@@ -50,8 +50,25 @@ struct LaunchSplashView: View {
                 WordCloudBackdropView(
                     scope: .corpus,
                     dim: FRUSTheme.cloudDimSplash,
-                    exclusionZones: [identityZone(in: proxy.size)],
+                    exclusionZones: [Self.identityZone(in: proxy.size,
+                                                      safeAreaInsets: proxy.safeAreaInsets)],
                     showsChip: true,
+                    // The particle field, on the one surface composed for it (visual-marketing
+                    // plan §3.2, M-4). The static renderer gets no expansion and no bleed, so
+                    // today's splash is the "clump stranded in an empty expanse" the field's v1.2
+                    // spread exists to fix; full-bleed and full-screen, this is the only surface
+                    // that holds the composition the code was written for long enough to read it.
+                    //
+                    // It is also the first shipping surface to drift WITH an exclusion zone, which
+                    // is why `WordCloudDriftField.push`'s bleed re-clamp had to be fixed in the
+                    // same change: until now nothing exercised that path.
+                    //
+                    // Reduce Motion is already handled downstream — `WordCloudBackdropView` hands
+                    // the flag to the canvas, which pins the MOTION clock so the field is drawn at
+                    // its packed layout. The lens rotation deliberately continues (at 6 Hz), on the
+                    // canvas's own stated rule that Reduce Motion simplifies a transition rather
+                    // than removing it; so the splash still crossfades, it just does not drift.
+                    drift: true,
                     // SEEDED, never randomised (visual-marketing §3.2, M-5). This surface is the
                     // App Preview's opening frame, a store screenshot and the README hero at once;
                     // a lens decided by the wall clock makes the beat that most needs reproducing
@@ -79,20 +96,20 @@ struct LaunchSplashView: View {
     /// The centre block the cloud is kept out from under — matching the launch screen's
     /// composition so the hand-off between them is invisible.
     private var identityBlock: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: Self.blockSpacing) {
             // Compile-checked symbol, not a string — a typo here used to be a blank tile
             // at runtime. Enabled by ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS.
             Image(.launchAppTile)
                 .resizable()
-                .frame(width: tileSize, height: tileSize)
+                .frame(width: Self.tileSize, height: Self.tileSize)
             Text(Self.wordmark)
-                .font(.system(size: wordmarkSize, weight: .semibold))
+                .font(.system(size: Self.wordmarkSize, weight: .semibold))
             Text(Self.caption)
-                .font(.system(size: captionSize))
+                .font(.system(size: Self.captionSize))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             shimmerBar
-                .padding(.top, 10)
+                .padding(.top, Self.shimmerTopPadding)
         }
         .padding(.horizontal, 32)
     }
@@ -124,15 +141,34 @@ struct LaunchSplashView: View {
                     .frame(width: 46)
                     .offset(x: (140 - 46) * phase)
             }
-            .frame(width: 140, height: 3)
+            .frame(width: 140, height: Self.shimmerHeight)
         }
         .accessibilityHidden(true)
     }
 
-    private func identityZone(in size: CGSize) -> CGRect {
+    /// The rect the cloud is kept out from under, **in the backdrop's coordinate space**.
+    ///
+    /// ## Two spaces, and the zone has to be in the second one
+    /// This view is an `.overlay` on `ContentView`, so its `GeometryReader` reports the
+    /// SAFE-AREA-inset box, and the identity block is centred in that. The backdrop beneath it
+    /// carries `.ignoresSafeArea()`, so it packs and drifts in the FULL-BLEED box. Handing the
+    /// zone across unchanged puts it off by exactly the leading/top inset — measured at 62 pt
+    /// vertically on an iPhone 17 in portrait, which leaves the shimmer bar and the gap above it
+    /// outside the protected rect, and in landscape leaves the caption's right-hand end outside.
+    ///
+    /// The offset makes the zone name the same rectangle the block occupies on screen. It matters
+    /// more since M-4: before, a word that reached that strip sat still under it; now it drifts.
+    ///
+    /// - Parameters:
+    ///   - size: the safe-area box the identity block is laid out in.
+    ///   - safeAreaInsets: that box's insets, which locate it inside the full-bleed canvas.
+    /// - Returns: the zone in full-bleed coordinates.
+    static func identityZone(in size: CGSize,
+                             safeAreaInsets: EdgeInsets = EdgeInsets()) -> CGRect {
         let width: CGFloat = min(340, size.width - 48)
         let height: CGFloat = 260
-        return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2,
+        return CGRect(x: safeAreaInsets.leading + (size.width - width) / 2,
+                      y: safeAreaInsets.top + (size.height - height) / 2,
                       width: width, height: height)
     }
 
@@ -147,15 +183,50 @@ struct LaunchSplashView: View {
 
     // MARK: - Metrics
 
+    /// The gap between the identity block's stacked elements.
+    ///
+    /// `static` alongside the three sizes below so ``identityZone`` can be checked against the
+    /// block it exists to cover. Without them a test can only compare the zone with a copy of its
+    /// own numbers, which passes for any zone at all — including one too small to cover anything.
+    /// Measured: shrinking the zone to 40 pt tall left the composition sweep green, because that
+    /// sweep places its words relative to the zone and therefore moves with it.
+    static let blockSpacing: CGFloat = 14
+
     #if os(macOS)
-    private var tileSize: CGFloat { 76 }
-    private var wordmarkSize: CGFloat { 20 }
-    private var captionSize: CGFloat { 12 }
+    /// The app tile's edge length.
+    static let tileSize: CGFloat = 76
+    /// The wordmark's point size.
+    static let wordmarkSize: CGFloat = 20
+    /// The caption's point size.
+    static let captionSize: CGFloat = 12
     #else
-    private var tileSize: CGFloat { 88 }
-    private var wordmarkSize: CGFloat { 22 }
-    private var captionSize: CGFloat { 13 }
+    /// The app tile's edge length.
+    static let tileSize: CGFloat = 88
+    /// The wordmark's point size.
+    static let wordmarkSize: CGFloat = 22
+    /// The caption's point size.
+    static let captionSize: CGFloat = 13
     #endif
+
+    /// The shimmer bar's height, and the extra padding above it.
+    ///
+    /// Included in the floor below rather than left out as "chrome": it is the LOWEST element of
+    /// the block, so it is the first thing an under-sized or mis-placed zone stops protecting —
+    /// which is exactly what the safe-area offset did before ``identityZone`` took the insets.
+    static let shimmerHeight: CGFloat = 3
+    /// The gap above the shimmer bar, beyond the stack's own spacing.
+    static let shimmerTopPadding: CGFloat = 10
+
+    /// The least vertical space the identity block can occupy: its three type elements, the
+    /// shimmer bar, and every gap between them. ``identityZone`` must cover it.
+    ///
+    /// A floor, not the laid-out height — the two `Text` elements render at roughly 1.2x their
+    /// point size, so the real block is a little taller. Under-stating is the safe direction for
+    /// a guard; over-stating would fail on a zone that is in fact adequate.
+    static var identityBlockMinimumHeight: CGFloat {
+        tileSize + wordmarkSize + captionSize + shimmerHeight
+            + blockSpacing * 3 + shimmerTopPadding
+    }
 }
 
 // MARK: - Cross-platform background

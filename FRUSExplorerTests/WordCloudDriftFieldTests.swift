@@ -110,7 +110,7 @@ struct WordCloudDriftFieldTests {
         for step in 0..<3600 {
             let t = Double(step) / 20
             for particle in field.particles {
-                let state = WordCloudDriftField.state(of: particle, at: t, in: size)
+                let state = WordCloudDriftField.state(of: particle, at: t, in: size, bleed: 0)
                 #expect(state.position.x.isFinite && state.position.y.isFinite)
 
                 let halfW = particle.halfSize.width * state.scale
@@ -147,7 +147,7 @@ struct WordCloudDriftFieldTests {
         let particle = try! #require(field.particles.first)
 
         for step in 0..<200 {
-            let state = WordCloudDriftField.state(of: particle, at: Double(step) / 10, in: size)
+            let state = WordCloudDriftField.state(of: particle, at: Double(step) / 10, in: size, bleed: 0)
             #expect(state.position.x == size.width / 2,
                     "a word too wide to fit must sit centred, not at an inverted bound")
         }
@@ -206,7 +206,7 @@ struct WordCloudDriftFieldTests {
         var observedMax: CGFloat = 0
         for step in 0..<4000 {
             for particle in field.particles {
-                let scale = WordCloudDriftField.state(of: particle, at: Double(step) / 20, in: size).scale
+                let scale = WordCloudDriftField.state(of: particle, at: Double(step) / 20, in: size, bleed: 0).scale
                 observedMax = max(observedMax, scale)
                 #expect(scale <= ceiling + 1e-9, "scale \(scale) exceeded the resolved ceiling \(ceiling)")
                 #expect(scale > 0)
@@ -278,13 +278,13 @@ struct WordCloudDriftFieldTests {
         let field = WordCloudDriftField(placed: placed, rankCeiling: 25)
 
         for particle in field.particles {
-            let state = WordCloudDriftField.state(of: particle, at: 0, in: size)
+            let state = WordCloudDriftField.state(of: particle, at: 0, in: size, bleed: 0)
             #expect(abs(state.position.x - particle.home.x) < 0.001,
                     "\(particle.term) rests \(state.position.x - particle.home.x) pt off home")
             #expect(abs(state.position.y - particle.home.y) < 0.001,
                     "\(particle.term) rests \(state.position.y - particle.home.y) pt off home")
 
-            let again = WordCloudDriftField.state(of: particle, at: 0, in: size)
+            let again = WordCloudDriftField.state(of: particle, at: 0, in: size, bleed: 0)
             #expect(again == state, "the rest pose must be a function, not a sample")
         }
     }
@@ -307,7 +307,7 @@ struct WordCloudDriftFieldTests {
         var everOverlapped = false
         for step in 0..<2000 {
             let state = WordCloudDriftField.state(of: particle, at: Double(step) / 20,
-                                                  in: size, avoiding: field.exclusionZones)
+                                                  in: size, avoiding: field.exclusionZones, bleed: 0)
             let box = CGRect(x: state.position.x - particle.halfSize.width * state.scale,
                              y: state.position.y - particle.halfSize.height * state.scale,
                              width: particle.halfSize.width * state.scale * 2,
@@ -324,8 +324,8 @@ struct WordCloudDriftFieldTests {
         let field = WordCloudDriftField(placed: placed, rankCeiling: 25)
         for step in 0..<200 {
             let t = Double(step) / 10
-            let withNone = WordCloudDriftField.state(of: field.particles[0], at: t, in: size)
-            let explicit = WordCloudDriftField.state(of: field.particles[0], at: t, in: size, avoiding: [])
+            let withNone = WordCloudDriftField.state(of: field.particles[0], at: t, in: size, bleed: 0)
+            let explicit = WordCloudDriftField.state(of: field.particles[0], at: t, in: size, avoiding: [], bleed: 0)
             #expect(withNone == explicit)
         }
     }
@@ -346,8 +346,8 @@ struct WordCloudDriftFieldTests {
         var nearScaleSum = 0.0, farScaleSum = 0.0
         for step in 0..<2000 {
             let t = Double(step) / 20
-            let n = WordCloudDriftField.state(of: nearP, at: t, in: size)
-            let f = WordCloudDriftField.state(of: farP, at: t, in: size)
+            let n = WordCloudDriftField.state(of: nearP, at: t, in: size, bleed: 0)
+            let f = WordCloudDriftField.state(of: farP, at: t, in: size, bleed: 0)
             nearExcursion = max(nearExcursion, abs(n.position.x - 400))
             farExcursion = max(farExcursion, abs(f.position.x - 400))
             nearScaleSum += n.scale

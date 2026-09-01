@@ -122,6 +122,17 @@ struct WordCloudDriftCanvas: View {
     /// Frozen when true: the field is drawn at its rest pose and never ticks.
     let reduceMotion: Bool
 
+    /// How far to shift the wall-clock lens index, so a **seeded** surface draws the lens its
+    /// chip names (visual-marketing plan §3.2, M-4/M-5).
+    ///
+    /// **Without this the splash names one lens and draws another three launches in four.** The
+    /// chip reads `WordCloudBackdropView.lensIndex`, which `lensSeed` pins to 0; the canvas
+    /// derived its own index from the absolute clock. Nothing caught it because the splash is the
+    /// first surface in the app to combine `showsChip: true` with `drift: true` — the two existing
+    /// drift surfaces suppress the chip, and the one other chip surface does not drift. Zero for
+    /// an unseeded surface, which is byte-identical to the previous behaviour.
+    var lensOffset: Int = 0
+
     var body: some View {
         // NOT `paused:`. Reduce Motion freezes the drift, not the lens rotation — the house
         // rule is to simplify a transition, not to remove it, and the static renderer keeps
@@ -134,7 +145,8 @@ struct WordCloudDriftCanvas: View {
         // the *motion* clock is pinned inside the renderer.
         TimelineView(.animation(minimumInterval: reduceMotion ? 1.0 / 6.0 : nil)) { context in
             WordCloudDriftCanvasFrame(snapshot: snapshot, dim: dim,
-                                      reduceMotion: reduceMotion, date: context.date)
+                                      reduceMotion: reduceMotion, date: context.date,
+                                      lensOffset: lensOffset)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
@@ -159,6 +171,10 @@ struct WordCloudDriftCanvasFrame: View {
     let dim: Double
     let reduceMotion: Bool
     let date: Date
+
+    /// Shifts which layer the absolute clock names, so a seeded surface draws the lens its chip
+    /// says it is drawing. See ``WordCloudDriftCanvas/lensOffset``.
+    var lensOffset: Int = 0
 
     var body: some View {
         Canvas(opaque: false, colorMode: .nonLinear, rendersAsynchronously: true) { ctx, size in
@@ -217,7 +233,8 @@ struct WordCloudDriftCanvasFrame: View {
         let motionTime = reduceMotion ? 0 : date.timeIntervalSinceReferenceDate
         let cycleTime = date.timeIntervalSinceReferenceDate
 
-        let cycle = WordCloudDriftCanvas.cycle(at: cycleTime, layerCount: snapshot.layers.count)
+        let cycle = WordCloudDriftCanvas.cycle(at: cycleTime, layerCount: snapshot.layers.count,
+                                               offset: lensOffset)
         drawLayer(snapshot.layers[cycle.outgoing], opacity: 1 - cycle.progress,
                   into: &ctx, size: size, time: motionTime)
         if cycle.progress > 0, cycle.incoming != cycle.outgoing {
@@ -267,11 +284,15 @@ extension WordCloudDriftCanvas {
     ///
     /// Derived from absolute time so it matches the chip driver exactly without either
     /// having to tell the other anything.
-    static func cycle(at time: Double, layerCount: Int) -> (outgoing: Int, incoming: Int, progress: Double) {
+    static func cycle(at time: Double, layerCount: Int,
+                      offset: Int = 0) -> (outgoing: Int, incoming: Int, progress: Double) {
         guard layerCount > 1 else { return (0, 0, 0) }
         let cadence = FRUSTheme.cloudLensCadence
         let phase = time / cadence
-        let index = Int(phase.rounded(.down))
+        // `offset` shifts which layer the absolute phase names, so a seeded surface starts where
+        // its chip says it does. The crossfade's `progress` is untouched: it is the position
+        // WITHIN a hold, and seeding moves which lens a hold shows, never when it begins.
+        let index = Int(phase.rounded(.down)) + offset
         let within = (phase - phase.rounded(.down)) * cadence
         // The crossfade occupies the head of each hold, matching the Text renderer's
         // incoming-transform duration so the two surfaces feel like one animation.

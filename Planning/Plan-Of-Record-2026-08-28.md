@@ -72,7 +72,7 @@ proposal and is left as written — read this block for what is true.
 | Lane | State |
 |---|---|
 | **M-2** — the five residual gaps | **ALL FIVE CLOSED.** Gaps 1–2 by GATE C (#1154), 3–4 by steps 1–2 (#1155), 5 by its methods half (#1157). The three that *blocked publication* were the first three, so **the map figure and the analytics plates are publishable**. |
-| **M-3** — in-app motion | **§3.2's M-1, M-2, M-3 and M-5 shipped** as one change (#1158), plus §7 step 0's double-cloud fix (#1156). **M-4 alone remains** — step 14, deliberately after capture, `S in code, M in risk`. |
+| **M-3** — in-app motion | **§3.2's M-1, M-2, M-3 and M-5 shipped** as one change (#1158), plus §7 step 0's double-cloud fix (#1156). **M-4 SHIPPED 2026-09-01 (PR #1174)**, pulled ahead of capture per §4c. The `M in risk` pricing was right: enabling drift on the splash made it the app's first `showsChip` + `drift` surface and surfaced **two defects the review did not predict** — the chip named a lens the canvas was not drawing on 75% of launches (silently undoing M-5 in the words while the label went on claiming otherwise), and the exclusion zone was computed in the overlay's safe-area box and consumed in the backdrop's full-bleed one, 62 pt out on an iPhone 17. Both fixed. 17 mutations killed. **Owner step outstanding: the on-device composition review at phone and Mac widths**, and it has three named things to look for — see the PR. |
 | **M-1** — the store listing | **Copy drafted** (#1160, `Store-Listing-Draft.md`): every field counted, every number measured from a shipped artifact, disclaimer in the same field as the "official documentary record" line. **GATE B was already satisfied** — 552 volumes, 316,839 documents — so the capture program is unblocked. **GATE A stays owner-only** (EULA placeholders, privacy nutrition label; still no `.xcprivacy` in the repo). |
 
 **§7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9.** That line is machine-checked against the plan itself by
@@ -231,14 +231,7 @@ into the rows above; this is the summary and the resulting order.
 | **REMOVED** | none |
 | **NEWLY FILED** | B-6, B-7 (§3a) |
 
-**M-4 is built BEFORE capture, reversing the plan's own schedule** — an owner decision made with
-the trade stated: the plan put it at step 14 precisely because it changes the App Preview's opening
-frame, so shooting first would mean re-shooting. Building first means one capture pass and accepts
-the on-device composition review it needs at phone and Mac widths. It carries a real bug that must
-land with it, not after: `WordCloudDriftField.state(of:)` clamps with the surface's bleed while
-`push`'s acceptance test re-clamps with the default `bleed: 0`, so on any surface with fill > 1 — 
-**exactly the full-bleed splash M-4 proposes** — a valid nudge is rejected and the word is left
-inside the identity zone.
+**M-4 was built BEFORE capture, reversing the plan's own schedule** — an owner decision made with the trade stated, and it paid. The plan put it at step 14 because it changes the App Preview's opening frame; building first meant one capture pass. It also found two defects that would have been shot into the store assets: on the frame the App Preview opens on, the lens chip named the wrong lens three launches in four, and the identity block's protected rect sat 62 pt from the block. The `push` re-clamp bug the row required did ship with it — and turned out to be the least consequential of the three, because the field's own expansion opens a void around a centred zone before drift's 14 pt excursion applies.
 
 **P10 is deferred to the next index bump rather than scheduled.** `currentDateIndexVersion` is 47
 and P10 needs 48, which is a full re-index for every user; the plan already treats bumps as batched

@@ -10258,3 +10258,70 @@ the next edit; a mutation introducing "catalogued"/"analysed" confirms it bites.
 
 Twelve mutations, each killed by its intended test. No schema change: `Row` and
 `CorpusCoverage` are plain structs.
+
+## Session 2026-09-01c — M-4: the splash drifts
+
+Visual-marketing plan §3.2's last motion row, pulled ahead of the capture sessions by the
+§4c disposition sweep. Three things, and only the first was in the plan.
+
+**The clamp defect the row required.** `WordCloudDriftField.push` had never run in
+production: it is reached only when a drifting surface passes an exclusion zone, and the
+one surface passing a zone — the splash — was on the static `Text` renderer while the two
+drifting surfaces passed none. So the path shipped reviewed and unexecuted, with a real bug
+in it. `state(of:)` clamped against the canvas *plus the surface's bleed*, then asked
+`push` to move a word clear; `push` re-clamped its candidate with the default `bleed: 0`,
+so on any surface with fill > 1 a legitimate push whose landing sat in the bleed margin was
+measured against a tighter canvas, judged off-screen, and rejected — leaving the word
+exactly where the zone existed to keep it from. `bleed` is required now, on both `push` and
+`state(of:)`, because a silent default is what let the two disagree.
+
+**Two defects the plan did not predict, both from enabling drift.** The splash is the app's
+first surface to combine `showsChip: true` with `drift: true` — the two existing drift
+surfaces suppress the chip, and the one other chip surface does not drift — and that
+combination was broken:
+
+- **The chip named a lens the canvas was not drawing, three launches in four.** The chip
+  reads `lensIndex`, which `lensSeed: 0` pins; the canvas derived its layer from the
+  absolute wall clock. This silently undid M-5: a splash whose lens is decided by the clock
+  is the non-reproducible beat M-5 exists to fix, and M-4 would have reintroduced it in the
+  words while the label went on claiming otherwise. The canvas now takes an offset, and the
+  arithmetic is short enough to check by eye — `offset = seed − phaseOrigin`, with no clock
+  in it.
+- **The exclusion zone was in the wrong coordinate space.** `LaunchSplashView` is an
+  `.overlay`, so its `GeometryReader` reports the safe-area box and centres the identity
+  block there; the backdrop beneath carries `.ignoresSafeArea()` and packs in the
+  full-bleed box. The zone crossed unchanged and landed 62 pt out on an iPhone 17 in
+  portrait, leaving the shimmer bar unprotected while spending its top on status-bar space.
+  This predates M-4; what M-4 changes is that a word reaching that strip used to sit still
+  and now drifts across it.
+
+**Three of my own tests were vacuous, and each took a different instrument to find.**
+
+- The composition sweep never entered the push body — 0 of 4,800 samples — because the
+  field's v1.2 expansion, measured at (1.78, 2.97) for a set that small, threw every home
+  off an 852 pt canvas. It passed with `push` deleted, with the zones discarded in the
+  initialiser, and with the bug restored. My first diagnosis of *why* was also wrong: I
+  blamed placing words relative to the zone, which had nothing to do with it. It now counts
+  how often the sweep actually reaches the zone and fails if that is never.
+- The seeded-lens test computed the offset itself and fed it to `cycle`, so replacing the
+  view's whole computation with `return 0` left it green. Driving the real property then
+  exposed a further residual: `phaseOrigin` is nil until `onAppear`, so the offset was 0 on
+  the first rendered frame — the frame the App Preview opens on, and the frame my own doc
+  comment claimed was already right.
+- `anImpossiblePushIsStillRefused` put the word at the zone's midpoint, where the left and
+  right escapes are an exact tie; `min(by:)` keeps the first, so the push was refused
+  without `right` ever being evaluated, while the comment claimed the word moves.
+
+**Measured, not estimated.** The packer cost of drift at launch is 2.7 ms for all four
+lenses against ~0.7 ms for the static path's one; 20–25 words actually place per lens at
+splash size. Against the real corpus through the real packer the push fires for
+approximately one particle across four sizes and four lenses, because the expansion opens a
+14–117 pt void around a centred zone before drift's 14 pt excursion applies — so the clamp
+fix, which the row was written around, is the least consequential of the three changes.
+
+**17 mutations, all killed** (after two rounds of fixing survivors). Recorded and not
+fixed: `push` tries only the shortest escape and abandons the zone if it is refused — an
+exhaustive synthetic sweep finds 2,500 residual cases at splash geometry, all cured by
+trying the next axis, but that is a change to the algorithm rather than to the clamp M-4
+was asked to fix. **Owner step outstanding: the on-device composition review at phone and
+Mac widths**, with three named things to look for.

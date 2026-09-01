@@ -92,6 +92,40 @@ struct WordCloudBackdropView: View {
     @State private var layouts: [LayoutKey: [PlacedWord]] = [:]
 
     private var lenses: [WordCloudLens] { WordCloudLens.bundledCloudLenses }
+
+    /// How far the drift canvas must shift its wall-clock lens index to agree with the chip.
+    ///
+    /// Zero on an unseeded surface, where `lensIndex` IS the absolute phase and the canvas already
+    /// agrees. On a seeded one it is the gap the seed opened, so both halves of the surface name
+    /// the same lens — which is what makes M-5's reproducible opening frame reproducible in the
+    /// words as well as in the label.
+    /// The shift the drift canvas needs to draw the lens the chip names.
+    ///
+    /// The arithmetic is short enough to check by eye: the canvas computes
+    /// `absolutePhase + offset`, and the cadence driver sets `lensIndex = seed + absolutePhase −
+    /// phaseOrigin`. Equating the two leaves `offset = seed − phaseOrigin`, with no clock in it.
+    ///
+    /// **The `currentPhase` fallback is the first frame, and the first frame is the one that
+    /// matters.** `phaseOrigin` is `nil` until the cadence driver's `onAppear`, so a version that
+    /// returned 0 there would disagree with the chip on exactly the frame that opens the App
+    /// Preview. The driver is about to record this same value as the origin, so using it now is
+    /// the answer that will hold a moment later rather than a guess.
+    ///
+    /// - Parameters:
+    ///   - seed: the surface's `lensSeed`, or `nil` for an unseeded surface.
+    ///   - origin: the recorded phase origin, or `nil` before it is recorded.
+    ///   - currentPhase: the absolute phase now, used only when `origin` is `nil`.
+    /// - Returns: the offset, or 0 for an unseeded surface — byte-identical to before.
+    static func driftLensOffset(seed: Int?, origin: Int?, currentPhase: Int) -> Int {
+        guard let seed else { return 0 }
+        return seed - (origin ?? currentPhase)
+    }
+
+    /// This surface's offset, for the canvas.
+    private var driftLensOffset: Int {
+        Self.driftLensOffset(seed: lensSeed, origin: phaseOrigin,
+                             currentPhase: phase(at: Date()))
+    }
     private var lens: WordCloudLens {
         // Floor-modulo: a seeded surface can reach a negative index if the clock moves backwards
         // across a boundary, and `%` in Swift keeps the sign.
@@ -106,8 +140,12 @@ struct WordCloudBackdropView: View {
             ZStack(alignment: .topLeading) {
                 if drift {
                     if let snapshot = driftSnapshot(size: proxy.size) {
+                        // The chip and the words must name one lens. `lensIndex` already carries
+                        // the seed; the canvas derives its own index from the absolute clock, so
+                        // it is handed the difference.
                         WordCloudDriftCanvas(snapshot: snapshot, dim: dim,
-                                             reduceMotion: reduceMotion)
+                                             reduceMotion: reduceMotion,
+                                             lensOffset: driftLensOffset)
                     }
                 } else if let resolved {
                     ForEach(Array(resolved.words.enumerated()), id: \.element.id) { rank, word in
