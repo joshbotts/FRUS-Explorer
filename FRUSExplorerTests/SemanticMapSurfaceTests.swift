@@ -1490,6 +1490,71 @@ struct SemanticMapExportTests {
         #expect(!plain.extraCaveats.contains { $0.isEmpty })
     }
 
+    // MARK: - The figure's frame (gap 5)
+
+    /// **A figure is a photograph of a view, and the view is not the reader's.** The export frames
+    /// from its own plate rectangle, so the field of view differs from a wide Mac window's; nothing
+    /// on the plate said so, and nothing said which camera produced it.
+    @Test("A figure states its frame; a table has none to state")
+    func figureStatesItsFrame() {
+        let frame = SemanticMapExport.FigureFrame(
+            camera: SemanticMapCamera(centre: SIMD2<Float>(120, -240), halfExtent: 4_000),
+            size: CGSize(width: 1144, height: 900),
+            labelledRegionCount: 12)
+        let figure = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lens: .cluster, indexedVolumeCount: 1, figureTitle: "Semantic map", frame: frame)
+        let text = figure.extraCaveats.joined(separator: " ")
+        #expect(text.contains("1144"), "the plate rectangle")
+        #expect(text.contains("120") && text.contains("-240"), "the camera centre")
+        #expect(text.contains("no axis, no scale and no origin"),
+                "the coordinates must be given with the warning against reading them as measurement")
+
+        // The regions CSV lists every region whatever was on screen, so a frame sentence there
+        // would describe a framing the table does not depend on.
+        let table = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lens: .cluster, indexedVolumeCount: 1)
+        #expect(!table.extraCaveats.joined(separator: " ").contains("Frame:"))
+    }
+
+    /// The label layer re-runs its spacing rule against the export rectangle, so the figure can
+    /// name regions the reader never saw named — and the plate is the only place that can say so.
+    @Test("A figure says how many regions it names, and a slice says nothing")
+    func figureStatesItsLabelCount() {
+        func caveats(labelled: Int) -> String {
+            SemanticMapExport.provenance(
+                index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+                lens: .cluster, indexedVolumeCount: 1, figureTitle: "Semantic map",
+                frame: SemanticMapExport.FigureFrame(
+                    camera: SemanticMapCamera(centre: .zero, halfExtent: 4_000),
+                    size: CGSize(width: 1144, height: 900),
+                    labelledRegionCount: labelled)
+            ).extraCaveats.joined(separator: " ")
+        }
+        // 3 regions in the fixture index.
+        #expect(caveats(labelled: 2).contains("2 of 3"))
+        // A slice draws no labels at all; `sliceDescription` explains that, and a "0 of 3" line
+        // would contradict it by implying names were selected and none fitted.
+        #expect(!caveats(labelled: 0).contains("Region names shown"))
+    }
+
+    /// Fully zoomed out, the honest sentence is that nothing is cropped — not a span in units
+    /// wider than the plane itself.
+    @Test("A whole-map frame says so rather than printing a span past the grid")
+    func wholeMapFrameSaysSo() {
+        let text = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lens: .cluster, indexedVolumeCount: 1, figureTitle: "Semantic map",
+            frame: SemanticMapExport.FigureFrame(
+                camera: SemanticMapCamera(centre: .zero, halfExtent: 32_768),
+                size: CGSize(width: 1144, height: 900),
+                labelledRegionCount: 1)
+        ).extraCaveats.joined(separator: " ")
+        #expect(text.contains("the entire map is in frame"))
+        #expect(!text.contains("grid units in view"))
+    }
+
     /// The caveats are shared by the regions CSV and the figure, so wording that assumes a table
     /// is false on half the exports it ships in.
     @Test("No caveat assumes the export is a table")
