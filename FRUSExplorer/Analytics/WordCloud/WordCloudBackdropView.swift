@@ -70,12 +70,33 @@ struct WordCloudBackdropView: View {
     /// and there is no reason to re-open them to answer a question about the indexing strip.
     var drift: Bool = false
 
+    /// Which lens this surface STARTS on, or `nil` to keep the wall-clock-derived start
+    /// (visual-marketing plan §3.2, M-5).
+    ///
+    /// **The default start is not lens 0; it is arbitrary, and that is the defect.** `lensIndex`
+    /// is seeded 0 but the cadence driver assigns the ABSOLUTE phase integer at the first boundary
+    /// it crosses, so a surface that lives across one — roughly 38% of 1.6 s fresh-install splashes,
+    /// at a 4.2 s cadence — lands on a lens decided by the wall clock. For the indexing strip, which
+    /// lives for minutes, that is harmless and even desirable. For the splash it is not: the splash
+    /// is simultaneously the App Preview's opening frame, a store screenshot and the README hero,
+    /// and the one beat that most needs to be reproducible was the one that could not be.
+    ///
+    /// A seed pins the START and keeps the cadence: subsequent changes advance RELATIVE to the
+    /// first phase this surface saw, so a long-lived seeded surface still cycles, deterministically.
+    var lensSeed: Int?
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lensIndex = 0
+    /// The first cadence phase this surface saw, so a seeded surface can advance relative to it.
+    @State private var phaseOrigin: Int?
     @State private var layouts: [LayoutKey: [PlacedWord]] = [:]
 
     private var lenses: [WordCloudLens] { WordCloudLens.bundledCloudLenses }
-    private var lens: WordCloudLens { lenses[lensIndex % lenses.count] }
+    private var lens: WordCloudLens {
+        // Floor-modulo: a seeded surface can reach a negative index if the clock moves backwards
+        // across a boundary, and `%` in Swift keeps the sign.
+        lenses[((lensIndex % lenses.count) + lenses.count) % lenses.count]
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -138,10 +159,15 @@ struct WordCloudBackdropView: View {
         TimelineView(.animation) { context in
             Color.clear
                 .frame(width: 0, height: 0)
+                .onAppear { if phaseOrigin == nil { phaseOrigin = phase(at: context.date) } }
                 .onChange(of: phase(at: context.date)) { _, newPhase in
-                    guard newPhase != lensIndex else { return }
-                    lensIndex = newPhase
-                    onLensChange?(lenses[newPhase % lenses.count])
+                    // Unseeded surfaces keep the absolute phase, byte for byte as before.
+                    let next = lensSeed.map { seed in
+                        seed + (newPhase - (phaseOrigin ?? newPhase))
+                    } ?? newPhase
+                    guard next != lensIndex else { return }
+                    lensIndex = next
+                    onLensChange?(lenses[((next % lenses.count) + lenses.count) % lenses.count])
                 }
         }
     }

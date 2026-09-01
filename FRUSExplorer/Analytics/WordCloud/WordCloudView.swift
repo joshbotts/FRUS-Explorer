@@ -94,7 +94,6 @@ struct WordCloudView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Differentiate Without Color (UI audit A8): when set, the sentiment lens adds
     /// +/− prefixes to polarised words (cloud, list, legend, and image exports) so
     /// polarity is never conveyed by hue alone.

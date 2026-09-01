@@ -170,6 +170,19 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     let device: MTLDevice
     private let queue: MTLCommandQueue
     private let pipeline: MTLRenderPipelineState
+    /// The whole point layer's opacity, 0...1 — the lens dip's lever (visual-marketing §3.2, M-3).
+    ///
+    /// The field existed in `Uniforms`, was consumed by the shader, and was hardcoded to 1.0 at
+    /// both call sites: an end-to-end lever with nothing on the end of it. It drives the ON-SCREEN
+    /// pass only; `renderOffscreen` passes 1.0 explicitly, so an export taken mid-dip is a full
+    /// plate rather than a faded one.
+    ///
+    /// `didSet` redraws for the same reason `camera` does — the view is `isPaused = true`, so a
+    /// write that did not mark the view dirty would simply not appear.
+    var layerAlpha: Float = 1 {
+        didSet { if layerAlpha != oldValue { setNeedsRedraw() } }
+    }
+
     private var pointBuffer: MTLBuffer?
     private var paletteBuffer: MTLBuffer
     private var pointCount = 0
@@ -619,7 +632,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         else { return }
 
         var uniforms = Uniforms(
-            centre: centre, scale: scale, pointSize: pointSize, alpha: 1.0,
+            centre: centre, scale: scale, pointSize: pointSize, alpha: layerAlpha,
             scopeActive: isScoped ? 1 : 0)
 
         encode(into: descriptor, buffer: buffer, uniforms: &uniforms)
@@ -724,6 +737,10 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
             centre: centre,
             scale: camera.scale(aspect: Float(width) / Float(height)),
             pointSize: pointSize * Float(height) / Float(max(1, drawablePixelSize.height)),
+            // **1.0 EXPLICITLY, never `layerAlpha`.** A figure exported while the on-screen lens
+            // dip is mid-fade would be a faded plate — a published figure whose points are
+            // washed out for a reason no reader could recover. The export reads the stored view
+            // state and never the transient part of it.
             alpha: 1.0,
             scopeActive: isScoped ? 1 : 0)
 
