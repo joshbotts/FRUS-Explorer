@@ -146,6 +146,49 @@ struct SemanticMapFrameSequenceTests {
         #expect(first.pixels == second.pixels)
     }
 
+    // MARK: - Refusal
+
+    /// **A frame that fails must stop the run, not thin it.**
+    ///
+    /// The loop writes at the LOOP index while the closing frame writes at `records.count`, so a
+    /// single skipped render does two things at once: it leaves a hole that stops `ffmpeg` at the
+    /// gap, and it makes the closing frame overwrite a real one. The result is a directory that
+    /// looks like a finished sequence and is not. The plan's remedy was a manual pre-flight before
+    /// assembling; refusing removes the need for one.
+    ///
+    /// Driven through the real `render`, with `writeFrame` throwing to stand in for a renderer that
+    /// returns nil — the only way to reach the failure path without a broken GPU. It proves the
+    /// error escapes rather than being swallowed, which is the property that matters: what must
+    /// never happen is the run continuing.
+    @Test("A failing frame stops the run rather than thinning the sequence",
+          .enabled(if: frameSequenceHasMetal))
+    @MainActor
+    func aFailedFrameRefuses() async throws {
+        let model = try #require(await preparedModel())
+        let ordered = Array(await coveredOrder().prefix(3))
+        try #require(ordered.count == 3)
+
+        // A zero pixel size makes `renderOffscreen` return nil at its first guard — the real
+        // failure path, reached without a broken GPU. Throwing from `writeFrame` would NOT do:
+        // that closure only runs once an image exists, so a test built on it passes whether the
+        // nil case throws or skips. (It did, until the mutation said otherwise.)
+        var written = 0
+        #expect(throws: FrameSequenceError.self) {
+            _ = try SemanticMapFrameSequence.render(
+                model: model, ordered: ordered,
+                pixelSize: .zero, supersample: 1) { _, _ in written += 1 }
+        }
+        #expect(written == 0, "nothing should have been written; wrote \(written)")
+
+        // And the happy path still returns every frame plus the closing one.
+        var frames = 0
+        let records = try SemanticMapFrameSequence.render(
+            model: model, ordered: ordered,
+            pixelSize: CGSize(width: 64, height: 48), supersample: 1) { _, _ in frames += 1 }
+        #expect(records.count == ordered.count + 1)
+        #expect(frames == records.count)
+    }
+
     // MARK: - The generator run (gated)
 
     /// The full-corpus render: every covered volume in coverage order, 1920×1080, plus the

@@ -57,6 +57,15 @@ import CoreGraphics
 ///
 /// Version history:
 ///   1.0 — W-3 (#1007) §6 Phase 3: initial implementation
+/// Why a sequence run stopped.
+///
+/// Version history:
+///   1.0 — visual-marketing step 4: a failed frame refuses rather than corrupting the sequence
+enum FrameSequenceError: Error, Equatable {
+    /// A frame did not render. Carries which one, because the answer is almost always the volume.
+    case frameFailed(index: Int, volumeID: String)
+}
+
 @MainActor
 enum SemanticMapFrameSequence {
 
@@ -123,7 +132,7 @@ enum SemanticMapFrameSequence {
                        ordered: [VolumeManifestEntry],
                        pixelSize: CGSize,
                        supersample: Int = 2,
-                       writeFrame: (Int, CGImage) throws -> Void) rethrows -> [FrameRecord] {
+                       writeFrame: (Int, CGImage) throws -> Void) throws -> [FrameRecord] {
         guard let renderer = model.renderer else { return [] }
         var records: [FrameRecord] = []
         var cumulative = Set<String>()
@@ -132,8 +141,19 @@ enum SemanticMapFrameSequence {
             let started = Date()
             cumulative.insert(entry.volumeId)
             model.setScope(volumeIDs: cumulative)
+            // **REFUSE, do not skip.** This used to `continue`, and the consequence was not a
+            // missing frame — it was a corrupted sequence that looked complete. `writeFrame` takes
+            // the LOOP index while the closing frame below takes `records.count`, so one skipped
+            // render leaves a hole in the numbering *and* makes the closing frame overwrite a real
+            // one: 552 files where 553 are expected, a gap that stops `ffmpeg` at the hole, and a
+            // frame silently replaced. The plan's remedy was a manual pre-flight — `ls | wc -l`
+            // against `records.count` — before assembling. A throw makes the ritual unnecessary,
+            // which is this repo's posture everywhere else a generator can produce a plausible
+            // wrong artifact.
             guard let image = renderer.renderOffscreen(pixelSize: pixelSize,
-                                                       supersample: supersample) else { continue }
+                                                       supersample: supersample) else {
+                throw FrameSequenceError.frameFailed(index: index, volumeID: entry.volumeId)
+            }
             try writeFrame(index, image)
             records.append(FrameRecord(
                 index: index,
