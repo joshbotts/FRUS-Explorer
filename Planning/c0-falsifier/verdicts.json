@@ -1,0 +1,1274 @@
+{
+ "a6": {
+  "cell": "a6",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "Header states \"the FRUS Explorer corpus (552 volumes, 316,839 documents)\" and \u00a74 reports \"314,676 of 316,839 documents carry a parsed date (99.3%) ... but 2,163 documents are undated and fall out of every by-decade figure here\"; \u00a72 adds \"Per-decade tagging coverage of the corpus runs 60%\u201386% (1890s 60%, 1940s 78%, 1960s 86%)\". I re-ran these against frus-copy.db: volumes=552, docs=316,839, dated=314,676 \u2014 exact. Coverage was measured over the index and reported."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "The deliverable is framed as conditional throughout and the volume count is named: \"Re: what the FRUS Explorer corpus (552 volumes, 316,839 documents) holds on this question\"; \u00a74 is headed \"What the corpus cannot tell you, and you should know before you rely on it\"; \"appears in 18 documents in the entire 552-volume corpus\"; \u00a76(d) \"every claim here comes from the SQLite index and the bundled JSON\"."
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Documents are cited in volume/document form: \"The earliest opium document in the corpus is 1861-12-24 (`frus1862/d669`, arms-and-opium trading)\"; \u00a75 lists \"`frus1881/d133`, `frus1881/message-of-the-president` ... `frus1882/d76` (Frelinghuysen circular, April 1882), `frus1888p1/d200`, `d213`\" and \"FRUS 1946 vol. I (`d70`, `d96`, `d102`, `d320`, `d508`)\". No claim rests on a title alone."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "violated",
+    "evidence": "The one reproducer in \u00a76 joins on rowid: \"FROM frus_documents f JOIN document_cache dc ON dc.rowid=f.rowid\" \u2014 rowid is used to identify which document each FTS hit is. It was avoidable: `frus_documents` is an external-content FTS5 table that carries `document_id` and `volume_id` as UNINDEXED columns, and I reproduced the memo's 1,118 by selecting the pair straight off `frus_documents` with no rowid anywhere."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every document-level join in the shown SQL uses the pair: \"JOIN document_dates dd ON dd.volume_id=u.v AND dd.document_id=u.d\", and the union CTE is built on \"SELECT DISTINCT volume_id v, document_id d\" from both axes. No join on document_id alone. (The separate rowid defect is scored at I2.)"
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "violated",
+    "evidence": "The memo never states an inclusion policy for front matter, and front matter is silently inside its headline set: I ran the memo's own union against `document_cache` and the 1,118 pre-1970 documents comprise 1,107 ordinary documents, 5 editorial notes and 6 front-matter records. \u00a75 even offers a front-matter record as a lead \u2014 \"`frus1881/message-of-the-president`\" \u2014 without flagging it. The nearest disclosure is \u00a74's \"Only 5 editorial notes pre-1970 mention narcotics\" (which matches my count exactly), but it never says whether those 5 are in or out of the 1,118, and front matter is not mentioned anywhere in the memo."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "Neither `summary_text` nor `note_text` appears anywhere in the memo (grep returns nothing), and the stated surfaces are elsewhere: \u00a72 \"FTS5 over `frus_documents.body_text` (porter-stemmed)\" and \u00a73.3 \"`document_sources` preserves each printed document's file citation\". Quoted prose is from the printed record (Arthur's 1881 message), not a generated summary."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "`cross_references` is never queried or mentioned anywhere in the memo; its two axes are FTS over body_text and `document_subject_refs`, with `document_sources`/`volume_sources` for the archival section. No cross-reference work was done, so the is_broken filter never arose."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "Stemming is named and worked with: \u00a72 \"FTS5 over `frus_documents.body_text` (porter-stemmed)\" using `narcotic*`, and \u00a75 item 3 turns it into an explicit method choice \u2014 \"Institution names as phrases, not stems: `\"opium advisory committee\"`, `\"permanent central opium board\"` ... These separate regime-machinery documents from commodity documents cleanly.\""
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "Periodisation runs off `document_dates.date_iso` \u2014 \"WHERE CAST(substr(dd.date_iso,1,4) AS INT) < 1970\" \u2014 and \u00a74 states \"Dates are document dates, not volume years.\" `citation_era` is never referenced. Where the memo does name filing-schedule generations (\"`341.9` | post-1949\", \"`SOC 11\u20135` | post-1963 subject-numeric\") it is labelling which classification schedule a class belongs to, not reading a period out of the era column."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "Every archival count in \u00a73.3 is attributed to one channel and stated as such \u2014 \"`document_sources` preserves each printed document's file citation ... Measured in the corpus:\" followed by the class table \u2014 and the follow-ups in \u00a75 name the same table and columns (\"`document_sources.decimal_class LIKE '511.4%'`\", \"`document_sources.raw_text LIKE '%.114 Narcotics%'`\"). `external_citations` is never queried, and no count mixes the two."
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "violated",
+    "evidence": "Exactly one number in the memo carries its SQL \u2014 the \u00a76 reproducer for 1,118. The by-decade table (24 figures), the year-by-year series (35 figures), the eight subject document-frequencies, the \u00a72 axis-agreement table (102/34/982/1,118), the \u00a73.3 file-class table and the thirteen \u00a74 name counts are all reported bare. The memo offers a template instead (\"Reproduce any number with, e.g.\"), and gives two exact predicates in \u00a75, but the work behind the great majority of reported numbers is not shown. (The header's claim that \"every number has a query behind it\" is a claim, not shown work.)"
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Proportions carry denominators throughout: \"**Roughly 1,100 documents dated before 1970 touch narcotics**, out of 285,060 pre-1970 dated documents (**0.39%**)\"; the \u00a73.1 table prints \"narcotics docs | all docs | rate\" per decade with an instruction to \"Read the **rate** column, not the count\"; \"314,676 of 316,839 documents carry a parsed date (99.3%)\"; \"Of those 269, 147 mention 'liquor' and only 8 mention narcotics or opium.\" I verified 285,060 and 316,839/314,676 against the database."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Absence claims are stated and paired with evidence that the same query does return rows: \u00a71/\u00a73.3 \"State had no narcotics office before 1971 ... its lot file (Lot 77 D 120) appears in the corpus only in 1969\u201376 volumes\" and \"The S/NM files (Lot 77 D 120, Vance) and IO/T/HNP files (Lot 81 D 327) exist in the corpus only from 1969 forward\" \u2014 I confirmed Lot 77 D 120 resolves in `document_sources` to frus1969-76ve03 and nothing earlier. Likewise \"`341.9` appears in exactly one volume of 552\" is reported beside its 13 documents (verified: 13 docs, 1 volume). \u00a76(c) also reports a null re-check and grades it: \"I re-ran with `smuggl|contraband|illicit traffic` and found nothing narcotics-related that the first pass had missed, but that is a weaker check than I would like.\""
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Thin results are explicitly flagged as properties of the source base rather than of history: \"Whatever the corpus says about State's role, it will systematically understate the Federal Bureau of Narcotics, and the absence of Anslinger is not evidence of his absence from the policy\"; \"**The coca/cocaine side is thin.** ... are not, on this evidence, well represented before 1970\"; \"**`341.9` appears in exactly one volume of 552** ... That is the sharpest single statement of how thin the mid-century coverage is\"; and \u00a72's caveat that tag coverage of 60\u201386% means \"axis B under-counts everywhere\"."
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "violated",
+    "evidence": "No control \u2014 positive or negative \u2014 is run on the search instrument anywhere; the word does not appear in that sense in the memo. What the memo has instead is triangulation between two result sets (\u00a72's \"88% agreement between a stemmed word search and a human-assigned tag\") and post-hoc characterisation of false positives (\u00a73.4's five classes; the `811.114` Prohibition trap at \"147 mention 'liquor' and only 8 mention narcotics or opium\"). Those validate results, not the query path, and no probe with a known expected answer is run in the same pass to show the apparatus behaves."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "The counting surface is stated for the corpus scans: \u00a72 \"**Axis A \u2014 lexical.** FTS5 over `frus_documents.body_text` (porter-stemmed)\", and \u00a76(d) closes the question explicitly \u2014 \"I did not open the TEI XML at all; every claim here comes from the SQLite index and the bundled JSON, and the index's own parse of source notes is what I trusted for \u00a73.3.\""
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "Variants are expanded and the split is reported. The match expression carries spellings and phrase variants \u2014 \"narcotic* OR opium OR cocaine OR morphine OR heroin OR marihuana OR marijuana OR cannabis OR \\\"coca leaf\\\" OR \\\"coca leaves\\\"\" \u2014 the eight subject terms are broken out with per-term document counts (Opium 1,016 / Narcotics 631 / Heroin 175 \u2026), \u00a74 reports thirteen per-phrase counts (\"'opium advisory committee'/'advisory committee on traffic in opium' 66\"), and \u00a73.3 splits file-number spellings (\"`893.114` (+ `893.114-N`, `893.114N`)\"). The axis split itself is tabulated: A-only 102, B-only 34, both 982, union 1,118 \u2014 which I reproduced exactly (1,118)."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 says which was used and what it costs: \"**Dates are document dates, not volume years.** 314,676 of 316,839 documents carry a parsed date (99.3%), so the temporal cuts above are reliable, but 2,163 documents are undated and fall out of every by-decade figure here.\" The shown SQL confirms it: \"JOIN document_dates dd ... WHERE CAST(substr(dd.date_iso,1,4) AS INT) < 1970\"."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "violated",
+    "evidence": "No mention of second editions, Ed2 volumes, or duplicate folding anywhere in the memo (grep for 'ed2', 'second edition', 'duplicat' returns nothing), and the fold was not checked and dismissed either. It is not hypothetical here: the index holds frus1951-54IranEd2, frus1969-76ve15p2Ed2 and frus1977-80v09Ed2, and running the memo's own union shows frus1951-54IranEd2 contributing 2 documents to its headline 1,118 pre-1970 set."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a73.3 establishes provenance for the relevant documents from `document_sources`: \"| `511.4*` | US participation in the opium conferences | **165** |\", \"| `893.114` (+ `893.114-N`, `893.114N`) | China \u2014 traffic in narcotics | 54 |\", `812.114 Narcotics` for Mexico, `341.9` for the UN Commission, plus \"`volume_sources` also names the relevant lot files directly, e.g. for FRUS 1961\u201363 v. XXV: `RG 59, IO Files: Lot 67 D 378 ...`\". I verified 511.4* = 165 documents and 341.9 = 13 documents in one volume."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "violated",
+    "evidence": "The footnote channel is never touched. `external_citations` is not mentioned or queried anywhere in the memo, and no passage asks where the editors' notes point; \u00a73.3 is built entirely on where documents came from (\"`document_sources` preserves each printed document's file citation\"), and \u00a74's only remark about notes is a count of editorial notes (\"Only 5 editorial notes pre-1970 mention narcotics\"), not an analysis of their citation targets. The memo did substantial archival work, so the item applies."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Each archival count is attributed to its named source and none are added together: \u00a73.3 opens \"`document_sources` preserves each printed document's file citation\" before the class table, then separately \"`volume_sources` also names the relevant lot files directly\", and \u00a75's follow-ups re-name the table and column each time (\"`document_sources.decimal_class LIKE '511.4%'` (165 docs, 20 volumes)\", \"`document_sources.raw_text LIKE '%.114 Narcotics%'` \u2014 58 documents\"). No total combines channels."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\"From the bundled `decimal-class-labels.json` (the 1910\u20131949 schedule), **subject suffix `.114` = 'Traffic in liquors and habit-forming drugs'**, and class 5 = 'Congresses and Conferences'.\" I opened the same file in /Applications/FRUS Explorer.app/Contents/Resources/ and it carries `\"114\": \"Traffic in liquors and habit-forming drugs\"` verbatim. \u00a72 also reads `document-subject-index.json` for the eight subject vocabulary indices."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Concrete targets are named: \"`RG 59, IO Files: Lot 67 D 378, Deputy Assistant Secretary Richard N. Gardner Files, 1961\u201365, Opium\u2026` \u2014 a concrete archival lead\", plus \"The S/NM files (Lot 77 D 120, Vance) and IO/T/HNP files (Lot 81 D 327)\" and specific file classes (`511.4*`, `893.114`, `341.9`, `892.53: Narcotics traffic in Thailand`). I confirmed Lot 77 D 120 resolves in `document_sources` (frus1969-76ve03)."
+   }
+  ],
+  "obeyed": 18,
+  "violated": 6,
+  "notApplicable": 1,
+  "notes": "The rubric's table lists 25 rows (C1\u2013C2, I1\u2013I3, E1\u2013E3, T1\u2013T3, R1\u2013R4, S1\u2013S5, A1\u2013A5) although the heading says 24; I scored all 25. Compliance = 18/24 = 0.75.\\n\\nVerification: I re-ran the memo's headline query and it reproduces exactly (1,118). Corpus counts (552 volumes, 316,839 documents, 314,676 dated, 285,060 pre-1970 dated), the archival counts I could check (511.4* = 165, 811.114 = 269, 341.9 = 13 in one volume), the Anslinger count (18), the Lot 77 D 120 volume range, and the decimal-class-labels.json gloss for .114 all check out. The one numeric discrepancy I found is minor and in a forward-looking recommendation: \u00a75 says 511.4* covers \\\"20 volumes\\\"; the database says 26.\\n\\nThe ARCHIVAL block \u2014 the block the rubric flags as the discriminating one \u2014 is 4/5 obeyed and genuinely substantive: a decimal-file axis worked out from a bundled artifact, named lots and record groups, and a measured trap (811.114 is Prohibition, not narcotics). The single archival failure is A2: the footnote channel (`external_citations`) is never opened, so the memo answers \\\"where did these documents come from\\\" and never \\\"where do the editors point\\\".\\n\\nThe six failures cluster in method hygiene rather than archival reach:\\n- R1: one SQL block for one number, against roughly eighty reported figures. The memo substitutes a reproducer template and a claim that \\\"every number has a query behind it\\\"; the claim is not shown work.\\n- E1: front matter is silently inside the headline set (6 records, verified) and never mentioned; editorial notes are counted (5, verified) but never declared in or out.\\n- S5: the Ed2 fold is neither handled nor dismissed, and it is live \u2014 frus1951-54IranEd2 contributes 2 documents to the 1,118.\\n- I2: the shown SQL joins `document_cache` on rowid. Avoidable \u2014 the FTS table exposes volume_id/document_id UNINDEXED, and I got the same 1,118 without touching rowid.\\n- S1: no control on the instrument. The memo validates results (two-axis agreement, five measured false-positive classes) but never runs a probe with a known expected answer. This was the closest call I made; I resolved it against the memo because a control is applied to the method, and the memo's checks are applied to its output.\\n- A2 as above.\\n\\nJudgement calls worth flagging for adjudication: S1 (argued above), R3 (scored obeyed on the Lot 77 D 120 / 341.9 absence claims, which do pair a null with proof the query returns rows elsewhere \u2014 the \u00a76(c) null re-check alone would have been too weak), and I3 (scored obeyed because every document-level join uses the pair; the rowid join is penalised once, at I2, rather than twice).\\n\\nThis is a careful and largely honest memo \u2014 its self-criticism section names four real weaknesses including the one that matters most (\\\"I sampled rather than classified\\\") \u2014 but the rubric measures shown work, and its reporting discipline is where it thins out."
+ },
+ "a4": {
+  "cell": "a4",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a710 opens with the coverage query and its result: `sqlite3 \"$DB\" \"select count(*), count(distinct volume_id) from document_cache;\"   # 316839 / 552`, and the header reports it: \"316,839 documents, 552 volumes\". I re-ran it: returns 316839|552 exactly."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "Header: \"**Corpus:** local FRUS Explorer index \u2014 316,839 documents, 552 volumes, plus the TEI XML the index was built from and the app's bundled reference JSON.\" Conditionality is stated repeatedly: \u00a71 \"a **1948\u201360 hole that is a hole in FRUS's selection, not in the archive**\"; \u00a78 \"the pre-1970 narcotics material this corpus knows about\"; \u00a79 is a dedicated \"Limits of this pass\" section."
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Documents are cited as volume + document id throughout: \"`frus1887` d148\", \"`frus1908` d72 (`File No. 774/197A`\u2026)\", \"`frus1906p1` d332\", \"`frus1961-63v25` d326\", \"(d336, d342\u2026)\". Verified in the DB: frus1908/d72 header is \"The Secretary of State to Ambassador Reid\" with source note \"File No. 774/197A.\"; frus1887/d148 is \"Mr. Bayard to Mr. Denby\"; frus1906p1/d332 is \"The Acting Secretary of State to Minister Rockhill\" \u2014 all as described."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "`grep -niE \"rowid\"` over the memo returns nothing. Every identifier reported is a (volume_id, document_id) pair or a class/file number; e.g. \u00a710's queries select `volume_id,document_id` and never rowid."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every join in \u00a710 is on the pair: \"left join document_dates d using(volume_id,document_id)\" (measure a), \"join document_dates d using(volume_id,document_id)\" (measure b), and \"left join n using(volume_id,document_id)\" in the 811.114 trap query."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "violated",
+    "evidence": "No count in the memo filters apparatus material \u2014 \u00a710's queries hit `document_cache`/`frus_documents`/`document_dates` with no `is_front_matter`/`is_editorial_note` predicate, and the DB holds 8,468 editorial notes and 1,012 front-matter rows inside the 316,839 denominator, the 64,632 window and the 1,676 keyword hits. Front matter is never mentioned at all. The only disclosure is local and partial: \u00a79 \"Two documents in the 1961\u201363 chapter have no header or date row at all (d336, d342 \u2014 probably editorial notes or attachments); they are counted in the compilation total\" \u2014 true (both are is_editorial_note=1) but it is a note about two rows, not a statement of the counting policy behind the headline figures."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "`grep -niE \"summary_text|note_text\"` returns nothing. The one long quotation, in \u00a75, is verifiably the document's own `source_note`, not user content: I read frus1961-63v25/d326 and its `source_note` column begins \"Source: National Archives and Records Administration, RG 59, Central Files 1960\u201363, 341.9/1\u20131961. Official Use Only. Anslinger was Commissioner of Narcotics in the Department of the Treasury. The instructions were drafted on January 18 by Chester G. Dunham\u2026\" \u2014 word-for-word what the memo quotes. (It mislabels it \"The FRUS editorial note\", but the source is the printed note, not `note_text`.)"
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "`grep -niE \"cross_reference|is_broken\"` returns nothing; the memo's four measures are FTS keywords, `document_subject_refs`, `volume_structures.structure_json` and `document_sources`. It never uses the cross-reference table, so the exclusion never arose."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "The counting surface is named with its tokenizer in the \u00a72(a) heading: \"### (a) Full-text keyword hits (FTS5, porter-stemmed)\". Variant handling is consistent with it \u2014 distinct spellings that do not share a stem are both listed (\"marihuana OR marijuana\"), and \u00a76 item 5 treats the stem-equivalent pair as one: \"Do not search bare `drug`, `drugs`, or `smuggling` (1,572 hits\u2026)\"."
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "`document_sources.citation_era` is a real column here (default 'unrecognized') and the memo uses `document_sources` heavily, yet never touches it (grep: no hit). All periodisation runs off `document_dates.date_iso` \u2014 \u00a710: \"sum(d.date_iso<'1970-01-01')\" \u2014 and \u00a79 states the choice: \"Dates are document dates from `document_dates`, not publication dates.\" Eras are inferred from file-number form instead (\"`341.9` | the 1950\u201363 Central Files narcotics class\", \"`SOC 11-5` | the 1963\u201373 subject-numeric narcotics class\")."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "The archival table in \u00a72(d) is labelled with its single source \u2014 \"`document_sources.raw_text` / `decimal_class`\" \u2014 and every archival query in \u00a710 and \u00a76 step 2 hits `document_sources` only. `external_citations` never appears in the memo (grep: no hit), so no combined count exists."
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a72(a) shows the FTS query inline and \u00a710 (\"How to reproduce every number here\") gives seven runnable statements. I ran them all: 1676/1087/51 hits, 1016 subject union, 150 for `File No. 774`, 268/7 for 811.114, 64632 for the 1948\u201360 window, and the full decade table \u2014 every figure reproduced exactly. (Gap noted: no code for \u00a77's compilation walk \u2014 \"(c) requires walking `volume_structures.structure_json`\" \u2014 nor for \u00a78's cross-check or \u00a74's phrase counts.)"
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Proportions carry denominators throughout: \u00a73 \"**268 documents, of which only 7** mention any narcotics term and 216 mention liquor\"; \"`893.114` (China) is 44/46 narcotics\"; \"(48/51, 28/31, 19/28, 9/9, 8/8, 7/8)\"; \u00a74 \"**82 subject-tagged documents**, against 64,632 corpus documents in the window (0.13%, versus 0.44% for 1906\u201347)\" \u2014 the one percentage given is accompanied by both denominators. \u00a79 \"**428 documents of which 426** fall in its later era bucket.\""
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Empty results are stated and paired with a positive check that the window could return rows: \u00a71 \"**Not one document dated 1948\u20131960 sits in a narcotics-titled compilation** \u2014 against 64,632 corpus documents dated in that window\", with \u00a710's `select count(*) from document_dates where date_iso between '1948-01-01' and '1960-12-31';  # 64632` proving the date range is populated (I re-ran it: 64632). Also \u00a73(ii) \"`511.4C1` (7 docs) \u2026 **liquor traffic in Africa, zero narcotics mentions**\" \u2014 a zero reported against a non-empty base."
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a79 flags thin results as artefacts of the indexing rather than the record: \"The subject taxonomy is the Office of the Historian's, applied unevenly. Its density is much higher in modern volumes. **A pre-1970 volume being lightly tagged is weak evidence of absence.**\" \u00a71 does the same for the biggest negative finding (\"a hole in FRUS's selection, not in the archive\"), and \u00a77's Turkey row is marked \"**only ~1 doc is on narcotics; treat this row as inflated**\"."
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a73 runs both against the decimal-class instrument in one pass and reports both: negatives \u2014 \"`811.114` (the United States file) holds **268 documents, of which only 7 mention any narcotics term**\" and \"`511.4C1` (7 docs) \u2026 **zero narcotics mentions**\"; positives \u2014 \"By contrast `893.114` (China) is 44/46 narcotics\" and \"All the `511.4A*` sub-files and `511.4R1` are genuinely narcotics (48/51, 28/31, 19/28, 9/9, 8/8, 7/8)\". \u00a710 ships the 811.114 control query, which I re-ran (268|7)."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a72(a) names the surface and tokenizer in its heading \u2014 \"Full-text keyword hits (FTS5, porter-stemmed)\" \u2014 and \u00a79 states what was *not* scanned: \"**I did not open the TEI XML.** Everything above is from the SQLite index and the bundled JSON. If a compilation heading is malformed in the XML, my \u00a77 table inherits the error.\" (It does not enumerate which FTS columns are indexed, so header/source-note hits are silently included in \"mention\" counts.)"
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "Eleven variants in one MATCH \u2014 \"narcotic OR narcotics OR opium OR cocaine OR morphine OR heroin OR marihuana OR marijuana OR cannabis OR hashish OR \\\"dangerous drugs\\\"\" \u2014 and the split is reported per term in \u00a72(b): \"Opium (1,016), Narcotics (631), Heroin (175), Narcotics control (168), Cocaine (100), Morphine (99), Narcotics traffic (69), Drug industry (8)\" (I verified all eight df values against document-subject-index.json \u2014 exact). \u00a76 item 4 gives per-phrase counts, and \u00a73(ii) reports orthographic variants: \"`511.4Al` and `511.4a6` appear alongside `511.4A1`/`511.4A6`, and the pre-WWII volumes print the class with spaces (`511.4 A 2/31b`)\"."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a79 states the choice outright: \"**Dates are document dates from `document_dates`, not publication dates.**\" The decade table in \u00a72(a) is built as \"`substr(date_iso,1,3)||'0s'`\" and every period claim joins `document_dates`; I reproduced the decade table exactly. Volume years are used only as volume labels, never as the period axis."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "violated",
+    "evidence": "`grep -niE \"ed2|second edition\"` over the memo returns nothing \u2014 the fold is neither applied nor checked-and-dismissed. It is live in this period: the DB holds `frus1951-54IranEd2`, which contributes 2 documents to the memo's own keyword MATCH and 2 to its eight-id subject union, both inside the pre-1970 window and both counted twice against their first-edition twins."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a72(d) \"Archival provenance \u2014 the Department's own file classes\" is a whole measure built from where the documents came from \u2014 \"`document_sources.raw_text` / `decimal_class` \u2026 the State Department filed narcotics under identifiable numbers and FRUS prints the file number in the source note\" \u2014 with a six-row table: `774/\u2026` 1906\u201310 Numerical File (150), `511.4A*`/`511.4R1` (~158), `500.C1197` League Advisory Committee (33), `NNN.114 Narcotics/\u2026` (58), `341.9` (13), `SOC 11-5` (52). I reproduced the 774 count (150) and the 811.114 control (268/7)."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "violated",
+    "evidence": "The footnote channel is never opened: `external_citations` does not appear anywhere in the memo (grep: no hit), and \u00a76's search plan lists only `document_sources.raw_text LIKE \u2026`, the subject union and full-text phrases. The channel is applicable and populated \u2014 `external_citations` holds 49,687 rows, 156 of them on documents matching the memo's own narcotics MATCH, resolving to Nixon Presidential Materials/NSC Files (29), Carter Library/National Security Affairs (29), Department of State lot 54 D 423 (5) and others. The one thing the memo calls a footnote in \u00a75 (\"The FRUS editorial note attached to it\") is in fact the document's `source_note`, i.e. the channel it had already used."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Only one archival channel is used and it is named at the point of counting \u2014 \u00a72(d) heading \"`document_sources.raw_text` / `decimal_class`\" \u2014 and \u00a76 step 2 repeats the channel for the reader (\"`document_sources.raw_text LIKE '%Narcotics/%'`\u2026\"). No figure anywhere adds a source-note count to a footnote-citation count, since the latter is never computed."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a72(d): \"`decimal-class-labels.json` (parsed from NARA's *Classification of Correspondence, August 1910 \u2013 December 1949*) gives subject suffix `114` = **\\\"Traffic in liquors and habit-forming drugs\\\"** under class 8, Internal Affairs of States, and class 5 = \\\"Congresses and Conferences.\\\"\" I opened the bundled artifact: schedule 0's `subjects['8']['114']` is exactly \"Traffic in liquors and habit-forming drugs\", `classes['8']` is \"Internal Affairs of States\", `classes['5']` is \"Congresses and Conferences\", and `source` is \"RG 59 Department of State Classification of Correspondence, August 1910 \u2013 December 1949\". Country numbers also check out (93 China, 90 Asia, 91 Iran). Also opened: document-subject-index.json, volume-subject-profiles-index.json, semantic-map-index.json, manifest.json."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a75 names a concrete target verbatim: \"`RG 59, Central Files 1960\u201363, 341.9/1\u20131961`\" \u2014 record group, series and file number. Confirmed against the DB: frus1961-63v25/d326's source_note reads \"National Archives and Records Administration, RG 59, Central Files 1960\u201363, 341.9/1\u20131961\". Further concrete units in \u00a72(d): the 1906\u201310 Numerical File (`774/\u2026`), `500.C1197` (League of Nations Advisory Committee on Traffic in Opium), and `511.4A2A/1008` quoted in \u00a74."
+   }
+  ],
+  "obeyed": 21,
+  "violated": 3,
+  "notApplicable": 1,
+  "notes": "Note: the rubric's table lists 25 rows (C1\u2013C2, I1\u2013I3, E1\u2013E3, T1\u2013T3, R1\u2013R4, S1\u2013S5, A1\u2013A5) though its heading says 24; I scored all 25 as written. Compliance = 21/24 = 0.875 over scorable items.\n\nVERIFICATION. I independently re-ran every query in \u00a710 against frus-copy.db and opened the bundled JSON the memo cites. Everything reproduced: 1,676 FTS hits / 1,087 pre-1970 / 51 undated; 1,016 subject union pre-1970; 150 for `File No. 774`; 268 documents at `811.114` of which 7 match narcotics terms; 64,632 documents dated 1948\u201360; the full decade table (26/33/64/54/161/142/136/187/132/78/74/460) matched cell for cell. All eight subject-id document-frequencies matched document-subject-index.json exactly, as did the class-8 `114` gloss, classes 5 and 8, and the country numbers in decimal-class-labels.json. Three spot-checked document citations (frus1908/d72 with File No. 774/197A, frus1887/d148 Bayard\u2192Denby, frus1906p1/d332) are all correct, and the \u00a75 quotation is word-for-word the stored source note. Two trivial slips found: \"211 distinct volumes\" is 213 pre-1970 (272 for all hits), and my own independent walk of volume_structures found 47 narcotics-titled sections in 37 volumes against the memo's 40/35, including two the \u00a77 table omits (frus1936v01 Suppression conference, frus1944v05). Neither affects an item.\n\nTHE THREE FAILURES, and they are structural rather than sloppy.\n\nA2 is the substantive one. The memo builds a serious archival measure out of one channel \u2014 `document_sources`, where the printed document came from \u2014 and never opens the other, `external_citations`, where the editors' footnotes point. That table is not empty for this topic (156 rows joined to the memo's own MATCH, naming Nixon NSC Files, Carter NSA files, Kennedy NSF and State lot 54 D 423), and \u00a76's search plan omits it too, so a reader following the memo would never find it. Compounding this, \u00a75 calls a `source_note` \"The FRUS editorial note attached to it\" \u2014 the memo appears not to distinguish the two channels conceptually, which is exactly what A2 exists to test. A3 still passes because only one channel was counted and it was labelled; there was nothing to sum.\n\nE1: not one figure in the memo excludes or discloses apparatus. 8,468 editorial notes and 1,012 front-matter rows sit inside the 316,839 denominator, the 64,632 window and the 1,676 hits with no filter and no statement. \u00a79's remark about d336/d342 is a correct local observation (both are indeed is_editorial_note=1) but covers two rows in one chapter, not the counting policy.\n\nS5: the Ed2 fold is unmentioned and live \u2014 frus1951-54IranEd2 double-counts 2 documents into both the keyword and subject measures inside the memo's own period.\n\nWHERE I WAS CLOSE TO MARKING DOWN BUT DID NOT. R1: \u00a710 is titled \"How to reproduce every number here\" and does not reach \u00a77's 498-document compilation table (the memo's own recommended starting point), \u00a78's five-row cross-check, or \u00a74's phrase counts; I passed it because the SQL that is shown is exact, runnable and verified. S2: the surface and tokenizer are named (\"FTS5, porter-stemmed\", \"I did not open the TEI XML\") but the indexed column set is not, so header/source-note hits count as \"mentions\" silently. S1: the positive/negative pair is a precision audit of the decimal-class instrument (893.114 vs 811.114/511.4C1) rather than a plumbing check, but both arms are run in the same pass and both are reported with counts, which is what the item asks.\n\nONE INTERNAL INCONSISTENCY worth recording though no item covers it: \u00a71 and \u00a74 both assert zero compilation documents dated 1948\u201360, while \u00a77 carries a 32-document row for the 1952\u201354 Turkey compilation. The memo flags that row as inflated but never reconciles the \"zero\" claim against it."
+ },
+ "a1": {
+  "cell": "a1",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "Header states a measured coverage result: \"**Corpus:** local FRUS Explorer index \u2014 316,839 documents across 552 volumes, coverage 1861\u20131988 (one 1989\u201392 volume)\". \u00a73 adds a full per-decade corpus denominator table (\"corpus docs\" column: 11,253 / 5,808 / 6,482 \u2026) and \u00a77 lists `denom.tsv` \"the per-decade corpus denominator\" and `vols.tsv` \"manifest export: volume id, subseries, coverage years\u2026\". Verified: `select count(*) from frus_documents` = 316839, `count(distinct volume_id)` = 552 \u2014 exact."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "Names the library and its volume count in the same clause \u2014 \"**Corpus:** local FRUS Explorer index \u2014 316,839 documents across 552 volumes\" \u2014 and repeatedly conditions results on it: \"4,999 documents in 501 of 552 volumes\". \u00a76 conditions the findings explicitly: \"**Coverage gaps.** \u2026 The corpus effectively stops at 1988 (a single 1989\u201392 volume, on START, with one union hit), so the 1982 signature and the 1994 Part XI agreement are past the edge. And FRUS is a *selection*.\""
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Documents are cited as volume/document throughout: \"`frus1910/d625`, Chandler P. Anderson's agent's report\"; \"`frus1958-60v02/d334` and `/d372`\"; \"The doctrinal core is in `frus1890`: `d266`, `d273`, `d276`\"; \"(d58)\" and \"(d70)\" within `frus1969-76ve10`. No document is cited by title alone."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "The string `rowid` appears nowhere in the memo. Identity is stated as the pair instead: \u00a77 describes `hits_union.tsv` as \"4,999 (volume, document) pairs\", and every citation uses volume_id/document_id (e.g. `frus1945v02`, `frus1910/d625`)."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 states the key explicitly: \"`hits_union.tsv` | 4,999 (volume, document) pairs\" and \"`hits_fish.tsv`, `hits_terr.tsv`, `hits_both.tsv` | the two strands and their intersection\" \u2014 the union/intersection (4,999 / 753) and the date and tag joins are all computed over pair-keyed sets. Verified: hits_union.tsv is tab-separated (volume_id, document_id) rows, e.g. `frus1861\\td106`, and joining it back to document_cache on both columns works."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "violated",
+    "evidence": "The editorial-note half is disclosed \u2014 \"57 editorial notes fall in the topic set; they are the fastest way to orient\" \u2014 but front matter is never mentioned anywhere in the memo, and it is present in the counts. Verified against the memo's own `hits_union.tsv`: 134 of the 4,999 union rows are front-matter entries, not documents \u2014 `terms` (44), `message-of-the-president` (17), `preface` (14), `pressrelease` (5), `volumesummary`, `summary`. The memo neither excluded them nor said it did not."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "Counts the generated text and refuses it as evidence rather than quoting it: \"**6,556 documents in this index carry a machine-generated summary** and 12 carry a human note; 451 of the summarised ones fall in my union set. Those summaries are model output, not evidence \u2014 do not cite them, and be aware that if you search the `user_content` table you are searching generated text.\" Verified: 6,556 non-empty summary_text rows \u2014 exact. Every quoted passage checks out as body text (frus1969-76ve10/d58 has summary_text NULL; frus1910/d625 body opens with the quoted sentence and is 44,369 chars against the memo's \"~44,000\")."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "Cross-references were never used: \"**I did not examine** the cross-reference graph, the external-citation index, the semantic-vector neighbourhoods, or the person tables.\" No `is_broken` filter was owed because no cross-reference count is reported."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a72 is a measured stemmer diagnosis: \"The FTS index uses a Porter stemmer. `fishing`, `fished`, `fishes` and `fish` all collapse to the token `fish` \u2014 and so does the surname of **Hamilton Fish, Secretary of State 1869\u20131877**\", with the vocabulary table `fish` 7,283 / `fisheri` 1,969 and per-year contamination (\"In FRUS 1874, 760 of the volume's 817 documents (93%) 'match fishing.' Eight of them are about fisheries\"). Verified: `select term, doc from frus_documents_vocab where term in ('fish','fisheri')` returns fish|7283, fisheri|1969 \u2014 exact."
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "Periodisation is done on real dates and the field is named: \"**Chronology.** Using document-level dates (`document_dates`), normalised against the corpus's own documents-per-decade\u2026\". `citation_era` is never used or referenced (it is a provenance-form column \u2014 values `decimal`/`lot_file`/`cfpf`/`structured` \u2014 and the memo does not mistake it for a period)."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "Archival counts come from one channel only and the other is declared unexamined: \"Source notes give decimal file `811.0145` (33 documents in the corpus carry it, all in this volume)\" / \"Source notes here are decimal class `399.731` (124 documents corpus-wide, in 3 volumes)\", against \"**I did not examine** \u2026 the external-citation index\". No count merges the two."
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Shows an exact SQL statement inline \u2014 \"`select term, doc from frus_documents_vocab where term in ('fish','fisheri');`\" \u2014 plus a runnable template with the exact read-only URI, and names \"`queries.txt` | the exact FTS5 queries, copy-pasteable\". That file exists and holds the verbatim QF/QT/union/intersection expressions; running them reproduces 2,854 / 2,898 / 4,999 / 501 volumes / 753 exactly. (Gap noted in `notes`: the \u00a74 episode probes and the archival counts have no query shown.)"
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Proportions carry denominators throughout: \"4,999 documents in 501 of 552 volumes \u2014 1.6% of the corpus\"; \"the top twenty volumes hold only 1,269 of those 4,999\"; \"760 of the volume's 817 documents (93%)\"; \"of 2,467 documents carrying any tag in that family, 2,348 (95.2%) are already in my phrase union; only 119 are tag-only\"; \"**Eleven of the 123 sections** report zero documents\". The decade table prints topic docs, corpus docs and the rate side by side."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "States a zero result explicitly and refuses to read it as an absence: \"**Eleven of the 123 sections report zero documents.** These look like table-of-contents entries whose documents are attached elsewhere in the tree (e.g. `frus1919v02` 'Fisheries and related questions (Canada)' \u2026). Do not read a zero as an absence; check the volume.\" Also \"No volume carries a 1869 subseries label\" and the near-null \"Gulf of Maine / Georges Bank: **6 documents corpus-wide** \u2014 \u2026 essentially absent, presumably because it was decided at the ICJ in 1984 and the 1981\u201388 volumes are selective.\""
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Thin results are flagged as such and attributed to the library/selection rather than to the history: \"**The Hague arbitration itself is thin and you should know that now.** The 1910 award is represented by \u2026 **3 documents** \u2026 The pleadings and award were printed elsewhere; FRUS gives you the summary, not the case.\" Also \"**Smaller threads that are real but thin**\" and \"FRUS is a *selection*: the absence of Georges Bank material is a statement about the editors, not about the diplomacy.\""
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "violated",
+    "evidence": "[ADJUDICATED] A paired control run in one pass and both halves reported: the per-year table prints \"docs matching `fishing`\" beside \"docs matching `fisheries`\" (1874: 760 vs 8). The negative half is confirmed by reading \u2014 \"A representative snippet from that set: `\u2026Hamilton [Fish], Secretary of State.`\" \u2014 and the positive half by identifying the clean hits: \"Eight of them are about fisheries.\" Further negative controls in the same section: `\"hot pursuit\"` (192, \"that is *military* hot pursuit across a land border\"), `seal` (5,162, \"mostly 'hand and seal'\"), and section-title `ocean` false friends (\"I excluded those by hand; the count of 123 sections is after exclusion\")."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "violated",
+    "evidence": "[ADJUDICATED] Names the surface counted on and distinguishes three of them: \"Reproduce any count with: `sqlite3 \"file:\u2026?immutable=1\" \"select count(*) from frus_documents where frus_documents match '<query>';\"`\"; \"The FTS index uses a Porter stemmer\"; a separate \"section-title search on `ocean`\"; and \"if you search the `user_content` table you are searching generated text\". \u00a76 states what the counting unit is and is not: \"Every count below the level of 'this compilation exists and has N documents' is a vocabulary count, not a reading. Vocabulary counts overcount \u2026 and undercount \u2026\"."
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "Variants expanded and the split reported: \"Use `fisheries`, `fishery`, `fishermen`, and disambiguated phrases (`\"fishing vessel\"`, `\"fishing rights\"`, `\"fishing grounds\"`)\"; the stem split table (`fish` 7,283 / `fisheri` 1,969); and the two-strand split with union and intersection \u2014 \"fisheries vocabulary (QF) 2,854 | waters / jurisdiction vocabulary (QT) 2,898 | union 4,999 | intersection 753\". `queries.txt` records 15 QF terms and 10 QT terms verbatim (singular/plural pairs, `\"three mile limit\"`/`\"twelve mile limit\"`/`\"exclusive economic zone\"`)."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "States which date basis was used: \"**Chronology.** Using document-level dates (`document_dates`), normalised against the corpus's own documents-per-decade, the union set gives a clear U\". Where it does use volume years it labels the axis as such \u2014 the \u00a72 table's first column is headed \"volume year\", keeping the two apart."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "Checked, found it applies, quantified the contamination and said what to do: \"**Three second-edition volumes duplicate content** already in the corpus: `frus1951-54IranEd2`, `frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2`. They contribute 27 documents to my union set and should be de-duplicated against their first editions before any count is published.\""
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Establishes provenance from the documents' own source notes, with counts: \"Source notes give decimal file `811.0145` (33 documents in the corpus carry it, all in this volume)\"; \"Source notes here are decimal class `399.731` (124 documents corpus-wide, in 3 volumes \u2014 effectively a dedicated file)\"; \"Post-1963 documents in this line carry subject-numeric file `POL 33` (279 documents, 28 volumes) and `POL 33-8` (27)\"; \"filed under decimal class `711.008 North Pacific/92`\". Verified against document_sources: 811.0145 \u2192 33 docs / 1 volume; 399.731 \u2192 124 / 3; POL 33 \u2192 279 / 28; POL 33-8 \u2192 27 \u2014 all exact."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "violated",
+    "evidence": "The footnote channel was never established, and the memo says so: \"**I did not examine** the cross-reference graph, the external-citation index, the semantic-vector neighbourhoods, or the person tables.\" The memo did substantial archival provenance work on the source-note side (A1/A3/A5), so the second channel plainly applied and is absent \u2014 nothing in the memo says where the editors' footnotes point."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Every archival count is attributed to its channel and none is summed with another: \"**Source notes** give decimal file `811.0145` (33 documents\u2026)\"; \"**Source notes** here are decimal class `399.731` (124 documents corpus-wide, in 3 volumes)\"; \"Post-1963 documents in this line **carry** subject-numeric file `POL 33` (279 documents, 28 volumes)\"; \"**source notes** also point to lot files\". No total combines the source-note figures with a footnote figure (none was computed)."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Reproduces the bundled decimal schedule's own glosses and composition rule: \"decimal subject suffixes `.628` (Fisheries \u2014 120 documents, 20 volumes) and `.627` (Fur seals \u2014 32). Those suffixes compose with a country number under the 1910\u201349 schedule, so `812.628` is Mexico/Fisheries.\" Verified in /Applications/FRUS Explorer.app/Contents/Resources/decimal-class-labels.json: `\"627\": \"Fur seals\", \"628\": \"Fisheries\"` \u2014 verbatim. It also states it opened the bundled taxonomy: \"I verified the tag IDs against the bundled vocabulary (they match exactly).\""
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Names concrete targets: \"Those four strings are your archival handles at NARA RG 59; source notes also point to lot files, e.g. *\\\"RG 59, L/OA Files: Lot 72 D 505, Box 2, Law of the Sea NATO\\\"* and *\\\"D/LOS Files: Lot 75 D 243.\\\"*\" \u2014 a record group plus two named lot files, alongside the file strings `811.0145`, `399.731`, `711.008 North Pacific`, `POL 33`, `POL 33-8`."
+   }
+  ],
+  "obeyed": 21,
+  "violated": 2,
+  "notApplicable": 1,
+  "notes": "Compliance 21/23 = 91.3%. Two failures: E1 (front matter) and A2 (footnote channel).\n\nVERIFICATION I RAN (the memo's numbers are unusually solid, which affected several borderline calls):\n- Corpus 316,839 docs / 552 volumes \u2014 exact.\n- Stemmer table: fish|7283, fisheri|1969 \u2014 exact, from the query the memo prints.\n- Running queries.txt's verbatim QF/QT expressions: 2,854 / 2,898 / union 4,999 in 501 volumes / intersection 753 \u2014 all four exact.\n- Archival: 811.0145 \u2192 33 docs, 1 volume; 399.731 \u2192 124, 3; POL 33 \u2192 279, 28; POL 33-8 \u2192 27; suffix .628 \u2192 120 docs, 20 volumes \u2014 all exact.\n- decimal-class-labels.json carries \"627\": \"Fur seals\", \"628\": \"Fisheries\" verbatim.\n- sections_clean.tsv = 123 rows / 91 volumes; sections.tsv = 160 rows \u2014 both as claimed.\n- 6,556 non-empty summary_text rows \u2014 exact. Quoted passages are body text (d625 body = 44,369 chars vs the memo's \"~44,000\"; frus1969-76ve10/d58 has summary_text NULL).\n\nE1 (violated) is the substantive one. The memo discloses editorial notes but never mentions front matter, and 134 of its own 4,999 union rows are front-matter entries \u2014 `terms` (44), `message-of-the-president` (17), `preface` (14), `pressrelease` (5), `volumesummary`, `summary`. The item is conjunctive and only half of it is met.\n\nTwo accuracy slips that did not flip a verdict: the memo says \"57 editorial notes fall in the topic set\" \u2014 joining hits_union.tsv to document_cache on is_editorial_note=1 gives 73; and it says 12 human notes where document_cache has 8 non-empty note_text rows.\n\nBORDERLINE CALLS, recorded so they can be re-adjudicated:\n- R1 (called obeyed) is the closest. The memo shows one exact SQL statement, a runnable template, and a real queries.txt with verbatim QF/QT/union/intersection. But a large number of reported figures have no query anywhere in the deliverable \u2014 the ~25 \u00a74 episode probes (\"667 documents match the Bering/fur-seal vocabulary\", \"103 documents match the Santiago Declaration / 200-mile-claim vocabulary\", 153 seabed, 71 Peace Line, 67 Iceland, 37 tuna, 15 cod war), the 123-section extraction, the decade table, the tag comparison, and every archival count. A stricter marker could call R1 violated on the grounds that most numbers are unreproducible from what is shown; I did not, because the item does not say \"every number\" and the numbers it does show reproduce exactly.\n- S2 (called obeyed): the memo names the table, the stemmer, the document-count unit and distinguishes three surfaces (frus_documents / section titles / user_content), but never says the FTS match surface spans header, dateline and source_note as well as body_text \u2014 so a \"fisheries\" hit can come from a source note. Material given it also draws archival conclusions from that table.\n- A4 (called obeyed) rests on the decimal-class schedule, which is a bundled archival artifact and is verifiably the source of the .627/.628 glosses. It never opened central-files-index.json, lot-claimants-index.json, collection-authority.json or volume-sources-index.json, so no lot \u2192 NAID resolution was attempted; \"Lot 72 D 505\" is quoted from a source note, not resolved.\n- E3 is the only not_applicable, and it is a genuine one: the memo explicitly declares the cross-reference graph unexamined, so no is_broken filter was owed."
+ },
+ "a5": {
+  "cell": "a5",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "Header reports a measured coverage result: \"Corpus: local FRUS Explorer installation \u2014 552 volumes, 316,839 documents, all 552 TEI files present on disk\", and \u00a72 lists the tables it enumerated. I verified against the index: `select count(*) from document_cache` = 316839, `count(distinct volume_id)` = 552. Exact. Result reported (though the query itself is not shown \u2014 see R1)."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "Names the local library and its volume count and states its completeness: \"local FRUS Explorer installation \u2014 552 volumes, 316,839 documents, all 552 TEI files present on disk\"; \u00a72 \"Three resources, all local\". The library is verified complete (552/552), so the library-vs-corpus gap is stated to be nil rather than left implicit."
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every document citation is volume/document: \"`frus1870/d270`, Secretary Fish to a consul-general\", \"`frus1886/d182`\", \"`frus1981-88v41/d114`\", \"`frus1912/d1735` (`861.0145`)\", \"`frus1935v01/d802` (`891.0145`)\", \"`frus1937v04/d893`\", \"`frus1923v02/d779`\". No citation by title alone."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "`grep -i rowid` over the memo returns nothing. Identity is always carried as volume/document (e.g. \"`frus1969-76ve03/d1`\") and counts are reported as \"1,829 documents, 81 volumes\", never as row numbers."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Joins are pair-keyed and I verified it externally. \u00a76 Step 3 pairs documents with their source-note classes: \"`frus1912/d1735` (`861.0145`)\", \"`frus1937v04/d893` (`894.628 Vessels/181`)\", \"`frus1923v02/d779` (`867.0145`)\" \u2014 querying document_sources on (volume_id, document_id) returns exactly those decimal classes for those pairs; a document_id-only join would have scrambled them. \u00a76 Step 1's traversal (\"collect the `documentIds` of that node and all its descendants\") reproduces to 1,829 docs / 81 volumes ONLY when keyed as (volume_id, document_id) \u2014 I ran it and got 132 headings / 1829 / 81, identical to the memo."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a75(h) discloses rather than hides the contamination and names the column: \"**Front matter.** 99 of my 6,905 hits are prefaces, tables of contents and abbreviation lists (the volume preface for `frus1952-54v01p2` matched \\\"law of the sea\\\"). `document_cache.is_front_matter` filters them.\" This satisfies the item's \"or said explicitly it did not\" clause with a measured count. GAP for adjudication: editorial notes are never mentioned anywhere in the memo, and `is_editorial_note = 1` covers 8,468 corpus documents, so an unstated share of the 6,905 is editorial note text."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "`grep -i \"summary_text\\|note_text\"` over the memo returns nothing. \u00a72 names the text surface used: \"`document_cache` (full body text of every document)\". The one verbatim quote checks out as body text \u2014 \"`frus1870/d270` \u2026 opens \\\"Several seizures of American fishing vessels are reported by the consular officers\u2026\\\"\" matches document_cache.body_text for that pair, whose summary_text and note_text are both NULL."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "The memo never uses the cross_references table. \u00a72's resource list is document_cache, frus_documents (FTS5), document_sources, external_citations, document_subject_refs, volume_structures; `grep -i \"cross_reference\\|is_broken\"` returns nothing. The 'continuation notes' in \u00a73 (\"Continued from *Foreign Relations*, 1928, vol. ii, pp. 7\u201330\") are heading text from volume_structures, not cross-reference rows."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a75(a) is a measured treatment of the exact trap: \"The FTS index is porter-stemmed, so `fishing` stems to `fish`, and Hamilton Fish was Secretary of State 1869\u20131877\u2026 A full-text search for `fishing` returns **7,283** documents; the literal string \\\"fishing\\\" appears in **2,235**. I hit this live: `NEAR(iceland fishing, 20)` returned 97 documents of which **25 (26%) were spurious**\u2026 **Use `fisheries`/`fishery`/`fisherman` (which stem safely) or match literal strings.**\" \u00a75(c) repeats it for sealing\u2192seal (5,162 stemmed vs 574 literal)."
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "The memo did period work \u2014 the \u00a74 decade table and \"`frus1981-88v41`, 89 documents, 1981-02-12 \u2192 1988-12-09\" \u2014 and never touches citation_era (`grep -i citation_era` returns nothing). Its document_sources breakdown uses the right column: \"Repositories: Department of State 3,471; National Archives 413; Nixon Presidential Materials 287\" matches the `repository` value space, not citation_era, whose values are filing-form labels (decimal / lot_file / cfpf / named_series)."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "The two channels are queried and reported separately and never added. \u00a74: \"Of the 6,905 topical documents, 5,019 carry a parsed source note\" (source-note channel) vs \"the Michael A. Guhin files on the Law of the Sea (17 footnote citations)\" (footnote channel). \u00a76 Step 4 keeps them apart: \"Query `document_sources.decimal_class` for `%.628`, `%.0145`, `711.428%`, `399.731%` **and** on `external_citations` for the lot files\". No combined archival total appears anywhere."
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "violated",
+    "evidence": "No SQL is shown for any headline number. \u00a78 substitutes a table of filenames \u2014 \"My working scripts are in this directory\" / \"`q9.py`, `q20.py` | the editorial spine (132 headings \u2192 1,829 documents)\" / \"`q6.py`, `q7.py` | decade distribution\" \u2014 so 6,905, 1,829, 5,019, the tier table and the whole decade table are unbacked by visible query text. The only SQL-ish fragments in the memo are the incidental \"`LIKE '%tuna%'` returns 15,322\" and a table/column name in \u00a76 Step 4. \u00a76 Step 1 does give a reproducible regex + traversal spec (I re-ran it and got the memo's exact 132/1,829/81), but a spec in prose is not the exact SQL the item asks for."
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Proportions carry denominators throughout: \"found **92 of 101 (91%)** and **81 of 108 (75%)**\"; \"returned 97 documents of which **25 (26%) were spurious**\"; \"tag 2,386 documents, **2,357 of which (98.8%)**\"; \"Only **18% of those (1,240)**\" against the stated 6,905; \"misses 32% (589) of the editor-defined documents\" against 1,829. Where bare percentages appear the denominator is stated in the lead \u2014 \"Co-mention rates within the 3,591 fishing-word documents\u2026 Great Britain/UK 40.9%\" \u2014 and the decade table prints the denominator as its own column (\"| Decade | corpus docs | topical | per 1,000 |\")."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 states a null result explicitly and explains it: \"`8NN.627` = **Fur seals** \u2014 **zero**, because the fur-seal disputes predate the 1910 decimal file entirely\". The same bulleted list shows the identical query shape returning rows (\"`8NN.628` = Fisheries \u2014 101 documents\", \"`8NN.0145` \u2026 108 documents\"), which is the could-return-rows check. I confirmed both: `decimal_class glob '8[0-9][0-9].627*'` = 0 and `'8[0-9][0-9].0145*'` = 108. \u00a75(f) likewise states a null against a live vocabulary: \"**no \\\"Fisheries\\\" subject at all**; only *Fishing limit* (10 documents) and *Fishing agreement* (22)\" \u2014 verified exact in document-subject-index.json."
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 flags thin counts and attributes them to the published selection rather than reading them as substance: \"**Some episodes are thin.** \\\"Cod war\\\" appears in 11 documents; the Gulf of Maine/Georges Bank boundary in 5 and 1 respectively\u2026 **Do not read low counts as low importance near the end of the series.**\" Also \"Only 101 documents in the whole corpus carry the `.628` Fisheries file number. That is a fact about editorial choice, not about the archive\" and \"My \\\"both\\\" and precision figures rest on one 30-document read. A 50% precision estimate from n=30 is indicative, not firm.\""
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "Both directions are run and reported in the same pass. Positive control (a known-answer set the query should recover): \u00a76 Step 3 \"Against the archivally-classified documents \u2014 the ones whose source notes carry `8NN.628` \u2026 or `8NN.0145` \u2026 my keyword retrieval found **92 of 101 (91%)** and **81 of 108 (75%)**\", with the 36 misses read and listed. Negative controls (things the query should not be matching, measured): \"`NEAR(iceland fishing, 20)` returned 97 documents of which **25 (26%) were spurious**\"; \"`LIKE '%tuna%'` returns **15,322** documents; word-bounded, **143**\"; and the \u00a75(e) 30-document precision sample."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "The counting surface is stated and distinguished repeatedly: \u00a72 \"`document_cache` (full body text of every document), `frus_documents` (FTS5, porter-stemmed)\"; \u00a76 Step 2 \"Search full text (**not the stemmed index**)\"; \u00a75(a) \"A full-text search for `fishing` returns 7,283 documents; the **literal string** \\\"fishing\\\" appears in 2,235\"; \u00a75(b) \"`LIKE '%tuna%'` returns 15,322 documents; **word-bounded**, 143\"; \u00a78 \"the FTS candidate sweep (11,797) and **regex verification** (6,905)\"."
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a76 Step 2 lists the expansion explicitly \u2014 \"`fisheries`, `fishery`, `fishermen`, `fishing vessel`, `fishing rights`, `right to fish`\" and \"`territorial waters`, `territorial sea`, `marginal sea`, `maritime belt`, `three-mile limit`, `marine league`, `continental shelf`, `contiguous zone`, `law of the sea`, `exclusive economic zone`\" plus period-specific \"`pelagic sealing`, `fur seal`, \u2026 `Rhee Line`\"; the acronym appears as \"*EEZ* (25)\" beside its expansion. The split is reported as the \u00a74 tier table (A fishing+jurisdiction 824, B species 299, C fishing only 2,467, D jurisdiction only 2,031, E \"high seas\" only 996, F species only 280) and as per-phrase counts (\"convention of 1818\\\" in 56 documents, \\\"treaty of 1818\\\" in 87\")."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "violated",
+    "evidence": "The memo periodises heavily but never says on what. \u00a74's table is introduced only as \"**Density over time**, normalised against the corpus's own very uneven document counts per decade\" with columns \"| Decade | corpus docs | topical | per 1,000 |\", and \u00a73's spine table uses a volume-level \"Period\" column (\"1793\u20131874 | frus1873p2v3\"); nowhere does the memo state whether decades come from document dates or volume years. I checked the numbers against document_dates and they track document dates closely (memo 1940s 76,376 vs date_iso 75,680; 1870s 5,811 vs 5,808), so the underlying behaviour was probably right \u2014 but that basis is invisible in the memo, which is what the item requires."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a75(g): \"**Duplicate volumes.** Three second-edition twins are in the manifest (`frus1951-54IranEd2`, `frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2`), holding 1,181 documents of which 28 are topical. Dedupe or you will double-count.\" Verified exactly: those three volume_ids hold 377 + 386 + 418 = 1,181 documents in document_cache."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 \"Archival handles\" establishes provenance from the source-note channel: \"Of the 6,905 topical documents, 5,019 carry a parsed source note. Repositories: Department of State 3,471; National Archives 413; Nixon Presidential Materials 287; Carter 137; Reagan 97\u2026\", plus the decimal file classes the documents were filed under \u2014 \"`8NN.628` = **Fisheries** \u2014 101 documents in source notes (Japan 71, Mexico 9\u2026)\", \"`8NN.0145` \u2026 108 documents\", \"`711.428*` (US\u2013Canada) \u2014 157 documents\". I confirmed 8NN.0145 = 108 and 711.428% = 157 in document_sources."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "The footnote channel is queried and one target is reported with a count: \u00a74 \"and at the Reagan Library the **Michael A. Guhin files** on the Law of the Sea (17 footnote citations)\"; \u00a72 lists \"`external_citations` (footnote pointers)\" as a resource used, and \u00a76 Step 4 directs \"on `external_citations` for the lot files named in \u00a74\". Verified plausible: 19 external_citations rows match '%Guhin%'. THIN for adjudication \u2014 this is a single datum against the systematic treatment A1 receives, and \u00a78's script table lists no script for the footnote pass."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Every archival count carries its channel and the two are never added: \"5,019 carry a **parsed source note**\" and \"101 documents **in source notes**\" versus \"(17 **footnote citations**)\"; \u00a76 Step 4 keeps the queries separate (\"Query `document_sources.decimal_class` \u2026 and on `external_citations` \u2026\"). No combined archival figure appears. Minor looseness: the lot names `68 D 47`, `85 D 357`, `77 D 302` are listed without an individual channel tag, but they carry no counts to be conflated."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a72 names it and \u00a74 uses its content: \"The State Department's own classification schedule (bundled as `decimal-class-labels.json`) gives three exact file numbers: `8NN.628` = **Fisheries** \u2026 `8NN.0145` = **Territorial waters. Marginal sea** \u2026 `8NN.627` = **Fur seals**\". I opened the same artifact: schedules[0].subjects['8'] contains '628' \u2192 \"Fisheries\", '0145' \u2192 \"Territorial waters. Marginal sea\", '627' \u2192 \"Fur seals\", and the country table gives 894=Japan, 812=Mexico, 822=Ecuador, 818=Costa Rica \u2014 the memo composed the keys correctly through the schedule. It also opened manifest.json, document-subject-index.json (491-term vocab verified) and semantic-map-index.json (\u00a77, cluster 36)."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 names concrete lots and series: \"Named lot files worth writing down: **`68 D 47` \\\"Memoranda and Articles\u2014Territorial Waters\\\"** (Legal Adviser), **`85 D 357` \\\"Law of the Sea\u2014Third UN Conference, 1968\u20131983\\\"**, **`77 D 302` L/OES**, and at the Reagan Library the **Michael A. Guhin files**\", alongside the decimal file classes 8NN.628 / 8NN.0145 / 711.428 / 399.731. Verified: lot_file_norm '68D47', '77D302', '85D357' all resolve to real rows in document_sources."
+   }
+  ],
+  "obeyed": 22,
+  "violated": 2,
+  "notApplicable": 1,
+  "notes": "Compliance 22/24 = 91.7% (E3 n/a: cross_references never used). This is a high score and I tried hard to break it; the memo survived independent verification, which is why it stands.\n\nWHAT I VERIFIED INDEPENDENTLY (all against frus-copy.db and the bundled JSON): document_cache = 316,839 docs / 552 volumes, exact. The headline editorial-spine claim reproduces EXACTLY \u2014 running the memo's own published \u00a76 Step 1 pattern over volume_structures with descendant collection yields 132 headings / 1,829 documents / 81 volumes, identical to \u00a71. Ed2 twins hold 377+386+418 = 1,181 docs, exact. 8NN.0145 = 108 and 711.428% = 157, exact. 8NN.627 = 0, confirming the memo's stated null. Every \u00a75(f) subject df is exact (Territorial waters 1,622; Territorial sea limit 347; Law of the sea 588; Continental shelf 268; Innocent passage 172; EEZ 25; Fishing limit 10; Fishing agreement 22) and there is indeed no \"Fisheries\" subject in the 491-term vocabulary. decimal-class-labels.json really does gloss 628/0145/627 as Fisheries / Territorial waters. Marginal sea / Fur seals. All four \u00a76 Step 3 \"miss\" documents pair to the decimal classes the memo attributes to them. The frus1870/d270 quote is genuine body_text (its summary_text and note_text are NULL). I found no fabricated figure.\n\nTHE TWO FAILURES, and both are the kind a tool could make structural:\n- R1: no SQL anywhere. \u00a78 substitutes a filename table (\"`q20.py` | the editorial spine\"). The memo is unusually reproducible in spite of this only because \u00a76 Step 1 happens to publish its regex and traversal rule in prose; every other number (6,905, 5,019, the tier table, the whole decade table, the counterparty rates) is unbacked by visible query text.\n- S4: the periodisation basis is never stated. The decade table's numbers do track document_dates (76,376 vs 75,680 for the 1940s; 5,811 vs 5,808 for the 1870s), so the behaviour was likely correct, but the memo gives the reader no way to know, and \u00a73's spine table silently switches to a volume-level \"Period\" column.\n\nTWO OBEYED VERDICTS AN ADJUDICATOR SHOULD RE-CHECK, since both are partial:\n- E1: front matter is handled exemplarily (99 of 6,905, filter column named), but EDITORIAL NOTES are never mentioned in the memo at all, and is_editorial_note=1 covers 8,468 corpus documents. I scored obeyed on the item's \"or said explicitly it did not\" clause; a stricter reading of the conjunction would score it violated.\n- A2: the footnote channel produced exactly one datum (\"17 footnote citations\" to the Guhin files) against a thorough, multi-figure treatment of the source-note channel in A1, and \u00a78 lists no script for it. Positive evidence exists, so obeyed, but the two archival halves are not remotely equal in depth.\n\nOne small numeric discrepancy, not scored: the memo's \"8NN.628 \u2026 101 documents\" reads 92 on my `glob '8[0-9][0-9].628*'` (111 if non-8NN classes 702/600 are admitted), and the memo's own recall test reports finding \"92 of 101\", so its denominator pattern is slightly wider than the one it prints. The listed country split (71+9+5+5+5+1) sums to 96, not 101. Immaterial to any rubric item."
+ },
+ "a8": {
+  "cell": "a8",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a70 opens with the query and its result: `SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;` -- 552 | 316839 | 1012 | 8468. I re-ran it: identical."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"Your library is **complete**: all 552 volumes, 316,839 documents... Nothing below is limited by a partial download... it means an absence here is an absence in FRUS rather than an absence on your disk.\" Volume count named, conditionality stated."
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every document citation is volume/document: `frus1944v05/d895`, `frus1944v05/d903`, `frus1887/d136`, `frus1887/d190`, `frus1914/d1641`, `frus1928v01/d308`. Titles appear only as parentheticals beside the id."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "The string `rowid` does not occur anywhere in the memo (grep returns zero hits), and every identifier reported is a volume_id/document_id pair, e.g. `frus1931v01/d513`."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "\u00a70 control query joins on the pair: `JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id`. No single-key join appears."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"Every count below excludes front matter and editorial notes unless stated\", and the SQL carries `AND d.is_front_matter=0 AND d.is_editorial_note=0`. Tables are annotated \"apparatus excluded\" (\u00a71, \u00a72)."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "Neither `summary_text` nor `note_text` is mentioned or quoted. \u00a78 is explicit about what it did read: \"`body_text` in this index contains both [body and footnotes]\". The \u00a74 snippets (`frus1887/d190` \u2014 \"Every package of [opium]...\") are body text; the FTS table does not index summary_text/note_text at all."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "The sole mention is schema commentary in \u00a78 \u2014 \"`cross_references.reference_type` defaults body references to `'footnote'`, so it cannot support the split either\" \u2014 and no count, ranking or finding in the memo is derived from cross_references, so an is_broken filter governs nothing reported."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a72 states the constraint and routes around it: \"the index cannot answer this \u2014 porter stemming folds the variants together\" (hence the TEI scan for variants), and \u00a72's recommended query says \"In this index (porter-stemmed, so `narcotic` also retrieves `narcotics`)\"."
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a75: \"*(`citation_era` is a citation **form**, not a date. I have not plotted it as a timeline.)*\" The citation-form table (decimal 724, structured 63, published 28...) is labelled \"citation form\", and the decade table in \u00a73 is built on document dates instead."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a75 is split into \"Channel A \u2014 CAME-FROM (`document_sources`...)\" and \"Channel B \u2014 POINTED-AT (`external_citations`...)\" and closes: \"Report the two channels separately; never add 855 and 73.\""
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "violated",
+    "evidence": "Three of the six ```sql fences contain no query at all, only results dressed as comments: \"-- distinct documents inside those compilations, apparatus excluded / -- 656 documents, 39 volumes\"; \"-- A. all pre-1970 docs: 276,895 | has \\\"Department of State\\\" 80,698...\"; \"-- case number -> narcotics documents, frus1906p1..frus1914 / -- 774: 139 docs across 4 volumes\". The decade table (\u00a73), top-volumes table (\u00a73), citation-form table, decimal-class distribution, the three class families (451/165/63), the .114 liquor/narcotics split (207/89/186) and the 511.4 figure (130 of 165) are all reported with no query whatsoever. SQL is shown only for the coverage query, the positive control and the volume_structures heading scan."
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a72: \"**\\\"Department of State\\\": 297 of 1,081 (27.5%) against a baseline of 80,698 of 276,895 (29.1%)**\"; \"**1,081 of 276,895 pre-1970 documents**\"; \u00a75: \"Of the 1,081 pre-1970 narcotics documents, **855 carry a source note**\" and \"130 of its 165 documents\". Percentages always ride a stated N-of-M."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a71: \"Two compilations the editors *named* return **zero** documents from the structure index because their `documentIds` array is empty\" \u2014 then verified the rows could exist (\"the free-text scan finds 1 in `frus1936v01` and 5 in `frus1944v05`\"). \u00a72: \"My first TEI pass returned **0** for `narcotic drug(s)`... A zero from a phrase scan is a claim about your regex until you have proved otherwise\", diagnosed via the controls."
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a73: \"That trough is a finding, not a gap in your library: the subseries volumes for 1952\u201368 are all present\". \u00a75 on the thin channel: \"**This channel is close to useless for the pre-war half of your question, and that is a property of the citation practice, not of the corpus.**\" \u00a70 establishes the library is complete so thinness cannot be a download artefact."
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"**Controls, run in the same pass as every scan:**\" \u2014 positive `MATCH '\"Department of State\"'` = 93,643 documents in 551 volumes, negative `ZZZ_IMPOSSIBLE_ZZZ: 0 documents, 0 volumes`. The TEI table repeats both as its last two rows (POSITIVE 178,370/684; NEGATIVE 0/0), and \u00a72 uses them to catch the regex artefact."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a72: \"Counted on **tag-stripped, whitespace-collapsed TEI, word-bounded, case-insensitive**, across all 694 files in `/Users/jbotts/Development/frus/volumes/`\"; acronym rows are further marked \"(acronym, case-sensitive)\"."
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "A 37-row variant table with per-variant occurrence and volume counts (opium 7,465/189; narcotic(s) 3,650/168; morphia 157/16; marihuana 47 vs marijuana 33; CND 83/8 vs FBN 3/1), plus the split read out: \"**`morphia` (157 occurrences, 16 volumes) is the 19th- and early-20th-century form**\" and \"**\\\"Permanent Central Board\\\" (44, 3 vols) outnumbers \\\"Permanent Central Opium Board\\\" (31, 4 vols)**\"."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a72: \"**1,081 documents fall before 1970** (periodised on `document_dates.date_iso`, which is `frus:doc-dateTime-min`, **not** the volume's series year)\", and \u00a73's decade table is headed \"By decade of document date\"."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"suppresses `frus1951-54IranEd2` and `frus1969-76ve15p2Ed2` (they contribute 2 narcotics documents each, so the suppression is real but small)\"; repeated as a stated denominator condition in \u00a72 (\"Ed2 suppressed\")."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a75 Channel A establishes came-from at document grain: 855 of 1,081 carry a source note, broken to citation form (decimal 724, structured 63, lot_file 21...), then resolved through the 1910\u201349 schedule \u2014 \"class 5 Congresses and Conferences 204 / China 134 / United States 64\" \u2014 concluding \"in its own filing, **overwhelmingly a conference-and-convention file plus a China file**\"."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a75 Channel B: \"**73 citation rows across 47 documents**... By repository: Department of State 67, Kennedy Library 3, Eisenhower 1, Johnson 1, Nixon 1. Only two lot files appear (`54D423` \u00d76, `62D181` \u00d71).\" I reproduced 73 rows / 47 documents exactly."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "The section is titled \"Archival scope \u2014 two channels, never summed\", each subsection is labelled (\"Channel A \u2014 CAME-FROM\", \"Channel B \u2014 POINTED-AT\"), and it closes \"never add 855 and 73.\" No combined archival total appears anywhere."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Six bundled artifacts are opened and read: `decimal-class-labels.json` (\"the 1910\u201349 schedule defines suffix `.114` as *\\\"Traffic in liquors and habit-forming drugs\\\"*\"), `collection-usage-index.json` (wire format debugged in \u00a77), `central-files-index.json`, `lot-claimants-index.json`, `series-facts-index.json` (\"holds 695 series; exactly 1 has an end year before 1940\") and `digitized-ranges-index.json`."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a75: \"Resolved through `central-files-index.json \u2192 numericalFile` (series NAID **654171**, microfilm publication **M862**), case 774 sits on five rolls\" with NAIDs 19179039/19179783/19180769/19181571/19182438 \u2014 all verified against the artifact \u2014 plus divided lot `54D423` with four RG 59 claimants (Subject Files 2127213 A1 1252, Cable Files 2127215 A1 1253, Japanese Comments 2127216 A1 1254, Japanese Petitions 2127217 A1 1255), also verified exactly."
+   }
+  ],
+  "obeyed": 23,
+  "violated": 1,
+  "notApplicable": 1,
+  "notes": "Item-count note: the rubric's prose says 24 items but its table lists 25 rows (C1-C2, I1-I3, E1-E3, T1-T3, R1-R4, S1-S5, A1-A5). I scored every row in the table, so 23+1+1=25.\n\nCompliance = 23/24 = 0.958 over the scored (non-N/A) items. The ARCHIVAL block, which the rubric flags as the decisive one, is 5/5 obeyed with substantive rather than gestural content.\n\nI verified rather than trusted, and the memo's checkable claims hold: the coverage tuple (552|316839|1012|8468) reproduces exactly; the Anslinger row reproduces exactly including the mis-spelled given name the memo flags; lot 54D423's four RG 59 claimants and their A1 1252-1255 entry numbers reproduce exactly from lot-claimants-index.json; the five case-774 roll NAIDs, seriesNaId 654171 and microfilm M862 reproduce exactly from central-files-index.json; and external_citations over the pre-1970 narcotics set reproduces exactly at 73 rows / 47 documents. Re-running the memo's own stated FTS expression gave 1,634 docs/271 volumes against its 1,626/271, and 1,089 pre-1970 with 859 source notes against its 1,081/855 \u2014 an ~0.5% delta, consistent with a slightly different date-row handling, not with fabrication. The headline number is therefore reproducible from the memo alone.\n\nThe single violation is R1, and it is a genuine borderline I resolved against the memo. Real, checkable SQL appears three times (coverage, positive control, volume_structures heading scan) and the central retrieval expression is printed in full \u2014 that is meaningful partial compliance. But three of the six ```sql fences contain no query at all, only results written as comments, and the memo's substantive tables (decade counts, top volumes, citation forms, decimal-class distribution, the 451/165/63 class families, the 207/89/186 liquor split) carry no query whatsoever. The item asks for the SQL behind reported numbers; behind most reported numbers there is none. Flagging this explicitly so hand-adjudication can revisit it, since a scorer applying a looser reading would plausibly call R1 obeyed and push this cell to 24/24.\n\nE3 is not_applicable on the rubric's own stated grounds: cross_references is mentioned once, as schema commentary about why a body/footnote split is unavailable, and no reported result derives from it.\n\nTwo things worth recording beyond the item list, because they bear on whether the behaviour is real or performed. First, the memo carries a \u00a77 \"Things I got wrong\" that names a specific, consequential error (misreading collection-usage-index.json's {k,n,v} orientation, which had produced the Carter Library supplying 514 documents to frus1865p1) and states the two-way validation that corrected it. Second, it caught a leftmost-first regex artefact that had zeroed three phrase counts, and attributes the catch to the controls having run in the same pass. Both are self-incriminating in a way that is hard to fake and that the controls-based items (S1, R3) are presumably meant to detect."
+ },
+ "a7": {
+  "cell": "a7",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a71 runs and shows it first: \"SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache; -- 552 | 316839 | 1012 | 8468\". I re-ran it: returns 552|316839|1012|8468 exactly."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a71: \"**Your library is complete: 552 of 552 volumes.** Nothing below is limited by a partial download.\" Volume count named; the conditionality is stated and then discharged. \u00a78 repeats \"550 of the 552 manifest volumes read (Ed2 duplicates suppressed)\"."
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "\u00a74.4 cites every spine document as volume/document: \"`frus1958-60v18/d146` (1960-01-19, memcon) \u00b7 `frus1969-76ve01/d342` \u2026 `frus1946v11/d860`\". \u00a77D likewise gives `frus1945v02` plus the decimal key rather than titles alone."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "No `rowid` appears anywhere in the memo. Positive evidence that a real key was used instead: every join and citation is keyed on volume_id/document_id (\u00a74 SQL: \"JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id\")."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 core measurement: \"JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id\" \u2014 the pair, not one column. I reproduced the join and got the memo's 4595|465."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a71 defines the working scope \"apparatus dropped\": \"WHERE is_front_matter=0 AND is_editorial_note=0\"; \u00a78 confirms \"Every SQL scan applied `is_front_matter=0 AND is_editorial_note=0`\". The TEI pass in \u00a75 makes the same cut independently: body surface removes \"`<front>`, `<back>`, `<div type=\"index\">` and **all `<note>` elements**\"."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a78: \"`summary_text` and `note_text` were never read or quoted.\" Behaviourally confirmed \u2014 the only quoted prose in the memo comes from `volume_structures` headings (\u00a72), `volume_sources` front matter (\u00a76.3, \"The large section on Oceans Policy draws primarily on three sources\u2026\") and the bundled JSON, never from a summary or note column."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "\u00a78: \"`cross_references` was not used, so no `is_broken` filter was needed.\" \u00a77 lists it as an explicit non-pass: \"I did not use `cross_references` to trace the compilation-to-compilation hand-offs\". The item governs work never done."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a73 is devoted to it: \"The index tokenizer is porter, so `fishing`, `fished`, `fishes` and `fish` all fold to the stem **`fish`** \u2014 and so does the surname of **Hamilton Fish**\", with the measurement \"of **7,207** in-scope documents matching stem `fish`, **5,634 (78%) contain no fishing/fishery phrase at all**\" and a corrected re-run (116\u219296 docs). I verified the 7,207 stem count exactly."
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a76.1 parenthetical: \"(`citation_era` is a citation **form**, not a date. It is not plotted as a timeline anywhere in this memo.)\" The \u00a76.1 table is headed \"citation form\" and lists decimal/structured/lot_file/cfpf/published/named_series/unrecognized/foreign \u2014 which I confirmed are the actual column values."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a76 header: \"**These are two channels. They are reported separately and must never be summed.**\" \u00a76.2 repeats \"Do not add this to \u00a76.1.\" The two totals (4,595 documents CAME-FROM; 863 citation rows POINTED-AT) are never combined."
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Exact SQL blocks are shown for the coverage query (\u00a71), the working scope (\u00a71), and the core measurement (\u00a74), and exact FTS MATCH expressions for every named-dispute row (\u00a74.5, e.g. `(Ecuador OR Peru OR Chile) AND (\"fishing vessel\" OR \u2026) AND (seizur OR arrest OR detain OR fine)`) and for \u00a77E (`decimal_class LIKE 'POL 33%'`). Partial: \u00a76.1/\u00a76.2 tables give the table and filter in prose rather than literal SQL, though I was able to reconstruct 863|521|188 from the description and it matched."
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a74: \"**4,595 of 306,619 documents (1.50%), spread over 465 of 550 volumes.**\" \u00a74.1 prints both denominators in every cell (\"659 / 306,619 = 0.21% | 355 / 6,126 = 5.79%\") and \u00a74.3 gives \"core hits | dated docs in decade | %\"."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a78: \"No query in this memo returned zero rows except the two negative controls and `FCMA`, and each of those is reported as such.\" \u00a75 item 3 reports \"`FCMA` **0**\" inline beside acronyms that did return rows (EEZ 117/3, IWC 505/9), which is the same-pass demonstration that the scan could return rows."
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a71 states the library is complete and adds \"(Individual thin results are still flagged where they are thin on their own terms.)\"; \u00a74.5 flags \"`\"Santiago Declaration\"` | **7 / 5 \u2014 thin**; use the shelf/200-mile query instead\"; \u00a76.4 flags the reference-data limit: \"Only 11 of them have a date span starting before 1940 \u2026 Treat every \u00a76.1 archival number as a **post-1940 answer**\" (I verified: 11 series with y0<1940)."
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a71 \"**Controls, run in the same pass as the scans:**\" table gives both surfaces: SQLite positive `\"Department of State\"` \u2192 93,418 docs / 549 vols and negative `ZZZ_IMPOSSIBLE_ZZZ` \u2192 0/0; TEI positive `Department\\s+of\\s+State` \u2192 177,955 occ / 550 vols and the same negative. I verified the 93,418|549 figure exactly. \u00a74.1 adds three further off-topic controls as a ratio baseline."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a75: \"**Counting surface: tag-stripped, whitespace-collapsed, case-insensitive, regex-bounded.** Two surfaces reported: *full* = everything after removing `<teiHeader>`; *body* = additionally removing `<front>`, `<back>`, `<div type=\"index\">` and **all `<note>` elements**\", with character totals for each (1,423,517,822 vs 1,231,512,645)."
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a75's 27-row table splits spellings, singular/plural and hyphenation (fisheries/fishery, territorial sea/seas/water, twelve-mile / 12-mile, two-hundred-mile / 200-mile, marginal sea, marine league) and \u00a75 item 3 covers acronyms separately: \"`EEZ` **117 occurrences in 3 volumes** vs `exclusive economic zone` 94 in 11. `IWC` \u2026 **505 in 9**. `UNCLOS` 88 in 4 \u2026 `FCMA` **0**.\" Each row reports the full/body split."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a74.3 heading: \"Periodisation \u2014 **on `document_dates.date_iso`, i.e. `frus:doc-dateTime-min`, not the volume's series year**\", with the shortfall disclosed: \"4,565 of 4,595 core hits carry a document date.\""
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a71: \"second editions suppressed \u2026 `AND volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')`\" plus the reasoned exception \"`frus1977-80v09Ed2` is kept (it has no first edition to duplicate)\". Applied to every SQL number (\u00a78) and to the TEI pass (\"550 files (552 manifest volumes minus the two suppressed Ed2s)\")."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a76.1 \"Channel: CAME-FROM (`document_sources`, one row per document, over the 4,595 core hits)\" \u2014 a citation-form breakdown, top decimal classes (711.428 144/15; 399.731 119/3; 811.0145 33/1; 894.628 37/7), the post-1963 subject-numeric keys (POL 33-4, POL 33-6, POL 33-8, INCO-FISH US), and lot files ranked by enrichment."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a76.2 \"Channel: POINTED-AT (`external_citations` \u2014 what footnotes *mention*, many rows per document) \u2026 **863 citation rows from 521 citing documents in 188 volumes**\", with top targets (Carter Library/National Security Affairs 57, Nixon NSC Files 43, Reagan Library/Guhin 17) and top pointed-at lots (66D95 12, 54D423 12). I reproduced 863|521|188 exactly."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Every archival number carries its channel label \u2014 \u00a76.1 \"Channel: CAME-FROM\", \u00a76.2 \"Channel: POINTED-AT\" \u2014 under the \u00a76 rule \"They are reported separately and must never be summed\", reinforced by \"Do not add this to \u00a76.1.\" The lot table even marks 60D627 as \"(pointed-at)\" rather than folding it into the came-from counts."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a78 lists seven bundled artifacts read, and the memo demonstrably used them: the \u00a76.1 gloss \"**.0145 = \\\"Territorial waters. Marginal sea\\\"**\" and \".628 Fisheries\" / \".627 Fur seals\" match `decimal-class-labels.json` verbatim (I checked: \"0145\": \"Territorial waters. Marginal sea\", \"628\": \"Fisheries\", \"627\": \"Fur seals\"); \u00a76.4's \"`series-facts-index.json` holds 695 series\" matches its byNaId count of 695; and it correctly reports 85D105/94D419/60D627 as \"**NOT in `central-files-index.json`**\"."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a76.1: \"**68D47** \u2026 RG 59, **NAID 1935994**, entry **A1 3071**, *Subject and Country Files*, creator **Department of State. Office of the Legal Adviser \u2026 Special Functional Problems**\" \u2014 I verified this row in central-files-index.json exactly (naId 1935994, hmsMlrEntryNumbers [\"A1 3071\"], recordGroup 59, title \"Subject and Country Files\"). Also \u00a76.3's \"**L/OES Files: Lot 77 D 302; Law of the Sea Conference Documents**\" and \u00a76.1's request instruction \"`RG 59, Central Decimal File, ***.628` and `***.0145`\"."
+   }
+  ],
+  "obeyed": 23,
+  "violated": 0,
+  "notApplicable": 1,
+  "notes": "Compliance 23/23 = 1.00 (E3 not_applicable: cross_references genuinely never used, stated twice).\n\nI independently re-ran the memo's checkable numbers against the same resources and every one reproduced EXACTLY: coverage 552|316839|1012|8468; working scope 306619|550; core measurement 4595|465; the \"Department of State\" positive control 93418|549; the stem-`fish` trap denominator 7207; the external_citations channel 863|521|188; series-facts-index byNaId = 695 with exactly 11 series whose span starts before 1940 (1909; 1928\u00d72, 1929; 1932\u00d72, 1934, 1935, 1937, 1938\u00d72 \u2014 matching the memo's \"1900s: 1; 1920s: 3; 1930s: 7\"); the decimal-class glosses .0145 \"Territorial waters. Marginal sea\", .628 \"Fisheries\", .627 \"Fur seals\" verbatim from decimal-class-labels.json; and lot 68D47 \u2192 NAID 1935994 / entry A1 3071 / RG 59 / \"Subject and Country Files\" verbatim from central-files-index.json. No fabricated figure found.\n\nTwo qualifications on otherwise-obeyed items, recorded so the score is not read as flawless:\n1. R1 is the weakest obeyed. Literal SQL is shown for the coverage, scope and core queries and exact MATCH expressions for \u00a74.5/\u00a77, but \u00a74.2, \u00a74.3, \u00a76.1 and \u00a76.2 report their tables with the source table and filter described in prose rather than the statement itself. It is reconstructible (I rebuilt \u00a76.2 from the description and it matched), so this is under-display rather than opacity.\n2. R4 is partly discharged by circumstance rather than by work \u2014 the library is complete, so nothing here can reflect a partial download. The memo still flags thinness on its own terms (Santiago Declaration 7/5) and, more substantially, flags the *reference-data* limit in \u00a76.4 rather than letting the post-1940 skew pass silently.\n\nBeyond the rubric: the memo also self-reports its unexecuted passes (\u00a77 \"Things I did *not* do\") and discloses a disagreement between two sources rather than picking the flattering one (\u00a78, collection-usage-index at volume scope vs the document-grain SQL). Its one uncertain claim is properly hedged in place: the 711.428 gloss is marked \"*(The shipped schedule has no country 42 and no class-7 suffix table, so the gloss here is from reading the documents, not from the label file.)*\" \u2014 an honest label on a derived rather than looked-up value."
+ },
+ "a2": {
+  "cell": "a2",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a70 shows the query and its result: `SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;` -- `552 | 316839 | 1012 | 8468`. I re-ran it: identical output."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"Your library is **complete**: 552 of the 552 published volumes, 316,839 documents. So the usual 'conditional on what you downloaded' caveat is unusually weak here -- but every count below is still conditional on those 552 volumes, and I say so again wherever a count is thin.\" Repeated in \u00a715: \"Every count is over the 552 volumes in this index.\""
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Used throughout; \u00a714 states the convention outright -- \"Cited as `volume_id/document_id`\" -- and every row follows it (`frus1913/d229`, `frus1944v02/d907`, `frus1937v04/d852`). Same form in \u00a74 (`frus1952-54v08/d577`), \u00a75's 1950s table and \u00a78."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "The string `rowid` appears nowhere in the memo. Every document reference is the composite id (\u00a714 \"Cited as `volume_id/document_id`\"), and the SQL selects/joins on `volume_id, document_id` rather than a row number (\u00a76a: `WHERE volume_id=? AND document_id=?`)."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every join is on the pair. \u00a72: `FROM frus_documents f JOIN document_cache dc USING(volume_id, document_id)`. \u00a73 adds a third table the same way: `JOIN document_cache dc USING(volume_id, document_id) LEFT JOIN document_dates dd USING(volume_id, document_id)`. \u00a75's candidate set is `SELECT DISTINCT volume_id, document_id`."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"Standing exclusions applied to everything unless noted: `is_front_matter = 0`, `is_editorial_note = 0`\" -- carried in every SQL block shown. Where the exclusion does NOT hold the memo says so explicitly: \u00a710 \"Counting surface: tag-stripped + whitespace-collapsed whole TEI file (front matter, footnotes and index included)\"."
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a715: \"I read no `summary_text` and no `note_text`.\" No summary or note text is quoted anywhere in the memo; the quoted text fields are headers and source notes (\u00a714 'source note as printed')."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "not_applicable",
+    "evidence": "The memo never queries `cross_references`. Its two archival channels are `document_sources` (\u00a76a) and `external_citations` (\u00a76b); no reference table and no `is_broken` column appears anywhere, so the exclusion had no occasion to apply."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "Recognised and diagnosed. \u00a75: \"its porter tokenizer folds stems -- `frus1929v01/d216` and `frus1918Supp02/d148` match `cocain*` / `morphin*` on the words **cocainism** and **morphinism**\". \u00a710 quantifies it: \"`MATCH 'cocain'` and `MATCH 'cocaine'` both return exactly 105 documents and `morphin`/`morphine` both return 102 -- the index cannot distinguish the spellings at all\", and it moves the variant scan to the TEI as a result. I verified the equivalence: cocain=cocaine=106, morphin=morphine=102 unfiltered."
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a76a labels it at first use: \"`citation_era` (a citation **form**, not a date): decimal 420, structured 48, published 12, lot_file 12...\". \u00a715 repeats: \"`citation_era` in \u00a76a is a citation **form**, not a date, and is not plotted as one anywhere here.\" All periodisation is done on `document_dates.date_iso` instead."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a76 is headed \"Archival channels -- **two numbers, never one**\" with separate subsections 6a CAME-FROM (498 of 615) and 6b POINTED-AT (29 references from 20 documents); no combined figure appears. \u00a715: \"The two channels in \u00a76 are never added together; 498 came-from and 29 pointed-at are answers to different questions.\""
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Eight-plus SQL blocks are printed against the headline numbers -- \u00a70 coverage, \u00a70 the 306,619 body-document count, \u00a71 both controls, \u00a72 the false-friend baseline, \u00a73 the parameterised anachronism query, \u00a75 the vocabulary union, \u00a76a the per-document source query, \u00a77a `SELECT volume_id, COUNT(*) FROM document_sources WHERE raw_text LIKE 'File No. 774%' GROUP BY 1`, \u00a711 the persons count. I re-ran five of them and each reproduced exactly (552|316839|1012|8468; 306619; 98499|551; 0; frus1908 56 / frus1907p1 36 / frus1910 30 / frus1909 28). Where Python did the aggregating the memo says so and names the script (\u00a75 \"script: density.py in this run directory\"; \u00a716 lists all six)."
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Denominators are carried with every proportion. \u00a72: \"**93,418 of 306,619** corpus-wide (30.5%) against **2,355 of 9,610** in the narcotics volumes (24.5%)\". \u00a76a: \"**498 of 615** carry a source row\"; \"**456 of the 498** located documents name RG 59\". \u00a74: \"**0 of 44**\", \"**0 of 12** and **1 of 5**\". \u00a77a's table gives 'chapter docs with a source note' beside 'of which case 774' (37 of 37 -> 36)."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 is the model case: \"**None of the 32 contains narcotics vocabulary** ... Positive control in the same volume: `MATCH 'Turkey'` returns 122 documents, so the volume is searchable and the absence is real, not a query failure.\" I reproduced both halves (one narcotics hit in the whole volume, `frus1952-54v08/d577`, outside d459-d490; Turkey = 122). \u00a711 prints the zero with its SQL (`persons` = 0 in four volumes, verified). \u00a710 reports zeros explicitly for the acronyms and old spellings against a same-pass positive control (\"`Department of State` **11,709 occurrences in 37 of 37 volumes**; `ZZZ_IMPOSSIBLE_ZZZ` **0**\")."
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a75: \"Thirteen documents is thin enough that I would not build a chapter on it without going to the files (\u00a77). **This is a publication-selection fact about FRUS, not a fact about the Department**\". \u00a715: \"The **1950s figure (13 documents) is thin enough to be a property of FRUS's compilation policy rather than of the archive.** Do not publish it as an absence without checking RG 170 and the UN records.\" \u00a78 is a whole section headed \"A corpus-scoping negative is not a research negative\". \u00a76b: \"This channel is effectively empty for your period and **you should not build anything on it**.\""
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a71 runs both and reports both: `MATCH '\"Department of State\"'` -> \"98499 docs | 551 volumes\"; `MATCH 'ZZZ_IMPOSSIBLE_ZZZ'` -> \"0 | 0\"; \"Positive control fires in 551 of 552 volumes; negative control returns zero. The scan works.\" I reproduced both exactly. A second control pair is run in the separate TEI pass (\u00a710) and in the Turkey volume (\u00a74)."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "Stated for each scan and then measured. \u00a75: \"**Counting surface: this database's flattened `body_text`, which includes editorial footnotes**\". \u00a710: \"**Counting surface: tag-stripped + whitespace-collapsed whole TEI file** (front matter, footnotes and index included), word-bounded, case-insensitive.\" \u00a79 is a dedicated section comparing raw TEI / tag-stripped whole file / `<body>` only / inside `<note>` across five volumes, and states the residual limit: \"The database *cannot* split body from footnote (both live in `body_text`)... **I have not done a corpus-wide body/apparatus split.**\""
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a710 is a 26-row variant table with per-form occurrence counts and volume spreads -- bare/compound `opium` forms, `narcotic` vs `narcotics` singular/plural split, `poppy`/`poppies`, `marijuana`/`marihuana`, `habit-forming` vs `habit forming`, old spellings `cocain`/`morphin`/`codein`/`hasheesh` (0 each), and \"**Acronyms -- CND, BNDD, INCB, PCOB, S/NM, FBN** | **0 each**\". The split is then read: \"`opium` is the word. 4,885 occurrences against 1,062 for `narcotic`+`narcotics` combined -- 4.6:1.\" It also flags a gap in its own expansion (point 4: `cannabis` / `Indian hemp`)."
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a75 names the field and the distinction: \"Periodisation is on `document_dates.date_iso`, which is the TEI `frus:doc-dateTime-min` -- **document date, not volume series year**.\" The decade table and the pre-1970 columns are built on it, and \u00a73's table reports `MIN(dd.date_iso)` per phrase."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"the two duplicate second editions dropped (`frus1951-54IranEd2`, `frus1969-76ve15p2Ed2`; `frus1977-80v09Ed2` kept, it has no first edition)\" -- carried in every SQL block as `volume_id NOT IN (...)`. The cost is then measured: \"The suppressed second editions cost this question almost nothing: 2 narcotics-vocabulary documents in `frus1951-54IranEd2` and 2 in `frus1969-76ve15p2Ed2`, all duplicates of first-edition documents.\" I verified the resulting 306,619 body count."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a76a works `document_sources` over the 615-document scope: \"**498 of 615** carry a source row\", broken out by repository (Department of State 432, National Archives 30...), record group (\"RG 59 in 456 of the 498\") and citation form. Conclusion drawn: \"**This question is a Record Group 59 central-file question.**\" \u00a77 then resolves the came-from side into three successive filing systems, and I verified the \u00a77a `File No. 774` counts exactly (56/36/30/28)."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a76b \"POINTED-AT (`external_citations`, many rows per document -- what the footnotes mention)\": \"Over the same 615 documents: **29 footnote references from 20 documents.** Repository: Department of State 28, Nixon Presidential Materials 1. Collections: `NSC Files` (1). Lots: `54D423` (2).\" The emptiness is explained structurally rather than left as a number: \"FRUS's pre-1945 volumes put their archival citation in the document's own source note (channel 6a), not in an editor's footnote.\""
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a76 heading: \"Archival channels -- **two numbers, never one**\", with 6a explicitly \"(`document_sources`, one row per document -- where FRUS got the document)\" and 6b \"(`external_citations`, many rows per document -- what the footnotes mention)\", computed \"over the same scope, the **615 pre-1970 documents at >=2 occurrences**\". No summed figure appears; \u00a715 confirms \"never added together\"."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Five bundled artifacts are opened and quoted: `central-files-index.json` (\u00a77a, resolving case 774 to a series), `roll-scans-index.json` (\u00a77a roll/NAID/span/image-count table), `decimal-class-labels.json` (\u00a77b, \"Verified against ... the Department's own 1910-1949 schedule\", including the verbatim `.114` gloss), `collection-authority.json` (\u00a77d, \"holds 4,429 collections\"), `series-facts-index.json` (\u00a77d, \"397 distinct creator headings across 695 series\"). I confirmed all five files exist in `/Applications/FRUS Explorer.app/Contents/Resources/`."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Several, at series and roll grain. \u00a77a: \"**RG 59, Numerical and Minor Files, series NAID 654171, NARA microfilm publication M862**\", with named rolls and NAIDs (\"M862 Roll 104 | 19179039 | 774 - 774/180\"). \u00a77d names lots with NAIDs: \"77 D 120 | 2131140 | S/NM Files\", \"83 D 343 | 27022701\". \u00a77b names decimal classes (`511.4A2`, `500.C1197`, `893.114 Narcotics/1971`) and \u00a78 names \"**Record Group 170, Records of the Drug Enforcement Administration**\". The reach limit is stated too: \"No bundled index turns `893.114 Narcotics/1971` into a series NAID or a box.\""
+   }
+  ],
+  "obeyed": 23,
+  "violated": 0,
+  "notApplicable": 1,
+  "notes": "Compliance 23/23 = 1.00 (E3 not applicable: the memo never touches `cross_references`, matching the rubric's own example of a genuine N/A).\n\nThis is a near-total pass and I tried hard to break it. The decisive factor is that the memo's behaviour is checkable rather than asserted, and it checks out. I independently re-ran five of its SQL blocks against `frus-copy.db` and every one reproduced exactly: coverage 552|316839|1012|8468; the Ed2-and-apparatus-excluded body count 306619; both controls (98499|551 and 0); the `File No. 774` breakdown 56/36/30/28; `persons` = 0 in the four early volumes; the anachronism rows for `\"drug abuse\"` (116|1|1963-06-28) and `\"opium traffic\"` (105|94|1870-04-22); and the porter-stemming equivalence (cocain=cocaine, morphin=morphine). I also confirmed the \u00a74 null result and its positive control: the whole 724-document `frus1952-54v08` yields exactly one narcotics hit, `d577`, outside the named Turkey chapter, while `MATCH 'Turkey'` returns 122. All five bundled JSON artifacts it claims to have opened exist in the app Resources directory.\n\nTwo places where a hard marker could push back, neither reaching `violated`:\n1. **R1 is substantially rather than exhaustively satisfied.** SQL is shown for every headline number in \u00a70-\u00a73, \u00a75, \u00a76a, \u00a77a and \u00a711, but \u00a77b's decimal-class table, \u00a713's phrase counts and \u00a76b's breakdown are reported without their queries. The memo does not hide this -- it names the Python scripts that produced the aggregates (\u00a75 \"script: density.py\"; \u00a716 lists all six) and states the counting surface each time. Given that the SQL it does show reproduces exactly, I scored obeyed rather than penalising the aggregation step.\n2. **One trivial numeric drift.** \u00a710 says `cocain`/`cocaine` \"both return exactly 105 documents\"; unfiltered I get 106 for each. The substantive claim -- that the index cannot distinguish the two spellings -- is exactly right, and 105 is consistent with the memo's standing apparatus/Ed2 exclusions. Not scoreable against any item.\n\nWorth recording for the aggregate: several items are obeyed in a strong form rather than a formal one. R3 is not merely \"said the query returned nothing\" but ran a same-volume positive control to prove the absence was real and then reinterpreted it as a lead rather than a dead end. S1 runs control pairs three separate times (index, TEI, single volume). A3 separates the two archival channels structurally, in the section architecture, not just in a caveat. \u00a77b's `.114` trap (811.114 is Prohibition liquor, not narcotics) and \u00a711's Harry/Harvey Anslinger catch are the kind of finding that only comes from actually reading output. The memo also volunteers three limits against its own interest (\u00a715: no corpus-wide body/apparatus split; \u00a710's variant scan covers 37 volumes not 552, with the unfinished script named; no NARA creator heading verified)."
+ },
+ "a3": {
+  "cell": "a3",
+  "items": [
+   {
+    "id": "C1",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a70 opens with a runnable coverage query and its result: \"SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache; -- 552 | 316839 | 1012 | 8468\". I re-ran it: it returns 552|316839|1012|8468 exactly."
+   },
+   {
+    "id": "C2",
+    "block": "COVERAGE",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"Your library is **complete**: all 552 manifest volumes are indexed. So for once the usual caveat is weak \u2014 nothing here is thin because of a partial download. It may still be thin because FRUS is thin, and I flag that separately where it happens.\" Volume count named; conditionality stated and then resolved rather than asserted. \u00a70 also states the working denominator (306,619) that every later count rests on."
+   },
+   {
+    "id": "I1",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every document citation is a volume/document pair: \"fur seal / Bering Sea \u2014 `frus1894app1/d210`, `frus1894app1/d226`\" (\u00a74); \"`frus1981-88v41/d307`, `/d308`, `/d313`\" (\u00a77). No document is cited by title alone."
+   },
+   {
+    "id": "I2",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "No rowid appears anywhere. Where a distinct-document count is needed the memo composes the pair instead: \"COUNT(DISTINCT r.volume_id||'/'||r.document_id)\" (\u00a75 SQL) \u2014 the exact place a rowid shortcut would have been tempting."
+   },
+   {
+    "id": "I3",
+    "block": "IDENTITY",
+    "verdict": "obeyed",
+    "evidence": "Every join in the memo is on the pair: \"JOIN document_cache d USING(volume_id,document_id)\" appears in \u00a71, \u00a72, \u00a75, \u00a77; the by-decade query joins twice on the pair \u2014 \"JOIN document_dates dd USING(volume_id,document_id) LEFT JOIN document_sources s USING(volume_id,document_id)\" (\u00a77)."
+   },
+   {
+    "id": "E1",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\"AND d.is_front_matter=0 AND d.is_editorial_note=0\" is carried in every SQL block shown (\u00a71, \u00a72, \u00a75, \u00a77). \u00a74 shows the exclusion arithmetic on the analysis set: \"raw documents under matching headings 1,717 | less front matter / editorial notes \u221224\". \u00a76 also states where the exclusion does NOT hold: \"these TEI counts are over the whole file \u2014 front matter, abbreviation lists, editorial footnotes and the index included. I did **not** separate document text from apparatus for this table.\""
+   },
+   {
+    "id": "E2",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "No summary_text or note_text is read or quoted. The only quoted note text is attributed to the archival source column, not user content: \"raw note reads *\\\"Department of State, Marine Law and Policy Division, Subject and Country Files, Law of the Sea, 1982\u20131983, Lot 85D105\\\"*\" (\u00a77, from `document_sources`). Confirmed against the schema: summary_text/note_text are document_cache columns feeding the `user_content` FTS table, which the memo never touches."
+   },
+   {
+    "id": "E3",
+    "block": "EXCLUSIONS",
+    "verdict": "obeyed",
+    "evidence": "\u00a78 states the filter on both directions of the graph: \"-- outbound from the set, is_broken = 0 / 684 references... -- inbound into the set, is_broken = 0 / 29 references\"."
+   },
+   {
+    "id": "T1",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a76: \"The index cannot answer this: porter stemming folds `fishery`/`fisheries` to one stem and `fishing` to another, so any count here is a count of stems. So I ran it over the XML.\" Separately \u00a75 records recognising and diagnosing a zero-return rather than reporting it: \"My first scan of it returned zero hits and I nearly reported that as an absence \u2014 the bug was mine, `vocab` is a list of records, not of strings.\""
+   },
+   {
+    "id": "T2",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 labels the column explicitly as a form: \"Citation **form** (`citation_era` is a form, not a date)\", and the table beneath it lists decimal/structured/lot_file/cfpf/published/unrecognized \u2014 forms, not periods. Periodisation is done elsewhere from `document_dates.date_iso`."
+   },
+   {
+    "id": "T3",
+    "block": "TRAPS",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 header: \"Two channels, labelled, never summed.\" and its closing line: \"Two channels over one scope. **989 came-from and 91 pointed-at are two different numbers and must never be added.**\""
+   },
+   {
+    "id": "R1",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Verbatim runnable SQL is shown for the coverage count (\u00a70), both controls (\u00a71), the co-occurrence scan (\u00a72), the subject-tag rollup (\u00a75), the decimal-class scan (\u00a77) and the source-note-by-decade scan (\u00a77); I re-ran four of them and all reproduced. Non-SQL numbers name the script that produced them (\"`heading_docs.py` in my scratch dir\", \u00a74) and the Reproduction table lists all five files, which I confirmed exist on disk. Two lapses noted: \u00a72's block carries a `<family>` placeholder and \u00a78's ```sql fence contains a prose summary rather than the query."
+   },
+   {
+    "id": "R2",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Proportions carry their denominators throughout: \"702 of 1,693 documents (41.5%) fall before 1910\" (\u00a74); \"**3,099 of the 4,443 (70%) carry one or both of the two largest tags**\" (\u00a75); \"989 of 1,693 documents carry a source note\" (\u00a77); \"Overlap with my heading set: **573 of 1,693**\" (\u00a75). The one bare percentage \u2014 \"79.1% of the case-insensitive hits are the Spanish article *los*\" \u2014 sits one clause after its denominator (3,911 in 340 volumes)."
+   },
+   {
+    "id": "R3",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "Zero-returns are stated as findings and then tested: \u00a73 \"Notably absent from every heading in 552 volumes: the word **\\\"tuna\\\"** (0 headings), and any form of **\\\"200-mile\\\"** (0 headings)\". \u00a77 states the null \u2014 \"**Not one of the 528 nineteenth-century documents ... carries a source note.**\" \u2014 then verifies the surface could return rows: \"I checked whether that is FRUS or the index\", producing 1910s = 29,348 of 30,359 with notes (I reproduced this table exactly). \u00a71 makes the same guarantee up front: \"Both surfaces work. Absences below are findings, not failures.\""
+   },
+   {
+    "id": "R4",
+    "block": "REPORTING",
+    "verdict": "obeyed",
+    "evidence": "\u00a70 disposes of the library case with the count (\"all 552 manifest volumes are indexed\") and commits to flagging corpus thinness instead; it then does so repeatedly: \"**91 footnote references from 74 of the 1,693 documents.** That is the honest scale\" (\u00a77); \"the fisheries half of your question is essentially untagged: 'Fishing agreement' (21 documents) and 'Fishing limit' (9)\" (\u00a75); \"**1,693 is a floor, not a count**\" (\u00a710)."
+   },
+   {
+    "id": "S1",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a71 reports both on both surfaces: \"-- POSITIVE ... -- 93643 documents | 551 volumes\" and \"-- NEGATIVE ... MATCH 'ZZZ_IMPOSSIBLE_ZZZ' ... -- 0 | 0\", plus \"TEI surface ... positive control **177,916 occurrences in 550 of 550 volumes**; negative control **0**\". The TEI controls are re-reported inside the \u00a76 variant table itself, i.e. in the same pass as the scan. I reproduced the SQL positive control: 93643|551."
+   },
+   {
+    "id": "S2",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a76 states it as a heading: \"**Counting surface: raw TEI, tag-stripped, whitespace-collapsed. 550 files (552 manifest volumes minus 2 Ed2 duplicates), 1,432.2 M characters. Occurrences, not documents.**\" \u00a70 separates the two surfaces and their denominators in advance: \"**Two surfaces, two denominators.** SQL numbers are over the 552-volume index. The TEI numbers in \u00a76 are over the 550 XML files matching the manifest.\""
+   },
+   {
+    "id": "S3",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a76's table splits spellings, plurals and acronyms and reports each separately: \"fishery / fisheries 8,153\", \"fisherman / fishermen 2,392\", \"three-mile / 3-mile 1,002\", \"law of the sea 2,258\" vs \"`LOS` (case-sensitive) 816\" vs \"`UNCLOS` 88\" vs \"`EEZ` 117\". The split is then interpreted, including a measured acronym trap: \"A case-*insensitive* `\\\\bLOS\\\\b` returns **3,911** occurrences in 340 volumes. Case-sensitive it returns **816** in 40.\""
+   },
+   {
+    "id": "S4",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a74 names the field and the alternative it rejected: \"Periodised on **`document_dates.date_iso`** \u2014 the document's own `frus:doc-dateTime-min`, *not* the volume's series year (the difference is real: `frus1902app1` carries documents dated 1844\u20131901)\". The volume table in \u00a74 carries per-volume document-date spans for the same reason."
+   },
+   {
+    "id": "S5",
+    "block": "SCOPING",
+    "verdict": "obeyed",
+    "evidence": "\u00a70: \"**Second-edition suppression.** I dropped `frus1951-54IranEd2` (358 documents) and `frus1969-76ve15p2Ed2` (382), and kept `frus1977-80v09Ed2`.\" The exclusion is carried in the later SQL (\"AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')\") and its effect is measured rather than assumed: \"Neither Ed2 volume contributed a single document to my topical set... I applied it anyway\", and \u00a72 reconciles the 1,666/1,664 discrepancy it creates."
+   },
+   {
+    "id": "A1",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 \"Channel A \u2014 CAME-FROM (`document_sources`, one row per document)\" gives coverage (989 of 1,693), citation form, repositories (\"Department of State 786, Nixon Presidential Materials 67, Reagan Library 55...\"), and a per-class breakdown I reproduced exactly (894.628|71|8, 890.0145|34|2, 811.0145|33|1, 861.0145|21|1...)."
+   },
+   {
+    "id": "A2",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 \"Channel B \u2014 POINTED-AT (`external_citations`, many rows per document)\" reports \"**91 footnote references from 74 of the 1,693 documents**\", broken out by repository/collection (\"Reagan Library, **Guhin** files 17\") and by target: \"Lots cited in footnotes but not printed from: `94D419` (6), `86D362` (5)...\" and \"Decimal classes cited-not-printed: `890.0145` (36 refs / 22 citing documents)\"."
+   },
+   {
+    "id": "A3",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "The two channels are named, scoped identically and kept apart: \"Two channels, labelled, never summed. Scope for both: the **1,693-document heading set**\", closing with \"**989 came-from and 91 pointed-at are two different numbers and must never be added.**\" No combined archival total appears anywhere in the memo."
+   },
+   {
+    "id": "A4",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "Four bundled artifacts are opened and their contents used: \"Running the top decimal classes through `decimal-class-labels.json` (the 1910\u20131949 schedule)\" (\u00a77); \"Resolved against `central-files-index.json` and `series-facts-index.json`\" (\u00a77); and the taxonomy in \u00a75. The series-facts figures check out \u2014 I confirmed NAID 3859203 carries extent \"14 linear feet\", 1966\u20131980, exactly as quoted."
+   },
+   {
+    "id": "A5",
+    "block": "ARCHIVAL",
+    "verdict": "obeyed",
+    "evidence": "\u00a77 names concrete targets at series grain with NAIDs and entry numbers: \"**Lot 92D208 \u2014 \\\"Law of the Sea Files\\\", RG 59, NAID 3859203, entry P 299**\", plus 68D47/NAID 1935994/entry A1 3071 and five more, and the pre-1910 substitutes: \"**Diplomatic Despatches, Great Britain \u2014 200 rolls**, \\\"Despatches from U.S. Ministers to Great Britain, 1791\u20131906\\\" (e.g. Volume 213, Oct 5 1905 \u2013 Jan 31 1906, NAID 188600418)\" and microfilm M862. Unresolved lots are reported as unresolved rather than guessed."
+   }
+  ],
+  "obeyed": 24,
+  "violated": 0,
+  "notApplicable": 0,
+  "notes": "24/24 obeyed, compliance 1.00. I treated this score as suspicious and tried to break it by re-running the memo's own SQL against frus-copy.db: the coverage row (552|316839|1012|8468), the positive control (93643|551), the \\\"territorial waters\\\" count (1666), the full decimal-class table (894.628|71|8, 890.0145|34|2, 811.0145|33|1, 861.0145|21|1, 812.0145|10|3, 702.6282|10|1, 812.628|9|2, 894a.628|5|1), the subject-tag rollup (1616/1597/614/565/341/252) and the by-decade source-note coverage (1880s 6472/2, 1890s 9712/0, 1900s 9924/2135, 1910s 30359/29348) all reproduced to the digit. NAID 3859203's \\\"14 linear feet\\\", 1966\u20131980 matches series-facts-index.json. All five reproduction artifacts named in the closing table exist on disk. I found no fabricated number.\n\nThree residual weaknesses, none sufficient to flip an item:\n1. R1 is the softest pass. \u00a78's ```sql fence contains a prose summary (\\\"684 references, of which 198 are cross-volume\\\") rather than a query, and \u00a72's block carries a `<family>` placeholder while the 12-row lift table has no query shown at all. R1 still scores obeyed because six verbatim, runnable blocks are shown and every non-SQL number names its script in the Reproduction table.\n2. The \u00a77 pre-1910 query selects `FROM onset o` \u2014 a set never defined in the memo \u2014 so that block is not runnable as printed even though its numbers reproduce from an equivalent query.\n3. Two of the archival glosses are the memo's own inference (842.628 as Canada, 811b.628 as a US territory); the memo flags both as unglossed guesses in \u00a77 and again in \u00a710, which is why they are not a defect.\n\nDistinguishing features worth recording for the adjudication: the memo's central finding is a NEGATIVE about the historian's own phrase, established with a lift test against four unrelated control phrases (\\\"territorial waters\\\" 1.48 sits inside a 1.42\u20131.55 noise band), which is a control design the rubric does not ask for; it reports two of its own bugs (the taxonomy vocab type error, the case-insensitive LOS/Spanish-article collision) rather than only its results; and it converts an archival null into a positive lead (the 528 nineteenth-century documents carry no source note, so it routes to the pre-1910 countrySeries rolls instead). It also volunteers the three-spelling St. John's geoKey trap and the 142 stub XML files in volumes/, neither of which any rubric item required."
+ }
+}

@@ -1,0 +1,34 @@
+{
+  "a1": {
+    "q": 1,
+    "arm": "control"
+  },
+  "a2": {
+    "q": 2,
+    "arm": "block"
+  },
+  "a3": {
+    "q": 1,
+    "arm": "block"
+  },
+  "a4": {
+    "q": 2,
+    "arm": "control"
+  },
+  "a5": {
+    "q": 1,
+    "arm": "control"
+  },
+  "a6": {
+    "q": 2,
+    "arm": "control"
+  },
+  "a7": {
+    "q": 1,
+    "arm": "block"
+  },
+  "a8": {
+    "q": 2,
+    "arm": "block"
+  }
+}

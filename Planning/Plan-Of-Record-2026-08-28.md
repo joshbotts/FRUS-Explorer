@@ -94,19 +94,35 @@ built, an MCP server would have been the first artifact in the wave that works o
 MCP-capable clients, narrowing the audience for no guarantee a fixed-subcommand binary does not
 already give. Two of the row's premises did not survive; the assessment names both.
 
-The residue the assessment exposed is small, ungated, and listed at the foot of the wave's plan:
-two documentation defects in the guide (§14.11's unpathed artifact table, and a missing
-surface-routing table in §12), SQL views on the L-2 export, stamping the export with its own
-provenance, and a seven-build-stale number in `README.md`.
+**THE RESIDUE SHIPPED THE SAME DAY (PR #1151)** — all five items: §14.11's artifact paths, §12's
+surface-routing table (plus a SURFACES preamble and per-rule `[TEI]`/`[JSON]` tags inside the
+pasted block), three `research_*` views on the L-2 export, a `research_provenance` stamp inside the
+copy, and `README.md` 37 → 44 with a test pinning it to `project.yml`. Building it exposed three
+more defects, all fixed: §12's Ed2 rule read as an instruction to delete the *first* editions;
+§14.9's 718-document overlap is the semantic artifacts' figure while the index's is **701**, so the
+section about double-counting was violating the guide's own counting-surface rule; and §14.11's
+table listed thirteen of the fifteen artifacts it counted.
+
+**AND C-0 RAN THE SAME DAY (PR #1152) — the falsifier substantially FIRES.**
+`C0-Falsifier-2026-08-31.md` records it: eight scoping passes, two fresh questions × (§12 block
+pasted | no rules) × 2, blind-scored against a rubric frozen before launch. **BLOCK 96/97 = 99%,
+CONTROL 81/96 = 84%.** The block works — on L-8's own terms, *the rules that do not survive a paste
+are the subcommand specification*, and that specification is nearly empty. §14.11's archival zero
+turns out to be **part discovery failure** (4/4 no-rules runs opened a bundled artifact once the
+files were merely listed by name, which is what PR #1151 shipped) and **part rules failure** (those
+same four runs resolved **zero NAIDs**, against 4/4 in the block arm). Of the four rules the block
+earns, two are already structural in #1151's views. **C-1 is therefore downgraded from a build to a
+row gated on C-2**, a long-session re-run — the only setting where the delivery-channel argument can
+be true, and the one C-0's short fresh-context sessions could not test.
 
 **L-0 was larger than its row implied.** `Docs/Agentic-Analysis-Guide.md` is now
 at **v1.2** (PR #1137): §14 added the scoping method from three measured runs, and §14.11 added
 the archival half after an audit found all three runs had resolved zero record groups and zero
 NAIDs. Two consequences for this wave. First, A.7's staleness is unchanged and still owed.
-Second, **§14.11 is the strongest argument yet for L-8**: the rules a local MCP server would
-enforce are now written down and measured — controls on every scan, a declared counting surface,
-variant expansion, and both archival channels resolved and never summed — so the assessment has
-a concrete tool surface to assess rather than a sketch.
+Second, **§14.11 was read at the time as the strongest argument yet for L-8** — the rules a local
+MCP server would enforce, written down and measured. C-0 has since narrowed that: pasted as prose,
+those same rules are obeyed 96 times in 97, so what §14.11 established was a *specification*, not a
+case for a binary to carry it. The guide is now at **v1.10**.
 
 ### 2c. One small UI item
 

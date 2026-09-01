@@ -243,25 +243,63 @@ exactly the authority of §12's prose. Only implementations bind.
 
 | # | Session | Size | Gate |
 |---|---|---|---|
-| C-0 | **Run the falsifier**: re-run §14's scoping protocol with the §12 block pasted and count which rules are violated anyway, by block | S | none |
-| C-1 | The read-only CLI, `archival_units` subcommand first — the only tool answering a *measured* failure | M | C-0 |
+| ~~C-0~~ | ~~**Run the falsifier**~~ — **RUN AND JUDGED 2026-08-31**, PR #1152. Verdict: the falsifier substantially FIRES. Full record: `Planning/C0-Falsifier-2026-08-31.md`, evidence at `Planning/c0-falsifier/` | S | — |
+| C-2 | **The long-session re-run** — the only setting in which the delivery-channel argument can be true, and the one C-0 could not test | S | none |
+| C-1 | ~~The read-only CLI~~ — **DOWNGRADED to gated-on-C-2.** At most `archival_units`, and only if the block is shown to decay | M | **C-2** |
 
-**C-0 is not ceremony and must not be skipped.** §14.11's zero — three careful runs resolving no
-record groups and no NAIDs — was recorded *before* §12 carried an ARCHIVAL SCOPE block at all. If the
-block alone fixes the failure it was written to fix, the honest answer is a docs pass and SQL views,
-not a binary. The rules that survive a paste need no tool; the rules that do not **are** the
-subcommand specification.
+**C-0 ran with a control arm the row did not ask for, and that arm is why the result means
+anything.** Eight scoping passes — two fresh questions × (§12 block pasted | no rules) × 2 — blind-
+scored against a 24-item rubric frozen before launch. **BLOCK 96/97 = 99%. CONTROL 81/96 = 84%.**
 
-### Residue this assessment exposed, none of it gated on C-1
+Three findings, in order of how much they change the plan:
 
-- §14.11's artifact table names fifteen files with **no path**; the bundle path is stated only in §5
-  and §A.1. Put it in §14.11 and note the files are committed in the public repo. *(Doc, XS.)*
-- Add a **surface-routing table** to §12: which rules the database can answer, and which need the TEI
-  or the bundled JSON. *(Doc, S.)*
-- **SQL views on the L-2 export** pre-applying the EXCLUSIONS block and the Ed2 twin fold — ~4 of 40
-  rules, reaching `sqlite3`, Python and the generic SQLite MCP server the guide already recommends.
-  *(S.)*
-- **Stamp the export.** It carries no provenance of its own, so a stripped copy is indistinguishable
-  from an unstripped one. *(XS, and it removes the failure §13 exists to prevent.)*
-- `README.md` states build 37 against `project.yml`'s 44 — seven builds stale on the public front
-  door, on the page carrying the only link to the guide this wave serves. *(XS.)*
+1. **The block works.** On L-8's own literal terms — *the rules that do not survive a paste are the
+   subcommand specification* — the specification is nearly empty. One violated item across four
+   BLOCK memos.
+2. **§14.11's archival zero was PART discovery failure, and that part is already fixed.** With no
+   rules at all, 4/4 control runs opened a bundled archival artifact. Listing the eighteen files by
+   name and path is what did it, and that paragraph shipped in PR #1151.
+3. **But not ONLY discovery.** With the artifacts open in front of them, the four no-rules runs
+   resolved **zero NAIDs** — every one of them — against 4/4 and 14 distinct NAIDs in the BLOCK arm.
+   Finding the shelf list is discovery; naming the shelf is a rule.
+
+Of the four items the block earns (E1, S1, S5, A2), **two are already structural** in PR #1151's
+export views. That leaves A2 and S1 — one subcommand's worth, not six.
+
+**What C-0 could not see, which is why C-2 exists rather than a closure.** Every run was 30–60 tool
+calls in fresh context. The one point the assessment kept on MCP's side — a catalogue is re-presented
+each turn where a 110-line block can be forgotten — is invisible to that design. C-0 shows the rules
+*work*; it says nothing about whether they *survive*.
+
+### C-2 — the long-session re-run
+
+Paste the block at turn 1, then reach the archival work only after substantial unrelated work — a
+multi-question sitting, or a scoping pass followed by a drafting pass. Score the same 24 items,
+with **A5 sharpened** to ask for a resolved catalogue identifier rather than "a concrete archival
+target" (a copied lot number satisfied it, which is how C-0 came to need a post-hoc NAID count).
+
+- Compliance holds → **close C-1 as NOT NEEDED.** The block is sufficient and the wave is finished.
+- Compliance decays → **the decay is the specification**, and `archival_units` is the first and
+  possibly only subcommand.
+
+Reuse `Planning/c0-falsifier/workflow.mjs`; the runner and scorer prompts and both arms are in it
+verbatim.
+
+### Residue this assessment exposed — ALL SHIPPED 2026-08-31 in PR #1151
+
+- ~~§14.11's artifact table names fifteen files with **no path**~~ — done, and the table was also
+  two rows short of its own fifteen (`provenance-flow-index.json`, `source-provenance-index.json`).
+- ~~Add a **surface-routing table** to §12~~ — done, plus a SURFACES preamble and per-rule
+  `[TEI]`/`[JSON]` tags inside the pasted block itself.
+- ~~**SQL views on the L-2 export**~~ — done: `research_documents`, `research_cross_references`,
+  `research_suppressed_volumes`. The Ed2 fold is computed and conditional on the copy, not
+  hard-coded.
+- ~~**Stamp the export**~~ — done: `research_provenance`, whose `my_writing_included` row is the one
+  fact nothing in the file carried.
+- ~~`README.md` states build 37~~ — done, and pinned by `CodingStandardsAuditTests` so it cannot go
+  stale again.
+
+Two defects the implementation exposed and also fixed: §12's Ed2 rule read as an instruction to
+delete the **first** editions, and §14.9's 718-document overlap is the semantic artifacts' figure
+while the index's is **701** — the section about double-counting was violating §14.3, the guide's own
+counting-surface rule.
