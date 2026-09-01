@@ -567,8 +567,18 @@ ahead of the capture sessions. Old numbers in brackets.)*
    but a captioning obligation, with three options in the runbook (caption it, start at frame 6, or
    the one that is not available).
 
-   **Both `provenance.txt` defects confirmed in the produced file**: it says *"Only the 0 volume(s)
-   indexed on this device"*, and hard-codes the lens. Step 11 already schedules them.
+   ~~**Both `provenance.txt` defects confirmed in the produced file**~~ **FIXED 2026-09-01**,
+   PR #1166. The device-reach clause is now omitted where there is no such affordance — nobody opens
+   a document out of a video — rather than printed as "the 0 volume(s)"; and the lens comes from
+   `SemanticMapModel.appliedLens`, which the model now records, instead of a literal that was
+   correct only until something rendered on another lens.
+
+   **AND THE ORDERING CHANGED: publication date, not coverage.** The 1620 opening is gone — frame 0
+   is `frus1861`, published 1861, running to 2025. The harness's own grain sentence had been
+   describing publication order all along (*"every document in the volumes **published** so far"*),
+   so prose and sort had disagreed and the prose was right. A frame now means *this much of the
+   record had been released*, which the map can support; coverage order asked *this much of the past
+   had been lived through*, which it cannot, since a document lands where its language puts it.
 
    **"THE TELEPORT RECORDING IS THE BEFORE SHOT" NO LONGER WORKS AS WRITTEN**, because this step ran
    after steps 7–9 rather than before them, and the teleport is gone. It is still recordable

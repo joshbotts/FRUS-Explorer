@@ -96,7 +96,11 @@ enum SemanticMapExport {
     ///     `provenance` is the one place that caveat can reach both export halves. Passing a label
     ///     made the caption structurally unreachable, which is how the `.provenance` lens shipped
     ///     an export that never said its categories are a plurality.
-    ///   - indexedVolumeCount: Volumes this device can actually open.
+    ///   - indexedVolumeCount: Volumes this device can actually open, or **`nil` when the export
+    ///     has no such affordance**. A film is the case: nobody opens a document out of a video, so
+    ///     "only the N volume(s) indexed on this device can be opened from it" is not a caveat
+    ///     there, it is a sentence about a thing the artifact cannot do. The frame-sequence sidecar
+    ///     shipped it reading "the 0 volume(s)", which is worse than saying nothing.
     /// - Returns: The provenance block.
     /// - Parameters (figure additions, W-3):
     ///   - figureTitle: Overrides the default regions-table title — the FIGURE passes
@@ -110,7 +114,7 @@ enum SemanticMapExport {
                            scopeLabel: String?,
                            scopedDocumentCount: Int?,
                            lens: SemanticMapLens,
-                           indexedVolumeCount: Int,
+                           indexedVolumeCount: Int?,
                            figureTitle: String? = nil,
                            sliceDescription: String? = nil,
                            frame: FigureFrame? = nil) -> AnalyticsProvenance {
@@ -120,7 +124,9 @@ enum SemanticMapExport {
             axisLabel: String(localized: "semanticMap.export.axis",
                               defaultValue: "Documents"),
             scopeLabel: scopeLabel,
-            indexedVolumeCount: indexedVolumeCount,
+            // Unused here — `corpusStatement` is always supplied below, so the default
+            // device-limited caveat this feeds never renders. Zero is the neutral filler.
+            indexedVolumeCount: indexedVolumeCount ?? 0,
             yearRange: nil,
             // The map has no date axis at all: position is projected similarity, not time.
             appliesDocumentDating: false,
@@ -139,11 +145,18 @@ enum SemanticMapExport {
     /// volumes actually indexed here).
     private static func corpusStatement(index: SemanticMapArtifacts.MapIndex,
                                         scopedDocumentCount: Int?,
-                                        indexedVolumeCount: Int) -> String {
-        let base = String(format: String(
-            localized: "semanticMap.export.caveat.corpus %lld %lld",
-            defaultValue: "Corpus: the map is a bundled artifact covering all %1$lld documents in the published series, and draws them whether or not a volume has been downloaded. Only the %2$lld volume(s) indexed on this device can be opened from it."),
-            Int64(index.documentCount), Int64(indexedVolumeCount))
+                                        indexedVolumeCount: Int?) -> String {
+        let whole = String(format: String(
+            localized: "semanticMap.export.caveat.corpus.whole %lld",
+            defaultValue: "Corpus: the map is a bundled artifact covering all %1$lld documents in the published series, and draws them whether or not a volume has been downloaded."),
+            Int64(index.documentCount))
+        // The device-reach clause only where the reader can act on it.
+        let base = indexedVolumeCount.map { count in
+            whole + " " + String(format: String(
+                localized: "semanticMap.export.caveat.corpus.reach %lld",
+                defaultValue: "Only the %1$lld volume(s) indexed on this device can be opened from it."),
+                Int64(count))
+        } ?? whole
         guard let scopedDocumentCount else { return base }
         return base + " " + String(format: String(
             localized: "semanticMap.export.caveat.scoped %lld",

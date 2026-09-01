@@ -74,7 +74,10 @@ ffmpeg -framerate 12 -i frame-%04d.png -pix_fmt yuv420p map.mp4
 
 ### What running it found that reading it did not
 
-**The sequence opens in 1620, and its first six frames are a lie about chronology.**
+**FIXED 2026-09-01 by ordering on publication date instead** (see below). The finding, and why the
+ordering changed:
+
+**The sequence opened in 1620, and its first six frames were a lie about chronology.**
 
 | Frame | coverage_start | Volume |
 |---|---|---|
@@ -90,15 +93,15 @@ papers — so three volumes published in the 1870s–1900s carry documents from 
 watching "the published record accumulate chronologically" reads the opening as *the record begins
 in 1620*.** It does not; the series begins in 1861.
 
-This is a §5-class problem — a caption that a promotional clip would make false — and it is **not**
-a defect in the harness: ordering by earliest coverage is the honest thing for the harness to do.
-It is a captioning obligation for anything assembled from these frames. Three options, none of
-them requiring code:
+**Resolved by changing the order, not by captioning around it.** The sequence now sorts on
+`publicationDate`, and the harness's own grain sentence turns out to have been describing that all
+along — *"every document in the volumes **published** so far"*. Prose and sort had disagreed, and
+the prose was right.
 
-1. **Caption it.** *"Ordered by each volume's earliest document; three early volumes print
-   historical enclosures, so the sequence opens before 1800."* Truthful, and mildly interesting.
-2. **Start at frame 6.** The clip then opens in 1811 and no caption is owed. Cheapest.
-3. **Say nothing and open on 1620.** Not available — it is the failure §5 exists to prevent.
+Measured after the change: frame 0 is `frus1861`, published 1861, and the run ends at 2025. A frame
+now means *this much of the record had been released*, which is a claim the map can actually
+support; coverage order asked *this much of the past had been lived through*, which it cannot,
+because a document lands where its language puts it and not where its date does.
 
 **The `provenance.txt` defects are confirmed, and both are literals in the test target.** The
 sidecar as written today says *"Only the **0** volume(s) indexed on this device can be opened from
@@ -251,14 +254,21 @@ That is the simulator app-host wedge, and **this runbook can cause it**: §7 tel
 `simctl launch` the app on a device, and §1 then runs `xcodebuild test` on the same one. Launching
 and shutting a device around a test host is enough to leave it in that state.
 
-**Retry once before doing anything destructive — it is frequently transient.** Measured on
-2026-09-01: a run failed this way, and the *same command* on the *same device* succeeded minutes
-later with no intervention at all. Back-to-back `xcodebuild test` runs against one simulator seem
-to be the trigger, so leave a gap rather than firing the next one immediately.
+**Retry once first — it is sometimes transient.** A run failed this way and the *same command* on
+the *same device* succeeded minutes later with nothing done to it.
 
-**If it repeats, erase.** A shutdown/boot pair does not clear a genuinely wedged device — recorded
-elsewhere in this repo, and consistent with what was seen here: all three iPhone 17 simulators were
-already shut down while the wedge was live.
+**If it repeats, ERASE. That is the only thing measured to work.** Over a dozen runs on 2026-09-01:
+
+| Attempted | Result |
+|---|---|
+| Retry immediately | failed again |
+| `simctl shutdown` | no effect — the devices were already shut down while the wedge was live |
+| `killall -9 com.apple.CoreSimulator.CoreSimulatorService` | **no effect**, though it is the usual advice |
+| `simctl erase <device>` | **cured it, three times out of three** |
+
+The erase does not have to be the same device that failed, but it has to be the device the next run
+targets. Expect to need it roughly once per back-to-back pair: erase, run, and if you are firing a
+second run straight after, erase again.
 
 ```bash
 xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl erase "$UDID"

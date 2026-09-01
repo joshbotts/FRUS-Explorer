@@ -207,6 +207,13 @@ final class SemanticMapModel {
     /// what makes the labels follow the map instead of sitting where they were when it loaded.
     private(set) var camera = SemanticMapCamera()
 
+    /// The lens the points are currently coloured by.
+    ///
+    /// Recorded because an EXPORT has to name it and could not otherwise ask. The frame-sequence
+    /// harness used to hardcode `.cluster` into its provenance sidecar: correct only for as long as
+    /// nothing rendered a sequence on another lens, and silently wrong the moment something did.
+    private(set) var appliedLens: SemanticMapLens = .cluster
+
     /// The vector index, for the volume row ranges every lens but `cluster` fills.
     private var index: SemanticVectorIndex?
     /// Whether the points have been uploaded.
@@ -1057,6 +1064,7 @@ final class SemanticMapModel {
             renderer.setPalette(SemanticMapColouring.palette(for: lens))
             renderer.setColourIndices(colours)
         }
+        appliedLens = lens
         guard let duration = lensDipDuration else { return recolour() }
         dip(over: duration, at: recolour)
     }
