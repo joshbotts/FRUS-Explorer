@@ -569,9 +569,12 @@ enum FRUSTheme {
     static let headnotePurpleBorder = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA,
                                                      lightOpacity: 0.30, darkOpacity: 0.42)
 
-    // MARK: Chrome
+    // MARK: - Cloud surfaces — backdrop, splash, indexing strip, pending backdrop, semantic map
 
-    // MARK: - Onboarding cloud backdrop (O-2)
+    // These constants were written for the onboarding backdrop (O-2) and the header still said so
+    // while they served five surfaces across four host features in three directories. The dangling
+    // `// MARK: Chrome` above it had no body at all — renaming one and leaving the other would have
+    // left a second wrong header behind the corrected one.
 
     /// How long each lens holds before the backdrop crossfades to the next.
     ///
@@ -618,7 +621,20 @@ enum FRUSTheme {
     /// Crossfade timings, in seconds (hand-off §"Lens cycle").
     static let cloudFadeOutDuration: Double = 0.95
     /// Duration of the incoming words' scale/position settle.
+    ///
+    /// **The app's one figure for "this surface is changing what it is showing you."** Shared by
+    /// both cloud renderers by explicit design, and by the semantic map's lens dip since the
+    /// visual-marketing pass — see ``semanticLensDipDuration``, which is an alias and not a second
+    /// number. Do not introduce another.
     static let cloudTransformDuration: Double = 1.15
+
+    /// The semantic map's lens dip, in seconds.
+    ///
+    /// An ALIAS for ``cloudTransformDuration``, so a `Semantic/` file can name it without reading
+    /// as a borrow from the onboarding backdrop, and so the two can never drift into two figures
+    /// for one idea. A lens swap is exactly what that constant means: the surface is changing what
+    /// it is showing you, while showing you the same documents.
+    static var semanticLensDipDuration: Double { cloudTransformDuration }
     /// Per-word delay multiplier for outgoing words.
     static let cloudStaggerOut: Double = 0.014
     /// Per-word delay multiplier for incoming words.

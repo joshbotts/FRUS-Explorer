@@ -151,9 +151,16 @@ it, and the first is not the fix the review proposed:
   body re-evaluation and Canvas re-composite producing a byte-identical frame, on a
   `.cloudKitImport` splash that is by definition a main-thread-contended wait. Match the drift
   canvas's shape or leave it; do not half-apply the rule.
-- **`WordCloudView.swift:97` declares `@Environment(\.accessibilityReduceMotion)` and never uses
-  it** — the only occurrence in that 2,024-line file. A dead read in the app's flagship word cloud
-  is a larger inconsistency than the splash shimmer. One-line deletion or two-line implementation.
+  **RESOLVED 2026-08-31 as LEAVE IT, with the reason written at the code.** The two diverge for a
+  cause: the drift canvas slows rather than pauses because it still has something to say — it keeps
+  cycling lenses — while the shimmer's phase is substituted with a constant, so every frame after
+  the first is byte-identical. Slowing its schedule would buy a re-composite per tick to produce an
+  indistinguishable frame. The value is pinned and no transition remains to simplify.
+- ~~**`WordCloudView.swift:97` declares `@Environment(\.accessibilityReduceMotion)` and never uses
+  it**~~ **DELETED 2026-08-31.** The deletion arm, because there was nothing to implement: that view
+  has no motion of its own — the drift lives in the backdrop, which reads the setting itself — and
+  adding an animation to its lens picker purely to justify an environment read would be inventing
+  scope to keep a variable.
 - **State the Reduce Transparency behaviour rather than implying one**, given a dark full-bleed
   field with dots at alpha 0.72 — including "no change, and why," if that is the answer. And note
   what is missing beside it: **`accessibilityDifferentiateWithoutColor` appears nowhere under
@@ -527,11 +534,27 @@ ahead of the capture sessions. Old numbers in brackets.)*
 5. **Ship the publication-lag plate**, then Plate A under §4.2's four conditions. Plate A rides the
    *fresh-install* device (State A), not Gate B — and it already has a scheduled capture sitting.
 6. **Build the three device states** and confirm State A still shows the splash before shooting.
-7. *(was 10)* **Plan §3.2's M-1 + M-2 as one change (M).** The accessibility contract ships with the
-   motion.
-8. *(was part of 12)* **Plan §3.2's M-3, the lens dip (M).** See its Gap 4 scheduling note — Gap 4 is
-   step 2, so either pull the shared assertion forward or accept the gap deliberately.
-9. *(was part of 12)* **Plan §3.2's M-5 alone — seed the splash lens, never randomise (one line).**
+7. ~~*(was 10)* **Plan §3.2's M-1 + M-2 as one change (M).**~~ **SHIPPED 2026-08-31**, PR #1158.
+   **Constraint 3's premise is FALSE and must not be quoted forward**: `setScope` rebuilds the scope
+   mask and drops the selection, and never touches the camera — there is no reveal-versus-`applyScope`
+   race. The real race is with the writes that DO move it (`frameAll`, pan, zoom), and each now
+   cancels a transit in flight. Constraints 1 and 2 were exact, and one shape satisfies both: the
+   tween drives BOTH cameras through a single `applyCamera`, so `model.camera == renderer.camera`
+   holds mid-flight — stronger than what shipped — while `cameraTransitDuration` defaults to `nil`,
+   which keeps the synchronous contract every existing test asserts, IS the Reduce Motion path, and
+   needed no test edited.
+8. ~~*(was part of 12)* **Plan §3.2's M-3, the lens dip (M).**~~ **SHIPPED 2026-08-31**, PR #1158.
+   The Gap 4 scheduling conflict is moot — Gap 4 shipped at step 2 and this adds its own assertion
+   now, the second of the two options the note offered. `FRUSTheme.semanticLensDipDuration` is an
+   ALIAS for `cloudTransformDuration`, not a second figure; the stale
+   `// MARK: - Onboarding cloud backdrop (O-2)` and the bodyless `// MARK: Chrome` above it are
+   folded into one correct header.
+9. ~~*(was part of 12)* **Plan §3.2's M-5 alone — seed the splash lens, never randomise.**~~
+   **SHIPPED 2026-08-31**, PR #1158 — **not one line, because the mechanism is not what the row
+   assumed.** `lensIndex` is seeded 0, but the cadence driver assigns the ABSOLUTE phase integer at
+   the first boundary it crosses, so a seed alone would be overwritten within 4.2 s. A seeded surface
+   now advances RELATIVE to the first phase it saw: the start is pinned and the cycle survives.
+   Unseeded surfaces keep the absolute phase byte for byte. Original text:
    It moves ahead of capture because the splash is the App Preview's opening frame *and* a store
    screenshot: capturing before seeding is capturing a beat that cannot be reproduced. **M-4 does
    not move with it** — it is `M in risk`, enables a renderer, and needs an on-device composition

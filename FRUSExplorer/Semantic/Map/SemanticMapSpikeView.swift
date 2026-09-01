@@ -460,10 +460,7 @@ final class SemanticMapModel {
         // screen — the question a reveal answers is "what is this document *near*", and a camera
         // pinned to the point alone would answer "where is this document", which the selection
         // marker already does.
-        // The RENDERER first, then the mirror — the same order `pan` and `zoom` use. Writing the
-        // mirror alone moves the labels and the marker while the points stay put.
-        renderer?.focus(on: position, halfExtent: Self.revealHalfExtent)
-        if let renderer { camera = renderer.camera }
+        moveCamera(to: SemanticMapCamera(centre: position, halfExtent: Self.revealHalfExtent))
         return .revealed
     }
 
@@ -539,9 +536,7 @@ final class SemanticMapModel {
         selection = nil
         selectedRegion = region
         let position = SIMD2(Float(region.centreX), Float(region.centreY))
-        // The RENDERER first, then the mirror — the same order `pan`, `zoom` and `reveal` use.
-        renderer?.focus(on: position, halfExtent: Self.regionFocusHalfExtent)
-        if let renderer { camera = renderer.camera }
+        moveCamera(to: SemanticMapCamera(centre: position, halfExtent: Self.regionFocusHalfExtent))
         return .revealed
     }
 
@@ -941,10 +936,78 @@ final class SemanticMapModel {
         return points
     }
 
+    // MARK: - Camera moves (visual-marketing plan §3.2, M-1)
+
+    /// How long a focus takes to travel. **`nil` lands instantly, and that is three things at
+    /// once**: the default, so a model built without a view — every test in this suite — keeps the
+    /// synchronous contract it asserts; the Reduce Motion path, which is simply today's shipped
+    /// behaviour; and the fallback whenever no host has opted in.
+    ///
+    /// Set by `SemanticMapSpikeView` from the environment. See ``moveCamera(to:)``.
+    var cameraTransitDuration: Duration?
+
+    /// The in-flight transit, so a second move cancels the first rather than fighting it.
+    private var transitTask: Task<Void, Never>?
+
+    /// Moves the camera to `target`, instantly or over ``cameraTransitDuration``.
+    ///
+    /// **The mirror is maintained at every step, not just at the ends.** `revealKeepsCamerasInStep`
+    /// asserts `model.camera == renderer.camera`, and the plan warned that the obvious shape — set
+    /// the target synchronously, then animate toward it — fails that assertion by construction,
+    /// because the model's camera becomes the destination while the renderer's is mid-tween. So the
+    /// tween drives BOTH through `applyCamera`, which writes the renderer and mirrors it. The
+    /// invariant holds mid-flight, which is stronger than what shipped, not weaker.
+    ///
+    /// **A camera write is exactly one frame.** The renderer is `isPaused = true` with
+    /// `enableSetNeedsDisplay`, and `camera` carries `didSet { setNeedsRedraw() }`, so a transit is
+    /// N dirty marks and costs nothing when idle. That property is why this is affordable on a
+    /// 314,483-point map at all.
+    private func moveCamera(to target: SemanticMapCamera) {
+        transitTask?.cancel()
+        transitTask = nil
+        guard let duration = cameraTransitDuration else { return applyCamera(target) }
+        let transit = SemanticMapCameraTransit(from: camera, to: target)
+        guard transit.isWorthAnimating, renderer != nil else { return applyCamera(target) }
+
+        let steps = max(1, Int(duration / Self.transitFrame))
+        transitTask = Task { @MainActor [weak self] in
+            for step in 1...steps {
+                try? await Task.sleep(for: Self.transitFrame)
+                guard !Task.isCancelled, let self else { return }
+                self.applyCamera(transit.camera(at: Double(step) / Double(steps)))
+            }
+        }
+    }
+
+    /// One frame of a transit — 60 Hz, so a 0.6 s move is ~36 dirty marks.
+    private static let transitFrame: Duration = .milliseconds(16)
+
+    /// Writes the camera to the renderer and mirrors it, in that order.
+    ///
+    /// The RENDERER first, then the mirror — the order `pan` and `zoom` use. Writing the mirror
+    /// alone moves the labels and the marker while the points stay put.
+    private func applyCamera(_ target: SemanticMapCamera) {
+        renderer?.focus(on: target.centre, halfExtent: target.halfExtent)
+        if let renderer { camera = renderer.camera }
+    }
+
+    /// Stops any transit in flight.
+    ///
+    /// Every other camera write calls this first. The plan named the race as a reveal arriving
+    /// before `applyScope`; **that premise is false of the shipped code** — `setScope` rebuilds the
+    /// scope mask and drops the selection, and never touches the camera. The real race is with the
+    /// writes that DO move it: `frameAll`, a pan and a zoom. A tween still running through a
+    /// reader's own gesture would drag the map out from under their finger.
+    private func cancelTransit() {
+        transitTask?.cancel()
+        transitTask = nil
+    }
+
     /// Pans the camera by a gesture translation in points.
     /// - Parameter translation: The delta since the last change.
     func pan(by translation: CGSize) {
         guard let renderer else { return }
+        cancelTransit()
         renderer.pan(by: translation)
         camera = renderer.camera
     }
@@ -953,6 +1016,7 @@ final class SemanticMapModel {
     /// - Parameter factor: >1 magnifies.
     func zoom(by factor: Float) {
         guard let renderer else { return }
+        cancelTransit()
         renderer.zoom(by: factor)
         camera = renderer.camera
     }
@@ -963,6 +1027,7 @@ final class SemanticMapModel {
     /// plane. Framing the wrong one leaves the reader staring at a corner of nothing.
     func frameAll() {
         guard let renderer else { return }
+        cancelTransit()
         let extent = slice == nil
             ? Float(BundledSemanticMap.vectors?.gridExtent ?? SemanticAxis.sliceExtent)
             : Float(SemanticAxis.sliceExtent)
@@ -988,9 +1053,64 @@ final class SemanticMapModel {
             for: lens, map: map, index: index,
             eraForVolume: eraForVolume, isDownloaded: isDownloaded,
             provenanceForVolume: provenanceForVolume)
-        renderer.setPalette(SemanticMapColouring.palette(for: lens))
-        renderer.setColourIndices(colours)
+        let recolour = {
+            renderer.setPalette(SemanticMapColouring.palette(for: lens))
+            renderer.setColourIndices(colours)
+        }
+        guard let duration = lensDipDuration else { return recolour() }
+        dip(over: duration, at: recolour)
     }
+
+    // MARK: - Lens dip (visual-marketing plan §3.2, M-3)
+
+    /// How long a lens swap dips, or `nil` to swap instantly.
+    ///
+    /// Same shape and same three reasons as ``cameraTransitDuration``: the default keeps every
+    /// existing test's synchronous contract, it is the Reduce Motion path, and it is the fallback
+    /// when no host opts in.
+    var lensDipDuration: Duration?
+
+    /// The in-flight dip.
+    private var dipTask: Task<Void, Never>?
+
+    /// Fades the point layer down, recolours at the bottom, and fades back up.
+    ///
+    /// **A dip, not a cross-dissolve, and that is forced by the artifact.** `colourIndex` means a
+    /// different thing under each lens — region id here, era there — so interpolating between two
+    /// palettes produces colours that belong to neither, and a true dissolve needs two draws of
+    /// 314,483 points. Fading through the floor is the honest form: it says *the colouring is
+    /// changing* without asserting an intermediate colouring that means nothing.
+    ///
+    /// The swap happens at the BOTTOM of the dip, so the reader never sees the two colourings at
+    /// once. `setColourIndices` leaves the flags byte untouched, so a dip composes correctly with a
+    /// live scope — the ghosted out-of-scope points stay ghosted throughout.
+    private func dip(over duration: Duration, at recolour: @escaping () -> Void) {
+        dipTask?.cancel()
+        guard let renderer else { return recolour() }
+        let half = duration / 2
+        let steps = max(1, Int(half / Self.transitFrame))
+        dipTask = Task { @MainActor [weak self] in
+            for step in 1...steps {
+                try? await Task.sleep(for: Self.transitFrame)
+                guard !Task.isCancelled, self != nil else { return }
+                renderer.layerAlpha = Self.dipFloor
+                    + (1 - Self.dipFloor) * Float(1 - Double(step) / Double(steps))
+            }
+            guard !Task.isCancelled else { renderer.layerAlpha = 1; return }
+            recolour()
+            for step in 1...steps {
+                try? await Task.sleep(for: Self.transitFrame)
+                guard !Task.isCancelled, self != nil else { renderer.layerAlpha = 1; return }
+                renderer.layerAlpha = Self.dipFloor
+                    + (1 - Self.dipFloor) * Float(Double(step) / Double(steps))
+            }
+            renderer.layerAlpha = 1
+        }
+    }
+
+    /// How far down the dip goes. Not to zero: a map that blanks entirely reads as a failure, and
+    /// the point field's shape is the thing that reassures the reader nothing else moved.
+    static let dipFloor: Float = 0.25
 
     /// Turns an unavailability into a sentence a reader can act on.
     /// - Parameter reason: Why the map is unavailable.
@@ -1030,6 +1150,26 @@ final class SemanticMapModel {
 ///         the map failed to appear at all
 struct SemanticMapSpikeView: View {
 
+    /// Hands the model the motion contract — one place, both effects.
+    ///
+    /// Under Reduce Motion both become `nil`, which is not a special path but the behaviour that
+    /// shipped for this surface's whole life: the camera lands, the lens swaps. Nothing is removed
+    /// from what the reader can see or do; only the journey between two identical states goes.
+    private func applyMotionContract() {
+        model.cameraTransitDuration = reduceMotion ? nil : Self.cameraTransit
+        model.lensDipDuration = reduceMotion
+            ? nil
+            : .milliseconds(Int(FRUSTheme.semanticLensDipDuration * 1000))
+    }
+
+    /// How long a region focus takes to travel, when motion is allowed.
+    ///
+    /// Long enough to read as a move rather than a cut, short enough that a reader who pressed
+    /// "See on the semantic map" is not waiting for the map. Not `cloudTransformDuration`: that
+    /// constant means "this surface is changing what it is showing you", and a camera transit
+    /// changes nothing about what is shown — the same documents, from a nearer position.
+    static let cameraTransit: Duration = .milliseconds(600)
+
     /// The app state, for the volume metadata every lens except `cluster` is computed from.
     let appState: AppState
 
@@ -1048,6 +1188,32 @@ struct SemanticMapSpikeView: View {
     @State private var surfaceSize = CGSize.zero
     /// Whether a drag draws a lasso instead of panning.
     @State private var isLassoing = false
+    // MARK: - The motion contract (visual-marketing plan §3.2, M-2)
+    //
+    // Until this, a grep across `FRUSExplorer/Semantic/` returned ZERO references to either of
+    // these, while eight other files read them. **The contract, in the words the drift canvas
+    // already uses: pin the VALUE, not the schedule; simplify the transition, never remove it.**
+    //
+    // For this surface that resolves unusually cheaply, because the map is `isPaused = true` and
+    // has no ambient motion to slow down. Its only motion is the camera transit M-1 adds, and the
+    // Reduce Motion path is therefore the behaviour that shipped for the map's whole life: the
+    // camera lands instantly. The destination, the labels and the selection are identical either
+    // way — only the journey is removed, which is exactly "simplify the transition" for a
+    // transition whose simplest form is arrival.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    // **Reduce Transparency: no change, and the reason is worth stating rather than implying.**
+    // The setting asks for opaque substitutes where a blur or a translucency would otherwise let
+    // background through. This map has neither: it is a full-bleed opaque field cleared to a solid
+    // colour, and its points' alpha is a DATA channel — the ghosting that marks a document as
+    // outside the current scope. Raising those to opacity would not reduce transparency, it would
+    // delete the scope's only visual encoding and assert that every document is in scope. So the
+    // honest response is to leave it alone, and to say so where the next reader looks.
+    //
+    // `accessibilityDifferentiateWithoutColor` is a REAL gap here and is deliberately not closed in
+    // this change: the cluster lens is an even hue sweep and the provenance lens a ten-hue legend,
+    // so colour is load-bearing on a surface where `WordCloudView` honours the setting on far less.
+    // Closing it needs a second channel (shape, or a labelled sub-selection), which is a design
+    // question and not a contract to state. Recorded in the plan rather than half-answered here.
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -1316,6 +1482,10 @@ struct SemanticMapSpikeView: View {
             DocumentView(entry: entry, onNavigateToDocument: { next, _ in openedDocument = next })
         }
         #endif
+        // Set before `prepare`, so the very first focus a deferred request performs already obeys
+        // it, and re-applied on change so toggling the setting takes effect without a relaunch.
+        .onAppear { applyMotionContract() }
+        .onChange(of: reduceMotion) { _, _ in applyMotionContract() }
         .task {
             primeProvenanceIfNeeded()
             await model.prepare(lens: lens, eraForVolume: eraForVolume,

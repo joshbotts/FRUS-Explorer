@@ -51,7 +51,12 @@ struct LaunchSplashView: View {
                     scope: .corpus,
                     dim: FRUSTheme.cloudDimSplash,
                     exclusionZones: [identityZone(in: proxy.size)],
-                    showsChip: true
+                    showsChip: true,
+                    // SEEDED, never randomised (visual-marketing §3.2, M-5). This surface is the
+                    // App Preview's opening frame, a store screenshot and the README hero at once;
+                    // a lens decided by the wall clock makes the beat that most needs reproducing
+                    // the one that cannot be.
+                    lensSeed: 0
                 )
                 .ignoresSafeArea()
 
@@ -94,6 +99,20 @@ struct LaunchSplashView: View {
 
     /// A determinate-looking bar for an indeterminate wait. Honest enough: it says "working",
     /// not "this far along", and it stops moving under Reduce Motion.
+    ///
+    /// ## Why this pauses where `WordCloudDriftCanvas` slows, which looks inconsistent and is not
+    ///
+    /// The contract is *pin the value, not the schedule; simplify the transition, never remove it*
+    /// — and the drift canvas follows it by slowing to 6 Hz rather than pausing, because **it still
+    /// has something to say**: it keeps cycling lenses under Reduce Motion, and a paused schedule
+    /// would pin one lens forever and take three quarters of the vocabulary away.
+    ///
+    /// This bar has nothing left to say. Under Reduce Motion its phase is substituted with a
+    /// constant (`0.5`, below), so every frame after the first is byte-identical. Slowing the
+    /// schedule instead of pausing it would buy a body re-evaluation and a re-composite per tick to
+    /// produce a frame nobody can distinguish — on a `.cloudKitImport` splash that is, by
+    /// definition, a main-thread-contended wait. The value is pinned; there is no transition left
+    /// to simplify; so the schedule stops. That is the rule applied, not evaded.
     private var shimmerBar: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
             let phase = reduceMotion
