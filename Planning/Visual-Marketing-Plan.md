@@ -31,8 +31,8 @@ rather than procedural**. That is the stronger design. All four documented traps
 
 | # | Gap | Evidence | Severity |
 |---|---|---|---|
-| 1 | **The caption band carries no caveats and no source attribution.** `AnalyticsProvenance.captionLines` returns exactly `[figureTitle, facts]` (`AnalyticsProvenance.swift:169-176`); `extraCaveats`, `corpusCaveat` and `corpusAttribution` are appended **only** in `csvPreambleLines` (`:180`, `:213`). Every plate credits "FRUS Explorer 0.2" and **not** the Office of the Historian. | Blocks publication |
-| 2 | **The plate prints a sentence a standalone PNG makes false.** `AnalyticsFigureExport.swift:79-80` unconditionally renders *"Full method, caveats, and the underlying numbers accompany this figure in its CSV export."* Publish the image alone and it does not merely omit its caveats — it asserts they travelled with it. | Blocks publication |
+| ~~1~~ | **FIXED 2026-08-31 (GATE C).** ~~The caption band carries no caveats and no source attribution.~~ `AnalyticsProvenance.captionLines` returns exactly `[figureTitle, facts]` (`AnalyticsProvenance.swift:169-176`); `extraCaveats`, `corpusCaveat` and `corpusAttribution` are appended **only** in `csvPreambleLines` (`:180`, `:213`). Every plate credits "FRUS Explorer 0.2" and **not** the Office of the Historian. | Blocks publication |
+| ~~2~~ | **FIXED 2026-08-31 (GATE C).** ~~The plate prints a sentence a standalone PNG makes false.~~ `AnalyticsFigureExport.swift:79-80` unconditionally renders *"Full method, caveats, and the underlying numbers accompany this figure in its CSV export."* Publish the image alone and it does not merely omit its caveats — it asserts they travelled with it. | Blocks publication |
 | 3 | **The map's mandatory lens caveat reaches neither export half.** `SemanticMapLens.swift:100` carries *"a plurality, not a majority, for 73 of 522 volumes"*; its only consumer is the on-screen legend (`SemanticMapSpikeView.swift:2990`). `SemanticMapExport.caveats` takes a lens **label**, not a lens. | Blocks Provenance-lens publication |
 | 4 | **The plate is washed toward white and its brightest dots clamp.** `sourceAlphaBlendFactor = .sourceAlpha` (`SemanticMapRenderer.swift:377`), not `.one`. Readback alpha lands ~0.79–0.84 while RGB holds a full over-composite against the dark clear colour — and the image is *declared* premultiplied, so compositing over `AnalyticsFigureCanvas`'s forced white clamps bright dots to pure white rather than lightening uniformly. | Print defect (S) |
 | 5 | **The plate cannot state what was in frame.** The export builds uniforms from its own 1144:900 ratio, so the exported field of view differs from a wide Mac window's, and the label layer re-runs its spacing rule against the export rectangle — the figure can name regions the reader never saw named. The caveat list states no camera centre, no half-extent, no aspect. Readback is untagged `CGColorSpaceCreateDeviceRGB` (`:730`, `:744`). | Methods gap (S–M) |
@@ -436,14 +436,37 @@ first sitting:
   any encoder-carrying build; **TestFlight is explicitly not gated**). Decide the privacy nutrition
   label — **no `PrivacyInfo.xcprivacy` exists anywhere in the repo**. Neither is visual; both are
   hard blockers that surface the week you planned to submit.
-- **GATE B — start the full 552-volume download and index now.** ~317,000 documents; the longest
-  pole. Every store screenshot, Pass B, and every word-cloud or term-frequency plate depends on it.
-- **GATE C — fix the caption band. Size L, not M.** It is the funnel for **twelve** plates; it needs
+- ~~**GATE B — start the full 552-volume download and index now.**~~ **ALREADY SATISFIED, verified
+  2026-08-31.** The author's own Mac carries **552 volumes / 316,839 documents** — the whole manifest,
+  every volume. The longest pole in the plan was already finished when the plan was written; nobody
+  had looked. Steps 5 and 10 and every corpus-bearing store screenshot are unblocked **now**.
+- ~~**GATE C — fix the caption band.**~~ **SHIPPED 2026-08-31**, PR #1154. See the note below for
+  what the sizing argument got wrong. Original text: **Size L, not M.** It is the funnel for **twelve** plates; it needs
   a **per-provenance-builder** caveat designation across five builders (the map's caveats are not
   Plate A's — Plate A needs its dating rule and its Other/Unclassified sentence); it adds
   `String(localized:)` strings the audit suite gates; and the "~60 pt on a 900 pt plate" budget is
   the *map's* geometry — the Series plates default to `chartHeight: 300`, where 60 pt is a fifth of
   the chart. Reword the false CSV sentence in the same change. **Highest-leverage item in the plan.**
+
+  **What GATE C found, and two of this plan's premises did not survive it.**
+
+  1. **The band does not squeeze the chart; the plate grows.** `AnalyticsFigureExporter.render`
+     proposes `ProposedViewSize(width:height: nil)`, so the canvas sizes to fit and the chart keeps
+     its `chartHeight` exactly. **Measured**: full disclosure costs **+152 px at 2× = +76 pt**, and
+     the same +76 pt whether the chart is 240 pt or 900 pt. A 240 pt Series plate goes 842 → 994 px;
+     the map plate 2162 → 2314 px. So the real question was never "does the caveat block eat a fifth
+     of the chart" — it is "what share of the image is method text", which is 18% on the smallest
+     plate and 7% on the map. For a *research* figure that is correct rather than excessive.
+  2. **"Five builders" undercounts by a factor of three.** There are **14 `AnalyticsProvenance(`
+     construction sites across 7 files**. The fix therefore did not designate caveats per builder at
+     all: `plateCaveats` defaults to `nil`, which prints **everything the CSV prints**, so no builder
+     can silently under-disclose and none had to be edited. Trimming is available, deliberate, and
+     structurally safe — a designation FILTERS `allCaveats`, so a trim can never invent a
+     qualification the method block does not make, and `corpusCaveat` survives every trim.
+
+  Also confirmed exactly as written: **twelve plates** funnel through the canvas, and the Series
+  dashboards' `figureHeight` default is `300` — though every real call site passes 240–280, so the
+  proportion is worse than the plan's own figure, not better.
 
 Then, in order. *(Re-sequenced 2026-08-31, §10: a step 0 added, and the three motion items moved
 ahead of the capture sessions. Old numbers in brackets.)*
@@ -460,7 +483,8 @@ ahead of the capture sessions. Old numbers in brackets.)*
 1. **Route `lens.caption` into both export halves (S)**; fix the two wording imprecisions while there.
 2. **Fix the two print defects (S each)** — blend factor and colour space. Add one assertion apiece;
    **verify on device and on screen**, since the pipeline is shared.
-3. **Draft store copy by lifting (M).** Fix the README build number.
+3. **Draft store copy by lifting (M).** ~~Fix the README build number.~~ **Done 2026-08-31 in
+   PR #1151** — 37 → 44, with a `CodingStandardsAuditTests` gate so it cannot go stale again.
 4. **Film what already exists — one afternoon, zero code.** Run the frame sequence; record the splash,
    the drifting indexing strip, the lens picker, and the camera **teleport**. This settles whether
    the material justifies engineering before a line is written, and the teleport recording is the

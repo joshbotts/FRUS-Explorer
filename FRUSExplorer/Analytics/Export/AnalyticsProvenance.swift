@@ -89,6 +89,19 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var corpusStatement: String?
     /// View-specific caveats appended verbatim (e.g. the cross-reference excluded-references note).
     var extraCaveats: [String] = []
+    /// The caveats an exported *figure* prints on the image, when the full set is too much for a
+    /// plate.
+    ///
+    /// **`nil` means print them all, and that default is the safe direction.** A figure published
+    /// as a standalone PNG carries only what is baked into it: an omitted caveat is a research
+    /// defect, while a tall text band is merely ugly. So a builder that says nothing gets complete
+    /// disclosure, and trimming is a deliberate act by someone who has looked at the figure.
+    ///
+    /// A supplied list can only ever SELECT from what the CSV states, and cannot drop
+    /// `corpusCaveat`. Both are enforced by `plateCaveatLines` rather than by a test, so a plate
+    /// cannot assert a qualification the accompanying method block never made, and cannot drop the
+    /// one caveat every figure here needs.
+    var plateCaveats: [String]? = nil
     /// When the export was produced.
     var exportDate: Date = Date()
 
@@ -103,6 +116,29 @@ struct AnalyticsProvenance: Sendable, Equatable {
     static var appCredit: String {
         String(format: String(localized: "analytics.export.credit %@",
                               defaultValue: "FRUS Explorer %@"), appVersion)
+    }
+
+    /// The publisher credit an exported figure carries on the image.
+    ///
+    /// **The plate must credit the Office of the Historian, not this app.** Until this existed
+    /// every exported figure printed `FRUS Explorer <version>` and nothing else, so a plate
+    /// published in an article credited a reading application for the U.S. government's documentary
+    /// edition. `corpusAttribution` says the same thing at CSV length; this is the one-line form a
+    /// caption can carry.
+    static var plateAttribution: String {
+        String(localized: "analytics.export.plateAttribution",
+               defaultValue: "Foreign Relations of the United States, published by the Office of the Historian, U.S. Department of State. Public domain.")
+    }
+
+    /// Where the numbers are — phrased to stay true of a plate published on its own.
+    ///
+    /// It used to read "Full method, caveats, and the underlying numbers **accompany this figure**
+    /// in its CSV export", printed unconditionally by the canvas. Publish the PNG alone and that
+    /// sentence does not merely omit the caveats — it asserts they travelled with the image. This
+    /// states where the data can be got, which is true however the figure is published.
+    static var plateDataPointer: String {
+        String(localized: "analytics.export.figure.seeData",
+               defaultValue: "The underlying numbers are available as a CSV export from FRUS Explorer, with the full method statement.")
     }
 
     /// The corpus attribution, matching the app's own About/Settings wording.
@@ -175,6 +211,55 @@ struct AnalyticsProvenance: Sendable, Equatable {
         return [figureTitle, facts.joined(separator: " · ")]
     }
 
+    /// Every caveat the CSV method block states, in the order it states them.
+    ///
+    /// One definition, two consumers: `csvPreambleLines` prints these below its header fields and
+    /// `plateCaveatLines` prints them (or a designated subset) on the image, so a plate cannot
+    /// disclose something its CSV does not.
+    var allCaveats: [String] {
+        var lines: [String] = []
+        if appliesDocumentDating || datingRule != nil { lines.append(datingCaveat) }
+        lines.append(corpusCaveat)
+        if let valueModeCaveat { lines.append(valueModeCaveat) }
+        lines.append(contentsOf: extraCaveats)
+        return lines
+    }
+
+    /// The caveats printed on an exported figure — all of them unless a builder designated fewer.
+    ///
+    /// A designation FILTERS `allCaveats`; it is never returned as given. Two consequences, both
+    /// deliberate and both structural rather than merely documented:
+    ///
+    /// - **A plate can only print what its CSV prints.** A designated string the method block does
+    ///   not contain is dropped, not rendered, so no trim can invent a qualification.
+    /// - **`corpusCaveat` survives every trim.** It is the sentence saying which volumes the counts
+    ///   cover, and a figure without it is a figure whose denominator is unstated. A designation
+    ///   that omits it gets it back, first.
+    ///
+    /// Order always follows `allCaveats`, not the designation, so two figures trimmed differently
+    /// still read in the same sequence.
+    var plateCaveatLines: [String] {
+        guard let plateCaveats else { return allCaveats }
+        let designated = Set(plateCaveats)
+        let kept = allCaveats.filter { designated.contains($0) }
+        return kept.contains(corpusCaveat) ? kept : [corpusCaveat] + kept
+    }
+
+    /// Everything an exported plate prints beneath its chart, in order, each tagged with the role
+    /// that decides how it is set.
+    ///
+    /// The canvas is a `ForEach` over this array and nothing else, so a test that drives this
+    /// property is testing what the image actually says rather than a parallel copy of the rule.
+    var plateLines: [AnalyticsPlateLine] {
+        var lines = captionLines.enumerated().map { index, text in
+            AnalyticsPlateLine(role: index == 0 ? .title : .facts, text: text)
+        }
+        lines += plateCaveatLines.map { AnalyticsPlateLine(role: .caveat, text: $0) }
+        lines.append(AnalyticsPlateLine(role: .attribution, text: Self.plateAttribution))
+        lines.append(AnalyticsPlateLine(role: .dataPointer, text: Self.plateDataPointer))
+        return lines
+    }
+
     /// The complete method block as `#`-prefixed CSV comment lines (header included), ready to be
     /// prepended to a table's CSV.
     var csvPreambleLines: [String] {
@@ -205,14 +290,39 @@ struct AnalyticsProvenance: Sendable, Equatable {
         lines.append("\(String(localized: "analytics.export.field.exported", defaultValue: "Exported")): \(Self.appCredit), \(formattedDate)")
         lines.append("")
         lines.append(String(localized: "analytics.export.preamble.method", defaultValue: "Method and caveats"))
-        if appliesDocumentDating || datingRule != nil { lines.append(datingCaveat) }
-        lines.append(corpusCaveat)
-        if let valueModeCaveat { lines.append(valueModeCaveat) }
-        for caveat in extraCaveats { lines.append(caveat) }
+        lines.append(contentsOf: allCaveats)
         lines.append("")
         lines.append(Self.corpusAttribution)
         return lines.map { $0.isEmpty ? "#" : "# \($0)" }
     }
+}
+
+// MARK: - AnalyticsPlateLine
+
+/// One line printed on an exported figure, with the role that decides how it is set.
+///
+/// Version history:
+///   1.0 — Visual-marketing GATE C: the plate's caption band gains caveats and an attribution
+struct AnalyticsPlateLine: Sendable, Equatable {
+
+    /// What a line is for, which is what decides its size and weight.
+    enum Role: Sendable, Equatable {
+        /// The figure title.
+        case title
+        /// The identifying facts — scope, range, credit, date.
+        case facts
+        /// A caveat that qualifies the numbers.
+        case caveat
+        /// The publisher credit.
+        case attribution
+        /// Where the underlying numbers can be got.
+        case dataPointer
+    }
+
+    /// The role.
+    let role: Role
+    /// The text as printed.
+    let text: String
 }
 
 // MARK: - ChartInspectorData + provenance
