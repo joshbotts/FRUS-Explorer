@@ -92,6 +92,23 @@ struct WordCloudBackdropView: View {
     @State private var layouts: [LayoutKey: [PlacedWord]] = [:]
 
     private var lenses: [WordCloudLens] { WordCloudLens.bundledCloudLenses }
+
+    /// How far the drift canvas must shift its wall-clock lens index to agree with the chip.
+    ///
+    /// Zero on an unseeded surface, where `lensIndex` IS the absolute phase and the canvas already
+    /// agrees. On a seeded one it is the gap the seed opened, so both halves of the surface name
+    /// the same lens — which is what makes M-5's reproducible opening frame reproducible in the
+    /// words as well as in the label.
+    /// The arithmetic, since it is short enough to check by eye: the canvas computes
+    /// `absolutePhase + offset`, and the cadence driver sets `lensIndex = seed + absolutePhase −
+    /// phaseOrigin`. Equating the two leaves `offset = seed − phaseOrigin`, with no clock in it.
+    /// It is also right on the first frame, where `absolutePhase == phaseOrigin` and both sides
+    /// are the seed — the window in which `lensIndex` still holds its initial value because the
+    /// driver only fires on a phase CHANGE.
+    private var driftLensOffset: Int {
+        guard let seed = lensSeed, let origin = phaseOrigin else { return 0 }
+        return seed - origin
+    }
     private var lens: WordCloudLens {
         // Floor-modulo: a seeded surface can reach a negative index if the clock moves backwards
         // across a boundary, and `%` in Swift keeps the sign.
@@ -106,8 +123,12 @@ struct WordCloudBackdropView: View {
             ZStack(alignment: .topLeading) {
                 if drift {
                     if let snapshot = driftSnapshot(size: proxy.size) {
+                        // The chip and the words must name one lens. `lensIndex` already carries
+                        // the seed; the canvas derives its own index from the absolute clock, so
+                        // it is handed the difference.
                         WordCloudDriftCanvas(snapshot: snapshot, dim: dim,
-                                             reduceMotion: reduceMotion)
+                                             reduceMotion: reduceMotion,
+                                             lensOffset: driftLensOffset)
                     }
                 } else if let resolved {
                     ForEach(Array(resolved.words.enumerated()), id: \.element.id) { rank, word in

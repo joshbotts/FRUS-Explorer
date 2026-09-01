@@ -50,7 +50,8 @@ struct LaunchSplashView: View {
                 WordCloudBackdropView(
                     scope: .corpus,
                     dim: FRUSTheme.cloudDimSplash,
-                    exclusionZones: [Self.identityZone(in: proxy.size)],
+                    exclusionZones: [Self.identityZone(in: proxy.size,
+                                                      safeAreaInsets: proxy.safeAreaInsets)],
                     showsChip: true,
                     // The particle field, on the one surface composed for it (visual-marketing
                     // plan §3.2, M-4). The static renderer gets no expansion and no bleed, so
@@ -142,10 +143,29 @@ struct LaunchSplashView: View {
         .accessibilityHidden(true)
     }
 
-    static func identityZone(in size: CGSize) -> CGRect {
+    /// The rect the cloud is kept out from under, **in the backdrop's coordinate space**.
+    ///
+    /// ## Two spaces, and the zone has to be in the second one
+    /// This view is an `.overlay` on `ContentView`, so its `GeometryReader` reports the
+    /// SAFE-AREA-inset box, and the identity block is centred in that. The backdrop beneath it
+    /// carries `.ignoresSafeArea()`, so it packs and drifts in the FULL-BLEED box. Handing the
+    /// zone across unchanged puts it off by exactly the leading/top inset — measured at 62 pt
+    /// vertically on an iPhone 17 in portrait, which leaves the shimmer bar and the gap above it
+    /// outside the protected rect, and in landscape leaves the caption's right-hand end outside.
+    ///
+    /// The offset makes the zone name the same rectangle the block occupies on screen. It matters
+    /// more since M-4: before, a word that reached that strip sat still under it; now it drifts.
+    ///
+    /// - Parameters:
+    ///   - size: the safe-area box the identity block is laid out in.
+    ///   - safeAreaInsets: that box's insets, which locate it inside the full-bleed canvas.
+    /// - Returns: the zone in full-bleed coordinates.
+    static func identityZone(in size: CGSize,
+                             safeAreaInsets: EdgeInsets = EdgeInsets()) -> CGRect {
         let width: CGFloat = min(340, size.width - 48)
         let height: CGFloat = 260
-        return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2,
+        return CGRect(x: safeAreaInsets.leading + (size.width - width) / 2,
+                      y: safeAreaInsets.top + (size.height - height) / 2,
                       width: width, height: height)
     }
 

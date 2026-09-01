@@ -9,6 +9,7 @@
 import Testing
 import Foundation
 import CoreGraphics
+import SwiftUI
 @testable import FRUSExplorer
 
 // MARK: - SplashDriftTests
@@ -227,6 +228,94 @@ struct SplashDriftTests {
         }
     }
 
+    // MARK: - The chip and the words must agree
+
+    /// **The splash is the first surface in the app to combine a lens chip with drift, and the two
+    /// halves named different lenses three launches in four.**
+    ///
+    /// The chip reads `WordCloudBackdropView.lensIndex`, which `lensSeed: 0` pins; the canvas
+    /// derived its layer from the absolute wall clock. Nothing caught it: the two existing drift
+    /// surfaces suppress the chip, and the one other chip surface does not drift. It is also
+    /// exactly what M-5 exists to prevent — a splash whose lens is decided by the clock is the one
+    /// beat that cannot be reproduced, and M-4 would have reintroduced it in the words while the
+    /// label went on claiming otherwise.
+    ///
+    /// `offset = seed − phaseOrigin`, so this drives the identity the fix rests on across a whole
+    /// cycle and a phase origin that is not zero.
+    @Test("A seeded surface draws the lens its chip names")
+    func seededCanvasAgreesWithTheChip() {
+        let cadence = FRUSTheme.cloudLensCadence
+        let layers = 4
+        for origin in [0, 1, 2, 3, 7, 1_000_003] {
+            for seed in [0, 2] {
+                let offset = seed - origin
+                for step in 0..<12 {
+                    // An absolute phase `step` holds past the origin.
+                    let absolutePhase = origin + step
+                    let time = (Double(absolutePhase) + 0.5) * cadence
+                    // What the chip would say: the cadence driver's own arithmetic.
+                    let lensIndex = seed + (absolutePhase - origin)
+                    let chip = ((lensIndex % layers) + layers) % layers
+                    let drawn = WordCloudDriftCanvas.cycle(at: time, layerCount: layers,
+                                                           offset: offset).incoming
+                    #expect(drawn == chip,
+                            "origin \(origin) seed \(seed) step \(step): chip \(chip), drawn \(drawn)")
+                }
+            }
+        }
+    }
+
+    /// An unseeded surface is untouched — the two shipping drift surfaces must render exactly as
+    /// they did, so the fix cannot be blamed for a change nobody asked for.
+    @Test("An unseeded surface is byte-identical to the old behaviour")
+    func unseededCycleIsUnchanged() {
+        for step in 0..<20 {
+            let t = Double(step) * 1.7
+            let with = WordCloudDriftCanvas.cycle(at: t, layerCount: 4, offset: 0)
+            let without = WordCloudDriftCanvas.cycle(at: t, layerCount: 4)
+            #expect(with == without)
+        }
+    }
+
+    /// The seed moves which lens a hold shows, never when the hold begins — so the crossfade is
+    /// untouched. A fix that shifted `progress` would make every seeded surface stutter.
+    @Test("The offset does not disturb the crossfade")
+    func offsetLeavesProgressAlone() {
+        for step in 0..<40 {
+            let t = Double(step) * 0.7
+            #expect(WordCloudDriftCanvas.cycle(at: t, layerCount: 4, offset: 3).progress
+                    == WordCloudDriftCanvas.cycle(at: t, layerCount: 4).progress)
+        }
+    }
+
+    // MARK: - Coordinate space
+
+    /// **The zone is computed in one space and consumed in another, and it has to bridge them.**
+    ///
+    /// `LaunchSplashView` is an `.overlay`, so its `GeometryReader` reports the safe-area box and
+    /// centres the identity block there; the backdrop under it carries `.ignoresSafeArea()` and
+    /// packs in the full-bleed box. Passing the zone across unchanged puts it off by the leading
+    /// and top insets — 62 pt vertically on an iPhone 17 in portrait — which leaves the bottom of
+    /// the identity block unprotected while the zone wastes its top on empty status-bar space.
+    @Test("The zone lands on the identity block in the canvas's own space")
+    func zoneIsInTheCanvasCoordinateSpace() {
+        let safeArea = CGSize(width: 393, height: 790)
+        let insets = EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)
+        let zone = LaunchSplashView.identityZone(in: safeArea, safeAreaInsets: insets)
+        // The block is centred in the SAFE-AREA box, which sits `insets.top` down the canvas.
+        #expect(abs(zone.midY - (insets.top + safeArea.height / 2)) < 0.001,
+                "zone midY \(zone.midY) vs block \(insets.top + safeArea.height / 2)")
+        #expect(abs(zone.midX - (insets.leading + safeArea.width / 2)) < 0.001)
+        // Landscape: the insets are horizontal, and the same rule has to carry it.
+        let landscape = CGSize(width: 750, height: 382)
+        let sideInsets = EdgeInsets(top: 0, leading: 62, bottom: 20, trailing: 62)
+        let rotated = LaunchSplashView.identityZone(in: landscape, safeAreaInsets: sideInsets)
+        #expect(abs(rotated.midX - (62 + landscape.width / 2)) < 0.001)
+        // With no insets it is exactly what it always was.
+        let bare = LaunchSplashView.identityZone(in: safeArea)
+        #expect(abs(bare.midY - safeArea.height / 2) < 0.001)
+    }
+
     // MARK: - Wiring
 
     /// The splash actually asks for the particle field.
@@ -255,6 +344,9 @@ struct SplashDriftTests {
             .joined(separator: "\n")
         #expect(call.contains("drift: true"), "the splash stopped drifting:\n\(call)")
         #expect(call.contains("lensSeed: 0"), "M-5's seeded lens was lost")
+        // The zone must be handed across in the canvas's coordinate space, not the overlay's.
+        #expect(call.contains("safeAreaInsets:"),
+                "the exclusion zone lost its safe-area offset:\n\(call)")
     }
 
     // MARK: - Helpers
