@@ -36,10 +36,12 @@ struct SemanticMapFrameSequenceTests {
 
     /// Decodes a minimal manifest entry — through `Codable`, so the fixture cannot drift
     /// from the real decoding path.
-    private func entry(_ id: String, earliest: String?, title: String = "T") throws -> VolumeManifestEntry {
+    private func entry(_ id: String, earliest: String?, published: String? = nil,
+                       title: String = "T") throws -> VolumeManifestEntry {
         let json = """
         {"volumeId":"\(id)","filename":"\(id).xml","subseries":"s","title":"\(title)",
          "dateRange":{"earliest":\(earliest.map { "\"\($0)\"" } ?? "null"),"latest":null},
+         "publicationDate":\(published.map { "\"\($0)\"" } ?? "null"),
          "status":"published","editors":[],"documentCount":1,"sizeBytes":1,"tags":[]}
         """
         return try JSONDecoder().decode(VolumeManifestEntry.self, from: Data(json.utf8))
@@ -61,7 +63,7 @@ struct SemanticMapFrameSequenceTests {
     private func coveredOrder() async -> [VolumeManifestEntry] {
         await BundledSemanticVectors.prepare()
         let entries = ManifestStore().bundledEntries
-        return SemanticMapFrameSequence.chronological(entries) {
+        return SemanticMapFrameSequence.byPublication(entries) {
             BundledSemanticVectors.index?.rows(forVolume: $0) != nil
         }
     }
@@ -69,16 +71,43 @@ struct SemanticMapFrameSequenceTests {
     // MARK: - Ordering
 
     @Test("Frames run in coverage order, id-tiebroken, uncovered volumes dropped")
-    func chronologicalOrdering() throws {
+    func publicationOrdering() throws {
         let entries = [
-            try entry("frus-late", earliest: "1950-01-01"),
-            try entry("frus-b", earliest: "1900-01-01"),
-            try entry("frus-a", earliest: "1900-01-01"),   // ties with -b on date; id breaks it
-            try entry("frus-undated", earliest: nil),      // sorts last, not first
-            try entry("frus-uncovered", earliest: "1861-01-01"),
+            try entry("frus-late", earliest: "1950-01-01", published: "1990"),
+            try entry("frus-b", earliest: "1900-01-01", published: "1930"),
+            try entry("frus-a", earliest: "1900-01-01", published: "1930"),  // ties; id breaks it
+            try entry("frus-unpublished", earliest: "1800-01-01", published: nil), // last, not first
+            try entry("frus-uncovered", earliest: "1861-01-01", published: "1861"),
         ]
-        let ordered = SemanticMapFrameSequence.chronological(entries) { $0 != "frus-uncovered" }
-        #expect(ordered.map(\.volumeId) == ["frus-a", "frus-b", "frus-late", "frus-undated"])
+        let ordered = SemanticMapFrameSequence.byPublication(entries) { $0 != "frus-uncovered" }
+        #expect(ordered.map(\.volumeId) == ["frus-a", "frus-b", "frus-late", "frus-unpublished"])
+    }
+
+    /// **The two orders are not interchangeable, and this is the case that made the difference.**
+    ///
+    /// FRUS prints historical enclosures in arbitration papers, so a volume published in 1872 can
+    /// carry a document from 1620. Ordered by coverage the sequence opened on it, and a viewer read
+    /// that as *the record begins in 1620*. Ordered by publication, frame 0 is the first volume
+    /// actually released.
+    @Test("Coverage order and publication order disagree at the front, on the real manifest")
+    @MainActor
+    func publicationOrderFixesTheOpening() throws {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load")
+
+        let byPublication = SemanticMapFrameSequence.byPublication(entries) { _ in true }
+        let byCoverage = entries.sorted {
+            ($0.dateRange.earliest ?? "9999", $0.volumeId) < ($1.dateRange.earliest ?? "9999", $1.volumeId)
+        }
+
+        // Coverage order opens before 1800 — the defect.
+        let coverageOpening = try #require(byCoverage.first?.dateRange.earliest)
+        #expect(coverageOpening < "1800", "opened at \(coverageOpening)")
+
+        // Publication order opens on the first volume the series actually published.
+        let firstPublished = try #require(byPublication.first?.publicationDate)
+        #expect(firstPublished.hasPrefix("1861"), "opened at \(firstPublished)")
+        #expect(byPublication.first?.volumeId != byCoverage.first?.volumeId)
     }
 
     // MARK: - Sidecars
@@ -88,12 +117,15 @@ struct SemanticMapFrameSequenceTests {
         let records = [SemanticMapFrameSequence.FrameRecord(
             index: 0, volumeID: "frus1861",
             volumeTitle: #"Foreign Relations, 1861, "Part I""#,
-            coverageStart: "1861-03-04", cumulativeVolumes: 1,
+            published: "1861", coverageStart: "1861-03-04", cumulativeVolumes: 1,
             cumulativeDocuments: 312, renderMilliseconds: 12.34)]
         let csv = SemanticMapFrameSequence.framesCSV(records)
         let lines = csv.split(separator: "\n")
-        #expect(lines[0] == "frame,volume_id,volume_title,coverage_start,cumulative_volumes,cumulative_documents,render_ms")
-        #expect(lines[1] == #"0,"frus1861","Foreign Relations, 1861, ""Part I""","1861-03-04",1,312,12.3"#)
+        #expect(lines[0] == "frame,volume_id,volume_title,published,coverage_start,cumulative_volumes,cumulative_documents,render_ms")
+        // The ordering key is a COLUMN, not just an argument: a reader of the film has to be able
+        // to see what the sequence was sorted by without reading the source.
+        #expect(lines[1].contains("\"1861\",\"1861-03-04\""))
+        #expect(lines[1] == #"0,"frus1861","Foreign Relations, 1861, ""Part I""","1861","1861-03-04",1,312,12.3"#)
     }
 
     @Test("provenance.txt leads with the grain sentence and carries the map's methods block")
@@ -236,9 +268,12 @@ struct SemanticMapFrameSequenceTests {
         try SemanticMapFrameSequence.framesCSV(records)
             .write(to: directory.appending(path: "frames.csv"), atomically: true, encoding: .utf8)
         let index = try #require(BundledSemanticMap.index)
+        // The lens the model ACTUALLY applied, and no device-reach clause: nobody opens a
+        // document out of a video, so "only the N volume(s) indexed on this device can be opened
+        // from it" is a sentence about something this artifact cannot do. Both were literals.
         try SemanticMapFrameSequence.provenanceText(
-            index: index, lens: .cluster, frameCount: records.count,
-            indexedVolumeCount: 0)
+            index: index, lens: model.appliedLens, frameCount: records.count,
+            indexedVolumeCount: nil)
             .write(to: directory.appending(path: "provenance.txt"),
                    atomically: true, encoding: .utf8)
 

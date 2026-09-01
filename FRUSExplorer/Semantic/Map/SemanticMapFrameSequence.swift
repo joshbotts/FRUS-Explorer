@@ -78,7 +78,10 @@ enum SemanticMapFrameSequence {
         let volumeID: String
         /// The volume's title, or the closing frame's label.
         let volumeTitle: String
-        /// The volume's coverage start (`dateRange.earliest`), or `""`.
+        /// The volume's publication date — **the key the sequence is ordered by** — or `""`.
+        let published: String
+        /// The volume's coverage start (`dateRange.earliest`), or `""`. Reported beside the
+        /// publication date because the two diverge by decades and a caption needs both.
         let coverageStart: String
         /// Volumes in scope after this frame.
         let cumulativeVolumes: Int
@@ -95,21 +98,42 @@ enum SemanticMapFrameSequence {
 
     // MARK: - Ordering
 
-    /// The frame order: covered volumes ascending by coverage start, volume id as the total
+    /// The frame order: covered volumes ascending by **publication date**, volume id as the total
     /// tiebreak — a deterministic order, testable without a GPU.
+    ///
+    /// ## Publication, not coverage, and the old order was telling a different story
+    ///
+    /// This sorted by `dateRange.earliest` until 2026-09-01. Two reasons it is wrong for a film.
+    ///
+    /// The first is that the sequence's own grain sentence already said otherwise — *"every
+    /// document in the volumes **published** so far"* — so the prose and the sort disagreed, and the
+    /// prose was right. A frame here means *this much of the record had been released*; coverage
+    /// order answers a different question, *this much of the past had been lived through*, and the
+    /// map cannot show that because a volume's documents land where their language puts them, not
+    /// where their date does.
+    ///
+    /// The second was measured. Under coverage order the first six frames spanned **1620 to 1811**
+    /// and every one of them was an 1870s–1900s volume: FRUS prints historical enclosures in
+    /// arbitration papers, so `frus1872p2v5` reaches back to 1620-11-03 and sorted first. A viewer
+    /// reads that opening as *the record begins in 1620*, which is false — the series begins in
+    /// 1861, and under publication order frame 0 is `frus1861`, which is exactly right.
+    ///
+    /// Every one of the 552 bundled volumes carries a `publicationDate`, so the `"9999"` fallback
+    /// is defensive rather than load-bearing; a volume without one sorts last rather than first,
+    /// which is the safe direction for a sequence about release.
     ///
     /// - Parameters:
     ///   - entries: The manifest entries (the published series).
     ///   - isCovered: Whether the map artifact carries rows for a volume; an uncovered
     ///     volume would add a frame identical to its predecessor.
     /// - Returns: The entries that will each get a frame, in order.
-    nonisolated static func chronological(_ entries: [VolumeManifestEntry],
+    nonisolated static func byPublication(_ entries: [VolumeManifestEntry],
                                           isCovered: (String) -> Bool) -> [VolumeManifestEntry] {
         entries
             .filter { isCovered($0.volumeId) }
             .sorted {
-                let l = $0.dateRange.earliest ?? "9999"
-                let r = $1.dateRange.earliest ?? "9999"
+                let l = $0.publicationDate ?? "9999"
+                let r = $1.publicationDate ?? "9999"
                 if l != r { return l < r }
                 return $0.volumeId < $1.volumeId
             }
@@ -159,6 +183,7 @@ enum SemanticMapFrameSequence {
                 index: index,
                 volumeID: entry.volumeId,
                 volumeTitle: entry.title,
+                published: entry.publicationDate ?? "",
                 coverageStart: entry.dateRange.earliest ?? "",
                 cumulativeVolumes: model.scope?.volumeCount ?? cumulative.count,
                 cumulativeDocuments: model.scope?.documentCount ?? 0,
@@ -177,6 +202,7 @@ enum SemanticMapFrameSequence {
                 volumeID: "",
                 volumeTitle: String(localized: "semanticMap.frames.closing",
                                     defaultValue: "Complete series"),
+                published: "",
                 coverageStart: "",
                 cumulativeVolumes: ordered.count,
                 cumulativeDocuments: renderer.uploadedPointCount,
@@ -193,7 +219,7 @@ enum SemanticMapFrameSequence {
     static func provenanceText(index: SemanticMapArtifacts.MapIndex,
                                lens: SemanticMapLens,
                                frameCount: Int,
-                               indexedVolumeCount: Int) -> String {
+                               indexedVolumeCount: Int?) -> String {
         let provenance = SemanticMapExport.provenance(
             index: index, scopeLabel: nil, scopedDocumentCount: nil,
             lens: lens, indexedVolumeCount: indexedVolumeCount,
@@ -202,7 +228,7 @@ enum SemanticMapFrameSequence {
         var lines: [String] = []
         lines.append("# \(animationGrainSentence)")
         lines.append("# " + String(localized: "semanticMap.frames.spec",
-            defaultValue: "\(frameCount.formatted()) frames: one volume added per frame in coverage order, plus a closing unscoped frame. Out-of-scope documents are ghosted, never removed."))
+            defaultValue: "\(frameCount.formatted()) frames: one volume added per frame in PUBLICATION order — the record as it was released, not as it was lived — plus a closing unscoped frame. Out-of-scope documents are ghosted, never removed."))
         lines.append("#")
         lines.append(contentsOf: provenance.csvPreambleLines)
         return lines.joined(separator: "\n") + "\n"
@@ -213,10 +239,11 @@ enum SemanticMapFrameSequence {
         func quote(_ field: String) -> String {
             "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
-        var rows = ["frame,volume_id,volume_title,coverage_start,cumulative_volumes,cumulative_documents,render_ms"]
+        var rows = ["frame,volume_id,volume_title,published,coverage_start,cumulative_volumes,cumulative_documents,render_ms"]
         for r in records {
             rows.append([String(r.index), quote(r.volumeID), quote(r.volumeTitle),
-                         quote(r.coverageStart), String(r.cumulativeVolumes),
+                         quote(r.published), quote(r.coverageStart),
+                         String(r.cumulativeVolumes),
                          String(r.cumulativeDocuments),
                          String(format: "%.1f", r.renderMilliseconds)].joined(separator: ","))
         }
