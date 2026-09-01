@@ -348,6 +348,12 @@ struct SourceProvenanceData: Sendable {
     let totalSourceNotes: Int
     /// The artifact's covered-volume count.
     let volumesCovered: Int
+    /// The bundled artifact's generation date (`yyyy-MM-dd`), empty when no artifact loaded.
+    ///
+    /// Carried so an exported figure can name the artifact it was drawn from. Every number on this
+    /// dashboard comes from one bundled aggregate; two plates made from different generations are
+    /// different figures, and without this they would carry identical captions.
+    let generated: String
     /// The earliest and latest shown decades, or `nil` when none is present.
     let decadeRangeShown: ClosedRange<Int>?
     /// Total notes floored out below `trendStartDecade` (the pre-1900 buckets).
@@ -387,6 +393,7 @@ struct SourceProvenanceData: Sendable {
             notesByDecade = []
             totalSourceNotes = 0
             volumesCovered = 0
+            generated = ""
             decadeRangeShown = nil
             prewarExcludedNoteCount = 0
             shownNoteCount = 0
@@ -410,6 +417,7 @@ struct SourceProvenanceData: Sendable {
         totalSourceNotes = scopedVolumes.map { $0.reduce(0) { $0 + $1.totalNotes } }
             ?? index.totalSourceNotes
         volumesCovered = scopedVolumes.map { $0.count } ?? index.volumesCovered
+        generated = index.generated
 
         // Partition decades at the trend-start floor.
         let shownDecades = decades

@@ -93,6 +93,53 @@ struct AnalyticsProvenanceOverrideTests {
 @Suite("Series analytics — export provenance")
 struct SeriesAnalyticsExportTests {
 
+    // MARK: - Plate A's four conditions (visual-marketing §4.2)
+
+    private func plateA(hidden: [String] = [], generated: String = "2026-08-19")
+        -> AnalyticsProvenance {
+        SeriesAnalyticsExport.provenance(
+            figureTitle: "Where the editors found the documents",
+            axisLabel: "Coverage decade", scopeLabel: nil, yearRange: nil,
+            volumeCount: 522, noteCount: 268_757,
+            hiddenCategories: hidden, generated: generated)
+    }
+
+    /// **Condition 4.** Every number on this dashboard comes from one bundled aggregate, so two
+    /// plates drawn from different generations are different figures. Without the stamp they carry
+    /// identical captions and nothing distinguishes them.
+    @Test("The plate names the artifact generation it was drawn from")
+    func plateNamesItsArtifact() {
+        let text = plateA().plateLines.map(\.text).joined(separator: " ")
+        #expect(text.contains("2026-08-19"))
+        #expect(text.contains("Artifact:"))
+        // Empty is tolerated and omits the line: an absent stamp beats a fabricated one.
+        #expect(!plateA(generated: "").plateLines.map(\.text)
+            .joined(separator: " ").contains("Artifact:"))
+    }
+
+    /// **Condition 2.** Hiding a category re-bases every share, and the natural aesthetic choice —
+    /// the one-tap "Hide Other / Unclassified" — is exactly the one that silently changes every
+    /// number. The disclosure must reach the IMAGE, not only the CSV.
+    @Test("A hidden category is disclosed on the plate, not only in the CSV")
+    func hiddenCategoryReachesThePlate() {
+        let plain = plateA()
+        let filtered = plateA(hidden: ["Other / Unclassified"])
+        let onPlate = filtered.plateLines.filter { $0.role == .caveat }.map(\.text)
+        #expect(onPlate.contains { $0.contains("Re-based") && $0.contains("Other / Unclassified") })
+        #expect(!plain.plateLines.map(\.text).joined().contains("Re-based"),
+                "an unfiltered plate must not claim a re-basing that did not happen")
+    }
+
+    /// **Condition 3.** Under 1900 the plate is a solid "Other / Unclassified" wall, which reads as
+    /// *the editors did not say where these came from* when it means *the parser did not classify
+    /// these*. That sentence was CSV-only until the figure canvas began printing every caveat.
+    @Test("The parser-not-editors sentence reaches the plate")
+    func unclassifiedMeaningReachesThePlate() {
+        let onPlate = plateA().plateLines.filter { $0.role == .caveat }.map(\.text)
+        #expect(onPlate.contains { $0.contains("could not classify") })
+        #expect(onPlate.contains { $0.contains("not a missing note") })
+    }
+
     private var all: [AnalyticsProvenance] {
         [
             SeriesAnalyticsExport.production(
