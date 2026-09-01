@@ -548,10 +548,32 @@ ahead of the capture sessions. Old numbers in brackets.)*
    print documents earlier than 1800 — `frus1872p2v5` reaches **1620** — because FRUS includes
    historical enclosures in arbitration papers. *Published since 1861* is true and checkable;
    *covering 1861 onward* is not, and a store listing has no recompute step.
-4. **Film what already exists — one afternoon, zero code.** Run the frame sequence; record the splash,
-   the drifting indexing strip, the lens picker, and the camera **teleport**. This settles whether
-   the material justifies engineering before a line is written, and the teleport recording is the
-   "before" shot that justifies M-1.
+4. ~~**Film what already exists — one afternoon, zero code.**~~ **THE CODE-DRIVEN HALF IS RUN**,
+   2026-08-31, PR #1161 — `Planning/Capture-Runbook.md`. The filming itself stays the owner's, per
+   §2(b). 553 frames, mean **100.8 ms**, worst 122.8 ms, 392 MB, no gaps — reproducing the
+   2026-08-27 figures (103.8 / 123.9).
+
+   **Running it found what reading it did not: the sequence opens in 1620 and its first six frames
+   misrepresent chronology.** Ordering is by `dateRange.earliest`, and FRUS prints historical
+   enclosures in arbitration papers, so three volumes published in the 1870s–1900s carry pre-1800
+   documents. A clip captioned "the record accumulating chronologically" would be false for its
+   opening. NOT a harness defect — ordering by earliest coverage is the honest thing for it to do —
+   but a captioning obligation, with three options in the runbook (caption it, start at frame 6, or
+   the one that is not available).
+
+   **Both `provenance.txt` defects confirmed in the produced file**: it says *"Only the 0 volume(s)
+   indexed on this device"*, and hard-codes the lens. Step 11 already schedules them.
+
+   **"THE TELEPORT RECORDING IS THE BEFORE SHOT" NO LONGER WORKS AS WRITTEN**, because this step ran
+   after steps 7–9 rather than before them, and the teleport is gone. It is still recordable
+   exactly: **turn on Reduce Motion**, which M-2 made the behaviour that shipped for the map's whole
+   life. One setting toggle on one device is a better before/after than two builds.
+
+   **One departure from "zero code", argued in the runbook §4**: the harness skipped a failed frame
+   with `continue`, which does not thin the sequence but CORRUPTS it — a hole that stops `ffmpeg`
+   plus a closing frame that overwrites a real one. It throws now, which makes step 11's manual
+   pre-flight unnecessary. All 553 frames rendered in this run, so the pre-flight would have passed;
+   that is precisely why it was the wrong guard.
 5. **Ship the publication-lag plate**, then Plate A under §4.2's four conditions. Plate A rides the
    *fresh-install* device (State A), not Gate B — and it already has a scheduled capture sitting.
 6. **Build the three device states** and confirm State A still shows the splash before shooting.
@@ -582,10 +604,12 @@ ahead of the capture sessions. Old numbers in brackets.)*
    review, none of which should gate a capture program.
 10. *(was 7)* **Run the capture sessions.** The shot list stages ~41 rows ≈ **44–48 files**, not the
     31 stale committed PNGs that circulated as a work estimate. Shoot store frames as a separate pass.
-11. *(was 8)* **Finish the film (M, mostly assembly).** **Pre-flight `ls | wc -l == records.count`
+11. *(was 8)* **Finish the film (M, mostly assembly).** ~~**Pre-flight `ls | wc -l == records.count`
     before assembling**: a nil frame is skipped with `continue`, leaving a hole that stops `ffmpeg`,
     and the closing frame's index is `records.count`, which after one skip **overwrites a real
-    frame**. Crop the ~44% dead width and put the grain sentence in the reclaimed margin; generate
+    frame**.~~ **NO LONGER NEEDED, 2026-08-31** — the harness throws on a failed frame (PR #1161),
+    so the corruption this pre-flight guarded against cannot occur. The two `provenance.txt`
+    literals below still stand. Crop the ~44% dead width and put the grain sentence in the reclaimed margin; generate
     subtitles from `framesCSV`, whose fields are already exactly a subtitle track's; fix the
     `provenance.txt` `indexedVolumeCount: 0` and the hardcoded lens label. Not "zero Swift" — those
     two literals are in the test target.
