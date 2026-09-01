@@ -55,6 +55,21 @@ struct CloudSurfaceArbiterTests {
         #expect(CloudSurfaceArbiter.resolve(inputs) == .indexingBackdrop)
     }
 
+    /// **What this proves, and what it does not — read before trusting it.**
+    ///
+    /// It asserts the arbiter's VALUE, not what reaches the screen, and in one state those differ.
+    /// `.indexingBackdrop` is a suppression verdict that this layer does not render: `ContentView`
+    /// reads it as "(c) owns the screen" and withholds the splash, while `MainTabView` mounts the
+    /// drifting strip only when `indexingBatch != nil`. So on a relaunch with a download QUEUED but
+    /// no batch started yet — a fresh library's first volume — the splash is refused and the strip
+    /// is never mounted, and **nothing is on screen while this test passes.**
+    ///
+    /// It is left as it is deliberately. The arbiter's precedence is right and is what this suite
+    /// is for; the gap is that a verdict has no renderer in one window, and closing it is a product
+    /// decision (should that window show a queued-download banner, or the splash?) plus a banner
+    /// state that does not exist — `IndexingQueueBannerView` needs a `batch.latest` there is none
+    /// of. Recorded in `Visual-Marketing-Plan.md` §10 as its own row. Do not read a green tick here
+    /// as evidence that the window renders.
     @Test("Relaunching mid-download shows the indexing backdrop, not a splash")
     func relaunchMidDownloadPrefersIndexing() {
         // The exact state the plan says to verify by hand: start a download, relaunch.

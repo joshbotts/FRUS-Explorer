@@ -65,6 +65,72 @@ struct PendingCloudBackdropTests {
 
     /// Measured against the real 316,839-document index, a rare term returns in 4–47 ms. A
     /// cloud that faded in and out inside that is a flicker.
+    // MARK: - Liveness (visual-marketing step 0)
+
+    /// **The completeness invariant: no two states with different verdicts may share a key.**
+    ///
+    /// This is the test the shipped defect needed and did not have. `shouldShow` was correct all
+    /// along — every rule test above passed while the bug was on screen — because the failure was
+    /// not in the rule but in consulting it once and keeping the answer. `.task(id: isPending)`
+    /// gave the pair (pending, not indexing) and (pending, indexing) the SAME identity, so the
+    /// second never re-ran and a cloud already up kept drifting over the indexing strip.
+    ///
+    /// Exhaustive over the eight reachable states rather than sampled, and it is the reason
+    /// `Liveness` is a named type instead of a private tuple in the view: a field dropped from the
+    /// key fails here, immediately and by name.
+    @Test("Every input that moves the verdict is carried by the task key")
+    func keyIsCompleteOverTheDecision() {
+        let flags = [false, true]
+        var states: [(key: PendingCloudRule.Liveness, verdict: Bool)] = []
+        for pending in flags {
+            for indexing in flags {
+                for ready in flags {
+                    let key = PendingCloudRule.Liveness(
+                        isPending: pending, isIndexing: indexing, isCoreReady: ready)
+                    // What the modifier actually does: pending AND the rule.
+                    let verdict = pending && PendingCloudRule.shouldShow(
+                        isCoreReady: ready, isUITestMode: false, isIndexing: indexing)
+                    states.append((key, verdict))
+                }
+            }
+        }
+        for a in states {
+            for b in states where a.verdict != b.verdict {
+                #expect(a.key != b.key,
+                        "states with different verdicts share a task key: \(a.key) / \(b.key)")
+            }
+        }
+        // The invariant is only meaningful if the verdicts actually differ across the space.
+        #expect(Set(states.map(\.verdict)).count == 2, "the fixture must span both verdicts")
+    }
+
+    /// The exact transition the defect could not see: still waiting, and indexing begins.
+    @Test("Indexing starting mid-wait changes the key, so the cloud is withdrawn")
+    func indexingStartingIsANewKey() {
+        let waiting = PendingCloudRule.Liveness(
+            isPending: true, isIndexing: false, isCoreReady: true)
+        let indexingBegan = PendingCloudRule.Liveness(
+            isPending: true, isIndexing: true, isCoreReady: true)
+        // Under the shipped key — `isPending` alone — these were equal, and that is the bug.
+        #expect(waiting.isPending == indexingBegan.isPending)
+        #expect(waiting != indexingBegan)
+        #expect(PendingCloudRule.shouldShow(isCoreReady: true, isUITestMode: false, isIndexing: false))
+        #expect(!PendingCloudRule.shouldShow(isCoreReady: true, isUITestMode: false, isIndexing: true))
+    }
+
+    /// The same staleness in the other direction, which the plan did not name: a wait that began
+    /// before the vectors were resident could never acquire a cloud when they arrived.
+    @Test("Vectors arriving mid-wait changes the key too")
+    func vectorsArrivingIsANewKey() {
+        let dark = PendingCloudRule.Liveness(
+            isPending: true, isIndexing: false, isCoreReady: false)
+        let ready = PendingCloudRule.Liveness(
+            isPending: true, isIndexing: false, isCoreReady: true)
+        #expect(dark != ready)
+        #expect(!PendingCloudRule.shouldShow(isCoreReady: false, isUITestMode: false, isIndexing: false))
+        #expect(PendingCloudRule.shouldShow(isCoreReady: true, isUITestMode: false, isIndexing: false))
+    }
+
     @Test("The appearance delay outlasts a fast search but not a real wait")
     func appearanceDelayIsInTheRightBand() {
         let delay = PendingCloudBackdrop.appearanceDelay

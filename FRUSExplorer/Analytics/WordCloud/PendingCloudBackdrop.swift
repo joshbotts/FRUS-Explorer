@@ -46,6 +46,9 @@ import SwiftUI
 ///   1.0 — P-2: initial implementation, search as the first consumer
 ///   1.1 — the spinner fades out once the cloud is up: same message, and two indicators
 ///         competing reads worse than either alone
+///   1.2 — visual-marketing step 0: the appearance task is keyed on every mutable input, so a
+///         cloud already up is withdrawn when indexing starts and one suppressed for want of
+///         vectors can still appear when they arrive
 struct PendingCloudBackdrop: ViewModifier {
 
     /// Which scope's vocabulary to show — normally what the user filtered the wait down to.
@@ -96,7 +99,25 @@ struct PendingCloudBackdrop: ViewModifier {
                 }
             }
             .animation(.easeInOut(duration: 0.45), value: isShowing)
-            .task(id: isPending) {
+            // KEYED ON EVERY INPUT THAT CAN CHANGE, not just `isPending`.
+            //
+            // `canShow` was sampled once, when the pending state flipped, and `isShowing` is
+            // `@State` that nothing re-tested. So a cloud already up when an indexing batch began
+            // kept drifting above the newly-mounted banner strip — two drifting Canvases, which
+            // `PendingCloudRule` exists to forbid and whose comment says so directly. The
+            // staleness cuts BOTH ways: a search that began before the vectors finished loading
+            // could never acquire a cloud either, because `isCoreReady` turning true re-ran
+            // nothing.
+            //
+            // `isUITestMode` is deliberately absent from the key. It is fixed for the life of the
+            // process, so it cannot make a decision stale — and reading it here would build a
+            // `ProcessInfo.environment` dictionary on every body pass of a view that is on screen
+            // during a search. A liveness key carries what can change and nothing else. The rule
+            // itself still reads it, so the decision stays in one place.
+            .task(id: PendingCloudRule.Liveness(
+                isPending: isPending,
+                isIndexing: appState.indexingBatch != nil,
+                isCoreReady: BundledCloudVectors.isCoreReady)) {
                 guard isPending, canShow else { isShowing = false; return }
                 try? await Task.sleep(for: Self.appearanceDelay)
                 guard !Task.isCancelled else { return }
@@ -123,7 +144,29 @@ struct PendingCloudBackdrop: ViewModifier {
 ///
 /// Version history:
 ///   1.0 — P-2: initial implementation
+///   1.1 — visual-marketing step 0: `Liveness`, the key that keeps the decision from going stale
 enum PendingCloudRule {
+
+    /// The inputs whose movement must re-take the decision — the appearance task's identity.
+    ///
+    /// It lives here, beside the rule, for the reason this type's own comment gives: a decision
+    /// that cannot be evaluated outside a view host is a decision that fails where only a person
+    /// looking at a device can see it. The shipped defect was not in `shouldShow` at all — the rule
+    /// was right — it was that the rule was consulted once and the answer kept. So the *liveness*
+    /// needs a test as much as the rule does, and `keyIsCompleteOverTheDecision` is that test:
+    /// no two states with different verdicts may share a key.
+    ///
+    /// **`isUITestMode` is deliberately not a member.** It is fixed for the life of the process, so
+    /// it cannot make an answer stale, and including it would cost a `ProcessInfo.environment`
+    /// build on every body pass. A liveness key carries what can change.
+    struct Liveness: Equatable {
+        /// Whether the host is waiting.
+        let isPending: Bool
+        /// Whether an indexing batch is running, which raises the competing strip.
+        let isIndexing: Bool
+        /// Whether the bundled vectors are resident.
+        let isCoreReady: Bool
+    }
 
     /// The decision, in the order the reasons matter.
     static func shouldShow(isCoreReady: Bool, isUITestMode: Bool, isIndexing: Bool) -> Bool {
