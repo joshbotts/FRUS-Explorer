@@ -178,7 +178,7 @@ case for a binary to carry it. The guide is now at **v1.10**.
 | # | Session | Scope | Gate |
 |---|---|---|---|
 | C-1 | **W-12 parallel-series concordance — ASSESSMENT** | Unchanged from the old plan: DBPO/DDF/AAPD/Dodis/Wilson Center volume-level concordance scoping; document-level alignment stays out. | none |
-| C-2 | **W-15 geographic analytics — ASSESSMENT, historical toponymy first-class** | Unchanged: BigPicture priorities 8/10/11/12 together, with era-correct place names reconciling to stable places as the owner's stated requirement. | none |
+| ~~C-2~~ | ~~**W-15 geographic analytics — ASSESSMENT**~~ **ASSESSED 2026-09-01**, PR #1170 — `W15-Geographic-Analytics-Assessment-2026-09-01.md`. **P10 BUILD but renamed** (a *document-origin* table, not "country attention"); **P8 DO NOT BUILD from place mentions** — Washington is 46.9% of all dateline geography; **P11 and P12 CLOSE as already delivered**, which the plan describes as postponed. The recon's "few hundred rows" premise survives only with a normalisation step it did not identify: keyed on raw surface a 300-row table reaches 90.0%, keyed on the normalised head 96.4%. | — |
 | C-3 | **W-10 OS-27 adoption — assessment against the actual SDK** | Unchanged; first session is assessment-against-the-beta, not a build. | SDK availability |
 
 ## 4a. Tier D — vacated *(2026-08-31)*
