@@ -471,7 +471,21 @@ first sitting:
 Then, in order. *(Re-sequenced 2026-08-31, §10: a step 0 added, and the three motion items moved
 ahead of the capture sessions. Old numbers in brackets.)*
 
-0. **Withdraw the pending cloud when indexing begins (XS).** `PendingCloudBackdrop.canShow` is
+0. ~~**Withdraw the pending cloud when indexing begins (XS).**~~ **SHIPPED 2026-08-31**, PR #1156 —
+   by making the whole predicate live rather than by the `onChange` alternative, which fixes only
+   the indexing half. **The staleness cuts both ways and this plan named only one**: a wait that
+   began before the vectors were resident could never acquire a cloud when they arrived, because
+   `isCoreReady` turning true also re-ran nothing. The task is now keyed on
+   `PendingCloudRule.Liveness` — pending, indexing, core-ready. `isUITestMode` is deliberately
+   excluded: it cannot change within a process, and reading it per body pass would build a
+   `ProcessInfo.environment` dictionary on a view that is on screen during every search.
+
+   The key is a named type beside the rule rather than a private struct in the view, for the reason
+   `PendingCloudRule`'s own comment gives — *rules that can be evaluated are rules that can be wrong
+   out loud*. **The rule was never wrong here; consulting it once and keeping the answer was**, so
+   the liveness needed a test as much as the rule did. `keyIsCompleteOverTheDecision` is exhaustive
+   over the eight reachable states and asserts the invariant directly: no two states with different
+   verdicts may share a key. Dropping either field from the key fails it by name. Original text: `PendingCloudBackdrop.canShow` is
    sampled **once**, inside `.task(id: isPending)` (`PendingCloudBackdrop.swift:99-104`), and
    `isShowing` is `@State` that is never re-tested. So a search cloud already up when a batch starts
    keeps drifting *above* the newly-mounted banner strip — genuinely two drifting Canvases, the state
@@ -670,7 +684,13 @@ screen. It also breaks five test call sites (`PendingCloudBackdropTests.swift:37
 ### Two real defects it missed, in the file it opened
 
 - **The genuine double-cloud, by staleness rather than predicate.** Now §7 step 0.
-- **The opposite defect, and it is the one that lives in the queue-only window:**
+- **The opposite defect — CONFIRMED 2026-08-31 and deliberately NOT fixed; still owed a row.**
+  Verified at all three sites while shipping step 0. It is not a drive-by: closing it needs a product
+  decision (should that window show a queued-download banner, or let the splash through?) *and* a
+  banner state that does not exist — `IndexingQueueBannerView` needs a `batch.latest`, and in that
+  window there is no batch. What step 0 did do is stop the misleading test from misleading: the doc
+  comment on `relaunchMidDownloadPrefersIndexing` now states that it asserts the arbiter's value
+  rather than what renders, and that the screen is blank while it passes. Original text:
   `.indexingBackdrop` is a suppression verdict that **nothing renders**. `ContentView.swift:178-181`
   reads it as "(c) owns the screen" and refuses the splash, while `MainTabView.swift:452` declines to
   mount the only thing that draws (c); `resolveSplash()` runs once (`:166-168`). So a relaunch
