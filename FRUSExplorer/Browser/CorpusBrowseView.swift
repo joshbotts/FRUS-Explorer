@@ -290,6 +290,14 @@ struct CorpusDocumentsView: View {
     /// Bulk-loaded display metadata, keyed by `"volumeId/documentId"`.
     @State private var headers: [String: String] = [:]
     @State private var dates: [String: String] = [:]
+    /// The engagement partition behind the row badges and the coverage line (W-13). `nil` until
+    /// the first gather lands; the list renders unbadged in the meantime rather than blocking.
+    @State private var coverage: EngagementCoverage?
+    /// Bumped by ``EngagementObserver`` whenever a visit, note, highlight or collection lands, so
+    /// the gather re-runs. Navigation edges cannot do this job — opening a document from this very
+    /// list is the case they miss.
+    @State private var engagementRevision = 0
+    @Environment(\.modelContext) private var modelContext
 
     init(corpusId: UUID, onOpenDocument: @escaping @MainActor (DocumentBrowserEntry) -> Void) {
         self.corpusId = corpusId
@@ -325,6 +333,14 @@ struct CorpusDocumentsView: View {
         .task(id: "\(corpusId)-\(appState.indexedVolumeIds.count)") {
             await loadMetadata()
         }
+        // Re-keyed on the active project (the scope of every count) and on the observer's
+        // revision (any new visit, note, highlight or collection).
+        .task(id: "\(corpusId)-\(appState.activeProjectId?.uuidString ?? "-")-\(engagementRevision)") {
+            await loadCoverage()
+        }
+        .background {
+            EngagementObserver { engagementRevision = $0 }
+        }
     }
 
     @ViewBuilder
@@ -338,6 +354,26 @@ struct CorpusDocumentsView: View {
                 Text(resolution.coverageDescription)
                     .font(.caption)
                     .foregroundStyle(resolution.isComplete ? Color.secondary : Color.orange)
+                if let coverage {
+                    // The sibling sentence: how much of the corpus has been worked on, in the
+                    // same place and the same voice as how much of it this device can reach.
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(coverage.coverageDescription)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let breakdown = coverage.breakdownDescription {
+                            Text(breakdown)
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                        }
+                        if let caveat = coverage.loggingCaveat {
+                            Text(caveat)
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                }
             }
             ForEach(CorporaAxis.volumeSections(from: corpus.documentKeys)) { section in
                 volumeSection(section)
@@ -362,7 +398,8 @@ struct CorpusDocumentsView: View {
         Section(entry?.title ?? section.volumeId) {
             ForEach(CorporaAxis.ordered(section.documents, dates: dates,
                                         volumeEarliest: entry?.dateRange.earliest)) { ref in
-                documentRow(ref, state: state, entry: entry, isDownloading: isDownloading)
+                documentRow(ref, state: state, entry: entry, isDownloading: isDownloading,
+                            engagement: coverage?.state(for: ref.key) ?? .untouched)
             }
         }
     }
@@ -371,7 +408,8 @@ struct CorpusDocumentsView: View {
     private func documentRow(_ ref: CorporaAxis.DocumentRef,
                              state: CorporaAxis.RowState,
                              entry: VolumeManifestEntry?,
-                             isDownloading: Bool) -> some View {
+                             isDownloading: Bool,
+                             engagement: DocumentEngagement.State) -> some View {
         switch state {
         case .open:
             Button {
@@ -387,18 +425,21 @@ struct CorpusDocumentsView: View {
                 print("[CorpusDocumentsView] Open \(ref.key)")
                 #endif
             } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(headers[ref.key] ?? ref.documentId)
-                        .font(.callout)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if let date = dates[ref.key] {
-                        Text(date)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(headers[ref.key] ?? ref.documentId)
+                            .font(.callout)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let date = dates[ref.key] {
+                            Text(date)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                    // Both modifiers, in this order — the #312 full-row tap-target idiom.
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    engagementBadge(engagement)
                 }
-                // Both modifiers, in this order — the #312 full-row tap-target idiom.
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -415,6 +456,7 @@ struct CorpusDocumentsView: View {
                         .foregroundStyle(.tertiary)
                 }
                 Spacer(minLength: 8)
+                engagementBadge(engagement)
                 if isDownloading {
                     ProgressView()
                         .controlSize(.small)
@@ -448,6 +490,44 @@ struct CorpusDocumentsView: View {
         }
     }
 
+    /// The row badge — an icon only, and nothing at all for an untouched document.
+    ///
+    /// A systematic review is mostly untouched rows; marking each of them would put a glyph on
+    /// every line and make the worked-on ones harder to pick out, which is the opposite of the job.
+    /// The label is carried for VoiceOver, which has no absence to perceive.
+    ///
+    /// - Parameter engagement: The strongest engagement recorded against this document.
+    @ViewBuilder
+    private func engagementBadge(_ engagement: DocumentEngagement.State) -> some View {
+        if let symbol = engagement.symbolName {
+            Image(systemName: symbol)
+                .font(.caption)
+                .foregroundStyle(engagement == .annotated ? Color.accentColor : Color.secondary)
+                .accessibilityLabel(engagement.label)
+        }
+    }
+
+    /// Partitions the corpus by engagement, off the main actor.
+    ///
+    /// Scoped to the active project when there is one, and to the whole device when there is not —
+    /// "have I read this" is worth answering for a reader who has never made a project.
+    private func loadCoverage() async {
+        guard let corpus else { return }
+        let keys = corpus.documentKeys
+        guard !keys.isEmpty else {
+            coverage = nil
+            return
+        }
+        coverage = await DocumentEngagementService.coverage(
+            forCorpusKeys: keys,
+            project: appState.activeProjectId,
+            container: modelContext.container
+        )
+        #if DEBUG
+        print("[CorpusDocumentsView] Coverage: \(coverage?.engagedCount ?? 0) of \(keys.count) worked on")
+        #endif
+    }
+
     /// The bulk metadata load — one chunked call per store, never per-key queries.
     private func loadMetadata() async {
         guard let corpus else { return }
@@ -466,6 +546,63 @@ struct CorpusDocumentsView: View {
         #if DEBUG
         print("[CorpusDocumentsView] Loaded \(headers.count) headers, \(dates.count) dates for \(keys.count) keys")
         #endif
+    }
+}
+
+// MARK: - EngagementObserver
+
+/// A hidden, always-mounted `@Query` observer that tells `CorpusDocumentsView` when to re-gather
+/// its coverage (W-13 session 1).
+///
+/// ## Why an observer and not a navigation trigger
+/// The change this must catch is *the reader opened a document from this list, read it, annotated
+/// it and came back*. `navigationPath` and `scenePhase` both miss it — a pushed detail leaves this
+/// view mounted and the scene continuously active, and on iPad the document may open in a sibling
+/// window that touches neither. `@Query` observes the shared `ModelContainer`, so it fires
+/// whichever route the write came from.
+///
+/// ## What it costs, stated rather than hidden
+/// Four unfiltered queries are live while the list is on screen, so all four tables are faulted in.
+/// That is the price of the guarantee, and it buys only a **revision counter** — the rows
+/// themselves are never read. The token is built from counts, which catches every insert and
+/// delete; re-tagging an existing note into a different project while this list is open is the one
+/// change it will miss.
+///
+/// Version history:
+///   1.0 — W-13 session 1: initial implementation
+private struct EngagementObserver: View {
+
+    /// Called with a monotonic revision whenever any observed table changes size.
+    private let onRevision: (Int) -> Void
+
+    @Query private var visits: [ReadingHistoryEntry]
+    @Query private var notes: [ResearchNote]
+    @Query private var highlights: [DocumentHighlight]
+    @Query private var collections: [Collection]
+
+    /// Creates the observer.
+    ///
+    /// - Parameter onRevision: Receives the revision token.
+    init(onRevision: @escaping (Int) -> Void) {
+        self.onRevision = onRevision
+    }
+
+    /// The change signal. Not an identity — only its *inequality* is used.
+    private var revision: Int {
+        var hasher = Hasher()
+        hasher.combine(visits.count)
+        hasher.combine(notes.count)
+        hasher.combine(highlights.count)
+        hasher.combine(collections.count)
+        return hasher.finalize()
+    }
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+            .onAppear { onRevision(revision) }
+            .onChange(of: revision) { _, new in onRevision(new) }
     }
 }
 

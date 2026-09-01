@@ -10134,3 +10134,61 @@ gate's input, but with it running anyway the verdict decides whether its OUTPUT 
 harness additions fold in as needed-only. Tier B carries W-13/W-14/W-3 §7/the V-5
 supplementary sitting; Tier C the three assessments (W-12, W-15, W-10). Standing gates:
 build-44 tester feedback outranks the order, and the Studio harvest is assumed nothing.
+
+## Session 2026-09-01 — W-13 session 1: the coverage map's numerators
+
+**Both sources the plan named are refuted, and the Tier-E assessment called it.**
+`ExportHistoryEntry` records a `documentCount` and no document identities, so it can
+contribute nothing to "43 of 267"; `ProjectEngagedDocuments.keys` unions visits, notes
+and collection entries into one flat `Set<String>` — exactly right for the search History
+scope, which asks only *whether* a project has touched a document, and fatal for a
+sentence made of the split it discards. Verified against the tree before any code was
+written, along with the two premises that hold: `ReadingHistoryEntry` really is gated on
+research logging at its writer, and `CorpusDocumentsView` really does already render
+`coverageDescription`, so the new sentence is its sibling and not a new surface.
+
+**`DocumentEngagementService`** is a second reading of the three real numerators, gathered
+apart in the `ProjectLeadsService` shape (nonisolated, unscoped fetch filtered in memory,
+run off-main on a detached context) and intersected with the corpus before counting — the
+gatherers answer for the whole library, and a note on a document outside the corpus would
+otherwise report more worked on than the corpus holds. Three findings the data forced,
+each now stated on screen rather than rounded away:
+
+- **Opened is a floor, not a total, when research logging is off.** The count still shows
+  — rows written before the switch was flipped are real — carrying `loggingCaveat`.
+- **A `DocumentHighlight` carries no `projectId`**, only an optional `noteId`, so scoped it
+  counts through its note and a standalone highlight counts only unscoped.
+- **Scope is optional throughout.** Requiring a project would make the feature invisible to
+  every reader who has never made one, and "have I read this" does not need a project.
+
+`CorpusDocumentsView` gains the coverage line and a row badge for the strongest engagement
+— and nothing at all for untouched, which is most rows and is what a systematic review is
+hunting. Refresh hangs on an always-mounted `@Query` observer, never a navigation edge:
+the change to catch is the reader opening a document *from this very list*, which leaves
+the view mounted and the scene active, and on iPad may open a sibling window touching
+neither. The observer's cost — four live queries for a revision counter — is stated in its
+doc comment rather than hidden.
+
+**A defect in #1163's capture seeder, found on the way.** It created `CollectionEntry` rows
+carrying only a `collectionId` and never linked the relationship every reader goes through,
+so State C's collections seeded **empty** — precisely the screen the seeder exists to fill.
+The first fix mirrored `CollectionPickerSheet` (`collection.documentEntries?.append(row)`)
+and was itself wrong: that relationship is `nil` on a just-inserted collection, so the
+optional chain does nothing. It only came out because the test fixture used the same idiom
+and returned zero collected keys. Both now assign the inverse, `row.collection = collection`.
+
+Eight mutations, each killed by its intended test: dropping the corpus intersection,
+ranking `collected` above `annotated`, ignoring scope in the visits gatherer, letting a
+standalone highlight count while scoped, dropping the collection-entry kind filter,
+nulling the logging caveat, emitting a breakdown of three zeroes, and swapping the
+coverage sentence's numerator and denominator. The last of those is why the sentence test
+asserts the *order* of the two numbers rather than their presence: "10 of 4 documents
+worked on" contains both and is nonsense, and the first draft of that assertion passed it.
+
+**4,271 unit tests in 566 suites pass** (the 4,260 baseline plus exactly these 11); the
+macOS build is clean but for the two documented non-source residues.
+
+No schema change — instances only, no new `@Model` and no stored property, as forecast.
+**Session 2 remains**: the exportable statement in `QueryMethodAppendix` across all three
+renderers (markdown, plainTextLines, csv) plus `preambleLines` and the logging-off caveat,
+a Project Home tile variant, and both-platform polish.
