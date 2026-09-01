@@ -2748,7 +2748,7 @@ struct SemanticMapSpikeView: View {
             index: index,
             scopeLabel: scopeLabel,
             scopedDocumentCount: model.scope?.documentCount,
-            lensLabel: lens.displayName,
+            lens: lens,
             indexedVolumeCount: appState.indexedVolumeIds.count)
         exportBox.deliver(table, provenance)
     }
@@ -2791,7 +2791,7 @@ struct SemanticMapSpikeView: View {
             index: index,
             scopeLabel: scopeLabel,
             scopedDocumentCount: model.scope?.documentCount,
-            lensLabel: lens.displayName,
+            lens: lens,
             indexedVolumeCount: appState.indexedVolumeIds.count,
             figureTitle: String(localized: "semanticMap.export.figureTitle",
                                 defaultValue: "Semantic map"),

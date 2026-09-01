@@ -147,6 +147,19 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     /// `SemanticMapSurfaceTests` asserts they agree because nothing else does.
     static let pixelFormat: MTLPixelFormat = .bgra8Unorm
 
+    /// The colour space an exported readback is TAGGED with — sRGB, not device RGB.
+    ///
+    /// The pipeline renders `.bgra8Unorm` (not `_srgb`), so the shader writes sRGB-encoded values
+    /// directly and blending happens in that encoded space. Those bytes are already sRGB; the only
+    /// question is whether the image says so. `CGColorSpaceCreateDeviceRGB()` does not — it is
+    /// *untagged*, so a colour-managed consumer is free to interpret it as the display's space, and
+    /// a figure that leaves this app for a journal or a printer is exactly such a consumer. Tagging
+    /// changes no pixel VALUE; it fixes their meaning.
+    ///
+    /// Readback only. The on-screen path never travels through this.
+    static let readbackColorSpace: CGColorSpace =
+        CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+
     /// The map's background — ONE definition, shared by the on-screen view's `clearColor` and the
     /// offscreen export's pass descriptor (W-3). The shader's scope treatment was tuned against
     /// this dark ground (see the ghost-alpha notes in the shader source); an export cleared to
@@ -370,11 +383,24 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         // documents saturate toward the source colour rather than accumulating. An earlier version of
         // this comment called it "additive … which is what makes density legible without a separate
         // heat layer"; that is not what these factors do, and a real density layer is still owed.
+        //
+        // **The ALPHA source factor is `.one`, and the RGB one is `.sourceAlpha`. They differ, and
+        // the difference is the whole of source-over.** RGB wants the source weighted by its own
+        // coverage; alpha wants the coverage itself, unweighted. Using `.sourceAlpha` for both —
+        // which is what shipped until the visual-marketing review — squares it: a dot with alpha
+        // 0.5 over an opaque ground yields 0.75 rather than 1, so a readback lands at ~0.79–0.84
+        // and the image is *declared* premultiplied. Composited over a white figure canvas the
+        // brightest dots then clamp to pure white instead of lightening uniformly.
+        //
+        // On screen this was invisible and remains so: `MTKView`'s layer is opaque, so nothing
+        // reads the alpha channel. The defect was structurally unobservable — no test reads an
+        // alpha channel and the fixture palette's alpha is 1 — which is why it survived the design
+        // doc asserting the opposite. `renderedAlphaIsOpaque` now reads it.
         descriptor.colorAttachments[0].isBlendingEnabled = true
         descriptor.colorAttachments[0].rgbBlendOperation = .add
         descriptor.colorAttachments[0].alphaBlendOperation = .add
         descriptor.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-        descriptor.colorAttachments[0].sourceAlphaBlendFactor = .sourceAlpha
+        descriptor.colorAttachments[0].sourceAlphaBlendFactor = .one
         descriptor.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
         descriptor.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
 
@@ -727,7 +753,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
               let full = CGImage(
                 width: width, height: height,
                 bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: bytesPerRow,
-                space: CGColorSpaceCreateDeviceRGB(),
+                space: Self.readbackColorSpace,
                 bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue
                     | CGBitmapInfo.byteOrder32Little.rawValue),
                 provider: provider, decode: nil,
@@ -741,7 +767,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         guard let context = CGContext(
             data: nil, width: finalWidth, height: finalHeight,
             bitsPerComponent: 8, bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(),
+            space: Self.readbackColorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
                 | CGBitmapInfo.byteOrder32Little.rawValue)
         else { return full }

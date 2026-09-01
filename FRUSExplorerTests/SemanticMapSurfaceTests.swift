@@ -1444,7 +1444,7 @@ struct SemanticMapExportTests {
     func corpusStatementDescribesTheBundledArtifact() {
         let provenance = SemanticMapExport.provenance(
             index: index(), scopeLabel: nil, scopedDocumentCount: nil,
-            lensLabel: "Regions", indexedVolumeCount: 3)
+            lens: .cluster, indexedVolumeCount: 3)
         let caveat = provenance.corpusCaveat
         #expect(caveat.contains("1000"), "the whole-series document count must be stated")
         #expect(!caveat.hasPrefix("Corpus: counts cover only"),
@@ -1456,7 +1456,7 @@ struct SemanticMapExportTests {
     func coverageCaveatNamesTheUnclustered() {
         let provenance = SemanticMapExport.provenance(
             index: index(), scopeLabel: nil, scopedDocumentCount: nil,
-            lensLabel: "Regions", indexedVolumeCount: 0)
+            lens: .cluster, indexedVolumeCount: 0)
         // 400 of 1,000 are in no region, so no row below can describe them. A regions table that
         // did not say so would read as a description of the whole corpus.
         let joined = provenance.extraCaveats.joined(separator: " ")
@@ -1464,11 +1464,51 @@ struct SemanticMapExportTests {
         #expect(joined.contains("400"))
     }
 
+    /// **The lens's own caveat has to reach the export, and until now it reached only the screen.**
+    ///
+    /// A lens carries a `caption` exactly when its colouring would otherwise overstate the
+    /// evidence: the provenance lens assigns each volume the category its source notes name most
+    /// often, which is a plurality and not a majority for 73 of 522 volumes. `provenance` used to
+    /// take a lens LABEL, so the caption was structurally unreachable — a figure or CSV taken on
+    /// that lens made a stronger claim than the data supports and said nothing about it.
+    @Test("A lens with a caveat carries it into the export; one without adds nothing")
+    func lensCaptionReachesTheExport() {
+        let flagged = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lens: .provenance, indexedVolumeCount: 1)
+        let caption = try? #require(SemanticMapLens.provenance.caption)
+        #expect(flagged.extraCaveats.contains { $0 == caption })
+        #expect(flagged.extraCaveats.joined(separator: " ").contains("plurality"))
+
+        // `.era` has no caption, and must not acquire one — an empty caveat line would read as a
+        // qualification the lens does not make.
+        #expect(SemanticMapLens.era.caption == nil)
+        let plain = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil,
+            lens: .era, indexedVolumeCount: 1)
+        #expect(plain.extraCaveats.count == flagged.extraCaveats.count - 1)
+        #expect(!plain.extraCaveats.contains { $0.isEmpty })
+    }
+
+    /// The caveats are shared by the regions CSV and the figure, so wording that assumes a table
+    /// is false on half the exports it ships in.
+    @Test("No caveat assumes the export is a table")
+    func caveatsDoNotAssumeATable() {
+        let provenance = SemanticMapExport.provenance(
+            index: index(), scopeLabel: "Truman", scopedDocumentCount: 120,
+            lens: .provenance, indexedVolumeCount: 1)
+        let text = (provenance.extraCaveats + [provenance.corpusCaveat])
+            .joined(separator: " ").lowercased()
+        for phrase in ["row below", "this table was taken", "rows below"] {
+            #expect(!text.contains(phrase), "a figure has no \(phrase)")
+        }
+    }
+
     @Test("A scoped export says the rows are counted inside that scope")
     func scopedExportStatesItsScope() {
         let provenance = SemanticMapExport.provenance(
             index: index(), scopeLabel: "Truman", scopedDocumentCount: 120,
-            lensLabel: "Era", indexedVolumeCount: 5)
+            lens: .era, indexedVolumeCount: 5)
         #expect(provenance.corpusCaveat.contains("120"))
         #expect(provenance.scopeDescription == "Truman")
     }

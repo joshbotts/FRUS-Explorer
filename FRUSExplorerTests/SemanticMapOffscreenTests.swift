@@ -177,6 +177,60 @@ struct SemanticMapOffscreenTests {
         #expect(data[centre + 2] < 50, "blue channel: \(data[centre + 2])")
     }
 
+    /// **An opaque ground stays opaque, whatever is drawn over it.**
+    ///
+    /// This is the invariant `sourceAlphaBlendFactor` broke. Source-over wants the source's own
+    /// coverage for alpha (`.one`); the pipeline used `.sourceAlpha`, squaring it, so a
+    /// half-transparent dot over the opaque background yielded 0.75 rather than 1. The readback is
+    /// *declared* premultiplied, so composited onto the white figure canvas the brightest dots
+    /// clamped to pure white instead of lightening.
+    ///
+    /// **It needs a SEMI-TRANSPARENT palette entry and that is the whole reason it did not exist
+    /// before.** Every other fixture here uses alpha 1, where `.sourceAlpha` and `.one` are
+    /// arithmetically identical — the defect was invisible to the suite by construction, not by
+    /// oversight. Asserting over every pixel rather than a chosen one also makes the test
+    /// independent of what the shader does to alpha internally.
+    @Test("An opaque background stays opaque under a transparent point",
+          .enabled(if: offscreenHasMetal))
+    @MainActor
+    func renderedAlphaIsOpaque() throws {
+        guard let device = MTLCreateSystemDefaultDevice(),
+              let renderer = SemanticMapRenderer(device: device) else { return }
+        renderer.setPalette([SIMD4<Float>(1, 1, 1, 0.5)])
+        renderer.setPoints([point(0, 0)])
+        renderer.frameAll(extent: 100)
+        // pointSize 6 on a 200 pt plate, matching the idiom the other pixel tests use. The default
+        // 2.0 on a 40x40 plate draws NOTHING — which is how the first version of this test passed
+        // against the very defect it was written for. A vacuous pixel assertion over an untouched
+        // background is indistinguishable from a correct one; the mutation is what told them apart.
+        renderer.pointSize = 6
+        let image = try #require(renderer.renderOffscreen(
+            pixelSize: CGSize(width: 200, height: 200), supersample: 1))
+        #expect(!litPixels(of: image).isEmpty, "precondition: the point must actually be drawn")
+        let (data, width, height) = try #require(pixels(of: image))
+        var minimum = 255
+        for y in 0..<height {
+            for x in 0..<width { minimum = min(minimum, Int(data[(y * width + x) * 4 + 3])) }
+        }
+        #expect(minimum == 255, "least-opaque pixel had alpha \(minimum); the ground is opaque")
+    }
+
+    /// A figure that leaves this app for a journal or a printer meets a colour-managed consumer.
+    /// `CGColorSpaceCreateDeviceRGB()` is untagged, so that consumer may read the bytes in the
+    /// display's space instead of the one they were written in.
+    @Test("An exported readback is tagged sRGB, not device RGB",
+          .enabled(if: offscreenHasMetal))
+    @MainActor
+    func readbackIsTaggedSRGB() throws {
+        let renderer = try #require(makeRenderer(points: [point(0, 0)]))
+        for supersample in [1, 2] {   // the downsampled path builds its own context
+            let image = try #require(renderer.renderOffscreen(
+                pixelSize: CGSize(width: 40, height: 40), supersample: supersample))
+            #expect(image.colorSpace?.name == CGColorSpace.sRGB,
+                    "supersample \(supersample): \(String(describing: image.colorSpace?.name))")
+        }
+    }
+
     @Test("The on-screen view state is untouched by an export",
           .enabled(if: offscreenHasMetal))
     @MainActor
@@ -211,7 +265,7 @@ struct SemanticMapOffscreenTests {
         let index = try #require(BundledSemanticMap.index)
         let provenance = SemanticMapExport.provenance(
             index: index, scopeLabel: nil, scopedDocumentCount: nil,
-            lensLabel: "Era", indexedVolumeCount: 1,
+            lens: .era, indexedVolumeCount: 1,
             figureTitle: "Semantic map",
             sliceDescription: "This figure shows a SLICE — test sentence.")
         #expect(provenance.figureTitle == "Semantic map")
@@ -219,7 +273,7 @@ struct SemanticMapOffscreenTests {
         // Without a slice, the caveats are unchanged and the regions title survives for the CSV.
         let plain = SemanticMapExport.provenance(
             index: index, scopeLabel: nil, scopedDocumentCount: nil,
-            lensLabel: "Era", indexedVolumeCount: 1)
+            lens: .era, indexedVolumeCount: 1)
         #expect(plain.figureTitle == "Semantic map regions")
         #expect(plain.extraCaveats.first?.contains("How to read position") == true)
     }
@@ -235,7 +289,7 @@ struct SemanticMapOffscreenTests {
             pixelSize: CGSize(width: 400, height: 300), supersample: 1))
         let provenance = SemanticMapExport.provenance(
             index: index, scopeLabel: nil, scopedDocumentCount: nil,
-            lensLabel: "Era", indexedVolumeCount: 0, figureTitle: "Semantic map")
+            lens: .era, indexedVolumeCount: 0, figureTitle: "Semantic map")
         let canvas = AnalyticsFigureCanvas(provenance: provenance, chartHeight: 150) {
             Image(decorative: plate, scale: 2)
         }

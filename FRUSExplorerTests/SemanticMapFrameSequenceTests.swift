@@ -102,7 +102,7 @@ struct SemanticMapFrameSequenceTests {
         await BundledSemanticMap.prepare()
         let index = try #require(BundledSemanticMap.index)
         let text = SemanticMapFrameSequence.provenanceText(
-            index: index, lensLabel: "Regions", frameCount: 553, indexedVolumeCount: 1)
+            index: index, lens: .cluster, frameCount: 553, indexedVolumeCount: 1)
         let lines = text.split(separator: "\n").map(String.init)
         #expect(lines.first == "# " + SemanticMapFrameSequence.animationGrainSentence)
         // The methods block is the map's own — one definition of the caveats.
@@ -194,7 +194,7 @@ struct SemanticMapFrameSequenceTests {
             .write(to: directory.appending(path: "frames.csv"), atomically: true, encoding: .utf8)
         let index = try #require(BundledSemanticMap.index)
         try SemanticMapFrameSequence.provenanceText(
-            index: index, lensLabel: "Regions", frameCount: records.count,
+            index: index, lens: .cluster, frameCount: records.count,
             indexedVolumeCount: 0)
             .write(to: directory.appending(path: "provenance.txt"),
                    atomically: true, encoding: .utf8)

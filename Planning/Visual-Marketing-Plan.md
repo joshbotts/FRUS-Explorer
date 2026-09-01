@@ -33,8 +33,8 @@ rather than procedural**. That is the stronger design. All four documented traps
 |---|---|---|---|
 | ~~1~~ | **FIXED 2026-08-31 (GATE C).** ~~The caption band carries no caveats and no source attribution.~~ `AnalyticsProvenance.captionLines` returns exactly `[figureTitle, facts]` (`AnalyticsProvenance.swift:169-176`); `extraCaveats`, `corpusCaveat` and `corpusAttribution` are appended **only** in `csvPreambleLines` (`:180`, `:213`). Every plate credits "FRUS Explorer 0.2" and **not** the Office of the Historian. | Blocks publication |
 | ~~2~~ | **FIXED 2026-08-31 (GATE C).** ~~The plate prints a sentence a standalone PNG makes false.~~ `AnalyticsFigureExport.swift:79-80` unconditionally renders *"Full method, caveats, and the underlying numbers accompany this figure in its CSV export."* Publish the image alone and it does not merely omit its caveats — it asserts they travelled with it. | Blocks publication |
-| 3 | **The map's mandatory lens caveat reaches neither export half.** `SemanticMapLens.swift:100` carries *"a plurality, not a majority, for 73 of 522 volumes"*; its only consumer is the on-screen legend (`SemanticMapSpikeView.swift:2990`). `SemanticMapExport.caveats` takes a lens **label**, not a lens. | Blocks Provenance-lens publication |
-| 4 | **The plate is washed toward white and its brightest dots clamp.** `sourceAlphaBlendFactor = .sourceAlpha` (`SemanticMapRenderer.swift:377`), not `.one`. Readback alpha lands ~0.79–0.84 while RGB holds a full over-composite against the dark clear colour — and the image is *declared* premultiplied, so compositing over `AnalyticsFigureCanvas`'s forced white clamps bright dots to pure white rather than lightening uniformly. | Print defect (S) |
+| ~~3~~ | **FIXED 2026-08-31 (step 1).** ~~The map's mandatory lens caveat reaches neither export half.~~ `SemanticMapLens.swift:100` carries *"a plurality, not a majority, for 73 of 522 volumes"*; its only consumer is the on-screen legend (`SemanticMapSpikeView.swift:2990`). `SemanticMapExport.caveats` takes a lens **label**, not a lens. | Blocks Provenance-lens publication |
+| ~~4~~ | **FIXED 2026-08-31 (step 2).** ~~The plate is washed toward white and its brightest dots clamp.~~ `sourceAlphaBlendFactor = .sourceAlpha` (`SemanticMapRenderer.swift:377`), not `.one`. Readback alpha lands ~0.79–0.84 while RGB holds a full over-composite against the dark clear colour — and the image is *declared* premultiplied, so compositing over `AnalyticsFigureCanvas`'s forced white clamps bright dots to pure white rather than lightening uniformly. | Print defect (S) |
 | 5 | **The plate cannot state what was in frame.** The export builds uniforms from its own 1144:900 ratio, so the exported field of view differs from a wide Mac window's, and the label layer re-runs its spacing rule against the export rectangle — the figure can name regions the reader never saw named. The caveat list states no camera centre, no half-extent, no aspect. Readback is untagged `CGColorSpaceCreateDeviceRGB` (`:730`, `:744`). | Methods gap (S–M) |
 
 **Gap 4 is my error to own.** `Map-Figure-Export-And-Visual-Outputs.md:143-144` asserts *"blending is
@@ -480,9 +480,30 @@ ahead of the capture sessions. Old numbers in brackets.)*
    **Not** the predicate swap a review proposed — see §10 for why that fixes nothing and costs the
    search backdrop the whole pre-indexing download phase.
 
-1. **Route `lens.caption` into both export halves (S)**; fix the two wording imprecisions while there.
-2. **Fix the two print defects (S each)** — blend factor and colour space. Add one assertion apiece;
-   **verify on device and on screen**, since the pipeline is shared.
+1. ~~**Route `lens.caption` into both export halves (S)**; fix the two wording imprecisions while
+   there.~~ **SHIPPED 2026-08-31**, PR #1155. Done by replacing the `lensLabel: String` parameter
+   with `lens: SemanticMapLens`, so the caption reaches both halves through the one call they share
+   and cannot be omitted by a caller. **"Two wording imprecisions" was four**, and all four were the
+   same defect: caveats written for the regions CSV and inherited by the figure at W-3 assert a
+   table the figure does not have — "every row below", "appear in no row below", "when this table
+   was taken", "this table names regions and counts". All reworded to be true of both halves.
+2. ~~**Fix the two print defects (S each)** — blend factor and colour space.~~ **SHIPPED
+   2026-08-31**, PR #1155. `sourceAlphaBlendFactor` `.sourceAlpha` -> `.one`; the readback is tagged
+   sRGB rather than left as untagged device RGB, in both the direct and the downsampled path.
+
+   **On the shared-pipeline warning: the blend change is a no-op on screen and provably so.** The
+   `MTKView` layer is opaque, so nothing reads the alpha channel there; and with an opaque ground
+   (`backgroundClearColor` alpha 1) the fixed factor yields `srcA + 1·(1−srcA) = 1` for every source
+   alpha, so the visible RGB composite is unchanged. The colour-space change is readback-only and
+   never touches the on-screen path at all.
+
+   **Both assertions had to be built rather than added, and the first one written was vacuous.** No
+   existing fixture could see the alpha defect: every one uses a palette with alpha 1, where
+   `.sourceAlpha` and `.one` are arithmetically identical — the defect was invisible to the suite
+   *by construction*, which is why the design doc could assert the opposite for months. The new test
+   uses a half-transparent palette entry and asserts the invariant rather than a pixel value: an
+   opaque ground stays opaque whatever is drawn over it. Under the old factor the least-opaque pixel
+   measures **191**, exactly `1 − a + a²` at `a = 0.5`.
 3. **Draft store copy by lifting (M).** ~~Fix the README build number.~~ **Done 2026-08-31 in
    PR #1151** — 37 → 44, with a `CodingStandardsAuditTests` gate so it cannot go stale again.
 4. **Film what already exists — one afternoon, zero code.** Run the frame sequence; record the splash,
