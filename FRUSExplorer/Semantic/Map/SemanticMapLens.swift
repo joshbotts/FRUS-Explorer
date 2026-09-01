@@ -97,7 +97,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
             return nil
         case .provenance:
             return String(localized: "semanticMap.lens.provenance.caption.v2",
-                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncolored.")
+                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of the 498 volumes it colors. Volumes with fewer than ten notes are left uncolored.")
         }
     }
 
@@ -132,7 +132,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
                            defaultValue: "Downloaded")]
         case .provenance:
             // Slot 0 is every volume the lens will not speak for: the 30 the aggregate does not cover
-            // at all, plus the 24 whose whole volume rests on ten notes or fewer. One slot rather
+            // at all, plus the 24 whose whole volume rests on fewer than ten notes. One slot rather
             // than two because both mean the same thing to a reader — there is not enough here to
             // colour — and a key that named two kinds of absence would invite them to read a
             // distinction that is an artifact of whether one note happened to parse.

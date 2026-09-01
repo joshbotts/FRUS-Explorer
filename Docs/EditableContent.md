@@ -5479,7 +5479,7 @@ Too few source notes
 #### Each volume takes the category its source notes name most…
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapLens.swift | lines: 99–100 | key: semanticMap.lens.provenance.caption.v2 -->
 
-Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of 522 volumes. Volumes with ten notes or fewer are left uncolored.
+Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of the 498 volumes it colors. Volumes with fewer than ten notes are left uncolored.
 
 <!-- END SOURCE: semanticMap.lens.provenance.caption.v2 -->
 

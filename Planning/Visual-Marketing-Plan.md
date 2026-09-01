@@ -387,10 +387,13 @@ sidecar** — a sidecar is the first thing lost when a clip is reposted.
 2. `SemanticMapExport` returns **seven** caveats; the drafts carried two. The **artifact stamp +
    provenance digest** caveat is the one that makes a published figure reproducible — it must be in
    the subset.
-3. *"Volumes with ten notes or fewer are left uncolored"* **contradicts the code**, which colours at
-   exactly ten and has a test pinning that inclusive boundary. **Fix the caption, not the code.**
-   Invisible today only because no volume sits at exactly ten.
-4. "73 of 522" is measured over the **498 coloured** volumes. Literally true, imprecise.
+3. ~~*"Volumes with ten notes or fewer are left uncolored"* **contradicts the code**~~ **FIXED
+   2026-08-31**, PR #1160 — the caption now reads *"fewer than ten"*. The plan's diagnosis was exact,
+   including why it was invisible: measured against the shipped artifact, **zero of 522 volumes sit
+   at exactly ten**.
+4. ~~"73 of 522" is measured over the **498 coloured** volumes. Literally true, imprecise.~~
+   **FIXED 2026-08-31**, PR #1160 — the caption now gives 73 against the 498 volumes the lens
+   colours. Both denominators verified from `source-provenance-index.json`.
 
 **Two copy rules.** The map draws **314,483** documents; the app indexes **316,839** — a title card
 reading "every document" would be wrong. And **no marketing number may come from `CLAUDE.md` or a
@@ -525,8 +528,26 @@ ahead of the capture sessions. Old numbers in brackets.)*
    uses a half-transparent palette entry and asserts the invariant rather than a pixel value: an
    opaque ground stays opaque whatever is drawn over it. Under the old factor the least-opaque pixel
    measures **191**, exactly `1 − a + a²` at `a = 0.5`.
-3. **Draft store copy by lifting (M).** ~~Fix the README build number.~~ **Done 2026-08-31 in
-   PR #1151** — 37 → 44, with a `CodingStandardsAuditTests` gate so it cannot go stale again.
+3. ~~**Draft store copy by lifting (M).**~~ **DRAFTED 2026-08-31**, PR #1160 —
+   `Planning/Store-Listing-Draft.md`. Every field counted rather than estimated, every number
+   measured from a shipped artifact, and the "official documentary record" line placed in the
+   description with the disclaimer in the SAME field, never in the subtitle. ~~Fix the README build
+   number.~~ **Done 2026-08-31 in PR #1151** — 37 → 44, with a `CodingStandardsAuditTests` gate so
+   it cannot go stale again.
+
+   **A fourth amendment to §5 is now applied in code, not just recorded.** Amendment 3 said the
+   provenance-lens caption contradicts the colouring rule and to *"fix the caption, not the code"* —
+   it now reads *"Volumes with fewer than ten notes are left uncolored"*, matching
+   `totalNotes >= minimumProvenanceNotes`. Measured against `source-provenance-index.json`: 522
+   volumes, **498 coloured**, 24 below the floor, and **zero at exactly ten**, which is why the
+   defect was invisible. Amendment 4 is applied in the same string — 73 is now given against the
+   **498 volumes the lens colours**, not against all 522. Both were shipping in the CSV and the
+   figure as well as the legend, because step 1 routed that caption into both export halves.
+
+   **One measured caution the plan does not carry: coverage does NOT start in 1861.** Three volumes
+   print documents earlier than 1800 — `frus1872p2v5` reaches **1620** — because FRUS includes
+   historical enclosures in arbitration papers. *Published since 1861* is true and checkable;
+   *covering 1861 onward* is not, and a store listing has no recompute step.
 4. **Film what already exists — one afternoon, zero code.** Run the frame sequence; record the splash,
    the drifting indexing strip, the lens picker, and the camera **teleport**. This settles whether
    the material justifies engineering before a line is written, and the teleport recording is the
