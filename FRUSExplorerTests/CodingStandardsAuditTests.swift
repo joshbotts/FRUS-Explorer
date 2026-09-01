@@ -93,6 +93,65 @@ struct CodingStandardsAuditTests {
                 """)
     }
 
+    /// The Plan of Record's claim about which visual-marketing steps are done matches the plan.
+    ///
+    /// **This exists because the drift already happened.** The Plan of Record is the document
+    /// someone reads to decide what to work on next, and it described five closed export gaps, four
+    /// shipped motion items and a drafted store listing as all still open — for a day, across
+    /// fourteen merged PRs. Separately, a strike in the plan itself was silently *lost* when a
+    /// script wrote the file twice from one unmodified string, so a finished row read as startable.
+    ///
+    /// Neither failure is visible by reading: both documents were internally plausible. What makes
+    /// them checkable is that the Plan of Record states a set and the plan holds the truth, so the
+    /// two can be compared. Strike a row without updating the Plan of Record — or lose a strike —
+    /// and this fails with both sets printed.
+    ///
+    /// It deliberately does NOT try to decide whether a row *should* be struck. That needs to know
+    /// what shipped, which no test can. It pins the far narrower and still useful property: the two
+    /// documents agree.
+    @Test("CodingStandardsAudit: the Plan of Record's struck-step list matches the plan")
+    func planOfRecordMatchesTheVisualMarketingPlan() throws {
+        let planURL = Self.projectRoot
+            .appendingPathComponent("Planning/Visual-Marketing-Plan.md")
+        let recordURL = Self.projectRoot
+            .appendingPathComponent("Planning/Plan-Of-Record-2026-08-28.md")
+        let plan = try String(contentsOf: planURL, encoding: .utf8)
+        let record = try String(contentsOf: recordURL, encoding: .utf8)
+
+        // What the plan actually says: numbered rows inside its §7 Sequence, struck or not.
+        var struckInPlan: Set<Int> = []
+        var sawSequence = false
+        var rowsSeen = 0
+        for line in plan.split(separator: "\n", omittingEmptySubsequences: false) {
+            if line.hasPrefix("## 7. Sequence") { sawSequence = true; continue }
+            if sawSequence, line.hasPrefix("## 8.") { break }
+            guard sawSequence else { continue }
+            guard let match = line.firstMatch(of: /^(\d+)\. (~~)?/) else { continue }
+            guard let number = Int(match.1) else { continue }
+            rowsSeen += 1
+            if match.2 != nil { struckInPlan.insert(number) }
+        }
+        #expect(rowsSeen > 10, """
+            Parsed only \(rowsSeen) numbered rows from the plan's §7 Sequence. The section headings \
+            or the row format changed, and this check is now blind rather than passing.
+            """)
+
+        // What the Plan of Record claims.
+        let claim = try #require(record.firstMatch(of: /§7 struck: ([0-9, ]+)\./),
+                                 "the Plan of Record must carry a line of the form: §7 struck: 0, 1, 2.")
+        let claimed = Set(claim.1.split(separator: ",").compactMap {
+            Int($0.trimmingCharacters(in: .whitespaces))
+        })
+
+        #expect(claimed == struckInPlan, """
+            The Plan of Record and Visual-Marketing-Plan disagree about which §7 steps are done.
+              Plan of Record claims: \(claimed.sorted())
+              The plan itself shows: \(struckInPlan.sorted())
+            Update the "§7 struck:" line in Plan-Of-Record-2026-08-28.md, or restore the strike that \
+            went missing from Visual-Marketing-Plan.md.
+            """)
+    }
+
     // MARK: - OpenAPI Compliance
 
     @Test("CodingStandardsAudit: FRUS-API.openapi.yaml declares OpenAPI 3.1.0")
