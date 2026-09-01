@@ -164,7 +164,9 @@ struct SemanticModelSection: View {
     /// to the container from another process anyway.
     @ViewBuilder
     private var modelPathRow: some View {
-        if let url = appState.semanticModelStore?.verifiedModelURL() {
+        // From the status, never from the store. Reading the actor here was a strict-concurrency
+        // warning AND two filesystem stats per body pass; `reload()` already awaits the same actor.
+        if let url = status.verifiedURL {
             #if os(macOS)
             HStack {
                 Text(String(localized: "settings.model.path.label", defaultValue: "Model File"))

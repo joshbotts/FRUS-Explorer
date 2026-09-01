@@ -790,8 +790,22 @@ final class AppState {
         /// Whether the semantic stack booted at all; when false the screen says unavailable,
         /// never "not downloaded".
         var isAvailable: Bool
+        /// The verified model file's location, or `nil` when no verified copy is on disk.
+        ///
+        /// **Carried here rather than fetched by the view, and that is the point.** The settings
+        /// row that shows the path used to call `SemanticModelStore.verifiedModelURL()` straight
+        /// from its body — an actor-isolated call from a synchronous MainActor context, which is a
+        /// strict-concurrency warning, and two filesystem stats on every body evaluation. This
+        /// status is already built from an `await` against that same actor, so the URL rides along
+        /// with the rest of the state for free.
+        var verifiedURL: URL?
+
         /// Whether a verified copy is on disk.
-        var isPresent: Bool
+        ///
+        /// Computed, never stored: it and `verifiedURL` are the same fact, and two stored fields
+        /// filled from two separate reads of the same disk can disagree — the row saying "present"
+        /// while the path row shows nothing, or the reverse.
+        var isPresent: Bool { verifiedURL != nil }
         /// Bytes the stored file occupies (0 when absent).
         var bytesOnDisk: Int
         /// The last fetch failure, described for the screen; `nil` when none is remembered.
@@ -799,7 +813,7 @@ final class AppState {
 
         /// The stack-not-booted state.
         static let unavailable = SemanticModelStatus(
-            isAvailable: false, isPresent: false, bytesOnDisk: 0, failure: nil)
+            isAvailable: false, verifiedURL: nil, bytesOnDisk: 0, failure: nil)
     }
 
     /// Reads the model's current state for the storage screen.
@@ -812,7 +826,10 @@ final class AppState {
         }
         return SemanticModelStatus(
             isAvailable: true,
-            isPresent: await store.isModelPresent(),
+            // `verifiedModelURL()` rather than `isModelPresent()`: the latter is defined as
+            // `verifiedModelURL() != nil`, so asking for the URL is the same hop and the presence
+            // flag falls out of it. One read of the disk, one answer.
+            verifiedURL: await store.verifiedModelURL(),
             bytesOnDisk: await store.bytesOnDisk(),
             failure: failure.map { Self.describeModelError($0) })
     }
