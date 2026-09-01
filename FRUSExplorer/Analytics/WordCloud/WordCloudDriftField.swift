@@ -262,7 +262,8 @@ struct WordCloudDriftField: Sendable {
 
         let drifted = CGPoint(x: p.home.x + dx, y: p.home.y + dy)
         let bounded = clamp(drifted, halfSize: p.halfSize, scale: scale, in: size, bleed: bleed)
-        let clear = push(bounded, halfSize: p.halfSize, scale: scale, outOf: zones, in: size)
+        let clear = push(bounded, halfSize: p.halfSize, scale: scale, outOf: zones, in: size,
+                         bleed: bleed)
         return State(position: clear, scale: scale, opacity: opacity)
     }
 
@@ -273,7 +274,7 @@ struct WordCloudDriftField: Sendable {
     /// nudge, not a relocation. A word that cannot escape — larger than the gap the zones
     /// leave — is left where the canvas clamp put it rather than teleported somewhere worse.
     static func push(_ point: CGPoint, halfSize: CGSize, scale: CGFloat,
-                     outOf zones: [CGRect], in size: CGSize) -> CGPoint {
+                     outOf zones: [CGRect], in size: CGSize, bleed: CGFloat) -> CGPoint {
         guard !zones.isEmpty else { return point }
         var result = point
         let halfW = halfSize.width * scale
@@ -298,8 +299,18 @@ struct WordCloudDriftField: Sendable {
             } else {
                 candidate.y += shortest + (shortest < 0 ? -clearance : clearance)
             }
-            // Only accept a push that stays on the canvas; otherwise leave it be.
-            let reclamped = clamp(candidate, halfSize: halfSize, scale: scale, in: size)
+            // Only accept a push that stays on the canvas; otherwise leave it be — measured
+            // against the SAME canvas `state(of:)` clamped to, bleed included.
+            //
+            // This test used to re-clamp with the default `bleed: 0` while its caller had
+            // clamped with the surface's own bleed, so on any surface with fill > 1 — every
+            // host taller than `bandHeight`, the full-bleed splash included — a legitimate
+            // push whose landing sat in the bleed margin was measured against a tighter
+            // canvas, judged off-screen, and rejected. The word then stayed exactly where the
+            // zone existed to keep it from. The parameter is required rather than defaulted
+            // because a silent default is what made the two disagree in the first place.
+            let reclamped = clamp(candidate, halfSize: halfSize, scale: scale, in: size,
+                                  bleed: bleed)
             if abs(reclamped.x - candidate.x) < 0.5, abs(reclamped.y - candidate.y) < 0.5 {
                 result = candidate
             }

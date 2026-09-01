@@ -50,8 +50,21 @@ struct LaunchSplashView: View {
                 WordCloudBackdropView(
                     scope: .corpus,
                     dim: FRUSTheme.cloudDimSplash,
-                    exclusionZones: [identityZone(in: proxy.size)],
+                    exclusionZones: [Self.identityZone(in: proxy.size)],
                     showsChip: true,
+                    // The particle field, on the one surface composed for it (visual-marketing
+                    // plan §3.2, M-4). The static renderer gets no expansion and no bleed, so
+                    // today's splash is the "clump stranded in an empty expanse" the field's v1.2
+                    // spread exists to fix; full-bleed and full-screen, this is the only surface
+                    // that holds the composition the code was written for long enough to read it.
+                    //
+                    // It is also the first shipping surface to drift WITH an exclusion zone, which
+                    // is why `WordCloudDriftField.push`'s bleed re-clamp had to be fixed in the
+                    // same change: until now nothing exercised that path.
+                    //
+                    // Reduce Motion is already handled downstream — `WordCloudBackdropView` hands
+                    // the flag to the canvas, which freezes the field at its packed layout.
+                    drift: true,
                     // SEEDED, never randomised (visual-marketing §3.2, M-5). This surface is the
                     // App Preview's opening frame, a store screenshot and the README hero at once;
                     // a lens decided by the wall clock makes the beat that most needs reproducing
@@ -129,7 +142,7 @@ struct LaunchSplashView: View {
         .accessibilityHidden(true)
     }
 
-    private func identityZone(in size: CGSize) -> CGRect {
+    static func identityZone(in size: CGSize) -> CGRect {
         let width: CGFloat = min(340, size.width - 48)
         let height: CGFloat = 260
         return CGRect(x: (size.width - width) / 2, y: (size.height - height) / 2,
