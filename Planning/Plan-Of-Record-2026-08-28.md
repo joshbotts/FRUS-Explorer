@@ -75,8 +75,12 @@ proposal and is left as written — read this block for what is true.
 | **M-3** — in-app motion | **§3.2's M-1, M-2, M-3 and M-5 shipped** as one change (#1158), plus §7 step 0's double-cloud fix (#1156). **M-4 alone remains** — step 14, deliberately after capture, `S in code, M in risk`. |
 | **M-1** — the store listing | **Copy drafted** (#1160, `Store-Listing-Draft.md`): every field counted, every number measured from a shipped artifact, disclaimer in the same field as the "official documentary record" line. **GATE B was already satisfied** — 552 volumes, 316,839 documents — so the capture program is unblocked. **GATE A stays owner-only** (EULA placeholders, privacy nutrition label; still no `.xcprivacy` in the repo). |
 
-§7 steps 0–9 are struck. **Steps 10–16 are the owner's**: run the capture sessions, finish the
-film, record the App Preview, Plate B, then M-4 and the outside-the-repo composition.
+**§7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9.** That line is machine-checked against the plan itself by
+`CodingStandardsAuditTests` — strike a row there without updating it here and the suite fails, which
+is the drift this document has already suffered once. Step 5 is deliberately NOT struck: its four
+conditions are closed but the plates themselves are an export the owner presses. **Steps 10–16 are
+the owner's**: run the capture sessions, finish the film, record the App Preview, Plate B, then M-4
+and the outside-the-repo composition.
 `Planning/Capture-Runbook.md` is the afternoon written down — every command self-contained and
 executed verbatim, the simulator wedge and its only measured cure, and the device classes the store
 actually requires (6.9″/13″), which are **not** the two this plan names.
