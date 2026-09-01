@@ -78,12 +78,23 @@ struct SplashDriftTests {
         // The zone starts hard against the left edge, so there is nowhere to the left to go.
         let zone = CGRect(x: 0, y: 0, width: 200, height: size.height)
         let half = CGSize(width: 40, height: 12)
-        let start = CGPoint(x: 100, y: 426)
+        // **Off the zone's midpoint, deliberately.** At x = 100 the left and right escapes are an
+        // exact tie (−140 and +140), `min(by:)` keeps the first, and the word is refused without
+        // `right` ever being evaluated — so the test passed while asserting nothing. At 110 the
+        // right escape is genuinely the shorter one.
+        let start = CGPoint(x: 110, y: 426)
         let pushed = WordCloudDriftField.push(start, halfSize: half, scale: 1,
                                               outOf: [zone], in: size, bleed: 0.12)
-        // `right` is the shortest escape here and it is on-canvas, so the word does move —
-        // what must not happen is a move that puts it off the left edge.
+        // Right is shortest and lands on-canvas: 200 + 40 + 1 = 241.
+        #expect(abs(pushed.x - 241) < 0.001, "expected a push right to 241, got \(pushed.x)")
         #expect(pushed.x >= 35.2 - 0.001, "the word was pushed off the canvas: \(pushed.x)")
+
+        // And the genuinely impossible case: a zone spanning the whole canvas has no escape at
+        // all, so every candidate is off-canvas and the word is left where it was.
+        let everywhere = CGRect(origin: .zero, size: size)
+        let stuck = WordCloudDriftField.push(start, halfSize: half, scale: 1,
+                                             outOf: [everywhere], in: size, bleed: 0.12)
+        #expect(stuck == start, "an impossible push must leave the word alone, got \(stuck)")
     }
 
     /// Without zones the whole path is inert, bleed or no bleed.
@@ -263,6 +274,28 @@ struct SplashDriftTests {
                 }
             }
         }
+    }
+
+    /// **The offset the view actually computes**, which the test above did not touch.
+    ///
+    /// `seededCanvasAgreesWithTheChip` computes `seed − origin` itself and feeds it to `cycle`,
+    /// so it proves the canvas honours an offset and says nothing about the offset being right.
+    /// Measured: replacing the view's whole computation with `return 0` left it green. This drives
+    /// `WordCloudBackdropView.driftLensOffset` instead.
+    @Test("The backdrop computes the offset the canvas needs")
+    func backdropComputesTheOffset() {
+        // Seeded, origin recorded: the gap the seed opened.
+        #expect(WordCloudBackdropView.driftLensOffset(seed: 0, origin: 7, currentPhase: 9) == -7)
+        #expect(WordCloudBackdropView.driftLensOffset(seed: 3, origin: 7, currentPhase: 9) == -4)
+        // Unseeded: zero, so the two shipping drift surfaces are untouched.
+        #expect(WordCloudBackdropView.driftLensOffset(seed: nil, origin: 7, currentPhase: 9) == 0)
+        #expect(WordCloudBackdropView.driftLensOffset(seed: nil, origin: nil, currentPhase: 9) == 0)
+        // **The first frame.** `phaseOrigin` is nil until the cadence driver appears, and that is
+        // the frame the App Preview opens on. Falling back to 0 there would show one lens while
+        // the chip named another; falling back to the current phase agrees with the chip, whose
+        // `lensIndex` is still its initial `seed`.
+        #expect(WordCloudBackdropView.driftLensOffset(seed: 0, origin: nil, currentPhase: 9) == -9)
+        #expect(WordCloudBackdropView.driftLensOffset(seed: 2, origin: nil, currentPhase: 9) == -7)
     }
 
     /// An unseeded surface is untouched — the two shipping drift surfaces must render exactly as

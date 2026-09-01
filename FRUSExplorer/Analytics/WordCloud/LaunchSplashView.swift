@@ -64,7 +64,10 @@ struct LaunchSplashView: View {
                     // same change: until now nothing exercised that path.
                     //
                     // Reduce Motion is already handled downstream — `WordCloudBackdropView` hands
-                    // the flag to the canvas, which freezes the field at its packed layout.
+                    // the flag to the canvas, which pins the MOTION clock so the field is drawn at
+                    // its packed layout. The lens rotation deliberately continues (at 6 Hz), on the
+                    // canvas's own stated rule that Reduce Motion simplifies a transition rather
+                    // than removing it; so the splash still crossfades, it just does not drift.
                     drift: true,
                     // SEEDED, never randomised (visual-marketing §3.2, M-5). This surface is the
                     // App Preview's opening frame, a store screenshot and the README hero at once;
@@ -106,7 +109,7 @@ struct LaunchSplashView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             shimmerBar
-                .padding(.top, 10)
+                .padding(.top, Self.shimmerTopPadding)
         }
         .padding(.horizontal, 32)
     }
@@ -138,7 +141,7 @@ struct LaunchSplashView: View {
                     .frame(width: 46)
                     .offset(x: (140 - 46) * phase)
             }
-            .frame(width: 140, height: 3)
+            .frame(width: 140, height: Self.shimmerHeight)
         }
         .accessibilityHidden(true)
     }
@@ -205,10 +208,24 @@ struct LaunchSplashView: View {
     static let captionSize: CGFloat = 13
     #endif
 
-    /// The least vertical space the identity block can occupy: its three type elements and the
-    /// gaps between them, before the shimmer bar and its padding. ``identityZone`` must cover it.
+    /// The shimmer bar's height, and the extra padding above it.
+    ///
+    /// Included in the floor below rather than left out as "chrome": it is the LOWEST element of
+    /// the block, so it is the first thing an under-sized or mis-placed zone stops protecting —
+    /// which is exactly what the safe-area offset did before ``identityZone`` took the insets.
+    static let shimmerHeight: CGFloat = 3
+    /// The gap above the shimmer bar, beyond the stack's own spacing.
+    static let shimmerTopPadding: CGFloat = 10
+
+    /// The least vertical space the identity block can occupy: its three type elements, the
+    /// shimmer bar, and every gap between them. ``identityZone`` must cover it.
+    ///
+    /// A floor, not the laid-out height — the two `Text` elements render at roughly 1.2x their
+    /// point size, so the real block is a little taller. Under-stating is the safe direction for
+    /// a guard; over-stating would fail on a zone that is in fact adequate.
     static var identityBlockMinimumHeight: CGFloat {
-        tileSize + wordmarkSize + captionSize + blockSpacing * 3
+        tileSize + wordmarkSize + captionSize + shimmerHeight
+            + blockSpacing * 3 + shimmerTopPadding
     }
 }
 

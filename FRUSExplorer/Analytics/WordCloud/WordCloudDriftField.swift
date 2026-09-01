@@ -226,8 +226,12 @@ struct WordCloudDriftField: Sendable {
     /// - Parameter time: seconds since an arbitrary but fixed epoch. `0` yields the rest
     ///   pose, which is what Reduce Motion draws.
     /// - Parameter size: the canvas, used only to keep words inside it.
+    /// - Note: `bleed` is **required**, on the same argument the push's own re-clamp records: a
+    ///   silent default is what let the two clamps disagree, and nothing structurally ties a
+    ///   caller's bleed to the one the particle's homes were expanded with. Making it explicit
+    ///   puts the question in front of every caller instead of answering it for them with a zero.
     static func state(of p: Particle, at time: Double, in size: CGSize,
-                      avoiding zones: [CGRect] = [], bleed: CGFloat = 0) -> State {
+                      avoiding zones: [CGRect] = [], bleed: CGFloat) -> State {
         // Parallax: near words swing wider and faster than far ones. This is the whole of
         // the depth illusion — the eye reads differential motion as distance long before it
         // reads size.
