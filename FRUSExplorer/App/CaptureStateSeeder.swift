@@ -144,10 +144,22 @@ enum CaptureStateSeeder {
                                         projectIds: [project.id])
             context.insert(collection)
             for (position, document) in entry.documents.enumerated() {
-                context.insert(CollectionEntry(collectionId: collection.id,
-                                               documentId: document.document,
-                                               volumeId: document.volume,
-                                               sortOrder: position))
+                let row = CollectionEntry(collectionId: collection.id,
+                                          documentId: document.document,
+                                          volumeId: document.volume,
+                                          sortOrder: position)
+                context.insert(row)
+                // The link, not just the id. `CollectionEntry.init` does not set `collection`, and
+                // every reader of a collection's contents goes through the `documentEntries`
+                // relationship — so an entry that carries only `collectionId` is invisible. Seeded
+                // collections shipped empty until this line, which is precisely the screen State C
+                // exists to fill.
+                //
+                // Assigning the INVERSE rather than appending to `collection.documentEntries`, the
+                // way `CollectionPickerSheet.add` does: that relationship is still `nil` on a
+                // collection inserted moments ago, so the optional-chained append does nothing at
+                // all. SwiftData maintains the other side from this.
+                row.collection = collection
             }
         }
 
