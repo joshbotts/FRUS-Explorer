@@ -7,45 +7,42 @@ frames are manual on an erased device, in a window that occurs once per install.
 
 ---
 
-## 0. Resolve the capture device once
+## 0. How the blocks in this document work
 
-Every command below uses `$UDID`. Run this first, in the shell you will keep.
+**Every `bash` block here is self-contained.** Each one resolves its own device, so you can copy any
+single block into a cold shell and it will run. Nothing depends on a variable you set in an earlier
+block, and nothing has a blank for you to fill in.
 
-```bash
-# Newest installed runtime carrying the named device. Change the name for another class (§8).
-UDID=$(xcrun simctl list devices available -j | python3 -c '
-import json, sys
-devices = json.load(sys.stdin)["devices"]
-match = ""
-for runtime in sorted(devices):
-    for device in devices[runtime]:
-        if device["name"] == "iPhone 17":
-            match = device["udid"]
-print(match)')
-echo "$UDID"
-```
+That is a rule this document learned the hard way, three times over: first a literal `id=<UDID>`
+placeholder, then a `simctl launch --console` that hangs the terminal, then a `$UDID` set in one
+block and used in another — which fails with *"missing value for key 'id' of option 'Destination'"*
+the moment anyone copies the second block alone. **A runbook block that needs invisible prior state
+is a runbook block that is wrong.**
 
-**Pin the device by id, not by name, and this is a departure from `CLAUDE.md` on purpose.** The
-house idiom for running tests is `name=iPhone 17`, which is right there: any iPhone 17 will do. A
-capture is different — three iOS runtimes are installed, `name=` silently picks one of them, and
-"which device did I shoot on" has to be answerable afterwards. Resolving once and pinning `id=`
-costs nothing and removes the ambiguity.
+To shoot a different device class, change `DEVICE=` at the top of the block — see §8.
+
+**Why `id=` and not `name=`, which is a departure from `CLAUDE.md` on purpose.** The house idiom for
+running tests is `name=iPhone 17`: right there, because any iPhone 17 will do. A capture is
+different — several iOS runtimes are installed, `name=` silently picks one, and *"which device did I
+shoot on"* has to be answerable afterwards.
 
 ## 1. The frame sequence — RUN 2026-08-31, and it holds
 
 ```bash
+DEVICE="iPhone 17"
+UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next((x['udid'] for r in sorted(d,reverse=True) for x in d[r] if x['name']=='$DEVICE'),''))")
+[ -n "$UDID" ] && echo "Using $DEVICE ($UDID)" || echo "!! No '$DEVICE' simulator — check: xcrun simctl list devices available"
+
+# The wedge cure, up front. Measured as needed before roughly every run — see §3.
+xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl erase "$UDID"
+
 TEST_RUNNER_RENDER_MAP_FRAMES_DIR=/tmp/map-frames xcodebuild test \
   -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,id=$UDID" \
   -only-testing FRUSExplorerTests/SemanticMapFrameSequenceTests
 ```
 
-**Copy that as it stands — it is the whole command.** `name=` is the house idiom (`CLAUDE.md` uses
-it for every documented test run) and it resolves even with several iOS runtimes installed, so
-there is nothing to substitute. An earlier draft wrote `id=<UDID>`, which is not a command but a
-fill-in-the-blank: pasted verbatim it fails with *"Unable to find a device matching the provided
-destination specifier"* and forty lines of devices. Where a UDID is genuinely needed — `simctl`,
-below — this document resolves it for you.
+Verified by running that block verbatim in a shell with no prior state: 553 frames.
 
 Two things about that command are load-bearing and both are in the harness's own doc comment: the
 env var **must** wear xcodebuild's `TEST_RUNNER_` prefix (a trailing `KEY=VALUE` is a build setting
@@ -66,9 +63,11 @@ mean barely moves — the shape of a warm-up outlier, not a slower device. The o
 either way: the sequence is deterministic in the artifact, not in the host.
 
 Files `frame-0000.png` … `frame-0552.png`, **no gaps**, plus `frames.csv` (554 lines: header + 553)
-and `provenance.txt`. Assemble with:
+and `provenance.txt`. **The film assembles, verified 2026-09-01**: 553 frames at 12 fps → `map.mp4`, 1920×1080,
+**46.1 s, 1.19 MB**. Assemble with:
 
 ```bash
+cd /tmp/map-frames
 ffmpeg -framerate 12 -i frame-%04d.png -pix_fmt yuv420p map.mp4
 ```
 
@@ -213,23 +212,16 @@ screens a research app most needs to show.
 idempotent by project name, mirroring the two seeders already on that boot path.
 
 ```bash
-# Resolve the capture device once — newest installed runtime that has it.
-UDID=$(xcrun simctl list devices available -j | python3 -c '
-import json, sys
-devices = json.load(sys.stdin)["devices"]
-match = ""
-for runtime in sorted(devices):
-    for device in devices[runtime]:
-        if device["name"] == "iPhone 17":
-            match = device["udid"]
-print(match)')
-echo "$UDID"
+DEVICE="iPhone 17"
+UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next((x['udid'] for r in sorted(d,reverse=True) for x in d[r] if x['name']=='$DEVICE'),''))")
+[ -n "$UDID" ] && echo "Using $DEVICE ($UDID)" || echo "!! No '$DEVICE' simulator — check: xcrun simctl list devices available"
 
 xcrun simctl boot "$UDID" 2>/dev/null || true
 xcrun simctl launch "$UDID" bottsywattsy.FRUS-Explorer --setenv FRUS_CAPTURE_SEED 1
 ```
 
-Change the device name in that snippet to whichever class you are shooting — see §8.
+Change `DEVICE=` for another class — see §8. **Do not erase before this one**: unlike §1, this block
+writes state you want to keep.
 
 Three things that will otherwise cost you an afternoon:
 
@@ -271,18 +263,26 @@ targets. Expect to need it roughly once per back-to-back pair: erase, run, and i
 second run straight after, erase again.
 
 ```bash
+DEVICE="iPhone 17"
+UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next((x['udid'] for r in sorted(d,reverse=True) for x in d[r] if x['name']=='$DEVICE'),''))")
 xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl erase "$UDID"
 ```
 
 Erasing destroys that device's data — **including a seeded State C**. Check before you run it:
 
 ```bash
+DEVICE="iPhone 17"
+UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];print(next((x['udid'] for r in sorted(d,reverse=True) for x in d[r] if x['name']=='$DEVICE'),''))")
+xcrun simctl boot "$UDID" 2>/dev/null; sleep 4      # the lookup needs a booted device
 xcrun simctl get_app_container "$UDID" bottsywattsy.FRUS-Explorer data
+xcrun simctl shutdown "$UDID" 2>/dev/null
 ```
 
-No container means nothing to lose. A container means re-seed after erasing (§7 is one command, so
-this is cheap — but losing hand-edited `Content` prose is not, and that lives in the source, not on
-the device).
+**An error is the good answer here.** `No such file or directory` means the app is not installed and
+there is nothing to lose. A path means a container exists — re-seed after erasing.
+
+Re-seeding is one command (§7), so the state itself is cheap; the hand-edited `Content` prose is
+not, and that lives in the source rather than on the device, so it survives any erase.
 
 The cleanest avoidance is to keep the two jobs on **different** devices: seed State C on the class
 you are shooting, and render the frame sequence somewhere else.
