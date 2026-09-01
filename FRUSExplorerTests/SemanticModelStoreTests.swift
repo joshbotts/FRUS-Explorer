@@ -43,6 +43,50 @@ struct SemanticModelStoreTests {
         return url
     }
 
+    // MARK: - The settings status
+
+    /// **The status carries the verified URL, so the view never asks the actor.**
+    ///
+    /// `SemanticModelSection`'s path row used to call `SemanticModelStore.verifiedModelURL()`
+    /// straight from its body: an actor-isolated call from a synchronous MainActor context — a
+    /// strict-concurrency warning the project's standards forbid — and two filesystem stats on
+    /// every body evaluation. `semanticModelStatus()` was already awaiting that same actor and
+    /// throwing the URL away.
+    ///
+    /// Driven end to end through a real store and a real adopt, not through a hand-built status,
+    /// so the assertion covers the hop the view depends on rather than a copy of it.
+    @Test("The status carries the verified URL, and presence is that same fact")
+    @MainActor
+    func statusCarriesTheVerifiedURL() async throws {
+        let dir = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = SemanticModelStore(
+            directory: dir, expectedSHA256: Self.fixtureSHA,
+            expectedBytes: Self.fixtureBytes.count)
+        let state = AppState()
+        state.semanticModelStore = store
+
+        var status = await state.semanticModelStatus()
+        #expect(status.isAvailable)
+        #expect(status.verifiedURL == nil, "nothing adopted yet")
+        #expect(!status.isPresent)
+
+        try await store.adoptModel(from: writeFixture(in: dir))
+
+        status = await state.semanticModelStatus()
+        #expect(status.verifiedURL == store.modelFileURL)
+        #expect(status.isPresent, "presence and the URL are one fact and cannot disagree")
+        #expect(status.bytesOnDisk == Self.fixtureBytes.count)
+    }
+
+    /// The stack-not-booted state names no file, and is not "downloaded".
+    @Test("An unavailable status has no URL and is not present")
+    func unavailableStatusNamesNoFile() {
+        #expect(AppState.SemanticModelStatus.unavailable.verifiedURL == nil)
+        #expect(!AppState.SemanticModelStatus.unavailable.isPresent)
+        #expect(!AppState.SemanticModelStatus.unavailable.isAvailable)
+    }
+
     @Test("A wrong-length file is refused before any hashing, and nothing lands")
     func wrongLengthRefused() async throws {
         let dir = try makeDirectory()
