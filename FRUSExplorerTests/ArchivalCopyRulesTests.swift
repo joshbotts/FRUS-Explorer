@@ -75,6 +75,12 @@ struct ArchivalCopyRulesTests {
         "Analytics/PersonAnalyticsView.swift",
         "Analytics/PersonCoMentionGraphView.swift",
         "Chronology/ChronologyView.swift",
+        // W-13: the coverage statement's prose. It ships in exported Markdown, CSV, and a
+        // collection PDF, which is the copy least likely to be re-read and the most likely to be
+        // quoted — and until it was listed here nothing checked its spelling at all. Both files
+        // were already clean, so enrolling them is a zero-diff guard against the next edit.
+        "Export/QueryMethodAppendix.swift",
+        "ProjectContext/DocumentEngagementService.swift",
     ]
 
     private static func source(_ relative: String) throws -> String {

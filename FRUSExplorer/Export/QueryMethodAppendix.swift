@@ -69,12 +69,42 @@ struct QueryMethodAppendix: Sendable, Equatable {
         /// tell those apart and does not claim to.
         var workingCorpusName: String?
 
+        /// The id of that corpus. Stored beside the name because the coverage block narrows on it:
+        /// a name is what a reader sees, an id is what a join needs, and two corpora may share a
+        /// name. `nil` on the same terms as ``workingCorpusName``.
+        var workingCorpusId: UUID?
+
         /// The FTS5 expression the query compiled to. Printed in the CSV only — it is the answer
         /// to "what did the app actually search for", which prose cannot give.
         var renderedExpression: String?
 
         /// The id of the project active at execution, if any.
         var projectId: UUID?
+    }
+
+    /// One corpus and how much of it was examined.
+    ///
+    /// Version history:
+    ///   1.0 — W-13 session 2: initial implementation
+    struct CorpusCoverage: Sendable, Equatable {
+
+        /// The corpus, for the join against ``Row/workingCorpusId``.
+        var corpusId: UUID
+
+        /// Its name at export time.
+        var corpusName: String
+
+        /// Opened / annotated / collected against the corpus's own document count.
+        var coverage: EngagementCoverage
+
+        /// Whether the capture that built the corpus was complete.
+        ///
+        /// **The denominator can itself be a floor**, and this appendix's one non-negotiable
+        /// property is that a floor never renders as a total. A corpus saved at the row ceiling
+        /// holds 7,500 of 40,000 matches, so "43 of 7,500 worked on" is a true sentence about a
+        /// set that is not the one the query described — and a reader has no way to tell without
+        /// being told.
+        var truncation: WorkingCorpus.CaptureTruncation = .unrecorded
     }
 
     /// The active project's name at export time, heading the appendix exactly as it heads a
@@ -90,6 +120,16 @@ struct QueryMethodAppendix: Sendable, Equatable {
     /// Every recorded search, oldest first.
     var rows: [Row]
 
+    /// How much of each searched corpus was actually examined (W-13 session 2).
+    ///
+    /// **Every corpus here was searched inside by one of `rows`.** That is the whole answer to the
+    /// question of what a coverage statement in a query log is entitled to describe: a
+    /// `WorkingCorpus` carries no project identifier, so there is no such thing as "this project's
+    /// corpora" to report on — but "the corpora this project searched inside" is derivable from
+    /// the log itself, through `SearchHistoryEntry.appliedCorpusId`. Read
+    /// ``applicableCoverage`` rather than this, which narrows with the rows.
+    var corpusCoverage: [CorpusCoverage] = []
+
     // MARK: - Construction
 
     /// Builds an appendix from the stored trail.
@@ -101,11 +141,15 @@ struct QueryMethodAppendix: Sendable, Equatable {
     ///   - projectName: the active project's name, or `nil` in global context.
     ///   - researchQuestion: that project's research question, if set.
     ///   - generatedAt: the export timestamp.
+    ///   - corpusCoverage: how much of each searched corpus was examined, or `[]`. Defaulted so
+    ///     every existing caller and test keeps compiling and keeps meaning what it meant — an
+    ///     appendix with no coverage table renders exactly as it did before W-13 session 2.
     static func make(searches: [SearchHistoryEntry],
                      corpusNames: [UUID: String],
                      projectName: String?,
                      researchQuestion: String?,
-                     generatedAt: Date) -> QueryMethodAppendix {
+                     generatedAt: Date,
+                     corpusCoverage: [CorpusCoverage] = []) -> QueryMethodAppendix {
         let sorted = searches.sorted { lhs, rhs in
             switch (lhs.executedAt, rhs.executedAt) {
             case let (left?, right?): return left < right
@@ -125,9 +169,11 @@ struct QueryMethodAppendix: Sendable, Equatable {
                     scopeSignature: entry.scopeSignature,
                     indexedVolumeCount: entry.indexedVolumeCount,
                     workingCorpusName: entry.appliedCorpusId.flatMap { corpusNames[$0] },
+                    workingCorpusId: entry.appliedCorpusId,
                     renderedExpression: entry.renderedExpression,
                     projectId: entry.projectId)
-            })
+            },
+            corpusCoverage: corpusCoverage.sorted { $0.corpusName < $1.corpusName })
     }
 
     /// The same appendix, narrowed to the searches run under one project.
@@ -148,6 +194,13 @@ struct QueryMethodAppendix: Sendable, Equatable {
     func scoped(toProject projectId: UUID?) -> QueryMethodAppendix {
         var scoped = self
         scoped.rows = projectId.map { id in rows.filter { $0.projectId == id } } ?? []
+        // The coverage table is narrowed with the rows, on the same argument. `coverageLines`
+        // already renders only ``applicableCoverage``, so this is belt as well as braces — but a
+        // scoped appendix is the one handed to a *collection export*, a shareable artifact, and a
+        // stored table naming corpora from another line of work is exactly the disclosure the
+        // narrowing exists to prevent. Anything reading `corpusCoverage` directly is safe too.
+        let searched = Set(scoped.rows.compactMap(\.workingCorpusId))
+        scoped.corpusCoverage = corpusCoverage.filter { searched.contains($0.corpusId) }
         return scoped
     }
 
@@ -179,6 +232,69 @@ struct QueryMethodAppendix: Sendable, Equatable {
     /// sentence in a method appendix.
     var keywordZeroResultRowCount: Int {
         rows.filter { $0.count.displayedTotal == 0 && !Self.isSemanticRow($0) }.count
+    }
+
+    /// The coverage rows that describe corpora **these** rows actually searched inside.
+    ///
+    /// Derived rather than stored, for the reason ``scoped(toProject:)`` gives about the caveat
+    /// counts: a narrowed appendix that kept reporting coverage of a corpus it no longer shows a
+    /// search for would be describing a different document. Narrowing the rows narrows this.
+    var applicableCoverage: [CorpusCoverage] {
+        let searched = Set(rows.compactMap(\.workingCorpusId))
+        return corpusCoverage.filter { searched.contains($0.corpusId) }
+    }
+
+    /// The heading over the coverage block, in every format.
+    static var coverageHeading: String {
+        String(localized: "appendix.coverage.heading",
+               defaultValue: "How much of each searched corpus was examined")
+    }
+
+    /// The coverage block as plain sentences — **one definition, rendered by all three formats.**
+    ///
+    /// The three renderers decorate it differently (a Markdown bullet, a bare line, a `#` comment)
+    /// and none of them composes the sentence. That is deliberate and is the failure this block was
+    /// written to avoid: the appendix already had three renderers, and a fact added to one of them
+    /// appears in the exported Markdown and is silently missing from the collection PDF that the
+    /// same research is published from.
+    ///
+    /// Empty when no row searched inside a corpus, which is the honest outcome rather than a
+    /// degenerate one: with no corpus there is no denominator, and a coverage statement without a
+    /// denominator is the thing this feature exists to replace.
+    var coverageLines: [String] {
+        let applicable = applicableCoverage
+        guard !applicable.isEmpty else { return [] }
+        // Whose engagement, said plainly. A project-scoped count attributes a note or a highlight
+        // through the project that owns it, so a highlight made with no note attached to no project
+        // is not counted — and a reader recomputing these numbers by hand needs to know which
+        // population they describe before the difference looks like an error.
+        var lines = [projectName == nil
+            ? String(localized: "appendix.coverage.preamble.device",
+                     defaultValue: "Coverage counts what has been done on this device with the documents each corpus holds — opened, annotated, or placed in a collection. It is not what the searches returned.")
+            : String(localized: "appendix.coverage.preamble.project",
+                     defaultValue: "Coverage counts what this project has done with the documents each corpus holds — opened, annotated, or placed in a collection. It is not what the searches returned.")]
+        for entry in applicable {
+            var sentence = "\(entry.corpusName): \(entry.coverage.coverageDescription)"
+            if let breakdown = entry.coverage.breakdownDescription {
+                sentence += " · \(breakdown)"
+            }
+            sentence += " · \(entry.coverage.untouchedDescription)"
+            lines.append(sentence)
+            // The denominator's own completeness, in the corpus browser's exact words, prefixed
+            // with the name so a multi-corpus block stays attributable line by line.
+            if let note = CorporaAxis.truncationLine(entry.truncation,
+                                                     documentCount: entry.coverage.totalCount) {
+                lines.append("\(entry.corpusName): \(note)")
+            }
+        }
+        // Once for the block, not once per corpus: the gate is a device setting, so a log with
+        // four corpora would otherwise print the same sentence four times. Taken from the first
+        // coverage that HAS one rather than from the first coverage — `first?.loggingCaveat` is
+        // nil whenever the alphabetically-first corpus happens to be the complete one.
+        if let caveat = applicable.compactMap({ $0.coverage.loggingCaveat }).first {
+            lines.append(caveat)
+        }
+        return lines
     }
 
     /// Rows recorded from the Meaning route, so the appendix can say what those counts mean.
@@ -226,6 +342,12 @@ struct QueryMethodAppendix: Sendable, Equatable {
                 Self.escapeMarkdownCell(row.scopeProse)
             ].joined(separator: " | ") + " |")
         }
+        let coverage = coverageLines
+        if !coverage.isEmpty {
+            lines.append("")
+            lines.append("## " + Self.coverageHeading)
+            for line in coverage { lines.append("- \(line)") }
+        }
         lines.append("")
         lines.append("## " + String(localized: "appendix.method.heading",
                                     defaultValue: "How to read this table"))
@@ -250,6 +372,12 @@ struct QueryMethodAppendix: Sendable, Equatable {
     var plainTextLines: [String] {
         var lines = [String(localized: "appendix.title", defaultValue: "Query log — method appendix")]
         for caveat in caveats { lines.append("— \(caveat)") }
+        let coverage = coverageLines
+        if !coverage.isEmpty {
+            lines.append("")
+            lines.append(Self.coverageHeading)
+            for line in coverage { lines.append(line) }
+        }
         lines.append("")
         for row in rows {
             var parts = [row.executedAt.map(Self.tableDate) ?? "—", "“\(row.queryText)”"]
@@ -312,6 +440,12 @@ struct QueryMethodAppendix: Sendable, Equatable {
         }
         lines.append("\(String(localized: "appendix.field.generated", defaultValue: "Generated")): \(Self.appCredit), \(formattedGeneratedAt)")
         lines.append("\(String(localized: "appendix.field.searches", defaultValue: "Searches")): \(rows.count.formatted())")
+        let coverage = coverageLines
+        if !coverage.isEmpty {
+            lines.append("")
+            lines.append(Self.coverageHeading)
+            for line in coverage { lines.append(line) }
+        }
         lines.append("")
         lines.append(String(localized: "appendix.method.heading", defaultValue: "How to read this table"))
         for caveat in caveats { lines.append(caveat) }

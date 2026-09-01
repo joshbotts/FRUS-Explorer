@@ -808,8 +808,63 @@ enum ResearchDataExporter {
             corpusNames: Dictionary(corpora.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first }),
             projectName: project?.name,
             researchQuestion: project?.researchQuestion,
-            generatedAt: generatedAt
+            generatedAt: generatedAt,
+            corpusCoverage: coverage(of: corpora, searchedBy: searches,
+                                     project: activeProjectId, in: modelContext)
         )
+    }
+
+    /// How much of each **searched** corpus the project examined (W-13 session 2).
+    ///
+    /// ## Why the corpora are chosen this way
+    /// A `WorkingCorpus` carries no project identifier — there is no such thing in this schema as
+    /// "this project's corpora", and inventing one for an export would be inventing a fact. What
+    /// does exist is `SearchHistoryEntry.appliedCorpusId`: the only record in the app where a
+    /// corpus id and a project id sit together. So the universe is *the corpora this log searched
+    /// inside*, which is also exactly the bridge the appendix was missing — from what was searched
+    /// to what was examined.
+    ///
+    /// Every searched corpus is measured here, not only the active project's, because
+    /// ``QueryMethodAppendix/scoped(toProject:)`` narrows both the rows and this table together.
+    /// Measuring the union costs one extra `partition` per corpus over an already-gathered key set.
+    ///
+    /// ## Gathered once
+    /// The three engagement gathers each read every note, visit and collection on the device.
+    /// Running them per corpus would repeat that per corpus, so they run once and every corpus is
+    /// partitioned against the same sets — which also guarantees the rows cannot disagree.
+    ///
+    /// - Parameters:
+    ///   - corpora: every working corpus on the device.
+    ///   - searches: the recorded searches, unscoped.
+    ///   - projectId: the project whose engagement counts, or `nil` for the whole device.
+    ///   - modelContext: the context to read from.
+    /// - Returns: one row per searched corpus, or `[]` when no search named one.
+    private static func coverage(of corpora: [WorkingCorpus],
+                                 searchedBy searches: [SearchHistoryEntry],
+                                 project projectId: UUID?,
+                                 in modelContext: ModelContext) -> [QueryMethodAppendix.CorpusCoverage] {
+        // **The project's own searches, not every search on the device.** The Settings route
+        // exports the whole trail while naming the active project in its header, so taking the
+        // corpora from all rows would list one another project searched and report THIS project's
+        // engagement against it — a fraction whose numerator and denominator describe different
+        // populations, and which would read as a real zero. Narrowing here keeps every coverage
+        // line about one population; `applicableCoverage` then drops any the rows do not mention.
+        let searched = Set(searches
+            .filter { projectId == nil || $0.projectId == projectId }
+            .compactMap(\.appliedCorpusId))
+        let measurable = corpora.filter { searched.contains($0.id) }
+        guard !measurable.isEmpty else { return [] }
+        let keys = DocumentEngagementService.gather(forProject: projectId, in: modelContext)
+        let isOpenedComplete = AppState.isResearchLoggingEnabled
+        return measurable.map { corpus in
+            QueryMethodAppendix.CorpusCoverage(
+                corpusId: corpus.id,
+                corpusName: corpus.name,
+                coverage: DocumentEngagementService.partition(corpusKeys: corpus.documentKeys,
+                                                              keys: keys,
+                                                              isOpenedComplete: isOpenedComplete),
+                truncation: corpus.truncationAtCapture)
+        }
     }
 
     /// The method-appendix lines for a collection export, or `[]` (M-2).

@@ -27,6 +27,37 @@ struct ProjectHomeRequest: Codable, Hashable {
     let projectId: UUID
 }
 
+// MARK: - ProjectCorpusCoverage
+
+/// One coverage tile's content: a corpus this project searched inside, and how much of it has been
+/// worked on (W-13 session 2).
+///
+/// A view-side type rather than a reuse of `QueryMethodAppendix.CorpusCoverage`, which is an export
+/// record and carries an export's obligations. Both are built from the same
+/// `DocumentEngagementService.partition` over the same gathered keys, so the tile and the appendix
+/// state the same numbers by construction rather than by agreement.
+///
+/// Version history:
+///   1.0 — W-13 session 2: initial implementation
+struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
+
+    /// The corpus, and the tile's stable identity in the grid.
+    let corpusId: UUID
+
+    /// Its name, which is the tile's label.
+    let corpusName: String
+
+    /// Opened / annotated / collected against the corpus's own document count.
+    let coverage: EngagementCoverage
+
+    /// Whether the capture that built the corpus was complete — the denominator can itself be a
+    /// floor, and a tile reading "43/267" must not imply 267 was every match.
+    let truncation: WorkingCorpus.CaptureTruncation
+
+    /// `ForEach` identity.
+    var id: UUID { corpusId }
+}
+
 // MARK: - ProjectHomeView
 
 /// The **Project Home** dashboard (#377 Phase 1) — a project's activity workspace.
@@ -94,6 +125,12 @@ struct ProjectHomeView: View {
     /// `isEditorialNote` is a snapshot taken when the lead surfaced (dismissed leads never
     /// refresh), so the lead row consults these live before trusting it.
     @Query private var classificationOverrides: [DocumentClassificationOverride]
+    /// W-13: the corpora, and the highlights the engagement partition needs. Both are read whole
+    /// and filtered in memory like every other table on this screen.
+    @Query(sort: \WorkingCorpus.name) private var allCorpora: [WorkingCorpus]
+    @Query private var allHighlights: [DocumentHighlight]
+    /// Coverage of the corpora this project searched inside, recomputed off the body path.
+    @State private var corpusCoverage: [ProjectCorpusCoverage] = []
     // Archive Visits Phase 3: the project's plan, resolved by in-memory `projectIds` filter
     // (the file's standing rule — the contains-predicate is unreliable in SwiftData).
     @Query(sort: \ArchiveVisitPlan.lastModified, order: .reverse)
@@ -193,6 +230,11 @@ struct ProjectHomeView: View {
         // Recompute leads when the project's collections (or their documents) change — the
         // discovery feedback loop (#377 Phase 3). Debounced inside `scheduleRecompute`.
         .onChange(of: seedSignature) { _, _ in scheduleRecompute() }
+        // W-13 coverage tiles. Keyed on a cheap signature of the tables the partition reads, so it
+        // recomputes when the answer can have changed and never on a bare re-render — the set
+        // arithmetic is over every note, visit and collection on the device, which is work this
+        // screen's body must not do.
+        .task(id: coverageSignature) { refreshCoverage() }
         .onDisappear { recomputeTask?.cancel() }
         .sheet(isPresented: $showFocusEditor) {
             ProjectFocusSubjectsEditor(projectId: projectId)
@@ -222,6 +264,55 @@ struct ProjectHomeView: View {
                     }
             }
             .environment(appState)
+        }
+    }
+
+    // MARK: - Coverage (W-13)
+
+    /// The signature the coverage recompute is keyed on.
+    ///
+    /// Counts only. It moves when a visit, note, highlight, collection or corpus is added or
+    /// removed, and when the corpora this project has searched changes — which is every way the
+    /// tiles' numbers can move except editing an existing record's project membership, the same
+    /// bound `EngagementObserver` accepts in `CorpusDocumentsView`.
+    private var coverageSignature: String {
+        let searched = Set(summary.searches.compactMap(\.appliedCorpusId)).count
+        return "\(projectId)-\(allVisits.count)-\(allNotes.count)-\(allHighlights.count)" +
+               "-\(allCollections.count)-\(allCollectionEntries.count)-\(allCorpora.count)-\(searched)"
+    }
+
+    /// Recomputes the coverage tiles from the arrays already on screen.
+    ///
+    /// **The corpora are the ones this project searched inside**, resolved through
+    /// `SearchHistoryEntry.appliedCorpusId` — the only record in the app carrying a corpus id and a
+    /// project id together. A `WorkingCorpus` has no project of its own, so any other choice of
+    /// universe would either invent a relationship or show the researcher corpora from an unrelated
+    /// line of work. Same rule as the exported appendix, which is why both read it from the log.
+    ///
+    /// No fetch: every table it needs is already a `@Query` on this view, and
+    /// `DocumentEngagementService`'s pure overloads take the arrays directly, so the tiles and the
+    /// export cannot come to disagree about what counts.
+    private func refreshCoverage() {
+        let searched = Set(summary.searches.compactMap(\.appliedCorpusId))
+        let measurable = allCorpora.filter { searched.contains($0.id) }
+        guard !measurable.isEmpty else {
+            corpusCoverage = []
+            return
+        }
+        let keys = DocumentEngagementService.gather(collections: allCollections,
+                                                    notes: allNotes,
+                                                    highlights: allHighlights,
+                                                    visits: allVisits,
+                                                    forProject: projectId)
+        let isOpenedComplete = AppState.isResearchLoggingEnabled
+        corpusCoverage = measurable.map { corpus in
+            ProjectCorpusCoverage(
+                corpusId: corpus.id,
+                corpusName: corpus.name,
+                coverage: DocumentEngagementService.partition(corpusKeys: corpus.documentKeys,
+                                                              keys: keys,
+                                                              isOpenedComplete: isOpenedComplete),
+                truncation: corpus.truncationAtCapture)
         }
     }
 
@@ -498,7 +589,46 @@ struct ProjectHomeView: View {
             statTile(s.searchCount,
                      String(localized: "project.home.stat.searches", defaultValue: "Searches Run"),
                      "magnifyingglass")
+            // W-13: one tile per corpus this project searched inside. Not a fifth fixed tile,
+            // because the number of corpora is a property of the research and not of the layout —
+            // and none at all is the common case, where the grid is exactly as it was.
+            ForEach(corpusCoverage) { entry in
+                coverageTile(entry)
+            }
         }
+    }
+
+    /// A coverage tile: how much of one searched corpus this project has worked on.
+    ///
+    /// A fraction where the others show a count, because the number alone answers nothing — "43"
+    /// is progress against 60 and a standing start against 6,000. The corpus name is the label,
+    /// so several tiles are told apart by the thing that distinguishes them.
+    private func coverageTile(_ entry: ProjectCorpusCoverage) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                Text(entry.corpusName).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            } icon: {
+                Image(systemName: "checklist").foregroundStyle(.secondary)
+            }
+            Text(verbatim: "\(entry.coverage.engagedCount)/\(entry.coverage.totalCount)")
+                .font(.title.weight(.semibold))
+                .contentTransition(.numericText())
+            Text(entry.coverage.untouchedDescription)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            if let note = CorporaAxis.truncationLine(entry.truncation,
+                                                     documentCount: entry.coverage.totalCount) {
+                Text(note)
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(entry.corpusName): \(entry.coverage.coverageDescription)")
     }
 
     private func statTile(_ count: Int, _ label: String, _ systemImage: String) -> some View {

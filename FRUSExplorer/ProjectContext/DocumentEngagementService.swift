@@ -169,12 +169,17 @@ struct EngagementCoverage: Sendable, Equatable {
 
     /// The headline sentence, stating both numbers the way ``WorkingCorpusResolution`` does.
     ///
+    /// Numbers go through `formatted()` rather than `%lld` so they carry the reader's grouping
+    /// separators. That is not cosmetic here: `QueryMethodAppendix` prints every other number this
+    /// way, and a methods appendix whose table said "1,234" beside a coverage line saying "1234"
+    /// invites the reader to wonder whether the two came from the same count.
+    ///
     /// Says "worked on" rather than "engaged": the codebase's own word for this set is *engaged*,
     /// but that is a term of art from `ProjectEngagedDocuments` and no reader has met it.
     var coverageDescription: String {
-        String(format: String(localized: "engagement.coverage %lld %lld",
-                              defaultValue: "%lld of %lld documents worked on"),
-               Int64(engagedCount), Int64(totalCount))
+        String(format: String(localized: "engagement.coverage %@ %@",
+                              defaultValue: "%@ of %@ documents worked on"),
+               engagedCount.formatted(), totalCount.formatted())
     }
 
     /// The per-kind breakdown that defines the headline, or `nil` when nothing is engaged.
@@ -184,9 +189,23 @@ struct EngagementCoverage: Sendable, Equatable {
     /// would leave the reader to infer.
     var breakdownDescription: String? {
         guard engagedCount > 0 else { return nil }
-        return String(format: String(localized: "engagement.breakdown %lld %lld %lld",
-                                     defaultValue: "%lld opened · %lld annotated · %lld collected"),
-                      Int64(openedCount), Int64(annotatedCount), Int64(collectedCount))
+        return String(format: String(localized: "engagement.breakdown %@ %@ %@",
+                                     defaultValue: "%@ opened · %@ annotated · %@ collected"),
+                      openedCount.formatted(), annotatedCount.formatted(),
+                      collectedCount.formatted())
+    }
+
+    /// The remainder, spelled out — "224 untouched".
+    ///
+    /// Separate from ``breakdownDescription`` rather than folded into it because the two surfaces
+    /// read differently: a list caption is glanced at repeatedly and stays terse, while an exported
+    /// methods appendix is read once and carefully, by someone checking a claim, and the number of
+    /// documents the researcher did *not* open is the one a reviewer most wants stated rather than
+    /// subtracted. The two cannot disagree — this is `totalCount - engagedCount`.
+    var untouchedDescription: String {
+        String(format: String(localized: "engagement.untouched %@",
+                              defaultValue: "%@ untouched"),
+               untouchedCount.formatted())
     }
 
     /// The caveat that must accompany ``openedCount`` when logging is off; `nil` when it is on.
@@ -238,8 +257,25 @@ enum DocumentEngagementService {
     /// - Returns: `"volumeId/documentId"` keys.
     nonisolated static func openedKeys(forProject projectId: UUID?,
                                        in context: ModelContext) -> Set<String> {
+        openedKeys(visits: (try? context.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? [],
+                   forProject: projectId)
+    }
+
+    /// The same rule over visits a caller already holds.
+    ///
+    /// Project Home has every one of these tables live in a `@Query` already, and re-fetching them
+    /// through a context to answer a question its own arrays can answer would be both wasteful and
+    /// a second place for the rule to live. The context overloads delegate here, so there is one
+    /// definition of what counts and the two callers cannot drift.
+    ///
+    /// - Parameters:
+    ///   - visits: the visits to consider.
+    ///   - projectId: The project to attribute to, or `nil` for every visit.
+    /// - Returns: `"volumeId/documentId"` keys.
+    nonisolated static func openedKeys(visits: [ReadingHistoryEntry],
+                                       forProject projectId: UUID?) -> Set<String> {
         var keys = Set<String>()
-        for visit in ((try? context.fetch(FetchDescriptor<ReadingHistoryEntry>())) ?? [])
+        for visit in visits
         where !visit.volumeId.isEmpty && !visit.documentId.isEmpty
             && (projectId == nil || visit.projectId == projectId) {
             keys.insert(ProjectEngagedDocuments.key(visit.volumeId, visit.documentId))
@@ -255,7 +291,22 @@ enum DocumentEngagementService {
     /// - Returns: `"volumeId/documentId"` keys.
     nonisolated static func annotatedKeys(forProject projectId: UUID?,
                                           in context: ModelContext) -> Set<String> {
-        let notes = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
+        annotatedKeys(notes: (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? [],
+                      highlights: (try? context.fetch(FetchDescriptor<DocumentHighlight>())) ?? [],
+                      forProject: projectId)
+    }
+
+    /// The same rule over notes and highlights a caller already holds. See
+    /// ``openedKeys(visits:forProject:)`` for why the pure overload exists.
+    ///
+    /// - Parameters:
+    ///   - notes: the notes to consider.
+    ///   - highlights: the highlights to consider.
+    ///   - projectId: The project to attribute to, or `nil` for every annotation.
+    /// - Returns: `"volumeId/documentId"` keys.
+    nonisolated static func annotatedKeys(notes: [ResearchNote],
+                                          highlights: [DocumentHighlight],
+                                          forProject projectId: UUID?) -> Set<String> {
         let inScope = notes.filter { note in
             guard let projectId else { return true }
             return note.projectIds.contains(projectId)
@@ -267,7 +318,7 @@ enum DocumentEngagementService {
         // A highlight has no project of its own; it inherits its note's. Unscoped, every highlight
         // counts — including the standalone ones, which are exactly what a scope cannot claim.
         let claimable = Set(inScope.map(\.id))
-        for highlight in ((try? context.fetch(FetchDescriptor<DocumentHighlight>())) ?? [])
+        for highlight in highlights
         where !highlight.volumeId.isEmpty && !highlight.documentId.isEmpty
             && (projectId == nil || highlight.noteId.map(claimable.contains) == true) {
             keys.insert(ProjectEngagedDocuments.key(highlight.volumeId, highlight.documentId))
@@ -288,7 +339,20 @@ enum DocumentEngagementService {
     /// - Returns: `"volumeId/documentId"` keys.
     nonisolated static func collectedKeys(forProject projectId: UUID?,
                                           in context: ModelContext) -> Set<String> {
-        let collections = ((try? context.fetch(FetchDescriptor<Collection>())) ?? [])
+        collectedKeys(collections: (try? context.fetch(FetchDescriptor<Collection>())) ?? [],
+                      forProject: projectId)
+    }
+
+    /// The same rule over collections a caller already holds. See
+    /// ``openedKeys(visits:forProject:)`` for why the pure overload exists.
+    ///
+    /// - Parameters:
+    ///   - collections: the collections to consider.
+    ///   - projectId: The project to attribute to, or `nil` for every collection.
+    /// - Returns: `"volumeId/documentId"` keys.
+    nonisolated static func collectedKeys(collections allCollections: [Collection],
+                                          forProject projectId: UUID?) -> Set<String> {
+        let collections = allCollections
             .filter { collection in
                 guard let projectId else { return true }
                 return collection.projectIds.contains(projectId)
@@ -302,6 +366,74 @@ enum DocumentEngagementService {
             }
         }
         return keys
+    }
+
+    /// The three kinds gathered once, for a caller that must partition **several** corpora.
+    ///
+    /// The export path needs this: a method appendix reports coverage of every corpus the project
+    /// searched inside, and gathering per corpus would re-fetch every note, visit and collection
+    /// once per corpus. Gather once, partition many.
+    ///
+    /// Version history:
+    ///   1.0 — W-13 session 2: initial implementation
+    struct GatheredKeys: Sendable, Equatable {
+        /// Documents opened in scope.
+        let opened: Set<String>
+        /// Documents carrying a note or a highlight.
+        let annotated: Set<String>
+        /// Documents in a collection.
+        let collected: Set<String>
+    }
+
+    /// Runs all three gatherers against one context.
+    ///
+    /// The single definition of "every kind of engagement": `coverage(forCorpusKeys:…)` calls it
+    /// too, so the one-corpus and many-corpus paths cannot come to disagree about what counts.
+    ///
+    /// - Parameters:
+    ///   - projectId: The project to attribute to, or `nil` for the whole device.
+    ///   - context: The context to fetch through.
+    /// - Returns: The three key sets.
+    nonisolated static func gather(forProject projectId: UUID?,
+                                   in context: ModelContext) -> GatheredKeys {
+        GatheredKeys(opened: openedKeys(forProject: projectId, in: context),
+                     annotated: annotatedKeys(forProject: projectId, in: context),
+                     collected: collectedKeys(forProject: projectId, in: context))
+    }
+
+    /// All three kinds over model arrays a caller already holds — the Project Home path.
+    ///
+    /// - Parameters:
+    ///   - collections: the collections to consider.
+    ///   - notes: the notes to consider.
+    ///   - highlights: the highlights to consider.
+    ///   - visits: the visits to consider.
+    ///   - projectId: The project to attribute to, or `nil` for the whole device.
+    /// - Returns: The three key sets.
+    nonisolated static func gather(collections: [Collection],
+                                   notes: [ResearchNote],
+                                   highlights: [DocumentHighlight],
+                                   visits: [ReadingHistoryEntry],
+                                   forProject projectId: UUID?) -> GatheredKeys {
+        GatheredKeys(opened: openedKeys(visits: visits, forProject: projectId),
+                     annotated: annotatedKeys(notes: notes, highlights: highlights,
+                                              forProject: projectId),
+                     collected: collectedKeys(collections: collections, forProject: projectId))
+    }
+
+    /// Partitions one corpus against an already-gathered key set.
+    ///
+    /// - Parameters:
+    ///   - corpusKeys: The corpus's document keys.
+    ///   - keys: The gathered engagement.
+    ///   - isOpenedComplete: Whether research logging is on.
+    /// - Returns: The partition.
+    nonisolated static func partition(corpusKeys: [String],
+                                      keys: GatheredKeys,
+                                      isOpenedComplete: Bool) -> EngagementCoverage {
+        partition(corpusKeys: corpusKeys,
+                  opened: keys.opened, annotated: keys.annotated, collected: keys.collected,
+                  isOpenedComplete: isOpenedComplete)
     }
 
     /// Partitions a corpus by the three gathered sets. Pure, so the suite pins the arithmetic
@@ -359,9 +491,7 @@ enum DocumentEngagementService {
         await Task.detached {
             let context = ModelContext(container)
             return partition(corpusKeys: corpusKeys,
-                             opened: openedKeys(forProject: projectId, in: context),
-                             annotated: annotatedKeys(forProject: projectId, in: context),
-                             collected: collectedKeys(forProject: projectId, in: context),
+                             keys: gather(forProject: projectId, in: context),
                              isOpenedComplete: isOpenedComplete)
         }.value
     }
