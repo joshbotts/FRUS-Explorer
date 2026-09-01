@@ -107,16 +107,22 @@ struct DocumentEngagementServiceTests {
 
     /// Both numbers, always — the ``WorkingCorpusResolution`` rule. A bare "3 worked on" invites
     /// the reader to supply a denominator they do not have.
-    @Test("The coverage sentence states both numbers, and the breakdown defines it")
-    func sentences() {
+    @Test("The coverage sentence states both numbers, in order, and the breakdown defines it")
+    func sentences() throws {
         let coverage = DocumentEngagementService.partition(
             corpusKeys: (1...10).map { "v1/d\($0)" },
             opened: ["v1/d1", "v1/d2"], annotated: ["v1/d3"], collected: ["v1/d4"],
             isOpenedComplete: true)
-        #expect(coverage.coverageDescription.contains("4"))
-        #expect(coverage.coverageDescription.contains("10"))
-        let breakdown = try? #require(coverage.breakdownDescription)
-        #expect(breakdown?.contains("2") == true)
+        // The ORDER, not merely the presence: "10 of 4 documents worked on" contains both
+        // numbers and is nonsense, and a swapped numerator/denominator is the classic way to
+        // write it. The engaged count must precede the corpus total.
+        let engaged = try #require(coverage.coverageDescription.range(of: "4"))
+        let total = try #require(coverage.coverageDescription.range(of: "10"))
+        #expect(engaged.lowerBound < total.lowerBound, "\(coverage.coverageDescription)")
+        // The breakdown reads opened, then annotated, then collected — 2, 1, 1 here, so the
+        // first number distinguishes it from either of the others.
+        let breakdown = try #require(coverage.breakdownDescription)
+        #expect(breakdown.hasPrefix("2"), "\(breakdown)")
         #expect(coverage.loggingCaveat == nil)
     }
 
