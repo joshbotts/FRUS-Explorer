@@ -65,6 +65,29 @@ Its own §7 sequences the work. The two things a reader of *this* document needs
 Plan §6 names its own largest structural gap (operations) and §8 records what it refuses.
 Read those two before scoping a session out of it.
 
+**PROGRESS THROUGH 2026-09-01. Every engineering row in this plan is now closed; what remains is
+capture, assembly and one deferred motion item.** The lane table above describes the state at
+proposal and is left as written — read this block for what is true.
+
+| Lane | State |
+|---|---|
+| **M-2** — the five residual gaps | **ALL FIVE CLOSED.** Gaps 1–2 by GATE C (#1154), 3–4 by steps 1–2 (#1155), 5 by its methods half (#1157). The three that *blocked publication* were the first three, so **the map figure and the analytics plates are publishable**. |
+| **M-3** — in-app motion | **§3.2's M-1, M-2, M-3 and M-5 shipped** as one change (#1158), plus §7 step 0's double-cloud fix (#1156). **M-4 alone remains** — step 14, deliberately after capture, `S in code, M in risk`. |
+| **M-1** — the store listing | **Copy drafted** (#1160, `Store-Listing-Draft.md`): every field counted, every number measured from a shipped artifact, disclaimer in the same field as the "official documentary record" line. **GATE B was already satisfied** — 552 volumes, 316,839 documents — so the capture program is unblocked. **GATE A stays owner-only** (EULA placeholders, privacy nutrition label; still no `.xcprivacy` in the repo). |
+
+§7 steps 0–9 are struck. **Steps 10–16 are the owner's**: run the capture sessions, finish the
+film, record the App Preview, Plate B, then M-4 and the outside-the-repo composition.
+`Planning/Capture-Runbook.md` is the afternoon written down — every command self-contained and
+executed verbatim, the simulator wedge and its only measured cure, and the device classes the store
+actually requires (6.9″/13″), which are **not** the two this plan names.
+
+**Five plan premises did not survive contact, each recorded at its row**: M-1's constraint 3 (a
+reveal-versus-`applyScope` race that does not exist — `setScope` never touches the camera); GATE C's
+"five builders" (there are 14 construction sites across 7 files); the claim that the caption band
+would eat the chart (the plate grows instead — measured +76 pt at any chart height); §4.2 condition
+3's "CSV-only today" (GATE C had already carried it to the plate); and the frame sequence's coverage
+ordering, which opened the film in **1620** and is now publication-ordered, opening on `frus1861`.
+
 ### 2b. The agentic-loop wave, W-19 — `Agentic-Loop-Development-Plan.md`
 
 *(Was Tier D, added 2026-08-30; promoted 2026-08-31.)* One wave, one plan document: the app-side
