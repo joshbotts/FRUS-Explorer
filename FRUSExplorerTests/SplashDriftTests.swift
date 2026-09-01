@@ -93,6 +93,38 @@ struct SplashDriftTests {
                                          scale: 1, outOf: [], in: phone, bleed: 0.12) == point)
     }
 
+    /// **The same defect through the door production uses.**
+    ///
+    /// The test above drives `push` directly, which is not what the canvas does — it calls
+    /// `state(of:)`, and `state(of:)` has to *forward* its bleed to the push. Fixing `push`'s
+    /// signature while leaving that call passing `0` restores the bug in full and leaves the
+    /// direct test green, so the fix needs an assertion on the real entry point. (Measured: that
+    /// exact mutation survived every other test in this suite.)
+    ///
+    /// At `t = 0` the field is phase-corrected to sit exactly on its packed layout with `breath`
+    /// at 1, so the particle is at `home` and the scale is `farScale`. That makes the geometry
+    /// arithmetic rather than a search: half-width 50 × 0.78 = 39, so a zone at x = 76 puts the
+    /// escape at 76 − 39 − 1 = **36**, inside the bleed-widened canvas (34.32) and outside the
+    /// bare one (39).
+    @Test("state(of:) forwards its bleed, so the push survives the trip")
+    func stateForwardsBleedIntoThePush() {
+        let size = CGSize(width: 400, height: 400)
+        // Full-height so a vertical escape is never the shortest; wide so `right` never is either.
+        let zone = CGRect(x: 76, y: 0, width: 250, height: 400)
+        let particle = WordCloudDriftField.Particle(
+            term: "communiqué", home: CGPoint(x: 100, y: 200), baseFontSize: 20,
+            rotationDegrees: 0, depth: 1, halfSize: CGSize(width: 50, height: 15),
+            phase: SIMD3<Double>(0, 0, 0))
+
+        let state = WordCloudDriftField.state(of: particle, at: 0, in: size,
+                                              avoiding: [zone], bleed: 0.12)
+        #expect(abs(state.position.x - 36) < 0.001,
+                "expected the word cleared to 36, got \(state.position.x)")
+        let box = CGRect(x: state.position.x - 39, y: state.position.y - 11.7,
+                         width: 78, height: 23.4)
+        #expect(!box.intersects(zone), "the word is still under the identity block")
+    }
+
     // MARK: - The splash's own geometry
 
     /// The composition guard the plan asks for: the **real** identity zone, at phone width, over a
@@ -153,6 +185,26 @@ struct SplashDriftTests {
         #expect(WordCloudBackdropView.fillFactor(for: phone) > 1)
         // …and a short strip is not, so the threshold is doing work.
         #expect(WordCloudBackdropView.fillFactor(for: CGSize(width: 393, height: 96)) <= 1)
+    }
+
+    /// **The zone must cover the thing it exists to protect.**
+    ///
+    /// The composition sweep above places its words relative to the zone, so it moves with the
+    /// zone and passes for any zone at all — shrinking `identityZone` to 40 pt tall left it green.
+    /// This checks the zone against the identity block's own layout constants instead, so a zone
+    /// too small to cover the wordmark fails here rather than on a store screenshot.
+    @Test("The exclusion zone covers the identity block it protects")
+    func zoneCoversTheIdentityBlock() {
+        for size in [phone, CGSize(width: 1_280, height: 800)] {
+            let zone = LaunchSplashView.identityZone(in: size)
+            #expect(zone.height >= LaunchSplashView.identityBlockMinimumHeight,
+                    "the zone is \(zone.height) tall at \(size), and the block needs \(LaunchSplashView.identityBlockMinimumHeight)")
+            #expect(zone.width >= LaunchSplashView.tileSize,
+                    "the zone is narrower than the app tile at \(size)")
+            // Centred on the block, which is centred in the frame.
+            #expect(abs(zone.midX - size.width / 2) < 0.001)
+            #expect(abs(zone.midY - size.height / 2) < 0.001)
+        }
     }
 
     // MARK: - Wiring

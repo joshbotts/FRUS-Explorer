@@ -92,16 +92,16 @@ struct LaunchSplashView: View {
     /// The centre block the cloud is kept out from under — matching the launch screen's
     /// composition so the hand-off between them is invisible.
     private var identityBlock: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: Self.blockSpacing) {
             // Compile-checked symbol, not a string — a typo here used to be a blank tile
             // at runtime. Enabled by ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS.
             Image(.launchAppTile)
                 .resizable()
-                .frame(width: tileSize, height: tileSize)
+                .frame(width: Self.tileSize, height: Self.tileSize)
             Text(Self.wordmark)
-                .font(.system(size: wordmarkSize, weight: .semibold))
+                .font(.system(size: Self.wordmarkSize, weight: .semibold))
             Text(Self.caption)
-                .font(.system(size: captionSize))
+                .font(.system(size: Self.captionSize))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             shimmerBar
@@ -160,15 +160,36 @@ struct LaunchSplashView: View {
 
     // MARK: - Metrics
 
+    /// The gap between the identity block's stacked elements.
+    ///
+    /// `static` alongside the three sizes below so ``identityZone`` can be checked against the
+    /// block it exists to cover. Without them a test can only compare the zone with a copy of its
+    /// own numbers, which passes for any zone at all — including one too small to cover anything.
+    /// Measured: shrinking the zone to 40 pt tall left the composition sweep green, because that
+    /// sweep places its words relative to the zone and therefore moves with it.
+    static let blockSpacing: CGFloat = 14
+
     #if os(macOS)
-    private var tileSize: CGFloat { 76 }
-    private var wordmarkSize: CGFloat { 20 }
-    private var captionSize: CGFloat { 12 }
+    /// The app tile's edge length.
+    static let tileSize: CGFloat = 76
+    /// The wordmark's point size.
+    static let wordmarkSize: CGFloat = 20
+    /// The caption's point size.
+    static let captionSize: CGFloat = 12
     #else
-    private var tileSize: CGFloat { 88 }
-    private var wordmarkSize: CGFloat { 22 }
-    private var captionSize: CGFloat { 13 }
+    /// The app tile's edge length.
+    static let tileSize: CGFloat = 88
+    /// The wordmark's point size.
+    static let wordmarkSize: CGFloat = 22
+    /// The caption's point size.
+    static let captionSize: CGFloat = 13
     #endif
+
+    /// The least vertical space the identity block can occupy: its three type elements and the
+    /// gaps between them, before the shimmer bar and its padding. ``identityZone`` must cover it.
+    static var identityBlockMinimumHeight: CGFloat {
+        tileSize + wordmarkSize + captionSize + blockSpacing * 3
+    }
 }
 
 // MARK: - Cross-platform background
