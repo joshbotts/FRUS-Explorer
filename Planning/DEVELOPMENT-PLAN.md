@@ -10192,3 +10192,69 @@ No schema change — instances only, no new `@Model` and no stored property, as 
 **Session 2 remains**: the exportable statement in `QueryMethodAppendix` across all three
 renderers (markdown, plainTextLines, csv) plus `preambleLines` and the logging-off caveat,
 a Project Home tile variant, and both-platform polish.
+
+## Session 2026-09-01b — W-13 session 2: the exportable coverage statement
+
+The appendix said what was **searched**. It now says what was **examined**, and the whole
+session turned on one question the plan had not asked: *of what?*
+
+**The denominator problem, and the only honest answer.** A `WorkingCorpus` carries no
+project identifier and `Project` carries no corpus reference — verified against the model,
+the CloudKit field list, and every `WorkingCorpus` query in the tree, none of which filters
+by project. So "this project's corpora" is not a thing this schema can express, and an
+export that invented it would be asserting a fact the data does not hold. What *does* exist
+is `SearchHistoryEntry.appliedCorpusId`: the single record in the app where a corpus id and
+a project id sit together. The universe is therefore **the corpora this project searched
+inside**, read out of the log the appendix already is — which is also precisely the
+searched→examined bridge the row asked for. Five other candidate denominators were
+considered and each fails: every corpus on the device leaks other projects' work into a
+shareable PDF; the project's collections and the leads seed are *circular*, since collected
+is one of the three numerators and the fraction would read ~100% forever; the whole indexed
+corpus gives 0.0x% and answers a question nobody asked; and a union of captures taken at
+different moments under different queries is a set nobody ever searched.
+
+**`preambleLines` is not shared, and believing otherwise was the session's biggest trap.**
+It is `private` with exactly one consumer, `csv`; `markdown` and `plainTextLines` each
+hand-build their own header. Writing the coverage block into the one property named
+"shared" would have shipped it in the exported CSV and left it silently absent from the
+collection PDF the same research is published from — with every other assertion still
+green. One `coverageLines`, three explicit call sites, and a parity test that fails if any
+renderer loses it. Three separate mutations, one per renderer, confirm it.
+
+Placement is pinned at both ends: the HTML collection renderer promotes line 0 to the
+document's `<h2>`, and `lineShape` requires the last line to be a search. The block goes in
+the middle, and both ends are asserted.
+
+**Four things the data forced.**
+
+- **The corpora and the engagement must describe one population.** The Settings route
+  exports the whole device trail while naming the active project in its header, so taking
+  corpora from every row while counting one project's engagement would produce a fraction
+  whose numerator and denominator describe different populations — and it would read as a
+  real zero against another project's corpus. The producer narrows to the project's own
+  searches first.
+- **The denominator can itself be a floor.** A corpus captured at the row ceiling holds a
+  slice of its query's matches, so the block carries `truncationAtCapture` and discloses it
+  in the corpus browser's own words. This appendix's stated non-negotiable property is that
+  a floor never renders as a total; it has to hold for the denominator too.
+- **The block names the population it counted** — "this project" or "this device" — because
+  a project-scoped count attributes annotations through the project that owns them, and a
+  reader recomputing by hand needs to know which before the difference looks like an error.
+- **Numbers are grouped.** The appendix prints every other number through `formatted()`, and
+  a table reading "1,234" beside a coverage line reading "1234" invites the reader to doubt
+  they share a source. Session 1's three sentences were changed to match.
+
+Project Home gains one tile per searched corpus — a fraction where the others show a count,
+since "43" is progress against 60 and a standing start against 6,000. Same rule, same
+service, computed off the body path on a scalar signature. The gatherers grew pure
+overloads taking model arrays, so the tile uses the `@Query` results the screen already
+holds instead of re-fetching, and the tile and the export cannot come to disagree.
+
+**Two guards closed on the way.** The new prose joined `Docs/EditableContent.md` (eight
+blocks), and `QueryMethodAppendix.swift` + `DocumentEngagementService.swift` were enrolled
+in `ArchivalCopyRulesTests.sources` — until now nothing checked the spelling of the copy
+that ships in an exported PDF. Both were already clean, so it is a zero-diff guard against
+the next edit; a mutation introducing "catalogued"/"analysed" confirms it bites.
+
+Twelve mutations, each killed by its intended test. No schema change: `Row` and
+`CorpusCoverage` are plain structs.

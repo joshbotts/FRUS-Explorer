@@ -2552,6 +2552,66 @@ One search predates this app version. It saved only a result count — not the s
 
 <!-- END SOURCE: appendix.caveat.unrecorded.many %lld -->
 
+<!-- The coverage block (W-13 session 2): how much of each searched corpus was actually examined.
+     The corpora are the ones this project's own searches ran inside — a WorkingCorpus carries no
+     project of its own, so SearchHistoryEntry.appliedCorpusId is the only honest way to name them.
+     Two preambles, not one: the block must say whose engagement it counted, because a
+     project-scoped count attributes annotations through the project that owns them and a reader
+     recomputing by hand needs to know which population the numbers describe. -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.coverage.heading -->
+
+How much of each searched corpus was examined
+
+<!-- END SOURCE: appendix.coverage.heading -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.coverage.preamble.project -->
+
+Coverage counts what this project has done with the documents each corpus holds — opened, annotated, or placed in a collection. It is not what the searches returned.
+
+<!-- END SOURCE: appendix.coverage.preamble.project -->
+
+<!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.coverage.preamble.device -->
+
+*The same sentence when no project heads the export.*
+
+Coverage counts what has been done on this device with the documents each corpus holds — opened, annotated, or placed in a collection. It is not what the searches returned.
+
+<!-- END SOURCE: appendix.coverage.preamble.device -->
+
+<!-- The three sentences the coverage lines are built from live in DocumentEngagementService, since
+     the in-app corpus list states them too and the two must not drift. -->
+
+<!-- SOURCE: FRUSExplorer/ProjectContext/DocumentEngagementService.swift | key: engagement.coverage %@ %@ -->
+
+*Interpolated with the engaged count and the corpus total, both grouped.*
+
+%@ of %@ documents worked on
+
+<!-- END SOURCE: engagement.coverage %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/ProjectContext/DocumentEngagementService.swift | key: engagement.breakdown %@ %@ %@ -->
+
+*Interpolated with the opened, annotated and collected counts. All three are named even when zero: in a review a zero is a finding.*
+
+%@ opened · %@ annotated · %@ collected
+
+<!-- END SOURCE: engagement.breakdown %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/ProjectContext/DocumentEngagementService.swift | key: engagement.untouched %@ -->
+
+%@ untouched
+
+<!-- END SOURCE: engagement.untouched %@ -->
+
+<!-- SOURCE: FRUSExplorer/ProjectContext/DocumentEngagementService.swift | key: engagement.caveat.loggingOff -->
+
+*Shown whenever "Log Research Sessions" is off. The opened count is not zeroed — entries written before the switch was flipped are still there — so the sentence says what the number is rather than hiding it.*
+
+Opened is a floor, not a total — research logging is off.
+
+<!-- END SOURCE: engagement.caveat.loggingOff -->
+
 <!-- SOURCE: FRUSExplorer/Export/QueryMethodAppendix.swift | key: appendix.attribution -->
 
 Text from Foreign Relations of the United States, Office of the Historian, U.S. Department of State (public domain).
