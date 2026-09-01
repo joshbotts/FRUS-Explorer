@@ -317,15 +317,18 @@ of source notes to under 1%, and presidential libraries rise from nothing to a m
 conditions before it ships:
 
 1. **Restore the 1920s row** (17 volumes, 13,412 notes, 98.5% central decimal file). The draft's
-   table jumped 1910s → 1930s without saying so.
+   table jumped 1910s → 1930s without saying so. **Figures re-verified against
+   `source-provenance-index.json` 2026-08-31: exact.**
 2. **Export with no category hidden.** The dashboard has a one-tap "Hide Other / Unclassified" that
    **re-bases every share** — the natural aesthetic choice, and it silently changes every number.
-3. **Decide the pre-1900 axis, and caption it either way.** This is not "either is defensible": the
+3. ~~**Decide the pre-1900 axis, and caption it either way.**~~ **The fixing sentence is no longer
+   CSV-only** — GATE C put every CSV caveat on the plate, so a figure exported today carries it.
+   The axis decision itself is still the owner's. This is not "either is defensible": the
    1860s are 22 volumes and 1,890 of 1,891 notes `unrecognized`; under 1900, one note in 1,946
    parses. Included without a caption, the plate shows a solid "Other/Unclassified" wall that reads
    as *the editors did not say where these came from* when it means *the parser did not classify
    these*. The fixing sentence exists — and is CSV-only today.
-4. Thread the artifact's `generated` stamp into the methods line.
+4. ~~Thread the artifact's `generated` stamp into the methods line.~~ **DONE 2026-08-31**, PR #1162.
 
 **PLATE B — the map under the Provenance lens.** The same finding rendered spatially rather than
 quantitatively, which is what gets two figures into one paper instead of one figure and a decoration.
@@ -576,6 +579,21 @@ ahead of the capture sessions. Old numbers in brackets.)*
    that is precisely why it was the wrong guard.
 5. **Ship the publication-lag plate**, then Plate A under §4.2's four conditions. Plate A rides the
    *fresh-install* device (State A), not Gate B — and it already has a scheduled capture sitting.
+   **THE FOUR CONDITIONS ARE CLOSED, 2026-08-31, PR #1162** — the plates themselves are an export
+   the owner presses. Both dashboards verified reachable with zero downloads.
+
+   - **1 — the 1920s row.** Verified from the artifact, exactly as written: **17 volumes, 13,412
+     notes, 98.5% central decimal file.** A drafting instruction, not a code defect: do not jump
+     1910s → 1930s.
+   - **2 and 3 were already satisfied in the CSV, and GATE C carried them to the PLATE.** The
+     re-basing sentence and *"the parser could not classify, not a missing note"* are `extraCaveats`,
+     and since the figure canvas prints every caveat the CSV prints, both are now on the image. §4.2
+     called condition 3 "CSV-only today"; that ceased to be true when GATE C shipped, and nobody
+     noticed. Now pinned by tests, and the mutation that stops caveats reaching the plate fails both.
+   - **4 — the artifact stamp is new.** `SourceProvenanceData` carried the note and volume counts
+     from the index and dropped `generated`. The plate now reads *"Artifact: drawn from the bundled
+     source-provenance aggregate generated 2026-08-19"*. Every number on that dashboard comes from
+     one file; two plates from different generations were different figures with identical captions.
 6. **Build the three device states** and confirm State A still shows the splash before shooting.
 7. ~~*(was 10)* **Plan §3.2's M-1 + M-2 as one change (M).**~~ **SHIPPED 2026-08-31**, PR #1158.
    **Constraint 3's premise is FALSE and must not be quoted forward**: `setScope` rebuilds the scope

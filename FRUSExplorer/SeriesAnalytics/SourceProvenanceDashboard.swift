@@ -365,7 +365,8 @@ struct SourceProvenanceDashboard: View {
             yearRange: yearRange,
             volumeCount: data.volumesCovered,
             noteCount: data.totalSourceNotes,
-            hiddenCategories: hiddenCategories.map(\.displayName))
+            hiddenCategories: hiddenCategories.map(\.displayName),
+            generated: data.generated)
     }
 
     // MARK: - Chart 1: Provenance mix over time (stacked area, the anchor)

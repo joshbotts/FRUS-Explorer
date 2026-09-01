@@ -106,10 +106,21 @@ enum SeriesAnalyticsExport {
     /// - Parameter hiddenCategories: Categories the reader filtered out. Their absence **re-bases
     ///   every share**, so an export that did not say so would present a re-based share as a
     ///   share of the whole.
+    /// - Parameter generated: The bundled artifact's generation date. Named on the figure because
+    ///   every number here comes from one aggregate: two plates drawn from different generations
+    ///   are different figures, and without this they carry identical captions. Empty is tolerated
+    ///   and simply omits the line — an absent stamp is better than a fabricated one.
     static func provenance(figureTitle: String, axisLabel: String, scopeLabel: String?,
                            yearRange: ClosedRange<Int>?, volumeCount: Int, noteCount: Int,
-                           hiddenCategories: [String], extra: [String] = []) -> AnalyticsProvenance {
+                           hiddenCategories: [String], generated: String = "",
+                           extra: [String] = []) -> AnalyticsProvenance {
         var caveats = [scopeCaveat(scopeLabel)].compactMap { $0 }
+        if !generated.isEmpty {
+            caveats.append(String(format: String(
+                localized: "series.export.caveat.artifact %@",
+                defaultValue: "Artifact: drawn from the bundled source-provenance aggregate generated %@. Every figure on this surface reads that one file; a plate from a different generation is a different figure."),
+                generated))
+        }
         if !hiddenCategories.isEmpty {
             caveats.append(String(format: String(
                 localized: "series.export.caveat.hiddenCategories %@",
