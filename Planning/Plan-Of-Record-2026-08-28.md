@@ -111,9 +111,19 @@ are the subcommand specification*, and that specification is nearly empty. §14.
 turns out to be **part discovery failure** (4/4 no-rules runs opened a bundled artifact once the
 files were merely listed by name, which is what PR #1151 shipped) and **part rules failure** (those
 same four runs resolved **zero NAIDs**, against 4/4 in the block arm). Of the four rules the block
-earns, two are already structural in #1151's views. **C-1 is therefore downgraded from a build to a
-row gated on C-2**, a long-session re-run — the only setting where the delivery-channel argument can
-be true, and the one C-0's short fresh-context sessions could not test.
+earns, two are already structural in #1151's views. **C-1 was therefore downgraded to a row gated on C-2**, a
+long-session re-run — the only setting where the delivery-channel argument can be true.
+
+**C-2 RAN THE SAME DAY (PR #1153) AND CLOSES THE WAVE.** `C2-Long-Session-2026-08-31.md`: eight
+sessions of 123 tool calls each (2.1× C-0's, ranges non-overlapping, verified before any verdict was
+read), three non-archival tasks in front of C-0's byte-identical terminal task, withheld in a file so
+it entered context far from the rules. **LONG+block 99/100 — not one item decayed**, against
+SHORT+block 96/97. The no-rules arm *did* decay, 84% → 75%, which is what makes that a finding rather
+than a null. Catalogue identifiers resolved, all sixteen runs across both experiments: **BLOCK 8 of 8,
+CONTROL 0 of 8.** **C-1 is CLOSED as NOT NEEDED** on C-2's pre-registered reading, and W-19 ends with
+a build refused twice on measurement — once for MCP at L-8, once for the CLI here. Recorded limit: no
+session compacted, so the *truncated* half of the mechanism is untested; it does not reopen C-1,
+because that branch's fix is re-pasting the block rather than shipping a binary.
 
 **L-0 was larger than its row implied.** `Docs/Agentic-Analysis-Guide.md` is now
 at **v1.2** (PR #1137): §14 added the scoping method from three measured runs, and §14.11 added

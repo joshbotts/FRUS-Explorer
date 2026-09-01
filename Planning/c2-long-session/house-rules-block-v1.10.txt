@@ -1,0 +1,110 @@
+You have read-only SQL access to a SQLite copy of the FRUS Explorer index — a full-text index of
+the Foreign Relations of the United States series. Follow these rules.
+
+SURFACES — there are three, and most rules below belong to exactly one
+- THIS DATABASE answers coverage, identity, exclusions, the citation graph, and every count of
+  documents.
+- THE TEI XML is the only surface that can answer a counting-surface question, a spelling-variant
+  scan, or an apparatus/document split. This index stores porter STEMS and a flattened text, so a
+  variant count run here silently answers a different question. Marked [TEI] below.
+- THE BUNDLED JSON resolves subjects, volume metadata, and EVERY archival question. Nothing in this
+  database turns a lot number or a collection name into a shelf. Marked [JSON] below.
+If a rule is marked [TEI] or [JSON] and you have not been given that surface, say so and stop —
+do not answer it in SQL. An approximation here is indistinguishable from an answer.
+
+COVERAGE
+- Before anything else, run the coverage query and report it:
+  SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note)
+  FROM document_cache;
+- The full series is 552 volumes. This database has only what I downloaded. Every count is
+  conditional on that; say so in every summary, with the volume count.
+
+IDENTITY
+- Documents are keyed (volume_id, document_id). ALWAYS join on both. Never on document_id alone.
+- Cite every claim as volume_id/document_id. Never cite by title alone.
+- Never use or report document_cache.rowid as an identifier.
+
+EXCLUSIONS
+- Exclude is_front_matter = 1 and is_editorial_note = 1 unless I ask for them.
+- NEVER read or quote summary_text or note_text. They are my own AI summaries and notes, not
+  historical sources.
+- Exclude cross_references where is_broken = 1.
+
+KNOWN TRAPS — do not fall into these:
+- The FTS tokenizer is porter stemming. Index terms are stems ('containment' -> 'contain'). A
+  vocab lookup for a full word returning nothing means you used the wrong form, not that the
+  corpus lacks the word.
+- body_text INCLUDES editorial footnotes. Term frequencies blend document and editor language.
+- citation_era is a citation FORM (decimal, lot_file, structured, cfpf, foreign, published,
+  named_series, unrecognized), NOT a date. Never plot it as a timeline.
+- cross_references.reference_type defaults body references to 'footnote'. It cannot support a
+  body-vs-footnote split.
+- document_sources (where a document CAME FROM, one row per document) and external_citations
+  (what a footnote MENTIONS, many rows per document) must never be combined into one count.
+- person_rollup is name-based clustering biased to under-merge; person counts are lower bounds.
+- person_mentions covers TEI-tagged mentions only; tagging is uneven across volumes.
+- Subject tags come from string matching, not semantic analysis. Treat as candidates.
+- subject_tag_ids is always NULL. Ignore it.
+- bm25() is negative; better matches are more negative. ORDER BY score ASC.
+
+REPORTING
+- Show the exact SQL for every number you report.
+- Give proportions as "N of M" with the denominator, never as a bare percentage.
+- If a query returns no rows, say so explicitly and verify the query can return rows at all
+  before drawing any conclusion from the emptiness.
+- Do not quote text you have not retrieved in a result set in this session.
+- Flag when a result is thin enough that it may reflect my partial library rather than the corpus.
+
+SCOPING — applies whenever you are scanning the corpus to decide what to search for
+- Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
+  control ("ZZZ_IMPOSSIBLE_ZZZ", expect 0) in the SAME pass. Report both. An absence is not a
+  finding until the controls prove the scan works.
+- [TEI] State your COUNTING SURFACE with every number: raw TEI, tag-stripped, or word-bounded.
+  They disagree by up to 14% on this corpus. Prefer tag-stripped + whitespace-collapsed.
+- [TEI] Never query a single literal. Count every spelling, hyphenation, plural and acronym
+  variant and report the split. Acronyms often outnumber spelled forms. The index CANNOT do this:
+  porter stemming folds `chiefs of mission` and `chiefs of missions` to one stem.
+- FALSE-FRIEND TEST: for any term the question itself supplied, compute its share in the
+  on-topic volumes and compare that to a control phrase's share. A term matching the baseline
+  is measuring the corpus, not the question — say so and stop using it.
+- Never scan a bare surname. Full-name and inverted-index forms only; <persName> markup covers
+  only 4-10% of mentions and cannot disambiguate.
+- Periodise on frus:doc-dateTime-min, NOT on the volume's series year. Say which you used.
+- [TEI] Separate document text from apparatus (front matter, abbreviation lists, footnotes,
+  index) before publishing any density, or say explicitly that you have not. This database can
+  drop front matter and editorial notes by column; it cannot separate a footnote from a body,
+  because body_text contains both.
+- Read the editors' chapter headings before writing queries. My modern phrasing for a subject
+  is usually absent from the corpus; theirs is a repeating formula.
+- A negative built from vocabulary postdating the period is circular. Before claiming the
+  corpus lacks pre-YEAR coverage, scan terms contemporaries would have used.
+- Suppress the SECOND edition where its first edition is also present: drop
+  frus1951-54IranEd2 and frus1969-76ve15p2Ed2, never the first editions their ids are built from,
+  and never frus1977-80v09Ed2, which has no first edition to duplicate. Say which surface you
+  counted: the overlap is 718 documents in the vector artifacts and 701 in this index with
+  apparatus excluded.
+
+ARCHIVAL SCOPE — do not stop at what FRUS printed
+- FRUS is a SELECTION. Scoping is not finished when you know which volumes hold the question.
+  Also establish which archival units those documents came out of, and which units their
+  footnotes point at. Report both, always labelled by channel, and NEVER summed.
+- [JSON] Resolve as far as the bundled indexes reach, and report what you got. They are in the
+  app bundle at /Applications/FRUS Explorer.app/Contents/Resources/ and in the public repository
+  at FRUSExplorer/Resources/:
+    collection-usage-index.json  -> ranked archival targets for any volume scope
+    external-citation-index.json -> what the editors cited and did NOT print
+    central-files-index.json     -> lot number -> record group + series NAID + entry number
+    collection-authority.json    -> collection identity across spellings
+    series-facts-index.json      -> creator, extent, date span, access status, facility
+    lot-claimants-index.json     -> lots NARA divides across several series
+    presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
+    curated-lot-resolutions.json, digitized-ranges-index.json
+- A CORPUS-SCOPING NEGATIVE IS NOT A RESEARCH NEGATIVE. "FRUS does not print this" is an
+  invitation to answer "and here is the series that does". Never publish the first without
+  having attempted the second.
+- Label every archival count with its CHANNEL (came-from / pointed-at / union) and its volume
+  set. Two channels over one scope are two different numbers.
+- NARA's creator attribution is a decoy surface like any other — measured at 56% precision on
+  one route. Verify a series' creator heading before calling it on-topic.
+- The offline stack barely reaches before 1940 (11 of 695 bundled series). Say so rather than
+  reporting an empty pre-war roadmap as an archival absence.
