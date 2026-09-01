@@ -7,12 +7,36 @@ frames are manual on an erased device, in a window that occurs once per install.
 
 ---
 
+## 0. Resolve the capture device once
+
+Every command below uses `$UDID`. Run this first, in the shell you will keep.
+
+```bash
+# Newest installed runtime carrying the named device. Change the name for another class (§8).
+UDID=$(xcrun simctl list devices available -j | python3 -c '
+import json, sys
+devices = json.load(sys.stdin)["devices"]
+match = ""
+for runtime in sorted(devices):
+    for device in devices[runtime]:
+        if device["name"] == "iPhone 17":
+            match = device["udid"]
+print(match)')
+echo "$UDID"
+```
+
+**Pin the device by id, not by name, and this is a departure from `CLAUDE.md` on purpose.** The
+house idiom for running tests is `name=iPhone 17`, which is right there: any iPhone 17 will do. A
+capture is different — three iOS runtimes are installed, `name=` silently picks one of them, and
+"which device did I shoot on" has to be answerable afterwards. Resolving once and pinning `id=`
+costs nothing and removes the ambiguity.
+
 ## 1. The frame sequence — RUN 2026-08-31, and it holds
 
 ```bash
 TEST_RUNNER_RENDER_MAP_FRAMES_DIR=/tmp/map-frames xcodebuild test \
   -project FRUSExplorer.xcodeproj -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -destination "platform=iOS Simulator,id=$UDID" \
   -only-testing FRUSExplorerTests/SemanticMapFrameSequenceTests
 ```
 
@@ -214,6 +238,44 @@ Three things that will otherwise cost you an afternoon:
   and expect to quit the app to get your prompt back.
 - **Shut the simulator down when you are finished.** A simulator left booted competes with the test
   suite for the machine and is a known source of wall-clock flakes.
+
+### If a run dies with "Application failed preflight checks"
+
+```
+Simulator device failed to launch bottsywattsy.FRUS-Explorer.
+… denied by service delegate (SBMainWorkspace) for reason: Busy
+   ("Application failed preflight checks")
+```
+
+That is the simulator app-host wedge, and **this runbook can cause it**: §7 tells you to
+`simctl launch` the app on a device, and §1 then runs `xcodebuild test` on the same one. Launching
+and shutting a device around a test host is enough to leave it in that state.
+
+**Retry once before doing anything destructive — it is frequently transient.** Measured on
+2026-09-01: a run failed this way, and the *same command* on the *same device* succeeded minutes
+later with no intervention at all. Back-to-back `xcodebuild test` runs against one simulator seem
+to be the trigger, so leave a gap rather than firing the next one immediately.
+
+**If it repeats, erase.** A shutdown/boot pair does not clear a genuinely wedged device — recorded
+elsewhere in this repo, and consistent with what was seen here: all three iPhone 17 simulators were
+already shut down while the wedge was live.
+
+```bash
+xcrun simctl shutdown "$UDID" 2>/dev/null; xcrun simctl erase "$UDID"
+```
+
+Erasing destroys that device's data — **including a seeded State C**. Check before you run it:
+
+```bash
+xcrun simctl get_app_container "$UDID" bottsywattsy.FRUS-Explorer data
+```
+
+No container means nothing to lose. A container means re-seed after erasing (§7 is one command, so
+this is cheap — but losing hand-edited `Content` prose is not, and that lives in the source, not on
+the device).
+
+The cleanest avoidance is to keep the two jobs on **different** devices: seed State C on the class
+you are shooting, and render the frame sequence somewhere else.
 
 **It seeds the structure and not the words.** Every body reads *"Replace before capture."* Edit
 `CaptureStateSeeder.Content` — one enum of plain data, no code — and re-run. That division is
