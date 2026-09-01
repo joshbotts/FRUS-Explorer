@@ -321,6 +321,8 @@ conditions before it ships:
    `source-provenance-index.json` 2026-08-31: exact.**
 2. **Export with no category hidden.** The dashboard has a one-tap "Hide Other / Unclassified" that
    **re-bases every share** — the natural aesthetic choice, and it silently changes every number.
+   **The disclosure now reaches the PLATE, not only the CSV** (GATE C), so a filtered export says so
+   on the image; the instruction to prefer an unfiltered one stands.
 3. ~~**Decide the pre-1900 axis, and caption it either way.**~~ **The fixing sentence is no longer
    CSV-only** — GATE C put every CSV caveat on the plate, so a figure exported today carries it.
    The axis decision itself is still the owner's. This is not "either is defensible": the
@@ -607,7 +609,17 @@ ahead of the capture sessions. Old numbers in brackets.)*
      from the index and dropped `generated`. The plate now reads *"Artifact: drawn from the bundled
      source-provenance aggregate generated 2026-08-19"*. Every number on that dashboard comes from
      one file; two plates from different generations were different figures with identical captions.
-6. **Build the three device states** and confirm State A still shows the splash before shooting.
+6. ~~**Build the three device states**~~ **STATE C IS BUILDABLE ON DEMAND, 2026-08-31**, PR #1163 —
+   `CaptureStateSeeder`, `#if DEBUG` and inert unless `FRUS_CAPTURE_SEED=1`, idempotent by project
+   name. A and B need no code: A is an erase, B is already satisfied. **It seeds the STRUCTURE and
+   not the words** — every body reads "Replace before capture." §6's "must wait for person-rollup
+   consolidation" does not bind: nothing in that structure reads or writes a rollup. And confirming
+   State A still shows the splash is **not automatable** (the UI-test guard returns `.none`
+   unconditionally); if it is missing, check whether a download is QUEUED before assuming a
+   regression — that is §10's second defect.
+
+   *(This strike was lost once: the commit that shipped step 6 wrote the file twice from one
+   unmodified string, so this edit was clobbered by the next one and the row read "open" for a day.)*
 7. ~~*(was 10)* **Plan §3.2's M-1 + M-2 as one change (M).**~~ **SHIPPED 2026-08-31**, PR #1158.
    **Constraint 3's premise is FALSE and must not be quoted forward**: `setScope` rebuilds the scope
    mask and drops the selection, and never touches the camera — there is no reveal-versus-`applyScope`
