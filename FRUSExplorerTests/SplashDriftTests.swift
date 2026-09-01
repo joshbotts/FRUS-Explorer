@@ -128,51 +128,71 @@ struct SplashDriftTests {
     // MARK: - The splash's own geometry
 
     /// The composition guard the plan asks for: the **real** identity zone, at phone width, over a
-    /// full drift period.
+    /// full drift period — and, crucially, a check that the sweep actually reaches the zone.
     ///
-    /// It drives `LaunchSplashView.identityZone` and `WordCloudBackdropView.fillFactor` rather than
-    /// restating their numbers, so a change to either is caught here instead of agreeing with a
-    /// copy of itself. Words are placed where the packer would put them — outside the zone — and
-    /// the assertion is that drift never leaves one sitting on the wordmark.
-    @Test("No word settles on the identity block over a full drift period")
+    /// **The first version of this test was inert and looked fine.** It placed words 14 pt outside
+    /// the zone's edges, which sounds like the closest the packer could put them; but
+    /// `WordCloudDriftField.init` then applies the v1.2 expansion — measured at (1.78, 2.97) for a
+    /// set this small — which threw every home clean off the canvas, 267 pt from the zone. The
+    /// pre-push box intersected the zone in **0 of 4,800 samples**, so the whole sweep passed with
+    /// `push` deleted, with `state(of:)` not calling it, with the exclusion zones discarded in the
+    /// initialiser, and with the very bug this change fixes restored.
+    ///
+    /// So the assertion that matters is `entered > 0`, and it is measured rather than assumed: each
+    /// instant is evaluated twice, once with no zones (which is the un-pushed position, since
+    /// `push` returns early on an empty list) and once with the real one. Any future change to
+    /// `expansion`, `fillFactor` or the tuning that quietly stops carrying words into the zone
+    /// fails here instead of going green.
+    @Test("No word settles on the identity block — and the sweep really reaches it")
     func nothingSettlesOnTheIdentityBlock() {
         let size = phone
         let zone = LaunchSplashView.identityZone(in: size)
         let fill = WordCloudBackdropView.fillFactor(for: size)
         #expect(fill > 1, "the splash must be a full-bleed surface for this test to mean anything")
 
-        // **Above and below only, and that is a fact about the phone rather than a shortcut.**
-        // The identity block is 340 pt wide on a 393 pt screen, so it leaves 26.5 pt a side —
-        // narrower than a single word's half-width at this size. The packer cannot place a word
-        // beside it, which is also why every escape from this zone is a vertical one.
-        #expect(min(zone.minX, size.width - zone.maxX) < 30,
-                "the zone stopped spanning the width; this fixture needs side words again")
+        // **Packed centres, not final positions.** The expansion moves each of these outward from
+        // the canvas centre; these values were chosen so that AFTER it they sit a few points
+        // outside the zone's edges — where the packer would actually leave them — and drift then
+        // carries them in. `entered` below is what keeps that true.
         let placed = [
-            word("diplomacy", at: CGPoint(x: size.width / 2, y: zone.minY - 14)),
-            word("telegram", at: CGPoint(x: size.width / 3, y: zone.maxY + 14)),
-            word("memorandum", at: CGPoint(x: size.width * 2 / 3, y: zone.minY - 18)),
-            word("aide", at: CGPoint(x: size.width / 2, y: zone.maxY + 18)),
+            word("diplomacy", at: CGPoint(x: size.width / 2, y: 392), rank: 0),
+            word("telegram", at: CGPoint(x: size.width / 3, y: 460), rank: 8),
+            word("memorandum", at: CGPoint(x: size.width * 2 / 3, y: 388), rank: 20),
+            word("aide", at: CGPoint(x: size.width / 2, y: 464), rank: 40),
         ]
         let field = WordCloudDriftField(placed: placed,
                                         rankCeiling: WordCloudBackdropView.rankCeiling,
                                         exclusionZones: [zone], canvas: size, fill: fill)
         #expect(field.bleed > 0, "fill > 1 must produce a bleed for the push path to matter")
 
+        func box(_ state: WordCloudDriftField.State,
+                 _ particle: WordCloudDriftField.Particle) -> CGRect {
+            CGRect(x: state.position.x - particle.halfSize.width * state.scale,
+                   y: state.position.y - particle.halfSize.height * state.scale,
+                   width: particle.halfSize.width * state.scale * 2,
+                   height: particle.halfSize.height * state.scale * 2)
+        }
+
+        var entered = 0
         for particle in field.particles {
             for step in 0..<1_200 {
-                let state = WordCloudDriftField.state(of: particle, at: Double(step) / 20,
-                                                      in: size,
-                                                      avoiding: field.exclusionZones,
-                                                      bleed: field.bleed)
-                let box = CGRect(x: state.position.x - particle.halfSize.width * state.scale,
-                                 y: state.position.y - particle.halfSize.height * state.scale,
-                                 width: particle.halfSize.width * state.scale * 2,
-                                 height: particle.halfSize.height * state.scale * 2)
-                #expect(!box.intersects(zone),
+                let t = Double(step) / 20
+                // No zones = the position before any push, since `push` returns early on `[]`.
+                let free = WordCloudDriftField.state(of: particle, at: t, in: size,
+                                                     avoiding: [], bleed: field.bleed)
+                if box(free, particle).intersects(zone) { entered += 1 }
+
+                let pushed = WordCloudDriftField.state(of: particle, at: t, in: size,
+                                                       avoiding: field.exclusionZones,
+                                                       bleed: field.bleed)
+                let settled = box(pushed, particle)
+                #expect(!settled.intersects(zone),
                         "\(particle.term) settled on the identity block at step \(step)")
-                if box.intersects(zone) { return }
+                if settled.intersects(zone) { return }
             }
         }
+        #expect(entered > 0,
+                "the sweep never carried a word into the zone, so it proves nothing about the push")
     }
 
     /// The splash is a full-bleed surface by the same rule every other host uses — it is far
@@ -225,15 +245,26 @@ struct SplashDriftTests {
         let rest = source[start.upperBound...]
         let end = try #require(rest.range(of: "\n                )"),
                                "could not find the end of the backdrop call")
+        // **Comments stripped first.** Two thirds of this call's 1,600 characters are prose
+        // explaining why the splash drifts, and a bare `contains` is satisfied by an explanation
+        // as readily as by an argument — so flipping the flag while any nearby comment happened to
+        // quote it would leave this green.
         let call = String(rest[..<end.lowerBound])
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
         #expect(call.contains("drift: true"), "the splash stopped drifting:\n\(call)")
         #expect(call.contains("lensSeed: 0"), "M-5's seeded lens was lost")
     }
 
     // MARK: - Helpers
 
-    private func word(_ term: String, at center: CGPoint) -> PlacedWord {
-        PlacedWord(term: term, count: 100, center: center, fontSize: 20,
-                   colorIndex: 0, rotationDegrees: 0)
+    /// `rank` is load-bearing: it becomes `colorIndex`, which the field turns into `depth`, which
+    /// selects the amplitude, rate, scale and opacity. Leaving it at 0 for every word — as the
+    /// first draft did — sweeps only the near end of the depth model and makes the field's own
+    /// depth sort a no-op.
+    private func word(_ term: String, at center: CGPoint, rank: Int = 0) -> PlacedWord {
+        PlacedWord(term: term, count: 100 - rank, center: center, fontSize: 20,
+                   colorIndex: rank, rotationDegrees: 0)
     }
 }
