@@ -45,8 +45,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — CW-7a (UI review M-20 / F-28): regions CSV + provenance
+///   1.2 — Visual-marketing step 1: `lens` replaces `lensLabel`, so the lens's own caveat reaches
+///         both export halves; four table-only phrasings reworded to stay true on a figure
 ///   1.1 — W-3 (#1007): the figure — `figureTitle`/`sliceDescription` parameters on
-///         ``provenance(index:scopeLabel:scopedDocumentCount:lensLabel:indexedVolumeCount:figureTitle:sliceDescription:)``,
+///         ``provenance(index:scopeLabel:scopedDocumentCount:lens:indexedVolumeCount:figureTitle:sliceDescription:)``,
 ///         and the refusal section above rewritten as the assembly description
 enum SemanticMapExport {
 
@@ -64,7 +66,11 @@ enum SemanticMapExport {
     ///   - index: The bundled map index, for the layout parameters and the generation stamp.
     ///   - scopeLabel: The scope bar's current label, or `nil` for the whole corpus.
     ///   - scopedDocumentCount: Documents inside the current scope, or `nil` when unscoped.
-    ///   - lensLabel: The colour lens in effect when the table was taken.
+    ///   - lens: The colour lens in effect. **The lens itself, not its label** — a lens that
+    ///     carries a `caption` carries it because the colouring is not self-explanatory, and
+    ///     `provenance` is the one place that caveat can reach both export halves. Passing a label
+    ///     made the caption structurally unreachable, which is how the `.provenance` lens shipped
+    ///     an export that never said its categories are a plurality.
     ///   - indexedVolumeCount: Volumes this device can actually open.
     /// - Returns: The provenance block.
     /// - Parameters (figure additions, W-3):
@@ -76,7 +82,7 @@ enum SemanticMapExport {
     static func provenance(index: SemanticMapArtifacts.MapIndex,
                            scopeLabel: String?,
                            scopedDocumentCount: Int?,
-                           lensLabel: String,
+                           lens: SemanticMapLens,
                            indexedVolumeCount: Int,
                            figureTitle: String? = nil,
                            sliceDescription: String? = nil) -> AnalyticsProvenance {
@@ -96,7 +102,7 @@ enum SemanticMapExport {
                                              scopedDocumentCount: scopedDocumentCount,
                                              indexedVolumeCount: indexedVolumeCount),
             extraCaveats: (sliceDescription.map { [$0] } ?? [])
-                + caveats(index: index, lensLabel: lensLabel))
+                + caveats(index: index, lens: lens))
     }
 
     /// The corpus sentence, which has to say two different numbers that are easy to conflate: what
@@ -112,15 +118,15 @@ enum SemanticMapExport {
         guard let scopedDocumentCount else { return base }
         return base + " " + String(format: String(
             localized: "semanticMap.export.caveat.scoped %lld",
-            defaultValue: "The current scope covers %1$lld of those documents; every row below is counted inside that scope."),
+            defaultValue: "The current scope covers %1$lld of those documents; every count in this export is taken inside that scope."),
             Int64(scopedDocumentCount))
     }
 
     /// The caveats, every one of which is a fact the reader can otherwise only get off the screen.
     private static func caveats(index: SemanticMapArtifacts.MapIndex,
-                                lensLabel: String) -> [String] {
+                                lens: SemanticMapLens) -> [String] {
         let layout = index.layout
-        return [
+        var lines: [String] = [
             // The sentence the map already prints under itself. An export that dropped it would
             // let a reader treat the distance between two rows' centres as a measurement.
             String(localized: "semanticMap.export.caveat.layout",
@@ -129,7 +135,7 @@ enum SemanticMapExport {
                    defaultValue: "This surface is experimental. The regions are found by a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region's documents — not subject headings."),
             String(format: String(
                 localized: "semanticMap.export.caveat.unclustered %lld %lld %lld",
-                defaultValue: "Coverage: %1$lld regions cover %2$lld documents. The other %3$lld sit between regions and appear in no row below — a table of regions cannot describe them."),
+                defaultValue: "Coverage: %1$lld regions cover %2$lld documents. The other %3$lld sit between regions and belong to none: a regions table cannot list them, and on the map they are drawn with no region name."),
                 Int64(index.clusters.count),
                 Int64(index.documentCount - layout.unclusteredCount),
                 Int64(layout.unclusteredCount)),
@@ -144,11 +150,18 @@ enum SemanticMapExport {
                 index.generated, index.provenanceDigest),
             String(format: String(
                 localized: "semanticMap.export.caveat.lens %@",
-                defaultValue: "Color lens in effect when this table was taken: %1$@. The lens changes only what the points are colored by, never where they sit."),
-                lensLabel),
+                defaultValue: "Color lens in effect when this export was taken: %1$@. The lens changes only what the points are colored by, never where they sit."),
+                lens.displayName),
             String(localized: "semanticMap.export.caveat.identity",
-                   defaultValue: "The map artifact stores positions and region membership only — no document titles and no dates — so this table names regions and counts, and cannot name a document."),
+                   defaultValue: "The map artifact stores positions and region membership only — no document titles and no dates — so an export from it can name regions and counts, and cannot name a document."),
         ]
+        // The lens's OWN caveat, which until now reached only the on-screen legend. A lens carries
+        // a caption exactly when its colouring would otherwise overstate the evidence — the
+        // provenance lens's categories are a plurality, not a majority, for 73 of 522 volumes — so
+        // an export without it is an export that overstates. Appended last, beside the lens line
+        // it qualifies.
+        if let caption = lens.caption { lines.append(caption) }
+        return lines
     }
 
     // MARK: - Table

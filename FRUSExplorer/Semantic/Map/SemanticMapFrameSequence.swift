@@ -171,12 +171,12 @@ enum SemanticMapFrameSequence {
     /// same `AnalyticsProvenance` the CSV and the figure carry — led by the animation's
     /// grain sentence and the frame spec.
     static func provenanceText(index: SemanticMapArtifacts.MapIndex,
-                               lensLabel: String,
+                               lens: SemanticMapLens,
                                frameCount: Int,
                                indexedVolumeCount: Int) -> String {
         let provenance = SemanticMapExport.provenance(
             index: index, scopeLabel: nil, scopedDocumentCount: nil,
-            lensLabel: lensLabel, indexedVolumeCount: indexedVolumeCount,
+            lens: lens, indexedVolumeCount: indexedVolumeCount,
             figureTitle: String(localized: "semanticMap.frames.title",
                                 defaultValue: "Semantic map frame sequence"))
         var lines: [String] = []
