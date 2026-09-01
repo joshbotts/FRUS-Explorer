@@ -244,8 +244,8 @@ exactly the authority of §12's prose. Only implementations bind.
 | # | Session | Size | Gate |
 |---|---|---|---|
 | ~~C-0~~ | ~~**Run the falsifier**~~ — **RUN AND JUDGED 2026-08-31**, PR #1152. Verdict: the falsifier substantially FIRES. Full record: `Planning/C0-Falsifier-2026-08-31.md`, evidence at `Planning/c0-falsifier/` | S | — |
-| C-2 | **The long-session re-run** — the only setting in which the delivery-channel argument can be true, and the one C-0 could not test | S | none |
-| C-1 | ~~The read-only CLI~~ — **DOWNGRADED to gated-on-C-2.** At most `archival_units`, and only if the block is shown to decay | M | **C-2** |
+| ~~C-2~~ | ~~**The long-session re-run**~~ — **RUN AND JUDGED 2026-08-31**, PR #1153. **The block does not decay.** Record: `Planning/C2-Long-Session-2026-08-31.md` | S | — |
+| ~~C-1~~ | ~~The read-only CLI~~ — **CLOSED, NOT NEEDED**, on C-2's pre-registered reading | M | — |
 
 **C-0 ran with a control arm the row did not ask for, and that arm is why the result means
 anything.** Eight scoping passes — two fresh questions × (§12 block pasted | no rules) × 2 — blind-
@@ -271,19 +271,41 @@ calls in fresh context. The one point the assessment kept on MCP's side — a ca
 each turn where a 110-line block can be forgotten — is invisible to that design. C-0 shows the rules
 *work*; it says nothing about whether they *survive*.
 
-### C-2 — the long-session re-run
+### C-2 — RUN 2026-08-31. The block does not decay; C-1 is closed.
 
-Paste the block at turn 1, then reach the archival work only after substantial unrelated work — a
-multi-question sitting, or a scoping pass followed by a drafting pass. Score the same 24 items,
-with **A5 sharpened** to ask for a resolved catalogue identifier rather than "a concrete archival
-target" (a copied lot number satisfied it, which is how C-0 came to need a post-hoc NAID count).
+Eight long sessions: three substantial non-archival tasks, then **C-0's terminal task byte-identical**
+— same questions, same deliverable, same budget — withheld in a `task4.md` the runner was told not to
+open until the rest was done, so it entered context as a tool result rather than beside the rules.
+Both arms re-run at length, because a drop in the block arm would otherwise be unattributable between
+"the rules decayed" and "long sessions degrade everything".
 
-- Compliance holds → **close C-1 as NOT NEEDED.** The block is sufficient and the wave is finished.
-- Compliance decays → **the decay is the specification**, and `archival_units` is the first and
-  possibly only subcommand.
+**The manipulation was verified before any verdict was read**: 123 tool calls against C-0's 59
+(2.1×), transcripts 767 KB against 454 KB, and the ranges do not overlap.
 
-Reuse `Planning/c0-falsifier/workflow.mjs`; the runner and scorer prompts and both arms are in it
-verbatim.
+|  | block | no rules |
+|---|---|---|
+| **short session** (C-0) | 99% | 84% |
+| **long session** (C-2) | **99%** | 75% |
+
+**Not one item decayed.** The block arm's single violation is `R1`, the same item on the same
+question as C-0's. Meanwhile the control arm *did* decay, 84% → 75% — which is what makes the
+block-arm result a finding rather than a null: the degradation was available and the rules prevented
+it.
+
+**And the sharpest number in the program.** Distinct catalogue identifiers resolved, all sixteen runs
+across both experiments: **BLOCK 8 of 8 runs, CONTROL 0 of 8** — at either session length. That is
+pre-registered item A6, the strict form C-0 had to recover post-hoc.
+
+**The recorded limit: no session compacted, zero of eight.** So the *forgotten* half of the mechanism
+is refuted and the *truncated* half is untested. It does not reopen C-1 — the pre-registration said
+what to do, the untested branch's fix is re-pasting rather than a binary, and a mechanism showing
+zero effect across a doubling is not one to expect at 3×.
+
+One method lesson, against the previous document: **the mechanical grep produced two false alarms
+here, both defects in my own pattern** (a `NAID` table column, and `counting-surface` hyphenated). In
+C-0 the grep corrected the scorers; in C-2 the scorers corrected the grep. Neither is the reliable
+one, and any instrument used to overturn a judgement needs its own positive and negative control
+first.
 
 ### Residue this assessment exposed — ALL SHIPPED 2026-08-31 in PR #1151
 
