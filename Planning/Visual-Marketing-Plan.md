@@ -432,7 +432,10 @@ first sitting:
   already drives the whole path — offscreen render → canvas → PNG bytes — and the env-gated
   generator-test pattern is established. A `RENDER_PLATES_DIR`-gated test emitting all twelve plates
   is the **only** option that answers the regeneration question. Record the choice either way.
-- **A third device axis.** The two device states (corpus-empty, corpus-full) are incomplete: Session A
+- ~~**A third device axis.**~~ **BUILT 2026-08-31** as `CaptureStateSeeder` (PR #1163): a project,
+  collections with entries, tags with assignments, notes and saved searches, on one env-gated
+  launch. The stated blocker did not bind — nothing in that structure reads or writes a person
+  rollup. Original text: The two device states (corpus-empty, corpus-full) are incomplete: Session A
   also needs *a project active* plus hand-authored collections, notes, tags and saved searches, none
   of which is downloaded or bundled — and it must wait for person-rollup consolidation.
 - **Device classes are asserted, not verified.** The documented capture program is iPhone 17 +

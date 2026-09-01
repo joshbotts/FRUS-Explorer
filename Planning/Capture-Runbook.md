@@ -136,6 +136,51 @@ would have been. Film both takes back to back.
 
 ---
 
+## 7. The three device states (step 6)
+
+| State | What it is | How to reach it |
+|---|---|---|
+| **A** | Corpus-empty, fresh install | Erase the simulator. The splash is reachable **only** here. |
+| **B** | Corpus-full | Already satisfied — 552 volumes, 316,839 documents on the author's Mac. |
+| **C** | A library that has been *worked in* | State B **plus** `FRUS_CAPTURE_SEED=1` on one launch. |
+
+**Why C exists.** §6 records that A and B are incomplete: a project header, a collection with
+entries, tagged documents and saved searches are none of them downloaded and none of them bundled,
+so on a corpus-full device every one of those screens is still an empty state — and they are the
+screens a research app most needs to show.
+
+`CaptureStateSeeder` builds C. It is `#if DEBUG`, inert unless `FRUS_CAPTURE_SEED=1`, and
+idempotent by project name, mirroring the two seeders already on that boot path.
+
+```bash
+xcrun simctl launch --console <UDID> bottsywattsy.FRUS-Explorer   --setenv FRUS_CAPTURE_SEED 1
+```
+
+**It seeds the structure and not the words.** Every body reads *"Replace before capture."* Edit
+`CaptureStateSeeder.Content` — one enum of plain data, no code — and re-run. That division is
+deliberate: the prose in a store screenshot of a research tool is a historian's to write, and a
+note that reads plausibly while saying something slightly wrong about the record would be wrong in
+the one place nobody re-reads. A test fails if the placeholder ever stops saying "replace".
+
+**§6 said State C "must wait for person-rollup consolidation".** Nothing in the seeded structure
+touches person rollups — no `PersonClusterOverride`, no rollup read — so that dependency does not
+bind here. If it was meant to gate a *person-profile* screenshot, that is a separate shot and still
+waits.
+
+### Confirming State A still shows the splash
+
+Step 6 says to confirm this before shooting, and it cannot be automated: the UI-test guard returns
+`.none` unconditionally, so the XCUITest harness can never see the splash (§2(b)).
+
+What **is** checkable, and is pinned by `CloudSurfaceArbiterTests`, is the arbiter's verdict for
+State A's inputs. What is not checkable is that the verdict reaches the screen — and there is a
+known window where it does not: with a download **queued but no batch started**, `resolve` returns
+`.indexingBackdrop`, `ContentView` withholds the splash, and `MainTabView` never mounts the strip,
+so nothing renders. So the confirmation is: **erase, launch with no download queued, watch for the
+splash.** If it is missing, check whether anything is queued before assuming a regression.
+
+---
+
 ## 6. What this settles
 
 Step 4 exists to answer *does the material justify engineering before a line is written*. Read
