@@ -70,17 +70,17 @@ struct AnalyticsFigureCanvas<Content: View>: View {
                 .frame(width: width - margin * 2, height: chartHeight)
             Divider()
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(provenance.captionLines.enumerated()), id: \.offset) { index, line in
-                    Text(line)
-                        .font(index == 0 ? .system(size: 15, weight: .semibold) : .system(size: 12))
-                        .foregroundStyle(index == 0 ? Color.black : Color.black.opacity(0.65))
+                // ONE ForEach over `plateLines` and nothing else. The band used to be assembled
+                // here — two caption lines plus a hardcoded sentence — which put the rule for what
+                // a published figure says inside a view body, where no test could reach it. Every
+                // line, and its order, is now the provenance's to state.
+                ForEach(Array(provenance.plateLines.enumerated()), id: \.offset) { _, line in
+                    Text(line.text)
+                        .font(Self.font(for: line.role))
+                        .foregroundStyle(Color.black.opacity(Self.opacity(for: line.role)))
                         .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, line.role == .caveat ? 0 : 2)
                 }
-                Text(String(localized: "analytics.export.figure.seeData",
-                            defaultValue: "Full method, caveats, and the underlying numbers accompany this figure in its CSV export."))
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.black.opacity(0.45))
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: width - margin * 2, alignment: .leading)
         }
@@ -90,6 +90,35 @@ struct AnalyticsFigureCanvas<Content: View>: View {
         // Detached content would otherwise resolve the renderer's default appearance; pin it so an
         // export looks the same regardless of the user's light/dark setting.
         .environment(\.colorScheme, .light)
+    }
+
+    // MARK: - Type
+
+    /// The size each role is set at.
+    ///
+    /// Caveats are the smallest thing on the plate and there can be several long ones, so they are
+    /// set at 10 pt — legible at the 2x raster this exports at, and small enough that complete
+    /// disclosure does not overwhelm a 240 pt chart. The attribution is set at caveat size but
+    /// darker, because it is a credit rather than a qualification.
+    static func font(for role: AnalyticsPlateLine.Role) -> Font {
+        switch role {
+        case .title:       return .system(size: 15, weight: .semibold)
+        case .facts:       return .system(size: 12)
+        case .caveat:      return .system(size: 10)
+        case .attribution: return .system(size: 10, weight: .medium)
+        case .dataPointer: return .system(size: 10)
+        }
+    }
+
+    /// How dark each role is set.
+    static func opacity(for role: AnalyticsPlateLine.Role) -> Double {
+        switch role {
+        case .title:       return 1.0
+        case .facts:       return 0.65
+        case .caveat:      return 0.55
+        case .attribution: return 0.75
+        case .dataPointer: return 0.45
+        }
     }
 }
 

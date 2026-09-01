@@ -80,6 +80,93 @@ struct AnalyticsProvenanceTests {
         #expect(sample().csvPreambleLines.allSatisfy { $0 == "#" || $0.hasPrefix("# ") })
     }
 
+    // MARK: - The published plate (visual-marketing GATE C)
+
+    /// **The publication blocker.** Every exported figure printed `FRUS Explorer <version>` and
+    /// nothing else, so a plate published in an article credited a reading application for the
+    /// U.S. government's documentary edition.
+    @Test("An exported plate credits the Office of the Historian, not the app")
+    func plateCreditsThePublisher() {
+        let lines = sample().plateLines
+        let attribution = lines.filter { $0.role == .attribution }
+        #expect(attribution.count == 1)
+        // `first`, not `[0]`: `#expect` does not stop the test, so a subscript here traps the whole
+        // process when the line is missing — which is precisely the failure this test exists for.
+        #expect(attribution.first?.text.contains("Office of the Historian") == true)
+        #expect(attribution.first?.text.contains("Department of State") == true)
+        // The app credit is still there — as a fact, not as the publisher.
+        #expect(lines.contains { $0.role == .facts && $0.text.contains("FRUS Explorer") })
+    }
+
+    /// A plate published alone carries its caveats, because nothing else will carry them for it.
+    @Test("An exported plate prints every caveat its CSV prints")
+    func platePrintsItsCaveats() {
+        let p = sample(valueMode: "Raw count")
+        let onPlate = p.plateLines.filter { $0.role == .caveat }.map(\.text)
+        #expect(!onPlate.isEmpty)
+        #expect(onPlate == p.allCaveats)
+        // And the CSV says exactly the same things, so the two cannot drift.
+        for caveat in onPlate {
+            #expect(p.csvPreambleLines.contains("# \(caveat)"), "CSV is missing: \(caveat)")
+        }
+    }
+
+    /// The sentence the plate used to print unconditionally asserted its caveats had travelled
+    /// with it. Publish the PNG alone and that was simply false.
+    @Test("The plate never claims its CSV travelled with it")
+    func plateDoesNotClaimTheCSVIsAttached() {
+        let text = sample().plateLines.map(\.text).joined(separator: "\n").lowercased()
+        #expect(!text.contains("accompany this figure"))
+        #expect(!text.contains("accompanies this figure"))
+        // It still says where the numbers are.
+        #expect(text.contains("csv export"))
+    }
+
+    /// A trim SELECTS from the method block; it cannot introduce a line the CSV does not carry.
+    @Test("A designated plate caveat set can only select from what the CSV states")
+    func plateCaveatsCannotInventAQualification() {
+        var p = sample(valueMode: "Raw count")
+        let real = p.allCaveats
+        #expect(real.count >= 2, "fixture must have something to trim")
+        p.plateCaveats = [real[0], "Invented: this figure has been independently verified."]
+        let kept = p.plateCaveatLines
+        #expect(!kept.contains { $0.contains("Invented") })
+        #expect(kept.allSatisfy { real.contains($0) })
+    }
+
+    /// The one caveat no figure may drop: which volumes the counts cover. Without it the plate's
+    /// denominator is unstated.
+    @Test("A trim cannot drop the corpus caveat")
+    func plateAlwaysKeepsTheCorpusCaveat() {
+        var p = sample(valueMode: "Raw count")
+        let others = p.allCaveats.filter { $0 != p.corpusCaveat }
+        #expect(!others.isEmpty)
+        p.plateCaveats = others                       // deliberately omits it
+        #expect(p.plateCaveatLines.first == p.corpusCaveat)
+        #expect(p.plateCaveatLines.contains(p.corpusCaveat))
+    }
+
+    /// Trimming reorders nothing: two figures trimmed differently still read in one sequence.
+    @Test("A trim follows the method block's order, not the designation's")
+    func plateCaveatOrderFollowsTheMethodBlock() {
+        var p = sample(valueMode: "Raw count")
+        let real = p.allCaveats
+        #expect(real.count >= 3, "fixture must have enough caveats to reorder")
+        p.plateCaveats = Array(real.reversed())
+        #expect(p.plateCaveatLines == real)
+    }
+
+    /// The band's order is fixed: title, facts, caveats, publisher, then where the data is.
+    @Test("Plate lines come in a fixed order")
+    func plateLineOrder() {
+        let roles = sample().plateLines.map(\.role)
+        #expect(roles.first == .title)
+        #expect(roles.dropFirst().first == .facts)
+        #expect(roles.last == .dataPointer)
+        #expect(roles.dropLast().last == .attribution)
+        #expect(roles.filter { $0 == .caveat }.count == sample().allCaveats.count)
+    }
+
     /// Scope defaults to the whole corpus when no volume scope is set.
     @Test("Absent scope reads as the whole corpus")
     func scopeDefault() {

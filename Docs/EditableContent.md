@@ -1412,11 +1412,29 @@ Not applied — this breakdown covers the whole corpus span
 
 #### Figure caption — pointer to the CSV
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsFigureExport.swift | AnalyticsFigureCanvas.body | lines: 79–80 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
+Printed on every exported figure. It used to read "Full method, caveats, and the underlying numbers
+**accompany this figure** in its CSV export" — which a PNG published on its own made false: it did
+not merely omit the caveats, it asserted they had travelled with the image. It now says where the
+numbers can be got, which is true however the figure is published.
 
-Full method, caveats, and the underlying numbers accompany this figure in its CSV export.
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateDataPointer | lines: 140–141 | key: analytics.export.figure.seeData | shared: iOS+macOS (single edit point) -->
+
+The underlying numbers are available as a CSV export from FRUS Explorer, with the full method statement.
 
 <!-- END SOURCE: analytics.export.figure.seeData -->
+
+#### Figure plate — publisher credit
+
+The credit an exported figure carries **on the image**. Before this existed a plate printed
+`FRUS Explorer <version>` and nothing else, so a figure published in an article credited a reading
+application for the U.S. government's documentary edition. This is the one-line form; the full
+sentence in the CSV preamble is `analytics.export.attribution`, and the two should agree.
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.plateAttribution | lines: 129–130 | key: analytics.export.plateAttribution | shared: iOS+macOS (single edit point) -->
+
+Foreign Relations of the United States, published by the Office of the Historian, U.S. Department of State. Public domain.
+
+<!-- END SOURCE: analytics.export.plateAttribution -->
 
 ### Analytics Export — Person Analytics caveats
 
