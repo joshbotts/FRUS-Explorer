@@ -171,19 +171,30 @@ case for a binary to carry it. The guide is now at **v1.10**.
 
 | # | Session | Scope | Gate |
 |---|---|---|---|
-| B-1 | **W-13 coverage map / systematic-review mode** | Unchanged from the old plan: "opened 43 of 267 in this corpus — 12 annotated, 224 unread," from `ExportHistoryEntry` + `ProjectEngagedDocuments`, plus the exportable coverage statement completing the method appendix (searched → examined). No schema change. | none |
-| B-2 | **W-14 read-aloud** | Unchanged: `AVSpeechSynthesizer` over the render tree — skip footnotes, track position, honor the read-vs-research split. Purely additive. | none |
+| B-1 | **KEEP — next engineering session.** W-13 coverage map / systematic-review mode | Unchanged from the old plan: "opened 43 of 267 in this corpus — 12 annotated, 224 unread," from `ExportHistoryEntry` + `ProjectEngagedDocuments`, plus the exportable coverage statement completing the method appendix (searched → examined). No schema change. | none |
+| B-2 | **DEFERRED 2026-09-01 (owner).** Purely additive and nothing depends on it; the only row here with no research argument behind it. Not removed — revisit after the App Store push. W-14 read-aloud | Unchanged: `AVSpeechSynthesizer` over the render tree — skip footnotes, track position, honor the read-vs-research split. Purely additive. | none |
 | ~~B-3~~ | ~~**W-3 §7 remainders**~~ | **Struck 2026-08-31 — folded into Tier A §2a.** `Visual-Marketing-Plan.md` reconciles against `Map-Figure-Export-And-Visual-Outputs.md` §7–§9 and supersedes this row's scope. The four items it named (word-cloud drift harness, splash lens, marketing plates, extra lenses) are governed there now; scope sessions out of that plan's §7, not out of this row. | — |
-| B-4 | **V-5 residue: the supplementary sitting** | The shipped Meaning surfaces have never been judged the way the first 25 queries were: a second owner sitting over the SHIPPED pipeline (hybrid page + fallback), reusing the standing harness and rubric — sharpened by whatever build-44 testers report. Also the small unmeasured number: the encoder's Metal in-app footprint on a device/attended Mac run (the CPU shape measured 141→349→393→140 MB; the CLI ceiling 639–861 MB bounds Metal). | owner appetite; tester feedback helps |
-| B-5 | **W-8 residue: the two June leftovers** *(recovered 2026-08-29, §7)* | Recorded in the old plan's struck W-8 row ("Left of this row") and carried nowhere until now: **enclosure dual-home rendering** (the printed text lives in its originating despatch; the classifier surfaces should say so — Finding 4 of the June pass), and the **live UI walkthrough of the pre-1910 classifier surfaces** on both platforms. Small; one sitting; no open issue tracks them, so this row is the only record. | none |
+| B-4 | **SPLIT 2026-09-01 (owner): the measurement is KEPT, the sitting is DEFERRED.** The encoder's in-app Metal footprint is an unmeasured number that needs no owner time — take it. The second sitting over the shipped Meaning pipeline waits for build-44 tester feedback, which is what would sharpen its rubric. V-5 residue: the supplementary sitting | The shipped Meaning surfaces have never been judged the way the first 25 queries were: a second owner sitting over the SHIPPED pipeline (hybrid page + fallback), reusing the standing harness and rubric — sharpened by whatever build-44 testers report. Also the small unmeasured number: the encoder's Metal in-app footprint on a device/attended Mac run (the CPU shape measured 141→349→393→140 MB; the CLI ceiling 639–861 MB bounds Metal). | owner appetite; tester feedback helps |
+| B-5 | **KEEP.** No issue tracks either leftover, so this row is their only record — which is precisely how the June pass lost them once already. W-8 residue: the two June leftovers *(recovered 2026-08-29, §7)* | Recorded in the old plan's struck W-8 row ("Left of this row") and carried nowhere until now: **enclosure dual-home rendering** (the printed text lives in its originating despatch; the classifier surfaces should say so — Finding 4 of the June pass), and the **live UI walkthrough of the pre-1910 classifier surfaces** on both platforms. Small; one sitting; no open issue tracks them, so this row is the only record. | none |
+
+## 3a. Newly filed — 2026-09-01
+
+Two defects found during the visual-marketing wave, recorded in code comments and in the plan's
+§10 but never given a row. Both are **owner decisions before any code**, which is why they sat
+unfiled; filing them is what stops "recorded somewhere" from meaning "lost".
+
+| # | Session | Scope | Gate |
+|---|---|---|---|
+| B-6 | **The blank relaunch window** | `.indexingBackdrop` is a suppression verdict **nothing renders**. With a download QUEUED but no batch started, `ContentView` withholds the splash and `MainTabView` never mounts the strip, so a relaunch mid-download shows nothing at all. `CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing` passes while the screen is blank, and now says so in its doc comment. **Not a drive-by**: the fix needs a product decision (a queued-download banner, or let the splash through?) *and* a banner state that does not exist — `IndexingQueueBannerView` needs a `batch.latest`, and in that window there is no batch. | **owner decision** |
+| B-7 | **Differentiate Without Color on the map** | `accessibilityDifferentiateWithoutColor` appears nowhere under `Semantic/`, while `WordCloudView` honours it with a documented rationale on a surface far *less* colour-dependent. The map's cluster lens is an even hue sweep and its provenance lens a ten-hue legend, so colour is load-bearing. Closing it needs a **second channel** — shape, or a labelled sub-selection — which is a design question, not a contract to state. M-2 stated the Reduce Motion and Reduce Transparency positions and deliberately left this one open rather than half-answering it. | **owner design decision** |
 
 ## 4. Tier C — assessments (each ends with a build/no-build recommendation)
 
 | # | Session | Scope | Gate |
 |---|---|---|---|
-| C-1 | **W-12 parallel-series concordance — ASSESSMENT** | Unchanged from the old plan: DBPO/DDF/AAPD/Dodis/Wilson Center volume-level concordance scoping; document-level alignment stays out. | none |
+| C-1 | **KEEP.** The last startable Tier C row. C-2 is the argument for doing it: an assessment that refused P8 outright and corrected a design premise before anyone built on it. W-12 parallel-series concordance — ASSESSMENT | Unchanged from the old plan: DBPO/DDF/AAPD/Dodis/Wilson Center volume-level concordance scoping; document-level alignment stays out. | none |
 | ~~C-2~~ | ~~**W-15 geographic analytics — ASSESSMENT**~~ **ASSESSED 2026-09-01**, PR #1170 — `W15-Geographic-Analytics-Assessment-2026-09-01.md`. **P10 BUILD but renamed** (a *document-origin* table, not "country attention"); **P8 DO NOT BUILD from place mentions** — Washington is 46.9% of all dateline geography; **P11 and P12 CLOSE as already delivered**, which the plan describes as postponed. The recon's "few hundred rows" premise survives only with a normalisation step it did not identify: keyed on raw surface a 300-row table reaches 90.0%, keyed on the normalised head 96.4%. | — |
-| C-3 | **W-10 OS-27 adoption — assessment against the actual SDK** | Unchanged; first session is assessment-against-the-beta, not a build. | SDK availability |
+| C-3 | **DEFERRED by its own gate**, not by choice — it cannot start until the SDK is available. W-10 OS-27 adoption — assessment against the actual SDK | Unchanged; first session is assessment-against-the-beta, not a build. | SDK availability |
 
 ## 4a. Tier D — vacated *(2026-08-31)*
 
@@ -207,6 +218,36 @@ it is the gate every row below is refused without, and it stays live in the owne
 | N-1 | **Score the harvest** | When the stores exist: run `score_detections.py` over the Qwen3-14B store, the `EarlyEraNERControl` (NLTagger) store, and the editors'-markup baseline, against the keyed gold — same scorer, same documents, maximum-cardinality matching. Deliverable: the three-way table and the verdict on the question the scorer was designed for (`NER-RUNBOOK.md` §6–7) — *does the model beat the free option by enough to justify its cost?* — under `People-Early-Era-Program.md` §5's own binding constraint, which is prior: eval set first, nothing ships until M2a is keyed *(citation repointed 2026-08-29, §7 — §5 states the keying gate, not the comparison question)*. Record whatever the answer is; a control win is a finding, not a failure. Guard rails already in the tools: a store that sampled without `sampled_doc_ids` is refused; gold re-verified against the text layer before any detector is read. | N-0 + the stores |
 | N-2 | **The verdict's consequences** | Branches on N-1, both pre-scoped: **detector wins** → design the ingestion (how detected early-era mentions reach the people browser #234 asks to extend — index shape, confidence display, the "detected, not editorial" disclosure the program mandates); **control/baseline wins** → the same browser extension built on the editors' markup + NLTagger at zero model cost, and the sweep output archived as a measured negative. Either branch ends with a build plan for the browser extension itself. | N-1 |
 | N-3 | **W-7a, if a re-run is ever wanted** | The harness additions (`ONLY_DOCUMENTS` + `WORKERS`, both shapes settled by the Swift control and the #1083 probe). Needed only if N-1's verdict demands scoped re-runs of other models. Do not build ahead of that need. | an N-1 outcome that wants more models |
+
+## 4c. Disposition sweep — 2026-09-01
+
+Every remaining session was put to the owner for keep / defer / remove. The results are written
+into the rows above; this is the summary and the resulting order.
+
+| Decision | Rows |
+|---|---|
+| **KEEP** | B-1 (W-13 coverage map), B-5 (W-8 residue), C-1 (W-12 assessment), B-4's *measurement* half, and **M-4 pulled forward** |
+| **DEFERRED** | B-2 (W-14 read-aloud), B-4's *sitting* half, **P10**, C-3 (by its own SDK gate) |
+| **REMOVED** | none |
+| **NEWLY FILED** | B-6, B-7 (§3a) |
+
+**M-4 is built BEFORE capture, reversing the plan's own schedule** — an owner decision made with
+the trade stated: the plan put it at step 14 precisely because it changes the App Preview's opening
+frame, so shooting first would mean re-shooting. Building first means one capture pass and accepts
+the on-device composition review it needs at phone and Mac widths. It carries a real bug that must
+land with it, not after: `WordCloudDriftField.state(of:)` clamps with the surface's bleed while
+`push`'s acceptance test re-clamps with the default `bleed: 0`, so on any surface with fill > 1 — 
+**exactly the full-bleed splash M-4 proposes** — a valid nudge is rejected and the word is left
+inside the identity zone.
+
+**P10 is deferred to the next index bump rather than scheduled.** `currentDateIndexVersion` is 47
+and P10 needs 48, which is a full re-index for every user; the plan already treats bumps as batched
+events with a passenger list. Its step 1 is owner curation of the top 300 normalised toponym heads
+and is unblocked by code whenever the owner wants it — the measurement in
+`W15-Geographic-Analytics-Assessment-2026-09-01.md` §2 is the input.
+
+**Suggested order for the engineering rows**: M-4 first (it gates a capture pass the owner is
+mid-way through), then B-1, then B-5, then C-1. B-4's measurement folds into any of them.
 
 ## 5. The owner lane
 
