@@ -2107,6 +2107,9 @@ struct FRUSExplorerApp: App {
             #if DEBUG
             // #312: research-content seed for UIObstructionTests scenario 5 — see the seeder.
             UITestResearchSeeder.seedIfRequested(context: modelContainer.mainContext)
+            // Visual-marketing §7 step 6: State C, a library that has been worked in. Inert unless
+            // FRUS_CAPTURE_SEED=1, and idempotent by project name.
+            CaptureStateSeeder.seedIfRequested(context: modelContainer.mainContext)
             #endif
             // #406: reconstruct orphaned tag associations. On a local-only store there is no
             // CloudKit import to wait for and the local store is authoritative, so run it now.
