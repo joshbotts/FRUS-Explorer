@@ -10325,3 +10325,101 @@ exhaustive synthetic sweep finds 2,500 residual cases at splash geometry, all cu
 trying the next axis, but that is a change to the algorithm rather than to the clamp M-4
 was asked to fix. **Owner step outstanding: the on-device composition review at phone and
 Mac widths**, with three named things to look for.
+
+---
+
+## Session 2026-09-01 — New-volume release readiness (planning only, no code)
+
+**Deliverable:** `Planning/New-Volume-Release-Plan.md`, plus a four-row pointer at
+`Plan-Of-Record-2026-08-28.md` §3b. No source changed, no artifact regenerated.
+
+The Office of the Historian intends to publish before the end of the year. The plan traces what a
+new volume actually costs — the 36 bundled data resources classified into four tiers, the run order
+across twelve generators, the owner-gated semantic stage, and the release mechanics — and reaches four
+findings that were not visible from the planning documents alone:
+
+- **A new volume needs an app release.** `ManifestStore` computes `newlyAvailable` from the live
+  GitHub diff and its doc comment says a badge renders it. Nothing does: the only consumer outside
+  `ManifestStore.swift` is a test asserting `id == filename`. Every volume-listing surface reads
+  `diffResult?.known`, which is bundled ∩ live. Side-loading is the reader's only route on the day
+  of publication.
+- **The map cannot be deferred.** `BundledSemanticMap.prepare()` passes the vector artifact's
+  document count into the map reader, which throws on a mismatch — so a stale `semantic-map.bin`
+  is refused cleanly and the whole Clusters/Map feature goes dark. Relayout (~15 min of Python,
+  plus a real review of 179 re-derived cluster labels) or no map.
+- **An incremental harvest can silently rewrite the corpus's provenance.**
+  `harvest_embeddings.py` writes `run-manifest.json` from the current invocation with no comparison
+  against the store's existing one, and `SemanticRawStore` cross-checks only `model` and `dim` per
+  volume — never `prefix`, `chunk_chars` or `overlap_chars`. A resume that forgets
+  `PREFIX="title: none | text: "` packs cleanly under a **different** family digest, mixing two
+  prompts and costing every device a 162 MB shard re-fetch. Filed as R-2; the mitigation until then
+  is a before/after diff of `run-manifest.json`.
+- **`CollectionRelations.coverageEras` stops at 1992 and clamps.** Correct at the low end (eight
+  volumes reach back before 1861 and dropping them would shrink counts a reader takes as complete);
+  never exercised at the high end. A first 1993+ volume would be filed under "1989–1992" in every
+  era-scoped surface — no crash, a wrong label. Conditional row R-3/§7.2.
+
+Also enumerated for the executing session: the nine user-visible strings that hard-code `552` (four
+of them ratios needing re-measurement), the artifact-pinned tests that will fail by design and the
+re-measure-never-relax rule for fixing them, the device-side backfills keyed to each artifact's
+`generated` stamp, and the confirmation that no CloudKit deploy is engaged.
+
+**Explicitly not covered, and flagged as needing its own plan:** corrected volumes. OH revises what
+it has published; `VolumeUpdateChecker` detects it by git blob SHA, but what happens to notes and
+highlights anchored into a document whose text moved is unanswered.
+
+---
+
+## Session 2026-09-02 — Annotation integrity across an OH correction (design only, no code)
+
+**Deliverable:** `Planning/Volume-Update-Annotation-Integrity-Design.md`, plus an R-5 row at
+`Plan-Of-Record-2026-08-28.md` §3b and the §13 update in `New-Volume-Release-Plan.md` that this
+design discharges. No source changed.
+
+The question: when OH corrects a published volume, can the app tell the reader which of their
+annotations are in doubt — per document, or only per volume?
+
+**Per document, and the app is closer than it looks.** `indexVolume` re-parses the new TEI and
+UPSERTs `document_cache` row by row (`documentCacheUpsertSQL`, `:5995`), preserving each row's
+rowid and its user columns. At that instant both versions of every document are in hand — the old
+row and the new `DocumentCacheRow` — so the changed set is exact, with no second parse, no kept
+XML, and no diff of two files. Nothing captures it today: the upsert overwrites and the old text
+is gone.
+
+**The hash the app already has is the wrong hash for this job, and that is the design's spine.**
+`renderingVersion` is `SHA-256(flatText(bodyNodes) ++ kVersion)`, and `flatText` skips
+`.footnoteBody` (`ASTToRenderNodeConverter.swift:144`) while `document_cache.body_text` includes
+footnotes (`FRUSASTNode.plainText`, `IndexingPipeline.swift:10192`). The exclusion is correct — a
+footnote change moves no highlight offset, and the converter's version history records two
+occasions where `kVersion` was deliberately not bumped for that exact reason. But it means a
+detector built on `renderingVersion` alone is blind to footnote and source-note corrections, which
+are a large share of what an erratum touches and exactly what a researcher's citation may rest on.
+So the design stores two hashes: one says *this document changed*, the other *and your offsets
+moved*.
+
+Three further findings shaped it:
+
+- **The vanished-document path already knows the answer and says nothing.**
+  `auxDeleteVanishedCacheRows` (`:6075`) computes the set of documents the new TEI no longer
+  carries — its own comment notes upstream revisions "occasionally renumber or drop documents" —
+  and deletes them silently. Recording before deleting is the smallest change in the design and
+  covers the worst case: an annotation whose anchor no longer exists.
+- **`CollectionEntry.excerptRenderingVersion` is already stored and never read.** Its doc comment
+  says so, captured against a future decision; this is that decision, and it needs no schema
+  change.
+- **The review surface already exists.** `ResearchView` aggregates engagement per
+  `(volumeId, documentId)` across notes, tags, collection entries and highlights
+  (`ResearchView.swift:39–48`), so the affected-annotation view is a filter over that aggregation
+  rather than a second model of what a researcher has done to a document. That is the main reason
+  the feature is affordable.
+
+Phased P1 (record, no UI) / P2 (notify) / P3 (repair, including a unique-match re-anchor from
+`DocumentHighlight.selectedText`). P1 is device-local SQLite, so no CloudKit deploy is engaged.
+**P1 should ship with the next volume batch**: shipped later it is blind to every correction that
+came before it. One gate, Q-1 — the cost of running the AST→render conversion at index time to get
+a render-space hash is unmeasured, and the design names the lazy fallback rather than assuming it
+is free.
+
+Refusals recorded: no silent re-anchoring, no auto-deletion of orphaned annotations, no warning
+for changes that move no characters, and no copy that tells a reader their note is wrong when the
+app can only prove the text moved.
