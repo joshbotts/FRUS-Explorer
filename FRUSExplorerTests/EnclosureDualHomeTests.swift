@@ -165,6 +165,67 @@ struct EnclosureDualHomeTests {
                 "the enclosure should be a consular despatch, got \(enclosureCategories)")
     }
 
+    // MARK: - The narrowing
+
+    /// **An enclosure is offered a home only when its OWN dateline can place it.**
+    ///
+    /// Measured over the corpus: of 23,296 dateline-bearing enclosures, only 5,876 name an
+    /// institution. The other 17,420 print a bare city, and passing the parent's chapter would
+    /// route them through the `.medium` "datelined abroad" fallback to the PARENT's country — a
+    /// parent-derived guess wearing an enclosure's label, which is the conflation this feature
+    /// exists to end, re-entering through the geography instead of the head.
+    ///
+    /// The lever is `chapterCountry: nil`, and this pins both halves of it.
+    @Test("Only a self-placing enclosure gets a home")
+    func onlySelfPlacingEnclosuresResolve() {
+        // Names its own institution: the consular branch reads the post out of the dateline.
+        let placing = CentralFilesClassifier.classify(
+            header: "Mr. Springer to Mr. Uhl",
+            dateline: "Consulate-General, of the United States, Havana, June 19, 1895.",
+            chapterCountry: nil)
+        #expect(placing.contains { !$0.geoKeys.isEmpty },
+                "a dateline naming its own consulate must place without a chapter")
+
+        // A bare city places only by borrowing a chapter — so with none, it must not.
+        let bare = CentralFilesClassifier.classify(
+            header: "Mr. Smith to Mr. Jones",
+            dateline: "Paris, December 11, 1863.",
+            chapterCountry: nil)
+        #expect(bare.allSatisfy { $0.geoKeys.isEmpty },
+                "a bare city produced a usable geography from nowhere: \(bare.map(\.geoKeys))")
+
+        // …and the same bare dateline DOES place when a chapter is supplied, which is what the
+        // document's own row still does and what the enclosure row deliberately declines.
+        let withChapter = CentralFilesClassifier.classify(
+            header: "Mr. Smith to Mr. Jones",
+            dateline: "Paris, December 11, 1863.",
+            chapterCountry: "France.")
+        #expect(withChapter.contains { !$0.geoKeys.isEmpty },
+                "the control failed — the fixture proves nothing about the narrowing")
+    }
+
+    // MARK: - Row identity
+
+    /// A document and its enclosure can resolve to the SAME series — one post writing twice — and
+    /// a row id built from the category alone makes `ForEach` show one and silently drop the
+    /// other. This drives the real `id`, not a restatement of it.
+    @Test("Two parts sharing a series are still two rows")
+    func rowIdentitySurvivesASharedSeries() {
+        let classification = CentralFilesClassification(
+            category: .consularDespatches, geoKeys: ["havana"], confidence: .high,
+            rationale: "test")
+        let document = SourceExplorerView.CountrySeriesResolution(
+            classification: classification, rolls: [], part: .document)
+        let enclosure = SourceExplorerView.CountrySeriesResolution(
+            classification: classification, rolls: [], part: .enclosure(label: "1"))
+        let second = SourceExplorerView.CountrySeriesResolution(
+            classification: classification, rolls: [], part: .enclosure(label: "2"))
+        #expect(Set([document.id, enclosure.id, second.id]).count == 3,
+                "row ids collided: \(document.id), \(enclosure.id), \(second.id)")
+        #expect(document.id.contains(classification.category.rawValue),
+                "the series must still be part of the identity")
+    }
+
     // MARK: - The part
 
     /// Two parts of one document can resolve to the SAME series — one post writing twice — and a
