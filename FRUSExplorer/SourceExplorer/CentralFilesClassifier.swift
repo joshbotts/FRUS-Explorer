@@ -26,6 +26,126 @@ enum CentralFilesConfidence: Sendable {
     }
 }
 
+// MARK: - CentralFilesDocumentPart
+
+/// Which part of a printed FRUS document an archival home belongs to (B-5, Finding 4).
+///
+/// **A printed document and its enclosures do not share an archival home.** The June 2026 pre-1910
+/// research traced one FRUS text to two places: the enclosure is filmed in its own originating
+/// series, while the covering despatch or instruction is filmed in another, where the enclosure is
+/// only referenced. A reader given one roll for the whole page is being told something false about
+/// half of it.
+///
+/// The classifier itself is unchanged and still answers about one dateline at a time; this names
+/// *whose* dateline was asked about, so a surface can say which roll holds which text.
+///
+/// Version history:
+///   1.0 — B-5 (W-8 residue), Finding 4: initial implementation
+enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
+
+    /// The printed document itself — the despatch, instruction or note.
+    case document
+
+    /// An enclosure printed beneath it, with the TEI's own label when it carries one.
+    case enclosure(label: String?)
+
+    /// A stable key, so a resolution's identity survives two parts resolving to one series.
+    ///
+    /// Without it a document and its enclosure that both classify to, say, Consular Despatches
+    /// collide in a `ForEach` keyed on the category alone — the shape the surfaces used before
+    /// this existed, where SwiftUI would have shown one row and silently dropped the other.
+    var key: String {
+        switch self {
+        case .document: return "document"
+        case .enclosure(let label): return "enclosure:\(label ?? "")"
+        }
+    }
+
+    /// What the row is called on screen.
+    var displayName: String {
+        switch self {
+        case .document:
+            return String(localized: "centralFiles.part.document", defaultValue: "This document")
+        case .enclosure(let label):
+            guard let label, !label.isEmpty else {
+                return String(localized: "centralFiles.part.enclosure",
+                              defaultValue: "Enclosure")
+            }
+            return String(format: String(localized: "centralFiles.part.enclosure.numbered %@",
+                                         defaultValue: "Enclosure %@"), label)
+        }
+    }
+
+    /// Whether this part is an enclosure.
+    var isEnclosure: Bool {
+        if case .enclosure = self { return true }
+        return false
+    }
+
+    /// The sentence a surface prints once when a document's enclosures have homes of their own.
+    ///
+    /// Said once for the section rather than per row: it is a fact about how the record was
+    /// filed, not about any single roll, and repeating it per enclosure would train the reader
+    /// to skip it — the argument `QueryMethodAppendix.caveats` already makes about its own.
+    static var enclosureNote: String {
+        String(localized: "centralFiles.part.enclosureNote.v2",
+               defaultValue: "An enclosure was often filmed in its own series rather than with the document that enclosed it. Each row below says which text its rolls hold; check both.")
+    }
+}
+
+// MARK: - CentralFilesEnclosureHomes
+
+/// One enclosure's archival home: which part it is, what it classified to, and its rolls (B-5).
+struct CentralFilesEnclosureHome: Sendable, Equatable {
+    /// Which enclosure of the printed page this is.
+    let part: CentralFilesDocumentPart
+    /// The series it placed in.
+    let classification: CentralFilesClassification
+}
+
+extension CentralFilesClassifier {
+
+    /// The archival homes of a document's enclosures, from their own openers (B-5, Finding 4).
+    ///
+    /// **Extracted from the two Source Explorer views rather than written into each.** They are
+    /// hand-maintained twins, and the first attempt at this feature drifted between them inside a
+    /// single commit; the rule that decides what an enclosure resolves to is the part that must
+    /// not. It is also the part worth testing, and a private method inside a SwiftUI view is not
+    /// reachable from a test — which is how a mutation that removed the narrowing survived a
+    /// sweep that killed everything else.
+    ///
+    /// **`chapterCountry` is deliberately `nil`.** An enclosure prints no chapter of its own, so
+    /// borrowing the parent's would let the 74.8% of dateline-bearing enclosures whose dateline
+    /// names only a city resolve through the `.medium` "datelined abroad" fallback to the PARENT's
+    /// country, and then be labelled "Enclosure" — a parent-derived guess wearing an enclosure's
+    /// name, which is the conflation this feature exists to end. Passing `nil` makes the
+    /// classifier refuse them: the geo-keyed branches guard on a non-empty `geoKeys` and the
+    /// fallback returns an empty one the caller's roll lookup skips. What survives is the
+    /// self-placing form — a dateline naming its own institution, or a chronological run matched
+    /// by date — measured at 5,876 of 23,296 dateline-bearing enclosures.
+    ///
+    /// - Parameter openers: the enclosure openers, in printed order.
+    /// - Returns: one home per enclosure that places, de-duplicated on part and series — two
+    ///   enclosures of one document routinely share a series, and the reader needs the row once.
+    static func enclosureHomes(
+        openers: [IndexingPipeline.EnclosureOpener]
+    ) -> [CentralFilesEnclosureHome] {
+        var homes: [CentralFilesEnclosureHome] = []
+        var seen = Set<String>()
+        for opener in openers {
+            let part = CentralFilesDocumentPart.enclosure(label: opener.label)
+            for classification in classify(header: opener.header,
+                                           dateline: opener.dateline,
+                                           chapterCountry: nil) {
+                let key = "\(part.key)|\(classification.category.rawValue)"
+                guard seen.insert(key).inserted else { continue }
+                homes.append(CentralFilesEnclosureHome(part: part, classification: classification))
+            }
+        }
+        return homes
+    }
+}
+
 // MARK: - CentralFilesClassification
 
 /// A candidate series + country for a pre-1906 document, derived from its dateline,

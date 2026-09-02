@@ -10423,3 +10423,68 @@ is free.
 Refusals recorded: no silent re-anchoring, no auto-deletion of orphaned annotations, no warning
 for changes that move no characters, and no copy that tells a reader their note is wrong when the
 app can only prove the text moved.
+
+## Session 2026-09-01d — B-5: an enclosure's own archival home
+
+Finding 4 of the June 2026 pre-1910 research, carried only in the Plan of Record's B-5 row
+because no issue tracks it. One printed FRUS page has **two** archival homes: the covering
+despatch or instruction was filmed in one series, the enclosure printed beneath it in its
+own originating series, and in the covering document's series the enclosure is only
+referenced. A reader handed one roll for the whole page is told something false about half
+of it.
+
+**Measured before building, because the row said "small" and nothing about whether it
+mattered.** At the classifier's own gate — which is `year < 1906`, though this row and the
+research both say "pre-1910" — 12,293 documents carry at least one enclosure and 19,243
+enclosures print a dateline differing from their parent's.
+
+**No index bump, and that is what kept it small.** `extractDateline` stops at the first
+dateline inside an `<opener>` and never descends into an attachment, and `document_cache`
+holds one dateline per document, so an enclosure's dateline was unreachable anywhere in the
+app. The route that avoids a schema change is the app-wide `DocumentASTCache`: the Source
+Explorer is reached from a document that is already open. Cache-hit-else-parse, not
+cache-only — a 24-slot LRU that empties on memory pressure is not a structural guarantee,
+and two readers of the same document would otherwise get different archival answers.
+
+**Narrowed on measurement, and this is the substantive design decision.** Only 5,876 of
+23,296 dateline-bearing enclosures name their own institution. The other 17,420 print a bare
+city and would have placed by borrowing the *parent's* chapter country through the `.medium`
+"datelined abroad" fallback, then been labelled "Enclosure" — a parent-derived guess wearing
+an enclosure's name, which is the conflation the feature exists to end, re-entering through
+the geography instead of the head. `chapterCountry: nil` is the refusal lever: the geo-keyed
+branches guard on a non-empty `geoKeys` and the fallback returns an empty one.
+
+**Three process failures worth recording, because each cost real work.**
+
+- **My commit message said "both twins are patched identically" and it was false.** The two
+  Source Explorer views differ by four spaces of indentation, so the render half of the
+  patch silently no-opped on macOS while the resolution half applied — leaving macOS adding
+  *unlabelled* enclosure rolls to the document's own list, which reads as extra homes for
+  the document itself and is worse than not shipping. The patch script asserted only that
+  the file changed, which earlier edits had already made true.
+- **`git checkout -- <path>` after a probe reverted every uncommitted change under that
+  path, twice.** One commit ended up carrying a message describing five source corrections
+  and containing only a test file; a fixture correction was lost the same way. The repo's
+  own note — commit before mutation testing — exists for exactly this and I hit it anyway.
+- **A mutation-harness bug reported two killed mutations as survivors.** A secondary "Test
+  run with N passed" line can coexist with a real failure, so the classifier has to test for
+  a failure *first*.
+
+**And one structural fix the survivors forced.** A mutation making the enclosure path borrow
+the parent's chapter survived a sweep that killed everything else, because the rule lived in
+a private async method of a SwiftUI view where no test could reach it — while a test that
+*looked* like it covered the narrowing was pinning `classify(chapterCountry: nil)`, a
+different assertion. The rule is now `CentralFilesClassifier.enclosureHomes(openers:)`,
+which also removes ~30 lines duplicated across the twins: the part that decides what an
+enclosure resolves to is precisely the part that must not be written twice.
+
+Also corrected from the adversarial pass: `n=` is on **none** of the corpus's 28,983
+attachments and the parser does not synthesise it, so every label was nil and every row read
+a bare "Enclosure" — the number is printed prose, `[Inclosure 1 in No. 363.]`, which 13,967
+dateline-bearing attachments carry, in both the *Inclosure* and *Enclosure* spellings. And
+the section's sentence claimed more than one observation of one series supports; it now says
+"often" and tells the reader to check both.
+
+4,307 tests in 570 suites; macOS clean; ten mutations killed. **B-5's second item — the live
+UI walkthrough of the pre-1910 classifier surfaces on both platforms — remains and is the
+owner's.**

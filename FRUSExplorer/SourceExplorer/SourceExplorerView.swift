@@ -949,7 +949,11 @@ struct SourceExplorerView: View {
     struct CountrySeriesResolution: Identifiable {
         let classification: CentralFilesClassification
         let rolls: [CountryRoll]
-        var id: String { classification.category.rawValue }
+        /// Whose dateline produced this home — the document's, or one enclosure's (B-5).
+        var part: CentralFilesDocumentPart = .document
+        /// Keyed on the part as well as the category: a document and its enclosure can resolve to
+        /// the SAME series, and an id of the category alone silently drops one of the two rows.
+        var id: String { "\(part.key)|\(classification.category.rawValue)" }
     }
 
     /// Classifies a pre-1906 document (which carries no source note) from its dateline,
@@ -1001,6 +1005,12 @@ struct SourceExplorerView: View {
                 }
             }
         }
+        // B-5 / Finding 4: an enclosure is filmed in ITS originating series, not with the
+        // document that enclosed it, so its own dateline gets the same treatment. The AST comes
+        // from the shared `DocumentASTCache` — this sheet is only ever opened from an open
+        // document, so the parse has just happened; a miss simply yields no enclosure rows rather
+        // than a wrong one.
+        resolutions += await enclosureResolutions(index: index, path: path)
         countryResolutions = resolutions
         // Fetched here rather than threaded through the snapshot types: this method already runs
         // only for pre-1906 documents and already holds the pipeline, volume id and document id.
@@ -1037,12 +1047,22 @@ struct SourceExplorerView: View {
                     }
                     .padding(.vertical, 2)
                 }
+            if showsPartLabels {
+                Text(CentralFilesDocumentPart.enclosureNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             ForEach(countryResolutions) { resolution in
                 let c = resolution.classification
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Text(c.category.displayName).font(.callout.weight(.semibold))
                         ConfidenceChip(confidence: c.confidence)
+                    }
+                    if showsPartLabels {
+                        Text(resolution.part.displayName)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
                     }
                     Text(c.rationale).font(.caption).foregroundStyle(.secondary)
                     ForEach(resolution.rolls) { roll in
@@ -1059,6 +1079,81 @@ struct SourceExplorerView: View {
             Text(String(localized: "source.explorer.countrySeries.header.v2",
                         defaultValue: "Digitized Department of State Records (pre-1906)"))
         }
+    }
+
+    /// Whether the archival rows name which part of the printed page they belong to.
+    ///
+    /// One property rather than the same condition written into each twin's render block: these
+    /// two views are hand-maintained copies, and the first attempt at this feature patched the iOS
+    /// block and silently missed the Mac one — which left macOS adding UNLABELLED enclosure rolls
+    /// to the document's own list, reading as extra homes for the document itself, which is worse
+    /// than not shipping it. Withheld when there is nothing to tell apart, so an ordinary
+    /// single-home document reads exactly as it did.
+    private var showsPartLabels: Bool {
+        countryResolutions.contains { $0.part.isEnclosure }
+    }
+
+    /// Archival homes for the document's enclosures, each classified from its OWN opener (B-5).
+    ///
+    /// Reads the parsed AST from the app-wide `DocumentASTCache`, the same actor
+    /// `CollectionContentResolver` serves its previews from. Nothing is parsed here: the Source
+    /// Explorer is reached from a document that is already open, so its AST is in the cache. On a
+    /// miss the result is empty — the surface then says exactly what it said before B-5, which is
+    /// the honest degradation for a fact that could not be read.
+    ///
+    /// - Parameters:
+    ///   - index: the bundled central-files index.
+    ///   - path: the FRUS section chain, reused so an enclosure inherits the chapter country its
+    ///     parent was resolved under — the enclosure prints no chapter of its own.
+    /// - Returns: one resolution per enclosure that resolves, tagged with its part.
+    private func enclosureResolutions(index: CentralFilesIndex,
+                                      path: [String]) async -> [CountrySeriesResolution] {
+        guard let volumeId = documentVolumeId, let docId = documentId else { return [] }
+        // Cache hit, else parse — the `CollectionContentResolver.cachedAST` shape. The cache is a
+        // 24-slot LRU that empties itself on an iOS memory warning, so "the document is open, so
+        // its AST is cached" is probabilistic rather than structural; an eviction or a restored
+        // scene would otherwise give two readers of the SAME document different archival answers,
+        // with nothing on screen to say why.
+        var cached = await appState.documentASTCache.ast(volumeId: volumeId, documentId: docId)
+        if cached == nil, let dm = appState.downloadManager {
+            let volumeURL = dm.volumeURL(for: volumeId)
+            if FileManager.default.fileExists(atPath: volumeURL.path),
+               let parsed = try? await FRUSDocumentParser().parseDocument(documentId: docId,
+                                                                          volumeURL: volumeURL) {
+                await appState.documentASTCache.store([parsed], volumeId: volumeId)
+                cached = parsed
+            }
+        }
+        guard let ast = cached else { return [] }
+        let openers = IndexingPipeline.extractEnclosureOpeners(from: ast.nodes)
+        // Each enclosure's OWN date, keyed by part — a chronological run is matched by date alone,
+        // and using the parent's would file the enclosure under the covering document's date.
+        var enclosureDates: [String: String] = [:]
+        for opener in openers {
+            let part = CentralFilesDocumentPart.enclosure(label: opener.label)
+            enclosureDates[part.key] = CentralFilesClassifier.datelineDateISO(from: opener.dateline)
+        }
+        guard !openers.isEmpty else { return [] }
+
+        var found: [CountrySeriesResolution] = []
+        // The rule lives in `CentralFilesClassifier.enclosureHomes` so these two hand-maintained
+        // twins cannot come to disagree about what an enclosure resolves to — they already drifted
+        // once here — and so it can be tested, which a private method inside a view cannot be.
+        for home in CentralFilesClassifier.enclosureHomes(openers: openers) {
+            guard let series = index.series(category: home.classification.category) else { continue }
+            let rolls: [CountryRoll]
+            if home.classification.category.isChronologicalRun {
+                guard let date = enclosureDates[home.part.key] else { continue }
+                rolls = series.rolls(containingDate: date)
+            } else {
+                guard let geoKey = home.classification.geoKeys.first else { continue }
+                rolls = series.rolls(geoKey: geoKey, dateISO: enclosureDates[home.part.key])
+            }
+            guard !rolls.isEmpty else { continue }
+            found.append(CountrySeriesResolution(classification: home.classification,
+                                                 rolls: rolls, part: home.part))
+        }
+        return found
     }
 
     /// Shown for a document with no source note that the country-series classifier could not
