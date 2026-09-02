@@ -211,6 +211,42 @@ struct EnclosureDualHomeTests {
                 "the control failed — the fixture proves nothing about the narrowing")
     }
 
+    /// The narrowing **through the function the views actually call**.
+    ///
+    /// The test above pins `classify(chapterCountry: nil)`; this pins that the enclosure path
+    /// passes `nil`. They are not the same assertion — a mutation that made the view supply the
+    /// parent's chapter survived a sweep that killed everything else, because the rule lived
+    /// inside a private method of a SwiftUI view where no test could reach it. It lives in
+    /// `CentralFilesClassifier.enclosureHomes` now, and this is why.
+    @Test("The enclosure path itself refuses a chapter-dependent placement")
+    func enclosureHomesRefuseAParentDerivedCountry() {
+        let selfPlacing = IndexingPipeline.EnclosureOpener(
+            label: "1", header: "Mr. Springer to Mr. Uhl",
+            dateline: "Consulate-General, of the United States, Havana, June 19, 1895.")
+        let bare = IndexingPipeline.EnclosureOpener(
+            label: "2", header: "Mr. Smith to Mr. Jones",
+            dateline: "Paris, December 11, 1863.")
+
+        let homes = CentralFilesClassifier.enclosureHomes(openers: [selfPlacing, bare])
+        #expect(homes.contains { $0.part == .enclosure(label: "1") && !$0.classification.geoKeys.isEmpty },
+                "the self-placing enclosure lost its home")
+        #expect(!homes.contains { $0.part == .enclosure(label: "2") && !$0.classification.geoKeys.isEmpty },
+                "a bare city produced a usable country — the parent's chapter leaked in")
+    }
+
+    /// Two enclosures of one document routinely share a series — the same post writing twice —
+    /// and the reader needs that row once, not once per enclosure.
+    @Test("Homes are de-duplicated on part and series")
+    func homesAreDeduplicated() {
+        let opener = IndexingPipeline.EnclosureOpener(
+            label: "1", header: "Mr. Springer to Mr. Uhl",
+            dateline: "Consulate-General, of the United States, Havana, June 19, 1895.")
+        let homes = CentralFilesClassifier.enclosureHomes(openers: [opener, opener])
+        let keys = homes.map { "\($0.part.key)|\($0.classification.category.rawValue)" }
+        #expect(keys.count == Set(keys).count, "duplicate rows: \(keys)")
+        #expect(!homes.isEmpty, "the fixture must place, or this proves nothing")
+    }
+
     // MARK: - Row identity
 
     /// A document and its enclosure can resolve to the SAME series — one post writing twice — and

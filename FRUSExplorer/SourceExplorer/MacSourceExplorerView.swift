@@ -1598,48 +1598,32 @@ struct MacSourceExplorerView: View {
         }
         guard let ast = cached else { return [] }
         let openers = IndexingPipeline.extractEnclosureOpeners(from: ast.nodes)
+        // Each enclosure's OWN date, keyed by part — a chronological run is matched by date alone,
+        // and using the parent's would file the enclosure under the covering document's date.
+        var enclosureDates: [String: String] = [:]
+        for opener in openers {
+            let part = CentralFilesDocumentPart.enclosure(label: opener.label)
+            enclosureDates[part.key] = CentralFilesClassifier.datelineDateISO(from: opener.dateline)
+        }
         guard !openers.isEmpty else { return [] }
 
         var found: [CountrySeriesResolution] = []
-        var seen = Set<String>()
-        for opener in openers {
-            let dateISO = CentralFilesClassifier.datelineDateISO(from: opener.dateline)
-            // **`chapterCountry: nil`, and that is the whole narrowing.** An enclosure prints no
-            // chapter of its own, so borrowing the parent's would let 74.8% of dateline-bearing
-            // enclosures — the ones whose dateline names only a city — resolve through the
-            // `.medium` "datelined abroad" fallback to the PARENT's country, and then be labelled
-            // "Enclosure". That is a parent-derived guess wearing an enclosure's name, which is
-            // exactly the conflation `EnclosureOpener` exists to prevent, re-entering through the
-            // geography instead of the head. Passing `nil` makes the classifier refuse: its
-            // geo-keyed branches guard on a non-empty `geoKeys`, and the fallback returns an
-            // empty one the roll lookup below then skips. What survives is the self-placing form —
-            // a dateline naming its own institution, or a chronological run matched by date —
-            // measured at 5,876 of 23,296 dateline-bearing enclosures.
-            for _ in [0] {
-                let classifications = CentralFilesClassifier.classify(
-                    header: opener.header, dateline: opener.dateline, chapterCountry: nil)
-                var placed = false
-                for classification in classifications {
-                    guard let series = index.series(category: classification.category) else { continue }
-                    let rolls: [CountryRoll]
-                    if classification.category.isChronologicalRun {
-                        guard let dateISO else { continue }
-                        rolls = series.rolls(containingDate: dateISO)
-                    } else {
-                        guard let geoKey = classification.geoKeys.first else { continue }
-                        rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
-                    }
-                    guard !rolls.isEmpty else { continue }
-                    let part = CentralFilesDocumentPart.enclosure(label: opener.label)
-                    let resolution = CountrySeriesResolution(classification: classification,
-                                                             rolls: rolls, part: part)
-                    // Two enclosures of one document routinely share a series — the same post
-                    // writing twice — and the reader needs the row once, not once per enclosure.
-                    if seen.insert(resolution.id).inserted { found.append(resolution) }
-                    placed = true
-                }
-                if placed { break }
+        // The rule lives in `CentralFilesClassifier.enclosureHomes` so these two hand-maintained
+        // twins cannot come to disagree about what an enclosure resolves to — they already drifted
+        // once here — and so it can be tested, which a private method inside a view cannot be.
+        for home in CentralFilesClassifier.enclosureHomes(openers: openers) {
+            guard let series = index.series(category: home.classification.category) else { continue }
+            let rolls: [CountryRoll]
+            if home.classification.category.isChronologicalRun {
+                guard let date = enclosureDates[home.part.key] else { continue }
+                rolls = series.rolls(containingDate: date)
+            } else {
+                guard let geoKey = home.classification.geoKeys.first else { continue }
+                rolls = series.rolls(geoKey: geoKey, dateISO: enclosureDates[home.part.key])
             }
+            guard !rolls.isEmpty else { continue }
+            found.append(CountrySeriesResolution(classification: home.classification,
+                                                 rolls: rolls, part: home.part))
         }
         return found
     }

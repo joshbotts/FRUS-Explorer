@@ -93,6 +93,59 @@ enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
     }
 }
 
+// MARK: - CentralFilesEnclosureHomes
+
+/// One enclosure's archival home: which part it is, what it classified to, and its rolls (B-5).
+struct CentralFilesEnclosureHome: Sendable, Equatable {
+    /// Which enclosure of the printed page this is.
+    let part: CentralFilesDocumentPart
+    /// The series it placed in.
+    let classification: CentralFilesClassification
+}
+
+extension CentralFilesClassifier {
+
+    /// The archival homes of a document's enclosures, from their own openers (B-5, Finding 4).
+    ///
+    /// **Extracted from the two Source Explorer views rather than written into each.** They are
+    /// hand-maintained twins, and the first attempt at this feature drifted between them inside a
+    /// single commit; the rule that decides what an enclosure resolves to is the part that must
+    /// not. It is also the part worth testing, and a private method inside a SwiftUI view is not
+    /// reachable from a test — which is how a mutation that removed the narrowing survived a
+    /// sweep that killed everything else.
+    ///
+    /// **`chapterCountry` is deliberately `nil`.** An enclosure prints no chapter of its own, so
+    /// borrowing the parent's would let the 74.8% of dateline-bearing enclosures whose dateline
+    /// names only a city resolve through the `.medium` "datelined abroad" fallback to the PARENT's
+    /// country, and then be labelled "Enclosure" — a parent-derived guess wearing an enclosure's
+    /// name, which is the conflation this feature exists to end. Passing `nil` makes the
+    /// classifier refuse them: the geo-keyed branches guard on a non-empty `geoKeys` and the
+    /// fallback returns an empty one the caller's roll lookup skips. What survives is the
+    /// self-placing form — a dateline naming its own institution, or a chronological run matched
+    /// by date — measured at 5,876 of 23,296 dateline-bearing enclosures.
+    ///
+    /// - Parameter openers: the enclosure openers, in printed order.
+    /// - Returns: one home per enclosure that places, de-duplicated on part and series — two
+    ///   enclosures of one document routinely share a series, and the reader needs the row once.
+    static func enclosureHomes(
+        openers: [IndexingPipeline.EnclosureOpener]
+    ) -> [CentralFilesEnclosureHome] {
+        var homes: [CentralFilesEnclosureHome] = []
+        var seen = Set<String>()
+        for opener in openers {
+            let part = CentralFilesDocumentPart.enclosure(label: opener.label)
+            for classification in classify(header: opener.header,
+                                           dateline: opener.dateline,
+                                           chapterCountry: nil) {
+                let key = "\(part.key)|\(classification.category.rawValue)"
+                guard seen.insert(key).inserted else { continue }
+                homes.append(CentralFilesEnclosureHome(part: part, classification: classification))
+            }
+        }
+        return homes
+    }
+}
+
 // MARK: - CentralFilesClassification
 
 /// A candidate series + country for a pre-1906 document, derived from its dateline,
