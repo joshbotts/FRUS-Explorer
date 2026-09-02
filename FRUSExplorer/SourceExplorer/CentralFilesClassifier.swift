@@ -88,8 +88,8 @@ enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
     /// filed, not about any single roll, and repeating it per enclosure would train the reader
     /// to skip it — the argument `QueryMethodAppendix.caveats` already makes about its own.
     static var enclosureNote: String {
-        String(localized: "centralFiles.part.enclosureNote",
-               defaultValue: "An enclosure was filmed in its own series, not with the document that enclosed it. Each row below says which text its rolls hold.")
+        String(localized: "centralFiles.part.enclosureNote.v2",
+               defaultValue: "An enclosure was often filmed in its own series rather than with the document that enclosed it. Each row below says which text its rolls hold; check both.")
     }
 }
 

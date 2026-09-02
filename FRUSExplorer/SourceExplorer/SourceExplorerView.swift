@@ -1047,7 +1047,7 @@ struct SourceExplorerView: View {
                     }
                     .padding(.vertical, 2)
                 }
-            if countryResolutions.contains(where: { $0.part.isEnclosure }) {
+            if showsPartLabels {
                 Text(CentralFilesDocumentPart.enclosureNote)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1059,9 +1059,7 @@ struct SourceExplorerView: View {
                         Text(c.category.displayName).font(.callout.weight(.semibold))
                         ConfidenceChip(confidence: c.confidence)
                     }
-                    // Named only when there is more than one part to tell apart, so the ordinary
-                    // single-home document reads exactly as it did.
-                    if countryResolutions.contains(where: { $0.part.isEnclosure }) {
+                    if showsPartLabels {
                         Text(resolution.part.displayName)
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
@@ -1083,6 +1081,18 @@ struct SourceExplorerView: View {
         }
     }
 
+    /// Whether the archival rows name which part of the printed page they belong to.
+    ///
+    /// One property rather than the same condition written into each twin's render block: these
+    /// two views are hand-maintained copies, and the first attempt at this feature patched the iOS
+    /// block and silently missed the Mac one — which left macOS adding UNLABELLED enclosure rolls
+    /// to the document's own list, reading as extra homes for the document itself, which is worse
+    /// than not shipping it. Withheld when there is nothing to tell apart, so an ordinary
+    /// single-home document reads exactly as it did.
+    private var showsPartLabels: Bool {
+        countryResolutions.contains { $0.part.isEnclosure }
+    }
+
     /// Archival homes for the document's enclosures, each classified from its OWN opener (B-5).
     ///
     /// Reads the parsed AST from the app-wide `DocumentASTCache`, the same actor
@@ -1098,9 +1108,23 @@ struct SourceExplorerView: View {
     /// - Returns: one resolution per enclosure that resolves, tagged with its part.
     private func enclosureResolutions(index: CentralFilesIndex,
                                       path: [String]) async -> [CountrySeriesResolution] {
-        guard let volumeId = documentVolumeId, let docId = documentId,
-              let ast = await appState.documentASTCache.ast(volumeId: volumeId, documentId: docId)
-        else { return [] }
+        guard let volumeId = documentVolumeId, let docId = documentId else { return [] }
+        // Cache hit, else parse — the `CollectionContentResolver.cachedAST` shape. The cache is a
+        // 24-slot LRU that empties itself on an iOS memory warning, so "the document is open, so
+        // its AST is cached" is probabilistic rather than structural; an eviction or a restored
+        // scene would otherwise give two readers of the SAME document different archival answers,
+        // with nothing on screen to say why.
+        var cached = await appState.documentASTCache.ast(volumeId: volumeId, documentId: docId)
+        if cached == nil, let dm = appState.downloadManager {
+            let volumeURL = dm.volumeURL(for: volumeId)
+            if FileManager.default.fileExists(atPath: volumeURL.path),
+               let parsed = try? await FRUSDocumentParser().parseDocument(documentId: docId,
+                                                                          volumeURL: volumeURL) {
+                await appState.documentASTCache.store([parsed], volumeId: volumeId)
+                cached = parsed
+            }
+        }
+        guard let ast = cached else { return [] }
         let openers = IndexingPipeline.extractEnclosureOpeners(from: ast.nodes)
         guard !openers.isEmpty else { return [] }
 
@@ -1108,9 +1132,20 @@ struct SourceExplorerView: View {
         var seen = Set<String>()
         for opener in openers {
             let dateISO = CentralFilesClassifier.datelineDateISO(from: opener.dateline)
-            for title in path {
+            // **`chapterCountry: nil`, and that is the whole narrowing.** An enclosure prints no
+            // chapter of its own, so borrowing the parent's would let 74.8% of dateline-bearing
+            // enclosures — the ones whose dateline names only a city — resolve through the
+            // `.medium` "datelined abroad" fallback to the PARENT's country, and then be labelled
+            // "Enclosure". That is a parent-derived guess wearing an enclosure's name, which is
+            // exactly the conflation `EnclosureOpener` exists to prevent, re-entering through the
+            // geography instead of the head. Passing `nil` makes the classifier refuse: its
+            // geo-keyed branches guard on a non-empty `geoKeys`, and the fallback returns an
+            // empty one the roll lookup below then skips. What survives is the self-placing form —
+            // a dateline naming its own institution, or a chronological run matched by date —
+            // measured at 5,876 of 23,296 dateline-bearing enclosures.
+            for _ in [0] {
                 let classifications = CentralFilesClassifier.classify(
-                    header: opener.header, dateline: opener.dateline, chapterCountry: title)
+                    header: opener.header, dateline: opener.dateline, chapterCountry: nil)
                 var placed = false
                 for classification in classifications {
                     guard let series = index.series(category: classification.category) else { continue }

@@ -4576,7 +4576,7 @@ public actor IndexingPipeline {
             for node in nodes {
                 guard case .attachment(let n, let children) = node else { continue }
                 if let dateline = extractDateline(from: children), !dateline.isEmpty {
-                    found.append(EnclosureOpener(label: n,
+                    found.append(EnclosureOpener(label: extractAttachmentLabel(from: children) ?? n,
                                                  header: extractAttachmentHead(from: children),
                                                  dateline: dateline))
                 }
@@ -4585,6 +4585,36 @@ public actor IndexingPipeline {
         }
         walk(nodes)
         return found
+    }
+
+    /// The enclosure's printed number, read from the label it actually prints.
+    ///
+    /// **`n=` is not in this corpus.** Measured over the 76 volume files covering pre-1906:
+    /// 28,983 `<frus:attachment>` elements and **not one** carries the attribute — and the parser
+    /// reads it straight through (`FRUSDocumentParser.swift`, `attributes["n"]`) rather than
+    /// numbering them itself, so a label taken from it is `nil` every time and every row reads a
+    /// bare "Enclosure". The number the reader sees is display text in the attachment's own
+    /// opener — `[Inclosure 1 in No. 363.]` — which 13,967 of the 23,296 dateline-bearing
+    /// attachments print.
+    ///
+    /// Both spellings are matched: FRUS prints *Inclosure* through the 19th century and
+    /// *Enclosure* later, and a matcher for one silently halves the coverage.
+    ///
+    /// - Parameter nodes: an attachment's own children.
+    /// - Returns: the printed number, or `nil` when the enclosure prints no label.
+    nonisolated static func extractAttachmentLabel(from nodes: [FRUSASTNode]) -> String? {
+        for node in nodes {
+            guard case .opener(let children) = node else { continue }
+            let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            guard let match = text.range(of: "\\[\\s*[IE]nclosure\\s+[^\\s,\\].]+",
+                                         options: [.regularExpression, .caseInsensitive])
+            else { continue }
+            let parts = text[match].dropFirst().split(separator: " ")
+            guard parts.count >= 2 else { continue }
+            let number = parts[1].trimmingCharacters(in: .punctuationCharacters)
+            if !number.isEmpty { return number }
+        }
+        return nil
     }
 
     /// The first `<head>` among an attachment's own children, flattened.
