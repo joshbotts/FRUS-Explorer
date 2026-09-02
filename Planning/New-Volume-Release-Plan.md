@@ -514,10 +514,14 @@ dark for everyone).
 - **Corrected volumes.** OH revises published volumes, and a correction changes every corpus-derived
   artifact exactly as a new volume does — but it also invalidates already-downloaded copies on
   device. `VolumeUpdateChecker` compares the live git blob SHA against the local file and surfaces
-  updatable volumes in both storage hubs; whether a re-download should force a re-index, and what
-  happens to a reader's notes and highlights anchored into a document whose text moved, is a real
-  question this document does not answer. It deserves its own plan before the first correction
-  lands in a release.
+  updatable volumes in both storage hubs. What happens to a reader's notes and highlights anchored
+  into a document whose text moved is **now designed** —
+  `Volume-Update-Annotation-Integrity-Design.md`, written 2026-09-02 — and its P1 (record the
+  per-document change set at re-index time) is worth shipping **in the same release as the next
+  volume batch**, because a revision table that starts recording before the first correction lands
+  is one that can answer the question the first time it is asked. What remains unanswered here is
+  the artifact side: whether a re-download should force a re-index, and how a correction that
+  changes document counts propagates through the semantic row order (§5).
 - **A volume that will not parse.** `LocalVolumeCatalog.entry` returns `nil` rather than inventing
   a title, and the volume goes unlisted. Fine for side-load; unexamined for the catalogue path.
 - **The `newlyAvailable` doc-comment defect** is recorded here (§1) but not filed. It should be an

@@ -10367,3 +10367,59 @@ re-measure-never-relax rule for fixing them, the device-side backfills keyed to 
 **Explicitly not covered, and flagged as needing its own plan:** corrected volumes. OH revises what
 it has published; `VolumeUpdateChecker` detects it by git blob SHA, but what happens to notes and
 highlights anchored into a document whose text moved is unanswered.
+
+---
+
+## Session 2026-09-02 — Annotation integrity across an OH correction (design only, no code)
+
+**Deliverable:** `Planning/Volume-Update-Annotation-Integrity-Design.md`, plus an R-5 row at
+`Plan-Of-Record-2026-08-28.md` §3b and the §13 update in `New-Volume-Release-Plan.md` that this
+design discharges. No source changed.
+
+The question: when OH corrects a published volume, can the app tell the reader which of their
+annotations are in doubt — per document, or only per volume?
+
+**Per document, and the app is closer than it looks.** `indexVolume` re-parses the new TEI and
+UPSERTs `document_cache` row by row (`documentCacheUpsertSQL`, `:5995`), preserving each row's
+rowid and its user columns. At that instant both versions of every document are in hand — the old
+row and the new `DocumentCacheRow` — so the changed set is exact, with no second parse, no kept
+XML, and no diff of two files. Nothing captures it today: the upsert overwrites and the old text
+is gone.
+
+**The hash the app already has is the wrong hash for this job, and that is the design's spine.**
+`renderingVersion` is `SHA-256(flatText(bodyNodes) ++ kVersion)`, and `flatText` skips
+`.footnoteBody` (`ASTToRenderNodeConverter.swift:144`) while `document_cache.body_text` includes
+footnotes (`FRUSASTNode.plainText`, `IndexingPipeline.swift:10192`). The exclusion is correct — a
+footnote change moves no highlight offset, and the converter's version history records two
+occasions where `kVersion` was deliberately not bumped for that exact reason. But it means a
+detector built on `renderingVersion` alone is blind to footnote and source-note corrections, which
+are a large share of what an erratum touches and exactly what a researcher's citation may rest on.
+So the design stores two hashes: one says *this document changed*, the other *and your offsets
+moved*.
+
+Three further findings shaped it:
+
+- **The vanished-document path already knows the answer and says nothing.**
+  `auxDeleteVanishedCacheRows` (`:6075`) computes the set of documents the new TEI no longer
+  carries — its own comment notes upstream revisions "occasionally renumber or drop documents" —
+  and deletes them silently. Recording before deleting is the smallest change in the design and
+  covers the worst case: an annotation whose anchor no longer exists.
+- **`CollectionEntry.excerptRenderingVersion` is already stored and never read.** Its doc comment
+  says so, captured against a future decision; this is that decision, and it needs no schema
+  change.
+- **The review surface already exists.** `ResearchView` aggregates engagement per
+  `(volumeId, documentId)` across notes, tags, collection entries and highlights
+  (`ResearchView.swift:39–48`), so the affected-annotation view is a filter over that aggregation
+  rather than a second model of what a researcher has done to a document. That is the main reason
+  the feature is affordable.
+
+Phased P1 (record, no UI) / P2 (notify) / P3 (repair, including a unique-match re-anchor from
+`DocumentHighlight.selectedText`). P1 is device-local SQLite, so no CloudKit deploy is engaged.
+**P1 should ship with the next volume batch**: shipped later it is blind to every correction that
+came before it. One gate, Q-1 — the cost of running the AST→render conversion at index time to get
+a render-space hash is unmeasured, and the design names the lazy fallback rather than assuming it
+is free.
+
+Refusals recorded: no silent re-anchoring, no auto-deletion of orphaned annotations, no warning
+for changes that move no characters, and no copy that tells a reader their note is wrong when the
+app can only prove the text moved.
