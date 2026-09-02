@@ -4530,6 +4530,77 @@ public actor IndexingPipeline {
         return nil
     }
 
+    /// One enclosure's own opener — the head and dateline printed above its text.
+    ///
+    /// **An enclosure has a different archival home from the document that encloses it**, and this
+    /// is the pair that finds it. The June 2026 pre-1910 research (Finding 4) traced one printed
+    /// text to two places: the enclosure itself is filmed in its ORIGINATING series, derived from
+    /// its own dateline, while the covering despatch or instruction lives in another series where
+    /// the enclosure is only referenced. `frus1895p2/d464` is the type case — the parent is
+    /// datelined *Department of State, Washington* (Instructions, Spain) and its enclosure
+    /// *Consulate-General of the United States, Havana* (Consular Despatches, Havana).
+    ///
+    /// Both fields are carried because the classifier reads both: the dateline decides the series
+    /// and the geography, and the head decides whether an addressee is a consul or a domestic
+    /// office. Passing the parent's head with the enclosure's dateline would mix two documents'
+    /// cues and produce a confident wrong answer.
+    ///
+    /// Version history:
+    ///   1.0 — B-5 (W-8 residue), Finding 4: initial implementation
+    struct EnclosureOpener: Sendable, Equatable {
+        /// The `n` attribute on `<frus:attachment>`, when the TEI carries one.
+        let label: String?
+        /// The enclosure's own head, or `""` when it prints none.
+        let header: String
+        /// The enclosure's own dateline. Never empty — an opener without one is not returned.
+        let dateline: String
+    }
+
+    /// Every enclosure opener in a parsed document, in printed order.
+    ///
+    /// Returns only enclosures that print a dateline of their own, because a dateline is the
+    /// classifier's whole input for a series: an enclosure without one cannot be placed, and
+    /// emitting it would invite a caller to classify it against the parent's dateline, which is
+    /// exactly the conflation this exists to avoid.
+    ///
+    /// Recurses, because an enclosure can itself enclose one. Measured over the corpus at the
+    /// shipped pre-1906 gate: 12,293 documents carry at least one attachment and 19,243
+    /// attachments print a dateline that differs from their parent's, so this is a common shape
+    /// rather than a curiosity.
+    ///
+    /// - Parameter nodes: a document AST's top-level nodes.
+    /// - Returns: the openers, oldest-first in document order.
+    nonisolated static func extractEnclosureOpeners(from nodes: [FRUSASTNode]) -> [EnclosureOpener] {
+        var found: [EnclosureOpener] = []
+        func walk(_ nodes: [FRUSASTNode]) {
+            for node in nodes {
+                guard case .attachment(let n, let children) = node else { continue }
+                if let dateline = extractDateline(from: children), !dateline.isEmpty {
+                    found.append(EnclosureOpener(label: n,
+                                                 header: extractAttachmentHead(from: children),
+                                                 dateline: dateline))
+                }
+                walk(children)
+            }
+        }
+        walk(nodes)
+        return found
+    }
+
+    /// The first `<head>` among an attachment's own children, flattened.
+    ///
+    /// Deliberately NOT recursive past the attachment's own level: a nested enclosure's head
+    /// belongs to that enclosure, and borrowing it would attribute the wrong correspondents to
+    /// the outer one.
+    nonisolated static func extractAttachmentHead(from nodes: [FRUSASTNode]) -> String {
+        for node in nodes {
+            if case .head(let c) = node {
+                return c.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            }
+        }
+        return ""
+    }
+
     /// Locates a document's provenance note, porting the Office of the Historian
     /// frus-sources locator chain (`import/import.xq`). Priority order:
     ///

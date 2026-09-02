@@ -26,6 +26,73 @@ enum CentralFilesConfidence: Sendable {
     }
 }
 
+// MARK: - CentralFilesDocumentPart
+
+/// Which part of a printed FRUS document an archival home belongs to (B-5, Finding 4).
+///
+/// **A printed document and its enclosures do not share an archival home.** The June 2026 pre-1910
+/// research traced one FRUS text to two places: the enclosure is filmed in its own originating
+/// series, while the covering despatch or instruction is filmed in another, where the enclosure is
+/// only referenced. A reader given one roll for the whole page is being told something false about
+/// half of it.
+///
+/// The classifier itself is unchanged and still answers about one dateline at a time; this names
+/// *whose* dateline was asked about, so a surface can say which roll holds which text.
+///
+/// Version history:
+///   1.0 — B-5 (W-8 residue), Finding 4: initial implementation
+enum CentralFilesDocumentPart: Sendable, Equatable, Hashable {
+
+    /// The printed document itself — the despatch, instruction or note.
+    case document
+
+    /// An enclosure printed beneath it, with the TEI's own label when it carries one.
+    case enclosure(label: String?)
+
+    /// A stable key, so a resolution's identity survives two parts resolving to one series.
+    ///
+    /// Without it a document and its enclosure that both classify to, say, Consular Despatches
+    /// collide in a `ForEach` keyed on the category alone — the shape the surfaces used before
+    /// this existed, where SwiftUI would have shown one row and silently dropped the other.
+    var key: String {
+        switch self {
+        case .document: return "document"
+        case .enclosure(let label): return "enclosure:\(label ?? "")"
+        }
+    }
+
+    /// What the row is called on screen.
+    var displayName: String {
+        switch self {
+        case .document:
+            return String(localized: "centralFiles.part.document", defaultValue: "This document")
+        case .enclosure(let label):
+            guard let label, !label.isEmpty else {
+                return String(localized: "centralFiles.part.enclosure",
+                              defaultValue: "Enclosure")
+            }
+            return String(format: String(localized: "centralFiles.part.enclosure.numbered %@",
+                                         defaultValue: "Enclosure %@"), label)
+        }
+    }
+
+    /// Whether this part is an enclosure.
+    var isEnclosure: Bool {
+        if case .enclosure = self { return true }
+        return false
+    }
+
+    /// The sentence a surface prints once when a document's enclosures have homes of their own.
+    ///
+    /// Said once for the section rather than per row: it is a fact about how the record was
+    /// filed, not about any single roll, and repeating it per enclosure would train the reader
+    /// to skip it — the argument `QueryMethodAppendix.caveats` already makes about its own.
+    static var enclosureNote: String {
+        String(localized: "centralFiles.part.enclosureNote",
+               defaultValue: "An enclosure was filmed in its own series, not with the document that enclosed it. Each row below says which text its rolls hold.")
+    }
+}
+
 // MARK: - CentralFilesClassification
 
 /// A candidate series + country for a pre-1906 document, derived from its dateline,

@@ -1426,7 +1426,11 @@ struct MacSourceExplorerView: View {
     struct CountrySeriesResolution: Identifiable {
         let classification: CentralFilesClassification
         let rolls: [CountryRoll]
-        var id: String { classification.category.rawValue }
+        /// Whose dateline produced this home — the document's, or one enclosure's (B-5).
+        var part: CentralFilesDocumentPart = .document
+        /// Keyed on the part as well as the category: a document and its enclosure can resolve to
+        /// the SAME series, and an id of the category alone silently drops one of the two rows.
+        var id: String { "\(part.key)|\(classification.category.rawValue)" }
     }
 
     /// Classifies a pre-1906 document (no source note) from its dateline, heading, and
@@ -1476,6 +1480,12 @@ struct MacSourceExplorerView: View {
                 }
             }
         }
+        // B-5 / Finding 4: an enclosure is filmed in ITS originating series, not with the
+        // document that enclosed it, so its own dateline gets the same treatment. The AST comes
+        // from the shared `DocumentASTCache` — this sheet is only ever opened from an open
+        // document, so the parse has just happened; a miss simply yields no enclosure rows rather
+        // than a wrong one.
+        resolutions += await enclosureResolutions(index: index, path: path)
         countryResolutions = resolutions
         if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId {
             despatchSerial = try? await pipeline.despatchSerial(volumeId: volumeId, documentId: docId)
@@ -1531,6 +1541,60 @@ struct MacSourceExplorerView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    /// Archival homes for the document's enclosures, each classified from its OWN opener (B-5).
+    ///
+    /// Reads the parsed AST from the app-wide `DocumentASTCache`, the same actor
+    /// `CollectionContentResolver` serves its previews from. Nothing is parsed here: the Source
+    /// Explorer is reached from a document that is already open, so its AST is in the cache. On a
+    /// miss the result is empty — the surface then says exactly what it said before B-5, which is
+    /// the honest degradation for a fact that could not be read.
+    ///
+    /// - Parameters:
+    ///   - index: the bundled central-files index.
+    ///   - path: the FRUS section chain, reused so an enclosure inherits the chapter country its
+    ///     parent was resolved under — the enclosure prints no chapter of its own.
+    /// - Returns: one resolution per enclosure that resolves, tagged with its part.
+    private func enclosureResolutions(index: CentralFilesIndex,
+                                      path: [String]) async -> [CountrySeriesResolution] {
+        guard let volumeId = documentVolumeId, let docId = documentId,
+              let ast = await appState.documentASTCache.ast(volumeId: volumeId, documentId: docId)
+        else { return [] }
+        let openers = IndexingPipeline.extractEnclosureOpeners(from: ast.nodes)
+        guard !openers.isEmpty else { return [] }
+
+        var found: [CountrySeriesResolution] = []
+        var seen = Set<String>()
+        for opener in openers {
+            let dateISO = CentralFilesClassifier.datelineDateISO(from: opener.dateline)
+            for title in path {
+                let classifications = CentralFilesClassifier.classify(
+                    header: opener.header, dateline: opener.dateline, chapterCountry: title)
+                var placed = false
+                for classification in classifications {
+                    guard let series = index.series(category: classification.category) else { continue }
+                    let rolls: [CountryRoll]
+                    if classification.category.isChronologicalRun {
+                        guard let dateISO else { continue }
+                        rolls = series.rolls(containingDate: dateISO)
+                    } else {
+                        guard let geoKey = classification.geoKeys.first else { continue }
+                        rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
+                    }
+                    guard !rolls.isEmpty else { continue }
+                    let part = CentralFilesDocumentPart.enclosure(label: opener.label)
+                    let resolution = CountrySeriesResolution(classification: classification,
+                                                             rolls: rolls, part: part)
+                    // Two enclosures of one document routinely share a series — the same post
+                    // writing twice — and the reader needs the row once, not once per enclosure.
+                    if seen.insert(resolution.id).inserted { found.append(resolution) }
+                    placed = true
+                }
+                if placed { break }
+            }
+        }
+        return found
     }
 
     /// Shown for a document with no source note that the country-series classifier could not
