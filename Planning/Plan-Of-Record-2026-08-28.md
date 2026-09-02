@@ -188,6 +188,21 @@ unfiled; filing them is what stops "recorded somewhere" from meaning "lost".
 | B-6 | **The blank relaunch window** | `.indexingBackdrop` is a suppression verdict **nothing renders**. With a download QUEUED but no batch started, `ContentView` withholds the splash and `MainTabView` never mounts the strip, so a relaunch mid-download shows nothing at all. `CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing` passes while the screen is blank, and now says so in its doc comment. **Not a drive-by**: the fix needs a product decision (a queued-download banner, or let the splash through?) *and* a banner state that does not exist — `IndexingQueueBannerView` needs a `batch.latest`, and in that window there is no batch. | **owner decision** |
 | B-7 | **Differentiate Without Color on the map** | `accessibilityDifferentiateWithoutColor` appears nowhere under `Semantic/`, while `WordCloudView` honours it with a documented rationale on a surface far *less* colour-dependent. The map's cluster lens is an even hue sweep and its provenance lens a ten-hue legend, so colour is load-bearing. Closing it needs a **second channel** — shape, or a labelled sub-selection — which is a design question, not a contract to state. M-2 stated the Reduce Motion and Reduce Transparency positions and deliberately left this one open rather than half-answering it. | **owner design decision** |
 
+## 3b. Standing readiness — the next OH release *(filed 2026-09-01)*
+
+The Office of the Historian intends to publish before the end of the year, and a new volume is a
+**release**, not a manifest row: 18 corpus-derived bundled artifacts, an owner-run harvest on a
+second machine, a shard pushed to a different repository, and ten strings of user-visible copy that
+hard-code `552`. Scoped in full — inventory, run order, traps, decisions, effort — in
+`New-Volume-Release-Plan.md`.
+
+| # | Session | Scope | Gate |
+|---|---|---|---|
+| R-1 | **The volume-release runbook** | The plan's §10, executed when the volumes land. Nothing to do until they do. | **OH publication** |
+| R-2 | **The harvest-contract guard** (plan §4.2, W-1) | `harvest_embeddings.py` overwrites `run-manifest.json` from the *current* invocation with no comparison against the store's, and the packer cross-checks only `model`/`dim` per volume — so an incremental harvest that drops `PREFIX` repacks the whole corpus under a new provenance digest and costs every device a 162 MB re-fetch. A refusal on a changed contract turns that into an exit code. **Cheaper before the release than after.** | none |
+| R-3 | **The `552` literals** (plan §7.1, W-2) | Nine user-visible strings become false the day a 553rd volume ships; four of them are ratios that must be re-measured, not bumped. Derive from `ManifestStore.bundledEntries.count` and each artifact's own coverage block. | none |
+| R-4 | **`newlyAvailable` is dead code with a live doc comment** (plan §1, D-1) | `ManifestStore` computes the bucket and claims a badge renders it; no view reads it, so a published-but-unshipped volume is invisible rather than explained. Either grow the consumer or stop claiming one. | **owner decision** |
+
 ## 4. Tier C — assessments (each ends with a build/no-build recommendation)
 
 | # | Session | Scope | Gate |
