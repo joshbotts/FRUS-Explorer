@@ -40,7 +40,7 @@ struct EnclosureDualHomeTests {
         rend="italic">Washington</hi></placeName>, <date when="1895-07-05">July 5, 1895</date>.</dateline>
         <seg>No. 363.]</seg></opener>
       <p>Sir: I transmit for your information a copy of a dispatch from the vice-consul-general.</p>
-      <frus:attachment n="1">
+      <frus:attachment>
         <opener><seg>[Inclosure 1 in No. 363.]</seg></opener>
         <head><hi rend="italic">Mr. <persName type="from">Springer</persName> to Mr.
           <persName type="to">Uhl</persName>.</hi></head>
@@ -79,7 +79,12 @@ struct EnclosureDualHomeTests {
         let openers = IndexingPipeline.extractEnclosureOpeners(from: try await nodes(body: d464))
         #expect(openers.count == 1)
         let enclosure = try #require(openers.first)
-        #expect(enclosure.label == "1")
+        // **Read from the printed label, not from `n=`.** Measured over the 76 volume files
+        // covering pre-1906: 28,983 attachments and NOT ONE carries the attribute, and the parser
+        // reads it straight through rather than numbering them — so a label taken from it is nil
+        // every time and every row reads a bare "Enclosure". The fixture carries no `n=` either,
+        // because the corpus does not.
+        #expect(enclosure.label == "1", "got: \(enclosure.label ?? "nil")")
         #expect(enclosure.dateline.contains("Havana"), "got: \(enclosure.dateline)")
         #expect(enclosure.dateline.contains("June"), "got: \(enclosure.dateline)")
         #expect(enclosure.header.contains("Springer"), "got: \(enclosure.header)")
@@ -105,7 +110,7 @@ struct EnclosureDualHomeTests {
         let body = """
         <div type="document" xml:id="d1">
           <opener><dateline>Legation of the United States, Paris, May 1, 1890.</dateline></opener>
-          <frus:attachment n="1"><head>A memorandum</head><p>No dateline here.</p></frus:attachment>
+          <frus:attachment><head>A memorandum</head><p>No dateline here.</p></frus:attachment>
         </div>
         """
         #expect(IndexingPipeline.extractEnclosureOpeners(from: try await nodes(body: body)).isEmpty)
@@ -118,10 +123,12 @@ struct EnclosureDualHomeTests {
         let body = """
         <div type="document" xml:id="d1">
           <opener><dateline>Department of State, Washington, May 1, 1890.</dateline></opener>
-          <frus:attachment n="1">
+          <frus:attachment>
+            <opener><seg>[Inclosure 1 in No. 5.]</seg></opener>
             <head>Mr. Outer to Mr. Reader</head>
             <opener><dateline>Consulate of the United States, Havana, April 2, 1890.</dateline></opener>
-            <frus:attachment n="2">
+            <frus:attachment>
+              <opener><seg>[Inclosure 2 in No. 5.]</seg></opener>
               <head>Mr. Inner to Mr. Outer</head>
               <opener><dateline>Legation of the United States, Madrid, March 3, 1890.</dateline></opener>
             </frus:attachment>
