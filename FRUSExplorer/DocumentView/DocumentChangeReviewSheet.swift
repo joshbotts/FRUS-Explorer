@@ -23,11 +23,14 @@ import SwiftData
 /// all, so the Research route is the only one an orphan has, and the sheet works with no render
 /// model: nothing here needs one.
 ///
-/// What it refuses, per §7: it never re-anchors, never deletes on its own, and never says an
-/// annotation is wrong — only what two hashes can prove.
+/// What it refuses, per §7: it never re-anchors ON ITS OWN — since R-5 P3b-3 it may OFFER to move
+/// a highlight whose stored passage it found again, showing the words and their surroundings, and
+/// it moves nothing until the reader taps; it never deletes on its own; and it never says an
+/// annotation is wrong — only what the hashes and an exact search can prove.
 ///
 /// Version history:
 ///   1.0 — R-5 P3: initial implementation
+///   1.1 — R-5 P3b-3: the re-anchor search, the found passage in context, and the Move Here offer
 struct DocumentChangeReviewSheet: View {
 
     let volumeId: String
@@ -53,6 +56,19 @@ struct DocumentChangeReviewSheet: View {
     @State private var loaded = false
     @State private var highlightToDelete: DocumentHighlight?
     @State private var stamping = false
+    /// The document's block partition as it reads NOW, built once per sheet — the haystack the
+    /// re-anchor search runs against (R-5 P3b-3). Nil when the volume is not on this device.
+    @State private var blocks: [String]?
+    /// The `renderingVersion` of the model those blocks came from. A Move must write THIS, not
+    /// `effectiveVersion`, which on the Research route falls back to the index-time `bodyHash` and
+    /// can disagree with a model parsed from disk now.
+    @State private var searchedVersion: String?
+    /// One search per highlight, computed once off the row builder — `highlightRow` runs per
+    /// `ForEach` element and the search is not free.
+    @State private var searches: [UUID: HighlightReview.Search] = [:]
+    /// The display order frozen for the life of the sheet: the `@Query` sorts on `startOffset`, so
+    /// a Move would otherwise make the row jump under the reader's finger as they tap it.
+    @State private var rowOrder: [UUID] = []
 
     init(volumeId: String, documentId: String, title: String, currentVersion: String? = nil) {
         self.volumeId = volumeId
@@ -82,6 +98,11 @@ struct DocumentChangeReviewSheet: View {
 
     /// The version highlights are judged against.
     private var effectiveVersion: String? {
+        // Once the sheet has parsed the document itself, THAT is the authority: it came from the
+        // bytes on disk, while `currentVersion` can predate a background re-index and the revision
+        // row's `bodyHash` is the index's copy. Without this, Confirm and Move could write two
+        // different hashes from the same row (R-5 P3b-3 review).
+        if let searchedVersion, !searchedVersion.isEmpty { return searchedVersion }
         if let currentVersion, !currentVersion.isEmpty { return currentVersion }
         if let bodyHash = revision?.bodyHash, !bodyHash.isEmpty { return bodyHash }
         return nil
@@ -123,7 +144,10 @@ struct DocumentChangeReviewSheet: View {
         #if os(macOS)
         .frame(minWidth: 520, minHeight: 440)
         #endif
-        .task { await loadRevision() }
+        .task {
+            await loadRevision()
+            await runSearches()
+        }
         .confirmationDialog(
             String(localized: "highlight.delete.title", defaultValue: "Remove Highlight"),
             isPresented: Binding(get: { highlightToDelete != nil },
@@ -132,6 +156,7 @@ struct DocumentChangeReviewSheet: View {
         ) {
             Button(String(localized: "highlight.delete.confirm", defaultValue: "Remove"), role: .destructive) {
                 if let highlight = highlightToDelete {
+                    searches[highlight.id] = nil
                     HighlightReview.delete(highlight, in: modelContext)
                     appState.revisionReviewToken += 1
                 }
@@ -191,21 +216,26 @@ struct DocumentChangeReviewSheet: View {
     /// Every highlight on the document, with its standing and its two actions.
     private var highlightsSection: some View {
         Section {
-            ForEach(highlights) { highlight in
+            ForEach(orderedHighlights) { highlight in
                 highlightRow(highlight)
             }
         } header: {
             Text(String(localized: "document.review.highlights.header", defaultValue: "Highlights"))
         } footer: {
-            Text(String(localized: "document.review.highlights.footer",
-                        defaultValue: "Confirm keeps a highlight exactly where it is and clears its warning everywhere you are signed in. The app never moves a highlight on its own."))
+            Text(String(localized: "document.review.highlights.footer.v2",
+                        defaultValue: "Confirm keeps a highlight exactly where it is and clears its warning everywhere you are signed in. Where the app can find the passage again it offers to move the highlight, showing you the words and what surrounds them — it never moves one on its own, and it never guesses when the words appear more than once."))
         }
     }
 
     private func highlightRow(_ highlight: DocumentHighlight) -> some View {
         let status = HighlightReview.status(of: highlight, currentVersion: effectiveVersion)
         return VStack(alignment: .leading, spacing: 6) {
-            if highlight.selectedText.isEmpty {
+            if let context = matchContext(for: highlight) {
+                // The found words IN their surroundings, replacing the bare passage above rather
+                // than printing it twice: under an exact match the found words ARE the stored
+                // passage, so the surroundings are the whole information gain.
+                context.lineLimit(6)
+            } else if highlight.selectedText.isEmpty {
                 Text(String(localized: "document.review.highlight.noPassage", defaultValue: "Highlighted passage"))
                     .italic()
                     .foregroundStyle(.secondary)
@@ -216,10 +246,29 @@ struct DocumentChangeReviewSheet: View {
             Text(Self.statusLine(status, vanished: isVanished))
                 .font(.caption)
                 .foregroundStyle(isVanished ? Color.red : (status == .aligned ? Color.secondary : Color.orange))
+            if let search = searches[highlight.id], let line = Self.searchLine(search) {
+                Text(line)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             HStack(spacing: 12) {
+                if !isVanished, let match = movableMatch(for: highlight), let version = searchedVersion {
+                    Button(String(localized: "document.review.highlight.move", defaultValue: "Move Here")) {
+                        HighlightReview.move(highlight, to: match, currentVersion: version)
+                        searches[highlight.id] = nil
+                        appState.revisionReviewToken += 1
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .accessibilityIdentifier("document.review.highlight.move")
+                }
                 if !isVanished, case .stale = status, let version = effectiveVersion {
                     Button(String(localized: "document.review.highlight.confirm", defaultValue: "Confirm")) {
                         HighlightReview.confirm(highlight, currentVersion: version)
+                        // A confirmation settles the question the search was asking. Leaving the
+                        // result would have the row say "Matches the current text" and "Found once,
+                        // at a new position" together, with Move still offered.
+                        searches[highlight.id] = nil
                         appState.revisionReviewToken += 1
                     }
                     .buttonStyle(.bordered)
@@ -266,7 +315,140 @@ struct DocumentChangeReviewSheet: View {
         }
     }
 
+    // MARK: - The re-anchor search (R-5 P3b-3)
+
+    /// The highlights in the order the reader first saw them.
+    ///
+    /// The `@Query` sorts on `startOffset`, which a Move rewrites — so without this the row would
+    /// jump to a new place in the list at the instant it is tapped. New arrivals (another device's
+    /// highlight syncing in) go to the end rather than reshuffling what is on screen.
+    private var orderedHighlights: [DocumentHighlight] {
+        guard !rowOrder.isEmpty else { return highlights }
+        // `uniquingKeysWith`, not `uniqueKeysWithValues`: `DocumentHighlight.id` carries no unique
+        // constraint (CloudKit forbids one), so a sync can materialise two rows sharing an id and
+        // the trapping initialiser would crash the sheet.
+        let rank = Dictionary(rowOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return highlights.sorted { rank[$0.id] ?? Int.max < rank[$1.id] ?? Int.max }
+    }
+
+    /// The match a Move would apply, or nil when there is nothing to offer.
+    ///
+    /// `foundFar` is deliberately excluded: a unique match hundreds of characters away is the
+    /// signature of a renumbered document, where this id now names a different document and the
+    /// passage belongs to someone else's text. The sheet says what it found; it does not offer the
+    /// one-tap repair.
+    private func movableMatch(for highlight: DocumentHighlight) -> HighlightReview.Match? {
+        guard HighlightReview.status(of: highlight, currentVersion: effectiveVersion) != .aligned else { return nil }
+        return Self.offeredMove(searches[highlight.id])
+    }
+
+    /// Which search results earn a one-tap Move — lifted out of the view so it can be tested.
+    ///
+    /// `.foundFar` deliberately does NOT: a unique match hundreds of characters away is the
+    /// signature of a renumbered document, where this id names a different document and the words
+    /// found are someone else's. The sheet says what it found and offers no repair.
+    static func offeredMove(_ search: HighlightReview.Search?) -> HighlightReview.Match? {
+        guard case .moved(let match)? = search else { return nil }
+        return match
+    }
+
+    /// The found passage set in its surroundings, the passage itself emphasised.
+    ///
+    /// Built from three `Text` runs rather than one formatted string: the emphasis has to survive
+    /// into VoiceOver and into every text size, and bracket characters around the passage would be
+    /// read aloud as their names and fall back unpredictably outside the system font's coverage.
+    /// Nothing here is localizable — every character is the document's own text.
+    private func matchContext(for highlight: DocumentHighlight) -> Text? {
+        guard let blocks else { return nil }
+        let match: HighlightReview.Match
+        switch searches[highlight.id] {
+        case .moved(let m), .foundFar(let m): match = m
+        default: return nil
+        }
+        let radius = 100
+        let before = flatTextExcerpt(blocks: blocks, start: max(0, match.start - radius), end: match.start) ?? ""
+        let found = flatTextExcerpt(blocks: blocks, start: match.start, end: match.end) ?? highlight.selectedText
+        let after = flatTextExcerpt(blocks: blocks, start: match.end, end: match.end + radius) ?? ""
+        var lead = AttributedString("…" + before)
+        lead.foregroundColor = .secondary
+        var middle = AttributedString(found)
+        middle.inlinePresentationIntent = .stronglyEmphasized
+        var tail = AttributedString(after + "…")
+        tail.foregroundColor = .secondary
+        return Text(lead + middle + tail)
+    }
+
+    /// Builds the haystack once and searches every stale highlight against it.
+    ///
+    /// **Aligned highlights are not searched.** `renderingVersion` IS a hash of the flat text, so
+    /// aligned means the text is byte-identical and the offsets are provably exact; a search could
+    /// only agree, or — for a short passage — report several occurrences, which would read as doubt
+    /// about an anchor that is certain.
+    private func runSearches() async {
+        if rowOrder.isEmpty { rowOrder = highlights.map(\.id) }
+        guard !isVanished, !highlights.isEmpty else { return }
+        guard let dm = appState.downloadManager else { return }
+        let url = dm.volumeURL(for: volumeId)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        var ast = await appState.documentASTCache.ast(volumeId: volumeId, documentId: documentId)
+        if ast == nil,
+           let parsed = try? await FRUSDocumentParser().parseDocument(documentId: documentId, volumeURL: url) {
+            await appState.documentASTCache.store([parsed], volumeId: volumeId)
+            ast = parsed
+        }
+        guard let ast else { return }
+        // A BARE converter: the lookup closures resolve links and change no character of the flat
+        // text, and the index's own `bodyHash` is computed the same way.
+        var converter = ASTToRenderNodeConverter()
+        let model = converter.convert(ast)
+        let partition = buildFlatTextBlocks(from: model)
+        let version = ASTToRenderNodeConverter.renderingVersion(for: model)
+        var found: [UUID: HighlightReview.Search] = [:]
+        for highlight in highlights {
+            guard HighlightReview.status(of: highlight, currentVersion: effectiveVersion) != .aligned else { continue }
+            found[highlight.id] = HighlightReview.locate(passage: highlight.selectedText,
+                                                         storedStart: highlight.startOffset,
+                                                         storedEnd: highlight.endOffset,
+                                                         in: partition)
+        }
+        blocks = partition
+        searchedVersion = version
+        searches = found
+    }
+
     // MARK: - Sentences
+
+    /// What the search found, or nil where there is nothing to add to the standing line.
+    ///
+    /// Every sentence says only what an exact search can support. "Not found" never says the
+    /// editors deleted the passage: about half of the documents a real correction changes are
+    /// RENUMBERED rather than edited, and in those this document id names a different document
+    /// altogether, so the passage is elsewhere rather than gone.
+    static func searchLine(_ search: HighlightReview.Search) -> String? {
+        switch search {
+        case .here:
+            return String(localized: "document.review.search.here",
+                          defaultValue: "Found once, still in this position.")
+        case .moved:
+            return String(localized: "document.review.search.moved",
+                          defaultValue: "Found once, at a new position in the corrected text.")
+        case .foundFar:
+            return String(localized: "document.review.search.far",
+                          defaultValue: "Found once, but far from where it was. This can mean the document was renumbered and this one is not the same document — check it before moving anything by hand.")
+        case .notFound:
+            return String(localized: "document.review.search.notFound",
+                          defaultValue: "Not found in the current text. The passage may have been edited, or this document may have been renumbered.")
+        case .ambiguous(let count):
+            return String(format: String(localized: "document.review.search.ambiguous %lld",
+                                         defaultValue: "Found %lld times, so the app cannot tell which one is yours."),
+                          Int64(count))
+        case .refused(.tooShort):
+            return String(localized: "document.review.search.tooShort.v2",
+                          defaultValue: "Too short to look for: a passage this brief can repeat, so finding it once would not prove anything.")
+        case .noPassage, .refused:
+            return nil
+        }
+    }
 
     /// One line per standing. Says what two hashes prove and nothing more.
     static func statusLine(_ status: HighlightReview.Status, vanished: Bool) -> String {

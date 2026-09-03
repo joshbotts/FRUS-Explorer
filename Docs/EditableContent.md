@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1937,11 +1937,11 @@ Highlights
 <!-- END SOURCE: document.review.highlights.header -->
 
 #### Highlights — footer
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 200–201 | key: document.review.highlights.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 224–225 | key: document.review.highlights.footer.v2 | shared: iOS+macOS (single edit point) -->
 
-Confirm keeps a highlight exactly where it is and clears its warning everywhere you are signed in. The app never moves a highlight on its own.
+Confirm keeps a highlight exactly where it is and clears its warning everywhere you are signed in. Where the app can find the passage again it offers to move the highlight, showing you the words and what surrounds them — it never moves one on its own, and it never guesses when the words appear more than once.
 
-<!-- END SOURCE: document.review.highlights.footer -->
+<!-- END SOURCE: document.review.highlights.footer.v2 -->
 
 #### Highlight with no stored passage
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 209 | key: document.review.highlight.noPassage | shared: iOS+macOS (single edit point) -->
@@ -2054,6 +2054,63 @@ in an archive-visit plan
 These carry no position in the text, so the app cannot judge them against the change. Review them by eye; a summary describes the text as it was when it was written.
 
 <!-- END SOURCE: document.review.other.footer -->
+
+### Review Changes sheet — finding a moved passage (R-5 P3b-3)
+
+When a correction moves the text under a highlight, the sheet looks for the exact words the
+reader stored and, if it finds them in one place, offers to move the highlight there. These
+are the sentences it uses. None of them may claim the passage was deleted: about half of what
+a real correction changes is renumbering, where the document id now names a different
+document and the passage is elsewhere rather than gone.
+
+#### Move button
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 256 | key: document.review.highlight.move | shared: iOS+macOS (single edit point) -->
+
+Move Here
+
+<!-- END SOURCE: document.review.highlight.move -->
+
+#### Found, unmoved
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 421–422 | key: document.review.search.here | shared: iOS+macOS (single edit point) -->
+
+Found once, still in this position.
+
+<!-- END SOURCE: document.review.search.here -->
+
+#### Found at a new position
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 424–425 | key: document.review.search.moved | shared: iOS+macOS (single edit point) -->
+
+Found once, at a new position in the corrected text.
+
+<!-- END SOURCE: document.review.search.moved -->
+
+#### Found far away
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 427–428 | key: document.review.search.far | shared: iOS+macOS (single edit point) -->
+
+Found once, but far from where it was. This can mean the document was renumbered and this one is not the same document — check it before moving anything by hand.
+
+<!-- END SOURCE: document.review.search.far -->
+
+#### Not found
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 430–431 | key: document.review.search.notFound | shared: iOS+macOS (single edit point) -->
+
+Not found in the current text. The passage may have been edited, or this document may have been renumbered.
+
+<!-- END SOURCE: document.review.search.notFound -->
+
+#### Found more than once
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 433–434 | key: document.review.search.ambiguous %lld | shared: iOS+macOS (single edit point) -->
+
+Found %lld times, so the app cannot tell which one is yours.
+
+<!-- END SOURCE: document.review.search.ambiguous %lld -->
+
+#### Too short to search
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 437–438 | key: document.review.search.tooShort.v2 | shared: iOS+macOS (single edit point) -->
+
+Too short to look for: a passage this brief can repeat, so finding it once would not prove anything.
+
+<!-- END SOURCE: document.review.search.tooShort.v2 -->
 
 ### After an Update — per-volume Mark Reviewed (R-5 P3)
 
