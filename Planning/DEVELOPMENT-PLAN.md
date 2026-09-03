@@ -10730,3 +10730,74 @@ deploy and no design.
   its volume" instead of "their volumes are not downloaded".
 
 **Verification.** **Full iOS unit suite (iPhone 16e sim), run alone: 4,372 tests in 577 suites, 0 failures** — baseline 4,355 / 576 at #1181, +17: seven in `DocumentRevisionsTests` (removed-volume hide-and-return, the two-volume correlation, the Erase clear vs the rebuild wipe, the vanished source row, vanished keys outliving review, `clearSummaryText`, the ghost sweep on reopen — all through the real pipeline, two through a raw SQLite read of the column), two in `ResearchDocumentAggregationTests` (drafts, `rowDestination`), five in the new `SummaryIndexSelectionTests` (newest wins, drafts and nil dates, blanks and order, the two tie-breaks, draft-only documents), two in `ExcerptVerificationWiringTests` (the vanished bucket with one/many forms, `upgradingVanished`), one wiring scan. `FRUSExplorerMac` Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues. **Mutation sweep: 21 mutations, 21 killed.** Sixteen on the main pass; the five verifier mutations first read as survivors because the file holds three suites and the filter named the first — the two new tests had never executed — and all five died once the filter named `ExcerptVerificationWiringTests`. The sweep script now carries a positive control per mutation (the pinning test's display name must appear in the run's log, else the verdict is `INVALID`), and the memory note on suite filters records the instance. Killed: both `EXISTS` clauses (dropped and re-scoped to document grain), the sources delete, the Erase clear, the ghost sweep, `clearSummaryText` writing an empty string, the draft filters in selection and aggregation, the `createdAt` / nil-date / `lastModified` / id tie-breaks, the draft-only rule, the destination rule ignoring the vanished fact, the vanished bucket misfiled, `isClean`, the dropped sentence, an upgrade accepting any recorded kind, and the one/many swap. **Adversarial review before the sweep: 28 agents (four lenses, a refuter per finding), 24 findings, 20 confirmed, 4 refuted.** The 20 reduced to nine fixes, all made: (1) the Research routing keyed on the UNREVIEWED row, so a vanished document lost its only route to the sheet the moment it was marked reviewed — vanished-ness is now its own pipeline read (`vanishedDocumentKeys()`), carried on the entry independent of review state, with a pure `rowDestination` rule; (2) the volume-grain `EXISTS` was untested for CORRELATION — an uncorrelated `EXISTS` passed the single-volume test — so a two-volume removal test pins it; (3) the export sheet's upgrade rule was a scan-pinned loop in a view — it is now `ExcerptVerifier.upgradingVanished`, tested with vanished / body / empty / absent kinds and a real miss left alone (a `row != nil` rule would have called every quotation from a FREED volume "removed by an update", the reverse misreport); (4) skipping draft-only documents in the push loops would have frozen a collection-private draft's words in the search column forever — `draftOnlyDocuments` now names them and `clearSummaryText` empties the column; (5) neither reader reloaded on the one event that changes the unreviewed read's answer, a volume removal — `onVolumeDeleted` bumps the review token; (6) existing installs carry ghost `document_sources` rows from before the vanished-row delete — an idempotent anti-join sweep at database open removes them, and the index version is NOT bumped, because a bump would re-index 552 volumes to delete rows a millisecond statement removes; (7) "1 cite a document" — the sentence gained one/many forms like its failures sibling; (8) the selection's `lastModified` and id tie-breaks were untested and now are; (9) two "the other two" doc comments and three version histories were brought current. The four refuted: `document_dates` ghosts (no reader counts them), an excerpt-owned headnote (no route mints one), the visit editor's caption (its meaning was already "no source row indexed"), and the per-volume-clear wording (accurate for the path it documents).
+
+## Session 2026-09-03e — R-5 P3b-2: the review ledger, and the ninth CloudKit promotion
+
+**This is the deploy PR, and it needs the owner before it ships.** `identifiersAwaitingDeploy`
+carries nine identifiers; the app says so at launch and in Settings ▸ Data & Recovery. The two
+steps no test can perform are the owner's: exercise both additions on a Development build signed
+into iCloud (press *Mark Reviewed* on a changed document, generate one summary), then CloudKit
+Dashboard ▸ Schema ▸ Deploy Schema Changes to Production. Only then does the baseline get restated
+from what the suite prints.
+
+**`AnnotationReview`, and the design choices that carry it.** The id is DERIVED — SHA-256 over
+`kind|annotationId|volume/document|contentHash|changeKind`, the `ArchiveVisitPlan.derivedChildId` construction
+— and deriving it over the HASH as well as the annotation is what makes the ledger append-only.
+Keyed on the annotation alone the row would be mutable, a re-review would rewrite its hash, and two
+devices that reviewed the same annotation at different texts would merge under CloudKit's
+last-writer-wins with no tiebreaker: the survivor names one hash and the other reader's review is
+destroyed with no trace. Keyed on the hash too, those devices mint a byte-identical row that
+`DuplicateRecordCleanup` collapses losslessly, and no merge can lose information because there is
+nothing to merge. It also removes any need for `lastModified`, and `createdAt` is computed from
+`reviewedAt`, so the type costs eight identifiers rather than ten.
+
+**The kind vocabulary ships whole; only `document` has a writer.** `note`, `tag`, `collectionEntry`,
+`summary` and `visitDocument` are reserved for P3b-4 and P3b-5. Adding them later would cost a
+TENTH promotion for two columns that already exist — which is the strongest argument in the whole
+plan for the ledger shape the owner chose over a field on each annotation type.
+
+**`highlight` is deliberately absent.** `DocumentHighlight.renderingVersion` is already mirrored,
+already deployed, and already rewritten by Confirm, so a highlight's review state syncs today. A
+ledger row would be a second source of truth keyed on a DIFFERENT hash: `renderingVersion` is
+compared against the revision row's `body_hash` and the ledger against its `content_hash`, and an
+apparatus-only correction moves one and not the other. There is no non-arbitrary rule for which
+wins, so highlights keep the field they have.
+
+**The reconcile matches the text AND the change, and the second half was the review's finding.**
+The hash carries most of it: a correction moves `content_hash` in the same statement that NULLs
+`reviewed_at`, so a cleared stamp cannot be re-applied by the row that caused it. But that is not
+the only place `reviewed_at` is NULLed — the upsert's `CASE` has a second arm, `OR change_kind =
+'vanished'`, which clears the stamp at an UNCHANGED hash, because the vanished mark deliberately
+keeps the hash ("the row itself is kept, hashes and all"). So a document that vanishes and is then
+restored unchanged is re-opened at the very hash a reader already reviewed, and matching on the
+hash alone would have silently stamped the restoration as seen. The ledger therefore records
+which change was dispositioned, and `AND change_kind IS ?` refuses a restoration. That term also
+subsumes the blanket vanished refusal it replaced, and is better than it: a vanished document's own
+disposition now crosses devices — an orphan the reader has explicitly looked at stops being raised
+everywhere — while a review of the change before it cannot be mistaken for one.
+
+**Three mounts, because nothing in this app observes a CloudKit arrival.** Boot covers "reviewed
+while this device was closed"; the import-settle debounce is the app's only reaction to a remote
+arrival, and it is gated on sync being enabled and succeeding, which is why boot is not optional;
+and the post-download mount is the only one that survives the upsert, since a row carrying the
+POST-correction hash cannot match until this device has re-indexed and moved its own hash.
+
+**The backfill nobody planned.** Every review made since P3a is device-local with no row. Without
+the up direction those reviews would stay local for ever and the feature's first impression would
+be that it does not work, so `reviewedDocumentRevisions()` was added and the reconcile mints rows
+carrying the date the reader actually reviewed.
+
+**Q-8 (d-cloud) rides the same promotion.** `GeneratedSummary.sourceContentHash`, read BEFORE the
+provider call — a chunked document takes minutes and a download can re-index mid-run, so reading it
+afterwards would stamp a summary with the hash of text it never saw. `nil` when the document is not
+indexed, never `""`, which would read as a hash and compare unequal to every real one for ever. It
+is the revision row's own hash and never a hash of the summariser's input: three recipes feed that
+text and `contentHash` hashes the stored columns instead.
+
+**Two shipped sentences became false and were re-keyed.** Both promised a review stayed on one
+device. New keys, because no String Catalog ships and `defaultValue` IS the shipped string. The new
+wording is honest about *when*: with no remote-change observer, propagation is a few seconds after
+the other device syncs, or its next launch. Design §5.2 gained a superseded-in-part banner rather
+than a silent edit.
+
+**Verification.** **Full iOS unit suite (iPhone 16e sim), run alone: 4,389 tests in 579 suites, 0 failures** — baseline 4,372 / 577 at #1182, +17 in two new suites: `AnnotationReviewTests` (13 — the derived id and every component that moves it, the reserved vocabulary, idempotent `record`, and eight reconcile cases through the real `IndexingPipeline`: a matching row stamps, a stale row does not, an unchanged document does not, a reserved kind does not, a review of the document is not a review of its disappearance, a review of the vanishing itself crosses devices, a restoration is refused, and the backfill mints and dedupes on the change kind) and `SummarySourceHashTests` (4, the first tests in the repo to inject a live pipeline into `SummarizationService` — every existing construction passes none, so a nil assertion there would pass against a deleted write). `FRUSExplorerMac` Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues. **Mutation sweep: 18 mutations, 17 killed, 1 equivalent.** Fourteen died on the first pass. Three survived as missing fixtures, each of which exposed something worth pinning and now has a test: the hash term was untestable because the stale-row fixture also differed in the change kind, so the kind term alone refused it (rewritten as two successive body changes, which differ only in the hash); the backfill's dedupe key dropping the kind was invisible without a review of a restoration beside a review of the change before it; and the down direction's kind filter was untested because no fixture planted a reserved-kind row, which is also the contract that stops P3b-4's writers retroactively changing what already-synced rows mean. All three then died. The one equivalent mutant removes the `!row.contentHash.isEmpty` guard before storing a summary's source hash: `content_hash` is `TEXT NOT NULL`, so an empty hash cannot reach it from a live row and the guard is defensive. It stays, documented as such. **Adversarial review before the sweep: 30 agents (five lenses, a refuter per finding), 25 findings, 12 confirmed, 13 refuted.** One was a real defect and it changed the design: the reconcile's hash guard rested on an invariant the code breaks. `reviewed_at` is NULLed in a SECOND place — the upsert's `OR change_kind = 'vanished'` arm — which clears the stamp at an UNCHANGED hash, because the vanished mark deliberately keeps the hash. So a document that vanished and was then restored unchanged is re-opened at the very hash a reader had already reviewed, and the reconcile would have silently stamped the restoration as seen: the reader would never learn their document came back. The fix is that the ledger now records WHICH change was dispositioned, not only which text — a `changeKind` column, matched by `AND change_kind IS ?` — and it subsumes the blanket vanished refusal it replaces, so a vanished document's own disposition can cross devices while a review of the change before it cannot be mistaken for one. Two tests pin both halves. That is the tenth identifier in the promotion. The rest: the macOS manual still promised a device-local review (reported by four lenses); the boot mount's comment claimed nothing observes a CloudKit arrival while the same PR adds a mount to the observer that does; `CD_AnnotationReview.CD_annotationId` is nil in every record this build writes, so the Development schema may not create it and the gate cannot notice — disclosed in the awaiting list with an obligation on P3b-4/P3b-5 to verify it in the Console; and the bulk-summarization path can stamp a hash read after its text was captured, which is recorded on the field as an obligation of the phase that first reads it, since closing it needs a pipeline reference `BackgroundSummarizationService` does not have. The 13 refuted include the claim that the two new doc comments misquote the upsert (they did — that is finding one, and it was fixed) and that byte-identical rows are not byte-identical.

@@ -6437,6 +6437,86 @@ public actor IndexingPipeline {
         return out
     }
 
+    /// Stamps this device's revision rows from the synced review ledger (R-5 P3b-2, design Q-3/Q-6).
+    ///
+    /// **A row must match the text AND the change.** The hash carries most of the weight: a
+    /// correction moves `content_hash` in the same statement that NULLs `reviewed_at`, so the
+    /// instant a stamp is cleared the local hash differs from every ledger row that could have
+    /// caused it. Neither `markDocumentRevisionReviewed` nor `markVolumeRevisionsReviewed` can
+    /// serve here, because neither reads a hash at all.
+    ///
+    /// **But the hash alone is NOT sufficient, and a restoration is the proof.** The upsert's
+    /// `reviewed_at` CASE has a second arm — `OR change_kind = 'vanished'` — which clears the
+    /// stamp at an UNCHANGED hash, because `auxMarkVanishedRevisions` keeps the hash ("the row
+    /// itself is kept, hashes and all"). So a document that vanishes and is then restored
+    /// unchanged is re-opened at the very hash a reader already reviewed, and matching on the hash
+    /// alone would silently stamp the restoration as seen — the reader would never learn their
+    /// document came back. `change_kind IS ?` closes it: the ledger records WHICH change was
+    /// dispositioned, and a restoration (`'apparatus'`) is not the change that was reviewed. The
+    /// same term lets a vanished document's own disposition cross devices, which a blanket refusal
+    /// of vanished rows could not — an orphan the reader has explicitly looked at stops being
+    /// raised everywhere, while one they have not is still raised on every device.
+    ///
+    /// The stamp records when THIS device learned of the review, which is what the column means
+    /// everywhere else (it is bound from the local clock). When the reader reviewed is carried by
+    /// the ledger row.
+    ///
+    /// - Returns: how many rows were stamped.
+    @discardableResult
+    public func applyAnnotationReviews(_ reviews: [AnnotationReviewData]) throws -> Int {
+        guard !reviews.isEmpty else { return 0 }
+        let stmt = try auxPrepare("""
+            UPDATE document_revisions SET reviewed_at = ?
+             WHERE volume_id = ? AND document_id = ? AND content_hash = ? AND change_kind IS ?
+               AND changed_at IS NOT NULL AND reviewed_at IS NULL
+            """)
+        defer { sqlite3_finalize(stmt) }
+        let now = Self.isoNow()
+        var stamped = 0
+        try inTransaction {
+            for review in reviews {
+                sqlite3_reset(stmt)
+                sqlite3_clear_bindings(stmt)
+                sqlite3_bind_text(stmt, 1, now, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, review.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, review.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 4, review.contentHash, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 5, review.changeKind)
+                try auxStep(stmt)
+                stamped += Int(sqlite3_changes(auxDb))
+            }
+        }
+        return stamped
+    }
+
+    /// Every REVIEWED change on a volume this device holds (R-5 P3b-2).
+    ///
+    /// The mirror of `unreviewedDocumentRevisions()`, and the backfill's input: every stamp made
+    /// since P3a shipped is device-local with no ledger row, and without this read those reviews
+    /// would stay local for ever. Same volume-grain guard, for the same reason.
+    public func reviewedDocumentRevisions() throws -> [DocumentRevision] {
+        let stmt = try auxPrepare("""
+            SELECT volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at
+              FROM document_revisions
+             WHERE reviewed_at IS NOT NULL
+               AND EXISTS (SELECT 1 FROM document_cache dc WHERE dc.volume_id = document_revisions.volume_id)
+             ORDER BY volume_id, document_id
+            """)
+        defer { sqlite3_finalize(stmt) }
+        var out: [DocumentRevision] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(DocumentRevision(
+                volumeId: auxColumnString(stmt, 0) ?? "",
+                documentId: auxColumnString(stmt, 1) ?? "",
+                contentHash: auxColumnString(stmt, 2) ?? "",
+                bodyHash: auxColumnString(stmt, 3) ?? "",
+                changedAt: auxColumnString(stmt, 4),
+                changeKind: auxColumnString(stmt, 5),
+                reviewedAt: auxColumnString(stmt, 6)))
+        }
+        return out
+    }
+
     /// Forgets every change record — for **Erase Everything only** (R-5 P3b-1, design Q-9 rider).
     ///
     /// Deliberately NOT part of `removeAllVolumesFromIndex`: that call is also the Rebuild Index

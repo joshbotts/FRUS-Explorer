@@ -182,8 +182,8 @@ struct DocumentChangeReviewSheet: View {
             Text(String(localized: "document.review.change.header", defaultValue: "What Changed"))
         } footer: {
             if canMarkReviewed {
-                Text(String(localized: "document.review.change.footer",
-                            defaultValue: "Marking the document reviewed clears it from “Changed by an update” on this device only. Highlights stay flagged until you confirm each one, and the next update re-opens the document if it changes again."))
+                Text(String(localized: "document.review.change.footer.v2",
+                            defaultValue: "Marking the document reviewed clears it from “Changed by an update”. With iCloud sync it reaches your other devices too, a few seconds after they next sync or when they next open. Highlights stay flagged until you confirm each one, and the next update re-opens the document if it changes again."))
             }
         }
     }
@@ -302,6 +302,14 @@ struct DocumentChangeReviewSheet: View {
         guard let pipeline = appState.indexingPipeline else { return }
         stamping = true
         defer { stamping = false }
+        // R-5 P3b-2: the ledger row FIRST, from the hash the reader is dispositioning — it is what
+        // carries this review to the reader's other devices. The local stamp follows.
+        if let hash = revision?.contentHash, !hash.isEmpty {
+            AnnotationReviewStore.record(kind: .document, volumeId: volumeId, documentId: documentId,
+                                         contentHash: hash, changeKind: revision?.changeKind,
+                                         context: modelContext)
+            try? modelContext.save()
+        }
         _ = try? await pipeline.markDocumentRevisionReviewed(volumeId: volumeId, documentId: documentId)
         await loadRevision()
         appState.revisionReviewToken += 1

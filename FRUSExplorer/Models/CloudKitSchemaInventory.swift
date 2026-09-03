@@ -78,6 +78,10 @@ import SwiftData
 ///          on a Development build. ``identifiersAwaitingDeploy`` cleared; baseline restated
 ///          219 → 260 with the digest the suite printed; `deployedThroughBuild` 40 → 43,
 ///          `deployedOn` 2026-08-08 → 2026-08-26. Production once again matches this build.
+///   1.6 — R-5 P3b-2: the NINTH promotion is opened — `CD_AnnotationReview` (the cross-device
+///          review ledger, design §8.2 Q-3/Q-6) and `CD_GeneratedSummary.CD_sourceContentHash`
+///          (Q-8 d-cloud, riding the same Dashboard visit). Listed in
+///          ``identifiersAwaitingDeploy``; the baseline is deliberately NOT restated.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -87,6 +91,15 @@ enum CloudKitSchemaInventory {
     /// Do not hand-edit. When the schema changes, `CloudKitSchemaInventoryTests` prints the
     /// replacement list; paste it wholesale so the diff shows exactly what CloudKit gained or lost.
     static let installedIdentifiers: [String] = [
+        "CD_AnnotationReview",
+        "CD_AnnotationReview.CD_annotationId",
+        "CD_AnnotationReview.CD_annotationType",
+        "CD_AnnotationReview.CD_changeKind",
+        "CD_AnnotationReview.CD_contentHash",
+        "CD_AnnotationReview.CD_documentId",
+        "CD_AnnotationReview.CD_id",
+        "CD_AnnotationReview.CD_reviewedAt",
+        "CD_AnnotationReview.CD_volumeId",
         "CD_ArchiveVisitDocument",
         "CD_ArchiveVisitDocument.CD_createdAt",
         "CD_ArchiveVisitDocument.CD_documentKey",
@@ -224,6 +237,7 @@ enum CloudKitSchemaInventory {
         "CD_GeneratedSummary.CD_promptId",
         "CD_GeneratedSummary.CD_responseFormat",
         "CD_GeneratedSummary.CD_responseText",
+        "CD_GeneratedSummary.CD_sourceContentHash",
         "CD_GeneratedSummary.CD_volumeId",
         "CD_GeneratedSummary.CD_wasChunked",
         "CD_PersonClusterOverride",
@@ -408,11 +422,13 @@ enum CloudKitSchemaInventory {
     /// records carrying them — the #488 failure mode — and the app says so at launch and in
     /// Settings ▸ Data & Recovery.
     ///
-    /// **This list is also an interlock, not only a notice.** `ResearchTrailMigration` refuses to
-    /// run while any identifier here belongs to a record type it writes, because that pass writes
-    /// replacements and deletes their sources in one call: CloudKit would take the deletions and
-    /// reject the writes, and the data would be gone on the next device. Anything else that both
-    /// writes an undeployed type and destroys its source should consult this the same way.
+    /// **This list is also an interlock, not only a notice.** `ResearchTrailMigration` — retired in
+    /// R-2b (PR #981) — consulted it before running, because that pass wrote replacements and
+    /// deleted their sources in one call: CloudKit would take the deletions and reject the writes,
+    /// and the data would be gone on the next device. No pass in the tree does that today, and
+    /// anything that both writes an undeployed type and destroys its source must consult this the
+    /// same way. R-5 P3b-2's review reconcile deliberately does not qualify: it writes a ledger row
+    /// and destroys nothing, so an undeployed row costs a failed upload and no data.
     ///
     /// Populated by the developer who changes the schema; cleared by whoever runs
     /// CloudKit Dashboard → Schema → **Deploy Schema Changes to Production**.
@@ -423,16 +439,28 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty: Production matches this build. The EIGHTH promotion (2026-08-26, build 43
-        // line) deployed the reserved W-4+W-5 block in one Dashboard step — 41 identifiers:
-        // Archive Visits Phase 2's three plan record types (CD_ArchiveVisitPlan /
-        // CD_ArchiveVisitDocument / CD_ArchiveVisitTarget, 32 identifiers), W-4's
-        // CD_DocumentClassificationOverride (7), and W-5's two CD_SavedSearch fields
-        // (CD_freshnessData, CD_lastModified). Each type/field was exercised on a
-        // Development build signed into iCloud before deploying, per the checklist above.
+        // R-5 P3b-2 — the NINTH promotion, opened 2026-09-03. Two features, one Dashboard visit:
+        // the cross-device review ledger (design §8.2 Q-3/Q-6) and the summary's record of which
+        // text it describes (Q-8 d-cloud). The owner exercises both on a Development build signed
+        // into iCloud — press Mark Reviewed on a changed document, and generate one summary — then
+        // deploys, then clears this list and restates the baseline from what the suite prints.
         //
-        // (The SEVENTH promotion — 2026-08-08, build 40 — was
-        // `CD_SavedSearch.CD_parametersData`, #756's complete SearchParameters snapshot.)
+        // ONE FIELD CANNOT BE EXERCISED BY THIS BUILD, and the gate cannot notice: every writer
+        // here records a `document`-grain row, whose `annotationId` is nil, so no pushed record
+        // carries `CD_AnnotationReview.CD_annotationId` and CloudKit creates Development schema
+        // lazily from what is pushed. It is listed because the column exists and P3b-4/P3b-5 will
+        // write it — those PRs must confirm the field in the CloudKit Console before shipping a
+        // non-document kind, because `CloudKitSchemaInventoryTests` will stay green either way.
+        "CD_AnnotationReview",
+        "CD_AnnotationReview.CD_annotationId",
+        "CD_AnnotationReview.CD_changeKind",
+        "CD_AnnotationReview.CD_annotationType",
+        "CD_AnnotationReview.CD_contentHash",
+        "CD_AnnotationReview.CD_documentId",
+        "CD_AnnotationReview.CD_id",
+        "CD_AnnotationReview.CD_reviewedAt",
+        "CD_AnnotationReview.CD_volumeId",
+        "CD_GeneratedSummary.CD_sourceContentHash",
     ]
 
     // MARK: - Derived state

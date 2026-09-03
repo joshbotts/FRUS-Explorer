@@ -67,6 +67,8 @@ extension ModelContainer {
     ///   1.9 — W-4 (#279): `DocumentClassificationOverride` — one new CloudKit record type
     ///          (the user's reversible document-vs-editorial-note reclassifications). Boards
     ///          the same reserved promotion; held in `identifiersAwaitingDeploy` until then.
+    ///   2.0 — R-5 P3b-2: `AnnotationReview` — one new CloudKit record type (the cross-device
+    ///          review ledger). Opens the ninth promotion with `GeneratedSummary.sourceContentHash`.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -132,6 +134,11 @@ extension ModelContainer {
             // Boards the same reserved W-4+W-5 promotion: deploy the schema to Production
             // before shipping, per the note above.
             DocumentClassificationOverride.self,
+            // R-5 P3b-2 (design §8.2 Q-3/Q-6) — NEW CloudKit record type (the review ledger, so a
+            // disposition made on one device reaches the others). Opens the NINTH promotion
+            // together with `CD_GeneratedSummary.CD_sourceContentHash`: deploy the schema to
+            // Production before shipping, per the note above.
+            AnnotationReview.self,
         ]
     }
 

@@ -82,6 +82,9 @@ enum ResetInventory {
     /// before `Project` on the same principle, even though no `@Relationship` makes it structural.
     static let erased: [any PersistentModel.Type] = [
         // Dependents first.
+        // R-5 P3b-2: the review ledger references annotations and documents by raw id, so it goes
+        // ahead of every type it names, on the same principle as the #746 additions below.
+        AnnotationReview.self,
         DocumentTagAssignment.self,
         DocumentHighlight.self,
         CollectionEntry.self,

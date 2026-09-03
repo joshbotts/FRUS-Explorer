@@ -30,6 +30,11 @@ extension ArchiveVisitTarget: DeduplicableRecord {}
 // CloudKit re-import of the SAME record; two devices overriding the same document mint two
 // records with different ids, which the apply order resolves (newest assertion applied last).
 extension DocumentClassificationOverride: DeduplicableRecord {}
+// R-5 P3b-2 — the review ledger carries a DERIVED id (a namespace hash over kind, annotation,
+// document and the content hash reviewed), so two devices reviewing the same change at the same
+// text mint a byte-identical row. That is exactly the duplicate this pass collapses, and it is
+// lossless here: the rows agree in every field, which is why the id includes the hash.
+extension AnnotationReview: DeduplicableRecord {}
 
 /// Collapses duplicate user-data records that share the same `id`.
 ///
@@ -79,6 +84,7 @@ enum DuplicateRecordCleanup {
             + dedupeSimple(ArchiveVisitDocument.self, context: context)
             + dedupeSimple(ArchiveVisitTarget.self, context: context)
             + dedupeSimple(DocumentClassificationOverride.self, context: context)
+            + dedupeSimple(AnnotationReview.self, context: context)
         guard removed > 0 else { return }
         try? context.save()
         // Always-on (not #if DEBUG): deleting synced user records is a destructive,
