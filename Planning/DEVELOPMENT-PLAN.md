@@ -10520,3 +10520,42 @@ Swift digest test drives the real `run()` against a two-kilobyte fixture store.
 
 No app-target file references the changed Core types, so no app build is engaged; `swift build`
 of the whole package is the positive signal. R-3 (the `552` literals) is next; R-4 waits on D-1.
+
+
+## Session 2026-09-02b — R-3: the nine `552` literals derive (New-Volume-Release-Plan §7.1)
+
+Nine user-visible strings hard-coded the catalog count or a ratio against it; all nine now
+derive. The catalog count comes from `ManifestStore.bundledEntries.count` (Onboarding, Subject
+Index, Research Guide via a `{{volumes}}` token substituted at both of the guide's render sites)
+or from a dashboard's own `entries`; the ratios from the artifacts' coverage fields —
+`SourceProvenanceData.volumesCovered`, `AdministrationProfilesData.volumesCovered`,
+`SeriesGeographyData.volumesWithAnyRegion`/`totalVolumes`, and two new fields on
+`ArchivalCollectionsData` (`volumesScanned` from the usage index, `authorityVolumeReach` from the
+authority records). The FRUSTheme Flows item drops its numbers outright: they duplicated,
+hardcoded, the live "Only N of M volumes" line `ArchivalFlowsView` already prints — the exact
+static/live split #838 drew.
+
+**The finding.** The collections card said the authority "reaches 356 of them", and
+`ArchivalLibraryQueryTests` pinned that literal as *measured*. Computed from the shipped
+`collection-authority.json`, the reach is **365** — all within the shippable set — and had been
+since the 2026-08-19 re-clustering (#372 1b added 87 lot resolutions). A number pinned by a
+source scan is a number that goes stale with nothing to notice. The pin is re-targeted to the
+derived form, and a value test now asserts the card's figure against an independent count over
+the artifact, through the real `ArchivalCollectionsData.make`.
+
+**Eight localization keys were renamed** (the format changed), so their `Docs/EditableContent.md`
+blocks were rekeyed and re-bodied in the same commit — `EditableContentKeyTests` is the gate.
+
+**Two harness lessons, both cheap and both mine.** Three mutations "survived" because the test
+file holds *two* suites and the appended value test sits in the second,
+`ArchivalAnalyticsEntryPointTests`; my sweep filtered on the first. The repo's own note says a
+non-matching `-only-testing` filter runs a real but different suite and reports passed — this was
+that, in a new shape: a *matching* filter that runs the wrong one of two. And the value test
+originally checked `volumesScanned` only `if let` — a `make()` that stopped passing it through
+would have skipped the branch and passed; it is required whenever the usage index loaded.
+
+**Honest limit, recorded.** Seven of the nine strings live in SwiftUI bodies no unit test drives.
+`CorpusScaleLiteralsTests` scans each string's own `defaultValue` (scoped to the key, with a
+`seen == 9` guard) so a literal cannot return to the *text*; it cannot see one passed as the
+*argument* — `Int64(552)` for `Int64(data.total)` — and that mutation survives. Seven others
+are killed. Next: R-1 waits on OH; R-5's P1 waits on its Q-1 measurement.

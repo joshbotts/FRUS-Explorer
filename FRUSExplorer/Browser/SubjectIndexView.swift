@@ -257,10 +257,12 @@ struct SubjectIndexView: View {
 
     /// The caption that keeps every number on this screen honest.
     private var coverageCaption: String {
+        // R-3: the volume count is the bundled manifest's, never a literal — `552` shipped here
+        // and would have been false on the day a 553rd volume was catalogued.
         String(format: String(
-            localized: "subjects.index.coverage %lld",
-            defaultValue: "%lld detected topics across the whole series. Counts describe all 552 volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong."),
-            Int64(rows.count))
+            localized: "subjects.index.coverage.v2 %lld %lld",
+            defaultValue: "%1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong."),
+            Int64(rows.count), Int64(appState.manifestStore.bundledEntries.count))
     }
 
     @ViewBuilder

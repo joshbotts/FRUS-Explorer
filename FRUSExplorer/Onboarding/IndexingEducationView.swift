@@ -137,6 +137,26 @@ struct IndexingEducationView: View {
         case standalone
     }
 
+    /// The bundled manifest's volume count, for the `{{volumes}}` token in the prose (R-3).
+    @Environment(AppState.self) private var appState
+    private var volumeCount: Int { appState.manifestStore.bundledEntries.count }
+
+    /// Replaces `{{volumes}}` with the live count, and nothing else.
+    ///
+    /// The Research Guide's prose is a static table so the owner can edit it as text
+    /// (`Docs/EditableContent.md` pins it by page and line). A count that is a fact about the
+    /// bundle, not about the prose, cannot live in that table as a literal — `552` shipped there
+    /// and became false on the day a 553rd volume did. One token, one substitution; anything
+    /// more would make the table a template language.
+    ///
+    /// - Parameters:
+    ///   - paragraph: a prose paragraph, possibly carrying the token.
+    ///   - volumeCount: the count to print.
+    /// - Returns: the paragraph with the token replaced.
+    static func substituted(_ paragraph: String, volumeCount: Int) -> String {
+        paragraph.replacingOccurrences(of: "{{volumes}}", with: volumeCount.formatted())
+    }
+
     @State private var pageIndex: Int
     var presentationContext: PresentationContext
     var onComplete: () -> Void
@@ -385,6 +405,11 @@ struct IndexingEducationView: View {
 
 #if os(macOS)
 private struct MacSectionView: View {
+    /// The bundled manifest's volume count, for the `{{volumes}}` token (R-3). This struct is
+    /// macOS-only, so the iOS build never compiled its render twin — the Mac build is the only
+    /// thing that reaches this line, which is why it is the twin that was missed.
+    @Environment(AppState.self) private var appState
+    private var volumeCount: Int { appState.manifestStore.bundledEntries.count }
 
     let section: EducationSection
 
@@ -404,7 +429,7 @@ private struct MacSectionView: View {
                 }
             }
             ForEach(section.paragraphs, id: \.self) { para in
-                Text(AttributedString(markdownBody: para))
+                Text(AttributedString(markdownBody: IndexingEducationView.substituted(para, volumeCount: volumeCount)))
                     .font(.body)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -475,6 +500,11 @@ private struct iOSPageView: View {
 }
 
 private struct iOSSectionView: View {
+    /// The bundled manifest's volume count, for the `{{volumes}}` token (R-3) — the same
+    /// environment the outer view reads; this section view is a separate struct, so it must
+    /// read it itself.
+    @Environment(AppState.self) private var appState
+    private var volumeCount: Int { appState.manifestStore.bundledEntries.count }
 
     let section: EducationSection
 
@@ -493,7 +523,8 @@ private struct iOSSectionView: View {
                 }
             }
             ForEach(section.paragraphs, id: \.self) { para in
-                Text(AttributedString(markdownBody: para)).font(.body).fixedSize(horizontal: false, vertical: true)
+                Text(AttributedString(markdownBody: IndexingEducationView.substituted(para, volumeCount: volumeCount)))
+                    .font(.body).fixedSize(horizontal: false, vertical: true)
             }
             if let bullets = section.bullets {
                 VStack(alignment: .leading, spacing: 4) {
@@ -616,6 +647,8 @@ struct EducationSection: Identifiable {
     /// sidebar item, etc.), shown beside the heading so users recognise the on-screen
     /// control. `nil` for non-feature (corpus-background) sections.
     let systemImage: String?
+    /// Prose paragraphs. May carry `{{volumes}}`, which the renderer replaces with the bundled
+    /// manifest's volume count — see `IndexingEducationView.substituted(_:volumeCount:)`.
     let paragraphs: [String]
     let bullets: [String]?
 
@@ -731,7 +764,7 @@ private extension EducationPage {
                 id: "digital",
                 heading: "The Digital Transition",
                 paragraphs: [
-                    "The Office of the Historian's shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All 552 volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed."
+                    "The Office of the Historian's shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All {{volumes}} volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed."
                 ]
             ),
             EducationSection(

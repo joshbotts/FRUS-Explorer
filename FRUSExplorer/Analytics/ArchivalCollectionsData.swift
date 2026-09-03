@@ -284,6 +284,18 @@ struct ArchivalCollectionsData: Sendable {
     /// Volumes the derivation could place in a band (i.e. whose coverage parsed).
     let volumesPlaced: Int
 
+    /// Volumes the document-level usage index scanned — its `coverage.volumesScanned` — or `nil`
+    /// when the index is unavailable and the card is counting volumes itself (R-3).
+    let volumesScanned: Int?
+
+    /// Distinct volumes the cross-volume authority names in ANY collection's `volumeIds` (R-3).
+    ///
+    /// **This is the number the card used to hardcode as 356, and it was already 365.** The
+    /// authority was re-clustered on 2026-08-19 (#372 1b added 87 lot resolutions) and the literal
+    /// did not move; a source-scan test pinned the stale value as "measured". Derived here from
+    /// the same records the rows are built from, so it cannot drift from them again.
+    let authorityVolumeReach: Int
+
     // MARK: - Building
 
     /// Builds the whole derivation in one pass over the two artifacts.
@@ -380,7 +392,9 @@ struct ArchivalCollectionsData: Sendable {
             collectionPointers: collectionPointers,
             classPointers: classPointers,
             supportsPointerWeight: external != nil,
-            volumesPlaced: bandByVolume.count)
+            volumesPlaced: bandByVolume.count,
+            volumesScanned: usage?.coverage.volumesScanned,
+            authorityVolumeReach: Set(authority.flatMap(\.volumeIds)).count)
     }
 
     /// The class vocabulary's per-band totals, **folded to one grain**, with the leaves kept.

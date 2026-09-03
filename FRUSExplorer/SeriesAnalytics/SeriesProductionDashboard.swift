@@ -312,8 +312,10 @@ struct SeriesProductionDashboard: View {
         return chartCard(
             title: String(localized: "series.chart.cumulative.title",
                           defaultValue: "Cumulative volumes published"),
-            caption: String(localized: "series.chart.cumulative.caption",
-                            defaultValue: "The digitized corpus has grown to the 552 volumes this app catalogs — steeply in some decades, slowly in others."),
+            // R-3: the count is the data's own total, never a literal.
+            caption: String(format: String(localized: "series.chart.cumulative.caption.v2 %lld",
+                            defaultValue: "The digitized corpus has grown to the %lld volumes this app catalogs — steeply in some decades, slowly in others."),
+                            Int64(data.total)),
             inspector: ChartInspectorAdapters.cumulativeTable(points),
             provenance: SeriesAnalyticsExport.production(
                 figureTitle: String(localized: "series.chart.cumulative.title",
@@ -382,8 +384,9 @@ struct SeriesProductionDashboard: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text(String(localized: "series.caveats.body",
-                        defaultValue: "These figures cover only published, digitized volumes. A volume's publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero or negative. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume's publication year, so it shows exactly the target in force when that volume was published. These charts cover the 552 volumes the app currently catalogs, so the newest volumes may not appear yet."))
+            Text(String(format: String(localized: "series.caveats.body.v2 %lld",
+                        defaultValue: "These figures cover only published, digitized volumes. A volume's publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero or negative. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume's publication year, so it shows exactly the target in force when that volume was published. These charts cover the %lld volumes the app currently catalogs, so the newest volumes may not appear yet."),
+                        Int64(data.total)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
