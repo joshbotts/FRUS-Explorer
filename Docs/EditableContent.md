@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -2111,6 +2111,142 @@ Found %lld times, so the app cannot tell which one is yours.
 Too short to look for: a passage this brief can repeat, so finding it once would not prove anything.
 
 <!-- END SOURCE: document.review.search.tooShort.v2 -->
+
+### Review Changes sheet — quotations (R-5 P3b-4)
+
+An excerpt is a copy, not a pointer: the passage was frozen into its collection when it was
+captured and renders from that copy, so a correction cannot change what it prints. What a
+correction can change is whether those words are still in the record the quotation cites. Each
+row therefore says up to two independent things — always what an exact search of the current
+text found, and, when there is something to report, which version of the text the quotation was
+taken from. The version line is deliberately SILENT when the quotation was taken from the text as
+it now reads, and when the sheet has no current version to compare against: a row that speaks is
+a row saying something real. The two sentences must never read as though the app were
+contradicting itself, and neither mentions the other's subject.
+
+Absence of a version is NOT staleness. A quotation taken from a footnote carries no version at
+all, because a footnote selection reports text without offsets, and it is perfectly checkable;
+its sentence has to say how it was taken, never that something moved.
+
+#### Quotations — header
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 339 | key: document.review.excerpts.header | shared: iOS+macOS (single edit point) -->
+
+Quotations
+
+<!-- END SOURCE: document.review.excerpts.header -->
+
+#### Quotations — footer
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 341–342 | key: document.review.excerpts.footer | shared: iOS+macOS (single edit point) -->
+
+A quotation is a copy, so a correction cannot change what it prints — what it can change is whether those words are still in the record it cites. This is the same check that runs when a collection is exported, and it reads the whole document, footnotes included. So a quotation can be affected by a correction described above as touching only the notes, and a quotation can fail this check for reasons older than any correction. Nothing here edits or removes a quotation: it belongs to its collection, and the collection editor is where you change it.
+
+<!-- END SOURCE: document.review.excerpts.footer -->
+
+#### Quotation — checking
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 373–374 | key: document.review.excerpt.checking | shared: iOS+macOS (single edit point) -->
+
+Checking this quotation against the current text…
+
+<!-- END SOURCE: document.review.excerpt.checking -->
+
+#### Quotation — found
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 137–138 | key: document.review.excerpt.verified | shared: iOS+macOS (single edit point) -->
+
+These words are still in the document as it reads now.
+
+<!-- END SOURCE: document.review.excerpt.verified -->
+
+#### Quotation — not found
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 140–141 | key: document.review.excerpt.notFound | shared: iOS+macOS (single edit point) -->
+
+These words are not in the document as it reads now. The passage may have been corrected, or this document may have been renumbered and this one may not be the same document.
+
+<!-- END SOURCE: document.review.excerpt.notFound -->
+
+#### Quotation — the document is gone
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 143–144 | key: document.review.excerpt.vanished | shared: iOS+macOS (single edit point) -->
+
+The document is no longer in the volume, so there is nothing to check the quotation against.
+
+<!-- END SOURCE: document.review.excerpt.vanished -->
+
+#### Quotation — no indexed text to check against
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 149–150 | key: document.review.excerpt.notIndexed.v2 | shared: iOS+macOS (single edit point) -->
+
+There is no indexed text for this document on this device, so the quotation could not be checked.
+
+<!-- END SOURCE: document.review.excerpt.notIndexed.v2 -->
+
+#### Quotation — too short to check
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 152–153 | key: document.review.excerpt.inconclusive | shared: iOS+macOS (single edit point) -->
+
+Too short, or too heavily elided, to check: a fragment this brief appears in too many documents to prove anything.
+
+<!-- END SOURCE: document.review.excerpt.inconclusive -->
+
+#### Quotation — captured from an earlier version
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 168–169 | key: document.review.excerpt.capturedEarlier | shared: iOS+macOS (single edit point) -->
+
+Captured from an earlier version of the text.
+
+<!-- END SOURCE: document.review.excerpt.capturedEarlier -->
+
+#### Quotation — captured with no version recorded
+<!-- SOURCE: FRUSExplorer/DocumentView/ExcerptReview.swift | lines: 171–172 | key: document.review.excerpt.capturedUnversioned | shared: iOS+macOS (single edit point) -->
+
+Captured without a record of which version of the text it came from.
+
+<!-- END SOURCE: document.review.excerpt.capturedUnversioned -->
+
+### The excerpt check on export (M-3, unmirrored until R-5 P3b-4)
+
+The same verifier, reporting on a whole collection in the export sheet. These six sentences
+shipped with M-3 and P3b-1 and had never been mirrored here, so their wording could not be
+edited from this file. The order they appear in is deliberate: failures lead, because they are
+the only category saying something is wrong with the work; the rest are stated as limits on the
+check rather than as problems with the quotations.
+
+#### Export check — one quotation not found
+<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 297–298 | key: excerpt.verify.failures.one | shared: iOS+macOS (single edit point) -->
+
+One quotation was not found in the document it cites.
+
+<!-- END SOURCE: excerpt.verify.failures.one -->
+
+#### Export check — several not found
+<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 299–300 | key: excerpt.verify.failures.many %lld | shared: iOS+macOS (single edit point) -->
+
+%lld quotations were not found in the documents they cite.
+
+<!-- END SOURCE: excerpt.verify.failures.many %lld -->
+
+#### Export check — one document removed by an update
+<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 304–305 | key: excerpt.verify.vanished.one | shared: iOS+macOS (single edit point) -->
+
+One quotation cites a document that an update removed from its volume.
+
+<!-- END SOURCE: excerpt.verify.vanished.one -->
+
+#### Export check — several documents removed by an update
+<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 306–307 | key: excerpt.verify.vanished.many %lld | shared: iOS+macOS (single edit point) -->
+
+%lld quotations cite documents that an update removed from their volumes.
+
+<!-- END SOURCE: excerpt.verify.vanished.many %lld -->
+
+#### Export check — volumes not downloaded
+<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 310–311 | key: excerpt.verify.unindexed %lld | shared: iOS+macOS (single edit point) -->
+
+%lld could not be checked — their volumes are not downloaded.
+
+<!-- END SOURCE: excerpt.verify.unindexed %lld -->
+
+#### Export check — too short to check
+<!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 314–315 | key: excerpt.verify.inconclusive %lld | shared: iOS+macOS (single edit point) -->
+
+%lld were too short to check.
+
+<!-- END SOURCE: excerpt.verify.inconclusive %lld -->
 
 ### After an Update — per-volume Mark Reviewed (R-5 P3)
 

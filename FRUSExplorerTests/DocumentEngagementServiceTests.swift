@@ -234,8 +234,9 @@ struct DocumentEngagementGathererTests {
                 == ["v1/d1", "v1/d2", "v1/d3", "v1/d4", "v1/d5"])
     }
 
-    /// A collection holds headings and prose beside its documents, and neither is a document read.
-    /// Counting them would inflate coverage against a denominator that has no room for them.
+    /// A collection holds headings, prose and quotations beside its documents, and none of them is
+    /// a document read. Counting them would inflate coverage against a denominator that has no
+    /// room for them.
     @Test("Only document entries count, and only from collections in scope")
     @MainActor
     func collectedKeysSkipNonDocumentEntries() throws {
@@ -261,6 +262,13 @@ struct DocumentEngagementGathererTests {
         add(myCollection, "d1", order: 0)
         add(myCollection, "d2", kind: .heading, order: 1)
         add(myCollection, "d3", kind: .prose, order: 2)
+        // R-5 P3b-4: an EXCERPT must not count here, though it now counts in the Research review
+        // filter (`ResearchDocumentAggregation.countsAsAnnotation`). The two rules answer different
+        // questions — this one asks what the reader worked on in a project, and it feeds the
+        // Project Home coverage tile, the exported method appendix and the corpus coverage map.
+        // Nothing pinned this boundary before, so a copy-paste widening of the three engagement
+        // gates would have run fully green while moving three published numbers.
+        add(myCollection, "d5", kind: .excerpt, order: 3)
         add(theirCollection, "d4", order: 0)
         try context.save()
 

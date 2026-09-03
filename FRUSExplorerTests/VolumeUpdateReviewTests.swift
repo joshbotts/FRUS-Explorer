@@ -204,6 +204,78 @@ struct VolumeUpdateReviewTests {
         #expect(export.contains("ExcerptVerifier.upgradingVanished(outcomes, changeKinds: changeKinds)"))
     }
 
+    /// R-5 P3b-4. Every claim here is about a CALL the sheet makes, not about a string in the
+    /// file: the pure rules are pinned by `ExcerptReviewTests`, and a sheet that computed the right
+    /// answer and never called them would pass every one of those tests.
+    ///
+    /// The `upgradingVanished` line is the one that matters most. Without it a quotation on a
+    /// document an update removed reads "this volume is not on this device" — the exact Q-7 (g)
+    /// misreport P3b-1 fixed on the export path, and this sheet is the only route a vanished
+    /// document has.
+    @Test("P3b-4 wiring: the sheet checks quotations through the shipped rules, and the parse gate admits them")
+    func p3b4Wiring() throws {
+        let sheet = try Self.source("DocumentView/DocumentChangeReviewSheet.swift")
+        // The verifier, then the vanished upgrade, then the sentences — through the shipped types.
+        #expect(sheet.contains("ExcerptVerifier.verify(pairs.map(\\.1), bodyTexts: bodies)"),
+                "the sheet must run the export check, not a private comparison")
+        // The ARGUMENT, not just the call: `upgradingVanished(outcomes, changeKinds: [:])` compiles,
+        // reads as wired, and re-opens the exact Q-7 (g) misreport. The sibling pin on the export
+        // sheet at the top of this file has always named its arguments for the same reason.
+        #expect(sheet.contains("""
+        let upgraded = ExcerptVerifier.upgradingVanished(
+            outcomes, changeKinds: ["\\(volumeId)/\\(documentId)": revision?.changeKind ?? ""])
+"""),
+                "the vanished upgrade must be fed this document's own recorded change kind")
+        // ONE call, not two: composing the finding and the capture line in the view is what
+        // produced a vanished row saying "nothing to check against" above "captured from an
+        // earlier version". `ExcerptReview.lines` owns the pairing and is tested on it.
+        #expect(sheet.contains("ExcerptReview.lines(outcome: $0,"),
+                "the row must compose through the tested entry point")
+        #expect(sheet.contains("storedVersion: entry.excerptRenderingVersion,"),
+                "design Q-7 (f): the stored version must be READ, which nothing did before P3b-4")
+        #expect(!sheet.contains("ExcerptReview.captureLine("),
+                "the view must not pair the two sentences itself")
+        #expect(sheet.contains("ExcerptReview.isWarning(outcome)"),
+                "only a genuine miss may colour as a warning")
+        // The section is mounted, and the task runs the check.
+        #expect(sheet.contains("if !excerpts.isEmpty { excerptsSection }"))
+        #expect(sheet.contains("await verifyExcerpts()"))
+        // The parse gate: without excerpts in it, `searchedVersion` is never computed for a
+        // document carrying only quotations, so on the Research route — where `currentVersion` is
+        // nil — the capture would be judged against the revision row's `bodyHash`, the INDEX's
+        // copy, which can predate a re-download that has not been re-indexed yet.
+        #expect(sheet.contains("guard !isVanished, !highlights.isEmpty || !excerpts.isEmpty else { return }"))
+        // The rows are READS. A write here would be the first writer of the ledger's annotationId
+        // and would cost a tenth CloudKit promotion against the design's "No deploy".
+        let excerptSection = try #require(sheet.range(of: "// MARK: - Quotations (R-5 P3b-4)"))
+        let sectionEnd = sheet.range(of: "/// The other annotations on the document",
+                                     range: excerptSection.upperBound..<sheet.endIndex)?.lowerBound
+            ?? sheet.endIndex
+        let body = String(sheet[excerptSection.upperBound..<sectionEnd])
+        #expect(!body.isEmpty, "the Quotations section must exist for this scan to mean anything")
+        #expect(!body.contains("AnnotationReviewStore.record"), "an excerpt row must not write a ledger row")
+        #expect(!body.contains("modelContext.delete"), "deletion belongs to the collection editor")
+        #expect(!body.contains("HighlightReview.move"), "nothing renders from the anchors; a move would be invisible")
+
+        // The rider, scoped to the control rather than the file: the Research sidebar's
+        // per-collection number counts DISTINCT DOCUMENTS under the same kind rule, so it equals
+        // the length of the list the row opens. It used to be `documentEntries.count` — every
+        // entry of every kind — which counted headings and prose blocks as documents, and after
+        // P3b-4 would additionally have counted an excerpt and its own document entry as two.
+        let research = try Self.source("Research/ResearchView.swift")
+        let countStart = try #require(research.range(of: "private var sortedCollectionsWithCounts:")).upperBound
+        let countEnd = research.range(of: "\n    }\n", range: countStart..<research.endIndex)?.upperBound
+            ?? research.endIndex
+        let counter = String(research[countStart..<countEnd])
+        // The behaviour is pinned by `ResearchDocumentAggregationTests.sidebarCountIsDistinctDocuments`;
+        // this only checks the view reaches it, since a private computed property on a View cannot
+        // be called from a test.
+        #expect(counter.contains("ResearchDocumentAggregation.distinctDocumentKeys(in:"),
+                "the sidebar count must go through the tested rule")
+        #expect(!counter.contains("(collection.documentEntries ?? []).count"),
+                "counting every entry of every kind names headings and prose blocks as documents")
+    }
+
     @Test("Both document-view twins mount DocumentChangeBanner and neither keeps a private banner")
     func bothTwinsMountTheSharedBanner() throws {
         for twin in ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"] {
