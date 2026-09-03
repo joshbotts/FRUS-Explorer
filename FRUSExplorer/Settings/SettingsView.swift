@@ -1271,6 +1271,7 @@ private struct SummarizationPromptsSettingsView: View {
 ///   1.2 — Wave R-5: the warning names the research trail. `performReset` has deleted it since
 ///          R-2a, but the copy still listed only notes/projects/tags/collections/highlights/
 ///          summaries, so the screen under-stated its own reach. New key (`…warning.trail`)
+///   1.3 — R-5 P3b-1: `performReset` clears `document_revisions` — the one site that may
 struct EraseEverythingView: View {
 
     @Environment(AppState.self) private var appState
@@ -1385,6 +1386,10 @@ struct EraseEverythingView: View {
             do {
                 // Delete downloaded volumes and clear the search index.
                 await ResetService.resetLocalData(appState: appState)
+                // R-5 P3b-1 (design Q-9 rider): the change records go too — HERE and nowhere else.
+                // `resetLocalData` is also "Reset This Device", which promises the annotations
+                // return; only Erase Everything erases what the records describe.
+                try? await appState.indexingPipeline?.clearDocumentRevisions()
                 // Delete every SwiftData type `ResetInventory.erased` names, in its order —
                 // dependents before the records they reference, because this sequence is not
                 // transactional (an interrupted reset should leave a harmless orphaned child, not

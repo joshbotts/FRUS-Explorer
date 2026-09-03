@@ -58,6 +58,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — M-3: initial implementation
+///   1.1 — R-5 P3b-1: `Outcome.documentVanished` and `upgradingVanished`
 enum ExcerptVerifier {
 
     /// The shortest fragment this will accept as evidence, in normalised characters.
@@ -76,13 +77,18 @@ enum ExcerptVerifier {
         /// The volume is not on this device, so there was nothing to check against. **Not** a
         /// failure: a researcher who freed up space must not be told their quotation is wrong.
         case documentNotIndexed
+        /// The document is no longer in its volume after an update (R-5 P3b-1). The verifier
+        /// cannot tell this from `documentNotIndexed` — both read as "no body text" — so the
+        /// caller consults `document_revisions` and upgrades the outcome. Not a failure of the
+        /// quotation either: the source moved out from under it.
+        case documentVanished
         /// Too little to go on — an empty quotation, or a fragment shorter than
         /// ``minimumFragmentLength``.
         case inconclusive
 
         /// Whether this outcome should be surfaced as a problem with the quotation itself.
         ///
-        /// Only ``notFound`` is. The other two non-verified cases are statements about what could
+        /// Only ``notFound`` is. The other three non-verified cases are statements about what could
         /// be checked, and dressing them as failures is how a warning gets ignored.
         var isFailure: Bool { self == .notFound }
     }
@@ -199,6 +205,33 @@ enum ExcerptVerifier {
     }
 }
 
+// MARK: - Vanished upgrade (R-5 P3b-1)
+
+extension ExcerptVerifier {
+    /// Re-labels a `documentNotIndexed` miss as `documentVanished` when the revision table says
+    /// the document was removed by an update (design Q-7 g).
+    ///
+    /// The verifier itself cannot tell the two apart — both read as "no body text" — so the
+    /// caller looks up each missing document's `change_kind` and hands the kinds in here. Only
+    /// `documentNotIndexed` entries are touched, and only when the kind is exactly `"vanished"`:
+    /// a freed volume's documents all carry revision rows too (the first index writes one per
+    /// document, and Q-9 keeps them on removal), so any looser rule would call every quotation
+    /// from a freed volume "removed by an update" — the reverse of the misreport this fixes.
+    ///
+    /// - Parameter changeKinds: `"volumeId/documentId"` → the row's `change_kind`, for the
+    ///   documents the caller looked up. Absent keys and non-vanished kinds leave the miss alone.
+    static func upgradingVanished(_ outcomes: [Request: Outcome],
+                                  changeKinds: [String: String]) -> [Request: Outcome] {
+        var result = outcomes
+        for (request, outcome) in outcomes where outcome == .documentNotIndexed {
+            if changeKinds["\(request.volumeId)/\(request.documentId)"] == "vanished" {
+                result[request] = .documentVanished
+            }
+        }
+        return result
+    }
+}
+
 // MARK: - ExcerptVerificationReport
 
 /// The result of checking every quotation in a collection before it is exported (M-3).
@@ -210,6 +243,7 @@ enum ExcerptVerifier {
 ///
 /// Version history:
 ///   1.0 — M-3: initial implementation
+///   1.1 — R-5 P3b-1: the `vanished` bucket, named from the revision table
 struct ExcerptVerificationReport: Equatable, Sendable {
 
     /// Quotations that were not found in the document they name.
@@ -217,6 +251,9 @@ struct ExcerptVerificationReport: Equatable, Sendable {
 
     /// Quotations that could not be checked because their volume is not on this device.
     var unindexed: [ExcerptVerifier.Request]
+
+    /// Quotations whose document an update removed from its volume (R-5 P3b-1).
+    var vanished: [ExcerptVerifier.Request]
 
     /// Quotations too short — or too heavily elided — to check.
     var inconclusive: [ExcerptVerifier.Request]
@@ -236,6 +273,7 @@ struct ExcerptVerificationReport: Equatable, Sendable {
         }
         failures = sorted(.notFound)
         unindexed = sorted(.documentNotIndexed)
+        vanished = sorted(.documentVanished)
         inconclusive = sorted(.inconclusive)
         verifiedCount = outcomes.values.filter { $0 == .verified }.count
     }
@@ -244,12 +282,12 @@ struct ExcerptVerificationReport: Equatable, Sendable {
     var hasFailures: Bool { !failures.isEmpty }
 
     /// `true` when there is nothing at all to say — every quotation checked out.
-    var isClean: Bool { failures.isEmpty && unindexed.isEmpty && inconclusive.isEmpty }
+    var isClean: Bool { failures.isEmpty && unindexed.isEmpty && vanished.isEmpty && inconclusive.isEmpty }
 
     /// The sentence shown above the export button, or `nil` when there is nothing to report.
     ///
     /// Failures lead, because they are the only category that says something is wrong with the
-    /// work. The other two are stated after, and stated as limits on the check rather than as
+    /// work. The other three are stated after, and stated as limits on the check rather than as
     /// problems with the quotations.
     var summary: String? {
         guard !isClean else { return nil }
@@ -260,6 +298,13 @@ struct ExcerptVerificationReport: Equatable, Sendable {
                          defaultValue: "One quotation was not found in the document it cites.")
                 : String(localized: "excerpt.verify.failures.many %lld",
                          defaultValue: "\(failures.count) quotations were not found in the documents they cite."))
+        }
+        if !vanished.isEmpty {
+            parts.append(vanished.count == 1
+                ? String(localized: "excerpt.verify.vanished.one",
+                         defaultValue: "One quotation cites a document that an update removed from its volume.")
+                : String(localized: "excerpt.verify.vanished.many %lld",
+                         defaultValue: "\(vanished.count) quotations cite documents that an update removed from their volumes."))
         }
         if !unindexed.isEmpty {
             parts.append(String(localized: "excerpt.verify.unindexed %lld",

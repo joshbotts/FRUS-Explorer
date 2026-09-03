@@ -294,4 +294,43 @@ struct ExcerptVerificationWiringTests {
         #expect(sheet.contains("ExcerptVerifier.Outcome.documentNotIndexed"),
                 "a missing pipeline must report uncheckable rather than skipping the check")
     }
+
+    /// R-5 P3b-1 (design Q-7 g): a document an update removed is named as such, not as "volume
+    /// not downloaded"; the report is not clean while one is present; one and many read as English.
+    @Test("A vanished document's quotation is its own bucket, with a one-form and a many-form")
+    func vanishedBucket() {
+        let a = ExcerptVerifier.Request(volumeId: "v1", documentId: "d1", text: "some quoted words here")
+        let b = ExcerptVerifier.Request(volumeId: "v1", documentId: "d3", text: "more quoted words here")
+        let unindexed = ExcerptVerifier.Request(volumeId: "v1", documentId: "d2", text: "other quoted words here")
+        let one = ExcerptVerificationReport(outcomes: [a: .documentVanished, unindexed: .documentNotIndexed])
+        #expect(one.vanished == [a])
+        #expect(one.unindexed == [unindexed])
+        #expect(!one.isClean && !one.hasFailures)
+        #expect((one.summary ?? "").contains("One quotation cites a document that an update removed from its volume."))
+        #expect((one.summary ?? "").contains("1 could not be checked"))
+        let many = ExcerptVerificationReport(outcomes: [a: .documentVanished, b: .documentVanished])
+        #expect((many.summary ?? "").contains("2 quotations cite documents that an update removed from their volumes."))
+    }
+
+    /// The rule that turns a verifier miss into the vanished bucket: only a `documentNotIndexed`
+    /// miss, and only for a kind that is exactly `"vanished"`. A freed volume's documents carry
+    /// revision rows too, so `"body"`, `"apparatus"`, `""` and an absent key must all leave the
+    /// miss alone — the mutation sweep on the first version found `row != nil` indistinguishable.
+    @Test("upgradingVanished touches only documentNotIndexed misses whose kind is exactly vanished")
+    func upgradingVanished() {
+        func req(_ d: String) -> ExcerptVerifier.Request { .init(volumeId: "v1", documentId: d, text: "quoted words long enough") }
+        let outcomes: [ExcerptVerifier.Request: ExcerptVerifier.Outcome] = [
+            req("gone"): .documentNotIndexed, req("freed"): .documentNotIndexed, req("edited"): .documentNotIndexed,
+            req("unknown"): .documentNotIndexed, req("lost"): .notFound, req("ok"): .verified,
+        ]
+        let kinds = ["v1/gone": "vanished", "v1/freed": "", "v1/edited": "body", "v1/lost": "vanished", "v1/ok": "vanished"]
+        let upgraded = ExcerptVerifier.upgradingVanished(outcomes, changeKinds: kinds)
+        #expect(upgraded[req("gone")] == .documentVanished)
+        #expect(upgraded[req("freed")] == .documentNotIndexed)
+        #expect(upgraded[req("edited")] == .documentNotIndexed)
+        #expect(upgraded[req("unknown")] == .documentNotIndexed)
+        #expect(upgraded[req("lost")] == .notFound, "a real miss is never relabelled")
+        #expect(upgraded[req("ok")] == .verified)
+        #expect(upgraded.count == outcomes.count)
+    }
 }

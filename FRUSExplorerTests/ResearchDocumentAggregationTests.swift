@@ -109,4 +109,36 @@ struct ResearchDocumentAggregationTests {
         #expect(ResearchDocumentAggregation.changeLine(for: rev(nil)) == nil)
         #expect(ResearchDocumentAggregation.changeLine(for: rev("renumbered")) == nil)
     }
+
+    /// Design Q-8: a headnote draft is collection-private and excluded from every carousel, so it
+    /// must not make a document "annotated" by itself, nor count as one of its summaries.
+    @Test("Headnote drafts neither annotate a document nor count as its summaries")
+    func draftsAreExcluded() {
+        let draft = GeneratedSummary(documentId: "d7", volumeId: "v1", promptId: UUID(), responseText: "own words",
+                                     isHeadnoteDraft: true)
+        let live = GeneratedSummary(documentId: "d8", volumeId: "v1", promptId: UUID(), responseText: "ai")
+        let keys = ResearchDocumentAggregation.annotatedKeys(
+            notes: [], tagAssignments: [], collections: [], highlights: [],
+            summaries: [draft, live], visitDocuments: [])
+        #expect(keys == ["v1/d8"])
+        let counts = ResearchDocumentAggregation.summaryCounts([draft, live, live])
+        #expect(counts == ["v1/d8": 2])
+    }
+
+    /// Design Q-11 (h): a vanished document routes to the review sheet whether or not its change
+    /// has been reviewed — vanished-ness is a fact about the volume, review state is not. The
+    /// first version keyed on the unreviewed row and lost the route the moment Mark Reviewed ran.
+    @Test("rowDestination: vanished routes to the sheet regardless of review state; everything else opens the document")
+    func rowDestination() {
+        func rev(_ kind: String?, reviewed: Bool = false) -> IndexingPipeline.DocumentRevision {
+            .init(volumeId: "v1", documentId: "d1", contentHash: "c", bodyHash: "b",
+                  changedAt: "2026-09-03T00:00:00Z", changeKind: kind, reviewedAt: reviewed ? "2026-09-03T01:00:00Z" : nil)
+        }
+        #expect(ResearchDocumentAggregation.rowDestination(revision: rev("vanished"), isVanished: true) == .reviewSheet)
+        #expect(ResearchDocumentAggregation.rowDestination(revision: nil, isVanished: true) == .reviewSheet)
+        #expect(ResearchDocumentAggregation.rowDestination(revision: rev("vanished", reviewed: true), isVanished: true) == .reviewSheet)
+        #expect(ResearchDocumentAggregation.rowDestination(revision: rev("body"), isVanished: false) == .document)
+        #expect(ResearchDocumentAggregation.rowDestination(revision: rev("apparatus"), isVanished: false) == .document)
+        #expect(ResearchDocumentAggregation.rowDestination(revision: nil, isVanished: false) == .document)
+    }
 }
