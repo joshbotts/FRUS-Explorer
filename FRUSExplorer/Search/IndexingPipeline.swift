@@ -1522,7 +1522,8 @@ public actor IndexingPipeline {
 
                     let storeStart = Date()
                     do {
-                        try await storeIndexData(data)
+                        // R-5 P3: a whole-index pass follows no file change — write the hashes, stamp nothing.
+                        try await storeIndexData(data, revisions: .rebaseline)
                         let storeElapsed = Date().timeIntervalSince(storeStart)
                         volumeIndexingStartTime = nil
                         volumeDocumentsProcessed = 0
@@ -4341,7 +4342,8 @@ public actor IndexingPipeline {
 
     // MARK: - Storage
 
-    private func storeIndexData(_ data: VolumeIndexData) async throws {
+    private func storeIndexData(_ data: VolumeIndexData,
+                                revisions: RevisionRecording = .stamp) async throws {
         guard !data.documentCache.isEmpty else { return }
 
         // --- document_cache insertion, batched for the iOS memory throttle ---
@@ -4391,7 +4393,7 @@ public actor IndexingPipeline {
             try auxInsertDocumentCache(cacheChunk)
             try auxUpsertDocumentRevisions(data.documentRevisions.filter { row in
                 cacheChunk.contains { $0.documentId == row.documentId }
-            })
+            }, mode: revisions)
 
             processed += cacheChunk.count
             volumeDocumentsProcessed = processed
@@ -6267,9 +6269,27 @@ public actor IndexingPipeline {
     /// have changed before the reader had it. `change_kind` is `'body'` when the highlight space
     /// moved and `'apparatus'` when only the content did (a footnote, a source note, a header),
     /// which is the distinction §3 of the design exists to draw.
-    private func auxUpsertDocumentRevisions(_ rows: [DocumentRevisionRow]) throws {
+    ///
+    /// **The `'body'` arm escalates (R-5 P3).** Two updates over one baseline — a body change the
+    /// reader has not looked at, then an apparatus-only correction — used to re-stamp the row
+    /// `'apparatus'`, and the copy would then say "the text did not change" about a document whose
+    /// highlight space HAD moved since the reader last looked. The second arm keeps `'body'` while
+    /// the earlier body stamp is unreviewed; once reviewed, an apparatus change reads as apparatus.
+    /// `DocumentChangeBanner` still keeps its own highlight-staleness input, because a highlight
+    /// made before the table existed has no row to agree with.
+    ///
+    /// **`.rebaseline` writes the hashes and stamps nothing.** A whole-index re-run
+    /// (`indexAllVolumes`) never follows a file change — it follows a version bump or the hub's
+    /// re-index — so hashes that move there moved because the PARSE changed, not the volume. Stamping
+    /// them would tell every reader their annotated documents changed in an update that never
+    /// happened. Existing stamps and dispositions are left exactly as they were.
+    private func auxUpsertDocumentRevisions(_ rows: [DocumentRevisionRow],
+                                            mode: RevisionRecording = .stamp) throws {
         guard !rows.isEmpty else { return }
-        let stmt = try auxPrepare("""
+        let sql: String
+        switch mode {
+        case .stamp:
+            sql = """
             INSERT INTO document_revisions
                 (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at)
             VALUES (?, ?, ?, ?, NULL, NULL, NULL)
@@ -6280,6 +6300,9 @@ public actor IndexingPipeline {
                                 THEN ? ELSE document_revisions.changed_at END,
                 change_kind = CASE
                                 WHEN excluded.body_hash != document_revisions.body_hash THEN 'body'
+                                WHEN excluded.content_hash != document_revisions.content_hash
+                                 AND document_revisions.change_kind = 'body'
+                                 AND document_revisions.reviewed_at IS NULL THEN 'body'
                                 WHEN excluded.content_hash != document_revisions.content_hash THEN 'apparatus'
                                 WHEN document_revisions.change_kind = 'vanished' THEN 'apparatus'
                                 ELSE document_revisions.change_kind END,
@@ -6289,18 +6312,78 @@ public actor IndexingPipeline {
                                 THEN NULL ELSE document_revisions.reviewed_at END,
                 content_hash = excluded.content_hash,
                 body_hash    = excluded.body_hash
-            """)
+            """
+        case .rebaseline:
+            sql = """
+            INSERT INTO document_revisions
+                (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at)
+            VALUES (?, ?, ?, ?, NULL, NULL, NULL)
+            ON CONFLICT(volume_id, document_id) DO UPDATE SET
+                content_hash = excluded.content_hash,
+                body_hash    = excluded.body_hash
+            """
+        }
+        let stmt = try auxPrepare(sql)
         defer { sqlite3_finalize(stmt) }
         let now = Self.isoNow()
-        for row in rows {
-            sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_text(stmt, 3, row.contentHash, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_text(stmt, 4, row.bodyHash, -1, SQLITE_TRANSIENT_IP)
-            sqlite3_bind_text(stmt, 5, now, -1, SQLITE_TRANSIENT_IP)
-            try auxStep(stmt)
-            sqlite3_reset(stmt)
+        // One transaction per chunk (R-5 P3): the loop used to run in autocommit, one journal
+        // commit per row, and a crash mid-chunk left cache and revision rows disagreeing.
+        try inTransaction {
+            for row in rows {
+                sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 3, row.contentHash, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, 4, row.bodyHash, -1, SQLITE_TRANSIENT_IP)
+                if mode == .stamp { sqlite3_bind_text(stmt, 5, now, -1, SQLITE_TRANSIENT_IP) }
+                try auxStep(stmt)
+                sqlite3_reset(stmt)
+            }
         }
+    }
+
+    /// How a store pass treats `document_revisions` (R-5 P3).
+    public enum RevisionRecording: Sendable, Equatable {
+        /// Stamp a change when a hash moved — the volume-update path.
+        case stamp
+        /// Write the hashes, stamp nothing — a re-index that followed no file change.
+        case rebaseline
+    }
+
+    /// Stamps one document's unreviewed change as reviewed (R-5 P3).
+    ///
+    /// Writes `reviewed_at` and nothing else: `change_kind` and the hashes stay, so the next real
+    /// change is still detected against them and the upsert's `CASE` re-opens the row by itself.
+    /// Returns `false` when there was nothing to stamp — no row, no change recorded, or already
+    /// reviewed — so a caller can tell a no-op from a disposition.
+    @discardableResult
+    public func markDocumentRevisionReviewed(volumeId: String, documentId: String) throws -> Bool {
+        let stmt = try auxPrepare("""
+            UPDATE document_revisions SET reviewed_at = ?
+             WHERE volume_id = ? AND document_id = ?
+               AND changed_at IS NOT NULL AND reviewed_at IS NULL
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, Self.isoNow(), -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 3, documentId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+        return sqlite3_changes(auxDb) > 0
+    }
+
+    /// Stamps every unreviewed change in a volume as reviewed — the storage hub's grain (R-5 P3).
+    /// Returns how many rows were stamped. Same write as the per-document form, over the volume.
+    @discardableResult
+    public func markVolumeRevisionsReviewed(volumeId: String) throws -> Int {
+        let stmt = try auxPrepare("""
+            UPDATE document_revisions SET reviewed_at = ?
+             WHERE volume_id = ?
+               AND changed_at IS NOT NULL AND reviewed_at IS NULL
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, Self.isoNow(), -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(stmt)
+        return Int(sqlite3_changes(auxDb))
     }
 
     /// ISO-8601 UTC, to the second — what `changed_at` and `reviewed_at` carry.

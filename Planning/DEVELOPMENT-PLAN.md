@@ -10649,3 +10649,51 @@ cross-volume read, and the zero-part omission in the volume sentence.
 **Copy guards extended.** The hub section, the banner, and both document-view twins joined
 `ArchivalCopyRulesTests.sources` (zero-diff), and `Docs/EditableContent.md` gained blocks for every
 new key, so the next edit to any of this prose is checked.
+
+## Session 2026-09-03c — R-5 P3a: fix it, the half every report agreed on
+
+**Reconnaissance first, because the design's P3 rests on premises the code refutes.** Fifteen
+agents — seven readers over highlights, excerpts and visit plans, summaries, review surfaces, the
+pipeline, deletion idioms, and precedent; a verifier per reader trying to refute its load-bearing
+claims; one completeness critic. Six premises fell: (1) the escalation Q-5 attributed to the upsert
+did not exist — the `CASE` stamped `'apparatus'` for any non-body change whatever the row held;
+(2) highlight offsets are **UTF-16 code units**, not the Unicode scalars the model's doc comment and
+`102-DocumentHighlight-Architecture.md` state — the web view iterates a JS string's `length` and
+`flatTextExcerpt` slices with `utf16.count`, and the two agree on every BMP character, which is why
+nobody noticed; (3) `selectedText` is not a flat-text substring for any selection crossing a block —
+it carries `"\n\n"` seams the flat text lacks; (4) the table is per document, so §5.4's "a row in
+the revision table" per annotation has nowhere to land; (5) `reviewed_at` had readers on three
+surfaces and no writer; (6) "the same confirmation weight as deleting an annotation anywhere else"
+has no single referent — highlights always confirm, notes depend on the surface, collection entries
+and visit seeds never, summaries have no user-facing delete at all.
+
+**What shipped (P3a).** Everything the reports agreed on that needs no owner decision:
+- `markDocumentRevisionReviewed` / `markVolumeRevisionsReviewed` — `reviewed_at` only, so the
+  hashes still detect the next change and the upsert re-opens the row by itself.
+- The `'body'` escalation arm, tested body→apparatus→*body*, reviewed→apparatus→*apparatus*.
+- `RevisionRecording.rebaseline`: `indexAllVolumes` follows a version bump or the hub's re-index,
+  never a file change, so hashes that move there moved because the parse did; it writes them and
+  stamps nothing. Without it the first `currentDateIndexVersion` bump after P1 would have told every
+  reader their annotated documents changed in an update that never happened.
+- The upsert loop in one transaction per chunk (it ran in autocommit).
+- `DocumentChangeReviewSheet`, one shared view from the banner's *Review…* control in both twins and
+  from *Review Changes…* on any Research row with an unreviewed change — the only route for a
+  vanished document, which no document view can open. Per highlight: its standing (aligned / stale
+  with passage / stale without passage / unverifiable), **Confirm** (rewrites `renderingVersion` —
+  a CloudKit-mirrored field, so it clears the amber everywhere while the document stamp stays local,
+  and the copy says so) and **Remove** behind the twins' own dialog. Other annotations counted,
+  never judged. Document-level *Mark Reviewed*; per-volume *Mark Reviewed* in the hub behind a
+  dialog stating the count.
+- `HighlightSignature`: the web view compared id lists, so a confirm left the highlight amber until
+  reload; it now compares (id, offsets, version).
+- `AppState.revisionReviewToken`, the one signal the twins, Research, and the hub reload on.
+- The doc-comment sweep for the offset unit and the `renderingVersion` provenance (which is the
+  flat text, not the raw XML the comments said).
+
+**What waits, and why (design §8.1 Q-6…Q-11).** The unique-match re-anchor has three unsettled
+inputs and is the one feature §7 forbids getting wrong silently; summary regeneration appends and
+iOS has no control for it; excerpts in the filter would desynchronise three other consumers;
+non-highlight review state has no deploy-free per-annotation home; a removed volume's rows are
+never deleted; and the note / tag / override / lead / history *modify* surfaces have no mount.
+
+**Verification.** **Full iOS unit suite (iPhone 16e sim), run alone: 4,355 tests in 576 suites, 0 failures** — baseline 4,345 / 575 at #1180, +10: four review-write tests in `DocumentRevisionsTests` (stamp / volume stamp / escalation / rebaseline, all through the real `indexVolume` and `indexAllVolumes`), five in the new `HighlightReviewTests` (status, confirm, delete, repaint signature, the sheet's standing sentences), one mount scan in `VolumeUpdateReviewTests`. `FRUSExplorerMac` Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues. **Mutation sweep: 15 mutations, 15 killed on the first pass** — both halves of the stamp's guard, the volume stamp's scope, the escalation arm and its review condition, a whole-index pass that stamps, a rebaseline that keeps the old `body_hash`, the stale/no-passage flag, an empty version accepted by confirm or not refused by status, a delete that does nothing, each field of the repaint signature, and the sheet's vanished precedence and no-passage sentence.

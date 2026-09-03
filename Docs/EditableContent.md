@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row).**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed).**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1859,6 +1859,238 @@ Footnotes, source note, or heading changed in an update — the text did not
 No longer in the volume after an update
 
 <!-- END SOURCE: research.row.changed.vanished -->
+
+### Review Changes sheet (R-5 P3)
+
+One shared sheet, opened from the change banner's *Review…* control in both document views and
+from *Review Changes…* on a Research row. Lists what changed, every highlight with its standing
+and its Confirm / Remove actions, and the other annotations the app cannot judge.
+
+#### Banner control
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 60 | key: document.changed.review | shared: iOS+macOS (single edit point) -->
+
+Review…
+
+<!-- END SOURCE: document.changed.review -->
+
+#### Research row action
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 979 | key: research.action.reviewChanges -->
+
+Review Changes…
+
+<!-- END SOURCE: research.action.reviewChanges -->
+
+#### Done
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 119 | key: document.review.done | shared: iOS+macOS (single edit point) -->
+
+Done
+
+<!-- END SOURCE: document.review.done -->
+
+#### Loading
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 155 | key: document.review.loading | shared: iOS+macOS (single edit point) -->
+
+Reading the change record…
+
+<!-- END SOURCE: document.review.loading -->
+
+#### What Changed — header
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 182 | key: document.review.change.header | shared: iOS+macOS (single edit point) -->
+
+What Changed
+
+<!-- END SOURCE: document.review.change.header -->
+
+#### What Changed — vanished
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 158–159 | key: document.review.vanished | shared: iOS+macOS (single edit point) -->
+
+This document is no longer in the volume after an update. Everything you attached to it is kept until you remove it.
+
+<!-- END SOURCE: document.review.vanished -->
+
+#### What Changed — nothing recorded
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 166–167 | key: document.review.noChange | shared: iOS+macOS (single edit point) -->
+
+No change to this document is recorded on this device.
+
+<!-- END SOURCE: document.review.noChange -->
+
+#### Mark Reviewed button
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 175 | key: document.review.markReviewed | shared: iOS+macOS (single edit point) -->
+
+Mark Reviewed
+
+<!-- END SOURCE: document.review.markReviewed -->
+
+#### What Changed — footer
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 185–186 | key: document.review.change.footer | shared: iOS+macOS (single edit point) -->
+
+Marking the document reviewed clears it from “Changed by an update” on this device only. Highlights stay flagged until you confirm each one, and the next update re-opens the document if it changes again.
+
+<!-- END SOURCE: document.review.change.footer -->
+
+#### Highlights — header
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 198 | key: document.review.highlights.header | shared: iOS+macOS (single edit point) -->
+
+Highlights
+
+<!-- END SOURCE: document.review.highlights.header -->
+
+#### Highlights — footer
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 200–201 | key: document.review.highlights.footer | shared: iOS+macOS (single edit point) -->
+
+Confirm keeps a highlight exactly where it is and clears its warning everywhere you are signed in. The app never moves a highlight on its own.
+
+<!-- END SOURCE: document.review.highlights.footer -->
+
+#### Highlight with no stored passage
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 209 | key: document.review.highlight.noPassage | shared: iOS+macOS (single edit point) -->
+
+Highlighted passage
+
+<!-- END SOURCE: document.review.highlight.noPassage -->
+
+#### Highlight — Confirm
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 221 | key: document.review.highlight.confirm | shared: iOS+macOS (single edit point) -->
+
+Confirm
+
+<!-- END SOURCE: document.review.highlight.confirm -->
+
+#### Highlight — Remove
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 228 | key: document.review.highlight.remove | shared: iOS+macOS (single edit point) -->
+
+Remove…
+
+<!-- END SOURCE: document.review.highlight.remove -->
+
+#### Highlight standing — orphaned
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 274–275 | key: document.review.highlight.orphaned | shared: iOS+macOS (single edit point) -->
+
+The document it was made on is no longer in the volume.
+
+<!-- END SOURCE: document.review.highlight.orphaned -->
+
+#### Highlight standing — aligned
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 279–280 | key: document.review.highlight.aligned | shared: iOS+macOS (single edit point) -->
+
+Matches the current text.
+
+<!-- END SOURCE: document.review.highlight.aligned -->
+
+#### Highlight standing — stale
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 282–283 | key: document.review.highlight.stale | shared: iOS+macOS (single edit point) -->
+
+Made against an earlier version of the text — its position may have moved.
+
+<!-- END SOURCE: document.review.highlight.stale -->
+
+#### Highlight standing — stale, no passage
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 285–286 | key: document.review.highlight.stale.noPassage | shared: iOS+macOS (single edit point) -->
+
+Made against an earlier version of the text, and the words it covered were not stored — it can only be checked by eye.
+
+<!-- END SOURCE: document.review.highlight.stale.noPassage -->
+
+#### Highlight standing — unverifiable
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 288–289 | key: document.review.highlight.unverifiable | shared: iOS+macOS (single edit point) -->
+
+This device has no record to compare it against.
+
+<!-- END SOURCE: document.review.highlight.unverifiable -->
+
+#### Other Annotations — header
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 262 | key: document.review.other.header | shared: iOS+macOS (single edit point) -->
+
+Other Annotations
+
+<!-- END SOURCE: document.review.other.header -->
+
+#### Other Annotations — none
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 256 | key: document.review.other.none | shared: iOS+macOS (single edit point) -->
+
+No other annotations on this document.
+
+<!-- END SOURCE: document.review.other.none -->
+
+#### Other Annotations — notes
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 243–244 | key: document.review.other.notes %lld | shared: iOS+macOS (single edit point) -->
+
+%lld notes
+
+<!-- END SOURCE: document.review.other.notes %lld -->
+
+#### Other Annotations — tags
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 245–246 | key: document.review.other.tags %lld | shared: iOS+macOS (single edit point) -->
+
+%lld tags
+
+<!-- END SOURCE: document.review.other.tags %lld -->
+
+#### Other Annotations — collections
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 247–248 | key: document.review.other.collections %lld | shared: iOS+macOS (single edit point) -->
+
+in %lld collections
+
+<!-- END SOURCE: document.review.other.collections %lld -->
+
+#### Other Annotations — summaries
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 249–250 | key: document.review.other.summaries %lld | shared: iOS+macOS (single edit point) -->
+
+%lld summaries
+
+<!-- END SOURCE: document.review.other.summaries %lld -->
+
+#### Other Annotations — visit plan
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 251–252 | key: document.review.other.visit | shared: iOS+macOS (single edit point) -->
+
+in an archive-visit plan
+
+<!-- END SOURCE: document.review.other.visit -->
+
+#### Other Annotations — footer
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 264–265 | key: document.review.other.footer | shared: iOS+macOS (single edit point) -->
+
+These carry no position in the text, so the app cannot judge them against the change. Review them by eye; a summary describes the text as it was when it was written.
+
+<!-- END SOURCE: document.review.other.footer -->
+
+### After an Update — per-volume Mark Reviewed (R-5 P3)
+
+#### Row button
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 131 | key: settings.updateReview.markVolumeReviewed | shared: iOS+macOS (single edit point) -->
+
+Mark Reviewed
+
+<!-- END SOURCE: settings.updateReview.markVolumeReviewed -->
+
+#### Dialog title
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 140–141 | key: settings.updateReview.markVolume.title %lld | shared: iOS+macOS (single edit point) -->
+
+Mark %lld changed documents as reviewed?
+
+<!-- END SOURCE: settings.updateReview.markVolume.title %lld -->
+
+#### Dialog confirm
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 146 | key: settings.updateReview.markVolume.confirm | shared: iOS+macOS (single edit point) -->
+
+Mark Reviewed
+
+<!-- END SOURCE: settings.updateReview.markVolume.confirm -->
+
+#### Dialog cancel
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 151 | key: settings.updateReview.markVolume.cancel | shared: iOS+macOS (single edit point) -->
+
+Cancel
+
+<!-- END SOURCE: settings.updateReview.markVolume.cancel -->
+
+#### Dialog message
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 155–156 | key: settings.updateReview.markVolume.message | shared: iOS+macOS (single edit point) -->
+
+This stamps every changed document in the volume as reviewed on this device. Highlights stay flagged until you confirm each one, and the next update re-opens anything that changes again.
+
+<!-- END SOURCE: settings.updateReview.markVolume.message -->
 
 ### Volumes & Storage (Library)
 

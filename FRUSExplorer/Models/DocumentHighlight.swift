@@ -16,7 +16,7 @@ import SwiftUI
 /// A user-created text highlight within a FRUS document.
 ///
 /// ## Offset Model
-/// `startOffset` and `endOffset` are Unicode scalar positions (0-based, half-open
+/// `startOffset` and `endOffset` are **UTF-16 code-unit** positions (0-based, half-open
 /// `[start, end)`) within the **flat text string** produced by a deterministic
 /// depth-first traversal of `FRUSDocumentRenderModel.bodyNodes`. The traversal
 /// concatenates `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes; all
@@ -26,10 +26,15 @@ import SwiftUI
 /// body offset space.
 ///
 /// See `Planning/Completed/102-DocumentHighlight-Architecture.md` for the complete
-/// traversal specification, offset unit definition, and determinism analysis.
+/// traversal specification and determinism analysis. **The unit is UTF-16, not the Unicode
+/// scalar that document and the older comments here named** (corrected R-5 P3): the offsets
+/// come from the web view's `charToNode` map, built by iterating a JS string's `length`, and
+/// `flatTextExcerpt` slices with `utf16.count` — both UTF-16. The two agree on every BMP
+/// character, which is why the mistake was invisible.
 ///
 /// ## renderingVersion
-/// A 16-character hex prefix of `SHA-256(rawXMLBytes ++ converterVersionBytes)`.
+/// A 16-character hex prefix of `SHA-256(flatText(bodyNodes) ++ kVersion)` — the render model's
+/// flat text, not the raw XML (see `ASTToRenderNodeConverter.renderingVersion(for:)`).
 /// When `renderingVersion` does not match the value computed from the current
 /// document source, the highlight is **stale** — its offsets may no longer align
 /// with the correct text range. Stale highlights are displayed with a warning
@@ -65,10 +70,10 @@ import SwiftUI
 
     // MARK: - Text Range
 
-    /// Unicode scalar position of the first selected character (0-based, inclusive).
+    /// UTF-16 offset of the first selected character (0-based, inclusive) in the flat text.
     var startOffset: Int = 0
 
-    /// Unicode scalar position one past the last selected character (exclusive).
+    /// UTF-16 offset one past the last selected character (exclusive) in the flat text.
     var endOffset: Int = 0
 
     // MARK: - Annotation
@@ -91,7 +96,9 @@ import SwiftUI
 
     // MARK: - Versioning
 
-    /// 16-character hex prefix of SHA-256(rawXMLBytes ++ converterVersionBytes).
+    /// 16-character hex prefix of SHA-256(flatText(bodyNodes) ++ kVersion) — the document's
+    /// `ASTToRenderNodeConverter.renderingVersion(for:)` at creation, and since R-5 P3 also
+    /// rewritten by a reader's Confirm (`HighlightReview.confirm`) to the current value.
     /// Used to detect stale highlights after source or converter updates.
     var renderingVersion: String = ""
 
@@ -152,9 +159,9 @@ extension DocumentHighlight {
     /// `isStale` is computed at call time from the `renderingVersion` mismatch so the
     /// web layer doesn't need to know the current document version.
     struct HighlightDTO: Encodable {
-        /// Unicode scalar start offset, matching `DocumentHighlight.startOffset`.
+        /// UTF-16 start offset, matching `DocumentHighlight.startOffset`.
         let startOffset: Int
-        /// Unicode scalar end offset (exclusive), matching `DocumentHighlight.endOffset`.
+        /// UTF-16 end offset (exclusive), matching `DocumentHighlight.endOffset`.
         let endOffset: Int
         /// Highlight color name — one of `"yellow"`, `"green"`, `"blue"`, `"pink"`.
         let color: String

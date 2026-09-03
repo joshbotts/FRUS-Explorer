@@ -128,6 +128,7 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///         (`DocumentViewModel.recordReadingHistory`, `MacSearchViewModel
 ///         .recordSearchHistory`) now honour the same switch. `logEvent` gained a
 ///         `defaults:` parameter so the gate is testable without global state.
+///   4.8 — R-5 P3: `revisionReviewToken`, the review-write signal the P2 readers reload on.
 ///   4.8 — Wave R-2a: `logEvent(_:defaults:)`, `loggingContext`, `currentResearchSession`,
 ///         `lastEventDate` and `sessionExpiryInterval` removed. `AppState` no longer writes
 ///         the research trail at all — the three typed writers do, sessions are derived by
@@ -1704,6 +1705,12 @@ final class AppState {
     /// parsing. This value is created when indexing starts and survives until the backlog
     /// is empty.
     var indexingBatch: IndexingBatch?
+
+    /// Bumped after any review write to `document_revisions` or to a highlight's
+    /// `renderingVersion` (R-5 P3), so the three P2 readers — the document twins' `revision`,
+    /// `ResearchView`'s unreviewed set, the storage hubs' section — reload without a re-index.
+    /// A counter rather than a payload: every reader re-reads the whole set anyway.
+    var revisionReviewToken: Int = 0
 
     /// Volumes made searchable by the queue that just finished, when it held more than
     /// one — the summary card's queue-grain line. `nil` for a single-volume queue, whose

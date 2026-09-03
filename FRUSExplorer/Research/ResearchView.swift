@@ -40,7 +40,8 @@ enum ResearchSidebarItem: Hashable {
 // MARK: - ResearchDocumentEntry
 
 /// One row in the Research document list, aggregating all researcher engagement for a single
-/// `(volumeId, documentId)` pair from four independent sources:
+/// `(volumeId, documentId)` pair from six independent sources (four originally; two added for
+/// R-5 P2, see below):
 ///
 /// - `ResearchNote` records in SwiftData (`latestNote`, `noteCount`, note-level tags)
 /// - `DocumentTagAssignment` records in SwiftData (direct user tags)
@@ -154,6 +155,8 @@ struct ResearchView: View {
     /// R-5 P2: every unreviewed change the device's re-indexes have recorded, keyed by document.
     /// Loaded off the body path; re-read when the indexed set changes.
     @State private var unreviewedRevisions: [String: IndexingPipeline.DocumentRevision] = [:]
+    /// The row whose change set is open in the review sheet (R-5 P3).
+    @State private var reviewEntry: ResearchDocumentEntry?
 
     /// Projects — used to surface the active project's Project Home entry (#377 Phase 1 iOS follow-up).
     @Query(sort: \Project.name) private var allProjects: [Project]
@@ -223,6 +226,14 @@ struct ResearchView: View {
         .task { await loadUnreviewedRevisions() }
         .onChange(of: appState.indexingBatch) { _, batch in
             if batch == nil { Task { await loadUnreviewedRevisions() } }
+        }
+        // R-5 P3: a review write anywhere (the sheet, a document, the hub) re-reads the set.
+        .onChange(of: appState.revisionReviewToken) { _, _ in
+            Task { await loadUnreviewedRevisions() }
+        }
+        .sheet(item: $reviewEntry) { entry in
+            DocumentChangeReviewSheet(volumeId: entry.volumeId, documentId: entry.documentId,
+                                      title: documentHeaders[entry.id] ?? entry.documentId)
         }
             .task(id: selectedItemDocumentIds) { await loadHeaders() }
             // Reload note-sourced headers when any note changes.
@@ -956,6 +967,18 @@ struct ResearchView: View {
                        defaultValue: "Open Document"),
                 systemImage: "arrow.up.right.square"
             )
+        }
+
+        // R-5 P3: the per-document review of what an update changed. Offered on any row with an
+        // unreviewed change, whichever sidebar filter is showing — and it is the ONLY route for a
+        // vanished document, which no document view can open.
+        if entry.revision != nil {
+            Button {
+                reviewEntry = entry
+            } label: {
+                Label(String(localized: "research.action.reviewChanges", defaultValue: "Review Changes…"),
+                      systemImage: "arrow.triangle.2.circlepath")
+            }
         }
 
         #if os(macOS)
