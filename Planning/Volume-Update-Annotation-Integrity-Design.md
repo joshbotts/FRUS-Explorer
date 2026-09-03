@@ -316,7 +316,7 @@ that came before it.
 | **Q-10** | **(b)** the exact, unique, seam-aware search in the shared sheet with Move after an explicit tap and the found words plus context shown; **(e)**'s three sentences ship inside it; **(f)** a Find-passage complement through the twins' existing find machinery. UTF-16 pinned by fixture (the corpus holds no non-BMP or combining character). (c) only if matching ever becomes normalised. | No deploy. |
 | **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | No deploy. |
 
-**Sequence.** *P3b-1* (deploy-free hygiene, **PR #1182**, SHIPPED): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR) — **CODE COMPLETE 2026-09-03, awaiting the owner's ninth promotion**:
+**Sequence.** *P3b-1* (deploy-free hygiene, **PR #1182**, SHIPPED): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR, **PR #1183**) — **CODE COMPLETE 2026-09-03, awaiting the owner's ninth promotion**:
 `AnnotationReview`, one mirrored ledger with a **derived id over `kind|annotationId|document|contentHash|changeKind`**, which makes it
 append-only — two devices reviewing the same change at the same text mint a byte-identical row that
 `DuplicateRecordCleanup` collapses losslessly, so no CloudKit merge can destroy a review (keyed on the
