@@ -10650,7 +10650,7 @@ cross-volume read, and the zero-part omission in the volume sentence.
 `ArchivalCopyRulesTests.sources` (zero-diff), and `Docs/EditableContent.md` gained blocks for every
 new key, so the next edit to any of this prose is checked.
 
-## Session 2026-09-03c — R-5 P3a: fix it, the half every report agreed on
+## Session 2026-09-03c — R-5 P3a: fix it, the half every report agreed on (PR #1181)
 
 **Reconnaissance first, because the design's P3 rests on premises the code refutes.** Fifteen
 agents — seven readers over highlights, excerpts and visit plans, summaries, review surfaces, the
