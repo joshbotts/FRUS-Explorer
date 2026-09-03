@@ -392,17 +392,43 @@ public func buildFlatTextBlocks(from model: FRUSDocumentRenderModel) -> [String]
 ///   - model: The document render model to extract from.
 ///   - start: UTF-16 start offset into `buildFlatText(from: model)`.
 ///   - end: UTF-16 end offset (exclusive).
-/// - Returns: The block-separated passage, or `nil` when the range is empty, out of
-///   bounds, splits a surrogate pair, or covers only whitespace — callers fall back
-///   to their pre-existing behavior (raw selection text or empty string).
+/// - Returns: The block-separated passage, or `nil` when the range is empty, inverted,
+///   or covers only whitespace — callers fall back to their pre-existing behavior (raw
+///   selection text or empty string).
+///
+/// **This does NOT return `nil` for a range that splits a surrogate pair**, though an
+/// earlier version of this comment said so. The offsets are clamped in-bounds below, and
+/// a clamped `NSRange` never fails to convert: `Range(NSRange:in:)` snaps to a scalar
+/// boundary and returns a slice of a DIFFERENT length instead. Measured over every
+/// in-bounds `(location, length)` of a string containing an astral character, it returned
+/// `nil` zero times. A caller that guards on `nil` for that case is guarding against
+/// something that cannot happen, and a test asserting `!= nil` there passes against a
+/// wrong answer. (No shippable volume contains a non-BMP or combining character, measured
+/// across all 552, so this is a contract statement rather than a live hazard.)
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 5 review fixes: initial implementation
+///   1.1 — R-5 P3b-3: the `blocks:` overload, so a caller that already holds the partition
+///          does not rebuild it per call; the surrogate-pair claim corrected.
 public func flatTextExcerpt(from model: FRUSDocumentRenderModel, start: Int, end: Int) -> String? {
+    flatTextExcerpt(blocks: buildFlatTextBlocks(from: model), start: start, end: end)
+}
+
+/// The same extraction against a block partition the caller already holds.
+///
+/// The model-taking overload rebuilds the partition on every call, which is fine for the
+/// one-shot uses (freezing a selection, an excerpt capture) and quadratic for a search
+/// that must re-extract at many candidate spans. `HighlightReview.locate` is that search,
+/// and it is the reason this overload exists: the partition is built once per document.
+///
+/// The partition must be `buildFlatTextBlocks(from:)`'s output for the same model, whose
+/// concatenation IS `buildFlatText(from:)` — there is no separator between blocks — so the
+/// offsets mean the same thing in both.
+public func flatTextExcerpt(blocks: [String], start: Int, end: Int) -> String? {
     guard start >= 0, end > start else { return nil }
     var pieces: [String] = []
     var position = 0
-    for block in buildFlatTextBlocks(from: model) {
+    for block in blocks {
         let blockStart = position
         let blockLength = block.utf16.count
         position += blockLength

@@ -10825,3 +10825,41 @@ edit-then-reindex stamps nothing, with no error to explain it. Two passes are ne
 then edit, then re-index — and the summary half has the same precondition, since
 `sourceContentHash` is read from a revision row that does not exist until the volume is re-indexed
 on the new build.
+
+## Session 2026-09-03g — R-5 P3b-3: the unique-match re-anchor (PR #1185)
+
+**The matcher inverts a function rather than re-deriving it.** `flatTextExcerpt` joins per-block
+slices with `"\n\n"` and drops whitespace-only ones, so recovering a span from a stored passage is
+an inversion problem — and the obvious approach, splitting on the separator and walking consecutive
+blocks, is wrong in both directions. The corpus proves both: two adjacent `<lb/>` put a LITERAL
+`"\n\n"` inside one block (35 occurrences across 23 of 552 volumes), and a whitespace-only slice
+between two kept fragments is dropped, so consecutive fragments need not come from adjacent blocks
+(51 across 29). So the search generates candidates loosely and accepts one only if re-extracting at
+that span reproduces the passage exactly. The shipped extractor is the oracle; nothing re-derives
+its rules, and a mis-generated candidate simply fails.
+
+**Two historical passage formats, and only the recon found the second.** Highlights created before
+2026-07-03 froze a RAW flat-text slice — no seams, whitespace-only slices retained. Five of the
+owner's eight highlights are that shape. A matcher accepting only today's format would report "not
+found" for every pre-July cross-block highlight that had relocated perfectly, which is the oldest
+annotations and therefore the ones most likely to have survived a correction.
+
+**Two guards, both measured rather than chosen.** A 40-unit floor, because 13–15% of ten-character
+fragments and about 2% of twenty-character ones occur more than once inside their own document, so
+below that "found exactly once" is not evidence. And a 200-unit distance band: over 6,340
+relocations on real Office of the Historian corrections the median shift was −2 characters and the
+largest was ten. A unique match thousands of characters away is not a corrected passage — it is
+what a RENUMBERED document looks like, where this id now names a different document and the words
+found belong to someone else's text. Those are reported and never offered, and about half of what a
+real correction changes is renumbering rather than editing, which is also why "not found" never
+says the editors deleted anything.
+
+**The review caught a defect that would have shipped a false statement.** The first matcher
+enumerated every reading of the separators, so it capped the fragment count at five — and a
+highlight spanning six blocks then reported "Not found" about a passage present character for
+character, with a Remove button beside it. Six blocks is not exotic: every table cell and list item
+is one. The fix resolves each separator against the text where it stands instead of enumerating
+readings, so the number of blocks a highlight spans is no longer a limit, and a genuinely
+pathological branch count is REFUSED rather than answered from a truncated walk.
+
+**Verification.** **Full iOS unit suite (iPhone 16e sim), run alone: 4,411 tests in 580 suites, 0 failures** — baseline 4,389 / 579 at #1183, +22 in the new `HighlightReanchorTests`: the refusals, the ordinary outcomes, and every shape the corpus actually contains (a literal separator inside one block, a real seam, a dropped whitespace-only block between two kept ones, the pre-July-2026 raw-slice format, canonicalisation at both ends, a passage spanning three, six and nine blocks, a symmetric distance band, the move gate, the seven sentences, and a synthetic astral fixture for the UTF-16 arithmetic that no corpus volume can catch). `FRUSExplorerMac` Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues. **Mutation sweep: 15 mutations, 15 killed.** Twelve on the first pass. Three survivors were missing fixtures and one mutation did not compile — correctly voided by the positive control rather than counted. Each survivor taught something: the astral fixture had its non-BMP characters BEFORE the passage, so the passage's own character and UTF-16 counts matched and every arithmetic mutation was invisible; the leading contraction fires only on the STORED span, so the fixture had to store a span beginning inside a droppable slice; and the literal-separator branch turned out to be **unreachable** — the seam walk already skips whitespace and two newlines are whitespace — so it was deleted rather than given a contrived test, and its mutation with it. **Adversarial review: 32 findings, 25 confirmed, all addressed; 7 refuted.** One was a defect that would have shipped a false statement of fact — the first matcher capped the fragment count at five, so a highlight spanning six blocks reported "Not found" about a passage present character for character, with a Remove button beside it. The verifier reproduced it by compiling the shipped code.

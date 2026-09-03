@@ -14,11 +14,11 @@ import SwiftData
 /// What a reader can do to one highlight after a volume update, and the one fact the review
 /// surface states about it (Volume-Update-Annotation-Integrity design §5.4, R-5 P3).
 ///
-/// Two of the design's three verbs live here — **confirm** and **delete**. *Modify* (the
-/// unique-match re-anchor) is deliberately absent: it needs the current flat text, a UTF-16
-/// search that honours the `"\n\n"` block seams `selectedText` carries, and a preview the reader
-/// confirms before anything moves, and §7 forbids getting it wrong silently. It is the next
-/// phase's, not a corner of this one.
+/// All three of the design's verbs now live on this type — **confirm** and **delete** here,
+/// **modify** in `HighlightReanchor.swift`, added in R-5 P3b-3. The re-anchor is deliberately a
+/// separate file: it is an exact, seam-aware search over the document's block partition with its
+/// own vocabulary of outcomes, and §7's rule that a repair is offered, shown and confirmed rather
+/// than applied silently is easier to hold to when the search cannot reach a model.
 ///
 /// Confirm rewrites `renderingVersion`, which is the only per-highlight review state the model
 /// has — and it is a CloudKit-mirrored field, so a confirmation made on one device clears the amber
@@ -30,6 +30,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — R-5 P3: initial implementation
+///   1.1 — R-5 P3b-3: `locate` and `move` join it, in `HighlightReanchor.swift`
 enum HighlightReview {
 
     /// How a stored highlight stands against the text the reader would see now.

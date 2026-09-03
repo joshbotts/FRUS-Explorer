@@ -89,6 +89,8 @@ struct ArchivalCopyRulesTests {
         // R-5 P3: the review sheet and its status sentences.
         "DocumentView/DocumentChangeReviewSheet.swift",
         "DocumentView/HighlightReview.swift",
+        // R-5 P3b-3: the re-anchor's outcome sentences.
+        "DocumentView/HighlightReanchor.swift",
         "DocumentView/DocumentView.swift",
         "App/MacDocumentView.swift",
     ]
