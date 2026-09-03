@@ -10826,7 +10826,7 @@ then edit, then re-index — and the summary half has the same precondition, sin
 `sourceContentHash` is read from a revision row that does not exist until the volume is re-indexed
 on the new build.
 
-## Session 2026-09-03g — R-5 P3b-3: the unique-match re-anchor
+## Session 2026-09-03g — R-5 P3b-3: the unique-match re-anchor (PR #1185)
 
 **The matcher inverts a function rather than re-deriving it.** `flatTextExcerpt` joins per-block
 slices with `"\n\n"` and drops whitespace-only ones, so recovering a span from a stored passage is
