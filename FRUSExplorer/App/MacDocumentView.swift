@@ -100,6 +100,8 @@ struct MacDocumentView: View {
     @State private var showGlossNotFound  = false
     /// Set when an unresolvable cross-reference is tapped; drives the explanation sheet (#240).
     @State private var brokenRefExplanation: BrokenRefInfo? = nil
+    /// Presents the per-document review of a volume update's change set (R-5 P3).
+    @State private var showReviewChanges = false
     /// Set when a cross-reference targets a document in an undownloaded volume; drives
     /// a prompt offering to download it instead of pushing into a guaranteed load failure.
     @State private var crossRefDownloadVolumeId: String? = nil
@@ -281,6 +283,19 @@ struct MacDocumentView: View {
         }
         .sheet(item: $brokenRefExplanation) { info in
             BrokenRefExplanationSheet(info: info)
+        }
+        .sheet(isPresented: $showReviewChanges) {
+            DocumentChangeReviewSheet(volumeId: entry.volumeId, documentId: entry.documentId,
+                                      title: entry.header,
+                                      currentVersion: vm.renderModel.map { ASTToRenderNodeConverter.renderingVersion(for: $0) })
+        }
+        // R-5 P3: a review write anywhere (this sheet, Research, the hub) re-reads the row.
+        .onChange(of: appState.revisionReviewToken) { _, _ in
+            Task {
+                revision = await DocumentChangeBanner.revision(volumeId: entry.volumeId,
+                                                               documentId: entry.documentId,
+                                                               pipeline: appState.indexingPipeline)
+            }
         }
         .alert(
             String(localized: "personNotFound.title",
@@ -490,7 +505,8 @@ struct MacDocumentView: View {
             // whose renderingVersion doesn't match the current one. One shared view for both twins.
             let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: renderModel)
             DocumentChangeBanner(revision: revision,
-                                 highlightsStale: highlights.contains { $0.renderingVersion != renderingVersion })
+                                 highlightsStale: highlights.contains { $0.renderingVersion != renderingVersion },
+                                 onReview: { showReviewChanges = true })
 
             // Document body — WKWebView handles scrolling, tables, footnotes, and highlights.
             FRUSDocumentWebView(

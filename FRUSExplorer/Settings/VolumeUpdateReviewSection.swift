@@ -31,6 +31,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — R-5 P2: initial implementation
+///   1.1 — R-5 P3: per-volume Mark Reviewed; reloads on the review token
 struct VolumeUpdateReviewSection: View {
 
     @Environment(AppState.self) private var appState
@@ -48,6 +49,8 @@ struct VolumeUpdateReviewSection: View {
 
     /// Every unreviewed, stamped revision row, across volumes.
     @State private var revisions: [IndexingPipeline.DocumentRevision] = []
+    /// The volume whose changes the reader is about to stamp as reviewed (R-5 P3); drives the dialog.
+    @State private var volumeToReview: VolumeUpdateReview.VolumeSummary?
     /// Set once the first read has returned, so the "nothing waiting" row is a finding and not a
     /// placeholder shown before the table was consulted.
     @State private var loaded = false
@@ -112,6 +115,8 @@ struct VolumeUpdateReviewSection: View {
         .onChange(of: appState.indexingBatch) { _, batch in
             if batch == nil { Task { await reload() } }
         }
+        // R-5 P3: a review write anywhere re-reads the set.
+        .onChange(of: appState.revisionReviewToken) { _, _ in Task { await reload() } }
     }
 
     // MARK: - Rows
@@ -121,7 +126,43 @@ struct VolumeUpdateReviewSection: View {
         SettingsStatusRow(
             label: appState.manifestStore.entry(forVolumeId: volume.volumeId)?.title ?? volume.volumeId,
             detail: Self.volumeDetail(volume),
-            state: .warning)
+            state: .warning
+        ) {
+            Button(String(localized: "settings.updateReview.markVolumeReviewed", defaultValue: "Mark Reviewed")) {
+                volumeToReview = volume
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+        }
+        // R-5 P3: the volume-grain disposition. It stamps every changed document in the volume —
+        // annotated or not, which is what lets the headline count reach zero — and says so.
+        .confirmationDialog(
+            String(localized: "settings.updateReview.markVolume.title %lld",
+                   defaultValue: "Mark \(volumeToReview?.changedDocuments ?? 0) changed documents as reviewed?"),
+            isPresented: Binding(get: { volumeToReview?.id == volume.id },
+                                 set: { if !$0 { volumeToReview = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.updateReview.markVolume.confirm", defaultValue: "Mark Reviewed")) {
+                let id = volume.volumeId
+                volumeToReview = nil
+                Task { await markVolumeReviewed(id) }
+            }
+            Button(String(localized: "settings.updateReview.markVolume.cancel", defaultValue: "Cancel"), role: .cancel) {
+                volumeToReview = nil
+            }
+        } message: {
+            Text(String(localized: "settings.updateReview.markVolume.message",
+                        defaultValue: "This stamps every changed document in the volume as reviewed on this device. Highlights stay flagged until you confirm each one, and the next update re-opens anything that changes again."))
+        }
+    }
+
+    /// Stamps the volume, then reloads and tells the other readers.
+    private func markVolumeReviewed(_ volumeId: String) async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        _ = try? await pipeline.markVolumeRevisionsReviewed(volumeId: volumeId)
+        await reload()
+        appState.revisionReviewToken += 1
     }
 
     private var openResearchButton: some View {

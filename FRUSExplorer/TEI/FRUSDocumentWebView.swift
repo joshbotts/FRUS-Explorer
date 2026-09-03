@@ -15,7 +15,7 @@ import WebKit
 /// the bounding geometry that anchors the floating selection bar. A struct (not a positional
 /// tuple) so the growing payload stays readable.
 struct SelectionPayload: Equatable {
-    /// Flat-text Unicode-scalar start offset, or `-1` for an out-of-document (footnote) selection.
+    /// Flat-text UTF-16 start offset, or `-1` for an out-of-document (footnote) selection.
     let start: Int
     /// Flat-text end offset, or `-1` for a footnote selection.
     let end: Int
@@ -365,7 +365,7 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
     /// IDs of the last highlights passed to `updateNSView`/`updateUIView`, used to
     /// detect changes that require a `renderHighlights` call without a full reload.
-    var lastHighlightIds: [UUID] = []
+    var lastHighlightSignature: [HighlightSignature] = []
 
     // MARK: Selection state (Session 145)
 
@@ -619,13 +619,15 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
 
     func updateNSView(_ webView: WKWebView, context: Context) {
         let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
-        let newHighlightIds  = highlights.map(\.id)
-        let highlightsChanged = newHighlightIds != context.coordinator.lastHighlightIds
+        // R-5 P3: id + offsets + renderingVersion, so an in-place confirm (same id, new version)
+        // repaints — an id-only comparison left a confirmed highlight amber until reload.
+        let newHighlightSignature = HighlightSignature.signature(of: highlights)
+        let highlightsChanged = newHighlightSignature != context.coordinator.lastHighlightSignature
 
         // Always sync highlight state before any reload/render decision.
         context.coordinator.pendingHighlights        = highlights
         context.coordinator.currentRenderingVersion  = renderingVersion
-        context.coordinator.lastHighlightIds         = newHighlightIds
+        context.coordinator.lastHighlightSignature   = newHighlightSignature
         // #988. `anchorChanged` is computed against the coordinator's own record rather than a
         // separate `last…` property set here, so a reveal is attempted exactly once per (document,
         // anchor) pair however many times SwiftUI re-runs this update.
@@ -730,12 +732,14 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
 
     func updateUIView(_ webView: WKWebView, context: Context) {
         let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
-        let newHighlightIds  = highlights.map(\.id)
-        let highlightsChanged = newHighlightIds != context.coordinator.lastHighlightIds
+        // R-5 P3: id + offsets + renderingVersion, so an in-place confirm (same id, new version)
+        // repaints — an id-only comparison left a confirmed highlight amber until reload.
+        let newHighlightSignature = HighlightSignature.signature(of: highlights)
+        let highlightsChanged = newHighlightSignature != context.coordinator.lastHighlightSignature
 
         context.coordinator.pendingHighlights        = highlights
         context.coordinator.currentRenderingVersion  = renderingVersion
-        context.coordinator.lastHighlightIds         = newHighlightIds
+        context.coordinator.lastHighlightSignature   = newHighlightSignature
         // #988. `anchorChanged` is computed against the coordinator's own record rather than a
         // separate `last…` property set here, so a reveal is attempted exactly once per (document,
         // anchor) pair however many times SwiftUI re-runs this update.

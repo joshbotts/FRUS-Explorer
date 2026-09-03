@@ -73,6 +73,8 @@ enum DocumentSheet: Identifiable {
     /// The Research rail as an iPhone bottom sheet (Phase D). On iPad the rail is the trailing
     /// `.inspector` instead; on iPhone it folds into this consolidated sheet (owner decision D2).
     case researchRail
+    /// The per-document review of a volume update's change set (R-5 P3).
+    case reviewChanges
 
     var id: String {
         switch self {
@@ -96,6 +98,7 @@ enum DocumentSheet: Identifiable {
         case .semanticMap(let r):              return "semanticMap-\(r.focusDocumentKey ?? "all")"
         case .wordCloud(let scope):            return "wordCloud-\(scope.id)"
         case .researchRail:                    return "researchRail"
+        case .reviewChanges:                   return "reviewChanges"
         }
     }
 }
@@ -444,6 +447,14 @@ struct DocumentView: View {
         //
         // The id string encodes both documentId and volumeId so cross-volume references
         // (same docId, different volume) also trigger a reset.
+        // R-5 P3: a review write anywhere (this sheet, Research, the hub) re-reads the row.
+        .onChange(of: appState.revisionReviewToken) { _, _ in
+            Task {
+                revision = await DocumentChangeBanner.revision(volumeId: entry.volumeId,
+                                                               documentId: entry.documentId,
+                                                               pipeline: appState.indexingPipeline)
+            }
+        }
         .task(id: entry.documentId + "/" + entry.volumeId) {
             // Reset vm if we detect view reuse for a different entry.
             // bootstrapViewModel() alone is not enough because it guards on vm == nil.
@@ -921,6 +932,9 @@ struct DocumentView: View {
                 glossNotFoundSheet
             case .naraLookup(let text, let blockContext):
                 NARACatalogLookupView(initialText: text, blockContext: blockContext)
+            case .reviewChanges:
+                DocumentChangeReviewSheet(volumeId: entry.volumeId, documentId: entry.documentId,
+                                          title: entry.header, currentVersion: currentRenderingVersion)
             case .brokenRefExplanation(let info):
                 BrokenRefExplanationSheet(info: info)
                     .presentationDetents([.medium])
@@ -1624,7 +1638,8 @@ struct DocumentView: View {
             // whose renderingVersion doesn't match the current one. One shared view for both twins.
             let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
             DocumentChangeBanner(revision: revision,
-                                 highlightsStale: highlights.contains { $0.renderingVersion != renderingVersion })
+                                 highlightsStale: highlights.contains { $0.renderingVersion != renderingVersion },
+                                 onReview: { activeSheet = .reviewChanges })
 
             // Document body — WKWebView handles scrolling, footnotes, and highlights.
             // The edge-tap navigation overlay is layered on top via ZStack rather than
@@ -1983,6 +1998,11 @@ struct DocumentView: View {
     }
 
     // MARK: - Highlight Actions
+
+    /// The open document's `renderingVersion`, for the review sheet (R-5 P3); nil before load.
+    private var currentRenderingVersion: String? {
+        vm?.renderModel.map { ASTToRenderNodeConverter.renderingVersion(for: $0) }
+    }
 
     /// Deletes the `DocumentHighlight` matching `startOffset`/`endOffset` from SwiftData.
     @MainActor

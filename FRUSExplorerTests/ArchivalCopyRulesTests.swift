@@ -86,6 +86,9 @@ struct ArchivalCopyRulesTests {
         // so this is the guard against the next edit, not a fix.
         "Settings/VolumeUpdateReviewSection.swift",
         "DocumentView/DocumentChangeBanner.swift",
+        // R-5 P3: the review sheet and its status sentences.
+        "DocumentView/DocumentChangeReviewSheet.swift",
+        "DocumentView/HighlightReview.swift",
         "DocumentView/DocumentView.swift",
         "App/MacDocumentView.swift",
     ]

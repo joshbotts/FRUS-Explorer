@@ -310,4 +310,126 @@ struct DocumentRevisionsTests {
         #expect(changed.changedAt != nil)
         #expect(changed.bodyHash != first.bodyHash)
     }
+
+    // MARK: - The P3 review writes
+
+    /// The first write to `reviewed_at` the app has ever made. Stamping once drops the row from
+    /// the unreviewed set, keeps it readable with its kind, survives an identical re-index, and is
+    /// re-opened by the next real change — the `CASE` branch P1 wrote and never exercised.
+    @Test("markDocumentRevisionReviewed: stamps once, survives an identical re-index, re-opens on change")
+    func markReviewed() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        #expect(try await h.pipeline.markDocumentRevisionReviewed(volumeId: vol, documentId: "d2") == false)
+
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        _ = try await h.index(vol)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId) == ["d2"])
+
+        #expect(try await h.pipeline.markDocumentRevisionReviewed(volumeId: vol, documentId: "d2") == true)
+        #expect(try await h.pipeline.markDocumentRevisionReviewed(volumeId: vol, documentId: "d2") == false)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty)
+        let reviewed = try #require(try await h.pipeline.documentRevision(volumeId: vol, documentId: "d2"))
+        #expect(reviewed.reviewedAt != nil)
+        #expect(reviewed.changeKind == "body")
+        #expect(reviewed.changedAt != nil)
+
+        // An identical re-index keeps the disposition.
+        let again = try await h.index(vol)
+        #expect(again["d2"]?.reviewedAt == reviewed.reviewedAt)
+
+        // The next real change re-opens the row.
+        edited[1].footnote = "See Document 9."
+        try h.write(vol, edited)
+        let reopened = try await h.index(vol)
+        #expect(reopened["d2"]?.reviewedAt == nil)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId) == ["d2"])
+    }
+
+    @Test("markVolumeRevisionsReviewed stamps every unreviewed row in the volume, and only that volume")
+    func markVolumeReviewed() async throws {
+        let h = try Harness()
+        let vol2 = "frus1958-60v02"
+        try h.write(vol, base)
+        try h.write(vol2, base)
+        _ = try await h.index(vol)
+        _ = try await h.index(vol2)
+        var edited = base
+        edited[0].footnote = "See Document 5."
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        try h.write(vol2, edited)
+        _ = try await h.index(vol)
+        _ = try await h.index(vol2)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().count == 4)
+
+        #expect(try await h.pipeline.markVolumeRevisionsReviewed(volumeId: vol) == 2)
+        #expect(try await h.pipeline.markVolumeRevisionsReviewed(volumeId: vol) == 0)
+        let left = try await h.pipeline.unreviewedDocumentRevisions()
+        #expect(Set(left.map(\.volumeId)) == [vol2])
+        #expect(left.count == 2)
+    }
+
+    /// Q-5's escalation, now real: an apparatus-only correction landing on an unreviewed body
+    /// change keeps the row `'body'`, because the highlight space DID move since the reader last
+    /// looked. Once reviewed, the same correction reads as what it is.
+    @Test("An apparatus change after an unreviewed body change keeps 'body'; after review it is 'apparatus'")
+    func bodyWinsUntilReviewed() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        #expect(try await h.index(vol)["d2"]?.changeKind == "body")
+
+        edited[1].footnote = "See Document 9."
+        try h.write(vol, edited)
+        let stacked = try await h.index(vol)
+        #expect(stacked["d2"]?.changeKind == "body")
+        #expect(stacked["d2"]?.reviewedAt == nil)
+
+        _ = try await h.pipeline.markDocumentRevisionReviewed(volumeId: vol, documentId: "d2")
+        edited[1].footnote = "See Document 10."
+        try h.write(vol, edited)
+        let afterReview = try await h.index(vol)
+        #expect(afterReview["d2"]?.changeKind == "apparatus")
+        #expect(afterReview["d2"]?.reviewedAt == nil)
+    }
+
+    /// A whole-index pass follows no file change, so hashes that move there moved because the
+    /// parse did. `indexAllVolumes` re-baselines: the new hashes are written, nothing is stamped,
+    /// an earlier stamp is untouched — and the NEXT per-volume index stamps against the new baseline.
+    @Test("indexAllVolumes rebaselines: hashes move, nothing is stamped, earlier stamps survive")
+    func rebaseline() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        let stamped = try await h.index(vol)
+        #expect(stamped["d2"]?.changeKind == "body")
+
+        // Simulate a parse change: d3's text differs on disk, but the pass is a whole-index one.
+        edited[2].body = "The conference adjourned without result, twice."
+        try h.write(vol, edited)
+        try await h.pipeline.indexAllVolumes()
+        let rows = Dictionary(uniqueKeysWithValues:
+            try await h.pipeline.documentRevisions(forVolumeId: vol).map { ($0.documentId, $0) })
+        #expect(rows["d3"]?.changedAt == nil)
+        #expect(rows["d3"]?.changeKind == nil)
+        #expect(rows["d3"]?.bodyHash != stamped["d3"]?.bodyHash)
+        #expect(rows["d3"]?.bodyHash == (try await h.independentBodyHash(vol, "d3")))
+        #expect(rows["d2"]?.changeKind == "body")
+        #expect(rows["d2"]?.changedAt == stamped["d2"]?.changedAt)
+
+        // The baseline moved: a further change to d3 is now measured against it.
+        edited[2].body = "The conference adjourned without result, thrice."
+        try h.write(vol, edited)
+        #expect(try await h.index(vol)["d3"]?.changeKind == "body")
+    }
 }

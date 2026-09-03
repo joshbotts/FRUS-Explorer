@@ -157,6 +157,27 @@ struct VolumeUpdateReviewTests {
         #expect(s.contains("allAnnotatedKeys.intersection(unreviewedRevisions.keys)"), "the filter is the intersection")
     }
 
+    /// R-5 P3's mounts: the review sheet from both twins' banners and from the Research row, the
+    /// hub's per-volume stamp, and the widened repaint signature. A scan, and it says so.
+    @Test("P3 mounts: both twins open the review sheet, Research offers it, the hub stamps, the web view compares signatures")
+    func p3Mounts() throws {
+        for twin in ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"] {
+            let s = try Self.source(twin)
+            #expect(s.contains("DocumentChangeReviewSheet(volumeId: entry.volumeId"), "\(twin) must present the shared sheet")
+            #expect(s.contains("onReview:"), "\(twin) must give the banner its Review control")
+            #expect(s.contains("appState.revisionReviewToken"), "\(twin) must reload on a review write")
+        }
+        let research = try Self.source("Research/ResearchView.swift")
+        #expect(research.contains("\"research.action.reviewChanges\""))
+        #expect(research.contains("DocumentChangeReviewSheet(volumeId: entry.volumeId"))
+        #expect(research.contains("appState.revisionReviewToken"))
+        let hub = try Self.source("Settings/VolumeUpdateReviewSection.swift")
+        #expect(hub.contains("markVolumeRevisionsReviewed(volumeId:"))
+        #expect(hub.contains(".confirmationDialog("), "the volume-grain stamp must confirm first")
+        let web = try Self.source("TEI/FRUSDocumentWebView.swift")
+        #expect(web.contains("lastHighlightSignature") && !web.contains("lastHighlightIds"))
+    }
+
     @Test("Both document-view twins mount DocumentChangeBanner and neither keeps a private banner")
     func bothTwinsMountTheSharedBanner() throws {
         for twin in ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"] {

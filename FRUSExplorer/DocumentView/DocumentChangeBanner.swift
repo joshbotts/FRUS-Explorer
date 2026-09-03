@@ -37,12 +37,15 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — R-5 P2: lifted from the twins' `staleHighlightBanner`; revision-aware
+///   1.1 — R-5 P3: optional `onReview` control
 struct DocumentChangeBanner: View {
 
     /// This document's row in `document_revisions`, if the caller loaded one.
     let revision: IndexingPipeline.DocumentRevision?
     /// Whether any stored highlight's `renderingVersion` differs from the document's current one.
     let highlightsStale: Bool
+    /// Opens the per-document review sheet (R-5 P3). Nil renders the banner without a control.
+    var onReview: (() -> Void)? = nil
 
     var body: some View {
         if let line = Self.line(revision: revision, highlightsStale: highlightsStale) {
@@ -52,6 +55,13 @@ struct DocumentChangeBanner: View {
                 Text(line)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let onReview {
+                    Spacer(minLength: 8)
+                    Button(String(localized: "document.changed.review", defaultValue: "Review…"), action: onReview)
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityIdentifier("document.changeBanner.review")
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)

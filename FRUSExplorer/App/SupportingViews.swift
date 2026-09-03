@@ -33,7 +33,7 @@ import UniformTypeIdentifiers
 @Observable
 final class HighlightCoordinator {
 
-    /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
+    /// WebKit selection range — `(start, end)` UTF-16 offsets into the flat text.
     /// Non-nil when the user has an active selection in `FRUSDocumentWebView`.
     /// Cleared after a highlight is created or the selection is collapsed.
     var webKitSelectionRange: (Int, Int)? = nil

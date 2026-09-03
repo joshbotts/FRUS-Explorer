@@ -632,7 +632,7 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     // MARK: - Excerpt Anchors (Authoring Phase 5)
 
-    /// Unicode-scalar start offset of the excerpted passage within the source document's
+    /// UTF-16 start offset of the excerpted passage within the source document's
     /// flat text (the `DocumentHighlight.startOffset` coordinate space), copied from the
     /// source highlight/selection when the excerpt was created. `nil` when the creation
     /// path had no offsets (e.g. a footnote selection reported text only).
@@ -644,7 +644,7 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
         didSet { lastModified = .now }
     }
 
-    /// Unicode-scalar end offset (exclusive) of the excerpted passage — see
+    /// UTF-16 end offset (exclusive) of the excerpted passage — see
     /// `excerptStart` for the coordinate space and the A9 rationale. `nil` when the
     /// creation path had no offsets.
     var excerptEnd: Int? {
@@ -653,7 +653,7 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
 
     /// The source document's `renderingVersion` at excerpt creation (the
     /// `DocumentHighlight.renderingVersion` scheme: a 16-char SHA-256 prefix over the
-    /// raw XML + converter version). A future precision-rendering flip (A9) compares it
+    /// render model's flat text + converter version). A future precision-rendering flip (A9) compares it
     /// against the current document version to decide whether the offsets still align;
     /// today it is stored, never read at render time. `nil` when unavailable at creation.
     var excerptRenderingVersion: String? {
