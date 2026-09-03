@@ -178,6 +178,32 @@ struct VolumeUpdateReviewTests {
         #expect(web.contains("lastHighlightSignature") && !web.contains("lastHighlightIds"))
     }
 
+    /// P3b-1's wiring, as a scan: the Erase-only clear, the vanished-row routing, the two FTS pushes
+    /// through the selection, and the export sheet's revision lookup.
+    @Test("P3b-1 wiring: Erase-only clear, vanished rows route to the sheet, both pushes select, export consults revisions")
+    func p3b1Wiring() throws {
+        // The Erase-only clear: inside performReset's body, on a live line, AFTER resetLocalData.
+        let settings = try Self.source("Settings/SettingsView.swift")
+        let bodyStart = try #require(settings.range(of: "private func performReset()")).upperBound
+        let bodyEnd = settings.range(of: "\n    }\n", range: bodyStart..<settings.endIndex)?.upperBound ?? settings.endIndex
+        let liveLines = settings[bodyStart..<bodyEnd].split(separator: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+        let resetLine = try #require(liveLines.firstIndex { $0.contains("ResetService.resetLocalData(") })
+        let clearLine = try #require(liveLines.firstIndex { $0.contains("clearDocumentRevisions()") })
+        #expect(clearLine > resetLine, "the clear must follow the index wipe")
+        let reset = try Self.source("Settings/ResetService.swift")
+        #expect(!reset.contains("clearDocumentRevisions"), "Reset This Device must keep the baselines")
+        let research = try Self.source("Research/ResearchView.swift")
+        #expect(research.contains("case .reviewSheet:\n            reviewEntry = entry\n            return"))
+        #expect(research.contains("vanishedDocumentKeys()"))
+        let app = try Self.source("App/FRUSExplorerApp.swift")
+        #expect(app.components(separatedBy: "GeneratedSummary.newestNonDraftPerDocument(").count - 1 == 2)
+        #expect(app.components(separatedBy: "GeneratedSummary.draftOnlyDocuments(").count - 1 == 2)
+        #expect(app.contains("_ = appState.indexedVolumeIds.remove(volumeId)\n                        // R-5 P3b-1"), "removal must signal the readers")
+        let export = try Self.source("Collections/CollectionExportSheet.swift")
+        #expect(export.contains("ExcerptVerifier.upgradingVanished(outcomes, changeKinds: changeKinds)"))
+    }
+
     @Test("Both document-view twins mount DocumentChangeBanner and neither keeps a private banner")
     func bothTwinsMountTheSharedBanner() throws {
         for twin in ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"] {

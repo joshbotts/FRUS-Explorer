@@ -542,8 +542,21 @@ struct ExportSheetView: View {
             return
         }
         let bodies = (try? await pipeline.documentBodyTextsByKey(forKeys: Array(keys))) ?? [:]
+        let outcomes = ExcerptVerifier.verify(requests, bodyTexts: bodies)
+        // R-5 P3b-1 (design Q-7 g): the verifier reads a vanished document and a freed volume
+        // alike — no body text — and used to tell the reader "their volumes are not downloaded"
+        // about a document an update removed. The revision table knows the difference; the rule
+        // that applies it is `ExcerptVerifier.upgradingVanished`, tested on its own.
+        var changeKinds: [String: String] = [:]
+        for request in outcomes.filter({ $0.value == .documentNotIndexed }).keys {
+            let key = "\(request.volumeId)/\(request.documentId)"
+            guard changeKinds[key] == nil else { continue }
+            let row = try? await pipeline.documentRevision(volumeId: request.volumeId,
+                                                          documentId: request.documentId)
+            changeKinds[key] = row?.changeKind ?? ""
+        }
         verification = ExcerptVerificationReport(
-            outcomes: ExcerptVerifier.verify(requests, bodyTexts: bodies))
+            outcomes: ExcerptVerifier.upgradingVanished(outcomes, changeKinds: changeKinds))
 
         #if DEBUG
         print("[CollectionExportSheet] Verified \(requests.count) excerpt(s): "

@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - DocumentRevisionsTests
@@ -56,6 +57,40 @@ struct DocumentRevisionsTests {
                                             volumesDirectory: volumesDir, concurrencyLimit: 2)
         }
         deinit { try? FileManager.default.removeItem(at: dir) }
+
+        /// A raw read of one `document_cache` column, for pinning what the pipeline wrote.
+        func cacheColumn(_ column: String, _ volumeId: String, _ documentId: String) -> String? {
+            var db: OpaquePointer?
+            guard sqlite3_open(dir.appendingPathComponent("test.sqlite").path, &db) == SQLITE_OK else { return nil }
+            defer { sqlite3_close(db) }
+            var stmt: OpaquePointer?
+            let sql = "SELECT \(column) FROM document_cache WHERE volume_id = ? AND document_id = ?"
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return nil }
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            sqlite3_bind_text(stmt, 2, documentId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) else { return nil }
+            return String(cString: c)
+        }
+
+        /// Runs one raw statement against the database — to plant a fixture the pipeline would never
+        /// write. Returns SQLite's result code, so a test can assert the plant itself took (the
+        /// first version swallowed a NOT NULL violation and then "failed" on the read).
+        @discardableResult
+        func raw(_ sql: String) -> Int32 {
+            var db: OpaquePointer?
+            guard sqlite3_open(dir.appendingPathComponent("test.sqlite").path, &db) == SQLITE_OK else { return -1 }
+            defer { sqlite3_close(db) }
+            return sqlite3_exec(db, sql, nil, nil, nil)
+        }
+
+        /// A second pipeline on the same database — what a relaunch does, `setupDatabase` included.
+        func reopen() throws -> IndexingPipeline {
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let store = try FTS5Store(databaseURL: dbURL)
+            return try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                        volumesDirectory: volumesDir, concurrencyLimit: 2)
+        }
 
         func write(_ volumeId: String, _ docs: [Doc]) throws {
             let divs = docs.map { d in
@@ -431,5 +466,141 @@ struct DocumentRevisionsTests {
         edited[2].body = "The conference adjourned without result, thrice."
         try h.write(vol, edited)
         #expect(try await h.index(vol)["d3"]?.changeKind == "body")
+    }
+
+    // MARK: - P3b-1: removed volumes, the erase clear, the vanished source row
+
+    /// Design Q-9 (c): a removed volume's rows leave the unreviewed read but are KEPT, and return
+    /// intact — pending review included — when the volume is indexed again; a document dropped
+    /// while the volume was gone reads as vanished on return.
+    @Test("A removed volume's rows hide from the unreviewed read and return intact on re-index")
+    func removedVolumeRowsHideAndReturn() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        _ = try await h.index(vol)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId) == ["d2"])
+
+        try await h.pipeline.removeVolume(vol)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty)
+        #expect(try await h.pipeline.documentRevisions(forVolumeId: vol).count == 3, "the rows are kept")
+
+        _ = try await h.index(vol)     // identical re-index: the pending review is back
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId) == ["d2"])
+
+        try await h.pipeline.removeVolume(vol)
+        edited.remove(at: 2)           // d3 disappears while the volume is off the device
+        try h.write(vol, edited)
+        let back = try await h.index(vol)
+        #expect(back["d3"]?.changeKind == "vanished")
+        #expect(Set(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId)) == ["d2", "d3"])
+    }
+
+    /// Design Q-9 (d): the clear is for Erase Everything alone; the rebuild wipe must leave the
+    /// table, because `indexAllVolumes` then rebaselines to keep stamps and dispositions.
+    @Test("clearDocumentRevisions empties the table; removeAllVolumesFromIndex leaves it intact")
+    func clearIsNotTheRebuildWipe() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        _ = try await h.index(vol)
+        try await h.pipeline.removeAllVolumesFromIndex()
+        let kept = try await h.pipeline.documentRevisions(forVolumeId: vol)
+        #expect(kept.count == 3)
+        #expect(kept.first { $0.documentId == "d2" }?.changeKind == "body")
+        try await h.pipeline.clearDocumentRevisions()
+        #expect(try await h.pipeline.documentRevisions(forVolumeId: vol).isEmpty)
+    }
+
+    /// Design Q-11 (f): the vanished document's source row goes with its cache row, so an
+    /// archive-visit plan stops deriving a target from a document that no longer exists.
+    @Test("A vanished document's document_sources row is deleted with its cache row")
+    func vanishedDocumentLosesItsSourceRow() async throws {
+        let h = try Harness()
+        try h.write(vol, base)     // d1 carries a source note
+        _ = try await h.index(vol)
+        #expect(!(try await h.pipeline.documentSourcesByKey([(volumeId: vol, documentId: "d1")])).isEmpty)
+        try h.write(vol, Array(base.dropFirst()))
+        let after = try await h.index(vol)
+        #expect(after["d1"]?.changeKind == "vanished")
+        #expect((try await h.pipeline.documentSourcesByKey([(volumeId: vol, documentId: "d1")])).isEmpty)
+    }
+
+    // MARK: - P3b-1 review fixes
+
+    /// The EXISTS must be CORRELATED: with two volumes indexed, removing one must hide only its
+    /// rows — an uncorrelated EXISTS survived the single-volume test because the cache was either
+    /// wholly empty or wholly present.
+    @Test("Removing one of two volumes hides only its rows, and re-indexing it brings them back")
+    func removalIsPerVolume() async throws {
+        let h = try Harness()
+        let vol2 = "frus1958-60v02"
+        try h.write(vol, base); try h.write(vol2, base)
+        _ = try await h.index(vol); _ = try await h.index(vol2)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited); try h.write(vol2, edited)
+        _ = try await h.index(vol); _ = try await h.index(vol2)
+        #expect(Set(try await h.pipeline.unreviewedDocumentRevisions().map(\.volumeId)) == [vol, vol2])
+        try await h.pipeline.removeVolume(vol)
+        #expect(Set(try await h.pipeline.unreviewedDocumentRevisions().map(\.volumeId)) == [vol2])
+        _ = try await h.index(vol)
+        #expect(Set(try await h.pipeline.unreviewedDocumentRevisions().map(\.volumeId)) == [vol, vol2])
+    }
+
+    /// Design Q-11 (h): vanished-ness outlives review. The keys survive a Mark Reviewed and
+    /// follow the same volume-grain rule as the unreviewed read.
+    @Test("vanishedDocumentKeys survives a review stamp and hides with its volume")
+    func vanishedKeysOutliveReview() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        try h.write(vol, Array(base.dropLast()))
+        _ = try await h.index(vol)
+        #expect(try await h.pipeline.vanishedDocumentKeys() == ["\(vol)/d3"])
+        #expect(try await h.pipeline.markDocumentRevisionReviewed(volumeId: vol, documentId: "d3") == true)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty)
+        #expect(try await h.pipeline.vanishedDocumentKeys() == ["\(vol)/d3"], "reviewed, but still gone")
+        try await h.pipeline.removeVolume(vol)
+        #expect(try await h.pipeline.vanishedDocumentKeys().isEmpty)
+        _ = try await h.index(vol)
+        #expect(try await h.pipeline.vanishedDocumentKeys() == ["\(vol)/d3"])
+    }
+
+    /// Design Q-8 (g): the column can be emptied, and a NULL column stays NULL.
+    @Test("clearSummaryText empties summary_text; updateSummaryText refills it")
+    func clearSummaryText() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        try await h.pipeline.updateSummaryText(volumeId: vol, documentId: "d1", responseText: "draft words")
+        #expect(h.cacheColumn("summary_text", vol, "d1") == "draft words")
+        try await h.pipeline.clearSummaryText(volumeId: vol, documentId: "d1")
+        #expect(h.cacheColumn("summary_text", vol, "d1") == nil)
+        try await h.pipeline.clearSummaryText(volumeId: vol, documentId: "d1")   // idempotent
+        #expect(h.cacheColumn("summary_text", vol, "d1") == nil)
+        try await h.pipeline.updateSummaryText(volumeId: vol, documentId: "d1", responseText: "fresh")
+        #expect(h.cacheColumn("summary_text", vol, "d1") == "fresh")
+    }
+
+    /// Design Q-11 (f), for indexes built before the vanished-row delete reached this table: a
+    /// source row with no cache row is swept on the next open, and a legitimate row is not.
+    @Test("A ghost document_sources row is swept when the database is reopened")
+    func ghostSourceRowSweptOnOpen() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        let rc = h.raw("INSERT INTO document_sources (volume_id, document_id, citation_era, raw_text) VALUES ('\(vol)', 'ghost', 'unrecognized', 'Ghost source note.')")
+        #expect(rc == SQLITE_OK, "the plant must take")
+        #expect(!(try await h.pipeline.documentSourcesByKey([(volumeId: vol, documentId: "ghost")])).isEmpty, "planted")
+        let reopened = try h.reopen()
+        #expect((try await reopened.documentSourcesByKey([(volumeId: vol, documentId: "ghost")])).isEmpty, "swept")
+        #expect(!(try await reopened.documentSourcesByKey([(volumeId: vol, documentId: "d1")])).isEmpty, "the real row stays")
     }
 }

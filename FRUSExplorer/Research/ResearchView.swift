@@ -75,6 +75,9 @@ struct ResearchDocumentEntry: Identifiable {
     var isInVisitPlan: Bool = false
     /// The unreviewed change a re-index recorded, if any (R-5 P2).
     var revision: IndexingPipeline.DocumentRevision? = nil
+    /// Whether an update removed this document from its volume — reviewed or not (R-5 P3b-1).
+    /// Independent of `revision`, which is nil once the change is reviewed.
+    var isVanished: Bool = false
     /// Union of tags from all notes and direct `DocumentTagAssignment` records.
     let allTagIds: Set<UUID>
     /// IDs of `Collection` records this document belongs to.
@@ -157,6 +160,8 @@ struct ResearchView: View {
     @State private var unreviewedRevisions: [String: IndexingPipeline.DocumentRevision] = [:]
     /// The row whose change set is open in the review sheet (R-5 P3).
     @State private var reviewEntry: ResearchDocumentEntry?
+    /// Every `"volumeId/documentId"` an update removed, reviewed or not (R-5 P3b-1).
+    @State private var vanishedKeys: Set<String> = []
 
     /// Projects — used to surface the active project's Project Home entry (#377 Phase 1 iOS follow-up).
     @Query(sort: \Project.name) private var allProjects: [Project]
@@ -795,6 +800,12 @@ struct ResearchView: View {
                     .font(.caption)
                     .foregroundStyle(revision.changeKind == "vanished" ? Color.red : Color.orange)
                     .lineLimit(2)
+            } else if entry.isVanished {
+                // Reviewed, but still gone: the fact outlives the review (R-5 P3b-1).
+                Label(ResearchDocumentAggregation.vanishedLine, systemImage: "arrow.triangle.2.circlepath")
+                    .font(.caption)
+                    .foregroundStyle(Color.red)
+                    .lineLimit(2)
             }
             if entry.summaryCount > 0 || entry.isInVisitPlan {
                 HStack(spacing: 8) {
@@ -972,7 +983,7 @@ struct ResearchView: View {
         // R-5 P3: the per-document review of what an update changed. Offered on any row with an
         // unreviewed change, whichever sidebar filter is showing — and it is the ONLY route for a
         // vanished document, which no document view can open.
-        if entry.revision != nil {
+        if entry.revision != nil || entry.isVanished {
             Button {
                 reviewEntry = entry
             } label: {
@@ -1011,6 +1022,17 @@ struct ResearchView: View {
     /// Opens the document in this Research window's provenance host (macOS) or
     /// navigates to Browse (iOS).
     private func openDocument(_ entry: ResearchDocumentEntry) {
+        // R-5 P3b-1 (design Q-11 h): a document an update removed cannot load — both twins land on
+        // "Failed to Load" — so its row opens the review sheet, the only surface that can say what
+        // happened to it and let the reader act. Keyed on the vanished FACT, not on the unreviewed
+        // row: review state does not bring the document back.
+        switch ResearchDocumentAggregation.rowDestination(revision: entry.revision, isVanished: entry.isVanished) {
+        case .reviewSheet:
+            reviewEntry = entry
+            return
+        case .document:
+            break
+        }
         let header = documentHeaders[entry.id] ?? entry.documentId
         let browsEntry = DocumentBrowserEntry(
             documentId: entry.documentId,
@@ -1133,11 +1155,7 @@ struct ResearchView: View {
     /// Doc key → highlights array (newest-first), built from `allHighlights`.
     /// R-5 P2: summary counts by document key.
     private var summarizedDocs: [String: Int] {
-        var result: [String: Int] = [:]
-        for summary in allSummaries where !summary.volumeId.isEmpty && !summary.documentId.isEmpty {
-            result["\(summary.volumeId)/\(summary.documentId)", default: 0] += 1
-        }
-        return result
+        ResearchDocumentAggregation.summaryCounts(allSummaries)
     }
 
     /// R-5 P2: documents named by any archive-visit plan. `documentKey` is already the composite.
@@ -1182,6 +1200,7 @@ struct ResearchView: View {
         let rows = (try? await pipeline.unreviewedDocumentRevisions()) ?? []
         unreviewedRevisions = Dictionary(rows.map { ("\($0.volumeId)/\($0.documentId)", $0) },
                                          uniquingKeysWith: { first, _ in first })
+        vanishedKeys = Set((try? await pipeline.vanishedDocumentKeys()) ?? [])
     }
 
     private func documents(for item: ResearchSidebarItem) -> [ResearchDocumentEntry] {
@@ -1249,6 +1268,7 @@ struct ResearchView: View {
                 summaryCount: summarizedDocs[key] ?? 0,
                 isInVisitPlan: visitPlanDocs.contains(key),
                 revision: unreviewedRevisions[key],
+                isVanished: vanishedKeys.contains(key),
                 allTagIds: noteTagIds.union(directTagIds),
                 collectionIds: colIds,
                 highlights: docHighlights
@@ -1333,9 +1353,47 @@ enum ResearchDocumentAggregation {
             }
         }
         for h in highlights where !h.volumeId.isEmpty && !h.documentId.isEmpty { keys.insert("\(h.volumeId)/\(h.documentId)") }
-        for g in summaries where !g.volumeId.isEmpty && !g.documentId.isEmpty { keys.insert("\(g.volumeId)/\(g.documentId)") }
+        // Headnote DRAFTS are excluded (R-5 P3b-1, design Q-8): they are collection-private, the only
+        // user-authored summaries, and excluded from every carousel — a row reading "1 summaries"
+        // for one would name research the document view never lists. The draft's owning entry
+        // already puts the document in this set through the collections loop.
+        for g in summaries where !g.isHeadnoteDraft && !g.volumeId.isEmpty && !g.documentId.isEmpty {
+            keys.insert("\(g.volumeId)/\(g.documentId)")
+        }
         for v in visitDocuments where !v.documentKey.isEmpty { keys.insert(v.documentKey) }
         return keys
+    }
+
+    /// Per-document count of the summaries a Research row may name — drafts excluded, for the
+    /// reason `annotatedKeys` gives.
+    static func summaryCounts(_ summaries: [GeneratedSummary]) -> [String: Int] {
+        var result: [String: Int] = [:]
+        for summary in summaries where !summary.isHeadnoteDraft
+            && !summary.volumeId.isEmpty && !summary.documentId.isEmpty {
+            result["\(summary.volumeId)/\(summary.documentId)", default: 0] += 1
+        }
+        return result
+    }
+
+    /// Where a tap on a row goes (R-5 P3b-1, design Q-11 h).
+    enum RowDestination: Equatable {
+        /// The review sheet — the only surface that can open on a document that no longer exists.
+        case reviewSheet
+        /// The document itself.
+        case document
+    }
+
+    /// A vanished document routes to the sheet whether or not its change has been reviewed;
+    /// `revision` alone is not enough, because it is nil once the reader has marked it reviewed.
+    static func rowDestination(revision: IndexingPipeline.DocumentRevision?, isVanished: Bool) -> RowDestination {
+        if isVanished || revision?.changeKind == "vanished" { return .reviewSheet }
+        return .document
+    }
+
+    /// The one sentence for a document an update removed, shared by the unreviewed line and the
+    /// reviewed-but-still-gone line.
+    static var vanishedLine: String {
+        String(localized: "research.row.changed.vanished", defaultValue: "No longer in the volume after an update")
     }
 
     /// The row's sentence for a recorded change, or `nil` for a kind the app does not know.
@@ -1351,8 +1409,7 @@ enum ResearchDocumentAggregation {
             return String(localized: "research.row.changed.apparatus",
                           defaultValue: "Footnotes, source note, or heading changed in an update — the text did not")
         case "vanished":
-            return String(localized: "research.row.changed.vanished",
-                          defaultValue: "No longer in the volume after an update")
+            return vanishedLine
         default:
             return nil
         }

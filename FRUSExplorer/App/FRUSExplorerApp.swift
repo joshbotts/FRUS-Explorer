@@ -2301,12 +2301,20 @@ struct FRUSExplorerApp: App {
             Task {
                 let context = ModelContext(container)
 
-                let summaries = (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
+                // R-5 P3b-1 (design Q-8 g): one text per document goes into `summary_text`, so push
+                // the newest non-draft summary rather than every row in fetch order.
+                let allSummaries = (try? context.fetch(FetchDescriptor<GeneratedSummary>())) ?? []
+                let summaries = GeneratedSummary.newestNonDraftPerDocument(allSummaries)
                 for summary in summaries {
                     let vid = summary.volumeId
                     let did = summary.documentId
                     let text = summary.responseText
                     try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
+                }
+                // A document whose only summaries are drafts had its draft text pushed by the old
+                // loop; skipping it would freeze that text in the column. Clear it.
+                for doc in GeneratedSummary.draftOnlyDocuments(allSummaries) {
+                    try? await pipeline.clearSummaryText(volumeId: doc.volumeId, documentId: doc.documentId)
                 }
 
                 let notes = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
@@ -2383,11 +2391,16 @@ struct FRUSExplorerApp: App {
                     let summaryDescriptor = FetchDescriptor<GeneratedSummary>(
                         predicate: #Predicate { $0.volumeId == vid }
                     )
-                    let summaries = (try? context.fetch(summaryDescriptor)) ?? []
+                    // R-5 P3b-1 (design Q-8 g): the newest non-draft summary per document, not every row.
+                    let volumeSummaries = (try? context.fetch(summaryDescriptor)) ?? []
+                    let summaries = GeneratedSummary.newestNonDraftPerDocument(volumeSummaries)
                     for summary in summaries {
                         let did = summary.documentId
                         let text = summary.responseText
                         try? await pipeline.updateSummaryText(volumeId: vid, documentId: did, responseText: text)
+                    }
+                    for doc in GeneratedSummary.draftOnlyDocuments(volumeSummaries) {
+                        try? await pipeline.clearSummaryText(volumeId: doc.volumeId, documentId: doc.documentId)
                     }
 
                     let noteDescriptor = FetchDescriptor<ResearchNote>(
@@ -2422,6 +2435,9 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.removeVolume(volumeId)
                     await MainActor.run {
                         _ = appState.indexedVolumeIds.remove(volumeId)
+                        // R-5 P3b-1: the unreviewed read now excludes volumes with no cache rows,
+                        // so a removal changes its answer — tell the three readers.
+                        appState.revisionReviewToken += 1
                         #if os(iOS)
                         // Both inputs to the Browse-tab badge just changed: the volume left
                         // the indexed set AND left the disk.

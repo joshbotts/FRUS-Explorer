@@ -1807,6 +1807,19 @@ public actor IndexingPipeline {
         )
     }
 
+    /// Clears the one-per-document `summary_text` column (R-5 P3b-1, design Q-8 g).
+    ///
+    /// The push loops used to write every summary, drafts included; the selection that now skips
+    /// a document whose only summaries are drafts would otherwise leave the draft's words in the
+    /// search column forever. `updateCacheColumns` binds `nil` as SQL NULL and is value-guarded,
+    /// so a column already NULL costs a zero-row UPDATE.
+    func clearSummaryText(volumeId: String, documentId: String) async throws {
+        try updateCacheColumns(
+            volumeId: volumeId, documentId: documentId, label: "clearSummaryText",
+            assignments: [("summary_text", nil)]
+        )
+    }
+
     /// Updates research note content and user tag IDs for a document in `document_cache`.
     ///
     /// The `user_content` FTS5 sync trigger re-indexes the note text; `user_tag_ids`
@@ -5839,6 +5852,20 @@ public actor IndexingPipeline {
         // Cheap and idempotent: the rows are gone after the first run, and none are written now.
         try exec("DELETE FROM document_sources WHERE citation_era = 'footnote'")
 
+        // R-5 P3b-1 (design Q-11 f): a source row with no cache row is a ghost — the document
+        // vanished in an update indexed before the vanished-row delete reached this table, and a
+        // live archive-visit plan kept deriving a target from it. Every legitimate source row has a
+        // cache row (both come from the same parse; `auxDeleteVolume` removes both), so the
+        // anti-join is exact, idempotent, and a cleanup rather than a parse change — no
+        // index-version bump, because a bump would re-index 552 volumes to delete rows a
+        // millisecond statement removes.
+        try exec("""
+            DELETE FROM document_sources
+             WHERE NOT EXISTS (SELECT 1 FROM document_cache dc
+                                WHERE dc.volume_id = document_sources.volume_id
+                                  AND dc.document_id = document_sources.document_id)
+            """)
+
         // #784: where the editorial *footnotes* point, in their own table.
         //
         // This is the table #783's removal note promised, and its shape is the reason that
@@ -6386,6 +6413,42 @@ public actor IndexingPipeline {
         return Int(sqlite3_changes(auxDb))
     }
 
+    /// Every document an update removed from a volume that is on this device — reviewed or not
+    /// (R-5 P3b-1, design Q-11 h).
+    ///
+    /// Vanished-ness is a fact about the volume; review state is not. The Research row's routing
+    /// used to key on the UNREVIEWED set, so the moment a reader (or the hub's per-volume stamp)
+    /// marked a vanished row reviewed, its only route to the sheet was lost and a tap landed on
+    /// "Failed to Load". Same volume-grain guard as `unreviewedDocumentRevisions()`.
+    /// Returns `"volumeId/documentId"` keys, sorted.
+    public func vanishedDocumentKeys() throws -> [String] {
+        let stmt = try auxPrepare("""
+            SELECT volume_id, document_id
+              FROM document_revisions
+             WHERE change_kind = 'vanished'
+               AND EXISTS (SELECT 1 FROM document_cache dc WHERE dc.volume_id = document_revisions.volume_id)
+             ORDER BY volume_id, document_id
+            """)
+        defer { sqlite3_finalize(stmt) }
+        var out: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append("\(auxColumnString(stmt, 0) ?? "")/\(auxColumnString(stmt, 1) ?? "")")
+        }
+        return out
+    }
+
+    /// Forgets every change record — for **Erase Everything only** (R-5 P3b-1, design Q-9 rider).
+    ///
+    /// Deliberately NOT part of `removeAllVolumesFromIndex`: that call is also the Rebuild Index
+    /// wipe, after which `indexAllVolumes` rebaselines precisely to keep stamps and dispositions.
+    /// And deliberately not in `ResetService.resetLocalData`, which "Reset This Device" also calls
+    /// while promising the reader their annotations return — a clear there would lose every
+    /// baseline while every annotation survived. Erase Everything erases the annotations too, so a
+    /// change record with nothing to describe is the one case where forgetting is honest.
+    public func clearDocumentRevisions() throws {
+        try auxExec("DELETE FROM document_revisions")
+    }
+
     /// ISO-8601 UTC, to the second — what `changed_at` and `reviewed_at` carry.
     nonisolated static func isoNow(_ date: Date = Date()) -> String {
         let f = ISO8601DateFormatter()
@@ -6433,11 +6496,20 @@ public actor IndexingPipeline {
     /// stamped by a re-index and `reviewed_at` still NULL. Ordered newest change first so a
     /// summary can say which update this was. A first index stamps nothing, so a fresh library
     /// returns nothing — the only honest answer before any correction has landed.
+    ///
+    /// **Only volumes on this device (R-5 P3b-1, design Q-9 decision c).** A removed volume's rows
+    /// are kept — they are the only record of what changed while it was gone for the five
+    /// annotation types that carry no version of their own — but they must not count while the
+    /// volume is absent. The predicate is at VOLUME grain, the same fact `isVolumeIndexed` and
+    /// `AppState.indexedVolumeIds` read, never at document grain: a `'vanished'` document has no
+    /// `document_cache` row by design, and a document-grain join would drop the design's worst
+    /// case from the list. On re-download the rows return intact, pending reviews included.
     public func unreviewedDocumentRevisions() throws -> [DocumentRevision] {
         let stmt = try auxPrepare("""
             SELECT volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at
               FROM document_revisions
              WHERE changed_at IS NOT NULL AND reviewed_at IS NULL
+               AND EXISTS (SELECT 1 FROM document_cache dc WHERE dc.volume_id = document_revisions.volume_id)
              ORDER BY changed_at DESC, volume_id, rowid
             """)
         defer { sqlite3_finalize(stmt) }
@@ -6499,6 +6571,19 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(delete) }
         sqlite3_bind_text(delete, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         try auxStep(delete)
+
+        // R-5 P3b-1 (design Q-11 f): the source row goes with the cache row. `document_sources`
+        // is INSERT OR REPLACE per surviving document and had no per-volume clear, so a vanished
+        // document's row survived — and a live archive-visit plan kept deriving a target from a
+        // document that no longer existed.
+        let deleteSources = try auxPrepare("""
+            DELETE FROM document_sources
+            WHERE volume_id = ?
+              AND document_id NOT IN (SELECT d FROM surviving_doc_ids)
+            """)
+        defer { sqlite3_finalize(deleteSources) }
+        sqlite3_bind_text(deleteSources, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(deleteSources)
     }
 
     private func auxInsertPersonMentions(_ rows: [PersonMentionRow], inExternalTransaction: Bool = false) throws {

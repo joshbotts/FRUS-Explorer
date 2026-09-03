@@ -49,6 +49,8 @@ import SwiftData
 ///          macro — it should not synthesize `Sendable` when the type already declares
 ///          it. The warning is located in the generated macro expansion file, not in
 ///          this source, and is harmless. Track for removal when Apple fixes the macro.
+///   1.4 — R-5 P3b-1: `newestNonDraftPerDocument` / `draftOnlyDocuments` — statics only; no stored
+///          property, no CloudKit change
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
@@ -234,3 +236,49 @@ extension GeneratedSummary {
     }
 }
 
+// MARK: - Index push selection (R-5 P3b-1)
+
+extension GeneratedSummary {
+    /// The one summary per document whose text belongs in the FTS5 `summary_text` column.
+    ///
+    /// The column holds ONE text per document and the two push loops — boot reconcile and
+    /// post-download — used to write every summary in fetch order, so whichever the store returned
+    /// last won: search could rank a superseded summary, or a collection-private headnote draft,
+    /// above the newest AI summary of the current text. This picks the newest non-draft per
+    /// document: `createdAt` descending (nil last — rows synced from before the field existed),
+    /// then `lastModified` descending, then `id` so the choice is total and stable.
+    static func newestNonDraftPerDocument(_ summaries: [GeneratedSummary]) -> [GeneratedSummary] {
+        var best: [String: GeneratedSummary] = [:]
+        for s in summaries where !s.isHeadnoteDraft && !s.volumeId.isEmpty && !s.documentId.isEmpty {
+            let key = "\(s.volumeId)/\(s.documentId)"
+            if let current = best[key], !Self.ranksAbove(s, current) { continue }
+            best[key] = s
+        }
+        return best.keys.sorted().compactMap { best[$0] }
+    }
+
+    /// The documents whose every summary is a headnote draft — the keys the selection above
+    /// leaves out, and therefore the ones whose `summary_text` column must be CLEARED, not left.
+    ///
+    /// Before R-5 P3b-1 the push loops wrote every row, drafts included, so an existing install
+    /// can hold a collection-private draft's words in the search column; a selection that merely
+    /// skips those documents would freeze that text there forever. Blank ids are skipped.
+    static func draftOnlyDocuments(_ summaries: [GeneratedSummary]) -> [(volumeId: String, documentId: String)] {
+        var hasLive = Set<String>(), seen: [String: (String, String)] = [:]
+        for s in summaries where !s.volumeId.isEmpty && !s.documentId.isEmpty {
+            let key = "\(s.volumeId)/\(s.documentId)"
+            seen[key] = (s.volumeId, s.documentId)
+            if !s.isHeadnoteDraft { hasLive.insert(key) }
+        }
+        return seen.keys.sorted().filter { !hasLive.contains($0) }.map { (seen[$0]!.0, seen[$0]!.1) }
+    }
+
+    /// Strict "a should replace b" order for the selection above.
+    private static func ranksAbove(_ a: GeneratedSummary, _ b: GeneratedSummary) -> Bool {
+        let ca = a.createdAt ?? .distantPast, cb = b.createdAt ?? .distantPast
+        if ca != cb { return ca > cb }
+        let la = a.lastModified ?? .distantPast, lb = b.lastModified ?? .distantPast
+        if la != lb { return la > lb }
+        return a.id.uuidString < b.id.uuidString
+    }
+}
