@@ -276,7 +276,7 @@ FRUS Explorer is an independent research tool. It is not an official product of 
   *The long labels are macOS; iOS uses the short ones, because three full labels cannot
   share an iPhone's segment width without truncating.*
 
-- `onboarding.scope.caption.corpus` — 552+ volumes · ≈ 3.3 GB — the entire series, fully offline.
+- `onboarding.scope.caption.corpus.v2 %lld` — %lld+ volumes · ≈ 3.3 GB — the entire series, fully offline. *(the count is the bundled manifest's — R-3)*
 - `onboarding.scope.caption.subseries` — A decade or diplomatic era — the recommended starting point.
 - `onboarding.scope.caption.volume` — One volume to explore — typically a few MB.
 - `onboarding.scope.sheet.volumeCount` — *N* volume / volumes
@@ -428,7 +428,7 @@ Post-1991 volumes reflect the statute's empowerment of FRUS historians with broa
 
 **The Digital Transition**
 
-The Office of the Historian's shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All 552 volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed.
+The Office of the Historian's shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All {{volumes}} volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed.
 
 <!-- section-id: frus-history -->
 
@@ -694,7 +694,7 @@ The dashboard's own on-screen copy — the intro paragraph, per-chart captions, 
 
 - Intro: `series.production.intro`
 - Chart titles/captions: `series.chart.lag.title` / `.caption`, `series.chart.lag.target.series`, `series.chart.peryear.title` / `.caption`, `series.chart.cumulative.title` / `.caption`; axis labels `series.chart.*.x` / `.y`; era legend `series.chart.era.legend`
-- Caveats block: `series.caveats.title` / `series.caveats.body`
+- Caveats block: `series.caveats.title` / `series.caveats.body.v2 %lld`
 - Shared "View as table" control: `series.inspector.viewTable`
 - Empty state: `series.empty.title` / `series.empty.message`
 
@@ -712,7 +712,7 @@ The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Seri
 
 - Intro: `series.geography.intro`
 - Chart titles/captions: `series.geography.trend.title` / `.caption`, `series.geography.totals.title` / `.caption`, `series.geography.countries.title` / `.caption`; axis labels `series.geography.*.x` / `.y`; region legend `series.geography.region.legend`
-- Caveats block: `series.geography.caveats.title` / `series.geography.caveats.body`
+- Caveats block: `series.geography.caveats.title` / `series.geography.caveats.body.v2 %lld %lld`
 - Shared "View as table" control: `series.inspector.viewTable`
 - Empty state: `series.geography.empty.title` / `series.geography.empty.message`
 
@@ -730,7 +730,7 @@ The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Sour
 
 - Intro: `series.provenance.intro`
 - Chart titles/captions: `series.provenance.composition.title` / `.caption`, `series.provenance.trend.title` / `.caption`, `series.provenance.density.title` / `.caption`; axis labels `series.provenance.*.x` / `.y`; category legend `series.provenance.category.legend`
-- Caveats block: `series.provenance.caveats.title` / `series.provenance.caveats.body`
+- Caveats block: `series.provenance.caveats.title` / `series.provenance.caveats.body.v2 %lld %lld`
 - Shared "View as table" control: `series.inspector.viewTable`
 - Empty state: `series.provenance.empty.title` / `series.provenance.empty.message`
 
@@ -749,7 +749,7 @@ The dashboard's own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Admi
 - Intro: `series.admin.intro`
 - Chart titles/captions: `series.admin.docs.title` / `.caption`, `series.admin.perYear.title` / `.caption`, `series.admin.volumes.header` / `series.admin.volumes.caption`; axis labels `series.admin.*.x` / `.y`; party legend `series.admin.party.legend`; per-administration detail `series.admin.detail.title` / `series.admin.detail.picker`
 - Editorial-note (range-document) toggle: `series.admin.toggle.title` / `series.admin.toggle.subtitle`
-- Caveats block: `series.admin.caveats.title` / `series.admin.caveats.body`
+- Caveats block: `series.admin.caveats.title` / `series.admin.caveats.body.v2 %lld`
 - Shared "View as table" control: `series.inspector.viewTable`
 - Empty state: `series.admin.empty.title` / `series.admin.empty.message`
 
@@ -807,11 +807,11 @@ Some categories are hidden. Each share below is a share of the categories still 
 
 #### "About these figures" methodology footnote
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 619–620 | key: series.provenance.caveats.body -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 619–620 | key: series.provenance.caveats.body.v2 %lld %lld -->
 
-These figures come from parsing each document's source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. "Other / Unclassified" means a citation the parser could not classify, not a missing source note. Coverage spans 522 of the 552 cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. Those early retrospective compilations are left out of the charts. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system, and the Central Foreign Policy File is its post-1963 successor. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors drew their documents. That is an editorial and archival signal, not a full census of the underlying archives.
+These figures come from parsing each document's source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. "Other / Unclassified" means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. Those early retrospective compilations are left out of the charts. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system, and the Central Foreign Policy File is its post-1963 successor. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors drew their documents. That is an editorial and archival signal, not a full census of the underlying archives.
 
-<!-- END SOURCE: series.provenance.caveats.body -->
+<!-- END SOURCE: series.provenance.caveats.body.v2 %lld %lld -->
 
 ---
 
@@ -875,11 +875,11 @@ Scoped to the %@ subseries. Counts and proportions come from that subseries' vol
 Note: `%@` is filled with the active subseries label at runtime — keep the placeholder verbatim.
 
 #### Any-overlap attribution footnote — "About these figures"
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.caveats | lines: 561–562 | key: series.admin.caveats.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.caveats | lines: 561–562 | key: series.admin.caveats.body.v2 %lld | shared: iOS+macOS (single edit point) -->
 
-A document counts toward an administration if its dates overlap that president's term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series' 552 volumes. It is also why one volume's proportions can total over 100% across administrations. These counts measure whose foreign policy the documents cover, not when the volumes were published. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Retrospective compilations covering years before 1861 concern no single administration and are left out. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland's two non-consecutive terms. Administrations the series has not yet published do not appear.
+A document counts toward an administration if its dates overlap that president's term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series' %lld volumes. It is also why one volume's proportions can total over 100% across administrations. These counts measure whose foreign policy the documents cover, not when the volumes were published. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Retrospective compilations covering years before 1861 concern no single administration and are left out. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland's two non-consecutive terms. Administrations the series has not yet published do not appear.
 
-<!-- END SOURCE: series.admin.caveats.body -->
+<!-- END SOURCE: series.admin.caveats.body.v2 %lld -->
 
 ---
 
@@ -914,11 +914,11 @@ The individual place tags carried by the most volumes — the concrete detail be
 <!-- END SOURCE: series.geography.countries.caption -->
 
 #### Regional-bureau mapping footnote
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 354–355 | key: series.geography.caveats.body -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 354–355 | key: series.geography.caveats.body.v2 %lld %lld -->
 
-Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." 551 of the 552 cataloged volumes carry at least one place tag. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet.
+Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into "Other." %1$lld of the %2$lld cataloged volumes carry a place tag that maps to a region. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet.
 
-<!-- END SOURCE: series.geography.caveats.body -->
+<!-- END SOURCE: series.geography.caveats.body.v2 %lld %lld -->
 Note: while a subseries scope is active, this dashboard's caveats block also shows the shared scope line `series.caveats.scope %@` (`SeriesGeographyDashboard.swift` lines 321–322). Its canonical block lives in the Production & Timeliness subsection below; the same key and defaultValue appear in both files, so edit both occurrences together.
 
 ---
@@ -953,11 +953,11 @@ How many volumes reached print in each year, colored by era. Output has never be
 
 #### Chart 3 caption — Cumulative volumes published
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var cumulativeChart (caption) | lines: 315–316 | key: series.chart.cumulative.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var cumulativeChart (caption) | lines: 315–316 | key: series.chart.cumulative.caption.v2 %lld | shared: iOS+macOS (single edit point) -->
 
-The digitized corpus has grown to the 552 volumes this app catalogs — steeply in some decades, slowly in others.
+The digitized corpus has grown to the %lld volumes this app catalogs — steeply in some decades, slowly in others.
 
-<!-- END SOURCE: series.chart.cumulative.caption -->
+<!-- END SOURCE: series.chart.cumulative.caption.v2 %lld -->
 
 #### Subseries-scope caveat — shown while a subseries scope is active (shared with Geographic Emphasis)
 
@@ -970,11 +970,11 @@ Note: `SeriesGeographyDashboard.swift` repeats the same key and defaultValue in 
 
 #### Publication-timeliness footnote ("About these figures")
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (body) | lines: 385–386 | key: series.caveats.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (body) | lines: 385–386 | key: series.caveats.body.v2 %lld | shared: iOS+macOS (single edit point) -->
 
-These figures cover only published, digitized volumes. A volume's publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero or negative. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume's publication year, so it shows exactly the target in force when that volume was published. These charts cover the 552 volumes the app currently catalogs, so the newest volumes may not appear yet.
+These figures cover only published, digitized volumes. A volume's publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero or negative. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume's publication year, so it shows exactly the target in force when that volume was published. These charts cover the %lld volumes the app currently catalogs, so the newest volumes may not appear yet.
 
-<!-- END SOURCE: series.caveats.body -->
+<!-- END SOURCE: series.caveats.body.v2 %lld -->
 
 ---
 
@@ -3837,11 +3837,11 @@ A flow is an editor's footnote, not an archive's
 
 #### A flow is an editor's footnote — detail
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 252–253 | key: archival.info.flows.detail -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 252–253 | key: archival.info.flows.detail.v2 -->
 
-About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding. Only 254 of the 552 volumes carry any of these references, because the cross-reference style they come from postdates 1945.
+About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding: the cross-reference style these come from postdates 1945, so most volumes carry none, and the chart states how many do.
 
-<!-- END SOURCE: archival.info.flows.detail -->
+<!-- END SOURCE: archival.info.flows.detail.v2 -->
 
 ---
 
@@ -5615,11 +5615,11 @@ Open Document
 <!-- END SOURCE: research.action.openDocument.v2 -->
 
 #### Colors group collections by who holds the records — four…
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 304–305 | key: series.provenance.topCollections.method.v2 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | lines: 304–305 | key: series.provenance.topCollections.method.v3 %lld %lld -->
 
-Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking.
+Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking.
 
-<!-- END SOURCE: series.provenance.topCollections.method.v2 -->
+<!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
 
 #### Digitized Scans
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1822–1823 | key: source.explorer.scans.header.v2 -->
@@ -6066,8 +6066,8 @@ Volumes filed by the administration their documents cover — dated to each term
 <!-- The two disclosures are the caption: counts describe all 552 volumes while search reaches
      only this device's index, and topics are DETECTED, not editorial — "so some are wrong" is a
      sentence the feature owes the reader and must survive editing. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 260–261 | key: subjects.index.coverage %lld -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 260–261 | key: subjects.index.coverage.v2 %lld %lld -->
 
-%lld detected topics across the whole series. Counts describe all 552 volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
+%1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
 
-<!-- END SOURCE: subjects.index.coverage %lld -->
+<!-- END SOURCE: subjects.index.coverage.v2 %lld %lld -->

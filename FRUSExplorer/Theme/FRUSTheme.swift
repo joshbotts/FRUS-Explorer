@@ -275,8 +275,13 @@ extension FeatureInfoButton where Footer == EmptyView {
                                    defaultValue: "The State Department's Central Files are cited by 157 volumes and supply more than seventeen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.flows.title", defaultValue: "A flow is an editor's footnote, not an archive's"),
-                    detail: String(localized: "archival.info.flows.detail",
-                                   defaultValue: "About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding. Only 254 of the 552 volumes carry any of these references, because the cross-reference style they come from postdates 1945.")),
+                    // R-3: the "N of M volumes" sentence is gone from here. It duplicated, with
+                    // hardcoded numbers, the LIVE line the Flows chart prints from
+                    // `ArchivalFlowsData.volumesWithEdges` / `volumesScanned` — which is exactly
+                    // the split #838 made: a `FeatureInfoItem` is a static string and cannot hold
+                    // a live value, so the why stays here and the how-many stays on the chart.
+                    detail: String(localized: "archival.info.flows.detail.v2",
+                                   defaultValue: "About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding: the cross-reference style these come from postdates 1945, so most volumes carry none, and the chart states how many do.")),
                 // #838(1): the STATIC half of the Flows caveats, moved off the page. The
                 // sentences that carry live values — the citation counts, the era span, the Ibid.
                 // and footnote shares, the coverage counts — stay on the chart as conditional

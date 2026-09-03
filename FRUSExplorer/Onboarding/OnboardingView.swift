@@ -318,7 +318,7 @@ struct OnboardingView: View {
     /// The caption swaps with the selection (hand-off 4b, dock row 2).
     private var scopeCaption: String {
         switch scopeChoice {
-        case .corpus:    return Self.captionCorpus
+        case .corpus:    return Self.captionCorpus(volumeCount: appState.manifestStore.bundledEntries.count)
         case .subseries: return Self.captionSubseries
         case .volume:    return Self.captionVolume
         }
@@ -505,8 +505,19 @@ struct OnboardingView: View {
 
     static let scopeTitle = String(localized: "onboarding.scope.title",
         defaultValue: "What would you like to download?")
-    static let captionCorpus = String(localized: "onboarding.scope.caption.corpus",
-        defaultValue: "552+ volumes · ≈ 3.3 GB — the entire series, fully offline.")
+    /// The whole-series caption, with the count read from the bundled manifest.
+    ///
+    /// R-3 (New-Volume-Release-Plan §7.1): this was the one `552` literal that stayed *true* after
+    /// a 553rd volume — the `+` made it a floor — and it is the model for the other eight. Deriving
+    /// it makes the floor exact instead of merely honest. The `+` stays because the live manifest
+    /// can list volumes the bundle does not know yet (`ManifestStore.newlyAvailable`).
+    ///
+    /// - Parameter volumeCount: `ManifestStore.bundledEntries.count`.
+    static func captionCorpus(volumeCount: Int) -> String {
+        String(format: String(localized: "onboarding.scope.caption.corpus.v2 %lld",
+                              defaultValue: "%lld+ volumes · ≈ 3.3 GB — the entire series, fully offline."),
+               Int64(volumeCount))
+    }
     static let captionSubseries = String(localized: "onboarding.scope.caption.subseries",
         defaultValue: "A decade or diplomatic era — the recommended starting point.")
     static let captionVolume = String(localized: "onboarding.scope.caption.volume",

@@ -318,10 +318,25 @@ Note the shape of the last four: they are not one number but a *ratio* measured 
 (254/552, 522/552, 551/552, 356). Each has to be **re-measured from the regenerated artifact**, not
 arithmetically bumped.
 
-**Work item W-2 (M):** replace the literals with a value read from `ManifestStore.bundledEntries.count`
-and from each artifact's own coverage block, so the next release does not repeat this. Several of
-these strings already sit next to a `%lld` interpolation, so the pattern exists. Where a figure
-genuinely cannot be derived at runtime, the "552+" idiom is the fallback.
+**Work item W-2 — SHIPPED 2026-09-02 (PR #1178).** All nine strings derive their numbers: the
+catalog count from `ManifestStore.bundledEntries.count` (or a dashboard's own `entries`), the four
+ratios from the artifacts' coverage — `SourceProvenanceData.volumesCovered`,
+`AdministrationProfilesData.volumesCovered`, `SeriesGeographyData.volumesWithAnyRegion`/`totalVolumes`,
+and two new fields on `ArchivalCollectionsData` (`volumesScanned`, `authorityVolumeReach`). The
+Research Guide's static prose carries a `{{volumes}}` token substituted at render. The FRUSTheme
+Flows item drops its numbers entirely: they duplicated, hardcoded, the live line the chart already
+prints (#838's own split).
+
+**The finding that justified the row:** the collections card said the authority "reaches 356"
+volumes and a source-scan test pinned that as *measured*. The shipped authority had named **365**
+since its 2026-08-19 re-clustering. A literal pinned by a scan goes stale with nothing to notice;
+the value now comes from the same records the rows are built from, and a test asserts it against
+an independent count over the artifact.
+
+**Honest limit:** seven of the nine strings live in SwiftUI bodies no unit test drives. A per-key
+scan (`CorpusScaleLiteralsTests`) guards the *strings* against a literal returning; it cannot see
+a literal passed as the *argument* (`Int64(552)` for `Int64(data.total)`). Measured: that mutation
+survives. The two helpers that can be driven are.
 
 ### 7.2 The coverage-era table stops at 1992
 
@@ -472,7 +487,21 @@ Steps marked **[owner]** cannot be done from this repository.
 
 ---
 
-## 11. Decisions the owner has to make
+## 11. Decisions the owner has made *(2026-09-02)*
+
+All five decided in one sitting, and they simplify the plan:
+
+| # | Decision | Consequence |
+|---|---|---|
+| **D-1** | **Leave the gap silent.** The runbook will be prioritised so the publication-to-release gap is minimal. | R-4 is struck: `newlyAvailable` stays unconsumed. Its doc comment should stop claiming a badge (§13's unfiled defect stands). |
+| **D-2** | **Rebuild the map** every release. | §4.5's relayout is a fixed step of Phase D, and the cluster-label review is budgeted, not optional. |
+| **D-3** | **Harvest guard before** the release. | Done — PR #1177 (R-2), which shipped three guards. |
+| **D-4** | **Ship without the downstream enrichment data** when the upstream drops lag. | Phase E is deferrable per release; subject tags and the person crosswalk degrade per volume. |
+| **D-5** | **Ship with each release**, not batched. Publication will not be frequent enough for batching to be reasonable. | Every fixed cost in §12 is paid per volume. The plan's minimum-viable-release path (§12) is the expected shape, not the fallback. |
+
+*The original decision table, for the record:*
+
+### 11a. Decisions as they were posed
 
 | # | Decision | Why it matters |
 |---|---|---|

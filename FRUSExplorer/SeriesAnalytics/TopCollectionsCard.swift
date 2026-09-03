@@ -301,8 +301,13 @@ struct TopCollectionsCard: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Text(String(localized: "series.provenance.topCollections.method.v2",
-                        defaultValue: "Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all 552 cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches 356 of them. The Categories filter above does not apply to this ranking."))
+            // R-3: both numbers are derived — the index's `volumesScanned` (or the catalog count
+            // when the index is absent) and the authority's distinct-volume reach. The reach was
+            // hardcoded as 356 and had been 365 since the 2026-08-19 re-clustering.
+            Text(String(format: String(localized: "series.provenance.topCollections.method.v3 %lld %lld",
+                        defaultValue: "Colors group collections by who holds the records — four custodians, not the ten categories above, which classify the citation rather than its holder. Eras here are coarser than the decades above, so a year range ending mid-era still covers the whole era. Document counts come from an index covering all %1$lld cataloged volumes with no 1900 floor, so a row here can rest on volumes the charts above leave out; the collection names come from a cross-volume authority that reaches %2$lld of them. The Categories filter above does not apply to this ranking."),
+                        Int64(data.volumesScanned ?? entries.count),
+                        Int64(data.authorityVolumeReach)))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)

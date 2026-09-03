@@ -369,13 +369,21 @@ struct ArchivalAnalyticsEntryPointTests {
 
         // The three sentences the card owes its reader.
         #expect(card.contains("four custodians, not the ten categories above"))
-        // The measured claim, not the one the first draft made: the AUTHORITY names 356 volumes
-        // and none before 1900; it is the document index that covers all 552 with no floor.
-        #expect(card.contains("covering all 552 cataloged volumes with no 1900 floor"))
-        #expect(card.contains("reaches 356 of them"))
+        // R-3: both numbers are DERIVED now, never literals. This pin used to assert
+        // "reaches 356 of them" as the measured value — and the shipped authority had named
+        // 365 since its 2026-08-19 re-clustering. A literal pinned by a source scan is a number
+        // that can go stale without either the code or the test noticing; the value test
+        // `authorityReachIsDerivedFromTheShippedRecords` below is what actually measures it.
+        #expect(card.contains("covering all %1$lld cataloged volumes with no 1900 floor"))
+        #expect(card.contains("reaches %2$lld of them"))
+        #expect(card.contains("data.authorityVolumeReach"), "the reach must come from the data")
+        #expect(card.contains("data.volumesScanned ?? entries.count"),
+                "the catalog count must come from the index, falling back to the entries")
+        #expect(!card.contains("552 cataloged") && !card.contains("reaches 356"),
+                "a corpus-scale literal is back in the card's copy")
         #expect(!card.contains("archival authority, which spans all 552"), """
-            The authority does not span 552 volumes — measured, it names 356, none of them \
-            pre-1900. Stating otherwise is a claim the shipped artifacts contradict.
+            The authority does not span the whole catalog — it names a subset, none pre-1900. \
+            Stating otherwise is a claim the shipped artifacts contradict.
             """)
         #expect(card.contains("Eras here are coarser than the decades above"))
         // The umbrella is withheld, so its size must be stated — there is no chip on this page.
@@ -392,5 +400,31 @@ struct ArchivalAnalyticsEntryPointTests {
             The documents table is keyed by the usage index, which can name an id the authority \
             does not carry — such a row must not render as a control that does nothing.
             """)
+    }
+
+    /// **The number the card prints is the number the shipped records contain.**
+    ///
+    /// `ArchivalCollectionsData.make` derives `authorityVolumeReach` from the same authority
+    /// records the rows are built from, so it cannot drift from them. This asserts it against an
+    /// independent count over the shipped artifact — and asserts it is NOT the 356 the card
+    /// hardcoded, which had been stale since the authority's 2026-08-19 re-clustering.
+    @Test("The authority's volume reach is derived from the shipped records, not a literal")
+    func authorityReachIsDerivedFromTheShippedRecords() throws {
+        let store = try #require(CollectionAuthorityStore.shared, "the bundled authority must load")
+        let independent = Set(store.collections.flatMap(\.volumeIds)).count
+        #expect(independent > 300, "the shipped authority names hundreds of volumes")
+        let data = ArchivalCollectionsData.make(
+            authority: store.collections,
+            usage: CollectionUsageIndexStore.shared,
+            coverage: ArchivalVolumeCoverage.map(from: [], limitedTo: nil))
+        #expect(data.authorityVolumeReach == independent)
+        #expect(data.authorityVolumeReach != 356,
+                "356 was the literal the card shipped; if the artifact really names 356 again, re-measure and update this message rather than deleting the assertion")
+        // Required, not optional, whenever the usage index loaded: a `make()` that stopped
+        // passing the coverage through would otherwise skip this branch and pass.
+        if let usage = CollectionUsageIndexStore.shared {
+            #expect(data.volumesScanned == usage.coverage.volumesScanned,
+                    "volumesScanned must be the usage index's own coverage figure")
+        }
     }
 }
