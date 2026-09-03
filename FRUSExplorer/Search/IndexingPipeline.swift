@@ -6312,6 +6312,7 @@ public actor IndexingPipeline {
 
     /// One document's revision row as stored (R-5 P1).
     public struct DocumentRevision: Sendable, Equatable {
+        public let volumeId: String
         public let documentId: String
         public let contentHash: String
         public let bodyHash: String
@@ -6332,6 +6333,7 @@ public actor IndexingPipeline {
         var out: [DocumentRevision] = []
         while sqlite3_step(stmt) == SQLITE_ROW {
             out.append(DocumentRevision(
+                volumeId: volumeId,
                 documentId: auxColumnString(stmt, 0) ?? "",
                 contentHash: auxColumnString(stmt, 1) ?? "",
                 bodyHash: auxColumnString(stmt, 2) ?? "",
@@ -6340,6 +6342,55 @@ public actor IndexingPipeline {
                 reviewedAt: auxColumnString(stmt, 5)))
         }
         return out
+    }
+
+    /// Every changed-and-unreviewed revision row across all indexed volumes (R-5 P2).
+    ///
+    /// The set the Research filter and the storage-hub summary are built from: `changed_at`
+    /// stamped by a re-index and `reviewed_at` still NULL. Ordered newest change first so a
+    /// summary can say which update this was. A first index stamps nothing, so a fresh library
+    /// returns nothing — the only honest answer before any correction has landed.
+    public func unreviewedDocumentRevisions() throws -> [DocumentRevision] {
+        let stmt = try auxPrepare("""
+            SELECT volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at
+              FROM document_revisions
+             WHERE changed_at IS NOT NULL AND reviewed_at IS NULL
+             ORDER BY changed_at DESC, volume_id, rowid
+            """)
+        defer { sqlite3_finalize(stmt) }
+        var out: [DocumentRevision] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(DocumentRevision(
+                volumeId: auxColumnString(stmt, 0) ?? "",
+                documentId: auxColumnString(stmt, 1) ?? "",
+                contentHash: auxColumnString(stmt, 2) ?? "",
+                bodyHash: auxColumnString(stmt, 3) ?? "",
+                changedAt: auxColumnString(stmt, 4),
+                changeKind: auxColumnString(stmt, 5),
+                reviewedAt: auxColumnString(stmt, 6)))
+        }
+        return out
+    }
+
+    /// One document's revision row, or `nil` when it was never indexed on this device (R-5 P2).
+    /// `DocumentView` reads it to say whether a change moved the highlight space or only the
+    /// apparatus around it.
+    public func documentRevision(volumeId: String, documentId: String) throws -> DocumentRevision? {
+        let stmt = try auxPrepare("""
+            SELECT content_hash, body_hash, changed_at, change_kind, reviewed_at
+              FROM document_revisions WHERE volume_id = ? AND document_id = ?
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+        return DocumentRevision(
+            volumeId: volumeId, documentId: documentId,
+            contentHash: auxColumnString(stmt, 0) ?? "",
+            bodyHash: auxColumnString(stmt, 1) ?? "",
+            changedAt: auxColumnString(stmt, 2),
+            changeKind: auxColumnString(stmt, 3),
+            reviewedAt: auxColumnString(stmt, 4))
     }
 
     private func auxDeleteVanishedCacheRows(volumeId: String, survivingDocumentIds: [String]) throws {

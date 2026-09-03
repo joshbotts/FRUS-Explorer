@@ -257,4 +257,57 @@ struct DocumentRevisionsTests {
         #expect(d3.changedAt != nil, "its return is itself a change the reader should see")
         #expect(d3.reviewedAt == nil)
     }
+
+    // MARK: - The P2 read APIs
+
+    /// `unreviewedDocumentRevisions()` is what the Research filter and the hub summary read: every
+    /// stamped, unreviewed row across ALL volumes, each carrying its volume id. Two volumes are
+    /// indexed and one document in each is changed differently, so the set has to hold both ids.
+    @Test("unreviewedDocumentRevisions lists stamped rows across volumes, with their volume ids")
+    func unreviewedAcrossVolumes() async throws {
+        let h = try Harness()
+        let vol2 = "frus1958-60v02"
+        try h.write(vol, base)
+        try h.write(vol2, base)
+        _ = try await h.index(vol)
+        _ = try await h.index(vol2)
+        // Nothing has changed yet: the first index stamps nothing.
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty)
+
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        _ = try await h.index(vol)
+        var edited2 = base
+        edited2[0].footnote = "See Document 5."
+        try h.write(vol2, edited2)
+        _ = try await h.index(vol2)
+
+        let rows = try await h.pipeline.unreviewedDocumentRevisions()
+        let keyed = Set(rows.map { "\($0.volumeId)/\($0.documentId):\($0.changeKind ?? "nil")" })
+        #expect(keyed == ["\(vol)/d2:body", "\(vol2)/d1:apparatus"])
+        #expect(rows.allSatisfy { $0.changedAt != nil && $0.reviewedAt == nil })
+    }
+
+    @Test("documentRevision(volumeId:documentId:) returns the row, nil for an unknown document")
+    func singleRowRead() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        let first = try #require(try await h.pipeline.documentRevision(volumeId: vol, documentId: "d2"))
+        #expect(first.volumeId == vol)
+        #expect(first.documentId == "d2")
+        #expect(first.changedAt == nil)
+        #expect(try await h.pipeline.documentRevision(volumeId: vol, documentId: "d99") == nil)
+        #expect(try await h.pipeline.documentRevision(volumeId: "frus-none", documentId: "d2") == nil)
+
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        _ = try await h.index(vol)
+        let changed = try #require(try await h.pipeline.documentRevision(volumeId: vol, documentId: "d2"))
+        #expect(changed.changeKind == "body")
+        #expect(changed.changedAt != nil)
+        #expect(changed.bodyHash != first.bodyHash)
+    }
 }
