@@ -4058,6 +4058,7 @@ public actor IndexingPipeline {
         var pageRangeRows: [PageRangeRow] = []
         var dateRows: [DocumentDateRow] = []
         var cacheRows: [DocumentCacheRow] = []
+        var revisionRows: [DocumentRevisionRow] = []
         var personMentionRows: [PersonMentionRow] = []
         var externalCitationRows: [ExternalCitationRow] = []
         // Hoisted once per volume: `shared` is a lazily-initialised static and this scan runs over
@@ -4188,6 +4189,16 @@ public actor IndexingPipeline {
                 precision: dateMeta.precision?.rawValue,
                 certainty: dateMeta.certainty?.storageValue
             ))
+            // R-5 P1: both hashes, computed here because this is the only pass that holds the
+            // AST. The render conversion is a fresh converter per document — it carries footnote
+            // state — and it is cheap: measured over the largest post-1960 volume (11 MB, 751
+            // documents), converting and versioning every document costs 0.05 s against a 0.50 s
+            // parse (Q-1, 2026-09-03), so `bodyHash` is eager rather than the design's lazy fallback.
+            revisionRows.append(DocumentRevisionRow(
+                volumeId: volumeId, documentId: did,
+                contentHash: Self.contentHash(header: header, dateline: dateline,
+                                              sourceNote: sourceNote, bodyText: bodyText),
+                bodyHash: Self.bodyHash(for: astDoc)))
             cacheRows.append(DocumentCacheRow(
                 volumeId: volumeId, documentId: did, documentNumber: docNumber,
                 header: header, dateline: dateline, sourceNote: sourceNote,
@@ -4278,6 +4289,7 @@ public actor IndexingPipeline {
         return VolumeIndexData(
             volumeId: volumeId, crossReferences: crossRefs,
             pageRanges: pageRangeRows, documentDates: dateRows, documentCache: cacheRows,
+            documentRevisions: revisionRows,
             personMentions: personMentionRows,
             persons: personRows,
             terms: termRows,
@@ -4353,6 +4365,11 @@ public actor IndexingPipeline {
         // (the FTS5 external-content key) and their user fields — so only genuinely
         // vanished documents need deleting. The DELETE trigger cleans both FTS5
         // tables for each removed row.
+        // R-5 P1: record which documents are about to vanish BEFORE the rows go. This is the
+        // design's smallest change and its worst case — an annotation whose anchor no longer
+        // exists — and until now the delete below computed exactly this set and said nothing.
+        try auxMarkVanishedRevisions(volumeId: data.volumeId,
+                                     survivingDocumentIds: data.documentCache.map(\.documentId))
         try auxDeleteVanishedCacheRows(
             volumeId: data.volumeId,
             survivingDocumentIds: data.documentCache.map(\.documentId)
@@ -4372,6 +4389,9 @@ public actor IndexingPipeline {
             ))
 
             try auxInsertDocumentCache(cacheChunk)
+            try auxUpsertDocumentRevisions(data.documentRevisions.filter { row in
+                cacheChunk.contains { $0.documentId == row.documentId }
+            })
 
             processed += cacheChunk.count
             volumeDocumentsProcessed = processed
@@ -4514,6 +4534,26 @@ public actor IndexingPipeline {
             }
         }
         return ""
+    }
+
+    /// `content_hash`: over the exact strings `document_cache` stores, so it moves for any change
+    /// a reader can see — a corrected footnote, a revised source note, a re-headed document — and
+    /// is unmoved by the whitespace-only re-serialisations `normalizedWhitespace` already folds.
+    nonisolated static func contentHash(header: String, dateline: String?,
+                                        sourceNote: String?, bodyText: String) -> String {
+        let joined = [header, dateline ?? "", sourceNote ?? "", bodyText].joined(separator: "\u{1F}")
+        return SHA256.hash(data: Data(joined.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// `body_hash`: the highlight coordinate space, and nothing else.
+    ///
+    /// Deliberately the very function `DocumentView` uses to decide whether a stored highlight is
+    /// stale, run over the same conversion — so the answer "your offsets moved" here and the
+    /// amber highlight there cannot disagree. A hash over the AST instead would move for a
+    /// footnote correction that shifts no offset, and would disagree with every highlight.
+    nonisolated static func bodyHash(for document: FRUSDocumentAST) -> String {
+        var converter = ASTToRenderNodeConverter()
+        return ASTToRenderNodeConverter.renderingVersion(for: converter.convert(document))
     }
 
     nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
@@ -5593,6 +5633,18 @@ public actor IndexingPipeline {
         // under its old name until the next one — the same deferral `UserTagAdmin` documents for the
         // assignment mirror beside it.
         try exec("""
+            CREATE TABLE IF NOT EXISTS document_revisions (
+                volume_id     TEXT NOT NULL,
+                document_id   TEXT NOT NULL,
+                content_hash  TEXT NOT NULL,
+                body_hash     TEXT NOT NULL,
+                changed_at    TEXT,
+                change_kind   TEXT,
+                reviewed_at   TEXT,
+                PRIMARY KEY (volume_id, document_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_document_revisions_changed
+                ON document_revisions(volume_id, changed_at);
             CREATE TABLE IF NOT EXISTS user_tags (
                 tag_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL
@@ -6173,6 +6225,123 @@ public actor IndexingPipeline {
     /// `temp_store=MEMORY`) so the `NOT IN` comparison is unbounded — chunking a
     /// `NOT IN` parameter list would change its semantics, and large compilation
     /// volumes exceed SQLite's 999-bind-variable limit.
+    /// Stamps `'vanished'` on the revision rows of documents the new TEI no longer contains — run
+    /// BEFORE `auxDeleteVanishedCacheRows`, which computes the same set and deletes it (R-5 P1).
+    ///
+    /// The row itself is kept, hashes and all: it is the only record that the document ever
+    /// existed on this device, and every annotation anchored to it is now an orphan the reader has
+    /// to be shown. A document that later reappears under the same id is handled by the upsert,
+    /// which resets the kind from its hashes.
+    private func auxMarkVanishedRevisions(volumeId: String, survivingDocumentIds: [String]) throws {
+        try auxExec("CREATE TEMP TABLE IF NOT EXISTS surviving_doc_ids (d TEXT PRIMARY KEY)")
+        try auxExec("DELETE FROM surviving_doc_ids")
+        defer { try? auxExec("DELETE FROM surviving_doc_ids") }
+        let insert = try auxPrepare("INSERT OR IGNORE INTO surviving_doc_ids (d) VALUES (?)")
+        defer { sqlite3_finalize(insert) }
+        try inTransaction {
+            for id in survivingDocumentIds {
+                sqlite3_bind_text(insert, 1, id, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(insert)
+                sqlite3_reset(insert)
+            }
+        }
+        let mark = try auxPrepare("""
+            UPDATE document_revisions
+               SET change_kind = 'vanished', changed_at = ?, reviewed_at = NULL
+             WHERE volume_id = ?
+               AND document_id NOT IN (SELECT d FROM surviving_doc_ids)
+               AND change_kind IS NOT 'vanished'
+            """)
+        defer { sqlite3_finalize(mark) }
+        sqlite3_bind_text(mark, 1, Self.isoNow(), -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(mark, 2, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(mark)
+    }
+
+    /// Writes each document's hashes, stamping a change only when a hash actually moved (R-5 P1).
+    ///
+    /// **One statement, no prior read.** The `ON CONFLICT` clause compares the incoming hashes to
+    /// the stored ones in SQL: an identical document keeps its `changed_at`, `change_kind` and
+    /// `reviewed_at` untouched, so a re-index that changed nothing leaves no trace and a reader's
+    /// disposition survives it. A first index inserts with `changed_at` NULL — a document cannot
+    /// have changed before the reader had it. `change_kind` is `'body'` when the highlight space
+    /// moved and `'apparatus'` when only the content did (a footnote, a source note, a header),
+    /// which is the distinction §3 of the design exists to draw.
+    private func auxUpsertDocumentRevisions(_ rows: [DocumentRevisionRow]) throws {
+        guard !rows.isEmpty else { return }
+        let stmt = try auxPrepare("""
+            INSERT INTO document_revisions
+                (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at)
+            VALUES (?, ?, ?, ?, NULL, NULL, NULL)
+            ON CONFLICT(volume_id, document_id) DO UPDATE SET
+                changed_at  = CASE
+                                WHEN excluded.content_hash != document_revisions.content_hash
+                                  OR document_revisions.change_kind = 'vanished'
+                                THEN ? ELSE document_revisions.changed_at END,
+                change_kind = CASE
+                                WHEN excluded.body_hash != document_revisions.body_hash THEN 'body'
+                                WHEN excluded.content_hash != document_revisions.content_hash THEN 'apparatus'
+                                WHEN document_revisions.change_kind = 'vanished' THEN 'apparatus'
+                                ELSE document_revisions.change_kind END,
+                reviewed_at = CASE
+                                WHEN excluded.content_hash != document_revisions.content_hash
+                                  OR document_revisions.change_kind = 'vanished'
+                                THEN NULL ELSE document_revisions.reviewed_at END,
+                content_hash = excluded.content_hash,
+                body_hash    = excluded.body_hash
+            """)
+        defer { sqlite3_finalize(stmt) }
+        let now = Self.isoNow()
+        for row in rows {
+            sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(stmt, 3, row.contentHash, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(stmt, 4, row.bodyHash, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(stmt, 5, now, -1, SQLITE_TRANSIENT_IP)
+            try auxStep(stmt)
+            sqlite3_reset(stmt)
+        }
+    }
+
+    /// ISO-8601 UTC, to the second — what `changed_at` and `reviewed_at` carry.
+    nonisolated static func isoNow(_ date: Date = Date()) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f.string(from: date)
+    }
+
+    /// One document's revision row as stored (R-5 P1).
+    public struct DocumentRevision: Sendable, Equatable {
+        public let documentId: String
+        public let contentHash: String
+        public let bodyHash: String
+        public let changedAt: String?
+        public let changeKind: String?
+        public let reviewedAt: String?
+    }
+
+    /// Every revision row for a volume, in document order (R-5 P1). The read API P2's surfaces and
+    /// the tests use; a caller that wants "what changed" filters on `changedAt != nil`.
+    public func documentRevisions(forVolumeId volumeId: String) throws -> [DocumentRevision] {
+        let stmt = try auxPrepare("""
+            SELECT document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at
+              FROM document_revisions WHERE volume_id = ? ORDER BY rowid
+            """)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        var out: [DocumentRevision] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append(DocumentRevision(
+                documentId: auxColumnString(stmt, 0) ?? "",
+                contentHash: auxColumnString(stmt, 1) ?? "",
+                bodyHash: auxColumnString(stmt, 2) ?? "",
+                changedAt: auxColumnString(stmt, 3),
+                changeKind: auxColumnString(stmt, 4),
+                reviewedAt: auxColumnString(stmt, 5)))
+        }
+        return out
+    }
+
     private func auxDeleteVanishedCacheRows(volumeId: String, survivingDocumentIds: [String]) throws {
         try auxExec("CREATE TEMP TABLE IF NOT EXISTS surviving_doc_ids (d TEXT PRIMARY KEY)")
         try auxExec("DELETE FROM surviving_doc_ids")
@@ -9853,6 +10022,8 @@ private struct VolumeIndexData: Sendable {
     let pageRanges: [PageRangeRow]
     let documentDates: [DocumentDateRow]
     let documentCache: [DocumentCacheRow]
+    /// R-5 P1: the per-document hashes the store pass compares against the previous index.
+    var documentRevisions: [DocumentRevisionRow] = []
     let personMentions: [PersonMentionRow]
     let persons: [PersonRow]
     let terms: [TermRow]
@@ -10244,6 +10415,27 @@ private struct DocumentDateRow: Sendable {
     /// Nature of the source date (`exact`/`range`/`approximate`/`textOnly`), stored in
     /// `date_certainty`. `nil` when no date could be extracted.
     let certainty: String?
+}
+
+/// One document's two content hashes at index time (Volume-Update-Annotation-Integrity P1).
+///
+/// **Two hashes, because they answer two questions.** `contentHash` is over the exact strings
+/// `document_cache` stores — header, dateline, source note, body text — and moves for any change a
+/// reader can see, footnotes and source notes included. `bodyHash` is `renderingVersion` in the
+/// render-node space, the same 16-hex value every `DocumentHighlight` carries; it moves only when
+/// highlight offsets can have moved. Reporting only the first over-warns; only the second is blind
+/// to exactly the corrections — a citation, a source note — a researcher's note is most likely to
+/// be about.
+///
+/// Version history:
+///   1.0 — R-5 P1: initial implementation
+struct DocumentRevisionRow: Sendable {
+    let volumeId: String
+    let documentId: String
+    /// SHA-256 hex over header ⟂ dateline ⟂ sourceNote ⟂ bodyText, `\u{1F}`-separated.
+    let contentHash: String
+    /// `ASTToRenderNodeConverter.renderingVersion` for this document — the highlight coordinate space.
+    let bodyHash: String
 }
 
 struct DocumentCacheRow: Sendable {
