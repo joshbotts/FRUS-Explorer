@@ -82,6 +82,12 @@ import SwiftData
 ///          review ledger, design §8.2 Q-3/Q-6) and `CD_GeneratedSummary.CD_sourceContentHash`
 ///          (Q-8 d-cloud, riding the same Dashboard visit). Listed in
 ///          ``identifiersAwaitingDeploy``; the baseline is deliberately NOT restated.
+///   1.7 — The NINTH promotion ran (2026-09-03, build 44): the owner exercised the review
+///          ledger and the summary's source hash on a Development build and deployed. NINE of
+///          the ten identifiers are attested; `CD_AnnotationReview.CD_annotationId` stays in
+///          ``identifiersAwaitingDeploy`` because no build has written a non-nil value, so
+///          CloudKit never created the field to promote. Baseline 260 → 269 with the digest
+///          the suite printed; `deployedThroughBuild` 43 → 44, `deployedOn` → 2026-09-03.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -387,11 +393,11 @@ enum CloudKitSchemaInventory {
     /// three plan record types (32), W-4's `CD_DocumentClassificationOverride` (7), and W-5's two
     /// `CD_SavedSearch` fields — the deliberate one-Dashboard-visit block the owner reserved when
     /// Phase 2 shipped its schema ahead of its deploy.
-    static let deployedThroughBuild = "43"
+    static let deployedThroughBuild = "44"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-08-26"
+    static let deployedOn = "2026-09-03"
 
     /// How many identifiers **this build mirrors that are attested deployed**. Pinned by the
     /// test against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the
@@ -408,13 +414,13 @@ enum CloudKitSchemaInventory {
     /// equality claim about Production's contents. A future ADDITION still needs the full R-7
     /// checklist; a future removal needs only this number and the digest, and must NOT bump
     /// `deployedThroughBuild`, which would assert a promotion that never happened.
-    static let deployedIdentifierCount = 260
+    static let deployedIdentifierCount = 269
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "985a84b0212b55219b44668c2d0a5a267c374631244d39a52c8c56263d5938e2"
+        "6a5a6ec1cb02249c14ee67f4b7cf147e963dbdb9154a10c565d5c8c387ae259e"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -439,28 +445,15 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // R-5 P3b-2 — the NINTH promotion, opened 2026-09-03. Two features, one Dashboard visit:
-        // the cross-device review ledger (design §8.2 Q-3/Q-6) and the summary's record of which
-        // text it describes (Q-8 d-cloud). The owner exercises both on a Development build signed
-        // into iCloud — press Mark Reviewed on a changed document, and generate one summary — then
-        // deploys, then clears this list and restates the baseline from what the suite prints.
-        //
-        // ONE FIELD CANNOT BE EXERCISED BY THIS BUILD, and the gate cannot notice: every writer
-        // here records a `document`-grain row, whose `annotationId` is nil, so no pushed record
-        // carries `CD_AnnotationReview.CD_annotationId` and CloudKit creates Development schema
-        // lazily from what is pushed. It is listed because the column exists and P3b-4/P3b-5 will
-        // write it — those PRs must confirm the field in the CloudKit Console before shipping a
-        // non-document kind, because `CloudKitSchemaInventoryTests` will stay green either way.
-        "CD_AnnotationReview",
+        // The NINTH promotion ran 2026-09-03 (build 44): nine of R-5 P3b-2's ten identifiers are
+        // in Production. `CD_AnnotationReview.CD_annotationId` is NOT, and cannot be until a
+        // build writes one — CloudKit creates a field from the first record that carries a value,
+        // and every writer in this build records a `document`-grain row whose `annotationId` is
+        // nil. It is listed here honestly rather than attested, and P3b-4/P3b-5 — the phases that
+        // give the reserved kinds their writers — must exercise it on a Development build and
+        // promote it before shipping. `CloudKitSchemaInventoryTests` cannot catch this: the
+        // identifier is a real member of the inventory either way.
         "CD_AnnotationReview.CD_annotationId",
-        "CD_AnnotationReview.CD_changeKind",
-        "CD_AnnotationReview.CD_annotationType",
-        "CD_AnnotationReview.CD_contentHash",
-        "CD_AnnotationReview.CD_documentId",
-        "CD_AnnotationReview.CD_id",
-        "CD_AnnotationReview.CD_reviewedAt",
-        "CD_AnnotationReview.CD_volumeId",
-        "CD_GeneratedSummary.CD_sourceContentHash",
     ]
 
     // MARK: - Derived state
