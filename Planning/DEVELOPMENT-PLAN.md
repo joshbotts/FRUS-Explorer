@@ -10698,7 +10698,7 @@ never deleted; and the note / tag / override / lead / history *modify* surfaces 
 
 **Verification.** **Full iOS unit suite (iPhone 16e sim), run alone: 4,355 tests in 576 suites, 0 failures** — baseline 4,345 / 575 at #1180, +10: four review-write tests in `DocumentRevisionsTests` (stamp / volume stamp / escalation / rebaseline, all through the real `indexVolume` and `indexAllVolumes`), five in the new `HighlightReviewTests` (status, confirm, delete, repaint signature, the sheet's standing sentences), one mount scan in `VolumeUpdateReviewTests`. `FRUSExplorerMac` Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues. **Mutation sweep: 15 mutations, 15 killed on the first pass** — both halves of the stamp's guard, the volume stamp's scope, the escalation arm and its review condition, a whole-index pass that stamps, a rebaseline that keeps the old `body_hash`, the stale/no-passage flag, an empty version accepted by confirm or not refused by status, a delete that does nothing, each field of the repaint signature, and the sheet's vanished precedence and no-passage sentence.
 
-## Session 2026-09-03d — R-5 P3b-1: the deploy-free hygiene bundle
+## Session 2026-09-03d — R-5 P3b-1: the deploy-free hygiene bundle (PR #1182)
 
 **The seven decisions first.** The owner answered the brief the same day: Q-3 review state syncs;
 Q-6 **G**, one new mirrored ledger `@Model` (the ninth promotion) with tags keyed on tag id; Q-7

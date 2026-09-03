@@ -303,7 +303,7 @@ that came before it.
 | **Q-10** | **(b)** the exact, unique, seam-aware search in the shared sheet with Move after an explicit tap and the found words plus context shown; **(e)**'s three sentences ship inside it; **(f)** a Find-passage complement through the twins' existing find machinery. UTF-16 pinned by fixture (the corpus holds no non-BMP or combining character). (c) only if matching ever becomes normalised. | No deploy. |
 | **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | No deploy. |
 
-**Sequence.** *P3b-1* (deploy-free hygiene): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR): Q-6 G with the document-grain reconcile, Q-8 (d-cloud), `identifiersAwaitingDeploy` populated. *P3b-3*: Q-10. *P3b-4*: Q-7 (b)+(f) and the iOS manual. *P3b-5*: Q-11 (b)+(i), Q-8 (e), then (b).
+**Sequence.** *P3b-1* (deploy-free hygiene, **PR #1182**): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR): Q-6 G with the document-grain reconcile, Q-8 (d-cloud), `identifiersAwaitingDeploy` populated. *P3b-3*: Q-10. *P3b-4*: Q-7 (b)+(f) and the iOS manual. *P3b-5*: Q-11 (b)+(i), Q-8 (e), then (b).
 
 ## 9. What this design does not cover
 
