@@ -125,7 +125,15 @@ caffeinate -i python3 harvest_embeddings.py 2>&1 | tee harvest.log
   `title: none | text: ` (trailing space included) and the Phase 2 gates validated THAT
   configuration; a run without it produces vectors from a different contract and no error.
   The same goes for a resume: re-run the exact same command line (`tee -a` to keep the
-  earlier log), because a resumed volume embeds under whatever env the new invocation has.
+  earlier log). **Since R-2 the harvester enforces this**: on a resume it compares `MODEL`,
+  the GGUF's SHA-256, `PREFIX`, `CHUNK_CHARS` and `OVERLAP_CHARS` against the store's
+  `run-manifest.json` and exits non-zero on any difference, naming the field — because a
+  resumed volume would otherwise embed under this invocation's env, the manifest would be
+  rewritten for the WHOLE store, and the pack would carry a new provenance digest costing every
+  device a 162 MB shard re-fetch. `ALLOW_CONTRACT_CHANGE=1` overrides, loudly, for a genuinely
+  new family in an old directory. Every `head.json` written since R-2 also records the
+  contract, so the packer checks it per volume; the 552 heads from the first harvest predate
+  this and are trusted as before. `python3 selftest_harvest_contract.py` pins all of it.
 - **`MODEL_FILE` is not optional this time**: the spike captured a GGUF SHA only for
   nomic-q8; the full run's provenance must not repeat that gap. (My Models → reveal in
   Finder → drag the file into Terminal.)
@@ -145,6 +153,14 @@ caffeinate -i python3 harvest_embeddings.py 2>&1 | tee harvest.log
   model or the Mac slept. Fix, re-run, it resumes.
 
 ## Phase 4 — transfer Studio → Air
+
+> **When you pack** (Phase 5 / `SemanticVectorsGenerator`), pass
+> `EXPECT_DIGEST=a726ca606bdf4d1984ba7cfda4d5605c2e9dc1a8320654a1b5742e06aa6e3a64` — the
+> shipped family's provenance digest, from `semantic-vectors-index.json`. The packer refuses to
+> write anything under a different digest. It is the independent, Air-side check of the same
+> contract the harvester now guards on the Studio, and it also catches a store transferred from
+> the wrong run, which the harvester cannot see. Unset it only when a new family is intended.
+
 
 Either:
 

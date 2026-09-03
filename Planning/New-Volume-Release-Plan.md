@@ -176,10 +176,14 @@ Mitigation, and it is not optional:
   `a726ca606bdf4d1984ba7cfda4d5605c2e9dc1a8320654a1b5742e06aa6e3a64`, unchanged from the shipped
   artifact. A changed digest means a changed family and a 162 MB re-download for every user.
 
-**Work item W-1 (S, high value):** teach the harvester to refuse a resume whose contract fields
-differ from the store's existing `run-manifest.json`, or teach the packer to compare the digest
-against a `--expect-digest` argument. Either turns a silent corpus-wide fault into an exit code.
-Doing this *before* the release is cheaper than doing it after.
+**Work item W-1 — SHIPPED 2026-09-02 (PR #1177), both halves and a third.** The harvester refuses
+a resume whose `model` / GGUF SHA-256 / `prefix` / `chunk_chars` / `overlap_chars` differ from
+the store's `run-manifest.json` (`ALLOW_CONTRACT_CHANGE=1` overrides); the packer refuses to
+write under a digest other than `EXPECT_DIGEST`; and every `head.json` written from now on
+records the contract, so `SemanticRawStore.pooledDocuments` checks it **per volume** — which was
+structurally impossible before, since a head carried only `model` and `dim`. The before/after
+manifest diff above stays as belt to the braces. Eleven mutations killed; the packer test drives
+the real `run()` against a 2 KB store.
 
 ### 4.3 `DIMS=512` is not the default
 

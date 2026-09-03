@@ -24,6 +24,19 @@ Environment:
   BATCH          chunks per request, default 64
   CHUNK_CHARS    default 3200 (~800 tokens at the corpus's measured 4.16 chars/token)
   OVERLAP_CHARS  default 480 (~15%)
+  ALLOW_CONTRACT_CHANGE  =1 lets a RESUME proceed under a contract that differs from the
+                 store's run-manifest.json. Without it the run refuses (see below).
+Contract guard (R-2 of the release plan):
+  A resume embeds under whatever env THIS invocation has, and run-manifest.json is
+  rewritten from it at the end with no comparison against the store's. So a resume that
+  forgets PREFIX="title: none | text: " embeds the new volume under a different prompt,
+  records prefix "" for the WHOLE store, packs cleanly under a new provenance digest, and
+  costs every installed device a 162 MB re-fetch of shards that are now two prompts mixed.
+  The store cannot catch it: head.json (before this change) recorded only model and dim.
+  So the harvester now (a) refuses to resume when model / model_file_sha256 / prefix /
+  chunk_chars / overlap_chars differ from the store's manifest and at least one volume is
+  already complete, and (b) writes the contract into every new head.json so the packer can
+  check it per volume from now on.
 
 Design notes (why the store looks like this):
   * CHUNK vectors are stored, not document vectors. Pooling/normalisation/Matryoshka
@@ -158,6 +171,81 @@ def embed_batch(model, texts):
             delay *= 3
 
 
+# ---------------------------------------------------------------- contract guard
+
+# The fields a resume must not change. `dim` is deliberately absent: it is DERIVED from the
+# model at the first embed, not chosen, so a model mismatch already covers it and a spurious
+# dim refusal on a fresh store would block the first run.
+CONTRACT_FIELDS = ("model", "model_file_sha256", "prefix", "chunk_chars", "overlap_chars")
+
+
+def current_contract(model, model_file_sha):
+    """This invocation's contract, in run-manifest.json's own field names and types."""
+    return {"model": model, "model_file_sha256": model_file_sha, "prefix": PREFIX,
+            "chunk_chars": CHUNK_CHARS, "overlap_chars": OVERLAP_CHARS}
+
+
+def stored_contract(out_dir):
+    """The store's recorded contract, or None when there is no run-manifest.json yet."""
+    path = os.path.join(out_dir, "run-manifest.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        return json.load(open(path))
+    except ValueError:
+        return None
+
+
+def contract_mismatch(stored, current):
+    """Fields whose value differs between the store's manifest and this run.
+
+    Pure, so the selftest pins it directly. `model_file_sha256` is compared only when BOTH
+    sides are real digests: the manifest records "not captured" when MODEL_FILE was unset,
+    and a run that sets it for the first time is adding provenance, not changing it.
+    """
+    diffs = []
+    for field in CONTRACT_FIELDS:
+        old, new = stored.get(field), current.get(field)
+        if field == "model_file_sha256" and ("not captured" in (old, new) or None in (old, new)):
+            continue
+        if old != new:
+            diffs.append((field, old, new))
+    return diffs
+
+
+def refuse_if_contract_changed(out_dir, current, completed_count):
+    """Exit non-zero when a RESUME would embed under a different contract than the store's.
+
+    Only a resume is refused — a run-manifest.json left behind in a directory with no
+    completed volume describes nothing this run will mix with. ALLOW_CONTRACT_CHANGE=1
+    is the override, for the case where the operator really is starting a new family in
+    an old directory and knows the packed digest will change.
+    """
+    if completed_count == 0:
+        return
+    stored = stored_contract(out_dir)
+    if stored is None:
+        return
+    diffs = contract_mismatch(stored, current)
+    if not diffs:
+        return
+    lines = ["REFUSING TO RESUME: this invocation's contract differs from the store's "
+             "run-manifest.json, and %d volume(s) are already embedded under the old one."
+             % completed_count]
+    for field, old, new in diffs:
+        lines.append("  %-18s store: %r\n  %-18s now:   %r" % (field, old, "", new))
+    lines.append("Resuming would embed the remaining volumes under a different prompt or "
+                 "chunking, then rewrite run-manifest.json for the WHOLE store, and the packed "
+                 "artifact would carry a new provenance digest — costing every installed device "
+                 "a full shard re-fetch (162 MB) of vectors that mix two contracts.")
+    lines.append("Re-run the exact Phase-3 command line from README.md (every env var), or set "
+                 "ALLOW_CONTRACT_CHANGE=1 if a new family in this directory is really intended.")
+    if os.environ.get("ALLOW_CONTRACT_CHANGE") == "1":
+        print("\n".join(lines).replace("REFUSING TO RESUME", "WARNING (ALLOW_CONTRACT_CHANGE=1)"))
+        return
+    sys.exit("\n".join(lines))
+
+
 # ---------------------------------------------------------------- store
 
 def volume_done(vol, dim_holder):
@@ -216,8 +304,12 @@ def harvest_volume(vol, model, dim_holder, stats):
     secs = time.time() - started
     chars = sum(len(t) for _, _, t in docs)
     # head.json is written LAST — its presence plus a size check is the done marker.
+    # The contract rides in every head.json so the packer can check it PER VOLUME. Before
+    # this only model and dim were recorded, which is why a prefix mismatch was undetectable
+    # from the store side. Additive: the 552 existing heads lack these keys and stay valid.
     json.dump({"volume": vol, "model": model, "dim": dim_holder[0], "docs": len(docs),
-               "chunks": len(chunks), "chars": chars, "secs": round(secs, 1)},
+               "chunks": len(chunks), "chars": chars, "secs": round(secs, 1),
+               "prefix": PREFIX, "chunk_chars": CHUNK_CHARS, "overlap_chars": OVERLAP_CHARS},
               open(os.path.join(OUT, "vectors", vol + ".head.json"), "w"))
     with open(os.path.join(OUT, "runs.jsonl"), "a") as out:
         out.write(json.dumps({"vol": vol, "docs": len(docs), "chunks": len(chunks),
@@ -287,6 +379,10 @@ def main():
     model_file = os.environ.get("MODEL_FILE", "")
     if model_file and not os.path.exists(model_file):
         sys.exit("MODEL_FILE does not exist: %s" % model_file)
+    # Hashed NOW rather than only at the end: the contract guard below compares it, and this
+    # is the one check that can tell an operator they loaded a DIFFERENT GGUF at the same
+    # path — the packer verifies the manifest's digest is 64 hex, not that it is the same file.
+    model_file_sha = sha256(model_file) if model_file else "not captured"
     print("LM Studio %s | model %s | %d volume(s) -> %s" % (URL, model, len(volumes), OUT))
 
     dim_holder = [None]
@@ -294,6 +390,8 @@ def main():
     remaining_chars_estimate = None
     todo = [v for v in volumes if not volume_done(v, dim_holder)]
     print("%d already complete, %d to do" % (len(volumes) - len(todo), len(todo)))
+    refuse_if_contract_changed(OUT, current_contract(model, model_file_sha),
+                               completed_count=len(volumes) - len(todo))
 
     for index, vol in enumerate(todo):
         result = harvest_volume(vol, model, dim_holder, stats)
@@ -321,7 +419,7 @@ def main():
         "lmstudio_url": URL,
         "model": model,
         "models_listing": listing,
-        "model_file_sha256": sha256(model_file) if model_file else "not captured",
+        "model_file_sha256": model_file_sha,
         "dim": dim_holder[0],
         "chunk_chars": CHUNK_CHARS, "overlap_chars": OVERLAP_CHARS,
         "prefix": PREFIX, "batch": BATCH,

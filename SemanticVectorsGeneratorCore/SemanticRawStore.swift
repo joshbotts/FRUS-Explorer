@@ -91,6 +91,24 @@ public enum SemanticRawStore {
         public let chunks: Int
         /// Body-text characters.
         public let chars: Int
+        /// The chunk prefix this volume was embedded under, recorded by the harvester since R-2.
+        ///
+        /// **Optional because the 552 heads in the shipped store predate it.** Until the harvester
+        /// wrote these three, a per-volume contract check was structurally impossible — `head.json`
+        /// carried model and dim and nothing else — which is how a resume under a dropped `PREFIX`
+        /// could pack cleanly. When present they are compared against the run manifest in
+        /// `pooledDocuments`; when absent the volume is trusted, as it always was.
+        public let prefix: String?
+        /// Chunk window, as `chunk_chars`. See ``prefix``.
+        public let chunkChars: Int?
+        /// Chunk overlap, as `overlap_chars`. See ``prefix``.
+        public let overlapChars: Int?
+
+        private enum CodingKeys: String, CodingKey {
+            case volume, model, dim, docs, chunks, chars, prefix
+            case chunkChars = "chunk_chars"
+            case overlapChars = "overlap_chars"
+        }
     }
 
     // MARK: - Pooled output
@@ -123,6 +141,13 @@ public enum SemanticRawStore {
         case documentCountMismatch(volume: String, head: Int, pooled: Int)
         /// A volume was embedded under a different model or width than the run manifest states.
         case modelMismatch(volume: String, expected: String, actual: String)
+        /// A volume's own recorded contract disagrees with the run manifest's.
+        ///
+        /// The store-side half of R-2: a resumed harvest that changed `prefix`, `chunk_chars` or
+        /// `overlap_chars` and then rewrote `run-manifest.json` leaves the EARLIER volumes carrying
+        /// the old contract in their heads. Packing them together would put one provenance digest
+        /// over vectors embedded under two prompts.
+        case contractMismatch(volume: String, field: String, expected: String, actual: String)
         /// A meta line could not be decoded.
         case malformedMeta(volume: String, line: Int)
         /// A document's chunk weights summed to zero, or its pooled vector had no length — either
@@ -146,6 +171,10 @@ public enum SemanticRawStore {
                 return "\(volume): head says \(head) chunks, meta.jsonl has \(meta) lines"
             case .documentCountMismatch(let volume, let head, let pooled):
                 return "\(volume): head says \(head) docs, pooling produced \(pooled)"
+            case .contractMismatch(let volume, let field, let expected, let actual):
+                return "\(volume) was embedded with \(field) = \(actual) but run-manifest.json "
+                    + "says \(expected) — the store mixes two harvest contracts, and packing it "
+                    + "would ship one provenance digest over vectors from two prompts"
             case .modelMismatch(let volume, let expected, let actual):
                 return "\(volume) was embedded under \(actual), run manifest says \(expected)"
             case .malformedMeta(let volume, let line):
@@ -230,6 +259,23 @@ public enum SemanticRawStore {
         guard head.model == manifest.model, head.dim == manifest.dim else {
             throw StoreError.modelMismatch(
                 volume: volumeID, expected: manifest.model, actual: head.model)
+        }
+        // The per-volume contract check R-2 made possible. Each field is compared only when the
+        // head recorded it; a head without it is a pre-R-2 volume and is trusted.
+        if let prefix = head.prefix, prefix != manifest.prefix {
+            throw StoreError.contractMismatch(
+                volume: volumeID, field: "prefix",
+                expected: "\"\(manifest.prefix)\"", actual: "\"\(prefix)\"")
+        }
+        if let chunkChars = head.chunkChars, chunkChars != manifest.chunkChars {
+            throw StoreError.contractMismatch(
+                volume: volumeID, field: "chunk_chars",
+                expected: String(manifest.chunkChars), actual: String(chunkChars))
+        }
+        if let overlapChars = head.overlapChars, overlapChars != manifest.overlapChars {
+            throw StoreError.contractMismatch(
+                volume: volumeID, field: "overlap_chars",
+                expected: String(manifest.overlapChars), actual: String(overlapChars))
         }
 
         guard let binData = try? Data(contentsOf: binURL) else {
