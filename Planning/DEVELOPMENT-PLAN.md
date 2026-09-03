@@ -10734,7 +10734,7 @@ deploy and no design.
 ## Session 2026-09-03e — R-5 P3b-2: the review ledger, and the ninth CloudKit promotion (PR #1183)
 
 **This is the deploy PR, and it needs the owner before it ships.** `identifiersAwaitingDeploy`
-carries nine identifiers; the app says so at launch and in Settings ▸ Data & Recovery. The two
+carries ten identifiers; the app says so at launch and in Settings ▸ Data & Recovery. The two
 steps no test can perform are the owner's: exercise both additions on a Development build signed
 into iCloud (press *Mark Reviewed* on a changed document, generate one summary), then CloudKit
 Dashboard ▸ Schema ▸ Deploy Schema Changes to Production. Only then does the baseline get restated
