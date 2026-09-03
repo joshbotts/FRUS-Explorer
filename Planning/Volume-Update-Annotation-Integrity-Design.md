@@ -242,7 +242,7 @@ Each phase ships on its own and is useful without the next.
 
 | Phase | Scope | Depends on |
 |---|---|---|
-| **P1 — see it** | The `document_revisions` table; hashes written at index time; `auxDeleteVanishedCacheRows` records before deleting. No UI. Ships silently and starts accumulating truth. | measure the `body_hash` cost first (5.1) |
+| **P1 — see it** | **SHIPPED 2026-09-03 (PR #1179).** The `document_revisions` table; both hashes written in `parseAndExtract`, the only pass that holds the AST; the change set stamped by one SQL `CASE` upsert with no prior read; `'vanished'` stamped on the revision row before `auxDeleteVanishedCacheRows` runs. No UI, no `@Model`, no index bump (`CREATE TABLE IF NOT EXISTS` is additive). Read back through `documentRevisions(forVolumeId:)`. | Q-1 answered — see §8 |
 | **P2 — say it** | Post-update summary in the storage hubs; the affected-documents filter in `ResearchView`; the in-document banner distinguishes body from apparatus change. | P1 |
 | **P3 — fix it** | Per-annotation confirm / re-anchor / delete, including the unique-match repair; `GeneratedSummary` re-generation offer; orphan repair for vanished documents. | P2 |
 
@@ -272,7 +272,7 @@ that came before it.
 
 | # | Question | Why it needs an answer |
 |---|---|---|
-| **Q-1** | Is the render-node conversion affordable at index time? | Decides whether `body_hash` is eager (5.1) or lazy. Must be measured, not assumed. |
+| **Q-1** | Is the render-node conversion affordable at index time? | **Measured 2026-09-03, and yes — eager.** Over the largest post-1960 volume (`frus1961-63v10-12mSupp`, 11 MB, 751 documents): parse 0.50 s; converting and versioning **every** document 0.05 s (**9.7%** of the parse); the content SHA-256 over 4.3 MB of stored text 0.03 s. The converter is a dependency-free struct constructed fresh per document (it carries footnote state). One caveat: simulator, warm page cache — but the ratio is an order of magnitude below the parse, and it is the ratio that decides. The lazy fallback in 5.1 is not needed. |
 | **Q-2** | Should the reader be able to keep the **old** text of a changed document? | The strongest possible answer to "was my note right?" is the diff. Storing the superseded `body_text` for annotated documents only is bounded and cheap; storing it for all is not. |
 | **Q-3** | Does review state need to sync across devices? | 5.2's stated cost. Deferring it is safe; reversing it later is a schema change. |
 | **Q-4** | What happens to an annotation whose volume is *removed* rather than updated? | Out of scope here, and today the annotation simply persists unreferenced. Worth confirming that is intended. |
@@ -295,3 +295,4 @@ that came before it.
 
 *Document history*
 *1.0 — 2026-09-02: written against `b142381`, answering `New-Volume-Release-Plan.md` §13.*
+*1.1 — 2026-09-03: P1 shipped (#1179); Q-1 measured and answered. One design premise corrected in the shipping: the vanished stamp does not need to run *before* the cache delete, because the revision row lives in its own table and survives it — the ordering is kept for legibility, not correctness.*

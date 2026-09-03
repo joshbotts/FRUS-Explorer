@@ -10559,3 +10559,40 @@ would have skipped the branch and passed; it is required whenever the usage inde
 `seen == 9` guard) so a literal cannot return to the *text*; it cannot see one passed as the
 *argument* — `Int64(552)` for `Int64(data.total)` — and that mutation survives. Seven others
 are killed. Next: R-1 waits on OH; R-5's P1 waits on its Q-1 measurement.
+
+
+## Session 2026-09-03 — R-5 P1: the change set recorded at index time
+
+**Q-1 first, as the design demanded.** A throwaway probe over the largest post-1960 volume
+(`frus1961-63v10-12mSupp`, 11 MB, 751 documents): parse 0.50 s; converting and versioning every
+document 0.05 s — 9.7% of the parse; the content SHA-256 over 4.3 MB 0.03 s. The converter is a
+dependency-free struct built fresh per document. `body_hash` is eager; the lazy fallback is dead.
+
+**What shipped.** `document_revisions` created additively in `setupDatabase` (no index bump — 47
+stays 47); both hashes computed in `parseAndExtract`, the only pass holding the AST;
+`storeIndexData` stamps `'vanished'` on the revision rows of documents the new TEI dropped, then
+writes every document's hashes through one SQL `CASE` upsert that stamps `changed_at` and
+`change_kind` only when a hash moved, keeps a reader's `reviewed_at` across an identical re-index,
+and re-stamps a document that vanished and returned. `documentRevisions(forVolumeId:)` reads it
+back. No UI, no `@Model` — `CloudKitSchemaInventoryTests` passes, so the #488 gate is not engaged.
+
+**The claim that matters is pinned against the real emitter.** `body_hash` must be the exact
+`renderingVersion` a highlight stores or "your offsets moved" is wrong in both directions; a test
+parses the fixture independently, runs `ASTToRenderNodeConverter` the way `DocumentView` does, and
+asserts equality — before and after a body edit. A footnote-only edit moves `content_hash` and not
+`body_hash` and is stamped `'apparatus'`; whitespace moves nothing.
+
+**One design premise corrected in the shipping.** §5.1 says the vanished stamp must run *before*
+the cache delete. It does not need to: the revision row is its own table and survives the delete,
+so the comparison never depends on the cache row being present. The ordering is kept for
+legibility; the commit says it is not load-bearing.
+
+**Mutation sweep: seven killed, one equivalent, one harness artifact.** The artifact is worth
+recording: a mutation that added a `?` to a prepared statement left it unbound, SQLite bound NULL,
+and "always stamp" became "stamp NULL" — a false survivor. Re-expressed as `OR 1`, it died. The
+equivalent one: omitting the source note from `content_hash` changes nothing, because
+`extractBodyText` folds every node's `plainText` — a source note inside the document div is
+already in `body_text`. The term stays, documented as redundant.
+
+Two suite-filter traps in one day, both recorded: a file whose type names do not match its file
+name runs *none* of its suites under a file-named filter and reports the rest as passed.
