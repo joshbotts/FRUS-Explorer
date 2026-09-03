@@ -154,6 +154,17 @@ The store pass reads the prior row, compares, writes the new hashes, and stamps 
 
 ### 5.2 Device-local, not CloudKit — and why that is the right answer anyway
 
+> **SUPERSEDED IN PART, 2026-09-03 (R-5 P3b-2, PR pending).** The owner answered Q-3: review state
+> syncs. This section's reasoning about the *table* still stands — `document_revisions` remains
+> device-local derived data in `frus.db`, because "this device re-downloaded and re-indexed this
+> volume" is a device-local fact. What changed is the *disposition*: a reader's review now also
+> writes an `AnnotationReview` row, a mirrored `@Model`, and a reconcile pass stamps the local
+> column wherever a synced row's `content_hash` still matches. So the cost this section states
+> plainly — "dispositioning an annotation on the iPad does not clear the flag on the Mac" — is no
+> longer paid, and the escape it names (a mirrored field on each annotation) was weighed against
+> one ledger record type and lost on promotion cost. Read the rest of this section as the argument
+> that was made, not as current behaviour.
+
 The revision table is derived data in `frus.db`, not a `@Model`. That is deliberate:
 
 - Adding a stored property to a mirrored `@Model` engages the #488 Production-deploy gate
@@ -264,7 +275,9 @@ that came before it.
 - **No claim the app cannot support.** "This document changed" is provable from two hashes.
   "Your note is now wrong" is not, and the copy must not imply it — the reader is being asked to
   look, not told they are mistaken.
-- **No CloudKit schema change in P1 or P2.** 5.2.
+- **No CloudKit schema change in P1 or P2.** 5.2. *(P3b-2 makes one, deliberately and with the
+  owner's decision on Q-3 behind it — the ninth Production promotion. The refusal was always
+  scoped to P1 and P2.)*
 
 ---
 
@@ -303,7 +316,28 @@ that came before it.
 | **Q-10** | **(b)** the exact, unique, seam-aware search in the shared sheet with Move after an explicit tap and the found words plus context shown; **(e)**'s three sentences ship inside it; **(f)** a Find-passage complement through the twins' existing find machinery. UTF-16 pinned by fixture (the corpus holds no non-BMP or combining character). (c) only if matching ever becomes normalised. | No deploy. |
 | **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | No deploy. |
 
-**Sequence.** *P3b-1* (deploy-free hygiene, **PR #1182**): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR): Q-6 G with the document-grain reconcile, Q-8 (d-cloud), `identifiersAwaitingDeploy` populated. *P3b-3*: Q-10. *P3b-4*: Q-7 (b)+(f) and the iOS manual. *P3b-5*: Q-11 (b)+(i), Q-8 (e), then (b).
+**Sequence.** *P3b-1* (deploy-free hygiene, **PR #1182**, SHIPPED): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR, **PR #1183**) — **CODE COMPLETE 2026-09-03, awaiting the owner's ninth promotion**:
+`AnnotationReview`, one mirrored ledger with a **derived id over `kind|annotationId|document|contentHash|changeKind`**, which makes it
+append-only — two devices reviewing the same change at the same text mint a byte-identical row that
+`DuplicateRecordCleanup` collapses losslessly, so no CloudKit merge can destroy a review (keyed on the
+annotation alone the row would be mutable and last-writer-wins would silently drop one device's). No
+`lastModified`; `createdAt` computed, so it costs no identifier. The kind vocabulary ships whole and only
+`document` has a writer, because minting `note`/`tag`/`collectionEntry`/`summary`/`visitDocument` in P3b-4
+or P3b-5 would cost a TENTH promotion for two columns that already exist. **`highlight` is absent**:
+`renderingVersion` already syncs and keys on `body_hash`, the ledger on `content_hash`, and an
+apparatus-only correction moves one and not the other — two sources of truth with no non-arbitrary
+tie-break. `applyAnnotationReviews` matches the text AND the change (`AND content_hash = ? AND change_kind IS ?`).
+The hash carries most of it — a correction moves it in the same statement that NULLs `reviewed_at` —
+but **not all of it, which the P3b-2 review established**: the upsert's second arm (`OR change_kind =
+'vanished'`) clears the stamp at an UNCHANGED hash, because the vanished mark keeps the hash, so a
+document that vanishes and is restored unchanged is re-opened at a hash the reader already reviewed
+and a hash-only match would have stamped the restoration as seen. The kind term refuses that, and
+subsumes the blanket vanished refusal it replaced — a vanished document's own disposition now crosses
+devices, while a review of the change before it cannot be mistaken for one. The
+reconcile runs at three mounts — boot, the CloudKit import-settle debounce, and after a volume
+re-indexes — and backfills every stamp made since P3a, which would otherwise never leave its device.
+Q-8 (d-cloud) rides along. **10 identifiers** in `identifiersAwaitingDeploy`; the baseline is deliberately
+not restated. *P3b-3*: Q-10. *P3b-4*: Q-7 (b)+(f) and the iOS manual. *P3b-5*: Q-11 (b)+(i), Q-8 (e), then (b).
 
 ## 9. What this design does not cover
 

@@ -109,6 +109,18 @@ actor SummarizationService {
         print("[SummarizationService] Starting summarization for \(volumeId)/\(documentId)")
         #endif
 
+        // R-5 P3b-2 (design Q-8 d-cloud): the hash of the text being summarised, read BEFORE the
+        // provider call. A chunked document takes minutes and a download can re-index mid-run, so
+        // reading it afterwards would stamp the summary with the hash of text it never saw. `nil`
+        // when the document is not indexed on this device — never `""`, which would read as a
+        // hash and compare unequal to every real one.
+        var sourceContentHash: String? = nil
+        if let pipeline = indexingPipeline,
+           let row = try? await pipeline.documentRevision(volumeId: volumeId, documentId: documentId),
+           !row.contentHash.isEmpty {
+            sourceContentHash = row.contentHash
+        }
+
         let (resultText, wasChunked) = try await generateSummaryText(
             documentText: documentText,
             prompt: prompt,
@@ -125,7 +137,8 @@ actor SummarizationService {
             responseText: resultText,
             responseFormat: prompt.responseFormat,
             wasChunked: wasChunked,
-            projectId: activeProjectId
+            projectId: activeProjectId,
+            sourceContentHash: sourceContentHash
         )
 
         let context = ModelContext(modelContainer)

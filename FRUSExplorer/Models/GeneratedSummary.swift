@@ -51,6 +51,8 @@ import SwiftData
 ///          this source, and is harmless. Track for removal when Apple fixes the macro.
 ///   1.4 — R-5 P3b-1: `newestNonDraftPerDocument` / `draftOnlyDocuments` — statics only; no stored
 ///          property, no CloudKit change
+///   1.5 — R-5 P3b-2: `sourceContentHash` — the revision hash of the text a summary describes.
+///          A NEW mirrored field: it boards the ninth Production promotion.
 @Model final class GeneratedSummary: @unchecked Sendable {
 
     // MARK: - Identity
@@ -121,6 +123,32 @@ import SwiftData
         didSet { lastModified = .now }
     }
 
+    // MARK: - Provenance of the text summarised (R-5 P3b-2)
+
+    /// The `document_revisions.content_hash` of the text this summary describes, read at
+    /// generation, or `nil` when the document was not indexed then — and on every summary made
+    /// before this field existed.
+    ///
+    /// It is the revision row's own hash, never a hash of the text handed to the summariser:
+    /// three different recipes feed that text (the document view's `\n\n` join, the background
+    /// runner's, the export's space-joined `body_text`) and `contentHash` hashes the stored
+    /// columns instead, so no text hash could ever compare equal.
+    ///
+    /// **No `didSet`, unlike every neighbouring property.** Those observers never fire on a
+    /// `@Model` stored property, and nothing should ever rewrite this value: a summary describes
+    /// the text it was made from, permanently.
+    ///
+    /// **One known imprecision, on the bulk path only, and a reader of this field must allow for
+    /// it.** `SummarizationService.summarize` reads the hash as each document begins. A bulk run
+    /// materialises every document's text up front and then summarises for hours, so if a volume
+    /// is updated mid-run, a later job in that volume is summarised from the text captured before
+    /// the update while the hash recorded is the one after it — the summary would read as
+    /// describing the current text when it describes the earlier one. Closing this means carrying
+    /// the hash beside the text through `BackgroundSummarizationService`'s job list, which needs a
+    /// pipeline reference that service does not have; it is an obligation of the phase that first
+    /// READS this field (design §8.2, P3b-5), not of the phase that writes it.
+    var sourceContentHash: String? = nil
+
     // MARK: - Project Context
 
     /// The project active at generation time. `nil` if generated in global context.
@@ -146,7 +174,8 @@ import SwiftData
         wasChunked: Bool = false,
         projectId: UUID? = nil,
         authorship: SummaryAuthorship = .aiGenerated,
-        isHeadnoteDraft: Bool = false
+        isHeadnoteDraft: Bool = false,
+        sourceContentHash: String? = nil
     ) {
         self.id = UUID()
         self.documentId = documentId
@@ -158,6 +187,7 @@ import SwiftData
         self.projectId = projectId
         self.authorship = authorship
         self.isHeadnoteDraft = isHeadnoteDraft
+        self.sourceContentHash = sourceContentHash
         let now = Date.now
         createdAt = now
         lastModified = now
@@ -214,6 +244,9 @@ extension GeneratedSummary {
     /// without touching the original's drafts (#300). If `sourceEntry.headnoteSummaryId` points at a
     /// *real* document summary (not a draft), it is left shared: that summary belongs to the document,
     /// so the entry-field copy's identical id is correct.
+    /// **`sourceContentHash` is deliberately absent below.** A headnote draft is the reader's own
+    /// text, collection-private, and excluded from the review counts — it does not describe a
+    /// version of the document in the sense the field means, so a copy must not invent one.
     static func duplicateHeadnoteDraft(from sourceEntry: CollectionEntry,
                                        to copyEntry: CollectionEntry,
                                        in context: ModelContext) {

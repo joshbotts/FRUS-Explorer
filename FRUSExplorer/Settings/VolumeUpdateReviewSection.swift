@@ -35,6 +35,8 @@ import SwiftData
 struct VolumeUpdateReviewSection: View {
 
     @Environment(AppState.self) private var appState
+    /// R-5 P3b-2: the volume-grain Mark Reviewed mints one ledger row per changed document.
+    @Environment(\.modelContext) private var modelContext
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -152,14 +154,29 @@ struct VolumeUpdateReviewSection: View {
                 volumeToReview = nil
             }
         } message: {
-            Text(String(localized: "settings.updateReview.markVolume.message",
-                        defaultValue: "This stamps every changed document in the volume as reviewed on this device. Highlights stay flagged until you confirm each one, and the next update re-opens anything that changes again."))
+            Text(String(localized: "settings.updateReview.markVolume.message.v2",
+                        defaultValue: "This marks every changed document in the volume as reviewed. With iCloud sync it reaches your other devices too, a few seconds after they next sync or when they next open. Highlights stay flagged until you confirm each one, and the next update re-opens anything that changes again."))
         }
     }
 
     /// Stamps the volume, then reloads and tells the other readers.
+    ///
+    /// **One ledger row per changed document (R-5 P3b-2), and the fan-out is deliberate.** The
+    /// review is per document — that is the grain the reader's other devices need — so a volume
+    /// where the Office of the Historian corrected many documents mints many rows in one tap.
+    /// They are small and byte-identical across devices, and `markVolumeRevisionsReviewed`
+    /// returns only a count, so the rows are minted from the revisions this section already holds
+    /// rather than from its result.
     private func markVolumeReviewed(_ volumeId: String) async {
         guard let pipeline = appState.indexingPipeline else { return }
+        for revision in revisions where revision.volumeId == volumeId
+            && revision.changedAt != nil && revision.reviewedAt == nil && !revision.contentHash.isEmpty {
+            AnnotationReviewStore.record(kind: .document, volumeId: revision.volumeId,
+                                         documentId: revision.documentId,
+                                         contentHash: revision.contentHash,
+                                         changeKind: revision.changeKind, context: modelContext)
+        }
+        try? modelContext.save()
         _ = try? await pipeline.markVolumeRevisionsReviewed(volumeId: volumeId)
         await reload()
         appState.revisionReviewToken += 1

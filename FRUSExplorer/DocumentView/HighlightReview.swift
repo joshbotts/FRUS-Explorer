@@ -22,8 +22,11 @@ import SwiftData
 ///
 /// Confirm rewrites `renderingVersion`, which is the only per-highlight review state the model
 /// has — and it is a CloudKit-mirrored field, so a confirmation made on one device clears the amber
-/// on every device, while the document-level `reviewed_at` stamp stays on the device that made it
-/// (§5.2). The sheet's copy says so.
+/// on every device. Since R-5 P3b-2 the document-level stamp travels too, through the
+/// `AnnotationReview` ledger, so both halves of a review now reach the reader's other devices;
+/// highlights keep this field rather than gaining a ledger row, because the two key on different
+/// hashes (`renderingVersion` against the revision row's `body_hash`, the ledger against its
+/// `content_hash`) and an apparatus-only correction moves one and not the other.
 ///
 /// Version history:
 ///   1.0 — R-5 P3: initial implementation

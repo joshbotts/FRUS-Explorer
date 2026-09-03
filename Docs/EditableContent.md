@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed).**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1923,11 +1923,11 @@ Mark Reviewed
 <!-- END SOURCE: document.review.markReviewed -->
 
 #### What Changed — footer
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 185–186 | key: document.review.change.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 185–186 | key: document.review.change.footer.v2 | shared: iOS+macOS (single edit point) -->
 
-Marking the document reviewed clears it from “Changed by an update” on this device only. Highlights stay flagged until you confirm each one, and the next update re-opens the document if it changes again.
+Marking the document reviewed clears it from “Changed by an update”. With iCloud sync it reaches your other devices too, a few seconds after they next sync or when they next open. Highlights stay flagged until you confirm each one, and the next update re-opens the document if it changes again.
 
-<!-- END SOURCE: document.review.change.footer -->
+<!-- END SOURCE: document.review.change.footer.v2 -->
 
 #### Highlights — header
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 198 | key: document.review.highlights.header | shared: iOS+macOS (single edit point) -->
@@ -2086,11 +2086,11 @@ Cancel
 <!-- END SOURCE: settings.updateReview.markVolume.cancel -->
 
 #### Dialog message
-<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 155–156 | key: settings.updateReview.markVolume.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 157–158 | key: settings.updateReview.markVolume.message.v2 | shared: iOS+macOS (single edit point) -->
 
-This stamps every changed document in the volume as reviewed on this device. Highlights stay flagged until you confirm each one, and the next update re-opens anything that changes again.
+This marks every changed document in the volume as reviewed. With iCloud sync it reaches your other devices too, a few seconds after they next sync or when they next open. Highlights stay flagged until you confirm each one, and the next update re-opens anything that changes again.
 
-<!-- END SOURCE: settings.updateReview.markVolume.message -->
+<!-- END SOURCE: settings.updateReview.markVolume.message.v2 -->
 
 ### Volumes & Storage (Library)
 

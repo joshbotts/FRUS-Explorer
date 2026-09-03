@@ -2340,8 +2340,17 @@ struct FRUSExplorerApp: App {
                 }
                 try? await pipeline.applyClassificationOverrides(overrides)
 
+                // R-5 P3b-2: carry review dispositions between devices. Down — a review made on
+                // another device stamps this one, where the text and the change still match; up —
+                // a stamp this device made before the ledger existed gets a row. The app reacts to
+                // a remote arrival only through the import-settle debounce below, which cannot
+                // fire for an import that finished while the app was closed — so this mount covers
+                // "reviewed while closed" and that one covers "reviewed while open".
+                let reviewOutcome = await AnnotationReviewStore.reconcile(container: container, pipeline: pipeline)
+                if reviewOutcome.changedAnything { appState.revisionReviewToken += 1 }
+
                 #if DEBUG
-                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes, \(overrides.count) classification overrides pushed to FTS5")
+                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes, \(overrides.count) classification overrides pushed to FTS5; reviews stamped \(reviewOutcome.stamped), backfilled \(reviewOutcome.backfilled)")
                 #endif
             }
         }
@@ -2421,6 +2430,14 @@ struct FRUSExplorerApp: App {
                     // Semantic-ready when search-ready: 148 KB beside the ~6 MB volume the user
                     // just chose to download.
                     await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
+                    // R-5 P3b-2: the mount that survives the upsert. A ledger row carrying the
+                    // POST-correction hash cannot match anything until this device has re-indexed
+                    // and moved its own hash — which just happened. Boot-only would leave the
+                    // second device showing an unreviewed change for the whole session.
+                    let reviewOutcome = await AnnotationReviewStore.reconcile(container: container, pipeline: pipeline)
+                    if reviewOutcome.changedAnything {
+                        await MainActor.run { appState.revisionReviewToken += 1 }
+                    }
                     #if DEBUG
                     print("[FRUSExplorer] Auto-indexed \(volumeId): \(summaries.count) summaries, \(notes.count) notes synced.")
                     #endif
@@ -2573,6 +2590,15 @@ struct FRUSExplorerApp: App {
                                 // settled store, not a partial one mid-sync.
                                 SummarizationPromptSeeder.collapseDuplicates(
                                     context: modelContainer.mainContext)
+                                // R-5 P3b-2: same debounce, same reason — a review that arrived
+                                // in this import reaches the local index here rather than at the
+                                // next cold launch. This is the app's only reaction to a remote
+                                // arrival, which is why the boot mount is not optional either.
+                                if let pipeline = appState.indexingPipeline {
+                                    let outcome = await AnnotationReviewStore.reconcile(
+                                        container: modelContainer, pipeline: pipeline)
+                                    if outcome.changedAnything { appState.revisionReviewToken += 1 }
+                                }
                                 // Wave R-2a: same debounce, same reason. Running the trail
                                 // migration only after imports go quiet means a second device
                                 // that has already migrated will usually have delivered its rows
