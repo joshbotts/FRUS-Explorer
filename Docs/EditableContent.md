@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row).**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1684,6 +1684,181 @@ The iCloud sync zone is missing. Data cannot upload or download until it is recr
 <!-- END SOURCE: settings.sessions.delete.message.trail.v2 %@ -->
 
 ---
+
+### After an Update — the storage hubs' post-update summary (R-5 P2)
+
+One shared section mounted by both storage hubs. It says, per updated volume, how many changed
+documents carry the reader's research and splits them by what moved. Numbers are interpolated
+where `%lld` appears.
+
+#### Section header
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 106 | key: settings.updateReview.header | shared: iOS+macOS (single edit point) -->
+
+After an Update
+
+<!-- END SOURCE: settings.updateReview.header -->
+
+#### Section footer
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 108–109 | key: settings.updateReview.footer | shared: iOS+macOS (single edit point) -->
+
+When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, collection entry, summary, or archive-visit plan. The Research tab lists the changed ones under “Changed by an update”, and each opens with a banner saying whether its text moved or only its notes and heading changed.
+
+<!-- END SOURCE: settings.updateReview.footer -->
+
+#### Nothing waiting — label
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 75–76 | key: settings.updateReview.none.label | shared: iOS+macOS (single edit point) -->
+
+No changes waiting
+
+<!-- END SOURCE: settings.updateReview.none.label -->
+
+#### Nothing waiting — detail
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 77–78 | key: settings.updateReview.none.detail | shared: iOS+macOS (single edit point) -->
+
+No volume update on this device has changed a document since it was last indexed.
+
+<!-- END SOURCE: settings.updateReview.none.detail -->
+
+#### Summary row — label
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 82–83 | key: settings.updateReview.summary.label | shared: iOS+macOS (single edit point) -->
+
+Updates changed documents
+
+<!-- END SOURCE: settings.updateReview.summary.label -->
+
+#### Summary row — detail
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 144–145 | key: settings.updateReview.summary.detail %lld %lld %lld | shared: iOS+macOS (single edit point) -->
+
+%1$lld documents changed in %2$lld updated volumes. %3$lld of them carry your research. *(Interpolated with the changed-document, volume, and annotated-document totals.)*
+
+<!-- END SOURCE: settings.updateReview.summary.detail %lld %lld %lld -->
+
+#### Volume row — lead
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 167–168 | key: settings.updateReview.volume.lead %lld %lld | shared: iOS+macOS (single edit point) -->
+
+%1$lld of %2$lld changed documents carry your research *(followed by a colon and the non-zero parts below, or a full stop when none apply)*
+
+<!-- END SOURCE: settings.updateReview.volume.lead %lld %lld -->
+
+#### Volume row — part: text
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 156–157 | key: settings.updateReview.part.body %lld | shared: iOS+macOS (single edit point) -->
+
+%lld with changed text
+
+<!-- END SOURCE: settings.updateReview.part.body %lld -->
+
+#### Volume row — part: apparatus
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 160–161 | key: settings.updateReview.part.apparatus %lld | shared: iOS+macOS (single edit point) -->
+
+%lld with changed footnotes, source note, or heading
+
+<!-- END SOURCE: settings.updateReview.part.apparatus %lld -->
+
+#### Volume row — part: gone
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 164–165 | key: settings.updateReview.part.vanished %lld | shared: iOS+macOS (single edit point) -->
+
+%lld no longer in the volume
+
+<!-- END SOURCE: settings.updateReview.part.vanished %lld -->
+
+#### More volumes
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 94–95 | key: settings.updateReview.more %lld | shared: iOS+macOS (single edit point) -->
+
+And %lld more volumes with changed annotated documents.
+
+<!-- END SOURCE: settings.updateReview.more %lld -->
+
+#### Loading
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 101 | key: settings.updateReview.loading | shared: iOS+macOS (single edit point) -->
+
+Checking for changed documents…
+
+<!-- END SOURCE: settings.updateReview.loading -->
+
+#### Open Research button
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 128 | key: settings.updateReview.openResearch | shared: iOS+macOS (single edit point) -->
+
+Open Research
+
+<!-- END SOURCE: settings.updateReview.openResearch -->
+
+### Document Change Banner (R-5 P2)
+
+One shared banner above a document in both document views. Which sentence shows depends on the
+recorded change (text, apparatus, gone) and on whether any stored highlight was made against an
+earlier rendering. The first key is the pre-existing highlight hedge, now declared here only.
+
+#### No recorded change, stale highlights
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 88–89 | key: highlight.stale.warning | shared: iOS+macOS (single edit point) -->
+
+Some highlights may be misaligned — the document has been updated since they were created.
+
+<!-- END SOURCE: highlight.stale.warning -->
+
+#### Text changed
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 91–92 | key: document.changed.body | shared: iOS+macOS (single edit point) -->
+
+The text of this document changed in a volume update. Highlight positions may have moved.
+
+<!-- END SOURCE: document.changed.body -->
+
+#### Text changed, stale highlights
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 94–95 | key: document.changed.body.stale | shared: iOS+macOS (single edit point) -->
+
+The text of this document changed in a volume update. Some highlights may be misaligned.
+
+<!-- END SOURCE: document.changed.body.stale -->
+
+#### Apparatus changed
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 97–98 | key: document.changed.apparatus | shared: iOS+macOS (single edit point) -->
+
+Footnotes, the source note, or the heading changed in a volume update. The text did not.
+
+<!-- END SOURCE: document.changed.apparatus -->
+
+#### Apparatus changed, stale highlights
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 100–101 | key: document.changed.apparatus.stale | shared: iOS+macOS (single edit point) -->
+
+Footnotes, the source note, or the heading changed in a volume update, and some highlights may be misaligned.
+
+<!-- END SOURCE: document.changed.apparatus.stale -->
+
+#### No longer in the volume
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 103–104 | key: document.changed.vanished | shared: iOS+macOS (single edit point) -->
+
+This document is no longer in the volume after an update.
+
+<!-- END SOURCE: document.changed.vanished -->
+
+### Research — Changed by an update (R-5 P2)
+
+#### Sidebar row
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 569–570 | key: research.sidebar.updated -->
+
+Changed by an update
+
+<!-- END SOURCE: research.sidebar.updated -->
+
+#### Row line — text changed
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1325–1326 | key: research.row.changed.body -->
+
+Text changed in an update — highlight positions may have moved
+
+<!-- END SOURCE: research.row.changed.body -->
+
+#### Row line — apparatus changed
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1328–1329 | key: research.row.changed.apparatus -->
+
+Footnotes, source note, or heading changed in an update — the text did not
+
+<!-- END SOURCE: research.row.changed.apparatus -->
+
+#### Row line — gone
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1331–1332 | key: research.row.changed.vanished -->
+
+No longer in the volume after an update
+
+<!-- END SOURCE: research.row.changed.vanished -->
 
 ### Volumes & Storage (Library)
 

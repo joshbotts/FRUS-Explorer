@@ -2367,6 +2367,11 @@ struct FRUSExplorerApp: App {
                     // Yield before indexing so the download completion write can
                     // fully flush before we begin a potentially long CPU/DB task.
                     await Task.yield()
+                    // R-5 P2: an update overwrites the file in place, and the AST cache is keyed by
+                    // volume. Without this a document opened before the update keeps rendering the
+                    // superseded text from cache while the index — and the change banner — describe
+                    // the new one. Idempotent, so a first download pays nothing.
+                    await appState.documentASTCache.removeVolume(volumeId)
                     try? await pipeline.indexVolume(volumeId)
                     // After document_cache is populated, push any existing summaries
                     // for this volume into FTS5. This handles the re-download-after-reset

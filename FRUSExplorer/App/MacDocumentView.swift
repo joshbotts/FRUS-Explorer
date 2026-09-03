@@ -127,6 +127,9 @@ struct MacDocumentView: View {
     @State private var showAddExcerpt = false
 
     @Query private var highlights:              [DocumentHighlight]
+    /// This document's `document_revisions` row (R-5 P2), loaded per open; nil until read or when
+    /// the volume has never been re-indexed. Feeds `DocumentChangeBanner` beside the highlight check.
+    @State private var revision: IndexingPipeline.DocumentRevision?
 
     // Research rail visibility (⌘⇧R) — gates the trailing rail + the volume-nav bar (C5). The
     // rail owns the per-accordion expansion keys; this view only needs the top-level toggle.
@@ -221,6 +224,10 @@ struct MacDocumentView: View {
             case .rememberLast: break
             }
             await loadDocument()
+            // R-5 P2: this document's recorded change, if an update stamped one.
+            revision = await DocumentChangeBanner.revision(volumeId: entry.volumeId,
+                                                           documentId: entry.documentId,
+                                                           pipeline: appState.indexingPipeline)
             // #988: the note this navigation was aimed at, if any. macOS mounts a fresh
             // MacDocumentView per push, so this runs once per document.
             revealedFootnoteAnchor = entry.footnoteAnchor
@@ -479,11 +486,11 @@ struct MacDocumentView: View {
 
             Divider()
 
-            // Stale highlight banner (WebKit path)
+            // Change banner (R-5 P2): a recorded update to this document and/or stored highlights
+            // whose renderingVersion doesn't match the current one. One shared view for both twins.
             let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: renderModel)
-            if highlights.contains(where: { $0.renderingVersion != renderingVersion }) {
-                staleHighlightBanner
-            }
+            DocumentChangeBanner(revision: revision,
+                                 highlightsStale: highlights.contains { $0.renderingVersion != renderingVersion })
 
             // Document body — WKWebView handles scrolling, tables, footnotes, and highlights.
             FRUSDocumentWebView(
@@ -679,23 +686,6 @@ struct MacDocumentView: View {
               let range = Range(match.range(at: 1), in: dl)
         else { return nil }
         return Int(dl[range])
-    }
-
-    // MARK: - Stale Highlight Banner
-
-    private var staleHighlightBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-            Text(String(localized: "highlight.stale.warning",
-                        defaultValue: "Some highlights may be misaligned — the document has been updated since they were created."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.orange.opacity(0.08))
     }
 
     /// The "Document" menu's command surface for this document (UI audit gap 6),

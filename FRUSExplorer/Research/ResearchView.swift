@@ -32,6 +32,9 @@ enum ResearchSidebarItem: Hashable {
     /// and its History menu, so a second door in the Research window's sidebar would be a
     /// duplicate surface.
     case history
+    /// Documents an OH correction changed since the reader annotated them — the affected-documents
+    /// filter of the annotation-integrity design (R-5 P2). Keys come from `document_revisions`.
+    case updated
 }
 
 // MARK: - ResearchDocumentEntry
@@ -47,6 +50,15 @@ enum ResearchSidebarItem: Hashable {
 /// `latestNote` is `nil` when a document has only direct tags, collection entries, or highlights.
 /// `collectionIds` is empty when the document has not been added to any collection.
 /// `highlights` is empty when the document has no saved highlights.
+///
+/// **Widened for R-5 P2** so the affected-documents filter reaches every annotation the design's
+/// §5.3 names: `summaryCount` (`GeneratedSummary` — *derived from the text*, so the annotation most
+/// certainly superseded by a correction) and `isInVisitPlan` (`ArchiveVisitDocument`, whose plan is
+/// built on the source note). A document carrying only one of those was invisible here before, and
+/// so would have been invisible to a review of what an update changed.
+///
+/// `revision` is the device's own record of the last change a re-index found for this document
+/// (`document_revisions`, P1), or `nil` when nothing has changed since it was first indexed here.
 struct ResearchDocumentEntry: Identifiable {
     /// Stable key: `"volumeId/documentId"`.
     let id: String
@@ -56,6 +68,12 @@ struct ResearchDocumentEntry: Identifiable {
     let latestNote: ResearchNote?
     /// Total number of `ResearchNote` records for this document.
     let noteCount: Int
+    /// `GeneratedSummary` records for this document (R-5 P2).
+    var summaryCount: Int = 0
+    /// Whether an archive-visit plan names this document (R-5 P2).
+    var isInVisitPlan: Bool = false
+    /// The unreviewed change a re-index recorded, if any (R-5 P2).
+    var revision: IndexingPipeline.DocumentRevision? = nil
     /// Union of tags from all notes and direct `DocumentTagAssignment` records.
     let allTagIds: Set<UUID>
     /// IDs of `Collection` records this document belongs to.
@@ -128,6 +146,14 @@ struct ResearchView: View {
     @Query private var allCollectionEntries: [CollectionEntry]
     /// Saved highlights — the fourth annotation source; newest-first for display ordering.
     @Query(sort: \DocumentHighlight.createdAt, order: .reverse) private var allHighlights: [DocumentHighlight]
+    /// R-5 P2: the two annotation types the aggregation did not reach — a summary is derived from
+    /// the text and a visit plan from the source note, so both are exactly what a correction
+    /// supersedes, and a document carrying only one of them must appear here to be reviewable.
+    @Query private var allSummaries: [GeneratedSummary]
+    @Query private var allVisitDocuments: [ArchiveVisitDocument]
+    /// R-5 P2: every unreviewed change the device's re-indexes have recorded, keyed by document.
+    /// Loaded off the body path; re-read when the indexed set changes.
+    @State private var unreviewedRevisions: [String: IndexingPipeline.DocumentRevision] = [:]
 
     /// Projects — used to surface the active project's Project Home entry (#377 Phase 1 iOS follow-up).
     @Query(sort: \Project.name) private var allProjects: [Project]
@@ -191,6 +217,13 @@ struct ResearchView: View {
     var body: some View {
         navigationContainer
             // Reload headers when the selected item or the visible document set changes.
+            // R-5 P2: the unreviewed change set. Read once on appear and again when an indexing batch
+        // settles — NOT on `indexedVolumeIds`, which a re-index leaves unchanged (the id was already
+        // in the set), so a change-set read keyed on it would never refresh after an update.
+        .task { await loadUnreviewedRevisions() }
+        .onChange(of: appState.indexingBatch) { _, batch in
+            if batch == nil { Task { await loadUnreviewedRevisions() } }
+        }
             .task(id: selectedItemDocumentIds) { await loadHeaders() }
             // Reload note-sourced headers when any note changes.
             .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
@@ -526,6 +559,26 @@ struct ResearchView: View {
                     }
                 }
 
+                // R-5 P2: the affected-documents filter. Shown only when there is something to
+                // review — a row that is always present with a zero is a warning the reader learns
+                // to skip, and the design's §5.5 asks for "a badge that waits", not one that nags.
+                if updatedDocumentCount > 0 {
+                    sidebarRow(.updated) {
+                        Label {
+                            HStack {
+                                Text(String(localized: "research.sidebar.updated",
+                                            defaultValue: "Changed by an update"))
+                                Spacer()
+                                Text("\(updatedDocumentCount)")
+                                    .font(FRUSTheme.captionFont)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                        }
+                    }
+                }
+
                 #if os(iOS)
                 // Wave R-3: the research trail's only door on iPhone/iPad. macOS reaches the same
                 // `HistoryView` through the `frus.history` window and the History menu, so adding
@@ -650,6 +703,9 @@ struct ResearchView: View {
             case .highlightColor:
                 return String(localized: "research.empty.noDocs.highlight",
                               defaultValue: "No documents have highlights in this color.")
+            case .updated:
+                return String(localized: "research.empty.noDocs.updated",
+                              defaultValue: "No document you have annotated has changed since it was indexed on this device.")
             case .history:
                 // Unreachable: `destination(for:)` routes `.history` to `HistoryView` and never
                 // reaches this list. Present so the switch stays exhaustive.
@@ -720,6 +776,31 @@ struct ResearchView: View {
             // Highlight strips — displayed first so the user sees the document's
             // own words before their note commentary. Up to 3 strips; overflow
             // is indicated by a count line.
+            // R-5 P2: what a re-index found, in the kind's own words — and never "your note is
+            // wrong", which the app cannot know (design §7).
+            if let revision = entry.revision,
+               let line = ResearchDocumentAggregation.changeLine(for: revision) {
+                Label(line, systemImage: "arrow.triangle.2.circlepath")
+                    .font(.caption)
+                    .foregroundStyle(revision.changeKind == "vanished" ? Color.red : Color.orange)
+                    .lineLimit(2)
+            }
+            if entry.summaryCount > 0 || entry.isInVisitPlan {
+                HStack(spacing: 8) {
+                    if entry.summaryCount > 0 {
+                        Label(String(format: String(localized: "research.row.summaries %lld",
+                                                    defaultValue: "%lld summaries"),
+                                     Int64(entry.summaryCount)), systemImage: "text.alignleft")
+                    }
+                    if entry.isInVisitPlan {
+                        Label(String(localized: "research.row.inVisitPlan", defaultValue: "In a visit plan"),
+                              systemImage: "building.columns")
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            }
+
             if !entry.highlights.isEmpty {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(entry.highlights.prefix(3)) { hl in
@@ -985,12 +1066,18 @@ struct ResearchView: View {
     }
 
     /// Total distinct documents across all four annotation sources.
-    private var allAnnotatedDocumentCount: Int {
-        Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
-            .union(directlyTaggedDocs.keys)
-            .union(collectionMemberships.keys)
-            .union(highlightedDocs.keys)
-            .count
+    private var allAnnotatedDocumentCount: Int { allAnnotatedKeys.count }
+
+    /// Every document carrying any annotation this view knows about — six sources since R-5 P2.
+    private var allAnnotatedKeys: Set<String> {
+        ResearchDocumentAggregation.annotatedKeys(
+            notes: allNotes, tagAssignments: allTagAssignments, collections: allCollections,
+            highlights: allHighlights, summaries: allSummaries, visitDocuments: allVisitDocuments)
+    }
+
+    /// R-5 P2: the annotated documents an unreviewed change touched — the badge that waits.
+    private var updatedDocumentCount: Int {
+        allAnnotatedKeys.intersection(unreviewedRevisions.keys).count
     }
 
     /// Tags paired with their distinct-document count (notes + direct tags), sorted most-used first.
@@ -1021,6 +1108,20 @@ struct ResearchView: View {
     }
 
     /// Doc key → highlights array (newest-first), built from `allHighlights`.
+    /// R-5 P2: summary counts by document key.
+    private var summarizedDocs: [String: Int] {
+        var result: [String: Int] = [:]
+        for summary in allSummaries where !summary.volumeId.isEmpty && !summary.documentId.isEmpty {
+            result["\(summary.volumeId)/\(summary.documentId)", default: 0] += 1
+        }
+        return result
+    }
+
+    /// R-5 P2: documents named by any archive-visit plan. `documentKey` is already the composite.
+    private var visitPlanDocs: Set<String> {
+        Set(allVisitDocuments.map(\.documentKey).filter { !$0.isEmpty })
+    }
+
     private var highlightedDocs: [String: [DocumentHighlight]] {
         var result: [String: [DocumentHighlight]] = [:]
         for h in allHighlights {
@@ -1052,14 +1153,19 @@ struct ResearchView: View {
     ///
     /// Documents with no notes have `latestNote == nil`. Sorted by newest annotation
     /// date (considering both `lastModified` of notes and `createdAt` of highlights).
+    /// Reads every unreviewed change the device's re-indexes recorded (R-5 P2).
+    private func loadUnreviewedRevisions() async {
+        guard let pipeline = appState.indexingPipeline else { return }
+        let rows = (try? await pipeline.unreviewedDocumentRevisions()) ?? []
+        unreviewedRevisions = Dictionary(rows.map { ("\($0.volumeId)/\($0.documentId)", $0) },
+                                         uniquingKeysWith: { first, _ in first })
+    }
+
     private func documents(for item: ResearchSidebarItem) -> [ResearchDocumentEntry] {
         let matchingKeys: Set<String>
         switch item {
         case .allNotes:
-            matchingKeys = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
-                .union(directlyTaggedDocs.keys)
-                .union(collectionMemberships.keys)
-                .union(highlightedDocs.keys)
+            matchingKeys = allAnnotatedKeys
         case .tag(let id):
             let fromNotes  = Set(allNotes.filter { $0.userTagIds.contains(id) }
                                          .map { "\($0.volumeId)/\($0.documentId)" })
@@ -1073,6 +1179,10 @@ struct ResearchView: View {
                     .filter { $0.color == color }
                     .map { "\($0.volumeId)/\($0.documentId)" }
             )
+        case .updated:
+            // Only ANNOTATED documents: a changed document nobody wrote on is not the reader's
+            // to review, and the design's whole claim is confined to what they annotated.
+            matchingKeys = allAnnotatedKeys.intersection(unreviewedRevisions.keys)
         case .history:
             // The trail is not an annotation source — `HistoryView` reads it directly.
             matchingKeys = []
@@ -1113,6 +1223,9 @@ struct ResearchView: View {
                 documentId: parts[1],
                 latestNote: sortedNotes.first,
                 noteCount: notes.count,
+                summaryCount: summarizedDocs[key] ?? 0,
+                isInVisitPlan: visitPlanDocs.contains(key),
+                revision: unreviewedRevisions[key],
                 allTagIds: noteTagIds.union(directTagIds),
                 collectionIds: colIds,
                 highlights: docHighlights
@@ -1155,10 +1268,70 @@ struct ResearchView: View {
         case .highlightColor(let color):
             return color.displayName + " " + String(localized: "research.list.highlights",
                                                     defaultValue: "Highlights")
+        case .updated:
+            return String(localized: "research.list.updated", defaultValue: "Changed by an update")
         case .history:
             // `HistoryView` sets its own navigation title; this is only reached if a future
             // caller asks for the label outside `destination(for:)`.
             return String(localized: "research.sidebar.history", defaultValue: "History")
+        }
+    }
+}
+
+
+// MARK: - ResearchDocumentAggregation
+
+/// The rule for which documents the Research list shows, and the sentence a recorded change gets
+/// (R-5 P2). Pure, so the coverage claim the design's §5.6 rests on — *a review flow is a filter
+/// over this aggregation* — can be tested without a view.
+///
+/// Version history:
+///   1.0 — R-5 P2: extracted from `ResearchView` and widened to six sources
+enum ResearchDocumentAggregation {
+
+    /// Every `"volumeId/documentId"` carrying at least one annotation, across six sources.
+    ///
+    /// The two added for P2 are the ones a correction is most likely to supersede: a
+    /// `GeneratedSummary` is derived from the text, and an `ArchiveVisitDocument`'s plan from the
+    /// source note. Before P2 a document carrying only one of those did not appear here at all.
+    static func annotatedKeys(notes: [ResearchNote],
+                              tagAssignments: [DocumentTagAssignment],
+                              collections: [Collection],
+                              highlights: [DocumentHighlight],
+                              summaries: [GeneratedSummary],
+                              visitDocuments: [ArchiveVisitDocument]) -> Set<String> {
+        var keys = Set<String>()
+        for n in notes where !n.volumeId.isEmpty && !n.documentId.isEmpty { keys.insert("\(n.volumeId)/\(n.documentId)") }
+        for t in tagAssignments where !t.volumeId.isEmpty && !t.documentId.isEmpty { keys.insert("\(t.volumeId)/\(t.documentId)") }
+        for c in collections {
+            for e in c.documentEntries ?? [] where e.kind == CollectionEntryKind.document.rawValue
+                && !e.volumeId.isEmpty && !e.documentId.isEmpty {
+                keys.insert("\(e.volumeId)/\(e.documentId)")
+            }
+        }
+        for h in highlights where !h.volumeId.isEmpty && !h.documentId.isEmpty { keys.insert("\(h.volumeId)/\(h.documentId)") }
+        for g in summaries where !g.volumeId.isEmpty && !g.documentId.isEmpty { keys.insert("\(g.volumeId)/\(g.documentId)") }
+        for v in visitDocuments where !v.documentKey.isEmpty { keys.insert(v.documentKey) }
+        return keys
+    }
+
+    /// The row's sentence for a recorded change, or `nil` for a kind the app does not know.
+    ///
+    /// Each names what is provable from two hashes and no more: "changed", "positions may have
+    /// moved", "no longer in the volume". None says the reader's annotation is wrong.
+    static func changeLine(for revision: IndexingPipeline.DocumentRevision) -> String? {
+        switch revision.changeKind {
+        case "body":
+            return String(localized: "research.row.changed.body",
+                          defaultValue: "Text changed in an update — highlight positions may have moved")
+        case "apparatus":
+            return String(localized: "research.row.changed.apparatus",
+                          defaultValue: "Footnotes, source note, or heading changed in an update — the text did not")
+        case "vanished":
+            return String(localized: "research.row.changed.vanished",
+                          defaultValue: "No longer in the volume after an update")
+        default:
+            return nil
         }
     }
 }

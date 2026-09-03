@@ -81,6 +81,13 @@ struct ArchivalCopyRulesTests {
         // were already clean, so enrolling them is a zero-diff guard against the next edit.
         "Export/QueryMethodAppendix.swift",
         "ProjectContext/DocumentEngagementService.swift",
+        // R-5 P2: the update-review copy — a hub section, the in-document change banner, and the
+        // two document-view twins that mount it. All four were clean when enrolled (zero-diff),
+        // so this is the guard against the next edit, not a fix.
+        "Settings/VolumeUpdateReviewSection.swift",
+        "DocumentView/DocumentChangeBanner.swift",
+        "DocumentView/DocumentView.swift",
+        "App/MacDocumentView.swift",
     ]
 
     private static func source(_ relative: String) throws -> String {

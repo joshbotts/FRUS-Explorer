@@ -164,6 +164,9 @@ struct MacVolumesStorageHub: View {
                 needsAttentionSection
             }
             keepingCurrentSection
+            // R-5 P2: what the last updates did to the reader's annotated documents. One shared
+            // view, mounted by BOTH hubs — the #900 rule, for the same reason.
+            VolumeUpdateReviewSection()
             storageAndIndexSection
             // #900: one shared view, mounted by BOTH hubs. These two files are hand-maintained
             // twins, so a section written twice is two places for the same four numbers to drift.

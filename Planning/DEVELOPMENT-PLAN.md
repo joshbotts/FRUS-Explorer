@@ -10596,3 +10596,56 @@ already in `body_text`. The term stays, documented as redundant.
 
 Two suite-filter traps in one day, both recorded: a file whose type names do not match its file
 name runs *none* of its suites under a file-named filter and reports the rest as passed.
+
+## Session 2026-09-03b — R-5 P2: say it (PR #1180)
+
+**The owner's instruction widened the scope, and the reading of it is stated here.** "Add documents
+with use research notes to ResearchView to ensure coverage of updated documents" was read as: the
+review filter must reach every document the reader has touched, and `ResearchView` did not — it
+aggregated four sources (notes, tags, collections, highlights) and never a `GeneratedSummary` or an
+`ArchiveVisitDocument`, the two annotations a correction most directly supersedes (a summary is
+derived from the text; a visit plan from the source note). A document carrying only one of those
+did not appear in Research at all. `ResearchDocumentAggregation.annotatedKeys` now takes six
+sources and is the one definition both the Research filter and the hub summary count through.
+
+**What shipped, three surfaces and one shared view each.**
+- **Hubs.** `VolumeUpdateReviewSection`, mounted by both storage hubs beside the update rows: a
+  status row with the three totals, then one row per volume whose changes touch the reader's
+  research, split *text / footnotes-source-note-heading / gone*, zero parts omitted. `Open Research`
+  hands off through the existing `pendingTab` channel on iOS and fronts the Research window on the
+  Mac. Reloaded when an indexing batch ends, which is when a re-download's rows land.
+- **Research.** A *Changed by an update* sidebar row, shown only when non-zero, filtering the
+  aggregation by the unreviewed rows of `document_revisions`; each row states its change kind.
+  The tab carries no badge — the `MainTabView` decision stands, and §5.5's "nothing modal, nothing
+  at launch" is satisfied by the row and the section.
+- **Document.** The twins' two byte-identical `staleHighlightBanner`s became one
+  `DocumentChangeBanner`, whose sentence is a pure function of (recorded change, highlight
+  staleness): seven cells, every one pinned, the pre-P2 hedge preserved word for word for a
+  highlight made before the table existed. It keeps both inputs on purpose — see the Q-5 note in
+  the design: the upsert re-stamps the kind, so a body change followed by an apparatus one reads
+  *apparatus* while the highlight space has moved, and only the highlight's own `renderingVersion`
+  still says so.
+
+**One latent defect fixed on the way.** `onVolumeDownloaded` never dropped the volume's cached
+ASTs (only `onVolumeDeleted` did), so a document opened before an update kept rendering the
+superseded text from cache while the index — and now the banner — described the new one. One
+idempotent `removeVolume` before the re-index.
+
+**Pipeline reads.** `unreviewedDocumentRevisions()` (stamped, unreviewed, across volumes, newest
+first) and `documentRevision(volumeId:documentId:)`; `DocumentRevision` carries its `volumeId`.
+Both tested through the real `indexVolume`. No `@Model`, no index bump; the schema inventory suite
+passes.
+
+**Mutation sweep: 23 mutations, 22 killed on the first pass, the survivor killed by a stronger
+fixture.** The survivor: dropping the `changedAt != nil` half of the banner's guard. The test's
+unstamped row also carried a nil kind, so the guard was redundant against that fixture — and
+against today's table, whose upsert writes stamp and kind together. It is kept as a contract for a
+review path that clears the stamp and leaves the kind, and the fixture now has an unstamped row
+carrying `'body'`, which kills it. Every other cell held: the three sort keys of the per-volume
+order (a fixture where the id order alone would have reversed the result), each of the six
+aggregation sources and its blank-id guard, both SQL predicates, the column order of the
+cross-volume read, and the zero-part omission in the volume sentence.
+
+**Copy guards extended.** The hub section, the banner, and both document-view twins joined
+`ArchivalCopyRulesTests.sources` (zero-diff), and `Docs/EditableContent.md` gained blocks for every
+new key, so the next edit to any of this prose is checked.

@@ -387,6 +387,9 @@ struct DocumentView: View {
     private var isPhone: Bool { UIDevice.current.userInterfaceIdiom == .phone }
 
     @Query private var highlights:             [DocumentHighlight]
+    /// This document's `document_revisions` row (R-5 P2), loaded per open; nil until read or when
+    /// the volume has never been re-indexed. Feeds `DocumentChangeBanner` beside the highlight check.
+    @State private var revision: IndexingPipeline.DocumentRevision?
     @Query private var documentNotes:          [ResearchNote]
     @Query private var documentTagAssignments: [DocumentTagAssignment]
     @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
@@ -462,6 +465,11 @@ struct DocumentView: View {
             // so a REUSED view (the iPad two-pane detail pane renders one `DocumentView` and swaps
             // its `entry`) picks up the new entry's anchor and drops the previous document's.
             revealedFootnoteAnchor = entry.footnoteAnchor
+            // R-5 P2: this document's recorded change, if an update stamped one. Per entry, so a
+            // reused view swaps it with the document.
+            revision = await DocumentChangeBanner.revision(volumeId: entry.volumeId,
+                                                           documentId: entry.documentId,
+                                                           pipeline: appState.indexingPipeline)
             // Apply the default document mode on open (owner decision D2). On iPad/Mac the rail is the
             // persistent trailing inspector: .read closes it, .research opens it (via `panelVisible`),
             // .rememberLast leaves the persisted state untouched (defaults open).
@@ -1506,23 +1514,6 @@ struct DocumentView: View {
         }
     }
 
-    // MARK: - Stale Highlight Banner
-
-    private var staleHighlightBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-            Text(String(localized: "highlight.stale.warning",
-                        defaultValue: "Some highlights may be misaligned — the document has been updated since they were created."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.orange.opacity(0.08))
-    }
-
     // MARK: - Person / Gloss Not Found Sheets
 
     /// Shown when a persName link is tapped but the person data isn't in the index.
@@ -1629,12 +1620,11 @@ struct DocumentView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 4)
             }
-            // Stale highlight banner — shown when any stored highlight's
-            // renderingVersion doesn't match the current document version.
+            // Change banner (R-5 P2): a recorded update to this document and/or stored highlights
+            // whose renderingVersion doesn't match the current one. One shared view for both twins.
             let renderingVersion = ASTToRenderNodeConverter.renderingVersion(for: model)
-            if highlights.contains(where: { $0.renderingVersion != renderingVersion }) {
-                staleHighlightBanner
-            }
+            DocumentChangeBanner(revision: revision,
+                                 highlightsStale: highlights.contains { $0.renderingVersion != renderingVersion })
 
             // Document body — WKWebView handles scrolling, footnotes, and highlights.
             // The edge-tap navigation overlay is layered on top via ZStack rather than
