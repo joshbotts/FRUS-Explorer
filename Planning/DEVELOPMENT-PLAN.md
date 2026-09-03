@@ -10488,3 +10488,35 @@ the section's sentence claimed more than one observation of one series supports;
 4,307 tests in 570 suites; macOS clean; ten mutations killed. **B-5's second item — the live
 UI walkthrough of the pre-1910 classifier surfaces on both platforms — remains and is the
 owner's.**
+
+## Session 2026-09-02 — R-2: the harvest-contract guard (New-Volume-Release-Plan §4.2)
+
+"Start the release plan" with no volume published yet — the corpus clone is 26 commits behind
+`origin/master` and every one is dependabot; `volumes/` is untouched — means the ungated
+readiness rows. The plan's own D-3 puts R-2 first: cheap before the release, and the guard
+against the single worst silent failure it found.
+
+**The failure, verified before building.** `harvest_embeddings.py` assembles
+`run-manifest.json` from its *current* invocation and `json.dump`s it unconditionally; `PREFIX`
+defaults to `""` from the environment. And `head.json` recorded only `model` and `dim`, so the
+store *could not* check `prefix` per volume — the plan said "never cross-checked", and the
+reason is structural, not an omission. A resume that forgot `PREFIX="title: none | text: "`
+would embed the new volume under a different prompt, rewrite the manifest for the whole store,
+pack cleanly under a new provenance digest, and cost every device a 162 MB shard re-fetch.
+
+**Three guards, where the plan offered one or the other.** The harvester refuses a resume whose
+contract differs from the store's manifest (and hashes the GGUF at *startup*, which is the one
+check that can say "you loaded a different file at the same path"). The packer refuses to write
+under any digest but `EXPECT_DIGEST`, before a directory exists. And every new `head.json`
+records the contract, so `pooledDocuments` checks it per volume from now on — the 552 shipped
+heads predate it and are trusted, as they always were.
+
+**Two selftest scenarios were testing my own mock.** The Python sweep's first pass killed four
+of six mutations; the two survivors — the real head writer dropping the contract keys, and the
+GGUF never being hashed — survived because the selftest patched `harvest_volume` out entirely
+and never set `MODEL_FILE`. Both now drive the real code through the network seam alone
+(`embed_batch`) and a real temp GGUF. 20 checks; 6 Python and 5 Swift mutations killed; the
+Swift digest test drives the real `run()` against a two-kilobyte fixture store.
+
+No app-target file references the changed Core types, so no app build is engaged; `swift build`
+of the whole package is the positive signal. R-3 (the `552` literals) is next; R-4 waits on D-1.

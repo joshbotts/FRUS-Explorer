@@ -79,6 +79,10 @@ public enum SemanticVectorsRunner {
         case unpinnedModel(String)
         /// `DIMS` was unusable, or names a width this program has never measured.
         case unusableDims(String)
+        /// `EXPECT_DIGEST` was set and the provenance this pack would carry is not it.
+        case unexpectedDigest(expected: String, actual: String)
+        /// `EXPECT_DIGEST` was set to something that cannot be a SHA-256 hex digest.
+        case malformedExpectedDigest(String)
 
         public var description: String {
             switch self {
@@ -96,6 +100,16 @@ public enum SemanticVectorsRunner {
             case .unpinnedModel(let value):
                 return "run-manifest model_file_sha256 is \(value.isEmpty ? "empty" : value) — a "
                     + "shipped artifact must name the weights it came from"
+            case .unexpectedDigest(let expected, let actual):
+                return "provenance digest \(actual.prefix(12))… but EXPECT_DIGEST is "
+                    + "\(expected.prefix(12))… — refusing to write. A changed digest is a changed "
+                    + "vector family: every installed device would refuse its downloaded shards "
+                    + "and re-fetch all of them (162 MB). If the store's contract really changed "
+                    + "(model, GGUF, prefix, chunking, DIMS), unset EXPECT_DIGEST deliberately; if it "
+                    + "did not, the store or the environment is wrong — see release plan §4.2"
+            case .malformedExpectedDigest(let value):
+                return "EXPECT_DIGEST must be a 64-character hex SHA-256, got "
+                    + "\(value.isEmpty ? "an empty string" : "\"\(value)\"")"
             case .unusableDims(let detail):
                 return "DIMS \(detail). Measured widths: "
                     + measuredRecallAt10.keys.sorted().map(String.init).joined(separator: ", ")
@@ -142,6 +156,10 @@ public enum SemanticVectorsRunner {
             // so the artifact cannot describe a prompt the encoder does not send. Published,
             // never digested — see `Provenance.queryPrefix`.
             queryPrefix: SemanticQueryPrompt.queryPrefix)
+
+        // R-2's packer-side guard. Checked BEFORE any directory is created or byte written, so a
+        // refused run leaves the previous artifacts exactly as they were.
+        try verifyExpectedDigest(env["EXPECT_DIGEST"], actual: provenance.digestHex)
 
         let volumes = try loadManifestVolumes(manifestPath)
         guard !volumes.isEmpty else { throw RunError.emptyManifest(manifestPath) }
@@ -450,6 +468,36 @@ public enum SemanticVectorsRunner {
     ///
     /// - Parameter path: Path to `manifest.json`.
     /// - Returns: The volumes in manifest order.
+    /// Refuses to pack under a provenance digest other than the one the operator expected.
+    ///
+    /// ## Why this exists (release plan §4.2, R-2)
+    /// The family digest is computed from the store's `run-manifest.json`, which the harvester
+    /// rewrites from its *current* invocation at the end of every run. A resumed harvest that
+    /// forgot `PREFIX` therefore packs cleanly under a **different** digest, and every installed
+    /// device then refuses its downloaded shards and re-fetches all of them — 162 MB — to get
+    /// vectors that mix two prompts. The harvester now refuses that resume at its end; this is
+    /// the independent check at ours, and it also catches a store that was transferred from the
+    /// wrong run, which the harvester cannot see.
+    ///
+    /// `nil` (unset) is a pass: the digest is still logged, and a first pack of a new family has
+    /// no prior digest to expect. Empty or non-hex is an error rather than a pass, because an
+    /// operator who set the variable and mistyped it must not be told the pack was verified.
+    ///
+    /// - Parameters:
+    ///   - expected: the `EXPECT_DIGEST` environment value, or `nil` when unset.
+    ///   - actual: the digest this pack would carry.
+    static func verifyExpectedDigest(_ expected: String?, actual: String) throws {
+        guard let expected else { return }
+        let normalised = expected.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard normalised.count == 64,
+              normalised.allSatisfy({ $0.isHexDigit }) else {
+            throw RunError.malformedExpectedDigest(expected)
+        }
+        guard normalised == actual.lowercased() else {
+            throw RunError.unexpectedDigest(expected: normalised, actual: actual)
+        }
+    }
+
     private static func loadManifestVolumes(_ path: String) throws -> [ManifestVolume] {
         guard let data = FileManager.default.contents(atPath: path) else {
             throw GeneratorError.missingFile(path)
