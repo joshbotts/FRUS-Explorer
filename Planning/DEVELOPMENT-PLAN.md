@@ -10597,7 +10597,7 @@ already in `body_text`. The term stays, documented as redundant.
 Two suite-filter traps in one day, both recorded: a file whose type names do not match its file
 name runs *none* of its suites under a file-named filter and reports the rest as passed.
 
-## Session 2026-09-03b — R-5 P2: say it
+## Session 2026-09-03b — R-5 P2: say it (PR #1180)
 
 **The owner's instruction widened the scope, and the reading of it is stated here.** "Add documents
 with use research notes to ResearchView to ensure coverage of updated documents" was read as: the
