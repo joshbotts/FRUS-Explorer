@@ -564,7 +564,7 @@ Historical research can start from a question you are trying to answer or a sour
 
 **Narrow Without Losing Count**
 
-Whatever a search returns, you can see its shape before you read a page of it: how the matches spread across years, volumes, people, document types, and archival provenance. Any of those facets becomes a filter with one tap, and the subjects facet narrows a result set to a single topic area. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the series can be sliced. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
+Whatever a search returns, you can see its shape before you read a page of it: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one tap, and the subjects facet narrows a result set to a single topic area; archival provenance is the exception — it is descriptive only, because the search has no provenance filter to narrow to, and the panel says so where it is shown. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the series can be sliced. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
 
 <!-- section-id: honest-arithmetic -->
 
@@ -1699,11 +1699,18 @@ After an Update
 <!-- END SOURCE: settings.updateReview.header -->
 
 #### Section footer
-<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 108–109 | key: settings.updateReview.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 127–128 | key: settings.updateReview.footer.v2 | shared: iOS only (the macOS wording is the next block) -->
 
-When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, collection entry, summary, or archive-visit plan. The Research tab lists the changed ones under “Changed by an update”, and each opens with a banner saying whether its text moved or only its notes and heading changed.
+When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, quotation, collection entry, summary, or archive-visit plan. The Research tab lists the changed ones under “Changed by an update”. Opening one shows a banner saying whether its text moved or only its notes and heading changed — unless the update removed the document altogether, in which case it opens the review sheet, the only surface that can still reach it.
 
-<!-- END SOURCE: settings.updateReview.footer -->
+<!-- END SOURCE: settings.updateReview.footer.v2 -->
+
+#### After an Update — footer (macOS)
+<!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 124–125 | key: settings.updateReview.footer.mac.v2 | shared: macOS only (Research is a window here, not a tab) -->
+
+When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, quotation, collection entry, summary, or archive-visit plan. The Research window lists the changed ones under “Changed by an update”. Opening one shows a banner saying whether its text moved or only its notes and heading changed — unless the update removed the document altogether, in which case it opens the review sheet, the only surface that can still reach it.
+
+<!-- END SOURCE: settings.updateReview.footer.mac.v2 -->
 
 #### Nothing waiting — label
 <!-- SOURCE: FRUSExplorer/Settings/VolumeUpdateReviewSection.swift | lines: 75–76 | key: settings.updateReview.none.label | shared: iOS+macOS (single edit point) -->
@@ -2785,11 +2792,11 @@ Four Ways to Read These Results
 
 <!-- END SOURCE: tip.examine.title -->
 
-<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | ExamineResultsTip.message | key: tip.examine.message | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/App/DiscoveryTips.swift | lines: 137–138 | key: tip.examine.message.v2 | shared: iOS only -->
 
-Place them on a timeline, line every occurrence up on your search term, rank the words that keep company with it, or break the whole match down by year, volume, person and provenance.
+Place them on a timeline, line every occurrence up on your search term, rank the words that keep company with it, or break the whole match down six ways — by year, volume, person, document type, archival provenance and subject.
 
-<!-- END SOURCE: tip.examine.message -->
+<!-- END SOURCE: tip.examine.message.v2 -->
 
 #### Tip — Facet Rows Are Filters
 *iPhone, iPad and macOS — the one tip with a shared anchor. Appears on the facet panel.*
@@ -2955,17 +2962,17 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | key: search.mode.help -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 958–959 | key: search.mode.help.v2 -->
 
-Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, type and provenance.
+Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
-<!-- END SOURCE: search.mode.help -->
+<!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 935–936 | key: search.facets.on.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1032–1033 | key: search.facets.on.help.v3 -->
 
-Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply
+Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
-<!-- END SOURCE: search.facets.on.help.v2 -->
+<!-- END SOURCE: search.facets.on.help.v3 -->
 
 > ⚠️ **RETIRED — editing this block has no effect.** The app no longer ships this
 > string: no kwic string remains in SearchSheet. Kept so the wording is not lost; delete it, or point it at a

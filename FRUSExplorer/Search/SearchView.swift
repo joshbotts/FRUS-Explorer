@@ -954,8 +954,9 @@ struct SearchView: View {
         .popoverTip(ExamineResultsTip())
         .controlHelp(
             String(localized: "search.mode.a11y", defaultValue: "Examine these results"),
-            detail: String(localized: "search.mode.help",
-                           defaultValue: "Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, type and provenance."),
+            // .v2: the enumeration read as complete and was missing Subjects (#308).
+            detail: String(localized: "search.mode.help.v2",
+                           defaultValue: "Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject."),
             // The Large Content Viewer HUD is driven by this SEPARATE literal. Left behind, a
             // low-vision user would keep seeing chart.bar after the visible glyph had moved.
             systemImage: "binoculars"

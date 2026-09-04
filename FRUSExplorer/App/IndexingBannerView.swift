@@ -223,4 +223,112 @@ struct IndexingBannerView: View {
     }
 }
 
+// MARK: - IndexingInsetState
+
+/// Which of the bottom inset's five occupants owns it, as a value a test can reach.
+///
+/// **B-6 is why this exists.** The precedence used to live entirely inside
+/// `MainTabView.indexingBanner`'s `if`/`else if` chain, where no test could see it — and it had a
+/// hole. With a download QUEUED but no indexing batch started, every branch fell through: the
+/// batch branches need `batch.latest`, the summary branch needs `completedIndexingMetadata`, and
+/// the sync branch is false in the healthy case. The `@ViewBuilder` yielded nothing and the inset
+/// collapsed to zero height, while `CloudSurfaceArbiter` had already refused the splash for the
+/// same window. `CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing` passed throughout,
+/// because it asserts the arbiter's verdict and the verdict was right — nothing rendered it.
+///
+/// This follows the precedent `AppRootRouter` set for the same reason: a decision living inside a
+/// view body has no seam a test can reach, so the decision moves out and the body switches on it.
+/// `MainTabView` MUST switch on this rather than re-testing the conditions, or the extraction buys
+/// nothing and a mirrored copy in the test file would stay green while the view drifted.
+///
+/// Version history:
+///   1.0 — B-6: extracted from `MainTabView.indexingBanner`, with the queued-download case added
+enum IndexingInsetState: Equatable {
+    /// The keyboard is up; nothing may render here (#1070).
+    case hidden
+    /// A sync state worth reporting, and no transient work to outrank it.
+    case sync
+    /// A live indexing batch.
+    case batch
+    /// Downloads queued, none of them indexing yet — the B-6 window.
+    case downloadsQueued
+    /// The post-batch summary card.
+    case summary
+    /// Nothing to report.
+    case none
+
+    /// Decides the occupant. Order is the decision.
+    ///
+    /// 1. **The keyboard wins outright** (#1070): the inset floats onto the keyboard's accessory
+    ///    row and occluded the #861 Done bar. Every state here persists or re-announces.
+    /// 2. **A live batch beats everything else**, as before.
+    /// 3. **Queued downloads beat the summary card**, so newly queued work supersedes a card the
+    ///    reader has not dismissed — the card describes finished work, the queue describes work
+    ///    that is happening.
+    /// 4. **Transient work beats sync.** This extends the rule already written for indexing at the
+    ///    old `:438` — indexing is transient and finishes, while a local-only or failed-sync state
+    ///    waits and will still be true when the inset frees up. A queued download is transient in
+    ///    exactly the same way, so it inherits the same precedence rather than a new one.
+    static func resolve(keyboardIsVisible: Bool,
+                        hasBatch: Bool,
+                        hasCompletedMetadata: Bool,
+                        downloadQueueIsEmpty: Bool,
+                        syncIsWorthShowing: Bool) -> IndexingInsetState {
+        if keyboardIsVisible { return .hidden }
+        if hasBatch { return .batch }
+        if !downloadQueueIsEmpty { return .downloadsQueued }
+        if hasCompletedMetadata { return .summary }
+        if syncIsWorthShowing { return .sync }
+        return .none
+    }
+}
+
+// MARK: - DownloadQueueBannerView
+
+/// The inset's account of downloads that are queued but not yet indexing.
+///
+/// Deliberately the plainest of the five: an icon, a count, and nothing else. It mirrors what the
+/// Mac has shipped since `StatusBarView.activeTask`'s last fallthrough, which passes
+/// `progress: nil` and `eta: nil` — there is no progress to report, because the batch that would
+/// report it does not exist yet. A spinner here would imply the app knows how far along it is.
+///
+/// **"Queued" counts the transfer in flight**, because `allQueuedVolumeIds` is active-then-pending.
+/// That is the wording the Mac already ships and matching it is the point; it is imprecise on both.
+///
+/// Version history:
+///   1.0 — B-6: initial implementation
+struct DownloadQueueBannerView: View {
+    /// How many volumes are queued, including the one transferring.
+    let count: Int
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Divider()
+            HStack(spacing: 8) {
+                Image(systemName: "arrow.down.circle")
+                    .font(FRUSTheme.captionFont)
+                    .foregroundStyle(.secondary)
+
+                // Two keys rather than a ternary inside one `defaultValue`: a single key carrying
+                // two different strings is the silent collision the localized-key lesson warns
+                // about, and it is already shipped once in this directory.
+                Text(count == 1
+                     ? String(localized: "indexing.banner.downloadsQueued.one",
+                              defaultValue: "1 download queued")
+                     : String(localized: "indexing.banner.downloadsQueued.many",
+                              defaultValue: "\(count) downloads queued"))
+                    .font(FRUSTheme.captionFont)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .background(.ultraThinMaterial)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 #endif // os(iOS)

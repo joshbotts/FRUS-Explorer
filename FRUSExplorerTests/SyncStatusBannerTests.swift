@@ -67,17 +67,29 @@ struct SyncStatusBannerTests {
         return text
     }
 
-    /// The banner shares the indexing inset, and indexing must win: it is transient and
-    /// finishes, while local-only waits and will still be true when the space frees up.
+    /// The banner shares the indexing inset, and transient work must win: it finishes, while
+    /// local-only waits and will still be true when the space frees up.
+    ///
+    /// **This used to scan `MainTabView` for the old chain's literal conditions.** B-6 moved the
+    /// precedence into `IndexingInsetState.resolve` — because a decision inside a view body had no
+    /// seam and was hiding a hole — so the assertion now drives that rule instead. It is a
+    /// stronger test than the scan it replaces: the scan would have passed on any code that merely
+    /// mentioned the conditions, and it covers the queued-download case the scan could not see.
     @Test("Indexing keeps the banner slot when both want it")
-    func indexingWinsTheSlot() throws {
-        let text = try appSource("FRUSExplorer/App/MainTabView.swift")
-        let banner = try #require(text.range(of: "SyncStatusBanner("))
-        let head = String(text[text.startIndex..<banner.lowerBound].suffix(600))
-        #expect(head.contains("appState.indexingBatch == nil"),
-                "the sync banner can displace an in-flight indexing banner")
-        #expect(head.contains("completedIndexingMetadata == nil"),
-                "the sync banner can displace the indexing summary card")
+    func indexingWinsTheSlot() {
+        func state(batch: Bool = false, metadata: Bool = false,
+                   queueEmpty: Bool = true) -> IndexingInsetState {
+            IndexingInsetState.resolve(keyboardIsVisible: false, hasBatch: batch,
+                                       hasCompletedMetadata: metadata,
+                                       downloadQueueIsEmpty: queueEmpty, syncIsWorthShowing: true)
+        }
+        #expect(state(batch: true) == .batch,
+                "the sync banner must not displace an in-flight indexing banner")
+        #expect(state(metadata: true) == .summary,
+                "nor the indexing summary card")
+        #expect(state(queueEmpty: false) == .downloadsQueued,
+                "nor a queued download — B-6 extended the same rule to it")
+        #expect(state() == .sync, "and it takes the slot when nothing else wants it")
     }
 
     /// The settings pull must be debounced, not run per event.

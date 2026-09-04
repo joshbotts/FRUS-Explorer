@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- The app does not track, and collects nothing. Every network destination is either a
+         public read (the FRUS repository on GitHub, the NARA catalog, the model host) or the
+         user's own account under the user's own credentials (Zotero). CloudKit sync goes to the
+         user's private database, which is not collection by Apple's definition. There is no
+         analytics SDK and no third-party SPM dependency in either app target.
+         The App Store Connect nutrition label must say the same thing this file says. -->
+    <key>NSPrivacyTracking</key>
+    <false/>
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <!-- @AppStorage and UserDefaults across the app's own settings and preferences.
+             CA92.1, not 1C8F.1: there is no app group anywhere in the entitlements, and no
+             UserDefaults(suiteName:) in the source, so nothing is read across processes. -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+        <!-- WordCloudDiskCache reads .contentModificationDateKey to pick the newest cached
+             cloud from the app's own Library/Caches directory. C617.1 — inside the app's own
+             container. The seven attributesOfItem sites read [.size] only. -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>C617.1</string>
+            </array>
+        </dict>
+        <!-- Both storage hubs read volumeAvailableCapacityForImportantUsage to warn before a
+             download that would not fit. E174.1 — displayed to the user on their request; the
+             figure is never written anywhere and never leaves the device. -->
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>E174.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

@@ -11204,3 +11204,78 @@ same `summarizationError` surface the document's own Regenerate already uses.
 **No CloudKit change and no ledger row.** Writing an `AnnotationReview` of kind `.summary` would mint
 the first non-nil `annotationId` and cost a TENTH Production promotion for a sheet that judges
 nothing. 20 mutations, all killed by their own named controls; full suite 4,450 tests in 584 suites.
+
+## Session 2026-09-04 — B-6 and the honesty batch: the window that reported nothing, and five sentences the code stopped supporting (PR #1191)
+
+**B-6 was a hole in a precedence chain that had no seam, and that is why it survived.**
+`MainTabView.indexingBanner` decided among five occupants of the bottom inset with an
+`if`/`else if` chain inside a view body. With a download QUEUED but no indexing batch — every
+relaunch during a corpus download, before the first volume finishes transferring — the batch
+branches needed a `batch.latest` that did not exist, the summary branch needed metadata that did
+not exist, and the sync branch is false in the healthy case. The `@ViewBuilder` yielded nothing.
+Meanwhile `CloudSurfaceArbiter` had already refused the splash for the same window, on a verdict
+(`.indexingBackdrop`) that nothing rendered. `CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing`
+passed throughout, and its doc comment said so in as many words.
+
+**The fix is the seam, not the banner.** `IndexingInsetState.resolve` is the whole precedence as a
+pure function, and `MainTabView` switches on it — the pattern `AppRootRouter` already set for
+exactly this reason. `DownloadQueueBannerView` fills the gap it exposed. A mutation that removes
+the queued case, or that reorders any pair in the rule, is now killed by a named test; before this
+there was no test that could have been written.
+
+**The product decision went to the Mac's own answer.** `StatusBarView.activeTask` has shipped a
+"N downloads queued" fallthrough since it was written, so iOS was the odd platform. Matching it
+leaves decision O-0-1's precedence untouched — no splash, and the arbiter is unchanged — and it
+answers the "banner state that does not exist" objection, because the Mac's line carries
+`progress: nil` for the same reason iOS must: there is no batch to measure. The Mac's label is a
+raw literal with no key, so there was nothing to mirror; iOS gets two proper keys, one per
+plurality, rather than the ternary-inside-one-key anti-pattern already shipped in that directory.
+
+**Two of the row's own claims were narrower than written**, and both are corrected where they were
+recorded: the *screen* was never blank (the tabs render normally — what was missing was the app's
+account of the pending work), and "no cloud at all" is over-broad, since `PendingCloudRule` gates
+on `indexingBatch != nil` and so still draws on a pending Search.
+
+**FIVE USER-FACING SENTENCES DESCRIBED BEHAVIOUR THE APP NO LONGER HAS.** Each was true when
+written and was falsified by a later change nobody traced back to the copy — which is the reason
+the tests pin the corrections *and* assert the false wording is gone.
+
+- The storage hubs' **After an Update** footer promised that every changed document "opens with a
+  banner". Since P3b-1 a *vanished* document opens the review sheet, because no document view can
+  load a document the update removed — and the same section prints a "no longer in the volume"
+  count two rows above the footer, so it contradicted its own screen. It also said "The Research
+  tab" on macOS, where Research is a *window* (the section's own button branches on exactly that,
+  three lines above), and its list of what makes a document yours never gained the quotations
+  P3b-4 admitted through `countsAsAnnotation`. Two keys now, split the way `SettingsView`'s
+  citation footer already splits.
+- **Refresh Available List** promised newly published volumes, on both platforms. It cannot
+  deliver them: every download surface reads `diffResult.known`, a filter over the BUNDLED
+  manifest, which can only shrink. Decision D-1 left that gap deliberately silent while three
+  strings went on claiming it was closed. The replacements say what the refresh does do — refresh
+  links and sizes, drop withdrawn volumes. `ManifestStore`'s doc comments claimed a "newly
+  available badge" that has never existed; they now say the bucket is computed and unconsumed, and
+  why a badge alone would not fix it.
+- **Three facet enumerations were short.** The examine tip named three of the panel's six
+  sections; the two help strings named five. All were missing Subjects, which arrived with #308.
+  The panel renders six unconditionally on both platforms, so the tip now states the count.
+- **The indexing education claimed "any of those facets becomes a filter with one tap"** over a
+  list including archival provenance, which `FacetNarrowing.isNarrowable` excludes and which the
+  panel itself discloses in place as descriptive only.
+
+**`PrivacyInfo.xcprivacy` did not exist**, which would have drawn ITMS-91053 by email in submission
+week. Three required-reason categories, each traced to its call sites: UserDefaults CA92.1 (no app
+group anywhere in the entitlements, so not 1C8F.1), FileTimestamp C617.1 (`WordCloudDiskCache`
+reads `.contentModificationDateKey`; the seven `attributesOfItem` sites read `[.size]` only), and
+DiskSpace E174.1 (both storage hubs, displayed on request and never stored). Nothing for boot time
+or active keyboards. `NSPrivacyCollectedDataTypes` is empty and the file says why — **the App Store
+Connect nutrition label must be answered to match it**, and the one arguable line is Zotero export,
+which posts the user's own notes to the user's own account under the user's own key.
+
+**The suite caught a regression in this very batch**: the first draft of the education correction
+dropped the guide's only mention of the subjects facet, and `ResearchGuideCoverageTests` — which
+exists for exactly that absence — failed. Restored, with a test assertion so the next rewrite
+cannot repeat it. `SyncStatusBannerTests.indexingWinsTheSlot` was a source scan pinned to the old
+chain's literal text; it now drives `IndexingInsetState` and is stronger for it, covering the
+queued case the scan structurally could not see.
+
+11 mutations, all killed by their own named controls; 4,463 tests in 586 suites; macOS clean.

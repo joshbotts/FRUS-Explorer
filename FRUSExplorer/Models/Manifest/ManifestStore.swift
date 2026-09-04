@@ -21,11 +21,22 @@ public struct ManifestDiffResult: Sendable {
     public let known: [VolumeManifestEntry]
 
     /// Volumes present in the live listing only (newly released; no rich metadata yet).
-    /// Displayed with a "newly available" badge in the Browser and download views.
+    ///
+    /// **Computed and rendered NOWHERE**, by decision D-1 in `New-Volume-Release-Plan.md`, which
+    /// left the publication-to-release gap silent. This comment used to claim a "newly available"
+    /// badge in the Browser and download views; there is no such badge, and neither surface reads
+    /// this property. Nor could a badge alone fix it: every consumer of a `ManifestDiffResult`
+    /// reads ``known``, which is a filter OVER the bundled manifest and so can only shrink — a
+    /// volume published since this build shipped is not in `bundled`, has no rich metadata and no
+    /// download URL these surfaces read. Surfacing this bucket means growing a consumer.
     public let newlyAvailable: [NewlyAvailableVolume]
 
     /// Volumes in the bundled manifest but absent from the live listing.
-    /// No longer published; hidden from download UI but downloaded copies are unaffected.
+    ///
+    /// No longer published; downloaded copies are unaffected. They are indeed absent from the
+    /// download UI — but by the construction of ``known``, which filters the bundled manifest
+    /// against the live listing, NOT by anything reading this property. Like ``newlyAvailable``
+    /// it is computed and unconsumed.
     public let noLongerPublished: [VolumeManifestEntry]
 
     /// Live git blob SHA and byte size for every `known` volume, keyed by `volumeId`.
@@ -76,7 +87,9 @@ public struct NewlyAvailableVolume: Sendable, Identifiable {
 /// ## Live GitHub Manifest (Layer 2)
 /// Fetched asynchronously at launch when the device is online. Provides the current
 /// file listing to detect newly published volumes and confirm download URLs/SHAs.
-/// The diff result populates `diffResult` and drives the "newly available" badge.
+/// The diff result populates `diffResult`, whose `known` bucket is the catalogue every browse,
+/// download and analytics surface reads and whose `liveInfoByVolumeId` drives correction
+/// detection. `newlyAvailable` and `noLongerPublished` are computed and unconsumed (D-1).
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
