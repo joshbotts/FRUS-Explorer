@@ -895,6 +895,8 @@ FRUS Explorer can generate concise summaries of long documents entirely **on-dev
 
 Open the **Summary** accordion in the Research rail and tap **Summarize this Document**. The summary is saved automatically and indexed for full-text search — so a later search can match text that appears only in a summary. Generation takes a few moments on first use for a given document; unusually long documents are summarized in sections and recombined automatically, so even a treaty text completes rather than failing.
 
+Once a summary exists, the summary strip names the prompt that made it and carries a **Regenerate** control that runs that same prompt again — in the rail, and in the pinned strip above the document, which is where the summary appears on iPhone and in Read mode. Regenerating **keeps** the old summary rather than replacing it: the new one is shown first and **Next** steps back through the earlier ones.
+
 ### 13.2 Prompts
 
 The app ships a standard summarization prompt, and **Settings → Research → Summarization** is where you create your own — a prompt tuned to extract names and dates, or one that briefs a document against your specific research question. Choose which prompt to use when generating, and manage saved prompts in the same pane.

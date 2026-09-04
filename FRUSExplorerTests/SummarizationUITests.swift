@@ -72,58 +72,18 @@ struct SummarizationUITests {
         }
     }
 
-    // MARK: - SummaryDisplayTest
-
-    @Test("SummaryDisplayTest: active summary is most recent; cycling advances index")
-    func summaryDisplayCyclesBetweenSummaries() async throws {
-        let container = try ModelContainer.makeTestContainer()
-        let context = ModelContext(container)
-
-        // Insert 3 summaries with staggered timestamps
-        let older = GeneratedSummary(
-            documentId: "d1", volumeId: "vol1",
-            promptId: UUID(), responseText: "Older summary.",
-            wasChunked: false
-        )
-        let middle = GeneratedSummary(
-            documentId: "d1", volumeId: "vol1",
-            promptId: UUID(), responseText: "Middle summary.",
-            wasChunked: false
-        )
-        let newest = GeneratedSummary(
-            documentId: "d1", volumeId: "vol1",
-            promptId: UUID(), responseText: "Newest summary.",
-            wasChunked: false
-        )
-
-        context.insert(older)
-        context.insert(middle)
-        context.insert(newest)
-        try context.save()
-
-        // Manipulate timestamps so sorting is deterministic
-        older.lastModified    = Date(timeIntervalSinceReferenceDate: 1000)
-        middle.lastModified   = Date(timeIntervalSinceReferenceDate: 2000)
-        newest.lastModified   = Date(timeIntervalSinceReferenceDate: 3000)
-        try context.save()
-
-        // Simulate what DocumentViewModel.loadSummaries does
-        let docId = "d1"
-        let volId = "vol1"
-        var descriptor = FetchDescriptor<GeneratedSummary>(
-            predicate: #Predicate { s in s.documentId == docId && s.volumeId == volId }
-        )
-        descriptor.fetchLimit = 20
-        let summaries = try context.fetch(descriptor)
-            .sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
-
-        #expect(summaries.count == 3)
-        #expect(summaries[0].responseText == "Newest summary.")
-        #expect(summaries[1].responseText == "Middle summary.")
-        #expect(summaries[2].responseText == "Older summary.")
-    }
-
-    // MARK: - PromotionTest
+    // MARK: - SummaryDisplayTest — RETIRED (R-5 P3b-6)
+    //
+    // This suite carried a `summaryDisplayCyclesBetweenSummaries` test whose body opened with
+    // "// Simulate what DocumentViewModel.loadSummaries does" and then re-implemented it: the same
+    // predicate, the same `fetchLimit = 20`, the same in-memory sort. It could not fail for
+    // anything the real function did, and it had already drifted from it — the copy dropped the
+    // `!isHeadnoteDraft` predicate production carries, so it asserted an order over rows the app
+    // would never have shown.
+    //
+    // `SummaryCarouselOrderTests` replaces it by CALLING `loadSummaries` on a real
+    // `DocumentViewModel`, which is why the P3b-6 ordering fix is pinned at all: against this
+    // mirror, changing the descriptor's sort was invisible.
 
     @Test("PromotionTest: promoteSummary inserts text into note body and records summary ID")
     func summaryPromotionInsertsTextAndRecordsId() async throws {

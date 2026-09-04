@@ -307,7 +307,15 @@ extension GeneratedSummary {
     }
 
     /// Strict "a should replace b" order for the selection above.
-    private static func ranksAbove(_ a: GeneratedSummary, _ b: GeneratedSummary) -> Bool {
+    ///
+    /// Made non-private in R-5 P3b-6 so the document carousel shows the same summary this rule
+    /// calls newest. The two disagreed: `DocumentViewModel.loadSummaries` ordered on `lastModified`
+    /// alone, which is a SAVE stamp — `ModelModificationStamper` bumps it on every changed model,
+    /// and two bulk paths rewrite summaries for unrelated reasons (`SummarizationPromptSeeder`
+    /// repointing a duplicate prompt, `ProjectAdminService.merge` rewriting a project id). So a
+    /// prompt de-duplication could silently reorder a reader's carousel while search went on
+    /// naming a different summary as the newest. `createdAt` is never stamped.
+    static func ranksAbove(_ a: GeneratedSummary, _ b: GeneratedSummary) -> Bool {
         let ca = a.createdAt ?? .distantPast, cb = b.createdAt ?? .distantPast
         if ca != cb { return ca > cb }
         let la = a.lastModified ?? .distantPast, lb = b.lastModified ?? .distantPast

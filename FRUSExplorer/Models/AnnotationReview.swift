@@ -36,17 +36,20 @@ import SwiftData
 enum AnnotationReviewKind: String, CaseIterable, Sendable {
     /// The whole document — the reader pressed *Mark Reviewed*. The only kind written today.
     case document
-    /// One `ResearchNote`. Reserved for P3b-5.
+    /// One `ResearchNote`. Reserved: no writer, and minting one is a CloudKit DEPLOY — it would be the first value written to `CD_AnnotationReview.CD_annotationId`, which is still in `identifiersAwaitingDeploy`. P3b-5 shipped without one and P3b-6 refused one again.
     case note
     /// One `UserTag` on a document — keyed by the **tag's** id, never the assignment's, because
     /// `UserTagPickerSheet` deletes and re-inserts every `DocumentTagAssignment` row on save.
-    /// Reserved for P3b-5.
+    /// Reserved: no writer, and minting one is a CloudKit DEPLOY — it would be the first value written to `CD_AnnotationReview.CD_annotationId`, which is still in `identifiersAwaitingDeploy`. P3b-5 shipped without one and P3b-6 refused one again.
     case tag
-    /// One `CollectionEntry`. Reserved for P3b-4 (excerpts) and P3b-5.
+    /// One `CollectionEntry`. Reserved: no writer, and minting one is a CloudKit DEPLOY — it would be the first
+    /// value written to `CD_AnnotationReview.CD_annotationId`, which is still in
+    /// `identifiersAwaitingDeploy`. P3b-4 shipped excerpts in the review filter without one, and P3b-6
+    /// refused one again.
     case collectionEntry
-    /// One `GeneratedSummary`. Reserved for P3b-5.
+    /// One `GeneratedSummary`. Reserved: no writer, and minting one is a CloudKit DEPLOY — it would be the first value written to `CD_AnnotationReview.CD_annotationId`, which is still in `identifiersAwaitingDeploy`. P3b-5 shipped without one and P3b-6 refused one again.
     case summary
-    /// One `ArchiveVisitDocument` seed. Reserved for P3b-5.
+    /// One `ArchiveVisitDocument` seed. Reserved: no writer, and minting one is a CloudKit DEPLOY — it would be the first value written to `CD_AnnotationReview.CD_annotationId`, which is still in `identifiersAwaitingDeploy`. P3b-5 shipped without one and P3b-6 refused one again.
     case visitDocument
 }
 

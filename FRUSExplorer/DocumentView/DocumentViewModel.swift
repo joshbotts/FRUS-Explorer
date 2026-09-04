@@ -665,6 +665,28 @@ public final class DocumentViewModel {
     // MARK: - Summaries
 
     /// Loads summaries for this document from SwiftData, ordered newest-first.
+    ///
+    /// **The descriptor decides WHICH twenty; `ranksAbove` decides the order shown.** Before R-5
+    /// P3b-6 the descriptor carried a `fetchLimit` and NO `sortBy`, so which twenty came back was
+    /// undefined — this repo treats SwiftData fetch order as nondeterministic in four other places,
+    /// and these rows arrive by CloudKit sync as well as local insert — and a freshly generated
+    /// summary could simply be absent from the carousel. That defect had no consequence while
+    /// nothing minted a second summary in one sitting; the Regenerate controls this phase adds are
+    /// exactly that gesture, which is why the fix ships with them.
+    ///
+    /// Ordered on `createdAt`, NOT `lastModified`. The latter is a save stamp:
+    /// `ModelModificationStamper` bumps it on every changed model, and two bulk paths rewrite
+    /// summaries for reasons that have nothing to do with recency. Sharing
+    /// `GeneratedSummary.ranksAbove` also removes a second source of truth — the carousel and the
+    /// FTS summary column could otherwise name different summaries as the newest for one document.
+    ///
+    /// The in-memory sort is kept on purpose: SwiftData does not specify where NULLs land under a
+    /// descriptor sort, and both date fields are optional, so the shown order is decided by a rule
+    /// that coerces nil deterministically rather than by the store.
+    ///
+    /// Residue, disclosed: past twenty summaries on one document an older one is still unreachable
+    /// from the carousel, and the review sheet's unlimited query will report a larger count than the
+    /// carousel can step through.
     public func loadSummaries(context: ModelContext) {
         let docId = entry.documentId
         let volId = entry.volumeId
@@ -673,11 +695,12 @@ public final class DocumentViewModel {
                 // Dedicated headnote drafts (Composer redesign) belong to a collection entry's
                 // headnote, not the document's summary carousel.
                 s.documentId == docId && s.volumeId == volId && !s.isHeadnoteDraft
-            }
+            },
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse),
+                     SortDescriptor(\.lastModified, order: .reverse)]
         )
         descriptor.fetchLimit = 20
-        summaries = ((try? context.fetch(descriptor)) ?? [])
-            .sorted { ($0.lastModified ?? .distantPast) > ($1.lastModified ?? .distantPast) }
+        summaries = ((try? context.fetch(descriptor)) ?? []).sorted(by: GeneratedSummary.ranksAbove)
         activeSummaryIndex = 0
     }
 
