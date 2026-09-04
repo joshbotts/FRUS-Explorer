@@ -69,13 +69,13 @@ enum OccurrenceAvailability: Equatable, Sendable {
             switch self {
             case .exactWord:
                 return String(localized: "analytics.occurrences.unavailable.exact",
-                              defaultValue: "Occurrence counts aren't available for exact-word searches: the index stores word stems, so it cannot tell one exact spelling's occurrences from another's.")
+                              defaultValue: "Occurrence counts aren’t available for exact-word searches: the index stores word stems, so it cannot tell one exact spelling’s occurrences from another’s.")
             case .multiTermOperand:
                 return String(localized: "analytics.occurrences.unavailable.multiTerm",
-                              defaultValue: "Occurrence counts aren't available for phrases, wildcards or proximity searches — those match several index terms, which have no single occurrence count.")
+                              defaultValue: "Occurrence counts aren’t available for phrases, wildcards or proximity searches — those match several index terms, which have no single occurrence count.")
             case .compositeQuery:
                 return String(localized: "analytics.occurrences.unavailable.composite",
-                              defaultValue: "Occurrence counts aren't available for queries with more than one term: adding up occurrences of each would count two different things as one.")
+                              defaultValue: "Occurrence counts aren’t available for queries with more than one term: adding up occurrences of each would count two different things as one.")
             case .notASingleToken:
                 return String(localized: "analytics.occurrences.unavailable.notSingleToken",
                               defaultValue: "This term indexes as several separate words, so it has no single occurrence count.")

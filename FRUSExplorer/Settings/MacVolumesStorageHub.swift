@@ -473,7 +473,7 @@ struct MacVolumesStorageHub: View {
                     String(localized: "settings.hub.catalog.a11y.v2",
                            defaultValue: "Re-read the published volume list"),
                     detail: String(localized: "settings.hub.catalog.help.v2",
-                                   defaultValue: "Re-reads the FRUS repository's volume list, refreshing each volume's download link and size and dropping any the Office of the Historian has withdrawn"),
+                                   defaultValue: "Re-reads the FRUS repository’s volume list, refreshing each volume’s download link and size and dropping any the Office of the Historian has withdrawn"),
                     systemImage: "arrow.clockwise"
                 )
             }
@@ -1458,7 +1458,7 @@ private struct MacDownloadVolumesSheet: View {
                                 defaultValue: "Download from GitHub"))
                         .font(.headline)
                     Text(String(localized: "settings.hub.browse.subtitle",
-                                defaultValue: "Volumes are fetched from the Office of the Historian's public FRUS repository."))
+                                defaultValue: "Volumes are fetched from the Office of the Historian’s public FRUS repository."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1815,7 +1815,7 @@ private struct MacManageStorageSheet: View {
                            defaultValue: "No Removable Volumes"),
                     systemImage: "lock.shield",
                     description: Text(String(localized: "settings.hub.freeUp.none.detail",
-                                             defaultValue: "Every downloaded volume has attached notes, collections, or summaries. Remove those individually from \"Show all\" in Volumes & Storage."))
+                                             defaultValue: "Every downloaded volume has attached notes, collections, or summaries. Remove those individually from “Show all” in Volumes & Storage."))
                 )
             } else {
                 HStack(spacing: 6) {

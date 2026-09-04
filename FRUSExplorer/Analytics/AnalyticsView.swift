@@ -1604,7 +1604,7 @@ struct AnalyticsView: View {
                     ? String(localized: "analytics.empty.detail.compare",
                              defaultValue: "None of these terms match any indexed documents.")
                     : String(localized: "analytics.empty.detail",
-                             defaultValue: "No indexed documents match \"\(committedTerm)\"."))
+                             defaultValue: "No indexed documents match “\(committedTerm)”."))
             )
         } else if isComparing {
             // Compare mode is chart-only — the table shows a single term (D1 review fix); the
@@ -2566,7 +2566,7 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.subseries.heading",
-                       defaultValue: "\"\(committedTerm)\" \u{2014} by Subseries")
+                       defaultValue: "“\(committedTerm)” \u{2014} by Subseries")
             )
             .font(.headline)
             .padding(.horizontal)
@@ -2619,7 +2619,7 @@ struct AnalyticsView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(
                 String(localized: "analytics.chart.volume.heading",
-                       defaultValue: "\"\(committedTerm)\" \u{2014} by Volume")
+                       defaultValue: "“\(committedTerm)” \u{2014} by Volume")
             )
             .font(.headline)
             .padding(.horizontal)
@@ -2920,7 +2920,7 @@ struct AnalyticsView: View {
                     .disabled(committedTerm.isEmpty || viewMode != .chart)
                     .help(String(
                         localized: "analytics.normalize.help",
-                        defaultValue: "Plot raw matching-document counts, or each period's matches as a share of all indexed documents in that period — so a rising corpus size doesn't masquerade as a rising term."
+                        defaultValue: "Plot raw matching-document counts, or each period’s matches as a share of all indexed documents in that period — so a rising corpus size doesn’t masquerade as a rising term."
                     ))
                 }
             }
@@ -2997,7 +2997,7 @@ struct AnalyticsView: View {
                 }
                 .disabled(!canExport)
                 .help(String(localized: "analytics.export.menu.help",
-                             defaultValue: "Export this chart's data with its method and caveats"))
+                             defaultValue: "Export this chart’s data with its method and caveats"))
             }
         }
 

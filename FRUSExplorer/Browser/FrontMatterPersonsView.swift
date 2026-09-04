@@ -92,7 +92,7 @@ struct FrontMatterPersonsView: View {
                                 .font(.headline)
                             Text(isIndexed
                                  ? String(localized: "browser.persons.empty.noEditorList",
-                                          defaultValue: "This volume's editors did not publish a list of persons. Roughly half the corpus has none — they are most common from 1940 onward.")
+                                          defaultValue: "This volume’s editors did not publish a list of persons. Roughly half the corpus has none — they are most common from 1940 onward.")
                                  : String(localized: "browser.persons.empty.detail",
                                           defaultValue: "Index this volume to load its persons list."))
                                 .font(.callout)

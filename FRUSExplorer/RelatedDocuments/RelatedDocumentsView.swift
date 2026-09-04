@@ -250,7 +250,7 @@ struct RelatedDocumentsContent: View {
                         if let poolCutFrom, poolCutFrom > totalBeforeLimit {
                             Text(String(
                                 format: String(localized: "related.poolCut %lld %lld",
-                                               defaultValue: "Ranked from the first %1$lld of %2$lld documents that share this anchor's archival container. The rest were not scored. Narrow the scope to reach them."),
+                                               defaultValue: "Ranked from the first %1$lld of %2$lld documents that share this anchor’s archival container. The rest were not scored. Narrow the scope to reach them."),
                                 Int64(totalBeforeLimit), Int64(poolCutFrom)))
                                 .font(.caption2).foregroundStyle(.tertiary)
                                 .fixedSize(horizontal: false, vertical: true)
@@ -424,7 +424,7 @@ struct RelatedDocumentsContent: View {
         switch scope {
         case .allIndexed:
             return String(localized: "related.empty.detail",
-                defaultValue: "No indexed documents share this document's archival provenance or cross-references — indexing more volumes may surface some.")
+                defaultValue: "No indexed documents share this document’s archival provenance or cross-references — indexing more volumes may surface some.")
         case .volume, .subseries:
             return String(localized: "related.empty.detail.scoped",
                 defaultValue: "No related documents in this scope — switch to All volumes to search the whole index.")
@@ -527,9 +527,9 @@ struct RelatedDocumentsContent: View {
     private var lexicalAxisCaption: String {
         weights[.lexicalSimilarity] == 0
             ? String(localized: "related.weights.lexical.off",
-                     defaultValue: "Off. Raise it to also match documents that reuse this one's distinctive wording. Experimental; searches only the volumes indexed on this device, so results vary with your library.")
+                     defaultValue: "Off. Raise it to also match documents that reuse this one’s distinctive wording. Experimental; searches only the volumes indexed on this device, so results vary with your library.")
             : String(localized: "related.weights.lexical.on",
-                     defaultValue: "Matches share this document's distinctive wording. Searches only the volumes indexed on this device, so results vary with your library.")
+                     defaultValue: "Matches share this document’s distinctive wording. Searches only the volumes indexed on this device, so results vary with your library.")
     }
 
     private var semanticAxisCaption: String {

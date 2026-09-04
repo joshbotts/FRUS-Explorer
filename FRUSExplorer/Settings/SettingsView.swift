@@ -230,7 +230,7 @@ struct SettingsView: View {
             // that it did. Previously this was a hardcoded "check console for details"
             // placeholder with no code visible anywhere in the running app.
             let guidance = String(localized: "settings.icloud.localOnly.detail",
-                                  defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won't sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.")
+                                  defaultValue: "iCloud sync is unavailable. Notes, tags, and collections won’t sync across devices. Check that you are signed in to iCloud in Settings and that FRUS Explorer has iCloud access.")
             // Computed via an immediately-invoked closure rather than an `if`/`else`
             // directly in this @ViewBuilder body — a plain `if let … else …` whose
             // branches only assign to `detail` makes the result-builder transform try
@@ -366,7 +366,7 @@ enum SideloadError: LocalizedError {
                           defaultValue: "This XML file does not appear to be a FRUS volume: \(reason)")
         case .duplicateVolume(let id):
             return String(localized: "sideload.error.duplicate",
-                          defaultValue: "Volume '\(id)' is already present. Delete it first to replace it.")
+                          defaultValue: "Volume ‘\(id)’ is already present. Delete it first to replace it.")
         case .copyFailed(let error):
             return String(localized: "sideload.error.copy",
                           defaultValue: "Could not import the file: \(error.localizedDescription)")
@@ -416,7 +416,7 @@ struct SideloadValidator {
         guard rootDelegate.looksLikeFRUS else {
             let reason = String(
                 localized: "sideload.error.unexpectedRoot",
-                defaultValue: "Unexpected root element '\(rootDelegate.rootElementName ?? "unknown")'.")
+                defaultValue: "Unexpected root element ’\(rootDelegate.rootElementName ?? "unknown")'.")
             throw SideloadError.notFRUSVolume(reason: reason)
         }
 
@@ -909,7 +909,7 @@ struct MergeTagSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(String(localized: "settings.tags.merge.source.header",
-                                defaultValue: "Merge '\(sourceTag.name)' into:"))
+                                defaultValue: "Merge ‘\(sourceTag.name)’ into:"))
                         .font(.callout.weight(.medium))
 
                     ForEach(allTags) { tag in
@@ -919,7 +919,7 @@ struct MergeTagSheet: View {
                     Divider()
 
                     Text(String(localized: "settings.tags.merge.explanation",
-                                defaultValue: "All notes tagged '\(sourceTag.name)' will be re-tagged with the selected tag. '\(sourceTag.name)' will be deleted."))
+                                defaultValue: "All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag. ‘\(sourceTag.name)’ will be deleted."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -962,14 +962,14 @@ struct MergeTagSheet: View {
         NavigationStack {
             Form {
                 Section(String(localized: "settings.tags.merge.source.header",
-                               defaultValue: "Merge '\(sourceTag.name)' into:")) {
+                               defaultValue: "Merge ‘\(sourceTag.name)’ into:")) {
                     ForEach(allTags) { tag in
                         mergeTagRow(tag: tag)
                     }
                 }
 
                 Text(String(localized: "settings.tags.merge.explanation",
-                            defaultValue: "All notes tagged '\(sourceTag.name)' will be re-tagged with the selected tag. '\(sourceTag.name)' will be deleted."))
+                            defaultValue: "All notes tagged ‘\(sourceTag.name)’ will be re-tagged with the selected tag. ‘\(sourceTag.name)’ will be deleted."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -1124,7 +1124,7 @@ private struct SummarizationPromptsSettingsView: View {
                             defaultValue: "Standard Prompts"))
             } footer: {
                 Text(String(localized: "settings.summarization.standard.footer",
-                            defaultValue: "The prompts the app ships with. They can't be edited — start from one with Use as Template."))
+                            defaultValue: "The prompts the app ships with. They can’t be edited — start from one with Use as Template."))
             }
         }
 
@@ -1230,9 +1230,9 @@ private struct SummarizationPromptsSettingsView: View {
         guard tally.headnoteDrafts > 0 else { return base }
         let drafts = tally.headnoteDrafts == 1
             ? String(localized: "settings.summarization.headnotes.one",
-                     defaultValue: "1 collection headnote draft isn't counted above.")
+                     defaultValue: "1 collection headnote draft isn’t counted above.")
             : String(format: String(localized: "settings.summarization.headnotes.many %lld",
-                                    defaultValue: "%lld collection headnote drafts aren't counted above."),
+                                    defaultValue: "%lld collection headnote drafts aren’t counted above."),
                      Int64(tally.headnoteDrafts))
         return base + " " + drafts
     }
@@ -1497,7 +1497,7 @@ struct SyncSettingsSection<Leading: View>: View {
 
     private var footerText: Text {
         Text(String(localized: "settings.sync.footer",
-                    defaultValue: "When this is on, the device shares the settings above with your other devices that also have it on. Turning it on adopts the settings already in iCloud. Leave it off to keep this device's settings separate."))
+                    defaultValue: "When this is on, the device shares the settings above with your other devices that also have it on. Turning it on adopts the settings already in iCloud. Leave it off to keep this device’s settings separate."))
     }
 }
 
@@ -1634,7 +1634,7 @@ struct DisplaySettingsView: View {
                 // collision the localized-key lesson warns about.
                 #if os(macOS)
                 Text(String(localized: "settings.display.citationStyle.footer.mac",
-                            defaultValue: "Used for Copy Citation, Share Citation, and the citation popover's default. The popover can still switch styles per-presentation for comparison."))
+                            defaultValue: "Used for Copy Citation, Share Citation, and the citation popover’s default. The popover can still switch styles per-presentation for comparison."))
                 #else
                 Text(String(localized: "settings.display.citationStyle.footer",
                             defaultValue: "Used when copying or sharing a citation."))
@@ -1678,10 +1678,10 @@ struct DisplaySettingsView: View {
             } footer: {
                 if isPhone {
                     Text(String(localized: "settings.display.reading.footer.iphone",
-                                defaultValue: "The Research rail opens as a bottom sheet from the toolbar's Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed."))
+                                defaultValue: "The Research rail opens as a bottom sheet from the toolbar’s Research button. It never opens on its own, so it cannot cover a document you only meant to read. Edge-Tap Page Turn moves you between documents while the rail is closed."))
                 } else {
                     Text(String(localized: "settings.display.reading.footer",
-                                defaultValue: "\"Remember Last\" reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document."))
+                                defaultValue: "“Remember Last” reopens documents in the mode you used last, Read or Research. Research mode shows the Research rail in a side panel beside the document. Read mode hides the rail so you can just read. The rail toggle inside a document always wins for that document."))
                 }
             }
 

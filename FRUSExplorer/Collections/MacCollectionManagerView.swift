@@ -1369,7 +1369,7 @@ private struct CollectionDetailPane: View {
                       systemImage: "gearshape")
             }
             .help(String(localized: "collection.toolbar.settings.help",
-                         defaultValue: "Edit this collection's name, front matter, and composition"))
+                         defaultValue: "Edit this collection’s name, front matter, and composition"))
             .popover(isPresented: $showCollectionSettingsPopover, arrowEdge: .top) {
                 macCollectionSettingsForm
             }
@@ -1647,7 +1647,7 @@ private struct MacEntryRow: View {
                 // (or retargets/closes) the trailing Document inspector column (B8).
                 ConfigurePill(action: onInspect)
                     .help(String(localized: "collection.entry.inspect.help",
-                                 defaultValue: "Show this document's notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
+                                 defaultValue: "Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it"))
 
                 // Open in the app's reader (#755) — placed BEFORE the external link, because the
                 // in-app document (with its notes, highlights and cross-references) is what a

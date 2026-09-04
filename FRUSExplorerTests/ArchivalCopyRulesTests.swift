@@ -229,7 +229,7 @@ struct ArchivalCopyRulesTests {
         // And the popover must actually have absorbed it.
         let theme = try Self.source("../FRUSExplorer/Theme/FRUSTheme.swift")
         #expect(theme.contains("archival.info.method.detail"))
-        #expect(theme.contains("not read from an archive's catalog"), """
+        #expect(theme.contains("not read from an archive\u{2019}s catalog"), """
             The parsed-not-catalogued claim is the load-bearing sentence of the whole surface. \
             Removing it from the page without it landing in the popover would delete it.
             """)

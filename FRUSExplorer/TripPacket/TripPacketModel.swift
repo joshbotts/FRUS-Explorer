@@ -48,7 +48,7 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     /// Shown when neither a seed nor an edit exists — deliberately an instruction, not filler.
     static let placeholder = String(
         localized: "packet.topic.placeholder",
-        defaultValue: "[Describe your research topic in one or two sentences — narrow and specific. NARA asks for a succinct description, never \"everything you have\".]")
+        defaultValue: "[Describe your research topic in one or two sentences — narrow and specific. NARA asks for a succinct description, never “everything you have”.]")
 
     /// Seeds from a project's research question.
     static func seeded(from researchQuestion: String?) -> TripPacketTopicSentence {

@@ -762,7 +762,7 @@ struct CollectionEntryInspector: View {
             bodyDepthPicker
             overrideControls
             Text(String(localized: "collection.inspector.overrides.caption",
-                        defaultValue: "Default follows the section's setting when its heading sets one, else the collection's composition."))
+                        defaultValue: "Default follows the section’s setting when its heading sets one, else the collection’s composition."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -775,7 +775,7 @@ struct CollectionEntryInspector: View {
                        defaultValue: "Section Defaults")) {
             overrideControls
             Text(String(localized: "collection.inspector.sectionDefaults.caption",
-                        defaultValue: "Documents in this section use these settings unless they set their own. Default falls through to the collection's composition."))
+                        defaultValue: "Documents in this section use these settings unless they set their own. Default falls through to the collection’s composition."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -1070,7 +1070,7 @@ struct CollectionEntryInspector: View {
                 .foregroundStyle(.red)
         } else if aiSummarizationAvailable && !documentTextAvailableLocally {
             Text(String(localized: "collection.inspector.headnote.regen.needsVolume",
-                        defaultValue: "Download this document's volume to generate a summary."))
+                        defaultValue: "Download this document’s volume to generate a summary."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -1142,7 +1142,7 @@ struct CollectionEntryInspector: View {
         guard let service = appState.summarizationService,
               AppleIntelligenceProvider.shared.isAvailable else {
             regenError = String(localized: "collection.inspector.headnote.regen.unavailable",
-                                defaultValue: "On-device summarization isn't available on this device.")
+                                defaultValue: "On-device summarization isn’t available on this device.")
             return
         }
         guard let prompt = resolveHeadnotePrompt() else {

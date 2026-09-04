@@ -363,7 +363,7 @@ struct NARACatalogLookupView: View {
             if strategy != .centralURL && !hasAPIKey {
                 Label(
                     String(localized: "nara.lookup.noKey.warning",
-                           defaultValue: "A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The \"Central files identifier\" strategy does not require a key."),
+                           defaultValue: "A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The “Central files identifier” strategy does not require a key."),
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(.caption)
@@ -559,10 +559,10 @@ enum LookupStrategy: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .lotFileRG59:
             return String(localized: "nara.lookup.strategy.lotFileRG59.hint",
-                          defaultValue: "Use for D-designator lot numbers (e.g. \"63D135\" or \"68 D 277\"). Queries State Dept. lot file series in RG 59.")
+                          defaultValue: "Use for D-designator lot numbers (e.g. “63D135” or “68 D 277”). Queries State Dept. lot file series in RG 59.")
         case .lotFileRG84:
             return String(localized: "nara.lookup.strategy.lotFileRG84.hint",
-                          defaultValue: "Use for F-designator lot numbers (e.g. \"55F44\" or \"56 F 28\"). Queries diplomatic post record lots in RG 84.")
+                          defaultValue: "Use for F-designator lot numbers (e.g. “55F44” or “56 F 28”). Queries diplomatic post record lots in RG 84.")
         case .keywordRG59:
             return String(localized: "nara.lookup.strategy.keywordRG59.hint",
                           defaultValue: "Use for series names, collection descriptions, or partial citation text. Restricts results to RG 59 (State Dept.).")
@@ -571,7 +571,7 @@ enum LookupStrategy: String, CaseIterable, Identifiable, Sendable {
                           defaultValue: "Use for series names or collection descriptions. Restricts results to RG 84 (State Dept. post records).")
         case .centralURL:
             return String(localized: "nara.lookup.strategy.centralURL.hint",
-                          defaultValue: "Use for decimal file identifiers (e.g. \"862S.01/10-1646\") or central file keywords. Opens a pre-filtered NARA Catalog search — no API key required.")
+                          defaultValue: "Use for decimal file identifiers (e.g. “862S.01/10-1646”) or central file keywords. Opens a pre-filtered NARA Catalog search — no API key required.")
         case .keyword:
             return String(localized: "nara.lookup.strategy.keyword.hint",
                           defaultValue: "General free-text search across all record groups in the NARA Catalog. Useful when the collection type is unclear.")

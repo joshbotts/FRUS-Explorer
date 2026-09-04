@@ -336,7 +336,7 @@ struct VolumeSubjectVolumesSheet: View {
             }
         } footer: {
             Text(String(localized: "browser.volume.subjectVolumes.explore.footer",
-                        defaultValue: "Shows this topic's reach across the whole series, and finds the documents on it that you have indexed."))
+                        defaultValue: "Shows this topic’s reach across the whole series, and finds the documents on it that you have indexed."))
         }
     }
 

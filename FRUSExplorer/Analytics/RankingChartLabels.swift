@@ -141,11 +141,14 @@ func matrixColumnCodes(
 /// The apostrophe-form coverage span for a subseries: `"1955-57"` → `"'55–57"`, `"1861"` → `"'61"`.
 /// (Subseries spans use a hyphen with an already-2-digit end; the code uses an en-dash.)
 private func matrixYearCode(_ subseries: String) -> String {
+    // The elision mark is a RIGHT single quote (U+2019), matching the matrix caption in
+    // `FRUSTheme` that explains these labels by example. A naive smart-quote pass turns a leading
+    // `'` into a LEFT quote — `‘55` reads as an opening quotation mark, `’55` as the elided `19`.
     let parts = subseries.split(separator: "-", maxSplits: 1)
     if parts.count == 2 {
-        return "'\(parts[0].suffix(2))–\(parts[1].suffix(2))"
+        return "\u{2019}\(parts[0].suffix(2))–\(parts[1].suffix(2))"
     }
-    return "'\(subseries.suffix(2))"
+    return "\u{2019}\(subseries.suffix(2))"
 }
 
 /// The first "Volume <roman>" numeral in a manifest title, verbatim (`"…, Volume II"` → `"II"`), or

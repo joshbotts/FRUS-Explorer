@@ -50,7 +50,7 @@ enum SeriesAnalyticsExport {
         guard let label else { return nil }
         return String(format: String(
             localized: "series.export.caveat.scope %@",
-            defaultValue: "Scoped to %@ — every figure below is recomputed from that subset's volumes alone and is not comparable with a whole-series export."),
+            defaultValue: "Scoped to %@ — every figure below is recomputed from that subset’s volumes alone and is not comparable with a whole-series export."),
             label)
     }
 
@@ -73,7 +73,7 @@ enum SeriesAnalyticsExport {
             valueMode: nil,
             countingUnit: String(localized: "series.export.unit.volumes", defaultValue: "Volumes"),
             datingRule: String(localized: "series.export.dating.production",
-                               defaultValue: "Dating: no document date is read. A volume sits at its print year, taken from the publication-date in its TEI header. Its publication lag is that print year minus the last year of the coverage range in the same header. Neither figure is derived from the dates of the volume's own documents."),
+                               defaultValue: "Dating: no document date is read. A volume sits at its print year, taken from the publication-date in its TEI header. Its publication lag is that print year minus the last year of the coverage range in the same header. Neither figure is derived from the dates of the volume’s own documents."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: [scopeCaveat(scopeLabel)].compactMap { $0 } + extra)
     }
@@ -94,7 +94,7 @@ enum SeriesAnalyticsExport {
             valueMode: nil,
             countingUnit: String(localized: "series.export.unit.volumes", defaultValue: "Volumes"),
             datingRule: String(localized: "series.export.dating.geography",
-                               defaultValue: "Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume's own subject tags. So these figures count volumes concerned with a region, not documents about it."),
+                               defaultValue: "Dating: no document date is read. A volume is placed by the coverage range declared in its TEI header. Its regions come from the volume’s own subject tags. So these figures count volumes concerned with a region, not documents about it."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: [scopeCaveat(scopeLabel)].compactMap { $0 } + extra)
     }
@@ -129,7 +129,7 @@ enum SeriesAnalyticsExport {
         }
         caveats.append(String(format: String(
             localized: "series.export.caveat.provenanceNotes %lld",
-            defaultValue: "Unit: %lld parsed source notes. A source note is the citation naming where a document's archival original was found. \"Other / Unclassified\" means a citation the parser could not classify, not a missing note."),
+            defaultValue: "Unit: %lld parsed source notes. A source note is the citation naming where a document’s archival original was found. “Other / Unclassified” means a citation the parser could not classify, not a missing note."),
             Int64(noteCount)))
         return AnalyticsProvenance(
             figureTitle: figureTitle,
@@ -142,7 +142,7 @@ enum SeriesAnalyticsExport {
             countingUnit: String(localized: "series.export.unit.notes",
                                  defaultValue: "Source notes"),
             datingRule: String(localized: "series.export.dating.provenance",
-                               defaultValue: "Dating: no document date is read. Each source note sits in the coverage decade of the volume that printed it, taken from that volume's declared date range. The trend starts around 1900. Earlier volumes are published correspondence and carry no archival source notes."),
+                               defaultValue: "Dating: no document date is read. Each source note sits in the coverage decade of the volume that printed it, taken from that volume’s declared date range. The trend starts around 1900. Earlier volumes are published correspondence and carry no archival source notes."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: caveats + extra)
     }
@@ -157,7 +157,7 @@ enum SeriesAnalyticsExport {
     /// first time the wording changes.
     static var adminYearsCaveat: String {
         String(localized: "series.export.caveat.adminYears",
-               defaultValue: "Year range: this selects which administrations appear, by whether the president's term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.")
+               defaultValue: "Year range: this selects which administrations appear, by whether the president’s term overlaps the range. It does not re-count documents. An administration shown here carries its full count even when only part of its term falls inside the range.")
     }
 
     /// What any-overlap attribution costs: the per-administration counts are not exclusive, so
@@ -201,7 +201,7 @@ enum SeriesAnalyticsExport {
             countingUnit: String(localized: "series.export.unit.documents",
                                  defaultValue: "Documents"),
             datingRule: String(localized: "series.export.dating.administration",
-                               defaultValue: "Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. A TEI <date> is not used, and there is no fallback to the volume's start year. An undated document is attributed to no administration and drops out."),
+                               defaultValue: "Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. A TEI <date> is not used, and there is no fallback to the volume’s start year. An undated document is attributed to no administration and drops out."),
             corpusStatement: corpusStatement(volumeCount: volumeCount),
             extraCaveats: caveats + extra)
     }

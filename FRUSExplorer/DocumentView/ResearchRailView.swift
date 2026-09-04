@@ -708,7 +708,7 @@ struct ResearchRailView: View {
     private var reclassifyTitle: String {
         if hasClassificationOverride {
             return String(localized: "panel.classification.restore",
-                          defaultValue: "Restore FRUS's Classification")
+                          defaultValue: "Restore FRUS’s Classification")
         }
         return (effectiveIsEditorialNote ?? false)
             ? String(localized: "panel.classification.toDocument",
@@ -1036,21 +1036,21 @@ enum RailTileCopy {
     static var wordCloud: Entry {
         Entry(title: String(localized: "researchRail.tile.wordCloud", defaultValue: "Word Cloud"),
               detail: String(localized: "researchRail.tile.wordCloud.help",
-                             defaultValue: "Show a word cloud of this document's most frequent terms"))
+                             defaultValue: "Show a word cloud of this document’s most frequent terms"))
     }
 
     /// Sources — the archival source note, resolved.
     static var sources: Entry {
         Entry(title: String(localized: "researchRail.tile.sources", defaultValue: "Sources"),
               detail: String(localized: "researchRail.tile.sources.help",
-                             defaultValue: "Resolve this document's source note in the NARA Catalog or RG-59 records"))
+                             defaultValue: "Resolve this document’s source note in the NARA Catalog or RG-59 records"))
     }
 
     /// Graph — the cross-reference graph.
     static var graph: Entry {
         Entry(title: String(localized: "researchRail.tile.graph", defaultValue: "Graph"),
               detail: String(localized: "researchRail.tile.graph.help",
-                             defaultValue: "Show this document's cross-reference graph"))
+                             defaultValue: "Show this document’s cross-reference graph"))
     }
 
     /// Related — ranked related documents.
@@ -1139,7 +1139,7 @@ private struct ClassificationInfoSection: View {
                     // says what follows: the correction has stopped doing anything.
                     Text(parsed == effective
                          ? String(localized: "panel.classification.overrideNowRedundant",
-                                  defaultValue: "FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS's classification.")
+                                  defaultValue: "FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS’s classification.")
                          : String(format: String(
                             localized: "panel.classification.overridden %@",
                             defaultValue: "FRUS tags this as %@ — reclassified by you."),
@@ -1177,7 +1177,7 @@ private struct ClassificationInfoSection: View {
                 // `.v2`: the predecessor said "from this panel" when the control was a rail
                 // section — minted anew per the standing no-catalog rule.
                 Text(String(localized: "classification.override.warning.v2",
-                            defaultValue: "The document's body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS's own classification at any time from here or from Settings ▸ Search."))
+                            defaultValue: "The document’s body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS’s own classification at any time from here or from Settings ▸ Search."))
             }
         }
     }

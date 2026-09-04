@@ -194,14 +194,14 @@ enum ZoteroAPIError: Error, LocalizedError, Sendable {
                           defaultValue: "This Zotero key lacks write access to your library. Create a key with write and notes permission.")
         case .network:
             return String(localized: "zotero.error.network",
-                          defaultValue: "Couldn't reach Zotero. Check your connection and try again.")
+                          defaultValue: "Couldn’t reach Zotero. Check your connection and try again.")
         case let .http(code):
             return String(format: String(localized: "zotero.error.http %lld",
                                           defaultValue: "Zotero returned an unexpected error (HTTP %lld)."),
                           Int64(code))
         case .decoding:
             return String(localized: "zotero.error.decoding",
-                          defaultValue: "Zotero returned a response FRUS Explorer couldn't read.")
+                          defaultValue: "Zotero returned a response FRUS Explorer couldn’t read.")
         case .rateLimited:
             return String(localized: "zotero.error.rateLimited.v2",
                           defaultValue: "Zotero is receiving too many requests right now. Try again in a moment.")

@@ -176,9 +176,9 @@ extension FeatureInfoButton where Footer == EmptyView {
             heading: String(localized: "source.explorer.info.heading", defaultValue: "About Source Explorer"),
             items: [
                 FeatureInfoItem(
-                    title: String(localized: "source.explorer.info.shows.title", defaultValue: "What you're seeing"),
+                    title: String(localized: "source.explorer.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "source.explorer.info.shows.detail",
-                                   defaultValue: "A structured breakdown of one document's source note — the State Department editors' record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.")),
+                                   defaultValue: "A structured breakdown of one document’s source note — the State Department editors’ record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.")),
                 FeatureInfoItem(
                     title: String(localized: "source.explorer.info.why.title", defaultValue: "Why it matters"),
                     detail: String(localized: "source.explorer.info.why.detail",
@@ -212,15 +212,15 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body",
-                                   defaultValue: "Wrap words in quotes for an ordered phrase. \"missile crisis\" matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.")),
+                                   defaultValue: "Wrap words in quotes for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
                     detail: String(localized: "analytics.info.stemming.body",
-                                   defaultValue: "English stemming is applied: searching for \"negotiate\" also matches \"negotiating\", \"negotiated\", and \"negotiations\".")),
+                                   defaultValue: "English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
                     detail: String(localized: "analytics.info.dating.body",
-                                   defaultValue: "Each document sits at its TEI <date> attribute, the date it was written, not the volume's publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")),
+                                   defaultValue: "Each document sits at its TEI <date> attribute, the date it was written, not the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")),
             ]
         )
     }
@@ -232,17 +232,17 @@ extension FeatureInfoButton where Footer == EmptyView {
             heading: String(localized: "personAnalytics.info.heading", defaultValue: "About Person Analytics"),
             items: [
                 FeatureInfoItem(
-                    title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you're seeing"),
+                    title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "personAnalytics.info.shows.detail",
                                    defaultValue: "Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is mentioned across FRUS documents over time. Network maps who is named alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.counting.title", defaultValue: "How people are counted"),
                     detail: String(localized: "personAnalytics.info.counting.detail",
-                                   defaultValue: "Counts are mentions of a person across the documents you have indexed. The app's person authority groups them, so spelling variants, honorifics, and different name forms for one individual merge into a single identity instead of splitting into several.")),
+                                   defaultValue: "Counts are mentions of a person across the documents you have indexed. The app’s person authority groups them, so spelling variants, honorifics, and different name forms for one individual merge into a single identity instead of splitting into several.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.compare.title", defaultValue: "Comparing people"),
                     detail: String(localized: "personAnalytics.info.compare.detail",
-                                   defaultValue: "Tap a ranking bar, or use \"Add a person to compare\", to plot several people's mention trajectories on one chart — each colored line is one person. Remove a person with the ✕ on its chip.")),
+                                   defaultValue: "Tap a ranking bar, or use “Add a person to compare”, to plot several people’s mention trajectories on one chart — each colored line is one person. Remove a person with the ✕ on its chip.")),
             ]
         )
     }
@@ -257,24 +257,24 @@ extension FeatureInfoButton where Footer == EmptyView {
             heading: String(localized: "archival.info.heading", defaultValue: "About These Figures"),
             items: [
                 FeatureInfoItem(
-                    title: String(localized: "archival.info.shows.title", defaultValue: "What you're seeing"),
+                    title: String(localized: "archival.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "archival.info.shows.detail.v2",
-                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era's volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor's cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
+                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era’s volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor’s cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.method.title",
                                   defaultValue: "Where the figures come from"),
                     detail: String(localized: "archival.info.method.detail",
-                                   defaultValue: "They are parsed from the source note on each published document, not read from an archive's catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, where central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, where the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under nearby names.")),
+                                   defaultValue: "They are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, where central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, where the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under nearby names.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.weights.title.v2", defaultValue: "The three counts measure different things"),
                     detail: String(localized: "archival.info.weights.detail.v2",
-                                   defaultValue: "Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and a hundred and eighty-one collections appear only under pointers, having supplied no printed document. A collection named only in a volume's front matter has volumes but no documents.")),
+                                   defaultValue: "Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and a hundred and eighty-one collections appear only under pointers, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.umbrella.title", defaultValue: "Why Central Files is hidden"),
                     detail: String(localized: "archival.info.umbrella.detail",
-                                   defaultValue: "The State Department's Central Files are cited by 157 volumes and supply more than seventeen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
+                                   defaultValue: "The State Department’s Central Files are cited by 157 volumes and supply more than seventeen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.")),
                 FeatureInfoItem(
-                    title: String(localized: "archival.info.flows.title", defaultValue: "A flow is an editor's footnote, not an archive's"),
+                    title: String(localized: "archival.info.flows.title", defaultValue: "A flow is an editor’s footnote, not an archive’s"),
                     // R-3: the "N of M volumes" sentence is gone from here. It duplicated, with
                     // hardcoded numbers, the LIVE line the Flows chart prints from
                     // `ArchivalFlowsData.volumesWithEdges` / `volumesScanned` — which is exactly
@@ -292,7 +292,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                     title: String(localized: "archival.info.flows.scope.title",
                                   defaultValue: "What Flows reads, and what it does not"),
                     detail: String(localized: "archival.info.flows.scope.detail",
-                                   defaultValue: "This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite, which is why they were nearly absent here until it was added.\n\nMost central-file citations point at the citing document's own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between archives. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere new.")),
+                                   defaultValue: "This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite, which is why they were nearly absent here until it was added.\n\nMost central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between archives. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere new.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.flows.ibid.title",
                                   defaultValue: "An “Ibid.” is followed, which is a reading"),
@@ -302,7 +302,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                     title: String(localized: "archival.info.flows.mixed.title",
                                   defaultValue: "Citations that cross filing systems are counted in neither diagram"),
                     detail: String(localized: "archival.info.flows.mixed.detail",
-                                   defaultValue: "Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman's presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram.")),
+                                   defaultValue: "Some footnotes cross between the two filing systems — a document filed in a lot file or a presidential library pointing to a central-file number, or the reverse. There are about 1,900 of these across the series, and they are not spread evenly: a third of them come from two situations, the 1945 Potsdam volumes moving between Truman’s presidential file and the wartime file, and one 1952–54 conference volume moving between its lot file and its conference file. They are counted in neither diagram.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.flows.browse.title",
                                   defaultValue: "You cannot browse these citations"),
@@ -330,13 +330,13 @@ extension FeatureInfoButton where Footer == EmptyView {
             heading: String(localized: "crossRefAnalytics.info.heading", defaultValue: "About Cross-Reference Analytics"),
             items: [
                 FeatureInfoItem(
-                    title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you're seeing"),
+                    title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "crossRefAnalytics.info.shows.detail",
                                    defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broader scope that mixes several editorial practices.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.matrix.title", defaultValue: "Reading the heat matrix"),
                     detail: String(localized: "crossRefAnalytics.info.matrix.detail",
-                                   defaultValue: "Rows cite columns. A darker cell means the row's volume cites the column's volume more often. Column labels are a short code of the volume's years and number, such as '55–57 II. Hover over a label, or use VoiceOver, for the full title on either axis.")),
+                                   defaultValue: "Rows cite columns. A darker cell means the row’s volume cites the column’s volume more often. Column labels are a short code of the volume’s years and number, such as ’55–57 II. Hover over a label, or use VoiceOver, for the full title on either axis.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.influence.title", defaultValue: "About the influence score"),
                     detail: String(localized: "crossRefAnalytics.info.influence.detail",

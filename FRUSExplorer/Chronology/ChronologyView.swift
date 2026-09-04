@@ -867,7 +867,7 @@ struct ChronologyView: View {
                 .textCase(nil)
         } footer: {
             Text(String(localized: "chronology.spanning.footer",
-                        defaultValue: "These documents (mostly editorial notes) cover a span of dates rather than a single day, so they're listed here instead of on the timeline."))
+                        defaultValue: "These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline."))
                 .font(.caption2)
         }
         .id(Self.spanningSectionID)
@@ -964,7 +964,7 @@ struct ChronologyView: View {
                 .textCase(nil)
         } footer: {
             Text(String(localized: "chronology.overflow.footer",
-                        defaultValue: "These documents overlap your range but their dates are imprecise enough to reach before or after it, so they're listed here rather than placed on the chart."))
+                        defaultValue: "These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart."))
                 .font(.caption2)
         }
         .id(Self.overflowSectionID)
@@ -1102,7 +1102,7 @@ struct ChronologyView: View {
                 heading: String(localized: "chronology.info.heading", defaultValue: "About Chronology"),
                 items: [
                     FeatureInfoItem(
-                        title: String(localized: "chronology.info.shows.title", defaultValue: "What you're seeing"),
+                        title: String(localized: "chronology.info.shows.title", defaultValue: "What you’re seeing"),
                         detail: String(localized: "chronology.info.shows.detail",
                                        defaultValue: "Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.")),
                     FeatureInfoItem(

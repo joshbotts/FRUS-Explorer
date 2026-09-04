@@ -524,7 +524,7 @@ struct OnboardingView: View {
         defaultValue: "One volume to explore — typically a few MB.")
 
     static let readyTitle = String(localized: "onboarding.ready.title",
-        defaultValue: "You're all set")
+        defaultValue: "You’re all set")
     static let readyBody = String(localized: "onboarding.ready.body",
         defaultValue: "Volumes download and index automatically — search unlocks in minutes. Your project \u{201C}My Research\u{201D} is ready.")
 

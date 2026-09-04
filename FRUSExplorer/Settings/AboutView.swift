@@ -611,7 +611,7 @@ struct FullNoticesView: View {
                             defaultValue: "EmbeddingGemma (Google)"))
                     .font(.callout.bold())
                 Text(String(localized: "about.modelLicense.gemma.body",
-                            defaultValue: "When you enable natural-language search, the app downloads Google's EmbeddingGemma model (229 MB) and runs it on this device to convert your search queries into vectors. The model is used unmodified. Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms, including its Prohibited Use Policy."))
+                            defaultValue: "When you enable natural-language search, the app downloads Google’s EmbeddingGemma model (229 MB) and runs it on this device to convert your search queries into vectors. The model is used unmodified. Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms, including its Prohibited Use Policy."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)

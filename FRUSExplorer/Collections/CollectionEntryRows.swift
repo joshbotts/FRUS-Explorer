@@ -567,7 +567,7 @@ struct CollectionGeneratedEntryRow: View {
                           defaultValue: "Update FRUS Explorer to resolve this block.")
         }
         let base = String(localized: "collection.entry.generated.caption",
-                          defaultValue: "Generated from this collection's documents at export and in the preview.")
+                          defaultValue: "Generated from this collection’s documents at export and in the preview.")
         // Bibliography/chronology rows are one-per-document, so the entry count IS the
         // block's row count; the other blocks would need real resolution to count.
         if let count = documentCount, type == .bibliography || type == .chronology {
@@ -765,7 +765,7 @@ private struct EntryRowConfigureAccessibility: ViewModifier {
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint(Text(String(localized: "collection.entry.configure.hint",
-                                                defaultValue: "Opens this document's settings")))
+                                                defaultValue: "Opens this document’s settings")))
                 .accessibilityAction { action() }
         } else {
             content

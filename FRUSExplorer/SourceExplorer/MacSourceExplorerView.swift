@@ -278,7 +278,7 @@ struct MacSourceExplorerView: View {
                       systemImage: "building.columns")
             }
             .help(String(localized: "source.explorer.addVisit.help",
-                         defaultValue: "Seed an Archive Visit from this document's archival claims"))
+                         defaultValue: "Seed an Archive Visit from this document’s archival claims"))
             .disabled(documentVolumeId == nil || documentId == nil
                       || (!hasSourceNote && unprintedPointers.isEmpty))
         }
@@ -376,7 +376,7 @@ struct MacSourceExplorerView: View {
                     }
                 }
                 Text(String(localized: "source.explorer.unprinted.footer",
-                            defaultValue: "Archival units this document's footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from."))
+                            defaultValue: "Archival units this document’s footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -543,7 +543,7 @@ struct MacSourceExplorerView: View {
                     }
                     // #315: citation guidance — mirrors the iOS centralFilesPanel note.
                     Text(String(localized: "source.explorer.centralFiles.cite.note",
-                                defaultValue: "To request the original record from NARA, give them the decimal file number above. Add any telegram serial number, the from/to information, and the document's date from the source note. Archivists use these details to find the record within the file."))
+                                defaultValue: "To request the original record from NARA, give them the decimal file number above. Add any telegram serial number, the from/to information, and the document’s date from the source note. Archivists use these details to find the record within the file."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -697,7 +697,7 @@ struct MacSourceExplorerView: View {
                     }
                     // #315: CFPF citation guidance — mirrors the iOS cfpfPanel note.
                     Text(String(localized: "source.explorer.cfpf.cite.note",
-                                defaultValue: "To request the original record from NARA, give them the file identifier above. Add any telegram channel and serial numbers, the from/to information, and the document's date from the source note."))
+                                defaultValue: "To request the original record from NARA, give them the file identifier above. Add any telegram channel and serial numbers, the from/to information, and the document’s date from the source note."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1304,7 +1304,7 @@ struct MacSourceExplorerView: View {
                         .buttonStyle(.link)
                     }
                     Text(String(localized: "source.explorer.curatedLot.candidates.note",
-                                defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document's date and type."))
+                                defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1343,7 +1343,7 @@ struct MacSourceExplorerView: View {
                             openURL(url)
                         } label: {
                             Label(String(localized: "source.explorer.curatedLot.referral.browse",
-                                         defaultValue: "Browse the collection's series"),
+                                         defaultValue: "Browse the collection’s series"),
                                   systemImage: "arrow.up.right.square")
                         }
                         .buttonStyle(.link)
@@ -1498,7 +1498,7 @@ struct MacSourceExplorerView: View {
                         defaultValue: "Digitized Department of State Records (pre-1906)")) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(String(localized: "source.explorer.countrySeries.intro",
-                            defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document's date."))
+                            defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let serial = despatchSerial {
@@ -1515,7 +1515,7 @@ struct MacSourceExplorerView: View {
                             Image(systemName: "number").foregroundStyle(.secondary)
                         }
                         Text(String(localized: "source.explorer.countrySeries.serial.caption",
-                                    defaultValue: "FRUS prints this number above the document — the post's own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record."))
+                                    defaultValue: "FRUS prints this number above the document — the post’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -1638,7 +1638,7 @@ struct MacSourceExplorerView: View {
                         defaultValue: "Archival Source")) {
             VStack(alignment: .leading, spacing: 8) {
                 Text(String(localized: "source.explorer.noNote.detail",
-                            defaultValue: "This document carries no archival source note, and its exact filing couldn't be predicted from its dateline and FRUS chapter."))
+                            defaultValue: "This document carries no archival source note, and its exact filing couldn’t be predicted from its dateline and FRUS chapter."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if let series = predictedSeriesNote {
@@ -2390,7 +2390,7 @@ struct MacSourceExplorerView: View {
                           defaultValue: "No other indexed documents cite this archival source. Index more volumes to surface related documents.")
         } else {
             return String(localized: "source.explorer.related.empty.unmatched",
-                          defaultValue: "This source note doesn't cite a recognized lot file, central file, or presidential library, so related documents can't be matched.")
+                          defaultValue: "This source note doesn’t cite a recognized lot file, central file, or presidential library, so related documents can’t be matched.")
         }
     }
 

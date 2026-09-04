@@ -194,7 +194,7 @@ struct IndexHealthView: View {
         .buttonStyle(.bordered)
         .controlHelp(
             String(localized: "indexHealth.researchState.a11y",
-                   defaultValue: "Copy a record of this index's state"),
+                   defaultValue: "Copy a record of this index’s state"),
             detail: String(localized: "indexHealth.researchState.help",
                            defaultValue: "Copies app build, index versions, the indexed volume list and the vector provenance as JSON — what a reproducible research claim needs to cite"),
             systemImage: "doc.on.clipboard"
@@ -272,7 +272,7 @@ struct IndexHealthView: View {
                             .font(.callout)
                     }
                     Text(String(localized: "settings.storage.integrity.suggestion",
-                                defaultValue: "Try \"Delete Index & Rebuild\" above to fix these problems."))
+                                defaultValue: "Try “Delete Index & Rebuild” above to fix these problems."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

@@ -132,7 +132,7 @@ struct CollectionCompositionRows: View {
                     ForEach(allPrompts) { Text($0.name).tag(UUID?.some($0.id)) }
                 }
                 Text(String(localized: "composition.summaryPrompt.hint",
-                            defaultValue: "Summaries are generated on demand for documents that don't already have one for this prompt. Requires Apple Intelligence."))
+                            defaultValue: "Summaries are generated on demand for documents that don’t already have one for this prompt. Requires Apple Intelligence."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

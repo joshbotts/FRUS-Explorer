@@ -826,7 +826,7 @@ struct DocumentView: View {
         } message: { volumeId in
             let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
             Text(String(format: String(localized: "document.crossref.download.message %@",
-                                        defaultValue: "The linked document is in “%@”, which isn't downloaded yet. Download it to open the document, or view how it connects to this one."),
+                                        defaultValue: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one."),
                         title))
         }
         // Single consolidated sheet driven by the DocumentSheet enum (F-024).
@@ -2229,7 +2229,7 @@ struct DocumentShareMenu<LabelContent: View>: View {
         .task(id: vm.entry.documentId) { prepareExportFiles() }
         .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
         .alert(
-            String(localized: "document.share.zotero.error.title", defaultValue: "Couldn't Send to Zotero"),
+            String(localized: "document.share.zotero.error.title", defaultValue: "Couldn’t Send to Zotero"),
             isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
             presenting: zoteroError
         ) { _ in

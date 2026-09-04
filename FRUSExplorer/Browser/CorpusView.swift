@@ -477,7 +477,7 @@ struct CorpusView: View {
                        defaultValue: "Browse your working corpora")
             )
             .help(String(localized: "browser.corpus.corpora.help",
-                         defaultValue: "Fixed document sets captured from Search results or the semantic map — browse each one's documents, grouped by volume"))
+                         defaultValue: "Fixed document sets captured from Search results or the semantic map — browse each one’s documents, grouped by volume"))
         }
     }
 

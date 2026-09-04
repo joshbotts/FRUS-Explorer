@@ -355,9 +355,9 @@ struct SearchFilterView: View {
             let n = vm.projectEngagedDocumentKeys.count
             Text(n == 1
                 ? String(localized: "search.projectscope.footer.history.one",
-                         defaultValue: "History limits results to the 1 document you've collected, annotated, or opened in this project.")
+                         defaultValue: "History limits results to the 1 document you’ve collected, annotated, or opened in this project.")
                 : String(localized: "search.projectscope.footer.history.other",
-                         defaultValue: "History limits results to the \(n) documents you've collected, annotated, or opened in this project."))
+                         defaultValue: "History limits results to the \(n) documents you’ve collected, annotated, or opened in this project."))
         case .focus:
             // A manual volume selection overrides the subject-derived scope (owner
             // refinement); the footer names whichever is driving the search.
@@ -371,17 +371,17 @@ struct SearchFilterView: View {
                              defaultValue: "your \(count) selected volumes"))
                 : (count == 1
                     ? String(localized: "search.projectscope.focus.subjects.one",
-                             defaultValue: "the 1 volume your project's subjects define")
+                             defaultValue: "the 1 volume your project’s subjects define")
                     : String(localized: "search.projectscope.focus.subjects.other",
-                             defaultValue: "the \(count) volumes your project's subjects define"))
+                             defaultValue: "the \(count) volumes your project’s subjects define"))
             Text(vm.projectOnlyNew
                  ? String(localized: "search.projectscope.footer.focus.onlynew",
-                          defaultValue: "Focus searches \(volumesClause), excluding documents you've already engaged.")
+                          defaultValue: "Focus searches \(volumesClause), excluding documents you’ve already engaged.")
                  : String(localized: "search.projectscope.footer.focus",
                           defaultValue: "Focus searches \(volumesClause)."))
         case .off:
             Text(String(localized: "search.projectscope.footer.off",
-                        defaultValue: "Choose History to search only what you've engaged, or Focus to discover across the volumes your project's subjects define."))
+                        defaultValue: "Choose History to search only what you’ve engaged, or Focus to discover across the volumes your project’s subjects define."))
         }
     }
 
@@ -539,7 +539,7 @@ struct SearchFilterView: View {
             }
 
             Text(String(localized: "search.personref.help",
-                        defaultValue: "Type a person's name to filter results to documents that mention them."))
+                        defaultValue: "Type a person’s name to filter results to documents that mention them."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         } header: {
@@ -901,7 +901,7 @@ struct SearchFilterView: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint(String(localized: "search.scope.custom.hint",
-                                  defaultValue: "Fills the volume picker with this scope's indexed volumes"))
+                                  defaultValue: "Fills the volume picker with this scope’s indexed volumes"))
     }
 
     // MARK: - Subject Category Facet (#308 Phase 1)
@@ -1472,7 +1472,7 @@ private struct SubjectCategoryFacetPicker: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint(String(localized: "search.subject.facet.row.hint",
-                                  defaultValue: "Filters the search to this subject's volumes"))
+                                  defaultValue: "Filters the search to this subject’s volumes"))
     }
 
     /// A label + "in N volumes" reach caption (the honest-reach surfacing, F3).

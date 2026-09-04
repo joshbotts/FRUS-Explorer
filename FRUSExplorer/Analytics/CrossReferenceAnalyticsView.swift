@@ -515,7 +515,7 @@ struct CrossReferenceAnalyticsView: View {
             Int64(excludedBrokenCount))
         let sameVolume = String(
             localized: "crossRefAnalytics.export.caveat.sameVolume",
-            defaultValue: "Attribution: the document-level figures count same-volume references, including resolved page references, toward the document's own volume. The volume heat matrix counts only citations between different volumes, so it leaves same-volume references out.")
+            defaultValue: "Attribution: the document-level figures count same-volume references, including resolved page references, toward the document’s own volume. The volume heat matrix counts only citations between different volumes, so it leaves same-volume references out.")
         return AnalyticsProvenance(
             figureTitle: figureTitle,
             axisLabel: axisLabel,
@@ -688,7 +688,7 @@ struct CrossReferenceAnalyticsView: View {
                                   defaultValue: "Selection: the matrix covers the %lld volumes with the most references in and out. The CSV lists only pairs with at least one reference between them. The figure draws the whole grid and leaves the rest of the cells blank."),
                    Int64(Self.matrixVolumeLimit)),
             String(localized: "crossRefAnalytics.export.caveat.matrixAxes",
-                   defaultValue: "Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes' full titles appear in this CSV.")
+                   defaultValue: "Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes’ full titles appear in this CSV.")
         ]
     }
 
@@ -768,7 +768,7 @@ struct CrossReferenceAnalyticsView: View {
     private var resolvedCaption: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(String(localized: "crossRefAnalytics.resolvedCaption",
-                        defaultValue: "The most-referenced, degree, and PageRank charts count same-volume references, including resolved page references, toward the document's own volume. Set a year range or scope and they count citations made by documents in that era or scope. The heat matrix counts only connections between different volumes, so it leaves same-volume citations out."))
+                        defaultValue: "The most-referenced, degree, and PageRank charts count same-volume references, including resolved page references, toward the document’s own volume. Set a year range or scope and they count citations made by documents in that era or scope. The heat matrix counts only connections between different volumes, so it leaves same-volume citations out."))
             // No accessibilityLabel override: the explanatory clause exists nowhere else in the
             // view, so VoiceOver must read the full visible caption.
             if excludedBrokenCount > 0 {
@@ -879,7 +879,7 @@ struct CrossReferenceAnalyticsView: View {
                                 .font(.caption2).foregroundStyle(.secondary)
                             if !row.isIndexed {
                                 Text(String(localized: "crossRefAnalytics.row.notDownloaded",
-                                            defaultValue: "In a volume you haven't downloaded"))
+                                            defaultValue: "In a volume you haven’t downloaded"))
                                     .font(.caption2).foregroundStyle(.tertiary)
                             }
                         }
@@ -1223,7 +1223,7 @@ struct CrossReferenceAnalyticsView: View {
                                 .font(.caption2).foregroundStyle(.secondary)
                             if !row.isIndexed {
                                 Text(String(localized: "crossRefAnalytics.row.notDownloaded",
-                                            defaultValue: "In a volume you haven't downloaded"))
+                                            defaultValue: "In a volume you haven’t downloaded"))
                                     .font(.caption2).foregroundStyle(.tertiary)
                             }
                             // Relative influence bar — width ∝ score / max landmark score.

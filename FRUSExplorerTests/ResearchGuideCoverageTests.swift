@@ -55,7 +55,13 @@ struct ResearchGuideCoverageTests {
         "archival analytics": ["archival analytics"],
         // V-4: the semantic map shipped as an analytics window. Same shape as the row above — the
         // app's own Analysis Tools tooltip listed it while the guide did not.
-        "semantic analytics": ["semantic analytics"],
+        // Either name pins it. The 2026-09-04 copy pass renamed the sentence's subject from
+        // "an experimental semantic analytics feature" to "a semantic map", which is the better
+        // description and equally findable — and it satisfies this suite's own discipline, since
+        // "semantic map" was absent from the guide, the mirror and both manuals before that
+        // sentence existed (verified: 0 occurrences at the preceding commit), so a row using it
+        // would have failed on the day it was added rather than passing vacuously.
+        "semantic analytics": ["semantic analytics", "semantic map"],
         // #1026: the guide taught the VOLUME grain only. The document-grain Subjects section in the
         // results Facets panel narrows the result set and went unmentioned, while the sentence that
         // did cover subjects claimed a distinctiveness filter the app had stopped applying.

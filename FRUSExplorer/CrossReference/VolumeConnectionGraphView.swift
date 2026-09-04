@@ -552,7 +552,7 @@ struct VolumeConnectionGraphView: View {
                 }
                 .buttonStyle(.plain)
                 .help(String(localized: "volumeGraph.resetView.help",
-                             defaultValue: "Restore the graph's pan and zoom to their original position"))
+                             defaultValue: "Restore the graph’s pan and zoom to their original position"))
                 .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .topLeading)))
             }
 

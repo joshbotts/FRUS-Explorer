@@ -163,7 +163,7 @@ enum SearchScopeSignature {
         // reader must know is that this was NOT a term search, so a zero is not term absence.
         if signature.hasPrefix("route=semantic") {
             return [String(localized: "appendix.scope.semantic",
-                           defaultValue: "ranked by meaning (on-device model), not by keywords — the query's words were not required to appear")]
+                           defaultValue: "ranked by meaning (on-device model), not by keywords — the query’s words were not required to appear")]
         }
         var pairs: [String: String] = [:]
         for part in signature.split(separator: ";") {
@@ -258,7 +258,7 @@ enum SearchScopeSignature {
                            ? String(localized: "appendix.scope.person.rollup",
                                     defaultValue: "filtered to one person")
                            : String(localized: "appendix.scope.person.ref",
-                                    defaultValue: "filtered to one person, by a single volume's spelling"))
+                                    defaultValue: "filtered to one person, by a single volume’s spelling"))
         }
         if pairs["phrase"] == "1" {
             phrases.append(String(localized: "appendix.scope.phrase", defaultValue: "phrase search"))

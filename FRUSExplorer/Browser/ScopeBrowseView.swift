@@ -130,7 +130,7 @@ enum ScopeAxis {
                              defaultValue: "\(resolved.count) volumes in this scope, by volume number.")
         if missing > 0 {
             caption += " " + String(localized: "browser.scopes.drill.missing",
-                                    defaultValue: "Entries referencing volumes outside this device's catalogue: \(missing).")
+                                    defaultValue: "Entries referencing volumes outside this device’s catalogue: \(missing).")
         }
         return VolumeListSpec(
             axisKey: "scope:\(scope.id.uuidString)",
@@ -227,7 +227,7 @@ struct ScopeIndexView: View {
                         systemImage: "square.stack.3d.up",
                         description: Text(String(
                             localized: "browser.scopes.empty.detail",
-                            defaultValue: "A scope is a set of volumes you assemble yourself. Create one here, or use \"Save as Scope\" on any axis's volume list."))
+                            defaultValue: "A scope is a set of volumes you assemble yourself. Create one here, or use “Save as Scope” on any axis’s volume list."))
                     )
                 }
             } else {
@@ -383,7 +383,7 @@ struct VolumeScopeMenuItems: View {
                 }
             } label: {
                 Label(String(localized: "browser.scopes.menu.addToRecent",
-                             defaultValue: "Add to \"\(ScopeAxis.displayName(recent))\""),
+                             defaultValue: "Add to “\(ScopeAxis.displayName(recent))”"),
                       systemImage: "square.stack.3d.up")
             }
             .disabled(recent.volumeIds.contains(volumeId))
@@ -478,7 +478,7 @@ struct BrowseScopeFilterSection: View {
                           defaultValue: "Browsing within: \(name)")
         case .empty(let name):
             return String(localized: "browser.scopes.banner.empty",
-                          defaultValue: "Browsing within: \(name) — this scope has no volumes this device's catalogue can show.")
+                          defaultValue: "Browsing within: \(name) — this scope has no volumes this device’s catalogue can show.")
         case .unavailable:
             return String(localized: "browser.scopes.banner.unavailable",
                           defaultValue: "The scope this browse was narrowed to is no longer available.")

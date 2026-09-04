@@ -449,7 +449,7 @@ struct CollectionDetailView: View {
                         defaultValue: "Related Collections"))
         } footer: {
             Text(String(localized: "collection.detail.related.footer",
-                        defaultValue: "These collections appear alongside this one in the same volumes' source lists. Ranking uses the overlap coefficient, so a broad umbrella record does not dominate. The link is at volume level: both collections fed the same compilation. It does not mean the same documents cite both."))
+                        defaultValue: "These collections appear alongside this one in the same volumes’ source lists. Ranking uses the overlap coefficient, so a broad umbrella record does not dominate. The link is at volume level: both collections fed the same compilation. It does not mean the same documents cite both."))
         }
     }
 
@@ -548,7 +548,7 @@ struct CollectionDetailView: View {
                 .axChartDescriptor(inspector: timelineTable, title: timelineExportTitle)
                 Text(String(format: String(
                     localized: "collection.detail.timeline.caption %@",
-                    defaultValue: "Citing volumes by coverage era (the citing-volume list × the manifest's date ranges). %@"),
+                    defaultValue: "Citing volumes by coverage era (the citing-volume list × the manifest’s date ranges). %@"),
                     CollectionRelations.timelineNarrative(for: timeline)))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -790,7 +790,7 @@ struct CollectionDetailView: View {
                         defaultValue: "Pointed At, Not Printed"))
         } footer: {
             Text(String(localized: "collection.detail.unprinted.footer",
-                        defaultValue: "Counted from editors' footnotes naming material FRUS did not print. A separate body of evidence from the counts above, which record where printed documents were drawn from — the two are never added together."))
+                        defaultValue: "Counted from editors’ footnotes naming material FRUS did not print. A separate body of evidence from the counts above, which record where printed documents were drawn from — the two are never added together."))
         }
     }
 

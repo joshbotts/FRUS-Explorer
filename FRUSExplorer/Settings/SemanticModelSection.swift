@@ -71,7 +71,7 @@ struct SemanticModelSection: View {
             // hedging, for the vectors footer's reason.
             Text(String(
                 localized: "settings.model.footer",
-                defaultValue: "Lets the app understand searches phrased as questions, using a language model that runs entirely on this device — Google's EmbeddingGemma, an optional 229 MB download. The feature is experimental. The model is provided under the Gemma Terms of Use; see About ▸ Legal for the terms."))
+                defaultValue: "Lets the app understand searches phrased as questions, using a language model that runs entirely on this device — Google’s EmbeddingGemma, an optional 229 MB download. The feature is experimental. The model is provided under the Gemma Terms of Use; see About ▸ Legal for the terms."))
         }
         .task(id: reloadToken) { await reload() }
         .sheet(isPresented: $showingConsent) {
@@ -270,7 +270,7 @@ struct SemanticModelConsentSheet: View {
                 .font(.title3.bold())
             Text(String(
                 localized: "settings.model.consent.body",
-                defaultValue: "This optional 229 MB download is Google's EmbeddingGemma model, provided under and subject to the Gemma Terms of Use, including its Prohibited Use Policy. By downloading it you agree to use it consistently with those terms."))
+                defaultValue: "This optional 229 MB download is Google’s EmbeddingGemma model, provided under and subject to the Gemma Terms of Use, including its Prohibited Use Policy. By downloading it you agree to use it consistently with those terms."))
                 .fixedSize(horizontal: false, vertical: true)
             if let url = URL(string: AboutLinks.gemmaTerms) {
                 Link(String(localized: "settings.model.consent.terms",

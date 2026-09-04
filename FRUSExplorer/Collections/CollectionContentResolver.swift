@@ -38,7 +38,7 @@ enum CollectionResolveError: Error, LocalizedError {
                           defaultValue: "The linked saved search could not be found. It may have been deleted.")
         case .summaryPromptMissing:
             return String(localized: "export.summaryNoPrompt",
-                          defaultValue: "Choose a summarization prompt in the collection's Composition section to export summaries.")
+                          defaultValue: "Choose a summarization prompt in the collection’s Composition section to export summaries.")
         }
     }
 }

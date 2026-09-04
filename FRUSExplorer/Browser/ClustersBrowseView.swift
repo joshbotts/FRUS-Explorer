@@ -293,7 +293,7 @@ struct ClustersIndexView: View {
                           defaultValue: "The cluster data and the semantic vectors come from different releases, so the list is not shown.")
         default:
             return String(localized: "browser.clusters.missing",
-                          defaultValue: "This build's cluster data could not be read. Reinstalling the app restores it.")
+                          defaultValue: "This build’s cluster data could not be read. Reinstalling the app restores it.")
         }
     }
 
@@ -353,7 +353,7 @@ struct ClustersIndexView: View {
                    defaultValue: "\(label), \(cluster.documentCount) documents")
         )
         .help(String(localized: "browser.clusters.row.help",
-                     defaultValue: "Browse this cluster's documents, grouped by volume"))
+                     defaultValue: "Browse this cluster’s documents, grouped by volume"))
     }
 
     /// Loads the artifact, riding out another surface's in-flight load.
@@ -439,7 +439,7 @@ struct ClusterDocumentsView: View {
                            defaultValue: "Clusters Unavailable"),
                     systemImage: SemanticGlyph.clusters,
                     description: Text(String(localized: "browser.clusters.drill.unavailable",
-                                             defaultValue: "This cluster's data could not be loaded."))
+                                             defaultValue: "This cluster’s data could not be loaded."))
                 )
             } else {
                 ProgressView()
@@ -501,7 +501,7 @@ struct ClusterDocumentsView: View {
             // cluster is machine grouping, its label sampled terms; eras are the
             // volume's coverage, not the document's date.
             Text(String(localized: "browser.clusters.drill.footer",
-                        defaultValue: "A cluster is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its label is the most distinctive words in a sample of those documents, not a subject heading. Era counts reflect each volume's coverage era, not each document's own date."))
+                        defaultValue: "A cluster is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its label is the most distinctive words in a sample of those documents, not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date."))
         }
     }
 

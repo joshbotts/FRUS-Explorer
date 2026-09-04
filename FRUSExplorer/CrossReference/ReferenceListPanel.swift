@@ -287,7 +287,7 @@ struct ReferenceListPanel: View {
         .buttonStyle(.plain)
         .id(node.id)
         .accessibilityHint(String(localized: "graph.list.cluster.hint",
-                                  defaultValue: "Expands this volume's documents"))
+                                  defaultValue: "Expands this volume’s documents"))
     }
 
     /// Role colour matching the canvas encoding (blue inbound, orange outbound,
@@ -341,7 +341,7 @@ struct GraphNodeDetailView: View {
                 .controlHelp(
                     String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
                     detail: String(localized: "graph.panel.close.help",
-                                   defaultValue: "Hide this document's details panel"),
+                                   defaultValue: "Hide this document’s details panel"),
                     systemImage: "xmark.circle.fill"
                 )
             }
@@ -533,7 +533,7 @@ struct GraphEdgeDetailView: View {
                 .controlHelp(
                     String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
                     detail: String(localized: "graph.panel.close.help",
-                                   defaultValue: "Hide this document's details panel"),
+                                   defaultValue: "Hide this document’s details panel"),
                     systemImage: "xmark.circle.fill"
                 )
             }

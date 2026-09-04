@@ -187,7 +187,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var valueModeCaveat: String? {
         guard let valueMode else { return nil }
         return String(format: String(localized: "analytics.export.caveat.values %@",
-                                     defaultValue: "Values: %@. A share is that period's matching documents divided by all indexed documents in the same period, so a growing corpus does not read as a rising term."),
+                                     defaultValue: "Values: %@. A share is that period’s matching documents divided by all indexed documents in the same period, so a growing corpus does not read as a rising term."),
                       valueMode)
     }
 

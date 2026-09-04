@@ -686,7 +686,7 @@ private extension EducationPage {
                     "Since 1991, FRUS is required by federal statute (Public Law 102-138, codified at [22 U.S.C. § 4351 et seq.](https://uscode.house.gov/view.xhtml?req=%22foreign+relations+of+the+United+States%22+series&f=treesort&fq=true&num=2&hl=true&edition=prelim&granuleId=USC-prelim-title22-section4351), amended 2021). The law establishes four binding commitments:"
                 ],
                 bullets: [
-                    "The series must constitute \"a thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity. Volumes of this publication shall include all records needed to provide a comprehensive documentation of the major foreign policy decisions and actions of the United States Government, including the facts which contributed to the formulation of policies and records providing supporting and alternative views to the policy position ultimately adopted\"",
+                    "The series must constitute “a thorough, accurate, and reliable documentary record of major United States foreign policy decisions and significant United States diplomatic activity. Volumes of this publication shall include all records needed to provide a comprehensive documentation of the major foreign policy decisions and actions of the United States Government, including the facts which contributed to the formulation of policies and records providing supporting and alternative views to the policy position ultimately adopted”",
                     "Volumes must be published within 30 years of the events they document",
                     "Government departments must grant historians full access to pertinent records at 20 years",
                     "An Advisory Committee on Historical Diplomatic Documentation comprised of representatives of major scholarly organizations and experts chosen by the Department of State must oversee the production and declassification process to validate the historical objectivity of the series"
@@ -696,7 +696,7 @@ private extension EducationPage {
                 id: "ooh",
                 heading: "Prepared by the Department of State's Office of the Historian",
                 paragraphs: [
-                    "FRUS volumes are compiled and edited by professional historians in the Office of the Historian at the Department of State. Historians in the compilation and review team identify the most important documents, provide context through editorial notes and annotations, and review draft volume manuscripts to ensure they provide \"thorough, accurate, and reliable\" coverage of the assigned topic(s). Historians in the declassification, publishing, and digital initiatives team coordinate the complex and thorough interagency declassification review required before release and then the detailed preparation of the manuscript required for publication."
+                    "FRUS volumes are compiled and edited by professional historians in the Office of the Historian at the Department of State. Historians in the compilation and review team identify the most important documents, provide context through editorial notes and annotations, and review draft volume manuscripts to ensure they provide “thorough, accurate, and reliable” coverage of the assigned topic(s). Historians in the declassification, publishing, and digital initiatives team coordinate the complex and thorough interagency declassification review required before release and then the detailed preparation of the manuscript required for publication."
                 ]
             ),
             EducationSection(
@@ -710,7 +710,7 @@ private extension EducationPage {
                 id: "scope",
                 heading: "Scope",
                 paragraphs: [
-                    "FRUS volumes produced today cover U.S. bilateral and regional relations across the globe, including U.S. policymakers' responses to unfolding crises; their engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. The series currently spans from 1861 through the early 1990s, with volumes covering the Clinton administration still in production."
+                    "FRUS volumes produced today cover U.S. bilateral and regional relations across the globe, including U.S. policymakers’ responses to unfolding crises; their engagement with global issues like human rights, terrorism, narcotics, health, and the environment; and thematic topics including national security policy, foreign economic policy, and foreign affairs organization and management. The series currently spans from 1861 through the early 1990s, with volumes covering the Clinton administration still in production."
                 ]
             ),
         ]
@@ -729,7 +729,7 @@ private extension EducationPage {
                 id: "origins",
                 heading: "Origins: Diplomatic Correspondence (1861–1920s)",
                 paragraphs: [
-                    "At its birth, FRUS was an instrument of public affairs and congressional relations. The series began during the Civil War as a compilation of official diplomatic correspondence — despatches from diplomatic posts, instructions to U.S. ministers overseas, and notes to and from foreign governments. The volumes documented the operations of the State Department. Coverage was often contemporaneous: volumes sometimes appeared within a year of events, prioritizing currency over comprehensiveness. Because the volumes were produced by the same clerks who administered the Department's day-to-day business, principles of selection and editing standards reflected operational rather than historical purposes. By the early 20th century, the series had evolved to became a valuable knowledge management tool by providing ready access to key policy and precedent references for officials within the Department and its overseas posts and growing stakeholder constituencies in civil society."
+                    "At its birth, FRUS was an instrument of public affairs and congressional relations. The series began during the Civil War as a compilation of official diplomatic correspondence — despatches from diplomatic posts, instructions to U.S. ministers overseas, and notes to and from foreign governments. The volumes documented the operations of the State Department. Coverage was often contemporaneous: volumes sometimes appeared within a year of events, prioritizing currency over comprehensiveness. Because the volumes were produced by the same clerks who administered the Department’s day-to-day business, principles of selection and editing standards reflected operational rather than historical purposes. By the early 20th century, the series had evolved to became a valuable knowledge management tool by providing ready access to key policy and precedent references for officials within the Department and its overseas posts and growing stakeholder constituencies in civil society."
                 ]
             ),
             EducationSection(
@@ -743,34 +743,34 @@ private extension EducationPage {
                 id: "national-security",
                 heading: "The National Security Turn (1945–1970s)",
                 paragraphs: [
-                    "The Cold War transformed FRUS. As more decision-makers outside the Department of State left their imprint on foreign policy and diplomacy, FRUS historians increasingly needed to complement State Department records with documents drawn from other agencies' files - especially presidential records. At the same time, United States expanded and intensified its engagement around the world. The perceived stakes of disclosure in FRUS grew. In the 1957, the Department established a Historical Advisory Committee of outside academic experts to provide editorial advice about how to balance timeliness and comprehensiveness and to vouch for the integrity of published volumes. Over the following decades, FRUS historians and advisory committee experts maintained that balance and the series served as the Department of State's transparency engine. "
+                    "The Cold War transformed FRUS. As more decision-makers outside the Department of State left their imprint on foreign policy and diplomacy, FRUS historians increasingly needed to complement State Department records with documents drawn from other agencies’ files - especially presidential records. At the same time, United States expanded and intensified its engagement around the world. The perceived stakes of disclosure in FRUS grew. In the 1957, the Department established a Historical Advisory Committee of outside academic experts to provide editorial advice about how to balance timeliness and comprehensiveness and to vouch for the integrity of published volumes. Over the following decades, FRUS historians and advisory committee experts maintained that balance and the series served as the Department of State’s transparency engine. "
                 ]
             ),
             EducationSection(
                 id: "crisis",
                 heading: "Crisis and Reform (1978–1991)",
                 paragraphs: [
-                    "By the 1980s, the gap between what FRUS had always claimed to be and what it could actually deliver grew painfully apparent. Historians inside the Office of the Historian struggled to achieve direct access to key CIA records. Academic historians appointed to the Department-chartered Historical Advisory Committee faced tightening security restrictions that made it harder to judge whether information withheld during the declassification process was marginal or essential to the historical integrity of publishable volumes. In 1989 and 1990, academic criticism of a volume documenting U.S. policy toward Iran in the early 1950s without any references to widely-known covert action attracted congressional scrutiny of the State Department's management of the series and its relationship with the advisory committee. In 1991, Congress intervened by establishing statutory mandates for long-standing norms: the mission of the series, the obligations of U.S. Government agencies to provide access to their historical records to the historians producing FRUS, and an advisory committee of academic historians to provide oversight to validate the historical integrity of the series."
+                    "By the 1980s, the gap between what FRUS had always claimed to be and what it could actually deliver grew painfully apparent. Historians inside the Office of the Historian struggled to achieve direct access to key CIA records. Academic historians appointed to the Department-chartered Historical Advisory Committee faced tightening security restrictions that made it harder to judge whether information withheld during the declassification process was marginal or essential to the historical integrity of publishable volumes. In 1989 and 1990, academic criticism of a volume documenting U.S. policy toward Iran in the early 1950s without any references to widely-known covert action attracted congressional scrutiny of the State Department’s management of the series and its relationship with the advisory committee. In 1991, Congress intervened by establishing statutory mandates for long-standing norms: the mission of the series, the obligations of U.S. Government agencies to provide access to their historical records to the historians producing FRUS, and an advisory committee of academic historians to provide oversight to validate the historical integrity of the series."
                 ]
             ),
             EducationSection(
                 id: "contemporary",
                 heading: "The Contemporary Series (1991–Present)",
                 paragraphs: [
-                    "Post-1991 volumes reflect the statute's empowerment of FRUS historians with broader sourcing, fuller coverage of intelligence activities, and more detailed acknowledgment of omissions. Even as some volumes are delayed by interagency declassification disagreements, the 30-year rule creates a rolling horizon; volumes covering the Reagan administration are now publishing, with the Bush 41 and Clinton eras in active production."
+                    "Post-1991 volumes reflect the statute’s empowerment of FRUS historians with broader sourcing, fuller coverage of intelligence activities, and more detailed acknowledgment of omissions. Even as some volumes are delayed by interagency declassification disagreements, the 30-year rule creates a rolling horizon; volumes covering the Reagan administration are now publishing, with the Bush 41 and Clinton eras in active production."
                 ]
             ),
             EducationSection(
                 id: "digital",
                 heading: "The Digital Transition",
                 paragraphs: [
-                    "The Office of the Historian's shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All {{volumes}} volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed."
+                    "The Office of the Historian’s shift to XML-encoded TEI files and digital publication in the 21st century has transformed how FRUS can be read and searched. All {{volumes}} volumes are now available as structured digital texts — the foundation for everything this app does. The TEI format preserves document structure (headings, datelines, footnotes, person references) in a form that makes programmatic analysis possible in ways printed volumes never allowed."
                 ]
             ),
             EducationSection(
                 id: "frus-history",
                 paragraphs: [
-                    "To dive deeper into the history of the series, see the Office of the Historian's [official history](https://history.state.gov/historicaldocuments/frus-history) of FRUS."
+                    "To dive deeper into the history of the series, see the Office of the Historian’s [official history](https://history.state.gov/historicaldocuments/frus-history) of FRUS."
                 ]
             ),
         ]
@@ -797,8 +797,8 @@ private extension EducationPage {
                 paragraphs: [
                     "FRUS is a documentary history, which means it uses actual historical documents to tell the story of U.S. foreign policy. The historians who compile the volumes carefully select records that best document past decisions, diplomacy, and events. They also provide editorial annotation that adds more context and information from the archives than the documents themselves contain.",
                     "Primary documents are the actual historical records that were produced contemporaneously with the events they describe — cables, memoranda, meeting notes, intelligence assessments, letters. These are reproduced in FRUS (sometimes with excisions) from government files. Starting in the early 20th century, each document was published with a source note identifying its provenance, or where the original was found. Many documents also contain footnotes providing information about the historical context around the document or even offering specific archival citations to other documents, meetings, or events that are referenced in the printed document.",
-                    "Many volumes also contain editorial notes written by Office of the Historian historians. They appear as numbered entries in the document sequence and serve several purposes: summarizing developments the editors judged too voluminous or sensitive to reproduce in full, explaining gaps in the record, providing context for surrounding documents, and noting where fuller documentation exists. An editorial note that says \"On [date], the NSC met to discuss…\" is telling you something happened that isn't fully reproduced here. Editorial notes provide additional archival citations to unpublished documents.",
-                    "Volume front matter has evolved over time. Recent volumes include valuable information about the editor's research methodology and a listing the archival sources they consulted as they selected documents for inclusion. They also contain annotated lists of people who generated, received, or were mentioned in the documents and terms and abbreviations used in the documents."
+                    "Many volumes also contain editorial notes written by Office of the Historian historians. They appear as numbered entries in the document sequence and serve several purposes: summarizing developments the editors judged too voluminous or sensitive to reproduce in full, explaining gaps in the record, providing context for surrounding documents, and noting where fuller documentation exists. An editorial note that says “On [date], the NSC met to discuss…” is telling you something happened that isn’t fully reproduced here. Editorial notes provide additional archival citations to unpublished documents.",
+                    "Volume front matter has evolved over time. Recent volumes include valuable information about the editor’s research methodology and a listing the archival sources they consulted as they selected documents for inclusion. They also contain annotated lists of people who generated, received, or were mentioned in the documents and terms and abbreviations used in the documents."
                 ]
             ),
             EducationSection(
@@ -806,10 +806,10 @@ private extension EducationPage {
                 heading: "Reading a Source Note",
                 paragraphs: [
                     "Document source notes identify the archival provenance of the records published in FRUS. A source note for a document in the Reagan subseries might read:",
-                    "\"Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Secret; Nodis.\"",
-                    "This tells you: the original record was collected from the National Archives; it's in Record Group 59 (State Department records); it's part of the Central Foreign Policy File series; the reel identifier is P840114–1808; and it was classified Secret with a special handling caption.",
-                    "One way this app helps researchers is by connecting archival citations detected in source notes directly to NARA's finding aids — so you can navigate from a FRUS document directly to the archive where the original record lives. Source notes are extracted for every era of the series, including the modern volumes whose notes are embedded in the document heading. This makes it easier than ever to follow the archival roadmap FRUS offers for deeper research.",
-                    "When a source note records classification markings — \"Secret; Nodis\", or explicitly \"No classification marking\" — the app separates them from the archival citation and shows them as a small chip beside the source note in the reading view, in Source Explorer, and on search results. The markings describe how the original record was handled at the time; the published text has been declassified.",
+                    "“Source: National Archives, RG 59, Central Foreign Policy File, P840114–1808. Secret; Nodis.”",
+                    "This tells you: the original record was collected from the National Archives; it’s in Record Group 59 (State Department records); it’s part of the Central Foreign Policy File series; the reel identifier is P840114–1808; and it was classified Secret with a special handling caption.",
+                    "One way this app helps researchers is by connecting archival citations detected in source notes directly to NARA’s finding aids — so you can navigate from a FRUS document directly to the archive where the original record lives. Source notes are extracted for every era of the series, including the modern volumes whose notes are embedded in the document heading. This makes it easier than ever to follow the archival roadmap FRUS offers for deeper research.",
+                    "When a source note records classification markings — “Secret; Nodis”, or explicitly “No classification marking” — the app separates them from the archival citation and shows them as a small chip beside the source note in the reading view, in Source Explorer, and on search results. The markings describe how the original record was handled at the time; the published text has been declassified.",
                     "The app also ships a corpus-wide authority of the archival collections FRUS cites: from Source Explorer you can open any matched collection to see its variant citation forms, its National Archives catalog record, every volume across the series that cites it, and how many documents in your own indexed volumes came from it."
                 ]
             ),
@@ -817,7 +817,7 @@ private extension EducationPage {
                 id: "classifications",
                 heading: "Excisions",
                 paragraphs: [
-                    "Most FRUS documents are published in full, but there are many that were published with excisions. Some of these excisions were editorial - the historians who compiled the volume judged that the excised material wasn't significant enough to warrant inclusion. Other excisions were made for policy considerations - government officials judged that information could not be released without unacceptable risks to U.S. interests or security.",
+                    "Most FRUS documents are published in full, but there are many that were published with excisions. Some of these excisions were editorial - the historians who compiled the volume judged that the excised material wasn’t significant enough to warrant inclusion. Other excisions were made for policy considerations - government officials judged that information could not be released without unacceptable risks to U.S. interests or security.",
                     "Before the 1920s, FRUS editors did not annotate excisions. Beginning in the 1920s, FRUS historians added ellipses (...) to indicate that material was omitted, but did not describe how much information was withheld or explain whether an excision was editorial in nature or an unfavorable declassification decision. The 1991 statutory mandate required more detailed editorial accounting for excised material, giving researchers a greater sense of how what is published compares to what had to be withheld."
                 ]
             ),
@@ -825,7 +825,7 @@ private extension EducationPage {
                 id: "omissions",
                 heading: "What FRUS Leaves Out",
                 paragraphs: [
-                    "FRUS publishes thousands of documents for every administration's foreign policy, but it is just the tip of the iceberg for the entire historical record. Early volumes documented the implementation of foreign policy in the diplomacy conducted by the Department of State, but not the deliberative processes that set the course for U.S. foreign policy in Washington. Later volumes focused more and more on filling this gap by editorial prioritization of the decision-making process and inclusion of more and more records from beyond the State Department. This reversal of editorial focus means that the vast majority of diplomatic records that illustrate how foreign policy was implemented at U.S. embassies throughout the world are underrepresented in recent volumes compared to earlier ones."
+                    "FRUS publishes thousands of documents for every administration’s foreign policy, but it is just the tip of the iceberg for the entire historical record. Early volumes documented the implementation of foreign policy in the diplomacy conducted by the Department of State, but not the deliberative processes that set the course for U.S. foreign policy in Washington. Later volumes focused more and more on filling this gap by editorial prioritization of the decision-making process and inclusion of more and more records from beyond the State Department. This reversal of editorial focus means that the vast majority of diplomatic records that illustrate how foreign policy was implemented at U.S. embassies throughout the world are underrepresented in recent volumes compared to earlier ones."
                 ]
             ),
         ]
@@ -850,7 +850,7 @@ private extension EducationPage {
                 id: "introduction",
                 heading: "Read the Front Matter",
                 paragraphs: [
-                    "Every FRUS volume opens with a substantial editorial introduction that explains the volume's scope, the sources available (and unavailable), major gaps in the record, and key themes. Reading this Front Matter takes minutes but saves hours of confusion."
+                    "Every FRUS volume opens with a substantial editorial introduction that explains the volume’s scope, the sources available (and unavailable), major gaps in the record, and key themes. Reading this Front Matter takes minutes but saves hours of confusion."
                 ]
             ),
             EducationSection(
@@ -864,7 +864,7 @@ private extension EducationPage {
                 id: "editorial",
                 heading: "Editorial Notes as a Finding Aid",
                 paragraphs: [
-                    "When an editorial note summarizes a meeting or document rather than reproducing it, that's a research signal, not a dead end. The note includes archival citations to the underlying documentation. You can use the document-level Source Explorer or the free-text NARA Lookup tool to find the relevant finding aids and track down the relevant original records at NARA."
+                    "When an editorial note summarizes a meeting or document rather than reproducing it, that’s a research signal, not a dead end. The note includes archival citations to the underlying documentation. You can use the document-level Source Explorer or the free-text NARA Lookup tool to find the relevant finding aids and track down the relevant original records at NARA."
                 ]
             ),
             EducationSection(
@@ -885,7 +885,7 @@ private extension EducationPage {
                 id: "omissions",
                 heading: "Don't Forget What You're Not Reading",
                 paragraphs: [
-                    "FRUS tells the U.S. side of the history of foreign relations. The counterpart cable from a foreign ministry, the intelligence report shaping the other side's expectations and strategies, the domestic political pressures driving a foreign leader — these are absent. FRUS is indispensable for illuminating the thinking and actions of U.S. policymakers. As valuable as that often is, international history is an interactive story that requires understanding events from multiple perspectives to truly master. For many types of questions, researchers should treat FRUS as an entry point to a historical or policy question, not its answer."
+                    "FRUS tells the U.S. side of the history of foreign relations. The counterpart cable from a foreign ministry, the intelligence report shaping the other side’s expectations and strategies, the domestic political pressures driving a foreign leader — these are absent. FRUS is indispensable for illuminating the thinking and actions of U.S. policymakers. As valuable as that often is, international history is an interactive story that requires understanding events from multiple perspectives to truly master. For many types of questions, researchers should treat FRUS as an entry point to a historical or policy question, not its answer."
                 ]
             ),
         ]
@@ -907,7 +907,7 @@ private extension EducationPage {
                 id: "starting-points",
                 heading: "Start From Whatever You Have",
                 paragraphs: [
-                    "Historical research can start from a question you are trying to answer or a source you are trying to understand. FRUS Explorer is designed to help, regardless of whether your starting point is a phrase you half-remember, a citation that caught your eye in someone's footnote, a name that keeps appearing, a fateful date, a subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you have downloaded and indexed is searchable at once. A citation resolves to the document it names. Many people can be followed through everything that mentions them. Any span of days can be laid out in order, as they unfolded. The topic index reaches subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors' own arrangement, shared people and topics, or, if you choose to turn it on, the resemblance of their language."
+                    "FRUS Explorer is designed to help you find what you need in the series, regardless of whether your starting point is a natural language question, a phrase you half-remember, a citation that caught your eye in someone’s footnote, a name that keeps appearing, a fateful date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you have downloaded and indexed is searchable at once. A citation resolves to the document it names. Many people can be followed through everything that mentions them. Any span of days can be laid out in order, as they unfolded. The topic index reaches subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and topics, or, if you choose to turn it on, an AI model’s reading of the entire series for meaning."
                 ]
             ),
             EducationSection(
@@ -921,14 +921,14 @@ private extension EducationPage {
                 id: "honest-arithmetic",
                 heading: "Search That Shows Its Arithmetic",
                 paragraphs: [
-                    "The app treats your counts as evidence, and holds itself to that standard. The Query Inspector shows how the app translated what you typed into the search box into the query that actually ran under the hood. This can be especially important when your results are surprising. For example, an unexpectedly large count is usually related to how the app applies \"stemming\" to sweep variants of your terms into searches. Capped results are reported as floors, never as totals, and the app offers tools to visualize matches it cannot list. And wherever a figure could describe either the whole series or only your indexed volumes, the app says which one it is counting."
+                    "The app treats counts against the series as a whole as evidence, and holds itself to that standard. The Query Inspector shows how the app translated what you typed into the keyword search box into the query that actually ran under the hood. This can be especially important when your results are surprising. For example, an unexpectedly large count may be related to how the app sweeps variants of your terms into searches by default. Capped results are reported as floors, never as totals, and the app offers tools to visualize matches it cannot list. And wherever a figure could describe either the whole series or only your indexed volumes, the app says which one it is counting."
                 ]
             ),
             EducationSection(
                 id: "whole-series",
                 heading: "The Whole Series, Not Just Your Library",
                 paragraphs: [
-                    "Finding does not wait for downloading. Subjects, people, series-wide figures, and every volume's place in the corpus are all visible before a volume is on your device — so discovery can run ahead of your library and tell you which volumes are worth adding to it. What needs the text itself — full-text search, reading documents, analysis of the words — works over what you have indexed, and the app is plain about that boundary rather than letting a small library masquerade as the series."
+                    "Finding does not wait for downloading. Semantic similarity, subjects, people, series-wide figures, and every volume’s place in the corpus are all visible before you add any volume to your device. Discovery can run ahead of your library and tell you which volumes are worth adding to it. What needs the text itself — full-text search, reading documents, analysis of the words — works over what you have indexed, and the app is plain about that boundary rather than letting a small library masquerade as the series."
                 ]
             ),
             EducationSection(
@@ -953,42 +953,42 @@ private extension EducationPage {
                 id: "over-time",
                 heading: "Change Over Time",
                 paragraphs: [
-                    "You can watch the record move. Any term or phrase can be charted across the series' thirteen decades to see when it enters the record, when it surges, and which volumes carry it — as raw counts, or as a share of each period's documents so a term does not look like it is surging just because the series grew. Any stretch of days can be reconstructed in sequence. And any set of documents you assemble — a search's results, a collection — can be read as a timeline, so its gaps and concentrations show at a glance."
+                    "You can watch the record move. Any term or phrase can be charted across the series’ thirteen decades to see when it enters the record, when it surges, and which volumes carry it — as raw counts, or as a share of each period’s documents so a term does not look like it is surging just because the series grew. Any stretch of days can be reconstructed in sequence. And any set of documents you assemble — a search’s results, a collection — can be read as a timeline, so its gaps and concentrations show at a glance."
                 ]
             ),
             EducationSection(
                 id: "language",
                 heading: "The Language Itself",
                 paragraphs: [
-                    "You can ask what any slice of the corpus sounds like — a document, a volume, a decade, a working corpus — and get more than a list of frequent words: the words most distinctive of that slice compared with the whole series, the company a term keeps (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be read as usage rather than skimmed as a list. An experimental semantic analytics feature places every document in the series on one map by the shape of its wording, so documents that read alike sit near each other whether or not they share a volume, a date, or a citation."
+                    "You can ask what any slice of the corpus sounds like — a document, a volume, a decade, a working corpus — and get more than a list of frequent words: the words most distinctive of that slice compared with the whole series, what other terms occur frequently with your own search term (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. A semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation."
                 ]
             ),
             EducationSection(
                 id: "people",
                 heading: "The People",
                 paragraphs: [
-                    "You can ask who the published record foregrounds: the most-mentioned figures of an era, one person's presence traced year by year, two careers compared, pairs tracked together, and the network of who is named alongside whom. These readings reach the volumes whose editors tagged people during production — the more recent ones — and the app tells you so rather than letting an editorial gap read as a historical absence."
+                    "You can ask who the published record foregrounds: the most-mentioned figures of an era, one person’s presence traced year by year, two careers compared, pairs tracked together, and the network of who is named alongside whom. These readings reach the volumes whose editors tagged people during production — the more recent ones — and the app tells you so rather than letting an editorial gap read as a historical absence."
                 ]
             ),
             EducationSection(
                 id: "citation-web",
                 heading: "The Web the Editors Drew",
                 paragraphs: [
-                    "FRUS editors stitched the series together with cross-references between printed documents and out to archival records. In FRUS Explorer, you can read that stitching at both scales: one document's neighborhood as a graph — what informed it, what it fed into, including the archival material its footnotes cite but the series never printed — and the whole citation web as a statistical object, with its most-cited landmarks and the volumes that lean on each other. These are measures of how the editors linked documents, not a ranking of historical importance."
+                    "FRUS editors stitched the series together with cross-references between printed documents and out to archival records. In FRUS Explorer, you can read that stitching at both scales: one document’s neighborhood as a graph — what informed it, what it fed into, including the archival material its footnotes cite but the series never printed — and the whole citation web as an aggregated network, with its most-cited landmarks and the volumes that lean on each other. These are measures of how the editors linked documents, not a ranking of historical importance."
                 ]
             ),
             EducationSection(
                 id: "archival-signal",
                 heading: "Where the Documents Came From",
                 paragraphs: [
-                    "Every published document names the archival file its original was found in, and clustered across the series those source notes answer a question no volume states outright: which bodies of records each era's editors actually worked in. Archival analytics offers source rankings, co-citation networks, and flows between archival units, era by era — and the same signal works at reading distance: from any document you can gather the other indexed documents drawn from the same file or collection, so pieces of one archival file scattered across volumes come back together."
+                    "Every published document names the archival file its original was found in, and clustered across the series those source notes answer a question no volume states outright: which bodies of records each era’s editors actually worked in. Archival analytics offers source rankings, co-citation networks, and flows between archival units, era by era. Use this feature to see how FRUS highlights connections between discrete archival collections and repositories or scout out specific collections or central file classifications of interest from what FRUS prints from and about them."
                 ]
             ),
             EducationSection(
                 id: "finding-aid",
                 heading: "Honest Evidence",
                 paragraphs: [
-                    "FRUS is a selective, evolving proxy for the archival record. The app keeps that honest for you — denominators are named where available, experimental signals are marked as experimental, and where a measure cannot stand behind a number it says the measure is unavailable rather than showing one. To learn more about the app's analytics features, see the User Manual — linked from the About screen — for the full tour."
+                    "FRUS is a selective, evolving proxy for the archival record. To learn more about the app’s analytics features, see the User Manual — linked from the About screen — for the full tour."
                 ]
             ),
         ]
@@ -1006,35 +1006,35 @@ private extension EducationPage {
                 id: "reading",
                 heading: "The Text, As Published",
                 paragraphs: [
-                    "The document you read is the document the volume printed: its structure, its datelines, its style, its footnotes in place, with the people it names linked to the volume's own glossary. Reading stays clean until you ask for more — your notes, tags, and summaries sit in a rail you open when you want them and close when you don't."
+                    "The document you read is the document the volume printed: its structure, its datelines, its style, its footnotes in place, with the people it names linked to the volume’s own glossary. Reading stays clean until you ask for more — your notes, tags, and summaries sit in a rail you open when you want them and close when you don’t."
                 ]
             ),
             EducationSection(
                 id: "your-apparatus",
                 heading: "Your Own Layer on the Record",
                 paragraphs: [
-                    "Everything you add — highlights, notes, tags, the projects that keep separate research threads distinct — is your layer, kept apart from the published text and never blended into it. It follows you across your devices, and it stays private: the app shares nothing about your research with anyone, and everything you make can be exported so you can use it elsewhere."
+                    "Everything you add — highlights, notes, tags, the projects that keep separate research threads distinct — is maintained as a distinct, private layer, kept apart from the published text and never blended into it. It follows you across your devices, and it stays private: the app shares nothing about your research with anyone, and everything you make can be exported so you can use it elsewhere."
                 ]
             ),
             EducationSection(
                 id: "outputs",
                 heading: "From Reading List to Finished Output",
                 paragraphs: [
-                    "A set of documents can become a shaped thing: a teaching reader, a briefing packet, a source dossier — ordered, sectioned, curated in your own words, annotated, and exported in forms other people can actually use, from print-ready files to a working set that a colleague opens in their own FRUS Explorer. Every document carries a citation in the series' own style, ready for your footnotes or your reference manager. And where on-device AI is available it can draft summaries for you that are always labeled as generated, never passed off as the record or as you."
+                    "A set of documents can become a shaped thing: a teaching reader, a briefing packet, a source dossier — ordered, sectioned, curated in your own words, annotated, and exported in forms other people can actually use, from print-ready files to a working set that a colleague opens in their own FRUS Explorer. Every document carries a citation in the series’ own style, ready for your footnotes or your reference manager. And where on-device AI is available it can draft summaries for you that are always labeled as generated, never passed off as part of the record or as your own reading."
                 ]
             ),
             EducationSection(
                 id: "integrity",
                 heading: "Claims That Survive Checking",
                 paragraphs: [
-                    "The app is built so that what you publish from it can be checked. Every quotation you freeze into a collection is re-verified against the text of the document it cites before export — presentation is forgiven, wording is not, and a paraphrase does not pass. Your searches can be exported as a method appendix: the query log records each query with its scope, its date, and how many volumes were indexed at the time, which is what turns \"I searched and found nothing\" from an assertion into evidence a reader can check."
+                    "The app is built so that what you publish from it as a collection can be checked. Every quotation you freeze into a collection is re-verified against the text of the document it cites before export — presentation is forgiven, wording is not, and a paraphrase does not pass. Your searches can be exported as a method appendix: the query log records each query with its scope, its date, and how many volumes were indexed at the time. History isn’t science, but searches against a shared, trusted source like FRUS can and should provide reproducible results."
                 ]
             ),
             EducationSection(
                 id: "beyond",
                 heading: "When the Trail Leaves the Series",
                 paragraphs: [
-                    "When you are ready to follow source notes or footnotes past the published series to the shelves at College Park or a presidential library, FRUS Explorer can help you plan research visits. Documents you select seed a visit and research plan. The app's research trip packet resolves each document's source note and outward-pointing footnotes against National Archives data to flag access-restriction warnings for still-classified collections, draft advance inquiries to an archivist, and identify each record the way NARA asks you to request it."
+                    "When you are ready to follow source notes or footnotes past the published series to the shelves at College Park or a presidential library, FRUS Explorer can help you plan research visits. By selecting documents, you can seed and triage a research plan and prepare for a visit. The app’s research trip packet resolves selected documents’ source notes and/or outward-pointing footnotes against National Archives data to flag access-restriction warnings for still-classified collections, help you draft advance inquiries to an archivist, and gather the collection-level information about records that NARA asks you to provide when you’re ready to request them."
                 ]
             ),
             EducationSection(
@@ -1125,7 +1125,7 @@ private extension EducationPage {
         title: String(localized: "education.series.administrations.page.title",
                       defaultValue: "Administration Profiles"),
         subtitle: String(localized: "education.series.administrations.page.subtitle",
-                         defaultValue: "How the series' coverage is distributed across presidencies"),
+                         defaultValue: "How the series’ coverage is distributed across presidencies"),
         category: .aboutTheSeries,
         sections: [],
         dashboard: .administrationProfiles

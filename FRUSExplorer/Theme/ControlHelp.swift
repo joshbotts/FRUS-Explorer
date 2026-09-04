@@ -114,7 +114,7 @@ extension View {
     /// .controlHelp(
     ///     String(localized: "graph.resetView.a11y", defaultValue: "Reset View"),
     ///     detail: String(localized: "graph.resetView.help",
-    ///                    defaultValue: "Restore the graph's pan and zoom to their original position"),
+    ///                    defaultValue: "Restore the graph’s pan and zoom to their original position"),
     ///     systemImage: "arrow.up.left.and.down.right.magnifyingglass"
     /// )
     /// ```

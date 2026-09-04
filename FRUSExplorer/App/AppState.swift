@@ -479,7 +479,7 @@ final class AppState {
             return "Available"
         case .noAccount:
             return String(localized: "cloudkit.account.noAccount",
-                          defaultValue: "Not signed in to iCloud — notes, highlights, and collections won't sync. Sign in via Settings → Apple ID.")
+                          defaultValue: "Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.")
         case .restricted:
             return String(localized: "cloudkit.account.restricted",
                           defaultValue: "iCloud access is restricted on this device (parental controls or MDM policy).")

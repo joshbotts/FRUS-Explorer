@@ -205,7 +205,7 @@ struct ScopeEditorView: View {
                     Text(volumeId)
                         .font(.callout)
                     Text(String(localized: "browser.scopeEditor.unresolved",
-                                defaultValue: "Not in this device's catalogue"))
+                                defaultValue: "Not in this device’s catalogue"))
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }

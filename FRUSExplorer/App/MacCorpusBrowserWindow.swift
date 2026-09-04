@@ -579,7 +579,7 @@ struct SubseriesVolumeListView: View {
                           systemImage: "plus.square.on.square")
                 }
                 .help(String(localized: "browser.scopes.capture.help",
-                             defaultValue: "Save this list's volumes as a custom scope"))
+                             defaultValue: "Save this list’s volumes as a custom scope"))
             }
         }
         .alert(String(localized: "browser.scopes.capture.title", defaultValue: "Save as Scope"),
@@ -595,7 +595,7 @@ struct SubseriesVolumeListView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "browser.scopes.capture.detail",
-                        defaultValue: "The scope keeps this list's volumes; the axis's ordering and counts stay here."))
+                        defaultValue: "The scope keeps this list’s volumes; the axis’s ordering and counts stay here."))
         }
     }
 
@@ -647,7 +647,7 @@ struct SubseriesVolumeListView: View {
             // VoiceOver still reports download/index state.
             .accessibilityValue(volumeStatusA11yValue(vol))
             .accessibilityHint(String(localized: "corpus.volume.row.hint",
-                                      defaultValue: "Opens the volume's contents"))
+                                      defaultValue: "Opens the volume’s contents"))
             Button {
                 appState.openWordCloud(.volume(volumeId: vol.volumeId), from: nil)   // #338: macOS singleton window
                 appState.bindTool(.wordCloud, to: appState.provenance(of: .corpusBrowser))
@@ -1189,9 +1189,9 @@ private struct CorpusVolumeDetailView: View {
                     .font(.subheadline.weight(.semibold))
                 Text(isInterrupted
                      ? String(localized: "corpus.volume.indexInterrupted.detail",
-                              defaultValue: "You can browse this volume's contents now. Re-index it to restore full search coverage and document text.")
+                              defaultValue: "You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.")
                      : String(localized: "corpus.volume.indexRequired.detail",
-                              defaultValue: "You can browse this volume's contents now. Index it to search inside it and open its documents."))
+                              defaultValue: "You can browse this volume’s contents now. Index it to search inside it and open its documents."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1666,7 +1666,7 @@ private struct CorpusSectionDocumentView: View {
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
                             Text(String(localized: "corpus.section.needsIndex",
-                                        defaultValue: "This volume isn't indexed yet."))
+                                        defaultValue: "This volume isn’t indexed yet."))
                                 .foregroundStyle(.secondary)
                             Text(String(localized: "corpus.section.needsIndex.detail",
                                         defaultValue: "Index the volume (from the banner atop its contents) to view and open its documents."))

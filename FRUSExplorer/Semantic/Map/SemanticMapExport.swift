@@ -174,7 +174,7 @@ enum SemanticMapExport {
             String(localized: "semanticMap.export.caveat.layout",
                    defaultValue: "How to read position: the projection preserves local similarity, so documents near each other are alike. Distances between far-apart regions are not meaningful, and neither is direction — there is no axis, no scale and no origin."),
             String(localized: "semanticMap.export.caveat.experimental",
-                   defaultValue: "This surface is experimental. The regions are found by a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region's documents — not subject headings."),
+                   defaultValue: "This surface is experimental. The regions are found by a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings."),
             String(format: String(
                 localized: "semanticMap.export.caveat.unclustered %lld %lld %lld",
                 defaultValue: "Coverage: %1$lld regions cover %2$lld documents. The other %3$lld sit between regions and belong to none: a regions table cannot list them, and on the map they are drawn with no region name."),
@@ -231,7 +231,7 @@ enum SemanticMapExport {
                      Int64(visible.x * 2), Int64(visible.y * 2))
         var lines = [String(format: String(
             localized: "semanticMap.export.caveat.frame %lld %lld %lld %lld %@",
-            defaultValue: "Frame: rendered at %1$lld × %2$lld points, centered on grid (%3$lld, %4$lld) — %5$@. Those coordinates are the artifact's own grid, recorded so this exact view can be restored; they are not a measurement, and the projection has no axis, no scale and no origin."),
+            defaultValue: "Frame: rendered at %1$lld × %2$lld points, centered on grid (%3$lld, %4$lld) — %5$@. Those coordinates are the artifact’s own grid, recorded so this exact view can be restored; they are not a measurement, and the projection has no axis, no scale and no origin."),
             Int64(frame.size.width), Int64(frame.size.height),
             Int64(frame.camera.centre.x), Int64(frame.camera.centre.y), span)]
         // Only when the figure carries names at all — a slice figure has none, and says so through
@@ -239,7 +239,7 @@ enum SemanticMapExport {
         if frame.labelledRegionCount > 0 {
             lines.append(String(format: String(
                 localized: "semanticMap.export.caveat.frame.labels %lld %lld",
-                defaultValue: "Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app's window is a different shape and re-runs the same rule against it, so a reader at the screen sees a different set of names — a region named here can be unnamed there, and the reverse."),
+                defaultValue: "Region names shown: %1$lld of %2$lld, chosen to fit this plate. The app’s window is a different shape and re-runs the same rule against it, so a reader at the screen sees a different set of names — a region named here can be unnamed there, and the reverse."),
                 Int64(frame.labelledRegionCount), Int64(index.clusters.count)))
         }
         return lines

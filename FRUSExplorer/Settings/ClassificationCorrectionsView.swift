@@ -104,7 +104,7 @@ struct ClassificationCorrectionsSheet: View {
                        defaultValue: "No Corrections"),
                 systemImage: "arrow.uturn.backward.circle",
                 description: Text(String(localized: "classification.corrections.empty.detail",
-                    defaultValue: "Documents you reclassify from the Research panel appear here, where you can restore FRUS's own classification."))
+                    defaultValue: "Documents you reclassify from the Research panel appear here, where you can restore FRUS’s own classification."))
             )
         } else {
             List {
@@ -134,7 +134,7 @@ struct ClassificationCorrectionsSheet: View {
                     }
                 } footer: {
                     Text(String(localized: "classification.corrections.footer",
-                        defaultValue: "Undoing a correction restores FRUS's own classification and syncs across your devices. A correction for a volume not indexed on this device takes effect when the volume is indexed."))
+                        defaultValue: "Undoing a correction restores FRUS’s own classification and syncs across your devices. A correction for a volume not indexed on this device takes effect when the volume is indexed."))
                 }
             }
             #if os(macOS)
@@ -182,7 +182,7 @@ struct ClassificationCorrectionsSheet: View {
         }
         AccessibilityNotification.Announcement(
             String(localized: "classification.corrections.undo.inProgress",
-                   defaultValue: "Restoring FRUS's classification…")).post()
+                   defaultValue: "Restoring FRUS’s classification…")).post()
         // R-5 P3b-5 (design Q-11 i): restore FRUS's CURRENT classification, not the one recorded
         // when the correction was made. The stored `parsedIsEditorialNote` is frozen at override
         // time and never refreshed, so if the Office of the Historian has since fixed the same

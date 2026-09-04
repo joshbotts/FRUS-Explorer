@@ -153,7 +153,7 @@ struct SemanticStorageSection: View {
         // at a volume semantically. Says the same thing as a sequence of plain events instead.
         .accessibilityHint(String(
             localized: "settings.vectors.auto.a11y.v2",
-            defaultValue: "When this is off, the extra file is not downloaded alongside a volume. You can still download them all from the button above, and if you open Related Documents for a volume, the app fetches that volume's file then."))
+            defaultValue: "When this is off, the extra file is not downloaded alongside a volume. You can still download them all from the button above, and if you open Related Documents for a volume, the app fetches that volume’s file then."))
     }
 
     /// Fetches every shard this device is missing for the volumes it holds.
