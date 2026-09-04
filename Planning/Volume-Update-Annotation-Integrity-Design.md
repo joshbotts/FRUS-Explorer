@@ -366,7 +366,7 @@ reports only whether the current search matched, so that platform cannot state a
 sheet says "Found N times". A control that contradicted the sentence beside it would be worse than no
 control. If the complement is wanted later, the shape to build is scroll-and-reveal from the match's own
 offsets (`buildRanges` already turns them into a DOM Range, and `revealFootnote` is the working
-precedent), which needs no third text. *P3b-5* — **SHIPPED 2026-09-03 (PR #NNNN)**: Q-11 options (b) and (i). **Q-8 (e) and (b) move to
+precedent), which needs no third text. *P3b-5* — **SHIPPED 2026-09-03 (PR #1187)**: Q-11 options (b) and (i). **Q-8 (e) and (b) move to
 P3b-6**, because (e) turned out to be five defects rather than the "four literals" the row records —
 the oldest-prompt regenerate, SIX unlocalised literals, a `· custom prompt` label that renders for
 every summary including standard-prompt ones, three silent failure paths, and a `fetchLimit = 20` on

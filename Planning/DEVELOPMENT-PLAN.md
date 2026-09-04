@@ -10968,7 +10968,7 @@ poisoned them with a live mutation, silently invalidating four results and later
 un-copied fix. The rule is simple and was learned the expensive way — never touch the pristine set
 while a sweep is live; stop it, repair, and re-run the affected range.
 
-## Session 2026-09-03i — R-5 P3b-5: the sheet opens what it names, and FRUS's own answer stops being frozen (PR #NNNN)
+## Session 2026-09-03i — R-5 P3b-5: the sheet opens what it names, and FRUS's own answer stops being frozen (PR #1187)
 
 **Q-11 (b): telling a reader their annotation may be affected, and giving them no way to reach it.**
 The review sheet has counted notes, tags, collection entries, summaries and visit plans since P2, and
