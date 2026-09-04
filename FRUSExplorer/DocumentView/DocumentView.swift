@@ -2394,8 +2394,54 @@ struct SummaryStripView: View {
     let summary: GeneratedSummary
     let totalCount: Int
 
+    // Both mounts sit inside `DocumentView`'s environment, which supplies these — the rail's copy
+    // reaches them through the iPhone rail sheet, which the review sheet's own `AppState` read from
+    // the same presentation already proves propagates.
+    @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
+
     /// Number of lines shown before the summary is collapsed behind "Show more".
     private static let collapsedLineLimit = 4
+
+    /// Which prompt a regeneration would run, and the name this strip may print.
+    private var promptResolution: SummarizationPrompt.Resolution {
+        SummarizationPrompt.resolve(preferredId: summary.promptId, in: modelContext)
+    }
+
+    /// Whether the Regenerate control is offered at all.
+    ///
+    /// Gated on the service as well as the model: an offered control that returns on its first line
+    /// is worse than none, which is the defect this phase fixes on the other platform.
+    private var canRegenerate: Bool {
+        AppleIntelligenceProvider.shared.isAvailable
+            && appState.summarizationService != nil
+            && promptResolution.prompt != nil
+    }
+
+    /// Regenerates with the prompt that made THIS summary, keeping the old one.
+    ///
+    /// Deliberately NOT routed through `onOpenTool(.summarize)`, which the rail's generate button
+    /// uses: that presents the prompt picker — re-asking for a prompt is the opposite of
+    /// regenerating with the summary's own — and on iPhone it REPLACES the rail sheet in one step,
+    /// tearing down the surface the reader tapped in.
+    ///
+    /// Keeping is free: `SummarizationService.summarize` only ever inserts, and `loadSummaries`
+    /// resets the carousel to index 0, so the new summary is the one shown and the old one is one
+    /// tap of Next away.
+    ///
+    /// The failure surfaces on `DocumentView`'s existing alert over `vm.summarizationError`, not
+    /// inline here: both strips are alive at once on iPhone, so an inline label would report one
+    /// failure twice, and this task outlives a dismissed rail sheet by design.
+    private func regenerate() async {
+        guard let service = appState.summarizationService,
+              let prompt = promptResolution.prompt else { return }
+        await vm.generateSummary(
+            prompt: prompt,
+            provider: AppleIntelligenceProvider.shared,
+            service: service,
+            activeProjectId: appState.activeProjectId,
+            context: modelContext)
+    }
 
     /// Whether the full summary text is shown. Collapsed by default so a long
     /// summary doesn't dominate the pinned header; tapping expands it inline.
@@ -2406,7 +2452,10 @@ struct SummaryStripView: View {
     @State private var isTruncated = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        // Resolved once per pass: it runs a SwiftData fetch, and this view re-renders as the rail
+        // scrolls and as the document body reflows.
+        let resolution = promptResolution
+        return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Label(
                     String(localized: "document.summary.label", defaultValue: "Summary"),
@@ -2415,6 +2464,19 @@ struct SummaryStripView: View {
                 .font(.caption.bold())
                 .foregroundStyle(.secondary)
                 Spacer()
+                // The prompt that MADE this summary, by name — the same rule and the same key the
+                // macOS block uses, so the two twins cannot describe one summary two ways.
+                if let name = resolution.provenanceName {
+                    Text(String(format: String(localized: "summary.block.prompt %@",
+                                               defaultValue: "· %@"), name))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        // User-named and unbounded: without this it pushes the strip's own
+                        // controls off the row on iPhone.
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .layoutPriority(-1)
+                }
                 if totalCount > 1 {
                     Button {
                         vm.activeSummaryIndex = (vm.activeSummaryIndex + 1) % totalCount
@@ -2429,6 +2491,50 @@ struct SummaryStripView: View {
                                defaultValue: "View next summary")
                     )
                 }
+                // R-5 P3b-6: iOS had NO regenerate control at all — the rail offers "Summarize this
+                // Document" only in the branch reached when no summary exists. It lives HERE rather
+                // than in that rail branch because the strip is also the pinned iPhone and Read-mode
+                // surface, where it is the only place a summary appears; one edit covers both.
+                if resolution.prompt != nil, canRegenerate {
+                    Button {
+                        Task { await regenerate() }
+                    } label: {
+                        // The label keeps its size while summarizing: swapping a word for a spinner
+                        // resized the row and slid every control right of it.
+                        Text(String(localized: "summary.block.regenerate", defaultValue: "Regenerate"))
+                            .font(.caption)
+                            .opacity(vm.isSummarizing ? 0 : 1)
+                            .overlay { if vm.isSummarizing { ProgressView().controlSize(.mini) } }
+                    }
+                    .buttonStyle(.borderless)
+                    // Both mounts are alive at once on iPhone, so without this the second press is
+                    // a silent no-op against the view model's own `!isSummarizing` guard.
+                    .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
+                    .accessibilityLabel(String(localized: "summary.block.regenerate.a11y",
+                                               defaultValue: "Regenerate this summary"))
+                }
+            }
+            // The macOS twin prints this and iOS did not, so the same deleted prompt produced a
+            // warning on one platform and a silent substitution on the other — which is exactly the
+            // harm the enum's own doc calls a caller obligation ("The caller must SAY so before
+            // running"). Same key, same words, so the twins cannot describe one summary two ways.
+            if case .standardFallback(let p) = resolution, canRegenerate {
+                Text(String(format: String(localized: "summary.block.regenerate.fallback %@",
+                                           defaultValue: "Regenerate will use “%@” — the prompt that made this summary is no longer on this device."),
+                            p.name))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            // Inline, NOT only on the document's alert. A regeneration started from the iPhone rail
+            // SHEET raises `summarizationError` on a view the sheet is covering, so the alert cannot
+            // present and the failure reached nobody. Only one strip is ever visible at a time — the
+            // sheet covers the pinned one — so this cannot double-report.
+            if let error = vm.summarizationError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Text(summary.responseText)
                 .font(.callout)

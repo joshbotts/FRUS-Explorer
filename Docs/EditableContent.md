@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -2175,6 +2175,84 @@ Found %lld times, so the app cannot tell which one is yours.
 Too short to look for: a passage this brief can repeat, so finding it once would not prove anything.
 
 <!-- END SOURCE: document.review.search.tooShort.v2 -->
+
+### AI summaries — the prompt a regeneration runs (R-5 P3b-6)
+
+A summary is made with a PROMPT, and until now neither surface said which. macOS printed
+“· custom prompt” beside every summary, including the standard-prompt ones, and its Regenerate ran
+whichever prompt happened to be oldest — so regenerating a summary made with a prompt of your own
+quietly produced one in a different voice. iOS had no regenerate control at all.
+
+Both now name the prompt that MADE the summary, and regenerate with it. A substitute is never
+printed as provenance: if the prompt has been deleted, both surfaces say which one Regenerate will
+use instead, before it is pressed.
+
+**Read the `shared:` line on each block below.** Most of these strings live in a `#if os(macOS)`
+file and exist on that platform alone; three are declared on BOTH surfaces, at two call sites, and
+editing one of those without the other makes the twins describe one summary two different ways.
+
+#### The AI-summary badge
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 153 | key: summary.block.label | shared: macOS only -->
+
+AI summary
+
+<!-- END SOURCE: summary.block.label -->
+
+#### The prompt that made this summary
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 167–168 | key: summary.block.prompt %@ | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+
+· %@
+
+<!-- END SOURCE: summary.block.prompt %@ -->
+
+#### Change prompt
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 185–186 | key: summary.block.changePrompt | shared: macOS only -->
+
+Change prompt
+
+<!-- END SOURCE: summary.block.changePrompt -->
+
+#### Regenerate
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 194–195 | key: summary.block.regenerate | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+
+Regenerate
+
+<!-- END SOURCE: summary.block.regenerate -->
+
+#### No prompt to summarize with
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 213–214 | key: summary.block.noPrompt | shared: macOS only -->
+
+No summarization prompt is available. Add one in Settings ▸ Research ▸ Summarization.
+
+<!-- END SOURCE: summary.block.noPrompt -->
+
+#### Regenerate will substitute a prompt
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 220–221 | key: summary.block.regenerate.fallback %@ | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+
+Regenerate will use “%@” — the prompt that made this summary is no longer on this device.
+
+<!-- END SOURCE: summary.block.regenerate.fallback %@ -->
+
+#### Where you are in the summary history
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 118–119 | key: summary.history.position %lld %lld | shared: macOS only -->
+
+%lld/%lld
+
+<!-- END SOURCE: summary.history.position %lld %lld -->
+
+#### Where you are in the summary history — spoken
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 124–125 | key: summary.history.position.a11y %lld %lld | shared: macOS only -->
+
+Summary %lld of %lld
+
+<!-- END SOURCE: summary.history.position.a11y %lld %lld -->
+
+#### Regenerate — spoken
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2505–2506 | key: summary.block.regenerate.a11y | shared: iOS only -->
+
+Regenerate this summary
+
+<!-- END SOURCE: summary.block.regenerate.a11y -->
 
 ### Review Changes sheet — quotations (R-5 P3b-4)
 

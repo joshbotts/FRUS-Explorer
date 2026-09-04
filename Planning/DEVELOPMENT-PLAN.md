@@ -11057,3 +11057,93 @@ does not split CRLF text at all and the whole note came back as its own first li
 the rule that works. And the corrected model doc comment **was itself inaccurate** about the Settings
 fallback: that paragraph exists to replace a false claim, and the replacement introduced a new one in
 the same place.
+
+## Session 2026-09-03j — R-5 P3b-6: the prompt a regeneration runs (PR #NNNN)
+
+**The design row said "four literals". It was six defects and seven literals, and the worst of them
+was not a literal at all.** macOS's Regenerate fetched every `SummarizationPrompt` ordered by
+`createdAt` and took the first. Two things beyond the obvious were wrong with that: the fetch
+carried **no `isStandard` filter**, so the winner was simply the oldest row of any kind and a
+reader's own prompt could become the silent default; and `SortDescriptor` over an OPTIONAL `Date`
+puts NULL first, so a legacy or CloudKit-synced row with no date won outright. A reader who
+summarised with a prompt of their own and pressed Regenerate got a summary in a different voice,
+with nothing on screen saying so.
+
+**`· custom prompt` was gated on `activeSummary != nil`, not on the prompt.** It had been telling
+readers that every standard-prompt summary was a custom one. It is not a localisation target; it is
+a false statement, and it is gone.
+
+**Four failure paths returned in silence, and the empty prompt store is reachable** — Erase
+Everything deletes every prompt and the seeder runs only at launch, so the store stays empty for the
+rest of that session and the deletion syncs to a device that already seeded. Three are now closed by
+withholding or disabling the control; the fourth gets a sentence. **iOS had no regenerate control at
+all**, and a sixth defect nobody had recorded: the rail's branch chain is `if let summary … else if
+isSummarizing … else if available … else`, so a reader who HAD a summary could never see the spinner
+or the unavailability sentence. The seventh literal was the `1/3` history counter, unlabelled between
+two buttons that both carried accessibility labels — VoiceOver read it "one slash three".
+
+**One rule now answers the question for every surface.** `SummarizationPrompt.resolve(preferredId:in:)`
+returns an OUTCOME — `.requested` / `.standardFallback` / `.unavailable` — rather than a prompt,
+because three states need three sentences and the defect was a caller that could not tell them apart.
+Four call sites use it, including the Collections composer, which carried its own copy of the same
+nil-date trap.
+
+**Two of its refinements came from review and are the interesting ones.** The fallback PREFERS a
+standard prompt but does not REQUIRE one: a reader with an empty store is told to add a prompt in
+Settings, and a prompt they add is `isStandard == false`, so a standards-only rule would have gone on
+reporting "no prompt is available" after they had followed the instruction exactly. And it breaks ties
+on id, because `min(by:)` is not documented as stable and the seeder inserts its standards in a single
+tick — without a total order the prompt NAMED and the prompt RUN could differ between two reads of one
+store.
+
+**A substitute is never printed as provenance.** The label names the prompt that MADE the summary;
+naming the one that would remake it would attribute the summary to a prompt that never wrote a word
+of it. Instead both surfaces say which prompt Regenerate will substitute, before it is pressed — a
+requirement the enum's own doc states, and one the first iOS draft failed, which review caught.
+
+**The rider outgrew the paging bug it started as.** `loadSummaries` set `fetchLimit = 20` on a
+descriptor with NO `sortBy`, so which twenty came back was undefined and a freshly generated summary
+could be absent — harmless until this phase added the gesture that mints a second summary in one
+sitting. But it also ordered on `lastModified`, a SAVE stamp that `SummarizationPromptSeeder`'s
+duplicate collapse and `ProjectAdminService.merge` bump for reasons unrelated to recency, while the
+FTS column ranked by `createdAt`. The carousel and search could name different summaries as newest
+for one document. Both now share `GeneratedSummary.ranksAbove`. **The "SQLite pages the oldest twenty"
+claim written into the design during P3b-5 was withdrawn**: nothing in this tree establishes it, four
+sites treat fetch order as nondeterministic, and these rows arrive by CloudKit sync as well as local
+insert. The honest claim — which twenty is undefined — is weaker and sufficient.
+
+**A mirrored test was retired.** `SummarizationUITests` carried a body opening
+`// Simulate what DocumentViewModel.loadSummaries does` followed by a re-implementation: same
+predicate, same limit, same in-memory sort. It could not fail for anything the real function did, and
+it had already drifted — the copy dropped the `!isHeadnoteDraft` predicate production carries. Two new
+suites call the real emitters, which is why the ordering fix is pinned at all.
+
+**Q-8 (b) becomes P3b-7**, for a measured reason: its content is a `sourceContentHash` comparison, and
+that field's first writer shipped in build 44, so every summary in existence carries a nil hash. The
+rule would ship with exactly one branch reachable, and that branch is the date rule the sheet's footer
+already states in words.
+
+**Verification.** **Full iOS unit suite (iPhone 16e), run alone on a quiesced tree: 4,444 tests in 584 suites, 0
+failures** — baseline 4,430 / 582 at #1187, so +14 tests and +2 suites (`SummaryPromptResolutionTests`
+and `SummaryCarouselOrderTests`), net of the mirrored test retired. `FRUSExplorerMac` Debug, run alone
+after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues.
+
+**Mutation sweep: 13 mutations, 13 killed, each by the specific test named as its control**, with no
+survivors and no invalid runs. Six target the shared rule — ignoring the preferred id, dropping the
+standard preference, restricting the fallback to standards only, flipping the nil-date coercion,
+removing the tie-break, and naming a substitute as provenance — and each fixture is built so the wrong
+rule picks a different row. Four target the carousel order, including the `volumeId` conjunct that had
+no fixture until review pointed out that deleting it passed every other test. Three pin the wiring, so
+a surface that resolved correctly and then regenerated with something else cannot pass.
+
+**Adversarial review: 6 lenses, 15 findings deduplicating to 7 distinct defects, all fixed.** Five
+were mine. The iOS strip **substituted a deleted prompt with no warning** while its macOS twin printed
+one — and my comment there claimed "the two twins cannot describe one summary two ways". A
+regeneration started from the iPhone rail SHEET **reported its failure nowhere**, because the alert
+belongs to the view that sheet covers; my reason for omitting an inline error had confused aliveness
+with visibility. The standard-only fallback **dead-ended after the reader followed its own
+instruction**, since a prompt added in Settings is not `isStandard`. `min(by:)` is not documented as
+stable, so two standards seeded in one tick could make the prompt NAMED differ from the prompt RUN.
+And "Change prompt" was left reaching the same silent guard Regenerate had just been gated against.
+Also corrected: nine mirror blocks claimed `iOS+macOS (single edit point)` when six are macOS-only,
+one iOS-only, and three genuinely have two call sites.

@@ -1189,16 +1189,13 @@ struct CollectionEntryInspector: View {
     /// default (the oldest `isStandard` prompt, i.e. "Standard Summary" — selected by creation
     /// order rather than its localized name).
     private func resolveHeadnotePrompt() -> SummarizationPrompt? {
-        let effectiveId = entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId
-        if let id = effectiveId,
-           let prompt = (try? modelContext.fetch(FetchDescriptor<SummarizationPrompt>(
-               predicate: #Predicate { $0.id == id })))?.first {
-            return prompt
-        }
-        let standard = (try? modelContext.fetch(FetchDescriptor<SummarizationPrompt>(
-            predicate: #Predicate { $0.isStandard == true },
-            sortBy: [SortDescriptor(\.createdAt)]))) ?? []
-        return standard.first
+        // R-5 P3b-6: the cascade that picks WHICH id is this surface's own; resolving that id is
+        // now the shared rule, so every caller answers it the same way. This carried the same
+        // nil-date trap the macOS block did — `SortDescriptor(\.createdAt)` over an optional puts
+        // NULL first, so a dateless standard row won the fallback.
+        SummarizationPrompt.resolve(
+            preferredId: entry.summaryPromptIdOverride ?? resolvedEntryDefaults?.summaryPromptId,
+            in: modelContext).prompt
     }
 
     /// Obtains this document's plain body text for on-device summarization — the cheap indexed path

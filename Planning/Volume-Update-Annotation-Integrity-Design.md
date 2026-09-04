@@ -311,7 +311,7 @@ that came before it.
 | **Q-3** | Review state syncs. | Settles Q-6 toward the mirrored ledger; the document-grain stamp joins it through a reconcile pass. |
 | **Q-6** | **G** — one new mirrored `@Model` ledger (`AnnotationReview`: annotation type, annotation id, volume, document, content hash, reviewed at), rather than a field on four to seven annotation types. Tags key on **tag id**, since the picker re-mints assignment rows. | One CloudKit record type in the ninth Production promotion (#488 gate: `identifiersAwaitingDeploy`, owner exercises on a Development build, Dashboard deploy, baseline restated). |
 | **Q-7** | **(b) with (f)**: excerpt entries join the review filter; the sheet runs `ExcerptVerifier` per quotation and reads `excerptRenderingVersion` as a highlight's version is read. Plus the export sheet stops reporting a vanished document as "volume not downloaded". The three engagement consumers keep the `.document` rule. | **SHIPPED P3b-4**, no deploy — the rows are reads, and a ledger row for a collection entry would have cost a tenth promotion. The iOS manual gained the whole review paragraph it lacked, and both manuals' excerpt sections were corrected: the frozen text stays as the source *printed* it, not as it *prints* it. |
-| **Q-8** | Drafts excluded from the counts; **(e)** the two per-platform generate surfaces fixed (Mac regenerates with the summary's own prompt, four literals localised; iOS rail offers Regenerate when a summary exists); **(g)** search hygiene (newest non-draft summary wins the FTS column); **(b)** regenerate-and-keep from the sheet as a later step; **(d-cloud)** `GeneratedSummary.sourceContentHash` **rides Q-6's deploy** — the stored value is the revision row's `content_hash` at generation, never a hash of the summariser's input; existing summaries stay null and keep the date rule. (c) refused; (f) only if a correction batch is large. | One more identifier in the same promotion. |
+| **Q-8** | Drafts excluded from the counts; **(e) SHIPPED P3b-6** — six defects and SEVEN literals, not the four this row recorded, and the oldest-prompt fetch had no `isStandard` filter at all, so it could make a reader's own prompt the silent default. iOS's control went in the summary STRIP rather than the rail branch, because the strip is also the pinned iPhone and Read-mode surface. **(b) → P3b-7**: every summary in existence carries a nil `sourceContentHash`, so its comparison cannot fire; **(g)** search hygiene (newest non-draft summary wins the FTS column); **(b)** regenerate-and-keep from the sheet as a later step; **(d-cloud)** `GeneratedSummary.sourceContentHash` **rides Q-6's deploy** — the stored value is the revision row's `content_hash` at generation, never a hash of the summariser's input; existing summaries stay null and keep the date rule. (c) refused; (f) only if a correction batch is large. | One more identifier in the same promotion. |
 | **Q-9** | **(c)** un-indexed volumes excluded from the unreviewed read at VOLUME grain (rows return intact on re-download); **(d)** rider: the table is cleared at the Erase-Everything site only — never in `resetLocalData`, which "Reset This Device" also calls while promising annotations return. | No deploy. Known residue: a removed volume misses the rebaseline; an additive `index_version` column fixes that later. |
 | **Q-10** | **(b)** the exact, unique, seam-aware search in the shared sheet with Move after an explicit tap and the found words plus context shown; **(e)**'s three sentences ship inside it; **(f)** a Find-passage complement through the twins' existing find machinery — **subsequently REFUSED in P3b-4** on a six-axis measurement of what the find bar searches against what the sheet searches; see the P3b-4 paragraph below. UTF-16 pinned by fixture (the corpus holds no non-BMP or combining character). (c) only if matching ever becomes normalised. | No deploy. |
 | **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | **(b) and (i) SHIPPED P3b-5**, no deploy. (i) turned out to be THREE sites — the sentence and both Undo paths — plus a fresh override minting a corrupt snapshot after a stale restore. (b) reaches notes, tags and archive-visit plans; macOS routes a note to its composer WINDOW, whose request type is pure identity, rather than nesting a sheet. |
@@ -370,8 +370,10 @@ precedent), which needs no third text. *P3b-5* — **SHIPPED 2026-09-03 (PR #118
 P3b-6**, because (e) turned out to be five defects rather than the "four literals" the row records —
 the oldest-prompt regenerate, SIX unlocalised literals, a `· custom prompt` label that renders for
 every summary including standard-prompt ones, three silent failure paths, and a `fetchLimit = 20` on
-a descriptor with no `sortBy`, which under SQLite pages the OLDEST twenty and would hide a
-regenerated summary outright — and because the summary surfaces are the genuine twin in this
+a descriptor with no `sortBy`, so WHICH twenty is undefined and a regenerated summary can be absent
+from the carousel (the repo treats fetch order as nondeterministic in four places, and these rows
+arrive by CloudKit sync as well as local insert; an earlier draft of this line asserted SQLite pages
+the oldest twenty, which nothing in the tree establishes) — and because the summary surfaces are the genuine twin in this
 workstream while everything in (b)/(i) is a single shared view.
 **(b)**: the sheet now OPENS what it names. A row per research note presents `ResearchNoteEditorView`;
 *Edit Tags…* presents the shared `UserTagPickerSheet`; and a row per archive-visit PLAN opens
@@ -406,7 +408,43 @@ themselves as FRUS. Read REACTIVELY, because `.task(id: entry.id)` fires when th
 when the document finishes loading. Display-only: no model write, so nothing syncs on a read gesture.
 **Reading it live made AGREEMENT reachable for the first time** — the frozen snapshot recorded a
 disagreement and could never stop reporting one — so a new sentence says when FRUS has adopted the
-reader's correction and that it no longer changes anything. *P3b-6*: Q-8 (e) then (b).
+reader's correction and that it no longer changes anything.
+*P3b-6* — **SHIPPED 2026-09-03 (PR #NNNN)**: Q-8 option (e), plus the carousel-order rider it
+depends on. **(b) becomes P3b-7**, for a measured reason rather than a scheduling one: its whole
+content is a `sourceContentHash` comparison, that field's first writer shipped in build 44, and so
+EVERY summary in existence carries a nil hash — the multi-state rule would ship with exactly one
+branch reachable, and that branch is the date rule the sheet's footer already states in words.
+Reading the field also inherits the obligation its own doc comment assigns to "the phase that first
+READS" it, which needs the hash threaded beside the text through `BackgroundSummarizationService`'s
+two job lists, and that service holds no pipeline reference.
+**(e) was SIX defects and SEVEN literals, not the "four literals" this row recorded.** macOS's
+Regenerate fetched every prompt ordered by `createdAt` and took the first — with NO `isStandard`
+filter, so a reader's own prompt could become the silent default, and over an optional `Date` where
+`SortDescriptor` puts NULL FIRST, so a dateless legacy or synced row won outright. `· custom prompt`
+was gated on `activeSummary != nil` rather than on the prompt, so it called every standard-prompt
+summary custom. Four failure paths returned in silence, and the prompt store genuinely can be empty,
+because Erase Everything deletes prompts while the seeder runs only at launch. iOS had no regenerate
+control at all, and its rail branch chain meant a reader who HAD a summary could never see the
+spinner or the unavailability sentence. The seventh literal was the `1/3` history counter, which
+VoiceOver read as "one slash three".
+Everything now goes through one rule, `SummarizationPrompt.resolve(preferredId:in:)`, which returns
+an OUTCOME — `.requested` / `.standardFallback` / `.unavailable` — because three states need three
+sentences and the defect was a caller that could not tell them apart. Two of its refinements came
+from review and are worth keeping: the fallback prefers a standard prompt but does not REQUIRE one,
+since a reader told to "add one in Settings" adds a non-standard prompt and a standards-only rule
+would still report none available; and it breaks ties on id, because `min(by:)` is not documented as
+stable and the seeder inserts its standards in one tick, so the prompt NAMED and the prompt RUN could
+otherwise differ. A substitute is never printed as provenance — that would attribute a summary to a
+prompt which never wrote a word of it — so both surfaces instead say which prompt Regenerate will
+substitute, before it is pressed.
+**The rider matters more than the paging bug it started as.** `loadSummaries` carried a
+`fetchLimit = 20` on a descriptor with NO `sortBy`, so which twenty returned was undefined and a
+freshly generated summary could be absent — invisible until this phase added the gesture that mints
+a second summary in one sitting. But it also ordered on `lastModified`, a SAVE stamp that
+`SummarizationPromptSeeder.repointReferences` and `ProjectAdminService.merge` bump for reasons
+unrelated to recency, while the FTS column ranked by `createdAt`. So the carousel and search could
+name different summaries as the newest for one document. Both now share `GeneratedSummary.ranksAbove`.
+*P3b-7*: Q-8 (b).
 
 ## 9. What this design does not cover
 

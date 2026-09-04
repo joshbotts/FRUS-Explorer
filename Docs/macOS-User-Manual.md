@@ -738,7 +738,7 @@ FRUS Explorer integrates with Apple Intelligence to generate document summaries 
 
 ### 13.1 Summarizing a Document
 
-Open the Research rail (⌘⇧R), expand **Summary**, and click **Summarize this document**. Generation uses the oldest prompt in your list (normally *Standard Summary*); **Change prompt** picks another, regenerating the moment you click it. When a document has more than one summary, ‹ › chevrons and an *n*/*N* counter step through them, newest first.
+Open the Research rail (⌘⇧R), expand **Summary**, and click **Summarize this Document**. The first summary uses a standard prompt; **Change prompt** picks another and regenerates the moment you click it. Thereafter the block names the prompt that made the summary you are reading, and **Regenerate** runs *that* prompt again — so regenerating a summary you wrote a custom prompt for gives you another in the same voice, not a standard one. If you have since deleted that prompt, the block says which prompt Regenerate will substitute before you press it. Regenerating keeps the old summary: when a document has more than one, ‹ › chevrons and an *n*/*N* counter step through them, newest first.
 
 ### 13.2 Prompts
 

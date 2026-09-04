@@ -76,14 +76,21 @@ final class HighlightCoordinator {
 
 // MARK: - SummaryBlockView
 
-/// Inline AI summary block rendered within the document body.
+/// Inline AI summary block rendered within the document body — macOS only, by this file's own
+/// `#if os(macOS)` fence and by its single fenced mount in `ResearchRailView`.
 ///
-/// Shows the most recent summary with prompt label and history cycling controls.
-/// Collapses to a "Summarize" prompt when no summary exists.
-/// Hidden entirely when `SummarizationService` is unavailable.
+/// Shows the most recent summary with the name of the prompt that MADE it, and history cycling
+/// controls. Collapses to a "Summarize this Document" prompt when no summary exists.
+///
+/// The old header claimed the block is "hidden entirely when `SummarizationService` is
+/// unavailable". It was not: the mount tests only for a summary or a service, so the block rendered
+/// with its generate controls pressable and `regenerateSummary` returned on its first line. Since
+/// R-5 P3b-6 the CONTROLS are gated on the service, which is what that sentence described.
 ///
 /// Version history:
 ///   1.0 — New UI scaffolding
+///   1.1 — R-5 P3b-6: Regenerate runs the summary's own prompt; the prompt is named rather than
+///         asserted "custom"; seven literals keyed; the four silent failure paths closed
 struct SummaryBlockView: View {
     @Bindable var vm: DocumentViewModel
     @Environment(AppState.self) private var appState
@@ -113,9 +120,17 @@ struct SummaryBlockView: View {
             .help(String(localized: "summary.history.older.help", defaultValue: "Show older summary"))
             .accessibilityLabel(String(localized: "summary.history.older.a11y", defaultValue: "Older summary"))
 
-            Text("\(vm.activeSummaryIndex + 1)/\(vm.summaries.count)")
+            // Localized, and given the accessibility label its two neighbouring buttons already
+            // carry: unlabelled, VoiceOver read this as "one slash three".
+            Text(String(format: String(localized: "summary.history.position %lld %lld",
+                                       defaultValue: "%lld/%lld"),
+                        Int64(vm.activeSummaryIndex + 1), Int64(vm.summaries.count)))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+                .accessibilityLabel(String(
+                    format: String(localized: "summary.history.position.a11y %lld %lld",
+                                   defaultValue: "Summary %lld of %lld"),
+                    Int64(vm.activeSummaryIndex + 1), Int64(vm.summaries.count)))
 
             Button {
                 if vm.activeSummaryIndex > 0 { vm.activeSummaryIndex -= 1 }
@@ -130,21 +145,37 @@ struct SummaryBlockView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Read ONCE per pass. `aiAvailable` is a live unobserved read of
+        // `SystemLanguageModel.default.isAvailable`, and it was evaluated separately for the header
+        // controls and for the body — so one pass could offer Regenerate above a sentence saying
+        // the model is unavailable.
+        let available = aiAvailable
+        // Likewise once: `promptResolution` runs a SwiftData fetch and was read three times in one
+        // pass — by the label, and by each of the two sentences below the controls.
+        let resolution = promptResolution
+        return VStack(alignment: .leading, spacing: 10) {
 
             // Header — two rows so the identity label and the Change-prompt / Regenerate controls
             // don't collide and clip in the ~270 pt Research rail (C1 follow-up; this view now lives
             // only in the rail, so it can optimize for that width unconditionally).
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 4) {
-                    Label("AI summary", systemImage: "sparkles")
+                    Label(String(localized: "summary.block.label", defaultValue: "AI summary"),
+                          systemImage: "sparkles")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                         .textCase(.uppercase)
                         .kerning(0.7)
 
-                    if vm.activeSummary != nil {
-                        Text("· custom prompt")
+                    // The prompt that MADE this summary, by name. This read "· custom prompt" for
+                    // every summary — the gate was `activeSummary != nil`, not the prompt — so it
+                    // told the reader every standard-prompt summary was a custom one. A substitute
+                    // is never named here: `provenanceName` is nil unless the summary's own prompt
+                    // is still on the device, because naming the prompt that WOULD remake it would
+                    // attribute the summary to a prompt that never wrote a word of it.
+                    if vm.activeSummary != nil, let name = resolution.provenanceName {
+                        Text(String(format: String(localized: "summary.block.prompt %@",
+                                                   defaultValue: "· %@"), name))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -156,23 +187,55 @@ struct SummaryBlockView: View {
                     }
                 }
 
-                if aiAvailable {
+                // Gated on the SERVICE as well as the model. Without it both controls were
+                // pressable with `appState.summarizationService == nil`, and `regenerateSummary`
+                // returned on its first line with no word to the reader.
+                if available, appState.summarizationService != nil {
                     HStack(spacing: 12) {
-                        Button("Change prompt") { showPromptPicker = true }
+                        Button(String(localized: "summary.block.changePrompt",
+                                      defaultValue: "Change prompt")) { showPromptPicker = true }
                             .font(.caption2)
                             .buttonStyle(.plain)
                             .foregroundStyle(.secondary)
                             .popover(isPresented: $showPromptPicker) {
                                 SummaryPromptPickerView(vm: vm)
                             }
+                            // The picker GENERATES on tap, so it reaches the same empty-text guard
+                            // Regenerate is gated against; without this it is the one control left
+                            // that can be pressed and do nothing.
+                            .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
 
-                        Button("Regenerate") { Task { await regenerateSummary() } }
+                        Button(String(localized: "summary.block.regenerate",
+                                      defaultValue: "Regenerate")) {
+                            Task { await regenerateSummary() }
+                        }
                             .font(.caption2)
                             .buttonStyle(.plain)
                             .foregroundStyle(.secondary)
-                            .disabled(vm.isSummarizing)
+                            // Empty text was the third silent path: the view model's own guard
+                            // returns BEFORE it clears `summarizationError`, so a previous
+                            // failure's banner stayed on screen and read as this attempt's.
+                            .disabled(vm.isSummarizing || vm.documentPlainText.isEmpty)
 
                         Spacer(minLength: 0)
+                    }
+
+                    // The fourth silent path, and the only one that cannot be disabled away: the
+                    // prompt store can be EMPTY — Erase Everything deletes every prompt and the
+                    // seeder runs only at launch — and a regeneration then did nothing at all.
+                    if case .unavailable = resolution {
+                        Text(String(localized: "summary.block.noPrompt",
+                                    defaultValue: "No summarization prompt is available. Add one in Settings ▸ Research ▸ Summarization."))
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    } else if case .standardFallback(let p) = resolution, vm.activeSummary != nil {
+                        // The button will substitute. Saying so is the difference between a
+                        // regeneration the reader chose and one that quietly changed voice.
+                        Text(String(format: String(localized: "summary.block.regenerate.fallback %@",
+                                                   defaultValue: "Regenerate will use “%@” — the prompt that made this summary is no longer on this device."),
+                                    p.name))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -193,18 +256,26 @@ struct SummaryBlockView: View {
             if vm.isSummarizing {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("Summarizing…").font(.body).foregroundStyle(.secondary)
+                    Text(String(localized: "panel.summary.generating", defaultValue: "Summarizing…"))
+                        .font(.body).foregroundStyle(.secondary)
                 }
             } else if let summary = vm.activeSummary {
                 Text(summary.responseText)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .lineSpacing(4)
-            } else if aiAvailable {
-                Button("Summarize this document") { Task { await regenerateSummary() } }
+            } else if available {
+                // Adopts the iOS key. The two twins shipped the same action in two spellings —
+                // "this document" here, "this Document" there — so one of them had to move; taking
+                // the iOS wording puts both under one key rather than minting a second.
+                Button(String(localized: "panel.summary.generate",
+                              defaultValue: "Summarize this Document")) {
+                    Task { await regenerateSummary() }
+                }
                     .font(.body)
                     .buttonStyle(.plain)
                     .foregroundStyle(.tertiary)
+                    .disabled(vm.documentPlainText.isEmpty)
             } else {
                 // No summary and no way to make one on this hardware — explain
                 // instead of offering a button that fails silently.
@@ -225,22 +296,35 @@ struct SummaryBlockView: View {
         )
     }
 
+    /// Which prompt a regeneration would run, and the two facts the header prints from it.
+    ///
+    /// A fetch, so `body` reads it into a `let` once per pass — the rail re-renders as it scrolls,
+    /// and this was previously read three times per pass through three separate call sites.
+    private var promptResolution: SummarizationPrompt.Resolution {
+        SummarizationPrompt.resolve(preferredId: vm.activeSummary?.promptId, in: modelContext)
+    }
+
+    /// Regenerates the active summary with THE PROMPT THAT MADE IT.
+    ///
+    /// It used to fetch every prompt ordered by `createdAt` and take the first. Two things were
+    /// wrong with that beyond the obvious. The fetch had no `isStandard` filter, so the winner was
+    /// simply the oldest row of any kind — a user's own prompt could become the silent default —
+    /// and `SortDescriptor` over an optional `Date` puts NULL FIRST, so a legacy or synced row with
+    /// no date won outright. So a reader who summarised with a prompt of their own, then pressed
+    /// Regenerate, got a summary in a different voice with nothing on screen saying so.
+    ///
+    /// The two comment lines this replaces were false as well: `SummarizationService.summarize`
+    /// takes a non-optional prompt and has no standard-prompt fallback of its own.
     private func regenerateSummary() async {
         guard let service = appState.summarizationService else { return }
-        let provider = AppleIntelligenceProvider.shared
-        // Default prompt nil — picked in prompt picker popover.
-        // If no prompt is selected, SummarizationService uses the standard prompt.
-        if let prompts = try? modelContext.fetch(
-            FetchDescriptor<SummarizationPrompt>(sortBy: [SortDescriptor(\.createdAt)])
-        ), let prompt = prompts.first {
-            await vm.generateSummary(
-                prompt: prompt,
-                provider: provider,
-                service: service,
-                activeProjectId: appState.activeProjectId,
-                context: modelContext
-            )
-        }
+        guard let prompt = promptResolution.prompt else { return }
+        await vm.generateSummary(
+            prompt: prompt,
+            provider: AppleIntelligenceProvider.shared,
+            service: service,
+            activeProjectId: appState.activeProjectId,
+            context: modelContext
+        )
     }
 }
 
