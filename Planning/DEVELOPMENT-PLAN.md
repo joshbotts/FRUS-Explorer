@@ -11205,7 +11205,7 @@ same `summarizationError` surface the document's own Regenerate already uses.
 the first non-nil `annotationId` and cost a TENTH Production promotion for a sheet that judges
 nothing. 20 mutations, all killed by their own named controls; full suite 4,450 tests in 584 suites.
 
-## Session 2026-09-04 — B-6 and the honesty batch: the window that reported nothing, and five sentences the code stopped supporting (PR #NNNN)
+## Session 2026-09-04 — B-6 and the honesty batch: the window that reported nothing, and five sentences the code stopped supporting (PR #1191)
 
 **B-6 was a hole in a precedence chain that had no seam, and that is why it survived.**
 `MainTabView.indexingBanner` decided among five occupants of the bottom inset with an

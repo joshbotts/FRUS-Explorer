@@ -795,7 +795,7 @@ screen. It also breaks five test call sites (`PendingCloudBackdropTests.swift:37
 ### Two real defects it missed, in the file it opened
 
 - **The genuine double-cloud, by staleness rather than predicate.** Now §7 step 0.
-- **The opposite defect — CONFIRMED 2026-08-31, filed as B-6, and CLOSED 2026-09-04 (PR #NNNN).**
+- **The opposite defect — CONFIRMED 2026-08-31, filed as B-6, and CLOSED 2026-09-04 (PR #1191).**
   Verified at all three sites while shipping step 0. It is not a drive-by: closing it needs a product
   decision (should that window show a queued-download banner, or let the splash through?) *and* a
   banner state that does not exist — `IndexingQueueBannerView` needs a `batch.latest`, and in that
