@@ -11326,7 +11326,7 @@ The four badge labels (Untouched / Opened / In a collection / Annotated) are exa
 3,779.** Build 44's Mac file shipped at 4,018 — over — so the cap was checked with `wc -m` over the
 whole file, heading included, rather than assumed.
 
-## Session 2026-09-04c — Wave PV planned: provenance tiers (PR #NNNN)
+## Session 2026-09-04c — Wave PV planned: provenance tiers (PR #1194)
 
 **Planning only. No implementation, by owner instruction — this ships in the release after build
 45, which is at the store gate.** `Planning/Provenance-Tiers-Development-Plan.md`, filed as a new
