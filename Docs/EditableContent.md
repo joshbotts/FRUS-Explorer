@@ -6351,6 +6351,27 @@ The three counts measure different things
 
 <!-- END SOURCE: chronology.agg.editorial.v2 -->
 
+### A document with no printed title
+
+Most FRUS documents carry a printed head, and that is what the app shows in every list. A few do
+not — almost all of them editorial notes, which are the editors' own connective prose rather than a
+document reproduced from the archives. These two strings are what such a row says instead. Before
+they existed the row showed the raw record id, and before that it showed nothing at all.
+
+#### An editorial note, with its document number
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentDisplayTitle.swift | lines: 52–53 | key: document.title.editorialNote %@ | shared: iOS+macOS (single edit point) -->
+
+Editorial Note %@
+
+<!-- END SOURCE: document.title.editorialNote %@ -->
+
+#### An editorial note carrying no number
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentDisplayTitle.swift | lines: 55–56 | key: document.title.editorialNote.unnumbered | shared: iOS+macOS (single edit point) -->
+
+Editorial Note
+
+<!-- END SOURCE: document.title.editorialNote.unnumbered -->
+
 #### \(volumes) volume\(volumes == 1 ?
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1314–1315 | key: chronology.agg.volumes.v2 -->
 

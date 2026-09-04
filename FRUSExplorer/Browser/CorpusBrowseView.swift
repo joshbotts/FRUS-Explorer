@@ -288,7 +288,7 @@ struct CorpusDocumentsView: View {
     @Environment(AppState.self) private var appState
 
     /// Bulk-loaded display metadata, keyed by `"volumeId/documentId"`.
-    @State private var headers: [String: String] = [:]
+    @State private var headers: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
     @State private var dates: [String: String] = [:]
     /// The engagement partition behind the row badges and the coverage line (W-13). `nil` until
     /// the first gather lands; the list renders unbadged in the meantime rather than blocking.
@@ -417,7 +417,7 @@ struct CorpusDocumentsView: View {
                     documentId: ref.documentId,
                     volumeId: ref.volumeId,
                     documentNumber: nil,
-                    header: headers[ref.key] ?? ref.documentId,
+                    header: DocumentDisplayTitle.text(headers[ref.key], documentId: ref.documentId),
                     dateline: nil,
                     sourceNote: nil
                 ))
@@ -427,7 +427,7 @@ struct CorpusDocumentsView: View {
             } label: {
                 HStack(spacing: 8) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(headers[ref.key] ?? ref.documentId)
+                        Text(DocumentDisplayTitle.text(headers[ref.key], documentId: ref.documentId))
                             .font(.callout)
                             .fixedSize(horizontal: false, vertical: true)
                         if let date = dates[ref.key] {
@@ -536,7 +536,7 @@ struct CorpusDocumentsView: View {
             .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         guard !keys.isEmpty else { return }
         if let store = appState.crossReferenceStore,
-           let loaded = try? await store.documentHeaders(for: keys) {
+           let loaded = try? await store.documentTitleFacts(for: keys) {
             headers = loaded
         }
         if let pipeline = appState.indexingPipeline,
