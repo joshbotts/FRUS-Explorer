@@ -11058,7 +11058,7 @@ the rule that works. And the corrected model doc comment **was itself inaccurate
 fallback: that paragraph exists to replace a false claim, and the replacement introduced a new one in
 the same place.
 
-## Session 2026-09-03j — R-5 P3b-6: the prompt a regeneration runs (PR #NNNN)
+## Session 2026-09-03j — R-5 P3b-6: the prompt a regeneration runs (PR #1188)
 
 **The design row said "four literals". It was six defects and seven literals, and the worst of them
 was not a literal at all.** macOS's Regenerate fetched every `SummarizationPrompt` ordered by

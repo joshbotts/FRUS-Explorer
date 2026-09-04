@@ -409,7 +409,7 @@ when the document finishes loading. Display-only: no model write, so nothing syn
 **Reading it live made AGREEMENT reachable for the first time** — the frozen snapshot recorded a
 disagreement and could never stop reporting one — so a new sentence says when FRUS has adopted the
 reader's correction and that it no longer changes anything.
-*P3b-6* — **SHIPPED 2026-09-03 (PR #NNNN)**: Q-8 option (e), plus the carousel-order rider it
+*P3b-6* — **SHIPPED 2026-09-03 (PR #1188)**: Q-8 option (e), plus the carousel-order rider it
 depends on. **(b) becomes P3b-7**, for a measured reason rather than a scheduling one: its whole
 content is a `sourceContentHash` comparison, that field's first writer shipped in build 44, and so
 EVERY summary in existence carries a nil hash — the multi-state rule would ship with exactly one
