@@ -135,6 +135,26 @@ private func insertDocumentDate(
     sqlite3_step(stmt)
 }
 
+/// Marks an existing `document_cache` row as an editorial note.
+private func setEditorialNote(dbURL: URL, volumeId: String, documentId: String) throws {
+    var db: OpaquePointer?
+    guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
+          let db else {
+        throw CrossReferenceError.databaseOpenFailed(message: "setEditorialNote: cannot open")
+    }
+    defer { sqlite3_close_v2(db) }
+    let TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+    var stmt: OpaquePointer?
+    sqlite3_prepare_v2(db, """
+        UPDATE document_cache SET is_editorial_note = 1
+         WHERE volume_id = ? AND document_id = ?
+        """, -1, &stmt, nil)
+    defer { sqlite3_finalize(stmt) }
+    sqlite3_bind_text(stmt, 1, volumeId,   -1, TRANSIENT)
+    sqlite3_bind_text(stmt, 2, documentId, -1, TRANSIENT)
+    sqlite3_step(stmt)
+}
+
 // MARK: - CrossReferenceStoreTests
 
 struct CrossReferenceStoreTests {
@@ -248,6 +268,35 @@ struct CrossReferenceStoreTests {
         #expect(chunks.filter { $0.volumeId == "v2" }.map(\.documentIds) == [["a"]])
         // Every input key survives exactly once.
         #expect(chunks.reduce(0) { $0 + $1.documentIds.count } == 951)
+    }
+
+    /// The facts query behind the display title — same batching, three columns.
+    @Test("documentTitleFacts reports the head, the number and the note flag")
+    func documentTitleFactsRoundTrip() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "d1",
+                                documentNumber: "1", header: "A Printed Head")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "d304",
+                                documentNumber: "304", header: "")
+        try setEditorialNote(dbURL: dbURL, volumeId: "v1", documentId: "d304")
+
+        let facts = try await store.documentTitleFacts(for: [
+            (volumeId: "v1", documentId: "d1"),
+            (volumeId: "v1", documentId: "d304"),
+            (volumeId: "v1", documentId: "absent"),
+        ])
+        #expect(facts["v1/d1"]?.header == "A Printed Head")
+        #expect(facts["v1/d1"]?.isEditorialNote == false)
+        // An empty head is nil here, exactly as `documentHeaders` omits it.
+        #expect(facts["v1/d304"]?.header == nil)
+        #expect(facts["v1/d304"]?.documentNumber == "304")
+        #expect(facts["v1/d304"]?.isEditorialNote == true)
+        #expect(facts["v1/absent"] == nil)
+
+        // End to end: the pair a reader actually sees.
+        #expect(DocumentDisplayTitle.text(facts["v1/d304"], documentId: "d304") == "Editorial Note 304")
+        #expect(DocumentDisplayTitle.text(facts["v1/absent"], documentId: "absent") == "absent")
     }
 
     // MARK: - InboundEdgeQueryTest

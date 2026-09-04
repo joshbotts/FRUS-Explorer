@@ -218,7 +218,7 @@ struct ResearchView: View {
     @State private var containerWidth: CGFloat = 0
     #endif
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
-    @State private var documentHeaders: [String: String] = [:]
+    @State private var documentHeaders: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
 
     // MARK: - Body
 
@@ -238,7 +238,7 @@ struct ResearchView: View {
         }
         .sheet(item: $reviewEntry) { entry in
             DocumentChangeReviewSheet(volumeId: entry.volumeId, documentId: entry.documentId,
-                                      title: documentHeaders[entry.id] ?? entry.documentId)
+                                      title: DocumentDisplayTitle.text(documentHeaders[entry.id], documentId: entry.documentId))
         }
             .task(id: selectedItemDocumentIds) { await loadHeaders() }
             // Reload note-sourced headers when any note changes.
@@ -762,11 +762,14 @@ struct ResearchView: View {
             // the short fallback or the (often two-line) real title — so the post-open async header
             // merge swaps text in place instead of growing the row and reflowing the whole list a
             // beat after it appears (the second half of #390's "flickers after open").
-            let header = documentHeaders[entry.id]
-            let hasHeader = !(header ?? "").isEmpty
-            Text(hasHeader ? header! : entry.documentId)
+            // `.secondary` means PROVISIONAL — the id standing in until the async load lands —
+            // so it keys on whether the facts arrived, not on whether a printed head exists. An
+            // editorial note resolves to "Editorial Note 304", which is final rather than a
+            // placeholder and reads as `.primary` accordingly.
+            let facts = documentHeaders[entry.id]
+            Text(DocumentDisplayTitle.text(facts, documentId: entry.documentId))
                 .font(.body)
-                .foregroundStyle(hasHeader ? .primary : .secondary)
+                .foregroundStyle(facts == nil ? .secondary : .primary)
                 .lineLimit(2, reservesSpace: true)
 
             // Volume title + most-recent annotation date
@@ -994,7 +997,7 @@ struct ResearchView: View {
 
         #if os(macOS)
         Button {
-            let header = documentHeaders[entry.id] ?? entry.documentId
+            let header = DocumentDisplayTitle.text(documentHeaders[entry.id], documentId: entry.documentId)
             let browsEntry = DocumentBrowserEntry(
                 documentId: entry.documentId,
                 volumeId: entry.volumeId,
@@ -1033,7 +1036,7 @@ struct ResearchView: View {
         case .document:
             break
         }
-        let header = documentHeaders[entry.id] ?? entry.documentId
+        let header = DocumentDisplayTitle.text(documentHeaders[entry.id], documentId: entry.documentId)
         let browsEntry = DocumentBrowserEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
@@ -1061,7 +1064,7 @@ struct ResearchView: View {
         let pairs = documents(for: item)
             .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
         guard !pairs.isEmpty else { return }
-        if let headers = try? await store.documentHeaders(for: pairs) {
+        if let headers = try? await store.documentTitleFacts(for: pairs) {
             documentHeaders.merge(headers) { _, new in new }
         }
     }

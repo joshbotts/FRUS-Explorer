@@ -420,7 +420,7 @@ struct ClusterDocumentsView: View {
     /// Why the drill is empty, when it is.
     @State private var unavailable: SemanticUnavailable?
     /// Bulk-loaded display metadata, keyed by `"volumeId/documentId"`.
-    @State private var headers: [String: String] = [:]
+    @State private var headers: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
     @State private var dates: [String: String] = [:]
     /// The last save's outcome, for the confirmation + truncation lines.
     @State private var savedCorpusName: String?
@@ -595,7 +595,7 @@ struct ClusterDocumentsView: View {
                     documentId: ref.documentId,
                     volumeId: ref.volumeId,
                     documentNumber: nil,
-                    header: headers[ref.key] ?? ref.documentId,
+                    header: DocumentDisplayTitle.text(headers[ref.key], documentId: ref.documentId),
                     dateline: nil,
                     sourceNote: nil
                 ))
@@ -604,7 +604,7 @@ struct ClusterDocumentsView: View {
                 #endif
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(headers[ref.key] ?? ref.documentId)
+                    Text(DocumentDisplayTitle.text(headers[ref.key], documentId: ref.documentId))
                         .font(.callout)
                         .fixedSize(horizontal: false, vertical: true)
                     if let date = dates[ref.key] {
@@ -709,7 +709,7 @@ struct ClusterDocumentsView: View {
             return (String(parts[0]), String(parts[1]))
         }
         if let store = appState.crossReferenceStore,
-           let loaded = try? await store.documentHeaders(for: pairs) {
+           let loaded = try? await store.documentTitleFacts(for: pairs) {
             headers = loaded
         }
         if let pipeline = appState.indexingPipeline,

@@ -429,6 +429,60 @@ public actor CrossReferenceStore {
         return result
     }
 
+    /// What a display title needs about one document, when the header alone is not enough.
+    ///
+    /// `header` is nil when the document has none — the same omission ``documentHeaders(for:)``
+    /// makes, for the same reason. The other two fields exist so a caller can say something better
+    /// than a raw document id in that case.
+    public struct DocumentTitleFacts: Sendable, Equatable {
+        /// The printed `<head>`, or nil when the document has none.
+        public let header: String?
+        /// The FRUS document number (`"304"`), or nil when the document carries none.
+        public let documentNumber: String?
+        /// Whether the document is an editorial note rather than a printed document.
+        public let isEditorialNote: Bool
+    }
+
+    /// Returns everything a display title needs for a batch of keys, in one query per volume.
+    ///
+    /// ``documentHeaders(for:)`` remains the answer when a caller only wants the printed head.
+    /// This exists because the six sites that render a document's name were falling back to a raw
+    /// document id for the 8,467 headerless editorial notes on a full index — accurate but not
+    /// useful, since `d304` names the record rather than describing it. Every one of those notes
+    /// carries a `document_number`, so a caller can render *Editorial Note 304* instead.
+    ///
+    /// Keys with no row are omitted, as everywhere else in this file.
+    public func documentTitleFacts(
+        for keys: [(volumeId: String, documentId: String)]
+    ) throws -> [String: DocumentTitleFacts] {
+        var result: [String: DocumentTitleFacts] = [:]
+        try forEachDocumentChunk(keys) { volumeId, documentIds in
+            let sql = """
+                SELECT document_id, header, document_number, is_editorial_note
+                  FROM document_cache
+                 WHERE volume_id = ? AND document_id IN (\(Self.placeholders(documentIds.count)))
+                """
+            let stmt = try prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_CR)
+            for (i, doc) in documentIds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 2), doc, -1, SQLITE_TRANSIENT_CR)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let doc = columnString(stmt, 0) else { continue }
+                // Empty is nil here, matching `documentHeaders`. The whole point of this type is
+                // that the caller has something to say when it IS nil.
+                let head = columnString(stmt, 1).flatMap { $0.isEmpty ? nil : $0 }
+                let number = columnString(stmt, 2).flatMap { $0.isEmpty ? nil : $0 }
+                result["\(volumeId)/\(doc)"] = DocumentTitleFacts(
+                    header: head,
+                    documentNumber: number,
+                    isEditorialNote: sqlite3_column_int(stmt, 3) != 0)
+            }
+        }
+        return result
+    }
+
     // MARK: - Batched-lookup plumbing
 
     /// How many document ids ride in one `IN (…)` list.
