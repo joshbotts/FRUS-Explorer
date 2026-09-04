@@ -1,38 +1,33 @@
-# What's New Since Build 43 (iOS)
+# What's New Since Build 44 (iOS)
 
-The headlines: **search by meaning** and **archive visit plans**. Also: a Similar-wording axis in Related, classification overrides, saved-search freshness badges, FRUS text in system Spotlight.
+The headline: **what happens when the Office of the Historian corrects a volume**. Also a per-project coverage map.
 
-**Two one-time costs on first launch**: a full re-index of downloaded volumes (one index change), and a background Spotlight re-donation (~317k items). The app stays usable; Search and archival surfaces are incomplete until the re-index finishes.
+**No one-time costs this time.** Build 44 needed a full re-index and a Spotlight re-donation. Build 45 changes no index, so it opens straight into a working library.
 
-## Search by meaning (experimental)
+## When a volume is corrected
 
-Two engines now: **Keywords**, and **Meaning** — a new segment under the search field that ranks the whole series by what your question means, so "Why did the Marshall Plan happen?" finds the 1947 policy papers despite sharing no words with them.
+FRUS volumes get corrected after publication — a transcription fixed, a footnote rewritten, occasionally a document withdrawn. The app used to absorb that silently while your highlights moved. It now records each document's change set as it indexes, and says what moved.
 
-- A one-time, optional **229 MB model download** (Google's EmbeddingGemma, running entirely on-device). Offered when keywords find nothing, or when you switch to Meaning; managed under Settings ▸ Volumes & Storage.
-- **Results reach beyond your library**: matches in volumes you lack show the volume title, a score, and a Download Volume button.
-- The strip above the results states the terms: filters intersected, what couldn't be scored yet — scoring **warms up over your first few searches** as small match files download.
-- Exact phrases stay keywords' job; concordance/collocates/facets close in Meaning mode; Saved Searches always run as keywords.
+- A **banner** on a changed document says whether its **text** moved — highlight positions may have shifted — or whether only footnotes, the source note or the heading changed and the text did not.
+- **Review…** opens a sheet over your own work on that document: **Confirm**, **Remove** or **Move Here** each highlight (offered only where the passage is found exactly once, and it shows you the passage in context first), re-checks every quotation you froze against the new text, opens the notes, tags and archive-visit plans attached to it, offers **Summarize Again**, and ends in **Mark Reviewed**.
+- The **Research tab** gains a **Changed by an update** filter; **Settings ▸ Volumes & Storage ▸ After an Update** summarises it per volume.
+- A document an update **removed still opens** — that sheet is the only route left to it.
+- Review state **syncs across your devices**.
 
-## Archive visit plans — now fed from all over the app
-
-Persistent, synced plans for consulting the records behind your documents. The list lives in the **Research tab ▸ Archive Visits**; each plan holds **research targets** on two labeled channels — where documents *came from* (source notes) and what their footnotes *point at* (external references) — never summed, plus archival units added at their own grain. A packet generated from a plan draws its chapters from the targets; unresolvable citations route into the advance inquiry; deleting asks first (it cascades).
-
-**Feeding a plan, from wherever you're working**: Collections (a collection's add menu sends its documents), Source Explorer (an archival collection's page, or the Archival Neighbors sheet, sends the documents sharing a unit — or the unit itself). Every add goes through the same picker with a blue **basis banner** saying which claim the seeds contribute and where the add came from — you approve exactly what gets written.
+**Expect silence, and check that it is silent.** The comparison needs a previously indexed copy, so the first time a document is indexed the app records a baseline and reports nothing. On a library you already hold, these surfaces stay quiet in build 45 by design and light up from the next correction onward. The bug worth reporting is the opposite one — anything claiming an update changed it when none did. To see the whole flow you need a volume corrected since you downloaded it: **Volumes & Storage ▸ Check for Corrections** will say.
 
 ## Also
 
-**Similar wording** (Related, weight 0): raise it and matches share distinctive vocabulary, chips naming the terms; the archival axis routes ~11k more documents to neighbors. **Classification overrides**: fix a wrong chip from the rail's info popover; synced, survives re-indexing. **Saved searches** show an exact new-since-last-run count. **Spotlight** finds document text from the home screen. Previously-published sources signpost instead of dead-ending; pre-1910 consular rolls resolve offline; two iPad layout fixes; long titles wrap.
+**Coverage**: with a project active, a working corpus's document list badges each row Untouched / Opened / In a collection / Annotated and totals it, with a Project Home tile and a coverage statement in the exported method appendix. **Enclosures** get their own archival home in Source Explorer. Exported figures carry their caveats and credit the Office of the Historian. The search field's prompt follows the engine you picked. `frusexplorer://` links open a document; **Copy Research-State Record** and **Download Vectors for Every Volume** are under Volumes & Storage ▸ Advanced. The splash drifts.
 
 ## What to test
 
-1. Meaning end-to-end: empty keyword search → model offer → accept on Wi-Fi → it searches by itself.
-2. Ask real research questions in Meaning. Do the top matches deserve opening? **This is the verdict we most need.**
-3. Download Volume from a beyond-library match; re-run — the row gains its title.
-4. Search twice early: does "could not be scored yet" fall?
-5. Filters + Meaning: a volume scope or date range should narrow results, the strip saying what it removed.
-6. Archive Visits: build one plan from three places — a collection, an Archival Neighbors sheet, a hand-entered unit. Do the basis banners describe each add right? Are the two channels labeled apart in the packet?
-7. Similar wording on a distinctively-worded document — do matches read alike?
-8. Override a wrong classification chip; re-index; it should survive.
-9. Spotlight a phrase you know is in a downloaded document.
+1. Launch on your existing library: no re-index, and **nothing claims to have changed**. Report anything that does.
+2. **Check for Corrections**. If it finds one, update it, then take a document you had highlighted through the review sheet: does the banner name the right kind of change, and does Move Here land on the right words?
+3. Mark a document reviewed; check it clears on a second device.
+4. Queue two or three volumes, force-quit before indexing starts, relaunch — **"N downloads queued"** should sit above the tab bar. It showed nothing at all before.
+5. Coverage on a corpus you have worked in: does the figure match what you believe you read? Export and read the statement back.
+6. **Browse ▸ Clusters — coherent research leads, or arbitrary piles?** Open several and say which. "Piles" is the most useful answer: it means we remove the feature.
+7. Meaning search: do the top matches deserve opening? Still unanswered from build 44.
 
-Include device + iOS version, taps, expected, actual. Thanks!
+Include device + iOS version, taps, expected, actual — and for anything about corrections, the volume id. Thanks!

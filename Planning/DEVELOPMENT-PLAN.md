@@ -11279,3 +11279,49 @@ chain's literal text; it now drives `IndexingInsetState` and is stronger for it,
 queued case the scan structurally could not see.
 
 11 mutations, all killed by their own named controls; 4,463 tests in 586 suites; macOS clean.
+
+## Session 2026-09-04b — Build 45 and its TestFlight notes (PR #1192)
+
+**Build 45 across all three targets** — `project.yml` (3 occurrences) and `project.pbxproj` (9),
+edited directly, no `xcodegen`, per the standing rule. `MARKETING_VERSION` stays 0.2. The audit
+suite caught the third place the number lives: `README.md`'s "Current build:" line, which wraps
+across two lines and so needed a two-line replacement rather than the obvious one. That test exists
+precisely because "a step nothing enforces is a step that gets skipped".
+
+**`deployedThroughBuild` stays "44", deliberately.** The ninth CloudKit promotion ran during build
+44's life (2026-09-03) and covers everything build 45 ships; no `@Model` or stored property changed
+since the tag. Bumping the marker would attest a deploy that did not happen.
+`CD_AnnotationReview.CD_annotationId` still awaits its first writer and is still listed honestly.
+
+**The notes' headline is the opposite of build 44's.** No index-version constant changed since the
+`build-44` tag, so build 45 costs **no re-index and no Spotlight re-donation** — and since testers
+were explicitly warned about both last time, saying so is worth the characters.
+
+**The subtlety that would otherwise arrive as a false bug report.** R-5's revision table is written
+at index time, and a document's FIRST indexing records a baseline and reports nothing (the insert
+writes `changed_at` and `change_kind` NULL). On a library a tester already holds, every
+correction-review surface is therefore QUIET in build 45 by design; they light up from the next
+upstream correction. Both files say so, and both turn it into the testable claim — *the bug worth
+reporting is a document claiming an update changed it when none did* — with **Check for
+Corrections** named as the only route to the whole flow today.
+
+**Standing gate 1 discharged.** Build 43 asked whether the semantic map's clusters are "coherent
+research leads, or arbitrary piles?"; the build-44 rewrite dropped the ask wholesale, and the gate
+directed restoring it in the next build's notes. It is back on both platforms, with the consequence
+stated so the answer is worth giving ("'Piles' is the most useful answer: it means we remove the
+feature"). Note the repo contains two statements that look contradictory: `DEVELOPMENT-PLAN.md`
+records the owner relaying a "favorable leads-or-noise verdict" on 2026-08-27, and the live plan's
+§7 review two days later says the verdict is still outstanding. Reading both in place, the 08-27
+relay resolved **W-9's tier gate**, not the map's clusters — so the ask stands.
+
+**Every label in both files was verified against the source**, which caught four drafting errors
+before they reached a tester: `Copy Research-State Record` is under Volumes & Storage ▸ **Advanced**
+(«Index Health» is a code comment, not a visible heading), `Export Research Database…` is under
+**Data & Recovery**, the Clusters axis is reached from **Browse** on iOS and the **Corpus Browser**
+window on Mac, and a drafted coverage example quoted the engagement counters in the wrong order —
+the real strings are "%@ of %@ documents worked on" and "%@ opened · %@ annotated · %@ collected".
+The four badge labels (Untouched / Opened / In a collection / Annotated) are exact.
+
+**Both files are under the 4,000-character App Store Connect cap with margin: iOS 3,761, Mac
+3,779.** Build 44's Mac file shipped at 4,018 — over — so the cap was checked with `wc -m` over the
+whole file, heading included, rather than assumed.
