@@ -314,7 +314,7 @@ that came before it.
 | **Q-8** | Drafts excluded from the counts; **(e)** the two per-platform generate surfaces fixed (Mac regenerates with the summary's own prompt, four literals localised; iOS rail offers Regenerate when a summary exists); **(g)** search hygiene (newest non-draft summary wins the FTS column); **(b)** regenerate-and-keep from the sheet as a later step; **(d-cloud)** `GeneratedSummary.sourceContentHash` **rides Q-6's deploy** — the stored value is the revision row's `content_hash` at generation, never a hash of the summariser's input; existing summaries stay null and keep the date rule. (c) refused; (f) only if a correction batch is large. | One more identifier in the same promotion. |
 | **Q-9** | **(c)** un-indexed volumes excluded from the unreviewed read at VOLUME grain (rows return intact on re-download); **(d)** rider: the table is cleared at the Erase-Everything site only — never in `resetLocalData`, which "Reset This Device" also calls while promising annotations return. | No deploy. Known residue: a removed volume misses the rebaseline; an additive `index_version` column fixes that later. |
 | **Q-10** | **(b)** the exact, unique, seam-aware search in the shared sheet with Move after an explicit tap and the found words plus context shown; **(e)**'s three sentences ship inside it; **(f)** a Find-passage complement through the twins' existing find machinery — **subsequently REFUSED in P3b-4** on a six-axis measurement of what the find bar searches against what the sheet searches; see the P3b-4 paragraph below. UTF-16 pinned by fixture (the corpus holds no non-BMP or combining character). (c) only if matching ever becomes normalised. | No deploy. |
-| **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | No deploy. |
+| **Q-11** | **(h)** a vanished row's Open Document routes to the sheet; **(f)** the vanished-row delete also removes the `document_sources` row (a live visit plan was deriving targets from a document that no longer exists); **(b)** Open Note and Edit Tags from the sheet, the plan editor where a route exists; **(i)** the override's "FRUS tags this as" sentence refreshed from the live parse on open. (c) the purge refused. | **(b) and (i) SHIPPED P3b-5**, no deploy. (i) turned out to be THREE sites — the sentence and both Undo paths — plus a fresh override minting a corrupt snapshot after a stale restore. (b) reaches notes, tags and archive-visit plans; macOS routes a note to its composer WINDOW, whose request type is pure identity, rather than nesting a sheet. |
 
 **Sequence.** *P3b-1* (deploy-free hygiene, **PR #1182**, SHIPPED): Q-9 (c)+(d), Q-11 (h)+(f), Q-8 drafts + (g), Q-7's export-sheet cause fix. *P3b-2* (the deploy PR, **PR #1183**) — **SHIPPED; the NINTH promotion ran 2026-09-03 (build 44)**, nine of ten identifiers attested (`CD_AnnotationReview.CD_annotationId` still awaits a build that writes one):
 `AnnotationReview`, one mirrored ledger with a **derived id over `kind|annotationId|document|contentHash|changeKind`**, which makes it
@@ -366,7 +366,47 @@ reports only whether the current search matched, so that platform cannot state a
 sheet says "Found N times". A control that contradicted the sentence beside it would be worse than no
 control. If the complement is wanted later, the shape to build is scroll-and-reveal from the match's own
 offsets (`buildRanges` already turns them into a DOM Range, and `revealFootnote` is the working
-precedent), which needs no third text. *P3b-5*: Q-11 (b)+(i), Q-8 (e), then (b).
+precedent), which needs no third text. *P3b-5* — **SHIPPED 2026-09-03 (PR #1187)**: Q-11 options (b) and (i). **Q-8 (e) and (b) move to
+P3b-6**, because (e) turned out to be five defects rather than the "four literals" the row records —
+the oldest-prompt regenerate, SIX unlocalised literals, a `· custom prompt` label that renders for
+every summary including standard-prompt ones, three silent failure paths, and a `fetchLimit = 20` on
+a descriptor with no `sortBy`, which under SQLite pages the OLDEST twenty and would hide a
+regenerated summary outright — and because the summary surfaces are the genuine twin in this
+workstream while everything in (b)/(i) is a single shared view.
+**(b)**: the sheet now OPENS what it names. A row per research note presents `ResearchNoteEditorView`;
+*Edit Tags…* presents the shared `UserTagPickerSheet`; and a row per archive-visit PLAN opens
+`ArchiveVisitEditorView` in the shape Project Home already presents it. Until now the sheet told a
+reader that a document they had written on had changed and offered no route to what they wrote. Every
+editor takes only scalars the sheet already held, and all three are declared INSIDE the sheet, because
+SwiftUI will not present an ancestor's sheet over a descendant's. Three decisions worth keeping: macOS
+opens a note in the `frus.noteComposer` WINDOW rather than a nested sheet, since `NoteComposerRequest`
+is pure identity and opening the same note twice must focus the open window instead of stacking a
+second editor over one row; *Edit Tags…* is NOT gated on the document already having tags, because the
+picker replaces the whole assignment set and a gated control would delete itself when the last tag was
+cleared; and the plan row promises only to OPEN the plan — the editor takes a whole plan, opens on its
+Targets tab and cannot focus a seed, so a label saying it would show this document there is a promise
+the app cannot keep. The plan route was first refused on "it cannot be aimed" and the refusal was
+overturned in recon: a label that claims no aiming needs none.
+**(i)** is three sites, not the one the row names. `parsedIsEditorialNote` is written once at override
+creation and NOTHING refreshes it — not `setOverride`'s update branch (unreachable from the app), and
+not a re-index: `applyClassificationOverrides` writes only `document_cache.is_editorial_note`, and the
+model's own doc comment claiming a re-index corrected the drift was FALSE and is corrected. So after
+the Office of the Historian fixes the same mistag a reader corrected, the rail's "FRUS tags this as…"
+quoted the superseded reading, and BOTH controls labelled *Restore FRUS's Classification* — the rail's
+and Settings' per-row Undo — wrote it back into the index, leaving the column disagreeing with the TEI
+and no override row to explain it. A verifier found the third site: after such a restore the column is
+corrupt, so a FRESH override mints a corrupt snapshot. All three now prefer the live parse. The rail
+reads `DocumentViewModel.parsedIsEditorialNote`, which records `ast.isShapedAsEditorialNote` BEFORE the
+override reshapes the AST and had ZERO readers until now; Settings, which has no open document,
+re-parses the TEI through a new shared rule and falls back to the stored snapshot when the volume is
+absent — the ordinary case there, which is why that field is not a load-time placeholder and stays the
+value of record. **It cannot come from the index**: once an override exists the replay has written the
+reader's own assertion into that column, so a "refresh from the index" would quote the reader back at
+themselves as FRUS. Read REACTIVELY, because `.task(id: entry.id)` fires when the entry changes and not
+when the document finishes loading. Display-only: no model write, so nothing syncs on a read gesture.
+**Reading it live made AGREEMENT reachable for the first time** — the frozen snapshot recorded a
+disagreement and could never stop reporting one — so a new sentence says when FRUS has adopted the
+reader's correction and that it no longer changes anything. *P3b-6*: Q-8 (e) then (b).
 
 ## 9. What this design does not cover
 

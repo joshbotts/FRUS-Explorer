@@ -257,7 +257,7 @@ struct ResearchRailView: View {
                 ClassificationInfoSection(
                     effectiveIsEditorialNote: effectiveIsEditorialNote,
                     hasOverride: hasClassificationOverride,
-                    parsedIsEditorialNote: parsedIsEditorialNote,
+                    parsedIsEditorialNote: displayedParsedIsEditorialNote,
                     reclassifyTitle: reclassifyTitle,
                     onConfirm: { await applyReclassification() })
             }
@@ -717,6 +717,35 @@ struct ResearchRailView: View {
                      defaultValue: "Reclassify as Editorial Note…")
     }
 
+    /// What FRUS's own parse says about this document RIGHT NOW — the value behind the
+    /// "FRUS tags this as…" sentence and behind the restore an un-override performs
+    /// (R-5 P3b-5, design Q-11 i).
+    ///
+    /// **Read live, and read here rather than snapshotted.** `DocumentClassificationOverride`
+    /// stores `parsedIsEditorialNote` once, at override creation, and NOTHING ever refreshes it:
+    /// `applyClassificationOverrides` writes only `document_cache.is_editorial_note`, and the
+    /// model's own doc comment claiming a later re-index corrects the drift is true of that column
+    /// and false of the snapshot. So after the Office of the Historian fixes the very mistag the
+    /// reader corrected, the stored value still reports the old parse — and this rail is where the
+    /// app tells the reader what FRUS says.
+    ///
+    /// The live answer is already computed: `DocumentViewModel` records `ast.isShapedAsEditorialNote`
+    /// BEFORE the override reshapes the AST, and its comment there names this sentence as the
+    /// consumer. Until P3b-5 nothing read it.
+    ///
+    /// It cannot come from the index instead. Once an override exists the replay has written the
+    /// reader's own assertion into `is_editorial_note`, so `effectiveIsEditorialNote` returns the
+    /// override — a "refresh from the index" would quote the reader back at themselves as FRUS.
+    ///
+    /// Computed rather than stored because `.task(id: entry.id)` fires when the ENTRY changes, not
+    /// when the document finishes loading; a value captured in `loadClassification` would be nil on
+    /// every cold open and never refresh. `DocumentViewModel` is `@Observable`, so reading it in the
+    /// body re-renders the popover's footer when the parse arrives. The stored snapshot is the
+    /// fallback, not the answer: it keeps the sentence from blanking while the body loads.
+    private var displayedParsedIsEditorialNote: Bool? {
+        vm.parsedIsEditorialNote ?? parsedIsEditorialNote
+    }
+
     /// Loads the classification block's state: the effective flag from the index (overrides
     /// already applied by the replay), and the stored override when one exists — whose
     /// `parsedIsEditorialNote` is the TEI's own value; with no override, the column IS the
@@ -743,15 +772,29 @@ struct ResearchRailView: View {
               let effective = effectiveIsEditorialNote else { return }
         if let override = DocumentClassificationOverrideStore.override(
             volumeId: entry.volumeId, documentId: entry.documentId, context: modelContext) {
-            let restore = override.snapshot
+            // R-5 P3b-5 (design Q-11 i): restore FRUS's CURRENT answer, not the one recorded when
+            // the correction was made. `override.snapshot` carries `parsedIsEditorialNote`, which
+            // nothing has refreshed since the override was created — so if the Office of the
+            // Historian has since fixed the same mistag, un-overriding wrote the OLD parse straight
+            // into `document_cache.is_editorial_note`, leaving the column disagreeing with the TEI
+            // and no override row left to explain it. Falls back to the snapshot when the document
+            // has not finished loading, which is the only state the live parse is unavailable in.
+            let restore = DocumentClassificationOverrideData(
+                volumeId: override.volumeId,
+                documentId: override.documentId,
+                isEditorialNote: override.isEditorialNote,
+                parsedIsEditorialNote: displayedParsedIsEditorialNote ?? override.parsedIsEditorialNote)
             DocumentClassificationOverrideStore.remove(override, context: modelContext)
             await DocumentClassificationOverrideStore.saveAndApply(
                 context: modelContext, pipeline: pipeline, restoring: restore)
         } else {
+            // The same live-parse preference on the way IN: this value is the observation being
+            // frozen, and the index column can lag a re-download that has not been re-indexed.
+            // With no override the two agree, so this changes nothing in the common case.
             DocumentClassificationOverrideStore.setOverride(
                 volumeId: entry.volumeId, documentId: entry.documentId,
                 isEditorialNote: !effective,
-                parsedIsEditorialNote: parsedIsEditorialNote ?? effective,
+                parsedIsEditorialNote: displayedParsedIsEditorialNote ?? effective,
                 context: modelContext)
             await DocumentClassificationOverrideStore.saveAndApply(
                 context: modelContext, pipeline: pipeline)
@@ -1087,14 +1130,24 @@ private struct ClassificationInfoSection: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if hasOverride, let parsed = parsedIsEditorialNote {
-                    Text(String(format: String(
-                        localized: "panel.classification.overridden %@",
-                        defaultValue: "FRUS tags this as %@ — reclassified by you."),
-                        parsed
-                            ? String(localized: "panel.classification.note.inline",
-                                     defaultValue: "an editorial note")
-                            : String(localized: "panel.classification.document.inline",
-                                     defaultValue: "a document")))
+                    // R-5 P3b-5: with the parse read LIVE, agreement became reachable for the first
+                    // time. The frozen snapshot recorded a disagreement and could never stop
+                    // reporting one, so this sentence only ever had the one case; now that FRUS's
+                    // own answer can catch up with the reader's, saying "FRUS tags this as a
+                    // document — reclassified by you" about a document FRUS also calls a document
+                    // would be a disagreement the app is inventing. When they agree it says so, and
+                    // says what follows: the correction has stopped doing anything.
+                    Text(parsed == effective
+                         ? String(localized: "panel.classification.overrideNowRedundant",
+                                  defaultValue: "FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS's classification.")
+                         : String(format: String(
+                            localized: "panel.classification.overridden %@",
+                            defaultValue: "FRUS tags this as %@ — reclassified by you."),
+                            parsed
+                                ? String(localized: "panel.classification.note.inline",
+                                         defaultValue: "an editorial note")
+                                : String(localized: "panel.classification.document.inline",
+                                         defaultValue: "a document")))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

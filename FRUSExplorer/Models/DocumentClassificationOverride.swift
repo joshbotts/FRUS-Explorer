@@ -39,8 +39,25 @@ import SwiftData
 /// because an upstream TEI fix must keep propagating for every non-overridden document — so
 /// overrides are REPLAYED after indexing, the same way summaries and notes are.
 /// ``parsedIsEditorialNote`` records what the TEI said at override time, so REMOVING an
-/// override can restore the original without a re-parse; a later re-index corrects any drift
-/// between that snapshot and a revised volume.
+/// override can restore the original without a re-parse.
+///
+/// **It is written once and NOTHING ever refreshes it** — not `setOverride`'s update branch
+/// (which is unreachable from the app: the rail removes rather than re-sets), and not a re-index.
+/// `applyClassificationOverrides` writes only `document_cache.is_editorial_note`; a re-index
+/// corrects THAT COLUMN for un-overridden documents and then the replay re-asserts the override
+/// over it, so the snapshot on this record never moves. An earlier version of this comment claimed
+/// the re-index corrected the drift; it does not, and R-5 P3b-5 (design Q-11 i) is what that cost:
+/// after the Office of the Historian fixed the same mistag a reader had corrected, the rail said
+/// "FRUS tags this as…" from the stale value and un-overriding wrote it back into the index.
+/// Both surfaces now prefer the live parse, by DIFFERENT routes and with different fallbacks, and
+/// the difference matters to anyone deciding whether this field still earns its place. The research
+/// rail reads `DocumentViewModel.parsedIsEditorialNote` — the AST is already in hand — and falls
+/// back here only while the document has not finished loading. The Settings corrections sheet has
+/// no document at all, so it re-parses the TEI through ``liveParsedIsEditorialNote`` and falls back
+/// here whenever the volume is not on this device, which is the ORDINARY case for a correction made
+/// before the volume was freed. So this field is not a brief load-time placeholder: it is the value
+/// the Settings Undo uses on every override whose volume is gone, and the value of record for what
+/// was observed AT OVERRIDE TIME.
 ///
 /// One override per document: ``DocumentClassificationOverrideStore/setOverride`` upserts on
 /// the anchor rather than inserting duplicates.
@@ -174,6 +191,32 @@ enum DocumentClassificationOverrideStore {
             isEditorialNote: isEditorialNote, parsedIsEditorialNote: parsedIsEditorialNote)
         context.insert(override)
         return override
+    }
+
+    /// The value an un-override should put back: FRUS's classification of this document as the
+    /// TEI reads NOW, or `nil` when it cannot be established here (R-5 P3b-5, design Q-11 i).
+    ///
+    /// **It has to come from the TEI, and it cannot come from the index.** Once an override exists
+    /// the replay has written the reader's own assertion into `document_cache.is_editorial_note`,
+    /// so reading the column back would restore the correction the reader is undoing. And it
+    /// cannot come from the stored ``DocumentClassificationOverride/parsedIsEditorialNote``,
+    /// which is frozen at override time and never refreshed — the whole reason this exists.
+    ///
+    /// Returns `nil` when the volume is not on this device, which is the ordinary case in Settings
+    /// for a correction made before the volume was freed. The caller then falls back to the stored
+    /// snapshot, which is today's behaviour: this is an improvement with a graceful floor, never a
+    /// reason to refuse the Undo.
+    ///
+    /// The rule it applies is `FRUSDocumentAST.isShapedAsEditorialNote`, whose own doc records that
+    /// it is the exact rule `IndexingPipeline` applies at index time, so the two cannot drift.
+    /// - Parameter volumeURL: the volume's file on this device, or `nil` when there is no download
+    ///   manager to ask — both are the same answer here, so the caller need not spell one out.
+    static func liveParsedIsEditorialNote(volumeId: String, documentId: String,
+                                          volumeURL: URL?) async -> Bool? {
+        guard let volumeURL, FileManager.default.fileExists(atPath: volumeURL.path) else { return nil }
+        guard let ast = try? await FRUSDocumentParser().parseDocument(
+            documentId: documentId, volumeURL: volumeURL) else { return nil }
+        return ast.isShapedAsEditorialNote
     }
 
     /// Removes an override. The caller restores the index column (through the shared tail

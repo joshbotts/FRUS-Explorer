@@ -27,12 +27,16 @@ import SwiftData
 /// What it refuses, per §7: it never re-anchors ON ITS OWN — since R-5 P3b-3 it may OFFER to move
 /// a highlight whose stored passage it found again, showing the words and their surroundings, and
 /// it moves nothing until the reader taps; it never deletes on its own; and it never says an
-/// annotation is wrong — only what the hashes and an exact search can prove.
+/// annotation is wrong — only what the hashes and an exact search can prove. Since R-5 P3b-5 it
+/// also OPENS what it names: a note row presents the note editor and a tag row the tag picker,
+/// because telling a reader their annotation may be affected and giving them no way to reach it
+/// left the only route out of the sheet and back through the document.
 ///
 /// Version history:
 ///   1.0 — R-5 P3: initial implementation
 ///   1.1 — R-5 P3b-3: the re-anchor search, the found passage in context, and the Move Here offer
 ///   1.2 — R-5 P3b-4: the Quotations section — the export check, per excerpt, with its capture version
+///   1.3 — R-5 P3b-5: notes and tags open from the sheet (design Q-11 b)
 struct DocumentChangeReviewSheet: View {
 
     let volumeId: String
@@ -46,6 +50,13 @@ struct DocumentChangeReviewSheet: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    #if os(macOS)
+    /// macOS opens a note in the `frus.noteComposer` WINDOW rather than a nested sheet, because
+    /// `NoteComposerRequest`'s stored properties are all identity fields: opening the same request
+    /// focuses the composer already on screen instead of stacking a second editor over one
+    /// SwiftData row. A sheet here would be the only macOS route that could do that.
+    @Environment(\.openWindow) private var openWindow
+    #endif
 
     @Query private var highlights: [DocumentHighlight]
     @Query private var notes: [ResearchNote]
@@ -74,6 +85,16 @@ struct DocumentChangeReviewSheet: View {
     /// One verifier outcome per excerpt entry, by entry id (R-5 P3b-4). Empty until the check has
     /// run, which is why the row says "checking" rather than defaulting to an answer.
     @State private var excerptOutcomes: [UUID: ExcerptVerifier.Outcome] = [:]
+    /// The note the reader asked to open (R-5 P3b-5, design Q-11 b). Carries the note ITSELF, not
+    /// its id: a `.sheet(item:)` closure that re-derived the note from a sibling `@State` would
+    /// read a value captured before the presentation (#862).
+    @State private var noteToOpen: NoteEditorRequest?
+    /// Whether the tag picker is up — the same sheet the Research rail presents.
+    @State private var editingTags = false
+    /// The archive-visit plan the reader asked to open, resolved from a seed's `planId`.
+    @State private var planToOpen: ArchiveVisitPlan?
+    /// The note row order frozen for the life of the sheet — see `orderedNotes`.
+    @State private var noteOrder: [UUID] = []
 
     init(volumeId: String, documentId: String, title: String, currentVersion: String? = nil) {
         self.volumeId = volumeId
@@ -162,6 +183,45 @@ struct DocumentChangeReviewSheet: View {
         .task(id: excerptCheckKey) {
             guard loaded else { return }
             await verifyExcerpts()
+        }
+        // Declared HERE, on the sheet's own content, never on any of its three mounts: SwiftUI
+        // will not present an ancestor's sheet over a descendant's, so a `.sheet` attached where
+        // this sheet is presented would be a no-op that ghost-presents when this one closes
+        // (DocumentView's own note on the rail records that failure). Sheet-over-sheet from inside
+        // a sheet is what CollectionPickerSheet and NotesSettingsView already ship.
+        .sheet(item: $noteToOpen) { request in
+            ResearchNoteEditorView(
+                documentId: documentId,
+                volumeId: volumeId,
+                activeProjectId: appState.activeProjectId,
+                noteToEdit: request.note,
+                indexingPipeline: appState.indexingPipeline)
+        }
+        .sheet(isPresented: $editingTags) {
+            UserTagPickerSheet(
+                entry: browserEntry,
+                indexingPipeline: appState.indexingPipeline,
+                initialTagIds: Set(tagAssignments.map(\.tagId)))
+        }
+        // The plan editor, in the shape Project Home already presents it: a NavigationStack with an
+        // explicit Done, and `appState` re-injected exactly as that mount does. The injection is
+        // belt-and-braces rather than load-bearing — the note sheet fifteen lines above reads
+        // `AppState` from the inherited environment and works — but matching the shipped mount
+        // costs nothing and keeps the two presentations of this editor identical.
+        //
+        // Deliberately NOT the macOS archive-visits WINDOW, which is a singleton whose selection is
+        // local state with no hand-off: fronting it would show whichever plan it was last on.
+        .sheet(item: $planToOpen) { plan in
+            NavigationStack {
+                ArchiveVisitEditorView(plan: plan)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(String(localized: "document.review.other.plan.done",
+                                          defaultValue: "Done")) { planToOpen = nil }
+                        }
+                    }
+            }
+            .environment(appState)
         }
         .confirmationDialog(
             String(localized: "highlight.delete.title", defaultValue: "Remove Highlight"),
@@ -439,12 +499,169 @@ struct DocumentChangeReviewSheet: View {
             } else {
                 Text(parts.joined(separator: " · "))
             }
+            // R-5 P3b-5 (design Q-11 b): the count stays — it is the honest overview — and the
+            // annotations the app can OPEN get a row each. Until now the sheet told a reader that
+            // a document they had written on had changed and gave them no way to reach what they
+            // wrote; the only route was to leave, find the document, and open the rail.
+            ForEach(orderedNotes) { note in
+                Button {
+                    openNote(note)
+                } label: {
+                    Label {
+                        Text(Self.noteRowTitle(note))
+                            .lineLimit(2)
+                    } icon: {
+                        Image(systemName: "note.text")
+                    }
+                }
+                .accessibilityIdentifier("document.review.other.openNote")
+            }
+            // NOT gated on the document already having tags: the picker's Done replaces the whole
+            // assignment set, so clearing the last tag through a gated control would delete the
+            // control that opened it and leave no way back. It is also the surface where a reader
+            // re-files a document after a correction, which is a reason to add a tag, not only to
+            // edit one.
+            Button {
+                editingTags = true
+            } label: {
+                Label(String(localized: "document.review.other.editTags",
+                             defaultValue: "Edit Tags…"),
+                      systemImage: "tag")
+            }
+            .accessibilityIdentifier("document.review.other.editTags")
+            // One row per PLAN, not one control: the seed query is keyed on the document alone, so
+            // a document can be seeded into several plans and a single button would open whichever
+            // one sorted first. The label promises only to open the plan — the editor takes a whole
+            // plan, opens on its Targets tab, and offers no way to focus a seed, so a label saying
+            // it would show this document there would be a promise the app cannot keep.
+            ForEach(planRows, id: \.id) { row in
+                Button {
+                    planToOpen = row.plan
+                } label: {
+                    Label {
+                        Text(String(format: String(localized: "document.review.other.openPlan %@",
+                                                   defaultValue: "Open the plan “%@”"), row.name))
+                            .lineLimit(2)
+                    } icon: {
+                        Image(systemName: "suitcase")
+                    }
+                }
+                .accessibilityIdentifier("document.review.other.openPlan")
+            }
         } header: {
             Text(String(localized: "document.review.other.header", defaultValue: "Other Annotations"))
         } footer: {
-            Text(String(localized: "document.review.other.footer",
-                        defaultValue: "These carry no position in the text, so the app cannot judge them against the change. Review them by eye; a summary describes the text as it was when it was written."))
+            Text(String(localized: "document.review.other.footer.v2",
+                        defaultValue: "These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written."))
         }
+    }
+
+    /// Opens one note, by the route that platform already uses for every other note.
+    ///
+    /// macOS has a non-modal composer window whose request type is pure identity, so opening the
+    /// same note twice focuses the open window. Routing a second macOS entry point through a sheet
+    /// would break that: a reader could edit one note in a window and in a sheet at once, over one
+    /// SwiftData row. iOS has no such window and presents the editor as a sheet everywhere.
+    private func openNote(_ note: ResearchNote) {
+        #if os(macOS)
+        // The sheet's own anchor, not the note's: the `@Query` filters on exactly these two, so
+        // they are equal by construction, and using the sheet's keeps the request identical to the
+        // one every other macOS route builds for this document.
+        openWindow(value: NoteComposerRequest(
+            documentId: documentId,
+            volumeId: volumeId,
+            noteId: note.id,
+            linkedHighlightId: nil))
+        #else
+        noteToOpen = NoteEditorRequest(note: note)
+        #endif
+    }
+
+    /// The archive-visit plans this document is seeded into, in a stable order.
+    ///
+    /// Resolved through `planId` rather than the seed's `plan` back-reference: the model's own note
+    /// on that property says it is managed by the parent's `documents` array, and `planId` is
+    /// documented as the field carried "for fast lookups that don't need the full graph". A seed
+    /// whose plan cannot be resolved — a CloudKit orphan — contributes no row rather than a row
+    /// that opens nothing.
+    private var planRows: [(id: UUID, name: String, plan: ArchiveVisitPlan)] {
+        var seen = Set<UUID>()
+        var rows: [(id: UUID, name: String, plan: ArchiveVisitPlan)] = []
+        for seed in visitDocuments {
+            guard !seen.contains(seed.planId) else { continue }
+            let id = seed.planId
+            guard let plan = (try? modelContext.fetch(
+                FetchDescriptor<ArchiveVisitPlan>(predicate: #Predicate { $0.id == id })))?.first
+            else { continue }
+            seen.insert(id)
+            // `displayName`, never a local placeholder: `ArchiveVisitPlan` already owns the name a
+            // nameless plan is called by, and minting a second one here would have this sheet say
+            // "Untitled plan" about the same plan every other surface calls "Untitled Archive Visit".
+            rows.append((id: id, name: plan.displayName, plan: plan))
+        }
+        return rows.sorted {
+            let c = $0.name.localizedCaseInsensitiveCompare($1.name)
+            return c != .orderedSame ? c == .orderedAscending : $0.id.uuidString < $1.id.uuidString
+        }
+    }
+
+    /// The notes on this document, in the order the reader first saw them.
+    ///
+    /// Newest first, and then FROZEN for the life of the sheet — the same treatment
+    /// `orderedHighlights` gives its rows, and for a sharper reason here. Opening a note from this
+    /// sheet and saving it writes `bodyText`, whose `didSet` stamps `lastModified`, so a live sort
+    /// on that field would send the row the reader just tapped to the top the instant they came
+    /// back. Working down a list of four notes, they would meet the same one twice and never reach
+    /// the last. New arrivals — another device's note syncing in — go to the end rather than
+    /// reshuffling what is on screen.
+    private var orderedNotes: [ResearchNote] {
+        let byRecency = notes.sorted {
+            let l = $0.lastModified ?? .distantPast, r = $1.lastModified ?? .distantPast
+            return l != r ? l > r : $0.id.uuidString < $1.id.uuidString
+        }
+        guard !noteOrder.isEmpty else { return byRecency }
+        // `uniquingKeysWith`, not `uniqueKeysWithValues`: `ResearchNote.id` carries no unique
+        // constraint (CloudKit forbids one), so a sync can materialise two rows sharing an id.
+        let rank = Dictionary(noteOrder.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        return byRecency.sorted { rank[$0.id] ?? Int.max < rank[$1.id] ?? Int.max }
+    }
+
+    /// A note's first line, or a placeholder when it has no text yet.
+    ///
+    /// Lifted out of the view so it can be tested, and deliberately NOT the note's full body: the
+    /// row is a way in, not a reading surface.
+    ///
+    /// `nonisolated` so the rule is not MainActor-bound merely by living on a `View`: a test, and
+    /// any future caller off the main actor, reaches it without an annotation.
+    nonisolated static func noteRowTitle(_ note: ResearchNote) -> String {
+        // Two CRLF traps, and the obvious code walks into both. `"\r\n"` is ONE Swift `Character`,
+        // so `split(separator: "\n")` does not split CRLF text at all and the whole note comes back
+        // as its own "first line"; splitting on `isNewline` handles LF, CR and CRLF alike. And
+        // `CharacterSet.whitespaces` is space and tab only, so trimming with it would leave a
+        // carriage return and print an invisible control character as the title.
+        let firstLine = note.bodyText
+            .split(whereSeparator: \.isNewline)
+            .lazy
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? ""
+        return firstLine.isEmpty
+            ? String(localized: "document.review.other.note.untitled", defaultValue: "Open note")
+            : firstLine
+    }
+
+    /// The document, in the shape the shared tag picker takes — the same three-field synthesis the
+    /// Research list already makes when it hands a document to the cross-reference graph.
+    ///
+    /// The picker reads only `volumeId`, `documentId` and `documentNumber`. It never reads
+    /// `isEditorialNote`, which is why letting that field default here does not assert a
+    /// classification the sheet has no way to know — but a future entry-consuming editor presented
+    /// from this sheet WOULD need the real value, and this is the line to revisit.
+    ///
+    /// One disclosed cost: the sheet has no document NUMBER, so the picker's title falls back from
+    /// "Tags — Doc 12" to "Tags — d12". Resolving the number would cost an indexed lookup for a
+    /// sheet title, and the fallback names the document truthfully.
+    private var browserEntry: DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: documentId, volumeId: volumeId, header: title)
     }
 
     // MARK: - The re-anchor search (R-5 P3b-3)
@@ -523,6 +740,7 @@ struct DocumentChangeReviewSheet: View {
     /// about an anchor that is certain.
     private func runSearches() async {
         if rowOrder.isEmpty { rowOrder = highlights.map(\.id) }
+        if noteOrder.isEmpty { noteOrder = orderedNotes.map(\.id) }
         // Excerpts join the gate (R-5 P3b-4) even though they never search here: the parse is what
         // produces `searchedVersion`, and that is the version a capture must be judged against for
         // the same reason a highlight is — it came from the bytes on disk, while the revision row's
@@ -640,4 +858,16 @@ struct DocumentChangeReviewSheet: View {
         await loadRevision()
         appState.revisionReviewToken += 1
     }
+}
+
+// MARK: - NoteEditorRequest
+
+/// One note the reader asked to open from the review sheet (R-5 P3b-5, design Q-11 b).
+///
+/// Carries the note ITSELF rather than its id, so the presented editor cannot be handed a value
+/// that has moved on since the tap — the `.sheet(item:)` failure #862 recorded, where a draft was
+/// saved into no context because the closure read a sibling `@State` captured before presentation.
+struct NoteEditorRequest: Identifiable {
+    let note: ResearchNote
+    var id: UUID { note.id }
 }
