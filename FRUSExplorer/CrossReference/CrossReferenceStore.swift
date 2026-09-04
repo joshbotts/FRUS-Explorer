@@ -336,34 +336,146 @@ public actor CrossReferenceStore {
     ///
     /// Keys with no matching row (volume not yet indexed) are omitted from the result.
     /// The return dictionary is keyed by `"volumeId/documentId"`.
+    /// **Batched, one query per (volume, chunk) rather than one per key.** The per-key loop this
+    /// replaces cost N round-trips and N `LEFT JOIN`s onto `document_dates` for a column it never
+    /// read — `fetchMetadata` selects five columns and joins; a header lookup needs one column and
+    /// no join. `ResearchView.loadHeaders` passes its whole selection here, so N grew with the
+    /// reader's library.
+    ///
+    /// Grouped by volume so the predicate is `volume_id = ? AND document_id IN (…)`, which uses
+    /// `document_cache`'s `PRIMARY KEY (volume_id, document_id)` from its leading column. A
+    /// row-value `IN (VALUES …)` would express the composite key directly but does not plan as
+    /// reliably across the SQLite versions this app ships against.
     public func documentHeaders(
         for keys: [(volumeId: String, documentId: String)]
     ) throws -> [String: String] {
         var result: [String: String] = [:]
-        for (vol, doc) in keys {
-            if let meta = try fetchMetadata(volumeId: vol, documentId: doc),
-               let header = meta.header {
-                result["\(vol)/\(doc)"] = header
+        try forEachDocumentChunk(keys) { volumeId, documentIds in
+            // `header IS NOT NULL` mirrors the `if let header = meta.header` this replaced. The
+            // column is declared NOT NULL, so it is a no-op against today's rows — it is here so
+            // the batched path cannot admit a key the per-key path would have skipped.
+            let sql = """
+                SELECT document_id, header FROM document_cache
+                 WHERE volume_id = ? AND header IS NOT NULL
+                   AND document_id IN (\(Self.placeholders(documentIds.count)))
+                """
+            let stmt = try prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_CR)
+            for (i, doc) in documentIds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 2), doc, -1, SQLITE_TRANSIENT_CR)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let doc = columnString(stmt, 0), let header = columnString(stmt, 1) else { continue }
+                result["\(volumeId)/\(doc)"] = header
             }
         }
         return result
     }
 
     /// Returns the subset of `keys` present in `document_cache` — the documents actually indexed
-    /// locally, regardless of whether they carry a `<head>`. Editorial notes are indexed but
-    /// headerless, so their header is nil even when downloaded; membership here is the true
-    /// "is this document indexed?" signal, distinct from a citation into an un-downloaded volume
-    /// (#278). Keyed `"volumeId/documentId"`.
+    /// locally, regardless of whether they carry a `<head>`. Membership here is the true "is this
+    /// document indexed?" signal, distinct from a citation into an un-downloaded volume (#278).
+    /// Keyed `"volumeId/documentId"`.
+    ///
+    /// **The mechanism this comment used to claim is false, and the correction matters.** It said
+    /// a headerless editorial note "has a nil header", implying `documentHeaders` would omit it
+    /// while this method kept it. It does not: `IndexingPipeline.extractHeader` returns `""` rather
+    /// than nil for a document with no `<head>`, the column is `TEXT NOT NULL`, and
+    /// `sqlite3_column_text` hands back a non-NULL pointer for a zero-length value — so
+    /// `documentHeaders` returns such a document mapped to `""`. The two methods therefore agree on
+    /// membership exactly, and differ only in return type.
+    ///
+    /// Keep them separate anyway: the intent is different, and the batched predicate a future
+    /// reader might reach for — `header != ''` — WOULD split them and silently change six display
+    /// sites. That is the trap this note exists to close.
     public func indexedDocumentKeys(
         for keys: [(volumeId: String, documentId: String)]
     ) throws -> Set<String> {
         var result: Set<String> = []
-        for (vol, doc) in keys {
-            if try fetchMetadata(volumeId: vol, documentId: doc) != nil {
-                result.insert("\(vol)/\(doc)")
+        try forEachDocumentChunk(keys) { volumeId, documentIds in
+            // No `header` predicate, deliberately — this is the membership question, and the doc
+            // comment above draws the distinction that makes it different from `documentHeaders`.
+            let sql = """
+                SELECT document_id FROM document_cache
+                 WHERE volume_id = ? AND document_id IN (\(Self.placeholders(documentIds.count)))
+                """
+            let stmt = try prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_CR)
+            for (i, doc) in documentIds.enumerated() {
+                sqlite3_bind_text(stmt, Int32(i + 2), doc, -1, SQLITE_TRANSIENT_CR)
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let doc = columnString(stmt, 0) { result.insert("\(volumeId)/\(doc)") }
             }
         }
         return result
+    }
+
+    // MARK: - Batched-lookup plumbing
+
+    /// How many document ids ride in one `IN (…)` list.
+    ///
+    /// **The bind limit is NOT the reason, and an earlier draft of this comment said it was.** That
+    /// draft invoked SQLite's historical 999-variable ceiling; the app's deployment target is
+    /// iOS/macOS **26.0** (`project.yml`), whose system SQLite is 3.51 and reports
+    /// `SQLITE_LIMIT_VARIABLE_NUMBER` of **500,000** (measured). SQLite raised the default to
+    /// 32,766 in 3.32, years below this floor, so no supported OS can hit 999. The compatibility
+    /// argument is dead and is recorded here so it is not reintroduced.
+    ///
+    /// What the chunk still buys is a ceiling on statement size for a caller that passes an
+    /// unbounded set — the largest today is `ResearchView.loadHeaders` with the whole selection.
+    /// It is defensive rather than required, it costs three queries instead of one for a
+    /// 950-document volume, and it keeps the query plan uniform. Kept on those terms only.
+    private static let documentChunkSize = 400
+
+    /// Groups `keys` by volume, chunks each volume's document ids, and runs `body` per chunk.
+    ///
+    /// Grouping is what lets the predicate use the primary key's leading column; chunking is what
+    /// keeps the bind count bounded. Duplicate keys collapse here, which is a deliberate change
+    /// from the per-key loop: it queried a repeated key twice and wrote the same answer twice.
+    /// An empty `keys` array runs no query at all.
+    private func forEachDocumentChunk(
+        _ keys: [(volumeId: String, documentId: String)],
+        _ body: (String, [String]) throws -> Void
+    ) rethrows {
+        for (volumeId, documentIds) in Self.documentChunks(keys) {
+            try body(volumeId, documentIds)
+        }
+    }
+
+    /// The partition itself, separated so a test can drive it.
+    ///
+    /// **It has to be reachable directly, because a test that goes through SQLite cannot prove the
+    /// partition.** Every supported OS permits 500,000 binds, so a 950-bind statement succeeds
+    /// whether or not the ids were chunked — measured: raising `documentChunkSize` past the input
+    /// size left the round-trip test green. The grouping and de-duplication are the parts that
+    /// change results, so they are asserted where they are decided rather than inferred from a
+    /// query that would have worked either way.
+    static func documentChunks(
+        _ keys: [(volumeId: String, documentId: String)]
+    ) -> [(volumeId: String, documentIds: [String])] {
+        var byVolume: [String: [String]] = [:]
+        var order: [String] = []
+        var seen: Set<String> = []
+        for (vol, doc) in keys where seen.insert("\(vol)/\(doc)").inserted {
+            if byVolume[vol] == nil { order.append(vol) }
+            byVolume[vol, default: []].append(doc)
+        }
+        var out: [(volumeId: String, documentIds: [String])] = []
+        for volumeId in order {
+            let ids = byVolume[volumeId] ?? []
+            for start in stride(from: 0, to: ids.count, by: documentChunkSize) {
+                out.append((volumeId, Array(ids[start..<min(start + documentChunkSize, ids.count)])))
+            }
+        }
+        return out
+    }
+
+    /// `"?, ?, ?"` for an `IN (…)` list of `count` binds.
+    private static func placeholders(_ count: Int) -> String {
+        Array(repeating: "?", count: count).joined(separator: ", ")
     }
 
     /// Returns every `(volumeId, documentId, userTagIds)` tuple where `document_cache`

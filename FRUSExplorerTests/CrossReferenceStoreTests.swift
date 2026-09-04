@@ -139,6 +139,98 @@ private func insertDocumentDate(
 
 struct CrossReferenceStoreTests {
 
+    // MARK: - Batched document_cache lookups
+
+    /// The batching rewrite must return exactly what the per-key loop returned.
+    ///
+    /// `documentHeaders(for:)` and `indexedDocumentKeys(for:)` each ran one query per key — the
+    /// same defect class as the `ResearchView` beachball one layer up (#1196), and reached with
+    /// the reader's whole Research selection. They now group by volume and chunk the ids.
+    @Test("Batched headers: mixed volumes, missing rows, and duplicate keys")
+    func batchedHeadersAcrossVolumes() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "d1", header: "First")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "d2", header: "Second")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v2", documentId: "d1", header: "Other volume")
+
+        let headers = try await store.documentHeaders(for: [
+            (volumeId: "v1", documentId: "d1"),
+            (volumeId: "v1", documentId: "d2"),
+            (volumeId: "v2", documentId: "d1"),
+            (volumeId: "v1", documentId: "d1"),        // duplicate — collapses
+            (volumeId: "v9", documentId: "missing"),   // no row — omitted
+        ])
+        #expect(headers == ["v1/d1": "First", "v1/d2": "Second", "v2/d1": "Other volume"])
+        // The composite key must not be flattened: v1/d1 and v2/d1 share a document id.
+        #expect(headers["v2/d1"] == "Other volume")
+        #expect(headers["v9/missing"] == nil)
+    }
+
+    /// Membership is a different question from header text, and the two methods must keep
+    /// answering it differently — `indexedDocumentKeys` carries no `header` predicate.
+    @Test("Batched membership includes a row whose header is empty")
+    func batchedMembershipIncludesHeaderlessRow() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "note", header: "")
+
+        let keys = [(volumeId: "v1", documentId: "note"), (volumeId: "v1", documentId: "absent")]
+        #expect(try await store.indexedDocumentKeys(for: keys) == ["v1/note"])
+        #expect(try await store.documentHeaders(for: keys)["v1/note"] == "")
+    }
+
+    /// Nothing in, nothing out — and no query issued.
+    @Test("Batched lookups accept an empty key list")
+    func batchedLookupsAcceptEmptyInput() async throws {
+        let (dir, _, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(try await store.documentHeaders(for: []).isEmpty)
+        #expect(try await store.indexedDocumentKeys(for: []).isEmpty)
+    }
+
+    /// The round trip over many documents. **This does NOT prove the chunking** — the system
+    /// SQLite here allows 500,000 binds, so it passes with chunking disabled (measured). It proves
+    /// the batched read is correct at size; `documentChunksPartitionsByVolumeAndSize` proves the
+    /// partition.
+    @Test("Batched lookups are correct over many documents")
+    func batchedLookupsChunk() async throws {
+        let (dir, dbURL, store) = try makeTempStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let count = 950
+        for i in 0..<count {
+            try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "d\(i)", header: "H\(i)")
+        }
+        let keys = (0..<count).map { (volumeId: "v1", documentId: "d\($0)") }
+
+        let headers = try await store.documentHeaders(for: keys)
+        #expect(headers.count == count)
+        #expect(headers["v1/d0"] == "H0")
+        #expect(headers["v1/d949"] == "H949")
+        #expect(try await store.indexedDocumentKeys(for: keys).count == count)
+    }
+
+    /// The partition the batched lookups run through, asserted directly.
+    ///
+    /// Driving it through SQLite cannot prove it: every OS at the app's 26.0 floor permits 500,000
+    /// binds, so an unchunked 950-id statement succeeds. What this pins is the part that changes
+    /// results — grouping by volume and collapsing duplicates — plus the chunk ceiling itself.
+    @Test("documentChunks groups by volume, collapses duplicates, and caps each chunk")
+    func documentChunksPartitionsByVolumeAndSize() {
+        let keys = (0..<950).map { (volumeId: "v1", documentId: "d\($0)") }
+                 + [(volumeId: "v2", documentId: "a"), (volumeId: "v2", documentId: "a")]
+        let chunks = CrossReferenceStore.documentChunks(keys)
+
+        // 950 ids at 400 per chunk = 3 chunks for v1, plus one for v2.
+        #expect(chunks.count == 4)
+        #expect(chunks.allSatisfy { $0.documentIds.count <= 400 })
+        #expect(chunks.filter { $0.volumeId == "v1" }.map(\.documentIds.count) == [400, 400, 150])
+        // The duplicate collapsed, so v2 contributes one id rather than two.
+        #expect(chunks.filter { $0.volumeId == "v2" }.map(\.documentIds) == [["a"]])
+        // Every input key survives exactly once.
+        #expect(chunks.reduce(0) { $0 + $1.documentIds.count } == 951)
+    }
+
     // MARK: - InboundEdgeQueryTest
 
     @Test("Inbound edge query returns edges whose target matches the central document")
