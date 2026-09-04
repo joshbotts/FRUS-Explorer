@@ -10967,3 +10967,93 @@ re-derives the shortcut.
 poisoned them with a live mutation, silently invalidating four results and later wiping an
 un-copied fix. The rule is simple and was learned the expensive way — never touch the pristine set
 while a sweep is live; stop it, repair, and re-run the affected range.
+
+## Session 2026-09-03i — R-5 P3b-5: the sheet opens what it names, and FRUS's own answer stops being frozen (PR #NNNN)
+
+**Q-11 (b): telling a reader their annotation may be affected, and giving them no way to reach it.**
+The review sheet has counted notes, tags, collection entries, summaries and visit plans since P2, and
+offered nothing on any of them: the only route from "this document you wrote on has changed" to what
+was written was to leave the sheet, find the document and open the rail. It now lists each note by its
+first line and opens the note editor, offers *Edit Tags…*, and carries a row per archive-visit plan.
+Every editor takes only scalars the sheet already held; the work was reach, not data.
+
+**Three decisions inside that, each of which the obvious code gets wrong.** macOS opens a note in the
+`frus.noteComposer` WINDOW rather than a nested sheet, because `NoteComposerRequest`'s stored
+properties are all identity fields — opening the same note twice focuses the window already on screen,
+and a sheet would have been the one macOS route able to stack a second editor over one SwiftData row.
+*Edit Tags…* is NOT gated on the document already having tags: the picker's Done replaces the whole
+assignment set, so a gated control would delete itself the moment a reader cleared the last tag. And
+all three editors are declared INSIDE the sheet, never at its three mounts, because SwiftUI will not
+present an ancestor's sheet over a descendant's — a `.sheet` on a mount would be a no-op that
+ghost-presents on dismissal, which `DocumentView`'s own note records paying for once already.
+
+**The plan row was refused, and the refusal was overturned by better evidence.** The first pass cut it
+because `ArchiveVisitEditorView` takes a whole plan, opens on its Targets tab, and cannot focus a seed
+— so the sheet could not aim it. Recon answered that a label promising only to OPEN the plan needs no
+aiming, and that a cross-platform presentation already ships in Project Home. It is in, worded so the
+app promises nothing it cannot do, and both manuals say the limit out loud.
+
+**Q-11 (i) was one site in the design and three in the code.** `parsedIsEditorialNote` is written once
+at override creation and nothing refreshes it — not `setOverride`'s update branch, which is unreachable
+from the app, and not a re-index: `applyClassificationOverrides` writes only
+`document_cache.is_editorial_note`. **The model's own doc comment claimed a re-index corrected the
+drift, and that was simply false.** So after the Office of the Historian fixes the same mistag a reader
+corrected, the rail's "FRUS tags this as…" quoted the superseded reading, and BOTH controls labelled
+*Restore FRUS's Classification* — the rail's and Settings' per-row Undo — wrote it back into the index,
+leaving the column disagreeing with the TEI and no override row left to explain it. A recon verifier
+then supplied the third site by following the chain one step further: after such a restore the column
+is corrupt, so a FRESH override mints a corrupt snapshot from it.
+
+**The live answer was already computed and had zero readers.** `DocumentViewModel` records
+`ast.isShapedAsEditorialNote` BEFORE the override reshapes the AST, and the comment there already names
+this sentence as its consumer; nothing had ever read it. The rail now does, reactively rather than
+snapshotted — `.task(id: entry.id)` fires when the ENTRY changes, not when the document finishes
+loading, so a captured value would be nil on every cold open and never refresh. Settings has no open
+document and re-parses the TEI through a new shared rule, falling back to the stored snapshot when the
+volume is absent, which is the ordinary case there and the reason that field is not a load-time
+placeholder. **It cannot come from the index** in either surface: once an override exists the replay
+has written the reader's own assertion into that column, so a "refresh from the index" would quote the
+reader back at themselves as FRUS.
+
+**Reading it live made agreement reachable for the first time.** A frozen snapshot recorded a
+disagreement and could never stop reporting one, so the sentence had only ever had one case. Now that
+FRUS's answer can catch up with the reader's, saying "FRUS tags this as a document — reclassified by
+you" about a document FRUS also calls a document would be a disagreement the app invents. When they
+agree it says so, and says what follows: the correction has stopped doing anything.
+
+**Q-8 (e) and (b) moved to P3b-6, and the recon is why.** The row records "four literals"; there are
+six. Beside them: `Regenerate` silently switches a custom-prompt summary to Standard; `· custom prompt`
+renders for EVERY summary including standard-prompt ones; three failure paths return in silence; and
+`loadSummaries` sets `fetchLimit = 20` on a descriptor with no `sortBy`, so past twenty summaries
+SQLite pages the OLDEST twenty and a regenerated summary would not appear at all. That is a feature's
+worth of work on the genuine twin of this workstream, and folding it into a PR already touching the
+review sheet and the rail would have made both harder to read.
+
+**Verification.** **Full iOS unit suite (iPhone 16e), run alone on a quiesced tree: 4,430 tests in 582 suites, 0
+failures** — baseline 4,425 / 581 at #1186, so +5 tests and +1 suite (`ClassificationLiveParseTests`:
+the rule's two refusals and, after review, its ANSWER against a real TEI fixture). `FRUSExplorerMac`
+Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known
+non-source residues.
+
+**Mutation sweep: 13 mutations, 13 killed, each by the specific test named as its control.** The
+harness change that made that statement worth anything: after P3b-4's sweep reported a survivor that
+had not survived, the control is no longer a test COUNT but a named test — the sweep refuses a verdict
+unless the display name of the test that should kill THIS mutation appears in that run's log. Two of
+the thirteen exist because a reviewer showed the source scan would pass against a stubbed rule
+(`return nil` as a prologue, and an inverted return); both are killed by the positive-path test the
+same reviewer asked for. One harness bug of my own was found and fixed mid-sweep: `grep -E "[✔✘]"`
+matches BYTES, not multibyte characters, so the control check could never fire and the first two
+mutations read INVALID; `grep -F` on the whole marker is what works.
+
+**Adversarial review: 6 lenses, 18 findings, 3 survived refutation, and the ones it caught were
+real.** The macOS note route bypassed `NoteComposerRequest`'s one-editor-per-note contract; *Edit
+Tags…* was gated on having tags, so clearing the last one deleted its own entry point; the Settings
+Undo held a live `@Model` across the new suspension point, breaking that type's stated re-fetch-at-
+action-time rule; the note rows re-sorted on `lastModified`, which every save bumps, so the row a
+reader had just opened jumped to the top; `"Untitled plan"` contradicted `ArchiveVisitPlan.displayName`;
+and one comment of mine asserted a SwiftUI rule the sheet fifteen lines above disproves. Two are worth
+naming for what they teach. **`"\r\n"` is a single Swift `Character`**, so `split(separator: "\n")`
+does not split CRLF text at all and the whole note came back as its own first line — `isNewline` is
+the rule that works. And the corrected model doc comment **was itself inaccurate** about the Settings
+fallback: that paragraph exists to replace a false claim, and the replacement introduced a new one in
+the same place.

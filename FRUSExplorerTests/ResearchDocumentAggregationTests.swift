@@ -70,6 +70,36 @@ struct ResearchDocumentAggregationTests {
         #expect(keys == ["v1/d1", "v1/d2", "v1/d3", "v1/d4", "v1/d5", "v1/d6"])
     }
 
+    /// R-5 P3b-5 (design Q-11 b). The row is a way IN to a note, not a place to read it, so it
+    /// prints the note's first line and never its body.
+    @Test("A note row shows its first line, trimmed, and says so when there is nothing to show")
+    func noteRowTitles() {
+        func note(_ body: String) -> ResearchNote {
+            ResearchNote(documentId: "d1", volumeId: "v1", bodyText: body, projectIds: [])
+        }
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("Ambassador's read of the meeting"))
+                == "Ambassador's read of the meeting")
+        // Only the FIRST line: a long note must not push every other row off the sheet.
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("First line\nSecond line\nThird"))
+                == "First line")
+        // Leading whitespace is the ordinary shape of a pasted note.
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("   indented\nmore")) == "indented")
+        // An empty note is reachable: the editor saves a row before the reader types.
+        let placeholder = DocumentChangeReviewSheet.noteRowTitle(note(""))
+        #expect(placeholder == "Open note")
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("\n\n")) == placeholder)
+        // The first line with something IN it, not literally the first line: a note that opens on a
+        // blank line still has a first line worth showing, and printing the placeholder for it
+        // would hide a note that is not empty at all.
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("   \n x")) == "x")
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("\n\nAmbassador's read")) == "Ambassador's read")
+        // CRLF. `CharacterSet.whitespaces` is space and tab only, so trimming with it would leave a
+        // carriage return here and print an invisible control character as the row's title.
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("\r\n\r\nAmbassador's read\r\nmore"))
+                == "Ambassador's read")
+        #expect(DocumentChangeReviewSheet.noteRowTitle(note("\r\n\r\n")) == placeholder)
+    }
+
     /// Design Q-7 (b). The excerpt is the annotation whose entire content is a verbatim copy of
     /// the text an update corrects, and before P3b-4 a document carrying only one was absent from
     /// "All Research Documents" and from "Changed by an update" — while the SAME document appeared

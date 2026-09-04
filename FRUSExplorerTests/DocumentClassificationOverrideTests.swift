@@ -70,9 +70,12 @@ struct DocumentClassificationOverrideStoreTests {
         DocumentClassificationOverrideStore.setOverride(
             volumeId: "v1", documentId: "d1",
             isEditorialNote: true, parsedIsEditorialNote: false, context: context)
+        // R-5 P3b-5: the second call passes a DIFFERENT parsed value. It used to pass `false`
+        // twice, so the assertion below held whichever call had won and the comment described a
+        // behaviour the test could not detect.
         DocumentClassificationOverrideStore.setOverride(
             volumeId: "v1", documentId: "d1",
-            isEditorialNote: false, parsedIsEditorialNote: false, context: context)
+            isEditorialNote: false, parsedIsEditorialNote: true, context: context)
 
         let all = DocumentClassificationOverrideStore.fetchAll(context: context)
         #expect(all.count == 1)
@@ -129,6 +132,63 @@ struct DocumentClassificationOverrideStoreTests {
 // MARK: - AST transform
 
 /// The body-restyle transform (#279, the owner's "also restyle the body" decision).
+/// The live-parse rule R-5 P3b-5 added, and the two refusals that make it safe to call from a
+/// Settings row that may be looking at a volume this device no longer holds.
+///
+/// Version history:
+///   1.0 — R-5 P3b-5: initial implementation
+@Suite("Classification override — the live parse")
+struct ClassificationLiveParseTests {
+
+    /// No download manager and no file are the same answer: there is nothing to read, so the
+    /// caller keeps the stored snapshot rather than being handed a fabricated `false`.
+    @Test("A missing volume yields nil, never a default")
+    @MainActor
+    func absentVolumeYieldsNil() async {
+        #expect(await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+            volumeId: "frus1969v01", documentId: "d1", volumeURL: nil) == nil)
+        let missing = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("frus-p3b5-does-not-exist-\(UUID().uuidString).xml")
+        #expect(await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+            volumeId: "frus1969v01", documentId: "d1", volumeURL: missing) == nil)
+    }
+
+    /// The rule's ANSWER, against a real TEI volume — without this every nil-path test above still
+    /// passes when the body is replaced by `return nil`, which is exactly the shape that would make
+    /// the Settings half of Q-11 (i) inert while the build stayed green.
+    // Deliberately NOT `@MainActor`: `withTempDir` takes a non-Sendable closure, so isolating the
+    // test would make the closure MainActor-isolated and unsendable. The awaits below hop to the
+    // store's actor on their own, which is how `ClassificationPipelineTests` does it too.
+    @Test("The rule reads the TEI's own shape: a document is false, an editorial note is true")
+    func readsTheParsedShape() async throws {
+        try await withTempDir { dir in
+            let url = dir.appendingPathComponent("frus1969-76v01.xml")
+            try writeClassificationFixture(to: url, volumeId: "frus1969-76v01")
+            // The fixture's own contract: d1 is a document, d2 an editorial note.
+            #expect(await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+                volumeId: "frus1969-76v01", documentId: "d1", volumeURL: url) == false)
+            #expect(await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+                volumeId: "frus1969-76v01", documentId: "d2", volumeURL: url) == true)
+            // A document the volume no longer contains — the vanished case — is nil, not a verdict.
+            #expect(await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+                volumeId: "frus1969-76v01", documentId: "d99", volumeURL: url) == nil)
+        }
+    }
+
+    /// A file that exists but is not a volume must also yield nil rather than throwing or
+    /// asserting a classification from a failed parse.
+    @Test("An unparseable file yields nil rather than a verdict")
+    @MainActor
+    func unparseableVolumeYieldsNil() async throws {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("frus-p3b5-not-tei-\(UUID().uuidString).xml")
+        try "not a TEI document at all".write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+        #expect(await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+            volumeId: "frus1969v01", documentId: "d1", volumeURL: url) == nil)
+    }
+}
+
 @Suite("Classification override AST transform")
 struct ClassificationASTTransformTests {
 

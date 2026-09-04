@@ -183,8 +183,33 @@ struct ClassificationCorrectionsSheet: View {
         AccessibilityNotification.Announcement(
             String(localized: "classification.corrections.undo.inProgress",
                    defaultValue: "Restoring FRUS's classification…")).post()
-        let restore = override.snapshot
-        DocumentClassificationOverrideStore.remove(override, context: modelContext)
+        // R-5 P3b-5 (design Q-11 i): restore FRUS's CURRENT classification, not the one recorded
+        // when the correction was made. The stored `parsedIsEditorialNote` is frozen at override
+        // time and never refreshed, so if the Office of the Historian has since fixed the same
+        // mistag, this button wrote the OLD parse back into the index and called it "Restore
+        // FRUS's Classification". Falls back to the stored value when the volume is not on this
+        // device, which is today's behaviour and the ordinary case here.
+        //
+        // VALUES ACROSS THE AWAIT, AND A RE-FETCH AFTER IT. The parse reads a file, so it suspends
+        // — and this type's whole shape (see its doc comment) is that Undo re-fetches by id at
+        // action time, because another device can delete the override while the sheet is open.
+        // Holding the live `@Model` across the suspension would be the one place that rule is
+        // broken, and the window is now seconds wide rather than instantaneous.
+        let frozen = override.snapshot
+        let live = await DocumentClassificationOverrideStore.liveParsedIsEditorialNote(
+            volumeId: frozen.volumeId,
+            documentId: frozen.documentId,
+            volumeURL: appState.downloadManager?.volumeURL(for: frozen.volumeId))
+        guard let current = (try? modelContext.fetch(descriptor))?.first else {
+            await load()
+            return
+        }
+        let restore = DocumentClassificationOverrideData(
+            volumeId: frozen.volumeId,
+            documentId: frozen.documentId,
+            isEditorialNote: frozen.isEditorialNote,
+            parsedIsEditorialNote: live ?? frozen.parsedIsEditorialNote)
+        DocumentClassificationOverrideStore.remove(current, context: modelContext)
         await DocumentClassificationOverrideStore.saveAndApply(
             context: modelContext, pipeline: pipeline, restoring: restore)
         AccessibilityNotification.Announcement(

@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -2049,11 +2049,75 @@ in an archive-visit plan
 <!-- END SOURCE: document.review.other.visit -->
 
 #### Other Annotations — footer
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 264–265 | key: document.review.other.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 501–502 | key: document.review.other.footer.v2 | shared: iOS+macOS (single edit point) -->
 
-These carry no position in the text, so the app cannot judge them against the change. Review them by eye; a summary describes the text as it was when it was written.
+These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written.
 
-<!-- END SOURCE: document.review.other.footer -->
+<!-- END SOURCE: document.review.other.footer.v2 -->
+
+#### Other Annotations — Edit Tags
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 492–493 | key: document.review.other.editTags | shared: iOS+macOS (single edit point) -->
+
+Edit Tags…
+
+<!-- END SOURCE: document.review.other.editTags -->
+
+#### Other Annotations — a note with nothing written in it yet
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 531 | key: document.review.other.note.untitled | shared: iOS+macOS (single edit point) -->
+
+Open note
+
+<!-- END SOURCE: document.review.other.note.untitled -->
+
+#### Other Annotations — open an archive-visit plan
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 527–528 | key: document.review.other.openPlan %@ | shared: iOS+macOS (single edit point) -->
+
+Open the plan “%@”
+
+<!-- END SOURCE: document.review.other.openPlan %@ -->
+
+#### Other Annotations — closing the plan editor
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 207–208 | key: document.review.other.plan.done | shared: iOS+macOS (single edit point) -->
+
+Done
+
+<!-- END SOURCE: document.review.other.plan.done -->
+
+### Research rail — the classification disagreement (R-5 P3b-5)
+
+The one sentence the rail prints when a reader has reclassified a document. It was never mirrored
+here, and R-5 P3b-5 is the phase that made it truthful: the value it names used to come from a
+snapshot frozen on the day of the correction, so once the Office of the Historian fixed the same
+mistag the app went on quoting the old reading — and the Undo beside it put that old reading back
+into the index. Both now read FRUS's parse as it stands.
+
+#### When FRUS adopts the reader's correction
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1141–1142 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
+
+FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS's classification.
+
+<!-- END SOURCE: panel.classification.overrideNowRedundant -->
+
+#### FRUS's own tagging, beside the reader's correction
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1134–1135 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
+
+FRUS tags this as %@ — reclassified by you.
+
+<!-- END SOURCE: panel.classification.overridden %@ -->
+
+#### The inline noun for an editorial note
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1137–1138 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
+
+an editorial note
+
+<!-- END SOURCE: panel.classification.note.inline -->
+
+#### The inline noun for a document
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1139–1140 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
+
+a document
+
+<!-- END SOURCE: panel.classification.document.inline -->
 
 ### Review Changes sheet — finding a moved passage (R-5 P3b-3)
 
