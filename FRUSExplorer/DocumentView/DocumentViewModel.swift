@@ -533,10 +533,7 @@ public final class DocumentViewModel {
                 ?? IndexingPipeline.extractDocumentNumber(from: ast.nodes)
 
             // Store plain text for summarization before converting to render model
-            documentPlainText = ast.nodes
-                .map(\.plainText)
-                .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                .joined(separator: "\n\n")
+            documentPlainText = SummarizationService.documentText(from: ast.nodes)
 
             // Extract source note for Source Explorer
             sourceNote = extractSourceNote(from: ast.nodes)
@@ -702,6 +699,27 @@ public final class DocumentViewModel {
         descriptor.fetchLimit = 20
         summaries = ((try? context.fetch(descriptor)) ?? []).sorted(by: GeneratedSummary.ranksAbove)
         activeSummaryIndex = 0
+    }
+
+    /// Reloads the carousel while keeping the reader where they were, unless a summary arrived.
+    ///
+    /// `loadSummaries` resets `activeSummaryIndex` to 0, which is right after a generation — the
+    /// newest sorts first, so 0 IS the new summary. It is wrong for every other reason the review
+    /// sheet bumps `revisionReviewToken`: marking a change reviewed, moving a highlight, editing a
+    /// note. Those write nothing to the carousel, and R-5 P3b-7's first cut still sent the reader
+    /// back to the first of a dozen summaries on each one.
+    ///
+    /// The rule is the count: if it grew, something was inserted and index 0 shows it; otherwise
+    /// the previously-active summary is found again by id, so a row inserted or removed elsewhere
+    /// in the array cannot silently shift the selection onto a different summary.
+    public func reloadSummariesPreservingSelection(context: ModelContext) {
+        let previousId = activeSummary?.id
+        let previousCount = summaries.count
+        loadSummaries(context: context)
+        guard summaries.count <= previousCount,
+              let previousId,
+              let index = summaries.firstIndex(where: { $0.id == previousId }) else { return }
+        activeSummaryIndex = index
     }
 
     /// Generates a summary for the current document using the given prompt and provider.

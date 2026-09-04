@@ -444,7 +444,53 @@ a second summary in one sitting. But it also ordered on `lastModified`, a SAVE s
 `SummarizationPromptSeeder.repointReferences` and `ProjectAdminService.merge` bump for reasons
 unrelated to recency, while the FTS column ranked by `createdAt`. So the carousel and search could
 name different summaries as the newest for one document. Both now share `GeneratedSummary.ranksAbove`.
-*P3b-7*: Q-8 (b).
+*P3b-7* — **SHIPPED 2026-09-04 (PR #1189), and it closes R-5's P3b sequence.** Q-8 (b) turned out to
+be TWO features under one letter, and only one of them is buildable honestly. The row calls (b)
+"regenerate-and-keep from the sheet"; the P3b-6 paragraph above called its whole content a
+`sourceContentHash` comparison. **The control ships. The comparison is REFUSED**, and the refusal is
+the considered half.
+**Why the hash cannot be read**, three properties of the data rather than of effort, each verified:
+`.rebaseline` rewrites `content_hash` and stamps nothing — its own doc says hashes that move there
+"moved because the PARSE changed, not the volume" — so one press of Rebuild Index moves every hash in
+the library with no correction behind any of them. The vanished mark keeps the row "hashes and all",
+so on a REMOVED document a stale summary's hash compares EQUAL, the one state where equality is a
+lie. And it is nil for every summary whose
+volume has not been re-indexed since P1, which took no index bump, so today it is nil essentially
+everywhere. The date fallback is no better: `changed_at` is THIS device's re-index time while
+summaries arrive by CloudKit, so it errs in both directions.
+
+**A FOURTH GROUND WAS CLAIMED HERE AND IS WITHDRAWN — twice written, twice wrong, and the second
+wording was produced by the review that caught the first.** It said `content_hash` covers material
+the summariser never reads, so a correction confined to that band moves the hash while the model's
+text is character-identical: first as "an apparatus-only correction — the commonest case this sheet
+exists for", then, once footnotes were shown to be on both sides, as "the header, dateline and source
+note". Both are false, and one grep settles it: `FRUSASTNode.plainText` recurses `.head`, `.dateline`
+and `.footnote` (IndexingPipeline.swift:10772–10784), and `extractSourceNote` reads a `.footnote`
+node — so EVERY element `content_hash` covers is inside `SummarizationService.documentText(from:)`,
+and no correction moves one without the other. The refusal stands on the three above, which is why
+the control shipped unchanged; what changed is that this document, `GeneratedSummary`'s doc comment
+and both user manuals had each stated the fourth as measured fact. The lesson is narrow and worth
+keeping: a claim about which text a hash covers is checkable against `plainText` in one command, and
+was asserted three times before anyone ran it.
+**What ships instead** is one *Summarize Again* control in the Other Annotations section — not a row
+per summary, because a row implies a standing the app cannot state and because the P3b-5 precedent is
+that the count stays and only annotations the app can OPEN get a row, which a summary cannot be. It
+runs the newest live summary's own prompt through P3b-6's `SummarizationPrompt.resolve`, warns before
+substituting a deleted prompt with the key that phase minted, keeps every earlier summary, and reports
+its outcome INLINE because the sheet is modal and the document's own failure alert cannot present over
+it. It is ABSENT rather than disabled when a run could not complete — including on a vanished
+document, whose cache row is deleted and whose div is gone, so there is no text and never will be;
+that is the one route an orphan has, and nothing pretends otherwise.
+**Two riders.** The summariser's input recipe is lifted into `SummarizationService.documentText(from:)`
+and adopted at all four sites, so the sheet's input is identical to the document view's BY
+CONSTRUCTION — and that retires the "three different recipes" complaint in `GeneratedSummary`'s own
+doc. And both document twins now reload the carousel on `revisionReviewToken`: `vm.summaries` is a
+snapshot ARRAY, not a `@Query`, so a summary made in the sheet was otherwise invisible — the reader
+would press the control, close the sheet, and find exactly what was there before.
+**R-5's P3b sequence is complete.** `CD_AnnotationReview.CD_annotationId` still awaits a writer: all
+four of P3b-4, P3b-5, P3b-6 and P3b-7 refused one, each because minting the first non-nil value costs
+a tenth Production promotion. The inventory comment naming P3b-4/P3b-5 as the phases that would supply
+it is corrected here.
 
 ## 9. What this design does not cover
 

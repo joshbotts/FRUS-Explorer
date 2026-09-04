@@ -7,7 +7,7 @@ stamped on every export, the Archive Visit planner and its trip packet, the Brow
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -2049,11 +2049,39 @@ in an archive-visit plan
 <!-- END SOURCE: document.review.other.visit -->
 
 #### Other Annotations — footer
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 501–502 | key: document.review.other.footer.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 576–577 | key: document.review.other.footer.v3 | shared: iOS+macOS (single edit point) -->
 
-These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written.
+These carry no position in the text, so the app cannot judge them against the change — it can take you to them, and it can summarize the document again. Review them by eye; a summary describes the text as it was when it was written, and the app cannot tell you which of these predate the correction.
 
-<!-- END SOURCE: document.review.other.footer.v2 -->
+<!-- END SOURCE: document.review.other.footer.v3 -->
+
+#### Other Annotations — footer when no summary can be made
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 579–580 | key: document.review.other.footer.noSummarizer.v3 | shared: iOS+macOS (single edit point) -->
+
+These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written, and the app cannot tell you which of these predate the correction.
+
+<!-- END SOURCE: document.review.other.footer.noSummarizer.v3 -->
+
+#### Other Annotations — make another summary
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 646–647 | key: document.review.other.summarizeAgain | shared: iOS+macOS (single edit point) -->
+
+Summarize Again
+
+<!-- END SOURCE: document.review.other.summarizeAgain -->
+
+#### Other Annotations — Summarize Again will substitute a prompt
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 635–636 | key: document.review.summarizeAgain.fallback %@ | shared: iOS+macOS (single edit point) -->
+
+Summarize Again will use “%@” — the prompt that made the newest summary is no longer on this device.
+
+<!-- END SOURCE: document.review.summarizeAgain.fallback %@ -->
+
+#### Other Annotations — a new summary was added
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 731–732 | key: document.review.other.summarizeAgain.done | shared: iOS+macOS (single edit point) -->
+
+A new summary was added. The earlier ones are kept — step through them in the document's Summary panel.
+
+<!-- END SOURCE: document.review.other.summarizeAgain.done -->
 
 #### Other Annotations — Edit Tags
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 492–493 | key: document.review.other.editTags | shared: iOS+macOS (single edit point) -->
