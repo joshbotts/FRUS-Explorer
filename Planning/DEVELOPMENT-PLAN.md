@@ -11325,3 +11325,61 @@ The four badge labels (Untouched / Opened / In a collection / Annotated) are exa
 **Both files are under the 4,000-character App Store Connect cap with margin: iOS 3,761, Mac
 3,779.** Build 44's Mac file shipped at 4,018 — over — so the cap was checked with `wc -m` over the
 whole file, heading included, rather than assumed.
+
+## Session 2026-09-04c — Wave PV planned: provenance tiers (PR #1194)
+
+**Planning only. No implementation, by owner instruction — this ships in the release after build
+45, which is at the store gate.** `Planning/Provenance-Tiers-Development-Plan.md`, filed as a new
+Plan-of-Record row §3c.
+
+**The owner's clarification is what made the wave possible, and it reversed the first assessment.**
+An initial pass read the first category as *what is printed on the page* and concluded the layers
+did not partition: six provenance classes rather than three, and compound atoms with nowhere to put
+a chip. The owner's definition is **dependency closure** — derived from FRUS with no other bundled
+source in its inputs — and the purpose is **citation**: what a reader may honestly write down. Under
+that definition the layers do partition, and the boundary is mechanical, because every generator
+already declares its inputs in an `Env:` line.
+
+**The rule, and the refinement that a per-file reading would have got wrong.** A bundled artifact
+does not make a derivation Tier 2; the artifact's own input closure decides — **per FIELD, not per
+file**. The first draft of the plan tiered `collection-authority.json` as a file and therefore
+called the whole archival-analytics family Tier 2. Measured, that is false: `grep -rn
+"naId\|catalogURL" FRUSExplorer/Analytics/` returns **zero hits**, the generator touches the NARA
+resolver on exactly one line (`AuthorityBuilder.swift:176`, filling one field), and `AuthorityLookup`
+keys only on FRUS-derived fields. Collections, Flows and Network are **Tier 1**. A per-file rule
+would have told the reader their largest analytics surface was NARA-dependent when it never reads a
+NARA value — understating what they may claim, which is worse than saying nothing.
+
+**Measured over the 34 bundled artifacts:** Tier 1 = 8, Tier 2 = 21, Tier 3 = 5. Four of the Tier-2
+artifacts contain **no FRUS data at all**. The crux case — is a parse of printed prose Tier 1? —
+resolves **yes**: `SourceNoteKit` declares no dependencies and reads no bundle, and demoting it for
+fallibility would demote `extractBodyText` and the FTS5 index too. The tier is provenance, not
+confidence.
+
+**The finding that decides the design.** The boundary runs *inside a row*: of 4,429 collections,
+3,411 (77%) are clustered from FRUS front matter alone and 1,018 (23%) carry a NARA identifier — one
+card, two provenances. So the badge attaches to a claim, never to a card or a screen, and a
+per-screen chip must not be built.
+
+**Three artifacts are undocumented and therefore untierable** — `digitized-ranges-index.json`,
+`roll-scans-index.json` and `document-subject-index.json` appear nowhere in CLAUDE.md. The third
+matters most: it reads `DOCUMENT_SUBJECTS` only, has no FRUS input at all, and sits behind the
+Related list's `sharedSubjects` axis. PV-0 documents all three before anything else.
+
+**Ruby is available and already in use.** The app icon's dominant field is `#A61C2A`, so this
+extends inward a colour the icon already asserts rather than introducing one. It scores 6.67:1 in
+light and **2.29:1 in dark** — below even the 3:1 UI minimum — so the dark twin is a rose
+(`#E8798A`, 6.10:1), the same trade `headnotePurple` already ships. Three hues carry the tier and
+eight labels name the partner, because "FRUS + NARA catalog" is the first half of a footnote where
+"Tier 2" is a lookup.
+
+**Recorded as traps, each measured:** red has 53 call sites and four meanings, one of which is
+*Republican* in a `Capsule()` at `opacity(0.18)` — the very treatment proposed; macOS has no
+`AccentColor` asset, so the reader's own accent may itself be red; a 12% wash is 1.23:1 against the
+page, so the perceived colour is the text and not the fill; and `preambleLines` is not shared, so an
+export sentence added once ships in CSV and vanishes from the collection PDF.
+
+**The honest caution the plan puts to the owner:** a provenance badge will be read as a reliability
+badge. The source-note parser returns `unrecognized` for 7.4% of 1952–54 notes and essentially 100%
+of pre-1906 notes — all of them Tier 1. Aggregates owe a residual beside the badge, and whether that
+residual appears on screen or only in the export block is owner question Q-1.
