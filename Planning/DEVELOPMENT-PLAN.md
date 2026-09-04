@@ -11148,7 +11148,7 @@ And "Change prompt" was left reaching the same silent guard Regenerate had just 
 Also corrected: nine mirror blocks claimed `iOS+macOS (single edit point)` when six are macOS-only,
 one iOS-only, and three genuinely have two call sites.
 
-## Session 2026-09-03k — R-5 P3b-7: another summary, and the claim that had to be withdrawn three times (PR #NNNN)
+## Session 2026-09-03k — R-5 P3b-7: another summary, and the claim that had to be withdrawn three times (PR #1189)
 
 **Q-8 (b) is two features under one letter, and only one of them shipped.** The row asks for
 regenerate-and-keep from the review sheet *and* for the sheet to say which summaries predate the

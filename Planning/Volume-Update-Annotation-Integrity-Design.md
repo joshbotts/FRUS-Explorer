@@ -444,7 +444,7 @@ a second summary in one sitting. But it also ordered on `lastModified`, a SAVE s
 `SummarizationPromptSeeder.repointReferences` and `ProjectAdminService.merge` bump for reasons
 unrelated to recency, while the FTS column ranked by `createdAt`. So the carousel and search could
 name different summaries as the newest for one document. Both now share `GeneratedSummary.ranksAbove`.
-*P3b-7* — **SHIPPED 2026-09-04 (PR #NNNN), and it closes R-5's P3b sequence.** Q-8 (b) turned out to
+*P3b-7* — **SHIPPED 2026-09-04 (PR #1189), and it closes R-5's P3b sequence.** Q-8 (b) turned out to
 be TWO features under one letter, and only one of them is buildable honestly. The row calls (b)
 "regenerate-and-keep from the sheet"; the P3b-6 paragraph above called its whole content a
 `sourceContentHash` comparison. **The control ships. The comparison is REFUSED**, and the refusal is
