@@ -334,8 +334,23 @@ public actor CrossReferenceStore {
     /// Returns the document header text for a batch of `(volumeId, documentId)` pairs,
     /// queried from the `document_cache` table.
     ///
-    /// Keys with no matching row (volume not yet indexed) are omitted from the result.
-    /// The return dictionary is keyed by `"volumeId/documentId"`.
+    /// **A key is omitted when there is no header to give** — either no row (the volume is not
+    /// indexed) or a row whose header is empty. It never returns `""`.
+    ///
+    /// That second half is the fix for a defect this method caused at six call sites. A document
+    /// with no `<head>` is stored with `header = ''`, because `IndexingPipeline.extractHeader`
+    /// returns `""` rather than nil and the column is `TEXT NOT NULL`. The method used to hand that
+    /// back as a present, empty value, so every caller writing `headers[key] ?? documentId` — the
+    /// idiom at all six — got `""` instead of the fallback and **rendered a blank row**. Measured
+    /// on a full index: 8,474 of 316,839 documents (2.7%), almost all editorial notes.
+    /// `CollectionEntryInspector` was the only site that had hand-written `!header.isEmpty`.
+    ///
+    /// Omitting is the right shape rather than a convenience: this method answers *what is this
+    /// document called*, and a headerless document has no answer. **Membership is a different
+    /// question and has its own method** — ``indexedDocumentKeys(for:)`` — which no caller may now
+    /// substitute this one for. Verified before the change: not one call site read `.keys` or
+    /// `.contains` on this dictionary; all seven look up by key. `CrossReferenceAnalyticsView`
+    /// already asks both questions separately, which is what made the split safe.
     /// **Batched, one query per (volume, chunk) rather than one per key.** The per-key loop this
     /// replaces cost N round-trips and N `LEFT JOIN`s onto `document_dates` for a column it never
     /// read — `fetchMetadata` selects five columns and joins; a header lookup needs one column and
@@ -354,9 +369,11 @@ public actor CrossReferenceStore {
             // `header IS NOT NULL` mirrors the `if let header = meta.header` this replaced. The
             // column is declared NOT NULL, so it is a no-op against today's rows — it is here so
             // the batched path cannot admit a key the per-key path would have skipped.
+            // `header <> ''` is the guard; `IS NOT NULL` is belt-and-braces, since the column is
+            // declared NOT NULL and a mutation removing it is equivalent against today's schema.
             let sql = """
                 SELECT document_id, header FROM document_cache
-                 WHERE volume_id = ? AND header IS NOT NULL
+                 WHERE volume_id = ? AND header IS NOT NULL AND header <> ''
                    AND document_id IN (\(Self.placeholders(documentIds.count)))
                 """
             let stmt = try prepare(sql)
@@ -378,17 +395,16 @@ public actor CrossReferenceStore {
     /// document indexed?" signal, distinct from a citation into an un-downloaded volume (#278).
     /// Keyed `"volumeId/documentId"`.
     ///
-    /// **The mechanism this comment used to claim is false, and the correction matters.** It said
-    /// a headerless editorial note "has a nil header", implying `documentHeaders` would omit it
-    /// while this method kept it. It does not: `IndexingPipeline.extractHeader` returns `""` rather
-    /// than nil for a document with no `<head>`, the column is `TEXT NOT NULL`, and
-    /// `sqlite3_column_text` hands back a non-NULL pointer for a zero-length value — so
-    /// `documentHeaders` returns such a document mapped to `""`. The two methods therefore agree on
-    /// membership exactly, and differ only in return type.
+    /// **This is now the only method that answers membership, and the distinction is real.** An
+    /// earlier comment here claimed a headerless editorial note "has a nil header", implying
+    /// `documentHeaders` already omitted it; it did not — `extractHeader` returns `""`, the column
+    /// is `TEXT NOT NULL`, and `sqlite3_column_text` returns non-NULL for a zero-length value, so
+    /// such a document came back mapped to `""` and the two methods agreed on membership exactly.
     ///
-    /// Keep them separate anyway: the intent is different, and the batched predicate a future
-    /// reader might reach for — `header != ''` — WOULD split them and silently change six display
-    /// sites. That is the trap this note exists to close.
+    /// `documentHeaders` now omits empty headers, so they genuinely differ: a headerless indexed
+    /// document is **absent** there and **present** here. That is the point — a caller asking
+    /// "is this downloaded?" must call this, and a caller asking "what is it called?" must accept
+    /// that the answer can be missing.
     public func indexedDocumentKeys(
         for keys: [(volumeId: String, documentId: String)]
     ) throws -> Set<String> {

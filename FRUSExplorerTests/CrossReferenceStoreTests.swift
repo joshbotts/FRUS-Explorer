@@ -167,17 +167,36 @@ struct CrossReferenceStoreTests {
         #expect(headers["v9/missing"] == nil)
     }
 
-    /// Membership is a different question from header text, and the two methods must keep
-    /// answering it differently — `indexedDocumentKeys` carries no `header` predicate.
-    @Test("Batched membership includes a row whose header is empty")
-    func batchedMembershipIncludesHeaderlessRow() async throws {
+    /// **The headerless-document guard.** A document with no `<head>` is stored with `header = ''`
+    /// (`extractHeader` returns `""` and the column is NOT NULL). `documentHeaders` used to hand
+    /// that back as a present, empty value, so the `headers[key] ?? documentId` idiom at six call
+    /// sites never took its fallback and rendered a blank row — 8,474 of 316,839 documents on a
+    /// full index, almost all editorial notes.
+    ///
+    /// It must be ABSENT from `documentHeaders` and PRESENT in `indexedDocumentKeys`: the first
+    /// asks what a document is called, the second whether it is downloaded, and only now do the
+    /// two genuinely differ.
+    @Test("A headerless document is absent from headers and present in membership")
+    func headerlessDocumentIsOmittedFromHeaders() async throws {
         let (dir, dbURL, store) = try makeTempStore()
         defer { try? FileManager.default.removeItem(at: dir) }
         try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "note", header: "")
+        try insertDocumentCache(dbURL: dbURL, volumeId: "v1", documentId: "titled", header: "A Title")
 
-        let keys = [(volumeId: "v1", documentId: "note"), (volumeId: "v1", documentId: "absent")]
-        #expect(try await store.indexedDocumentKeys(for: keys) == ["v1/note"])
-        #expect(try await store.documentHeaders(for: keys)["v1/note"] == "")
+        let keys = [(volumeId: "v1", documentId: "note"),
+                    (volumeId: "v1", documentId: "titled"),
+                    (volumeId: "v1", documentId: "absent")]
+
+        let headers = try await store.documentHeaders(for: keys)
+        #expect(headers["v1/note"] == nil, "an empty header must be omitted, not returned as \"\"")
+        #expect(headers["v1/titled"] == "A Title")
+        #expect(headers["v1/absent"] == nil)
+
+        // Membership is unchanged: the headerless document IS indexed.
+        #expect(try await store.indexedDocumentKeys(for: keys) == ["v1/note", "v1/titled"])
+
+        // The caller idiom now reaches its fallback, which is the whole point.
+        #expect((headers["v1/note"] ?? "note") == "note")
     }
 
     /// Nothing in, nothing out — and no query issued.
