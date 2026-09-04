@@ -247,6 +247,40 @@ struct ResearchDocumentAggregationTests {
         #expect(counts == ["v1/d8": 2])
     }
 
+    // MARK: - The per-document rebuild (build 45 hang)
+
+    /// **`documents(for:)` must hoist its five dictionaries before the loop, not read them inside.**
+    ///
+    /// `directlyTaggedDocs`, `collectionMemberships`, `highlightedDocs`, `summarizedDocs` and
+    /// `visitPlanDocs` are COMPUTED properties: each walks a whole `@Query` array and builds a new
+    /// dictionary. Read inside `compactMap` they were rebuilt once per document, making the
+    /// Research list O(documents × annotations).
+    ///
+    /// It beachballed build 45 on a real library. A `sample` of the hung process put **2,393 of
+    /// 2,626 samples** in `summarizedDocs` → `summaryCounts`, which reads three properties on every
+    /// `GeneratedSummary` — and every one of those reads goes through SwiftData's
+    /// `persistentBackingData`, so it is far more expensive than an array read.
+    ///
+    /// A timing test would flake under parallel load, and the aggregation is a private method on a
+    /// `View`, so this pins the structural fix instead: the hoists exist and precede the loop.
+    @Test("The document aggregation hoists its dictionaries out of the per-document loop")
+    func aggregationHoistsItsDictionaries() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Research/ResearchView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+
+        let fn = try #require(source.range(of: "private func documents(for item: ResearchSidebarItem)"))
+        let loop = try #require(source.range(of: "return grouped.compactMap", range: fn.upperBound..<source.endIndex))
+        let preamble = String(source[fn.upperBound..<loop.lowerBound])
+
+        for name in ["directlyTaggedDocs", "collectionMemberships", "highlightedDocs",
+                     "summarizedDocs", "visitPlanDocs"] {
+            #expect(preamble.contains("let \(name) = \(name)"),
+                    Comment(rawValue: "\(name) must be hoisted before the loop — reading the computed property inside compactMap rebuilds it once per document"))
+        }
+    }
+
     /// Design Q-11 (h): a vanished document routes to the review sheet whether or not its change
     /// has been reviewed — vanished-ness is a fact about the volume, review state is not. The
     /// first version keyed on the unreviewed row and lost the route the moment Mark Reviewed ran.
