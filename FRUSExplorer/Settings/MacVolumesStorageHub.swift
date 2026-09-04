@@ -467,10 +467,13 @@ struct MacVolumesStorageHub: View {
                 .buttonStyle(.bordered)
                 .disabled(isRefreshingCatalog || !appState.isOnline)
                 .controlHelp(
-                    String(localized: "settings.hub.catalog.a11y",
-                           defaultValue: "Look for newly published volumes"),
-                    detail: String(localized: "settings.hub.catalog.help",
-                                   defaultValue: "Re-reads the FRUS repository's volume list so newly published volumes appear in the download browser"),
+                    // .v2 / .v2: both promised newly published volumes appearing in the download
+                    // browser. They cannot — that browser reads `diffResult.known`, a filter over
+                    // the BUNDLED manifest, which can only shrink (D-1).
+                    String(localized: "settings.hub.catalog.a11y.v2",
+                           defaultValue: "Re-read the published volume list"),
+                    detail: String(localized: "settings.hub.catalog.help.v2",
+                                   defaultValue: "Re-reads the FRUS repository's volume list, refreshing each volume's download link and size and dropping any the Office of the Historian has withdrawn"),
                     systemImage: "arrow.clockwise"
                 )
             }

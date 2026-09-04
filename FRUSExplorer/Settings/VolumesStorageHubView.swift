@@ -491,8 +491,14 @@ struct VolumesStorageHubView: View {
                         label: String(localized: "settings.hub.catalog.button",
                                       defaultValue: "Refresh Available List"),
                         systemImage: "arrow.clockwise",
-                        detail: String(localized: "settings.hub.catalog.detail",
-                                       defaultValue: "Look for newly published volumes.")
+                        // .v2: the old text promised newly published volumes. It cannot deliver
+                        // them — every download surface reads `diffResult.known`, a filter over
+                        // the BUNDLED manifest, so a volume published since this build shipped
+                        // has no row to appear in (D-1 left that gap silent). What the refresh
+                        // does deliver is real: corrected download URLs and sizes, and volumes
+                        // withdrawn upstream dropping out of the list.
+                        detail: String(localized: "settings.hub.catalog.detail.v2",
+                                       defaultValue: "Re-read the published list to refresh sizes and download links.")
                     )
                 }
             }

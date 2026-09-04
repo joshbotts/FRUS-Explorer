@@ -130,8 +130,12 @@ struct ExamineResultsTip: Tip {
 
     /// Names all four, since the anchor is the menu label and the items are not visible yet.
     var message: Text? {
-        Text(String(localized: "tip.examine.message",
-                    defaultValue: "Place them on a timeline, line every occurrence up on your search term, rank the words that keep company with it, or break the whole match down by year, volume and person."))
+        // .v2: the fourth clause named three of the panel's SIX sections. The panel renders
+        // Years, Volumes, People, Document type, Archival provenance and Subjects
+        // unconditionally, on both platforms — Subjects arrived with #308 and no string was
+        // updated for it. The count is stated so the reader can tell a list from a sample.
+        Text(String(localized: "tip.examine.message.v2",
+                    defaultValue: "Place them on a timeline, line every occurrence up on your search term, rank the words that keep company with it, or break the whole match down six ways — by year, volume, person, document type, archival provenance and subject."))
     }
 
     /// Matches the menu's glyph.

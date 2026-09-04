@@ -412,11 +412,14 @@ struct MainTabView: View {
 
     /// Returns the appropriate indexing UI above the tab bar, or `EmptyView` when idle.
     ///
-    /// Priority order:
-    /// 1. `indexingBatch` non-nil, queue position non-nil → `IndexingQueueBannerView`
-    /// 2. `indexingBatch` non-nil, single volume → `IndexingBannerView`
-    /// 3. `indexingBatch` nil, `completedIndexingMetadata` non-nil → `IndexingSummaryCard`
-    /// 4. Both nil → `EmptyView` (no height inset)
+    /// **The precedence is `IndexingInsetState.resolve`, not this body.** B-6 was a hole in the
+    /// old `if`/`else if` chain — a queued download with no batch matched no branch and the inset
+    /// collapsed to nothing — and it survived because the chain had no seam a test could reach.
+    /// Switch on the state; do not re-test the conditions here, or the extraction buys nothing.
+    ///
+    /// Within `.batch`, the queue banner still outranks the single-volume one:
+    /// 1. queue position non-nil → `IndexingQueueBannerView`
+    /// 2. otherwise → `IndexingBannerView`
     ///
     /// **The queue outranks the summary card**, which is the inverse of the original
     /// order and the whole point. `completedIndexingMetadata` is set once per *volume*,
@@ -432,15 +435,23 @@ struct MainTabView: View {
         // onto the keyboard's accessory row and occludes the #861 Done bar (measured: the
         // bar's Done existed but was unhittable under this banner). Every state here
         // persists or re-announces, so nothing is lost by waiting out a typing session.
-        if keyboardIsVisible {
+        switch IndexingInsetState.resolve(
+            keyboardIsVisible: keyboardIsVisible,
+            hasBatch: appState.indexingBatch != nil,
+            hasCompletedMetadata: appState.completedIndexingMetadata != nil,
+            downloadQueueIsEmpty: appState.downloadQueue.isEmpty,
+            syncIsWorthShowing: SyncStatusBanner.isWorthShowing(
+                state: appState.cloudKitSyncState,
+                cloudKitEnabled: appState.cloudKitSyncEnabled)
+        ) {
+        case .hidden:
+            // #1070: nothing in this inset renders while the keyboard is up — the inset floats
+            // onto the keyboard's accessory row and occludes the #861 Done bar.
             EmptyView()
-        }
-        // #665: the iCloud indicator shares this inset. Indexing wins when both want it —
-        // indexing is transient and finishes, while a local-only or failed-sync state waits and
-        // will still be true when the banner frees up.
-        else if appState.indexingBatch == nil, appState.completedIndexingMetadata == nil,
-           SyncStatusBanner.isWorthShowing(state: appState.cloudKitSyncState,
-                                           cloudKitEnabled: appState.cloudKitSyncEnabled) {
+        // #665: the iCloud indicator shares this inset. Transient work wins when both want it —
+        // it finishes, while a local-only or failed-sync state waits and will still be true when
+        // the banner frees up.
+        case .sync:
             SyncStatusBanner(
                 state: appState.cloudKitSyncState,
                 cloudKitEnabled: appState.cloudKitSyncEnabled,
@@ -449,7 +460,13 @@ struct MainTabView: View {
                 }
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))
-        } else if let batch = appState.indexingBatch {
+        // B-6: queued but not yet indexing. Without this the app said nothing at all about work
+        // it was doing — the arbiter had already refused the splash for this same window.
+        case .downloadsQueued:
+            DownloadQueueBannerView(count: appState.downloadQueue.count)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+        case .batch:
+            if let batch = appState.indexingBatch {
             if let queuePosition = appState.indexingQueuePosition {
                 IndexingQueueBannerView(
                     update: batch.latest,
@@ -472,7 +489,9 @@ struct MainTabView: View {
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-        } else if let meta = appState.completedIndexingMetadata {
+            }
+        case .summary:
+            if let meta = appState.completedIndexingMetadata {
             let title = appState.manifestStore.entry(forVolumeId: meta.volumeId)?.title
             IndexingSummaryCard(
                 metadata: meta,
@@ -490,6 +509,9 @@ struct MainTabView: View {
                 }
             )
             .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        case .none:
+            EmptyView()
         }
     }
 }

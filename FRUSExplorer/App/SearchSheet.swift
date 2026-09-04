@@ -1028,8 +1028,9 @@ struct MacSearchWindowView: View {
             .help(showFacetPanel
                   ? String(localized: "search.facets.off.help",
                            defaultValue: "Hide the result-set facets")
-                  : String(localized: "search.facets.on.help.v2",
-                           defaultValue: "Break the whole match down by year, volume, person, type and provenance — before any narrowing you apply"))
+                  // .v3: the enumeration read as complete and was missing Subjects (#308).
+                  : String(localized: "search.facets.on.help.v3",
+                           defaultValue: "Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply"))
             .accessibilityLabel(String(localized: "search.facets.a11y",
                                        defaultValue: "Result-set facets"))
         }

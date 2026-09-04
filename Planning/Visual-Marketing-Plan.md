@@ -795,7 +795,7 @@ screen. It also breaks five test call sites (`PendingCloudBackdropTests.swift:37
 ### Two real defects it missed, in the file it opened
 
 - **The genuine double-cloud, by staleness rather than predicate.** Now §7 step 0.
-- **The opposite defect — CONFIRMED 2026-08-31 and deliberately NOT fixed; still owed a row.**
+- **The opposite defect — CONFIRMED 2026-08-31, filed as B-6, and CLOSED 2026-09-04 (PR #NNNN).**
   Verified at all three sites while shipping step 0. It is not a drive-by: closing it needs a product
   decision (should that window show a queued-download banner, or let the splash through?) *and* a
   banner state that does not exist — `IndexingQueueBannerView` needs a `batch.latest`, and in that
@@ -808,7 +808,21 @@ screen. It also breaks five test call sites (`PendingCloudBackdropTests.swift:37
   mid-download-before-first-index shows **no cloud at all**. `CloudSurfaceArbiterTests.relaunchMidDownloadPrefersIndexing`
   exists for exactly this state and **passes while the screen is blank**, because it asserts the
   arbiter's value rather than what renders. Unclaimed by the handoff, and the same bug class
-  `PendingCloudRule`'s doc comment catalogues. **Worth its own row when someone next opens these files.**
+  `PendingCloudRule`'s doc comment catalogues.
+
+  **HOW IT CLOSED, and two claims above that the fix corrected.** The product decision went to the
+  Mac's own answer rather than to the splash: `StatusBarView.activeTask` has shipped a
+  "N downloads queued" fallthrough all along, so iOS was the odd platform and matching it left
+  decision O-0-1's precedence untouched. The missing banner state was built as
+  `DownloadQueueBannerView`, which needs no `batch.latest` because it reports a count and nothing
+  else — the Mac passes `progress: nil` for the same reason, there being no batch to measure. The
+  real cause was structural and is what the fix actually addresses: a five-way precedence lived
+  inside `MainTabView.indexingBanner`'s `if`/`else if` chain where no test could reach it, so it
+  moved out to `IndexingInsetState.resolve` and the body switches on it — the seam `AppRootRouter`
+  already set the precedent for. Two claims here are narrower than written: the *screen* was never
+  blank (the tabs render; what was blank was the app's account of the pending work), and "no cloud
+  at all" is over-broad — `PendingCloudRule` gates on `indexingBatch != nil`, which is false in
+  this window, so the drift cloud does still render on a pending Search.
 
 ### Also corrected, applied above
 

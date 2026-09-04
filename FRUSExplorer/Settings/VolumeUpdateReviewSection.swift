@@ -110,8 +110,23 @@ struct VolumeUpdateReviewSection: View {
         } header: {
             Text(String(localized: "settings.updateReview.header", defaultValue: "After an Update"))
         } footer: {
-            Text(String(localized: "settings.updateReview.footer",
-                        defaultValue: "When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, collection entry, summary, or archive-visit plan. The Research tab lists the changed ones under “Changed by an update”, and each opens with a banner saying whether its text moved or only its notes and heading changed."))
+            // Two keys, split on the platform, because the two halves of the last sentence are
+            // both platform-specific: Research is a TAB on iOS and a WINDOW on macOS (the button
+            // three lines above already branches on exactly that), and the destination differs.
+            // Same key with two texts would be the silent collision the localized-key lesson
+            // warns about; `SettingsView`'s citation-style footer is the shipped precedent.
+            //
+            // Both wordings also drop the old promise that a changed document "opens with a
+            // banner". Since P3b-1 a VANISHED document opens the review sheet instead — no
+            // document view can load a document the update removed — and the vanished count is
+            // printed two rows above this footer, so the old text contradicted its own section.
+            #if os(macOS)
+            Text(String(localized: "settings.updateReview.footer.mac.v2",
+                        defaultValue: "When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, quotation, collection entry, summary, or archive-visit plan. The Research window lists the changed ones under “Changed by an update”. Opening one shows a banner saying whether its text moved or only its notes and heading changed — unless the update removed the document altogether, in which case it opens the review sheet, the only surface that can still reach it."))
+            #else
+            Text(String(localized: "settings.updateReview.footer.v2",
+                        defaultValue: "When a volume is updated, the app compares every document with the copy it indexed before and records which ones changed. A document counts as yours if it carries a note, tag, highlight, quotation, collection entry, summary, or archive-visit plan. The Research tab lists the changed ones under “Changed by an update”. Opening one shows a banner saying whether its text moved or only its notes and heading changed — unless the update removed the document altogether, in which case it opens the review sheet, the only surface that can still reach it."))
+            #endif
         }
         .task { await reload() }
         .onChange(of: appState.indexingBatch) { _, batch in
