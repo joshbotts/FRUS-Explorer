@@ -355,6 +355,27 @@ actor SummarizationService {
         return pieces
     }
 
+    // MARK: - Shared summariser input
+
+    /// The document text a summariser reads, from a parsed AST.
+    ///
+    /// Lifted here in R-5 P3b-7 so every caller builds the SAME string. `GeneratedSummary`'s own
+    /// doc comment complains that "three different recipes feed that text"; this collapses the
+    /// three that matter — the document view, the background runner's two job lists, and now the
+    /// review sheet — into one, so a summary made from the sheet is the summary the document view
+    /// would have made.
+    ///
+    /// The blank-line join is load-bearing, not cosmetic: ``chunk`` partitions on `"\n\n"`, so a
+    /// space-joined body (the index's `body_text` recipe) arrives as a single paragraph and falls
+    /// through to sentence-splitting — a different summary of the same document from the same
+    /// prompt. That is why the sheet parses rather than reading the cheaper indexed text.
+    nonisolated static func documentText(from nodes: [FRUSASTNode]) -> String {
+        nodes
+            .map(\.plainText)
+            .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .joined(separator: "\n\n")
+    }
+
     // MARK: - Background use
 
     /// Runs `summarize` and discards the result, returning `Void`.

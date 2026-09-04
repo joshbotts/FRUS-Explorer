@@ -154,6 +154,69 @@ struct SummaryCarouselOrderTests {
 
     /// The carousel and the FTS summary column must agree about which summary is newest — they are
     /// two answers to one question, and before P3b-6 they used different rules.
+    // MARK: - Position-preserving reload (R-5 P3b-7)
+
+    /// The token this reload hangs on fires on every review write — marking a change reviewed,
+    /// moving a highlight, editing a note — and `loadSummaries` resets `activeSummaryIndex` to 0.
+    /// The first cut of P3b-7 used it directly and sent the reader back to summary 1 on all of them.
+    @MainActor
+    @Test("A review write that adds no summary leaves the reader where they were")
+    func reloadKeepsPositionWhenNothingWasAdded() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        for i in 0..<5 { summary(context, "s\(i)", created: Double(i) * 100) }
+        let vm = makeViewModel()
+        vm.loadSummaries(context: context)
+        #expect(vm.summaries.count == 5)
+        vm.activeSummaryIndex = 3
+        let wasShowing = vm.activeSummary?.id
+
+        vm.reloadSummariesPreservingSelection(context: context)
+        #expect(vm.activeSummaryIndex == 3)
+        #expect(vm.activeSummary?.id == wasShowing, "the reader must still be on the same summary")
+    }
+
+    /// The other half of the rule: after a Summarize Again the newest sorts first, and index 0 IS
+    /// the summary the reader just made — so a grown carousel deliberately does NOT restore.
+    @MainActor
+    @Test("A new summary moves the reader to it")
+    func reloadShowsANewSummary() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        for i in 0..<5 { summary(context, "s\(i)", created: Double(i) * 100) }
+        let vm = makeViewModel()
+        vm.loadSummaries(context: context)
+        vm.activeSummaryIndex = 3
+
+        summary(context, "the new one", created: 10_000)
+        vm.reloadSummariesPreservingSelection(context: context)
+        #expect(vm.summaries.count == 6)
+        #expect(vm.activeSummaryIndex == 0)
+        #expect(vm.activeSummary?.responseText == "the new one")
+    }
+
+    /// A row deleted elsewhere shrinks the array, so the count rule alone would restore an index
+    /// that now points at a DIFFERENT summary. The id lookup is what makes that safe.
+    @MainActor
+    @Test("A summary removed elsewhere does not shift the reader onto a different one")
+    func reloadFollowsTheSummaryNotTheIndex() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        var made: [GeneratedSummary] = []
+        for i in 0..<5 { made.append(summary(context, "s\(i)", created: Double(i) * 100)) }
+        let vm = makeViewModel()
+        vm.loadSummaries(context: context)
+        vm.activeSummaryIndex = 3
+        let wasShowing = vm.activeSummary?.responseText
+
+        // Newest-first, so `made[4]` is at index 0 — deleting it shifts everything up by one.
+        context.delete(made[4])
+        vm.reloadSummariesPreservingSelection(context: context)
+        #expect(vm.summaries.count == 4)
+        #expect(vm.activeSummaryIndex == 2, "the index follows the summary, not its old position")
+        #expect(vm.activeSummary?.responseText == wasShowing)
+    }
+
     @Test("The carousel's newest is the summary search indexes")
     @MainActor
     func agreesWithTheSearchIndex() throws {

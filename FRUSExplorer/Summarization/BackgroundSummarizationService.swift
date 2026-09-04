@@ -353,10 +353,7 @@ public actor BackgroundSummarizationService {
                 }
                 if shouldSkip(volumeId: volumeId, documentId: doc.documentId,
                               promptId: promptId, context: context) { continue }
-                let text = doc.nodes
-                    .map(\.plainText)
-                    .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                    .joined(separator: "\n\n")
+                let text = SummarizationService.documentText(from: doc.nodes)
                 guard !text.isEmpty else { continue }
                 if batch.count < maxDocuments {
                     batch.append((volumeId, doc.documentId, text))
@@ -485,10 +482,7 @@ public actor BackgroundSummarizationService {
                         skippedCount += 1
                         continue
                     }
-                    let text = doc.nodes
-                        .map(\.plainText)
-                        .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-                        .joined(separator: "\n\n")
+                    let text = SummarizationService.documentText(from: doc.nodes)
                     guard !text.isEmpty else { continue }
                     jobs.append((volumeId: volumeId, documentId: doc.documentId, text: text))
                 }

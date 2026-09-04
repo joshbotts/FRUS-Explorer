@@ -44,6 +44,40 @@ struct SummaryPromptResolutionTests {
 
     private func date(_ t: TimeInterval) -> Date { Date(timeIntervalSinceReferenceDate: t) }
 
+    // MARK: - The shared summariser input (R-5 P3b-7)
+
+    /// The recipe every summariser input now goes through.
+    ///
+    /// Pinned behaviourally, not by its signature: a mutation changing the separator to a space
+    /// survived a scan that only checked the function EXISTS. The separator is load-bearing —
+    /// `SummarizationService.chunk` partitions on `"\n\n"`, so a space-joined body arrives as one
+    /// paragraph and falls through to sentence-splitting, producing a different summary of the same
+    /// document from the same prompt.
+    @Test("The shared recipe joins paragraphs with a blank line and drops the empty ones")
+    func sharedDocumentTextRecipe() {
+        let nodes: [FRUSASTNode] = [
+            .paragraph(children: [.text("The Ambassador reported.")]),
+            .paragraph(children: [.text("   ")]),
+            .paragraph(children: [.text("The delegation would arrive.")]),
+        ]
+        let text = SummarizationService.documentText(from: nodes)
+        #expect(text == "The Ambassador reported.\n\nThe delegation would arrive.",
+                "blank-line separated, with whitespace-only nodes dropped")
+        // The separator is the chunker's partition, so a space join is not a cosmetic variant.
+        #expect(text.contains("\n\n"))
+        #expect(!text.contains("   \n"))
+    }
+
+    /// Nothing in, nothing out — the callers all guard on emptiness, so this must be reachable.
+    @Test("An empty or all-blank document yields an empty string")
+    func sharedRecipeEmptyCases() {
+        #expect(SummarizationService.documentText(from: []).isEmpty)
+        #expect(SummarizationService.documentText(from: [
+            .paragraph(children: [.text("  ")]),
+            .paragraph(children: [.text("\n")]),
+        ]).isEmpty)
+    }
+
     private static func source(_ relative: String) throws -> String {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         return try String(contentsOf: root.appendingPathComponent("FRUSExplorer/\(relative)"), encoding: .utf8)

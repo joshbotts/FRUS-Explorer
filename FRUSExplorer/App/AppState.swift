@@ -137,6 +137,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.9 — Wave R-6: `checkCloudKitHealth()`'s two `catch` blocks run the error through
 ///         `CloudKitErrorInspector`, so an account or zone failure records the retry-after hint
 ///         and the "looked for per-item detail" fact instead of a bare domain and code.
+///   4.10 — R-5 P3b-7: `summarizeAgainFailure` and its `SummarizeAgainFailure` payload — a
+///          Summarize Again that failed after its sheet was dismissed, addressed to one document
 
 // MARK: - CloudKitSyncState
 
@@ -1711,6 +1713,36 @@ final class AppState {
     /// `ResearchView`'s unreviewed set, the storage hubs' section — reload without a re-index.
     /// A counter rather than a payload: every reader re-reads the whole set anyway.
     var revisionReviewToken: Int = 0
+
+    /// A Summarize Again that failed after its sheet was dismissed, for the document twins to show.
+    ///
+    /// The review sheet's Summarize Again spawns a task that outlives the sheet, and the sheet is
+    /// freely dismissible while it runs — `SummarizationService`'s own doc records a document at
+    /// 131 chunks and "many minutes". Success already survives that, because the sheet signals it
+    /// by bumping `revisionReviewToken` on this object; failure was written into the sheet's own
+    /// `@State` and reached nobody. This is the other half of that asymmetry, and it mirrors the
+    /// shipped precedent: `DocumentView.regenerate` stores its error on the view model precisely
+    /// because "this task outlives a dismissed rail sheet by design".
+    ///
+    /// Carries the document it belongs to, so a failure cannot surface on a document the reader
+    /// navigated to afterwards. Cleared by whichever twin shows it.
+    var summarizeAgainFailure: SummarizeAgainFailure?
+
+    /// A failed Summarize Again, addressed to one document.
+    ///
+    /// A struct rather than a tuple because the twins watch it with `onChange`, which needs
+    /// `Equatable`; and it carries `id` so that the SAME error twice in a row is still two
+    /// events — without it the second failure of a repeated attempt would not fire the handler.
+    struct SummarizeAgainFailure: Equatable {
+        /// The volume of the document the failed run belonged to.
+        let volumeId: String
+        /// The document the failed run belonged to.
+        let documentId: String
+        /// What to show the reader.
+        let message: String
+        /// Makes two identical failures distinct events.
+        let id = UUID()
+    }
 
     /// Volumes made searchable by the queue that just finished, when it held more than
     /// one — the summary card's queue-grain line. `nil` for a single-volume queue, whose

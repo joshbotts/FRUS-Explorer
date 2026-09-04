@@ -129,24 +129,44 @@ import SwiftData
     /// generation, or `nil` when the document was not indexed then — and on every summary made
     /// before this field existed.
     ///
-    /// It is the revision row's own hash, never a hash of the text handed to the summariser:
-    /// three different recipes feed that text (the document view's `\n\n` join, the background
-    /// runner's, the export's space-joined `body_text`) and `contentHash` hashes the stored
-    /// columns instead, so no text hash could ever compare equal.
+    /// It is the revision row's own hash, never a hash of the text handed to the summariser.
+    /// R-5 P3b-7 collapsed the three recipes that fed that text — the document view's, the
+    /// background runner's two job lists, and the review sheet's — into
+    /// `SummarizationService.documentText(from:)`, so the summariser's input is now one string
+    /// built one way. `contentHash` still hashes the stored columns rather than that string, so
+    /// the two are not comparable even now: see the refusal below.
     ///
     /// **No `didSet`, unlike every neighbouring property.** Those observers never fire on a
     /// `@Model` stored property, and nothing should ever rewrite this value: a summary describes
     /// the text it was made from, permanently.
     ///
-    /// **One known imprecision, on the bulk path only, and a reader of this field must allow for
-    /// it.** `SummarizationService.summarize` reads the hash as each document begins. A bulk run
-    /// materialises every document's text up front and then summarises for hours, so if a volume
-    /// is updated mid-run, a later job in that volume is summarised from the text captured before
-    /// the update while the hash recorded is the one after it — the summary would read as
-    /// describing the current text when it describes the earlier one. Closing this means carrying
-    /// the hash beside the text through `BackgroundSummarizationService`'s job list, which needs a
-    /// pipeline reference that service does not have; it is an obligation of the phase that first
-    /// READS this field (design §8.2, P3b-5), not of the phase that writes it.
+    /// **STILL UNREAD, and R-5 P3b-7 refused to be its first reader.** Three properties of the data
+    /// defeat the obvious rule, and each is a fact about the pipeline rather than about effort:
+    /// `.rebaseline` rewrites `content_hash` and stamps nothing, so one Rebuild Index moves every
+    /// hash in the library with no correction behind any of them; the vanished mark keeps the row
+    /// "hashes and all", so on a removed document a stale summary's hash compares EQUAL; and it is
+    /// nil for every summary whose volume has not been re-indexed since P1, which took no index
+    /// bump.
+    ///
+    /// **A fourth was claimed and withdrawn**, twice, and the second wording was as wrong as the
+    /// first. It held that the hash covers material the summariser never reads — first "so an
+    /// apparatus-only correction moves it alone", then, after that was shown false for footnotes,
+    /// "the header, dateline and source note, none of which the model reads". Both are false:
+    /// `FRUSASTNode.plainText` recurses `.head`, `.dateline` and `.footnote`, and the source note
+    /// is itself a footnote node, so EVERY element `content_hash` covers is inside
+    /// `SummarizationService.documentText(from:)`. There is no correction that moves the hash and
+    /// leaves the summariser's input alone. Recorded because the claim was written into this file,
+    /// the design and both manuals before it was checked against `plainText`.
+    ///
+    /// **One known imprecision, and a reader of this field must allow for it.**
+    /// `SummarizationService.summarize` reads the hash as each document begins, while the TEXT was
+    /// materialised earlier. A bulk run materialises every document up front and then summarises
+    /// for hours; the foreground path has the same window for a different reason, since
+    /// `DocumentViewModel.load()` writes `documentPlainText` once and does not re-run on a
+    /// re-index. Either way a summary can record the hash from AFTER an update while describing the
+    /// text from before it. Closing this means carrying the hash beside the text through
+    /// `BackgroundSummarizationService`'s two job lists, which needs a pipeline reference that
+    /// service does not have. The obligation stands for whichever phase first reads this field.
     var sourceContentHash: String? = nil
 
     // MARK: - Project Context

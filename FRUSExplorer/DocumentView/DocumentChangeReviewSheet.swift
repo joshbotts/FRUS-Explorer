@@ -37,6 +37,8 @@ import SwiftData
 ///   1.1 — R-5 P3b-3: the re-anchor search, the found passage in context, and the Move Here offer
 ///   1.2 — R-5 P3b-4: the Quotations section — the export check, per excerpt, with its capture version
 ///   1.3 — R-5 P3b-5: notes and tags open from the sheet (design Q-11 b)
+///   1.4 — R-5 P3b-7: Summarize Again — one more summary from the newest one's prompt, through the
+///         shared text recipe, with no per-summary standing claimed (design Q-8 b)
 struct DocumentChangeReviewSheet: View {
 
     let volumeId: String
@@ -89,6 +91,17 @@ struct DocumentChangeReviewSheet: View {
     /// its id: a `.sheet(item:)` closure that re-derived the note from a sibling `@State` would
     /// read a value captured before the presentation (#862).
     @State private var noteToOpen: NoteEditorRequest?
+    /// The document's text for a summariser, through the shared recipe, or nil when it could not
+    /// be obtained (R-5 P3b-7). Loaded once per sheet.
+    @State private var summarizerText: String?
+    /// Whether another summary is being made right now.
+    @State private var isSummarizingAgain = false
+    /// What to say about the last attempt. Shown IN the section: the sheet is modal, so the
+    /// document's own failure alert cannot present over it — the same reason P3b-6 put an inline
+    /// error in the iOS summary strip.
+    @State private var summarizeOutcome: String?
+    /// Whether `summarizeOutcome` is a failure, which is the only state that colours as one.
+    @State private var summarizeFailed = false
     /// Whether the tag picker is up — the same sheet the Research rail presents.
     @State private var editingTags = false
     /// The archive-visit plan the reader asked to open, resolved from a seed's `planId`.
@@ -183,6 +196,10 @@ struct DocumentChangeReviewSheet: View {
         .task(id: excerptCheckKey) {
             guard loaded else { return }
             await verifyExcerpts()
+        }
+        .task(id: summarizerTextKey) {
+            guard loaded else { return }
+            await loadSummarizerText()
         }
         // Declared HERE, on the sheet's own content, never on any of its three mounts: SwiftUI
         // will not present an ancestor's sheet over a descendant's, so a `.sheet` attached where
@@ -479,7 +496,7 @@ struct DocumentChangeReviewSheet: View {
     /// The other annotations on the document: counted, never judged.
     private var othersSection: some View {
         let documentEntries = entries.filter { $0.kind == CollectionEntryKind.document.rawValue }.count
-        let liveSummaries = summaries.filter { !$0.isHeadnoteDraft }.count
+        let liveSummaries = liveSummaryRows.count
         let parts: [String] = [
             notes.isEmpty ? nil : String(localized: "document.review.other.notes %lld",
                                          defaultValue: "\(notes.count) notes"),
@@ -548,11 +565,193 @@ struct DocumentChangeReviewSheet: View {
                 }
                 .accessibilityIdentifier("document.review.other.openPlan")
             }
+            summarizeAgainControl
         } header: {
             Text(String(localized: "document.review.other.header", defaultValue: "Other Annotations"))
         } footer: {
-            Text(String(localized: "document.review.other.footer.v2",
-                        defaultValue: "These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written."))
+            // Two strings, not one with a conditional clause: the sheet promises the control in
+            // the first, and the control is absent in five states (vanished, no Apple
+            // Intelligence, no service, no prompt resolves, no document text). A footer that
+            // promised it anyway would be the screen telling the reader to press a button that
+            // is not on it.
+            if let resolution = summaryPrompt, canSummarizeAgain(resolution) {
+                Text(String(localized: "document.review.other.footer.v3",
+                            defaultValue: "These carry no position in the text, so the app cannot judge them against the change — it can take you to them, and it can summarize the document again. Review them by eye; a summary describes the text as it was when it was written, and the app cannot tell you which of these predate the correction."))
+            } else {
+                Text(String(localized: "document.review.other.footer.noSummarizer.v3",
+                            defaultValue: "These carry no position in the text, so the app cannot judge them against the change — it can only take you to them. Review them by eye; a summary describes the text as it was when it was written, and the app cannot tell you which of these predate the correction."))
+            }
+        }
+    }
+
+    // MARK: - Summarize again (R-5 P3b-7, design Q-8 b)
+
+    /// What re-runs the text load: whether the revision has arrived, and whether the sheet has a
+    /// summary to offer the control for.
+    ///
+    /// `loaded` is in the key for the same reason the excerpt check's is — `revision` is `@State`
+    /// filled by `loadRevision`, so a key without it fires the load once, before the revision
+    /// exists, where `isVanished` is false because `revision` is nil rather than because the
+    /// document is there. The guard was dead and a vanished document parsed its whole volume for
+    /// text no control would ever use.
+    private var summarizerTextKey: String {
+        "\(loaded)-" + (liveSummaryRows.isEmpty ? "none" : "\(liveSummaryRows.count)")
+    }
+
+    /// The document's summaries, newest first, drafts excluded.
+    ///
+    /// The `@Query` carries neither the draft filter nor a sort, so both live here — and the count
+    /// and the control now read the SAME array rather than filtering separately. Ordered by
+    /// `GeneratedSummary.ranksAbove`, the rule P3b-6 shared between the carousel and the search
+    /// index, so "the newest" means the same summary in all three places.
+    private var liveSummaryRows: [GeneratedSummary] {
+        summaries.filter { !$0.isHeadnoteDraft }.sorted(by: GeneratedSummary.ranksAbove)
+    }
+
+    /// Which prompt another summary would use — the newest summary's own, as on both document
+    /// surfaces since P3b-6.
+    private var summaryPrompt: SummarizationPrompt.Resolution? {
+        guard let newest = liveSummaryRows.first else { return nil }
+        return SummarizationPrompt.resolve(preferredId: newest.promptId, in: modelContext)
+    }
+
+    /// One control, and NO per-summary standing.
+    ///
+    /// **The sheet refuses to say which summaries predate the correction**, and that refusal is the
+    /// considered half of Q-8 (b). `GeneratedSummary.sourceContentHash` looks like the answer and
+    /// is not, for three reasons that are properties of the data rather than of effort. Its
+    /// inequality does not mean a correction: `.rebaseline` rewrites `content_hash` and stamps
+    /// nothing, so one press of Rebuild Index moves every hash in the library. Its equality is a
+    /// LIE on a vanished document, whose row is kept "hashes and all". And it is nil for every
+    /// summary whose volume has not been re-indexed since P1, which is effectively all of them,
+    /// since P1 took no index bump. The date fallback is no better: `changed_at` is THIS device's
+    /// re-index time while summaries arrive by CloudKit.
+    ///
+    /// **Three, not the four this comment first claimed.** the review of this phase withdrew a fourth: the hash spans the header,
+    /// dateline and source note "which the model never reads", and it does read them —
+    /// `FRUSASTNode.plainText` recurses `.head`, `.dateline` and `.footnote`, and the source note
+    /// IS a footnote node, so every element the hash covers is inside the summariser's input and
+    /// no correction moves one without the other. The refusal stands
+    /// on the other three; a reader of this field must still handle all of them.
+    ///
+    /// So the sheet offers the one thing it can do honestly — make another — and says the rest in
+    /// the footer.
+    @ViewBuilder private var summarizeAgainControl: some View {
+        if let resolution = summaryPrompt, canSummarizeAgain(resolution) {
+            if case .standardFallback(let p) = resolution {
+                Text(String(format: String(localized: "document.review.summarizeAgain.fallback %@",
+                                           defaultValue: "Summarize Again will use “%@” — the prompt that made the newest summary is no longer on this device."),
+                            p.name))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button {
+                Task { await summarizeAgain(using: resolution) }
+            } label: {
+                Label {
+                    Text(String(localized: "document.review.other.summarizeAgain",
+                                defaultValue: "Summarize Again"))
+                        .opacity(isSummarizingAgain ? 0 : 1)
+                        .overlay { if isSummarizingAgain { ProgressView().controlSize(.small) } }
+                } icon: {
+                    Image(systemName: "sparkles")
+                }
+            }
+            .disabled(isSummarizingAgain)
+            .accessibilityIdentifier("document.review.other.summarizeAgain")
+        }
+        if let summarizeOutcome {
+            Text(summarizeOutcome)
+                .font(.caption)
+                .foregroundStyle(summarizeFailed ? .orange : .secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Whether another summary can actually be made. The control is ABSENT, not disabled, when it
+    /// cannot: an offered control that returns on its first line is the defect P3b-6 spent its
+    /// length fixing on the two document surfaces.
+    ///
+    /// A VANISHED document fails the first test and always will — its `document_cache` row is
+    /// deleted and its div is gone from the volume, so there is no text to summarize. That is the
+    /// one route an orphan has, so the control is missing exactly where a reader might reach for
+    /// it, and nothing pretends otherwise.
+    private func canSummarizeAgain(_ resolution: SummarizationPrompt.Resolution) -> Bool {
+        !isVanished
+            && AppleIntelligenceProvider.shared.isAvailable
+            && appState.summarizationService != nil
+            && resolution.prompt != nil
+            && !(summarizerText ?? "").isEmpty
+    }
+
+    /// The document's text for the summariser, built through the SHARED recipe so this sheet's
+    /// input is identical to the document view's by construction.
+    ///
+    /// Its own gate, deliberately NOT a widening of `runSearches`': that guard is pinned verbatim by
+    /// `VolumeUpdateReviewTests`, and the two loads want different documents — the re-anchor search
+    /// wants highlights or quotations, this wants summaries.
+    private func loadSummarizerText() async {
+        guard !isVanished, summarizerText == nil, !liveSummaryRows.isEmpty else { return }
+        guard let dm = appState.downloadManager else { return }
+        let url = dm.volumeURL(for: volumeId)
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        var ast = await appState.documentASTCache.ast(volumeId: volumeId, documentId: documentId)
+        if ast == nil,
+           let parsed = try? await FRUSDocumentParser().parseDocument(documentId: documentId, volumeURL: url) {
+            await appState.documentASTCache.store([parsed], volumeId: volumeId)
+            ast = parsed
+        }
+        guard let ast else { return }
+        summarizerText = SummarizationService.documentText(from: ast.nodes)
+    }
+
+    /// Makes another summary and KEEPS the old ones.
+    ///
+    /// Keeping costs nothing: `SummarizationService.summarize` only ever inserts, and no app path
+    /// deletes a non-draft summary. The consequence the footer owes the reader is the other side of
+    /// that — there is no per-summary delete anywhere in the app, so every press is one more row.
+    ///
+    /// Bumps `revisionReviewToken` on success, which is what makes the document's own carousel
+    /// reload: `vm.summaries` is a snapshot array, not a `@Query`, so without it the reader would
+    /// close this sheet onto a carousel that does not contain the summary they just made.
+    private func summarizeAgain(using resolution: SummarizationPrompt.Resolution) async {
+        guard !isSummarizingAgain,
+              let service = appState.summarizationService,
+              let prompt = resolution.prompt,
+              let text = summarizerText, !text.isEmpty else { return }
+        // The snapshot is taken on the main actor: `Resolution` carries live `@Model` references
+        // and is deliberately not `Sendable`.
+        let snapshot = SummarizationPromptSnapshot(from: prompt)
+        isSummarizingAgain = true
+        summarizeOutcome = nil
+        summarizeFailed = false
+        defer { isSummarizingAgain = false }
+        do {
+            try await service.summarizeDiscarding(
+                documentId: documentId,
+                volumeId: volumeId,
+                documentText: text,
+                prompt: snapshot,
+                provider: AppleIntelligenceProvider.shared,
+                activeProjectId: appState.activeProjectId)
+            summarizeOutcome = String(localized: "document.review.other.summarizeAgain.done",
+                                      defaultValue: "A new summary was added. The earlier ones are kept — step through them in the document's Summary panel.")
+            appState.revisionReviewToken += 1
+        } catch {
+            summarizeFailed = true
+            summarizeOutcome = error.localizedDescription
+            // Also durably, on the object that outlives this sheet. The reader may have pressed
+            // Done and walked away — this run takes minutes on a long document — and the inline
+            // copy above dies with the sheet's `@State`. Success already survives dismissal by
+            // bumping `revisionReviewToken` on the same object; without this the two halves are
+            // asymmetric and only the failure is silent.
+            appState.summarizeAgainFailure = AppState.SummarizeAgainFailure(
+                volumeId: volumeId, documentId: documentId,
+                message: error.localizedDescription)
+            #if DEBUG
+            print("[DocumentChangeReviewSheet] Summarize Again failed: \(error)")
+            #endif
         }
     }
 

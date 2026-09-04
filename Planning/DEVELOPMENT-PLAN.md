@@ -11147,3 +11147,60 @@ stable, so two standards seeded in one tick could make the prompt NAMED differ f
 And "Change prompt" was left reaching the same silent guard Regenerate had just been gated against.
 Also corrected: nine mirror blocks claimed `iOS+macOS (single edit point)` when six are macOS-only,
 one iOS-only, and three genuinely have two call sites.
+
+## Session 2026-09-03k — R-5 P3b-7: another summary, and the claim that had to be withdrawn three times (PR #NNNN)
+
+**Q-8 (b) is two features under one letter, and only one of them shipped.** The row asks for
+regenerate-and-keep from the review sheet *and* for the sheet to say which summaries predate the
+correction. The control ships. The comparison is REFUSED, and that refusal took more work than the
+control did.
+
+**Summarize Again** appears in the sheet's Other Annotations section when the document already has a
+summary, Apple Intelligence is available, a prompt resolves, the document still exists, and its text
+could be read. It runs the newest summary's own prompt through `SummarizationPrompt.resolve` — P3b-6's
+rule, so a deleted prompt substitutes a standard one and says so — and inserts; nothing is replaced,
+because no app path deletes a non-draft summary. `SummarizationService.summarize` only ever inserts.
+
+**The summariser's input is now built one way.** Three sites had their own recipe for turning a parsed
+document into the string a model reads, and `GeneratedSummary`'s own doc comment had been complaining
+about it. `SummarizationService.documentText(from:)` is now the only one, and the separator is
+load-bearing rather than cosmetic: `chunk` partitions on `"\n\n"`, so the index's space-joined
+`body_text` would arrive as a single paragraph and fall through to sentence-splitting — a different
+summary of the same document from the same prompt. A mutation swapping that separator survived the
+first sweep, because the test asserted the function EXISTED and nothing asserted what it produced.
+
+**THE CLAIM THAT WAS WRONG THREE TIMES.** The refusal to read `sourceContentHash` rested on four
+grounds. The third said the hash covers material the summariser never reads, so a correction confined
+to that band moves the hash while the model's text is character-identical — first as "an
+apparatus-only correction, the commonest case this sheet exists for", then, after review showed
+footnotes are on both sides, as "the header, dateline and source note". **Both are false, and one
+grep settles it**: `FRUSASTNode.plainText` recurses `.head`, `.dateline` and `.footnote`, and the
+source note IS a footnote node, so every element `content_hash` covers is inside the summariser's
+input. The ground is withdrawn. The refusal stands on the other three — `.rebaseline` moves every
+hash on a Rebuild Index with no correction behind any of them; the vanished mark preserves hashes, so
+on a REMOVED document a stale summary's hash compares EQUAL; and it is nil wherever a volume has not
+been re-indexed since P1, which took no index bump. It was stated as measured fact in this file, in
+the design, in `GeneratedSummary`'s doc comment and in both user manuals before anyone ran the grep.
+
+**Four defects the adversarial review found in the first cut, all of them mine.** The re-keyed footer
+promised "it can summarize the document again" in all five states where the control is absent — the
+screen telling the reader to press a button that is not on it; it is two strings now, in the two arms
+of one gate. The carousel reload was `loadSummaries`, which resets `activeSummaryIndex` to 0, so
+every review write — marking reviewed, moving a highlight, editing a note — sent the reader back to
+summary 1; `reloadSummariesPreservingSelection` restores by summary ID and deliberately does NOT
+restore when the count grew, because after a Summarize Again index 0 IS the new summary. The
+substitution caption was reused verbatim from P3b-6 and named a "Regenerate" control this sheet does
+not have. And `loadSummarizerText`'s `!isVanished` guard was DEAD: `revision` is `@State` filled by
+`loadRevision`, so the task fired first, read nil, and parsed the whole volume for a removed
+document — `loaded` is in the key now, the way the excerpt check's already was.
+
+**The asymmetry that made a failure silent.** Summarize Again spawns a task that outlives its sheet,
+and the sheet is freely dismissible while it runs — `SummarizationService`'s own doc records a
+document at 131 chunks and "many minutes". Success survived dismissal, because it signals by bumping
+`revisionReviewToken` on `AppState`; failure was written into the sheet's `@State` and reached
+nobody. `AppState.summarizeAgainFailure` carries it to whichever twin owns that document, onto the
+same `summarizationError` surface the document's own Regenerate already uses.
+
+**No CloudKit change and no ledger row.** Writing an `AnnotationReview` of kind `.summary` would mint
+the first non-nil `annotationId` and cost a TENTH Production promotion for a sheet that judges
+nothing. 20 mutations, all killed by their own named controls; full suite 4,450 tests in 584 suites.

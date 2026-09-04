@@ -289,8 +289,25 @@ struct MacDocumentView: View {
                                       title: entry.header,
                                       currentVersion: vm.renderModel.map { ASTToRenderNodeConverter.renderingVersion(for: $0) })
         }
+        // R-5 P3b-7: a Summarize Again that failed AFTER its sheet was dismissed. Success already
+        // reaches this document through `revisionReviewToken`; this is the other half, routed onto
+        // the same `summarizationError` surface the document's own Regenerate uses, and claimed
+        // only by the document it names.
+        .onChange(of: appState.summarizeAgainFailure) { _, failure in
+            guard let failure,
+                  failure.volumeId == entry.volumeId,
+                  failure.documentId == entry.documentId else { return }
+            vm.summarizationError = failure.message
+            appState.summarizeAgainFailure = nil
+        }
         // R-5 P3: a review write anywhere (this sheet, Research, the hub) re-reads the row.
         .onChange(of: appState.revisionReviewToken) { _, _ in
+            // R-5 P3b-7: the carousel is a snapshot ARRAY, not a `@Query`, so a summary made from
+            // the review sheet is invisible until something reloads it. Without this the reader
+            // presses Summarize Again, closes the sheet, and finds the same summaries as before.
+            // Position-preserving because this token fires on every review write, and a plain
+            // `loadSummaries` sends the reader back to summary 1 when they mark a change reviewed.
+            vm.reloadSummariesPreservingSelection(context: modelContext)
             Task {
                 revision = await DocumentChangeBanner.revision(volumeId: entry.volumeId,
                                                                documentId: entry.documentId,

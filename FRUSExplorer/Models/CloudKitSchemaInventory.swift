@@ -449,10 +449,13 @@ enum CloudKitSchemaInventory {
         // in Production. `CD_AnnotationReview.CD_annotationId` is NOT, and cannot be until a
         // build writes one — CloudKit creates a field from the first record that carries a value,
         // and every writer in this build records a `document`-grain row whose `annotationId` is
-        // nil. It is listed here honestly rather than attested, and P3b-4/P3b-5 — the phases that
-        // give the reserved kinds their writers — must exercise it on a Development build and
-        // promote it before shipping. `CloudKitSchemaInventoryTests` cannot catch this: the
-        // identifier is a real member of the inventory either way.
+        // nil. It is listed here honestly rather than attested. An earlier version of this comment
+        // named P3b-4/P3b-5 as "the phases that give the reserved kinds their writers": all four of
+        // P3b-4, P3b-5, P3b-6 and P3b-7 have now shipped WITHOUT one, each refusing a ledger row
+        // because minting the first non-nil `annotationId` costs a tenth Production promotion. So
+        // this identifier still awaits a writer, and whichever phase adds one must exercise it on a
+        // Development build and promote it before shipping. `CloudKitSchemaInventoryTests` cannot
+        // catch this: the identifier is a real member of the inventory either way.
         "CD_AnnotationReview.CD_annotationId",
     ]
 

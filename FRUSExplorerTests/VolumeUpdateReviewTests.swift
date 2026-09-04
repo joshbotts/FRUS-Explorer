@@ -316,9 +316,14 @@ struct VolumeUpdateReviewTests {
         #expect(shippedCopy.contains("Open the plan"))
         // The reworded footer is a NEW key: no String Catalog ships, so editing the old one in
         // place would have silently changed shipped copy.
-        #expect(sheet.contains("document.review.other.footer.v2"))
+        // Re-keyed again at P3b-7: the footer said the app "can only take you to them", which a
+        // Summarize Again control makes false. Each re-key is a NEW key because no String Catalog
+        // ships, so a defaultValue IS the shipped string.
+        #expect(sheet.contains("document.review.other.footer.v3"))
         #expect(!sheet.contains("\"document.review.other.footer\","),
                 "the superseded key must not still be emitted")
+        #expect(!sheet.contains("\"document.review.other.footer.v2\","),
+                "nor the one P3b-7 supersedes")
 
         let rail = try Self.source("DocumentView/ResearchRailView.swift")
         // Q-11 (i): the sentence and BOTH writes prefer the live parse. Fixing only the sentence
@@ -375,6 +380,137 @@ struct VolumeUpdateReviewTests {
         let reshape = try #require(vm.range(of: "ast = ast.applyingClassificationOverride("))
         #expect(assign.upperBound < reshape.lowerBound,
                 "recording it AFTER the reshape would make the parse equal the override")
+    }
+
+    /// R-5 P3b-7, design Q-8 (b). The control is one CALL each, and the refusal beside it matters
+    /// as much: the sheet states no per-summary standing, because none of the three available
+    /// signals supports one.
+    @Test("P3b-7 wiring: the sheet can summarize again, through the shared recipe, and judges nothing")
+    func p3b7Wiring() throws {
+        let sheet = try Self.source("DocumentView/DocumentChangeReviewSheet.swift")
+        #expect(sheet.contains("service.summarizeDiscarding("),
+                "the sheet must go through the shipped insert-only path")
+        #expect(sheet.contains("SummarizationService.documentText(from: ast.nodes)"),
+                "the input must be the SHARED recipe, not the index's space-joined body text")
+        #expect(sheet.contains("SummarizationPrompt.resolve(preferredId: newest.promptId, in: modelContext)"),
+                "another summary uses the newest one's own prompt, as both document surfaces do")
+        // Its OWN key, not the document surfaces' shipped one: that string names a "Regenerate"
+        // control, and this sheet's button says Summarize Again.
+        #expect(sheet.contains("document.review.summarizeAgain.fallback %@"),
+                "the sheet must warn before substituting a prompt, in its own control's words")
+        #expect(!sheet.contains("summary.block.regenerate.fallback"),
+                "reusing the document surfaces' key would name a control this sheet does not have")
+        // SCOPED to the function: `markReviewed` bumps the same token on the same line, so a
+        // file-wide scan matches that instead and the mutation survives. Verified by sweep.
+        let againStart = try #require(sheet.range(of: "private func summarizeAgain(")).upperBound
+        let againEnd = sheet.range(of: "\n    }\n", range: againStart..<sheet.endIndex)?.upperBound
+            ?? sheet.endIndex
+        let againBody = String(sheet[againStart..<againEnd])
+        #expect(againBody.contains("appState.revisionReviewToken += 1"),
+                "without the bump the reader closes the sheet onto a carousel missing the new summary")
+        #expect(againBody.contains("service.summarizeDiscarding("))
+        #expect(againBody.contains("SummarizationPromptSnapshot(from: prompt)"),
+                "the snapshot must be taken on the main actor: Resolution is not Sendable")
+
+        // The control's own gates, scoped the same way. A vanished document has no text and never
+        // will, so the control is absent rather than disabled.
+        let gateStart = try #require(sheet.range(of: "private func canSummarizeAgain(")).upperBound
+        let gateEnd = sheet.range(of: "\n    }\n", range: gateStart..<sheet.endIndex)?.upperBound
+            ?? sheet.endIndex
+        let gate = String(sheet[gateStart..<gateEnd])
+        #expect(gate.contains("!isVanished"), "a vanished document has no text to summarize")
+        #expect(gate.contains("AppleIntelligenceProvider.shared.isAvailable"))
+        #expect(gate.contains("appState.summarizationService != nil"))
+        #expect(gate.contains("resolution.prompt != nil"))
+        #expect(gate.contains("!(summarizerText ?? \"\").isEmpty"))
+
+        // The substitution warning is RENDERED, not merely present as a key.
+        let controlStart = try #require(sheet.range(of: "private var summarizeAgainControl")).upperBound
+        let controlEnd = sheet.range(of: "\n    }\n", range: controlStart..<sheet.endIndex)?.upperBound
+            ?? sheet.endIndex
+        let control = String(sheet[controlStart..<controlEnd])
+        #expect(control.contains("if case .standardFallback(let p) = resolution {"),
+                "the warning must be reachable — a mutation adding a false conjunct survived a key scan")
+        // It never claims a per-summary standing, and never READS the field that would look like the
+        // way to. Scoped to CODE, not prose: the control's own doc comment names the field four
+        // times explaining why it is refused, and a file-wide scan matches that instead — the trap
+        // this suite has now hit three phases running.
+        let code = sheet.split(separator: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+        #expect(!code.contains("sourceContentHash"),
+                "P3b-7 refused to read the hash; a reader of it must handle three separate defeats")
+        // And it writes no ledger row: that would mint the first non-nil annotationId and cost a
+        // tenth Production promotion.
+        // Scoped to CODE for the same reason as the scan above it — the doc comment explains at
+        // length why no ledger row is written, so a file-wide negative would match the prose.
+        #expect(!code.contains("AnnotationReviewStore.record(kind: .summary"))
+
+        // The carousel is a snapshot array, so both twins must reload it when the token moves.
+        for twin in ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"] {
+            let s = try Self.source(twin)
+            let start = try #require(s.range(of: "onChange(of: appState.revisionReviewToken)")).upperBound
+            let end = s.range(of: "\n        }\n", range: start..<s.endIndex)?.upperBound ?? s.endIndex
+            #expect(String(s[start..<end]).contains("reloadSummariesPreservingSelection(context: modelContext)"),
+                    "\(twin) must reload the carousel, or a summary made in the sheet stays invisible")
+            #expect(!String(s[start..<end]).contains("vm.loadSummaries(context: modelContext)"),
+                    "the plain reload resets activeSummaryIndex, discarding the reader's position on every review write")
+        }
+
+        // A failure must outlive the sheet. Success already does — it signals by bumping a token
+        // on `appState` — so without this the two halves are asymmetric and only failure is silent.
+        #expect(againBody.contains("appState.summarizeAgainFailure = AppState.SummarizeAgainFailure("),
+                "a Summarize Again that fails after Done must still reach the reader")
+        for twin in ["DocumentView/DocumentView.swift", "App/MacDocumentView.swift"] {
+            let s = try Self.source(twin)
+            let start = try #require(s.range(of: "onChange(of: appState.summarizeAgainFailure)")).upperBound
+            let end = s.range(of: "\n        }\n", range: start..<s.endIndex)?.upperBound ?? s.endIndex
+            let body = String(s[start..<end])
+            #expect(body.contains("failure.volumeId == entry.volumeId"),
+                    "\(twin) must not show another document's failure")
+            #expect(body.contains("failure.documentId == entry.documentId"))
+            #expect(body.contains("summarizationError = failure.message"),
+                    "\(twin) must route it to the surface Regenerate already uses")
+            #expect(body.contains("appState.summarizeAgainFailure = nil"),
+                    "\(twin) must clear it, or it re-shows on every later change")
+        }
+
+        // The footer does not promise a control the sheet may not be offering.
+        #expect(sheet.contains("document.review.other.footer.noSummarizer.v3"),
+                "five states hide the control; the footer needs wording for them")
+        // Anchored on the footer closure, not on a fallback to the file head: the two wordings
+        // must sit in the two arms of ONE gate, or the sheet promises a control it is not showing.
+        let footerStart = try #require(sheet.range(of: "} footer: {")).upperBound
+        let footerEnd = try #require(sheet.range(of: "document.review.other.footer.noSummarizer.v3",
+                                                 range: footerStart..<sheet.endIndex)).upperBound
+        let footer = String(sheet[footerStart..<footerEnd])
+        #expect(footer.contains("if let resolution = summaryPrompt, canSummarizeAgain(resolution) {"),
+                "the summarize-again wording must be behind the same gate as the control")
+        #expect(footer.contains("} else {"), "and the other wording must be its else arm")
+
+        // The order the prompt is read from is the order the carousel shows, and that rule is
+        // pinned behaviourally where it lives (SummaryCarouselOrderTests).
+        #expect(sheet.contains(".sorted(by: GeneratedSummary.ranksAbove)"),
+                "liveSummaryRows must use the shared order, or `newest` is not the newest")
+
+        // The text load waits for the revision. Without `loaded` in the key the task fires first,
+        // `isVanished` is false because `revision` is nil, and a removed document parses its whole
+        // volume for text no control will use.
+        let keyStart = try #require(sheet.range(of: "private var summarizerTextKey")).upperBound
+        let keyEnd = sheet.range(of: "\n    }\n", range: keyStart..<sheet.endIndex)?.upperBound
+            ?? sheet.endIndex
+        #expect(String(sheet[keyStart..<keyEnd]).contains("loaded"),
+                "the vanished guard is dead unless the load re-runs once the revision arrives")
+
+        // The four sites that build a summariser's input now share one function.
+        let service = try Self.source("Summarization/SummarizationService.swift")
+        #expect(service.contains("static func documentText(from nodes: [FRUSASTNode]) -> String"))
+        for site in ["DocumentView/DocumentViewModel.swift", "Summarization/BackgroundSummarizationService.swift"] {
+            let s = try Self.source(site)
+            #expect(s.contains("SummarizationService.documentText(from:"), "\(site) must share the recipe")
+            #expect(!s.contains(".joined(separator: \"\\n\\n\")"),
+                    "\(site) must not keep a private copy of it")
+        }
     }
 
     @Test("Both document-view twins mount DocumentChangeBanner and neither keeps a private banner")
