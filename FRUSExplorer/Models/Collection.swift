@@ -654,8 +654,18 @@ enum CollectionEntryKind: String, CaseIterable, Sendable {
     /// The source document's `renderingVersion` at excerpt creation (the
     /// `DocumentHighlight.renderingVersion` scheme: a 16-char SHA-256 prefix over the
     /// render model's flat text + converter version). A future precision-rendering flip (A9) compares it
-    /// against the current document version to decide whether the offsets still align;
-    /// today it is stored, never read at render time. `nil` when unavailable at creation.
+    /// against the current document version to decide whether the offsets still align.
+    ///
+    /// **Read since R-5 P3b-4** (design Q-7 f), though still never at render time: the volume-update
+    /// review sheet compares it against the document's current version through
+    /// `ExcerptReview.capture`, so a quotation can say it was taken from an earlier version of the
+    /// text. That is a statement about provenance and not about the rendering — the frozen `text`
+    /// remains the excerpt's rendering source of truth, per decision A9, so nothing on screen
+    /// changes when this value goes stale.
+    ///
+    /// `nil` when unavailable at creation, which is COMMON rather than exceptional: both selection
+    /// paths write it only when the selection reported offsets, and a footnote selection reports
+    /// text alone. So absence means *this is how the quotation was taken*, never *the text moved*.
     var excerptRenderingVersion: String? {
         didSet { lastModified = .now }
     }

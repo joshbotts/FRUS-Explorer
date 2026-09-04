@@ -10863,3 +10863,107 @@ readings, so the number of blocks a highlight spans is no longer a limit, and a 
 pathological branch count is REFUSED rather than answered from a truncated walk.
 
 **Verification.** **Full iOS unit suite (iPhone 16e sim), run alone: 4,411 tests in 580 suites, 0 failures** — baseline 4,389 / 579 at #1183, +22 in the new `HighlightReanchorTests`: the refusals, the ordinary outcomes, and every shape the corpus actually contains (a literal separator inside one block, a real seam, a dropped whitespace-only block between two kept ones, the pre-July-2026 raw-slice format, canonicalisation at both ends, a passage spanning three, six and nine blocks, a symmetric distance band, the move gate, the seven sentences, and a synthetic astral fixture for the UTF-16 arithmetic that no corpus volume can catch). `FRUSExplorerMac` Debug, run alone after the suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues. **Mutation sweep: 15 mutations, 15 killed.** Twelve on the first pass. Three survivors were missing fixtures and one mutation did not compile — correctly voided by the positive control rather than counted. Each survivor taught something: the astral fixture had its non-BMP characters BEFORE the passage, so the passage's own character and UTF-16 counts matched and every arithmetic mutation was invisible; the leading contraction fires only on the STORED span, so the fixture had to store a span beginning inside a droppable slice; and the literal-separator branch turned out to be **unreachable** — the seam walk already skips whitespace and two newlines are whitespace — so it was deleted rather than given a contrived test, and its mutation with it. **Adversarial review: 32 findings, 25 confirmed, all addressed; 7 refuted.** One was a defect that would have shipped a false statement of fact — the first matcher capped the fragment count at five, so a highlight spanning six blocks reported "Not found" about a passage present character for character, with a Remove button beside it. The verifier reproduced it by compiling the shipped code.
+
+## Session 2026-09-03h — R-5 P3b-4: a quotation is research too (PR #1186)
+
+**The reader most exposed to a correction was the one the app told nothing.** Design Q-7 (b) with
+(f). `ResearchDocumentAggregation.annotatedKeys` admitted only `.document` collection entries, so a
+document whose sole annotation was a frozen quotation never appeared in "All Research Documents",
+never appeared under "Changed by an update", and was never counted in the storage hub's per-volume
+summary — while that section's own footer promised a **collection entry** counts, and while the same
+Research sidebar happily listed the document under its collection, because the By-Collection
+grouping has always treated an excerpt as membership. Widening the rule settles a disagreement
+inside one view and makes a shipped promise true.
+
+**The rule is named, and it refuses by name.** `countsAsAnnotation` admits `.document` and
+`.excerpt` and rejects `.heading`, `.prose`, `.generated` and any raw value a newer build writes —
+not by leaning on their empty ids, which would let a future entry kind that does carry ids silently
+claim a document this build cannot describe. The three project-engagement consumers keep the
+`.document` rule and are byte-identical: they answer *what have I worked on in this project* and
+feed the Project Home coverage tile, the exported method appendix, the corpus coverage map, the
+leads seed and the History search scope. That boundary had **no fixture anywhere** — the existing
+test planted only headings and prose — so a copy-paste widening would have run fully green while
+moving three published numbers. It has a fixture now.
+
+**The sheet runs the shipped check, not a second copy.** The new Quotations section calls
+`ExcerptVerifier.verify` and then `upgradingVanished`, the same pair the export sheet uses. The
+second call is the load-bearing one: without it every quotation on a document an update REMOVED
+reads "this volume is not on this device" — the exact Q-7 (g) misreport P3b-1 had just fixed on the
+export path — and this sheet is the only route a vanished document has.
+
+**Rows are reads, by three separate decisions.** An `AnnotationReview` of kind `collectionEntry`
+would be the first writer of `CD_AnnotationReview.CD_annotationId` and force a TENTH Production
+promotion against this row's own "No deploy". A Move would be an invisible write, since nothing
+renders from the anchors — the frozen text is the rendering source of truth. And deletion belongs to
+the collection editor, which is where the footer sends the reader.
+
+**The banner and the row track opposite texts, and two draft sentences asserted the reverse.**
+`change_kind` is decided by `body_hash` — the render flat text, footnotes EXCLUDED, the very string
+`excerptRenderingVersion` belongs to — while the verifier reads the index's `body_text`, footnotes
+INCLUDED. So an *apparatus* correction leaves the version equal and CHANGES the haystack, and a
+quoted footnote can begin failing under a correction the banner calls notes-only. A first footer
+claimed the opposite ("it did not match before this correction either"), and a special-cased
+sentence for "not found with an unchanged version" was built on the same inversion; the review
+caught both and both were withdrawn. `ExcerptReview.lines` now composes the finding and the version
+line in ONE place so they cannot contradict each other, and suppresses the version line entirely on
+a vanished document — whose `body_hash` survives the vanish mark by design, so the comparison had a
+comparand and printed "captured from an earlier version" under "there is nothing to check against".
+
+**Q-10 (f) is REFUSED rather than deferred a second time.** The seeded find bar was measured against
+the sheet's own search: they disagree on SIX axes, not the two P3b-3 recorded — block seams, `<br>`,
+`data-skip` footnote-marker digits and figure captions present in the DOM and absent from flat text,
+the visible endnote section outside `.frus-document` that find matches and the sheet cannot see,
+case (the find bar is case-insensitive and wrapping; the sheet is exact equality), and counting,
+where macOS's WebKit find API reports only whether the current search matched and so cannot state a
+count at all while the sheet says "Found N times". A control that contradicted the sentence beside it
+is worse than no control. If the complement is ever wanted, the shape is scroll-and-reveal from the
+match's own offsets, which needs no third text.
+
+**Rider, disclosed rather than hidden.** The Research sidebar's per-collection number was
+`documentEntries.count` — every entry of every kind — so a collection of three documents under two
+headings showed "5" and opened a list of three. It now counts distinct documents through the same
+rule, and deliberately differs from the Collections feature's own per-collection counts, which count
+`.document` entries because they answer a different question: *what does this collection contain*
+rather than *what will I see if I tap this row*.
+
+**Docs.** The iOS manual had NO review paragraph at all — every R-5 PR had amended the macOS one and
+none had touched it — and now carries the whole flow, plus the *Changed by an update* category and a
+corrected annotation list that had said four sources since P2 made it six. The macOS paragraph moved
+too: "a sheet listing every highlight" stopped being the whole list. Both manuals said an excerpt
+"stays exactly as the source **prints** it", which is false after a correction and is precisely the
+claim this PR makes checkable. `Docs/EditableContent.md` gained the nine new strings **and the six
+`excerpt.verify.*` strings that had shipped since M-3 without ever being mirrored**, so the owner
+could not edit the wording of the export check's own verdicts; all sixteen blocks were verified
+character-for-character against their shipped `defaultValue`.
+
+**Verification.** **Full iOS unit suite (iPhone 16e sim), run alone on a quiesced tree: 4,425 tests in 581 suites, 0
+failures** — baseline 4,411 / 580 at #1185, so +14 tests and +1 suite (`ExcerptReviewTests`: the four
+capture states including the one an optional field makes real, the five verdict sentences, the
+vanished suppression, the withdrawn shortcut, the transparency of the composition over every other
+pairing, and the whole path through the real verifier). `FRUSExplorerMac` Debug, run alone after the
+suite: **BUILD SUCCEEDED**, no source warnings beyond the two known non-source residues.
+
+**Mutation sweep: 13 mutations, 13 killed** — twelve on the first honest pass, and the thirteenth
+only after the sweep's own report was disbelieved. It read `*** SURVIVED ***` on the mutation that
+widens the project-engagement gate to admit excerpts. It had not survived: the fixture that kills it
+lives in `DocumentEngagementGathererTests`, the SECOND suite in
+`DocumentEngagementServiceTests.swift`, and the sweep filtered on the first. Run against the right
+type the mutation dies on two expectations. **This is the third instance of that trap in eight days,
+and the positive control did not catch it** — the sweep refused any run under 38 tests and this one
+reported 40, because three other suites in the same filter supplied the count. A total across
+several suites is not a positive control; the control has to name the specific test that should
+kill THIS mutation. The memory note now says so.
+
+**Adversarial review: 7 lenses, 27 findings, 4 survived refutation, all 4 already fixed by the time
+the judge ran — plus 3 more the last lens raised and 2 that were fixed and then re-refuted as
+already-fixed.** Two mattered. The manuals named a control that does not exist ("Mark All Reviewed";
+the shipped button is "Mark Reviewed") and claimed the hub section appears only conditionally when
+it is mounted unconditionally and says "No changes waiting". And the hash inversion above: two
+sentences asserting that an unchanged version proved a quotation never matched, one of them shipped
+copy. Both were withdrawn and the reasoning is now recorded in `ExcerptReview`'s overview so nobody
+re-derives the shortcut.
+
+**A race worth recording:** refreshing the sweep's pristine copies WHILE the sweep was running
+poisoned them with a live mutation, silently invalidating four results and later wiping an
+un-copied fix. The rule is simple and was learned the expensive way — never touch the pristine set
+while a sweep is live; stop it, repair, and re-run the affected range.

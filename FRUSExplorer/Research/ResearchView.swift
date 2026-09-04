@@ -1085,6 +1085,11 @@ struct ResearchView: View {
     private var collectionMemberships: [String: Set<UUID>] {
         var result: [String: Set<UUID>] = [:]
         for entry in allCollectionEntries {
+            // The same kind rule the aggregation applies, so this view has ONE answer to "which
+            // entry names a document". A no-op against today's data — a heading, a prose block and
+            // a generated block are all minted with empty ids — but it stops a future entry kind
+            // that does carry ids from silently filing a document under a collection.
+            guard ResearchDocumentAggregation.countsAsAnnotation(entry.kind) else { continue }
             guard !entry.volumeId.isEmpty, !entry.documentId.isEmpty else { continue }
             result["\(entry.volumeId)/\(entry.documentId)", default: []].insert(entry.collectionId)
         }
@@ -1093,11 +1098,19 @@ struct ResearchView: View {
 
     /// Collections paired with their document count, sorted alphabetically.
     /// Filters out smart collections (savedSearchId != nil) and empty collections.
+    ///
+    /// The count is DISTINCT DOCUMENTS, under the same rule as `collectionMemberships` — so it
+    /// equals the length of the list the row opens. It used to be `documentEntries.count`, every
+    /// entry of every kind, which counted a section heading, an editorial prose block and a
+    /// generated apparatus block as documents; a collection of three documents under two headings
+    /// showed "5" and opened a list of three. R-5 P3b-4 did not cause that, but it would have made
+    /// it worse in a new way: an excerpt and its own document entry are two entries naming one
+    /// document.
     private var sortedCollectionsWithCounts: [(collection: Collection, count: Int)] {
         allCollections.compactMap { collection in
             // Exclude smart collections — their document list is dynamic, not curated entries.
             guard collection.savedSearchId == nil else { return nil }
-            let count = (collection.documentEntries ?? []).count
+            let count = ResearchDocumentAggregation.distinctDocumentKeys(in: collection.documentEntries ?? []).count
             guard count > 0 else { return nil }
             return (collection: collection, count: count)
         }
@@ -1110,7 +1123,7 @@ struct ResearchView: View {
         }
     }
 
-    /// Total distinct documents across all four annotation sources.
+    /// Total distinct documents across every annotation source — six since R-5 P2.
     private var allAnnotatedDocumentCount: Int { allAnnotatedKeys.count }
 
     /// Every document carrying any annotation this view knows about — six sources since R-5 P2.
@@ -1330,13 +1343,67 @@ struct ResearchView: View {
 ///
 /// Version history:
 ///   1.0 — R-5 P2: extracted from `ResearchView` and widened to six sources
+///   1.1 — R-5 P3b-1: `rowDestination`, and headnote drafts excluded
+///   1.2 — R-5 P3b-4: `countsAsAnnotation` — excerpt entries join the collections source
 enum ResearchDocumentAggregation {
+
+    /// Which collection-entry kinds put their document into the reader's research (R-5 P3b-4,
+    /// design Q-7 b).
+    ///
+    /// A `.document` entry says *this document belongs in my collection*; an `.excerpt` says
+    /// *these words from it do*, which is a stronger claim about the text, not a weaker one — an
+    /// excerpt is the one annotation whose whole content is a verbatim copy of what an update can
+    /// correct. Before P3b-4 a document carrying only an excerpt was absent from "All Research
+    /// Documents" and from "Changed by an update", while the same document DID appear under its
+    /// collection in the same sidebar (`collectionMemberships` counts every entry with a document
+    /// id), so widening this settles a disagreement inside one view. It also makes the hub's
+    /// footer true: it promises a "collection entry" counts, and an excerpt is one.
+    ///
+    /// The other kinds cannot contribute and are refused by name rather than by their empty ids:
+    /// `.heading` and `.prose` carry no document, `.generated` is computed at every resolve, and
+    /// `.unrecognized` is a kind written by a NEWER build — admitting it would let a future entry
+    /// type silently claim a document this build cannot describe.
+    ///
+    /// **This rule is the review filter's alone.** `ProjectEngagedDocuments`,
+    /// `ProjectLeadsService` and `DocumentEngagementService` keep the `.document` test: they
+    /// answer *what have I worked on in this project*, they feed published coverage numbers and
+    /// an exported method appendix, and a quotation is not a document a reader engaged with.
+    static func countsAsAnnotation(_ entryKind: String) -> Bool {
+        entryKind == CollectionEntryKind.document.rawValue
+            || entryKind == CollectionEntryKind.excerpt.rawValue
+    }
+
+    /// The DISTINCT documents a collection's entries name, under ``countsAsAnnotation``.
+    ///
+    /// This is the Research sidebar's per-collection number, and it is a set rather than a count
+    /// so that it equals the length of the list the row opens. The number used to be
+    /// `documentEntries.count` — every entry of every kind — so a collection of three documents
+    /// under two headings showed "5" and opened a list of three, and a document both quoted and
+    /// added counted twice. Both were already wrong before P3b-4; what P3b-4 changes is that the
+    /// list this number labels now includes documents reached only by a quotation, so a count that
+    /// disagreed with it would disagree more visibly.
+    ///
+    /// **It deliberately differs from the Collections feature's own per-collection counts**
+    /// (`CollectionPickerSheet`, `CollectionEditorView`, `CollectionExportSheet`,
+    /// `CollectionPreviewView`), which count `.document` ENTRIES. Those answer *how many documents
+    /// does this collection contain*, which is a fact about its composition. This one labels a row
+    /// that opens a list of the reader's annotated documents, so it answers *how many documents
+    /// will I see if I tap this*, and it must equal that list or it is simply wrong.
+    static func distinctDocumentKeys(in entries: [CollectionEntry]) -> Set<String> {
+        var keys = Set<String>()
+        for e in entries where countsAsAnnotation(e.kind) && !e.volumeId.isEmpty && !e.documentId.isEmpty {
+            keys.insert("\(e.volumeId)/\(e.documentId)")
+        }
+        return keys
+    }
 
     /// Every `"volumeId/documentId"` carrying at least one annotation, across six sources.
     ///
     /// The two added for P2 are the ones a correction is most likely to supersede: a
     /// `GeneratedSummary` is derived from the text, and an `ArchiveVisitDocument`'s plan from the
     /// source note. Before P2 a document carrying only one of those did not appear here at all.
+    /// The collections source counts the kinds ``countsAsAnnotation`` admits — since P3b-4 that
+    /// includes excerpts, whose frozen text is a verbatim copy of what an update corrects.
     static func annotatedKeys(notes: [ResearchNote],
                               tagAssignments: [DocumentTagAssignment],
                               collections: [Collection],
@@ -1347,7 +1414,7 @@ enum ResearchDocumentAggregation {
         for n in notes where !n.volumeId.isEmpty && !n.documentId.isEmpty { keys.insert("\(n.volumeId)/\(n.documentId)") }
         for t in tagAssignments where !t.volumeId.isEmpty && !t.documentId.isEmpty { keys.insert("\(t.volumeId)/\(t.documentId)") }
         for c in collections {
-            for e in c.documentEntries ?? [] where e.kind == CollectionEntryKind.document.rawValue
+            for e in c.documentEntries ?? [] where ResearchDocumentAggregation.countsAsAnnotation(e.kind)
                 && !e.volumeId.isEmpty && !e.documentId.isEmpty {
                 keys.insert("\(e.volumeId)/\(e.documentId)")
             }

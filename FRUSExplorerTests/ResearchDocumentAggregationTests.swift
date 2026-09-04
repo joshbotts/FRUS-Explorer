@@ -24,6 +24,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — R-5 P2: initial implementation
+///   1.1 — R-5 P3b-4: the collections source admits excerpt entries (design Q-7 b)
 @Suite("Research aggregation — the six annotation sources")
 struct ResearchDocumentAggregationTests {
 
@@ -67,6 +68,97 @@ struct ResearchDocumentAggregationTests {
             summaries: try context.fetch(FetchDescriptor<GeneratedSummary>()),
             visitDocuments: try context.fetch(FetchDescriptor<ArchiveVisitDocument>()))
         #expect(keys == ["v1/d1", "v1/d2", "v1/d3", "v1/d4", "v1/d5", "v1/d6"])
+    }
+
+    /// Design Q-7 (b). The excerpt is the annotation whose entire content is a verbatim copy of
+    /// the text an update corrects, and before P3b-4 a document carrying only one was absent from
+    /// "All Research Documents" and from "Changed by an update" — while the SAME document appeared
+    /// under its collection in the same sidebar, because that grouping counts every entry with a
+    /// document id.
+    @Test("An excerpt-only document is annotated; a heading, prose, generated or future entry is not")
+    @MainActor
+    func excerptEntriesCount() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "C", projectIds: [])
+        context.insert(collection)
+
+        // Every non-excerpt kind is planted WITH a document id, so the test proves the kind rule
+        // rather than the empty-id guard that `blankIdsAreSkipped` already covers.
+        func entry(_ kind: String, _ documentId: String, order: Int) {
+            let e = CollectionEntry(collectionId: collection.id, documentId: documentId,
+                                    volumeId: "v1", sortOrder: order)
+            e.kind = kind
+            context.insert(e)
+            e.collection = collection
+        }
+        entry(CollectionEntryKind.document.rawValue, "d1", order: 0)
+        entry(CollectionEntryKind.excerpt.rawValue, "d2", order: 1)
+        entry(CollectionEntryKind.heading.rawValue, "d3", order: 2)
+        entry(CollectionEntryKind.prose.rawValue, "d4", order: 3)
+        entry(CollectionEntryKind.generated.rawValue, "d5", order: 4)
+        entry("someKindAFutureBuildWrote", "d6", order: 5)
+        try context.save()
+
+        let keys = ResearchDocumentAggregation.annotatedKeys(
+            notes: [], tagAssignments: [],
+            collections: try context.fetch(FetchDescriptor<Collection>()),
+            highlights: [], summaries: [], visitDocuments: [])
+        #expect(keys == ["v1/d1", "v1/d2"])
+    }
+
+    /// The Research sidebar's per-collection number. It must equal the length of the list the row
+    /// opens, which is why it is a set of documents and not a count of entries: the old
+    /// `documentEntries.count` counted a heading and a prose block as documents, and after P3b-4
+    /// would additionally have counted an excerpt and its own document entry as two.
+    @Test("The sidebar count is distinct documents, not entries")
+    @MainActor
+    func sidebarCountIsDistinctDocuments() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "C", projectIds: [])
+        context.insert(collection)
+        func entry(_ kind: CollectionEntryKind, _ documentId: String, _ volumeId: String = "v1", order: Int) {
+            let e = CollectionEntry(collectionId: collection.id, documentId: documentId,
+                                    volumeId: volumeId, sortOrder: order)
+            e.kind = kind.rawValue
+            context.insert(e)
+            e.collection = collection
+        }
+        entry(.document, "d1", order: 0)
+        entry(.document, "d2", order: 1)
+        // The same document, quoted twice and also present as a document entry: ONE document.
+        entry(.excerpt, "d2", order: 2)
+        entry(.excerpt, "d2", order: 3)
+        // A document reached only by a quotation still counts.
+        entry(.excerpt, "d3", order: 4)
+        // Structure carries no document even when the ids are filled in.
+        entry(.heading, "d4", order: 5)
+        entry(.prose, "d5", order: 6)
+        entry(.generated, "d6", order: 7)
+        // The same document id in a different volume is a different document.
+        entry(.document, "d1", "v2", order: 8)
+        try context.save()
+
+        let entries = try #require(try context.fetch(FetchDescriptor<Collection>()).first?.documentEntries)
+        #expect(entries.count == 9, "the fixture must plant every entry, or the count proves nothing")
+        let keys = ResearchDocumentAggregation.distinctDocumentKeys(in: entries)
+        #expect(keys == ["v1/d1", "v1/d2", "v1/d3", "v2/d1"])
+        #expect(keys.count == 4, "nine entries, four documents")
+    }
+
+    /// The rule itself, so the three engagement consumers that must NOT widen have something to
+    /// point at: they test `.document` directly and never call this.
+    @Test("countsAsAnnotation admits document and excerpt, and refuses every other kind by name")
+    func countsAsAnnotationVocabulary() {
+        #expect(ResearchDocumentAggregation.countsAsAnnotation(CollectionEntryKind.document.rawValue))
+        #expect(ResearchDocumentAggregation.countsAsAnnotation(CollectionEntryKind.excerpt.rawValue))
+        for kind in [CollectionEntryKind.heading, .prose, .generated, .unrecognized] {
+            #expect(!ResearchDocumentAggregation.countsAsAnnotation(kind.rawValue),
+                    "\(kind.rawValue) must not put a document into the reader's research")
+        }
+        #expect(!ResearchDocumentAggregation.countsAsAnnotation(""))
+        #expect(!ResearchDocumentAggregation.countsAsAnnotation("someKindAFutureBuildWrote"))
     }
 
     @Test("A summary-only document and a visit-plan-only document are the two P2 adds")

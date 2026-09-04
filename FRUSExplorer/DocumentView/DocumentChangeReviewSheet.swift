@@ -13,8 +13,9 @@ import SwiftData
 
 /// The per-document review surface for a volume update (design §5.4–§5.6, R-5 P3): what the
 /// re-index recorded, every highlight on the document with its standing and the two actions the
-/// reader can take on it, the other annotations the app cannot judge, and the document-level
-/// disposition that stamps `reviewed_at`.
+/// reader can take on it, every quotation frozen from it with the export check's verdict, the
+/// other annotations the app cannot judge, and the document-level disposition that stamps
+/// `reviewed_at`.
 ///
 /// One shared view, reached three ways: the change banner's *Review…* control in both document
 /// twins (which pass the open document's `renderingVersion`), and the Research list's *Review
@@ -31,6 +32,7 @@ import SwiftData
 /// Version history:
 ///   1.0 — R-5 P3: initial implementation
 ///   1.1 — R-5 P3b-3: the re-anchor search, the found passage in context, and the Move Here offer
+///   1.2 — R-5 P3b-4: the Quotations section — the export check, per excerpt, with its capture version
 struct DocumentChangeReviewSheet: View {
 
     let volumeId: String
@@ -69,6 +71,9 @@ struct DocumentChangeReviewSheet: View {
     /// The display order frozen for the life of the sheet: the `@Query` sorts on `startOffset`, so
     /// a Move would otherwise make the row jump under the reader's finger as they tap it.
     @State private var rowOrder: [UUID] = []
+    /// One verifier outcome per excerpt entry, by entry id (R-5 P3b-4). Empty until the check has
+    /// run, which is why the row says "checking" rather than defaulting to an answer.
+    @State private var excerptOutcomes: [UUID: ExcerptVerifier.Outcome] = [:]
 
     init(volumeId: String, documentId: String, title: String, currentVersion: String? = nil) {
         self.volumeId = volumeId
@@ -129,6 +134,7 @@ struct DocumentChangeReviewSheet: View {
             List {
                 changeSection
                 if !highlights.isEmpty { highlightsSection }
+                if !excerpts.isEmpty { excerptsSection }
                 othersSection
             }
             .navigationTitle(title)
@@ -147,6 +153,15 @@ struct DocumentChangeReviewSheet: View {
         .task {
             await loadRevision()
             await runSearches()
+        }
+        // A SECOND task, keyed on the quotations and on whether the revision has loaded (R-5
+        // P3b-4). Keyed rather than chained for two reasons: the check must not run before
+        // `loadRevision`, since `upgradingVanished` needs the change kind; and an excerpt syncing
+        // in from another device while the sheet is open would otherwise keep "Checking…" on its
+        // row for the life of the sheet. Re-running is cheap — one indexed read for one document.
+        .task(id: excerptCheckKey) {
+            guard loaded else { return }
+            await verifyExcerpts()
         }
         .confirmationDialog(
             String(localized: "highlight.delete.title", defaultValue: "Remove Highlight"),
@@ -284,6 +299,123 @@ struct DocumentChangeReviewSheet: View {
         .padding(.vertical, 2)
     }
 
+    // MARK: - Quotations (R-5 P3b-4)
+
+    /// What re-runs the quotation check: the revision's arrival, then any change to the set of
+    /// quotations on this document.
+    private var excerptCheckKey: String {
+        (loaded ? "1|" : "0|") + excerpts.map(\.id.uuidString).joined(separator: ",")
+    }
+
+    /// Every stored quotation taken from this document, in a stable order.
+    ///
+    /// An entry with no text is skipped rather than shown as uncheckable: it renders as nothing in
+    /// its own collection too, and a row saying "nothing to check" about an invisible entry would
+    /// be the sheet's only mention of it.
+    private var excerpts: [CollectionEntry] {
+        entries
+            .filter { $0.entryKind == .excerpt && !($0.text ?? "").isEmpty }
+            .sorted {
+                // Branch on the COMPARISON, not on string inequality: two collections named
+                // "Notes" and "notes" are unequal strings that compare `.orderedSame`, so the
+                // obvious form returns false for both orderings and leaves them unordered against
+                // each other — and `sorted` is not stable, so the rows could swap between renders.
+                let order = ($0.collection?.name ?? "")
+                    .localizedCaseInsensitiveCompare($1.collection?.name ?? "")
+                if order != .orderedSame { return order == .orderedAscending }
+                if $0.sortOrder != $1.sortOrder { return $0.sortOrder < $1.sortOrder }
+                return $0.id.uuidString < $1.id.uuidString
+            }
+    }
+
+    /// The quotations frozen from this document, each with what an exact search of the current
+    /// text found and which version it was taken from.
+    private var excerptsSection: some View {
+        Section {
+            ForEach(excerpts) { entry in
+                excerptRow(entry)
+            }
+        } header: {
+            Text(String(localized: "document.review.excerpts.header", defaultValue: "Quotations"))
+        } footer: {
+            Text(String(localized: "document.review.excerpts.footer",
+                        defaultValue: "A quotation is a copy, so a correction cannot change what it prints — what it can change is whether those words are still in the record it cites. This is the same check that runs when a collection is exported, and it reads the whole document, footnotes included. So a quotation can be affected by a correction described above as touching only the notes, and a quotation can fail this check for reasons older than any correction. Nothing here edits or removes a quotation: it belongs to its collection, and the collection editor is where you change it."))
+        }
+    }
+
+    private func excerptRow(_ entry: CollectionEntry) -> some View {
+        let outcome = excerptOutcomes[entry.id]
+        // One call, so the two sentences cannot contradict each other — see `ExcerptReview.lines`,
+        // which exists because composing them in the view produced exactly that twice.
+        let lines = outcome.map {
+            ExcerptReview.lines(outcome: $0,
+                                storedVersion: entry.excerptRenderingVersion,
+                                currentVersion: effectiveVersion)
+        }
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(entry.text ?? "")
+                .lineLimit(4)
+            Text(entry.collection?.name.isEmpty == false
+                 ? entry.collection?.name ?? ""
+                 : String(localized: "research.list.untitledCollection", defaultValue: "Untitled Collection"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let outcome, let lines {
+                Text(lines.finding)
+                    .font(.caption)
+                    .foregroundStyle(ExcerptReview.isWarning(outcome) ? Color.orange : Color.secondary)
+                if let capture = lines.capture {
+                    Text(capture)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                Text(String(localized: "document.review.excerpt.checking",
+                            defaultValue: "Checking this quotation against the current text…"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    /// Runs the export sheet's own check over every quotation taken from this document.
+    ///
+    /// Deliberately the SHIPPED rules and not a second copy of them: `ExcerptVerifier.verify`
+    /// decides found/not-found, and `upgradingVanished` re-labels the miss on a document an update
+    /// removed. Without that second call every quotation on a vanished document would read "this
+    /// volume is not on this device" — the exact misreport P3b-1 fixed on the export path, and
+    /// this sheet is the ONLY route a vanished document has.
+    private func verifyExcerpts() async {
+        let items = excerpts
+        guard !items.isEmpty else { return }
+        let pairs = items.compactMap { entry -> (UUID, ExcerptVerifier.Request)? in
+            guard let text = entry.text, !text.isEmpty else { return nil }
+            return (entry.id, ExcerptVerifier.Request(volumeId: volumeId, documentId: documentId, text: text))
+        }
+        // A read failure is not a verdict, so no pipeline degrades every quotation to "could not be
+        // checked" rather than to "not found" — the same asymmetry the export sheet applies.
+        var bodies: [String: String] = [:]
+        if let pipeline = appState.indexingPipeline {
+            let key = WordCloudDocumentKey(volumeId: volumeId, documentId: documentId)
+            bodies = (try? await pipeline.documentBodyTextsByKey(forKeys: [key])) ?? [:]
+        }
+        let outcomes = ExcerptVerifier.verify(pairs.map(\.1), bodyTexts: bodies)
+        let upgraded = ExcerptVerifier.upgradingVanished(
+            outcomes, changeKinds: ["\(volumeId)/\(documentId)": revision?.changeKind ?? ""])
+        // A cancelled run must not overwrite the one that replaced it. `.task(id:)` cancels this
+        // when a quotation syncs in, but the only suspension point above — a `try?` await — does
+        // not throw on cancellation, so without this the older snapshot resumes and writes a
+        // dictionary missing the new entry's id, leaving its row on "Checking…" for good: the
+        // exact symptom the keyed task exists to remove.
+        guard !Task.isCancelled else { return }
+        // `uniquingKeysWith`, not `uniqueKeysWithValues`: `CollectionEntry.id` carries no unique
+        // constraint (CloudKit forbids one), so a sync can materialise two rows sharing an id and
+        // the trapping initialiser would crash the sheet.
+        excerptOutcomes = Dictionary(pairs.compactMap { id, request in upgraded[request].map { (id, $0) } },
+                                     uniquingKeysWith: { first, _ in first })
+    }
+
     /// The other annotations on the document: counted, never judged.
     private var othersSection: some View {
         let documentEntries = entries.filter { $0.kind == CollectionEntryKind.document.rawValue }.count
@@ -380,13 +512,25 @@ struct DocumentChangeReviewSheet: View {
 
     /// Builds the haystack once and searches every stale highlight against it.
     ///
+    /// Excerpts are never searched here. They are checked by `verifyExcerpts()` against the
+    /// index's body text, which is a different string from this partition — it includes footnote
+    /// prose, which the flat text excludes — and the two answer different questions: this one asks
+    /// WHERE a passage is, and that one asks WHETHER the words are still in the record.
+    ///
     /// **Aligned highlights are not searched.** `renderingVersion` IS a hash of the flat text, so
     /// aligned means the text is byte-identical and the offsets are provably exact; a search could
     /// only agree, or — for a short passage — report several occurrences, which would read as doubt
     /// about an anchor that is certain.
     private func runSearches() async {
         if rowOrder.isEmpty { rowOrder = highlights.map(\.id) }
-        guard !isVanished, !highlights.isEmpty else { return }
+        // Excerpts join the gate (R-5 P3b-4) even though they never search here: the parse is what
+        // produces `searchedVersion`, and that is the version a capture must be judged against for
+        // the same reason a highlight is — it came from the bytes on disk, while the revision row's
+        // `bodyHash` is the INDEX's copy and can predate a re-download that has not been re-indexed
+        // yet. Without this, a document carrying only quotations would fall back to that older copy
+        // on the Research route, where `currentVersion` is nil, and could report a quotation as
+        // captured from an earlier version of a text the reader is no longer looking at.
+        guard !isVanished, !highlights.isEmpty || !excerpts.isEmpty else { return }
         guard let dm = appState.downloadManager else { return }
         let url = dm.volumeURL(for: volumeId)
         guard FileManager.default.fileExists(atPath: url.path) else { return }

@@ -659,6 +659,12 @@ Select a passage (finger or Apple Pencil) and tap one of the four **color dots**
 
 Many researchers assign meanings to the colors — evidence for chapter 2 in yellow, historiographic leads in green — and the Research tab's **By Highlight Color** grouping (9.4) then works as a filing system. Highlights on a document can later be annotated inline in exports, or frozen as quotable **excerpts** in a collection (Section 12.4).
 
+**When a volume is corrected.** The Office of the Historian revises volumes after publication, and FRUS Explorer compares every document against the copy it indexed before. If a document you have marked was corrected, a banner appears at the top of it saying whether the text itself changed or only the footnotes, source note, or heading, and highlights made against the older text show in amber. The banner's **Review…** button opens a sheet for that document.
+
+The sheet is where you decide, and it decides nothing for you. Each highlight shows its standing and the actions open on it: **Confirm** keeps it exactly where it is and clears the warning on every device you are signed in to, **Remove…** deletes it after a confirmation, and **Move Here** appears only when the app has found the exact words you highlighted somewhere else in the corrected text, in one place and one place only — it shows you the passage in its new surroundings before you tap, and it never moves anything on its own. Below the highlights, every **quotation** you froze from the document is checked against the text as it now reads, the same check that runs when a collection is exported (Section 12.11); each row says what the app could establish — that the words are still there, that they are not, or why it could not tell — and adds where the quotation was taken from when that is worth saying. Quotations are read-only here — an excerpt belongs to its collection, and the collection editor is where you change one. **Mark Reviewed** clears the document from the Research tab's *Changed by an update* list, on your other devices too a few seconds after each next syncs.
+
+The same sheet opens from **Review Changes…** on a Research row, which is the only route to a document a correction removed from its volume altogether: everything you attached to it is kept, and the sheet is where you see it.
+
 ### 9.2 Research Notes
 
 Attach a free-form note from the floating selection bar's **Note** (with a passage selected) or from the **Notes** accordion in the Research rail. Notes are filed under your active project (Section 10), appear in the rail for that document, are gathered across your whole library in the Research tab, and are indexed for search — so a later search can match text that appears only in your own notes. In collection exports, notes render as clearly separated **"Research Note"** blocks after the document body: your voice, kept typographically distinct from the document's own footnotes.
@@ -671,11 +677,12 @@ Open the **Tags** accordion in the Research rail to apply custom labels you defi
 
 The **Research** tab is the single workspace for everything you've marked. Its root screen is a category list:
 
-- **All Research Documents** — every document you've annotated in any way (note, tag, collection membership, or highlight)
+- **All Research Documents** — every document you've annotated in any way: a note, a tag, a highlight, a collection entry (including a quotation you froze from it), an AI summary, or a place in an archive-visit plan
 - **History** — everything you've *read*, as opposed to marked up (9.5)
 - **By Collection** — documents grouped by the collections containing them
 - **By Tag** — grouped by your tags
 - **By Highlight Color** — grouped by which highlight colors appear in them
+- **Changed by an update** — the documents you have marked that a corrected volume has since changed, and that you have not yet reviewed (9.1). The row appears only when there is something waiting.
 
 Tap a category to see the matching documents; tapping one opens it in the document view on the Browse tab, scrolled to the relevant note or highlight.
 
@@ -789,7 +796,7 @@ From the manager's **add** menu, insert editorial structure anywhere in the orde
 
 ### 12.4 Excerpts
 
-An **excerpt** is a frozen verbatim quotation from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's color as an accent bar). Because the excerpt stores the exact passage, it renders even when the source volume isn't downloaded. Three ways to create one: **Add Highlighted Passages…** from the add menu (pick from your highlights on the collection's documents, several at once); select a passage while reading and tap **Excerpt** on the floating selection bar; or tap **Insert as Excerpt** on any highlight row in a document's inspector. Excerpt rows move and delete like prose blocks, but the quoted text itself is never edited — it stays exactly as the source prints it.
+An **excerpt** is a frozen verbatim quotation from a document, rendered in every export as a styled block quote with an automatic source citation (and the source highlight's color as an accent bar). Because the excerpt stores the exact passage, it renders even when the source volume isn't downloaded. Three ways to create one: **Add Highlighted Passages…** from the add menu (pick from your highlights on the collection's documents, several at once); select a passage while reading and tap **Excerpt** on the floating selection bar; or tap **Insert as Excerpt** on any highlight row in a document's inspector. Excerpt rows move and delete like prose blocks, but the quoted text itself is never edited — it stays exactly as the source printed it on the day you captured it, which is what makes it checkable later if the volume is corrected.
 
 ### 12.5 Apparatus Blocks
 
@@ -872,9 +879,11 @@ After export, the system share sheet appears — save to Files, print, AirDrop, 
 
 Before a collection exports, **every stored excerpt is checked against the document it cites**. An excerpt is a frozen quotation, captured whenever you captured it, and volumes get reindexed, removed, and re-downloaded in between.
 
+The same check runs in the review sheet a corrected volume opens, quotation by quotation, so you meet it when the correction lands rather than only on the way out.
+
 The check is a deterministic comparison, not a judgement. It forgives everything about presentation — line breaks, curly versus straight quotes, soft hyphens, capitalisation, and elisions marked with an ellipsis (whose fragments must still appear in order) — and forgives nothing about wording. A paraphrase does not pass.
 
-It warns; it never blocks. A quotation from a volume you have since removed cannot be checked at all, and the export says so rather than calling it wrong: being unable to verify something is not the same as finding it false. If you hand a reader to students, this check is your proofreader of record for every quotation in it.
+It warns; it never blocks, and it distinguishes three ways of not being able to check from one way of failing. A quotation whose volume you have since removed, or whose document a correction removed from its volume, cannot be checked at all; a quotation too short — or too heavily elided — to prove anything is reported as such rather than passed. The app says which, rather than calling any of them wrong: being unable to verify something is not the same as finding it false. Only a quotation whose words are genuinely absent from the document it cites is reported as a problem. If you hand a reader to students, this check is your proofreader of record for every quotation in it.
 
 ---
 
@@ -1157,7 +1166,7 @@ The **Settings** tab opens with your iCloud sync status, a **Search Settings** f
 
 ### 17.2 Volumes & Storage
 
-Opens with a **Storage used** bar split into XML and index, and a status line. Then, in the order you're likely to need them: **Active Downloads** (with per-transfer Cancel); **Add Volumes** (Download from GitHub…, Sideload XML File…); **Downloaded Volumes** (per-volume re-index and remove); **Needs Attention** (only when volumes were interrupted mid-index); **Keeping Current** (Check for Corrections; Refresh Available List — updating preserves your notes, highlights, tags, and summaries); **Storage & Index** (**Free Up Space…**, which lists only volumes with nothing of yours attached, ordered by what you'd recover, and asks first; **Index Remaining**; **Rebuild From Scratch** — none of the three touches notes, highlights, or tags); **Advanced** (index health, Check Integrity, the Spotlight index); and **Options** (concurrent downloads, cellular downloads, the indexing Live Activity).
+Opens with a **Storage used** bar split into XML and index, and a status line. Then, in the order you're likely to need them: **Active Downloads** (with per-transfer Cancel); **Add Volumes** (Download from GitHub…, Sideload XML File…); **Downloaded Volumes** (per-volume re-index and remove); **Needs Attention** (only when volumes were interrupted mid-index); **Keeping Current** (Check for Corrections; Refresh Available List — updating preserves your notes, highlights, tags, and summaries); **After an Update** (what volume updates have changed since each volume was last indexed — *No changes waiting* when there is nothing, and otherwise the volumes whose changed documents carry your research, each with a **Mark Reviewed** that asks before it stamps the whole volume); **Storage & Index** (**Free Up Space…**, which lists only volumes with nothing of yours attached, ordered by what you'd recover, and asks first; **Index Remaining**; **Rebuild From Scratch** — none of the three touches notes, highlights, or tags); **Advanced** (index health, Check Integrity, the Spotlight index); and **Options** (concurrent downloads, cellular downloads, the indexing Live Activity).
 
 **Compacting the index.** The search index doesn't shrink on its own: reindexing frees rows inside the database file but the file keeps its size. When the reclaimable space is worth it, the usage bar says so — *"3.5 GB of this is free space left by reindexing"* — and offers **Compact Database**. Search is unavailable while it runs (usually seconds); nothing you have written is touched; and the offer appears only when there's room to do it safely, since the rewrite needs space for a second copy before replacing the first.
 
