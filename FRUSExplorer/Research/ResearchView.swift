@@ -1253,6 +1253,23 @@ struct ResearchView: View {
             }
         }
 
+        // **Hoisted, and this is a hang fix rather than a tidy-up.** All five of these are COMPUTED
+        // properties that walk an entire `@Query` array and build a fresh dictionary. Read inside
+        // the `compactMap` below they were rebuilt once per document, making this O(documents ×
+        // annotations) — and `summarizedDocs` is the expensive one, because every field it touches
+        // on a `GeneratedSummary` goes through SwiftData's `persistentBackingData` rather than a
+        // plain array read. A sample of the beachball (build 45, Open Research from Settings ▸
+        // Volumes & Storage ▸ After an Update) put 2,393 of 2,626 samples in `summarizedDocs` →
+        // `summaryCounts`, which reads three properties on every summary, once per document.
+        //
+        // Shadowing by the same name is deliberate: the loop body needs no edits, and any future
+        // read of these names inside this function gets the local rather than the recompute.
+        let directlyTaggedDocs = directlyTaggedDocs
+        let collectionMemberships = collectionMemberships
+        let highlightedDocs = highlightedDocs
+        let summarizedDocs = summarizedDocs
+        let visitPlanDocs = visitPlanDocs
+
         return grouped.compactMap { key, notes -> ResearchDocumentEntry? in
             let parts = key.split(separator: "/", maxSplits: 1).map(String.init)
             guard parts.count == 2 else { return nil }
