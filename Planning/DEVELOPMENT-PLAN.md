@@ -11280,7 +11280,7 @@ queued case the scan structurally could not see.
 
 11 mutations, all killed by their own named controls; 4,463 tests in 586 suites; macOS clean.
 
-## Session 2026-09-04b — Build 45 and its TestFlight notes (PR #NNNN)
+## Session 2026-09-04b — Build 45 and its TestFlight notes (PR #1192)
 
 **Build 45 across all three targets** — `project.yml` (3 occurrences) and `project.pbxproj` (9),
 edited directly, no `xcodegen`, per the standing rule. `MARKETING_VERSION` stays 0.2. The audit
