@@ -288,7 +288,7 @@ struct TopCollectionsCard: View {
                 // lets them judge.
                 Text(String(format: String(
                     localized: "series.provenance.topCollections.umbrella.v2 %lld %lld",
-                    defaultValue: "The State Department's central files are withheld from this ranking — one undifferentiated record, carrying %1$lld here against %2$lld for the largest collection shown. Archival Analytics can show it."),
+                    defaultValue: "The State Department’s central files are withheld from this ranking — one undifferentiated record, carrying %1$lld here against %2$lld for the largest collection shown. Archival Analytics can show it."),
                     Int64(withheld), Int64(ranking.rows.first?.value ?? 0)))
                     .font(.caption2)
                     .foregroundStyle(.secondary)

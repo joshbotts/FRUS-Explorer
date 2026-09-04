@@ -144,7 +144,7 @@ struct SeriesGeographyDashboard: View {
     /// A short framing paragraph above the charts.
     private var intro: some View {
         Text(String(localized: "series.geography.intro",
-                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department's six regional bureaus. These charts show how the series' geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most."))
+                    defaultValue: "Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department’s six regional bureaus. These charts show how the series’ geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -181,7 +181,7 @@ struct SeriesGeographyDashboard: View {
             title: String(localized: "series.geography.trend.title",
                           defaultValue: "Regional emphasis over time"),
             caption: String(localized: "series.geography.trend.caption",
-                            defaultValue: "Each decade's volumes divided among the regions they cover. A volume spanning several regions splits evenly between them, so every decade totals 100%. A volume's decade is set by the midpoint of its coverage."),
+                            defaultValue: "Each decade’s volumes divided among the regions they cover. A volume spanning several regions splits evenly between them, so every decade totals 100%. A volume’s decade is set by the midpoint of its coverage."),
             inspector: ChartInspectorAdapters.regionTrendTable(shares),
             provenance: SeriesAnalyticsExport.geography(
                 figureTitle: String(localized: "series.geography.trend.title",
@@ -354,7 +354,7 @@ struct SeriesGeographyDashboard: View {
             // R-3: the ratio is the data's own `volumesWithAnyRegion` over `totalVolumes`. Worded
             // as what it measures — a tag that MAPS to a region — not "carries a place tag".
             Text(String(format: String(localized: "series.geography.caveats.body.v2 %lld %lld",
-                        defaultValue: "Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department's six current regional bureaus, with dependencies and territories folded into \"Other.\" %1$lld of the %2$lld cataloged volumes carry a place tag that maps to a region. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet."),
+                        defaultValue: "Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department’s six current regional bureaus, with dependencies and territories folded into “Other.” %1$lld of the %2$lld cataloged volumes carry a place tag that maps to a region. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet."),
                         Int64(data.volumesWithAnyRegion), Int64(data.totalVolumes)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)

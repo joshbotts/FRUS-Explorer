@@ -454,7 +454,7 @@ private struct SettingsScopesPane: View {
                 }
             } footer: {
                 Text(String(localized: "settings.scopes.pane.subtitle",
-                            defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven't downloaded stay in a scope and take effect once indexed."))
+                            defaultValue: "Named sets of volumes usable as search scopes. Scopes sync to your other devices via iCloud; volumes you haven’t downloaded stay in a scope and take effect once indexed."))
             }
         }
         .formStyle(.grouped)
@@ -533,7 +533,7 @@ private struct SettingsScopesPane: View {
             .buttonStyle(.borderless)
             .disabled(resolution == .noIndexedMembers)
             .help(String(localized: "settings.scopes.row.wordCloud.help",
-                         defaultValue: "Open a word cloud of this scope's indexed volumes"))
+                         defaultValue: "Open a word cloud of this scope’s indexed volumes"))
             .accessibilityLabel(String(format: String(
                 localized: "settings.scopes.row.wordCloud.a11y %@",
                 defaultValue: "Word cloud of %@"), scope.name))
@@ -730,7 +730,7 @@ private struct SettingsSummarizationPane: View {
                                 defaultValue: "Standard Prompts"))
                 } footer: {
                     Text(String(localized: "settings.summarization.standard.footer",
-                                defaultValue: "The prompts the app ships with. They can't be edited — start from one with Use as Template."))
+                                defaultValue: "The prompts the app ships with. They can’t be edited — start from one with Use as Template."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -864,9 +864,9 @@ private struct SettingsSummarizationPane: View {
         guard tally.headnoteDrafts > 0 else { return base }
         let drafts = tally.headnoteDrafts == 1
             ? String(localized: "settings.summarization.headnotes.one",
-                     defaultValue: "1 collection headnote draft isn't counted above.")
+                     defaultValue: "1 collection headnote draft isn’t counted above.")
             : String(format: String(localized: "settings.summarization.headnotes.many %lld",
-                                    defaultValue: "%lld collection headnote drafts aren't counted above."),
+                                    defaultValue: "%lld collection headnote drafts aren’t counted above."),
                      Int64(tally.headnoteDrafts))
         return base + " " + drafts
     }

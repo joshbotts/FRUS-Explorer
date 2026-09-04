@@ -594,7 +594,7 @@ struct ArchivalNetworkView: View {
             .frame(width: size.width, height: size.height)
             .accessibilityLabel(category.displayName)
             .accessibilityHint(String(localized: "archival.network.sector.hint",
-                                      defaultValue: "Select to inspect this custodian's partners as a group"))
+                                      defaultValue: "Select to inspect this custodian’s partners as a group"))
         }
     }
 
@@ -629,7 +629,7 @@ struct ArchivalNetworkView: View {
                 .accessibilityLabel(node.label)
                 .accessibilityValue(accessibilityValue(for: node, in: graph))
                 .accessibilityHint(String(localized: "archival.network.node.hint",
-                                          defaultValue: "Select to see this link's detail; long-press for actions"))
+                                          defaultValue: "Select to see this link’s detail; long-press for actions"))
             }
         }
     }
@@ -732,14 +732,14 @@ struct ArchivalNetworkView: View {
         if partners.isEmpty {
             Text(String(format: String(
                 localized: "archival.network.group.none %@",
-                defaultValue: "None of this focus's partners above the link threshold are held by %@. Lowering the threshold may bring some in."),
+                defaultValue: "None of this focus’s partners above the link threshold are held by %@. Lowering the threshold may bring some in."),
                 category.displayName.lowercased()))
                 .font(.caption).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         } else {
             Text(String(format: String(
                 localized: "archival.network.group.detail %lld %lld %@ %@ %lld",
-                defaultValue: "%1$lld of this focus's %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes."),
+                defaultValue: "%1$lld of this focus’s %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes."),
                 Int64(partners.count), Int64(graph.nodes.count),
                 category.displayName.lowercased(), strongest?.label ?? "",
                 Int64(strongest?.sharedVolumeCount ?? 0)))
@@ -776,7 +776,7 @@ struct ArchivalNetworkView: View {
         Text(node.kind == .collection
              ? node.category.displayName
              : String(localized: "archival.network.class.caption",
-                      defaultValue: "Central-file class — a subject heading inside the State Department's filing system, not a collection"))
+                      defaultValue: "Central-file class — a subject heading inside the State Department’s filing system, not a collection"))
             .font(.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
         Text(String(format: String(localized: "archival.network.card.detail %lld %lld %@",
@@ -844,7 +844,7 @@ struct ArchivalNetworkView: View {
         if graph.isCapped {
             text += " " + String(format: String(
                 localized: "archival.network.dock.capped.v2 %lld",
-                defaultValue: "%lld more are held back so each custodian's quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it."),
+                defaultValue: "%lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it."),
                 Int64(graph.withheldCount))
         }
         if graph.classNodeCount > 0 {

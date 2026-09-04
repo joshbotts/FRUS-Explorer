@@ -160,7 +160,7 @@ struct CollectionBrowserView: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint(String(localized: "collection.browser.row.hint",
-                                  defaultValue: "Opens the collection's detail"))
+                                  defaultValue: "Opens the collection’s detail"))
     }
 
     // MARK: - Grouping & filtering

@@ -94,7 +94,7 @@ enum SemanticMapFrameSequence {
 
     /// The scope-grain sentence any published sequence must carry (design §6 Phase 3).
     static let animationGrainSentence = String(localized: "semanticMap.frames.grain",
-        defaultValue: "Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes' documents sit, never the documents about any particular subject.")
+        defaultValue: "Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes’ documents sit, never the documents about any particular subject.")
 
     // MARK: - Ordering
 

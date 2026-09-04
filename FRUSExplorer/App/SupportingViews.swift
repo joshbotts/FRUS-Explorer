@@ -604,7 +604,7 @@ struct StatusBarView: View {
             // See AppState.cloudKitInitError / FRUSExplorerApp.cloudKitDiagnostic(_:).
             let guidance = String(
                 localized: "statusBar.sync.disabled.help",
-                defaultValue: "iCloud sync is unavailable — notes, collections, and tags won't sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
+                defaultValue: "iCloud sync is unavailable — notes, collections, and tags won’t sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings."
             )
             // Computed via an immediately-invoked closure (not an `if`/`else` directly
             // in this @ViewBuilder body) — a plain `if let … else …` whose branches
@@ -1554,7 +1554,7 @@ struct DocumentSharePopover: View {
         }
         .zoteroResultAlert(result: $zoteroResult, message: zoteroResultMessage, openURL: openURL)
         .alert(
-            String(localized: "document.share.zotero.error.title", defaultValue: "Couldn't Send to Zotero"),
+            String(localized: "document.share.zotero.error.title", defaultValue: "Couldn’t Send to Zotero"),
             isPresented: Binding(get: { zoteroError != nil }, set: { if !$0 { zoteroError = nil } }),
             presenting: zoteroError
         ) { _ in

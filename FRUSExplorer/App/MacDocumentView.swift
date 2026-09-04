@@ -186,7 +186,7 @@ struct MacDocumentView: View {
                               systemImage: "arrow.down.circle")
                     } description: {
                         Text(String(localized: "document.notDownloaded.detail",
-                                    defaultValue: "This document is in a volume you haven't downloaded yet."))
+                                    defaultValue: "This document is in a volume you haven’t downloaded yet."))
                     } actions: {
                         Button(String(localized: "document.notDownloaded.download",
                                       defaultValue: "Download Volume")) {
@@ -357,7 +357,7 @@ struct MacDocumentView: View {
         } message: { volumeId in
             let title = appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
             Text(String(format: String(localized: "document.crossref.download.message %@",
-                                        defaultValue: "The linked document is in “%@”, which isn't downloaded yet. Download it to open the document."),
+                                        defaultValue: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document."),
                         title))
         }
         .alert(

@@ -603,7 +603,7 @@ struct PersonIndexDetailSheet: View {
                 // Named, because these are the Department's own appointment records and a reader
                 // should know this is not something the app inferred from the documents.
                 Text(String(localized: "people.detail.career.source",
-                            defaultValue: "From the Department's Principal Officers and Chiefs of Mission register."))
+                            defaultValue: "From the Department’s Principal Officers and Chiefs of Mission register."))
             }
             .font(.caption2)
         }
@@ -723,7 +723,7 @@ struct PersonIndexDetailSheet: View {
                     if displayCount == 0
                         && !(indexEntry.rollupId == nil && resolvedMentionCount == nil && indexEntry.mentionCount == 0) {
                         Text(String(localized: "people.detail.findMentions.noMentions",
-                                    defaultValue: "This person has no indexed document mentions to open — they appear only in a volume's front-matter person list."))
+                                    defaultValue: "This person has no indexed document mentions to open — they appear only in a volume’s front-matter person list."))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -735,7 +735,7 @@ struct PersonIndexDetailSheet: View {
                                   systemImage: "link")
                         }
                         .help(String(localized: "people.detail.viaf.help",
-                                     defaultValue: "Open this person's VIAF authority record"))
+                                     defaultValue: "Open this person’s VIAF authority record"))
                         .accessibilityHint(String(localized: "people.detail.viaf.a11y",
                                                   defaultValue: "Opens in your browser"))
                     }
@@ -749,7 +749,7 @@ struct PersonIndexDetailSheet: View {
                                   systemImage: "link")
                         }
                         .help(String(localized: "people.detail.wikidata.help",
-                                     defaultValue: "Open this person's Wikidata item"))
+                                     defaultValue: "Open this person’s Wikidata item"))
                         .accessibilityHint(String(localized: "people.detail.wikidata.a11y",
                                                   defaultValue: "Opens in your browser"))
                     }
@@ -1009,7 +1009,7 @@ struct PersonIndexDetailSheet: View {
             target.entry.name, indexEntry.entry.name)
         if let mine = effectiveAuthorityId, let theirs = target.authorityId, mine != theirs {
             message += "\n\n" + String(localized: "people.detail.mergeConfirm.authorityWarning",
-                defaultValue: "These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you're sure.")
+                defaultValue: "These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you’re sure.")
         }
         return message
     }

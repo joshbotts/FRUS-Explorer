@@ -166,7 +166,7 @@ struct TripPacketSheet: View {
                 if isBuilding {
                     BootPlaceholderView(detail: String(
                         localized: "packet.building",
-                        defaultValue: "Reading your documents' source notes…"))
+                        defaultValue: "Reading your documents’ source notes…"))
                 } else if let packet {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
@@ -188,19 +188,19 @@ struct TripPacketSheet: View {
                     case .indexUnavailable:
                         ContentUnavailableView(
                             String(localized: "packet.empty.noIndex.title",
-                                   defaultValue: "The search index isn't ready"),
+                                   defaultValue: "The search index isn’t ready"),
                             systemImage: "doc.text.magnifyingglass",
                             description: Text(String(
                                 localized: "packet.empty.noIndex.message",
-                                defaultValue: "The packet reads source notes from the search index, which isn't available yet. Finish indexing and try again.")))
+                                defaultValue: "The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.")))
                     case .smartSearchUnavailable:
                         ContentUnavailableView(
                             String(localized: "packet.empty.smart.title",
-                                   defaultValue: "This collection's search can't run yet"),
+                                   defaultValue: "This collection’s search can’t run yet"),
                             systemImage: "doc.text.magnifyingglass",
                             description: Text(String(
                                 localized: "packet.empty.smart.message",
-                                defaultValue: "This collection's documents come from its saved search, and search isn't available yet. Finish indexing and try again.")))
+                                defaultValue: "This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.")))
                     case .noDocuments, nil:
                         ContentUnavailableView(
                             String(localized: "packet.empty.title", defaultValue: "Nothing to plan yet"),
@@ -352,7 +352,7 @@ struct TripPacketSheet: View {
                 .onSubmit { applyTopicEdit() }
             Text(researchQuestion?.isEmpty == false
                  ? String(localized: "packet.topic.caption.seeded",
-                          defaultValue: "Seeded from your project's research question — edit freely. The drafts send what you write here, never the stored note.")
+                          defaultValue: "Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.")
                  : String(localized: "packet.topic.caption.unseeded",
                           defaultValue: "The inquiry drafts send what you write here."))
                 .font(.caption)

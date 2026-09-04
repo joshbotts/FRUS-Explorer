@@ -196,7 +196,7 @@ struct VolumeListView: View {
                           systemImage: "plus.square.on.square")
                 }
                 .help(String(localized: "browser.scopes.capture.help",
-                             defaultValue: "Save this list's volumes as a custom scope"))
+                             defaultValue: "Save this list’s volumes as a custom scope"))
             }
         }
         .alert(String(localized: "browser.scopes.capture.title", defaultValue: "Save as Scope"),
@@ -214,7 +214,7 @@ struct VolumeListView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "browser.scopes.capture.detail",
-                        defaultValue: "The scope keeps this list's volumes; the axis's ordering and counts stay here."))
+                        defaultValue: "The scope keeps this list’s volumes; the axis’s ordering and counts stay here."))
         }
     }
 }

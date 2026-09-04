@@ -736,7 +736,7 @@ struct DocumentChangeReviewSheet: View {
                 provider: AppleIntelligenceProvider.shared,
                 activeProjectId: appState.activeProjectId)
             summarizeOutcome = String(localized: "document.review.other.summarizeAgain.done",
-                                      defaultValue: "A new summary was added. The earlier ones are kept — step through them in the document's Summary panel.")
+                                      defaultValue: "A new summary was added. The earlier ones are kept — step through them in the document’s Summary panel.")
             appState.revisionReviewToken += 1
         } catch {
             summarizeFailed = true

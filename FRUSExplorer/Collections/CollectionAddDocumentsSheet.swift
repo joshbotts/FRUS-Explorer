@@ -177,7 +177,7 @@ struct CollectionCitationLineResolver: Sendable {
         guard input.isActionable else {
             return .unresolved(reason: String(
                 localized: "collection.addDocs.citations.unparseable",
-                defaultValue: "Couldn't read this line as a FRUS citation or document link"))
+                defaultValue: "Couldn’t read this line as a FRUS citation or document link"))
         }
 
         // 3. Match and bucket the ranked results.
@@ -208,7 +208,7 @@ struct CollectionCitationLineResolver: Sendable {
                     volumeId: top.volumeId, documentId: top.documentId,
                     note: String(
                         localized: "collection.addDocs.citations.noVolumeIdentity",
-                        defaultValue: "\(top.confidenceLabel) — the citation doesn't identify a volume, so this match is a guess"))
+                        defaultValue: "\(top.confidenceLabel) — the citation doesn’t identify a volume, so this match is a guess"))
             }
             if Self.isExactStrategy(top.matchStrategy),
                top.matchStrategy == .exactDocumentNumber || documentLevel.count == 1 {
@@ -937,7 +937,7 @@ struct CollectionAddDocumentsSheet: View {
                 }
             } else if isDownloaded {
                 emptyState(String(localized: "collection.addDocs.browse.notIndexed",
-                                  defaultValue: "This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn't."))
+                                  defaultValue: "This volume is downloaded but not yet indexed. Indexing normally starts right after download — give it a moment, or check Settings if it doesn’t."))
             } else {
                 notDownloadedState(volume)
             }
@@ -994,7 +994,7 @@ struct CollectionAddDocumentsSheet: View {
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
             Text(String(localized: "collection.addDocs.browse.notDownloaded",
-                        defaultValue: "This volume isn't downloaded. Download and index it to browse its documents here."))
+                        defaultValue: "This volume isn’t downloaded. Download and index it to browse its documents here."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

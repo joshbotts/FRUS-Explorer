@@ -841,10 +841,10 @@ struct ArchivalAnalyticsView: View {
         switch other {
         case .centralFileClasses:
             return String(localized: "archival.denominator.tryClasses",
-                          defaultValue: "Most of this era's sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.")
+                          defaultValue: "Most of this era’s sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.")
         case .namedCollections:
             return String(localized: "archival.denominator.tryCollections",
-                          defaultValue: "Most of this era's sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.")
+                          defaultValue: "Most of this era’s sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.")
         }
     }
 
@@ -861,9 +861,9 @@ struct ArchivalAnalyticsView: View {
         if !ranking.rows.isEmpty {
             Label(unitLens == .namedCollections
                   ? String(localized: "archival.ranking.drillIn.collections",
-                           defaultValue: "Tap a bar to open that collection's record, or use the list below.")
+                           defaultValue: "Tap a bar to open that collection’s record, or use the list below.")
                   : String(localized: "archival.ranking.drillIn.classes",
-                           defaultValue: "Tap a bar to see that file number's documents, or use the list below."),
+                           defaultValue: "Tap a bar to see that file number’s documents, or use the list below."),
                   systemImage: "hand.tap")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -1213,7 +1213,7 @@ struct ArchivalAnalyticsView: View {
     private var perCollectionTimingPointer: some View {
         Label {
             Text(String(localized: "archival.collections.timingPointer",
-                        defaultValue: "When one collection entered the published record, and how long the editors kept returning to it, is on that collection's own record, under Cited Over Time."))
+                        defaultValue: "When one collection entered the published record, and how long the editors kept returning to it, is on that collection’s own record, under Cited Over Time."))
         } icon: {
             Image(systemName: "info.circle")
         }
@@ -1370,7 +1370,7 @@ struct ArchivalAnalyticsView: View {
             title: String(localized: "archival.library.bands.title",
                           defaultValue: "Citation forms across your volumes"),
             caption: String(localized: "archival.library.bands.caption",
-                            defaultValue: "The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department's decimal file, through the postwar bureau lot files, to the presidential libraries."),
+                            defaultValue: "The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department’s decimal file, through the postwar bureau lot files, to the presidential libraries."),
             inspector: libraryBandsTable(profile),
             axValueColumn: 2,
             onInspect: { inspectorData = $0 },
@@ -1472,7 +1472,7 @@ struct ArchivalAnalyticsView: View {
         ) {
             if profile.collections.isEmpty {
                 Text(String(localized: "archival.library.collections.empty",
-                            defaultValue: "None of your volumes' source notes name a collection the bundled authority recognizes."))
+                            defaultValue: "None of your volumes’ source notes name a collection the bundled authority recognizes."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1547,7 +1547,7 @@ struct ArchivalAnalyticsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.library.footer.detail %lld %lld",
-                defaultValue: "%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app's authority list does not recognize."),
+                defaultValue: "%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s authority list does not recognize."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)))
                 .font(.footnote)

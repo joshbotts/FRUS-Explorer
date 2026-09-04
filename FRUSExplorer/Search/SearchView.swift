@@ -1430,7 +1430,7 @@ struct SearchView: View {
                            defaultValue: "All Results Reviewed"),
                     systemImage: "checkmark.circle",
                     description: Text(String(localized: "search.checklist.allReviewed.detail",
-                                             defaultValue: "You've reviewed every result. Turn off Checklist Mode to see them again."))
+                                             defaultValue: "You’ve reviewed every result. Turn off Checklist Mode to see them again."))
                 )
             } else if showCollocates {
                 CollocationView(

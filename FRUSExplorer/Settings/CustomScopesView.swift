@@ -286,7 +286,7 @@ struct CustomScopeEditorView: View {
     var body: some View {
         editorBody
             .alert(String(localized: "settings.scopes.save.failed.title",
-                          defaultValue: "Couldn't Save Scope"),
+                          defaultValue: "Couldn’t Save Scope"),
                    isPresented: Binding(get: { saveError != nil },
                                         set: { if !$0 { saveError = nil } })) {
                 Button(String(localized: "common.ok", defaultValue: "OK"), role: .cancel) {}
@@ -315,7 +315,7 @@ struct CustomScopeEditorView: View {
     private var footerText: String {
         String(format: String(
             localized: "settings.scopes.editor.footer %lld %lld",
-            defaultValue: "%lld volumes selected · %lld indexed. Volumes you haven't downloaded stay in the scope and take effect once indexed."),
+            defaultValue: "%lld volumes selected · %lld indexed. Volumes you haven’t downloaded stay in the scope and take effect once indexed."),
             Int64(selection.count), Int64(indexedSelectedCount))
     }
 
@@ -784,7 +784,7 @@ private struct SubjectFacetPicker: View {
             .disabled(fullyAdded)
             .accessibilityLabel(entry.name)
             .accessibilityHint(String(localized: "settings.scopes.facet.add.hint",
-                                      defaultValue: "Adds this facet's volumes to the scope"))
+                                      defaultValue: "Adds this facet’s volumes to the scope"))
         }
     }
 }
@@ -906,7 +906,7 @@ private struct TagFacetPicker: View {
             .disabled(fullyAdded)
             .accessibilityLabel(tag.slug)
             .accessibilityHint(String(localized: "settings.scopes.facet.add.hint",
-                                      defaultValue: "Adds this facet's volumes to the scope"))
+                                      defaultValue: "Adds this facet’s volumes to the scope"))
         }
     }
 }

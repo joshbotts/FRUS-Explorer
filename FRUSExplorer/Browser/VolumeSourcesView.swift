@@ -455,7 +455,7 @@ struct VolumeSourcesView: View {
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .accessibilityHint(String(localized: "browser.sources.collection.hint",
-                                          defaultValue: "Opens the collection's cross-volume detail"))
+                                          defaultValue: "Opens the collection’s cross-volume detail"))
             } else if let crossVolume, crossVolume.volumeIds.count > 1 {
                 Button {
                     // B2: window on macOS (browsable beside the volumes it names);

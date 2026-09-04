@@ -26,8 +26,7 @@ More in [`Docs/screenshots/`](Docs/screenshots).
 
 - **Read** — TEI documents rendered with footnotes, page breaks, and live cross-references, plus
   highlights, notes, and a per-document Research rail.
-- **Search** — full-text FTS5/BM25 search with stemming, phrases, `NEAR(...)` proximity,
-  `=exact` word matching, saved scopes, and working corpora captured from a result set.
+- **Search** — full-text keyword FTS5/BM25 search with stemming, phrases, `NEAR(...)` proximity, `=exact` word matching, saved scopes, and working corpora captured from a result set. Semantic search relies on an optional query encoder download to execute natural language queries against vector embeddings.
 - **Read a result set four ways** — ranked list, timeline, concordance (every hit lined up on the
   search term), and collocates (the words that keep company with it).
 - **Inspect the query** — the Query Inspector shows the FTS5 expression your search actually became,

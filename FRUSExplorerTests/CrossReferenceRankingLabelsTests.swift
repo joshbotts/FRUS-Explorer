@@ -109,7 +109,7 @@ struct MatrixColumnCodeTests {
              title: "Foreign Relations of the United States, 1955–1957, China, Volume II",
              topic: "China")
         ])
-        #expect(codes["frus1955-57v2"] == "'55–57 II")
+        #expect(codes["frus1955-57v2"] == "’55–57 II")
     }
 
     /// A multi-letter numeral in a title that also carries a topic and trailing dates.
@@ -120,7 +120,7 @@ struct MatrixColumnCodeTests {
              title: "Foreign Relations of the United States, 1961–1963, Volume XIV, Berlin Crisis, 1961–1962",
              topic: "Berlin Crisis")
         ])
-        #expect(codes["frus1961-63v14"] == "'61–63 XIV")
+        #expect(codes["frus1961-63v14"] == "’61–63 XIV")
     }
 
     /// A single-year annual volume with no numeral and no topic reduces to just the year.
@@ -130,7 +130,7 @@ struct MatrixColumnCodeTests {
             (id: "frus1861", subseries: "1861",
              title: "Papers Relating to Foreign Affairs, 1861", topic: "")
         ])
-        #expect(codes["frus1861"] == "'61")
+        #expect(codes["frus1861"] == "’61")
     }
 
     /// No "Volume N" numeral but a topic → span + the first distinctive word, truncated to ≤6 chars.
@@ -140,7 +140,7 @@ struct MatrixColumnCodeTests {
             (id: "frusX", subseries: "1958-60",
              title: "Some Compilation Without A Volume Numeral", topic: "Western Europe")
         ])
-        #expect(codes["frusX"] == "'58–60 Wester")
+        #expect(codes["frusX"] == "’58–60 Wester")
     }
 
     /// A leading article/preposition is skipped so the chosen word is distinctive.
@@ -150,7 +150,7 @@ struct MatrixColumnCodeTests {
             (id: "frusY", subseries: "1948",
              title: "An Annual Compilation", topic: "The Far East")
         ])
-        #expect(codes["frusY"] == "'48 Far")
+        #expect(codes["frusY"] == "’48 Far")
     }
 
     /// Two Part-only annual volumes of the same year (no numeral, no topic) collide on the bare year
@@ -164,8 +164,8 @@ struct MatrixColumnCodeTests {
              title: "Papers Relating to Foreign Affairs, 1863, Part II", topic: "")
         ])
         // Distinct, both year-prefixed, disambiguated by the id suffix.
-        #expect(codes["frus1863p1"] == "'63 p1")
-        #expect(codes["frus1863p2"] == "'63 p2")
+        #expect(codes["frus1863p1"] == "’63 p1")
+        #expect(codes["frus1863p2"] == "’63 p2")
         #expect(Set(codes.values).count == 2)
     }
 
@@ -177,8 +177,8 @@ struct MatrixColumnCodeTests {
             (id: "frusA", subseries: "1958-60", title: "Compilation A", topic: "Western Europe"),
             (id: "frusB", subseries: "1958-60", title: "Compilation B", topic: "Western Hemisphere")
         ])
-        #expect(codes["frusA"] == "'58–60 Wester Europe")
-        #expect(codes["frusB"] == "'58–60 Wester Hemisp")
+        #expect(codes["frusA"] == "’58–60 Wester Europe")
+        #expect(codes["frusB"] == "’58–60 Wester Hemisp")
         #expect(Set(codes.values).count == 2)
     }
 
@@ -194,8 +194,8 @@ struct MatrixColumnCodeTests {
              title: "Foreign Relations of the United States, 1945, General: Political and Economic Matters, Volume II",
              topic: "General Political and Economic Matters")
         ])
-        #expect(codes["frus1945Berlinv02"] == "'45 II Confer")
-        #expect(codes["frus1945v02"] == "'45 II Genera")
+        #expect(codes["frus1945Berlinv02"] == "’45 II Confer")
+        #expect(codes["frus1945v02"] == "’45 II Genera")
         #expect(Set(codes.values).count == 2)
     }
 
@@ -207,7 +207,7 @@ struct MatrixColumnCodeTests {
              title: "Foreign Relations of the United States, 1952–1954, National Security Affairs, Volume II, Part 1",
              topic: "National Security Affairs")
         ])
-        #expect(codes["frus1952-54v2"] == "'52–54 II")
+        #expect(codes["frus1952-54v2"] == "’52–54 II")
     }
 
     /// An empty column set yields an empty map (no crash on the no-data path).

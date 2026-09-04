@@ -260,7 +260,7 @@ struct CollectionAddHighlightsSheet: View {
                        defaultValue: "No Highlighted Passages"),
                 systemImage: "highlighter",
                 description: Text(String(localized: "collection.addHighlights.empty.detail",
-                                         defaultValue: "Highlight passages in this collection's documents to insert them here as excerpts."))
+                                         defaultValue: "Highlight passages in this collection’s documents to insert them here as excerpts."))
             )
         } else {
             List(offered) { row in

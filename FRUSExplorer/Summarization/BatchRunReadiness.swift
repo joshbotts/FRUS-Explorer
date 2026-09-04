@@ -74,7 +74,7 @@ enum BatchRunBlocker: Equatable, Sendable {
         switch self {
         case .modelUnavailable:
             return String(localized: "bg.summarizer.blocked.model",
-                          defaultValue: "Apple Intelligence isn't available on this device, so summaries can't be generated here.")
+                          defaultValue: "Apple Intelligence isn’t available on this device, so summaries can’t be generated here.")
         case .notReady:
             return String(localized: "bg.summarizer.blocked.notReady",
                           defaultValue: "Still starting up. Try again in a moment.")
@@ -110,7 +110,7 @@ enum BatchRunBlocker: Equatable, Sendable {
             }
         case .customScopeNotDownloaded:
             return String(localized: "bg.summarizer.blocked.customScopeNotDownloaded",
-                          defaultValue: "None of this scope's volumes are downloaded. Summarization reads the volume text, so download at least one first.")
+                          defaultValue: "None of this scope’s volumes are downloaded. Summarization reads the volume text, so download at least one first.")
         }
     }
 }

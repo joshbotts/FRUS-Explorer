@@ -212,7 +212,7 @@ struct TagEditorView: View {
     private var deleteMessage: String {
         guard tally.notes > 0 || tally.documents > 0 else {
             return String(localized: "tag.editor.delete.message.unused",
-                          defaultValue: "This tag isn't applied to anything.")
+                          defaultValue: "This tag isn’t applied to anything.")
         }
         return String(localized: "tag.editor.delete.message",
                       defaultValue: "This tag is removed from \(tally.summary). The notes and documents themselves are kept.")

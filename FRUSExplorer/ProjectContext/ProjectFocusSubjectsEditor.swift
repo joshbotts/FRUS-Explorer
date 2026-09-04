@@ -108,7 +108,7 @@ struct ProjectFocusSubjectsEditor: View {
                     Text(String(localized: "project.focus.suggested", defaultValue: "Suggested from your volumes"))
                 } footer: {
                     Text(String(localized: "project.focus.suggested.detail",
-                                defaultValue: "Subjects that recur across the volumes you've already collected, annotated, or opened in this project."))
+                                defaultValue: "Subjects that recur across the volumes you’ve already collected, annotated, or opened in this project."))
                 }
             }
 

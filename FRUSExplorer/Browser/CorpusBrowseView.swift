@@ -197,7 +197,7 @@ struct CorporaIndexView: View {
                         systemImage: "tray.full",
                         description: Text(String(
                             localized: "browser.corpora.empty.detail",
-                            defaultValue: "A working corpus is a fixed set of documents captured from a result set — use \"Save as Working Corpus\" on Search results or the semantic map's lasso."))
+                            defaultValue: "A working corpus is a fixed set of documents captured from a result set — use “Save as Working Corpus” on Search results or the semantic map’s lasso."))
                     )
                 }
             } else {
@@ -207,7 +207,7 @@ struct CorporaIndexView: View {
                     }
                 } footer: {
                     Text(String(localized: "browser.corpora.footer",
-                                defaultValue: "A corpus is captured from a result set — in Search results or with the semantic map's lasso — and syncs via iCloud. There is nothing to create here."))
+                                defaultValue: "A corpus is captured from a result set — in Search results or with the semantic map’s lasso — and syncs via iCloud. There is nothing to create here."))
                 }
             }
         }
@@ -254,7 +254,7 @@ struct CorporaIndexView: View {
                    defaultValue: "\(CorporaAxis.displayName(corpus)), \(corpus.documentCount) documents")
         )
         .help(String(localized: "browser.corpora.row.help",
-                     defaultValue: "Browse this corpus's documents, grouped by volume"))
+                     defaultValue: "Browse this corpus’s documents, grouped by volume"))
     }
 }
 

@@ -168,7 +168,7 @@ struct CollectionPickerSheet: View {
                 VStack(spacing: 8) {
                     Spacer()
                     Text(String(localized: "collection.picker.noResults",
-                                defaultValue: "No collections match \"\(searchText)\"."))
+                                defaultValue: "No collections match “\(searchText)”."))
                         .foregroundStyle(.secondary)
                     Spacer()
                 }

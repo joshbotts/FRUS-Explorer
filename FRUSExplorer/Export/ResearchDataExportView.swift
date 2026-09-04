@@ -159,7 +159,7 @@ struct DataExportSections: View {
             } footer: {
                 Text(String(
                     localized: "settings.export.appendix.footer",
-                    defaultValue: "Every search you ran, in a Markdown table and a CSV. Each row gives the scope the search ran under and how many volumes were indexed at the time. Counts that hit the app's row ceiling appear as \"at least N\", so a partial result is never printed as a total."
+                    defaultValue: "Every search you ran, in a Markdown table and a CSV. Each row gives the scope the search ran under and how many volumes were indexed at the time. Counts that hit the app’s row ceiling appear as “at least N”, so a partial result is never printed as a total."
                 ))
             }
 
@@ -396,7 +396,7 @@ struct DataExportSections: View {
         } catch {
             jsonExportError = String(
                 localized: "settings.export.json.error",
-                defaultValue: "Couldn't prepare the export: \(error.localizedDescription)"
+                defaultValue: "Couldn’t prepare the export: \(error.localizedDescription)"
             )
         }
 

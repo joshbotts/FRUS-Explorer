@@ -60,7 +60,7 @@ struct ArchiveVisitListView: View {
                         systemImage: "building.columns",
                         description: Text(String(
                             localized: "archiveVisit.empty.detail",
-                            defaultValue: "An Archive Visit turns documents' source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
+                            defaultValue: "An Archive Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
                 }
             } else {
                 Section {

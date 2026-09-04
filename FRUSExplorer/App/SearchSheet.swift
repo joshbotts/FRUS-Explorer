@@ -1824,7 +1824,7 @@ struct MacSearchWindowView: View {
                   systemImage: "checkmark.circle")
         } description: {
             Text(String(localized: "search.checklist.allReviewed.detail",
-                        defaultValue: "You've reviewed every result. Turn off Checklist Mode to see them again."))
+                        defaultValue: "You’ve reviewed every result. Turn off Checklist Mode to see them again."))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

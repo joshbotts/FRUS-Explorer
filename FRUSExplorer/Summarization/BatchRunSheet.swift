@@ -41,7 +41,7 @@ struct BatchRunSheet: View {
 
     private var footer: String {
         String(localized: "settings.summarization.runSheet.footer",
-               defaultValue: "Closing this doesn't stop a run. Progress and the result appear on the Summarization screen.")
+               defaultValue: "Closing this doesn’t stop a run. Progress and the result appear on the Summarization screen.")
     }
 
     var body: some View {

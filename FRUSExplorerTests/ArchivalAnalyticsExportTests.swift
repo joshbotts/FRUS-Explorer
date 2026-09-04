@@ -89,7 +89,7 @@ struct ArchivalAnalyticsExportTests {
             Every archival export carries the parsed-from-source-notes statement.
             """)
         // The three claims a reader of this CSV alone cannot check for themselves.
-        #expect(caveats.contains("not this device's library"), """
+        #expect(caveats.contains("not this device’s library"), """
             The chart is corpus-wide; a reader who assumes it reflects their own library would \
             read a partial download as a gap in the record.
             """)

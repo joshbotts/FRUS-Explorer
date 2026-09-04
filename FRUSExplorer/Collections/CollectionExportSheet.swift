@@ -608,7 +608,7 @@ struct ExportSheetView: View {
                       defaultValue: "Include my research notes"),
                isOn: $includeNotesInSharedFile)
         Text(String(localized: "export.native.hint",
-                    defaultValue: "Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don't have. Your research notes stay private unless you include them above."))
+                    defaultValue: "Shares an editable copy of this collection: its documents, composition, sections, and prose. Recipients open it in FRUS Explorer and download any volumes they don’t have. Your research notes stay private unless you include them above."))
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -690,7 +690,7 @@ struct ExportSheetView: View {
                       defaultValue: "Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file, which Zotero can import on a Mac — not on iPhone or iPad.")
         #else
         return String(localized: "export.zotero.send.caption.macNoAccount",
-                      defaultValue: "Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero's File → Import.")
+                      defaultValue: "Connect a Zotero account to send with your tags & research notes. Without one this saves an RIS file for Zotero’s File → Import.")
         #endif
     }
 

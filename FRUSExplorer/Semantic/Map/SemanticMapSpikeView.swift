@@ -1666,7 +1666,7 @@ struct SemanticMapSpikeView: View {
                 approximate, so treat a clear side as meaningful and a small gap as noise.
                 """), negative, positive)
         let vertical = String(localized: "semanticMap.caveat.slice.vertical.v2",
-                              defaultValue: "Up and down is the volume's coverage midpoint, not each document's own date.")
+                              defaultValue: "Up and down is the volume’s coverage midpoint, not each document’s own date.")
         return position + " " + vertical
     }
 
@@ -2175,7 +2175,7 @@ struct SemanticMapSpikeView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(String(localized: "semanticMap.axis.needsSecondPole.v2",
-                                defaultValue: "Tap a document in a different volume and choose \u{201C}…to here\u{201D}. The map will then lay every document out by how far it leans between the two."))
+                                defaultValue: "Tap a document in a different volume and choose \u{201C}…to here\u{201D}. The map will then display every document in the series by where it falls between your chosen documents’ enclosing volumes."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -2230,7 +2230,7 @@ struct SemanticMapSpikeView: View {
                     .controlHelp(
                         String(localized: "semanticMap.region.clear", defaultValue: "Dismiss region"),
                         detail: String(localized: "semanticMap.region.clear.help",
-                                       defaultValue: "Closes this region's card"),
+                                       defaultValue: "Closes this region’s card"),
                         systemImage: "xmark.circle.fill")
                 }
                 // The region's own words. `verbatim` because these are corpus tokens, not UI copy.
@@ -2253,7 +2253,7 @@ struct SemanticMapSpikeView: View {
                 // oversea" for a topic label will over-read every region on the map.
                 Text(String(
                     localized: "semanticMap.region.whatItIs",
-                    defaultValue: "A region is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its name is the most distinctive words in a sample of those documents, not a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it."))
+                    defaultValue: "A region is a group the corpus fell into on its own — documents whose language an AI model detected to be alike, found by clustering rather than chosen by an editor. Its name reflects the most distinctive words in a sample of those documents. It is NOT a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2268,7 +2268,7 @@ struct SemanticMapSpikeView: View {
                     }
                 }
                 Text(String(localized: "semanticMap.region.eraCaveat",
-                            defaultValue: "Era is the volume's coverage midpoint, not each document's own date."))
+                            defaultValue: "Era is the volume’s coverage midpoint, not each document’s own date."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2962,7 +2962,7 @@ struct SemanticMapSpikeView: View {
         let sliceDescription = model.slice.map { axis in
             String(format: String(
                 localized: "semanticMap.export.caveat.slice %@ %@",
-                defaultValue: "This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region's center belongs to the map plane, and in the slice its documents sit somewhere else entirely."),
+                defaultValue: "This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region’s center belongs to the map plane, and in the slice its documents sit somewhere else entirely."),
                 axis.negativeLabel, axis.positiveLabel)
         }
         let provenance = SemanticMapExport.provenance(

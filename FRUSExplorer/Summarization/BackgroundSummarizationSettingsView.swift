@@ -304,7 +304,7 @@ struct BackgroundSummarizationSettingsView: View {
                 let downloaded = selectedCustomScopeDownloadedIds.count
                 if downloaded == 0 {
                     Text(String(localized: "bg.summarizer.scope.customScope.noneDownloaded",
-                                defaultValue: "None of this scope's volumes are downloaded yet — download them first."))
+                                defaultValue: "None of this scope’s volumes are downloaded yet — download them first."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {

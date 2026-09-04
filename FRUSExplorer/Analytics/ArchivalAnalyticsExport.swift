@@ -68,7 +68,7 @@ enum ArchivalAnalyticsExport {
     /// export says the fold happened and the app offers the leaves.
     static var grainCaveat: String {
         String(localized: "archival.export.caveat.grain",
-               defaultValue: "Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), because at full length half of them carry a single document. A grouped row's own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.")
+               defaultValue: "Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), because at full length half of them carry a single document. A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.")
     }
 
     /// The Collections ranking's statement.
@@ -104,7 +104,7 @@ enum ArchivalAnalyticsExport {
         if let scopeLabel {
             caveats.append(String(format: String(
                 localized: "archival.export.caveat.scope.volumes %@",
-                defaultValue: "Scope: only the volumes in \"%@\" are counted. The derivation behind this table is corpus-wide and is not narrowed to what this device has downloaded, so the same scope gives the same figures on any device."),
+                defaultValue: "Scope: only the volumes in “%@” are counted. The derivation behind this table is corpus-wide and is not narrowed to what this device has downloaded, so the same scope gives the same figures on any device."),
                 scopeLabel))
         }
         // Only under the documents weight: a "rows account for N of M" sentence over a volume
@@ -116,11 +116,11 @@ enum ArchivalAnalyticsExport {
             caveats.append(rowCapApplied
                 ? String(format: String(
                     localized: "archival.export.caveat.denominator %lld %lld",
-                    defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
+                    defaultValue: "Denominator: the era’s volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
                     Int64(noteCount), Int64(shownValue))
                 : String(format: String(
                     localized: "archival.export.caveat.denominator.uncapped %lld %lld",
-                    defaultValue: "Denominator: the era's volumes carry %1$lld source notes in all, and this table — every unit the era reaches, uncapped — accounts for %2$lld of them. The rest name a unit of the other kind, or nothing this app resolves."),
+                    defaultValue: "Denominator: the era’s volumes carry %1$lld source notes in all, and this table — every unit the era reaches, uncapped — accounts for %2$lld of them. The rest name a unit of the other kind, or nothing this app resolves."),
                     Int64(noteCount), Int64(shownValue)))
         }
         return AnalyticsProvenance(
@@ -178,7 +178,7 @@ enum ArchivalAnalyticsExport {
                 baseCaveat,
                 String(format: String(
                     localized: "archival.export.caveat.timeline %lld",
-                    defaultValue: "Scope: the whole published series, not this device's library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS's own subseries rather than decades, because a decade axis splits a published subseries across two bars."),
+                    defaultValue: "Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars."),
                     Int64(eraCount)),
             ])
     }
@@ -327,7 +327,7 @@ enum ArchivalAnalyticsExport {
     /// methods statements in one file, and the first one is the one a reader trusts.
     static var pointerBaseCaveat: String {
         String(localized: "archival.export.caveat.base.pointers",
-               defaultValue: "These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive's catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.")
+               defaultValue: "These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive’s catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.")
     }
 
     /// The era asymmetry, which decides whether a reader should have switched lenses.

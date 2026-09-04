@@ -626,7 +626,7 @@ struct WordCloudView: View {
             systemImage: lens.systemImage,
             description: Text(String(
                 format: String(localized: "wordcloud.lens.insufficient.detail %@",
-                               defaultValue: "There aren't enough %@ in this scope to fill a cloud. Try a broader scope or a different lens."),
+                               defaultValue: "There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a different lens."),
                 lens.label.lowercased()
             ))
         )
@@ -664,7 +664,7 @@ struct WordCloudView: View {
             // counts words that pass the lens gate, so this total — and every share computed from
             // it — describes that lens's vocabulary, not the scope's whole text.
             String(format: String(localized: "wordcloud.export.caveat.population %lld %lld %@",
-                                  defaultValue: "Population: these counts cover the %lld document(s) in this scope. The share column divides by %lld, which is every word counted under the \"%@\" lens after the filters below. That is not the scope's total word count. Shares from two different lenses cannot be compared."),
+                                  defaultValue: "Population: these counts cover the %lld document(s) in this scope. The share column divides by %lld, which is every word counted under the “%@” lens after the filters below. That is not the scope’s total word count. Shares from two different lenses cannot be compared."),
                    Int64(result.documentCount), Int64(result.totalTokenCount), lens.label),
             String(format: String(localized: "wordcloud.export.caveat.stopwords %@ %@",
                                   defaultValue: "Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@."),
@@ -695,19 +695,19 @@ struct WordCloudView: View {
         }
         if globalStops + lensStops > 0 {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.stopLists %lld %lld %@",
-                                                 defaultValue: "Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the \"%@\" lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                                                 defaultValue: "Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
                                   Int64(globalStops), Int64(lensStops), lens.label))
         }
         if let ranking {
             caveats.append(String(format: String(
                 localized: "wordcloud.export.caveat.keyness %lld %lld %@",
-                defaultValue: "Keyness: each word is scored against a built-in reference for the whole FRUS corpus. That reference covers %lld of the corpus's %lld distinct words for this lens, and was generated %@. Only words used more here than in the corpus are listed. A word this scope conspicuously avoids is a real finding, and this table does not carry it."),
+                defaultValue: "Keyness: each word is scored against a built-in reference for the whole FRUS corpus. That reference covers %lld of the corpus’s %lld distinct words for this lens, and was generated %@. Only words used more here than in the corpus are listed. A word this scope conspicuously avoids is a real finding, and this table does not carry it."),
                 Int64(ranking.referenceRetained), Int64(ranking.referenceDistinct),
                 ranking.generated ?? String(localized: "common.unknown", defaultValue: "unknown")))
             caveats.append(ranking.rankedAmongTopFrequent
                 ? String(format: String(
                     localized: "wordcloud.export.caveat.keyness.truncated %lld",
-                    defaultValue: "Keyness candidates: only this scope's %lld most frequent words were scored, so a word that is rare here but unique to it is outside this ranking."),
+                    defaultValue: "Keyness candidates: only this scope’s %lld most frequent words were scored, so a word that is rare here but unique to it is outside this ranking."),
                     Int64(ranking.candidateCount))
                 : String(format: String(
                     localized: "wordcloud.export.caveat.keyness.complete %lld",
@@ -722,7 +722,7 @@ struct WordCloudView: View {
         }
         if lens != .allTerms {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.lens %@",
-                                                 defaultValue: "Lens: the cloud is filtered to the \"%@\" word list, so this is a subset of the scope's vocabulary, not its whole frequency ranking."),
+                                                 defaultValue: "Lens: the cloud is filtered to the “%@” word list, so this is a subset of the scope’s vocabulary, not its whole frequency ranking."),
                                   lens.label))
         }
         return AnalyticsProvenance(
@@ -737,7 +737,7 @@ struct WordCloudView: View {
                 ? String(localized: "wordcloud.export.axis.keyness",
                          defaultValue: "Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference")
                 : String(localized: "wordcloud.export.axis",
-                         defaultValue: "Ranked by frequency across the scope's documents"),
+                         defaultValue: "Ranked by frequency across the scope’s documents"),
             scopeLabel: title,
             indexedVolumeCount: appState.indexedVolumeIds.count,
             yearRange: nil,
@@ -1006,7 +1006,7 @@ struct WordCloudView: View {
                           defaultValue: "Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.")
         case .subseries:
             return String(localized: "wordcloud.loading.subseries",
-                          defaultValue: "Reading this subseries' documents. This can take a minute or two.")
+                          defaultValue: "Reading this subseries’ documents. This can take a minute or two.")
         default:
             return String(localized: "wordcloud.loading", defaultValue: "Building word cloud…")
         }
@@ -1048,14 +1048,14 @@ struct WordCloudView: View {
             systemImage: WordCloudGlyph.symbol,
             description: Text(String(
                 localized: "wordcloud.empty.detail",
-                defaultValue: "There's no indexed text in this scope yet. Download and index the relevant volumes, then try again."
+                defaultValue: "There’s no indexed text in this scope yet. Download and index the relevant volumes, then try again."
             ))
         )
     }
 
     private func errorView(_ message: String) -> some View {
         ContentUnavailableView(
-            String(localized: "wordcloud.error.title", defaultValue: "Couldn't Build Word Cloud"),
+            String(localized: "wordcloud.error.title", defaultValue: "Couldn’t Build Word Cloud"),
             systemImage: "exclamationmark.triangle",
             description: Text(message)
         )
@@ -1096,7 +1096,7 @@ struct WordCloudView: View {
                 heading: String(localized: "wordcloud.info.heading", defaultValue: "About the Word Cloud"),
                 items: [
                     FeatureInfoItem(
-                        title: String(localized: "wordcloud.info.shows.title", defaultValue: "What you're seeing"),
+                        title: String(localized: "wordcloud.info.shows.title", defaultValue: "What you’re seeing"),
                         detail: String(localized: "wordcloud.info.shows.detail.v2",
                                        defaultValue: "The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.")),
                     FeatureInfoItem(
@@ -1113,13 +1113,13 @@ struct WordCloudView: View {
                         detail: String(localized: "wordcloud.info.lenses.detail",
                                        defaultValue: "The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.")),
                     FeatureInfoItem(
-                        title: String(localized: "wordcloud.info.filters.title", defaultValue: "What's filtered out"),
+                        title: String(localized: "wordcloud.info.filters.title", defaultValue: "What’s filtered out"),
                         detail: String(localized: "wordcloud.info.filters.detail",
-                                       defaultValue: "Common stopwords are always removed. A word's own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.")),
+                                       defaultValue: "Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.tap.title", defaultValue: "Tapping a word"),
                         detail: String(localized: "wordcloud.info.tap.detail",
-                                       defaultValue: "Charts how often that term appears across the whole corpus in Corpus Analytics; the word's menu also offers a scoped chart and a direct Search.")),
+                                       defaultValue: "Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.")),
                 ]
             )
         }

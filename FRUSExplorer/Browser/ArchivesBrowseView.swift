@@ -83,7 +83,7 @@ enum ArchivesAxis {
         let noteless = coverage.volumesScanned - coverage.volumesWithNotes
         return String(
             localized: "browser.archives.coverage",
-            defaultValue: "FRUS's editors printed a source note under \(coverage.noteCount) documents across \(coverage.volumesWithNotes) of \(coverage.volumesScanned) volumes — the archival record this axis browses. About \(percent)% of those notes name an archival collection; most of the rest cite a State Department central-file number. \(noteless) volumes, mostly the pre-1906 annuals, print no notes and cannot appear here."
+            defaultValue: "FRUS’s editors printed a source note under \(coverage.noteCount) documents across \(coverage.volumesWithNotes) of \(coverage.volumesScanned) volumes — the archival record this axis browses. About \(percent)% of those notes name an archival collection; most of the rest cite a State Department central-file number. \(noteless) volumes, mostly the pre-1906 annuals, print no notes and cannot appear here."
         )
     }
 
@@ -131,7 +131,7 @@ enum ArchivesAxis {
             volumeIds: ordered.map(\.key),
             caption: String(
                 localized: "browser.archives.drill.caption",
-                defaultValue: "\(byVolume.count) volumes with documents drawn from \(name), largest count first. Percentages are each volume's share of its own sourced documents — the notes printed under documents, not every document in the volume."),
+                defaultValue: "\(byVolume.count) volumes with documents drawn from \(name), largest count first. Percentages are each volume’s share of its own sourced documents — the notes printed under documents, not every document in the volume."),
             accessories: accessories
         )
     }

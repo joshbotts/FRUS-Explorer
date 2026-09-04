@@ -206,12 +206,12 @@ enum CentralFilesClassifier {
                 return [CentralFilesClassification(
                     category: .specialAgentsInstructions, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.specialAgentInstruction",
-                                      defaultValue: "Department of State outbound to a special agent — an instruction in the Special Missions volumes. Matched by the document's date."))]
+                                      defaultValue: "Department of State outbound to a special agent — an instruction in the Special Missions volumes. Matched by the document’s date."))]
             }
             return [CentralFilesClassification(
                 category: .specialAgentsDespatches, geoKeys: [], confidence: .medium,
                 rationale: String(localized: "centralFiles.rationale.specialAgentDespatch",
-                                  defaultValue: "From a special agent of the Department — filed with the agent's mission in Despatches from Special Agents. Matched by the document's date."))]
+                                  defaultValue: "From a special agent of the Department — filed with the agent’s mission in Despatches from Special Agents. Matched by the document’s date."))]
         }
 
         // Another executive department or the President's office writing to State (W-8
@@ -224,7 +224,7 @@ enum CentralFilesClassifier {
             return [CentralFilesClassification(
                 category: .lettersReceived, geoKeys: [], confidence: .high,
                 rationale: String(localized: "centralFiles.rationale.letterReceived",
-                                  defaultValue: "Dateline is another executive department — a letter received by the Department of State, filed chronologically. Matched by the document's date."))]
+                                  defaultValue: "Dateline is another executive department — a letter received by the Department of State, filed chronologically. Matched by the document’s date."))]
         }
 
         // A FOREIGN consulate in the United States → a note from a foreign consul to the
@@ -235,7 +235,7 @@ enum CentralFilesClassifier {
             return [CentralFilesClassification(
                 category: .notesFromForeignConsuls, geoKeys: [], confidence: .high,
                 rationale: String(localized: "centralFiles.rationale.noteFromConsul",
-                                  defaultValue: "Dateline is a foreign consulate in the United States — a note from the foreign consul to the Department. The series is a single chronological run, matched by the document's date."))]
+                                  defaultValue: "Dateline is a foreign consulate in the United States — a note from the foreign consul to the Department. The series is a single chronological run, matched by the document’s date."))]
         }
 
         // Consular despatch (Phase 3) — its geography is the post CITY taken from the
@@ -284,11 +284,11 @@ enum CentralFilesClassifier {
                 candidates.append(CentralFilesClassification(
                     category: .consularInstructions, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.consularInstruction",
-                                      defaultValue: "Department of State outbound to a consul; if the addressee is a U.S. consul abroad, it is a consular instruction. Matched by the document's date.")))
+                                      defaultValue: "Department of State outbound to a consul; if the addressee is a U.S. consul abroad, it is a consular instruction. Matched by the document’s date.")))
                 candidates.append(CentralFilesClassification(
                     category: .notesToForeignConsuls, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.noteToConsul",
-                                      defaultValue: "Department of State outbound to a consul; if the addressee is a foreign consul in the United States, it is a note to the consul. Matched by the document's date.")))
+                                      defaultValue: "Department of State outbound to a consul; if the addressee is a foreign consul in the United States, it is a note to the consul. Matched by the document’s date.")))
             }
             // Department outbound ADDRESSED to a domestic cabinet office (W-8 remainder):
             // a Domestic Letter. The office must sit AFTER the header's " to " — the same
@@ -298,7 +298,7 @@ enum CentralFilesClassifier {
                 candidates.append(CentralFilesClassification(
                     category: .domesticLetters, geoKeys: [], confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.domesticLetter",
-                                      defaultValue: "Department of State outbound to a domestic official — filed chronologically in Domestic Letters. Matched by the document's date.")))
+                                      defaultValue: "Department of State outbound to a domestic official — filed chronologically in Domestic Letters. Matched by the document’s date.")))
             }
             return candidates
         }

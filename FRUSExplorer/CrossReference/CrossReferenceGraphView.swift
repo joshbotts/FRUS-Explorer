@@ -722,7 +722,7 @@ struct CrossReferenceGraphView: View {
             // #837: the walk ends here. Promising "actions" on a node with no document behind
             // it is the fall-through this branch exists to prevent.
             return String(localized: "graph.node.unit.hint",
-                          defaultValue: "Tap to open this collection's record. There is no document here to open.")
+                          defaultValue: "Tap to open this collection’s record. There is no document here to open.")
         }
         if node.isDateCluster {
             return String(localized: "graph.node.dateCluster.hint",
@@ -1187,7 +1187,7 @@ struct CrossReferenceGraphView: View {
         .controlHelp(
             String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
             detail: String(localized: "graph.panel.close.help",
-                           defaultValue: "Hide this document's details panel"),
+                           defaultValue: "Hide this document’s details panel"),
             systemImage: "xmark.circle.fill"
         )
     }
@@ -1299,7 +1299,7 @@ struct CrossReferenceGraphView: View {
                 .controlHelp(
                     String(localized: "graph.breadcrumb.back", defaultValue: "Go back"),
                     detail: String(localized: "graph.breadcrumb.back.help",
-                                   defaultValue: "Return to the previous document in the graph's history"),
+                                   defaultValue: "Return to the previous document in the graph’s history"),
                     systemImage: "chevron.left"
                 )
 
@@ -1502,7 +1502,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
                 body:  String(localized: "graph.info.interact.body.v2",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection's record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",
@@ -1612,7 +1612,7 @@ struct CrossReferenceGraphView: View {
         .controlHelp(
             Self.resetViewportName,
             detail: String(localized: "graph.resetView.help",
-                           defaultValue: "Restore the graph's pan and zoom to their original position"),
+                           defaultValue: "Restore the graph’s pan and zoom to their original position"),
             systemImage: "arrow.up.left.and.down.right.magnifyingglass"
         )
     }

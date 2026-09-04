@@ -487,16 +487,16 @@ struct QueryMethodAppendix: Sendable, Equatable {
         if floorRowCount > 0 {
             caveats.append(floorRowCount == 1
                 ? String(localized: "appendix.caveat.floor.one",
-                         defaultValue: "One search hit the app's row ceiling. Its count is shown as \"at least N\" and is a floor, not a total — do not sum it with the others.")
+                         defaultValue: "One search hit the app’s row ceiling. Its count is shown as “at least N” and is a floor, not a total — do not sum it with the others.")
                 : String(localized: "appendix.caveat.floor.many %lld",
-                         defaultValue: "\(floorRowCount) searches hit the app's row ceiling. Those counts are shown as \"at least N\" and are floors, not totals — do not sum them."))
+                         defaultValue: "\(floorRowCount) searches hit the app’s row ceiling. Those counts are shown as “at least N” and are floors, not totals — do not sum them."))
         }
         if unrecordedRowCount > 0 {
             caveats.append(unrecordedRowCount == 1
                 ? String(localized: "appendix.caveat.unrecorded.one",
-                         defaultValue: "One search predates this app version. It saved only a result count — not the scope, the row ceiling, or how many volumes were indexed. It is marked \"as reported\" and cannot be checked against the others.")
+                         defaultValue: "One search predates this app version. It saved only a result count — not the scope, the row ceiling, or how many volumes were indexed. It is marked “as reported” and cannot be checked against the others.")
                 : String(localized: "appendix.caveat.unrecorded.many %lld",
-                         defaultValue: "\(unrecordedRowCount) searches predate this app version. They saved only a result count — not the scope, the row ceiling, or how many volumes were indexed. They are marked \"as reported\" and cannot be checked against the others."))
+                         defaultValue: "\(unrecordedRowCount) searches predate this app version. They saved only a result count — not the scope, the row ceiling, or how many volumes were indexed. They are marked “as reported” and cannot be checked against the others."))
         }
         return caveats
     }

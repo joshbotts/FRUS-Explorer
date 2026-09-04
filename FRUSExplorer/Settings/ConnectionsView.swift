@@ -292,7 +292,7 @@ struct NARACatalogConnectionView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "settings.connections.nara.remove.message",
-                        defaultValue: "Source Explorer's archival search stops working on this device and every device sharing your iCloud Keychain. Nothing you've already saved is affected."))
+                        defaultValue: "Source Explorer’s archival search stops working on this device and every device sharing your iCloud Keychain. Nothing you’ve already saved is affected."))
         }
     }
 
@@ -376,10 +376,10 @@ struct NARACatalogConnectionView: View {
     /// What the reader wants to know about the count, not what the developer knows.
     private var usageFooter: String {
         let base = String(localized: "settings.connections.nara.usage.footer",
-                          defaultValue: "Requests this app has made with your key in the last 30 days. NARA sets the actual rate limit and this app can't see it, so treat this as your own record rather than a quota.")
+                          defaultValue: "Requests this app has made with your key in the last 30 days. NARA sets the actual rate limit and this app can’t see it, so treat this as your own record rather than a quota.")
         guard hasExistingKey else { return base }
         return base + " " + String(localized: "settings.connections.nara.usage.footer.remove",
-                                   defaultValue: "Removing the key hides Source Explorer's archival search.")
+                                   defaultValue: "Removing the key hides Source Explorer’s archival search.")
     }
 
     /// Result of the last action, shown beside the control rather than in a section that appears
@@ -530,7 +530,7 @@ struct ZoteroConnectionView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "settings.connections.zotero.disconnect.message",
-                        defaultValue: "\"Send to Zotero Library…\" disappears from collections and documents. Anything already sent stays in your Zotero library."))
+                        defaultValue: "“Send to Zotero Library…” disappears from collections and documents. Anything already sent stays in your Zotero library."))
         }
     }
 
@@ -584,9 +584,9 @@ struct ZoteroConnectionView: View {
         } footer: {
             Text(isConnected
                  ? String(localized: "settings.connections.zotero.account.footer.on",
-                          defaultValue: "\"Send to Zotero Library…\" appears on collections and documents while you're connected.")
+                          defaultValue: "“Send to Zotero Library…” appears on collections and documents while you’re connected.")
                  : String(localized: "settings.connections.zotero.account.footer.off",
-                          defaultValue: "The key is checked with Zotero before it's stored, so a bad paste is caught here rather than the first time you try to send something."))
+                          defaultValue: "The key is checked with Zotero before it’s stored, so a bad paste is caught here rather than the first time you try to send something."))
         }
     }
 

@@ -261,7 +261,7 @@ struct ArchivalFlowsView: View {
             if data.layer == .toUnprinted {
                 axis = direction == .outgoing
                     ? String(localized: "archival.export.axis.flows.unprinted.outgoing",
-                             defaultValue: "Unprinted material this collection's footnotes name")
+                             defaultValue: "Unprinted material this collection’s footnotes name")
                     : String(localized: "archival.export.axis.flows.unprinted.incoming",
                              defaultValue: "Footnotes naming unprinted material in this collection")
             } else {
@@ -373,7 +373,7 @@ struct ArchivalFlowsView: View {
                 ? String(localized: "archival.flows.title.unprinted.outgoing",
                          defaultValue: "Where the footnotes send you")
                 : String(localized: "archival.flows.title.unprinted.incoming",
-                         defaultValue: "Which collections' footnotes send you here")
+                         defaultValue: "Which collections’ footnotes send you here")
         }
         return direction == .outgoing
             ? String(localized: "archival.flows.title.outgoing",

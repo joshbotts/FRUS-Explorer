@@ -131,9 +131,9 @@ struct AdministrationPresetMenu: View {
                     .font(.caption)
             }
             .help(String(localized: "analytics.adminPreset.help",
-                         defaultValue: "Set the year range to a presidential administration's years in office"))
+                         defaultValue: "Set the year range to a presidential administration’s years in office"))
             .accessibilityLabel(String(localized: "analytics.adminPreset.a11y",
-                                       defaultValue: "Set year range to an administration's term"))
+                                       defaultValue: "Set year range to an administration’s term"))
         }
     }
 }

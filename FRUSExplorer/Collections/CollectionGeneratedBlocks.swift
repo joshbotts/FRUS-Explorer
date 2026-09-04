@@ -225,7 +225,7 @@ enum CollectionGeneratedBlocks {
     /// a bare title over an empty list.
     static var emptyRowText: String {
         String(localized: "collection.generated.emptyRow",
-               defaultValue: "Nothing to list — this collection's documents provided no entries for this block.")
+               defaultValue: "Nothing to list — this collection’s documents provided no entries for this block.")
     }
 
     // MARK: - Data records

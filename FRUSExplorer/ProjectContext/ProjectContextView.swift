@@ -54,7 +54,7 @@ struct MergeProjectSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     Text(String(localized: "project.merge.source.header",
-                                defaultValue: "Merge \"\(sourceProject.name)\" into:"))
+                                defaultValue: "Merge “\(sourceProject.name)” into:"))
                         .font(.callout.weight(.medium))
 
                     ForEach(allProjects) { project in
@@ -64,7 +64,7 @@ struct MergeProjectSheet: View {
                     Divider()
 
                     Text(String(localized: "project.merge.explanation",
-                                defaultValue: "All notes, collections, summaries, and reading history assigned to \"\(sourceProject.name)\" will be re-assigned to the selected project. \"\(sourceProject.name)\" will be deleted."))
+                                defaultValue: "All notes, collections, summaries, and reading history assigned to “\(sourceProject.name)” will be re-assigned to the selected project. “\(sourceProject.name)” will be deleted."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -105,14 +105,14 @@ struct MergeProjectSheet: View {
         NavigationStack {
             Form {
                 Section(String(localized: "project.merge.source.header",
-                               defaultValue: "Merge \"\(sourceProject.name)\" into:")) {
+                               defaultValue: "Merge “\(sourceProject.name)” into:")) {
                     ForEach(allProjects) { project in
                         mergeProjectRow(project: project)
                     }
                 }
 
                 Text(String(localized: "project.merge.explanation",
-                            defaultValue: "All notes, collections, summaries, and reading history assigned to \"\(sourceProject.name)\" will be re-assigned to the selected project. \"\(sourceProject.name)\" will be deleted."))
+                            defaultValue: "All notes, collections, summaries, and reading history assigned to “\(sourceProject.name)” will be re-assigned to the selected project. “\(sourceProject.name)” will be deleted."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

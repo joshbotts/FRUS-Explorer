@@ -344,7 +344,7 @@ struct ProjectHomeView: View {
                 }
                 if chosenTags.isEmpty {
                     Text(String(localized: "project.home.focusTags.empty",
-                                defaultValue: "Choose tags whose documents should anchor this project's suggestions."))
+                                defaultValue: "Choose tags whose documents should anchor this project’s suggestions."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -445,7 +445,7 @@ struct ProjectHomeView: View {
             }
             if members.isEmpty {
                 Text(String(localized: "project.home.collections.empty",
-                            defaultValue: "Attach collections to fold their documents into this project's activity and suggestions."))
+                            defaultValue: "Attach collections to fold their documents into this project’s activity and suggestions."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -524,7 +524,7 @@ struct ProjectHomeView: View {
 
             TextField(
                 String(localized: "project.home.question.placeholder",
-                       defaultValue: "What is this project's research question?"),
+                       defaultValue: "What is this project’s research question?"),
                 text: $questionDraft,
                 axis: .vertical
             )
@@ -697,7 +697,7 @@ struct ProjectHomeView: View {
             if leads.isEmpty {
                 Label {
                     Text(String(localized: "project.home.leads.placeholder",
-                                defaultValue: "As you add documents to this project's collections, related documents you haven't gathered yet will surface here."))
+                                defaultValue: "As you add documents to this project’s collections, related documents you haven’t gathered yet will surface here."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -918,7 +918,7 @@ struct ProjectHomeView: View {
     private func weightTuningPanel(_ project: Project) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(String(localized: "project.home.leads.tune.detail",
-                        defaultValue: "Set how much each kind of connection shapes this project's suggestions."))
+                        defaultValue: "Set how much each kind of connection shapes this project’s suggestions."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1210,7 +1210,7 @@ struct ProjectCollectionsEditor: View {
                             Text(String(localized: "project.collections.manage.add", defaultValue: "Add collections"))
                         } footer: {
                             Text(String(localized: "project.collections.manage.footer",
-                                        defaultValue: "A collection can belong to more than one project. Attaching it here doesn't remove it from any others."))
+                                        defaultValue: "A collection can belong to more than one project. Attaching it here doesn’t remove it from any others."))
                         }
                     }
                 }
@@ -1360,7 +1360,7 @@ struct ProjectFocusTagsEditor: View {
                             String(localized: "project.focusTags.empty.title", defaultValue: "No Tags"),
                             systemImage: "tag.slash",
                             description: Text(String(localized: "project.focusTags.empty.detail",
-                                                     defaultValue: "Tag documents while you research, then choose which tags focus this project's suggestions here."))
+                                                     defaultValue: "Tag documents while you research, then choose which tags focus this project’s suggestions here."))
                         )
                     } else {
                         List {
@@ -1370,7 +1370,7 @@ struct ProjectFocusTagsEditor: View {
                                 }
                             } footer: {
                                 Text(String(localized: "project.focusTags.footer",
-                                            defaultValue: "Documents you've tagged with the chosen tags anchor this project's Suggested Next."))
+                                            defaultValue: "Documents you’ve tagged with the chosen tags anchor this project’s Suggested Next."))
                             }
                         }
                     }

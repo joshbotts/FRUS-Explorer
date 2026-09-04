@@ -951,7 +951,7 @@ struct FRUSExplorerApp: App {
                         systemImage: "books.vertical",
                         description: Text(
                             String(localized: "browser.sources.crossVolume.window.empty.detail",
-                                   defaultValue: "Open Cross-Volume Provenance from a collection in a volume's Sources list.")
+                                   defaultValue: "Open Cross-Volume Provenance from a collection in a volume’s Sources list.")
                         )
                     )
                 }
@@ -1174,7 +1174,7 @@ struct FRUSExplorerApp: App {
                         systemImage: "note.text",
                         description: Text(
                             String(localized: "note.composer.empty.detail",
-                                   defaultValue: "Use “Add note” in a document's Research strip, or open a note from its Research panel.")
+                                   defaultValue: "Use “Add note” in a document’s Research strip, or open a note from its Research panel.")
                         )
                     )
                 }
@@ -1317,7 +1317,7 @@ struct FRUSExplorerApp: App {
                         systemImage: "archivebox",
                         description: Text(
                             String(localized: "archivalNeighbors.window.empty.detail",
-                                   defaultValue: "Open Archival Neighbors from a document, search result, or a volume's Sources list.")
+                                   defaultValue: "Open Archival Neighbors from a document, search result, or a volume’s Sources list.")
                         )
                     )
                 }
@@ -1348,7 +1348,7 @@ struct FRUSExplorerApp: App {
                         systemImage: "doc.on.doc",
                         description: Text(
                             String(localized: "related.window.empty.detail",
-                                   defaultValue: "Open Related Documents from a document you're reading.")))
+                                   defaultValue: "Open Related Documents from a document you’re reading.")))
                 }
             }
             .environment(appState)

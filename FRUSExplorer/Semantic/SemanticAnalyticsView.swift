@@ -112,7 +112,7 @@ struct SemanticAnalyticsView: View {
             HStack(spacing: 6) {
                 Image(systemName: "exclamationmark.triangle.fill")
                 Text(String(localized: "semanticAnalytics.about.collapsed",
-                            defaultValue: "Experimental — a model's reading of the language"))
+                            defaultValue: "Experimental — a model’s reading of the language"))
                 Spacer(minLength: 8)
                 Image(systemName: "info.circle")
             }
@@ -135,7 +135,7 @@ struct SemanticAnalyticsView: View {
             HStack(alignment: .firstTextBaseline) {
                 Label(
                     String(localized: "semanticAnalytics.about.title",
-                           defaultValue: "How the corpus's language sits"),
+                           defaultValue: "How the corpus’s language sits"),
                     systemImage: SemanticGlyph.feature)
                     .font(.headline)
                 Spacer(minLength: 12)
@@ -157,8 +157,8 @@ struct SemanticAnalyticsView: View {
             Text(String(
                 localized: "semanticAnalytics.about.body.v2",
                 defaultValue: """
-                    Every document in the corpus placed by the shape of its language, not by \
-                    citations or archival provenance. Regions are named by the vocabulary that \
+                    Every document in the corpus placed by the AI-detected shape of its language, \
+                    not by citations or archival provenance. Regions are named by the vocabulary that \
                     distinguishes them. Tap a document to open it, draw a lasso to keep a set, or \
                     pick two poles to lay the corpus along an axis you can state — which replaces \
                     the vertical axis with each volume's coverage year.
@@ -169,7 +169,7 @@ struct SemanticAnalyticsView: View {
             Text(String(
                 localized: "semanticAnalytics.about.experimental",
                 defaultValue: """
-                    Experimental. This is a model's reading of the language, not an editorial fact, \
+                    Experimental. This is an AI model's reading of the language, not an editorial fact, \
                     and its quality before 1900 has not been measured.
                     """))
                 .font(.caption)

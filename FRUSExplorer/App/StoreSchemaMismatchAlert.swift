@@ -87,7 +87,7 @@ private struct StoreSchemaMismatchAlert: ViewModifier {
         guard let diagnostic = appState.storeSchemaMismatch else { return "" }
         return diagnostic.summary + "\n\n" + String(
             localized: "storeSchema.alert.recovery",
-            defaultValue: "To rebuild this device's copy from iCloud, use Settings ▸ Data & Recovery ▸ Fix iCloud Sync, then quit and reopen the app."
+            defaultValue: "To rebuild this device’s copy from iCloud, use Settings ▸ Data & Recovery ▸ Fix iCloud Sync, then quit and reopen the app."
         )
     }
     #endif

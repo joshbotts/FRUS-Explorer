@@ -211,7 +211,7 @@ struct CitationLookupView: View {
                 Text(String(localized: "citation.batch.header", defaultValue: "Footnotes"))
             } footer: {
                 Text(String(localized: "citation.batch.footer",
-                            defaultValue: "Paste a chapter's footnotes. Numbered notes are split on their numbers, and a note wrapped across lines is rejoined; an unnumbered list is one citation per line."))
+                            defaultValue: "Paste a chapter’s footnotes. Numbered notes are split on their numbers, and a note wrapped across lines is rejoined; an unnumbered list is one citation per line."))
             }
         } else if mode == .paste {
             Section {

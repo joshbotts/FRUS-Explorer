@@ -191,7 +191,7 @@ struct AnalyticsSectionExportControl: View {
         .controlSize(.small)
         .disabled(!isEnabled)
         .help(String(localized: "analytics.export.section.help",
-                     defaultValue: "Export this chart's data with its method and caveats"))
+                     defaultValue: "Export this chart’s data with its method and caveats"))
     }
 }
 

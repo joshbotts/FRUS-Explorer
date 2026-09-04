@@ -1056,7 +1056,7 @@ struct FacetPanelView: View {
                             defaultValue: "Subjects are still being prepared for your library — this breakdown is not complete yet."))
             }
             Text(String(localized: "facets.subjects.provenance",
-                        defaultValue: "Detected topics from the Office of the Historian, matched by name — not the volumes' own markup."))
+                        defaultValue: "Detected topics from the Office of the Historian, matched by name — not the volumes’ own markup."))
         }
         .font(.caption2)
         .foregroundStyle(.tertiary)

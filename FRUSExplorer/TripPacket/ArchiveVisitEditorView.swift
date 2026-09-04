@@ -268,7 +268,7 @@ struct ArchiveVisitEditorView: View {
         if isDeriving && derived == nil {
             BootPlaceholderView(detail: String(
                 localized: "archiveVisit.editor.deriving",
-                defaultValue: "Deriving research targets from the plan's documents…"))
+                defaultValue: "Deriving research targets from the plan’s documents…"))
                 .frame(maxHeight: .infinity)
         } else {
             switch tab {
@@ -486,7 +486,7 @@ struct ArchiveVisitEditorView: View {
                             defaultValue: "About research targets"))
                     .font(.headline)
                 Text(String(localized: "archiveVisit.info.body",
-                            defaultValue: "A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document's footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index."))
+                            defaultValue: "A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index."))
                     .font(.callout)
                 Text(String(localized: "archiveVisit.info.sparsity",
                             defaultValue: "Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan."))
@@ -879,7 +879,7 @@ struct ArchiveVisitEditorView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     if seeding.inherited {
                         Text(String(localized: "archiveVisit.seeding.inherited",
-                                    defaultValue: "Cited as “Ibid.” — inherited from the preceding footnote's citation."))
+                                    defaultValue: "Cited as “Ibid.” — inherited from the preceding footnote’s citation."))
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -1026,7 +1026,7 @@ struct ArchiveVisitEditorView: View {
                             tierMenu(for: key, derived: derived)
                         }
                         Text(String(localized: "archiveVisit.orphan.caption",
-                                    defaultValue: "Stored target — no longer derives from this plan's current seeds. Kept with your tier and notes; it never deletes itself."))
+                                    defaultValue: "Stored target — no longer derives from this plan’s current seeds. Kept with your tier and notes; it never deletes itself."))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1054,7 +1054,7 @@ struct ArchiveVisitEditorView: View {
         let anyOn = seeds.contains { $0.includeSource || $0.includeExternalRefs }
         if !anyOn {
             return String(localized: "archiveVisit.editor.allOff",
-                          defaultValue: "Every document's contributions are switched off — turn a document's archival source or unprinted references back on under Documents.")
+                          defaultValue: "Every document’s contributions are switched off — turn a document’s archival source or unprinted references back on under Documents.")
         }
         return String(localized: "archiveVisit.editor.noTargets",
                       defaultValue: "No targets derive from these documents on this device — their volumes may not be indexed yet, or their source notes name nothing the app can place.")
@@ -1079,7 +1079,7 @@ struct ArchiveVisitEditorView: View {
                     // footer pattern — on the container VStack it let a Text clip mid-word.
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "archiveVisit.documents.footer",
-                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes' citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch."))
+                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch."))
                             .fixedSize(horizontal: false, vertical: true)
                         if let sparsity, sparsity.indexed > 0 {
                             Text(measuredSparsityLine(sparsity))
@@ -1156,7 +1156,7 @@ struct ArchiveVisitEditorView: View {
             // The references half.
             if let count = facts?.referenceCount, count == 0 {
                 Text(String(localized: "archiveVisit.document.noRefs",
-                            defaultValue: "No unprinted references in this document's footnotes"))
+                            defaultValue: "No unprinted references in this document’s footnotes"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
