@@ -11467,7 +11467,7 @@ before anyone opened the note past its first 200 characters. The guide's own §1
 a claim about what a file says is a grep over that file, with the command shown — would have
 caught it at the first hop.
 
-## Session 2026-09-05 — PV-0: the tier becomes computable (PR #NNNN)
+## Session 2026-09-05 — PV-0: the tier becomes computable (PR #1210)
 
 **Build 45 shipped and all four owner questions were answered, which is what unblocked wave PV.**
 Q-1 export block only; Q-2 `administrations.json` is Tier 1; Q-3 disclose the curated resolutions;
