@@ -11611,7 +11611,7 @@ than trusting the equality assertions.
 Four new strings, mirrored in `Docs/EditableContent.md`. No CloudKit change, no index bump, no new
 bundled resource. New files, so xcodegen ran and the schemes were restored.
 
-## Session 2026-09-05d — PV-3: the split rendered where it falls, and a Q-3 error corrected (PR #PVTHREE)
+## Session 2026-09-05d — PV-3: the split rendered where it falls, and a Q-3 error corrected (PR #1216)
 
 **The row that justifies wave PV**, and it cost less than feared for a reason the plan did not know:
 `CollectionDetailView` is **shared** between platforms, so three of the five mounts are written
