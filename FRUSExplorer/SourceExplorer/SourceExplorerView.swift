@@ -245,6 +245,12 @@ struct SourceExplorerView: View {
                             Int64(record.volumeIds.count)))
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        // Both claims above are FRUS's own: the canonical name is the commonest
+                        // raw form across the corpus, and the count is the volumes whose front
+                        // matter or source notes cite it. Named per claim — see the note on
+                        // `CollectionDetailView.overviewSection` for why this is not looked up
+                        // from the artifact table.
+                        ProvenanceChip(source: .frusText)
                     }
                 }
             }

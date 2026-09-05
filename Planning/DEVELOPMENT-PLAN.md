@@ -11610,3 +11610,76 @@ than trusting the equality assertions.
 
 Four new strings, mirrored in `Docs/EditableContent.md`. No CloudKit change, no index bump, no new
 bundled resource. New files, so xcodegen ran and the schemes were restored.
+
+## Session 2026-09-05d — PV-3: the split rendered where it falls, and a Q-3 error corrected (PR #1216)
+
+**The row that justifies wave PV**, and it cost less than feared for a reason the plan did not know:
+`CollectionDetailView` is **shared** between platforms, so three of the five mounts are written
+once. Only the Source Explorer collection card is twinned, and a test pins both twins against the
+drift this repo has a record of.
+
+**The tier boundary falls between SECTIONS here, not inside a row.** §1c inferred the opposite from
+`CollectionGeneratedBlocks`, whose export rows really do pair a Tier-1 `text` with a Tier-2
+`secondaryText`. On these screens `overviewSection` is uniformly Tier 1 — the canonical name, the
+repository keyword, the record group, the lot key and the variant spellings are all clustered out of
+FRUS's own front matter, and `recordGroup` is a **vote over parsed references** rather than a
+catalogue lookup — while `catalogSection` and `dividedAtNARASection` are uniformly Tier 2. The
+per-claim rule is satisfied per section rather than weakened by it.
+
+**The scope is measured, not preferred.** A claim inventory over both twins, the shared detail view
+and the authority types found **279 distinct claims, about 150 of them Tier 2**. Badging each would
+put fifteen identical chips down one screen. It would also add nothing: those sections say *NARA* in
+their own labels — "NARA Creator", "Open Series in NARA Catalog", "View in National Archives
+Catalog". The chip earns its place on the **collection identity**, the one claim on these screens a
+reader would assume came from the catalogue and did not.
+
+**Three sections stayed unbadged because they are mixed PER ROW**, each caught by the inventory's
+adversarial pass and each a finding for a later row: the pre-1906 country series is Tier 2
+throughout rather than the Tier 1 it looks like; a lot file's record group is `.frusText` from
+`SourceNoteParser`'s pure rule but `.naraCatalog` when `CuratedLotResolutionsStore` supplied it, decided
+at render time; and Pointed At, Not Printed must branch on `citation.anchor`. Those are the §1c
+shape, and they need a per-row branch rather than a section chip.
+
+**PV-0 and PV-1 shipped a false claim, and this row removed it.** PV-0's `carriesCuratedResolutions`
+named four artifacts on the ground that `curated-lot-resolutions.json` "folds into
+central-files-index.json at generation time and leaves no marker". **The opposite is true and the app
+already enforced it**: that file says its rows are "deliberately NOT written into
+central-files-index.json, volume-sources-index.json, or collection-authority.json — those bundles
+feed surfaces that cannot express doubt", and two non-vacuous assertions in
+`CuratedLotResolutionsTests` hold the line. PV-1 used the set to make **every collection export
+containing an archival-sources block claim a hand-matched identifier it cannot contain** —
+manufacturing doubt the app had guaranteed away, which fails the wave's purpose exactly as
+overstating certainty would. The set is deleted rather than emptied (an empty one invites the claim
+back), the export passes nothing, and a test pins the absence. Where the doubt actually lives, it was
+already said better than a chip could: `curatedLotSection` carries a `ConfidenceChip` and the
+sentence "This match was made by collection name, not by a catalog control number."
+
+Five mutations killed, including one that adds a real `source(ofArtifact:)` call to prove the
+artifact-table prohibition is not vacuous — the first version of that test matched its own doc
+comment rather than any code, so the scan now strips comments before reading.
+
+No CloudKit change, no index bump, no new bundled resource. New test file, so xcodegen ran and the
+schemes were restored.
+
+**Environment note — TWO causes, and each looked like the other.** The full suite failed to
+complete five times before it ran clean, and the diagnosis moved twice.
+
+First, **starvation**: `xcodebuild test` sat at 0% CPU with seconds of total CPU time and never
+finished, at **load average 388**. The cause was partly this session's own inventory workflow (279
+claims, one verify agent each) and mostly **twelve orphaned `yes` processes** at ~83% CPU apiece —
+started five hours earlier, reparented to init, saturating ten cores. `ps aux | sort -k3` found
+them; killing them took the load from 388 to 5.
+
+Second, and only visible once the machine was free, **the app-host wedge**: the app failed to
+launch with *"Application failed preflight checks … Busy"*, which is the signature the memory note
+already records. `simctl erase` on the device cleared it.
+
+The two are hard to tell apart because both leave `xcodebuild` idle. **The CPU-time figure
+separates them** — seconds means it never got scheduled, whereas the wedge reaches the launch and
+is refused. Check `uptime` and `ps aux | sort -k3` first, then `simctl`.
+
+Two self-inflicted traps alongside: killing a stalled `xcodebuild` leaves a stale
+`XCBuildData/build.db` lock reporting "database is locked … two concurrent builds" with no holder
+(remove the directory), and piping the run through `| head -8` **SIGPIPEs xcodebuild mid-suite** and
+exits 0 — a truncating `head` on a test run reads as a pass with no verdict line. Redirect to a file
+and grep the file.

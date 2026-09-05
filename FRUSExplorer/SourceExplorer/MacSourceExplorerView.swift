@@ -405,6 +405,10 @@ struct MacSourceExplorerView: View {
                         Int64(record.volumeIds.count)))
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    // The iOS twin's `archivalCollectionSection` carries the same chip on the same
+                    // two claims. It is one declared type mounted twice rather than two capsules,
+                    // which is the whole reason PV-2 shipped `ProvenanceChip` before this row.
+                    ProvenanceChip(source: .frusText)
                     Button {
                         collectionDetailRecord = record
                     } label: {
