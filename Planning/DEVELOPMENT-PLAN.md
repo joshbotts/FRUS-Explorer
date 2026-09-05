@@ -11513,7 +11513,7 @@ Three mutations killed: a generator gaining an input, a NARA artifact claiming T
 artifact dropped from the table. 4,479 tests in 588 suites; macOS builds clean. No CloudKit change,
 no index bump. New files, so xcodegen ran and the schemes were restored.
 
-## Session 2026-09-05b — PV-1: the export sentences (PR #NNNN)
+## Session 2026-09-05b — PV-1: the export sentences (PR #1211)
 
 **The only part of wave PV a reader can cite**, which is why it came before the on-screen chips: a
 historian writing a footnote is reading an exported file, not a screen, and a chip cannot travel
