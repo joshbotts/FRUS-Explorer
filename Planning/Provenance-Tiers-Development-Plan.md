@@ -140,6 +140,13 @@ inward the one the icon already asserts.
 minimum for a UI component. The dark twin is a rose. `FRUSTheme.adaptiveColor(lightHex:darkHex:)`
 already exists for exactly this and `headnotePurple` already ships as two different purples.
 
+**The capsule around the text carries almost nothing, and PV-2 measured how little.** The 12% wash
+is **1.19–1.25:1** against the page across all six pairs, and the 32% hairline **1.63–1.94:1** —
+deliberately short of WCAG 1.4.11's 3:1, which governs visuals *required to identify a component*
+and does not bind here, since the label identifies the chip at 6.1:1 or better and the glyph beside
+it does too. Reaching 3:1 would take roughly 0.70 alpha, a heavy ring at `.caption2`. What a reader
+perceives is the chip's **text**.
+
 ---
 
 ## 3. The rows
@@ -148,7 +155,7 @@ already exists for exactly this and `headnotePurple` already ships as two differ
 |---|---|---|---|---|
 | ~~PV-0~~ | **SHIPPED 2026-09-05 (PR #1210).** THREE undocumented artifacts, not two — `document-subject-index.json` was the third and the one the classification most needed, since it reads `DOCUMENT_SUBJECTS` alone and has no FRUS TEI in its closure at all. `ProvenanceSource` (the eight labels, each with a chip label, a method sentence and a partner name), `ProvenanceTier`, and `BundledArtifactProvenance.table` — 27 rows covering every bundled data artifact, with the seven config payloads exempt by name. The derivation guard works: `declaredInputsMatchTheSources` walks each generator's `*GeneratorCore` sources for the data-input env names and fails when they disagree with the table, so a generator that gains an input fails the build until someone decides what it means for the tier. Three mutations killed — a generator gaining an input, a NARA artifact claiming Tier 1, and an artifact dropped from the table. | S | none |
 | ~~PV-1~~ | **SHIPPED 2026-09-05 (PR #1211).** `ProvenanceStatement` + a `sources` set on each export surface. THREE seams, each already the single source for its renderers, which is why this stayed an S: `AnalyticsProvenance.allCaveats` (CSV + plate), `QueryMethodAppendix.preambleLines` (CSV + Markdown), and `CollectionColophon` (PDF + HTML + DOCX — the type exists precisely "so HTML, PDF, and DOCX cannot drift", which is the W-13 failure this row was warned about). **The set is DERIVED from the exported items, never declared**, so an export cannot claim a source it did not use: a `.summaryOnly` body adds the model, an archival-sources block adds NARA and the curated disclosure, a persons index adds the people register, the researcher's own prose is their own. **One decision beyond the plan**: the sources block survives a plate's caveat designation, as `corpusCaveat` does — a designation trims qualifications, where sources are attribution, and a trimmed plate is the artifact most likely to be shared detached from its CSV. Three mutations killed. | S | PV-0 |
-| PV-2 | **The chip type and its non-colour channel** | One shared `ProvenanceChip`, both platforms, glyph + label + VoiceOver | M | PV-1 |
+| ~~PV-2~~ | **SHIPPED 2026-09-05 (PR #1212).** `ProvenanceChip` — glyph + label + VoiceOver sentence, three tier colours on `FRUSTheme`, **deliberately unmounted**: PV-3 is the row that decides where a badge falls, and mounting one here to prove the type compiles would pre-empt it. Every rule is a `static func`, so the whole chip is testable without a view host. **Four sentences, not the plan's three** — `yourReading` shares the computed tier while sitting outside the provenance family, and "computed by this app" over a reader's own highlight attributes their work to the software. Twelve mutations killed. Four findings changed the code after review: the neutral wash and hairline route through `provenanceFill`/`provenanceBorder` rather than restating the alphas; the stroke is **0.5**, the chip idiom, where 1.0 is the headnote *card*; the glyphs joined `SymbolNameAuditTests`' runtime check, since the literal audit cannot see a name returned from a function and `square.fill`/`triangle.fill` appear nowhere else in the tree (proved: mutating a glyph *and* its expectation together passes `ProvenanceChipTests` and fails the audit); and `.accessibilityElement(children: .ignore)` is pinned **with its position**, because `Image(systemName:)` speaks its own symbol name and a label applied above the modifier is discarded. | M | PV-1 |
 | PV-3 | **Source Explorer, per claim** | The 77/23 split rendered where it actually falls | M | PV-2 |
 | PV-4 | **The capture moments** | Add to Collection, freeze a quotation, Copy Citation | S | PV-2 |
 | PV-5 | **Person rollups** | Editor-tagged mentions beside the authority join and POCOM | S | PV-2 |
@@ -218,6 +225,24 @@ carries a glyph (■ ▲ ●) *and* the label *and* a VoiceOver string, and hono
 **VoiceOver strings:** *"Source: the FRUS volumes only."* / *"Source: FRUS joined to %@."* /
 *"Source: computed by this app."*
 
+**SHIPPED.** A fourth sentence was needed: `yourReading` sits in the computed tier while being
+deliberately outside the provenance family, so a per-*tier* string reads "computed by this app"
+over somebody's own highlight.
+
+**No variant was added, and that was the question the row was surveyed to answer.** A per-mount
+survey of all three remaining rows proposed a glyph-only form for dense person rows, a
+`Set<ProvenanceSource>` parameter for the capture moments, and a plain-`String` accessor for
+pasteboard payloads. All three were refused on verification: the words are already `String`s on
+`ProvenanceSource`, several sources on one surface is several chips (ordered by tier then label,
+as the export block orders its sentences), and a glyph-only chip would encode meaning by shape
+alone for a sighted reader who has not learned the vocabulary — the same failure as colour alone,
+one channel over. **The chip takes one `source` and nothing else.**
+
+**One shape collision is recorded rather than designed around.** `ArchivalNetworkView`'s legend
+already reads `circle.fill` as *Collection* and `square.fill` as *Central-file class* at the same
+`.caption2`/`.secondary` weight. §6 already refuses graph surfaces because hue is the data there;
+it now refuses them for a second reason, and the chip's own doc comment says so.
+
 ---
 
 ### PV-3 — Source Explorer, per claim
@@ -229,6 +254,33 @@ card, two badges, attached to the rows rather than the header.
 This is the row that justifies the wave — and the row most at risk of becoming decoration if it is
 built before PV-1 and PV-2 settle the vocabulary.
 
+**Surveyed at PV-2, two constraints verified:**
+
+- **The twins do not share a container.** `SourceExplorerView` is a `Form` of nine `Section`s;
+  `MacSourceExplorerView` has no `Form`, `List` or `Section` at all — it is `ScrollView` + `VStack`
+  + `GroupBox`, and its own header comment states the substitution. So the chip may not depend on
+  `Section` or `LabeledContent` semantics. `ConfidenceChip` and `ClassificationChip` are already
+  mounted at parallel sites in both, which is the shape to copy.
+- **A container accessibility label swallows the chip silently.** `SearchView`'s result rows set
+  `.accessibilityLabel(result.header)` on the `Button` wrapping `SearchResultRow`, and every chip
+  inside goes unannounced. Source Explorer's `NavigationLink`s set no container label *today*, so
+  this is a hazard to check rather than a present failure — and `ProvenanceChip.accessibilityLabel(for:)`
+  is callable on its own precisely so such a row can fold the sentence in.
+- **Do not route the source through `BundledArtifactProvenance.source(ofArtifact:)`.** The table
+  holds one `Entry` per file, and `collection-authority.json` is precisely the artifact whose two
+  halves this row must separate: `name`/`aliases`/`volumeIds` against `naId`/`catalogURL`. Nor can
+  the table be corrected to cover it — flipping that row to `.frusText` under the §1a field
+  exemption passes the PV-0 guard and would then claim Tier 1 for the NARA identifier and
+  catalogue link the collection detail screen renders. **The mount names the source per claim.**
+- **The card's two halves are not on one screen.** Both Source Explorers render only the Tier-1
+  rows; the NAID and the catalogue link are one navigation away. "One card, two badges" is
+  therefore two *screens*, one badge each — which is a stronger argument for the chip than the
+  plan's original framing, since neither screen is self-evidently the other's tier.
+- **The chip is a fixed-intrinsic leaf, and the mounts are why.** All twelve `ConfidenceChip`
+  sites across the twins are leading-packed `HStack(spacing: 6)`s — title first, chip last, no
+  `Spacer()` anywhere. A greedy chip stretches its capsule across the row and truncates the claim
+  beside it.
+
 ---
 
 ### PV-4 — The capture moments
@@ -237,12 +289,44 @@ Add to Collection, freezing a quotation, Copy Citation. **The moment a screen be
 chip here is read once, deliberately, by someone about to write something down. Highest
 attention-per-pixel in the wave.
 
+**Surveyed at PV-2, and no constraint on the chip's API survived verification.** The survey
+proposed three additions for these moments — a `Set<ProvenanceSource>` parameter, a plain-`String`
+accessor for pasteboard payloads, and a dark-chrome palette for the Excerpt trigger — and each was
+refused: the words are already `String`s on `ProvenanceSource`, and several sources at one moment
+is several chips. What it did *not* refute is a set of mount obligations, and they stand as
+the row's own work. None of the three moments is full-screen. `CollectionPickerSheet`'s shared
+seams are `String`s rather than views, so a chip must be mounted in **both** platform bodies or it
+travels to neither — and it belongs in the sheet's persistent chrome, visible from presentation
+until dismissal, never keyed to a post-tap confirmation state, since the point is to be read
+*before* the capture. And the sources must be derived from the payload that particular button
+captures rather than from the hosting screen: the mixed case already exists **within** a single
+surface, not merely across two, in the document share popover and menu.
+
 ---
 
 ### PV-5 — Person rollups
 
 Editor-tagged `persName` mentions (Tier 1) beside the authority join and POCOM careers (Tier 2),
 currently indistinguishable on one screen.
+
+**Surveyed at PV-2, three constraints verified:**
+
+- **Per row, from `PersonIndexEntry.authorityId` — never a per-screen constant.** The People list
+  is not uniformly joined: a row with a nil `authorityId` took its canonical name and its
+  birth/death years from the FRUS front-matter aggregate alone. And the chip must claim less than
+  it looks like even on a matched row — role and description *always* come from the FRUS aggregate,
+  and years fall back to it when the authority record carries none, so a chip keyed on
+  `authorityId != nil` asserts that the **identity** was matched, not that the fields beside it
+  came from the register.
+- **Two grains in `PersonIndexView`, not one.** The career section already carries a footer
+  sentence naming POCOM — that is the idiom to extend — while the identity section has no header
+  and no footer and holds the Tier-1 front-matter description and the Tier-2 authority role as
+  sibling `Text`s in one `VStack`. A chip must compose in both.
+- **Person Analytics takes a section-level mount, not a per-row one.** `PersonMentionRanking`
+  carries no authority field and the query selects no such column, so a per-row chip needs a new
+  store column first; in chart mode the rows are `BarMark`s, and `rankingChartBody` is reused
+  verbatim by `exportRankingFigure`, so a per-bar chip would be baked into the exported figure of
+  record. All fifteen rows derive from one query and would carry an identical tier anyway.
 
 ---
 
@@ -324,6 +408,12 @@ All four were answered the day build 45 shipped, which is what unblocked the wav
 
 ## 9. Version history
 
+- **1.2 — 2026-09-05:** PV-2 shipped. §2a gains the measured worth of the wash and the hairline;
+  PV-2's own section records the fourth VoiceOver sentence and the glyph collision with
+  `ArchivalNetworkView`'s legend; PV-3, PV-4 and PV-5 gain the constraints a per-mount survey
+  verified — and, as usefully, the four proposed API additions that did **not** survive it, so a
+  later row does not re-propose them.
+- **1.1 — 2026-09-05:** PV-0 and PV-1 shipped (PRs #1210, #1211); §8's four decisions answered.
 - **1.0 — 2026-09-04:** proposed, against build 45. Supersedes the first assessment of this idea,
   which read the first category as *what is printed on the page* and concluded the layers did not
   partition. Under the owner's dependency-closure definition they do, and the boundary is

@@ -167,6 +167,13 @@ struct SymbolNameAuditTests {
     /// pattern the suite's own doc comment prescribes. `SemanticGlyph`'s constants feed
     /// `railTile(_:...)` (a positional argument, no marker) and `SimilarityAxis.systemImage`
     /// is an enum property, so neither appears in ``literals()``.
+    ///
+    /// `ProvenanceChip.glyph(for:)` joined them at PV-2 for the same reason — the body passes a
+    /// function call to `systemName:`, not a literal — and it needed this more than the others:
+    /// `square.fill` and `triangle.fill` appear nowhere else in the tree, so nothing else would
+    /// have caught a typo. `ProvenanceChipTests` pins the three names against expected strings,
+    /// which catches drift but stays green if a name and its expectation are changed together to
+    /// something plausible that does not exist — the `cloud.slash` defect exactly.
     @Test("Symbol-bearing types resolve at runtime")
     func symbolBearingTypesResolve() {
         for name in [SemanticGlyph.feature, SemanticGlyph.clusters, SemanticGlyph.document] {
@@ -176,6 +183,14 @@ struct SymbolNameAuditTests {
             #expect(UIImage(systemName: axis.systemImage) != nil,
                     "SimilarityAxis.\(axis) names a missing symbol: \(axis.systemImage)")
         }
+        var tiers = 0
+        for tier in ProvenanceTier.allCases {
+            let glyph = ProvenanceChip.glyph(for: tier)
+            #expect(UIImage(systemName: glyph) != nil,
+                    "ProvenanceChip.glyph(for: .\(tier)) names a missing symbol: \(glyph)")
+            tiers += 1
+        }
+        #expect(tiers == 3, "the tier sweep ran over \(tiers) tiers")
     }
 
     /// The semantic-family contract. Every surface built on the semantic-vector methodology

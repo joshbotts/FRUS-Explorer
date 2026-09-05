@@ -6504,6 +6504,41 @@ Where this came from
 
 <!-- END SOURCE: provenance.block.heading -->
 
+### What VoiceOver reads from a provenance chip
+
+The chip beside a value carries three channels — a shape, the short label above, and this spoken
+sentence. VoiceOver reads **only this sentence**, in place of the glyph and the label, so it is
+what a reader using the screen reader learns about the value's provenance. Keep each one a
+complete sentence.
+
+#### provenance.chip.a11y.frusOnly
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 184–185 | key: provenance.chip.a11y.frusOnly | shared: iOS+macOS (single edit point) -->
+
+Source: the FRUS volumes only.
+
+<!-- END SOURCE: provenance.chip.a11y.frusOnly -->
+
+#### provenance.chip.a11y.joined %@
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 187–188 | key: provenance.chip.a11y.joined %@ | shared: iOS+macOS (single edit point) -->
+
+Source: FRUS joined to %@.
+
+<!-- END SOURCE: provenance.chip.a11y.joined %@ -->
+
+#### provenance.chip.a11y.computed
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 191–192 | key: provenance.chip.a11y.computed | shared: iOS+macOS (single edit point) -->
+
+Source: computed by this app.
+
+<!-- END SOURCE: provenance.chip.a11y.computed -->
+
+#### provenance.chip.a11y.yourReading
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceChip.swift | lines: 194–195 | key: provenance.chip.a11y.yourReading | shared: iOS+macOS (single edit point) -->
+
+Source: your own reading.
+
+<!-- END SOURCE: provenance.chip.a11y.yourReading -->
+
 
 #### \(volumes) volume\(volumes == 1 ?
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1314–1315 | key: chronology.agg.volumes.v2 -->

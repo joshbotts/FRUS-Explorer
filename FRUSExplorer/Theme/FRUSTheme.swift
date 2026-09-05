@@ -574,6 +574,34 @@ enum FRUSTheme {
     static let headnotePurpleBorder = adaptiveColor(lightHex: 0x8A6FD6, darkHex: 0xA78BFA,
                                                      lightOpacity: 0.30, darkOpacity: 0.42)
 
+    // MARK: - Provenance tiers (wave PV)
+
+    /// Tier 1 — read from the FRUS volumes and nothing else.
+    ///
+    /// **`#A61C2A` is the app icon's own dominant field**, sampled from `AppIcon-256.png`, which
+    /// runs `#A61C2A`–`#AE1E2D` over a paper-white ground: the series' binding red. This does not
+    /// introduce a brand colour, it extends inward the one the icon already asserts.
+    ///
+    /// **The dark twin is a rose, and it has to be.** `#A61C2A` on the dark grouped background
+    /// measures **2.29:1** — below even the 3:1 minimum for a UI component, let alone 4.5:1 for
+    /// text. `#E8798A` measures 6.10:1. The binding colour cannot cross into dark mode, and
+    /// `headnotePurple` already accepts the same trade.
+    static let provenanceFRUS = adaptiveColor(lightHex: 0xA61C2A, darkHex: 0xE8798A)
+    /// Tier 2 — the volumes joined to another body of data. 7.09:1 light, 6.97:1 dark.
+    static let provenanceJoined = adaptiveColor(lightHex: 0x3B4E8C, darkHex: 0x8FA5DE)
+    /// Tier 3 — computed here by a model or a scoring rule. 6.74:1 light, 7.54:1 dark.
+    static let provenanceComputed = adaptiveColor(lightHex: 0x4A5568, darkHex: 0xA0AEC0)
+
+    /// The tinted fill behind a provenance chip, and the border that makes it legible without it.
+    ///
+    /// **The fill is a whisper and the border is why that is acceptable.** Measured, a 12% tint of
+    /// the ruby sits at 1.23:1 against the page — what a reader perceives is the chip's *text*,
+    /// not its wash. The hairline carries the edge, exactly as `headnotePurpleBorder` does for the
+    /// headnote card, so the chip reads as an object rather than a faint stain.
+    static func provenanceFill(_ tint: Color) -> Color { tint.opacity(0.12) }
+    /// Hairline border for a provenance chip.
+    static func provenanceBorder(_ tint: Color) -> Color { tint.opacity(0.32) }
+
     // MARK: - Cloud surfaces — backdrop, splash, indexing strip, pending backdrop, semantic map
 
     // These constants were written for the onboarding backdrop (O-2) and the header still said so
