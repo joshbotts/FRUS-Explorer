@@ -11552,7 +11552,7 @@ intended; applied by hand the test is red. Same escaping trap as the P3b-5 sweep
 4,488 tests in 589 suites; macOS builds clean. No CloudKit change, no index bump. New file, so
 xcodegen ran and the schemes were restored.
 
-## Session 2026-09-05c — PV-2: the chip, and the channel that is not colour (PR #PVTWO)
+## Session 2026-09-05c — PV-2: the chip, and the channel that is not colour (PR #1212)
 
 **One `ProvenanceChip`, declared once, and deliberately mounted nowhere.** PV-3 is the row that
 decides where a badge falls; mounting one here to prove the type compiles would have pre-empted it,
