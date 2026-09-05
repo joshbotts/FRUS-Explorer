@@ -11684,7 +11684,7 @@ Two self-inflicted traps alongside: killing a stalled `xcodebuild` leaves a stal
 exits 0 — a truncating `head` on a test run reads as a pass with no verdict line. Redirect to a file
 and grep the file.
 
-## Session 2026-09-05e — PV-4: the capture moments, and what a chip must not do (PR #PVFOUR)
+## Session 2026-09-05e — PV-4: the capture moments, and what a chip must not do (PR #1217)
 
 **Two mounts, and the row is mostly measured refusals** — which is the honest outcome rather than a
 thin one.
