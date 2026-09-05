@@ -157,7 +157,7 @@ perceives is the chip's **text**.
 | ~~PV-1~~ | **SHIPPED 2026-09-05 (PR #1211).** `ProvenanceStatement` + a `sources` set on each export surface. THREE seams, each already the single source for its renderers, which is why this stayed an S: `AnalyticsProvenance.allCaveats` (CSV + plate), `QueryMethodAppendix.preambleLines` (CSV + Markdown), and `CollectionColophon` (PDF + HTML + DOCX — the type exists precisely "so HTML, PDF, and DOCX cannot drift", which is the W-13 failure this row was warned about). **The set is DERIVED from the exported items, never declared**, so an export cannot claim a source it did not use: a `.summaryOnly` body adds the model, an archival-sources block adds NARA and the curated disclosure, a persons index adds the people register, the researcher's own prose is their own. **One decision beyond the plan**: the sources block survives a plate's caveat designation, as `corpusCaveat` does — a designation trims qualifications, where sources are attribution, and a trimmed plate is the artifact most likely to be shared detached from its CSV. Three mutations killed. | S | PV-0 |
 | ~~PV-2~~ | **SHIPPED 2026-09-05 (PR #1212).** `ProvenanceChip` — glyph + label + VoiceOver sentence, three tier colours on `FRUSTheme`, **deliberately unmounted**: PV-3 is the row that decides where a badge falls, and mounting one here to prove the type compiles would pre-empt it. Every rule is a `static func`, so the whole chip is testable without a view host. **Four sentences, not the plan's three** — `yourReading` shares the computed tier while sitting outside the provenance family, and "computed by this app" over a reader's own highlight attributes their work to the software. Twelve mutations killed. Four findings changed the code after review: the neutral wash and hairline route through `provenanceFill`/`provenanceBorder` rather than restating the alphas; the stroke is **0.5**, the chip idiom, where 1.0 is the headnote *card*; the glyphs joined `SymbolNameAuditTests`' runtime check, since the literal audit cannot see a name returned from a function and `square.fill`/`triangle.fill` appear nowhere else in the tree (proved: mutating a glyph *and* its expectation together passes `ProvenanceChipTests` and fails the audit); and `.accessibilityElement(children: .ignore)` is pinned **with its position**, because `Image(systemName:)` speaks its own symbol name and a label applied above the modifier is discarded. | M | PV-1 |
 | ~~PV-3~~ | **SHIPPED 2026-09-05 (PR #1216).** Five mounts across four files, and the split renders where §1c said it falls. **The two halves are cleanly separated by SECTION, which the plan did not know**: `CollectionDetailView.overviewSection` (name, repository, record group, lot key, aliases) is uniformly Tier 1 — `recordGroup` is a vote over references parsed from FRUS front matter, not a catalogue lookup — while `catalogSection` (NAID, catalogue link) and `dividedAtNARASection` (claimant series, entry numbers) are uniformly Tier 2. So a per-section badge is exact rather than approximate, and no claim needed splitting. **That view is SHARED between platforms**, so three of the five mounts cover both; only the Source Explorer card is twinned, and a test pins both twins. **The mount names the source and never asks `source(ofArtifact:)`** — a test proves that prohibition non-vacuous by adding a real call. Five mutations killed. **It also corrected a Q-3 error PV-0 and PV-1 shipped — see §8.** | M | PV-2 |
-| PV-4 | **The capture moments** | Add to Collection, freeze a quotation, Copy Citation | S | PV-2 |
+| ~~PV-4~~ | **SHIPPED 2026-09-05 (PR #1217).** Two mounts, and mostly measured refusals. An enumeration of **71 capture moments** sorted them four ways: durable files and CSVs are already PV-1's (the colophon, the analytics block, the query appendix — the only form that travels); citations pasted into a footnote are **refused, with a test pinning it**, on the app's own #680 reasoning that a chip does not travel but a payload does; diagnostics dumps are out of scope by kind; and only two are UI moments before a save. Those two are `CollectionPickerSheet` (both platform bodies, persistent chrome, invariant `.frusText` **by construction** — an excerpt is a frozen span of the document's own text) and **the semantic map's lasso**, the row's headline and the one genuinely mixed capture in the app: the documents are FRUS's, but the fact that these particular ones are together is the model's. Four mutations killed. | S | PV-2 |
 | PV-5 | **Person rollups** | Editor-tagged mentions beside the authority join and POCOM | S | PV-2 |
 
 **Suggested order is the table order, and PV-1 before PV-2 is the argument of the wave**: the
@@ -327,6 +327,39 @@ Add to Collection, freezing a quotation, Copy Citation. **The moment a screen be
 chip here is read once, deliberately, by someone about to write something down. Highest
 attention-per-pixel in the wave.
 
+**SHIPPED.** Two mounts, and the row turned out to be mostly a set of measured refusals.
+
+**An enumeration of 71 capture moments across the app** — every copy, share, export, freeze and
+save a reader can invoke — sorted them into four kinds, and only one wanted a chip it did not
+already have:
+
+- **A durable file or CSV.** Already PV-1's, and already done: `CollectionColophon`,
+  `AnalyticsProvenance` and `QueryMethodAppendix` put the sources block into the artifact, which is
+  the only form that travels. Adding a chip beside the export button would duplicate it.
+- **A citation pasted into a footnote** — Copy Citation, Share Citation, BibTeX, RIS, Copy URL.
+  **Refused, and the refusal is now pinned by a test.** A sentence appended here is pasted into
+  somebody's document. The app already draws this line: `naraExportText` embeds a caveat in a
+  durable NARA record copy *because* "the chip in the UI does not travel into a research note"
+  (#680) — the distinction is what the payload becomes, not whether it leaves the app.
+- **A UI moment before a save**, where a chip is read once and deliberately. Two of these:
+  `CollectionPickerSheet` (both platform bodies, in the persistent chrome) and the semantic map's
+  lasso.
+- **Diagnostics dumps.** Out of scope by kind — a research-state record is not a research claim.
+
+**The lasso is the row's headline and the one genuinely mixed capture in the app.** The documents
+in a lassoed set are FRUS's; what is *not* FRUS's is that these particular ones are together — the
+model placed them near each other. The saved corpus records only
+`sourceDescription: "Semantic map selection"`, naming the mechanism without saying it is a model,
+and a reader who later writes "these documents cluster" is reporting the app's reading of the
+language. The chip sits above **Save as Working Corpus** on the panel's own stated reasoning: *say
+it before the corpus is made, not only in its provenance afterwards*.
+
+**The picker's chip is invariant, and that is by construction rather than by omission.** Nothing
+else can be captured there: the entry is a FRUS document and an excerpt is a frozen span of that
+document's own text. §6 refuses an invariant chip on *search results*, a browsing surface seen
+constantly; this is a capture moment seen once, deliberately, by someone about to write something
+down — and it is the surface whose exports PV-1 gives a colophon, so the two now agree.
+
 **Surveyed at PV-2, and no constraint on the chip's API survived verification.** The survey
 proposed three additions for these moments — a `Set<ProvenanceSource>` parameter, a plain-`String`
 accessor for pasteboard payloads, and a dark-chrome palette for the Excerpt trigger — and each was
@@ -446,6 +479,9 @@ All four were answered the day build 45 shipped, which is what unblocked the wav
 
 ## 9. Version history
 
+- **1.4 — 2026-09-05:** PV-4 shipped. §PV-4 records the 71-moment enumeration and the four kinds it
+  sorted into, the citation refusal and why the app already drew that line at #680, and why the
+  picker's chip is invariant by construction rather than by omission.
 - **1.3 — 2026-09-05:** PV-3 shipped. §PV-3 records that the tier boundary falls between *sections*
   rather than inside a row on these surfaces, and that `CollectionDetailView` is shared between
   platforms. **§8's Q-3 is rewritten**: its premise — that curated resolutions fold invisibly into

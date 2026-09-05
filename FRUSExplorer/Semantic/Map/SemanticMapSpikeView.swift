@@ -2651,6 +2651,19 @@ struct SemanticMapSpikeView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                // **The one capture in the app whose MEMBERSHIP is a model's opinion** (wave PV-4).
+                // The documents are FRUS's; what is not FRUS's is the fact that these particular
+                // ones are together — they are near each other because the model placed them there.
+                // A reader who later writes "these documents form a cluster" is reporting the app's
+                // reading of the language, and the corpus this button makes carries only
+                // `sourceDescription: "Semantic map selection"` afterwards, which names the
+                // mechanism without saying it is a model.
+                //
+                // Placed above the Save button on the same reasoning the truncation note beside it
+                // gives: say it before the corpus is made, not only in its provenance afterwards.
+                if result.total > 0 {
+                    ProvenanceChip(source: .appModel)
+                }
                 if result.isTruncated {
                     // Say it before the corpus is made, not only in its provenance afterwards.
                     Text(verbatim: Self.truncationNote(kept: result.documentKeys.count,

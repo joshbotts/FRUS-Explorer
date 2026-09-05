@@ -116,6 +116,18 @@ struct CollectionPickerSheet: View {
             HStack {
                 Text(pickerTitle)
                     .font(.headline)
+                // **In the sheet's chrome, not in a row and not after the tap** (wave PV-4). This
+                // is the moment a screen becomes a claim: the reader is about to put something
+                // into a collection they will later export, and PV-1 gives that export a colophon
+                // naming its sources. Saying it here means the two agree, and it must be readable
+                // from presentation until dismissal rather than appearing as confirmation.
+                //
+                // `.frusText` is not conditional, because nothing else can be captured here: the
+                // entry is a FRUS document, and an excerpt is a frozen span of that document's own
+                // text (`CollectionExcerptCapture` stores offsets into it). The chip is invariant
+                // BY CONSTRUCTION rather than by omission — if a capture path ever adds a summary
+                // or a model-derived set, this is where it stops being invariant.
+                ProvenanceChip(source: .frusText)
                 Spacer()
                 Button {
                     showNewCollection = true
@@ -225,6 +237,20 @@ struct CollectionPickerSheet: View {
                                        defaultValue: "Search collections")
                     )
                 }
+            }
+            .safeAreaInset(edge: .top) {
+                // The iOS twin of the macOS title-bar chip. It cannot go in the navigation title —
+                // that slot is a `String` — and a toolbar item would compete with Cancel and the
+                // inline title, so it rides directly under the bar where it is visible for the
+                // life of the sheet. `.safeAreaInset(edge: .top)` INSIDE the `NavigationStack`,
+                // which is the placement that composites under the bar rather than over it (#486).
+                HStack {
+                    ProvenanceChip(source: .frusText)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+                .background(.bar)
             }
             .navigationTitle(pickerTitle)
             .navigationBarTitleDisplayMode(.inline)
