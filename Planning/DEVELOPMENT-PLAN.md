@@ -11447,3 +11447,22 @@ Canada, Newfoundland, Switzerland, Bulgaria and the Philippines absent); coverag
 `series-facts-index.json`; an era gate for outside consumers; the wrong `73 D 153` claimant;
 `SourceNoteParser` phantom lots on `75 D 229`; an accession → series map citing #679; a harness
 runbook; the memory-note correction (done); the C-0 re-measure.
+
+
+## Session 2026-09-05 — Guide v1.12: §6.5's reason corrected, and the plan's stubs filed (PR #1209; issues #1201–#1208)
+
+**Docs only.** The nine repo-issue stubs in `Planning/Agentic-Guide-Revisions-2026-09-04.md` were
+filed as **#1201–#1208** (stub 8 was a memory-note correction outside the tree, already done, folded
+into #1207). Filing #1206 meant re-measuring its claim, and the claim was wrong in a way that had
+reached the guide: v1.11 §6.5 said `lot_file_norm` is populated on rows "whose note names no lot at
+all"; the two `75 D 229` rows it cited **do** name the lot, 1,250 and 343 characters in, as the
+location of another copy — the parser captured a secondary citation as the document's source. The
+advice stood; the reason did not. v1.12 gives the measured reason and points at #1206; the plan's
+stub 6 carries a dated correction. §15.1's block is byte-identical to v2; the fixture suite was not
+re-run for a change that does not touch §15.
+
+**Recorded because it is the pattern the guide is about.** A verifier's one-line description of a
+defect ("notes that name no lot") was carried into a plan, an issue draft and a guide sentence
+before anyone opened the note past its first 200 characters. The guide's own §14.14 rule 1 —
+a claim about what a file says is a grep over that file, with the command shown — would have
+caught it at the first hop.
