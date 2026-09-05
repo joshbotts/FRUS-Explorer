@@ -550,6 +550,10 @@ final class DocxCollectionExporter: CollectionExporter {
         // Trailing colophon paragraph (Authoring Phase 4) — opt-in only.
         if collection.includeColophon {
             body += styledPara(escaped(CollectionColophon.text(for: items)), styleId: "Colophon")
+            // PV-1: the sources block travels with the colophon, in all three rich formats.
+            for line in CollectionColophon.sourceLines(for: items) {
+                body += styledPara(escaped(line), styleId: "Colophon")
+            }
         }
 
         body += "    <w:sectPr/>\n"
