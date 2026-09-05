@@ -830,23 +830,62 @@ struct MacSearchWindowView: View {
 
     // MARK: - Scope Row
 
+    /// The row's own lead-in, and the three chip names.
+    ///
+    /// **Computed properties rather than expressions inlined into the calls below, for a reason
+    /// that is not style.** `MacChromeHonestyTests.everyScopeChipIsWired` reads this file line by
+    /// line and, on each line that mounts a chip, looks for the view-model property it binds.
+    /// Wrapping a `String(localized:)` call into the argument list pushes `isOn:` onto a line of
+    /// its own, the parse finds nothing, and the M-10 guard — that every scope chip reaches the
+    /// query — stops measuring anything. (Its `bound.count >= 3` floor would report that rather
+    /// than pass quietly, which is why the shape of that test is worth preserving instead of
+    /// loosening.)
+    ///
+    /// Both scanners key on the type name followed by an open paren, so this note deliberately
+    /// does not spell that pair: prose holding it reads as a mount, which is exactly how
+    /// `ScopeChipTests.chipLabelsAreLocalized` first failed.
+    ///
+    /// **Computed, not `static let`.** A `static let` resolves once per process, so the strings
+    /// would survive a locale change that recreated the view.
+    ///
+    /// No String Catalog ships, so each `defaultValue:` here **is** the string on screen. The
+    /// wording is unchanged from the raw literals these replace.
+    private var searchInLabel: String {
+        String(localized: "search.scope.searchIn", defaultValue: "Search in")
+    }
+
+    /// The Documents chip's name.
+    private var documentsScopeLabel: String {
+        String(localized: "search.scope.documents.label", defaultValue: "Documents")
+    }
+
+    /// The Notes chip's name.
+    private var notesScopeLabel: String {
+        String(localized: "search.scope.notes.label", defaultValue: "Notes")
+    }
+
+    /// The Summaries chip's name.
+    private var summariesScopeLabel: String {
+        String(localized: "search.scope.summaries.label", defaultValue: "Summaries")
+    }
+
     private var scopeRow: some View {
         HStack(spacing: 6) {
-            Text("Search in")
+            Text(searchInLabel)
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
 
-            ScopeChip(label: "Documents",   isOn: $searchVM.scopeDocuments)
+            ScopeChip(label: documentsScopeLabel, isOn: $searchVM.scopeDocuments)
                 .help(String(
                     localized: "search.scope.documents.help",
                     defaultValue: "Search the full text of FRUS documents (header, dateline, source note, body)"
                 ))
-            ScopeChip(label: "Notes",       isOn: $searchVM.scopeNotes)
+            ScopeChip(label: notesScopeLabel, isOn: $searchVM.scopeNotes)
                 .help(String(
                     localized: "search.scope.notes.help",
                     defaultValue: "Search the body text of your research notes"
                 ))
-            ScopeChip(label: "Summaries",   isOn: $searchVM.scopeSummaries)
+            ScopeChip(label: summariesScopeLabel, isOn: $searchVM.scopeSummaries)
                 .help(String(
                     localized: "search.scope.summaries.help",
                     defaultValue: "Search the text of generated AI summaries"
@@ -2442,33 +2481,6 @@ private struct SnippetView: View {
             }
         }
         return result
-    }
-}
-
-// MARK: - Scope Chip
-
-private struct ScopeChip: View {
-    let label: String
-    @Binding var isOn: Bool
-
-    var body: some View {
-        Button { isOn.toggle() } label: {
-            Text(label)
-                .font(.subheadline)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(isOn ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.08))
-                .foregroundStyle(isOn ? Color.accentColor : Color.secondary)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5)
-                        .strokeBorder(
-                            isOn ? Color.accentColor.opacity(0.3) : Color.secondary.opacity(0.2),
-                            lineWidth: 0.5
-                        )
-                )
-        }
-        .buttonStyle(.plain)
     }
 }
 
