@@ -510,6 +510,24 @@ enum FRUSTheme {
     /// screen edge was observed to misfire while scrolling.
     static let documentEdgeTapZoneWidth: CGFloat = 56
 
+    // MARK: Tap Targets
+
+    /// The smallest comfortable tap target on iOS and iPadOS, and the floor every hit area in this
+    /// app is measured against.
+    ///
+    /// It lives here rather than in a test because a floor a test types for itself measures
+    /// nothing: `TapTargetTests` used to assert `48 >= 44` from two literals of its own, which
+    /// stayed green through any change to the view it named. The constants below are the ones the
+    /// views actually use, so the assertion now has something to fail against.
+    static let minimumTapTarget: CGFloat = 44
+
+    /// The invisible circle a cross-reference graph node is tapped through.
+    ///
+    /// Deliberately larger than any node's drawn radius — a document node can be as small as 12pt
+    /// across, which is a quarter of this. The hit area is what the reader touches; the circle is
+    /// only what they see.
+    static let graphNodeHitAreaDiameter: CGFloat = 48
+
     // MARK: Tag Chips
 
     static let tagCornerRadius: CGFloat = 4
@@ -875,9 +893,15 @@ struct EditorialNoteBadge: View {
 /// - `.system`: secondary tint — subject taxonomy tags assigned by the search index
 /// - `.user`: accent tint   — tags created by the researcher
 ///
-/// Note: iOS `DocumentTagChip` (in `DocumentView.swift`) uses a Capsule shape and
-/// category-based colors — intentionally different from this chip, which targets the
-/// compact tag row on macOS and iPad.
+/// **The tint is never the only thing that separates the two styles**, which is what keeps this
+/// chip readable without colour vision: the two are mounted in separately headed accordions of
+/// `ResearchRailView` — subjects under *Subjects*, the researcher's own under *Tags* — and only a
+/// user tag carries an × to remove it. Position and affordance say it; the tint agrees.
+///
+/// This note used to describe an iOS `DocumentTagChip` with "category-based colors" as a
+/// deliberate counterpart. **That type no longer exists**, nor does any mapping from `TagCategory`
+/// to a colour anywhere in the app — categories are told apart by their names. The note outlived
+/// the code it described by long enough for a test to be written against it.
 struct FRUSTagChip: View {
     enum Style { case system, user }
     let label: String

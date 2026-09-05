@@ -773,7 +773,8 @@ struct CrossReferenceGraphView: View {
         } label: {
             Circle()
                 .fill(Color.clear)
-                .frame(width: 48, height: 48)
+                .frame(width: FRUSTheme.graphNodeHitAreaDiameter,
+                       height: FRUSTheme.graphNodeHitAreaDiameter)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

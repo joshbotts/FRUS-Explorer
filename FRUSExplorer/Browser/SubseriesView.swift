@@ -628,14 +628,3 @@ private struct TagPickerRow: View {
     }
 }
 
-// MARK: - TagCategory display name
-
-private extension TagCategory {
-    var displayName: String {
-        switch self {
-        case .people: return String(localized: "browser.tag.category.people", defaultValue: "People")
-        case .places: return String(localized: "browser.tag.category.places", defaultValue: "Places")
-        case .topics: return String(localized: "browser.tag.category.topics", defaultValue: "Topics")
-        }
-    }
-}
