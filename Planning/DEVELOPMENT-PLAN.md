@@ -11728,20 +11728,28 @@ moments ago, naming that method. Plus an offset-unit doc inconsistency in the sa
 
 No CloudKit change, no index bump, no new bundled resource, no new files.
 
-**VERIFICATION IS INCOMPLETE, and this is the honest state.** The iOS app host wedged and stayed
-wedged: every launch is refused with *"Application failed preflight checks … Busy"*. It survived a
-device erase, a `killall` of `CoreSimulatorService`, a switch to a different simulator model, and a
-full DerivedData wipe — six wedge lines in the log each time, at settled load. So the full unit
-suite did NOT complete on this tree. What IS verified: both schemes compile clean
-(`build-for-testing` for iOS, `build` for macOS, no source warnings); `ProvenanceMountTests` — all
-seven, including this row's three — passed repeatedly on this exact tree during the mutation sweep;
-and four mutations were killed. The last complete run was **4,510 tests in 592 suites** on the
-parent commit (PV-3). The machine most likely needs a restart, which is the owner's call.
+**4,513 tests in 592 suites pass** — 4,510 on the parent commit plus this row's three — and macOS
+builds clean.
 
-The environment cost this session was heavy and largely self-inflicted. Two lessons are recorded in
-memory: a verify-per-item pipeline over an unknown-length inventory is a fan-out of unknown width
-(279 claims became 169 agents, load 388), and a healing runner that resets the simulator must then
-WAIT — a fresh boot is its own storm at ~load 100 and 139 runnable threads, which fails the
-indexing settle-window timing tests and can re-wedge the host. Twelve orphaned `yes` processes from
-an earlier session, burning ten cores for five hours, were the largest single cause and were found
-only by `ps aux | sort -k3`.
+**Getting there took most of the session, and the cure was not any of the obvious ones.** The iOS
+app host refused every launch with *"Application failed preflight checks … Busy"*, and it survived a
+device erase, a `killall` of `CoreSimulatorService`, a switch to a different simulator model, and a
+full DerivedData wipe. What actually fixed it: **installing the app into the simulator by hand**
+(`xcrun simctl install <udid> "…/FRUS Explorer.app"`), which launched first try and returned a PID.
+`simctl get_app_container` had shown the bundle was **not installed at all** — so the failure was in
+the install step, and xcodebuild's message named the launch. Once a good install existed the test
+action ran clean, with zero wedge lines.
+
+**The diagnostic order that would have saved hours**: `uptime` and `ps aux | sort -k3` for load,
+then `simctl get_app_container` / `simctl install` / `simctl launch` **by hand** — which isolates
+install from launch and gives a real error — and only then device erases and daemon restarts, which
+did nothing here.
+
+Two other environment lessons are recorded in memory. A verify-per-item pipeline over an
+unknown-length inventory is a fan-out of unknown width (279 claims became 169 agents, load 388), and
+a healing runner that resets the simulator must then WAIT — a fresh boot is its own storm at ~load
+100 and 139 runnable threads, which fails the indexing settle-window timing tests and can re-wedge
+the host. Twelve orphaned `yes` processes from an earlier session, burning ten cores for five hours,
+were the largest single load source and were found only by `ps aux | sort -k3`. Worth a sweep at
+some point: this project has **146 DerivedData directories totalling 34 GB**, one per worktree path
+the spawned sessions used.
