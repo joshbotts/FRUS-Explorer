@@ -11551,3 +11551,62 @@ intended; applied by hand the test is red. Same escaping trap as the P3b-5 sweep
 
 4,488 tests in 589 suites; macOS builds clean. No CloudKit change, no index bump. New file, so
 xcodegen ran and the schemes were restored.
+
+## Session 2026-09-05c — PV-2: the chip, and the channel that is not colour (PR #PVTWO)
+
+**One `ProvenanceChip`, declared once, and deliberately mounted nowhere.** PV-3 is the row that
+decides where a badge falls; mounting one here to prove the type compiles would have pre-empted it,
+and the plan's §6 already refuses more surfaces than it accepts. What shipped is the vocabulary and
+its guarantees.
+
+**The chip states its source in shape, in words, and in a VoiceOver sentence, and the tint is never
+the only channel** — unconditionally, not only when the reader has asked. `accessibilityDifferentiateWithoutColor`
+is read in exactly one other file in the tree, and this chip inverts that precedent on purpose:
+`WordCloudView` *adds* a channel under the key, because its dots mean nothing until it is set. Here
+the glyph always carries the tier, so switching it would be theatre. What the key drops is the
+**hue** — under protanopia the ruby and the graphite converge, and three washes a reader cannot
+tell apart are noise.
+
+**Every rule is a `static func`, which is what makes the guarantee testable at all.** There is no
+view host in these tests; `meaningSurvivesTheLossOfColour` asserts the property directly — under
+the key all three tiers share one foreground while their glyphs stay distinct and all eight labels
+stay distinct.
+
+**Four VoiceOver sentences where the plan specified three.** `yourReading` sits in the computed
+tier while being deliberately outside the provenance family, so a per-*tier* string reads "computed
+by this app" over somebody's own highlight — false in the one direction that matters, since it
+attributes the reader's work to the software.
+
+**The row was surveyed against its three future mount sites before the API was written**, which is
+the reason it takes one `source` and nothing else: the survey proposed a glyph-only variant for
+dense person rows, a `Set<ProvenanceSource>` for the capture moments, and a `String` accessor for
+pasteboard payloads, and all three were refused on verification. A glyph-only chip encodes meaning
+by shape alone for a reader who has not learned the vocabulary — the same failure as colour alone,
+one channel over. Nineteen constraints did survive; the ones PV-3, PV-4 and PV-5 must honour are
+now in their sections of the plan, and the two the chip itself had to satisfy are in its doc
+comment: the caller names the source **per claim** and never by artifact filename (one
+`AuthorityCollectionRecord` carries both halves of the split PV-3 exists to draw), and the chip is
+a fixed-intrinsic leaf, because all twelve `ConfidenceChip` mounts are leading-packed `HStack`s a
+greedy chip would truncate.
+
+**Four review findings changed the code**, each verified against the tree before acting: the
+neutral wash and hairline route through `provenanceFill`/`provenanceBorder` instead of restating
+the alphas; the stroke is **0.5**, which is the chip idiom in this app, where 1.0 belongs to the
+headnote *card*; the three glyphs joined `SymbolNameAuditTests`' runtime check, because the literal
+audit cannot see a name returned from a function and `square.fill`/`triangle.fill` appear nowhere
+else in the tree; and `.accessibilityElement(children: .ignore)` is pinned **with its position**,
+since `Image(systemName:)` speaks its own symbol name and a label applied above the modifier is
+discarded rather than kept.
+
+**One shape collision was found and recorded rather than designed around.** `ArchivalNetworkView`'s
+legend already reads `circle.fill` as *Collection* and `square.fill` as *Central-file class* at the
+same weight. §6 refuses graph surfaces because hue is the data there; it now refuses them for a
+second reason.
+
+Twelve mutations killed, each by a named test. The twelfth is the one worth keeping: changing a
+glyph **and its expectation together** to a plausible symbol that does not exist passes
+`ProvenanceChipTests` and fails the symbol audit — which is why the audit entry was added rather
+than trusting the equality assertions.
+
+Four new strings, mirrored in `Docs/EditableContent.md`. No CloudKit change, no index bump, no new
+bundled resource. New files, so xcodegen ran and the schemes were restored.
