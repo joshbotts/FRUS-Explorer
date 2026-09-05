@@ -146,7 +146,7 @@ already exists for exactly this and `headnotePurple` already ships as two differ
 
 | # | Session | Scope | Size | Gate |
 |---|---|---|---|---|
-| PV-0 | **Make the tier computable, and fix what it reads** | Two undocumented artifacts + a test that derives every artifact's tier from declared inputs | S | none |
+| ~~PV-0~~ | **SHIPPED 2026-09-05 (PR #NNNN).** THREE undocumented artifacts, not two — `document-subject-index.json` was the third and the one the classification most needed, since it reads `DOCUMENT_SUBJECTS` alone and has no FRUS TEI in its closure at all. `ProvenanceSource` (the eight labels, each with a chip label, a method sentence and a partner name), `ProvenanceTier`, and `BundledArtifactProvenance.table` — 27 rows covering every bundled data artifact, with the seven config payloads exempt by name. The derivation guard works: `declaredInputsMatchTheSources` walks each generator's `*GeneratorCore` sources for the data-input env names and fails when they disagree with the table, so a generator that gains an input fails the build until someone decides what it means for the tier. Three mutations killed — a generator gaining an input, a NARA artifact claiming Tier 1, and an artifact dropped from the table. | S | none |
 | PV-1 | **The export sentences** | The methods block names its sources, in words, in every renderer | S | PV-0 |
 | PV-2 | **The chip type and its non-colour channel** | One shared `ProvenanceChip`, both platforms, glyph + label + VoiceOver | M | PV-1 |
 | PV-3 | **Source Explorer, per claim** | The 77/23 split rendered where it actually falls | M | PV-2 |
@@ -309,14 +309,16 @@ must it appear on screen beside the chip? The second is more honest and more clu
 
 ---
 
-## 8. Open questions for the owner
+## 8. Owner decisions — ANSWERED 2026-09-05
 
-| # | Question | Why it needs an answer before PV-1 |
-|---|---|---|
-| **Q-1** | Residual on screen, or only in the export block? (§5) | Decides whether PV-1 is a string change or a layout change. |
-| **Q-2** | Is `administrations.json` Tier 1? Its own `source` field is the U.S. House of Representatives, not OH — but it supplies 32 inauguration dates, a public-record calendar, not an interpretive dataset. | The only artifact whose tier is genuinely arguable. It decides whether the administration profiles carry a Tier-1 or Tier-2 chip. |
-| **Q-3** | Should the owner's curated resolutions be disclosed by name? `curated-lot-resolutions.json` says of itself that *"every row is human archival judgement"*, and **nothing on screen discloses that today**. | Folding them silently into "FRUS + NARA catalog" is defensible; naming them is more honest and costs a ninth label. |
-| **Q-4** | Eight labels, or collapse to three ("FRUS" / "FRUS + another source" / "computed here")? | Eight is more useful at the footnote; three is easier to learn. §2 recommends eight. |
+All four were answered the day build 45 shipped, which is what unblocked the wave.
+
+| # | Question | Decision | What it settled |
+|---|---|---|---|
+| **Q-1** | Residual on screen, or only in the export block? | **Export block only.** | PV-1 is a string change, not a layout change. The residual is a property of the method, and the methods block is where a method belongs. |
+| **Q-2** | Is `administrations.json` Tier 1? | **Yes.** | A calendar of who held office on which date is a public-record constant rather than a dataset that could disagree with FRUS. `administrations.json` joins {FRUS TEI, `manifest.json`} in `frusOnlyInputs`, and the administration profiles carry a Tier-1 chip. |
+| **Q-3** | Disclose the curated resolutions by name? | **Yes, as a disclosure line rather than a ninth label.** | Twenty lot files and 185 finding-aid entries rest on the owner's archival judgement. **Implementable without a generator re-run**: the shipped index cannot distinguish them (every lot carries `matchType: "control"`), but `CuratedLotResolutions.shared` already loads at runtime, so membership is a lookup. `ProvenanceSource.curatedDisclosure` carries the sentence; `carriesCuratedResolutions` names the four artifacts it applies to. |
+| **Q-4** | Eight labels, or three? | **Eight.** | The label is the first half of the footnote — "FRUS + NARA catalog" *is* the answer where "Tier 2" forces a lookup. `everySourceSpeaks` pins the count at eight so a ninth cannot arrive unnoticed. |
 
 ---
 

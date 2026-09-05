@@ -11466,3 +11466,49 @@ defect ("notes that name no lot") was carried into a plan, an issue draft and a 
 before anyone opened the note past its first 200 characters. The guide's own §14.14 rule 1 —
 a claim about what a file says is a grep over that file, with the command shown — would have
 caught it at the first hop.
+
+## Session 2026-09-05 — PV-0: the tier becomes computable (PR #NNNN)
+
+**Build 45 shipped and all four owner questions were answered, which is what unblocked wave PV.**
+Q-1 export block only; Q-2 `administrations.json` is Tier 1; Q-3 disclose the curated resolutions;
+Q-4 eight labels. All four are recorded in the plan's §8 with what each settled.
+
+**THREE artifacts were undocumented, not the two the plan named**, and the third was the one the
+classification most needed. `document-subject-index.json` reads `DOCUMENT_SUBJECTS` and nothing
+else — no `VOLUMES_DIR`, no `MANIFEST`, and `Package.swift` gives its target only GeneratorKit — so
+**it has no FRUS TEI in its input closure at all**, while sitting behind four features including
+the Related list's shared-subjects axis. `digitized-ranges-index.json` and `roll-scans-index.json`
+come from one generator reading one file, `HARVEST_DIR/series/rg_59.json`, with no FRUS input and
+no API key. All three now have CLAUDE.md entries in the house register.
+
+**The tier is now derived rather than asserted, which was the whole point of doing PV-0 first.**
+`BundledArtifactProvenance.table` has 27 rows covering every bundled data artifact — the seven
+config payloads that carry no corpus data are exempt by name, since they cannot carry a claim into
+a footnote. `declaredInputsMatchTheSources` walks each generator's `*GeneratorCore` sources for the
+data-input environment names and fails when they disagree with the table, so **a generator that
+gains an input fails the build until someone decides what that input means for the tier**. A table
+maintained by hand would have rotted within two waves, and its rot would have been silent and
+would have reached footnotes.
+
+**§1a's per-field rule is encoded, not just described.** `collection-usage-index.json` and
+`provenance-flow-index.json` take `COLLECTION_AUTHORITY`, whose closure includes NARA — and are
+Tier 1 anyway, because the fields the app reads out of the authority are identity, aliases and
+volume lists, all FRUS-derived. `tierOneRestsOnFRUSAlone` permits that only when the row states
+which fields it reads, so the exception cannot be claimed silently.
+
+**One recon claim was refuted before it could ship.** The reconnaissance reported that #1015
+retired the era-sanity gate "for both grains", which would have made the new entry's contrast with
+`VolumeSubjectProfilesGenerator` wrong. `ProfileAggregator.swift:98` still calls `EraSanity`, and
+the shipped volume-profiles artifact's own provenance string still ends "anachronistic subject tags
+removed by the #308 era-sanity table". The gate is live at volume grain; only the document grain
+lacks it, which is exactly the contrast the entry draws.
+
+**Measured facts now in CLAUDE.md rather than in a session log**: the subjects artifact is 491
+subjects in 106 buckets over 238,302 documents and 877,817 pairs, and the reason it applies no
+breadth filter is that the upstream exporter's own recommended `--max-volumes 200` would leave
+**170,563 of 238,302 documents (72%) with no tag at all**. The superseded-drop trap is recorded
+with both figures, because the wrong drop has the same filename and schema and decodes cleanly.
+
+Three mutations killed: a generator gaining an input, a NARA artifact claiming Tier 1, and an
+artifact dropped from the table. 4,479 tests in 588 suites; macOS builds clean. No CloudKit change,
+no index bump. New files, so xcodegen ran and the schemes were restored.
