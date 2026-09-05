@@ -11383,3 +11383,67 @@ export sentence added once ships in CSV and vanishes from the collection PDF.
 badge. The source-note parser returns `unrecognized` for 7.4% of 1952–54 notes and essentially 100%
 of pre-1906 notes — all of them Tier 1. Aggregates owe a residual beside the badge, and whether that
 residual appears on screen or only in the export block is owner question Q-1.
+
+
+## Session 2026-09-04d — Agentic Analysis Guide v1.11: the revisions the commercial-diplomacy run earned (PR #1200)
+
+**Docs only. Implements Part 1 of `Planning/Agentic-Guide-Revisions-2026-09-04.md`; Part 2, the
+research skill, is deferred by owner decision until there is more usage to test against.**
+
+**Where the change list came from.** The 2026-09-01/02 investigation of U.S. commercial diplomacy
+ran three rounds over the full 552-volume index with the guide's §12 block pasted into every agent
+— 207 agent sessions, 60 adversarial verdicts, memo scores **22 of 23 → 23 of 26 → 29 of 29**, and
+an argued STOP from the round-3 critic. Six miners read the run's verdicts, critics, scores and
+scripts; six checkers opened every cited line and grepped the guide for each "the guide does not
+say this" claim. Headline: **0 recommendations dropped whole, 10 kept as written, 46 amended**; the
+writer's document was then traced by an auditor (627 claims checked, 29 corrected).
+
+**The correction the review owed this log.** The task brief said the guide's own §2 read-only
+invocation `sqlite3 "file:…?mode=ro" -uri` fails on this Mac. The guide prints no `-uri` anywhere;
+the flag was in the C-0 falsifier's runner prompt and was copied into the run's round-1 script. The
+guide's real gap was that it printed no shell form at all. Recorded here because the wrong
+attribution had already reached a memory note.
+
+**What the guide gains, measured rather than asserted.** A shell read-only form and a ten-second
+canary (§2, §3); the definition of "read in full" as captured length equal to `length(body_text)`
+(§3); the **1950 decimal renumbering** — class 4 is *Claims* before and *U.S. trade* after — beside
+`external_citations`' **1910-12-06 floor** and `volume_sources` as the editors' own gloss table for
+post-1950 keys (§4.4); the `rowid IN (…)` count form, 0.3 s where the join form ran five minutes
+(§6.2); the per-decade denominator table — a 12.8× spread, the 1940s at 74,043 dated documents —
+with the rate rule and four date traps (§6.4); the literal-share protocol, after `"commercial
+officer"` measured half *commercial office* and `"national treatment"` 9 of 40 literal (§7.1);
+machine-checked quotations (§8); *measure the reading* (§9 item 8); 24 new lines in the §12 block;
+four reproducibility rows (§13); the control comparison, the shape of the TEI file, the actor test
+and the letterhead decoy, statute forms and the counterpart's vocabulary (§14.2–§14.6); the
+date-span screen, the offline harvest as a fourth surface labelled `[HARVEST]`, lot convergence and
+FRC accessions (§14.11); six more contesting practices (§14.12); and three new subsections —
+superlatives over a scope, revising a prior round, asking a critic when to stop (§14.13–§14.15).
+One existing sentence was wrong and is corrected: §14.7's `Rogers Act` count
+(`frus1977-80v28/d166` is document text).
+
+**The caveat the version history states.** The §12 block grew from 110 to 134 lines and none of the
+new lines has been re-measured with the C-0 harness; v1.10's block is the instrument that C-0 and
+C-2 scored at 99% with no decay. Re-measurement is owed before v1.11's block is declared the
+instrument (plan repo-issue stub 9).
+
+**One deliberate deviation from the plan.** §14.11's legend for `series-facts-index.json`'s wire
+keys follows the shipped artifact and `SeriesFactsIndex.swift` (`as`/`us` → statuses, `ru` →
+referenceUnits, `ur` → useRestrictions, six vocabularies); the plan's table had `ru` wrong and five
+vocabularies. A verifier checked all 695 rows.
+
+**How it was implemented.** Eight drafters converted the plan's pasteable text into 69 exact-match
+edits, each proven to occur exactly once in the guide before it was applied; one applier landed
+them under 16 mechanical checks; eight verifiers compared every landing word-for-word against the
+plan; a coherence reader read the revised guide whole (22 fixes); the full diff was then reviewed by
+hand and five things corrected — four broken line wraps and one §14.12 sentence that said a wrong
+shell flag "cost hours" where the plan's own checker had established it cost one failed call per
+agent. `FRUSExplorerTests/CollectionTests`: **133 tests passed**, including the two that pin §15.1's
+JSON block to the fixture (the block is byte-identical to v1.10's; §12 is one fence; all 66
+internal links resolve; §14 runs 14.1–14.15).
+
+**Residue, tracked in the plan's nine repo-issue stubs, none opened as issues yet:** the
+`decimal-class-labels.json` country table (Czechoslovakia glossed *Ruthenia* over 82 documents;
+Canada, Newfoundland, Switzerland, Bulgaria and the Philippines absent); coverage dates in
+`series-facts-index.json`; an era gate for outside consumers; the wrong `73 D 153` claimant;
+`SourceNoteParser` phantom lots on `75 D 229`; an accession → series map citing #679; a harness
+runbook; the memory-note correction (done); the C-0 re-measure.

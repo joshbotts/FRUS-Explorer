@@ -1,10 +1,13 @@
 # Agentic Analysis Guide — revisions from the commercial-diplomacy run, and a skill feasibility assessment
 
 **Status:** WRITTEN 2026-09-04 from a six-miner / six-checker review of the 2026-09-01/02
-commercial-diplomacy run. Nothing in `Docs/Agentic-Analysis-Guide.md` has been changed yet; this
-document is the change list, with every proposed line pasteable and every claim carrying the run
-file it rests on. Guide line numbers are `grep -n` over v1.10 (1,869 lines) on 2026-09-04; apply
-insertions bottom-up or renumber as you go.
+commercial-diplomacy run. **Part 1 IMPLEMENTED the same day in PR #1200** (guide v1.11, 2,601
+lines; `Planning/DEVELOPMENT-PLAN.md` session 2026-09-04d records how, and the two places the
+implementation departed from this text: §14.11's series-facts wire-key legend follows the shipped
+artifact rather than the table below, and the §12 block's measured growth is 24 lines, not the
+"about twenty-two" estimated here). **Part 2 is DEFERRED by owner decision** until there is more
+usage to test a skill against; nothing in it has been built. Guide line numbers below are
+`grep -n` over v1.10 (1,869 lines) and no longer match v1.11 — locate by the quoted text.
 
 **What the run was.** Three rounds over the full 552-volume index, following the guide at v1.10
 with its §12 house-rules block pasted into every agent: a scoping round (eight modalities, two
