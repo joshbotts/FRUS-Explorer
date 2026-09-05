@@ -11683,3 +11683,65 @@ Two self-inflicted traps alongside: killing a stalled `xcodebuild` leaves a stal
 (remove the directory), and piping the run through `| head -8` **SIGPIPEs xcodebuild mid-suite** and
 exits 0 — a truncating `head` on a test run reads as a pass with no verdict line. Redirect to a file
 and grep the file.
+
+## Session 2026-09-05e — PV-4: the capture moments, and what a chip must not do (PR #PVFOUR)
+
+**Two mounts, and the row is mostly measured refusals** — which is the honest outcome rather than a
+thin one.
+
+**An enumeration of 71 capture moments** across the app sorted them four ways. Durable files and
+CSVs are already PV-1's and already done: `CollectionColophon`, `AnalyticsProvenance` and
+`QueryMethodAppendix` put the sources block *into the artifact*, which is the only form that
+travels. Diagnostics dumps are out of scope by kind — a research-state record is not a research
+claim. That left citations, and two UI moments.
+
+**Citations are refused, and a test pins the refusal.** A sentence appended to a copied citation is
+pasted into somebody's footnote. The app already draws exactly this line: `naraExportText` embeds a
+caveat in a durable NARA record copy *because* "the chip in the UI does not travel into a research
+note" (#680) — so the distinction is what the payload becomes, not whether it leaves the app.
+`citationPayloadsStayClean` guards `plainTextFormattedCitation`, `shareableCitationMessage` and
+`bibtexCitation`, and a mutation that appends a method sentence to the shared message is caught.
+
+**The lasso is the headline and the one genuinely mixed capture in the app.** Documents in a
+lassoed set are FRUS's; what is not FRUS's is that these particular ones are *together* — the model
+placed them near each other. The saved corpus records only `sourceDescription: "Semantic map
+selection"`, which names the mechanism without saying it is a model, and a reader who later writes
+"these documents cluster" is reporting the app's reading of the language. The chip sits above **Save
+as Working Corpus**, on that panel's own stated reasoning: say it before the corpus is made, not
+only in its provenance afterwards.
+
+**The picker's chip is invariant by CONSTRUCTION, not by omission**, and the enumeration verified it
+independently: excerpt mode is reached from exactly two call sites, and the only producer of a
+colour-bearing capture reaches neither, so nothing but FRUS text can be captured there. §6 refuses
+an invariant chip on *search results* — a browsing surface seen constantly; this is a capture moment
+seen once, deliberately, and it is the surface whose exports PV-1 gives a colophon, so the two now
+agree. It is mounted in **both** platform bodies because the sheet's shared seams are `String`s.
+
+Four mutations killed. The capped fan-out worked: 15 agents against the previous row's 169, and the
+machine stayed responsive throughout.
+
+**One defect found and spun out**, not fixed here: `CollectionPickerSheet.add`'s document branch
+never sets `collectionEntry.collection`, while the excerpt path does — and `CaptureStateSeeder`
+already documents that the append it relies on "does nothing at all" on a collection inserted
+moments ago, naming that method. Plus an offset-unit doc inconsistency in the same area
+(`CollectionExcerpts` says Unicode-scalar, `FRUSRenderNode` says UTF-16).
+
+No CloudKit change, no index bump, no new bundled resource, no new files.
+
+**VERIFICATION IS INCOMPLETE, and this is the honest state.** The iOS app host wedged and stayed
+wedged: every launch is refused with *"Application failed preflight checks … Busy"*. It survived a
+device erase, a `killall` of `CoreSimulatorService`, a switch to a different simulator model, and a
+full DerivedData wipe — six wedge lines in the log each time, at settled load. So the full unit
+suite did NOT complete on this tree. What IS verified: both schemes compile clean
+(`build-for-testing` for iOS, `build` for macOS, no source warnings); `ProvenanceMountTests` — all
+seven, including this row's three — passed repeatedly on this exact tree during the mutation sweep;
+and four mutations were killed. The last complete run was **4,510 tests in 592 suites** on the
+parent commit (PV-3). The machine most likely needs a restart, which is the owner's call.
+
+The environment cost this session was heavy and largely self-inflicted. Two lessons are recorded in
+memory: a verify-per-item pipeline over an unknown-length inventory is a fan-out of unknown width
+(279 claims became 169 agents, load 388), and a healing runner that resets the simulator must then
+WAIT — a fresh boot is its own storm at ~load 100 and 139 runnable threads, which fails the
+indexing settle-window timing tests and can re-wedge the host. Twelve orphaned `yes` processes from
+an earlier session, burning ten cores for five hours, were the largest single cause and were found
+only by `ps aux | sort -k3`.

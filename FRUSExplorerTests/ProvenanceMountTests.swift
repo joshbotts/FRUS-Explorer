@@ -139,6 +139,69 @@ struct ProvenanceMountTests {
                 "captioning a NAID as FRUS-derived is the §1a error the wave exists to avoid")
     }
 
+    // MARK: - The capture moments (PV-4)
+
+    /// The sheet says what is being captured, in both platform bodies.
+    ///
+    /// `CollectionPickerSheet` is one struct with two bodies and its shared seams are `String`s
+    /// (`pickerTitle` is consumed as a `Text` on macOS and a `.navigationTitle` on iOS), so nothing
+    /// carries a view across the platform split. A chip added to one body travels to neither.
+    @Test("Both bodies of the collection picker badge what is being captured")
+    func bothPickerBodiesBadgeTheCapture() throws {
+        let file = try source("FRUSExplorer/Collections/CollectionPickerSheet.swift")
+        let mac = try body(of: "private var macBody: some View {", in: file)
+        let ios = try body(of: "private var iOSBody: some View {", in: file)
+        for (name, block) in [("macBody", mac), ("iOSBody", ios)] {
+            #expect(block.contains("ProvenanceChip(source: .frusText)"),
+                    Comment(rawValue: "CollectionPickerSheet.\(name) does not say what it captures"))
+        }
+    }
+
+    /// **The one capture whose membership is the model's, and it must not say `.frusText`.**
+    ///
+    /// The documents in a lassoed set are FRUS's; what is not FRUS's is that these particular ones
+    /// are together. A reader who writes "these documents cluster" is reporting the app's reading of
+    /// the language, and the saved corpus records only `sourceDescription: "Semantic map
+    /// selection"` — which names the mechanism without saying it is a model.
+    @Test("The map lasso badges its capture as the model's, not the volumes'")
+    func lassoCaptureBadgesTheModel() throws {
+        let file = try source("FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift")
+        #expect(file.contains("ProvenanceChip(source: .appModel)"),
+                "the lasso capture does not say the set is the model's grouping")
+        #expect(!file.contains("ProvenanceChip(source: .frusText)"),
+                "a lassoed set's membership is not the volumes' claim")
+    }
+
+    /// **A copied citation carries no provenance sentence, and that is a decision.**
+    ///
+    /// PV-1 puts a sources block in exported *artifacts* because a chip cannot travel into a PDF.
+    /// A citation is different in kind: it is pasted straight into somebody's footnote, so a
+    /// sentence appended to it would be pasted too. The app already understands the distinction —
+    /// `naraExportText` embeds a caveat in a durable NARA record copy precisely because "the chip in
+    /// the UI does not travel into a research note" — and the line between the two is what the
+    /// payload becomes, not whether it leaves the app.
+    ///
+    /// This pins the refusal so a later, well-meant change cannot quietly pollute a footnote.
+    @Test("A copied or shared citation carries no provenance sentence")
+    func citationPayloadsStayClean() throws {
+        let file = try code("FRUSExplorer/DocumentView/DocumentViewModel.swift")
+        var checked = 0
+        for property in ["var plainTextFormattedCitation", "var shareableCitationMessage",
+                         "var bibtexCitation"] {
+            guard let range = file.range(of: property) else {
+                Issue.record(Comment(rawValue: "\(property) is gone — the citation payloads moved"))
+                continue
+            }
+            let rest = String(file[range.lowerBound...].prefix(900))
+            #expect(!rest.contains("ProvenanceStatement"),
+                    Comment(rawValue: "\(property) injects a provenance sentence into a payload a reader pastes into a footnote"))
+            #expect(!rest.contains("methodSentence"),
+                    Comment(rawValue: "\(property) injects a method sentence into a citation"))
+            checked += 1
+        }
+        #expect(checked == 3, "the citation sweep ran over \(checked) payloads")
+    }
+
     // MARK: - The prohibition
 
     /// **The mount names the source; it never looks one up by artifact filename.**
