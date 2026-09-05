@@ -41,6 +41,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #665
+///   1.1 — accessibility identifier, so the #1070 keyboard gate can be asserted end-to-end
 struct SyncStatusBanner: View {
 
     /// The live sync state.
@@ -87,6 +88,12 @@ struct SyncStatusBanner: View {
             .overlay(alignment: .top) { Divider() }
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(title). \(detail)")
+            // #1070's contract is observable only if the occluder can be named. This banner is
+            // the inset's commonest occupant — for a local-only user it is up permanently — so
+            // `KeyboardDismissBarReachTests` asserts through this identifier that the inset has
+            // yielded while the keyboard is raised. An identifier rather than the label, which is
+            // localized and composed from two more localized strings.
+            .accessibilityIdentifier("tabShell.syncBanner")
         }
     }
 
