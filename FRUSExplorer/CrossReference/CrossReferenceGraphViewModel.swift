@@ -839,21 +839,39 @@ final class CrossReferenceGraphViewModel {
 
     // MARK: - Node sizing
 
+    /// The sizing rule itself, as a pure function of what a node is and how connected it is.
+    ///
+    /// **Split out of ``nodeRadius(for:)`` so it can be driven at a connection count the app has
+    /// not yet fetched.** The counts arrive asynchronously into `nodeConnectionCounts`, which is
+    /// `private(set)`, so a test going through the instance method sees every document node at the
+    /// same size and cannot reach the cap below. Measured: with the rule inline, raising that cap
+    /// from 22 to 30 — above the central node's fixed 24, which would have let a well-connected
+    /// document out-size the centre of its own graph — passed the suite unnoticed.
+    ///
+    /// `nonisolated` because it is arithmetic: it reads nothing from the view model.
+    nonisolated static func radius(for kind: DisplayNode.Kind, connectionCount: Int) -> CGFloat {
+        switch kind {
+        case .central:
+            return 24
+        case .clusterInbound, .clusterOutbound:
+            return 18
+        case .dateCluster(_, let count, _):
+            // Slightly larger than a document node, growing gently with size.
+            return min(16 + 2 * log2(CGFloat(max(count, 2))), 24)
+        case .inbound, .outbound, .extended, .unit, .centralFileClass:
+            let count  = max(connectionCount, 1)
+            let radius = 12.0 + 3.0 * log2(CGFloat(count) + 1)
+            let cap: CGFloat
+            if case .extended = kind { cap = 18 } else { cap = 22 }
+            return min(max(radius, 12), cap)
+        }
+    }
+
     /// Visual radius for a node. Central and cluster nodes have fixed sizes;
     /// document nodes scale logarithmically with their corpus-wide connection
     /// count so heavily referenced documents read as hubs at a glance.
     func nodeRadius(for node: DisplayNode) -> CGFloat {
-        if node.isCentral { return 24 }
-        if node.isCluster { return 18 }
-        if case .dateCluster(_, let count, _) = node.kind {
-            // Slightly larger than a document node, growing gently with size.
-            return min(16 + 2 * log2(CGFloat(max(count, 2))), 24)
-        }
-        let count  = max(nodeConnectionCounts[node.id] ?? 1, 1)
-        let radius = 12.0 + 3.0 * log2(CGFloat(count) + 1)
-        let cap: CGFloat
-        if case .extended = node.kind { cap = 18 } else { cap = 22 }
-        return min(max(radius, 12), cap)
+        Self.radius(for: node.kind, connectionCount: nodeConnectionCounts[node.id] ?? 1)
     }
 
     func onCanvasSizeChanged(_ size: CGSize, reduceMotion: Bool) {

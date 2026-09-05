@@ -11,7 +11,7 @@ import Foundation
 // MARK: - CentralFilesConfidence
 
 /// How confident the classifier is that a document belongs to a given series.
-enum CentralFilesConfidence: Sendable {
+enum CentralFilesConfidence: Sendable, CaseIterable {
     /// The dateline unambiguously identifies the series (e.g. a U.S. legation abroad).
     case high
     /// The dateline narrows to a small set but cannot disambiguate (Dept. of State

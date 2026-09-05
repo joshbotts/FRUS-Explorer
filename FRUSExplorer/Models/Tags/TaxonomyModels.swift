@@ -55,6 +55,24 @@ public enum TagCategory: String, Codable, Sendable, CaseIterable {
     case topics
 }
 
+extension TagCategory {
+
+    /// What a reader sees this category called — the Subjects browser's section headings.
+    ///
+    /// **This is the whole of how the three categories are told apart, and it moved here to be
+    /// testable.** It sat as a `private extension` inside `SubseriesView`, out of reach of the
+    /// suite, while `ColorIndependenceTests` nominally guarded a *colour* mapping that had been
+    /// deleted three months earlier — so nothing checked either channel. There is no
+    /// category-to-colour mapping in the app any more; the name is the signal.
+    var displayName: String {
+        switch self {
+        case .people: return String(localized: "browser.tag.category.people", defaultValue: "People")
+        case .places: return String(localized: "browser.tag.category.places", defaultValue: "Places")
+        case .topics: return String(localized: "browser.tag.category.topics", defaultValue: "Topics")
+        }
+    }
+}
+
 // MARK: - TagTaxonomyEntry
 
 /// A single entry decoded from `volume-tag-taxonomy.json`.
