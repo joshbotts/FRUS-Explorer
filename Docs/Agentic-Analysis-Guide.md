@@ -733,9 +733,10 @@ ORDER BY docs DESC;
 Label the output "citation form", not "era". For a repository breakdown use `repository` and
 `record_group`; for lot-file work join on `lot_file_norm`, never on the raw `lot_file` spelling,
 which varies (`64 D 199`, `64D199`, `64 D199`).
-`lot_file_norm` is a parse, not an assertion: it is populated on some rows whose
-note names no lot at all (two of the five `75 D 229` rows are Nixon Presidential Materials notes), so
-read `raw_text` for any lot you publish a shelf for.
+`lot_file_norm` is a parse, not an assertion: the parser reads the whole note, so a lot named only
+as the location of *another copy* is stored as the document's own (two of the five `75 D 229` rows
+are Nixon Presidential Materials notes whose lot appears in an "and in … Lot 75 D 229" clause —
+#1206), so read `raw_text` for any lot you publish a shelf for.
 
 ### 6.6 Citation graph
 
@@ -2478,6 +2479,12 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.12 — 2026-09-05: §6.5's stated reason corrected. v1.11 said `lot_file_norm` is populated on
+  rows "whose note names no lot at all"; the two `75 D 229` rows it had in mind do name the lot,
+  1,250 and 343 characters in, as the location of another copy — the parser captured a secondary
+  citation as the document's source (#1206). The advice was right for the wrong reason; the reason
+  now matches the measurement.
 
 - 1.11 — 2026-09-04: the docs pass from the 2026-09-01/02 commercial-diplomacy run — three rounds
   over the full 552-volume index with this guide's §12 block pasted into every agent, about 200
