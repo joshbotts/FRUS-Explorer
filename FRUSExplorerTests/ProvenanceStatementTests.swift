@@ -88,6 +88,35 @@ struct ProvenanceStatementTests {
         #expect(CollectionColophon.sourceLines(for: items).isEmpty)
     }
 
+    /// **An archival-sources block does NOT disclose hand-curated identifiers, because it cannot
+    /// contain one.** PV-1 shipped this the other way round, on the stated ground that such a
+    /// block "may carry an identifier the owner matched by hand" — so every collection export
+    /// containing one told its reader that some identifier in it might be the owner's judgement
+    /// rather than the catalogue's.
+    ///
+    /// It cannot be. The block's identifiers come from `ArchivalResolver.documentResolution`,
+    /// which reads only `CentralFilesIndexStore` and `VolumeSourcesIndexStore`, and
+    /// `CuratedLotResolutionsTests` proves in two non-vacuous assertions that curated rows are in
+    /// neither artifact behind them. The trip packet's `archivalResolution` returns `nil`
+    /// outright, and every reader of the curated tables is a Source Explorer view.
+    ///
+    /// The wave exists to let a reader say what they may claim. Manufacturing doubt the app has
+    /// guaranteed away fails that in the same way overstating certainty would.
+    @Test("An archival-sources export does not claim hand-matched identifiers")
+    func archivalSourcesDoesNotClaimCuration() {
+        let block = CollectionGeneratedBlock(
+            type: .archivalSources, title: "Archival Sources",
+            rows: [CollectionGeneratedRow(text: "RG 59, Central Files")])
+        let items: [CollectionExportItem] = [doc("d1"), .generated(block)]
+
+        let lines = CollectionColophon.sourceLines(for: items)
+        #expect(!lines.isEmpty, "the guard is vacuous if the block produced no sources at all")
+        #expect(lines.contains(ProvenanceSource.naraCatalog.methodSentence),
+                "an archival-sources block does draw on the catalog, and must still say so")
+        #expect(!lines.contains(ProvenanceSource.curatedDisclosure),
+                "the export claims a hand-matched identifier it cannot contain")
+    }
+
     // MARK: - Reach
 
     /// **The W-13 failure this must not repeat**: a fact added to one renderer ships in one format

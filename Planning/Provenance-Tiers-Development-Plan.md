@@ -156,7 +156,7 @@ perceives is the chip's **text**.
 | ~~PV-0~~ | **SHIPPED 2026-09-05 (PR #1210).** THREE undocumented artifacts, not two — `document-subject-index.json` was the third and the one the classification most needed, since it reads `DOCUMENT_SUBJECTS` alone and has no FRUS TEI in its closure at all. `ProvenanceSource` (the eight labels, each with a chip label, a method sentence and a partner name), `ProvenanceTier`, and `BundledArtifactProvenance.table` — 27 rows covering every bundled data artifact, with the seven config payloads exempt by name. The derivation guard works: `declaredInputsMatchTheSources` walks each generator's `*GeneratorCore` sources for the data-input env names and fails when they disagree with the table, so a generator that gains an input fails the build until someone decides what it means for the tier. Three mutations killed — a generator gaining an input, a NARA artifact claiming Tier 1, and an artifact dropped from the table. | S | none |
 | ~~PV-1~~ | **SHIPPED 2026-09-05 (PR #1211).** `ProvenanceStatement` + a `sources` set on each export surface. THREE seams, each already the single source for its renderers, which is why this stayed an S: `AnalyticsProvenance.allCaveats` (CSV + plate), `QueryMethodAppendix.preambleLines` (CSV + Markdown), and `CollectionColophon` (PDF + HTML + DOCX — the type exists precisely "so HTML, PDF, and DOCX cannot drift", which is the W-13 failure this row was warned about). **The set is DERIVED from the exported items, never declared**, so an export cannot claim a source it did not use: a `.summaryOnly` body adds the model, an archival-sources block adds NARA and the curated disclosure, a persons index adds the people register, the researcher's own prose is their own. **One decision beyond the plan**: the sources block survives a plate's caveat designation, as `corpusCaveat` does — a designation trims qualifications, where sources are attribution, and a trimmed plate is the artifact most likely to be shared detached from its CSV. Three mutations killed. | S | PV-0 |
 | ~~PV-2~~ | **SHIPPED 2026-09-05 (PR #1212).** `ProvenanceChip` — glyph + label + VoiceOver sentence, three tier colours on `FRUSTheme`, **deliberately unmounted**: PV-3 is the row that decides where a badge falls, and mounting one here to prove the type compiles would pre-empt it. Every rule is a `static func`, so the whole chip is testable without a view host. **Four sentences, not the plan's three** — `yourReading` shares the computed tier while sitting outside the provenance family, and "computed by this app" over a reader's own highlight attributes their work to the software. Twelve mutations killed. Four findings changed the code after review: the neutral wash and hairline route through `provenanceFill`/`provenanceBorder` rather than restating the alphas; the stroke is **0.5**, the chip idiom, where 1.0 is the headnote *card*; the glyphs joined `SymbolNameAuditTests`' runtime check, since the literal audit cannot see a name returned from a function and `square.fill`/`triangle.fill` appear nowhere else in the tree (proved: mutating a glyph *and* its expectation together passes `ProvenanceChipTests` and fails the audit); and `.accessibilityElement(children: .ignore)` is pinned **with its position**, because `Image(systemName:)` speaks its own symbol name and a label applied above the modifier is discarded. | M | PV-1 |
-| PV-3 | **Source Explorer, per claim** | The 77/23 split rendered where it actually falls | M | PV-2 |
+| ~~PV-3~~ | **SHIPPED 2026-09-05 (PR #PVTHREE).** Five mounts across four files, and the split renders where §1c said it falls. **The two halves are cleanly separated by SECTION, which the plan did not know**: `CollectionDetailView.overviewSection` (name, repository, record group, lot key, aliases) is uniformly Tier 1 — `recordGroup` is a vote over references parsed from FRUS front matter, not a catalogue lookup — while `catalogSection` (NAID, catalogue link) and `dividedAtNARASection` (claimant series, entry numbers) are uniformly Tier 2. So a per-section badge is exact rather than approximate, and no claim needed splitting. **That view is SHARED between platforms**, so three of the five mounts cover both; only the Source Explorer card is twinned, and a test pins both twins. **The mount names the source and never asks `source(ofArtifact:)`** — a test proves that prohibition non-vacuous by adding a real call. Five mutations killed. **It also corrected a Q-3 error PV-0 and PV-1 shipped — see §8.** | M | PV-2 |
 | PV-4 | **The capture moments** | Add to Collection, freeze a quotation, Copy Citation | S | PV-2 |
 | PV-5 | **Person rollups** | Editor-tagged mentions beside the authority join and POCOM | S | PV-2 |
 
@@ -253,6 +253,44 @@ card, two badges, attached to the rows rather than the header.
 
 This is the row that justifies the wave — and the row most at risk of becoming decoration if it is
 built before PV-1 and PV-2 settle the vocabulary.
+
+**SHIPPED.** What the row actually found, beyond the survey:
+
+- **The boundary falls between SECTIONS, not inside a row.** §1c inferred from
+  `CollectionGeneratedBlocks` (a Collections *export*, whose rows do mix a Tier-1 `text` with a
+  Tier-2 `secondaryText`) that the badge must attach below row level. On the Source Explorer
+  surfaces it does not: `overviewSection` is uniformly Tier 1 and `catalogSection` uniformly Tier 2.
+  The per-claim rule still holds — it is *satisfied* per section here, rather than weakened.
+- **`CollectionDetailView` is shared between platforms**, which is why this row cost less than
+  feared: three of five mounts are written once. Only the Source Explorer card is twinned.
+- **What is deliberately NOT badged, and the measurement behind it.** A claim inventory over both
+  twins, the shared detail view and the authority types found **279 distinct claims, of which
+  roughly 150 are Tier 2** — the lot-file panel, series facts, curated cards, live catalogue
+  results, digitised rolls, filing periods, Paris Peace, pre-1906 predictions, presidential
+  libraries, non-NARA repositories. Badging each would put fifteen identical chips down one screen,
+  which is the "chip per atom" §6 refuses.
+  **It would also add nothing, and that is the real argument**: those sections say *NARA* in their
+  own labels — "NARA Creator", "Open Series in NARA Catalog", "Resolved from the bundled index",
+  "View in National Archives Catalog". A reader cannot mistake them for FRUS. The chip earns its
+  place on the **collection identity**, which is the one claim on these screens a reader would
+  naturally assume came from the catalogue and did not; and on the two sections adjacent to it that
+  are the catalogue's, so the boundary is visible where it actually falls.
+  Also unbadged, for the same reason in the other direction: the sections counting over the
+  reader's own library (local citing counts, related collections, cited-over-time, citing volumes,
+  sub-series) are FRUS-derived and sit under a headline already badged Tier 1.
+- **Three sections are unbadged because they are MIXED per row, and a section chip there would be
+  wrong** — the inventory's adversarial pass caught all three, and each is a real finding for a
+  later row rather than an omission from this one:
+  the **pre-1906 country series** is Tier 2 throughout (the row exists only because a NARA artifact
+  said so), not the Tier 1 a first reading suggests;
+  a **lot file's record group** is `.frusText` when it falls out of `SourceNoteParser`'s pure
+  `lotFileRecordGroup` rule and `.naraCatalog` (with the curated disclosure) when
+  `CuratedLotResolutionsStore` supplied it — the same row, two answers, decided at render time;
+  and **Pointed At, Not Printed** must branch on `citation.anchor`, `.frusText` for lot and library
+  pointers against `.stateDeptSchedule` for central-file-class pointers, which are gated by
+  `decimal-class-labels.json`.
+  These are the §1c shape — the boundary inside a row — and they are where PV-3's per-claim rule
+  would actually have had to split a row. Badging them needs a per-row branch, not a section chip.
 
 **Surveyed at PV-2, two constraints verified:**
 
@@ -401,13 +439,18 @@ All four were answered the day build 45 shipped, which is what unblocked the wav
 |---|---|---|---|
 | **Q-1** | Residual on screen, or only in the export block? | **Export block only.** | PV-1 is a string change, not a layout change. The residual is a property of the method, and the methods block is where a method belongs. |
 | **Q-2** | Is `administrations.json` Tier 1? | **Yes.** | A calendar of who held office on which date is a public-record constant rather than a dataset that could disagree with FRUS. `administrations.json` joins {FRUS TEI, `manifest.json`} in `frusOnlyInputs`, and the administration profiles carry a Tier-1 chip. |
-| **Q-3** | Disclose the curated resolutions by name? | **Yes, as a disclosure line rather than a ninth label.** | Twenty lot files and 185 finding-aid entries rest on the owner's archival judgement. **Implementable without a generator re-run**: the shipped index cannot distinguish them (every lot carries `matchType: "control"`), but `CuratedLotResolutions.shared` already loads at runtime, so membership is a lookup. `ProvenanceSource.curatedDisclosure` carries the sentence; `carriesCuratedResolutions` names the four artifacts it applies to. |
+| **Q-3** | Disclose the curated resolutions by name? | **Yes — and PV-3 found they were ALREADY disclosed, in the only place they occur.** | ~~Twenty lot files and 185 finding-aid entries rest on the owner's archival judgement. Implementable without a generator re-run: the shipped index cannot distinguish them (every lot carries `matchType: "control"`), but `CuratedLotResolutions.shared` already loads at runtime, so membership is a lookup. `carriesCuratedResolutions` names the four artifacts it applies to.~~ **The premise was false and the app already enforced the opposite.** `curated-lot-resolutions.json` says of itself that its rows are "deliberately NOT written into central-files-index.json, volume-sources-index.json, or collection-authority.json — those bundles feed surfaces that cannot express doubt", and two non-vacuous assertions in `CuratedLotResolutionsTests` hold that line. PV-0's four-artifact set was therefore wrong, and PV-1 used it to make **every collection export containing an archival-sources block claim a hand-matched identifier it cannot contain** — manufacturing doubt the app had guaranteed away, which fails the wave's purpose in the same way overstating certainty would. Fixed in PV-3: the set is deleted (an empty one invites the claim back), the export passes nothing, and a test pins the absence. `ProvenanceSource.curatedDisclosure` is retained for a future surface that renders curated outcomes. **Where the doubt actually is, it was already said better than a chip could**: `SourceExplorerView.curatedLotSection` and its Mac twin carry a `ConfidenceChip` and the sentence "This match was made by collection name, not by a catalog control number." |
 | **Q-4** | Eight labels, or three? | **Eight.** | The label is the first half of the footnote — "FRUS + NARA catalog" *is* the answer where "Tier 2" forces a lookup. `everySourceSpeaks` pins the count at eight so a ninth cannot arrive unnoticed. |
 
 ---
 
 ## 9. Version history
 
+- **1.3 — 2026-09-05:** PV-3 shipped. §PV-3 records that the tier boundary falls between *sections*
+  rather than inside a row on these surfaces, and that `CollectionDetailView` is shared between
+  platforms. **§8's Q-3 is rewritten**: its premise — that curated resolutions fold invisibly into
+  the bundled artifacts — was false, the app already enforced the opposite in two tests, and PV-0
+  and PV-1 shipped a sentence claiming hand-matched identifiers in exports that cannot contain one.
 - **1.2 — 2026-09-05:** PV-2 shipped. §2a gains the measured worth of the wash and the hairline;
   PV-2's own section records the fourth VoiceOver sentence and the glyph collision with
   `ArchivalNetworkView`'s legend; PV-3, PV-4 and PV-5 gain the constraints a per-mount survey

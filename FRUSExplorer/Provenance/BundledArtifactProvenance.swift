@@ -192,15 +192,27 @@ enum BundledArtifactProvenance {
             inputs: ["STORE", "MANIFEST", "LEXICONS", "STOPWORDS", "LAYOUT_DIR"], source: .appModel),
     ]
 
-    /// The artifacts whose archival identifiers include rows matched by hand (Q-3).
+    /// **No bundled artifact carries a hand-curated archival identifier, and this is where that
+    /// was got wrong.**
     ///
-    /// `curated-lot-resolutions.json` folds into `central-files-index.json` at generation time and
-    /// leaves no marker — every shipped lot carries `matchType: "control"` — so membership is
-    /// checked at runtime against `CuratedLotResolutions`, which the app already loads.
-    static let carriesCuratedResolutions: Set<String> = [
-        "central-files-index.json", "collection-authority.json", "series-facts-index.json",
-        "lot-claimants-index.json",
-    ]
+    /// PV-0 shipped a `carriesCuratedResolutions` set naming four artifacts, on the stated ground
+    /// that `curated-lot-resolutions.json` "folds into `central-files-index.json` at generation
+    /// time and leaves no marker". **The opposite is true and the app already enforced it.**
+    /// `curated-lot-resolutions.json` says of itself that its rows are "deliberately NOT written
+    /// into central-files-index.json, volume-sources-index.json, or collection-authority.json —
+    /// those bundles feed surfaces that cannot express doubt", and two non-vacuous assertions in
+    /// `CuratedLotResolutionsTests` hold the line: `curatedLotsAreNotInCentralFilesIndex` and
+    /// `curatedLotsHaveNoAuthorityNAID`. The other two artifacts named are built *from*
+    /// central-files, so they inherit the exclusion.
+    ///
+    /// The consequence was a false sentence in every collection export containing an
+    /// archival-sources block — see `CollectionColophon.sourceLines(for:)`. The property is gone
+    /// rather than emptied: an always-empty set invites a caller to reinstate the same claim.
+    ///
+    /// Curated outcomes are real and they are rendered — by `SourceExplorerView.curatedLotSection`
+    /// and its Mac twin, which already carry a `ConfidenceChip` and say in prose that the match
+    /// "was made by collection name, not by a catalog control number". Q-3's disclosure is
+    /// therefore satisfied where the doubt exists, and nowhere else.
 
     /// What a reader may claim from an artifact's values, or `nil` when it is not in the table.
     static func source(ofArtifact filename: String) -> ProvenanceSource? {

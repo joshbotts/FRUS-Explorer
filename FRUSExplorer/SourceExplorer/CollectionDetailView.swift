@@ -207,6 +207,18 @@ struct CollectionDetailView: View {
             Text(record.name)
                 .font(.headline)
                 .textSelection(.enabled)
+            // **The badge that justifies wave PV**, and it belongs on this half rather than the
+            // card: everything in this section — the canonical name, the repository keyword, the
+            // record group, the lot key, the variant spellings — was clustered out of FRUS's own
+            // front matter and source notes by `CollectionAuthorityGenerator`. `recordGroup` is a
+            // vote over parsed references, not a catalogue lookup. A reader may write "FRUS calls
+            // it this" and stop there.
+            //
+            // The source is named HERE, per claim, and never fetched from
+            // `BundledArtifactProvenance.source(ofArtifact:)` — that table holds one entry per
+            // file and would answer `.naraCatalog` for both halves of this record, which is the
+            // §1a error the whole wave exists to avoid.
+            ProvenanceChip(source: .frusText)
             if let repository = record.repository {
                 LabeledContent(
                     String(localized: "collection.detail.repository", defaultValue: "Repository"),
@@ -259,6 +271,11 @@ struct CollectionDetailView: View {
     private var catalogSection: some View {
         Section(String(localized: "collection.detail.catalog.header",
                        defaultValue: "NARA Catalog")) {
+            // The other half of §1c's 77/23 split. Measured on the shipped authority, 1,018 of
+            // 4,429 collections carry an identifier here; the 3,411 that do not still have
+            // everything in `overviewSection`, so the absence of this section is not a gap in the
+            // record but the ordinary case.
+            ProvenanceChip(source: .naraCatalog)
             if let url = record.url {
                 Link(destination: url) {
                     Label(String(localized: "collection.detail.catalog.open",
@@ -648,6 +665,12 @@ struct CollectionDetailView: View {
     @ViewBuilder
     private func dividedAtNARASection(_ claimants: [LotClaimant]) -> some View {
         Section {
+            // Every value below is NARA's own assertion — a `variantControlNumber` on a series IS
+            // the catalogue saying that series holds this lot — so the claimant titles, NAIDs and
+            // HMS/MLR entry numbers are catalogue values, not readings of FRUS. The section's
+            // title says "at NARA" and could be taken to make that obvious, but a reader copying
+            // an entry number into a request slip is citing the catalogue and should know it.
+            ProvenanceChip(source: .naraCatalog)
             VStack(alignment: .leading, spacing: 4) {
                 Text(String(format: String(
                     localized: "collection.detail.divided.intro %lld",

@@ -916,13 +916,24 @@ enum CollectionColophon {
     /// The set is derived from the items, never passed in, so an export cannot name a source it did
     /// not use. Empty for a collection of headings alone, and the callers render nothing then.
     static func sourceLines(for items: [CollectionExportItem]) -> [String] {
-        ProvenanceStatement.block(
-            for: items.provenanceSources,
-            // Q-3: an archival-sources block may carry an identifier the owner matched by hand.
-            includesCuratedResolutions: items.contains {
-                if case .generated(let b) = $0 { return b.type == .archivalSources }
-                return false
-            })
+        // **No `includesCuratedResolutions`, and the omission is measured rather than an oversight.**
+        // PV-1 shipped this call passing `true` whenever an archival-sources block was present, on
+        // the assumption that such a block "may carry an identifier the owner matched by hand". It
+        // cannot. The block's identifiers come from `ArchivalResolver.documentResolution`, which
+        // reads `CentralFilesIndexStore` and `VolumeSourcesIndexStore` and nothing else — and two
+        // shipped assertions in `CuratedLotResolutionsTests` prove curated rows are absent from
+        // both of the artifacts behind them: `curatedLotsAreNotInCentralFilesIndex` and
+        // `curatedLotsHaveNoAuthorityNAID`. `curated-lot-resolutions.json` says the same about
+        // itself, and gives the reason: those bundles "feed surfaces that cannot express doubt".
+        //
+        // So the sentence added doubt to every archival-sources export that the app had in fact
+        // guaranteed away — the opposite of this wave's purpose, and worse than saying nothing.
+        // Every reader of the curated tables (`CuratedLotResolutionsStore`,
+        // `CuratedLibraryResolutionsStore`) is a Source Explorer *view*; the trip packet's
+        // `archivalResolution` returns `nil` outright. If an export path ever does render a curated
+        // outcome, this is where the disclosure goes back in — `CollectionExporterTests` pins the
+        // absence so that change cannot be silent.
+        ProvenanceStatement.block(for: items.provenanceSources)
     }
 }
 
