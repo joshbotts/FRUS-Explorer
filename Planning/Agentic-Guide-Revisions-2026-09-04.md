@@ -1870,9 +1870,10 @@ Each is one line; the guide carries a dated caveat until the issue closes.
    Summaries* where nine of ten source notes say *Morning Summaries*; 620873 is absent from
    central-files entirely). Re-run `LotClaimantsIndexGenerator` (already required after the 1b
    supplement per `CLAUDE.md`) and prefer the claimant whose title matches the editors' wording. (M5 A5.)
-6. **`SourceNoteParser` populates `document_sources.lot_file` on notes that name no lot** —
-   `frus1969-76v02/d1` and `/d11` (`75 D 229`) are Nixon Presidential Materials notes. (check-M4 R5, re-run
-   on the copy.)
+6. **`SourceNoteParser` stores a secondary "and in … Lot" citation as the document's `lot_file`** —
+   `frus1969-76v02/d1` and `/d11` (`75 D 229`) are Nixon Presidential Materials notes that name the lot
+   only as the location of another copy, 1,250 and 343 characters in. (check-M4 R5, re-run on the copy;
+   *this line first read "notes that name no lot", corrected 2026-09-05 when filing #1206.*)
 7. **A harness runbook under `Planning/`** — the 180 s watchdog, the resume cache keyed on (prompt,
    opts), the model-pin hang and its diagnosis from `agent-*.jsonl`, the canary, the `-uri` history.
    Today these live only in `~/.claude/projects/…/memory/env_workflow_agent_failure_modes.md`;
