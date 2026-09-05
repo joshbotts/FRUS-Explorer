@@ -905,6 +905,25 @@ enum CollectionColophon {
             localized: "export.colophon.line",
             defaultValue: "Compiled with FRUS Explorer · \(docCount) document\(docCount == 1 ? "" : "s") from \(volCount) volume\(volCount == 1 ? "" : "s") · \(df.string(from: date))")
     }
+
+    /// The sources block that follows the colophon line (PV-1).
+    ///
+    /// **Here rather than in each renderer, for the reason this type already exists**: it is the
+    /// single source for the trailing "how this artifact was produced" text, so HTML, PDF and DOCX
+    /// cannot drift. A sources sentence added to one renderer would ship in one format and vanish
+    /// from the other two — the failure W-13 recorded when it found `preambleLines` was not shared.
+    ///
+    /// The set is derived from the items, never passed in, so an export cannot name a source it did
+    /// not use. Empty for a collection of headings alone, and the callers render nothing then.
+    static func sourceLines(for items: [CollectionExportItem]) -> [String] {
+        ProvenanceStatement.block(
+            for: items.provenanceSources,
+            // Q-3: an archival-sources block may carry an identifier the owner matched by hand.
+            includesCuratedResolutions: items.contains {
+                if case .generated(let b) = $0 { return b.type == .archivalSources }
+                return false
+            })
+    }
 }
 
 // MARK: - CollectionAIAttribution
@@ -1089,6 +1108,50 @@ enum CollectionExportItem: Sendable {
 }
 
 extension Array where Element == CollectionExportItem {
+
+    /// What this collection's contents actually drew on, for the export's sources block (PV-1).
+    ///
+    /// **Derived from the items rather than declared by the caller**, so an export cannot claim a
+    /// source it did not use or omit one it did. The mapping is per item kind and per apparatus
+    /// block, and each entry is a claim about where the bytes came from:
+    ///
+    /// - a document or a frozen quotation is the printed record, so ``ProvenanceSource/frusText``;
+    /// - a `.summaryOnly` body was written by the on-device model, so ``ProvenanceSource/appModel``
+    ///   — the one case where the exported prose is not the record's;
+    /// - the researcher's own prose, and a thematic index built from their tags, are
+    ///   ``ProvenanceSource/yourReading``;
+    /// - an archival-sources block carries NARA identifiers where they resolved, so it adds
+    ///   ``ProvenanceSource/naraCatalog`` — and the note it parsed remains FRUS's;
+    /// - a persons index is rolled up through the authority join, so
+    ///   ``ProvenanceSource/ohPeopleRegister``.
+    ///
+    /// A bibliography and a chronology add nothing: both are built from the documents' own
+    /// metadata, which `frusText` already covers.
+    var provenanceSources: Set<ProvenanceSource> {
+        var out: Set<ProvenanceSource> = []
+        for item in self {
+            switch item {
+            case .document(let d):
+                out.insert(.frusText)
+                if d.bodyDepth == .summaryOnly { out.insert(.appModel) }
+            case .excerpt:
+                out.insert(.frusText)
+            case .prose:
+                out.insert(.yourReading)
+            case .heading:
+                break
+            case .generated(let block):
+                switch block.type {
+                case .bibliography, .chronology: out.insert(.frusText)
+                case .archivalSources:           out.formUnion([.frusText, .naraCatalog])
+                case .personsIndex:              out.formUnion([.frusText, .ohPeopleRegister])
+                case .thematicIndex:             out.insert(.yourReading)
+                }
+            }
+        }
+        return out
+    }
+
     /// The `.document` payloads, in order (heading/prose items dropped). Used where an
     /// exporter needs the documents alone — e.g. the collection word cloud.
     var documents: [CollectionExportDocument] {

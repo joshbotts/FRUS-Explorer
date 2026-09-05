@@ -577,6 +577,10 @@ struct CollectionItemHTMLRenderer {
         if metadata.includeColophon {
             body += "<footer class=\"colophon\">\n"
             body += "  <p>\(escaped(CollectionColophon.text(for: items)))</p>\n"
+            // PV-1: the sources block travels with the colophon, in all three rich formats.
+            for line in CollectionColophon.sourceLines(for: items) {
+                body += "  <p>\(escaped(line))</p>\n"
+            }
             body += "</footer>\n\n"
         }
 

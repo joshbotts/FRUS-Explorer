@@ -449,6 +449,16 @@ struct QueryMethodAppendix: Sendable, Equatable {
         lines.append("")
         lines.append(String(localized: "appendix.method.heading", defaultValue: "How to read this table"))
         for caveat in caveats { lines.append(caveat) }
+        // PV-1: what these counts were drawn from. A keyword search is the FTS5 index over FRUS's
+        // own text; a Meaning search additionally ran the on-device encoder, which is a different
+        // claim and is the reason the set is derived from the rows rather than fixed.
+        var sources: Set<ProvenanceSource> = [.frusText]
+        if semanticRowCount > 0 { sources.insert(.appModel) }
+        let sourceBlock = ProvenanceStatement.block(for: sources)
+        if !sourceBlock.isEmpty {
+            lines.append("")
+            lines.append(contentsOf: sourceBlock)
+        }
         lines.append("")
         lines.append(Self.corpusAttribution)
         return lines

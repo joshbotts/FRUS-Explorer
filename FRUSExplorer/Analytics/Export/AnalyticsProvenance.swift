@@ -89,6 +89,14 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var corpusStatement: String?
     /// View-specific caveats appended verbatim (e.g. the cross-reference excluded-references note).
     var extraCaveats: [String] = []
+
+    /// What this figure's numbers were drawn from (PV-1).
+    ///
+    /// Defaults to the volumes alone, which is true of most analytics — the counts come from the
+    /// corpus index. A surface joining anything else must say so: the archival family adds nothing
+    /// (it reads authority clusters by identity, all FRUS-derived — see
+    /// `BundledArtifactProvenance`), while a subject or person breakdown does.
+    var sources: Set<ProvenanceSource> = [.frusText]
     /// The caveats an exported *figure* prints on the image, when the full set is too much for a
     /// plate.
     ///
@@ -222,6 +230,11 @@ struct AnalyticsProvenance: Sendable, Equatable {
         lines.append(corpusCaveat)
         if let valueModeCaveat { lines.append(valueModeCaveat) }
         lines.append(contentsOf: extraCaveats)
+        // PV-1: what the figure was drawn from, last, because it qualifies everything above it.
+        // Joining `allCaveats` rather than the CSV preamble alone is deliberate — that is what
+        // carries it onto the plate too, through the same designation filter, so a figure and its
+        // CSV cannot disagree about their sources.
+        lines.append(contentsOf: ProvenanceStatement.lines(for: sources))
         return lines
     }
 
@@ -238,10 +251,16 @@ struct AnalyticsProvenance: Sendable, Equatable {
     ///
     /// Order always follows `allCaveats`, not the designation, so two figures trimmed differently
     /// still read in the same sequence.
+    /// **The sources block survives a trim too (PV-1), for the same reason `corpusCaveat` does.**
+    /// A designation trims *caveats* — qualifications a reader can weigh — where the sources
+    /// sentence is the attribution, and a plate is the artifact most likely to be shared on its
+    /// own, detached from the CSV that would otherwise carry it. A figure whose sources are
+    /// unstated is the exact thing this wave exists to prevent, so a designation cannot drop them.
     var plateCaveatLines: [String] {
         guard let plateCaveats else { return allCaveats }
         let designated = Set(plateCaveats)
-        let kept = allCaveats.filter { designated.contains($0) }
+        let sourceLines = ProvenanceStatement.lines(for: sources)
+        let kept = allCaveats.filter { designated.contains($0) || sourceLines.contains($0) }
         return kept.contains(corpusCaveat) ? kept : [corpusCaveat] + kept
     }
 

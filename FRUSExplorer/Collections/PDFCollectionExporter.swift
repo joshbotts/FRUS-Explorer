@@ -460,8 +460,13 @@ final class PDFCollectionExporter: CollectionExporter {
         // enable it produce exactly the prior page sequence.
         if collection.includeColophon {
             ctx.beginPDFPage(nil)
-            let attr = noteAttributedString(CollectionColophon.text(for: items),
-                                            fontSize: 9, gray: 0.45)
+            // PV-1: the sources block travels with the colophon, in all three rich formats. It
+            // is set with the colophon line as one flow so a long block wraps rather than
+            // overprinting the page number beneath it.
+            let colophonText = ([CollectionColophon.text(for: items)]
+                                + CollectionColophon.sourceLines(for: items))
+                .joined(separator: "\n")
+            let attr = noteAttributedString(colophonText, fontSize: 9, gray: 0.45)
             let h = measureHeight(attr, width: cw)
             draw(attr, in: ctx, rect: CGRect(x: M, y: H - M - h, width: cw, height: h))
             drawPageNumber(ctx: ctx, number: pageNumber)

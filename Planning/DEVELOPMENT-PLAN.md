@@ -11512,3 +11512,42 @@ with both figures, because the wrong drop has the same filename and schema and d
 Three mutations killed: a generator gaining an input, a NARA artifact claiming Tier 1, and an
 artifact dropped from the table. 4,479 tests in 588 suites; macOS builds clean. No CloudKit change,
 no index bump. New files, so xcodegen ran and the schemes were restored.
+
+## Session 2026-09-05b — PV-1: the export sentences (PR #1211)
+
+**The only part of wave PV a reader can cite**, which is why it came before the on-screen chips: a
+historian writing a footnote is reading an exported file, not a screen, and a chip cannot travel
+into a PDF somebody else opens.
+
+**It stayed an S because three seams already existed, each of them already the single source for
+its own renderers.** `AnalyticsProvenance.allCaveats` feeds the CSV method block and the plate;
+`QueryMethodAppendix.preambleLines` feeds the CSV and the Markdown; `CollectionColophon` feeds PDF,
+HTML and DOCX — and that type exists, in its own words, "so HTML, PDF, and DOCX cannot drift",
+which is exactly the W-13 failure the plan warned this row about. Nothing needed a new block shape.
+
+**The source set is DERIVED from the exported items, never declared by the caller**, so an export
+cannot claim a source it did not use or omit one it did. The mapping is per item kind: a document
+or a frozen quotation is the printed record; a `.summaryOnly` body adds the on-device model, and is
+the one case where exported prose is not the record's; an archival-sources block adds NARA *and*
+the Q-3 curated disclosure; a persons index adds the people register; the researcher's own prose
+and their thematic index are their own. A bibliography and a chronology add nothing, being built
+from the documents' own metadata.
+
+**One decision beyond the plan, and it is the one worth arguing.** `plateCaveatLines` filters
+`allCaveats` through a designation, so a trimmed plate would have silently dropped its sources. The
+sources block now survives a designation exactly as `corpusCaveat` does. The reason is that a
+designation trims **caveats** — qualifications a reader weighs — where the sources sentence is
+**attribution**, and a plate is the artifact most likely to be shared on its own, detached from the
+CSV that would otherwise carry it. A figure whose sources are unstated is the thing this wave
+exists to prevent.
+
+**Q-1 honoured**: nothing on screen. The residual and the sources both live in the method block.
+
+Eighteen new strings, all mirrored in `Docs/EditableContent.md` under a section that says what they
+are for. Three mutations killed — skipping the HTML renderer, not flagging a summary body, and
+letting a plate trim drop the sources. **One of those first read as a survivor and was not**: the
+sweep harness let the shell expand `$0` inside the mutation anchor, so the edit never applied as
+intended; applied by hand the test is red. Same escaping trap as the P3b-5 sweep, one layer down.
+
+4,488 tests in 589 suites; macOS builds clean. No CloudKit change, no index bump. New file, so
+xcodegen ran and the schemes were restored.

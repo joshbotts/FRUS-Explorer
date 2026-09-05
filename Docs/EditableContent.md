@@ -6372,6 +6372,139 @@ Editorial Note
 
 <!-- END SOURCE: document.title.editorialNote.unnumbered -->
 
+### Where an export says what it drew on
+
+These are wave PV's export sentences — the part a reader can actually cite, because a chip cannot
+travel into a PDF somebody else opens. Each names a source the exported material used; an export
+prints only the ones that apply to its own contents.
+
+#### provenance.source.frusText
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 104–105 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
+
+FRUS text
+
+<!-- END SOURCE: provenance.source.frusText -->
+
+#### provenance.source.nara
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 106–107 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
+
+FRUS + NARA catalog
+
+<!-- END SOURCE: provenance.source.nara -->
+
+#### provenance.source.ohPeople
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 108–109 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
+
+FRUS + OH people register
+
+<!-- END SOURCE: provenance.source.ohPeople -->
+
+#### provenance.source.ohSubjects
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 111–112 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
+
+FRUS + OH subjects
+
+<!-- END SOURCE: provenance.source.ohSubjects -->
+
+#### provenance.source.stateSchedule
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 114–115 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
+
+FRUS + State Dept. schedule
+
+<!-- END SOURCE: provenance.source.stateSchedule -->
+
+#### provenance.source.wordLists
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 117–118 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
+
+FRUS + this app's word lists
+
+<!-- END SOURCE: provenance.source.wordLists -->
+
+#### provenance.source.model
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 120–121 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
+
+This app's model
+
+<!-- END SOURCE: provenance.source.model -->
+
+#### provenance.source.yourReading
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 122–123 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
+
+Your reading
+
+<!-- END SOURCE: provenance.source.yourReading -->
+
+#### provenance.method.frusText
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 134–135 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
+
+Read from the text and editorial apparatus of the FRUS volumes, and from no other source. Where a value was parsed out of printed prose, this app did the reading.
+
+<!-- END SOURCE: provenance.method.frusText -->
+
+#### provenance.method.joined %@
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 137–138 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
+
+Produced by joining the FRUS volumes to %@. The join is this app's; a record it could not match is absent rather than wrong.
+
+<!-- END SOURCE: provenance.method.joined %@ -->
+
+#### provenance.method.computed
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 141–142 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
+
+Computed by this app rather than read from a source — a model or a scoring rule stands between the volumes and this figure. Cite it as the app's output, not the record's.
+
+<!-- END SOURCE: provenance.method.computed -->
+
+#### provenance.method.yourReading
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 144–145 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
+
+Your own notes, tags and highlights. The app never mixes them into the published text.
+
+<!-- END SOURCE: provenance.method.yourReading -->
+
+#### provenance.partner.nara
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 153–154 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
+
+the National Archives catalog
+
+<!-- END SOURCE: provenance.partner.nara -->
+
+#### provenance.partner.ohPeople
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 156–157 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
+
+the Office of the Historian's people register
+
+<!-- END SOURCE: provenance.partner.ohPeople -->
+
+#### provenance.partner.ohSubjects
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 159–160 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
+
+the Office of the Historian's subject taxonomy
+
+<!-- END SOURCE: provenance.partner.ohSubjects -->
+
+#### provenance.partner.stateSchedule
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 162–163 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
+
+the State Department's decimal classification schedule
+
+<!-- END SOURCE: provenance.partner.stateSchedule -->
+
+#### provenance.curated.disclosure
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 177–178 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
+
+Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.
+
+<!-- END SOURCE: provenance.curated.disclosure -->
+
+#### provenance.block.heading
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceStatement.swift | lines: 34–35 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
+
+Where this came from
+
+<!-- END SOURCE: provenance.block.heading -->
+
+
 #### \(volumes) volume\(volumes == 1 ?
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1314–1315 | key: chronology.agg.volumes.v2 -->
 
