@@ -7,9 +7,11 @@ vacated, when #234's scoring lane was deferred.* Every code claim below was veri
 tree at the stated anchors, not taken from a doc comment.
 
 **One row has moved since writing.** L-0 called `Docs/Agentic-Analysis-Guide.md` v1.1; the guide
-is now **v1.2** (PR #1137, 2026-08-31), which added §14 — the scoping method drawn from three
-measured runs — and §14.11, the archival half, after an audit found all three runs had resolved
-zero record groups and zero NAIDs. A.7's staleness is unaffected and still owed. But **§14.11
+is now at **v1.19** (2026-09-06). v1.2 (PR #1137, 2026-08-31) added §14 — the scoping method
+drawn from three measured runs — and §14.11, the archival half, after an audit found all three runs
+had resolved zero record groups and zero NAIDs. **A.7's staleness is no longer owed**: L-0 shipped
+it on 2026-08-31 (see the row below, which corrected two sites rather than the one this paragraph
+named), and this sentence outlived it. But **§14.11
 strengthens the case for L-8**: the rules a local read-only MCP server would enforce are now
 written down and measured (controls on every scan, a declared counting surface, variant
 expansion, both archival channels resolved and never summed), so that assessment now has a
@@ -21,8 +23,9 @@ byte-identical `(prompt, opts)` key, the model-pin hang, the read-only proof, qu
 a fleet costs. They are in `Planning/Agentic-Harness-Runbook.md` (#1207), each marked measured or
 cited, so the next run does not re-learn them the expensive way.
 
-**Why this document exists.** `Docs/Agentic-Analysis-Guide.md` (v1.1, with its Appendix A on the
-semantic artifacts) documents how an outside AI agent reads `frus.db` and the vector layer. What
+**Why this document exists.** `Docs/Agentic-Analysis-Guide.md` (v1.1 when this was written, at
+**v1.19** today, with its Appendix A on the semantic artifacts) documents how an outside AI agent
+reads `frus.db` and the vector layer. What
 it documents is folklore: the researcher must know the sandbox path, know `.backup` over `cp`,
 know the `rank`-1 integrity form, strip their own notes by hand, and bridge opaque tag ids by
 memory. And the return trip barely exists — an agent's findings come back as text the researcher
@@ -252,6 +255,7 @@ exactly the authority of §12's prose. Only implementations bind.
 | ~~C-0~~ | ~~**Run the falsifier**~~ — **RUN AND JUDGED 2026-08-31**, PR #1152. Verdict: the falsifier substantially FIRES. Full record: `Planning/C0-Falsifier-2026-08-31.md`, evidence at `Planning/c0-falsifier/` | S | — |
 | ~~C-2~~ | ~~**The long-session re-run**~~ — **RUN AND JUDGED 2026-08-31**, PR #1153. **The block does not decay.** Record: `Planning/C2-Long-Session-2026-08-31.md` | S | — |
 | ~~C-1~~ | ~~The read-only CLI~~ — **CLOSED, NOT NEEDED**, on C-2's pre-registered reading | M | — |
+| ~~C-0b~~ | ~~**Re-run the falsifier on the revised block**~~ — **RUN AND JUDGED 2026-09-06**, PR #1231 (#1208). **BLOCK 116/116 = 100%, CONTROL 90/116 = 77.6%** on the block at its current **143 lines**, two fresh questions. Archival discriminator reproduced: BLOCK 4/4 runs and 21 distinct NAIDs, CONTROL 0/4. Record: `Planning/C0b-Falsifier-2026-09-06.md`, evidence at `Planning/c0b-falsifier/` | S | — |
 
 **C-0 ran with a control arm the row did not ask for, and that arm is why the result means
 anything.** Eight scoping passes — two fresh questions × (§12 block pasted | no rules) × 2 — blind-
@@ -288,10 +292,19 @@ Both arms re-run at length, because a drop in the block arm would otherwise be u
 **The manipulation was verified before any verdict was read**: 123 tool calls against C-0's 59
 (2.1×), transcripts 767 KB against 454 KB, and the ranges do not overlap.
 
-|  | block | no rules |
-|---|---|---|
-| **short session** (C-0) | 99% | 84% |
-| **long session** (C-2) | **99%** | 75% |
+**Each cell names the block it measured**, because the block has since grown by a third and a
+table that did not say so would read as three measurements of one instrument:
+
+|  | block | no rules | block measured |
+|---|---|---|---|
+| **short session** (C-0) | 99% | 84% | 110 lines (guide v1.10) |
+| **long session** (C-2) | **99%** | 75% | 110 lines (guide v1.10) |
+| **short session** (C-0b) | **100%** | 77.6% | **143 lines** (guide v1.17) |
+
+**C-0b's own stated limit, carried here rather than re-decided:** it measured 143 lines at C-0
+length only. C-2's survival-across-a-doubled-session test was run on the 110-line block and has not
+been repeated, so the long-session row above describes a shorter instrument than the one shipping.
+Whether to run a C-2b is an owner call and is out of scope for this plan.
 
 **Not one item decayed.** The block arm's single violation is `R1`, the same item on the same
 question as C-0's. Meanwhile the control arm *did* decay, 84% → 75% — which is what makes the
