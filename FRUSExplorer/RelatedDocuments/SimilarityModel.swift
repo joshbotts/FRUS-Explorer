@@ -49,7 +49,10 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     case sharedSubjects
     /// Nearness in the corpus's embedding space (`SemanticVectorsKit`, V-1/V-2 artifacts). A
     /// generator, and the only axis that can reach a document with no archival key and no citation —
-    /// the 46,234 documents whose Related list is empty today, 98.2% of them pre-1900.
+    /// **45,030 of 316,839 documents whose Related list is empty (re-measured 2026-09-06; the
+    /// predicate and the axis's 96.7% reach over them are stated on
+    /// `SemanticSimilarityGenerator`).** This comment previously said 46,234, a figure inherited
+    /// from the lexical-neighbours assessment without the rule that produced it.
     ///
     /// **Ships experimental and opt-in at weight 0.** Owner decision 2026-08-12: the blind panel that
     /// would have graded pre-1900 quality was retired as a gate in favour of tester feedback, so

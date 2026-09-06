@@ -17,9 +17,21 @@ import Foundation
 /// Generates candidates by nearness in the corpus's embedding space.
 ///
 /// This is the axis the whole vector program exists for, and the only one that can reach a document
-/// with no archival key and no citation — measured, **46,234 documents have an empty Related list
-/// today, 98.2% of them pre-1900**. Every other generator needs an editorial or archival hook that
-/// the early corpus does not carry.
+/// with no archival key and no citation. Every other generator needs an editorial or archival hook
+/// that the early corpus does not carry.
+///
+/// **Re-measured 2026-09-06: 45,030 of 316,839 documents, and the predicate matters more than the
+/// number.** The figure this comment used to give — 46,234 — came from the lexical-neighbours
+/// assessment and travelled without the rule that produced it, so it could not be reproduced or
+/// falsified. The rule is: *no row in `document_sources`, and no `cross_references` row on either
+/// side with `is_broken = 0`* (a NULL `target_volume_id` coalesced to the source's). State it
+/// beside the count; a bare number here is what let the stale one survive.
+///
+/// **Coverage against that population, which is the half the design actually asks for:** the
+/// bundled index holds a vector for **43,552 of the 45,030 (96.7%)**; **1,478 are unreachable
+/// because they carry no vector at all**, the corpus being 314,483 vectored rows against 316,839
+/// display rows. Do NOT compare this with the lexical axis's 32,956 — that measures a different
+/// population (source-noted rows only, 264,487) under a stricter served rule.
 ///
 /// ## The pipeline, and why each stage is where it is
 ///
