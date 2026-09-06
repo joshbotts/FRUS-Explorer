@@ -11832,7 +11832,7 @@ new preamble strings replace them in `EditableContent.md`.
 4,533 tests in 594 suites; macOS builds clean. No CloudKit change, no index bump, no new bundled
 resource, no new files.
 
-## Session 2026-09-05h — #1201: the country glosses, and three rules that were losing rows (PR #C1201)
+## Session 2026-09-05h — #1201: the country glosses, and three rules that were losing rows (PR #1222)
 
 The issue reported seven wrong or missing country codes. **Five of them were one bug wearing three
 faces**, and the seventh face was the tell: rows were being LOST, and whatever survived took the
