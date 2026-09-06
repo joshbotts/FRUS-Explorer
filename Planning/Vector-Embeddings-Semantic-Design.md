@@ -362,6 +362,15 @@ sharpenings from the lexical assessment's scar tissue:
    generators' candidates so a semantically-perfect archival neighbor scores high on this axis
    too (the OS-27 §5.1(a) argument). Confirm the ranker invokes a generator in the scoring pass
    rather than assuming disjoint — flagged in OS-27 §5.2, still unverified.
+
+   > **ANSWERED 2026-09-06: the ranker DOES assume disjoint, and the scorer half of this item is
+   > refuted for now.** `RelatedDocumentsEngine.swift:90-92` reads a generator axis's score from
+   > `generatorNormalised` alone, and the scorer loop iterates a separate `scorers` array with no
+   > semantic member. Building the scoring pass is inert at the shipped weight of 0 — the ranker
+   > checks the weight *before* the score — and it cannot reach the 45,030 empty-list documents
+   > that justify the axis, since those have no other-generator candidates to re-score. Recorded
+   > as S-1 in `Plan-Of-Record-2026-09-06.md`, with the three implementation constraints that
+   > should ride with it whenever it is taken.
 3. **The "why related" chip.** Cosine explains nothing, and an unexplained row reads as noise
    (OS-27 §5.2's open question). Recommended answer: compute shared-distinctive-terms **at render
    time** for the ~30 displayed rows only — `documentBodyTextsByKey(forKeys:)` + the keyness
@@ -379,6 +388,18 @@ of pre-1900. That is also where cosine quality is *least proven* — the axis li
 V-0 pre-1900 gate, not on Cold War telegrams, which everything retrieves well.
 
 ### 6.2 Project Leads — **feasible; the OS-27 §5.5 design survives verbatim**
+
+> **CORRECTION 2026-09-06 — "survives verbatim" no longer holds, and the inherited claim it rests
+> on is false in both halves.** OS-27 §5.5 calls the centroid *"cheaper than N per-seed queries,
+> and semantically better"*. **Cheaper:** only for `semanticSimilarity`, which runs zero times at
+> the shipped default weight of 0; the other six contributing axes are anchor-keyed by protocol
+> signature and a centroid cannot absorb them. **Better:** ranking by centroid cosine is a positive
+> rescaling of the per-seed cosine sum the aggregator already computes — measured over the shipped
+> artifacts, the full 314,483-row ordering is *identical* at k=3 and k=40 (max residual 2.1e-14).
+> The real difference is only that `perSeedRelatedLimit` truncates today, and removing that
+> truncation is measurably worse on a heterogeneous project. Funnel recall also degrades with seed
+> count: 10.00/10 at k=1 against 6.33/10 at k=40. Full evidence and the re-scoped row in
+> `Plan-Of-Record-2026-09-06.md` (S-2). The off-index tier below, (a), **shipped** at PR #1235.
 
 Centroid of seed vectors (seedCap 40) → Tier 1/2 top-N → per-seed cosine on the bounded result to
 repopulate `contributingSeedKeys` — generation by centroid, attribution per seed, the §6.2
