@@ -722,13 +722,15 @@ engineering risk this cycle, promote it. That is an owner call.
 15. **Do not try to film the macOS hover magnifier.** Documented uncapturable by every path tried;
     it needs ScreenCaptureKit, which nothing here uses.
 16. **Do not cite `FrameTimeProbe` for a shipping build.** It is file-level `#if DEBUG` and returns
-    `self` in release, while its own doc comment still argues it is *not* DEBUG-gated. That comment
-    is stale. *(Sharpened 2026-08-31: the stale block is `FrameTimeProbe.swift:180-187`, with the
-    purpose statement at `:172-173` — **not** `:27`, which a review cited. And the gating is
-    test-enforced: `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` pins three properties of
-    that file by region and strips comments before matching. So this is a **documentation** defect,
-    not a code one — and anyone who reads the stale comment and "fixes" it by un-gating the probe
-    fails the suite. Fix the comment; leave the gate.)*
+    `self` in release, so its numbers describe an unoptimised SwiftUI build. *(Sharpened 2026-08-31:
+    the stale block was `FrameTimeProbe.swift:180-187`, with the purpose statement at `:172-173` —
+    **not** `:27`, which a review cited. And the gating is test-enforced:
+    `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` pins three properties of that file by
+    region and strips comments before matching. So this was a **documentation** defect, not a code
+    one — and anyone who read the stale comment and "fixed" it by un-gating the probe would fail the
+    suite.)* **The stale comment is corrected as of 2026-09-06**: the block now describes the two
+    gates that exist and keeps the old argument only as the limitation it became. The operative rule
+    is unchanged — do not cite this probe for a shipping build.
 17. **Do not introduce a second duration for "this surface is changing what it is showing you."**
     *(Added 2026-08-31, §10 — refusal 14's rule applied to timing rather than to API.)* The app has
     one such constant, `FRUSTheme.cloudTransformDuration` (1.15 s), already shared across both cloud
