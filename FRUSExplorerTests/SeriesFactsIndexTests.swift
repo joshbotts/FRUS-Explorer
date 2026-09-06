@@ -409,11 +409,18 @@ struct SeriesCatalogFactsTests {
             naId 604801 is the case that disproves containment; if it left the artifact, find \
             another before weakening this test.
             """)
-        #expect(counterexample.startYear == 1963 && counterexample.endYear == 1973)
-        #expect(counterexample.coverageStartYear == 1947 && counterexample.coverageEndYear == 1964)
-        let coverageContainsInclusive =
-            counterexample.coverageStartYear! <= counterexample.startYear!
-            && counterexample.coverageEndYear! >= counterexample.endYear!
+        // `#require`, never `!`: a force-unwrap TRAPS when the field goes missing, and a trap
+        // kills the whole test PROCESS — the sweep's mutation that dropped this pair reported
+        // "Test run with 0 tests in 1 suite passed", which reads as green and takes every
+        // unrelated test in the process down with it.
+        let incStart = try #require(counterexample.startYear)
+        let incEnd = try #require(counterexample.endYear)
+        let covStart = try #require(counterexample.coverageStartYear,
+                                    "naId 604801 lost `cy0` — the projection stopped emitting it")
+        let covEnd = try #require(counterexample.coverageEndYear)
+        #expect(incStart == 1963 && incEnd == 1973)
+        #expect(covStart == 1947 && covEnd == 1964)
+        let coverageContainsInclusive = covStart <= incStart && covEnd >= incEnd
         #expect(!coverageContainsInclusive, """
             Coverage is USUALLY the wider span, which is what makes "prefer coverage" tempting \
             and wrong. Take the union.
