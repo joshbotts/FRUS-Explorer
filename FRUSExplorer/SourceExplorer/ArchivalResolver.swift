@@ -22,6 +22,7 @@ import Foundation
 /// |---|---|---|
 /// | `central-files-index.json` | **1,065** | keyed harvest + the #372 1b offline supplement |
 /// | `volume-sources-index.json` `lots` | 0 | front-matter Sources pass, resolved offline |
+/// | `lot-claimants-index.json` | **123 refused** | offline record-group harvest (#675) |
 ///
 /// Source Explorer already read central-files; these two surfaces read volume-sources, so the
 /// same lot could carry a catalogue link in one place and none in another. Measured over the
@@ -47,6 +48,11 @@ import Foundation
 ///    second branch answers every *lot-less* node from volume-sources' 31 record-group
 ///    headers, and that branch carries **14,187 document rows and 6,373 front-matter nodes**
 ///    — twenty times the lot path's gain. This type never touches it.
+///
+/// ## A third bundle sits in front of both (#1205)
+/// `lot-claimants-index.json` records the lots NARA divided across several series. It is
+/// consulted **before** either map above and its answer is a refusal, never a resolution: where
+/// it names more than one claimant there is no single record to return. See `lotResolution`.
 ///
 /// ## What is deliberately preserved
 /// A citation that names a lot resolves **only** through that lot. An unresolved lot returns
@@ -76,6 +82,8 @@ import Foundation
 ///   1.0 — Session 2026-08-05: #372 / N-5 PR 1 (the repoint)
 ///   1.1 — Session 2026-08-19: #372 item 1 — the seven orphans folded into central-files
 ///   1.2 — Session 2026-08-19: #372 item 1b — +87 lots from the offline harvest supplement
+///   1.3 — Session 2026-09-05: #1205 — a divided lot resolves to nothing rather than to one
+///         of its claimants
 enum ArchivalResolver {
 
     /// The resolution for a **volume front-matter Sources node**: its lot, else its
@@ -100,8 +108,11 @@ enum ArchivalResolver {
                                       entryText: String,
                                       repository: String? = nil,
                                       centralFiles: CentralFilesIndex?,
-                                      volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
-        if let lotHit = lotResolution(lotFile, centralFiles, volumeSources) { return lotHit }
+                                      volumeSources: VolumeSourcesIndex?,
+                                      claimants: LotClaimantsIndex? = nil) -> ArchivalResolution? {
+        if let lotHit = lotResolution(lotFile, centralFiles, volumeSources, claimants) {
+            return lotHit
+        }
         guard (lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty else {
             return nil   // the lot-only rule
         }
@@ -176,21 +187,67 @@ enum ArchivalResolver {
     /// "RG 59" in the row label. It is the hyperlink that is withheld, not the fact.
     static func documentResolution(lotFile: String?,
                                    centralFiles: CentralFilesIndex?,
-                                   volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
-        lotResolution(lotFile, centralFiles, volumeSources)
+                                   volumeSources: VolumeSourcesIndex?,
+                                   claimants: LotClaimantsIndex? = nil) -> ArchivalResolution? {
+        lotResolution(lotFile, centralFiles, volumeSources, claimants)
     }
 
-    /// Central-files first, volume-sources second — the shared lot half of both entry points.
+    /// Central-files first, volume-sources second — the shared lot half of both entry points,
+    /// with the divided-lot refusal in front of both (#1205).
+    ///
+    /// ## Why a divided lot resolves to nothing
+    /// NARA divides a lot file across several series as readily as it consolidates, and a
+    /// `variantControlNumber` on a series **is** that series' assertion that it holds the lot.
+    /// So a divided lot has several correct answers, and `ArchivalResolution` can hold exactly
+    /// one: `title` and `catalogURL` are single non-optional values. There is no honest value to
+    /// return, which is why this declines rather than choosing — the refusal is forced by the
+    /// type, not preferred over an alternative rendering.
+    ///
+    /// Measured on the shipped bundles: **all 123 divided lots also carry a single `naId` in
+    /// `central-files-index.json`**, so before this guard every one of them resolved to a
+    /// confident single series. The picked naId was always *among* the claimants (0 of 123 were
+    /// outside the list), which is the shape #675 named: the defect is an **undisclosed pick**,
+    /// not a wrong record.
+    ///
+    /// Source Explorer has applied this rule since #675 — `SourceExplorerView` and
+    /// `MacSourceExplorerView` both try `LotClaimantsIndex.candidatesOutcome` before the single
+    /// bundled card — and `TripPacketModel.restriction` applies it on the access-status axis,
+    /// where its doc comment records *single-pick … printed one claimant's status as if it were
+    /// the lot's* as a rejected rendering. This resolver was the one lot surface still making
+    /// that move, on the **identity** axis, which is why a trip packet could print "NARA divides
+    /// this lot across 3 series" and a four-field pull-slip line naming one of them on the same
+    /// page.
+    ///
+    /// `claimants(forRawLot:)` folds the citation itself and already returns `nil` for a lot with
+    /// a single claimant, so this is exactly the divided case and never a lot NARA kept whole.
     private static func lotResolution(_ lotFile: String?,
                                       _ centralFiles: CentralFilesIndex?,
-                                      _ volumeSources: VolumeSourcesIndex?) -> ArchivalResolution? {
+                                      _ volumeSources: VolumeSourcesIndex?,
+                                      _ claimants: LotClaimantsIndex?) -> ArchivalResolution? {
         let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !lot.isEmpty else { return nil }
+        // Ahead of BOTH bundles: volume-sources stores one naId per lot for the same reason
+        // central-files does, so answering from the fallback would reintroduce the same pick.
+        if claimants?.claimants(forRawLot: lot) != nil { return nil }
         if let entry = centralFiles?.lotFile(forRawLot: lot) {
             return ArchivalResolution(lotFileEntry: entry)
         }
         // `recordGroup: nil` on purpose — see the note on the lot-only rule above.
         return volumeSources?.resolution(recordGroup: nil, lotFile: lot)
+    }
+
+    /// Whether the bundled claimants index says NARA divided this lot across several series.
+    ///
+    /// Exposed so a surface can say *why* a lot carries no catalogue link — "NARA divides this
+    /// lot across N series" is a fact worth printing, and without this the only signal is the
+    /// same `nil` an unresolvable lot produces. The trip packet reaches the claimants directly
+    /// for its restriction line and does not need this; the Collections export block does.
+    static func dividedLotClaimants(lotFile: String?,
+                                    claimants: LotClaimantsIndex?
+                                      = LotClaimantsIndexStore.shared) -> [LotClaimant]? {
+        let lot = lotFile?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !lot.isEmpty else { return nil }
+        return claimants?.claimants(forRawLot: lot)
     }
 
     /// ``frontMatterResolution(recordGroup:lotFile:centralFiles:volumeSources:)`` against the
@@ -201,7 +258,8 @@ enum ArchivalResolver {
         frontMatterResolution(recordGroup: recordGroup, lotFile: lotFile, entryText: entryText,
                               repository: repository,
                               centralFiles: CentralFilesIndexStore.shared,
-                              volumeSources: VolumeSourcesIndexStore.shared)
+                              volumeSources: VolumeSourcesIndexStore.shared,
+                              claimants: LotClaimantsIndexStore.shared)
     }
 
     /// ``documentResolution(lotFile:centralFiles:volumeSources:)`` against the app's bundled
@@ -209,7 +267,8 @@ enum ArchivalResolver {
     static func documentResolution(lotFile: String?) -> ArchivalResolution? {
         documentResolution(lotFile: lotFile,
                            centralFiles: CentralFilesIndexStore.shared,
-                           volumeSources: VolumeSourcesIndexStore.shared)
+                           volumeSources: VolumeSourcesIndexStore.shared,
+                           claimants: LotClaimantsIndexStore.shared)
     }
 }
 

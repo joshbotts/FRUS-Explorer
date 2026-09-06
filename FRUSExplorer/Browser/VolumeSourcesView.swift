@@ -304,7 +304,27 @@ struct VolumeSourcesView: View {
     /// The series/file-unit distinction goes through `displaySeriesTitle`, so the two surfaces
     /// cannot diverge in labelling.
     @ViewBuilder
-    private func resolutionEnrichment(_ resolution: ArchivalResolution?) -> some View {
+    private func resolutionEnrichment(_ resolution: ArchivalResolution?,
+                                      lotFile: String?) -> some View {
+        // #1205: where NARA divided the lot, `ArchivalResolver` returns nothing rather than one
+        // of the claiming series — so this row would otherwise lose its catalogue link and its
+        // entry number with no stated reason. Say the reason. The claimants themselves are one
+        // hop away, in `CollectionDetailView`'s divided-at-NARA section, which the row's
+        // Collection button already opens; naming them again here would duplicate that list on
+        // every row of every volume citing the lot.
+        //
+        // This matters most on THIS surface: the caption it replaces is `HMS/MLR Entry`, the
+        // identifier NARA staff ask a researcher to quote when requesting records. Measured on
+        // the shipped artifacts, 104 of the 123 divided lots appear as front-matter Sources
+        // rows — `62 D 430` in 59 volumes, where NARA's four claiming series carry four
+        // different entry numbers.
+        if resolution == nil, let claimants = ArchivalResolver.dividedLotClaimants(lotFile: lotFile) {
+            Text(String(format: String(localized: "browser.sources.lotFile.divided %lld",
+                                       defaultValue: "NARA divides this lot across %lld series — open Collection to see them."),
+                        claimants.count))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
         // #351: `resolution(recordGroup:lotFile:)` never returns a fileUnit-level lot (a
         // wrong-collection mis-resolution), so any resolution reaching here is trustworthy and
         // its enclosing-series enrichment is safe to show.
@@ -437,7 +457,7 @@ struct VolumeSourcesView: View {
             }
             // #322: the #315 archival identifiers (file series + HMS/MLR entry number) for a
             // resolved lot, so this surface shows the same detail as Source Explorer.
-            resolutionEnrichment(resolution)
+            resolutionEnrichment(resolution, lotFile: entry.lotFile)
             if let authority {
                 // The upgraded cross-volume affordance: the full Collection detail
                 // (aliases, catalog link, S5 local counts, citing volumes, sub-series).
