@@ -11928,6 +11928,30 @@ reader would go today.
 Parse-output change, so `currentDateIndexVersion` goes 47 → 48 in the same commit. Two mutations
 killed. 4,535 tests in 594 suites with zero restarts; 1,284 SPM tests; macOS builds clean.
 
+## Session 2026-09-05j — The guide caveats the last two fixes made false (PR #1224)
+
+Closing a defect makes the documentation that warned about it wrong, and both #1201 and #1206 said
+in their own text that the guide carried a dated caveat "until it closes". They closed; the caveats
+did not.
+
+**§14's `decimal-class-labels.json` row** described a country table that no longer exists: `60f` as
+*Ruthenia*, `47h` as *Cook Islands*, five codes absent, "233 documents unnameable, 109 named wrong",
+and a right-hand column reading 198 countries. It now records the fixed state — 217 codes, the two
+wrong glosses corrected, three of the five absences recovered — **and keeps the standing rule**,
+because `42` Canada and `74` Bulgaria are still absent by design and a reader can still meet a
+silent key.
+
+**§6.5** cited the two `75 D 229` rows as a live example of a secondary citation captured as a
+document's source. They are fixed and the lot is three documents, not five. The caveat now says what
+the fix does **not** cover, which is the part a reader needs: 1,927 notes name a lot only outside the
+leading sentence and only 63 were in the fixed class — most of the rest are the legitimate 1961–63
+abstract shape, so the advice to read `raw_text` stands on the residue rather than on the two rows.
+
+Both edits keep the guidance and replace the evidence. A caveat whose example has been fixed teaches
+a reader to discount the caveat.
+
+Guide to v1.13. 138 tests across the three suites that read the guide's bytes; no code change.
+
 ## Session 2026-09-05k — #1206 was not fixed: a fourth extraction site, and a test that read a label (PR #1225)
 
 **The fix merged in #1223 did not fix the reported documents, and my own test hid it.** A recon pass

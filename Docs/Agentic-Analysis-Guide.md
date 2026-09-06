@@ -733,10 +733,14 @@ ORDER BY docs DESC;
 Label the output "citation form", not "era". For a repository breakdown use `repository` and
 `record_group`; for lot-file work join on `lot_file_norm`, never on the raw `lot_file` spelling,
 which varies (`64 D 199`, `64D199`, `64 D199`).
-`lot_file_norm` is a parse, not an assertion: the parser reads the whole note, so a lot named only
-as the location of *another copy* is stored as the document's own (two of the five `75 D 229` rows
-are Nixon Presidential Materials notes whose lot appears in an "and in … Lot 75 D 229" clause —
-#1206), so read `raw_text` for any lot you publish a shelf for.
+`lot_file_norm` is a parse, not an assertion, and the parser bounds — but does not eliminate — the
+way a secondary citation can be captured as the document's own. The two Nixon Presidential Materials
+rows that made `75 D 229` look like five documents are fixed (#1206; it is three now), because a
+lead naming those materials is treated as having already claimed the document. **The class is
+narrower, not closed**: measured over the corpus, 13,287 source notes name a lot and **1,927 name it
+only outside the leading sentence**, of which the fix covers 63. Most of the rest are legitimate —
+the 1961–63 abstract notes put their citation in the tail — so no rule refuses them wholesale. Read
+`raw_text` for any lot you publish a shelf for.
 
 ### 6.6 Citation graph
 
@@ -1805,7 +1809,7 @@ The stack, and the question each artifact answers:
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
 | `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
 | `volume-sources-index.json` | what the editors say they consulted, per volume | 3,412 rows, 251 volumes |
-| `decimal-class-labels.json` | what `812.6363` means, compositionally. **ONE schedule, 1910–49**, and the artifact's provenance says a key resolves only against its own era: run a post-1950 key through it and you get a plausible WRONG gloss (`411` = *Claims*; `48` = *British Africa* where the editors gloss `411.48` as Poland), not a miss — gloss 1950–63 keys from `volume_sources` (§4.4). And its 1910–49 country table is wrong or empty on codes FRUS files commerce under (build of 2026-08-11): `60f` = *Ruthenia* (FRUS: Czechoslovakia, 82 documents on `611.60F31`), `47h` = *Cook Islands* (New Zealand, 27); `42` Canada, `43` Newfoundland, `54` Switzerland, `74` Bulgaria, `11b` Philippines absent — 233 documents unnameable, 109 named wrong. Keys are lowercase (`60f`; `document_sources` carries `60F`). A gloss table that answers wrongly is worse than one that fails: before publishing a country name from any bundled table, read one document header filed under the key. [Repo issue: the country table.] | 1910–49 schedule; 9 classes, 198 countries, 693 suffixes |
+| `decimal-class-labels.json` | what `812.6363` means, compositionally. **ONE schedule, 1910–49**, and the artifact's provenance says a key resolves only against its own era: run a post-1950 key through it and you get a plausible WRONG gloss (`411` = *Claims*; `48` = *British Africa* where the editors gloss `411.48` as Poland), not a miss — gloss 1950–63 keys from `volume_sources` (§4.4). Its 1910–49 country table **was** wrong or empty on several codes FRUS files commerce under; the build of 2026-09-05 fixed most of them (#1201). `60f` now glosses *Czechoslovakia* (was *Ruthenia*; 82 documents on `611.60F31`), `47h` *New Zealand* (was *Cook Islands*), and `43` Newfoundland, `54` Switzerland and `11b` Philippines are present where they were absent — 198 → **217** codes, with 19 others recovered and none lost. **`42` Canada and `74` Bulgaria are still absent, deliberately**: their pages in NARA's scan emit names and codes as separate blocks, so the document settles no pairing, and the table stays silent rather than guessing. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 1910–49 schedule; 9 classes, 217 countries, 693 suffixes |
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,792 edges, 4,907 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
@@ -2479,6 +2483,15 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.13 — 2026-09-05: two caveats updated because the defects behind them closed. **§14's
+  `decimal-class-labels.json` row**: the 1910–49 country table went 198 → 217 codes (#1201), `60f`
+  now reads *Czechoslovakia* and `47h` *New Zealand*, and Newfoundland, Switzerland and the
+  Philippines are present — but `42` Canada and `74` Bulgaria remain absent by design, so the
+  read-one-header rule stands. **§6.5**: the two `75 D 229` rows are fixed (#1206) and the lot is
+  three documents, not five; the caveat now states what the fix does NOT cover — 1,927 notes name a
+  lot only outside the leading sentence and only 63 were in the fixed class, most of the remainder
+  being the legitimate 1961–63 abstract shape.
 
 - 1.12 — 2026-09-05: §6.5's stated reason corrected. v1.11 said `lot_file_norm` is populated on
   rows "whose note names no lot at all"; the two `75 D 229` rows it had in mind do name the lot,
