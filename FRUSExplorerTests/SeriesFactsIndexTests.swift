@@ -78,7 +78,7 @@ struct SeriesFactsIndexTests {
             series-facts-index.json failed to load from the app bundle. If this is a fresh \
             resource, it needs `xcodegen generate` + the scheme restore to be enrolled.
             """)
-        #expect(index.schemaVersion == 2, "schema 2 adds the #663 catalog facts")
+        #expect(index.schemaVersion == 3, "schema 3 adds the #1202 coverage pair and legend")
         #expect(index.byNaId.count >= 600, "series with a creator: \(index.byNaId.count)")
         #expect(index.headings.count >= 340)
         // The largest single creator among app-held series, measured 2026-08-10 on 57 of them.
@@ -288,5 +288,135 @@ struct SeriesCatalogFactsTests {
         let i = fixture(headings: ["A."], rows: #"{"1":{"c":0}}"#)
         #expect(i.facts(forNaId: "1") == nil,
                 "an all-nil Facts would render a heading with nothing under it")
+    }
+
+    // MARK: - The legend, and the coverage pair (#1202, schema 3)
+
+    /// The shipped artifact's raw JSON — the legend is a contract for consumers who hold only the
+    /// file, so it is read the way they read it rather than through the app's decoder, which does
+    /// not carry it.
+    private func rawArtifact() throws -> [String: Any] {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "FRUSExplorer/Resources/series-facts-index.json")
+        return try #require(try JSONSerialization.jsonObject(with: try Data(contentsOf: url))
+                            as? [String: Any])
+    }
+
+    /// Every key a row actually uses is in the legend, and every vocabulary it names exists.
+    @Test("The legend accounts for every wire key in use, and names only real vocabularies")
+    func legendIsComplete() throws {
+        let artifact = try rawArtifact()
+        #expect(artifact["schemaVersion"] as? Int == 3)
+        let legend = try #require(artifact["legend"] as? [String: Any])
+        let keys = try #require(legend["keys"] as? [String: [String: Any]])
+        let rows = try #require(artifact["byNaId"] as? [String: [String: Any]])
+
+        let used = Set(rows.values.flatMap(\.keys))
+        let missing = used.subtracting(keys.keys).sorted()
+        #expect(missing.isEmpty, """
+            \(missing) appear in rows with no legend entry. An unlegended key is exactly the state \
+            #1202 exists to end — a reader has to guess, and the run's own plan document guessed \
+            wrong.
+            """)
+        // Not the converse as an equality: a legend entry for a key no row happens to carry is
+        // documentation, not rot. But it must still name a vocabulary that exists.
+        for (key, entry) in keys {
+            guard let into = entry["into"] as? String else { continue }
+            #expect(artifact[into] is [String], """
+                legend key \(key) dereferences through `\(into)`, which is not a top-level array \
+                in this artifact.
+                """)
+        }
+    }
+
+    /// **The legend's `into` claims are checked against where the app actually looks.**
+    ///
+    /// This is the assertion that makes the legend worth shipping. The failure #1202 reports was
+    /// not "I could not guess what `as` means" — it was taking `as` through `restrictions` and
+    /// getting a plausible wrong value on every row. The pairing is asymmetric: `as` and `us`
+    /// BOTH resolve through `statuses`, while `ar` uses `restrictions` and `ur` uses
+    /// `useRestrictions`, and nothing in the names says so.
+    ///
+    /// Every vocabulary here holds distinct sentinel strings, so a wrong dereference cannot
+    /// coincide with a right one.
+    @Test("Each legend entry names the vocabulary the app really resolves that key through")
+    func legendMatchesTheAppsDereference() throws {
+        let index = fixture(
+            headings: ["H0"],
+            rows: #"{"1":{"c":0,"as":0,"us":1,"ar":[0],"ur":[0],"ru":0,"fa":[0],"x":"E0","#
+                + #""y0":1900,"y1":1910,"cy0":1890,"cy1":1920}}"#,
+            statuses: ["S0", "S1"], restrictions: ["R0"], useRestrictions: ["U0"],
+            referenceUnits: ["F0"], findingAidTypes: ["A0"])
+        let facts = try #require(index.facts(forNaId: "1"))
+
+        // `as` and `us` through `statuses` — and `us` is the trap, because its name pairs it with
+        // `useRestrictions`. Distinct indices, so resolving `us` through the wrong array would
+        // read out of range and yield nil.
+        #expect(facts.accessStatus == "S0")
+        #expect(facts.useStatus == "S1", """
+            `us` must resolve through `statuses`, not `useRestrictions`. This is the exact \
+            misreading #1202 reports.
+            """)
+        #expect(facts.accessRestrictions == ["R0"])
+        #expect(facts.useRestrictions == ["U0"])
+        #expect(facts.referenceUnit == "F0")
+        #expect(facts.findingAids == ["A0"])
+        #expect(facts.extent == "E0")
+        #expect(index.creator(forNaId: "1") == "H0")
+
+        // Now assert the legend SAYS all of that. Driving the decoder alone would prove the app
+        // correct and leave the legend free to lie.
+        let keys = try #require((try rawArtifact()["legend"] as? [String: Any])?["keys"]
+                                as? [String: [String: Any]])
+        let expected: [String: (field: String, into: String?)] = [
+            "c": ("creator", "headings"), "p": ("predecessors", "headings"),
+            "as": ("accessStatus", "statuses"), "us": ("useStatus", "statuses"),
+            "ar": ("accessRestrictions", "restrictions"),
+            "ur": ("useRestrictions", "useRestrictions"),
+            "ru": ("referenceUnit", "referenceUnits"),
+            "fa": ("findingAids", "findingAidTypes"),
+            "x": ("extent", nil), "y0": ("inclusiveStartYear", nil),
+            "y1": ("inclusiveEndYear", nil), "cy0": ("coverageStartYear", nil),
+            "cy1": ("coverageEndYear", nil),
+        ]
+        for (key, want) in expected {
+            let got = try #require(keys[key], "legend has no entry for `\(key)`")
+            #expect(got["field"] as? String == want.field, "legend field for `\(key)`")
+            #expect(got["into"] as? String == want.into, "legend vocabulary for `\(key)`")
+        }
+        #expect(Set(keys.keys) == Set(expected.keys), "legend keys drifted from the schema")
+    }
+
+    /// The coverage pair ships, is additive, and does NOT contain the inclusive pair.
+    ///
+    /// The containment point is the one a consumer gets wrong. `naId 604801` is inclusive
+    /// 1963–1973 and coverage 1947–1964 — neither contains the other — so a date screen must take
+    /// the UNION. Measured over the commercial-diplomacy run's 93 lot resolutions, the union
+    /// fails 3 (the figure the guide's §14.11 rule 3 states), preferring coverage fails 4 by
+    /// inventing a failure on exactly this series, and the inclusive pair alone fails 6.
+    @Test("The coverage pair ships beside the inclusive one, and neither contains the other")
+    func coveragePairShipsAndDoesNotContain() throws {
+        let index = try shipped()
+        let withCoverage = index.byNaId.values.filter { $0.coverageStartYear != nil }
+        #expect(withCoverage.count >= 150, """
+            NARA publishes a coverage pair for a minority of series — 173 of 695 when this \
+            shipped. A collapse to near zero means the harvest field stopped decoding.
+            """)
+        #expect(index.byNaId.count == 695, "row count must not move: this change is additive")
+
+        let counterexample = try #require(index.byNaId["604801"], """
+            naId 604801 is the case that disproves containment; if it left the artifact, find \
+            another before weakening this test.
+            """)
+        #expect(counterexample.startYear == 1963 && counterexample.endYear == 1973)
+        #expect(counterexample.coverageStartYear == 1947 && counterexample.coverageEndYear == 1964)
+        let coverageContainsInclusive =
+            counterexample.coverageStartYear! <= counterexample.startYear!
+            && counterexample.coverageEndYear! >= counterexample.endYear!
+        #expect(!coverageContainsInclusive, """
+            Coverage is USUALLY the wider span, which is what makes "prefer coverage" tempting \
+            and wrong. Take the union.
+            """)
     }
 }

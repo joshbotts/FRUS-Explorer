@@ -85,6 +85,8 @@ public enum SeriesFactsIndexRunner {
         public var referenceUnits: [String]
         /// Finding-aid type vocabulary.
         public var findingAidTypes: [String]
+        /// What the one-letter row keys mean and which vocabulary each resolves through (#1202).
+        public var legend: Legend
     }
 
     /// One series' creators and NARA's own catalogue facts about it.
@@ -111,9 +113,25 @@ public enum SeriesFactsIndexRunner {
         public var referenceUnit: Int?
         /// Finding-aid types, as indices into `findingAidTypes`.
         public var findingAids: [Int]?
-        /// Coverage years as NARA states them.
+        /// NARA's **inclusive** start year — the NARROWER of the two spans it publishes.
         public var startYear: Int?
+        /// NARA's inclusive end year.
         public var endYear: Int?
+        /// NARA's **coverage** start year, where it publishes one (#1202).
+        ///
+        /// A date screen wants BOTH pairs, and must take their **union**. Measured over the
+        /// 4,449 RG 59 series in the harvest, 1,155 publish a coverage pair; against their own
+        /// inclusive pair coverage starts EARLIER in 880, the same year in 274, and LATER in
+        /// exactly **1**. Worse for a naive rule, **neither pair contains the other**: naId
+        /// 604801 is inclusive 1963-1973 and coverage 1947-1964.
+        ///
+        /// So "prefer coverage where present" is WRONG, and measurably: run over the
+        /// commercial-diplomacy run's 93 lot resolutions, the union fails 3 — the number the
+        /// guide's rule 3 states — while preferring coverage fails 4, inventing a failure on
+        /// 604801, and the inclusive pair alone fails 6.
+        public var coverageStartYear: Int?
+        /// NARA's coverage end year, where published.
+        public var coverageEndYear: Int?
 
         enum CodingKeys: String, CodingKey {
             case creator = "c"
@@ -127,6 +145,91 @@ public enum SeriesFactsIndexRunner {
             case findingAids = "fa"
             case startYear = "y0"
             case endYear = "y1"
+            case coverageStartYear = "cy0"
+            case coverageEndYear = "cy1"
+        }
+    }
+
+    /// What a `byNaId` row's one-letter keys mean, and — the part that matters — which vocabulary
+    /// each index dereferences through (#1202).
+    ///
+    /// ## Why the vocabulary, not just the field name
+    /// The observed failure was not "I could not guess what `as` stands for". It was taking `as`
+    /// through `restrictions` and getting a plausible wrong value on every row. The key names
+    /// invite exactly that, because the pairing is **asymmetric**: `as` and `us` BOTH dereference
+    /// through `statuses`, while `ar` goes through `restrictions` and `ur` through
+    /// `useRestrictions`. Nothing in the names says so, and the run's own plan document had the
+    /// table wrong until a verifier checked all 695 rows against the Swift source.
+    ///
+    /// ## A legend is not the advisory trap #1204 refused
+    /// An era gate can be ignored and the consumer still produces output. A one-letter key
+    /// **cannot** be resolved without consulting something — the only question is whether that
+    /// something ships in the file or has to be found in a Swift file the reader may not have. It
+    /// is not a rule the reader must remember to apply; it is the answer to a question they are
+    /// already forced to ask.
+    public struct Legend: Codable, Sendable, Equatable {
+        /// How to read a row, for someone who reaches this block before any documentation.
+        public var note: String
+        /// Wire key → what it is and how to resolve it.
+        public var keys: [String: Key]
+
+        /// One wire key's meaning.
+        public struct Key: Codable, Sendable, Equatable {
+            /// The field name, matching the Swift property the app decodes into.
+            public var field: String
+            /// `index`, `indexList`, `string` or `year`.
+            public var kind: String
+            /// The TOP-LEVEL array an `index`/`indexList` dereferences through. `nil` for a
+            /// literal. Naming the wrong one is the documented failure, so it is stated per key
+            /// rather than left to the reader to infer from the field name.
+            public var into: String?
+
+            /// Creates a legend entry.
+            public init(field: String, kind: String, into: String? = nil) {
+                self.field = field
+                self.kind = kind
+                self.into = into
+            }
+        }
+
+        /// The legend for the schema this generator writes.
+        ///
+        /// Declared here beside `Entry.CodingKeys` so the two are edited together, and pinned
+        /// against the app's decoder by `SeriesFactsIndexTests` so they cannot drift apart.
+        public static let current = Legend(
+            note: "Each `byNaId` row uses one-letter keys. `kind: index`/`indexList` values are "
+                + "offsets into the TOP-LEVEL array named by `into` — note that `as` and `us` "
+                + "share `statuses`, while `ar` uses `restrictions` and `ur` uses "
+                + "`useRestrictions`; the names do not tell you that. `y0`/`y1` are NARA's "
+                + "INCLUSIVE dates and `cy0`/`cy1` its COVERAGE dates, which it publishes for "
+                + "some series only. NEITHER PAIR CONTAINS THE OTHER: naId 604801 is inclusive "
+                + "1963-1973 and coverage 1947-1964, and across 1,155 RG 59 series carrying both, "
+                + "coverage starts earlier in 880, the same year in 274 and LATER in 1. So a date "
+                + "screen must take the UNION - min(y0,cy0) to max(y1,cy1) - not whichever pair "
+                + "looks wider and not coverage-in-preference-to-inclusive. Measured on the "
+                + "commercial-diplomacy run's 93 lot resolutions: the union fails 3, preferring "
+                + "coverage fails 4 (it invents a failure on 604801), and the inclusive pair "
+                + "alone fails 6.",
+            keys: [
+                "c": .init(field: "creator", kind: "index", into: "headings"),
+                "p": .init(field: "predecessors", kind: "indexList", into: "headings"),
+                "as": .init(field: "accessStatus", kind: "index", into: "statuses"),
+                "ar": .init(field: "accessRestrictions", kind: "indexList", into: "restrictions"),
+                "us": .init(field: "useStatus", kind: "index", into: "statuses"),
+                "ur": .init(field: "useRestrictions", kind: "indexList", into: "useRestrictions"),
+                "x": .init(field: "extent", kind: "string"),
+                "ru": .init(field: "referenceUnit", kind: "index", into: "referenceUnits"),
+                "fa": .init(field: "findingAids", kind: "indexList", into: "findingAidTypes"),
+                "y0": .init(field: "inclusiveStartYear", kind: "year"),
+                "y1": .init(field: "inclusiveEndYear", kind: "year"),
+                "cy0": .init(field: "coverageStartYear", kind: "year"),
+                "cy1": .init(field: "coverageEndYear", kind: "year"),
+            ])
+
+        /// Creates a legend.
+        public init(note: String, keys: [String: Key]) {
+            self.note = note
+            self.keys = keys
         }
     }
 
@@ -230,7 +333,9 @@ public enum SeriesFactsIndexRunner {
                 findingAids: (facts?.findingAids).flatMap {
                     $0.isEmpty ? nil : $0.map { findingAidTypes.index($0) }.sorted() },
                 startYear: facts?.startYear,
-                endYear: facts?.endYear)
+                endYear: facts?.endYear,
+                coverageStartYear: facts?.coverageStartYear,
+                coverageEndYear: facts?.coverageEndYear)
         }
         return (rows, statuses.values, restrictions.values, useRestrictions.values,
                 referenceUnits.values, findingAidTypes.values)
@@ -366,12 +471,15 @@ public enum SeriesFactsIndexRunner {
         let referenceUnits = built.referenceUnits
         let findingAidTypes = built.findingAidTypes
 
-        let index = Index(schemaVersion: 2, generated: generated,
+        // Schema 3 (#1202): the coverage pair beside the inclusive one, and a legend for the
+        // one-letter row keys.
+        let index = Index(schemaVersion: 3, generated: generated,
                           headings: vocabulary, byNaId: rows,
                           statuses: statuses, restrictions: restrictions,
                           useRestrictions: useRestrictions,
                           referenceUnits: referenceUnits,
-                          findingAidTypes: findingAidTypes)
+                          findingAidTypes: findingAidTypes,
+                          legend: .current)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         let data = try encoder.encode(index)
