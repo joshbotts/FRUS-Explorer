@@ -471,7 +471,7 @@ that whole array to a single `Data` before writing — for RG 59 that is 236,480
 completed in 8 minutes here, but it would swap or be killed on a 16 GB machine, and `DEPTH=all` would
 not finish at all. **Streaming the shard write is the fix and has not been done.**
 
-#### One real gap: 37 file units, all in one series
+#### The “37 file units” gap: a NAID-counting artifact, resolved
 
 RG 59 reports `fileUnitCountDelta = −37`. It is not spread thin — **1,467 of its 1,468 counted series
 match NARA exactly**, and the entire shortfall sits in series **654171, "Numerical Files"** (the
@@ -483,10 +483,33 @@ match NARA exactly**, and the entire shortfall sits in series **654171, "Numeric
 | this harvest | `recordGroupNumber=59` + `levelOfDescription=fileUnit` | 1,245 |
 | `central-files-index.json` (June) | `ancestorNaId=654171` + `availableOnline=true` | 1,261 |
 
-The *narrower* digitized-only query found 20 more than the record-group filter did, so the filter appears
-to under-return for this series — not restricted records, and not a page boundary (37 is no multiple of
-the page size, and the final page was full-ish at 230). Unresolved, 0.016% of the corpus, and confined to
-a series that already has independent coverage in this repo.
+**RESOLVED 2026-09-06, and the framing above is wrong in shape.** All three counts still reproduce
+exactly (1,282 / 1,245 / 1,261), but the two harvested sets are **not nested**, so "the filter
+under-returns" cannot be the explanation:
+
+| | count |
+|---|---|
+| in the index, not in the harvest | **43** |
+| in the harvest, not in the index | **27** |
+| union | **1,288** — *six more than NARA's own 1,282* |
+
+A union that overshoots NARA's own `fileUnitCount` rules out a simple missing-records story. The
+cause is that **NARA describes the same physical roll under several NAIDs**, and both sources
+contain such repeats:
+
+| | rows | distinct titles | rows attributable to a repeated title |
+|---|---|---|---|
+| `central-files-index.json` | 1,261 | 1,155 | 106 |
+| this harvest | 1,245 | 1,179 | 66 |
+
+Four rows share the title `Numerical File: 3217/260 – 3221`; four more share `3222-3247`. **Counting
+NAIDs is not counting rolls**, and by distinct title the record-group filter returns *more* (1,179)
+than the digitized-only query (1,155) — the reverse of the sentence this replaces.
+
+So the −37 is a NAID-counting artifact across two snapshots of a series NARA re-describes, not a
+gap in coverage. Nothing is missing that a re-harvest would recover, and the delta will move again
+whenever NARA re-describes another roll. **Do not chase it**; if the number matters for a
+particular question, count distinct titles and say so.
 
 ### Later — file units for chosen record groups
 
