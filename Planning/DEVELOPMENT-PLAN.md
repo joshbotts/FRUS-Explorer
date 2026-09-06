@@ -12032,7 +12032,7 @@ not this one.
 Five mutations killed, each by a distinct named control. 4,543 tests in 594 suites; macOS builds
 clean. No CloudKit change, no index-version bump, no new files.
 
-## Session 2026-09-06a — #1204: the label table states its own era contract (PR #TBD)
+## Session 2026-09-06a — #1204: the label table states its own era contract (PR #1227)
 
 `decimal-class-labels.json` ships one schedule, 1910–49, and its `provenance` string has said in
 words since #828 that a key resolves only against the schedule governing its own era. That did not
