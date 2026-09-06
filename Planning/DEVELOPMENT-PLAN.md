@@ -12229,7 +12229,7 @@ Four mutations killed, two of them by exactly one control each. New bundled reso
 generate` + scheme restore: 6 insertions, no build setting touched. Guide → 1.17. No index-version
 bump — which is the point of shipping it as data.
 
-## Session 2026-09-06e — #1208: the revised house-rules block re-measured, and declared the instrument (PR #TBD)
+## Session 2026-09-06e — #1208: the revised house-rules block re-measured, and declared the instrument (PR #1231)
 
 C-0's design re-run against §12's block at its **current 143 lines** — not the 134 #1208 names,
 because #1204 and #1203 added nine more while the issue sat open, and the guide's own caveat still
