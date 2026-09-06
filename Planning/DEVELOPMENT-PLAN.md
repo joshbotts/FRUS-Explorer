@@ -11928,7 +11928,7 @@ reader would go today.
 Parse-output change, so `currentDateIndexVersion` goes 47 → 48 in the same commit. Two mutations
 killed. 4,535 tests in 594 suites with zero restarts; 1,284 SPM tests; macOS builds clean.
 
-## Session 2026-09-05k — #1206 was not fixed: a fourth extraction site, and a test that read a label (PR #RESID)
+## Session 2026-09-05k — #1206 was not fixed: a fourth extraction site, and a test that read a label (PR #1225)
 
 **The fix merged in #1223 did not fix the reported documents, and my own test hid it.** A recon pass
 launched before that work returned afterwards and said so; checking it directly, `storedLot(d11)`
