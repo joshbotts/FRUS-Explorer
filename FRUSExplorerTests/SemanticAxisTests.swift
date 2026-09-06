@@ -194,9 +194,15 @@ struct SemanticAxisTests {
         // case failing both at once would tell us nothing about either.
         #expect(!RelatedDocumentsEngine.runsOffIndexScan(includeOffIndexLeads: false, weights: raised))
 
-        // The gate must be "skip an EXPERIMENTAL axis at zero", not "skip everything at zero":
-        // without this the whole related model could be disabled and the test above would pass.
-        #expect(RelatedDocumentsEngine.runsGenerator(.archivalProvenance, at: zero))
+        // The gate must be "skip an EXPERIMENTAL axis at zero", not "skip everything at zero".
+        // **Every axis has to be at zero for this to mean anything** — an earlier version of this
+        // line zeroed only the semantic axis and left archival at its non-zero default, so
+        // `weights[axis] > 0` alone satisfied it and a mutation reducing the gate to exactly that
+        // passed all fifteen tests.
+        var allZero = AxisWeights.default
+        for axis in SimilarityAxis.allCases { allZero[axis] = 0 }
+        #expect(RelatedDocumentsEngine.runsGenerator(.archivalProvenance, at: allZero))
+        #expect(!RelatedDocumentsEngine.runsGenerator(.semanticSimilarity, at: allZero))
 
         // The axis enters the ranker self-normalised (#643) and ships at 0 — the two facts the
         // old source scan was reaching for.
