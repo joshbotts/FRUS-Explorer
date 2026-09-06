@@ -11792,7 +11792,7 @@ and cleared it both times.
 
 No CloudKit change, no index bump, no new bundled resource, no new files.
 
-## Session 2026-09-05g — Facets over the semantic result set (PR #SEMFACETS)
+## Session 2026-09-05g — Facets over the semantic result set (PR #1221)
 
 The feature #1220 deferred, and it turned out to be one branch.
 
