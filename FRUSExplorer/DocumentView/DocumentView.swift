@@ -298,7 +298,10 @@ struct DocumentView: View {
     /// transient "Add Note to Highlight" row should appear (its dot was just tapped on the floating
     /// selection bar); cleared once the linked note is composed.
     @State private var pendingHighlightLink: UUID? = nil
-    /// WebKit selection range — `(start, end)` Unicode-scalar offsets.
+    /// WebKit selection range — `(start, end)` UTF-16 offsets (the
+    /// `DocumentHighlight.startOffset` coordinate space; `frus-selection.js` counts a JS string's
+    /// `length`, which is UTF-16 code units). This comment said Unicode scalar; the three units
+    /// agree on every BMP character, which is what kept the mismatch invisible.
     /// Set by `onSelectionChanged` from `FRUSDocumentWebView`.
     @State private var webKitSelectionRange: (Int, Int)? = nil
     /// Raw selected text from the WebKit renderer. Pre-populates the NARA lookup field.

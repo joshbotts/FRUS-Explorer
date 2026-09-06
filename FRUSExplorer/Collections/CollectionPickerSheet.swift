@@ -33,6 +33,11 @@ import SwiftData
 ///   1.3 — Research-rail Phase C1: the two per-platform twins unified into this one shared
 ///          cross-platform struct; the document-count row now counts only `.document`
 ///          entries (D5), so co-provenanced excerpts don't inflate the membership count.
+///   1.4 — The document branch attaches its entry through
+///          `CollectionDocumentDiscovery.appendToCollection` (the inverse assignment) instead
+///          of `collection.documentEntries?.append`, which is a silent no-op — and leaves the
+///          entry permanently orphaned — on a collection that has not been saved since it was
+///          inserted. The excerpt branch already did this via `CollectionExcerpts`.
 struct CollectionPickerSheet: View {
 
     /// The document being added (its `volumeId`/`documentId` provenance).
@@ -310,15 +315,18 @@ struct CollectionPickerSheet: View {
             return
         }
 
-        let nextOrder = (existing.map(\.sortOrder).max() ?? -1) + 1
-        let collectionEntry = CollectionEntry(
-            collectionId: collection.id,
+        // Through the shared factory, which links the entry by assigning the INVERSE. Appending
+        // to `collection.documentEntries` — what this line used to do — is a silent no-op on a
+        // collection whose relationship is still `nil`, which is every collection that has not
+        // been saved since it was inserted: including one this very sheet's "New Collection"
+        // button created moments ago. The entry then carries only `collectionId` and is orphaned
+        // permanently. See `CollectionDocumentDiscovery.appendToCollection` for the measurement.
+        CollectionDocumentDiscovery.appendToCollection(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
-            sortOrder: nextOrder
+            collection: collection,
+            modelContext: modelContext
         )
-        modelContext.insert(collectionEntry)
-        collection.documentEntries?.append(collectionEntry)
 
         addedCollectionId = collection.id
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }

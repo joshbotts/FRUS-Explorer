@@ -155,10 +155,13 @@ enum CaptureStateSeeder {
                 // collections shipped empty until this line, which is precisely the screen State C
                 // exists to fill.
                 //
-                // Assigning the INVERSE rather than appending to `collection.documentEntries`, the
-                // way `CollectionPickerSheet.add` does: that relationship is still `nil` on a
-                // collection inserted moments ago, so the optional-chained append does nothing at
-                // all. SwiftData maintains the other side from this.
+                // Assigning the INVERSE rather than appending to `collection.documentEntries`:
+                // that relationship is still `nil` on a collection inserted moments ago, so the
+                // optional-chained append does nothing at all. SwiftData maintains the other side
+                // from this. (This comment used to name `CollectionPickerSheet.add` as the
+                // counter-example; that path was the last one appending without the inverse and
+                // now goes through `CollectionDocumentDiscovery.appendToCollection`, which
+                // carries the measurement.)
                 row.collection = collection
             }
         }

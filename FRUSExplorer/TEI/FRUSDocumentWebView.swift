@@ -386,7 +386,9 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
     /// A `selectionChanged` body carries `"start"`, `"end"`, `"text"`, and — per selection kind —
     /// `"blockText"` (footnote body) plus `"rect"`/`"scale"` (bar-anchor geometry). `start == -1`
     /// with empty text signals selection cleared; `start >= 0 && end > start` is a valid
-    /// in-document range in flat-text Unicode-scalar offsets. `selectionScrolled` (empty body) is
+    /// in-document range in flat-text UTF-16 offsets (`kSelectionJS` counts a JS string's
+    /// `length`, which is UTF-16 code units — this comment said Unicode scalar, and the two agree
+    /// on every BMP character). `selectionScrolled` (empty body) is
     /// the throttled stale-rect hide signal. Decoding is factored into the pure
     /// `decodeFRUSSelectionEvent(from:)` so it is unit-testable without a `WKScriptMessage`.
     func userContentController(
