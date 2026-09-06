@@ -11831,3 +11831,60 @@ new preamble strings replace them in `EditableContent.md`.
 
 4,533 tests in 594 suites; macOS builds clean. No CloudKit change, no index bump, no new bundled
 resource, no new files.
+
+## Session 2026-09-05h — #1201: the country glosses, and three rules that were losing rows (PR #1222)
+
+The issue reported seven wrong or missing country codes. **Five of them were one bug wearing three
+faces**, and the seventh face was the tell: rows were being LOST, and whatever survived took the
+code by default. `Cook Islands` held 47h only because `New Zealand` never parsed at all;
+`Ruthenia` held 60f because `Czechoslovakia` lost a shortest-name tie-break.
+
+Three parse rules were dropping rows, each found by reading the table's own text:
+
+1. **A merged header line.** The column headers are reprinted per page, and on nineteen pages the
+   text layer glues two cells into `Country Country`. `pageFurniture` held only the single words, so
+   that line became a name fragment and the NEXT row's name became `Country Country <Name>` — which
+   `close()` then rejected by its own `hasPrefix("country")` guard. That alone lost Switzerland (54),
+   Newfoundland (43), Estonia, Jordan, Palestine, Principe, Les Saintes, Abaco and Marianne Islands
+   — and Honduras (15), which had been hand-curated as unrecoverable when it is a complete row.
+2. **A sentence ending inside quotation marks.** `New South Wales 47a Generally not used. See` wraps
+   onto a line reading `"Australia."`, which does not end with a full stop — it ends with a quote.
+   So it was kept as a name, and `New Zealand` parsed as `"Australia." New Zealand` and was thrown
+   out by the quote guard. **That is the whole of why 47h glossed as Cook Islands.**
+3. **Single-column rows dropped as unplaceable.** `Discontinued ⇒ left-align` had been removed
+   because `Arctic 01 Discontinued 1955` is not a 1910–49 code and left-aligning it glossed 4,513
+   documents. Dropping every such row over-corrected. **The year decides**: a code discontinued in
+   1946 was in use before 1946, so it belongs to the column whose span reaches that year — and
+   Arctic's 1955 still lands outside 1910–49, which is why this restores the rows without restoring
+   the defect. The existing regression test for `01`/`11h` passes unchanged.
+
+Two structural changes fell out of it. `parseCountries` returns ROWS rather than a name-keyed
+dictionary, because a country legitimately holds more than one code in one column — `Crete 67k
+Discontinued 1920` and `Crete 68c 81a 81a` are both 1910–49, the artifact maps code→name, and keyed
+by name the first row silently displaced the second. And curated corrections now **override** a
+parsed name instead of only filling gaps: `60f` had been answered wrongly and the curated entry
+beside it was inert.
+
+**Measured: 198 → 217 country codes, no code losing a name it had.** Five of the seven reported
+codes fixed; three further names corrected (Esthonia→Estonia, Hashemite Jordan Kingdom→Jordan,
+Tanganyika Territory→Ruanda-Urundi, the last from a complete row displacing an orphan pairing).
+
+**42 (Canada) and 74 (Bulgaria) are left unanswered, deliberately.** Their pages emit names and
+codes as separate blocks and the document settles no pairing by any rule, so the table stays silent
+rather than becoming confidently wrong — the standard the curated list is already held to. A test
+pins the silence so it is a decision rather than a gap.
+
+The log now names the contested codes, not just how many there are: the "190 names share a code"
+line said nothing about WHICH, which is why a wrong winner had to be found by reading the artifact.
+
+Three mutations killed. **Two survived first and the reason is worth keeping**: weakening the
+`Discontinued` guard and weakening the regex's anchor each masked the other, so neither showed. Only
+a note carrying an earlier year AND a discontinuation separates them — the "guard conjuncts need one
+fixture each" trap, met head on.
+
+4,535 tests in 594 suites; 1,280 SPM tests; macOS builds clean. Artifact regenerated from the local
+scans (SCHEDULE_DIR), no index bump, no CloudKit change.
+
+**Not re-measured**: the Through-1947 corpus figures CLAUDE.md records for this artifact (5,881 class
+keys / 135,432 documents) need the owner's live index and cannot be computed here. The artifact-level
+count is the measurement this session can make.

@@ -339,3 +339,66 @@ struct NestedSubjectTests {
             """)
     }
 }
+
+// MARK: - Parsing rules recovered at #1201
+
+/// The three parse rules that were losing whole rows from the country table.
+///
+/// Each is a pure function, so the rule is tested rather than the artifact it produced — the
+/// artifact assertions live in `DecimalClassLabelTests`.
+@Suite("Country-table parsing rules")
+struct CountryTableParsingRuleTests {
+
+    /// The header block is emitted once per page, and on nineteen pages the text layer runs two of
+    /// its cells into one line. Held only as single words, `Country Country` fell through to the
+    /// name builder and poisoned the NEXT row's name — which `close()` then rejected by its own
+    /// `hasPrefix("country")` guard, silently dropping Switzerland, Newfoundland and eight others.
+    @Test("A line of nothing but header words is furniture, however many are glued together")
+    func mergedHeaderLinesAreFurniture() {
+        for line in ["Country", "Country Country", "Number", "Country Number",
+                     "Country Number Notes", "1910-1949", "Country 1910-1949"] {
+            #expect(DecimalClassLabelRunner.isPageFurniture(line), "\(line) is header furniture")
+        }
+        for line in ["Switzerland 54 54 54", "Country Club", "Newfoundland", "Numbers"] {
+            #expect(!DecimalClassLabelRunner.isPageFurniture(line), "\(line) is content")
+        }
+    }
+
+    /// **The year the note states settles the column the old rule guessed at.**
+    ///
+    /// `Discontinued ⇒ left-align` was removed because `Arctic 01 Discontinued 1955` is not a
+    /// 1910–49 code and left-aligning it glossed 4,513 documents. Dropping every such row
+    /// over-corrected. The year decides: a code discontinued in 1946 was in use before 1946.
+    @Test("A discontinued code belongs to the column whose span reaches its year")
+    func discontinuedYearIsRead() {
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "Discontinued July 1946. See 96.")
+                == 1946)
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "Discontinued 1949. See 42.") == 1949)
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "Discontinued 1955. See 03.") == 1955)
+        // Not a discontinuation: the other direction is handled by right-alignment, and reading a
+        // year here would place a code in a column that postdates it.
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "Established July 1962.") == nil)
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "Beginning July 1946.") == nil)
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "Before 1920 see 67k.") == nil)
+        #expect(DecimalClassLabelRunner.discontinuedYear(in: "") == nil)
+
+        // **The year has to be the one DISCONTINUED names, not the first year in the note.**
+        // Written without this case, two mutations survived by masking each other: weakening the
+        // `contains("Discontinued")` guard was covered by the regex's own anchor, and weakening
+        // the anchor was covered by the guard. Only a note carrying BOTH an earlier year and a
+        // discontinuation separates them — and it is a real shape, since the table cross-refers
+        // to a code's previous number in the same sentence.
+        #expect(DecimalClassLabelRunner
+            .discontinuedYear(in: "Before 1920 see 67k. Discontinued 1955. See 03.") == 1955)
+    }
+
+    /// The 1955 case is the one that must keep failing: it is why the old rule was removed.
+    @Test("A code discontinued after 1949 is kept out of the 1910–49 column")
+    func aLaterDiscontinuationStaysOut() {
+        let year = try? #require(DecimalClassLabelRunner.discontinuedYear(in: "Discontinued 1955."))
+        #expect(year == 1955)
+        // The first column ends in 1949, so 1955 does not reach it.
+        #expect(DecimalClassLabelRunner.columnSpans[0].end < 1955)
+        #expect(DecimalClassLabelRunner.columnSpans[1].end >= 1955)
+    }
+}
