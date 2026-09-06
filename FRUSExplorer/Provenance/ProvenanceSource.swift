@@ -176,4 +176,24 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     static let curatedDisclosure = String(
         localized: "provenance.curated.disclosure",
         defaultValue: "Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.")
+
+    /// The parse residual PV §5 requires beside any archival-sources block (#1206 follow-up, Q-1).
+    ///
+    /// **Why this is conditional and not part of `.frusText`.** `.frusText` is inserted for every
+    /// document, excerpt, bibliography and chronology item, so folding the sentence into its
+    /// method statement would put a source-note-parse caveat on plain document collections that
+    /// parse no source notes at all. That is the error PV-3 had to undo for Q-3, where PV-1 made
+    /// every export containing an archival-sources block claim a hand-matched identifier it could
+    /// not contain. The residual is a property of one block type, so it is stated only when that
+    /// block is present.
+    ///
+    /// The figures are the checked-in `SourceNoteEvalGenerator` report's own (`eval-report.txt`,
+    /// `=== OVERALL`): 7,481 of 267,663 notes unrecognized, 2.8%. The era spread is the part worth
+    /// printing — it is 1.1% for 1906–1939 and **100.0% before 1906**, where the parser recognises
+    /// 1 note in 2,034, so an archival table over an early-corpus selection may rest on almost
+    /// nothing. A single corpus-wide percentage would hide exactly the case a reader needs warned
+    /// about.
+    static let parseResidualDisclosure = String(
+        localized: "provenance.parseResidual.disclosure",
+        defaultValue: "Archival units are read from the volumes' own source notes by a parser, which leaves 2.8% of notes unrecognized across the series — but the rate is uneven: about 1% for 1906–1939 and effectively all of them before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.")
 }

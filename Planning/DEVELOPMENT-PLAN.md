@@ -11541,7 +11541,10 @@ designation trims **caveats** — qualifications a reader weighs — where the s
 CSV that would otherwise carry it. A figure whose sources are unstated is the thing this wave
 exists to prevent.
 
-**Q-1 honoured**: nothing on screen. The residual and the sources both live in the method block.
+**Q-1 honoured**: nothing on screen. The sources live in the method block — but **the residual
+did NOT, and this sentence was false from the day it was written**; corrected 2026-09-06, when
+`provenance.parseResidual.disclosure` was added and made conditional on the export actually
+carrying an archival-sources block.
 
 Eighteen new strings, all mirrored in `Docs/EditableContent.md` under a section that says what they
 are for. Three mutations killed — skipping the HTML renderer, not flagging a summary body, and
