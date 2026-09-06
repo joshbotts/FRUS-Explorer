@@ -130,6 +130,14 @@ A subset run says so in its own review notes.
 This offline pass rebuilds the run-wide artifacts over every group from the raw stores. No network, no
 re-download. Do it last, and after any later per-group re-harvest.
 
+> **DO NOT RUN THIS TODAY — it is destructive with the raw store absent (2026-09-06).** With
+> neither `raw/` nor `raw-api/` present, `RecordGroupCatalogRunner` appends a review note and
+> `continue`s for each group, and the writers run **before** the `summaries.isEmpty`
+> self-assessment — so the pass rewrites the committed `Planning/nara-record-group-catalog/`
+> `manifest.json`, `census/*.csv`, `series-sample.json` and `harvest-report.txt` to describe
+> **zero groups**, and only then exits non-zero. It is git-recoverable, and it is still a
+> destructive no-op. See "The raw NDJSON is not scratch" below.
+
 ### Step 5 — creator authority enrichment (optional, adds ~155 MB)
 
 ```bash
@@ -351,6 +359,7 @@ a couple of minutes. Differences from the refresh path, all deliberate:
 | bulk (default) | 22 GB streamed | ✓ from the shards | also `referenceUnits[].mailCode`, and the deeper levels without extra paging |
 
 Finish either route with one offline `PROJECT_ONLY=1` pass over all 22 groups to rebuild the run-wide
+(**not possible today — the raw store is gone; see "The raw NDJSON is not scratch"**)
 manifest and censuses.
 
 ### Step R2 — the refresh
@@ -805,7 +814,15 @@ Written under `OUTPUT_DIR`:
 `.gitignore` excludes `Planning/nara-record-group-catalog/series/`, matching the precedent of
 `Planning/source-explorer-export/source-explorer-export.json` (182 MB, regenerated not committed).
 
-### The raw NDJSON is not scratch
+### The raw NDJSON is not scratch — and it is GONE, so this advice is now retrospective
+
+> **STATE, 2026-09-06: `.cache/nara-rg-catalog` DOES NOT EXIST.** Only `central-files/`,
+> `presidential-library-catalog/` and `volume-sources/` survive under `.cache/`. The
+> 2026-07-30 tarball is not a recovery route either — it holds only projected artifacts
+> (manifest, censuses, creators, series-sample, api-survey, `series/rg_*.json`), with no `raw/`
+> and no `checkpoints/`. **Every `PROJECT_ONLY=1` promise in this runbook is therefore currently
+> false**, and the paragraph below records the reasoning that was not followed rather than a
+> live instruction.
 
 `CACHE_DIR` sits under `.cache/`, which `.gitignore` describes as regenerable harvest scratch. True of
 the bytes — but regenerating them costs the entire 22 GB download again, and they are:
@@ -815,6 +832,13 @@ the bytes — but regenerating them costs the entire 22 GB download again, and t
 
 Deleting it turns a one-line schema correction from a seconds-long offline rebuild back into a full
 re-download. Keep it until the index is settled.
+
+**Restoring it, if a re-projection is ever needed.** Two routes, and they do not produce the same
+thing. The keyless bulk stream re-downloads ~22 GB and is feasible on this machine (32 GB RAM
+against the ~18.5 GB peak, 644 GB free) — but it rebuilds from the CURRENT bucket snapshot, not
+the 2026-04-09 one the shipped artifacts derive from, so the result is a different corpus, not a
+restoration. The keyed `API_ONLY=1` route is ~62 calls and minutes, and has the same
+different-snapshot property. **Neither reproduces the store that was deleted.**
 
 ---
 
