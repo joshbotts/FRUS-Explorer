@@ -12031,3 +12031,61 @@ not this one.
 
 Five mutations killed, each by a distinct named control. 4,543 tests in 594 suites; macOS builds
 clean. No CloudKit change, no index-version bump, no new files.
+
+## Session 2026-09-06a — #1204: the label table states its own era contract (PR #TBD)
+
+`decimal-class-labels.json` ships one schedule, 1910–49, and its `provenance` string has said in
+words since #828 that a key resolves only against the schedule governing its own era. That did not
+stop the failure #1204 reports. Prose in a long paragraph is not a contract a consumer can branch
+on, so schema 2 adds a `coverage` block — `glossableYears`, `keyOutsideGlossableYears: "no-gloss"`,
+`renumberedAt`, `decimalFileOpensIn`, and `notShipped` — built from the schedules that actually
+shipped rather than asserted, so it cannot drift from them.
+
+**The measurement settles which of the issue's two options is right.** The generator parses all
+three manuals every build: 1950-1959 yields **4** class headings against a floor of 10 and
+1960-1963 yields **8**, while their country (200/215) and subject (507/311) tables clear theirs
+easily. Classes are precisely the axis the 1950 renumbering changed, so shipping either would ship
+the hazard with a 40%-complete class table. Option 1 is refused by measurement, and `notShipped`
+now records that refusal WITH its numbers — an absence turned into a stated fact.
+
+**The skip comment stated the wrong reason, and the right one matters.** `gloss` never reads
+`classes` at all; it needs `countryArrangedClasses`, `countries` and `subjects`, and its last line
+returns a BARE COUNTRY NAME shaped exactly like a complete gloss. The country table comes from a
+different, born-digital PDF that parses cleanly for all three eras. So lowering `minClasses` would
+not yield a mostly-silent table — it would gloss nearly every post-1950 country-arranged key, most
+down to that fallback. The thinness measured is not the thinness that gates display.
+
+**What this does not do, recorded so nobody later mistakes the block for a guard.** JSON cannot
+force a consumer to check anything. An adversarial pass refuted "an era gate is sufficient" and was
+right: the file already carried four era signals — the `schedules` array, the `id`, the year pair,
+and the provenance sentence — and the failing consumer walked past all four. What changed is that
+the correct behaviour is now cheap, testable and citable, and §12's artifact block (the one that
+gets pasted into a brief) tells the reader to gate on it. The stronger proposal — a precomposed
+in-era gloss map, ~3,924 entries / ~140KB, so the naive operation MISSES instead of composing — is
+deliberately NOT taken: it couples a vocabulary artifact to the corpus and is neither option the
+issue scopes. Offered to the owner as its own change.
+
+**Two errors in the issue, corrected rather than reproduced.** Its acceptance test passes today
+with no fix (`gloss` refuses class 4 in every era, because 4 is not country-arranged), so the new
+test drives a hand composer reading only the JSON — the consumer that actually failed — and asserts
+the wrong reading is reachable BEFORE asserting the contract withholds it. And its `411.48` example
+splits into two halves that are neither of them the composed reading: it is class 4 + country 11 +
+a suffix read as a second country, *Claims — United States and British Africa*.
+
+**The adversarial pass also found a real defect in the first draft.** The contract was stricter than
+the rule it describes: the app clamps a volume span's lower bound to the earliest schedule's start,
+so it glosses a volume covering 1861–1947, where literal containment on `glossableYears` refuses it.
+`decimalFileOpensIn` publishes the clamp.
+
+Six mutations killed. **The transposition of `parsed` and `floors` survived the first sweep** — the
+shortfall assertion asked only whether SOME axis fell short, which transposed data satisfies
+(countries 100 against 200, subjects 20 against 507), so a row with every figure the wrong way round
+still looked correctly refused. It now pins the shortfall to the class table alone and the floors to
+their declared constants.
+
+Guide → 1.15. Also fixes a naming drift the schedule id now publishes as data: two doc comments
+called the `1950-1959` schedule "1951–59".
+
+Filed for a separate session: `external-citation-index.json` (generated 2026-08-27) was built
+against the 198-country vocabulary #1201 took to 217 on 2026-09-05, and no parity test exists
+between the pair. Not caused by this change — `schedules` is byte-identical across the regeneration.
