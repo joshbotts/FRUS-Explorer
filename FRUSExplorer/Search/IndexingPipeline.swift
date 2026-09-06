@@ -5705,6 +5705,7 @@ public actor IndexingPipeline {
                 changed_at    TEXT,
                 change_kind   TEXT,
                 reviewed_at   TEXT,
+                index_version INTEGER,
                 PRIMARY KEY (volume_id, document_id)
             );
             CREATE INDEX IF NOT EXISTS idx_document_revisions_changed
@@ -5724,6 +5725,12 @@ public actor IndexingPipeline {
         // shape here: `document_cache` rows carry USER content (summary_text, note_text) that a
         // drop would destroy, which is why this table never took that pattern.
         try? exec("ALTER TABLE document_cache ADD COLUMN despatch_serial TEXT")
+        // R-5 §8.2 Q-9: which parse version wrote a revision row, so a volume removed and
+        // re-downloaded across a parse change is REBASELINED rather than stamped as changed.
+        // `CREATE TABLE IF NOT EXISTS` is a no-op on an existing table, so without this the column
+        // never reaches a shipped install — the additive rule this file states beside
+        // `currentDateIndexVersion`.
+        try? exec("ALTER TABLE document_revisions ADD COLUMN index_version INTEGER")
         try exec("""
             CREATE TABLE IF NOT EXISTS person_mentions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -6367,14 +6374,19 @@ public actor IndexingPipeline {
         case .stamp:
             sql = """
             INSERT INTO document_revisions
-                (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at)
-            VALUES (?, ?, ?, ?, NULL, NULL, NULL)
+                (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at,
+                 index_version)
+            VALUES (?, ?, ?, ?, NULL, NULL, NULL, ?)
             ON CONFLICT(volume_id, document_id) DO UPDATE SET
                 changed_at  = CASE
+                                WHEN document_revisions.index_version IS NOT excluded.index_version
+                                THEN document_revisions.changed_at
                                 WHEN excluded.content_hash != document_revisions.content_hash
                                   OR document_revisions.change_kind = 'vanished'
                                 THEN ? ELSE document_revisions.changed_at END,
                 change_kind = CASE
+                                WHEN document_revisions.index_version IS NOT excluded.index_version
+                                THEN document_revisions.change_kind
                                 WHEN excluded.body_hash != document_revisions.body_hash THEN 'body'
                                 WHEN excluded.content_hash != document_revisions.content_hash
                                  AND document_revisions.change_kind = 'body'
@@ -6383,20 +6395,25 @@ public actor IndexingPipeline {
                                 WHEN document_revisions.change_kind = 'vanished' THEN 'apparatus'
                                 ELSE document_revisions.change_kind END,
                 reviewed_at = CASE
+                                WHEN document_revisions.index_version IS NOT excluded.index_version
+                                THEN document_revisions.reviewed_at
                                 WHEN excluded.content_hash != document_revisions.content_hash
                                   OR document_revisions.change_kind = 'vanished'
                                 THEN NULL ELSE document_revisions.reviewed_at END,
-                content_hash = excluded.content_hash,
-                body_hash    = excluded.body_hash
+                content_hash  = excluded.content_hash,
+                body_hash     = excluded.body_hash,
+                index_version = excluded.index_version
             """
         case .rebaseline:
             sql = """
             INSERT INTO document_revisions
-                (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at)
-            VALUES (?, ?, ?, ?, NULL, NULL, NULL)
+                (volume_id, document_id, content_hash, body_hash, changed_at, change_kind, reviewed_at,
+                 index_version)
+            VALUES (?, ?, ?, ?, NULL, NULL, NULL, ?)
             ON CONFLICT(volume_id, document_id) DO UPDATE SET
-                content_hash = excluded.content_hash,
-                body_hash    = excluded.body_hash
+                content_hash  = excluded.content_hash,
+                body_hash     = excluded.body_hash,
+                index_version = excluded.index_version
             """
         }
         let stmt = try auxPrepare(sql)
@@ -6410,7 +6427,10 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 3, row.contentHash, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 4, row.bodyHash, -1, SQLITE_TRANSIENT_IP)
-                if mode == .stamp { sqlite3_bind_text(stmt, 5, now, -1, SQLITE_TRANSIENT_IP) }
+                // Bound in BOTH arms (Q-9): a rebaseline that left the column stale would re-arm
+                // the very bug this fixes on the next stamp.
+                sqlite3_bind_int(stmt, 5, Int32(Self.currentDateIndexVersion))
+                if mode == .stamp { sqlite3_bind_text(stmt, 6, now, -1, SQLITE_TRANSIENT_IP) }
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }

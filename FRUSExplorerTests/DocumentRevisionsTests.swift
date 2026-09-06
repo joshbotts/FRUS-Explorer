@@ -243,6 +243,56 @@ struct DocumentRevisionsTests {
     /// **§4's last row: whitespace moves no characters and must not warn.** Extra spaces and a
     /// line break inside the body are folded by the stored text's normalisation and by the
     /// render conversion alike.
+
+    /// **R-5 §8.2 Q-9 — a volume removed and re-downloaded across a parse change is rebaselined,
+    /// not stamped.**
+    ///
+    /// `.rebaseline` is passed from exactly one site, `indexAllVolumes`, so a SINGLE-volume
+    /// re-download always took the `.stamp` path. If the parse version had moved while the volume
+    /// was off the device, every document in it came back as "changed by an update" — hashes
+    /// computed by a different parser, compared against hashes the old one wrote.
+    ///
+    /// The fixture plants a stale `index_version` rather than editing the document, because that
+    /// is the whole claim: the CONTENT is what a different parser produced, and only the version
+    /// column can tell that apart from an editorial correction.
+    @Test("A row written by a different parse version is rebaselined, not stamped as changed")
+    func staleIndexVersionRebaselines() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+
+        // The row now carries the current version. Age it, and change the text underneath it —
+        // exactly the state a re-download after a parse bump produces.
+        #expect(h.raw("UPDATE document_revisions SET index_version = -1") == SQLITE_OK)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        let second = try await h.index(vol)
+
+        let d2 = try #require(second["d2"])
+        #expect(d2.changeKind == nil, """
+            A parse-version change must rebaseline: the hashes are overwritten and nothing is \
+            stamped. Got changeKind=\(d2.changeKind ?? "nil").
+            """)
+        #expect(d2.changedAt == nil)
+        // And the rebaseline really did take the new hashes, or the next index would stamp it.
+        #expect(d2.bodyHash == (try await h.independentBodyHash(vol, "d2")))
+    }
+
+    /// The guard is on the VERSION, not on any change: a normal edit at the current version still
+    /// stamps. Without this the test above passes against a writer that never stamps at all.
+    @Test("At an unchanged parse version a body change still stamps")
+    func currentVersionStillStamps() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        let second = try await h.index(vol)
+        #expect(try #require(second["d2"]).changeKind == "body")
+    }
+
     @Test("A whitespace-only change is not a change")
     func whitespaceIsNotAChange() async throws {
         let h = try Harness()
