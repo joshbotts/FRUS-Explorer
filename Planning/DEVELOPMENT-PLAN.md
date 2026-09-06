@@ -12089,3 +12089,53 @@ called the `1950-1959` schedule "1951–59".
 Filed for a separate session: `external-citation-index.json` (generated 2026-08-27) was built
 against the 198-country vocabulary #1201 took to 217 on 2026-09-05, and no parity test exists
 between the pair. Not caused by this change — `schedules` is byte-identical across the regeneration.
+
+## Session 2026-09-06b — the #1201 vocabulary drift, and the parity test that could not have existed (PR #1228)
+
+`external-citation-index.json` was built 2026-08-27 through the 198-code 1910–49 country table.
+#1201 took that table to **217** on 2026-09-05 and nothing regenerated the pair, so the shipped
+class axis went on refusing references the shipped schedule admits. Found while closing #1204.
+
+**The measurement needed two runs, not a diff.** Five commits touched
+`ExternalCitationIndexGeneratorCore/` or `SourceNoteKit/` since that build, so a single fresh run
+diffed against the shipped artifact conflates the vocabulary with the code. Running the CURRENT
+generator twice, differing only in `DECIMAL_LABELS`: decimalReferences 29,890 → **29,985** (+95),
+classTargetKeys 4,231 → **4,269** (+38), classPairs 7,760 → **7,806** (+46),
+decimalNotComposingRefused 5,312 → 5,219. Nothing lost. The code half (shipped → old-vocabulary run
+at HEAD) is referencesWithBothEnds −66, pairs −24, attributable to #1206/#1225 and W-11/W-17.
+
+**Only 5 of the 19 added codes could change admission**, and that is a property of `composes`: it
+tries a 3-character country prefix then a 2-character one, so an added 3-character code whose
+2-character prefix already existed changes ATTRIBUTION, not admission (`11b` still composed as
+`11`). The five are 43, 46f, 46h, 54, 73 — and every one of the 38 new target keys sits on 43, 46f,
+54 or 73; `46h` produced none. The four source-only additions are knock-ons: source keys are the
+citing document's own class and are NOT composes-gated, which is why `797.00` rides along although
+country 97 is in no shipped vocabulary.
+
+**`SAMPLE_OUTPUT` cannot review this channel, and CLAUDE.md said otherwise.** The class channel is
+sampled only when `decimalReferencesInherited % sampleEvery == 1`, so the file carries the 1,173
+`Ibid.`-inherited class references and NONE of the 28,812 direct ones — 20,973 rows at
+SAMPLE_EVERY=1, containing 4 of the 95 new references. The evidence was read in the corpus instead:
+`Source: Department of State, Central Files, 773.11/6-1562`, `Ibid., 846F.2553/3–758`,
+`373.00/9-2861` — all anchored, all carrying a serial. `373.00` also occurs as `125,373.00` in an
+1901 monetary table and is correctly refused there. CLAUDE.md's entry now states what the sample
+actually covers.
+
+**THE PARITY TEST NEEDED A NEW FIELD, and the reason is the whole lesson.** The artifact recorded no
+fingerprint of the schedule it was built through, and the cheap substitute does not work: asserting
+that every stored key still composes catches a vocabulary that SHRANK, and this drift GREW — under a
+grown vocabulary every already-stored key goes on composing. That is exactly why nothing noticed for
+ten days, and it disqualifies the only check available without a new field.
+`coverage.decimalVocabulary` now carries a SHA-256 over the class and country KEYS `composes` reads,
+lower-cased as it reads them, so #1201's five renames do not move it — they change a gloss, never an
+admission, and a fingerprint that tripped on a display fix would be turned off within a month. The
+shrink direction is kept as a second, independent assertion over TARGET keys only.
+
+Two mutations, and the sweep showed the two tests independent: rebuilding the index against the old
+198-code vocabulary is caught by the digest test alone; removing a country code with digests kept
+consistent is caught by the compose test alone. A third (digest over classes only) would be
+redundant — M1's two vocabularies differ ONLY in countries, classes staying at 9, so M1 already
+proves the fingerprint covers the country table.
+
+`Planning/external-citation-sample.json` refreshed with the index. No index-version bump:
+`IndexingPipeline` never reads this artifact.

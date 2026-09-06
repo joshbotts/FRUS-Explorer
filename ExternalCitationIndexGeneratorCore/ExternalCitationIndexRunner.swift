@@ -506,7 +506,12 @@ public enum ExternalCitationIndexRunner {
                 decimalSameClassReferences: decimalSameClassReferences,
                 decimalSubjectNumericRefused: decimalSubjectNumericRefused,
                 decimalNotComposingRefused: decimalNotComposingRefused,
-                decimalNotInSharedVocabularyRefused: decimalNotInSharedVocabularyRefused))
+                decimalNotInSharedVocabularyRefused: decimalNotInSharedVocabularyRefused,
+                // #1201: the vocabulary this run admitted through, so the pair cannot
+                // drift again without a test noticing.
+                decimalVocabulary: .init(classes: schedule.classCount,
+                                         countries: schedule.countryCount,
+                                         digest: schedule.vocabularyDigest)))
         return BuildResult(index: index, samples: samples)
     }
 

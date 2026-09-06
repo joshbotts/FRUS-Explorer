@@ -1,5 +1,14 @@
 [
   {
+    "anchor" : "centralFileClass",
+    "armingClause" : "File No. 763.72/3788½.",
+    "citation" : "For the telegram as sent, see ibid",
+    "decimalClass" : "763.72",
+    "documentId" : "d157",
+    "inherited" : true,
+    "volumeId" : "frus1914-20v02"
+  },
+  {
     "anchor" : "lotFile",
     "citation" : "and Lot 57D284, Box 103",
     "documentId" : "d150",
@@ -124,6 +133,15 @@
     "volumeId" : "frus1955-57v01"
   },
   {
+    "anchor" : "centralFileClass",
+    "armingClause" : ", 793.00/3–455",
+    "citation" : "Ibid .",
+    "decimalClass" : "793.00",
+    "documentId" : "d143",
+    "inherited" : true,
+    "volumeId" : "frus1955-57v02"
+  },
+  {
     "anchor" : "lotFile",
     "citation" : "Ibid ., Geneva Talks Files: Lot 72 D 415, Geneva—Correspondence Re US– PRC , 1955–1956",
     "documentId" : "d19",
@@ -169,6 +187,15 @@
     "volumeId" : "frus1955-57v13"
   },
   {
+    "anchor" : "centralFileClass",
+    "armingClause" : "ibid., 846C.2553/11–255",
+    "citation" : "Ibid .",
+    "decimalClass" : "846C.2553",
+    "documentId" : "d422",
+    "inherited" : true,
+    "volumeId" : "frus1955-57v13"
+  },
+  {
     "anchor" : "presidentialLibrary",
     "citation" : "Eisenhower Library, Dulles Papers, General Telephone Conversations",
     "documentId" : "d340",
@@ -211,6 +238,15 @@
     "inherited" : false,
     "unitId" : "txt:eisenhower library|dulles paper",
     "unitName" : "Dulles Papers",
+    "volumeId" : "frus1955-57v21"
+  },
+  {
+    "anchor" : "centralFileClass",
+    "armingClause" : "Department of State, Central Files, 751J.00/10–257",
+    "citation" : "Ibid",
+    "decimalClass" : "751J.00",
+    "documentId" : "d478",
+    "inherited" : true,
     "volumeId" : "frus1955-57v21"
   },
   {
@@ -286,6 +322,15 @@
     "volumeId" : "frus1958-60v08"
   },
   {
+    "anchor" : "centralFileClass",
+    "armingClause" : "Ibid ., 762B.00/4–1360",
+    "citation" : "Ibid",
+    "decimalClass" : "762B.00",
+    "documentId" : "d291",
+    "inherited" : true,
+    "volumeId" : "frus1958-60v09"
+  },
+  {
     "anchor" : "lotFile",
     "citation" : "Ibid .",
     "documentId" : "d45",
@@ -311,6 +356,15 @@
     "unitId" : "lot:66D95",
     "unitName" : "S/S – NSC (Miscellaneous) Files: Lot 66 D 95",
     "volumeId" : "frus1958-60v14"
+  },
+  {
+    "anchor" : "centralFileClass",
+    "armingClause" : "Department of State, Central Files, 751J.00/12–660",
+    "citation" : "ibid .",
+    "decimalClass" : "751J.00",
+    "documentId" : "d475",
+    "inherited" : true,
+    "volumeId" : "frus1958-60v16"
   },
   {
     "anchor" : "presidentialLibrary",

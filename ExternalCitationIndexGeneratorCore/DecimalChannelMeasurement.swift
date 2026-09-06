@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CryptoKit
 import Foundation
 import CollectionAuthorityGeneratorCore
 import GeneratorKit
@@ -417,6 +418,32 @@ public enum DecimalChannelMeasurement {
             classes = Set(schedule.classes.keys)
             countries = Set(schedule.countries.keys.map { $0.lowercased() })
         }
+
+        /// A digest of exactly the vocabulary `composes` reads, for the #1201 parity check.
+        ///
+        /// ## Why the artifact needs this and could not borrow something it already had
+        /// `external-citation-index.json` records no fingerprint of the schedule it was built
+        /// through, and the obvious substitute does not work: asserting that every stored
+        /// `classTargetKey` still composes catches a vocabulary that SHRANK, and the drift that
+        /// prompted this GREW — #1201 took the 1910-49 country table from 198 codes to 217, and
+        /// every already-stored key went on composing, so nothing noticed for ten days.
+        ///
+        /// Over the KEYS only, lower-cased for countries, exactly as the two sets above are built
+        /// — so #1201's five renames (`60f` Ruthenia to Czechoslovakia and the rest) do NOT move
+        /// it. They change what a key is glossed as, never whether it is admitted, and a
+        /// fingerprint that moved on them would cry wolf on every display fix.
+        public var vocabularyDigest: String {
+            let joined = "classes:" + classes.sorted().joined(separator: ",")
+                + "|countries:" + countries.sorted().joined(separator: ",")
+            return SHA256.hash(data: Data(joined.utf8))
+                .map { String(format: "%02x", $0) }.joined()
+        }
+
+        /// How many class digits the admission vocabulary carries.
+        public var classCount: Int { classes.count }
+
+        /// How many country numbers the admission vocabulary carries.
+        public var countryCount: Int { countries.count }
 
         /// Whether `key` opens with a schedule class digit and a schedule country number.
         ///

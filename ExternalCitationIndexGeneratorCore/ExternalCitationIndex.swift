@@ -180,6 +180,36 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
         /// `collection-usage-index.json`, and a key absent from that vocabulary would rank with
         /// zero documents beside it.
         public let decimalNotInSharedVocabularyRefused: Int
+        /// The admission vocabulary this index was built through (#1201 parity).
+        ///
+        /// Without it the pair drifts silently. #1201 took the 1910-49 country table from 198
+        /// codes to 217 on 2026-09-05 and this artifact, built 2026-08-27, went on shipping a
+        /// class axis that refused 93 references the shipped schedule now admits. Nothing caught
+        /// it, and nothing COULD: the one check available without a fingerprint — every stored key
+        /// still composes — passes when the vocabulary grows, which is the direction that drifted.
+        public let decimalVocabulary: DecimalVocabulary
+
+        /// A fingerprint of the class and country KEYS `DecimalScheduleComposition.composes` reads.
+        ///
+        /// Keys only, and countries lower-cased, matching how `ScheduleValidator` builds its two
+        /// sets. #1201's five renames (`60f` Ruthenia to Czechoslovakia and the rest) change a
+        /// gloss and never an admission, so they deliberately do not move `digest` — a fingerprint
+        /// that tripped on a display fix would be turned off within a month.
+        public struct DecimalVocabulary: Codable, Sendable, Equatable {
+            /// Class digits in the schedule.
+            public let classes: Int
+            /// Country numbers in the schedule.
+            public let countries: Int
+            /// SHA-256 over the sorted keys, `classes:…|countries:…`.
+            public let digest: String
+
+            /// Creates a vocabulary fingerprint.
+            public init(classes: Int, countries: Int, digest: String) {
+                self.classes = classes
+                self.countries = countries
+                self.digest = digest
+            }
+        }
 
         /// Creates a coverage summary.
         public init(volumesScanned: Int, volumesWithReferences: Int, documentsScanned: Int,
@@ -193,7 +223,8 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
                     decimalReferencesWithBothEnds: Int,
                     decimalSameClassReferences: Int, decimalSubjectNumericRefused: Int,
                     decimalNotComposingRefused: Int,
-                    decimalNotInSharedVocabularyRefused: Int) {
+                    decimalNotInSharedVocabularyRefused: Int,
+                    decimalVocabulary: DecimalVocabulary) {
             self.volumesScanned = volumesScanned
             self.volumesWithReferences = volumesWithReferences
             self.documentsScanned = documentsScanned
@@ -217,6 +248,7 @@ public struct ExternalCitationIndex: Codable, Sendable, Equatable {
             self.decimalSubjectNumericRefused = decimalSubjectNumericRefused
             self.decimalNotComposingRefused = decimalNotComposingRefused
             self.decimalNotInSharedVocabularyRefused = decimalNotInSharedVocabularyRefused
+            self.decimalVocabulary = decimalVocabulary
         }
     }
 

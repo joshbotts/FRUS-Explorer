@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CryptoKit
 import Testing
 import Foundation
 import SQLite3
@@ -819,6 +820,108 @@ struct DecimalChannelArtifactTests {
     /// They are refused for that reason and not because they are fake: `222` composes as
     /// *Extradition / Ecuador* and dotless file numbers are a real filing form. Restoring them
     /// means giving them a home in the shared vocabulary, not relaxing this.
+
+    // MARK: - Vocabulary parity with decimal-class-labels.json (#1201 drift)
+
+    /// The class and country KEYS the shipped schedule admits through, digested the way the
+    /// generator digests them.
+    private func shippedVocabularyFingerprint() throws -> (classes: Int, countries: Int,
+                                                           digest: String) {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: root
+            .appending(path: "FRUSExplorer/Resources/decimal-class-labels.json"))
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let schedules = try #require(object["schedules"] as? [[String: Any]])
+        // The 1910-1949 schedule specifically, mirroring `ScheduleValidator.init`. Falling back to
+        // the first would silently digest a different era if one were ever prepended.
+        let schedule = try #require(
+            schedules.first { $0["id"] as? String == "1910-1949" } ?? schedules.first)
+        let classes = try #require(schedule["classes"] as? [String: String]).keys.sorted()
+        let countries = try #require(schedule["countries"] as? [String: String])
+            .keys.map { $0.lowercased() }.sorted()
+        let joined = "classes:" + classes.joined(separator: ",")
+            + "|countries:" + countries.joined(separator: ",")
+        let digest = SHA256.hash(data: Data(joined.utf8))
+            .map { String(format: "%02x", $0) }.joined()
+        return (classes.count, countries.count, digest)
+    }
+
+    /// The two bundled artifacts must name the same admission vocabulary.
+    ///
+    /// **This is the test that was missing, and its absence cost ten days.** #1201 took the
+    /// 1910-49 country table from 198 codes to 217 on 2026-09-05;
+    /// `external-citation-index.json`, built 2026-08-27, went on shipping a class axis whose
+    /// admission gate had refused 93 references the shipped schedule now admits. Nothing noticed,
+    /// and `classKeysParse` structurally could not: it checks the shared class GRAMMAR, never the
+    /// schedule.
+    ///
+    /// The obvious cheaper check cannot replace this one. Asserting that every stored
+    /// `classTargetKey` still composes catches a vocabulary that SHRANK; #1201's drift GREW, and
+    /// under a grown vocabulary every already-stored key goes on composing. That check is kept
+    /// below as a second, independent assertion — it catches the other direction — but it is not
+    /// this one.
+    @MainActor
+    @Test("The class axis was built through the schedule that ships beside it")
+    func decimalVocabularyMatchesTheShippedSchedule() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: root
+            .appending(path: "FRUSExplorer/Resources/external-citation-index.json"))
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let coverage = try #require(object["coverage"] as? [String: Any])
+        let recorded = try #require(coverage["decimalVocabulary"] as? [String: Any])
+        let shipped = try shippedVocabularyFingerprint()
+
+        #expect(recorded["digest"] as? String == shipped.digest, """
+            The class axis was built through a different schedule than the one shipping beside it. \
+            Re-run `swift run -c release ExternalCitationIndexGenerator` and commit both artifacts \
+            together. Recorded \(recorded["classes"] ?? "?") classes / \
+            \(recorded["countries"] ?? "?") countries; shipped \(shipped.classes) / \
+            \(shipped.countries).
+            """)
+        // The counts are not the check — the digest is — but they are what a failure needs to be
+        // readable, so they are pinned too rather than left to drift into decoration.
+        #expect(recorded["classes"] as? Int == shipped.classes)
+        #expect(recorded["countries"] as? Int == shipped.countries)
+    }
+
+    /// Every stored class key still composes under the shipped schedule.
+    ///
+    /// The other direction from the digest test, and genuinely independent of it: this fails when
+    /// the vocabulary loses a code the index was built on — a re-parse that drops rows, or a
+    /// schedule swapped for a different era — which a digest match would never reach, because a
+    /// regenerated pair matches itself by construction.
+    @MainActor
+    @Test("No stored class key has lost its footing in the shipped schedule")
+    func storedClassKeysStillCompose() throws {
+        let index = try #require(ExternalCitationIndexStore.shared)
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let data = try Data(contentsOf: root
+            .appending(path: "FRUSExplorer/Resources/decimal-class-labels.json"))
+        let object = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let schedules = try #require(object["schedules"] as? [[String: Any]])
+        let schedule = try #require(
+            schedules.first { $0["id"] as? String == "1910-1949" } ?? schedules.first)
+        let classes = Set(try #require(schedule["classes"] as? [String: String]).keys)
+        let countries = Set(try #require(schedule["countries"] as? [String: String])
+            .keys.map { $0.lowercased() })
+
+        // The TARGET side only. Source keys are the citing document's own class and are not
+        // composes-gated — measured on this artifact, `797.00` rides along as a source although
+        // country 97 is in no shipped vocabulary — so asserting over them would fail on data the
+        // generator never claimed to admit.
+        let orphaned = index.classTargetKeys.filter {
+            !DecimalScheduleComposition.composes($0, classes: classes, countries: countries)
+        }
+        #expect(orphaned.isEmpty, """
+            \(orphaned.count) stored class targets no longer compose under the shipped schedule — \
+            the vocabulary lost codes this index was built on. First few: \
+            \(orphaned.prefix(5).joined(separator: ", "))
+            """)
+    }
+
     @MainActor
     @Test("Every class key parses under the shared class grammar")
     func classKeysParse() throws {
