@@ -48,6 +48,16 @@ struct SeriesFactsIndex: Codable, Sendable, Equatable {
         let findingAids: [Int]?
         let startYear: Int?
         let endYear: Int?
+        /// NARA's **coverage** start year, where it publishes one (#1202, schema 3).
+        ///
+        /// The inclusive pair above is the narrower one. Measured over the 173 shipped rows that
+        /// carry both, coverage starts earlier in 141, the same year in 31 and LATER in 1 — naId
+        /// 519793189, NARA's *FRUS Clearance Files* — so it is usually wider and containment is
+        /// not guaranteed. **Not rendered**: the card's `years` line keeps the inclusive pair, so
+        /// this ships as a fact for a date screen rather than a change to what a reader sees.
+        let coverageStartYear: Int?
+        /// NARA's coverage end year, where published.
+        let coverageEndYear: Int?
 
         enum CodingKeys: String, CodingKey {
             case creator = "c"
@@ -61,6 +71,8 @@ struct SeriesFactsIndex: Codable, Sendable, Equatable {
             case findingAids = "fa"
             case startYear = "y0"
             case endYear = "y1"
+            case coverageStartYear = "cy0"
+            case coverageEndYear = "cy1"
         }
     }
 

@@ -1813,7 +1813,7 @@ The stack, and the question each artifact answers:
 | `external-citation-index.json` | what the editors cited and did **not** print | 19,800 lot/library refs + 29,890 class refs, 440 volumes |
 | `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,065 lot files, all carrying a NAID |
 | `collection-authority.json` | which collection is this note naming, under every spelling | 4,429 collections, 1,018 with a NAID |
-| `series-facts-index.json` | the pre-travel facts: creator, extent, **inclusive** date span (NARA's wider *coverage* span is not projected — rule 3 below), access status, facility. Its `byNaId` entries use one-letter wire keys with no legend — `as` and `us` (access and use status) → `statuses`, `ar` → `restrictions`, `ur` → `useRestrictions`, `ru` → `referenceUnits`, `c` and `p` (creator and predecessors) → `headings`, `fa` → `findingAidTypes`, `x` extent, `y0`/`y1` the inclusive span — over six separate vocabularies (`statuses`, `restrictions`, `useRestrictions`, `referenceUnits`, `findingAidTypes`, `headings`). Reading `as` through `restrictions` reproduces a plausible wrong value on every row. | 695 series, 397 creator headings |
+| `series-facts-index.json` | the pre-travel facts: creator, extent, date span, access status, facility. **Schema 3 (#1202) carries BOTH of NARA's date pairs** — `y0`/`y1` inclusive and `cy0`/`cy1` coverage, the latter on 173 of 695 rows — and a top-level **`legend`** giving, per wire key, its field name and the vocabulary it dereferences through. Read the legend rather than inferring: the pairing is asymmetric, `as` and `us` both resolving through `statuses` while `ar` uses `restrictions` and `ur` uses `useRestrictions`, and reading `as` through `restrictions` reproduces a plausible wrong value on every row. **Neither date pair contains the other** (naId 604801 is inclusive 1963–1973, coverage 1947–1964), so a date screen takes the UNION — see rule 3 below. | 695 series, 397 creator headings, 173 with a coverage pair |
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
 | `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
 | `volume-sources-index.json` | what the editors say they consulted, per volume | 3,412 rows, 251 volumes |
@@ -1845,10 +1845,15 @@ labelled.
 `document_dates.date_iso` to the series' span and test overlap — corpus-wide, never on your own
 volume subset (a lot's shelf is a property of the lot: `72 D 318` failed on one document and passed
 on seven, and one round's "7 of 93" against its critic's "6 of 93" was an undeclared denominator);
-against the wider of NARA's two spans (`series-facts` carries only the inclusive pair; of 75 RG 59
-series checked, 19 publish both fields, 17 differ, and coverage starts earlier in all 17; the
-inclusive field alone produced three false failures over 44 documents — the corpus-wide result is 3
-of 93, not 7 and not 6); reading the citing source note before accepting one of several claimants
+against the union of NARA's two spans — `min(y0,cy0)`–`max(y1,cy1)` (**since #1202 `series-facts`
+carries both**, where it used to carry only the inclusive pair; of 75 RG 59
+series first checked, 19 publish both fields, 17 differ, and coverage started earlier in all 17 —
+but that is a property of the sample: measured over all 1,155 RG 59 series carrying both, coverage
+starts earlier in 880, the same year in 274 and LATER in 1, and on naId 604801 neither pair contains
+the other at all, 1963–1973 inclusive against 1947–1964 coverage. So take the UNION, not "coverage
+where present": run from the bundle over these 93, the union fails 3, preferring coverage fails 4 —
+inventing a failure on 604801 — and the inclusive pair alone fails 6. The inclusive field alone also
+produced three false failures over 44 documents); reading the citing source note before accepting one of several claimants
 (`73 D 153`: nine of ten notes say *Morning Summaries*; the index had picked *Special Summaries*);
 and diagnosing a survivor rather than deleting it — ask whether the FRUS string is a lot number at
 all (the candidate rule in the table above). A one-year overhang at an accession boundary is the
@@ -2491,6 +2496,15 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.16 — 2026-09-06: **#1202 closed**, so §14's `series-facts-index.json` row and §14.11's rule 3
+  now describe an artifact that carries both of NARA's date pairs and a legend for its wire keys.
+  Rule 3's screen is restated as the UNION of the two spans rather than "the wider" — measured,
+  "prefer coverage where present" fails 4 of the 93 rather than 3, inventing a failure on naId
+  604801, where inclusive 1963-1973 and coverage 1947-1964 do not contain one another. The v1.11
+  parenthetical's "coverage starts earlier in all 17" is kept but marked as the 75-series
+  sample's property: across all 1,155 RG 59 series carrying both, it starts earlier in 880, the
+  same year in 274 and later in 1.
 
 - 1.15 — 2026-09-05: **#1204 closed, so §12's artifact block and §14's
   `decimal-class-labels.json` row now cite the file's own era contract** rather than warning about

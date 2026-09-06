@@ -66,7 +66,8 @@ public enum HarvestShardReader {
             public init(accessStatus: String? = nil, accessRestrictions: [String] = [],
                         useStatus: String? = nil, useRestrictions: [String] = [],
                         extent: String? = nil, referenceUnit: String? = nil,
-                        findingAids: [String] = [], startYear: Int? = nil, endYear: Int? = nil) {
+                        findingAids: [String] = [], startYear: Int? = nil, endYear: Int? = nil,
+                        coverageStartYear: Int? = nil, coverageEndYear: Int? = nil) {
                 self.accessStatus = accessStatus
                 self.accessRestrictions = accessRestrictions
                 self.useStatus = useStatus
@@ -76,6 +77,8 @@ public enum HarvestShardReader {
                 self.findingAids = findingAids
                 self.startYear = startYear
                 self.endYear = endYear
+                self.coverageStartYear = coverageStartYear
+                self.coverageEndYear = coverageEndYear
             }
 
             /// `Unrestricted` / `Restricted - Partly` / `Restricted - Fully` /
@@ -97,10 +100,24 @@ public enum HarvestShardReader {
             public var referenceUnit: String?
             /// Finding-aid types NARA offers (`Folder List`, `Container List`, `Index`), when any.
             public var findingAids: [String]
-            /// Coverage years as NARA states them, for sanity-checking a resolution against the
-            /// citation's own date.
+            /// NARA's **inclusive** dates. Despite the use these are put to, this is the
+            /// NARROWER of the two spans NARA publishes — see `coverageStartYear` (#1202).
             public var startYear: Int?
+            /// NARA's inclusive end date.
             public var endYear: Int?
+            /// NARA's **coverage** dates, where it publishes them — the pair a date screen wants.
+            ///
+            /// Measured over the 4,449 RG 59 series in the harvest: 1,155 publish a coverage pair,
+            /// and against their own inclusive pair coverage starts EARLIER in 880, the same year
+            /// in 274, and LATER in exactly **1** — naId 519793189, NARA's *Foreign Relations of
+            /// the United States (FRUS) Clearance Files*, coverage 1965–1968 against inclusive
+            /// 1964–1968. So coverage is usually the wider span but **containment is not
+            /// guaranteed**, and nothing downstream may assume it: carry both and let the caller
+            /// choose. `nil` for the 3,294 series NARA publishes no coverage pair for, which is
+            /// why this cannot simply replace the inclusive pair.
+            public var coverageStartYear: Int?
+            /// NARA's coverage end date, where published.
+            public var coverageEndYear: Int?
         }
 
         /// One creating body: NARA's heading, its own authority NAID, and which era it belongs to.
@@ -127,6 +144,10 @@ public enum HarvestShardReader {
         private enum CodingKeys: String, CodingKey {
             case naId, title, levelOfDescription, recordGroupNumber
             case variantControlNumbers, inclusiveStartDate, inclusiveEndDate, ancestors
+            // #1202: NARA's second, usually-wider date pair. Added HERE rather than in a parallel
+            // projection for the reason this file's header gives — a second decoder over the same
+            // shards is the drift it exists to prevent.
+            case coverageStartDate, coverageEndDate
             case creators, accessRestriction, useRestriction, findingAids, physicalOccurrences
             case digitalObjectCount, fileUnitCount
         }
@@ -221,6 +242,8 @@ public enum HarvestShardReader {
             let occurrences = (try? c.decode([Occurrence].self, forKey: .physicalOccurrences)) ?? []
             let startBox = try? c.decode(YearBox.self, forKey: .inclusiveStartDate)
             let endBox = try? c.decode(YearBox.self, forKey: .inclusiveEndDate)
+            let coverageStartBox = try? c.decode(YearBox.self, forKey: .coverageStartDate)
+            let coverageEndBox = try? c.decode(YearBox.self, forKey: .coverageEndDate)
             facts = Facts(
                 accessStatus: access?.status,
                 accessRestrictions: access?.specificRestrictions ?? [],
@@ -230,7 +253,9 @@ public enum HarvestShardReader {
                 referenceUnit: occurrences.first?.referenceUnitNames.first,
                 findingAids: aids.compactMap(\.findingAidType),
                 startYear: startBox?.year,
-                endYear: endBox?.year)
+                endYear: endBox?.year,
+                coverageStartYear: coverageStartBox?.year,
+                coverageEndYear: coverageEndBox?.year)
 
             let start = (try? c.decode(YearBox.self, forKey: .inclusiveStartDate))?.year
             let end = (try? c.decode(YearBox.self, forKey: .inclusiveEndDate))?.year
