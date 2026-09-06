@@ -1,6 +1,13 @@
 # Plan of Record — 2026-08-28, after build 44
 
-**Status:** the single live plan — **reviewed and revised 2026-08-29 (§7), re-prioritised
+**Status: SUPERSEDED 2026-09-06 by `Plan-Of-Record-2026-09-06.md`.** Keep it for the tier
+structure and for §7–§9's reasoning, which the successor does not repeat; do NOT read its row
+states as current. Five specific rows had gone stale and are listed in the successor's §4 — wave PV
+shipped whole, P10's "next index bump" deferral was overtaken by two bumps, M-1's `.xcprivacy`
+claim is false since PR #1191, R-4's residue is closed, and it carries no rows for the #1201–#1208
+wave.
+
+**Status when live:** the single live plan — **reviewed and revised 2026-08-29 (§7), re-prioritised
 2026-08-31 (§8), external animation handoff assessed 2026-08-31 (§9)** — superseding
 `Completed/Plan-Of-Record-2026-08-23.md`
 (discharged in bulk: tiers A and B shipped whole, Tier C's harvest lane closed except the
