@@ -172,4 +172,88 @@ struct SecondaryClauseLotTests {
                 "a lead naming only the Department must not narrow the lot scope")
         #expect(kind(note) == "lotFile")
     }
+
+    // MARK: - Presidential materials (#1206)
+
+    /// **The gap the library keywords left.** `libraryKeywords` carries "Nixon Presidential
+    /// Library" and "Nixon Library" but not the *Materials*, which are NARA-held and correctly
+    /// classify as a NARA collection rather than a library. So a note leading with them named no
+    /// competing repository, the scope stayed whole, and a lot cited later as *where another copy
+    /// is* became the document's own.
+    ///
+    /// This is `frus1969-76v02/d11` verbatim. The lot is 340 characters in, introduced by "are
+    /// ibid." — the editors saying where related drafts sit, not where this document came from.
+    @Test("A Nixon-materials lead is not captured by a lot named later in the note")
+    func presidentialMaterialsLeadClaimsTheDocument() {
+        let note = """
+            Source: National Archives, Nixon Presidential Materials, NSC Files, Subject Files,             Box 363, National Security Decision Memoranda, NSDM 2. Confidential. A January 13             memorandum from Pedersen to Rogers proposing revisions in NSDMs 2 and 3, together             with typed drafts of the NSDMs with handwritten revisions, are ibid., RG 59,             Pedersen Files: Lot 75 D 229, NSC.
+            """
+        #expect(SourceNoteParser.lotClaimScope(note) != note,
+                "the lead names the Nixon materials, so the scope must narrow past the lot")
+        #expect(kind(note) != "lotFile", """
+            `75 D 229` is where a related draft sits. Storing it as this document's lot_file put             two documents on a lot that never held them as source.
+            """)
+    }
+
+    /// The same defect in the longer shape the issue also reports — `frus1969-76v02/d1`, whose
+    /// lot sits 1,247 characters into a 1,265-character note, well past several sentences of
+    /// editorial remark.
+    @Test("A distant lot does not outrank a Nixon-materials lead")
+    func aDistantLotDoesNotOutrankTheMaterialsLead() {
+        let note = """
+            Source: National Archives, Nixon Presidential Materials, White House Central Files,             Subject Files, Executive FG 6–6. No classification marking. A handwritten annotation             on page one of the memorandum reads as approved. Copies are in the National Security             Council Institutional Files, Box H–209, National Security Decision Memoranda, NSDM 1;             and in the National Archives, RG 59, Pedersen Files: Lot 75 D 229, NSC.
+            """
+        #expect(kind(note) != "lotFile")
+    }
+
+    /// **The other side of the same coin, and the reason this is a lead test rather than a
+    /// distance test.** The third note on the same lot cites it as the primary source, in the
+    /// leading sentence — `frus1969-76v02/d297` verbatim — and must keep classifying as a lot
+    /// file. A rule that refused a lot by how far into the note it sat would break this.
+    @Test("A lot cited as the primary source is still a lot file")
+    func aPrimaryLotStillClassifies() {
+        let note = """
+            Source: National Archives, RG 59, Pedersen Files: Lot 75 D 229, Chron File.             No classification marking.
+            """
+        #expect(kind(note) == "lotFile")
+        #expect(SourceNoteParser.lotClaimScope(note) == note,
+                "nothing competes with the lot here, so the scope stays whole")
+    }
+
+    /// **The new vocabulary must not reach the classifier**, and this pins what it does not touch.
+    ///
+    /// `competingRepositoryLeads` answers one question — has the leading sentence already claimed
+    /// this document — and `lotClaimScope` is its only reader. What a note IS remains
+    /// `tryPresidentialLibrary`'s answer, from `libraryKeywords`, which is why the two lists are
+    /// kept apart: a phrase added to `libraryKeywords` to fix the claiming question would have
+    /// answered the classification question too.
+    ///
+    /// A short Nixon-materials note classified as `presidentialLibrary` **before this change and
+    /// still does** — measured against the parser at HEAD rather than assumed.
+    ///
+    /// **And that classification is substantively right, not merely incumbent.** The 1974
+    /// Presidential Recordings and Materials Preservation Act federalised Nixon's materials and
+    /// required them to stay in the Washington area, which is why the citations these notes carry
+    /// name College Park. Congress repealed that requirement in 2004; NARA took legal control of
+    /// the Yorba Linda library on 11 July 2007; and in **spring 2010** the Nixon Presidential
+    /// materials were moved there — all of them except the original White House Tapes, dictabelts
+    /// and White House Photo Office negatives, which remain at College Park. So the materials ARE
+    /// a presidential library's holdings today, and `curated-library-resolutions.json` already
+    /// routes them as a Nixon repository.
+    ///
+    /// Worth knowing when reading these notes: a FRUS citation naming *National Archives, Nixon
+    /// Presidential Materials* records where the records were when the volume was published, not
+    /// where a reader would go now.
+    @Test("A Nixon-materials note keeps the classification it already had")
+    func materialsClassificationIsUnchanged() {
+        let note = """
+            Source: National Archives, Nixon Presidential Materials, NSC Files, Subject Files, \
+            Box 363, National Security Decision Memoranda, NSDM 2. Confidential.
+            """
+        #expect(kind(note) == "presidentialLibrary", """
+            This is the classification the parser gave before #1206 and must still give. The lot \
+            fix narrows a SCOPE; it must not move a note between categories.
+            """)
+    }
+
 }

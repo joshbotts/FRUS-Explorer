@@ -1825,10 +1825,37 @@ public struct SourceNoteParser {
     private static func namesCompetingRepository(_ sentence: String) -> Bool {
         let range = NSRange(sentence.startIndex..., in: sentence)
         if centralFilesAnchorRegex?.firstMatch(in: sentence, range: range) != nil { return true }
-        return (libraryKeywords + manuscriptRepositoryKeywords).contains {
+        return (libraryKeywords + manuscriptRepositoryKeywords + competingRepositoryLeads).contains {
             sentence.range(of: $0, options: .caseInsensitive) != nil
         }
     }
+
+    /// Repository leads that claim a document without being presidential libraries (#1206).
+    ///
+    /// **Kept apart from `libraryKeywords` deliberately.** That list is read twice — here, to ask
+    /// whether the leading sentence has already claimed the document, and by
+    /// `tryPresidentialLibrary`, to decide what the note IS. Adding a phrase to it to fix the first
+    /// question would silently answer the second, reclassifying every Nixon-materials note out of
+    /// `naraCollection` and into `presidentialLibrary`. These entries answer the claiming question
+    /// only.
+    ///
+    /// **`Nixon Presidential Materials` is the measured case.** `libraryKeywords` carries "Nixon
+    /// Presidential Library" and "Nixon Library" but not the Materials, which are NARA-held and
+    /// correctly not a library — so a note leading `Source: National Archives, Nixon Presidential
+    /// Materials, NSC Files, …` named no competing repository, `lotClaimScope` returned the whole
+    /// body, and a lot cited 1,247 characters later as *where another copy is* became the
+    /// document's own `lot_file`. `frus1969-76v02/d1` and `/d11` both took `75 D 229` that way,
+    /// inflating that lot's document count from three to five.
+    ///
+    /// Measured over the shippable corpus: 268,750 source notes, 13,287 naming a lot, of which
+    /// **1,927 name it only outside the leading sentence** — and **63** of those lead with
+    /// `Presidential Materials`. The remaining 1,864 are NOT assumed to be defects: the 1961–63
+    /// abstract notes legitimately put their lot in the tail, and `lotClaimScope`'s own comment
+    /// records that refusing every out-of-lead lot would break 1,006 correct classifications.
+    private static let competingRepositoryLeads = [
+        "Presidential Materials",
+        "Presidential Recordings",
+    ]
 
     // MARK: - Presidential Library
 
