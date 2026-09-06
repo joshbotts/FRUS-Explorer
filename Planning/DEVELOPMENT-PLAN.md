@@ -12090,7 +12090,7 @@ Filed for a separate session: `external-citation-index.json` (generated 2026-08-
 against the 198-country vocabulary #1201 took to 217 on 2026-09-05, and no parity test exists
 between the pair. Not caused by this change — `schedules` is byte-identical across the regeneration.
 
-## Session 2026-09-06b — the #1201 vocabulary drift, and the parity test that could not have existed (PR #TBD)
+## Session 2026-09-06b — the #1201 vocabulary drift, and the parity test that could not have existed (PR #1228)
 
 `external-citation-index.json` was built 2026-08-27 through the 198-code 1910–49 country table.
 #1201 took that table to **217** on 2026-09-05 and nothing regenerated the pair, so the shipped
