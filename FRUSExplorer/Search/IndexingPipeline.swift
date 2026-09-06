@@ -2724,11 +2724,19 @@ public actor IndexingPipeline {
         userContentMatch: String?,
         filters: SearchSQLFilters,
         request: FacetRequest,
-        joinedMaterializationForParity: Bool = false
+        joinedMaterializationForParity: Bool = false,
+        documentKeys: [(volumeId: String, documentId: String)]? = nil
     ) throws -> ResultSetFacets {
-        let matchCount = try materializeMatchSet(
-            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
-            joinedMaterializationForParity: joinedMaterializationForParity)
+        // **The whole semantic-facet feature is this one branch** (#1193 follow-up). Every section
+        // below aggregates `temp.facet_mset`, a table of document rowids — nothing downstream knows
+        // or cares how those rowids were chosen. So a meaning search, which has no FTS match to
+        // materialise, supplies its ranked result keys instead and gets facets computed by the
+        // SAME emitter: identical joins, identical grouping, identical bounds. A second
+        // implementation for "facets over a key set" would have been a second thing to drift.
+        let matchCount = try documentKeys.map { try materializeKeySet($0) }
+            ?? materializeMatchSet(
+                corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+                joinedMaterializationForParity: joinedMaterializationForParity)
         defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
         guard matchCount > 0 else { return .empty() }
 
@@ -3010,6 +3018,47 @@ public actor IndexingPipeline {
             WHERE dc.user_tag_ids IS NOT NULL AND dc.user_tag_ids <> ''
             GROUP BY k
             """)
+    }
+
+    /// Materialises an explicit set of document keys into `temp.facet_mset`, for a result set that
+    /// was not produced by an FTS match at all.
+    ///
+    /// **A meaning search ranks by embedding similarity and has no MATCH**, so before this existed
+    /// the facet panel aggregated the *keyword* interpretation of the query text — 471 documents
+    /// counted beside a list of 100 (#1193). It now hands over the keys it actually returned.
+    ///
+    /// Each key is a rowid seek: `document_cache` is `PRIMARY KEY (volume_id, document_id)`, which
+    /// SQLite backs with an automatic unique index, so a hundred keys are a hundred index lookups
+    /// rather than a scan of 316,839 rows. `INSERT OR IGNORE` because the count must be of distinct
+    /// documents even if a caller repeats one.
+    ///
+    /// **No filters are applied here, and that is not an omission.** The keys arrive already
+    /// filtered — `SemanticSearchBackend.run` intersects its hits with `filterKeySet(parameters:)`
+    /// before returning — so re-applying them would be a second pass over a set that has already
+    /// had it. This is also why a facet count predicts what narrowing yields: the backend takes the
+    /// global top-N and *then* filters, so narrowing to a bucket returns exactly that bucket's
+    /// documents rather than re-ranking into a different set.
+    private func materializeKeySet(
+        _ keys: [(volumeId: String, documentId: String)]
+    ) throws -> Int {
+        try auxExec("DROP TABLE IF EXISTS temp.facet_mset")
+        try auxExec("CREATE TEMP TABLE facet_mset (docrowid INTEGER PRIMARY KEY)")
+        guard !keys.isEmpty else { return 0 }
+
+        let stmt = try auxPrepare("""
+            INSERT OR IGNORE INTO temp.facet_mset(docrowid)
+            SELECT rowid FROM document_cache WHERE volume_id = ? AND document_id = ?
+            """)
+        defer { sqlite3_finalize(stmt) }
+        for key in keys {
+            sqlite3_reset(stmt)
+            sqlite3_bind_text(stmt, 1, key.volumeId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(stmt, 2, key.documentId, -1, SQLITE_TRANSIENT_IP)
+            _ = try auxStep(stmt)
+        }
+        // Counted from the table, not from `keys.count`: a key the index does not hold — a volume
+        // removed since the search ran — must not be counted as a document the facets describe.
+        return try scalar("SELECT COUNT(*) FROM temp.facet_mset")
     }
 
     /// Materialises the current match into `temp.facet_mset(docrowid INTEGER PRIMARY KEY)`

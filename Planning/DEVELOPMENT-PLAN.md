@@ -11791,3 +11791,43 @@ actually worked, is non-destructive, and is safe on a shared machine. It fired t
 and cleared it both times.
 
 No CloudKit change, no index bump, no new bundled resource, no new files.
+
+## Session 2026-09-05g — Facets over the semantic result set (PR #1221)
+
+The feature #1220 deferred, and it turned out to be one branch.
+
+**Every facet section aggregates `temp.facet_mset`, a temp table of document rowids — and nothing
+downstream knows how those rowids were chosen.** So a meaning search, which has no FTS match to
+materialise, now hands over the keys it actually returned and gets facets computed by the **same
+emitter**: identical joins, identical grouping, identical bounds. `resultSetFacets` gained one
+optional `documentKeys:` parameter and one private `materializeKeySet`; no section SQL changed.
+A second implementation of "facets over a key set" would have been a second thing to drift, and
+`ResultSetFacetsTests.keySetFacetsEqualMatchFacets` pins the two routes against each other by
+describing the same documents both ways.
+
+**The counts are actionable, and that follows from the backend's order of operations.**
+`SemanticSearchBackend.run` takes the global top-N and filters *afterwards*, so narrowing to a
+bucket returns exactly that bucket's documents rather than re-ranking into a different set. A facet
+count therefore predicts what clicking it yields — which is the property that makes the panel worth
+restoring rather than merely correct.
+
+**The preamble had to branch, because the two routes make opposite claims and both are true.** The
+keyword wording — "Facets read the whole match, before any narrowing you apply below" — rests on a
+match wider than the capped list. A meaning search has no whole match: the results *are* the set, so
+the panel says "Describing the N closest matches" and "Counted over the results themselves".
+Repeating the keyword sentence would have been the same overclaim in a new place.
+
+Efficiency is a property of the schema rather than of care: `document_cache` is
+`PRIMARY KEY (volume_id, document_id)`, which SQLite backs with an automatic unique index, so a
+hundred keys are a hundred index seeks rather than a scan of 316,839 rows.
+
+Three mutations killed — counting the keys handed in rather than the documents found; ignoring
+`documentKeys` and silently falling back to the keyword match (the #1193 defect returning by
+omission); and a host that stops handing over its keys.
+
+#1220's suite is rewritten rather than extended: its assertions that the panel *withholds* facets
+were correct for the interim fix and are wrong for this one. Two of its strings are retired and two
+new preamble strings replace them in `EditableContent.md`.
+
+4,533 tests in 594 suites; macOS builds clean. No CloudKit change, no index bump, no new bundled
+resource, no new files.

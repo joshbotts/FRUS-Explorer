@@ -442,7 +442,10 @@ struct MacSearchWindowView: View {
         .inspector(isPresented: $showFacetPanel) {
             FacetPanelView(
                 controller: facetController,
-                matchCount: searchVM.totalMatchCount,
+                // Exact in meaning mode — the results are the set — where `totalMatchCount` is
+                // the whole match and is deliberately nil for a semantic run.
+                matchCount: searchVM.searchMode == .meaning
+                    ? searchVM.results.count : searchVM.totalMatchCount,
                 displayedCount: searchVM.displayedResults.count,
                 isPartialEvidence: resultSetScope.isPartialEvidence,
                 isChecklistHiding: searchVM.checklistMode
@@ -468,7 +471,13 @@ struct MacSearchWindowView: View {
                             section,
                             parameters: searchVM.submittedSearchParameters,
                             service: appState.searchService,
-                            pipeline: appState.indexingPipeline)
+                            pipeline: appState.indexingPipeline,
+                            // A meaning search has no MATCH; it describes the keys it returned.
+                            documentKeys: searchVM.searchMode == .meaning
+                                ? searchVM.results.map {
+                                    (volumeId: $0.volumeId, documentId: $0.documentId)
+                                  }
+                                : nil)
                     }
                 })
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 420)
