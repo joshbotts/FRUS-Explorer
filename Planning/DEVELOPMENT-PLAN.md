@@ -12140,7 +12140,7 @@ proves the fingerprint covers the country table.
 `Planning/external-citation-sample.json` refreshed with the index. No index-version bump:
 `IndexingPipeline` never reads this artifact.
 
-## Session 2026-09-06c — #1202: series-facts schema 3, and the rule the screen corrected (PR #TBD)
+## Session 2026-09-06c — #1202: series-facts schema 3, and the rule the screen corrected (PR #1229)
 
 `series-facts-index.json` carries both of NARA's date pairs and a legend for its one-letter wire
 keys. Purely additive: 695 rows, all six vocabularies and every pre-existing field byte-identical;
