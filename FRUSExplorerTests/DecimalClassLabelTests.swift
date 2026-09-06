@@ -533,10 +533,23 @@ struct DecimalClassLabelTests {
             let short = ["classes", "subjects", "countries"].filter { axis in
                 (parsed[axis] ?? 0) < (floors[axis] ?? 0)
             }
-            #expect(!short.isEmpty, """
-                \(omission["scheduleId"] ?? "?") is recorded as not shipped while clearing every \
-                floor — either the floors moved or a good schedule is being withheld.
+            // The shortfall is on CLASSES ALONE, and saying so is what makes the two numbers
+            // legible. A mutation sweep transposed `parsed` and `floors` and a bare
+            // "some axis falls short" assertion passed on the transposed data — countries read
+            // 100 against 200 and subjects 20 against 507, so the row still looked refused while
+            // every figure in it was the wrong way round.
+            #expect(short == ["classes"], """
+                \(omission["scheduleId"] ?? "?") must be refused on its class table and nothing \
+                else — the country and subject tables clear their floors. Short on: \(short)
                 """)
+            // The floors are declared constants, identical for both refused schedules; the parsed
+            // counts are this build's measurement and differ. Pinning both ways round is what
+            // distinguishes them, because a transposition preserves neither.
+            #expect(floors == ["classes": 10, "subjects": 20, "countries": 100],
+                    "the declared floors moved — update the measurement, not just the assertion")
+            #expect((parsed["classes"] ?? 0) < 10)
+            #expect((parsed["subjects"] ?? 0) >= 20 && (parsed["countries"] ?? 0) >= 100,
+                    "the non-class tables must still be the ones that pass, or the reason is stale")
             #expect((omission["reason"] as? String)?.isEmpty == false)
         }
 
