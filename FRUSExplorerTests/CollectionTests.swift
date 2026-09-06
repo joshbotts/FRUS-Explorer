@@ -5375,3 +5375,138 @@ struct CollectionExportParityTests {
         return (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
     }
 }
+
+
+// MARK: - CollectionAttachmentTests
+
+/// How a `CollectionEntry` is attached to its `Collection` — the relationship, not just the id.
+///
+/// ## The asymmetry these pin
+/// Four attach paths existed and three assigned `entry.collection = collection` (the inverse),
+/// letting SwiftData maintain `Collection.documentEntries` from it:
+/// `CollectionExcerpts.append`, `CollectionExcerpts.appendToCollection`,
+/// `CollectionDocumentDiscovery.appendEntries` and `CaptureStateSeeder.seed`. The fourth —
+/// `CollectionPickerSheet.addDocument`, the document branch — instead did
+/// `collection.documentEntries?.append(entry)`, which is a **total no-op** while that
+/// relationship is `nil`: nothing is appended and the inverse is never set.
+///
+/// ## The measurements these encode
+/// `documentEntries` is `nil` on a constructed collection and on an inserted-but-unsaved one, and
+/// `Optional([])` from the first save onward. So the old picker line was correct for every saved
+/// collection and silently wrong for one created moments earlier — which the picker's own
+/// "New Collection" button does. `CollectionEditorView` saves on the first name keystroke
+/// (`saveLive()`), so a named collection closes the window; nothing guarantees it otherwise.
+///
+/// The orphan is permanent: a later save does not repair it, and `DuplicateRecordCleanup`
+/// re-parents only entries that already carry a `collection`.
+///
+/// Version history:
+///   1.0 — the picker's document branch moved onto the shared inverse-assigning factory
+@Suite("Collection entry attachment")
+struct CollectionAttachmentTests {
+
+    /// The precondition the whole defect rests on. Stated as its own test so that if a future
+    /// SwiftData release starts materialising the relationship as `[]` at insert, this fails
+    /// **here** — naming the changed platform behaviour — rather than quietly turning the two
+    /// tests below into tautologies that pass against a reverted fix.
+    @Test("`documentEntries` is nil until the collection's first save, then []")
+    @MainActor
+    func relationshipIsNilBeforeFirstSave() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let collection = Collection(name: "Backchannel")
+        #expect(collection.documentEntries == nil, """
+            A constructed collection's relationship is nil, not []. If this now holds [], the \
+            optional-chained append is no longer a no-op and the two tests below no longer \
+            distinguish the fix from the bug.
+            """)
+
+        context.insert(collection)
+        #expect(collection.documentEntries == nil,
+                "Inserting does not materialise the relationship — only saving does.")
+
+        try context.save()
+        #expect(collection.documentEntries?.isEmpty == true,
+                "After the first save the relationship is Optional([]), so an append would work.")
+    }
+
+    /// The regression test. Drives the real emitter — `CollectionPickerSheet.addDocument` routes
+    /// straight to this factory — against a collection whose `documentEntries` is nil, and asserts
+    /// the entry is reachable **both** ways.
+    ///
+    /// This fails on the old code: the append no-ops, so `documentEntries` stays nil and
+    /// `entry.collection` stays nil, while `collectionId` is set either way. Asserting only the id
+    /// (or only one direction) would pass against the bug.
+    @Test("Adding to an unsaved collection links the entry in both directions")
+    @MainActor
+    func appendToUnsavedCollectionLinksBothWays() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        // Exactly the state the picker's "New Collection" button leaves behind: inserted, never
+        // saved, so the relationship is still nil.
+        let collection = Collection(name: "Created moments ago")
+        context.insert(collection)
+        try #require(collection.documentEntries == nil)
+
+        let entry = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d12", volumeId: "frus1969-76v01",
+            collection: collection, modelContext: context)
+
+        // Direction 1 — the relationship-keyed readers (the editors, export, the document count,
+        // `ResearchRailView.distinctCollections`, the picker's own duplicate guard).
+        #expect(collection.documentEntries?.count == 1, """
+            The entry is not reachable from the collection. This is the defect: \
+            `collection.documentEntries?.append(entry)` against a nil relationship appends nothing.
+            """)
+        #expect(collection.documentEntries?.first?.documentId == "d12")
+
+        // Direction 2 — the inverse, which is what `ResearchRailView.distinctCollections` reads
+        // and drops the entry for when it is nil.
+        #expect(entry.collection?.id == collection.id, """
+            The inverse is unset, so the entry is an orphan carrying only `collectionId` — \
+            counted by the id-keyed readers and invisible to every relationship-keyed one.
+            """)
+
+        // Direction 3 — the plain id, which was ALWAYS set. Pinned so a future reader can see
+        // that this is the property that masked the defect, not evidence the attach worked.
+        #expect(entry.collectionId == collection.id)
+
+        // And it survives the save that the old code's orphan never recovered from.
+        try context.save()
+        let refetched = try #require(try ModelContext(container)
+            .fetch(FetchDescriptor<Collection>()).first)
+        #expect(refetched.documentEntries?.count == 1)
+    }
+
+    /// The saved-collection case, which the old code handled correctly — pinned so the fix is not
+    /// mistaken for a behaviour change, and so a "fix" that double-linked would be caught.
+    @Test("Adding to a saved collection appends exactly one entry, at max sortOrder + 1")
+    @MainActor
+    func appendToSavedCollectionDoesNotDuplicate() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let collection = Collection(name: "Saved")
+        context.insert(collection)
+        try context.save()
+        try #require(collection.documentEntries?.isEmpty == true)
+
+        let first = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d1", volumeId: "v1", collection: collection, modelContext: context)
+        let second = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d2", volumeId: "v1", collection: collection, modelContext: context)
+        try context.save()
+
+        // Assigning the inverse already adds to `documentEntries`; the relationship is idempotent,
+        // so neither entry lands twice.
+        #expect(collection.documentEntries?.count == 2)
+        #expect(try ModelContext(container)
+            .fetch(FetchDescriptor<CollectionEntry>()).count == 2)
+
+        // End of the list, no renumbering — the `max + 1` contract this overload exists for.
+        #expect(first.sortOrder == 0)
+        #expect(second.sortOrder == 1)
+    }
+}

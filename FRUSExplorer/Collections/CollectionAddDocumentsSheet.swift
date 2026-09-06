@@ -344,6 +344,56 @@ enum CollectionDocumentDiscovery {
             next += 1
         }
     }
+
+    /// Appends a single document entry at the end of a collection **without** a pane-level
+    /// entries array — the path used by `CollectionPickerSheet`, which mutates the collection
+    /// directly. The exact sibling of `CollectionExcerpts.appendToCollection`, and the reason
+    /// this overload exists: `sortOrder` is `max + 1`, so no existing entry is renumbered.
+    ///
+    /// ## The link is the INVERSE assignment, not `collection.documentEntries?.append`
+    /// `documentEntries` is `nil` — not `[]` — on a collection that has not been saved since it
+    /// was inserted. Measured: `nil` when constructed and when inserted-but-unsaved,
+    /// `Optional([])` from the first save onward, and on any later fetch. Against `nil` the
+    /// optional-chained append is a *total* no-op: nothing is appended **and** the inverse is
+    /// never set, so the entry keeps only its `collectionId` and is orphaned permanently — a
+    /// later save does not repair it and nothing in the app reconciles it (`DuplicateRecordCleanup`
+    /// re-parents only entries that already have a `collection`).
+    ///
+    /// The orphan is worse than invisible, because the two reader routes disagree: the id-keyed
+    /// ones count it (`ResearchView.collectionMemberships` groups on `entry.collectionId`) while
+    /// every relationship-keyed one cannot see it — the editors, export, the collection's document
+    /// count, `ResearchRailView.distinctCollections`, and the picker's own duplicate guard.
+    ///
+    /// Assigning the inverse is correct in **both** states: SwiftData materialises
+    /// `documentEntries` from it even when it was `nil`, and the relationship is idempotent, so a
+    /// redundant `append` after it does not double-add (both measured — see
+    /// `CollectionAttachmentTests`).
+    ///
+    /// - Parameters:
+    ///   - documentId: The FRUS document identifier.
+    ///   - volumeId: The source volume identifier (provenance).
+    ///   - collection: The target collection.
+    ///   - modelContext: The SwiftData context the new entry is inserted into.
+    /// - Returns: The inserted entry (so callers can surface or select it).
+    @MainActor
+    @discardableResult
+    static func appendToCollection(
+        documentId: String,
+        volumeId: String,
+        collection: Collection,
+        modelContext: ModelContext
+    ) -> CollectionEntry {
+        let nextOrder = ((collection.documentEntries ?? []).map(\.sortOrder).max() ?? -1) + 1
+        let entry = CollectionEntry(
+            collectionId: collection.id,
+            documentId: documentId,
+            volumeId: volumeId,
+            sortOrder: nextOrder
+        )
+        entry.collection = collection
+        modelContext.insert(entry)
+        return entry
+    }
 }
 
 // MARK: - CollectionAddDocumentsSheet

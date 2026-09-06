@@ -32,6 +32,9 @@ import SwiftData
 /// Version history:
 ///   1.0 — Authoring Phase 5 (excerpts): initial implementation
 ///   1.1 — Authoring Phase 5 review fixes: block-aware capture contract documented
+///   1.2 — `start`/`end` documented as UTF-16, matching `DocumentHighlight.startOffset` and
+///          `CollectionEntry.excerptStart` (the space they come from and the field they go
+///          into). Comment only — the values were always UTF-16.
 struct CollectionExcerptCapture: Sendable, Equatable {
     /// The frozen verbatim passage — the excerpt's rendering source of truth (A9).
     let text: String
@@ -39,10 +42,19 @@ struct CollectionExcerptCapture: Sendable, Equatable {
     let volumeId: String
     /// The source FRUS document identifier (provenance).
     let documentId: String
-    /// Unicode-scalar start offset in the source document's flat text, when the source
-    /// exposed offsets (`DocumentHighlight.startOffset` coordinate space); else `nil`.
+    /// UTF-16 start offset in the source document's flat text, when the source exposed
+    /// offsets (`DocumentHighlight.startOffset` coordinate space); else `nil`.
+    ///
+    /// **UTF-16, not the Unicode scalar this comment used to name.** The offsets originate in
+    /// `frus-selection.js`, which builds `window.FRUSOffsets.charToNode` by iterating each DOM
+    /// text node's `nodeValue.length` — a JS string length is UTF-16 code units — and they are
+    /// consumed by `flatTextExcerpt(blocks:start:end:)`, which measures blocks with
+    /// `utf16.count` and slices with `NSRange`. `DocumentHighlight` (the coordinate space named
+    /// above) and `CollectionEntry.excerptStart` (the field this is copied into) both already
+    /// say UTF-16; this struct sat between them saying something else. The three units agree on
+    /// every BMP character, which is why the mismatch was invisible.
     let start: Int?
-    /// Unicode-scalar end offset (exclusive), when available; else `nil`.
+    /// UTF-16 end offset (exclusive), when available; else `nil`.
     let end: Int?
     /// The source document's `renderingVersion` at capture, when available; else `nil`.
     let renderingVersion: String?
