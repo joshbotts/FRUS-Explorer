@@ -158,7 +158,7 @@ perceives is the chip's **text**.
 | ~~PV-2~~ | **SHIPPED 2026-09-05 (PR #1212).** `ProvenanceChip` — glyph + label + VoiceOver sentence, three tier colours on `FRUSTheme`, **deliberately unmounted**: PV-3 is the row that decides where a badge falls, and mounting one here to prove the type compiles would pre-empt it. Every rule is a `static func`, so the whole chip is testable without a view host. **Four sentences, not the plan's three** — `yourReading` shares the computed tier while sitting outside the provenance family, and "computed by this app" over a reader's own highlight attributes their work to the software. Twelve mutations killed. Four findings changed the code after review: the neutral wash and hairline route through `provenanceFill`/`provenanceBorder` rather than restating the alphas; the stroke is **0.5**, the chip idiom, where 1.0 is the headnote *card*; the glyphs joined `SymbolNameAuditTests`' runtime check, since the literal audit cannot see a name returned from a function and `square.fill`/`triangle.fill` appear nowhere else in the tree (proved: mutating a glyph *and* its expectation together passes `ProvenanceChipTests` and fails the audit); and `.accessibilityElement(children: .ignore)` is pinned **with its position**, because `Image(systemName:)` speaks its own symbol name and a label applied above the modifier is discarded. | M | PV-1 |
 | ~~PV-3~~ | **SHIPPED 2026-09-05 (PR #1216).** Five mounts across four files, and the split renders where §1c said it falls. **The two halves are cleanly separated by SECTION, which the plan did not know**: `CollectionDetailView.overviewSection` (name, repository, record group, lot key, aliases) is uniformly Tier 1 — `recordGroup` is a vote over references parsed from FRUS front matter, not a catalogue lookup — while `catalogSection` (NAID, catalogue link) and `dividedAtNARASection` (claimant series, entry numbers) are uniformly Tier 2. So a per-section badge is exact rather than approximate, and no claim needed splitting. **That view is SHARED between platforms**, so three of the five mounts cover both; only the Source Explorer card is twinned, and a test pins both twins. **The mount names the source and never asks `source(ofArtifact:)`** — a test proves that prohibition non-vacuous by adding a real call. Five mutations killed. **It also corrected a Q-3 error PV-0 and PV-1 shipped — see §8.** | M | PV-2 |
 | ~~PV-4~~ | **SHIPPED 2026-09-05 (PR #1217).** Two mounts, and mostly measured refusals. An enumeration of **71 capture moments** sorted them four ways: durable files and CSVs are already PV-1's (the colophon, the analytics block, the query appendix — the only form that travels); citations pasted into a footnote are **refused, with a test pinning it**, on the app's own #680 reasoning that a chip does not travel but a payload does; diagnostics dumps are out of scope by kind; and only two are UI moments before a save. Those two are `CollectionPickerSheet` (both platform bodies, persistent chrome, invariant `.frusText` **by construction** — an excerpt is a frozen span of the document's own text) and **the semantic map's lasso**, the row's headline and the one genuinely mixed capture in the app: the documents are FRUS's, but the fact that these particular ones are together is the model's. Four mutations killed. | S | PV-2 |
-| PV-5 | **Person rollups** | Editor-tagged mentions beside the authority join and POCOM | S | PV-2 |
+| ~~PV-5~~ | **SHIPPED 2026-09-05 (PR #PVFIVE).** Three mounts, and **the row where the per-claim rule was actually needed**: the identity block puts the volumes' own description directly above the register's role, both secondary-styled prose about one person, previously indistinguishable — §1c's boundary-inside-a-row, found at last. The career footer takes the second grain, where the chip adds what the POCOM sentence leaves out: that *attaching* this career to this person is the app's join, which is what a reader needs before reading an empty Career section as "held no post". The People LIST stays unbadged on three measured legs — and one of PV-2's own premises was **wrong**: the row subtitle does not splice two tiers, `roleEraSubtitle` is `role ?? description` plus era, all TEI, so the row is uniformly Tier 1. Five mutations killed. **Wave PV complete.** | S | PV-2 |
 
 **Suggested order is the table order, and PV-1 before PV-2 is the argument of the wave**: the
 export sentence is the only part that reaches a footnote, and it is nearly free (see PV-1). If the
@@ -380,6 +380,36 @@ surface, not merely across two, in the document share popover and menu.
 Editor-tagged `persName` mentions (Tier 1) beside the authority join and POCOM careers (Tier 2),
 currently indistinguishable on one screen.
 
+**SHIPPED.** Three mounts, and this is the row where the per-claim rule was actually needed.
+
+**PV-3 found each Source Explorer section uniformly one source; here they are not.** The identity
+block holds `indexEntry.entry.description` — the volumes' own words — directly above
+`authorityEntry?.r`, the Office of the Historian's register, both secondary-styled prose about the
+same person. Nothing distinguished them, so a reader quoting "FRUS describes him as…" could not
+tell which line they had. Each now carries its own chip. **This is §1c's boundary-inside-a-row,
+found at last.**
+
+**The career footer is the second grain**, and the chip adds the half the sentence leaves out. The
+footer already said "From the Department's Principal Officers and Chiefs of Mission register" —
+whose records these are. It did not say that *attaching this career to this person* is a join the
+app made, which is what a reader needs before concluding from an empty Career section that somebody
+held no post. The chip supplements the sentence; a test pins that it does not replace it.
+
+**The People LIST is deliberately unbadged, for three measured reasons, and one of the survey's own
+premises was wrong.** PV-2's survey said "the row's subtitle string itself splices two tiers" — it
+does not: `FRUSASTNode.roleEraSubtitle` is `role ?? description` plus the era, read from the TEI, so
+the row is **uniformly Tier 1** and a chip there would never vary, which is §6's refusal of search
+results. Beyond that the row already carries a name, a subtitle, a duplicate hint, a count capsule
+and a chevron; and it is a `Button` with `.accessibilityElement(children: .combine)` *and its own*
+`.accessibilityLabel`, the exact container that swallows a chip's announcement — so a chip there
+would be silent to VoiceOver unless `accessibilityLabelText` folded the sentence in, which is why
+`ProvenanceChip.accessibilityLabel(for:)` is callable alone. A test pins all three legs, so whoever
+changes one is told the exclusion rested on it.
+
+**Person Analytics stays unbadged** on the survey's verified constraint: `PersonMentionRanking`
+carries no authority field, chart rows are `BarMark`s, and `rankingChartBody` is reused verbatim by
+`exportRankingFigure` — a per-bar chip would be baked into the exported figure of record.
+
 **Surveyed at PV-2, three constraints verified:**
 
 - **Per row, from `PersonIndexEntry.authorityId` — never a per-screen constant.** The People list
@@ -479,6 +509,10 @@ All four were answered the day build 45 shipped, which is what unblocked the wav
 
 ## 9. Version history
 
+- **1.5 — 2026-09-05:** PV-5 shipped and **wave PV is complete**. §PV-5 records the identity block
+  as the row where per-claim badging was genuinely required, the three measured legs behind leaving
+  the People list unbadged, and a PV-2 survey premise that did not survive checking (the row
+  subtitle is uniformly Tier 1, not mixed).
 - **1.4 — 2026-09-05:** PV-4 shipped. §PV-4 records the 71-moment enumeration and the four kinds it
   sorted into, the citation refusal and why the app already drew that line at #680, and why the
   picker's chip is invariant by construction rather than by omission.
