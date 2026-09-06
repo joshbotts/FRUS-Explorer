@@ -12185,7 +12185,7 @@ generator entry updated. A second `schemaVersion == 2` pin lives in the SPM targ
 running `swift test`, not the app suite. No index-version bump: `IndexingPipeline` never reads this
 artifact. The coverage pair is decoded but deliberately unrendered, so no screenshots are owed.
 
-## Session 2026-09-06d — #1203: an accession → series map, shipped as data (PR #TBD)
+## Session 2026-09-06d — #1203: an accession → series map, shipped as data (PR #1230)
 
 `accession-series-index.json` — which NARA series a Federal Records Center accession became.
 4,750 keys, 7,349 claimants, 619KB, built offline from the record-group harvest.
