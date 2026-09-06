@@ -151,7 +151,7 @@ struct ShippedArtifactTests {
     @Test("It carries the measured population")
     func measuredShape() throws {
         let index = try loadShipped()
-        #expect(index.schemaVersion == 2, "schema 2 adds the #663 catalog facts")
+        #expect(index.schemaVersion == 3, "schema 3 adds the #1202 coverage pair and legend")
         // Measured 2026-08-10 over the full harvest: 622 of 2,121 app-held series NAIDs carry a
         // creator. A floor, not equality — a re-harvest may add series — but a collapse is caught.
         #expect(index.byNaId.count >= 600, "series with a creator: \(index.byNaId.count)")

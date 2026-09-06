@@ -12139,3 +12139,48 @@ proves the fingerprint covers the country table.
 
 `Planning/external-citation-sample.json` refreshed with the index. No index-version bump:
 `IndexingPipeline` never reads this artifact.
+
+## Session 2026-09-06c — #1202: series-facts schema 3, and the rule the screen corrected (PR #TBD)
+
+`series-facts-index.json` carries both of NARA's date pairs and a legend for its one-letter wire
+keys. Purely additive: 695 rows, all six vocabularies and every pre-existing field byte-identical;
+173 rows gain `cy0`/`cy1`; a top-level `legend` appears; schema 2 → 3. The coverage pair went into
+`HarvestShardReader` rather than a parallel projection, per that file's own anti-drift rule, through
+the existing `try?`/`YearBox` pattern — a bare `try` would throw on the majority of records and kill
+the shard.
+
+**THE ISSUE'S FRAMING DOES NOT SURVIVE THE CORPUS, and the correction is load-bearing.** #1202 says
+that of 75 RG 59 series, coverage "starts earlier in all 17" that differ. Across all **1,155**
+series carrying both: earlier in 880, same year in 274, **later in 1** (naId 519793189, NARA's own
+*FRUS Clearance Files*). And naId **604801** is inclusive 1963–1973 against coverage 1947–1964 —
+**neither pair contains the other**.
+
+That decides the screen's rule. Running §14.11 rule 3 over the run's 93 lot resolutions FROM THE
+BUNDLE ALONE: the inclusive pair alone fails **6**, preferring coverage fails **4** (it invents a
+failure on 604801), and the **union** — `min(y0,cy0)`–`max(y1,cy1)` — fails **3**, which is rule 3's
+stated figure. So the acceptance criterion is met with no harvest access, and it could not have been
+met before this change because the 3 requires a field the bundle did not carry. The three survivors
+are the ones the run diagnosed: 65A987 (an FRC accession, not a lot), 73D153 (wrong claimant),
+57D294 (benign).
+
+**The first draft of the legend note said "prefer `cy0`/`cy1`, fall back to `y0`/`y1`". Running the
+screen is what caught it** — that rule yields 4, not 3. Every surface now states the union rule.
+
+**The legend states the VOCABULARY, not just the field name**, because the reported failure was
+taking `as` through `restrictions` and getting a plausible wrong value on every row. The pairing is
+asymmetric: `as` and `us` both resolve through `statuses`, while `ar` uses `restrictions` and `ur`
+uses `useRestrictions`. A legend is NOT the advisory trap #1204 refused — an era gate can be ignored
+while the consumer still produces output, but a one-letter key cannot be resolved without consulting
+something; the only question is whether that something ships in the file. The pinning test drives
+the app's real decoder over sentinel vocabularies and THEN asserts the legend agrees, because
+driving the decoder alone would prove the app correct and leave the legend free to lie.
+
+Four mutations killed, all through the real generator. **One first returned a false green worth
+recording**: dropping the coverage pair produced `Test run with 0 tests in 1 suite passed` — not a
+survivor, but a force-unwrap in the assertion trapping, which kills the test PROCESS before any
+result is recorded and takes every unrelated test with it. Replaced with `#require`.
+
+Guide → 1.16 (§14's row and §14.11's rule 3 both described the inclusive-only artifact). CLAUDE.md's
+generator entry updated. A second `schemaVersion == 2` pin lives in the SPM target and was found by
+running `swift test`, not the app suite. No index-version bump: `IndexingPipeline` never reads this
+artifact. The coverage pair is decoded but deliberately unrendered, so no screenshots are owed.
