@@ -419,6 +419,9 @@ the phone, O-2 and O-5 pay first.
 - **O-6 · Subseries poles.** 659 exact centroids ship (volumes *and* subseries); only tapped-document
   volume poles are offered. A picker is data-ready — and on the phone a picker beats tap-precision.
 
+  > **Correction, 2026-09-06.** The "98.2% pre-1900" in this row inverts its source: the assessment says *pre-1900 is 98.2% zero-candidate*, a statement about early documents, not about the make-up of the zero-candidate set. Re-measured against the live index: **93.9% of pre-1900 documents are zero-candidate**, while only **70.3% of zero-candidate documents are pre-1900**, and the population is **45,030**, not 46,234. The finding stands — the early corpus is where the axis is needed — but the number arguing for it is the first, not the second. Left in place as the record of what was reviewed.
+
+
 ### 7.6 Worklist additions
 
 | # | Carries | Findings | Effort | Wave |

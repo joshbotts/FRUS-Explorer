@@ -6388,12 +6388,13 @@ public actor IndexingPipeline {
             VALUES (?, ?, ?, ?, NULL, NULL, NULL, ?)
             ON CONFLICT(volume_id, document_id) DO UPDATE SET
                 changed_at  = CASE
+                                WHEN document_revisions.change_kind = 'vanished' THEN ?
                                 WHEN document_revisions.index_version IS NOT excluded.index_version
                                 THEN document_revisions.changed_at
                                 WHEN excluded.content_hash != document_revisions.content_hash
-                                  OR document_revisions.change_kind = 'vanished'
                                 THEN ? ELSE document_revisions.changed_at END,
                 change_kind = CASE
+                                WHEN document_revisions.change_kind = 'vanished' THEN 'apparatus'
                                 WHEN document_revisions.index_version IS NOT excluded.index_version
                                 THEN document_revisions.change_kind
                                 WHEN excluded.body_hash != document_revisions.body_hash THEN 'body'
@@ -6401,13 +6402,12 @@ public actor IndexingPipeline {
                                  AND document_revisions.change_kind = 'body'
                                  AND document_revisions.reviewed_at IS NULL THEN 'body'
                                 WHEN excluded.content_hash != document_revisions.content_hash THEN 'apparatus'
-                                WHEN document_revisions.change_kind = 'vanished' THEN 'apparatus'
                                 ELSE document_revisions.change_kind END,
                 reviewed_at = CASE
+                                WHEN document_revisions.change_kind = 'vanished' THEN NULL
                                 WHEN document_revisions.index_version IS NOT excluded.index_version
                                 THEN document_revisions.reviewed_at
                                 WHEN excluded.content_hash != document_revisions.content_hash
-                                  OR document_revisions.change_kind = 'vanished'
                                 THEN NULL ELSE document_revisions.reviewed_at END,
                 content_hash  = excluded.content_hash,
                 body_hash     = excluded.body_hash,
@@ -6439,7 +6439,13 @@ public actor IndexingPipeline {
                 // Bound in BOTH arms (Q-9): a rebaseline that left the column stale would re-arm
                 // the very bug this fixes on the next stamp.
                 sqlite3_bind_int(stmt, 5, Int32(Self.currentDateIndexVersion))
-                if mode == .stamp { sqlite3_bind_text(stmt, 6, now, -1, SQLITE_TRANSIENT_IP) }
+                if mode == .stamp {
+                    // `now` twice: the `changed_at` CASE tests 'vanished' BEFORE the version
+                    // guard, so it carries two `?` — a returning document is stamped whatever
+                    // parse version wrote its row, because presence is a fact and not a hash claim.
+                    sqlite3_bind_text(stmt, 6, now, -1, SQLITE_TRANSIENT_IP)
+                    sqlite3_bind_text(stmt, 7, now, -1, SQLITE_TRANSIENT_IP)
+                }
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }

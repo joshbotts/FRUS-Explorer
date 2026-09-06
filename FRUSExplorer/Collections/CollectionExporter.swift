@@ -931,8 +931,9 @@ enum CollectionColophon {
         // Every reader of the curated tables (`CuratedLotResolutionsStore`,
         // `CuratedLibraryResolutionsStore`) is a Source Explorer *view*; the trip packet's
         // `archivalResolution` returns `nil` outright. If an export path ever does render a curated
-        // outcome, this is where the disclosure goes back in — `CollectionExporterTests` pins the
-        // absence so that change cannot be silent.
+        // outcome, this is where the disclosure goes back in — `ProvenanceStatementTests` pins the
+        // absence so that change cannot be silent. (It named `CollectionExporterTests`, which does
+        // not exist; the pinning test is `archivalSourcesDoesNotClaimCuration`.)
         // PV §5 / Q-1: the residual is stated when — and only when — the export actually carries
         // an archival-sources block, since that block is a parse of the volumes' source notes.
         // Derived from the content, not passed by the caller, for the same reason the curated

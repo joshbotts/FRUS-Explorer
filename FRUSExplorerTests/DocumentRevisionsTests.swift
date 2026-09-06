@@ -73,6 +73,23 @@ struct DocumentRevisionsTests {
             return String(cString: c)
         }
 
+        /// A raw read of one `document_revisions` column, for pinning the migration itself —
+        /// `DocumentRevision` does not surface `index_version` and should not.
+        func revisionColumn(_ column: String, _ volumeId: String, _ documentId: String) -> String? {
+            var db: OpaquePointer?
+            guard sqlite3_open(dir.appendingPathComponent("test.sqlite").path, &db) == SQLITE_OK
+            else { return nil }
+            defer { sqlite3_close(db) }
+            var stmt: OpaquePointer?
+            let sql = "SELECT \(column) FROM document_revisions WHERE volume_id = ? AND document_id = ?"
+            guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else { return nil }
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            sqlite3_bind_text(stmt, 2, documentId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            guard sqlite3_step(stmt) == SQLITE_ROW, let c = sqlite3_column_text(stmt, 0) else { return nil }
+            return String(cString: c)
+        }
+
         /// Runs one raw statement against the database — to plant a fixture the pipeline would never
         /// write. Returns SQLite's result code, so a test can assert the plant itself took (the
         /// first version swallowed a NOT NULL violation and then "failed" on the read).
@@ -341,6 +358,65 @@ struct DocumentRevisionsTests {
         #expect(d3.changeKind != "vanished", "a document that is present is not vanished")
         #expect(d3.changedAt != nil, "its return is itself a change the reader should see")
         #expect(d3.reviewedAt == nil)
+    }
+
+
+    /// **Presence is a fact, not a hash comparison, so the version guard must not suppress it.**
+    ///
+    /// A first cut of the Q-9 guard sat above the `'vanished'` clause in all three CASE
+    /// expressions, so a document that came back under a different parse version stayed marked
+    /// vanished — the reader told a document was missing while looking at it.
+    @Test("A vanished document that returns under a different parse version is still un-vanished")
+    func reappearingUnderANewVersionIsNotVanished() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        try h.write(vol, Array(base.dropLast()))
+        #expect(try await h.index(vol)["d3"]?.changeKind == "vanished")
+
+        // The parse version moves while d3 is away — the re-download case, on a vanished row.
+        #expect(h.raw("UPDATE document_revisions SET index_version = -1") == SQLITE_OK)
+        try h.write(vol, base)
+        let back = try await h.index(vol)
+
+        let d3 = try #require(back["d3"])
+        #expect(d3.changeKind == "apparatus", """
+            A returning document is present whatever parser last wrote its row. Got \
+            \(d3.changeKind ?? "nil").
+            """)
+        #expect(d3.changedAt != nil, "its return is itself a change the reader should see")
+        #expect(d3.reviewedAt == nil)
+    }
+
+    /// The migration and its backfill, which the fresh-database harness would otherwise never
+    /// exercise — every test above starts from a `CREATE TABLE` that already has the column.
+    ///
+    /// Without the backfill every pre-migration row reads as a version mismatch, so the first
+    /// re-index of every volume on every existing install would rebaseline and swallow whatever
+    /// the editors had actually changed.
+    @Test("The migration backfills existing rows to the current version, so nothing rebaselines once")
+    func migrationBackfillsExistingRows() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+
+        // The state a pre-migration database is in the instant the column is added.
+        #expect(h.raw("UPDATE document_revisions SET index_version = NULL") == SQLITE_OK)
+        #expect(h.revisionColumn("index_version", vol, "d2") == nil)
+
+        // A relaunch runs setupDatabase, hence the migration and its backfill.
+        _ = try h.reopen()
+        #expect(h.revisionColumn("index_version", vol, "d2")
+                == String(IndexingPipeline.currentDateIndexVersion), """
+            A NULL row must be claimed for the CURRENT version, or the next stamp reads it as a \
+            mismatch and rebaselines a change the reader should have seen.
+            """)
+
+        // And with the row backfilled, an ordinary edit still stamps.
+        var edited = base
+        edited[1].body = "Nothing to report from Paris, except the rain."
+        try h.write(vol, edited)
+        #expect(try await h.index(vol)["d2"]?.changeKind == "body")
     }
 
     // MARK: - The P2 read APIs
