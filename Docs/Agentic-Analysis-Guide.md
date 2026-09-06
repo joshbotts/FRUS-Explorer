@@ -735,10 +735,13 @@ Label the output "citation form", not "era". For a repository breakdown use `rep
 which varies (`64 D 199`, `64D199`, `64 D199`).
 `lot_file_norm` is a parse, not an assertion, and the parser bounds — but does not eliminate — the
 way a secondary citation can be captured as the document's own. The two Nixon Presidential Materials
-rows that made `75 D 229` look like five documents are fixed (#1206; it is three now), because a
-lead naming those materials is treated as having already claimed the document. **The class is
-narrower, not closed**: measured over the corpus, 13,287 source notes name a lot and **1,927 name it
-only outside the leading sentence**, of which the fix covers 63. Most of the rest are legitimate —
+rows that made `75 D 229` look like five documents are fixed (#1206, completed in #1225; it is
+three now), because a lead naming those materials is treated as having already claimed the
+document — in all four places a lot is extracted, which the first attempt missed: it bounded three
+strategies and left `tryNARACollection` reading the whole note, so the two rows changed
+classification and kept the lot. **The class is narrower, not closed**: measured over the corpus,
+13,287 source notes name a lot and **1,927 name it only outside the leading sentence**, of which
+the fix covers 63. Most of the rest are legitimate —
 the 1961–63 abstract notes put their citation in the tail — so no rule refuses them wholesale. Read
 `raw_text` for any lot you publish a shelf for.
 
@@ -2489,7 +2492,8 @@ SEMANTIC VECTORS
   now reads *Czechoslovakia* and `47h` *New Zealand*, and Newfoundland, Switzerland and the
   Philippines are present — but `42` Canada and `74` Bulgaria remain absent by design, so the
   read-one-header rule stands. **§6.5**: the two `75 D 229` rows are fixed (#1206) and the lot is
-  three documents, not five; the caveat now states what the fix does NOT cover — 1,927 notes name a
+  three documents, not five (the #1206 fix was incomplete and was finished in #1225, which is why
+  the caveat names both); the caveat now states what the fix does NOT cover — 1,927 notes name a
   lot only outside the leading sentence and only 63 were in the fixed class, most of the remainder
   being the legitimate 1961–63 abstract shape.
 
