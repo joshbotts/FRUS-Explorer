@@ -90,7 +90,7 @@ struct AccessionSeriesIndexTests {
     }
 
     /// The legend covers every key a row actually uses (#1202's rule, applied to a second file).
-    @Test("The legend accounts for every wire key in use")
+    @Test("The legend accounts for every wire key an accession row uses")
     func legendIsComplete() throws {
         let legend = try #require(try artifact()["legend"] as? [String: String])
         let used = Set(try rows().values.flatMap { $0.flatMap(\.keys) })
