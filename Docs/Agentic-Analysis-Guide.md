@@ -1806,7 +1806,7 @@ The stack, and the question each artifact answers:
 |---|---|---|
 | `collection-usage-index.json` | how many documents in volume X came from archival unit Y — **the join that turns any volume scope into a ranked archival target list** | 264,464 notes; 1,839 collections reached; 10,446 class keys |
 | `external-citation-index.json` | what the editors cited and did **not** print | 19,800 lot/library refs + 29,890 class refs, 440 volumes |
-| `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type (an undivided lot has one answer, which is unchallenged, not confirmed — `72 D 192` resolves to a series titled *Speeches and Statements*). | 1,065 lot files, all carrying a NAID |
+| `central-files-index.json` | cited lot number → record group, series NAID, HMS/MLR entry number — as a **candidate**. The key is a folded control number, and a match is an identity claim only when both sides mean a lot by it: a Federal Records Center accession (`65 A 987`) and a file label fold the same way and are not lots. Two cheap screens before the date-span rule: does the series' extent hold the box FRUS cites (five inches cannot hold a Box 104), and does its title fit the document type. **One answer in this file does not mean one answer at NARA**: it stores a single NAID per lot, so a divided lot arrives here looking settled. `72 D 192` resolves to a series titled *Speeches and Statements*, which fits almost nothing a Rusk Files citation names — and the reason is that NARA divides that lot across **six** series, including *General Correspondence of Dean Rusk* and *Transcripts of Telephone Calls*. Check `lot-claimants-index.json` before treating any single answer as unchallenged; 123 lots are divided and this file conceals every one of them. | 1,065 lot files, all carrying a NAID |
 | `collection-authority.json` | which collection is this note naming, under every spelling | 4,429 collections, 1,018 with a NAID |
 | `series-facts-index.json` | the pre-travel facts: creator, extent, **inclusive** date span (NARA's wider *coverage* span is not projected — rule 3 below), access status, facility. Its `byNaId` entries use one-letter wire keys with no legend — `as` and `us` (access and use status) → `statuses`, `ar` → `restrictions`, `ur` → `useRestrictions`, `ru` → `referenceUnits`, `c` and `p` (creator and predecessors) → `headings`, `fa` → `findingAidTypes`, `x` extent, `y0`/`y1` the inclusive span — over six separate vocabularies (`statuses`, `restrictions`, `useRestrictions`, `referenceUnits`, `findingAidTypes`, `headings`). Reading `as` through `restrictions` reproduces a plausible wrong value on every row. | 695 series, 397 creator headings |
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
@@ -2486,6 +2486,14 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.14 — 2026-09-05: **§14's `central-files-index.json` row corrected.** It offered `72 D 192` as
+  an example of *an undivided lot [with] one answer*; `72 D 192` is one of the 123 lots NARA
+  divides, with **six** claiming series. It reads as undivided because `central-files-index.json`
+  stores a single NAID per lot and conceals the division — which is the defect #1205 fixes in the
+  app, where a divided lot now resolves to none of its claimants rather than silently to one. The
+  row's point survives and sharpens: a single answer here is not evidence of a single answer at
+  NARA, so screen against `lot-claimants-index.json` first.
 
 - 1.13 — 2026-09-05: two caveats updated because the defects behind them closed. **§14's
   `decimal-class-labels.json` row**: the 1910–49 country table went 198 → 217 codes (#1201), `60f`
