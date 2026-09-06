@@ -803,6 +803,7 @@
 		935F12940D1805D09CC50C60 /* IndexingQueueBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 551104A534CC0A4670AD011D /* IndexingQueueBannerView.swift */; };
 		937D55D24ABA92EF6609B8F2 /* WordCloudLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C62C528984EEA78DAF451E0 /* WordCloudLoader.swift */; };
 		93852FE2ABF03497440BB753 /* ProjectContextViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5427B5FF858A83768CB8A9F5 /* ProjectContextViewModel.swift */; };
+		93B1E9DAF857C82170C7F5CC /* FacetMeaningModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7537FB8004ED9B6D8D9A8B41 /* FacetMeaningModeTests.swift */; };
 		93E8A1DFF9FE23F2B8304AA0 /* SourceProvenanceDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3B3C989DE269DD1B5D99106 /* SourceProvenanceDashboard.swift */; };
 		94416E4967ADA2921FC62920 /* CorpusScaleLiteralsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88721839BB98CD08E60E00C7 /* CorpusScaleLiteralsTests.swift */; };
 		944A05325FBAE71430BEE37A /* ExportHistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A479E87E9FB696001E9EBDFF /* ExportHistoryEntry.swift */; };
@@ -1899,6 +1900,7 @@
 		73EA7A4B00A0BB70F8F7587F /* SourceProvenanceDataTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceProvenanceDataTests.swift; sourceTree = "<group>"; };
 		7493530A4C1DF09F9B10A046 /* ToolbarOverflowAccessibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarOverflowAccessibilityTests.swift; sourceTree = "<group>"; };
 		74A30A6A1986B600047646A7 /* FTS5Vocabulary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FTS5Vocabulary.swift; sourceTree = "<group>"; };
+		7537FB8004ED9B6D8D9A8B41 /* FacetMeaningModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FacetMeaningModeTests.swift; sourceTree = "<group>"; };
 		75B6A48541BE87A0974BFCD6 /* TEIHeaderParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TEIHeaderParser.swift; sourceTree = "<group>"; };
 		75BE9DFBE7BA63978BD3EAE7 /* CitationBlockSplitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitationBlockSplitterTests.swift; sourceTree = "<group>"; };
 		75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FRUSExplorerUITests.swift; sourceTree = "<group>"; };
@@ -2989,6 +2991,7 @@
 				C9942E6333E84F2DEF781D3F /* ExcerptVerifierTests.swift */,
 				494F27398E0CA343906DE73B /* ExternalCitationTests.swift */,
 				F1F6F0652F55F6EC5FFA535C /* FacetMatchSetParityTests.swift */,
+				7537FB8004ED9B6D8D9A8B41 /* FacetMeaningModeTests.swift */,
 				A3071533CEB37BF4076CEB42 /* FacetPanelControllerTests.swift */,
 				360F5140E1A7DECE2FDD8A13 /* FacetSelectionTests.swift */,
 				36CF49F832C51F6AEAF3B381 /* FacetSortingAndPagingTests.swift */,
@@ -5122,6 +5125,7 @@
 				95187F239510AA27632ECD32 /* FRUSParserSession07Tests.swift in Sources */,
 				314EBE886077ECD321160604 /* FRUSRenderNodeHTMLSerializerTests.swift in Sources */,
 				EEA80E8245699A4AFCC8FD90 /* FacetMatchSetParityTests.swift in Sources */,
+				93B1E9DAF857C82170C7F5CC /* FacetMeaningModeTests.swift in Sources */,
 				424A38E0255D7A5F6609C6BE /* FacetPanelControllerTests.swift in Sources */,
 				04B54A93CD2AE77454DEC14A /* FacetSelectionTests.swift in Sources */,
 				5267D956725F4E8B504ED657 /* FacetSortingAndPagingTests.swift in Sources */,

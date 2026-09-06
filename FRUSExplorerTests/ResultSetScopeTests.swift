@@ -43,6 +43,59 @@ struct ResultSetScopeTests {
                        totalMatchCount: total, documentsOnPage: onPage, pageCount: pages)
     }
 
+    /// A meaning search: the top-N nearest neighbours, and no total by construction.
+    private func meaning(loaded: Int = 100, shown: Int? = nil,
+                         onPage: Int = 25, pages: Int = 4) -> ResultSetScope {
+        // 100 mirrors `SemanticSearchBackend.hitLimit`, which is `@MainActor` and so cannot be
+        // read here. Nothing in these tests depends on the value: the meaning branch returns
+        // before any `fetchLimit` arithmetic, which is the point — the ceiling is not what the
+        // sentence is about.
+        ResultSetScope(loaded: loaded, shown: shown ?? loaded, fetchLimit: 100,
+                       totalMatchCount: nil, documentsOnPage: onPage, pageCount: pages,
+                       isMeaningSearch: true)
+    }
+
+    // MARK: - A meaning search has no total to be unavailable (#1193)
+
+    /// **The sentence the bug was.** With `totalMatchCount` nil and the fetch at its ceiling, the
+    /// keyword grammar renders "100 loaded · total unavailable" — which says a number exists and
+    /// could not be got. For a similarity ranking no number exists: every document is a match at
+    /// some distance, and N is the shape of the answer rather than a ceiling it hit.
+    @Test("A meaning search names the closest matches, not an unavailable total")
+    func meaningSearchDoesNotClaimAnUnavailableTotal() {
+        let scope = meaning()
+        #expect(scope.headerDescription == "100 closest matches")
+        #expect(!scope.headerDescription.contains("unavailable"),
+                "a similarity ranking has no total, so none can be unavailable")
+        #expect(!scope.headerDescription.contains("loaded"),
+                "\"loaded\" belongs to the keyword grammar, where a larger match exists")
+    }
+
+    /// The keyword grammar is untouched — the same numbers still read the old way.
+    @Test("The keyword grammar is unchanged by the meaning branch")
+    func keywordGrammarIsUnchanged() {
+        let capped = ResultSetScope(loaded: 100, shown: 100, fetchLimit: 100,
+                                    totalMatchCount: nil, documentsOnPage: 25, pageCount: 4)
+        #expect(capped.headerDescription.contains("total unavailable"),
+                "a capped keyword fetch with no count still says so")
+        #expect(iOS(loaded: 412).headerDescription == "412 results")
+    }
+
+    /// The clause is shared so the two platforms cannot word one fact differently — macOS renders
+    /// it inside its own page-range dialect, iOS as the whole header.
+    @Test("Both platforms draw the meaning clause from one place")
+    func meaningClauseIsShared() {
+        let scope = meaning(loaded: 100)
+        #expect(scope.closestMatchesClause == "100 closest matches")
+        #expect(scope.headerDescription == scope.closestMatchesClause)
+    }
+
+    /// An empty meaning search is still "No results" — the mode does not change that.
+    @Test("A meaning search with nothing found still reads as no results")
+    func emptyMeaningSearchIsUnchanged() {
+        #expect(meaning(loaded: 0, onPage: 0, pages: 0).headerDescription == "No results")
+    }
+
     // MARK: - Which set is which
 
     @Test("A fetch below its ceiling with no known total is complete")

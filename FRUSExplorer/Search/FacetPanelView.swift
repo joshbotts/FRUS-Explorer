@@ -456,6 +456,23 @@ struct FacetPanelView: View {
     /// Whether checklist mode is hiding reviewed rows.
     let isChecklistHiding: Bool
 
+    /// Whether the search that produced these results ran by MEANING rather than by keyword.
+    ///
+    /// **Facets are computed from an FTS5 MATCH, and a meaning search does not have one** (#1193).
+    /// `load(_:parameters:service:pipeline:)` asks `SearchService.matchExpressions(for:)` for a
+    /// keyword expression and aggregates the whole index against it — so in meaning mode every
+    /// count here described a *different set of documents* from the results on screen: the
+    /// keyword interpretation of the query text, not the ranked neighbours the reader is looking
+    /// at. Reported with the results list showing 100 and the panel counting 471.
+    ///
+    /// The panel therefore says so and computes nothing, which is the treatment `SearchSheet`
+    /// already gives the MATCH inspector — "the Meaning strip replaces the MATCH inspector — no
+    /// FTS expression exists". This is the same fact reaching a second surface.
+    ///
+    /// Declared here rather than gated at the two call sites because those hosts are
+    /// hand-maintained twins, and a rule spelled in both is a rule that drifts.
+    let isMeaningSearch: Bool
+
     /// Called when a facet row is clicked, for the sections that can narrow.
     let onNarrow: (FacetNarrowing) -> Void
 
@@ -492,6 +509,9 @@ struct FacetPanelView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                if isMeaningSearch {
+                    meaningModeNote
+                } else {
                 preamble
                 if isChecklistHiding { checklistNote }
                 if let failure = controller.failure { failureNote(failure) }
@@ -505,6 +525,7 @@ struct FacetPanelView: View {
                         title: String(localized: "facets.provenance", defaultValue: "Archival provenance"))
                 section(.subjects,
                         title: String(localized: "facets.subjects", defaultValue: "Subjects"))
+                }
             }
             .padding(.vertical, 12)
         }
@@ -531,7 +552,41 @@ struct FacetPanelView: View {
 
     /// Open sections with no data — see `FacetPanelController.sectionsNeedingLoad(expanded:)`.
     private var pendingSections: [FacetSection] {
-        controller.sectionsNeedingLoad(expanded: expanded)
+        // Nothing is requested for a meaning search: the aggregation would run over the keyword
+        // match this result set is not, and its rows would sit behind the note explaining why
+        // they are absent.
+        isMeaningSearch ? [] : controller.sectionsNeedingLoad(expanded: expanded)
+    }
+
+    /// Why there are no facets for a meaning search.
+    ///
+    /// Names the mechanism rather than apologising: a reader who knows facets come from the
+    /// keyword index also knows why a similarity ranking has none, and knows that switching
+    /// modes gets them back.
+    private var meaningModeNote: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(String(localized: "facets.meaning.title",
+                         defaultValue: "No facets for a meaning search"),
+                  systemImage: SemanticGlyph.feature)
+                .font(.callout.weight(.medium))
+            Text(String(localized: "facets.meaning.detail",
+                        defaultValue: """
+                            Facets are counted from the keyword index. A meaning search ranks \
+                            documents by similarity instead, so there is no keyword match to break \
+                            down — and counting one would describe a different set of documents \
+                            from the results beside it.
+                            """))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(String(localized: "facets.meaning.remedy",
+                        defaultValue: "Switch to keyword search to narrow by year, volume, person or subject."))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal)
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: - Preamble

@@ -97,6 +97,32 @@ struct ResultSetScope: Equatable, Sendable {
     /// "complete" about a set that was frozen from a capped capture.
     var appliedCorpusTruncation: WorkingCorpus.CaptureTruncation? = nil
 
+    // MARK: - The route that produced it
+
+    /// Whether these results were ranked by MEANING rather than matched by keyword.
+    ///
+    /// **A similarity search has no total, and "total unavailable" says the opposite** (#1193). The
+    /// keyword grammar above is built on a match that exists and a fetch that may not have reached
+    /// all of it, so "unavailable" means *there is a number and we could not get it*. A meaning
+    /// search returns the N nearest neighbours: every document in the corpus is a match at some
+    /// distance, so N is the answer's shape rather than a ceiling it ran into. Reported as
+    /// "100 loaded · total unavailable" beside a facet panel counting 471.
+    ///
+    /// `MacSearchViewModel.performMeaningSearch` sets `totalMatchCount = nil` deliberately — a
+    /// semantic number there would mint phantom deltas in the SavedSearch freshness watermark —
+    /// so the nil is correct and it is the *sentence* that was wrong.
+    var isMeaningSearch: Bool = false
+
+    /// The header clause for a meaning search: the shape of the answer, not a count of a match.
+    ///
+    /// Shared so the two platforms cannot word it differently — `headerDescription` renders it on
+    /// iOS and `SearchSheet.resultCountLabel` on macOS, which is the same division of labour the
+    /// corpus clause above already uses.
+    var closestMatchesClause: String {
+        String(format: String(localized: "search.count.closest %@",
+                              defaultValue: "%@ closest matches"), grouped(shown))
+    }
+
     // MARK: - Derived
 
     /// Whether more documents match the query than were loaded.
@@ -180,6 +206,8 @@ struct ResultSetScope: Equatable, Sendable {
         if shown == 0 {
             return String(localized: "search.count.none", defaultValue: "No results")
         }
+        // Before every keyword branch: none of them can describe this set. See ``isMeaningSearch``.
+        if isMeaningSearch { return closestMatchesClause }
         if !didHitFetchLimit, hiddenByChecklist == 0 {
             // Inside a corpus that was itself a capped capture, a bare count is the very claim
             // this type exists to stop: the number is exact for the corpus and says nothing about
