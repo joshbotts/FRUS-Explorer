@@ -1,0 +1,61 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema" 
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'POSCTRL', COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"'; SELECT 'NEGCTRL', COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('aviat',    'aviation', 'airlin', 'airline', 'aircraft', 'airplan', 'aeronaut', 'aerial', 'airport', 'airfield', 'airwai', 'airway', 'icao', 'picao', 'cabotag', 'overflight', 'overfli', 'iata', 'bermuda', 'chicago', 'air', 'flight', 'land', 'rout', 'carrier', 'pan', 'american') ORDER BY doc DESC;"
+./phrase.sh "civil aviation" "civil aviation"
+./phrase.sh "landing rights" "landing right"
+./phrase.sh "air routes" "air route "air rout"
+./phrase.sh "air transport" "air transport"
+./phrase.sh "air service" "air service"
+./phrase.sh "air navigation" "air navigation"
+./phrase.sh "commercial aviation" "commercial aviation"
+./phrase.sh "civil air" "civil air"
+./phrase.sh "air agreement" "air agreement"
+./phrase.sh "traffic rights" "traffic right"
+./phrase.sh "air base" "air base"
+./phrase.sh "air line" "air line "airline"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT d.volume_id||'/'||d.document_id, substr(replace(replace(d.body_text,char(10),' '),char(13),' '), max(1,instr(lower(d.body_text),'land')-60),150) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE f.frus_documents MATCH '\"landing rights\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND lower(d.header||' '||COALESCE(d.dateline,'')||' '||COALESCE(d.source_note,'')||' '||d.body_text) NOT LIKE '%landing right%' LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < civair.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < tight.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < topvol.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, structure_json FROM volume_structures;"
+python3 (walk volume_structures structure_json titles for aviation regex) > headings.txt
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < decade.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT dc.volume_id||'/'||dc.document_id, substr(dt.date_iso,1,10), substr(replace(dc.body_text,char(10),' '), max(1,instr(lower(dc.body_text),'air line')-70),130) FROM document_cache dc JOIN document_dates dt ON dt.volume_id=dc.volume_id AND dt.document_id=dc.document_id WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dt.date_iso < '1903' AND lower(dc.body_text) LIKE '%air line%' LIMIT 8;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH t AS (SELECT dc.volume_id, dc.document_id, dt.date_iso, lower(dc.header||' '||COALESCE(dc.dateline,'')||' '||COALESCE(dc.source_note,'')||' '||dc.body_text) x FROM document_cache dc JOIN document_dates dt ON dt.volume_id=dc.volume_id AND dt.document_id=dc.document_id WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dt.date_iso<'1903') SELECT SUM(x LIKE '%air line%'), SUM(x LIKE '%airline%'), SUM(x LIKE '%air route%'), SUM(x LIKE '%aeronautic%'), SUM(x LIKE '%air transport%'), SUM(x LIKE '%air navigation%'), SUM(x LIKE '%iata%'), SUM(x LIKE '%icao%'), SUM(x LIKE '%landing right%') FROM t;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".read core.sql" "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM core;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".read core.sql" ".read dec2.sql"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run2.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run3.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run4.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run5.sql
+python3 (read decimal-class-labels.json coverage + .796/.248 suffixes)
+python3 (decimal schedule: spans, subject suffixes .796/.248/.79/.7961)
+python3 (decimal subjects key format + grep aviation/air)
+python3 (lookup class-8 suffixes 79*, 248, 24*)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run6.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run7.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run8.sql
+python3 (central-files-index.json lot lookup for M88,63D351,62D1,54D270,93D188,72D316,66D95,96D262,62D430)
+python3 (grep aviation/air titles in central-files-index + series-facts-index + collection-authority)
+python3 (series-facts-index shape + NAID 2945755 facts + aviation creators)
+python3 (series-facts byNaId lookup for aviation NAIDs)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, record_group, lot_file, COALESCE(series_name,substr(entry_text,1,90)) FROM volume_sources WHERE lower(entry_text) LIKE '%aviation%' OR lower(entry_text) LIKE '%aeronaut%' OR lower(COALESCE(series_name,'')) LIKE '%aviation%' ORDER BY volume_id LIMIT 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run9.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < ff.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < carr.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < carr2.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < read.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT d.volume_id||'/'||d.document_id, length(d.body_text), substr(replace(d.header,char(10),' '),1,95) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE f.frus_documents MATCH '\"civil aviation\"' AND d.volume_id IN ('frus1944v02',
+'frus1946v01') AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY bm25(frus_documents) ASC LIMIT 8;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < grab.sql > read-whole.txt
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run10.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run11.sql
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run12.sql
+python3 (collection-usage-index.json ranked collections for frus1944v02/1945v08/1946v01/1946v05/1946v11)
+python3 (collection-usage: decode classKeys ranking for top aviation volumes)
+python3 (manifest.json titles for top aviation volumes)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run13.sql
+python3 (digitized-ranges-index.json containment test for .796 classes)
+python3 (digitized-ranges: CORRECT test - match decimalClass field itself)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < run14.sql

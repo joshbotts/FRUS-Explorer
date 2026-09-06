@@ -1320,9 +1320,11 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
 
 ### Which surface answers which block
 
-The block as it stood in v1.10 was measured to hold across a doubled session (C-2); the lines v1.11
-added to it have not been re-measured (see the version history), and its blocks are not equally
-reachable in any case. This is what an agent handed only the database can and cannot do:
+The block was re-measured at its current 143 lines and scored **100% compliance against a no-rules
+control's 77.6%** (C-0b, 2026-09-06, `Planning/C0b-Falsifier-2026-09-06.md`) — so the block below,
+not v1.10's shorter one, is the instrument. It was separately measured to hold across a doubled
+session at its v1.10 length (C-2); that survival test has not been repeated on the longer text. Its
+blocks are not equally reachable in any case. This is what an agent handed only the database can and cannot do:
 
 | Block | Surface | If the surface is missing |
 |---|---|---|
@@ -2502,6 +2504,14 @@ SEMANTIC VECTORS
 
 *Version history*
 
+- 1.18 — 2026-09-06: **#1208 closed — the block is re-measured and declared the instrument.**
+  C-0's design was re-run against the block at its current **143 lines** (not the 134 the issue
+  named; #1204 and #1203 added nine more while it sat open), on two fresh questions, with a
+  per-agent query log and the cost recorded: **BLOCK 100%, CONTROL 77.6%**, no item lost under
+  the block, and the archival discriminator reproduced exactly — 4 of 4 block runs resolved a
+  NARA identifier, 0 of 4 control runs did. §12's preamble and this history no longer defer to
+  v1.10's shorter text. Record: `Planning/C0b-Falsifier-2026-09-06.md`.
+
 - 1.17 — 2026-09-06: **#1203 ships as data**, so §12's artifact block and §14's table gain
   `accession-series-index.json` — which NARA series an FRC accession became. Two cautions are
   stated because both were measured the hard way: the record group is PART of the key (an
@@ -2580,11 +2590,11 @@ SEMANTIC VECTORS
   **§14.7's** sentence on the `Rogers Act` contradicted the guide's own record and is corrected:
   three of the four corpus hits are footnote glosses or index entries, the fourth is a 1979
   memorandum's own prose. Further additions to §4.2, §4.3, §5, §6.5, §7.7, §14.2–§14.6, §14.10, §15
-  and Appendix A are itemised in the plan. **One caveat.** §12's block gained twenty-four lines
-  on 110 (134 now), and none of them has been re-measured: v1.10's block is the instrument that C-0
-  and C-2 scored at 99%, and the C-0 harness is owed a re-run on the revised block before v1.11's
-  block is declared the instrument. *(Commercial-diplomacy run, plan Part 1; Part 2, the skill, is
-  deferred.)*
+  and Appendix A are itemised in the plan. **The caveat this version carried is discharged**: §12's
+  block, which had grown from 110 lines to 134 here and to 143 by v1.17, was re-measured on
+  2026-09-06 (C-0b, #1208) and scored **100% against a control's 77.6%**, with no v1.10 item and no
+  newly-added item losing a single run. The revised block is the instrument.
+  *(Commercial-diplomacy run, plan Part 1; Part 2, the skill, is deferred.)*
 
 - 1.10 — 2026-08-31: the four documentation defects the L-8 assessment named or its implementation
   exposed. **§4.7** documents the two things the app's export now adds and a hand-made copy does not

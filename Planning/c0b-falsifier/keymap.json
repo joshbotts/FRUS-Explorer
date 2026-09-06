@@ -1,0 +1,11 @@
+{
+  "_note": "Which arm each cell was. Written AFTER scoring; the scorers were not told.",
+  "b1": {"arm": "CONTROL", "question": "civil aviation"},
+  "b2": {"arm": "BLOCK",   "question": "civil aviation"},
+  "b3": {"arm": "CONTROL", "question": "civil aviation"},
+  "b4": {"arm": "BLOCK",   "question": "civil aviation"},
+  "b5": {"arm": "CONTROL", "question": "refugees and displaced persons"},
+  "b6": {"arm": "BLOCK",   "question": "refugees and displaced persons"},
+  "b7": {"arm": "CONTROL", "question": "refugees and displaced persons"},
+  "b8": {"arm": "BLOCK",   "question": "refugees and displaced persons"}
+}

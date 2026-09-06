@@ -1,0 +1,87 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema" | tail -60
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"Department of State"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('aviat','aviation','aeronaut','aeronautic','airlin','airline','airway','aerodrom','airfield','airport','airplan','aircraft','airspac','cabotag','icao','iata','airman','flight','landing','airl') ORDER BY doc DESC;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term LIKE 'air%' AND doc>=40 ORDER BY doc DESC LIMIT 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE (term LIKE 'aer%' OR term LIKE 'avi%') AND doc>=5 ORDER BY doc DESC LIMIT 30;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('carrier','route','routes','pan','panair','panam','transatlant','transpacif','overflight','overfli','skie','sky','freedom','fifth','bermuda','chicago','montreal','hijack','skyjack','charter') ORDER BY doc DESC;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"civil aviation"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"civil aviation"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air transport"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air transport"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"landing rights"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"landing rights"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air routes"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air routes"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air navigation"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air navigation"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"commercial aviation"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"commercial aviation"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"traffic rights"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"traffic rights"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air services"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air services"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air service agreement"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly $DB "SELECT volume_id, structure_json FROM volume_structures LIMIT 1;"
+python3 headings.py   # scan volume_structures section titles for aviation vocabulary
+python3 headings2.py   # narrow the heading scan to civil-aviation formulas
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air service agreement"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly $DB < q_phrase.sql   # literal-share test, civil aviation
+python3 phrases.py   # phrase doc/volume counts + strict & tolerant literal shares
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"fifth freedom"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"fifth freedom"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"civil air"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"civil air"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"aviation agreement"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"aviation agreement"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air transport agreement"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+ls -la "/Applications/FRUS Explorer.app/Contents/Resources"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '"air transport agreement"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+python3 subj.py   # locate aviation subjects in document-subject-index.json
+python3 subj2.py
+python3 subj3.py
+python3 cu.py
+python3 cu2.py
+python3 chapters.py   # build the civil-aviation chapter document set from volume_structures
+python3 -u phrases2.py   # phrase doc/volume counts + strict & tolerant literal shares
+python3 srcs.py   # came-from channel over the aviation-chapter document set
+python3 lab.py
+python3 lab2.py
+python3 lab3.py
+sqlite3 -readonly $DB < q796.sql
+sqlite3 -readonly $DB < q796b.sql
+python3 cross.py   # cross-validate chapter set vs .796 set; decade gate; AV subject-numeric
+python3 era.py   # decade shape with per-1,000 rates and top-volume share
+sqlite3 -readonly $DB < q_land.sql   # read pre-1910 'landing rights' hits
+python3 ff.py   # false-friend / precision test against the gold set
+python3 dig.py
+python3 dig2.py
+python3 ext.py   # pointed-at channel (external_citations) over the gold set
+python3 cfi.py
+python3 lots.py   # resolve gold-set lot files against central-files-index / series-facts / lot-claimants
+python3 sf.py
+python3 cf2.py
+python3 comp.py   # carrier-competition vocabulary: counts, precision vs gold, literal share
+python3 -u comp.py > comp.out   # carrier-competition vocabulary
+sqlite3 -readonly $DB < q_head.sql   # sample the Chicago Conference compilation
+sqlite3 -readonly $DB < q_off.sql   # Department aviation offices named in document headers
+sqlite3 -readonly $DB < q_ci.sql   # read 'chosen instrument' contexts
+python3 rank.py   # ranked volume table for the aviation gold set
+python3 tight.py   # tight chapter set (aviation clause must head the section title)
+sqlite3 -readonly $DB '.schema document_subject_refs' ; SELECT * FROM document_subject_refs LIMIT 3
+python3 tags.py   # subject-tag precision/recall vs the gold set
+python3 ppl.py   # TEI-tagged person mentions inside the gold set
+sqlite3 -readonly $DB < q_pm.sql   # persName tagging coverage by volume
+sqlite3 -readonly $DB < q_berle.sql
+sqlite3 -readonly $DB < q_miss.sql   # read the non-literal 'landing rights' matches
+sqlite3 -readonly $DB < q_vs.sql   # volume front-matter Sources entries naming aviation
+sqlite3 -readonly $DB < q_vs2.sql
+python3 carr.py   # carrier names: counts and lift vs the gold set
+sqlite3 -readonly $DB < q_aero.sql   # where Aeroflot appears
+sqlite3 -readonly $DB < q_base.sql
+sqlite3 -readonly $DB < q_kal.sql   # the 1980s Aeroflot cluster
+sqlite3 -readonly $DB < q_kal2.sql
+python3 - <<'PY' ... # splice carriers section into report.md and correct the section-8 tail note
+python3 - <<'PY' ... # update bottom line, next-steps, appendix in report.md

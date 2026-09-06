@@ -1,0 +1,182 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) AS docs, COUNT(DISTINCT volume_id) AS vols FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_subjects"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT * FROM document_subjects LIMIT 5;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM document_subjects;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_subject_refs"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_subject_volumes"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT * FROM document_subject_refs LIMIT 5;"
+python3 -c "
+import json
+p=\"/Applications/FRUS Explorer.app/Contents/Resources/document-subject-index.json\"
+d=json.load(open(p))
+print(type(d), list(d.keys())[:20] if isinstance(d,dict) else len(d))
+"
+python3 -c "
+import json
+p=\"/Applications/FRUS Explorer.app/Contents/Resources/document-subject-index.json\"
+d=json.load(open(p))
+v=d[\"vocab\"]
+print(type(v), (list(v.keys())[:10] if isinstance(v,dict) else v[:3]))
+"
+python3 -c "
+import json,re
+p=\"/Applications/FRUS Explorer.app/Contents/Resources/document-subject-index.json\"
+d=json.load(open(p))
+v=d[\"vocab\"]
+pat=re.compile(r\"aviat|air|aero|flight|civil air|transport\", re.I)
+for i,e in enumerate(v):
+    if pat.search(e[\"n\"]) or pat.search(e.get(\"c\",\"\")) or pat.search(e.get(\"s\",\"\")):
+        print(i, e[\"c\"], \"|\", e.get(\"s\"), \"|\", e[\"n\"], \"df=\", e[\"df\"])
+"
+python3 -c "
+import json
+d=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/document-subject-index.json\"))
+print(d[\"provenance\"]); print(d[\"generated\"], d[\"schemaVersion\"], d[\"documentCount\"])
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT subject, COUNT(*) FROM document_subject_refs WHERE subject IN (324,335,366,376) GROUP BY subject;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) c FROM document_subject_refs WHERE subject=335 GROUP BY volume_id ORDER BY c DESC LIMIT 30;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) c FROM document_subject_refs WHERE subject=324 GROUP BY volume_id ORDER BY c DESC LIMIT 30;"
+python3 -c "
+import json
+d=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(type(d), list(d.keys())[:15] if isinstance(d,dict) else len(d))
+"
+python3 -c "
+import json
+d=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(json.dumps(d[0], indent=1)[:900])
+"
+python3 -c "
+import json
+d=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+m={v[\"id\"]:v for v in d}
+import sys
+for vid in [\"frus1944v02\",\"frus1964-68v14\",\"frus1969-76ve01\",\"frus1961-63v05\",\"frus1945v02\",\"frus1946v11\",\"frus1949v05\",\"frus1924v01\",\"frus1929v01\",\"frus1981-88v04\",\"frus1977-80v13\",\"frus1919Parisv11\",\"frus1946v01\",\"frus1948v04\"]:
+    v=m.get(vid)
+    print(vid, \"|\", v[\"title\"] if v else \"MISSING\")
+"
+python3 -c "
+import json,re
+d=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+m={v[\"filename\"][:-4]:v for v in d}
+for vid in [\"frus1944v02\",\"frus1964-68v14\",\"frus1969-76ve01\",\"frus1961-63v05\",\"frus1945v02\",\"frus1946v11\",\"frus1949v05\",\"frus1924v01\",\"frus1929v01\",\"frus1981-88v04\",\"frus1981-88v05\",\"frus1977-80v13\",\"frus1919Parisv11\",\"frus1946v01\",\"frus1948v04\",\"frus1952-54v01p1\",\"frus1940v04\",\"frus1935v03\"]:
+    v=m.get(vid)
+    if v: print(vid,\"|\",v[\"dateRange\"][\"earliest\"][:4]+\"-\"+v[\"dateRange\"][\"latest\"][:4],\"|\",re.sub(r\"\s+\",\" \",v[\"title\"]))
+    else: print(vid,\"| MISSING\")
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'civil aviation' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"civil aviation\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'landing rights' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"landing rights\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air transport' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air transport\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air navigation' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air navigation\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air routes' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air routes\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air route' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air route\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'commercial aviation' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"commercial aviation\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'aviation' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"aviation\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'airline' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"airline\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air line' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air line\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'airways' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"airways\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air service' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air service\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air services agreement' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air services agreement\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'traffic rights' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"traffic rights\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'fifth freedom' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"fifth freedom\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'cabotage' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"cabotage\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'air base' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"air base\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'airport' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"airport\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'aeronautics' || '|' || COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"aeronautics\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '"civil aviation" OR "landing rights" OR "air transport" OR "air navigation" OR "air route" OR "commercial aviation" OR "air service" OR "traffic rights" OR "fifth freedom" OR cabotage OR "aviation agreement" OR "air agreement" OR "air services agreement"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '"civil aviation" OR "landing rights" OR "air transport" OR "air navigation" OR "air route" OR "commercial aviation" OR "air service" OR "traffic rights" OR "fifth freedom" OR cabotage OR "aviation agreement" OR "air agreement" OR "air services agreement"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) c FROM frus_documents WHERE frus_documents MATCH '"civil aviation" OR "landing rights" OR "air transport" OR "air navigation" OR "air route" OR "commercial aviation" OR "air service" OR "traffic rights" OR "fifth freedom" OR cabotage OR "aviation agreement" OR "air agreement" OR "air services agreement"' GROUP BY volume_id ORDER BY c DESC LIMIT 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) AS docs, COUNT(DISTINCT volume_id) AS vols FROM frus_documents WHERE frus_documents MATCH '$CORE';"  # CORE="civil aviation" OR "landing rights" OR "air transport" OR "air navigation" OR "air route" OR "commercial aviation" OR "air service" OR "traffic rights" OR "fifth freedom" OR cabotage OR "aviation agreement" OR "air agreement"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) c FROM frus_documents WHERE frus_documents MATCH '$CORE' GROUP BY volume_id ORDER BY c DESC LIMIT 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_dates"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT * FROM document_dates LIMIT 3;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(d.date_iso,1,3)||'0s' AS decade, COUNT(*) c FROM frus_documents f JOIN document_dates d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' GROUP BY decade ORDER BY decade;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(date_iso,1,3)||'0s' d, COUNT(*) FROM document_dates GROUP BY d ORDER BY d;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema volume_structures"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT * FROM volume_structures LIMIT 2;"
+python3 /tmp/sec.py  # scan volume_structures section titles for aviation regex (script written to /tmp/sec.py)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"International Civil Aviation Organization\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"ICAO\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"PICAO\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Civil Aeronautics Board\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Pan American Airways\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Pan American World Airways\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Aeroflot\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"hijack\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"overflight\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"over-flight\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Bermuda agreement\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Chicago convention\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Warsaw convention\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"five freedoms\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"freedoms of the air\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Trans World Airlines\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Trans-World\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Braniff\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"KLM\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"British Overseas Airways\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Imperial Airways\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Lufthansa\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"SCADTA\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Aerovias\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Panagra\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"China National Aviation Corporation\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Civil Air Transport\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"open skies\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(d.date_iso,1,3)||'0s', COUNT(*) FROM frus_documents f JOIN document_dates d USING(volume_id,document_id) WHERE frus_documents MATCH '\"open skies\"' GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(d.date_iso,1,3)||'0s', COUNT(*) FROM frus_documents f JOIN document_dates d USING(volume_id,document_id) WHERE frus_documents MATCH '\"overflight\"' GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(d.date_iso,1,3)||'0s', COUNT(*) FROM frus_documents f JOIN document_dates d USING(volume_id,document_id) WHERE frus_documents MATCH '\"hijack\"' GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(d.date_iso,1,3)||'0s', COUNT(*) FROM frus_documents f JOIN document_dates d USING(volume_id,document_id) WHERE frus_documents MATCH '\"civil aviation\"' GROUP BY 1 ORDER BY 1;"
+python3 /tmp/chi.py  # dump full section trees for 7 aviation-heavy volumes
+python3 /tmp/chihdr.py  # list headers of the 252-doc Chicago civil aviation compilation
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_sources"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT source_text, COUNT(*) c FROM document_sources WHERE volume_id='frus1944v02' GROUP BY source_text ORDER BY c DESC LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT decimal_class, COUNT(*) c FROM document_sources WHERE volume_id='frus1944v02' AND decimal_class IS NOT NULL GROUP BY 1 ORDER BY c DESC LIMIT 15;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT decimal_class, COUNT(*) c FROM document_sources WHERE decimal_class LIKE '%.796%' OR decimal_class LIKE '%.79%' GROUP BY 1 ORDER BY c DESC LIMIT 25;"
+python3 /tmp/lab.py  # inspect decimal-class-labels.json shape
+python3 /tmp/lab2.py  # look up the .796 decimal suffix gloss
+python3 /tmp/lab3.py  # decimal schedule: class digits, .79x suffixes, sample country numbers
+python3 /tmp/lab4.py  # find aviation suffixes in the 1910-49 schedule
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM document_sources WHERE decimal_class LIKE '%.796%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id) FROM document_sources WHERE decimal_class LIKE '%.796%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) c FROM document_sources WHERE decimal_class LIKE '%.796%' GROUP BY 1 ORDER BY c DESC LIMIT 20;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM document_sources WHERE decimal_class IS NOT NULL;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<3-way overlap: FTS core vs subjects 324/335/366/376 vs decimal .796>"  # SQL: WITH t AS (SELECT volume_id,document_id FROM frus_documents WHERE frus_documents MATCH '"civil aviation" OR "landing rights" OR "air transport" OR "air navigation" OR "air route" OR "commercial aviation" OR "air service" OR "traffic rights" OR "fifth freedom" OR cabotage OR "aviation agreement" OR "air agreement"'),  s AS (SELECT volume_id,document_id FROM document_subject_refs WHERE subject IN (324,335,366,376)),  c AS (SELECT volume_id,document_id FROM document_sources WHERE decimal_class LIKE '%.796%') SELECT  (SELECT COUNT(*) FROM t) AS text_only_n,  (SELECT COUNT(*) FROM s) AS subj_n,  (SELECT COUNT(*) FROM c) AS class_n,  (SELECT COUNT(*) FROM t JOIN s USING(volume_id,document_id)) AS t_and_s,  (SELECT COUNT(*) FROM t JOIN c USING(volume_id,document_id)) AS t_and_c,  (SELECT COUNT(*) FROM s JOIN c USING(volume_id,document_id)) AS s_and_c,  (SELECT COUNT(*) FROM (SELECT * FROM t UNION SELECT * FROM s UNION SELECT * FROM c)) AS union_all; 
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<sample 15 docs with .796 class but no core-phrase and no aviation subject tag>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(body_text,1,700) FROM document_cache WHERE volume_id='frus1929v01' AND document_id='d400';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(body_text,1,700) FROM document_cache WHERE volume_id='frus1940v05' AND document_id='d872';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT raw_text FROM document_sources WHERE decimal_class LIKE '%.796%' LIMIT 20;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT substr(raw_text,1,instr(raw_text,'/')-1)) FROM document_sources WHERE decimal_class LIKE '%.796%' AND raw_text LIKE '%Airways%' OR raw_text LIKE '%Airlines%';"
+python3 /tmp/sec2.py  # section-title scan restricted to 1952+ volumes, broader regex
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT dc.document_id, substr(dc.header,1,90), substr(dc.dateline,1,28) FROM document_subject_refs r JOIN document_cache dc USING(volume_id,document_id) WHERE r.subject=335 AND r.volume_id='frus1961-63v05' LIMIT 15;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT dc.document_id, substr(dc.header,1,90), substr(dc.dateline,1,28) FROM document_subject_refs r JOIN document_cache dc USING(volume_id,document_id) WHERE r.subject=335 AND r.volume_id='frus1964-68v14' LIMIT 15;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT document_id, body_text FROM document_cache WHERE volume_id='frus1964-68v14' AND document_id IN ('d3','d11','d22');" # then grep aviation context
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema persons"; .schema person_mentions
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<top persons mentioned in aviation-core document set>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT DISTINCT name, substr(role,1,90) FROM persons WHERE role LIKE '%viation%' OR description LIKE '%viation%' LIMIT 30;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM persons WHERE role LIKE '%viation%' OR description LIKE '%viation%' OR role LIKE '%Aeronautic%' OR description LIKE '%Aeronautic%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT DISTINCT substr(coalesce(role,description),1,80) FROM persons WHERE coalesce(role,description) LIKE '%Aviation Division%' OR coalesce(role,description) LIKE '%Aviation Policy%' OR coalesce(role,description) LIKE '%Aviation Affairs%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<top lot files cited by aviation-core documents>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<repository distribution for aviation-core docs>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<earliest 18 aviation-core documents by date>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<grep aviation phrase context in 4 early docs>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<flexible-whitespace grep for aviation phrases in 3 early docs incl header/source_note>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<snippet() over frus_documents for early docs to see the actual matched term>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<measure porter stem over-match for 'landing rights'>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<measure porter stem over/under-match for landing rights, corrected>"
+python3 /tmp/smap.py  # look for an aviation cluster in the semantic map
+python3 /tmp/smap2.py  # dump cluster shape and search cluster labels for aviation terms
+python3 /tmp/geo.py  # map .796 aviation decimal classes to country numbers from the 1910-49 schedule
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<breakdown of .796 subclass suffixes>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) FROM document_sources WHERE decimal_class LIKE '882.796%' GROUP BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<extent: total body chars of the union set>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<extent of the 4 named compilations>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<extent of the FTS text-core set alone>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<extent of the .796 class set alone>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<snippet sample for 'air service' phrase to test precision>"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"army air service\" OR \"naval air service\"';"
+ls /Users/jbotts/Development/frus/volumes/*.xml | wc -l
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "<union-set density per volume, min 30 hits>"

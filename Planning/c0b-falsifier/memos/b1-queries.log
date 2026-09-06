@@ -1,0 +1,67 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents" ; ".schema document_cache"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) AS docs, COUNT(DISTINCT volume_id) AS vols FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT is_front_matter, is_editorial_note, COUNT(*) FROM document_cache GROUP BY 1,2;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'civil aviation', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"civil aviation\"'; SELECT 'landing rights', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"landing rights\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) FROM frus_documents WHERE frus_documents MATCH <CORE aviation query> GROUP BY 1 ORDER BY 2 DESC LIMIT 45;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH <CORE>;"
+python3 -c "manifest.json head" # inspect /Applications/FRUS Explorer.app/Contents/Resources/manifest.json
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/decades.py  # per-decade distribution of CORE aviation query vs corpus denominator
+sqlite3 -readonly ... "SELECT volume_id, header FROM frus_documents WHERE frus_documents MATCH <CORE> AND volume_id IN (frus1929v01,frus1928v01) LIMIT"
+sqlite3 -readonly ... pre-1910 volumes CORE hits with headers
+sqlite3 -readonly ... ".schema volume_structures"; sample rows
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/sections.py  # scan volume_structures for aviation-named compilations/chapters
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/sections.py > /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/sections.txt  # save; then filter to civil-aviation-specific titles
+grep -c aviation-section list; count sections by decade from /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/sections.txt
+python3 - <<inspect frus1948v09 structure for zero-doc aviation sections>
+sqlite3 -readonly ... ".schema document_subjects"; SELECT * FROM document_subjects WHERE name LIKE %av%/%air%
+python3 - # inspect document-subject-index.json for aviation subjects
+python3 - # list aviation-matching subjects in vocab + their document counts
+python3 - # grep vocab for aviation/air/transport subjects with df
+sqlite3 -readonly ... 'SELECT subject,COUNT(*) FROM document_subject_refs WHERE subject IN (324,335,376) GROUP BY 1'
+sqlite3 -readonly ... 'SELECT volume_id,COUNT(*) FROM document_subject_refs WHERE subject=335 GROUP BY 1 ORDER BY 2 DESC LIMIT 30'
+sqlite3 -readonly ... headers for civil-aviation matches in late-era volumes
+sqlite3 -readonly ... carrier-name and Axis-airline probes (counts + top volumes)
+python3 - # decimal-class-labels.json: find aviation subject suffixes
+sqlite3 -readonly ... ".schema document_sources" ".schema external_citations"
+sqlite3 -readonly ... decimal_class LIKE '%.796%' counts + top classes + top volumes
+python3 - # decode country numbers for the top .796 classes
+sqlite3 -readonly ... cross-check: overlap of FTS CORE hits with .796-classed documents
+sqlite3 -readonly ... sample the 596 .796-classed docs missed by the FTS query
+sqlite3 -readonly ... export missed-doc bodies and count distinctive terms
+tr/sort/uniq term frequency over missed.txt
+sqlite3 -readonly ... REFINED query (adds bare aviation/aeronaut*/aerodrome/airfield/airport/aviacion/plane) recall vs .796
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/headingroute.py  # recall of the editorial-heading route vs the .796 archival gold set
+sqlite3 -readonly ... subject-numeric AV designators in document_sources.decimal_class
+sqlite3 -readonly ... volumes for AV classes
+sqlite3 -readonly ... raw_text LIKE '%AV 12%' etc
+python3 - # dump frus1944v02 comp9 and frus1946v01 aviation section structure
+sqlite3 -readonly ... first/last docs + date span of frus1944v02 comp9 (252 docs); sample headers
+sqlite3 -readonly ... ".schema person_mentions" ".schema persons"
+sqlite3 -readonly ... top person names mentioned in .796-classed documents
+sqlite3 -readonly ... top persons (persons.name via person_mentions.person_ref) in .796-classed documents
+sqlite3 -readonly ... persons whose role/description names aviation offices
+sqlite3 -readonly ... competition/subsidy/chosen-instrument vocabulary probes
+sqlite3 -readonly ... volume distribution of 'open skies' and 'chosen instrument'
+grep sections.txt for 1938-1943 Latin America aviation chapter titles
+awk over sections.txt: count aviation-named sections with zero printed documents
+grep -n 'air transport services' /Users/jbotts/Development/frus/volumes/frus1939v02.xml | head
+python3 - # extract TEI context around a zero-document aviation heading in frus1939v02
+python3 - # find all occurrences of 'air transport services' in frus1939v02 TEI and print the non-TOC one
+python3 - # manifest coverage span + volumes per decade
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/lots.py # repositories and lot files behind aviation-section documents
+sqlite3 -readonly ... aviation-topic headers in 1969-76/1977-80/1981-88 volumes
+sqlite3 -readonly ... probes: deregulation-era aviation policy vocabulary; US-Soviet air agreement; KAL 007; hijacking volume size
+sqlite3 -readonly ... list the 32 documents of frus1946v01 comp22 (Bermuda) with source notes
+sqlite3 -readonly ... conference-class (5xx) aviation files: PICAO/ICAO/Chicago
+sqlite3 -readonly ... find a policy-statement document inside frus1944v02 about freedoms of the air; print an excerpt
+sqlite3 -readonly ... .796 documents per publication-year bucket (volume_id prefix) and per country prefix
+sqlite3 -readonly ... does decimal_class parsing continue into the 1950s? any-class counts by volume year
+sqlite3 -readonly ... source notes of civil-aviation-content documents in 1950s volumes
+python3 - # titles/coverage for the anchor volumes
+python3 - # section titles carrying the .796 documents in frus1928v01/frus1929v01
+python3 - # parent path of the company-named aviation sections in frus1929v01
+python3 - # full 'good offices' rubric titles across 1920s-30s volumes
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/union.py  # union of the three routes; decade + volume spread
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b1/core2.py  # high-confidence core + sample of keyword-only residue for precision check
+grep -E 'Phoenix|trans-Pacific|Pacific Ocean' sections.txt  # confirm the trans-Pacific islands strand
