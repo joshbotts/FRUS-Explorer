@@ -269,7 +269,11 @@ struct SearchView: View {
     private func facetPanel(dismissesOnApply: Bool) -> some View {
         FacetPanelView(
             controller: facetController,
-            matchCount: vm.hasSearched ? vm.totalMatchCountForFacets : nil,
+            // In meaning mode the results ARE the set the facets describe, so the count is
+            // exact — where the keyword route's is the whole match, which the list only samples.
+            matchCount: vm.hasSearched
+                ? (vm.searchMode == .meaning ? vm.results.count : vm.totalMatchCountForFacets)
+                : nil,
             displayedCount: vm.displayedResults.count,
             isPartialEvidence: resultSetScope.isPartialEvidence,
             isChecklistHiding: vm.checklistMode
@@ -297,7 +301,11 @@ struct SearchView: View {
                         section,
                         parameters: vm.searchParameters,
                         service: appState.searchService,
-                        pipeline: appState.indexingPipeline)
+                        pipeline: appState.indexingPipeline,
+                        // A meaning search has no MATCH; it describes the keys it returned.
+                        documentKeys: vm.searchMode == .meaning
+                            ? vm.results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+                            : nil)
                 }
             })
     }

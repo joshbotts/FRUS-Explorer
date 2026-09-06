@@ -98,6 +98,105 @@ struct ResultSetFacetsTests {
             filters: await service.filtersForTesting(params), request: request)
     }
 
+    /// Facets over an explicit key set — the meaning-search route, which has no MATCH.
+    private func facets(
+        _ pipeline: IndexingPipeline, keys: [(volumeId: String, documentId: String)],
+        request: FacetRequest = .all
+    ) async throws -> ResultSetFacets {
+        try await pipeline.resultSetFacets(
+            corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(),
+            request: request, documentKeys: keys)
+    }
+
+    // MARK: - Facets over a key set (the meaning-search route)
+
+    /// **The property the whole feature rests on: one emitter, two ways in.**
+    ///
+    /// A meaning search has no FTS expression, so its facets are computed from the keys it
+    /// returned. If that path aggregated differently from the match path, the panel would be
+    /// trading one wrong set of numbers for another. Here the same documents are described both
+    /// ways — by MATCH, and by handing over exactly the keys that match produced — and every
+    /// bucket must agree.
+    @Test("Facets over a key set equal facets over the match that produced those keys")
+    func keySetFacetsEqualMatchFacets() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        for query in ["containment", "europe", "containment europe"] {
+            let viaMatch = try await facets(pipeline, service, query: query)
+            let results = try await service.search(parameters: SearchParameters(keywords: query))
+            let keys = results.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+            #expect(!keys.isEmpty, "the fixture must match something for \(query) to prove anything")
+
+            let viaKeys = try await facets(pipeline, keys: keys)
+            #expect(viaKeys.matchCount == viaMatch.matchCount, "match count differs for \(query)")
+            #expect(viaKeys.years == viaMatch.years, "year buckets differ for \(query)")
+            #expect(viaKeys.undatedCount == viaMatch.undatedCount, "undated differs for \(query)")
+            #expect(viaKeys.volumes == viaMatch.volumes, "volume buckets differ for \(query)")
+            #expect(viaKeys.documentTypes == viaMatch.documentTypes,
+                    "document-type buckets differ for \(query)")
+        }
+    }
+
+    /// The counts describe the keys handed over, not the corpus — so a subset is a smaller answer.
+    ///
+    /// This is what makes a facet row actionable in meaning mode: the backend takes the global
+    /// top-N and filters afterwards, so narrowing to a bucket returns exactly that bucket's
+    /// documents. A count over anything wider than the results would break that promise.
+    @Test("A key subset is described as itself, not as the corpus")
+    func keySubsetIsDescribedAsItself() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let all = try await service.search(parameters: SearchParameters(keywords: "containment"))
+        let keys = all.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        #expect(keys.count >= 4, "precondition: the fixture matches enough to halve")
+
+        let half = Array(keys.prefix(keys.count / 2))
+        let facetsForHalf = try await facets(pipeline, keys: half)
+        #expect(facetsForHalf.matchCount == half.count)
+        #expect(facetsForHalf.volumes.reduce(0) { $0 + $1.count } == half.count,
+                "the volume buckets must sum to the set they describe")
+    }
+
+    /// A key the index does not hold is not a document the facets describe.
+    ///
+    /// The count comes from the materialised table rather than `keys.count`, so a volume removed
+    /// between the search and the panel shrinks the denominator instead of inflating it.
+    @Test("Unknown keys are not counted")
+    func unknownKeysAreNotCounted() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let real = try await service.search(parameters: SearchParameters(keywords: "containment"))
+        let keys = real.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        let padded = keys + [(volumeId: "volMissing", documentId: "d999"),
+                             (volumeId: "vol1", documentId: "nosuchdocument")]
+        #expect(try await facets(pipeline, keys: padded).matchCount == keys.count)
+    }
+
+    /// Repeats must not inflate the denominator — `INSERT OR IGNORE` over a rowid primary key.
+    @Test("A repeated key is one document")
+    func repeatedKeysAreCountedOnce() async throws {
+        let (dir, service, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let real = try await service.search(parameters: SearchParameters(keywords: "containment"))
+        let keys = real.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        #expect(try await facets(pipeline, keys: keys + keys).matchCount == keys.count)
+    }
+
+    /// No keys is an empty result set, not the whole corpus — the failure mode a filter-only
+    /// search already guards against on the match path.
+    @Test("An empty key set describes nothing")
+    func emptyKeySetDescribesNothing() async throws {
+        let (dir, _, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let empty = try await facets(pipeline, keys: [])
+        #expect(empty.matchCount == 0)
+        #expect(empty.volumes.isEmpty)
+    }
+
     // MARK: - The match count is the denominator
 
     @Test("The facet match count equals the search's own count")

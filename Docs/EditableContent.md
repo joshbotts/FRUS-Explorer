@@ -3012,25 +3012,24 @@ Facets read the whole match, before any narrowing you apply below.
 
 <!-- END SOURCE: facets.preamble.detail -->
 
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.meaning.title -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.preamble.meaning %@ -->
 
-*Shown in place of the whole facet panel when the search ran by meaning rather than by keyword. Facets are counted from the keyword index, so a similarity ranking has none — and the counts that used to appear described a different set of documents from the results beside them (#1193).*
+*Interpolated with the result count. The header of the facet panel for a MEANING search — where the counts describe the results themselves rather than a wider match the list only samples.*
 
-No facets for a meaning search
+Describing the %@ closest matches
 
-<!-- END SOURCE: facets.meaning.title -->
+<!-- END SOURCE: facets.preamble.meaning %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.meaning.detail -->
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.preamble.detail.meaning -->
 
-Facets are counted from the keyword index. A meaning search ranks documents by similarity instead, so there is no keyword match to break down — and counting one would describe a different set of documents from the results beside it.
+*The meaning-mode counterpart to the line above. It is the opposite claim, and both are true of their own route: a keyword search's facets read past the capped list into the whole match, while a meaning search's describe exactly the ranked results — which is why narrowing to a row returns precisely its documents (#1193).*
 
-<!-- END SOURCE: facets.meaning.detail -->
+Counted over the results themselves, not the whole corpus. Narrowing to a row returns exactly its documents.
 
-<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.meaning.remedy -->
+<!-- END SOURCE: facets.preamble.detail.meaning -->
 
-Switch to keyword search to narrow by year, volume, person or subject.
 
-<!-- END SOURCE: facets.meaning.remedy -->
+
 
 <!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.closest %@ -->
 

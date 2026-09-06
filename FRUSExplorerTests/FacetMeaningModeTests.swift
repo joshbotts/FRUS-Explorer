@@ -22,8 +22,11 @@ import Foundation
 /// counting 471. A reader narrowing by one of those rows believed they were narrowing their
 /// semantic results.
 ///
-/// The app already draws this line one surface over — `SearchSheet` swaps the MATCH inspector for
-/// the Meaning strip because "no FTS expression exists". This is the same fact reaching the panel.
+/// **#1220 fixed this by withholding the facets; this suite now guards the real fix.** The panel
+/// computes them over the semantic result keys instead — `IndexingPipeline.resultSetFacets` takes a
+/// `documentKeys:` set and materialises `temp.facet_mset` from it, so every section runs the same
+/// SQL it always did. `ResultSetFacetsTests.keySetFacetsEqualMatchFacets` pins the two routes
+/// against each other; what is left here is the wiring that decides which route runs.
 ///
 /// The issue reported **two** numbers, so this suite covers both: the facet panel that counted a
 /// different set, and the header that said "total unavailable" — which asserts a total exists and
@@ -69,29 +72,52 @@ struct FacetMeaningModeTests {
         #expect(checked == 2, "the host sweep ran over \(checked) hosts")
     }
 
-    /// The panel must both *say* why there are no facets and *compute* none.
-    ///
-    /// Computing them anyway would leave the keyword aggregation running behind the note — wasted
-    /// work, and rows that would reappear the moment the gate was loosened.
-    @Test("The panel explains itself and requests nothing in meaning mode")
-    func panelGatesBothDisplayAndComputation() throws {
-        let file = try code("FRUSExplorer/Search/FacetPanelView.swift")
-        #expect(file.contains("if isMeaningSearch {"),
-                "the panel does not branch on the route")
-        #expect(file.contains("isMeaningSearch ? [] : controller.sectionsNeedingLoad"),
-                "the panel still requests keyword aggregations for a meaning search")
+    /// **Both hosts must hand over the keys**, or the panel falls back to the keyword expression
+    /// and the counts describe a different set again — the #1193 defect, returning by omission.
+    @Test("Both search hosts give the panel the semantic keys to describe")
+    func bothHostsPassTheKeys() throws {
+        var checked = 0
+        for path in ["FRUSExplorer/Search/SearchView.swift",
+                     "FRUSExplorer/App/SearchSheet.swift"] {
+            let file = try code(path)
+            guard let call = file.range(of: "facetController.load(") else {
+                Issue.record(Comment(rawValue: "\(path) no longer loads facets"))
+                continue
+            }
+            let arguments = String(file[call.lowerBound...].prefix(700))
+            #expect(arguments.contains("documentKeys:"),
+                    Comment(rawValue: "\(path) does not hand the panel its result keys"))
+            #expect(arguments.contains(".meaning"),
+                    Comment(rawValue: "\(path) passes keys unconditionally rather than for the meaning route"))
+            checked += 1
+        }
+        #expect(checked == 2, "the host sweep ran over \(checked) hosts")
     }
 
-    /// The panel's own explanation must name the mechanism, because the remedy follows from it:
-    /// a reader who knows facets come from the keyword index knows switching modes restores them.
-    @Test("The explanation names the keyword index and the way back")
-    func explanationNamesMechanismAndRemedy() throws {
+    /// The controller must not ask for a match expression when it has keys.
+    ///
+    /// Computing one and discarding it would be waste; computing one and *using* it is exactly how
+    /// the keyword interpretation leaked into these counts in the first place.
+    @Test("The controller skips the match expression when it has keys")
+    func controllerSkipsTheExpressionForKeys() throws {
+        let file = try code("FRUSExplorer/Search/FacetPanelView.swift")
+        #expect(file.contains("documentKeys == nil"),
+                "the controller builds a match expression regardless of route")
+        #expect(file.contains("documentKeys: documentKeys"),
+                "the controller does not forward the keys to the pipeline")
+    }
+
+    /// A meaning search's facets describe the results themselves, so the panel must not repeat the
+    /// keyword promise that they read past the list into the whole match.
+    @Test("The preamble says what the counts actually cover in each mode")
+    func preambleSaysWhatIsCounted() throws {
         let file = try source("FRUSExplorer/Search/FacetPanelView.swift")
-        for key in ["facets.meaning.title", "facets.meaning.detail", "facets.meaning.remedy"] {
-            #expect(file.contains(key), Comment(rawValue: "\(key) is missing from the panel"))
+        for key in ["facets.preamble.meaning %@", "facets.preamble.detail.meaning",
+                    "facets.preamble", "facets.preamble.detail"] {
+            #expect(file.contains(key), Comment(rawValue: "\(key) is missing from the preamble"))
         }
-        #expect(file.contains("counted from the keyword index"),
-                "the explanation does not say where facets come from")
+        #expect(file.contains("Counted over the results themselves"),
+                "the meaning preamble still claims to read the whole match")
     }
 
     /// **macOS renders its own header**, so the shared clause has to actually reach it — otherwise
@@ -116,16 +142,4 @@ struct FacetMeaningModeTests {
                 "both meaning branches must render the shared clause rather than wording it again")
     }
 
-    /// The load path is what made the counts wrong, and it is still keyword-only — so the gate
-    /// above is load-bearing rather than belt-and-braces.
-    @Test("The facet load path is still a keyword aggregation")
-    func loadPathRemainsKeywordOnly() throws {
-        let file = try code("FRUSExplorer/Search/FacetPanelView.swift")
-        #expect(file.contains("service.matchExpressions(for: parameters)"),
-                """
-                The facet load no longer builds an FTS expression. If it learned to aggregate a \
-                semantic result set, the meaning-mode gate is no longer needed and this suite \
-                should be replaced rather than adjusted.
-                """)
-    }
 }

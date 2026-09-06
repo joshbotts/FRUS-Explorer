@@ -359,11 +359,15 @@ final class FacetPanelController {
     }
 
     /// Computes `section` if it has not been computed for the current match.
+    /// - Parameter documentKeys: the result set to describe when it was **not** produced by an FTS
+    ///   match — a meaning search's ranked keys. `nil` for the keyword route, which materialises
+    ///   its match from the query expression as before.
     func load(
         _ section: FacetSection,
         parameters: SearchParameters,
         service: SearchService?,
-        pipeline: IndexingPipeline?
+        pipeline: IndexingPipeline?,
+        documentKeys: [(volumeId: String, documentId: String)]? = nil
     ) async {
         guard let service, let pipeline else { return }
         guard !loadedSections.contains(section), !loadingSections.contains(section) else { return }
@@ -371,11 +375,18 @@ final class FacetPanelController {
         defer { loadingSections.remove(section) }
 
         do {
-            let expressions = try await service.matchExpressions(for: parameters)
-            let filters = await service.filtersForTesting(parameters)
+            // A meaning search has no MATCH to build, so the expression pass is skipped entirely
+            // rather than computed and discarded — asking `matchExpressions` for the query text is
+            // exactly how the keyword interpretation leaked into these counts in the first place.
+            let expressions = documentKeys == nil
+                ? try await service.matchExpressions(for: parameters)
+                : (corpus: nil, userContent: nil)
+            let filters = documentKeys == nil
+                ? await service.filtersForTesting(parameters)
+                : SearchSQLFilters()
             let computed = try await pipeline.resultSetFacets(
                 corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
-                filters: filters, request: .one(section))
+                filters: filters, request: .one(section), documentKeys: documentKeys)
             guard !Task.isCancelled else { return }
             facets = Self.merge(computed, into: facets, section: section)
             loadedSections.insert(section)
@@ -509,9 +520,6 @@ struct FacetPanelView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
-                if isMeaningSearch {
-                    meaningModeNote
-                } else {
                 preamble
                 if isChecklistHiding { checklistNote }
                 if let failure = controller.failure { failureNote(failure) }
@@ -525,7 +533,6 @@ struct FacetPanelView: View {
                         title: String(localized: "facets.provenance", defaultValue: "Archival provenance"))
                 section(.subjects,
                         title: String(localized: "facets.subjects", defaultValue: "Subjects"))
-                }
             }
             .padding(.vertical, 12)
         }
@@ -552,59 +559,44 @@ struct FacetPanelView: View {
 
     /// Open sections with no data — see `FacetPanelController.sectionsNeedingLoad(expanded:)`.
     private var pendingSections: [FacetSection] {
-        // Nothing is requested for a meaning search: the aggregation would run over the keyword
-        // match this result set is not, and its rows would sit behind the note explaining why
-        // they are absent.
-        isMeaningSearch ? [] : controller.sectionsNeedingLoad(expanded: expanded)
-    }
-
-    /// Why there are no facets for a meaning search.
-    ///
-    /// Names the mechanism rather than apologising: a reader who knows facets come from the
-    /// keyword index also knows why a similarity ranking has none, and knows that switching
-    /// modes gets them back.
-    private var meaningModeNote: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(String(localized: "facets.meaning.title",
-                         defaultValue: "No facets for a meaning search"),
-                  systemImage: SemanticGlyph.feature)
-                .font(.callout.weight(.medium))
-            Text(String(localized: "facets.meaning.detail",
-                        defaultValue: """
-                            Facets are counted from the keyword index. A meaning search ranks \
-                            documents by similarity instead, so there is no keyword match to break \
-                            down — and counting one would describe a different set of documents \
-                            from the results beside it.
-                            """))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(String(localized: "facets.meaning.remedy",
-                        defaultValue: "Switch to keyword search to narrow by year, volume, person or subject."))
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal)
-        .accessibilityElement(children: .combine)
+        controller.sectionsNeedingLoad(expanded: expanded)
     }
 
     // MARK: - Preamble
 
     private var preamble: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(matchCount.map {
-                String(localized: "facets.preamble",
-                       defaultValue: "Describing all \($0.formatted()) matches")
-            } ?? String(localized: "facets.preamble.unknown",
-                        defaultValue: "Describing this result set — total unavailable"))
+            // **A meaning search describes a different denominator, so it gets a different
+            // sentence.** The keyword wording is built on "the whole match" — a set larger than
+            // the list, which the facets read past. A similarity ranking has no whole match: the
+            // results ARE the set, and these counts describe exactly them. Saying "all N matches"
+            // there would be the same overclaim in a new place.
+            Text(isMeaningSearch
+                 ? (matchCount.map {
+                        String(format: String(localized: "facets.preamble.meaning %@",
+                                              defaultValue: "Describing the %@ closest matches"),
+                               $0.formatted())
+                    } ?? String(localized: "facets.preamble.meaning.unknown",
+                                defaultValue: "Describing the closest matches"))
+                 : (matchCount.map {
+                        String(localized: "facets.preamble",
+                               defaultValue: "Describing all \($0.formatted()) matches")
+                    } ?? String(localized: "facets.preamble.unknown",
+                                defaultValue: "Describing this result set — total unavailable")))
                 .font(.callout.weight(.medium))
             // The distinction the design asks for, and the one the Q-M2 work showed matters:
-            // the result *list* is capped while these counts are not.
-            Text(String(localized: "facets.preamble.detail",
-                        defaultValue: "Facets read the whole match, before any narrowing you apply below."))
+            // the result *list* is capped while these counts are not. In meaning mode the opposite
+            // is true and the sentence says so — the counts cover the results themselves, and a
+            // bucket's count is what narrowing to it returns, because the backend takes the global
+            // top-N and filters afterwards.
+            Text(isMeaningSearch
+                 ? String(localized: "facets.preamble.detail.meaning",
+                          defaultValue: "Counted over the results themselves, not the whole corpus. Narrowing to a row returns exactly its documents.")
+                 : String(localized: "facets.preamble.detail",
+                          defaultValue: "Facets read the whole match, before any narrowing you apply below."))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal)
         // #597 Phase 1, and the one SHARED anchor in the set — this file carries no `#if os` gate
