@@ -11888,3 +11888,42 @@ scans (SCHEDULE_DIR), no index bump, no CloudKit change.
 **Not re-measured**: the Through-1947 corpus figures CLAUDE.md records for this artifact (5,881 class
 keys / 135,432 documents) need the owner's live index and cannot be computed here. The artifact-level
 count is the measurement this session can make.
+
+## Session 2026-09-05i — #1206: a secondary citation was being stored as the document's own lot (PR #1223)
+
+`document_sources.lot_file` answers *where the printed document came from*. For two documents it was
+answering *where another copy is*: `frus1969-76v02/d1` and `/d11` both carried `75 D 229`, a lot
+named 1,247 and 340 characters into their notes as the location of related drafts, inflating that
+lot's document count from three to five.
+
+**The parser already had the concept, and the gap was one phrase.** `lotClaimScope` narrows the span
+in which a `Lot` token speaks for the document — but only when the leading sentence "names a
+competing repository", and that test reads `libraryKeywords`, which carries *Nixon Presidential
+Library* and *Nixon Library* but **not** *Nixon Presidential Materials*. So a note leading
+`Source: National Archives, Nixon Presidential Materials, NSC Files, …` named nothing competing, the
+scope stayed the whole note, and a later lot captured it.
+
+**The phrase went into a NEW list rather than into `libraryKeywords`, and that is the design point.**
+That list is read twice — to ask whether the lead has claimed the document, and by
+`tryPresidentialLibrary` to decide what the note IS. Adding a phrase to fix the first question would
+silently have answered the second.
+
+**Measured over the shippable corpus**, not proxied: 268,750 source notes, 13,287 naming a lot,
+**1,927 naming one only outside the leading sentence**, of which **63 lead with "Presidential
+Materials"**. The other 1,864 are deliberately untouched — the 1961–63 abstract notes legitimately
+put their lot in the tail, and `lotClaimScope`'s own comment records that refusing every out-of-lead
+lot would break 1,006 correct classifications. The issue's two SQL proxies (722 / 94) are supersets
+of a different shape; this is the population the corpus actually holds.
+
+**One test premise of mine was wrong and the owner's question corrected it.** I first asserted the
+Nixon materials are "NARA-held, not a library" — the parser said otherwise, and the archival record
+agrees with the parser: the 1974 PRMPA federalised the materials and required them to stay near
+Washington, Congress repealed that in 2004, NARA took legal control of the Yorba Linda library on
+11 July 2007, and in **spring 2010** the materials moved there apart from the original tapes,
+dictabelts and Photo Office negatives, which remain at College Park. So `presidentialLibrary` is
+substantively right, and the test now says why. Worth carrying: a FRUS citation naming *National
+Archives, Nixon Presidential Materials* records where the records were at publication, not where a
+reader would go today.
+
+Parse-output change, so `currentDateIndexVersion` goes 47 → 48 in the same commit. Two mutations
+killed. 4,535 tests in 594 suites with zero restarts; 1,284 SPM tests; macOS builds clean.
