@@ -12184,3 +12184,47 @@ Guide → 1.16 (§14's row and §14.11's rule 3 both described the inclusive-onl
 generator entry updated. A second `schemaVersion == 2` pin lives in the SPM target and was found by
 running `swift test`, not the app suite. No index-version bump: `IndexingPipeline` never reads this
 artifact. The coverage pair is decoded but deliberately unrendered, so no screenshots are owed.
+
+## Session 2026-09-06d — #1203: an accession → series map, shipped as data (PR #TBD)
+
+`accession-series-index.json` — which NARA series a Federal Records Center accession became.
+4,750 keys, 7,349 claimants, 619KB, built offline from the record-group harvest.
+
+**SHIPPED AS DATA, NOT AS A FEATURE, by owner decision**, and the reason is a fact the issue does
+not contain: the app has NO accession concept at all — `VolumeSourceEntry` carries no such field
+and nothing extracts one — so #1203's step 2 ("fold it where the app resolves front-matter
+accessions") has nothing to fold into. A render surface would first need accession extraction in the
+TEI parse: a parse-output change, an index-version bump, a reindex for every user. Put to the owner
+with the measurement; the answer was artifact + guide entry, no UI.
+
+**I PUT AN INFLATED NUMBER TO THE OWNER AND CORRECTED IT.** Demand must be counted ANCHOR-FIRST —
+the accession directly following FRC / Federal Records Center / WNRC / Accession — because a
+proximity window sweeps in the lot numbers printed beside it. The window pass reported 2,371
+mentions over 177 accessions; the anchor pass reports **995 over 116**. Against the anchor count 22
+keys resolve (150 mentions, **15%**), 8 scoped to RG 59 (7%) — better than the 4% I first quoted,
+and it did not change the decision. The top-cited accession of all, `53A278` at 115 mentions, is
+ABSENT from the entire 4.5GB harvest, so the ceiling is NARA's catalogue.
+
+Also: #1203's "240,929 occurrences in the RG 59 shard" is that shard's total RECORD count. The field
+appears on 1,058 records / 1,437 occurrences, series-level only.
+
+**THE RECORD GROUP IS PART OF THE KEY.** An accession number is unique only within its group:
+`68A5612` is 1 series in RG 59 and 18 in RG 84; `71A6682` is 59 in RG 59 and 1 in RG 353. Keys are
+`<rg>/<accession>` — the unscoped map's 15% against the scoped 7% is not coverage, it is answering
+State citations with Foreign Service Post records, and a test pins the two groups' claimants
+disjoint. NARA writes the prefix four ways, so it is parsed rather than matched.
+
+**AN ITEM SUFFIX FOLDS TO ITS BASE**, which is what makes the issue's own acceptance case work:
+`059-71A6682-9` belongs to `71A6682`, and without it NAIDs 26309419 and 27022878 are unreachable and
+`68A5159` (34 citations) resolves to nothing. Guarded on the LETTERED shape — `059-96-564` is
+accession `96-564`, and truncating it would invent an accession `96`. 5 of 7,349 numbers carry a
+suffix, over 2 base accessions.
+
+Every claimant stored rather than chosen (#675's rule) because a key reaches 59; this does not
+reopen #679, which refused these numbers for lot ACCEPTANCE, a different question. One-letter wire
+keys with a legend (#1202's convention) — spelling them out cost 351KB of key names, 39% of the
+file; omitting `i` when false saved 132KB on its own. 896KB → 619KB.
+
+Four mutations killed, two of them by exactly one control each. New bundled resource, so `xcodegen
+generate` + scheme restore: 6 insertions, no build setting touched. Guide → 1.17. No index-version
+bump — which is the point of shipping it as data.

@@ -1294,7 +1294,11 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
     lot-claimants-index.json     -> lots NARA divides across several series and the NAIDs several
                                     lots converge on
     presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
-    curated-lot-resolutions.json, digitized-ranges-index.json
+    curated-lot-resolutions.json, digitized-ranges-index.json, accession-series-index.json
+  accession-series-index.json keys on `<record group>/<accession>` and THE RECORD GROUP IS PART
+    OF THE KEY: an FRC accession number is unique only within its group (`68A5612` is 1 series
+    in RG 59 and 18 in RG 84). Match a FRUS "FRC Accession No. 71 A 6682" only against the group
+    that citation sits in. Nothing in the app reads this file.
   decimal-class-labels.json gates itself: read `coverage.glossableYears` and gloss a key ONLY
     when the DOCUMENT's own date falls inside a listed span. Outside them the file has no gloss
     (`coverage.keyOutsideGlossableYears` says so) — composing anyway returns a plausible WRONG
@@ -1819,6 +1823,7 @@ The stack, and the question each artifact answers:
 | `volume-sources-index.json` | what the editors say they consulted, per volume | 3,412 rows, 251 volumes |
 | `decimal-class-labels.json` | what `812.6363` means, compositionally. **ONE schedule, 1910–49**, and since #1204 the file states that as data: read `coverage.glossableYears` and gloss only when the DOCUMENT's date falls inside a listed span — `coverage.keyOutsideGlossableYears` is `no-gloss`, and `coverage.notShipped` names 1950–1959 and 1960–1963 with the counts that refused them (4 and 8 class headings against a floor of 10; their country and subject tables cleared theirs). Run a post-1950 key through the shipped schedule anyway and you get a plausible WRONG gloss, not a miss: `411.48` composes as *Claims — United States and British Africa* where the editors gloss it as U.S. trade with **Poland**, and `48` is live in two vocabularies at once (country *British Africa*, class-8 subject *Calamities. Disasters*). Gloss 1950–63 keys from `volume_sources` (§4.4). Note the gate is on GLOSSING only — whether a key is well-formed is a separate, deliberately era-blind test, so a post-1950 key composing here is expected. Its 1910–49 country table **was** wrong or empty on several codes FRUS files commerce under; the build of 2026-09-05 fixed most of them (#1201). `60f` now glosses *Czechoslovakia* (was *Ruthenia*; 82 documents on `611.60F31`), `47h` *New Zealand* (was *Cook Islands*), and `43` Newfoundland, `54` Switzerland and `11b` Philippines are present where they were absent — 198 → **217** codes, with 19 others recovered and none lost. **`42` Canada and `74` Bulgaria are still absent, deliberately**: their pages in NARA's scan emit names and codes as separate blocks, so the document settles no pairing, and the table stays silent rather than guessing. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 1910–49 schedule; 9 classes, 217 countries, 693 suffixes |
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
+| `accession-series-index.json` | which NARA series a Federal Records Center accession became — the join a lot number cannot make, for front matter that says "now part of … Accession No. 71 A 6682". **Keys are `<record group>/<accession>` and the group is load-bearing**: an accession number is unique only within its group (`68A5612` = 1 series in RG 59, 18 in RG 84), so matching bare raises apparent coverage from 7% to 15% by answering State citations with Foreign Service Post records. **Know the ceiling before you lean on it**: counted anchor-first (the accession must directly follow *FRC* / *Federal Records Center* / *WNRC* / *Accession* — a proximity window sweeps in the lot numbers printed beside it and inflated this count from 995 mentions to 2,371), the corpus cites 116 accessions over 995 mentions, and **22 resolve — 150 mentions, 15%**; the most-cited of all, `53A278` at 115 mentions, is absent from the harvest entirely. Every claimant is stored, never chosen, because a key reaches **59**: state the division. One-letter row keys, `legend` in the file. NOTHING IN THE APP READS THIS — it is data for you, not a feature. | 4,750 keys, 7,349 claimants, max 59 |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,792 edges, 4,907 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
 | `resolved-edge-index.json` | the inbound half of the citation graph for volumes you have not downloaded (§6.6) | 8,628 cross-volume edges into 5,740 documents from 184 volumes — its `volumes` array (235) is a shared vocabulary of target *and* citing volumes, not a target list (distinct targets: 206), and its own footnote share is 7,622 of 8,628 = 88.3%, not the corpus-wide 95.3% |
@@ -2496,6 +2501,14 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.17 — 2026-09-06: **#1203 ships as data**, so §12's artifact block and §14's table gain
+  `accession-series-index.json` — which NARA series an FRC accession became. Two cautions are
+  stated because both were measured the hard way: the record group is PART of the key (an
+  accession number is unique only within its group, and matching bare turns 7% coverage into a
+  wrong-answer 15%), and demand must be counted anchor-first — a proximity window around *FRC*
+  or *accession* sweeps in the lot numbers printed beside it and inflated the corpus count from
+  995 mentions to 2,371. Nothing in the app reads the file; it exists for analysis.
 
 - 1.16 — 2026-09-06: **#1202 closed**, so §14's `series-facts-index.json` row and §14.11's rule 3
   now describe an artifact that carries both of NARA's date pairs and a legend for its wire keys.

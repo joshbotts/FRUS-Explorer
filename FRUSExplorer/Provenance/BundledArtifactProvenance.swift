@@ -143,6 +143,11 @@ enum BundledArtifactProvenance {
             generator: "SeriesFactsIndex",
             inputs: ["HARVEST_DIR", "CENTRAL_FILES_INDEX", "VOLUME_SOURCES_INDEX"],
             source: .naraCatalog),
+        // #1203. Harvest-only like its neighbours, and the one bundled artifact NO app code
+        // reads — it ships for analysis against the JSON, so its provenance row is the only
+        // place in the app that accounts for it at all.
+        "accession-series-index.json": .init(
+            generator: "AccessionSeriesIndex", inputs: ["HARVEST_DIR"], source: .naraCatalog),
         "digitized-ranges-index.json": .init(
             generator: "DigitizedRangeIndex", inputs: ["HARVEST_DIR"], source: .naraCatalog),
         "roll-scans-index.json": .init(
