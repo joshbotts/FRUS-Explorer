@@ -181,6 +181,33 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        /// Builds `accession-series-index.json` (#1203): which NARA series a Federal Records
+        /// Center accession became, keyed `<record group>/<accession>` because an accession
+        /// number is unique only within its group. Offline — reads the record-group harvest, no
+        /// CATALOG_API_KEY — and reuses `LotClaimantsIndexGeneratorCore`'s `HarvestShardReader`
+        /// rather than declaring a second decoder over the same shards.
+        .target(
+            name: "AccessionSeriesIndexGeneratorCore",
+            dependencies: [
+                .target(name: "GeneratorKit"),
+                .target(name: "LotClaimantsIndexGeneratorCore"),
+            ],
+            path: "AccessionSeriesIndexGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "AccessionSeriesIndexGenerator",
+            dependencies: [.target(name: "AccessionSeriesIndexGeneratorCore")],
+            path: "AccessionSeriesIndexGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "AccessionSeriesIndexGeneratorTests",
+            dependencies: [.target(name: "AccessionSeriesIndexGeneratorCore")],
+            path: "AccessionSeriesIndexGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         /// Builds `decimal-class-labels.json` (#828, design decision D-2): the era-scoped label
         /// table for State Department central-file decimal classes, parsed from NARA's published
         /// classification manuals. COMPOSITIONAL — class glosses, country numbers and subject
