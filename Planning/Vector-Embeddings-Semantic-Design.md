@@ -371,7 +371,10 @@ sharpenings from the lexical assessment's scar tissue:
    Fallback where extraction is thin: `Semantic match · 82%`. An on-device LLM one-liner via the
    existing `SummarizationProvider` is a v2 nicety, cached if ever built.
 
-**Who it serves is already measured:** 46,234 documents with an empty Related list today, 98.2%
+**Who it serves is already measured** *(re-measured 2026-09-06: **45,030**, and the pre-1900 claim
+below is stated in the direction the assessment makes it — **93.9% of pre-1900 documents are
+zero-candidate**, where only 70.3% of zero-candidate documents are pre-1900; two shipped doc
+comments had the inversion)*: 46,234 documents with an empty Related list today, 98.2%
 of pre-1900. That is also where cosine quality is *least proven* — the axis lives or dies on the
 V-0 pre-1900 gate, not on Cold War telegrams, which everything retrieves well.
 

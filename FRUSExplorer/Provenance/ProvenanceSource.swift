@@ -176,4 +176,29 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     static let curatedDisclosure = String(
         localized: "provenance.curated.disclosure",
         defaultValue: "Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.")
+
+    /// The parse residual PV §5 requires beside any archival-sources block (#1206 follow-up, Q-1).
+    ///
+    /// **Why this is conditional and not part of `.frusText`.** `.frusText` is inserted for every
+    /// document, excerpt, bibliography and chronology item, so folding the sentence into its
+    /// method statement would put a source-note-parse caveat on plain document collections that
+    /// parse no source notes at all. That is the error PV-3 had to undo for Q-3, where PV-1 made
+    /// every export containing an archival-sources block claim a hand-matched identifier it could
+    /// not contain. The residual is a property of one block type, so it is stated only when that
+    /// block is present.
+    ///
+    /// The figures come from **`eval-baseline.txt`**, the maintained `SourceNoteEvalGenerator`
+    /// output (Package.swift names it as the generator's own), **not** from the older
+    /// `eval-report.txt` sitting beside it — that one is from 4 July and says 2.8%, and a first
+    /// draft of this sentence shipped its number. Two stale figures in one repository is the
+    /// defect this whole change exists to fix.
+    ///
+    /// `=== OVERALL`: **5,472 of 267,663 notes unrecognized, 2.0%**. The era spread is the part
+    /// worth printing, and the bands to quote are the two ENDS rather than the flattering one:
+    /// **100.0% before 1906** (the parser recognises 1 note in 2,034) and **7.2% for 1952–1954**,
+    /// the worst post-1906 band. Quoting 1906–1939's 0.3% as "the post-1906 rate" would understate
+    /// 1952–1954 by twenty-four times, which is the opposite of what a caveat is for.
+    static let parseResidualDisclosure = String(
+        localized: "provenance.parseResidual.disclosure",
+        defaultValue: "Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.")
 }

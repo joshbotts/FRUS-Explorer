@@ -29,6 +29,11 @@ import GeneratorKit
 /// | `CACHE_DIR` | `.cache/nara-rg-catalog` | Raw NDJSON store + checkpoints. |
 /// | `PROBE` | off | Fetch **one** shard per group, write the censuses only, no index. |
 /// | `PROJECT_ONLY` | off | No network: rebuild everything from the stored raw NDJSON. |
+/// |  | | **The store at `CACHE_DIR` was deleted (checked 2026-09-06), so this is currently |
+/// |  | | unavailable.** With neither `raw/` nor `raw-api/` present every group is skipped |
+/// |  | | with a review note, and the writers run BEFORE the `summaries.isEmpty` check — so |
+/// |  | | the pass rewrites the committed run-wide artifacts to describe zero groups and |
+/// |  | | only then exits non-zero. Git-recoverable, and still destructive. |
 /// | `CREATOR_AUTHORITY` | off | Also resolve `creators[].naId` against NARA's authority records. |
 /// | `REFRESH` | off | Discard the store and checkpoints and re-harvest. |
 /// | `MAX_BYTES` | unlimited | Byte budget for this run; exceeding it checkpoints and exits 0. |

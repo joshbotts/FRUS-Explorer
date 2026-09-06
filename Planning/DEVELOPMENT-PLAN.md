@@ -11541,7 +11541,10 @@ designation trims **caveats** — qualifications a reader weighs — where the s
 CSV that would otherwise carry it. A figure whose sources are unstated is the thing this wave
 exists to prevent.
 
-**Q-1 honoured**: nothing on screen. The residual and the sources both live in the method block.
+**Q-1 honoured**: nothing on screen. The sources live in the method block — but **the residual
+did NOT, and this sentence was false from the day it was written**; corrected 2026-09-06, when
+`provenance.parseResidual.disclosure` was added and made conditional on the export actually
+carrying an archival-sources block.
 
 Eighteen new strings, all mirrored in `Docs/EditableContent.md` under a section that says what they
 are for. Three mutations killed — skipping the HTML renderer, not flagging a summary body, and
@@ -12306,3 +12309,41 @@ The cost table now carries two rows rather than none: the 2026-09 run (~207 sess
 measured 16 agents / 3.17M tokens / 35.2 minutes. The refuter share is the planning number.
 
 Guide → 1.19. Documentation only; no code, no artifact, no index-version bump.
+
+## Session 2026-09-06g — seven defects, and a plan of record for the week (PR #1233)
+
+Seven measured defects, each its own commit, and `Planning/Plan-Of-Record-2026-09-06.md` carrying
+what is left. All from a survey of the 26 live planning documents that screened 36 "startable"
+claims against the tree and **cut 16** as already shipped or genuinely blocked — the cut list is in
+the plan's §3, because a plan that lists only survivors invites the same re-derivation next week.
+
+**The defects share a shape**: each is a place where something shipped does not do what its own
+design, doc comment or session entry says.
+
+- **PV §5 / Q-1** — the PV-1 entry says "the residual and the sources both live in the method
+  block". The sources did; the residual never shipped. Now stated, and CONDITIONAL on the export
+  actually carrying an archival-sources block, because folding it into `.frusText` would caveat
+  every plain document collection — the error PV-3 already had to undo once.
+- **R-5 §8.2 Q-9** — `.rebaseline` is passed from one site, so a single-volume re-download always
+  stamped. `document_revisions.index_version`, bound in BOTH arms; the migration is the part that
+  would have been easy to omit, since `CREATE TABLE IF NOT EXISTS` never reaches a shipped install.
+- **V §7 item 1** — `46,234` travelled through two doc comments without its predicate. Re-measured
+  to **45,030 of 316,839**, and the half nobody had done: the axis reaches **43,552 (96.7%)** of
+  them, 1,478 having no vector at all.
+- **NARA §4** — the raw store is gone, making five `PROJECT_ONLY=1` promises false. The sharpest is
+  Step 4a, which calls a now-DESTRUCTIVE consolidation "required".
+- **NARA 37 units** — resolved rather than restated. Not an under-returning filter: the two sets are
+  not nested (43 vs 27) and their union **exceeds** NARA's own count, because NARA re-describes one
+  roll under several NAIDs. By distinct title the filter returns MORE than the query it was said to
+  lose to.
+- **VM refusal 16** — `FrameTimeProbe`'s block argued it was not DEBUG-gated. It is.
+- **W-19 C-table** — C-0b unrecorded, and the two-by-two did not say which block length each cell
+  measured, so 99/99/100 read as three measurements of one instrument.
+
+**A self-inflicted error worth recording.** During defect 7 I ran `git checkout --` to restore a
+mutation — with the fix uncommitted — and wiped it. That is exactly the trap
+[[feedback_mutation_testing_git_checkout]] names, committed anyway. Re-applied; the tests survived
+because they were in a different file, which is luck rather than method.
+
+Also: `Plan-Of-Record-2026-08-28.md` is marked superseded rather than deleted — its tier structure
+and §7–§9 reasoning are still worth reading, and the successor does not repeat them.

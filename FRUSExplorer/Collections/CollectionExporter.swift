@@ -933,7 +933,16 @@ enum CollectionColophon {
         // `archivalResolution` returns `nil` outright. If an export path ever does render a curated
         // outcome, this is where the disclosure goes back in — `CollectionExporterTests` pins the
         // absence so that change cannot be silent.
-        ProvenanceStatement.block(for: items.provenanceSources)
+        // PV §5 / Q-1: the residual is stated when — and only when — the export actually carries
+        // an archival-sources block, since that block is a parse of the volumes' source notes.
+        // Derived from the content, not passed by the caller, for the same reason the curated
+        // sentence above was removed: a flag a caller sets is a flag a caller sets wrongly.
+        let restsOnParse = items.contains { item in
+            if case .generated(let block) = item, block.type == .archivalSources { return true }
+            return false
+        }
+        return ProvenanceStatement.block(for: items.provenanceSources,
+                                         restsOnSourceNoteParse: restsOnParse)
     }
 }
 

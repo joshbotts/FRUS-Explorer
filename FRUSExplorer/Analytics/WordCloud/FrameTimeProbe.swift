@@ -177,13 +177,24 @@ struct FrameIntervalWindow {
 /// measurement is simple enough that owning it removes the whole apparatus: the number is
 /// read off the device, there is no cable, no symbolication, and no trace to lose.
 ///
-/// ## Not `#if DEBUG`, deliberately
-/// A Debug build's SwiftUI is unoptimised, so its frame times answer a question nobody
-/// asked. This is gated on an environment variable instead, so it can run under the
-/// **`AppStore` configuration** — which is what `Product ▸ Profile` builds — and report
-/// numbers that describe the shipping app. That follows the existing `FRUS_UI_TEST_MODE`
-/// and `FRUS_DEBUG_EDGE_TAP_ZONES` precedent: env-gated diagnostics living in shipping
-/// code, inert unless asked for.
+/// ## `#if DEBUG`, with an environment variable as the inner gate
+/// **This block used to argue the opposite and was wrong about the shipped code.** It said the
+/// probe was deliberately NOT `#if DEBUG`-gated, so that it could run under the `AppStore`
+/// configuration and report numbers describing the shipping app. That was true of the first
+/// version and is not true now: the probe — this type and its readout, lines 30–348 — sits inside
+/// `#if DEBUG`, with `FRUS_FRAME_PROBE=1` as the inner opt-in, exactly as the two sections below
+/// already describe. The `extension View` at the foot of the file is deliberately OUTSIDE the
+/// conditional, because `frameTimeProbe()` must still compile in release; there it returns `self`,
+/// so the call site needs no gate of its own.
+///
+/// The reason for the change is stated there and is worth repeating here, because the old
+/// argument is the tempting one: an environment check alone left the probe *compiled into* the
+/// release binary and merely inert — `FRUS_FRAME_PROBE` was verifiably present in both AppStore
+/// products. A runtime string compare was standing where a compilation condition belongs.
+///
+/// What the old argument got right survives as a limitation, not a feature: a Debug build's
+/// SwiftUI is unoptimised, so **these numbers do not describe a shipping build** and must not be
+/// cited for one. `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` enforces the gate.
 ///
 /// ## Reading it
 /// ```

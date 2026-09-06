@@ -1,5 +1,19 @@
 # NARA Record Group Catalog Harvester — Runbook
 
+> ## ⚠️ `PROJECT_ONLY=1` IS UNAVAILABLE (state, 2026-09-06)
+>
+> **`.cache/nara-rg-catalog` no longer exists**, and the 2026-07-30 tarball holds only projected
+> artifacts — no `raw/`, no `checkpoints/`. **Every `PROJECT_ONLY=1` instruction in this document
+> is therefore currently inoperative**, including the command blocks in §2 Step 4a and §2b, the
+> depth-repair recipe in §4, and the `CREATOR_AUTHORITY=1` route in §5. They are left in place
+> because they are correct for a store that exists.
+>
+> Worse than inoperative in one case: with no raw store the runner skips every group and its
+> writers run **before** the emptiness check, so a `PROJECT_ONLY=1` pass **rewrites the committed
+> run-wide artifacts to describe zero groups** and only then exits non-zero. Git-recoverable, and
+> still destructive. See "The raw NDJSON is not scratch".
+
+
 `RecordGroupCatalogGenerator` builds an offline index of **all available description data** for the
 file series in 22 foreign-affairs record groups, with **creator information** and the **complete,
 unfiltered set of variant control numbers** as its two priority payloads.
@@ -129,6 +143,14 @@ A subset run says so in its own review notes.
 
 This offline pass rebuilds the run-wide artifacts over every group from the raw stores. No network, no
 re-download. Do it last, and after any later per-group re-harvest.
+
+> **DO NOT RUN THIS TODAY — it is destructive with the raw store absent (2026-09-06).** With
+> neither `raw/` nor `raw-api/` present, `RecordGroupCatalogRunner` appends a review note and
+> `continue`s for each group, and the writers run **before** the `summaries.isEmpty`
+> self-assessment — so the pass rewrites the committed `Planning/nara-record-group-catalog/`
+> `manifest.json`, `census/*.csv`, `series-sample.json` and `harvest-report.txt` to describe
+> **zero groups**, and only then exits non-zero. It is git-recoverable, and it is still a
+> destructive no-op. See "The raw NDJSON is not scratch" below.
 
 ### Step 5 — creator authority enrichment (optional, adds ~155 MB)
 
@@ -351,6 +373,7 @@ a couple of minutes. Differences from the refresh path, all deliberate:
 | bulk (default) | 22 GB streamed | ✓ from the shards | also `referenceUnits[].mailCode`, and the deeper levels without extra paging |
 
 Finish either route with one offline `PROJECT_ONLY=1` pass over all 22 groups to rebuild the run-wide
+(**not possible today — the raw store is gone; see "The raw NDJSON is not scratch"**)
 manifest and censuses.
 
 ### Step R2 — the refresh
@@ -471,7 +494,7 @@ that whole array to a single `Data` before writing — for RG 59 that is 236,480
 completed in 8 minutes here, but it would swap or be killed on a 16 GB machine, and `DEPTH=all` would
 not finish at all. **Streaming the shard write is the fix and has not been done.**
 
-#### One real gap: 37 file units, all in one series
+#### The “37 file units” gap: a NAID-counting artifact, resolved
 
 RG 59 reports `fileUnitCountDelta = −37`. It is not spread thin — **1,467 of its 1,468 counted series
 match NARA exactly**, and the entire shortfall sits in series **654171, "Numerical Files"** (the
@@ -483,10 +506,33 @@ match NARA exactly**, and the entire shortfall sits in series **654171, "Numeric
 | this harvest | `recordGroupNumber=59` + `levelOfDescription=fileUnit` | 1,245 |
 | `central-files-index.json` (June) | `ancestorNaId=654171` + `availableOnline=true` | 1,261 |
 
-The *narrower* digitized-only query found 20 more than the record-group filter did, so the filter appears
-to under-return for this series — not restricted records, and not a page boundary (37 is no multiple of
-the page size, and the final page was full-ish at 230). Unresolved, 0.016% of the corpus, and confined to
-a series that already has independent coverage in this repo.
+**RESOLVED 2026-09-06, and the framing above is wrong in shape.** All three counts still reproduce
+exactly (1,282 / 1,245 / 1,261), but the two harvested sets are **not nested**, so "the filter
+under-returns" cannot be the explanation:
+
+| | count |
+|---|---|
+| in the index, not in the harvest | **43** |
+| in the harvest, not in the index | **27** |
+| union | **1,288** — *six more than NARA's own 1,282* |
+
+A union that overshoots NARA's own `fileUnitCount` rules out a simple missing-records story. The
+cause is that **NARA describes the same physical roll under several NAIDs**, and both sources
+contain such repeats:
+
+| | rows | distinct titles | rows attributable to a repeated title |
+|---|---|---|---|
+| `central-files-index.json` | 1,261 | 1,155 | 106 |
+| this harvest | 1,245 | 1,179 | 66 |
+
+Four rows share the title `Numerical File: 3217/260 – 3221`; four more share `3222-3247`. **Counting
+NAIDs is not counting rolls**, and by distinct title the record-group filter returns *more* (1,179)
+than the digitized-only query (1,155) — the reverse of the sentence this replaces.
+
+So the −37 is a NAID-counting artifact across two snapshots of a series NARA re-describes, not a
+gap in coverage. Nothing is missing that a re-harvest would recover, and the delta will move again
+whenever NARA re-describes another roll. **Do not chase it**; if the number matters for a
+particular question, count distinct titles and say so.
 
 ### Later — file units for chosen record groups
 
@@ -782,7 +828,15 @@ Written under `OUTPUT_DIR`:
 `.gitignore` excludes `Planning/nara-record-group-catalog/series/`, matching the precedent of
 `Planning/source-explorer-export/source-explorer-export.json` (182 MB, regenerated not committed).
 
-### The raw NDJSON is not scratch
+### The raw NDJSON is not scratch — and it is GONE, so this advice is now retrospective
+
+> **STATE, 2026-09-06: `.cache/nara-rg-catalog` DOES NOT EXIST.** Only `central-files/`,
+> `presidential-library-catalog/` and `volume-sources/` survive under `.cache/`. The
+> 2026-07-30 tarball is not a recovery route either — it holds only projected artifacts
+> (manifest, censuses, creators, series-sample, api-survey, `series/rg_*.json`), with no `raw/`
+> and no `checkpoints/`. **Every `PROJECT_ONLY=1` promise in this runbook is therefore currently
+> false**, and the paragraph below records the reasoning that was not followed rather than a
+> live instruction.
 
 `CACHE_DIR` sits under `.cache/`, which `.gitignore` describes as regenerable harvest scratch. True of
 the bytes — but regenerating them costs the entire 22 GB download again, and they are:
@@ -792,6 +846,13 @@ the bytes — but regenerating them costs the entire 22 GB download again, and t
 
 Deleting it turns a one-line schema correction from a seconds-long offline rebuild back into a full
 re-download. Keep it until the index is settled.
+
+**Restoring it, if a re-projection is ever needed.** Two routes, and they do not produce the same
+thing. The keyless bulk stream re-downloads ~22 GB and is feasible on this machine (32 GB RAM
+against the ~18.5 GB peak, 644 GB free) — but it rebuilds from the CURRENT bucket snapshot, not
+the 2026-04-09 one the shipped artifacts derive from, so the result is a different corpus, not a
+restoration. The keyed `API_ONLY=1` route is ~62 calls and minutes, and has the same
+different-snapshot property. **Neither reproduces the store that was deleted.**
 
 ---
 
