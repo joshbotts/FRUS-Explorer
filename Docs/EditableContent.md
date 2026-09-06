@@ -3012,6 +3012,34 @@ Facets read the whole match, before any narrowing you apply below.
 
 <!-- END SOURCE: facets.preamble.detail -->
 
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.meaning.title -->
+
+*Shown in place of the whole facet panel when the search ran by meaning rather than by keyword. Facets are counted from the keyword index, so a similarity ranking has none — and the counts that used to appear described a different set of documents from the results beside them (#1193).*
+
+No facets for a meaning search
+
+<!-- END SOURCE: facets.meaning.title -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.meaning.detail -->
+
+Facets are counted from the keyword index. A meaning search ranks documents by similarity instead, so there is no keyword match to break down — and counting one would describe a different set of documents from the results beside it.
+
+<!-- END SOURCE: facets.meaning.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.meaning.remedy -->
+
+Switch to keyword search to narrow by year, volume, person or subject.
+
+<!-- END SOURCE: facets.meaning.remedy -->
+
+<!-- SOURCE: FRUSExplorer/Search/ResultSetScope.swift | key: search.count.closest %@ -->
+
+*The results header for a meaning search, on both platforms. It replaces the keyword grammar's "N loaded · total unavailable", which asserts a total exists and could not be counted — a similarity ranking has no total, because every document is a match at some distance.*
+
+%@ closest matches
+
+<!-- END SOURCE: search.count.closest %@ -->
+
 <!-- SOURCE: FRUSExplorer/Search/FacetPanelView.swift | key: facets.checklistNote -->
 
 *Interpolated with the shown count.*

@@ -447,6 +447,7 @@ struct MacSearchWindowView: View {
                 isPartialEvidence: resultSetScope.isPartialEvidence,
                 isChecklistHiding: searchVM.checklistMode
                     && searchVM.displayedResults.count < searchVM.results.count,
+                isMeaningSearch: searchVM.searchMode == .meaning,
                 onNarrow: { narrowing in
                     // Captured here because the narrow re-runs the search, and by the time
                     // the panel recomputes, its match count describes the narrowed set.
@@ -1658,6 +1659,15 @@ struct MacSearchWindowView: View {
             } else if let total {
                 Text("\(start)–\(end) of \(loaded.formatted()) loaded · \(total.formatted()) total")
                     .font(.subheadline.weight(.medium))
+            } else if resultSetScope.isMeaningSearch, loaded <= searchVM.pageSize {
+                // A similarity search has no total to be unavailable — see
+                // `ResultSetScope.isMeaningSearch`. The clause is shared with iOS so the two
+                // platforms cannot word the same fact differently.
+                Text(resultSetScope.closestMatchesClause)
+                    .font(.subheadline.weight(.medium))
+            } else if resultSetScope.isMeaningSearch {
+                Text("\(start)–\(end) of \(resultSetScope.closestMatchesClause)")
+                    .font(.subheadline.weight(.medium))
             } else if loaded <= searchVM.pageSize {
                 Text("\(loaded) loaded · total unavailable")
                     .font(.subheadline.weight(.medium))
@@ -1791,7 +1801,8 @@ struct MacSearchWindowView: View {
                        totalMatchCount: searchVM.totalMatchCount,
                        documentsOnPage: searchVM.pagedResults.count,
                        pageCount: searchVM.totalPages,
-                       appliedCorpusTruncation: searchVM.filterVM?.appliedWorkingCorpusTruncation)
+                       appliedCorpusTruncation: searchVM.filterVM?.appliedWorkingCorpusTruncation,
+                       isMeaningSearch: searchVM.searchMode == .meaning)
     }
 
     /// Advisory banner shown directly below the results header when the underlying

@@ -274,6 +274,7 @@ struct SearchView: View {
             isPartialEvidence: resultSetScope.isPartialEvidence,
             isChecklistHiding: vm.checklistMode
                 && vm.displayedResults.count < vm.results.count,
+            isMeaningSearch: vm.searchMode == .meaning,
             onNarrow: { narrowing in
                 facetController.recordNarrowing(from: vm.totalMatchCountForFacets)
                 vm.applyFacetNarrowing(narrowing)
@@ -866,7 +867,8 @@ struct SearchView: View {
                        totalMatchCount: vm.totalMatchCount,
                        documentsOnPage: vm.pagedResults.count,
                        pageCount: vm.totalPages,
-                       appliedCorpusTruncation: vm.appliedWorkingCorpusTruncation)
+                       appliedCorpusTruncation: vm.appliedWorkingCorpusTruncation,
+                       isMeaningSearch: vm.searchMode == .meaning)
     }
 
     /// The active reading, derived from the three flags the body and rebuild keys still read.
