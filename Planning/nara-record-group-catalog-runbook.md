@@ -1,5 +1,19 @@
 # NARA Record Group Catalog Harvester — Runbook
 
+> ## ⚠️ `PROJECT_ONLY=1` IS UNAVAILABLE (state, 2026-09-06)
+>
+> **`.cache/nara-rg-catalog` no longer exists**, and the 2026-07-30 tarball holds only projected
+> artifacts — no `raw/`, no `checkpoints/`. **Every `PROJECT_ONLY=1` instruction in this document
+> is therefore currently inoperative**, including the command blocks in §2 Step 4a and §2b, the
+> depth-repair recipe in §4, and the `CREATOR_AUTHORITY=1` route in §5. They are left in place
+> because they are correct for a store that exists.
+>
+> Worse than inoperative in one case: with no raw store the runner skips every group and its
+> writers run **before** the emptiness check, so a `PROJECT_ONLY=1` pass **rewrites the committed
+> run-wide artifacts to describe zero groups** and only then exits non-zero. Git-recoverable, and
+> still destructive. See "The raw NDJSON is not scratch".
+
+
 `RecordGroupCatalogGenerator` builds an offline index of **all available description data** for the
 file series in 22 foreign-affairs record groups, with **creator information** and the **complete,
 unfiltered set of variant control numbers** as its two priority payloads.

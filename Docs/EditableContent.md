@@ -6541,11 +6541,11 @@ Some archival identifiers in this material were matched by hand rather than foun
 #### provenance.parseResidual.disclosure
 <!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 196–198 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
 
-Archival units are read from the volumes' own source notes by a parser, which leaves 2.8% of notes unrecognized across the series — but the rate is uneven: about 1% for 1906–1939 and effectively all of them before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.
+Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.
 
 <!-- END SOURCE: provenance.parseResidual.disclosure -->
 
-Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures are the checked-in `SourceNoteEvalGenerator` report's own (7,481 of 267,663 notes; 1.1% for 1906–1939; 2,033 of 2,034 before 1906).
+Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,472 of 267,663 notes; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
 
 #### provenance.block.heading
 <!-- SOURCE: FRUSExplorer/Provenance/ProvenanceStatement.swift | lines: 34–35 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->

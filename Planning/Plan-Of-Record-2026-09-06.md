@@ -140,4 +140,6 @@ against".
 
 Built from all 26 documents in `Planning/`, cross-checked against `Planning/DEVELOPMENT-PLAN.md`
 and `git log`. The screening pass that cut 16 of 36 candidates is what makes §2 and §3 worth
-trusting; its method is the one `Planning/Agentic-Harness-Runbook.md` §8 describes.
+trusting; its method — generate the candidate list, then verify each claim against the tree before
+trusting it — is the discipline `Planning/Agentic-Harness-Runbook.md` §8 applies to workflow
+scripts, used here on a survey instead.

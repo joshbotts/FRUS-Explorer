@@ -187,13 +187,18 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     /// not contain. The residual is a property of one block type, so it is stated only when that
     /// block is present.
     ///
-    /// The figures are the checked-in `SourceNoteEvalGenerator` report's own (`eval-report.txt`,
-    /// `=== OVERALL`): 7,481 of 267,663 notes unrecognized, 2.8%. The era spread is the part worth
-    /// printing — it is 1.1% for 1906–1939 and **100.0% before 1906**, where the parser recognises
-    /// 1 note in 2,034, so an archival table over an early-corpus selection may rest on almost
-    /// nothing. A single corpus-wide percentage would hide exactly the case a reader needs warned
-    /// about.
+    /// The figures come from **`eval-baseline.txt`**, the maintained `SourceNoteEvalGenerator`
+    /// output (Package.swift names it as the generator's own), **not** from the older
+    /// `eval-report.txt` sitting beside it — that one is from 4 July and says 2.8%, and a first
+    /// draft of this sentence shipped its number. Two stale figures in one repository is the
+    /// defect this whole change exists to fix.
+    ///
+    /// `=== OVERALL`: **5,472 of 267,663 notes unrecognized, 2.0%**. The era spread is the part
+    /// worth printing, and the bands to quote are the two ENDS rather than the flattering one:
+    /// **100.0% before 1906** (the parser recognises 1 note in 2,034) and **7.2% for 1952–1954**,
+    /// the worst post-1906 band. Quoting 1906–1939's 0.3% as "the post-1906 rate" would understate
+    /// 1952–1954 by twenty-four times, which is the opposite of what a caveat is for.
     static let parseResidualDisclosure = String(
         localized: "provenance.parseResidual.disclosure",
-        defaultValue: "Archival units are read from the volumes' own source notes by a parser, which leaves 2.8% of notes unrecognized across the series — but the rate is uneven: about 1% for 1906–1939 and effectively all of them before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.")
+        defaultValue: "Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.")
 }

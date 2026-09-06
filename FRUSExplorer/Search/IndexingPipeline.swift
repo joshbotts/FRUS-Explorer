@@ -5731,6 +5731,15 @@ public actor IndexingPipeline {
         // never reaches a shipped install — the additive rule this file states beside
         // `currentDateIndexVersion`.
         try? exec("ALTER TABLE document_revisions ADD COLUMN index_version INTEGER")
+        // BACKFILL, and it is not cosmetic. Without it every pre-migration row reads as a version
+        // mismatch on its first stamp, so the first re-index of every volume on every existing
+        // install would rebaseline — swallowing any real correction the Office of the Historian
+        // published in that window. Claiming the CURRENT version instead preserves today's
+        // behaviour exactly and starts protecting at the NEXT bump, which is the whole point.
+        // Safe as a guess: these hashes were written by whatever parser last ran, and a shipped
+        // install is at the current version by construction.
+        try? exec("UPDATE document_revisions SET index_version = \(Self.currentDateIndexVersion) "
+                + "WHERE index_version IS NULL")
         try exec("""
             CREATE TABLE IF NOT EXISTS person_mentions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

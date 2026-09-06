@@ -181,8 +181,11 @@ struct FrameIntervalWindow {
 /// **This block used to argue the opposite and was wrong about the shipped code.** It said the
 /// probe was deliberately NOT `#if DEBUG`-gated, so that it could run under the `AppStore`
 /// configuration and report numbers describing the shipping app. That was true of the first
-/// version and is not true now: the whole file sits inside `#if DEBUG`, and `FRUS_FRAME_PROBE=1`
-/// is the inner opt-in, exactly as the two sections below already describe.
+/// version and is not true now: the probe — this type and its readout, lines 30–348 — sits inside
+/// `#if DEBUG`, with `FRUS_FRAME_PROBE=1` as the inner opt-in, exactly as the two sections below
+/// already describe. The `extension View` at the foot of the file is deliberately OUTSIDE the
+/// conditional, because `frameTimeProbe()` must still compile in release; there it returns `self`,
+/// so the call site needs no gate of its own.
 ///
 /// The reason for the change is stated there and is worth repeating here, because the old
 /// argument is the tempting one: an environment check alone left the probe *compiled into* the
@@ -191,8 +194,7 @@ struct FrameIntervalWindow {
 ///
 /// What the old argument got right survives as a limitation, not a feature: a Debug build's
 /// SwiftUI is unoptimised, so **these numbers do not describe a shipping build** and must not be
-/// cited for one. `frameTimeProbe()` returns `self` in release, so the readout and its statistics
-/// do not exist there. `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` enforces the gate.
+/// cited for one. `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` enforces the gate.
 ///
 /// ## Reading it
 /// ```

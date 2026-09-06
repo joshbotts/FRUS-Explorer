@@ -68,6 +68,35 @@ struct ProvenanceStatementTests {
             title: "T", titleOverride: nil, date: nil, bodyText: "b", noteTexts: []))
     }
 
+
+    /// The parse residual is disclosed, and **only** where the export actually parses source notes.
+    ///
+    /// The conditionality is the whole design (PV §5 / Q-1): `.frusText` is inserted for every
+    /// document, excerpt, bibliography and chronology item, so an unconditional residual would
+    /// caveat plain document collections that parse nothing — the error PV-3 had to undo for Q-3.
+    @Test("The parse residual is disclosed, and only when the export parses source notes")
+    func parseResidualIsConditional() {
+        let without = ProvenanceStatement.lines(for: [.frusText, .naraCatalog])
+        let with = ProvenanceStatement.lines(for: [.frusText, .naraCatalog],
+                                             restsOnSourceNoteParse: true)
+        #expect(!without.contains(ProvenanceSource.parseResidualDisclosure))
+        #expect(with.contains(ProvenanceSource.parseResidualDisclosure))
+        #expect(with.count == without.count + 1)
+    }
+
+    /// The two disclosures are independent, so one cannot be read as implying the other.
+    @Test("The curated and parse-residual disclosures are independent")
+    func disclosuresAreIndependent() {
+        let both = ProvenanceStatement.lines(for: [.naraCatalog],
+                                             includesCuratedResolutions: true,
+                                             restsOnSourceNoteParse: true)
+        #expect(both.contains(ProvenanceSource.curatedDisclosure))
+        #expect(both.contains(ProvenanceSource.parseResidualDisclosure))
+        let curatedOnly = ProvenanceStatement.lines(for: [.naraCatalog],
+                                                    includesCuratedResolutions: true)
+        #expect(!curatedOnly.contains(ProvenanceSource.parseResidualDisclosure))
+    }
+
     /// Derived from the items, never declared — an export cannot claim a source it did not use.
     @Test("A plain document collection claims the volumes and nothing else")
     func plainCollectionIsFRUSOnly() {

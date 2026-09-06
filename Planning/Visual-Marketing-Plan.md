@@ -723,7 +723,7 @@ engineering risk this cycle, promote it. That is an owner call.
     it needs ScreenCaptureKit, which nothing here uses.
 16. **Do not cite `FrameTimeProbe` for a shipping build.** It is file-level `#if DEBUG` and returns
     `self` in release, so its numbers describe an unoptimised SwiftUI build. *(Sharpened 2026-08-31:
-    the stale block was `FrameTimeProbe.swift:180-187`, with the purpose statement at `:172-173` —
+    the stale block was `FrameTimeProbe.swift:180-187`, with the purpose statement at `:170-171` —
     **not** `:27`, which a review cited. And the gating is test-enforced:
     `DeveloperInstrumentationGateTests.wordCloudProbeIsGated` pins three properties of that file by
     region and strips comments before matching. So this was a **documentation** defect, not a code
