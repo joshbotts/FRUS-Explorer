@@ -647,15 +647,39 @@ ahead of the capture sessions. Old numbers in brackets.)*
    review, none of which should gate a capture program.
 10. *(was 7)* **Run the capture sessions.** The shot list stages ~41 rows ≈ **44–48 files**, not the
     31 stale committed PNGs that circulated as a work estimate. Shoot store frames as a separate pass.
-11. *(was 8)* **Finish the film (M, mostly assembly).** ~~**Pre-flight `ls | wc -l == records.count`
-    before assembling**: a nil frame is skipped with `continue`, leaving a hole that stops `ffmpeg`,
-    and the closing frame's index is `records.count`, which after one skip **overwrites a real
-    frame**.~~ **NO LONGER NEEDED, 2026-08-31** — the harness throws on a failed frame (PR #1161),
-    so the corruption this pre-flight guarded against cannot occur. The two `provenance.txt`
-    literals below still stand. Crop the ~44% dead width and put the grain sentence in the reclaimed margin; generate
-    subtitles from `framesCSV`, whose fields are already exactly a subtitle track's; fix the
-    `provenance.txt` `indexedVolumeCount: 0` and the hardcoded lens label. Not "zero Swift" — those
-    two literals are in the test target.
+11. ~~*(was 8)* **Finish the film (M, mostly assembly).**~~ **SHIPPED 2026-09-06** —
+    `tools/map-film/` (`build_film.sh`, `make_subtitles.py`, `render_caption.swift`, README).
+    Output `map-film.mp4`: **1440×1080, 46.08 s, 1.94 MB**, two soft subtitle tracks. No re-render.
+
+    **"~44% dead width" was exactly right, and is now measured rather than estimated**: the drawn
+    content occupies x 418..1501 (1084 px) of 1920, so **836 px = 43.5%** is empty ground. The crop
+    takes 1440, reclaiming 480 px and leaving ~178 px a side plus the 109 px band the grain sentence
+    now sits in. The box is **identical on the first frame and the last** — out-of-scope documents
+    are ghosted, not removed, so every frame draws all 314,483 points — and the build re-checks that
+    before encoding, because a harness that stopped drawing the ghosts would make one crop clip the
+    later frames with no error anywhere.
+
+    **Two constraints this machine imposes, neither of them in this plan.** `cropdetect` is the
+    wrong instrument and reports **no crop at all** at limit 2, 8 and 24: h264 ringing in the flat
+    `#0f1217` ground lifts border pixels over the threshold, so the box must be measured on the PNGs.
+    And **this ffmpeg cannot draw text** — no `drawtext`, no `subtitles`, no `ass`, and neither
+    `--enable-libfreetype` nor `--enable-libass` — so it can mux a subtitle track but not render a
+    glyph. The caption is rasterised by a CoreText script instead, which **fails rather than
+    clipping**, since CoreText drops overflowing lines silently and a half-printed disclosure line is
+    the one failure that matters.
+
+    **The subtitle arithmetic decides what the track is for.** 553 frames at 12 fps is **83 ms a
+    frame**; nothing is readable at that rate and no cue design changes it. So the per-frame track
+    (553 cues) is a scrubbing aid that names the volume you paused on, a `--group-by-year` track
+    (154 cues) is the one that reads at speed, and both are muxed for the viewer to pick. Each cue
+    carries the `volume_id`, because `frus1865p4`'s title runs to **498 characters** and the part
+    that identifies it sits past character 300 — every truncation loses it, and the id does not.
+    Both tracks were muxed, extracted and compared cue for cue: **553/553 and 154/154 identical**.
+
+    ~~Fix the `provenance.txt` `indexedVolumeCount: 0` and the hardcoded lens label.~~ **ALREADY
+    DONE at step 4** — PR #1166 (`cd2decd4`) passes `lens: model.appliedLens` and
+    `indexedVolumeCount: nil`, and the produced sidecar carries neither defect. This step's own text
+    said they "still stand" for five days after they stopped standing; corrected here.
 12. *(was 9)* **Record the App Preview in two passes and cut (L).**
 13. *(was 11)* **Plate B (S after step 1).**
 14. **Plan §3.2's M-4 — splash drift, with the `push` re-clamp fix.** After capture, deliberately.

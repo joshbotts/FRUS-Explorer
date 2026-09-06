@@ -144,9 +144,18 @@ Both de-risk R-1 without an Office of the Historian publication.
 
 ### 1f. One that reduces the owner's own queue
 
+**§7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11.** Machine-checked against `Visual-Marketing-Plan.md`
+itself by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`, which exists
+because the two documents once disagreed for a day across fourteen merged PRs and neither was
+implausible to read. The gate moved here on 2026-09-06: it had been reading
+`Plan-Of-Record-2026-08-28.md`, whose own header says *"do NOT read its row states as current"* —
+so the check against staleness had itself gone stale. It now finds the one plan of record not
+marked SUPERSEDED, and fails if there is not exactly one.
+
+
 | Row | What | Size |
 |---|---|---|
-| **F-1** | **VM §7 step 11** — finish the film: crop the dead width, cut a subtitle track from `frames.csv`. **No re-render needed** — all 553 post-#1166 frames are already at `~/Desktop/frus-map-film/` | M |
+| ~~**F-1**~~ | ~~**VM §7 step 11** — finish the film~~ **SHIPPED 2026-09-06.** `tools/map-film/` → `map-film.mp4`, 1440×1080, 46.08 s, two soft subtitle tracks. The dead width measured **43.5%**, exactly as estimated. Two machine constraints found: `cropdetect` reports no crop (h264 ringing in the flat ground, so measure the PNGs), and this ffmpeg **cannot draw text** — the caption is CoreText | ✓ |
 
 ---
 
