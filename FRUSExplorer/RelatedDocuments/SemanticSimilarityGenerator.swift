@@ -205,6 +205,96 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
             availableTotal: nil)
     }
 
+
+    /// What the semantic axis can see in volumes the reader has **not** indexed (V-3 §6.2(a)).
+    ///
+    /// A count and a volume list — never a document. The register is not a new judgement: it is the
+    /// one `SemanticSearchFallbackView` already ships for unscored search candidates, and the
+    /// ceiling CLAUDE.md sets for `resolved-edge-index.json` — *how many documents, and which
+    /// volumes they are in, never what they are.*
+    struct OffIndexLeads: Equatable, Sendable {
+        /// Documents at or better than the anchor's own on-index cut.
+        var documentCount: Int
+        /// The volumes holding them, most matches first. Ids only; the caller titles them from the
+        /// manifest, which is the one surface that knows a volume the reader does not hold.
+        var volumes: [(volumeID: String, count: Int)]
+        /// `true` when the scan's cap bound, so `documentCount` is a floor and the copy must say so.
+        var isCapped: Bool
+
+        static let none = OffIndexLeads(documentCount: 0, volumes: [], isCapped: false)
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.documentCount == rhs.documentCount && lhs.isCapped == rhs.isCapped
+                && lhs.volumes.map(\.volumeID) == rhs.volumes.map(\.volumeID)
+                && lhs.volumes.map(\.count) == rhs.volumes.map(\.count)
+        }
+    }
+
+    /// The off-index scan, and the reason its threshold is derived rather than chosen.
+    ///
+    /// ## "Strong" cannot be a constant, and that is measured
+    /// Over 60 random anchors against the shipped 512-dim artifact, the Hamming distance of the
+    /// **120th** neighbour — the axis's own cut — ranges **104 to 162** by anchor, while a random
+    /// corpus pair sits at median **194** with a minimum of **105** over 4,000 pairs. The bands
+    /// overlap: one anchor's 120th-best is worse than another pair's coincidence. A fixed corpus-
+    /// wide cutoff would therefore admit nothing for some anchors and a wide swathe for others.
+    ///
+    /// So the cut is the anchor's **own** on-index band, taken from the scan that has already run:
+    /// an off-index document is reported when it is at least as near as the last on-index
+    /// candidate the axis would itself have shown. Self-calibrating, and free.
+    ///
+    /// Measured yield with that rule, simulating a reader holding half the corpus: a median of
+    /// **94 documents across 19 volumes** per anchor, and every one of 20 sampled anchors found
+    /// something.
+    ///
+    /// ## Why the cap is generous
+    /// At a **10% library** — the reader this feature exists for — the median rises to 732 and a
+    /// cap of 800 would bind on **43%** of anchors. The Hamming pass is a full corpus scan whatever
+    /// the cap, so a larger one costs nothing but the selection; `isCapped` still discloses the
+    /// floor when it binds.
+    static func offIndexLeads(
+        anchorRow: Int,
+        corpus: SemanticCorpusVectors,
+        index: SemanticVectorIndex,
+        onIndexRows: [Int],
+        eligible: [UInt8],
+        limit: Int
+    ) -> OffIndexLeads {
+        // The anchor's own band. `onIndexRows` is nearest-first, so the last one the axis would
+        // have shown IS the cut. A short list means the reader holds little; its own last entry is
+        // still the right cut, because the claim is comparative and not absolute.
+        guard let cutRow = onIndexRows.prefix(limit).last,
+              let cutSimilarity = SemanticRetrievalKernel.binarySimilarity(
+                anchorRow, cutRow, in: corpus)
+        else { return .none }
+
+        let scanned = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: Self.offIndexScanCap,
+            isEligible: { eligible[$0] == 0 })
+        guard !scanned.isEmpty else { return .none }
+
+        var perVolume: [String: Int] = [:]
+        var kept = 0
+        for row in scanned {
+            // Nearest-first, so the first row past the cut ends the walk.
+            guard let similarity = SemanticRetrievalKernel.binarySimilarity(anchorRow, row, in: corpus),
+                  similarity >= cutSimilarity else { break }
+            guard let located = index.volumeSlot(containing: row) else { continue }
+            perVolume[index.volumes[located.slot].volumeID, default: 0] += 1
+            kept += 1
+        }
+        guard kept > 0 else { return .none }
+        return OffIndexLeads(
+            documentCount: kept,
+            volumes: perVolume.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+                .map { (volumeID: $0.key, count: $0.value) },
+            // The cap bound only if the walk consumed every scanned row without falling past the cut.
+            isCapped: kept == scanned.count && scanned.count >= Self.offIndexScanCap)
+    }
+
+    /// How deep the off-index scan selects. See `offIndexLeads` for why it is not 800.
+    static let offIndexScanCap = 4096
+
     /// The volumes a candidate may come from: indexed, intersected with the caller's scope.
     ///
     /// - Parameters:

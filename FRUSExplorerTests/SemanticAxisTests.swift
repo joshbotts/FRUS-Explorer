@@ -182,4 +182,66 @@ struct SemanticAxisTests {
         #expect(source.contains("where !generator.axis.skipsGenerationAtZeroWeight"))
         #expect(source.contains("axis.isSelfNormalising"))
     }
+
+    // MARK: - Off-index volume leads (V-3 §6.2(a))
+
+    /// The rule, driven against the shipped artifacts: an off-index document is reported when it is
+    /// at least as near as the last on-index candidate the axis would itself have shown.
+    ///
+    /// The fixture holds HALF the corpus, because that is the condition the yield was measured
+    /// under — a median of 94 documents across 19 volumes per anchor.
+    @MainActor
+    @Test("Off-index leads are counted against the anchor's own band, and name volumes only")
+    func offIndexLeadsUseTheAnchorsOwnBand() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+
+        // Half the volumes, deterministically: every other one in index order.
+        let held = Set(index.volumes.enumerated().filter { $0.offset.isMultiple(of: 2) }
+                                     .map { $0.element.volumeID })
+        var eligible = [UInt8](repeating: 0, count: index.documentCount)
+        for volumeID in held {
+            guard let rows = index.rows(forVolume: volumeID) else { continue }
+            for row in rows { eligible[row] = 1 }
+        }
+        let anchorVolume = try #require(held.sorted().first)
+        let anchorRow = try #require(index.rows(forVolume: anchorVolume)?.first)
+        let onIndex = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: 800, isEligible: { eligible[$0] == 1 })
+        try #require(!onIndex.isEmpty)
+
+        let leads = SemanticSimilarityGenerator.offIndexLeads(
+            anchorRow: anchorRow, corpus: corpus, index: index,
+            onIndexRows: onIndex, eligible: eligible, limit: 120)
+
+        #expect(leads.documentCount > 0, "a half-held corpus must surface something")
+        #expect(!leads.volumes.isEmpty)
+        // The whole point: NOT ONE of the volumes named may be one the reader already holds.
+        #expect(leads.volumes.allSatisfy { !held.contains($0.volumeID) }, """
+            An off-index lead that names a held volume is not off-index — the inverted eligibility \
+            predicate has been applied the wrong way round.
+            """)
+        // Counts sum to the documents, and the list is ordered by count.
+        #expect(leads.volumes.reduce(0) { $0 + $1.count } == leads.documentCount)
+        #expect(leads.volumes.map(\.count) == leads.volumes.map(\.count).sorted(by: >))
+    }
+
+    /// A reader who holds everything has nothing off-index, and the helper must say so rather than
+    /// scanning a corpus with no eligible rows and reporting whatever comes back.
+    @MainActor
+    @Test("A reader holding the whole corpus gets no off-index leads")
+    func nothingOffIndexWhenEverythingIsHeld() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+        let eligible = [UInt8](repeating: 1, count: index.documentCount)
+        let anchorRow = 0
+        let onIndex = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: 800, isEligible: { eligible[$0] == 1 })
+        let leads = SemanticSimilarityGenerator.offIndexLeads(
+            anchorRow: anchorRow, corpus: corpus, index: index,
+            onIndexRows: onIndex, eligible: eligible, limit: 120)
+        #expect(leads == .none)
+    }
 }
