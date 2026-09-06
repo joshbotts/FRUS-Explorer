@@ -12310,7 +12310,7 @@ measured 16 agents / 3.17M tokens / 35.2 minutes. The refuter share is the plann
 
 Guide → 1.19. Documentation only; no code, no artifact, no index-version bump.
 
-## Session 2026-09-06g — seven defects, and a plan of record for the week (PR #TBD)
+## Session 2026-09-06g — seven defects, and a plan of record for the week (PR #1233)
 
 Seven measured defects, each its own commit, and `Planning/Plan-Of-Record-2026-09-06.md` carrying
 what is left. All from a survey of the 26 live planning documents that screened 36 "startable"
