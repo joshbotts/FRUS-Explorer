@@ -484,4 +484,165 @@ struct ArchivalResolverTests {
                     "\(path) still resolves through volume-sources directly, bypassing the precedence")
         }
     }
+
+    // MARK: - Divided lots (#1205)
+
+    /// A one-entry claimants index dividing `lot` across `count` series.
+    ///
+    /// `lotNumber` is stored FOLDED, as the generator writes it — `claimants(forRawLot:)` folds
+    /// the citation and compares against the stored key directly, so a fixture spelled
+    /// `"11 D 11"` would silently never match and every test below would pass vacuously.
+    private static func syntheticClaimants(lot: String, count: Int) throws -> LotClaimantsIndex {
+        let claimants = (1...count).map { i in
+            #"{"naId":"90\#(i)","title":"claimant \#(i)","recordGroup":"59","#
+                + #""hmsMlrEntryNumbers":["A1 \#(i)"],"dateRange":"196\#(i)","evidence":"controlNumber"}"#
+        }.joined(separator: ",")
+        let doc = #"{"schemaVersion":1,"generated":"2026-01-01","#
+            + #""lots":[{"lotNumber":"\#(lot)","claimants":[\#(claimants)]}]}"#
+        return try JSONDecoder().decode(LotClaimantsIndex.self, from: Data(doc.utf8))
+    }
+
+    /// The refusal itself, against a fixture that provably resolves without it.
+    ///
+    /// The `claimants: nil` arm is the control and is not decoration: without it a fixture that
+    /// never resolved in the first place would produce the same `nil` and the test would pass
+    /// against a deleted guard.
+    @Test("A lot NARA divided resolves to nothing, where the same lot undivided resolves")
+    func dividedLotResolvesToNothing() throws {
+        let central = try Self.syntheticCentralFiles(lot: "11D11", extra: #"{"x":0}"#)
+        let divided = try Self.syntheticClaimants(lot: "11D11", count: 2)
+        #expect(divided.claimants(forRawLot: "11 D 11")?.count == 2,
+                "fixture guard: the claimants index must really divide this lot")
+
+        #expect(ArchivalResolver.documentResolution(lotFile: "11 D 11", centralFiles: central,
+                                                    volumeSources: try volumes(),
+                                                    claimants: nil)?.naId == "1",
+                "control: without the claimants index this lot resolves, so the refusal below is the guard's doing")
+        #expect(ArchivalResolver.documentResolution(lotFile: "11 D 11", centralFiles: central,
+                                                    volumeSources: try volumes(),
+                                                    claimants: divided) == nil,
+                "a divided lot must reach no single series — ArchivalResolution can name only one")
+    }
+
+    /// A lot with ONE claimant is not divided, and refusing it would go dark on the whole corpus.
+    @Test("A lot with a single claimant still resolves")
+    func undividedLotStillResolves() throws {
+        let central = try Self.syntheticCentralFiles(lot: "11D11", extra: #"{"x":0}"#)
+        let single = try Self.syntheticClaimants(lot: "11D11", count: 1)
+        #expect(single.claimants(forRawLot: "11 D 11") == nil,
+                "fixture guard: `claimants(forRawLot:)` reports only lots with more than one claimant")
+        #expect(ArchivalResolver.documentResolution(lotFile: "11 D 11", centralFiles: central,
+                                                    volumeSources: try volumes(),
+                                                    claimants: single)?.naId == "1")
+    }
+
+    /// The refusal sits in front of BOTH bundles, not inside the central-files branch.
+    ///
+    /// Volume-sources stores one `naId` per lot for the same reason central-files does, so a
+    /// guard placed after the central-files lookup would resolve every divided lot the fallback
+    /// answers — and the test above could not see it, because its lot is in central-files.
+    @Test("The refusal precedes the volume-sources fallback too")
+    func refusalPrecedesTheFallback() throws {
+        let orphan = try Self.syntheticVolumeSources(lot: "22D22", naId: "40967285")
+        let divided = try Self.syntheticClaimants(lot: "22D22", count: 3)
+        #expect(ArchivalResolver.documentResolution(lotFile: "22 D 22", centralFiles: try central(),
+                                                    volumeSources: orphan,
+                                                    claimants: nil)?.naId == "40967285",
+                "control: the fallback really answers this lot when nothing refuses it")
+        #expect(ArchivalResolver.documentResolution(lotFile: "22 D 22", centralFiles: try central(),
+                                                    volumeSources: orphan,
+                                                    claimants: divided) == nil,
+                "the divided-lot refusal must precede the volume-sources arm, not only the central-files one")
+    }
+
+    /// The front-matter arm refuses too — and must not read past the lot into the record group.
+    ///
+    /// This is the surface that prints `HMS/MLR Entry: …`, the identifier NARA staff use to pull
+    /// the records, so a divided lot here hands a researcher one of several entry numbers to
+    /// quote at the counter.
+    @Test("A divided lot refuses on the front-matter arm without falling through to the record group")
+    func frontMatterRefusesDividedLots() throws {
+        let central = try Self.syntheticCentralFiles(lot: "11D11", extra: #"{"x":0}"#)
+        let divided = try Self.syntheticClaimants(lot: "11D11", count: 4)
+        #expect(ArchivalResolver.frontMatterResolution(
+            recordGroup: "59", lotFile: "11 D 11",
+            entryText: "Record Group 59, Records of the Department of State",
+            centralFiles: central, volumeSources: try volumes(), claimants: divided) == nil,
+                "a divided lot must resolve to nothing — and never to RG 59, which the lot-only rule already forbids")
+    }
+
+    /// The citation is folded by the index, so every printed spelling refuses.
+    @Test("Every printed spelling of a divided lot refuses")
+    func everySpellingRefuses() throws {
+        let central = try Self.syntheticCentralFiles(lot: "11D11", extra: #"{"x":0}"#)
+        let divided = try Self.syntheticClaimants(lot: "11D11", count: 2)
+        for spelling in ["11D11", "11 D 11", "Lot 11–D 11", "lot 11-d-11"] {
+            #expect(ArchivalResolver.documentResolution(lotFile: spelling, centralFiles: central,
+                                                        volumeSources: try volumes(),
+                                                        claimants: divided) == nil,
+                    "the raw citation must reach the index unfolded — \(spelling) resolved")
+        }
+    }
+
+    // MARK: - Divided lots: the bundled wiring
+
+    /// The convenience overloads must pass the real claimants store.
+    ///
+    /// Every fixture test above injects the index, so dropping `claimants:
+    /// LotClaimantsIndexStore.shared` from the two bundled-store overloads would leave them all
+    /// green while the app kept naming one series. `73 D 153` is the #1205 case: central-files
+    /// stores NAID 621628 *Special Summaries* (1969) while NARA divides the lot across three
+    /// series, including *Morning Summaries and Related Records* (1971–1974) — so a 1973
+    /// document's records are very likely in a series the app was not naming.
+    @Test("The bundled-store overloads consult the claimants index")
+    func bundledOverloadsRefuseTheDividedLot() throws {
+        let claimants = try #require(LotClaimantsIndexStore.shared,
+                                     "lot-claimants-index.json must decode")
+        #expect(claimants.claimants(forRawLot: "73 D 153")?.count == 3,
+                "artifact precondition: 73 D 153 is the shipped three-way division")
+        #expect(try central().lotFile(forRawLot: "73 D 153")?.naId == "621628",
+                "artifact precondition: central-files still answers it with one series, which is what must be withheld")
+
+        #expect(ArchivalResolver.documentResolution(lotFile: "73 D 153") == nil,
+                "the document convenience overload must refuse a divided lot")
+        #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: "73 D 153",
+                                                       entryText: "Record Group 59") == nil,
+                "the front-matter convenience overload must refuse it too")
+
+        // The control: an undivided bundled lot must still resolve through the same overloads,
+        // or a guard that refused everything would pass the two assertions above.
+        #expect(claimants.claimants(forRawLot: "53 D 233") == nil, "control lot must be undivided")
+        #expect(ArchivalResolver.documentResolution(lotFile: "53 D 233")?.naId == "633906")
+        #expect(ArchivalResolver.frontMatterResolution(recordGroup: "59", lotFile: "53 D 233",
+                                                       entryText: "Record Group 59")?.naId == "633906")
+    }
+
+    /// Every divided lot is refused, not just the one with a regression test.
+    ///
+    /// All 123 also carry a single `naId` in central-files, so before the guard every one of
+    /// them resolved to a confident single series. A guard keyed on anything narrower than the
+    /// claimants index — a hardcoded lot, a claimant-count threshold — fails here.
+    @Test("No lot the claimants index divides resolves through the bundled overloads")
+    func noDividedLotResolves() throws {
+        let claimants = try #require(LotClaimantsIndexStore.shared)
+        #expect(claimants.lots.count == 123, "shipped artifact size changed — re-read the measurement")
+        var resolvedAnyway: [String] = []
+        for entry in claimants.lots where entry.claimants.count > 1 {
+            if ArchivalResolver.documentResolution(lotFile: entry.lotNumber) != nil {
+                resolvedAnyway.append(entry.lotNumber)
+            }
+        }
+        #expect(resolvedAnyway.isEmpty,
+                "divided lots still resolving to one series: \(resolvedAnyway.prefix(10))")
+    }
+
+    /// The disclosure accessor, so a surface can say *why* a lot carries no link.
+    @Test("The divided-lot accessor names the claimants, and stays silent otherwise")
+    func dividedLotAccessorReportsClaimants() throws {
+        #expect(ArchivalResolver.dividedLotClaimants(lotFile: "73 D 153")?.count == 3)
+        #expect(ArchivalResolver.dividedLotClaimants(lotFile: "53 D 233") == nil,
+                "an undivided lot must not be reported as divided")
+        #expect(ArchivalResolver.dividedLotClaimants(lotFile: nil) == nil)
+        #expect(ArchivalResolver.dividedLotClaimants(lotFile: "   ") == nil)
+    }
 }

@@ -5269,6 +5269,20 @@ NARA divided this lot file across %lld series. Each series lists the lot among i
 
 ---
 
+#### A divided lot on a volume's Sources outline
+
+*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeSourcesView.swift | lines: 322–323 | key: browser.sources.lotFile.divided %lld -->
+
+NARA divides this lot across %lld series — open Collection to see them.
+
+<!-- END SOURCE: browser.sources.lotFile.divided %lld -->
+
+This line replaces the catalogue link and the `HMS/MLR Entry` caption on a Sources row whose lot NARA divided. The app withholds those rather than naming one of several claiming series (#1205); the claimants themselves are listed in the Collection sheet the row's own button opens.
+
+---
+
 ### 11.4 Presidential libraries and other repositories
 
 #### Presidential library — provenance

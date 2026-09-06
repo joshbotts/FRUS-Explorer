@@ -11977,3 +11977,57 @@ indexed between the two merges holds rows this change supersedes, so the rule ap
 than being satisfied by the earlier bump.
 
 One mutation killed. 4,535 tests in 594 suites, zero restarts; 1,286 SPM tests; macOS builds clean.
+
+## Session 2026-09-05l — #1205: a lot NARA divided resolves to none of its claimants (PR #1226)
+
+`ArchivalResolver` answered a lot citation with one NARA series even where NARA divides that lot
+across several. **All 123 lots** in `lot-claimants-index.json` also carry a single `naId` in
+`central-files-index.json`, so every divided lot resolved to a confident single card — and the pick
+was always *among* the claimants (0 of 123 outside the list, 123 of 123 titles matching a claimant
+row exactly). This is #675's undisclosed pick, not a wrong record; what was wrong is the confidence.
+
+**The refusal is forced by the type, not preferred.** `ArchivalResolution` holds one `title` and one
+`catalogURL`, both non-optional, so a divided lot has no honest value to return. #1205 proposes
+re-running generators and a title-matching heuristic; neither is needed, because the answer already
+ships and the app already applies it in three places — `SourceExplorerView` and
+`MacSourceExplorerView` try `candidatesOutcome` before the single bundled card, `CollectionDetailView`
+lists every claimant, and `TripPacketModel.restriction` records *single-pick … printed one claimant's
+status as if it were the lot's* as a **rejected rendering** on the access-status axis. The resolver
+was the one lot surface still making that move, on the identity axis — which is why a trip packet
+could print "NARA divides this lot across 3 series" and a four-field pull-slip line naming one of
+them on the same page.
+
+**The issue's own framing does not survive the trace.** It says Source Explorer "renders the
+confident single card"; both twins have checked `candidatesOutcome` first since #675. The unguarded
+surface is `ArchivalResolver.lotResolution`, and through it the Collections export, the trip packet,
+the Browser Sources outline and the NARA Lookup sheet.
+
+Reach: **1,952 documents** cite a divided lot, 675 of them a lot with six or more claimants (245 on
+`64D563`, which has twelve). **Five lots** have claimants in more than one *record group*. `73 D 153`
+is the fixture — the pick, *Special Summaries* (NAID 621628, entry A1 5185), covers 1969 alone while
+its siblings cover 1944–1971 and 1971–1974.
+
+The sharpest harm was not the export. The Browser Sources outline prints `HMS/MLR Entry: …`, the
+identifier NARA staff ask a researcher to quote at the counter; 104 of the 123 divided lots appear as
+front-matter rows, `62 D 430` in **59 volumes**, where four claiming series carry four different
+entry numbers. That surface gains the one UI change, a caption naming the division. The trip packet
+needed none: `form == .lotFile && resolution == nil` already triggers the A5 "Please help me locate
+the following" ask, so declining converts a false pull-slip line into an explicit request, and the
+lot facility heading is unchanged.
+
+The guard precedes **both** bundles — volume-sources stores one naId per lot for the same reason
+central-files does. The injected overloads take `claimants` with an inert `nil` default so no test
+couples to the shipped artifact; the bundled-store overloads and `NARALookupAnalyzer` pass the real
+store, pinned behaviourally against `73 D 153` rather than by a source scan. `noDividedLotResolves`
+sweeps all 123, so a guard keyed on anything narrower fails.
+
+Guide → **1.14**: §14 offered `72 D 192` as an example of *an undivided lot [with] one answer*. It
+has six claimants and reads as undivided only because `central-files-index.json` conceals the
+division — the same defect, showing up in the documentation.
+
+Disclosed cost: a divided lot no longer contributes a row to the trip packet's `countsByNaId`, so the
+triage denominator shrinks silently. Pre-existing for unresolved lots; a `RestrictionTriage` change,
+not this one.
+
+Five mutations killed, each by a distinct named control. 4,543 tests in 594 suites; macOS builds
+clean. No CloudKit change, no index-version bump, no new files.

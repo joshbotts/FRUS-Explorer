@@ -100,12 +100,16 @@ enum NARALookupAnalyzer {
     ///   - context: The surrounding passage, when the caller could supply one.
     ///   - centralFiles: The bundled central-files index; injected so tests need no app bundle.
     ///   - volumeSources: The bundled volume-sources index, for the same reason.
+    ///   - claimants: The bundled divided-lot claimants index (#1205). Passed explicitly rather
+    ///     than left to the resolver, because this surface uses the *injected* resolver overload,
+    ///     whose `claimants` default is inert `nil` so no test silently couples to the bundle.
     /// - Returns: Candidates, best first. Empty when nothing in the text is recognisable, which is
     ///   when the sheet falls back to the manual field the issue asks to keep.
     static func candidates(selection: String,
                            context: String?,
                            centralFiles: CentralFilesIndex? = CentralFilesIndexStore.shared,
-                           volumeSources: VolumeSourcesIndex? = VolumeSourcesIndexStore.shared)
+                           volumeSources: VolumeSourcesIndex? = VolumeSourcesIndexStore.shared,
+                           claimants: LotClaimantsIndex? = LotClaimantsIndexStore.shared)
         -> [NARALookupCandidate] {
         var out: [NARALookupCandidate] = []
         var seen = Set<String>()
@@ -116,7 +120,8 @@ enum NARALookupAnalyzer {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { continue }
             for candidate in read(trimmed, origin: origin,
-                                  centralFiles: centralFiles, volumeSources: volumeSources)
+                                  centralFiles: centralFiles, volumeSources: volumeSources,
+                                  claimants: claimants)
             where !seen.contains(candidate.id) {
                 seen.insert(candidate.id)
                 out.append(candidate)
@@ -146,7 +151,8 @@ enum NARALookupAnalyzer {
     private static func read(_ text: String,
                              origin: NARALookupCandidate.Origin,
                              centralFiles: CentralFilesIndex?,
-                             volumeSources: VolumeSourcesIndex?) -> [NARALookupCandidate] {
+                             volumeSources: VolumeSourcesIndex?,
+                             claimants: LotClaimantsIndex?) -> [NARALookupCandidate] {
         var out: [NARALookupCandidate] = []
 
         if let decimal = SourceNoteParser.decimalClassLocation(inCitation: text) {
@@ -173,7 +179,8 @@ enum NARALookupAnalyzer {
                 // — a lot resolves only through its own number, never through the citation's
                 // record group, which is the rule #372 preserved.
                 resolution: ArchivalResolver.documentResolution(
-                    lotFile: lot, centralFiles: centralFiles, volumeSources: volumeSources)))
+                    lotFile: lot, centralFiles: centralFiles, volumeSources: volumeSources,
+                    claimants: claimants)))
             // Advance past this match. `firstLotReference` returns a range in the SLICE, so it is
             // mapped back through the slice's own start index; advancing by one character instead
             // would rescan the same lot forever on any text where the match is a single token.
