@@ -120,6 +120,20 @@ public enum HarvestShardReader {
             public var coverageEndYear: Int?
         }
 
+        /// The Federal Records Center accession numbers this series was retired under (#1203).
+        ///
+        /// NARA writes them record-group-prefixed and inconsistently punctuated — `059-71A6682`,
+        /// `59-71A-6682`, `71A6682`, `306-72A-5121`, `W084-70-1` all occur — so a consumer must
+        /// split the prefix off before matching a FRUS citation, which names the accession alone
+        /// ("FRC Accession No. 71 A 6682"). Measured over the 22-record-group harvest: 1,058
+        /// records in RG 59 carry the field, 1,437 occurrences, and it appears on the SERIES layer
+        /// only.
+        ///
+        /// **The prefix is load-bearing, not noise.** An accession number is unique only within
+        /// its record group: `68A5612` names 1 series in RG 59 and 18 in RG 84. Matching without
+        /// the prefix answers a State citation with Foreign Service Post records.
+        public let recordsCenterTransferNumbers: [String]
+
         /// One creating body: NARA's heading, its own authority NAID, and which era it belongs to.
         public struct Creator: Decodable, Sendable, Equatable {
             /// The full hierarchical heading, verbatim, e.g.
@@ -148,6 +162,9 @@ public enum HarvestShardReader {
             // projection for the reason this file's header gives — a second decoder over the same
             // shards is the drift it exists to prevent.
             case coverageStartDate, coverageEndDate
+            // #1203: the Federal Records Center accession a series was retired under. Same rule
+            // as every field above — it goes in THIS reader, never a parallel one.
+            case recordsCenterTransferNumbers
             case creators, accessRestriction, useRestriction, findingAids, physicalOccurrences
             case digitalObjectCount, fileUnitCount
         }
@@ -242,6 +259,8 @@ public enum HarvestShardReader {
             let occurrences = (try? c.decode([Occurrence].self, forKey: .physicalOccurrences)) ?? []
             let startBox = try? c.decode(YearBox.self, forKey: .inclusiveStartDate)
             let endBox = try? c.decode(YearBox.self, forKey: .inclusiveEndDate)
+            recordsCenterTransferNumbers =
+                (try? c.decode([String].self, forKey: .recordsCenterTransferNumbers)) ?? []
             let coverageStartBox = try? c.decode(YearBox.self, forKey: .coverageStartDate)
             let coverageEndBox = try? c.decode(YearBox.self, forKey: .coverageEndDate)
             facts = Facts(
