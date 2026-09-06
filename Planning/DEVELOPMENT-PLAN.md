@@ -11927,3 +11927,29 @@ reader would go today.
 
 Parse-output change, so `currentDateIndexVersion` goes 47 → 48 in the same commit. Two mutations
 killed. 4,535 tests in 594 suites with zero restarts; 1,284 SPM tests; macOS builds clean.
+
+## Session 2026-09-05k — #1206 was not fixed: a fourth extraction site, and a test that read a label (PR #1225)
+
+**The fix merged in #1223 did not fix the reported documents, and my own test hid it.** A recon pass
+launched before that work returned afterwards and said so; checking it directly, `storedLot(d11)`
+was still `75 D 229`.
+
+`lotClaimScope` bounds three lot strategies. **`tryNARACollection` is a fourth** and was reading the
+whole body — and it runs *before* both presidential-library arms, so a Nixon-materials note that
+names `RG 59` anywhere (including inside the secondary clause that caused the bug) reaches it with a
+non-nil record group and re-imports the same lot. `IndexingPipeline` writes a `.naraCollection` lot
+into `document_sources.lot_file` and `lot_file_norm` through the same call as a `.lotFile` one, so
+the column cannot tell the two apart, and `relatedByLotFile` keys on `lot_file_norm` with no era
+predicate.
+
+**The test failure is the lesson.** It asserted `kind(note) != "lotFile"`. Narrowing the scope moved
+d11 from `.lotFile` to `.naraCollection` — a different label, the same stored value — and the
+assertion passed over a live defect. The tests now read the column through `storedLot(_:)`, and the
+pairing that makes it a scope rule rather than a ban is pinned: d1 and d11 store nothing, d297 —
+which cites the lot as its primary source — still stores `75 D 229`.
+
+`currentDateIndexVersion` 48 → 49. It was bumped to 48 in the incomplete fix, and a device that
+indexed between the two merges holds rows this change supersedes, so the rule applies again rather
+than being satisfied by the earlier bump.
+
+One mutation killed. 4,535 tests in 594 suites, zero restarts; 1,286 SPM tests; macOS builds clean.

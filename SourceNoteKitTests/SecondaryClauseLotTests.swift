@@ -58,6 +58,16 @@ struct SecondaryClauseLotTests {
         }
     }
 
+    /// The lot the parse actually stored, whatever branch produced it — because
+    /// `document_sources.lot_file` is written from BOTH `.lotFile` and `.naraCollection`.
+    private func storedLot(_ note: String) -> String? {
+        switch parser.parse(note) {
+        case .lotFile(_, let lot, _): return lot
+        case .naraCollection(_, _, let lot, _): return lot
+        default: return nil
+        }
+    }
+
     // MARK: - The three channels
 
     /// `tryInlineLotFile` runs **second in `parse()`**, ahead of every decimal rule, so an
@@ -254,6 +264,51 @@ struct SecondaryClauseLotTests {
             This is the classification the parser gave before #1206 and must still give. The lot \
             fix narrows a SCOPE; it must not move a note between categories.
             """)
+    }
+
+
+    // MARK: - What the column actually holds (#1206 follow-up)
+
+    /// **Assert the STORED VALUE, not the branch that produced it.**
+    ///
+    /// The first #1206 fix asserted `kind(note) != "lotFile"` and passed while the defect stood:
+    /// narrowing `lotClaimScope` moved `frus1969-76v02/d11` from `.lotFile` to `.naraCollection`,
+    /// whose lot `IndexingPipeline` writes into the *same* `document_sources.lot_file` and
+    /// `lot_file_norm` through the same call. The classification changed; `75 D 229` stayed.
+    ///
+    /// `.naraCollection` is reached BEFORE both presidential-library arms, and d11 names `RG 59`
+    /// inside its secondary clause — so the branch that re-imported the lot is the one a
+    /// Nixon-materials note with an explicit record group always takes.
+    ///
+    /// A test that names a category is testing a label. This one reads the column.
+    @Test("The reported notes store no lot at all, by any branch")
+    func reportedNotesStoreNoLot() {
+        let d11 = """
+            Source: National Archives, Nixon Presidential Materials, NSC Files, Subject Files, \
+            Box 363, National Security Decision Memoranda, NSDM 2. Confidential. A January 13 \
+            memorandum from Pedersen to Rogers proposing revisions in NSDMs 2 and 3, together \
+            with typed drafts of the NSDMs with handwritten revisions, are ibid., RG 59, \
+            Pedersen Files: Lot 75 D 229, NSC.
+            """
+        let d1 = """
+            Source: National Archives, Nixon Presidential Materials, White House Central Files, \
+            Subject Files, Executive FG 6–6. No classification marking. Copies are in the National \
+            Security Council Institutional Files, Box H–209, National Security Decision Memoranda, \
+            NSDM 1; and in the National Archives, RG 59, Pedersen Files: Lot 75 D 229, NSC.
+            """
+        #expect(storedLot(d11) == nil, "d11 still stores a lot, via \(kind(d11))")
+        #expect(storedLot(d1) == nil, "d1 still stores a lot, via \(kind(d1))")
+    }
+
+    /// The other side, and the reason this is a scope rule rather than a ban: a NARA collection
+    /// whose lot IS the primary citation must still store it. `frus1969-76v02/d297` verbatim.
+    @Test("A NARA collection citing its lot primarily still stores it")
+    func primaryNARALotIsStillStored() {
+        let d297 = """
+            Source: National Archives, RG 59, Pedersen Files: Lot 75 D 229, Chron File. \
+            No classification marking.
+            """
+        #expect(storedLot(d297) == "75 D 229")
     }
 
 }
