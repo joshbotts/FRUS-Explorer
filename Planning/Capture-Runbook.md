@@ -102,12 +102,19 @@ now means *this much of the record had been released*, which is a claim the map 
 support; coverage order asked *this much of the past had been lived through*, which it cannot,
 because a document lands where its language puts it and not where its date does.
 
-**The `provenance.txt` defects are confirmed, and both are literals in the test target.** The
-sidecar as written today says *"Only the **0** volume(s) indexed on this device can be opened from
-it"* (`indexedVolumeCount: 0`), and hard-codes `lens: .cluster` regardless of what was rendered.
-The first is visibly wrong in a file meant to be published beside the frames; the second is latent,
-and only correct today because the harness happens to render on the default lens. Plan step 11
-already schedules both.
+~~**The `provenance.txt` defects are confirmed, and both are literals in the test target.**~~
+**BOTH FIXED 2026-09-01**, PR #1166 (`cd2decd4`): the call site now passes `lens: model.appliedLens`
+and `indexedVolumeCount: nil`, so the sidecar names the lens actually rendered and omits the
+device-reach clause entirely rather than printing *"Only the **0** volume(s)…"*. The produced file
+carries neither defect. *(This paragraph asserted the opposite for five days after the fix landed;
+step 11's own text did the same. Corrected 2026-09-06.)*
+
+**The film is finished**, 2026-09-06 — `tools/map-film/build_film.sh` crops the measured 43.5% dead
+width to 1440×1080, burns the grain sentence into the reclaimed band and muxes two subtitle tracks
+cut from `frames.csv`. It consumes these frames; it does not re-render them. See
+`tools/map-film/README.md`, and note two things this runbook's `ffmpeg` line does not: `cropdetect`
+reports no crop on the encoded mp4 (h264 ringing in the flat ground), and this ffmpeg build has no
+text filter at all.
 
 **The nil-frame hazard is real, was fixed in this pass, and did not fire in this run.** All 553
 frames rendered, so the pre-flight would have passed — which is exactly why it was the wrong guard.

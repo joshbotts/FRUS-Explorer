@@ -109,12 +109,31 @@ struct CodingStandardsAuditTests {
     /// It deliberately does NOT try to decide whether a row *should* be struck. That needs to know
     /// what shipped, which no test can. It pins the far narrower and still useful property: the two
     /// documents agree.
+    /// **The record half is found, not named** (2026-09-06). This test used to open
+    /// `Plan-Of-Record-2026-08-28.md` by literal path, and that document has since been superseded
+    /// — its own header now reads *"do NOT read its row states as current"*. So the check against
+    /// two documents drifting apart had itself drifted onto a frozen file, and would have gone on
+    /// passing against a snapshot forever. It now selects the one plan of record NOT marked
+    /// `Status: SUPERSEDED`, and fails when there is not exactly one — zero live plans or two live
+    /// plans is a real problem, not a test bug.
     @Test("CodingStandardsAudit: the Plan of Record's struck-step list matches the plan")
     func planOfRecordMatchesTheVisualMarketingPlan() throws {
         let planURL = Self.projectRoot
             .appendingPathComponent("Planning/Visual-Marketing-Plan.md")
-        let recordURL = Self.projectRoot
-            .appendingPathComponent("Planning/Plan-Of-Record-2026-08-28.md")
+        let planningDirectory = Self.projectRoot.appendingPathComponent("Planning")
+        let candidates = try FileManager.default
+            .contentsOfDirectory(at: planningDirectory, includingPropertiesForKeys: nil)
+            .filter { $0.lastPathComponent.hasPrefix("Plan-Of-Record-") && $0.pathExtension == "md" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        let live = try candidates.filter {
+            try !String(contentsOf: $0, encoding: .utf8).contains("Status: SUPERSEDED")
+        }
+        #expect(live.count == 1, """
+            Expected exactly one live plan of record in Planning/ — found \(live.count) of \
+            \(candidates.count): \(live.map(\.lastPathComponent).sorted()). A superseded plan must \
+            say "Status: SUPERSEDED" in its header; the current one must not.
+            """)
+        let recordURL = try #require(live.first)
         let plan = try String(contentsOf: planURL, encoding: .utf8)
         let record = try String(contentsOf: recordURL, encoding: .utf8)
 
@@ -147,8 +166,8 @@ struct CodingStandardsAuditTests {
             The Plan of Record and Visual-Marketing-Plan disagree about which §7 steps are done.
               Plan of Record claims: \(claimed.sorted())
               The plan itself shows: \(struckInPlan.sorted())
-            Update the "§7 struck:" line in Plan-Of-Record-2026-08-28.md, or restore the strike that \
-            went missing from Visual-Marketing-Plan.md.
+            Update the "§7 struck:" line in \(recordURL.lastPathComponent), or restore the strike \
+            that went missing from Visual-Marketing-Plan.md.
             """)
     }
 
