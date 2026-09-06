@@ -775,7 +775,7 @@ public actor IndexingPipeline {
     ///   bundled artifact, and the measurement. `ibidStandsAlone` is unchanged: the explicit
     ///   `Ibid., Central Files, X` form was already harvested, because the class is in the
     ///   clause. No schema change (the columns all exist); rows appear on re-parse.
-    public static let currentDateIndexVersion: Int = 48
+    public static let currentDateIndexVersion: Int = 49
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

@@ -1651,8 +1651,23 @@ public struct SourceNoteParser {
             // No RG number — fall through to let lot file or central files handle it
             return nil
         }
-        // Extract optional components
-        let lot    = extractLotFile(from: body)
+        // Extract optional components.
+        //
+        // **The lot is read from the CLAIM SCOPE, not the whole body**, and this is the fourth
+        // strategy to need that bound rather than the first (#1206 follow-up). `tryInlineLotFile`,
+        // `tryNarrativeLotFile` and `tryLooseLotFile` all call `lotClaimScope`; this one did not,
+        // so a note whose lead already named a competing repository still handed over a lot named
+        // later as the home of *another copy* — and `IndexingPipeline` writes a `.naraCollection`
+        // lot into `document_sources.lot_file` and `lot_file_norm` through exactly the same code
+        // as a `.lotFile` one, so the column could not tell the two apart.
+        //
+        // **This branch runs BEFORE the library branches** (`parseNarrativeBody` reaches NARA
+        // ahead of both presidential-library arms), which is why narrowing only the lot strategies
+        // was not enough: `frus1969-76v02/d11` names `RG 59` in its secondary clause, so `rg` is
+        // non-nil, the Nixon short-circuit above never fires, and the note arrives here. Its first
+        // fix moved it from `.lotFile` to `.naraCollection` and left `75 D 229` in place — the
+        // classification changed and the stored value did not.
+        let lot    = extractLotFile(from: Self.lotClaimScope(body))
         let box    = extractBoxNumber(from: body)
         let series = extractSeriesName(from: body, afterRG: rg)
         return .naraCollection(recordGroup: rg, series: series, lotFile: lot, box: box)
