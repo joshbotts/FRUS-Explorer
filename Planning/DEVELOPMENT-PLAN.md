@@ -11754,7 +11754,7 @@ were the largest single load source and were found only by `ps aux | sort -k3`. 
 some point: this project has **146 DerivedData directories totalling 34 GB**, one per worktree path
 the spawned sessions used.
 
-## Session 2026-09-05f — PV-5: the row that actually needed a per-claim badge (PR #PVFIVE)
+## Session 2026-09-05f — PV-5: the row that actually needed a per-claim badge (PR #1219)
 
 **Wave PV is complete.** Six rows: the tier made computable (PV-0), the export sentences (PV-1), the
 chip (PV-2), Source Explorer (PV-3), the capture moments (PV-4), person rollups (PV-5).
