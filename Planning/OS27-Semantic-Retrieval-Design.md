@@ -170,6 +170,15 @@ Embedding 250k+ documents on-device is the largest unknown here and the most lik
 
 **Compute a project centroid** from the seed documents' vectors and retrieve nearest neighbours to the centroid in one pass. Cheaper than N per-seed queries, and semantically better — it finds documents near the project's thematic centre rather than near any single seed, which is closer to what a "lead" means.
 
+> **CORRECTION 2026-09-06 — both halves of that sentence are false as stated, measured against the
+> shipped artifacts.** *Cheaper:* only for `semanticSimilarity`, which runs zero times at its
+> shipped weight of 0; the other six contributing axes are anchor-keyed by protocol signature, and
+> a project has no anchor. *Semantically better:* for unit vectors `cos(centroid, d)` is a positive
+> rescaling of the per-seed cosine sum `ProjectLeadsAggregator` already forms — the full
+> 314,483-row ordering is identical at k=3 and k=40 (max residual 2.1e-14). "Near the project's
+> thematic centre rather than near any single seed" describes summing per-seed similarity, which
+> is what ships. See `Plan-Of-Record-2026-09-06.md` (S-2) for the re-scoped row.
+
 **The catch:** a centroid query destroys per-seed attribution, and `contributingSeedKeys` exists precisely to power the "related to N of your documents" affordance. So the shape is **centroid for generation, per-seed cosine for attribution** — retrieve against the centroid, then batch-score the bounded result set per seed to repopulate `contributingSeedKeys`. Which is exactly the #308 §6.2 generator/scorer split, reused.
 
 Note `ProjectLeadEntry` **is** CloudKit-synced. Leads computed on a Mac and on an iPhone may differ if §5.3(3) holds. `lastComputedAt` already exists to reason about staleness; whether last-writer-wins across devices is acceptable here is an open question.

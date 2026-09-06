@@ -55,15 +55,65 @@ from the designs; reading the code changed the answer for all but one.
   empty. The scan cap is 4,096 rather than the rerank pool's 800 because at a **10% library** —
   the reader this exists for — the median rises to 732 and an 800-cap would bind on **43%** of
   anchors.
-- **S-1 — RECOMMENDED AGAINST.** The axis is generator-only by construction, not by omission:
-  making it a scorer needs a weight it does not have (it ships at 0, so the re-score would
-  contribute nothing until a reader moves the slider) and a zero it does not have either — cosine
-  has no natural zero, so every candidate any other axis produced would receive a non-zero
-  semantic score, changing the default ranking of every existing user.
-- **S-2 — BLOCKED ON A MEASUREMENT, not on effort.** A centroid over a project's seeds is only
-  cheaper if the seeds are homogeneous; for a heterogeneous project the centroid retrieves the
-  average of unlike things, which is nothing in particular. The `RecomputeCost` figure has to come
-  first.
+- **S-1 — REFUTED, and the reason is stronger than the one first recorded here.** The axis is
+  generator-only by construction, not by omission. The ranker consults the **weight before the
+  score** (`RelatedDocumentsEngine.swift:87-92` — `guard weight > 0 else { continue }` precedes the
+  `isGenerator` ternary), so a fully populated semantic strength map at the shipped weight of 0
+  never enters `axisScores`, never reaches `total`, and cannot reorder, add or drop one row. The
+  change is invisible to every reader who has not deliberately raised an experimental slider.
+  Worse for the row's premise, **S-1 cannot serve the population the axis exists for**: it
+  re-scores candidates the *other* generators produced, and the 45,030 documents with an empty
+  Related list — the axis's whole justification — have none. Its entire addressable effect is
+  reordering rows for readers who both raised the slider and already had candidates. When it is
+  eventually taken, three constraints already established should ride with it: write into
+  `generatorStrengths` and never `scorerScores` (the ternary would silently discard a scorer on the
+  same axis, compiling clean and producing byte-identical output, and scorer scores are used
+  **unclamped**, so a negative cosine would read as "no contribution" rather than "dissimilar");
+  gate on `weights[.semanticSimilarity] > 0` rather than on data availability, or it falsifies the
+  premise `AppState.swift:715-722` rests on when it exempts `.readerAskedForSemantics` from the
+  #926 switch; and settle the score floor first, because cosine has no zero and the corpus median
+  is ~0.49 — an unfloored re-score puts a "Semantic match · 48%" chip on rows scoring at chance.
+- **S-2 — REFUTED BY MEASUREMENT. This row previously read "blocked on a measurement"; that was
+  wrong, and the measurement had in fact already been taken.** Three independent grounds, two of
+  them measured against the shipped artifacts:
+    1. **Scope.** Six of the seven contributing axes are *anchor-keyed by protocol signature*
+       (`SimilarityGenerator.candidates(for anchor:)`, `SimilarityScorer.scores(anchor:)`), and a
+       project has no anchor — so a centroid can replace exactly one axis, `semanticSimilarity`,
+       which **runs zero times at the shipped default**. Replace the per-seed ranks with a centroid
+       and you delete every lead source that currently produces leads; add it beside them and you
+       add a retrieval and save nothing.
+    2. **"Semantically better" is false — it is the *same ranking function*.** For unit vectors,
+       `cos(centroid, d)` is a positive rescaling of the per-seed cosine sum `ProjectLeadsAggregator`
+       already forms. Driven over the shipped artifacts at k=3 and k=40, the **full 314,483-row
+       ordering is identical**, max residual 2.1e-14 — not top-10 agreement, every row in order.
+       The one real behavioural difference is that `perSeedRelatedLimit = 30` truncates each seed's
+       contribution today, and on a heterogeneous project removing that truncation is measurably
+       **worse**: on a real 3-seed project (mean pairwise cosine 0.492) the centroid's top-10
+       contains **0 of the 3 seeds' own best neighbours**; at 12 seeds, **0 of 12**.
+    3. **The artifact's stated recall does not transfer.** Averaging unlike vectors drives
+       components toward zero and the sign bits become noise. Fraction of the exact corpus top-10
+       recovered through the shipped 800-candidate funnel: **k=1 → 10.00/10** (the single-document
+       regime the artifact's 0.851 describes, intact), k=3 → 8.75, k=12 → 7.50, **k=40 → 6.33**
+       (k=40 is `seedCap`). A 40-seed project would lose a third of its own best leads before
+       scoring.
+
+  Two hazards the row never carried: a **missing seed shard silently re-centres the project**
+  (dropping 1 of 3 seeds leaves **2.6/10** of the full centroid's top-10, minimum 0) where today
+  that loss is per-seed and merely thins the list; and the attribution count behind *"Related to N
+  of your documents"* becomes an unowned floor decision writing a **CloudKit-mirrored** field, so a
+  mixed-build fleet would sort two incomparable score scales in one list.
+
+  **And the cost saving has never been observed.** `ProjectLeadsService.lastCost` is assigned at
+  `:309` and **read by nothing** — verified 2026-09-06, the only two hits in the tree are its
+  declaration and that assignment — so `RecomputeCost`'s "for the in-app report" describes a report
+  that does not exist.
+
+  **Re-scoped, the row is still worth doing**, but as a different thing: *give Project Leads a
+  semantic lead source at all — one corpus scan instead of forty* — aimed at the 45,030 empty-list
+  documents, not at making the shipped default cheaper. The cheapest alternative if leads *quality*
+  is the goal is to raise or drop `perSeedRelatedLimit`'s truncation for the semantic contribution,
+  which is the only behavioural difference the centroid actually delivers and keeps per-seed
+  attribution honest by construction.
 - **S-4 — PARKED, WIP on `claude/s4-two-more-corpus-lenses`.** The loader half builds; there is no
   consumer for it, and the artifact contract warning on `bundledCloudLenses` is the reason to stop
   rather than push through.

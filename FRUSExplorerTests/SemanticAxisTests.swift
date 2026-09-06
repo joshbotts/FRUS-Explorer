@@ -169,18 +169,45 @@ struct SemanticAxisTests {
 
     // MARK: - Wiring
 
+    /// The registration, and both of the engine's opt-in gates.
+    ///
+    /// **This test used to read the engine's SOURCE** and assert it contained two literals. That
+    /// is blind by construction: a stage that bypassed the gate entirely would leave both strings
+    /// in the file and the test green — and when the S-3 off-index scan added a SECOND gate, the
+    /// source scan did not notice it existed. Both gates are now predicates on the engine and are
+    /// driven here.
     @MainActor
-    @Test("The generator is registered, and the engine skips it at zero weight")
+    @Test("The generator is registered, and both engine gates hold at zero weight")
     func engineWiring() throws {
         #expect(RelatedDocumentsEngine.generators.contains { $0.axis == .semanticSimilarity })
 
-        let engine = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("FRUSExplorer/RelatedDocuments/RelatedDocumentsEngine.swift")
-        let source = try String(contentsOf: engine, encoding: .utf8)
-        // The gate is what stops a user who never enabled the axis from paying for its shard fetches.
-        #expect(source.contains("where !generator.axis.skipsGenerationAtZeroWeight"))
-        #expect(source.contains("axis.isSelfNormalising"))
+        var zero = AxisWeights.default
+        zero[.semanticSimilarity] = 0
+        #expect(!RelatedDocumentsEngine.runsGenerator(.semanticSimilarity, at: zero))
+        #expect(!RelatedDocumentsEngine.runsOffIndexScan(includeOffIndexLeads: true, weights: zero))
+
+        var raised = zero
+        raised[.semanticSimilarity] = 0.5
+        #expect(RelatedDocumentsEngine.runsGenerator(.semanticSimilarity, at: raised))
+        #expect(RelatedDocumentsEngine.runsOffIndexScan(includeOffIndexLeads: true, weights: raised))
+        // The background opt-out is the scan gate's OTHER conjunct and needs its own fixture — a
+        // case failing both at once would tell us nothing about either.
+        #expect(!RelatedDocumentsEngine.runsOffIndexScan(includeOffIndexLeads: false, weights: raised))
+
+        // The gate must be "skip an EXPERIMENTAL axis at zero", not "skip everything at zero".
+        // **Every axis has to be at zero for this to mean anything** — an earlier version of this
+        // line zeroed only the semantic axis and left archival at its non-zero default, so
+        // `weights[axis] > 0` alone satisfied it and a mutation reducing the gate to exactly that
+        // passed all fifteen tests.
+        var allZero = AxisWeights.default
+        for axis in SimilarityAxis.allCases { allZero[axis] = 0 }
+        #expect(RelatedDocumentsEngine.runsGenerator(.archivalProvenance, at: allZero))
+        #expect(!RelatedDocumentsEngine.runsGenerator(.semanticSimilarity, at: allZero))
+
+        // The axis enters the ranker self-normalised (#643) and ships at 0 — the two facts the
+        // old source scan was reaching for.
+        #expect(SimilarityAxis.semanticSimilarity.isSelfNormalising)
+        #expect(AxisWeights.default[.semanticSimilarity] == 0)
     }
 
     // MARK: - Off-index volume leads (V-3 §6.2(a))

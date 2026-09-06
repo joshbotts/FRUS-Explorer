@@ -197,7 +197,7 @@ enum RelatedDocumentsEngine {
         // have surfaced at all.
         var poolCutFrom: Int?
         for generator in generators
-        where !generator.axis.skipsGenerationAtZeroWeight || weights[generator.axis] > 0 {
+        where Self.runsGenerator(generator.axis, at: weights) {
             let pool = (try? await generator.candidates(
                 for: anchor, anchorYear: anchorYear, limit: candidateFetchLimit,
                 scopeVolumeIds: scopeVolumeIds, appState: appState)) ?? .empty
@@ -227,7 +227,7 @@ enum RelatedDocumentsEngine {
         // the axis itself uses. Computed before the early return below, and deliberately so: an
         // anchor with no on-index neighbours at all is exactly the reader this section is for.
         let offIndexLeads: SemanticOffIndexLeads
-        if includeOffIndexLeads, weights[.semanticSimilarity] > 0 {
+        if Self.runsOffIndexScan(includeOffIndexLeads: includeOffIndexLeads, weights: weights) {
             offIndexLeads = await SemanticSimilarityGenerator.offIndexSection(
                 for: anchor, limit: candidateFetchLimit,
                 scopeVolumeIds: scopeVolumeIds, appState: appState)
@@ -304,5 +304,45 @@ enum RelatedDocumentsEngine {
     nonisolated static func absorbing(_ pool: GeneratedPool, into existing: Int?) -> Int? {
         guard pool.isTruncated, let total = pool.availableTotal else { return existing }
         return max(existing ?? 0, total)
+    }
+
+    /// Whether a generator runs at these weights.
+    ///
+    /// **Extracted for exactly the reason `absorbing(_:into:)` above was**: so the rule can be
+    /// driven by a test rather than pinned by reading the source. `SemanticAxisTests.engineWiring`
+    /// used to assert that this FILE CONTAINED the literal
+    /// `where !generator.axis.skipsGenerationAtZeroWeight` — a future stage could have bypassed the
+    /// gate entirely while that string stayed in the file and the test stayed green.
+    ///
+    /// The rule is the experimental-axis contract. An axis that skips generation at zero weight
+    /// must not run for a reader who never raised it: its candidates would change the default
+    /// results of every existing user for a feature nobody opted into, and for the semantic axis it
+    /// would also spend their bandwidth — `AppState`'s exemption of `.readerAskedForSemantics` from
+    /// the #926 auto-download switch is justified *by this gate*, so bypassing it here silently
+    /// falsifies the consent argument made over there.
+    ///
+    /// - Parameters:
+    ///   - axis: The generator's axis.
+    ///   - weights: The reader's tuning.
+    /// - Returns: `true` when the generator should run.
+    nonisolated static func runsGenerator(_ axis: SimilarityAxis, at weights: AxisWeights) -> Bool {
+        !axis.skipsGenerationAtZeroWeight || weights[axis] > 0
+    }
+
+    /// Whether the S-3 off-index scan runs.
+    ///
+    /// Two conditions, each load-bearing on its own. A background caller opts out because the scan
+    /// is a full corpus Hamming pass whose only consumer is a section on screen; and the semantic
+    /// weight gates it for the same consent reason `runsGenerator` gives, since the section is that
+    /// axis's output by another route.
+    ///
+    /// - Parameters:
+    ///   - includeOffIndexLeads: The caller's opt-in.
+    ///   - weights: The reader's tuning.
+    /// - Returns: `true` when the scan should run.
+    nonisolated static func runsOffIndexScan(
+        includeOffIndexLeads: Bool, weights: AxisWeights
+    ) -> Bool {
+        includeOffIndexLeads && weights[.semanticSimilarity] > 0
     }
 }
