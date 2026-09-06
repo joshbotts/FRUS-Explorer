@@ -73,6 +73,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-3: initial implementation
+///   1.1 — S-3: the off-index leads channel (volume counts, plus document grain where a
+///          Tier-2 shard is already present)
 @MainActor
 struct SemanticSimilarityGenerator: SimilarityGenerator {
 
@@ -205,6 +207,217 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
             availableTotal: nil)
     }
 
+
+    /// The off-index scan, and the reason its threshold is derived rather than chosen.
+    ///
+    /// ## "Strong" cannot be a constant, and that is measured
+    /// Over 60 random anchors against the shipped 512-dim artifact, the Hamming distance of the
+    /// **120th** neighbour — the axis's own cut — ranges **104 to 162** by anchor, while a random
+    /// corpus pair sits at median **194** with a minimum of **105** over 4,000 pairs. The bands
+    /// overlap: one anchor's 120th-best is worse than another pair's coincidence. A fixed corpus-
+    /// wide cutoff would therefore admit nothing for some anchors and a wide swathe for others.
+    ///
+    /// So the cut is the anchor's **own** on-index band, taken from the scan that has already run:
+    /// an off-index document is reported when it is at least as near as the last on-index
+    /// candidate the axis would itself have shown. Self-calibrating, and free.
+    ///
+    /// Measured yield with that rule, simulating a reader holding half the corpus: a median of
+    /// **94 documents across 19 volumes** per anchor, and every one of 20 sampled anchors found
+    /// something.
+    ///
+    /// ## Why the cap is generous
+    /// At a **10% library** — the reader this feature exists for — the median rises to 732 and a
+    /// cap of 800 would bind on **43%** of anchors. The Hamming pass is a full corpus scan whatever
+    /// the cap, so a larger one costs nothing but the selection; `isCapped` still discloses the
+    /// floor when it binds.
+    static func offIndexLeads(
+        anchorRow: Int,
+        corpus: SemanticCorpusVectors,
+        index: SemanticVectorIndex,
+        onIndexRows: [Int],
+        eligible: [UInt8],
+        limit: Int
+    ) -> SemanticOffIndexLeads {
+        // The anchor's own band. `onIndexRows` is nearest-first, so the last one the axis would
+        // have shown IS the cut. A short list means the reader holds little; its own last entry is
+        // still the right cut, because the claim is comparative and not absolute.
+        guard let cutRow = onIndexRows.prefix(limit).last,
+              let cutSimilarity = SemanticRetrievalKernel.binarySimilarity(
+                anchorRow, cutRow, in: corpus)
+        else { return .none }
+
+        let scanned = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: Self.offIndexScanCap,
+            isEligible: { eligible[$0] == 0 })
+        guard !scanned.isEmpty else { return .none }
+
+        var perVolume: [String: Int] = [:]
+        var kept: [Int] = []
+        for row in scanned {
+            // Nearest-first, so the first row past the cut ends the walk.
+            guard let similarity = SemanticRetrievalKernel.binarySimilarity(anchorRow, row, in: corpus),
+                  similarity >= cutSimilarity else { break }
+            guard let located = index.volumeSlot(containing: row) else { continue }
+            perVolume[index.volumes[located.slot].volumeID, default: 0] += 1
+            kept.append(row)
+        }
+        guard !kept.isEmpty else { return .none }
+        return SemanticOffIndexLeads(
+            documentCount: kept.count,
+            volumes: perVolume.sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+                .map { SemanticOffIndexLeads.VolumeLead(volumeID: $0.key, count: $0.value) },
+            // The cap bound only if the walk consumed every scanned row without falling past the cut.
+            isCapped: kept.count == scanned.count && scanned.count >= Self.offIndexScanCap,
+            rows: kept)
+    }
+
+    /// Runs the off-index scan for an anchor, end to end, and scores what it can.
+    ///
+    /// A separate entry point rather than a second return value from ``candidates(for:anchorYear:limit:scopeVolumeIds:appState:)``:
+    /// `GeneratedPool` is document-grain and record-bearing — every candidate needs a
+    /// `document_cache` row to render — and a finding about documents this device *cannot* render
+    /// has no shape there. So the engine calls this beside the generator and carries the result on
+    /// its own result type.
+    ///
+    /// It re-runs the on-index Hamming pass rather than sharing the generator's. That pass is a
+    /// measured 1.43 ms over the whole corpus, and the alternative — threading one axis's internals
+    /// out through the shared `SimilarityGenerator` protocol — would make every other axis carry a
+    /// parameter for this one.
+    ///
+    /// **The volume channel deliberately does not need the anchor's own shard.** The cut is a
+    /// binary-similarity comparison over the bundled sign bits, so a reader whose anchor shard is
+    /// still downloading gets the leads even though the axis itself shows nothing at all.
+    ///
+    /// - Parameters:
+    ///   - anchor: The seed document.
+    ///   - limit: The axis's own candidate limit — the rank whose distance becomes the cut.
+    ///   - scopeVolumeIds: The caller's volume restriction, if any. It narrows what counts as
+    ///     *held*, exactly as it does for the axis, so a scoped panel reports leads against the
+    ///     scope the reader is looking at.
+    ///   - appState: Holds the live index and the shard store.
+    /// - Returns: The leads, or `.none` when the stack is absent or nothing cleared the cut.
+    static func offIndexSection(
+        for anchor: DocumentKey,
+        limit: Int,
+        scopeVolumeIds: Set<String>?,
+        appState: AppState
+    ) async -> SemanticOffIndexLeads {
+        guard let index = BundledSemanticVectors.index,
+              let corpus = BundledSemanticVectors.corpusVectors,
+              let store = appState.semanticShardStore,
+              let anchorRow = index.row(documentID: anchor.documentId, volumeID: anchor.volumeId)
+        else { return .none }
+
+        let eligibleVolumes = Self.eligibleVolumeIDs(
+            indexed: appState.indexedVolumeIds, scope: scopeVolumeIds)
+        guard !eligibleVolumes.isEmpty else { return .none }
+        var eligible = [UInt8](repeating: 0, count: index.documentCount)
+        for volumeID in eligibleVolumes {
+            guard let range = index.rows(forVolume: volumeID) else { continue }
+            for row in range { eligible[row] = 1 }
+        }
+
+        let onIndex = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: max(limit, index.file.retrieval.rerankPool),
+            isEligible: { eligible[$0] == 1 })
+        var leads = Self.offIndexLeads(
+            anchorRow: anchorRow, corpus: corpus, index: index,
+            onIndexRows: onIndex, eligible: eligible, limit: limit)
+        guard leads.documentCount > 0 else { return .none }
+
+        leads.documents = await Self.offIndexDocuments(
+            anchor: anchor, anchorRow: anchorRow, rows: leads.rows, index: index, store: store)
+        return leads
+    }
+
+    /// The document channel: exact cosines for the kept rows whose volume shard is already here.
+    ///
+    /// Walks the kept rows nearest-first up to ``offIndexDocumentDepth``, scores every one whose
+    /// volume shard is present, and hands the whole scored pool to ``rankOffIndexDocuments(_:anchor:limit:)``.
+    ///
+    /// **Scoring the pool and cutting afterwards is the point, not an accident of structure.** The
+    /// walk is in Hamming order and the display is in cosine order; a version of this that stopped
+    /// walking once it had `limit` rows would show the first five by Hamming, merely re-sorted —
+    /// which is exactly the funnel the on-index path exists to avoid (binary recalls 0.53 of the
+    /// exact top ten against the reranked 0.745).
+    private static func offIndexDocuments(
+        anchor: DocumentKey,
+        anchorRow: Int,
+        rows: [Int],
+        index: SemanticVectorIndex,
+        store: SemanticShardStore
+    ) async -> [SemanticOffIndexLeads.DocumentLead] {
+        // The query vector is the anchor's own, which needs the anchor's shard. Absent, the volume
+        // channel still stands; only the exact scores are unavailable.
+        guard let anchorEntry = index.volume(anchor.volumeId),
+              let anchorShard = await store.shard(for: anchor.volumeId),
+              let query = anchorShard.vector(at: anchorRow - anchorEntry.rowOffset)
+        else { return [] }
+
+        var shards: [Int: SemanticShard?] = [:]
+        var scored: [SemanticOffIndexLeads.DocumentLead] = []
+        for row in rows.prefix(Self.offIndexDocumentDepth) {
+            guard let located = index.volumeSlot(containing: row) else { continue }
+            let volumeID = index.volumes[located.slot].volumeID
+            if shards[located.slot] == nil { shards[located.slot] = await store.shard(for: volumeID) }
+            guard let shard = shards[located.slot] ?? nil,
+                  let document = index.document(at: row),
+                  let score = shard.cosine(
+                    row: located.localRow, query: query.codes, queryScale: query.scale)
+            else { continue }
+            scored.append(SemanticOffIndexLeads.DocumentLead(
+                volumeID: document.volumeID, documentID: document.documentID, score: score))
+        }
+        return Self.rankOffIndexDocuments(
+            scored, anchor: anchor, limit: Self.offIndexDocumentLimit)
+    }
+
+    /// Ranks the scored off-index candidates and folds edition twins out of them.
+    ///
+    /// Pure, and separated from the walk above so the rule can be driven by a test rather than
+    /// pinned by reading the source — the walk needs a shard store and the index, this needs
+    /// neither.
+    ///
+    /// **Sorting happens before folding**, which is what makes `foldingTwins`' documented
+    /// first-wins rule keep the better-scored edition rather than whichever the scan reached first.
+    /// **And the limit is applied after both**, so a twin pair inside the top `limit` costs a slot
+    /// to the fold and not to the list.
+    ///
+    /// **One twin case is deliberately left unhandled**: whether the reader already holds a twin of
+    /// an off-index document *on-index*. That needs a fold key for every on-index row, and the
+    /// volume channel beside this cannot afford that walk at all — so handling it here would make
+    /// the two channels disagree about the same document, which is worse than the residue.
+    ///
+    /// - Parameters:
+    ///   - scored: The candidates, in any order.
+    ///   - anchor: The seed, whose own reprint in another edition is dropped — to the reader it IS
+    ///     the anchor.
+    ///   - limit: How many survive.
+    /// - Returns: The kept leads, best first.
+    nonisolated static func rankOffIndexDocuments(
+        _ scored: [SemanticOffIndexLeads.DocumentLead],
+        anchor: DocumentKey,
+        limit: Int
+    ) -> [SemanticOffIndexLeads.DocumentLead] {
+        let ranked = scored
+            .filter { !(SemanticEditionTwins.areTwins($0.volumeID, anchor.volumeId)
+                        && $0.documentID == anchor.documentId) }
+            .sorted { $0.score == $1.score ? $0.id < $1.id : $0.score > $1.score }
+        let folded = SemanticEditionTwins.foldingTwins(ranked) { ($0.volumeID, $0.documentID) }
+        return Array(folded.prefix(max(0, limit)))
+    }
+
+    /// How deep the off-index scan selects. See `offIndexLeads` for why it is not 800.
+    static let offIndexScanCap = 4096
+
+    /// How many off-index documents the section names at most.
+    static let offIndexDocumentLimit = 5
+
+    /// How many kept rows the document channel examines before it stops looking. Bounded because a
+    /// reader holding almost nothing can clear the cut thousands of times, and every new volume in
+    /// that walk costs a shard lookup that will usually miss.
+    static let offIndexDocumentDepth = 200
+
     /// The volumes a candidate may come from: indexed, intersected with the caller's scope.
     ///
     /// - Parameters:
@@ -233,4 +446,57 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
             defaultValue: "Semantic match · \(percent)%")
     }
 
+}
+
+// MARK: - SemanticOffIndexLeads
+
+/// What the semantic axis can see in volumes the reader has **not** indexed (V-3 §6.2(a)).
+///
+/// Two channels, and what separates them is the shard. The **volume** channel needs nothing but
+/// the bundled sign bits, so it always answers: a count, and the volumes holding it. The
+/// **document** channel needs a volume's Tier-2 shard to be on this device already, and names
+/// documents only where one is — the register `SemanticUndownloadedRow` already ships in search
+/// (a document id, its volume's manifest title, a score chip), approved for this surface by the
+/// owner on 2026-09-06.
+///
+/// **Nothing here queues a shard fetch, and that is a decision rather than an omission.** Search
+/// queues (`SemanticQuerySearcher.fetchQueueDepth`) because the reader typed a question; here
+/// they merely opened a document, and prefetching the top volumes would spend ~294 KB each on
+/// volumes they have never asked for. So the document channel is opportunistic — it enriches the
+/// section where search or a past download has already paid for the shard, and its absence costs
+/// the reader nothing the volume channel does not already say.
+struct SemanticOffIndexLeads: Equatable, Sendable {
+
+    /// One volume beyond the reader's library, and how many of its documents cleared the cut.
+    struct VolumeLead: Equatable, Sendable, Identifiable {
+        /// The volume id. The caller titles it from the manifest, which is the one surface that
+        /// knows a volume this device does not hold.
+        let volumeID: String
+        /// Documents in it at or better than the anchor's own on-index cut.
+        let count: Int
+        var id: String { volumeID }
+    }
+
+    /// One document named outright, because its volume's shard was already on this device.
+    struct DocumentLead: Equatable, Sendable, Identifiable {
+        let volumeID: String
+        let documentID: String
+        /// The exact cosine — the same scale as the ranked rows above it. Never a Hamming
+        /// distance rescaled to look like one; the axis refuses that mix everywhere else.
+        let score: Double
+        var id: String { "\(volumeID)/\(documentID)" }
+    }
+
+    /// Documents at or better than the anchor's own on-index cut.
+    var documentCount: Int
+    /// The volumes holding them, most matches first.
+    var volumes: [VolumeLead]
+    /// `true` when the scan's cap bound, so `documentCount` is a floor and the copy must say so.
+    var isCapped: Bool
+    /// The kept corpus rows, nearest-first — carried so the document channel need not rescan.
+    var rows: [Int] = []
+    /// The document channel's rows, best first. Empty when no off-index shard was present.
+    var documents: [DocumentLead] = []
+
+    static let none = SemanticOffIndexLeads(documentCount: 0, volumes: [], isCapped: false)
 }

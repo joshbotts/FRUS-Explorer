@@ -163,6 +163,9 @@ enum RelatedDocumentsEngine {
     ///     (its query never runs).
     ///   - scopeVolumeIds: The volume set to restrict candidates to (`nil` = all indexed).
     ///   - limit: Maximum rows.
+    ///   - includeOffIndexLeads: Whether to run the S-3 off-index scan. Background callers pass
+    ///     `false` for the same reason they pass `includeSnippets: false` — the scan is a full
+    ///     corpus Hamming pass whose only consumer is a section on screen.
     ///   - appState: Holds the live index / stores.
     /// - Returns: The ranked result, or `.empty` when the index isn't ready or nothing matched. A
     ///   failing axis is coalesced to "no contribution", never a thrown error to the caller.
@@ -174,6 +177,7 @@ enum RelatedDocumentsEngine {
         scopeVolumeIds: Set<String>?,
         limit: Int,
         includeSnippets: Bool = true,
+        includeOffIndexLeads: Bool = true,
         appState: AppState
     ) async -> RelatedDocumentsResult {
         guard appState.indexingPipeline != nil else { return .empty }
@@ -219,8 +223,22 @@ enum RelatedDocumentsEngine {
             generatorEvidenceLabel[generator.axis] = evidenceLabel
         }
 
+        // S-3: what the semantic axis sees BEYOND the reader's library, on the same opt-in gate
+        // the axis itself uses. Computed before the early return below, and deliberately so: an
+        // anchor with no on-index neighbours at all is exactly the reader this section is for.
+        let offIndexLeads: SemanticOffIndexLeads
+        if includeOffIndexLeads, weights[.semanticSimilarity] > 0 {
+            offIndexLeads = await SemanticSimilarityGenerator.offIndexSection(
+                for: anchor, limit: candidateFetchLimit,
+                scopeVolumeIds: scopeVolumeIds, appState: appState)
+        } else {
+            offIndexLeads = .none
+        }
+
         let candidateKeys = Array(Set(generatorStrengths.values.flatMap(\.keys)).subtracting([anchor]))
-        guard !candidateKeys.isEmpty else { return .empty }
+        guard !candidateKeys.isEmpty else {
+            return RelatedDocumentsResult(rows: [], totalBeforeLimit: 0, offIndexLeads: offIndexLeads)
+        }
 
         // Scorers over the bounded candidate set — skip any axis the user zeroed (its query is work
         // the ranker would discard anyway).
@@ -265,7 +283,7 @@ enum RelatedDocumentsEngine {
             }
         }
         return RelatedDocumentsResult(rows: rows, totalBeforeLimit: ranked.rankableCount,
-                                      poolCutFrom: poolCutFrom)
+                                      poolCutFrom: poolCutFrom, offIndexLeads: offIndexLeads)
     }
 
     /// Folds one generator's pool into the running "largest cut" (#645).

@@ -496,14 +496,27 @@ struct RelatedDocumentsResult: Sendable {
     /// that alongside it.
     let poolCutFrom: Int?
 
+    /// What the semantic axis can see beyond the reader's library (S-3), or `.none`.
+    ///
+    /// **A sibling channel rather than more rows, and the type is what forces it.** A
+    /// `RelatedDocumentRow` carries a `CandidateRecord` read from `document_cache` — and the
+    /// absence of such a row is precisely what makes these documents off-index, so they could
+    /// never be ranked beside the others even if a surface wanted to.
+    ///
+    /// Populated only when the semantic axis carries weight (it ships at 0, so this is a
+    /// deliberate opt-in), and only for callers that asked for it.
+    let offIndexLeads: SemanticOffIndexLeads
+
     /// The empty result — no live index, or no candidates.
     static let empty = RelatedDocumentsResult(rows: [], totalBeforeLimit: 0)
 
     /// Creates a result.
-    init(rows: [RelatedDocumentRow], totalBeforeLimit: Int, poolCutFrom: Int? = nil) {
+    init(rows: [RelatedDocumentRow], totalBeforeLimit: Int, poolCutFrom: Int? = nil,
+         offIndexLeads: SemanticOffIndexLeads = .none) {
         self.rows = rows
         self.totalBeforeLimit = totalBeforeLimit
         self.poolCutFrom = poolCutFrom
+        self.offIndexLeads = offIndexLeads
     }
 }
 

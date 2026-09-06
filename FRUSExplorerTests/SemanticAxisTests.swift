@@ -182,4 +182,171 @@ struct SemanticAxisTests {
         #expect(source.contains("where !generator.axis.skipsGenerationAtZeroWeight"))
         #expect(source.contains("axis.isSelfNormalising"))
     }
+
+    // MARK: - Off-index volume leads (V-3 §6.2(a))
+
+    /// The rule, driven against the shipped artifacts: an off-index document is reported when it is
+    /// at least as near as the last on-index candidate the axis would itself have shown.
+    ///
+    /// The fixture holds HALF the corpus, because that is the condition the yield was measured
+    /// under — a median of 94 documents across 19 volumes per anchor.
+    @MainActor
+    @Test("Off-index leads are counted against the anchor's own band, and name volumes only")
+    func offIndexLeadsUseTheAnchorsOwnBand() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+
+        // Half the volumes, deterministically: every other one in index order.
+        let held = Set(index.volumes.enumerated().filter { $0.offset.isMultiple(of: 2) }
+                                     .map { $0.element.volumeID })
+        var eligible = [UInt8](repeating: 0, count: index.documentCount)
+        for volumeID in held {
+            guard let rows = index.rows(forVolume: volumeID) else { continue }
+            for row in rows { eligible[row] = 1 }
+        }
+        let anchorVolume = try #require(held.sorted().first)
+        let anchorRow = try #require(index.rows(forVolume: anchorVolume)?.first)
+        let onIndex = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: 800, isEligible: { eligible[$0] == 1 })
+        try #require(!onIndex.isEmpty)
+
+        let leads = SemanticSimilarityGenerator.offIndexLeads(
+            anchorRow: anchorRow, corpus: corpus, index: index,
+            onIndexRows: onIndex, eligible: eligible, limit: 120)
+
+        #expect(leads.documentCount > 0, "a half-held corpus must surface something")
+        #expect(!leads.volumes.isEmpty)
+        // The whole point: NOT ONE of the volumes named may be one the reader already holds.
+        #expect(leads.volumes.allSatisfy { !held.contains($0.volumeID) }, """
+            An off-index lead that names a held volume is not off-index — the inverted eligibility \
+            predicate has been applied the wrong way round.
+            """)
+        // Counts sum to the documents, and the list is ordered by count.
+        #expect(leads.volumes.reduce(0) { $0 + $1.count } == leads.documentCount)
+        #expect(leads.volumes.map(\.count) == leads.volumes.map(\.count).sorted(by: >))
+    }
+
+    /// A reader who holds everything has nothing off-index, and the helper must say so rather than
+    /// scanning a corpus with no eligible rows and reporting whatever comes back.
+    @MainActor
+    @Test("A reader holding the whole corpus gets no off-index leads")
+    func nothingOffIndexWhenEverythingIsHeld() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+        let eligible = [UInt8](repeating: 1, count: index.documentCount)
+        let anchorRow = 0
+        let onIndex = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: 800, isEligible: { eligible[$0] == 1 })
+        let leads = SemanticSimilarityGenerator.offIndexLeads(
+            anchorRow: anchorRow, corpus: corpus, index: index,
+            onIndexRows: onIndex, eligible: eligible, limit: 120)
+        #expect(leads == .none)
+    }
+
+    // MARK: - Off-index document channel (S-3)
+
+    /// A lead, spelled once so the fixtures below read as data.
+    private static func lead(_ volumeID: String, _ documentID: String, _ score: Double)
+        -> SemanticOffIndexLeads.DocumentLead {
+        SemanticOffIndexLeads.DocumentLead(
+            volumeID: volumeID, documentID: documentID, score: score)
+    }
+
+    /// The rank is the exact cosine, never the Hamming order the rows were walked in.
+    ///
+    /// The fixture arrives in ASCENDING score for that reason: an implementation that cut the walk
+    /// at `limit` and then sorted would return the first entries of this list, which are its worst.
+    @Test("Off-index documents rank by score, not by the order they were scanned")
+    func offIndexDocumentsRankByScore() {
+        let anchor = DocumentKey(volumeId: "frus1969-76v01", documentId: "d1")
+        let ranked = SemanticSimilarityGenerator.rankOffIndexDocuments(
+            [Self.lead("frusA", "d1", 0.10),
+             Self.lead("frusB", "d2", 0.50),
+             Self.lead("frusC", "d3", 0.90)],
+            anchor: anchor, limit: 2)
+        #expect(ranked.map(\.id) == ["frusC/d3", "frusB/d2"], """
+            The list must be the two best by cosine. Getting the two WORST back means the cut was \
+            applied in scan order and the sort only reordered what survived it.
+            """)
+    }
+
+    /// The anchor reprinted in another edition is not a lead — to the reader it is the anchor.
+    ///
+    /// **One fixture per conjunct.** The drop rule is `areTwins(volume) && sameDocumentID`, so the
+    /// suite carries a lead that fails each half on its own: a twin volume at a DIFFERENT document
+    /// is a real lead, and the same document id in an UNRELATED volume is a different document that
+    /// merely shares a number. A fixture violating both at once would test neither.
+    @Test("The anchor's own edition twin is dropped, and neither half of the rule alone drops one")
+    func offIndexDocumentsDropTheAnchorsTwin() {
+        let anchor = DocumentKey(volumeId: "frus1951-54Iran", documentId: "d166")
+        let ranked = SemanticSimilarityGenerator.rankOffIndexDocuments(
+            [Self.lead("frus1951-54IranEd2", "d166", 0.99),   // the anchor, reprinted — dropped
+             Self.lead("frus1951-54IranEd2", "d200", 0.98),   // twin volume, different document
+             Self.lead("frus1958-60v10p1", "d166", 0.97)],    // same number, unrelated volume
+            anchor: anchor, limit: 10)
+        #expect(ranked.map(\.id) == ["frus1951-54IranEd2/d200", "frus1958-60v10p1/d166"])
+    }
+
+    /// Two editions of one document are one lead — and the fold is charged to the fold, not to the
+    /// reader's slot.
+    ///
+    /// With `limit: 2` over a twin pair plus a third document, a fold applied AFTER the cut returns
+    /// one row; applied before it, two. The kept edition is the better-scored one, which is what
+    /// sorting before folding buys.
+    @Test("An edition twin pair folds to one lead, and the limit is applied after the fold")
+    func offIndexDocumentsFoldTwinsBeforeTheLimit() {
+        let anchor = DocumentKey(volumeId: "frus1969-76v01", documentId: "d1")
+        let ranked = SemanticSimilarityGenerator.rankOffIndexDocuments(
+            [Self.lead("frus1951-54Iran", "d20", 0.90),
+             Self.lead("frus1951-54IranEd2", "d20", 0.80),
+             Self.lead("frusOther", "d5", 0.70)],
+            anchor: anchor, limit: 2)
+        #expect(ranked.map(\.id) == ["frus1951-54Iran/d20", "frusOther/d5"], """
+            One row back means the twin consumed a display slot; the Ed2 edition first means the \
+            fold ran before the sort and kept whichever arrived first.
+            """)
+    }
+
+    /// The rows the scan kept and the number it reports are the same finding.
+    ///
+    /// The document channel is built from `rows`, and the caption from `documentCount`; if they can
+    /// disagree the section names documents it did not count, or counts documents it cannot reach.
+    @MainActor
+    @Test("The kept rows are exactly the counted documents, and every one is off-index")
+    func offIndexKeptRowsMatchTheCount() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let corpus = try #require(BundledSemanticVectors.corpusVectors)
+
+        let held = Set(index.volumes.enumerated().filter { $0.offset.isMultiple(of: 2) }
+                                     .map { $0.element.volumeID })
+        var eligible = [UInt8](repeating: 0, count: index.documentCount)
+        for volumeID in held {
+            guard let rows = index.rows(forVolume: volumeID) else { continue }
+            for row in rows { eligible[row] = 1 }
+        }
+        let anchorVolume = try #require(held.sorted().first)
+        let anchorRow = try #require(index.rows(forVolume: anchorVolume)?.first)
+        let onIndex = SemanticRetrievalKernel.hammingCandidates(
+            queryRow: anchorRow, in: corpus, limit: 800, isEligible: { eligible[$0] == 1 })
+
+        let leads = SemanticSimilarityGenerator.offIndexLeads(
+            anchorRow: anchorRow, corpus: corpus, index: index,
+            onIndexRows: onIndex, eligible: eligible, limit: 120)
+
+        #expect(leads.rows.count == leads.documentCount)
+        #expect(leads.rows.allSatisfy { eligible[$0] == 0 }, """
+            A kept row inside the reader's own library is not a lead — the document channel would \
+            then offer a download for a volume they already hold.
+            """)
+        // Nearest-first, which is what lets the document channel take a prefix and still be
+        // scoring the strongest candidates.
+        let distances = leads.rows.compactMap {
+            SemanticRetrievalKernel.binarySimilarity(anchorRow, $0, in: corpus)
+        }
+        #expect(distances.count == leads.rows.count)
+        #expect(distances == distances.sorted(by: >))
+    }
 }

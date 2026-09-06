@@ -266,12 +266,15 @@ enum ProjectLeadsService {
             }
             guard let anchor = DocumentKey(compositeString: seedKey) else { continue }
             // Leads never render the snippet, so skip the batched snippet extraction (× up to seedCap).
+            // Off-index leads are skipped for the same reason and a sharper one: the S-3 scan is a
+            // full corpus Hamming pass, its only consumer is a section in the Related panel, and
+            // this loop runs up to `seedCap` times per recompute.
             let seedState = signposter.beginInterval("rank-seed", id: signposter.makeSignpostID())
             let seedStartedAt = clock.now
             let result = await RelatedDocumentsEngine.rank(
                 anchor: anchor, anchorYear: nil, weights: weights,
                 scopeVolumeIds: nil, limit: perSeedRelatedLimit,
-                includeSnippets: false, appState: appState)
+                includeSnippets: false, includeOffIndexLeads: false, appState: appState)
             let seedElapsed = clock.now - seedStartedAt
             signposter.endInterval("rank-seed", seedState)
             rankingTime += seedElapsed

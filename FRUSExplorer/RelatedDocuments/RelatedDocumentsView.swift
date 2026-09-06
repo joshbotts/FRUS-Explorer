@@ -178,6 +178,9 @@ struct RelatedDocumentsContent: View {
 
     /// When a generator's candidate pool was cut, how many candidates it had (#645).
     @State private var poolCutFrom: Int?
+    /// What the semantic axis saw beyond this device's library (S-3). `.none` whenever the axis
+    /// is at weight 0, which is where it ships.
+    @State private var offIndexLeads: SemanticOffIndexLeads = .none
     @State private var isLoading = true
     /// Bumped when a weight slider settles, to re-fire the load without putting the continuously
     /// changing weight values directly in the `.task` id (which would re-rank on every drag tick).
@@ -214,13 +217,21 @@ struct RelatedDocumentsContent: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if isLoading {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if rows.isEmpty {
+                } else if rows.isEmpty, offIndexLeads.documentCount == 0 {
                     ContentUnavailableView(
                         String(localized: "related.empty", defaultValue: "No Related Documents"),
                         systemImage: "doc.on.doc",
                         description: Text(emptyDetail))
                 } else {
                     List {
+                        // The rows can be empty while the off-index section is not: an anchor with
+                        // no neighbour in this library is precisely the reader S-3 exists for, so
+                        // the verdict is stated here rather than swallowed by the section below.
+                        if rows.isEmpty {
+                            Text(emptyDetail)
+                                .font(.caption).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         ForEach(rows) { row in
                             Button { open(row) } label: { rowLabel(row) }
                                 .buttonStyle(.plain)
@@ -255,6 +266,7 @@ struct RelatedDocumentsContent: View {
                                 .font(.caption2).foregroundStyle(.tertiary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
+                        offIndexSection
                     }
                     .listStyle(.plain)
                 }
@@ -289,6 +301,7 @@ struct RelatedDocumentsContent: View {
             rows = result.rows
             totalBeforeLimit = result.totalBeforeLimit
             poolCutFrom = result.poolCutFrom
+            offIndexLeads = result.offIndexLeads
             isLoading = false
 
             // The semantic axis's "why related" evidence, computed AFTER ranking and only for the
@@ -574,6 +587,75 @@ struct RelatedDocumentsContent: View {
         }
     }
 
+    // MARK: Beyond the library (S-3)
+
+    /// How many off-index volumes the section names before it says "and N more". The list is a
+    /// lead, not an inventory — a reader holding little of the corpus can clear the cut in dozens
+    /// of volumes, and a section that printed all of them would bury the ranked rows above it.
+    private static let offIndexVolumeDisplayLimit = 5
+
+    /// What the semantic axis found in volumes this device does not hold (S-3).
+    ///
+    /// Two registers, because two different things are known. Where a volume's Tier-2 shard is
+    /// already on this device the document is **named and scored** on the same cosine scale as the
+    /// rows above (the owner approved that register for this surface on 2026-09-06; it is the one
+    /// `SemanticUndownloadedRow` already ships in search). Everywhere else only the count and the
+    /// volume are known — never the document — which is the ceiling CLAUDE.md sets for a
+    /// cross-corpus index: how many, and which volumes, never what they are.
+    @ViewBuilder
+    private var offIndexSection: some View {
+        if offIndexLeads.documentCount > 0 {
+            Section {
+                Text(offIndexCaption)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(offIndexLeads.documents) { document in
+                    let entry = appState.manifestStore.entry(forVolumeId: document.volumeID)
+                    SemanticUndownloadedRow(
+                        volumeID: document.volumeID,
+                        documentID: document.documentID,
+                        score: document.score,
+                        volumeTitle: entry?.title ?? document.volumeID,
+                        isDownloadable: entry?.downloadUrl != nil)
+                }
+                ForEach(offIndexLeads.volumes.prefix(Self.offIndexVolumeDisplayLimit)) { lead in
+                    OffIndexVolumeRow(
+                        lead: lead,
+                        title: appState.manifestStore.entry(forVolumeId: lead.volumeID)?.title,
+                        isDownloadable: appState.manifestStore
+                            .entry(forVolumeId: lead.volumeID)?.downloadUrl != nil)
+                }
+                if offIndexLeads.volumes.count > Self.offIndexVolumeDisplayLimit {
+                    Text(String(
+                        format: String(localized: "related.offIndex.moreVolumes %lld",
+                                       defaultValue: "and %lld more volumes"),
+                        Int64(offIndexLeads.volumes.count - Self.offIndexVolumeDisplayLimit)))
+                        .font(.caption2).foregroundStyle(.tertiary)
+                }
+            } header: {
+                Label(String(localized: "related.offIndex.header",
+                             defaultValue: "Beyond your library"),
+                      systemImage: SemanticGlyph.feature)
+            }
+        }
+    }
+
+    /// The section's opening sentence.
+    ///
+    /// **`isCapped` changes the claim, not the wording around it.** The scan stops at
+    /// `SemanticSimilarityGenerator.offIndexScanCap`, and when it stopped without falling past the
+    /// anchor's band the count is a floor — so the sentence says "at least" rather than reporting a
+    /// cap as though it were a total.
+    private var offIndexCaption: String {
+        let format = offIndexLeads.isCapped
+            ? String(localized: "related.offIndex.caption.capped %lld %lld",
+                     defaultValue: "At least %1$lld documents in %2$lld volumes you have not downloaded read as close to this one as the matches ranked above.")
+            : String(localized: "related.offIndex.caption %lld %lld",
+                     defaultValue: "%1$lld documents in %2$lld volumes you have not downloaded read as close to this one as the matches ranked above.")
+        return String(format: format,
+                      Int64(offIndexLeads.documentCount), Int64(offIndexLeads.volumes.count))
+    }
+
     // MARK: Rows
 
     /// One related-document row: header, volume + dateline, a context snippet, and the "why
@@ -691,6 +773,72 @@ struct RelatedDocumentsContent: View {
         appState.openTab(.browse, from: sceneID)
         #endif
         onNavigate?()
+    }
+}
+
+// MARK: - OffIndexVolumeRow
+
+/// One volume beyond the reader's library, with how many of its documents cleared the anchor's
+/// own band (S-3).
+///
+/// **It names no document, and that is the register rather than a limitation of the scan.** The
+/// scan knows exactly which rows cleared the cut; what it cannot do is render them — their volume
+/// has no `document_cache` row on this device, so there is no header, no dateline and no number to
+/// show. Saying "14 documents in this volume" is the true statement available, and it is also the
+/// one that answers the reader's actual question, which is whether to download it.
+///
+/// Sibling of `SemanticUndownloadedRow`, which is used in the same section for the volumes whose
+/// Tier-2 shard *is* present; the two share the download affordance and the caption voice.
+private struct OffIndexVolumeRow: View {
+
+    /// The volume and its count.
+    let lead: SemanticOffIndexLeads.VolumeLead
+    /// The manifest title, or `nil` for a volume the manifest does not carry.
+    let title: String?
+    /// Whether the manifest carries a download URL (side-loaded volumes do not).
+    let isDownloadable: Bool
+
+    @Environment(AppState.self) private var appState
+    /// Local queued-state so the button reads "queued" after the tap — `SemanticUndownloadedRow`'s
+    /// pattern, so the two rows in one section behave identically.
+    @State private var downloadQueued = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title ?? lead.volumeID)
+                .font(.callout)
+                .multilineTextAlignment(.leading)
+            HStack(spacing: 12) {
+                Text(String(format: String(
+                    localized: "related.offIndex.volumeCount %lld",
+                    defaultValue: "%lld matching documents"),
+                    Int64(lead.count)))
+                    .font(.caption).foregroundStyle(.secondary)
+                if downloadQueued {
+                    Text(String(localized: "related.offIndex.downloadQueued",
+                                defaultValue: "Download queued"))
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if isDownloadable {
+                    Button {
+                        queueDownload()
+                    } label: {
+                        Text(String(localized: "related.offIndex.download",
+                                    defaultValue: "Download Volume"))
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!appState.isOnline)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func queueDownload() {
+        guard let entry = appState.manifestStore.entry(forVolumeId: lead.volumeID),
+              let downloadManager = appState.downloadManager else { return }
+        downloadQueued = true
+        Task { await downloadManager.enqueueDownload(entry) }
     }
 }
 
