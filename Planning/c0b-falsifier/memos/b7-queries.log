@@ -1,0 +1,155 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT count(*) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'refugee', count(*) FROM frus_documents WHERE frus_documents MATCH 'refugee'; SELECT 'refugees', count(*) FROM frus_documents WHERE frus_documents MATCH 'refugees'; SELECT 'displaced', count(*) FROM frus_documents WHERE frus_documents MATCH 'displaced'; SELECT 'refuge', count(*) FROM frus_documents WHERE frus_documents MATCH 'refuge';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT count(*) FROM frus_documents WHERE frus_documents MATCH 'refugee AND refuge';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term LIKE 'refug%' ORDER BY cnt DESC LIMIT 20;" 2>&1 | head -30
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'refugee', count(*) FROM frus_documents WHERE frus_documents MATCH 'refugee';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT '"displaced persons"', count(*) FROM frus_documents WHERE frus_documents MATCH '"displaced persons"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT '"displaced person"', count(*) FROM frus_documents WHERE frus_documents MATCH '"displaced person"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'expellee', count(*) FROM frus_documents WHERE frus_documents MATCH 'expellee';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'stateless', count(*) FROM frus_documents WHERE frus_documents MATCH 'stateless';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'asylum', count(*) FROM frus_documents WHERE frus_documents MATCH 'asylum';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'resettlement', count(*) FROM frus_documents WHERE frus_documents MATCH 'resettlement';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'repatriation', count(*) FROM frus_documents WHERE frus_documents MATCH 'repatriation';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'escapee', count(*) FROM frus_documents WHERE frus_documents MATCH 'escapee';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'emigration', count(*) FROM frus_documents WHERE frus_documents MATCH 'emigration';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'immigration', count(*) FROM frus_documents WHERE frus_documents MATCH 'immigration';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'visa', count(*) FROM frus_documents WHERE frus_documents MATCH 'visa';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'quota', count(*) FROM frus_documents WHERE frus_documents MATCH 'quota';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'evacuee', count(*) FROM frus_documents WHERE frus_documents MATCH 'evacuee';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'exile', count(*) FROM frus_documents WHERE frus_documents MATCH 'exile';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'deportation', count(*) FROM frus_documents WHERE frus_documents MATCH 'deportation';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'internment', count(*) FROM frus_documents WHERE frus_documents MATCH 'internment';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'migration', count(*) FROM frus_documents WHERE frus_documents MATCH 'migration';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db 'SELECT "displaced persons", count(*) FROM frus_documents WHERE frus_documents MATCH """displaced persons""";'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db 'SELECT "internment camp", count(*) FROM frus_documents WHERE frus_documents MATCH """internment""";'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db 'SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ("intern","displac","asylum","resettl","repatri") ORDER BY doc DESC;'
+python3 -c "
+import json
+d=json.load(open('/Applications/FRUS Explorer.app/Contents/Resources/manifest.json'))
+print(type(d), list(d)[:8] if isinstance(d,dict) else len(d))
+v=d['volumes'] if isinstance(d,dict) and 'volumes' in d else d
+print(len(v)); print(json.dumps(v[0], indent=1)[:1200])
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, count(*) FROM frus_documents WHERE frus_documents MATCH 'refugee' GROUP BY volume_id;" > /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7/vol_refugee.tsv
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, count(*) FROM document_cache GROUP BY volume_id;" > /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7/vol_total.tsv
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, count(*) FROM frus_documents WHERE frus_documents MATCH '\"displaced persons\" OR \"displaced person\"' GROUP BY volume_id;" > /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7/vol_dp.tsv
+python3 /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7/agg.py /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7
+sort -t'|' -k2 -nr /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7/vol_dp.tsv | head -20
+python3 -c "
+import json
+man={v['volumeId']:' '.join(v['title'].split()) for v in json.load(open('/Applications/FRUS Explorer.app/Contents/Resources/manifest.json'))}
+import sys
+for line in open('/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0b/runs/b7/vol_dp.tsv'):
+    vid,n=line.strip().split('|')
+    print(int(n), vid, man.get(vid,'?')[:95])
+" | sort -rn | head -22
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'UNRRA', count(*) FROM frus_documents WHERE frus_documents MATCH 'UNRRA';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'IRO', count(*) FROM frus_documents WHERE frus_documents MATCH '\"International Refugee Organization\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'IGCR', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Intergovernmental Committee on Refugees\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'UNHCR', count(*) FROM frus_documents WHERE frus_documents MATCH 'UNHCR';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'HighCommRef', count(*) FROM frus_documents WHERE frus_documents MATCH '\"High Commissioner for Refugees\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'UNRWA', count(*) FROM frus_documents WHERE frus_documents MATCH 'UNRWA';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'ICEM', count(*) FROM frus_documents WHERE frus_documents MATCH 'ICEM';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'WarRefugeeBoard', count(*) FROM frus_documents WHERE frus_documents MATCH '\"War Refugee Board\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'Evian', count(*) FROM frus_documents WHERE frus_documents MATCH 'Evian';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'RefugeeConvention', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Refugee Convention\" OR \"Convention Relating to the Status of Refugees\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'DPAct', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Displaced Persons Act\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'RefugeeReliefAct', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Refugee Relief Act\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'RefugeeAct1980', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Refugee Act\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'EscapeeProgram', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Escapee Program\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'OrderlyDeparture', count(*) FROM frus_documents WHERE frus_documents MATCH '\"Orderly Departure\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'BoatPeople', count(*) FROM frus_documents WHERE frus_documents MATCH '\"boat people\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'PCIRO', count(*) FROM frus_documents WHERE frus_documents MATCH 'PCIRO';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'refugeecamp', count(*) FROM frus_documents WHERE frus_documents MATCH '\"refugee camp\" OR \"refugee camps\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'refugeeproblem', count(*) FROM frus_documents WHERE frus_documents MATCH '\"refugee problem\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db '.schema document_subjects'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db '.schema document_subject_refs'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT * FROM document_subjects LIMIT 5;"
+python3 -c "
+import json
+d=json.load(open('/Applications/FRUS Explorer.app/Contents/Resources/document-subject-index.json'))
+print(list(d)[:12])
+for k in d:
+    v=d[k]
+    print(k, type(v), (len(v) if hasattr(v,'__len__') else v))
+"
+python3 -c "
+import json
+d=json.load(open('/Applications/FRUS Explorer.app/Contents/Resources/document-subject-index.json'))
+print(json.dumps(d['vocab'][0], indent=1))
+print(d['provenance'])
+for i,s in enumerate(d['vocab']):
+    n=json.dumps(s)
+    if any(w in n.lower() for w in ['refug','displac','asylum','migrat','immigr','humanitar','relief','stateless','resettl','expell']):
+        print(i, n[:220])
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT subject, count(*) FROM document_subject_refs WHERE subject IN (40,124,152,197,238,309,314,370,373,463,34,346) GROUP BY subject ORDER BY 2 DESC;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+WITH r AS (SELECT volume_id, document_id FROM frus_documents WHERE frus_documents MATCH 'refugee'),
+     s AS (SELECT volume_id, document_id FROM document_subject_refs WHERE subject=40)
+SELECT (SELECT count(*) FROM r) AS fts_only_total,
+       (SELECT count(*) FROM s) AS subj_total,
+       (SELECT count(*) FROM r JOIN s USING(volume_id,document_id)) AS both;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id||' '||document_id||'  ::  '||substr(replace(header,char(10),' '),1,150) FROM frus_documents WHERE frus_documents MATCH 'refugee' AND header MATCH 'refugee' LIMIT 0;" 2>&1 | head -2
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT count(*) FROM frus_documents WHERE frus_documents MATCH 'header:refugee';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, substr(replace(header,char(10),' '),1,160) FROM frus_documents WHERE frus_documents MATCH 'header:refugee' ORDER BY volume_id LIMIT 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, substr(replace(header,char(10),' '),1,160) FROM frus_documents WHERE frus_documents MATCH 'header:refugee' ORDER BY volume_id LIMIT 40 OFFSET 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT count(*) FROM frus_documents WHERE frus_documents MATCH 'header:\"displaced persons\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, substr(replace(header,char(10),' '),1,150) FROM frus_documents WHERE frus_documents MATCH 'header:\"displaced\"' ORDER BY volume_id LIMIT 25;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db '.schema persons'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db '.schema person_mentions'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db '.schema document_sources'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+CREATE TEMP TABLE r AS SELECT volume_id, document_id FROM frus_documents WHERE frus_documents MATCH 'refugee';
+SELECT 'refugee docs with a source row', count(*) FROM r JOIN document_sources s USING(volume_id,document_id);
+SELECT '--- top decimal classes ---';
+SELECT s.decimal_class, count(*) c FROM r JOIN document_sources s USING(volume_id,document_id) WHERE s.decimal_class IS NOT NULL AND s.decimal_class<>'' GROUP BY 1 ORDER BY c DESC LIMIT 25;
+SELECT '--- top lot files ---';
+SELECT s.lot_file_norm, count(*) c FROM r JOIN document_sources s USING(volume_id,document_id) WHERE s.lot_file_norm IS NOT NULL AND s.lot_file_norm<>'' GROUP BY 1 ORDER BY c DESC LIMIT 20;
+SELECT '--- top repositories ---';
+SELECT s.repository, count(*) c FROM r JOIN document_sources s USING(volume_id,document_id) WHERE s.repository IS NOT NULL AND s.repository<>'' GROUP BY 1 ORDER BY c DESC LIMIT 15;
+"
+python3 agg.py <rundir>   # re-run after session resume
+sqlite3 -readonly $DB '<batch of 35 count(*) probes: refugee/DP/asylum/repatriation/agency-name vocabulary>'
+sqlite3 -readonly $DB "SELECT term,doc,cnt FROM frus_documents_vocab WHERE term IN (\"intern\",\"internment\",\"refuge\",\"displac\",\"asylum\",\"person\",\"repatri\",\"resettl\",\"emigr\",\"immigr\",\"migrat\",\"expel\",\"escape\",\"evacue\",\"statelesss\",\"stateless\") ORDER BY doc DESC;"
+sqlite3 -readonly $DB '.schema volume_structures'
+sqlite3 -readonly $DB '.schema document_cache' ; '.schema frus_documents'
+sqlite3 -readonly $DB "SELECT (SELECT count(*) FROM document_cache WHERE header||\" \"||body_text LIKE \"%refugee%\") AS literal_refugee, (SELECT count(*) FROM document_cache WHERE (header||\" \"||body_text LIKE \"%refuge%\") AND (header||\" \"||body_text NOT LIKE \"%refugee%\")) AS refuge_not_refugee;"
+sqlite3 -readonly $DB "SELECT term,doc,cnt FROM frus_documents_vocab WHERE term LIKE \"refug%\" OR term LIKE \"displac%\" ORDER BY doc DESC;"
+python3 struct.py   # walk volume_structures JSON for section titles matching refugee vocabulary
+python3 struct.py | tail -120   # remainder of the section-title list (post-1923)
+python3 -c "<enumerate document-subject-index.json vocab for refugee/migration terms>"
+python3 -c "print provenance of document-subject-index.json"
+sqlite3 -readonly $DB "<subject-axis vs text-axis overlap for subject 40 Refugees>"
+sqlite3 -readonly $DB ".schema document_sources"
+sqlite3 -readonly $DB "<archival provenance of refugee-matching documents: coverage, decimal classes, lot files, repositories>"
+python3 -c "<decode top decimal classes against decimal-class-labels.json>"
+python3 -c "<resolve class digit / country number / subject suffix for the top refugee decimal classes>"
+python3 -c "<inspect subject suffix table shape; look up .48 .51 .01>"
+sqlite3 -readonly $DB "<refugee docs grouped by decimal-class SUFFIX, vs whole-corpus base rate>"
+python3 pops.py   # named-population x coverage-decade matrix (FTS document counts)
+sqlite3 -readonly $DB "<header-field-only matches: aboutness proxy, counts + decade spread>"
+sqlite3 -readonly $DB "SELECT volume_id,count(*) FROM frus_documents WHERE frus_documents MATCH \"header:refugee\" GROUP BY 1 ORDER BY 2 DESC LIMIT 25;"
+sqlite3 -readonly $DB "<archival series names in source notes matching refugee>"
+sqlite3 -readonly $DB "SELECT DISTINCT substr(raw_text,1,120) FROM document_sources WHERE raw_text LIKE ... refugee ... LIMIT 25;"
+sqlite3 -readonly $DB "<count and date-span the named refugee decimal files: 840.48 Refugees, 811.111 Refugees, etc>"
+sqlite3 -readonly $DB "<bm25-ranked refugee documents in the five hinge volumes, header + opening lines>"
+sqlite3 -readonly $DB ".schema persons" ; "<persons whose role names refugees/DPs/migration>"
+sqlite3 -readonly $DB "<count refugee-titled persons; earliest volume per office keyword>"
+python3 -c "<manifest titles for the chapter-level refugee volumes>"; python3 -c "<semantic-map-index cluster labels matching refugee vocabulary>"
+python3 -c "<print all semantic-map cluster label sets to test for a refugee cluster>"
+python3 -c "<manifest: volumes by coverage decade, latest coverage year>"
+python3 -c "<Global Issues / thematic volumes in manifest>"; sqlite3 -readonly $DB "<their refugee doc counts>"
+sqlite3 -readonly $DB ".schema document_dates"
+sqlite3 -readonly $DB "<refugee docs per YEAR from document_dates, with corpus denominator>"
+sqlite3 -readonly $DB "<refugee share of dated documents per 5-year bin, 1860-1990>"
+sqlite3 -readonly $DB "<same 5-year-bin measure, rewritten as LEFT JOINs on indexed temp tables>"
+sqlite3 -readonly $DB "<5-year-bin refugee share, LEFT JOIN form>"
+sqlite3 -readonly $DB "<what drives the 19th-c refugee spikes: volumes + sample headers in 1875-79 and 1890-94 bins>"
+sqlite3 -readonly $DB "<sample 1870s refugee document text>"
+sqlite3 -readonly $DB "<sample 1891 and 1923 refugee documents>"
+python3 -c "<concentration: share of refugee docs in top-N volumes; volumes with zero>"
+sqlite3 -readonly $DB "<legal-instrument probes: Refugee Act, 1951 Convention, 1967 Protocol, parole, Mariel>"

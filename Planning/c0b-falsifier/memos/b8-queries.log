@@ -1,0 +1,172 @@
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache" ".schema frus_documents" ".schema document_dates" ".schema external_citations" ".schema document_sources"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'POSITIVE', COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"Department of State\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 UNION ALL SELECT 'NEGATIVE', COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+while read -r t; do n=$(sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*)||\"|\"||COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '"$t"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"); echo "$t|$n"; done < terms1.txt
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) FROM document_cache WHERE volume_id LIKE '%Ed2%' GROUP BY 1;" "SELECT COUNT(*) FROM document_dates;" "SELECT substr(date_iso,1,3)||'0s' dec, COUNT(*) FROM document_dates dd JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')), den AS (SELECT substr(date_iso,1,3) dc, COUNT(*) n FROM document_dates dd JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND date_iso IS NOT NULL GROUP BY 1) SELECT substr(dd.date_iso,1,3)||'0s', COUNT(*), den.n, ROUND(1000.0*COUNT(*)/den.n,2) FROM hit JOIN document_dates dd ON dd.volume_id=hit.v AND dd.document_id=hit.x JOIN den ON den.dc=substr(dd.date_iso,1,3) WHERE dd.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1 ORDER BY 2 DESC LIMIT 30;"
+python3 -c "
+import json
+m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(type(m), list(m)[:8] if isinstance(m,dict) else len(m))
+"
+python3 -c "
+import json
+m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+print(json.dumps(m[0],indent=1)[:900])
+ids=[\"frus1949v06\",\"frus1943v01\",\"frus1944v01\",\"frus1938v01\",\"frus1939v02\",\"frus1952-54v09p1\",\"frus1977-80v22\",\"frus1950v05\",\"frus1969-76v11\",\"frus1951v05\",\"frus1945v02\",\"frus1964-68v19\",\"frus1948v05p2\",\"frus1955-57v14\",\"frus1923v02\",\"frus1961-63v18\",\"frus1958-60v13\",\"frus1977-80v08\",\"frus1922v02\",\"frus1961-63v17\"]
+d={v.get(\"id\"):v for v in m}
+for i in ids:
+    v=d.get(i,{})
+    print(i,\"|\",v.get(\"title\",\"?\"))
+"
+python3 -c "
+import json,re
+m=json.load(open(\"/Applications/FRUS Explorer.app/Contents/Resources/manifest.json\"))
+d={v[\"filename\"][:-4]:v for v in m}
+ids=[\"frus1949v06\",\"frus1943v01\",\"frus1944v01\",\"frus1938v01\",\"frus1939v02\",\"frus1952-54v09p1\",\"frus1977-80v22\",\"frus1950v05\",\"frus1969-76v11\",\"frus1951v05\",\"frus1945v02\",\"frus1964-68v19\",\"frus1948v05p2\",\"frus1955-57v14\",\"frus1923v02\",\"frus1961-63v18\",\"frus1958-60v13\",\"frus1977-80v08\",\"frus1922v02\",\"frus1961-63v17\",\"frus1955-57v17\",\"frus1940v02\",\"frus1964-68v20\",\"frus1977-80v23\",\"frus1955-57v15\",\"frus1977-80v12\",\"frus1961-63v10-12mSupp\",\"frus1952-54v13p2\"]
+for i in ids:
+    v=d.get(i,{}); t=re.sub(r\"\\s+\",\" \",v.get(\"title\",\"?\"))
+    print(i,\"|\",v.get(\"dateRange\",{}).get(\"earliest\",\"\")[:4],\"-\",v.get(\"dateRange\",{}).get(\"latest\",\"\")[:4],\"|\",t[:110])
+"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH m AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0), t AS (SELECT m.v,m.x, COALESCE(d.header,'')||' '||COALESCE(d.dateline,'')||' '||COALESCE(d.source_note,'')||' '||d.body_text s FROM m JOIN document_cache d ON d.volume_id=m.v AND d.document_id=m.x) SELECT COUNT(*) matched, SUM(CASE WHEN s LIKE '%displaced person%' THEN 1 ELSE 0 END) tolerant, SUM(CASE WHEN s LIKE '%displaced persons%' THEN 1 ELSE 0 END) strict FROM t;"
+zsh lit.sh <<EOF
+political asylum|political asylum|political asylum
+Palestine refugees|palestine refugee|palestine refugees
+High Commissioner for Refugees|commissioner for refugee|High Commissioner for Refugees
+escapee program|escapee program|escapee program
+boat people|boat people|boat people
+War Refugee Board|war refugee board|War Refugee Board
+International Refugee Organization|international refugee organization|International Refugee Organization
+Intergovernmental Committee|intergovernmental committee|Intergovernmental Committee
+relief and rehabilitation|relief and rehabilitation|relief and rehabilitation
+EOF
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH den AS (SELECT volume_id v, COUNT(*) n FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 GROUP BY 1), r AS (SELECT f.volume_id v, COUNT(*) n FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY 1), c AS (SELECT f.volume_id v, COUNT(*) n FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"Department of State\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY 1) SELECT r.v, r.n, den.n, ROUND(100.0*r.n/den.n,1)||'%' refshare, ROUND(100.0*c.n/den.n,1)||'%' ctlshare FROM r JOIN den ON den.v=r.v LEFT JOIN c ON c.v=r.v ORDER BY r.n DESC LIMIT 14;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema volume_structures" "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0;" "SELECT * FROM volume_structures LIMIT 2;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT structure_json FROM volume_structures;" > /dev/null; python3 - <<PY
+import json,sqlite3,re
+db=sqlite3.connect("file:/Users/jbotts/frus-analysis/frus-copy.db")
+rows=db.execute("SELECT volume_id, structure_json FROM volume_structures").fetchall()
+pat=re.compile(r"refugee|displaced person|asylum|expatriat|emigra|repatriat|resettle|escapee|stateless|migration|exile|evacuee|immigra", re.I)
+out=[]
+def walk(node, vid):
+    t=re.sub(r"\s+"," ",(node.get("title") or "")).strip()
+    ids=node.get("documentIds") or []
+    if t and pat.search(t):
+        out.append((vid, node.get("divType"), len(ids), t))
+    for s in node.get("subsections") or []:
+        walk(s, vid)
+for vid, sj in rows:
+    d=json.loads(sj)
+    for s in d.get("sections") or []:
+        walk(s, vid)
+print("MATCHING HEADINGS:", len(out))
+for vid,dt,n,t in sorted(out):
+    print(f"{vid}|{dt}|{n}|{t[:150]}")
+PY
+python3 - <<PY
+import json,sqlite3,re
+db=sqlite3.connect("file:/Users/jbotts/frus-analysis/frus-copy.db")
+rows=db.execute("SELECT volume_id, structure_json FROM volume_structures").fetchall()
+pat=re.compile(r"refugee|displaced person|escapee|stateless|resettle|repatriat|migration|evacuee|asylum", re.I)
+out=[]
+def walk(node, vid):
+    t=re.sub(r"\s+"," ",(node.get("title") or "")).strip()
+    ids=node.get("documentIds") or []
+    if t and pat.search(t): out.append((vid, node.get("divType"), len(ids), t))
+    for s in node.get("subsections") or []: walk(s, vid)
+for vid, sj in rows:
+    for s in json.loads(sj).get("sections") or []: walk(s, vid)
+sel=[o for o in out if re.search(r"^frus19(2[4-9]|[3-9]\\d)", o[0])]
+print("HEADINGS 1924+ :", len(sel))
+for vid,dt,n,t in sorted(sel): print(f"{vid}|{dt}|{n}|{t[:165]}")
+PY
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY 1 ORDER BY 2 DESC LIMIT 15;" "SELECT substr(dd.date_iso,1,3)||'0s', COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '\"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT 'TOTAL_HITS', COUNT(*) FROM hit UNION ALL SELECT 'WITH_SOURCE_ROW', COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x;" "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT s.citation_era, COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x GROUP BY 1 ORDER BY 2 DESC;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT s.decimal_class, COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x WHERE s.decimal_class IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 25;" "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT s.lot_file_norm, COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x WHERE s.lot_file_norm IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 20;"
+python3 - <<PY
+import json
+p="/Applications/FRUS Explorer.app/Contents/Resources/decimal-class-labels.json"
+d=json.load(open(p))
+print("TOP KEYS:", list(d))
+cov=d.get("coverage",{})
+print("COVERAGE KEYS:", list(cov))
+print("glossableYears:", json.dumps(cov.get("glossableYears"))[:400])
+print("notShipped:", json.dumps(cov.get("notShipped"))[:400])
+for k in d:
+    if k not in ("coverage",):
+        v=d[k]
+        print(k, type(v).__name__, (len(v) if hasattr(v,\"__len__\") else \"\"))
+PY
+python3 gloss.py
+python3 gloss2.py
+python3 gloss3.py
+python3 gloss4.py
+python3 gloss5.py
+python3 gloss6.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0) SELECT CASE WHEN s.decimal_class LIKE '%.48%' THEN '.48 Calamities/Disasters' WHEN s.decimal_class LIKE '%.55%' THEN '.55 Immigration' WHEN s.decimal_class LIKE '%.56%' THEN '.56 Emigration' WHEN s.decimal_class LIKE '%.4016%' THEN '.4016 Race problems' WHEN s.decimal_class LIKE '%.01%' THEN '.01 Government' WHEN s.decimal_class LIKE '%.00%' THEN '.00 Political affairs' ELSE 'other/none' END fam, COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x WHERE s.decimal_class IS NOT NULL GROUP BY 1 ORDER BY 2 DESC;" "SELECT MIN(dd.date_iso), MAX(dd.date_iso), COUNT(*) FROM external_citations e JOIN document_dates dd ON dd.volume_id=e.volume_id AND dd.document_id=e.document_id;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0) SELECT 'DOCS_WITH_EXTCIT', COUNT(DISTINCT e.volume_id||'/'||e.document_id), 'ROWS', COUNT(*) FROM hit JOIN external_citations e ON e.volume_id=hit.v AND e.document_id=hit.x;" "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0) SELECT COALESCE(e.repository,'(none)'), COALESCE(e.collection,'(none)'), COUNT(*) FROM hit JOIN external_citations e ON e.volume_id=hit.v AND e.document_id=hit.x GROUP BY 1,2 ORDER BY 3 DESC LIMIT 22;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0) SELECT COALESCE(s.repository,'(none)'), COALESCE(s.record_group,'(none)'), COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x GROUP BY 1,2 ORDER BY 3 DESC LIMIT 15;" "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0) SELECT s.decimal_class, COUNT(*) FROM hit JOIN document_sources s ON s.volume_id=hit.v AND s.document_id=hit.x WHERE s.decimal_class GLOB '*[A-Z] *' GROUP BY 1 ORDER BY 2 DESC LIMIT 18;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT decimal_class, COUNT(*), MIN(dd.date_iso), MAX(dd.date_iso) FROM document_sources s LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE s.decimal_class LIKE 'REF%' GROUP BY 1 ORDER BY 2 DESC;" "SELECT COUNT(*) FROM document_sources WHERE decimal_class LIKE 'REF%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT series_name, COUNT(*) FROM document_sources WHERE series_name IS NOT NULL AND (series_name LIKE '%efugee%' OR series_name LIKE '%isplaced%' OR series_name LIKE '%igration%' OR series_name LIKE '%scapee%' OR series_name LIKE '%efugee%') GROUP BY 1 ORDER BY 2 DESC LIMIT 25;" "SELECT DISTINCT raw_text FROM document_sources WHERE raw_text LIKE '%Refugee%' LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT CASE WHEN raw_text LIKE '%840.48 Refugees%' THEN '840.48 Refugees' WHEN raw_text LIKE '%811.111 Refugees%' THEN '811.111 Refugees' WHEN raw_text LIKE '%868.51 Refugee%' THEN '868.51 Refugee Settlement/Loan' WHEN raw_text LIKE '%840.48%' THEN '840.48 (other)' WHEN raw_text LIKE '%.4016%' THEN '*.4016 Race problems' WHEN raw_text LIKE '%Refugee%' THEN 'other w/ Refugee in citation' END fam, COUNT(*), MIN(dd.date_iso), MAX(dd.date_iso) FROM document_sources s LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE fam IS NOT NULL GROUP BY 1 ORDER BY 2 DESC;"
+python3 jx.py
+python3 jx2.py
+python3 jx3.py
+python3 jx4.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT lot_file_norm, COUNT(*), MIN(dd.date_iso), MAX(dd.date_iso) FROM document_sources s LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE s.lot_file_norm IN ('70D229','70D66','70D44') GROUP BY 1;" "SELECT COUNT(DISTINCT lot_file_norm) FROM document_sources WHERE lot_file_norm IS NOT NULL;"
+python3 jx5.py
+python3 jx6.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_subjects" "SELECT * FROM document_subjects WHERE name LIKE '%efugee%' OR name LIKE '%isplaced%' OR name LIKE '%migrat%' OR name LIKE '%sylum%' OR name LIKE '%Humanitarian%' LIMIT 20;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_subject_refs" ".schema document_subject_volumes" "SELECT * FROM document_subject_refs LIMIT 3;"
+python3 subj.py
+python3 subj2.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0), tag AS (SELECT volume_id v, document_id x FROM document_subject_refs WHERE subject=40) SELECT (SELECT COUNT(*) FROM hit) fts_hits, (SELECT COUNT(*) FROM tag) tag_docs, (SELECT COUNT(*) FROM hit JOIN tag USING (v,x)) overlap;" "SELECT COUNT(*) FROM document_subject_refs r JOIN document_cache d ON d.volume_id=r.volume_id AND d.document_id=r.document_id WHERE r.subject=40 AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+python3 chap.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db -cmd ".mode list" "SELECT document_id||' | '||replace(header,char(10),' ')||' | '||COALESCE(source_note,'(no source)')||' | len='||length(body_text) FROM document_cache WHERE volume_id='frus1961-63v25' AND document_id IN ('d308','d309','d310','d311','d312','d313','d314','d315','d316','d317','d318','d319','d320','d321','d322','d323','d324','d325') ORDER BY CAST(substr(document_id,2) AS INT);"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT decimal_class, COUNT(*), MIN(dd.date_iso), MAX(dd.date_iso), COUNT(DISTINCT s.volume_id) FROM document_sources s LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE s.decimal_class LIKE '324.84%' OR s.decimal_class LIKE '320.2%' GROUP BY 1 ORDER BY 2 DESC LIMIT 12;" "SELECT lot_file_norm, COUNT(*), MIN(dd.date_iso), MAX(dd.date_iso) FROM document_sources s LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE s.raw_text LIKE '%67 D 378%' OR s.raw_text LIKE '%Refugee%Lot%' OR s.raw_text LIKE '%Lot%Refugee%' GROUP BY 1 ORDER BY 2 DESC LIMIT 15;"
+zsh pre.sh <<EOF
+refugee
+"Department of State"
+ZZZ_IMPOSSIBLE_ZZZ
+reconcentrados
+fugitives
+"right of asylum"
+"Armenian refugees"
+"Hungarian refugees"
+"Cuban refugees"
+"Boer refugees"
+sufferers
+relief
+"political offenders"
+EOF
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH m AS (SELECT f.volume_id v, f.document_id x FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'sufferers' AND d.is_front_matter=0 AND d.is_editorial_note=0), t AS (SELECT COALESCE(d.header,'')||' '||COALESCE(d.source_note,'')||' '||d.body_text s FROM m JOIN document_cache d ON d.volume_id=m.v AND d.document_id=m.x) SELECT 'sufferers', COUNT(*), SUM(CASE WHEN s LIKE '%sufferer%' THEN 1 ELSE 0 END) FROM t;" "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso<'1910' GROUP BY 1 ORDER BY 2 DESC LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db -cmd ".mode list" "SELECT f.volume_id||'/'||f.document_id||' | '||replace(COALESCE(d.header,'(none)'),char(10),' ')||' | '||COALESCE(dd.date_iso,'?')||' | len='||length(d.body_text) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id IN ('frus1891','frus1875v02','frus1868p2') ORDER BY bm25(frus_documents) ASC LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db -cmd ".mode list" "SELECT f.volume_id||'/'||f.document_id||' | '||replace(COALESCE(d.header,'(none)'),char(10),' ')||' | '||COALESCE(dd.date_iso,'?')||' | len='||length(d.body_text)||' | '||COALESCE(substr(d.source_note,1,90),'-') FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id IN ('frus1938v01','frus1946v01','frus1977-80v22') ORDER BY bm25(frus_documents) ASC LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db -cmd ".mode list" "SELECT '===== '||volume_id||'/'||document_id||' len='||length(body_text)||char(10)||COALESCE(header,'')||char(10)||COALESCE(dateline,'')||char(10)||'SOURCE: '||COALESCE(source_note,'(none)')||char(10)||body_text FROM document_cache WHERE (volume_id,document_id) IN (VALUES ('frus1891','d194'),('frus1875v02','d13'),('frus1868p2','d233'),('frus1961-63v25','d313'),('frus1977-80v22','d115'),('frus1946v01','d1'));" > captured.txt
+awk "/^===== frus1961-63v25/,/^===== frus1977/" captured.txt | head -22
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH hit AS (SELECT f.volume_id v, f.document_id x, substr(dd.date_iso,1,3) dc FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH 'refugee' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND dd.date_iso IS NOT NULL), pv AS (SELECT dc, v, COUNT(*) n FROM hit GROUP BY 1,2), tot AS (SELECT dc, COUNT(*) n FROM hit GROUP BY 1) SELECT tot.dc||'0s', tot.n, (SELECT v FROM pv WHERE pv.dc=tot.dc ORDER BY n DESC LIMIT 1) topvol, (SELECT MAX(n) FROM pv WHERE pv.dc=tot.dc) topn, ROUND(100.0*(SELECT MAX(n) FROM pv WHERE pv.dc=tot.dc)/tot.n,1)||'%' share FROM tot ORDER BY 1;"
+python3 cu.py
+python3 cu2.py
+python3 cu3.py
+zsh lit2.sh <<EOF
+refugee|refugee
+emigration|emigration
+exiles|exile
+repatriation|repatriation
+resettlement|resettlement
+asylum|asylum
+stateless|stateless
+EOF
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id LIKE '%Ed2%' GROUP BY 1;" "WITH den AS (SELECT volume_id v, COUNT(*) n FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 GROUP BY 1), r AS (SELECT f.volume_id v, COUNT(*) n FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY 1) SELECT COUNT(*) FROM r JOIN den ON den.v=r.v WHERE 1.0*r.n/den.n >= 0.10;"
+python3 core.py
+du -sh /Users/jbotts/Development/frus/volumes && ls /Users/jbotts/Development/frus/volumes/*.xml | wc -l
+python3 tei.py
+python3 dp.py
+python3 dp2.py
+python3 dp3.py
+python3 iro.py
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db -cmd ".mode list" "SELECT '===== '||volume_id||'/'||document_id||' len='||length(body_text)||char(10)||COALESCE(header,'(no header)')||char(10)||'SOURCE: '||COALESCE(source_note,'(none)')||char(10)||body_text FROM document_cache WHERE volume_id='frus1946v01' AND document_id='d752';" >> captured.txt
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT decimal_class, COUNT(*), MIN(dd.date_iso), MAX(dd.date_iso), COUNT(DISTINCT s.volume_id) FROM document_sources s LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE s.decimal_class LIKE '501.B%' GROUP BY 1 ORDER BY 2 DESC LIMIT 10;" "SELECT COUNT(*) FROM document_sources WHERE raw_text LIKE '%501.BD%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT length(body_text) FROM document_cache WHERE volume_id='frus1946v01' AND document_id='d752';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'refugee OR \"displaced persons\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"

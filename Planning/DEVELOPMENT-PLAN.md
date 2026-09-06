@@ -12228,3 +12228,43 @@ file; omitting `i` when false saved 132KB on its own. 896KB → 619KB.
 Four mutations killed, two of them by exactly one control each. New bundled resource, so `xcodegen
 generate` + scheme restore: 6 insertions, no build setting touched. Guide → 1.17. No index-version
 bump — which is the point of shipping it as data.
+
+## Session 2026-09-06e — #1208: the revised house-rules block re-measured, and declared the instrument (PR #1231)
+
+C-0's design re-run against §12's block at its **current 143 lines** — not the 134 #1208 names,
+because #1204 and #1203 added nine more while the issue sat open, and the guide's own caveat still
+said "134 now".
+
+**BLOCK 116 of 116 = 100%. CONTROL 90 of 116 = 77.6%.** C-0, adjudicated, was 99% / 84%. The block
+arm did not decay with 33 added lines; it went from one violation to none. 19 of the 30 items are
+4/4 in both arms; the control loses S5, A2 and A6 outright (0/4 each), then E1 and P3 (1/4), R1 and
+P4 (2/4), and I1/T1/S2/S4 (3/4).
+
+**The archival discriminator reproduced exactly.** Distinct NARA identifiers named per memo: BLOCK
+4 of 4 runs, 21 distinct; CONTROL **0 of 4 — not one, in any run**. C-0 measured 4/4 with 14
+distinct against 0/4, on different questions and a block a third shorter.
+
+**All four P-items are 4/4 under the block**, so nothing v1.11 added cost anything. Two of them earn
+their place — P3 (quotations attributed) and P4 (the reading count) are 1/4 and 2/4 in the control —
+while P1 and P2 are 4/4 in BOTH arms, so this run gives no evidence those two lines are
+load-bearing. Recorded rather than quietly dropped.
+
+**A defect in the C-0 harness itself, found before launch**: every C-0 prompt told agents to open
+the database with `sqlite3 "file:…?mode=ro" -uri`, and this sqlite3 REJECTS `-uri` ("unknown
+option"). Both C-0 arms carried it equally so its comparison stands, but all eight of its runs spent
+their first query on a broken command. C-0b uses the two forms that work, verified first.
+
+Three things #1208 required and got: two fresh questions (C-0's are printed in the planning docs and
+contaminated) — civil aviation, and refugees/displaced persons; a per-agent `queries.log`, demanded
+IDENTICALLY in both arms so the new instruction is not itself the treatment; and the cost — **16
+agents, 3,174,913 subagent tokens, 701 tool calls, 35.2 minutes**, the first such figure in the
+series.
+
+Pre-registered reading applied: ≥95% with A6 holding → declare the revised block the instrument.
+Guide → 1.18; §12's preamble and the version-history caveat both rewritten. One qualification stated
+rather than buried: this measures 143 lines at C-0 LENGTH. C-2's survival-across-a-doubled-session
+test was run on the 110-line block and has not been repeated.
+
+Archived at `Planning/c0b-falsifier/` (harness, block under test, rubric, all 8 memos, all 8 query
+logs, verdicts, arm key written after scoring) with the record at
+`Planning/C0b-Falsifier-2026-09-06.md`.
