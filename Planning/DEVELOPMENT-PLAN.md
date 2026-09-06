@@ -12268,3 +12268,41 @@ test was run on the 110-line block and has not been repeated.
 Archived at `Planning/c0b-falsifier/` (harness, block under test, rubric, all 8 memos, all 8 query
 logs, verdicts, arm key written after scoring) with the record at
 `Planning/C0b-Falsifier-2026-09-06.md`.
+
+## Session 2026-09-06f — #1207: the harness runbook (PR #TBD)
+
+`Planning/Agentic-Harness-Runbook.md` — the operational facts that decide whether a multi-agent run
+finishes, which until now lived only in throw-away workflow scripts and an assistant memory note
+outside the tree. Linked from the guide's §14.12 item 7 and from
+`Planning/Agentic-Loop-Development-Plan.md`.
+
+**Every fact is marked [VERIFIED] or [FROM THE RUN]**, because half of them cannot be re-measured —
+the 2026-09 sessions are gone — and a runbook that presents a cited figure and a re-run command in
+the same voice invites the next reader to trust both equally.
+
+Verified while writing, not transcribed:
+
+- **The read-only proof.** `BEGIN; CREATE TABLE zz(x); ROLLBACK;` fails with *"attempt to write a
+  readonly database (8)"* on both `file:…?mode=ro` and `-readonly`. And the negative half:
+  `BEGIN IMMEDIATE; ROLLBACK;` exits **0** and prints nothing on a read-only handle, so it proves
+  nothing — worth stating because it is the natural thing to reach for.
+- **The `-uri` attribution.** The guide contains `-uri` three times and ALL THREE are warnings
+  against it; the flag came from `Planning/c0-falsifier/workflow.mjs`. The issue's account is right
+  and the memory note's first version was wrong — recorded in the runbook as a correction, since a
+  wrong attribution survived into memory once already.
+- **It is still live.** `c0-falsifier/workflow.mjs` and `c2-long-session/workflow.mjs` both still
+  carry the flag (8 occurrences each), so every C-0 and C-2 run spent its first query on a broken
+  command. Both arms carried it equally, so those comparisons stand; `c0b-falsifier/workflow.mjs`
+  is the corrected template.
+
+Two additions the issue did not ask for, both earned in #1208 the day before: **generate the
+workflow script rather than hand-transcribing a payload into it** (C-0b's four block arms embed 143
+lines each — four chances to introduce a between-arm difference the experiment would then measure),
+and **verify the arms before launching** by parsing the generated script back, which is one command
+against a whole run.
+
+The cost table now carries two rows rather than none: the 2026-09 run (~207 sessions, 2.94B tokens,
+95.9% cache reads, ≈$2,800, **half of all output tokens adversarial refuters**) and C-0b's own
+measured 16 agents / 3.17M tokens / 35.2 minutes. The refuter share is the planning number.
+
+Guide → 1.19. Documentation only; no code, no artifact, no index-version bump.

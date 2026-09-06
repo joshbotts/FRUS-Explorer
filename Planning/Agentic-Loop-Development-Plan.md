@@ -15,6 +15,12 @@ written down and measured (controls on every scan, a declared counting surface, 
 expansion, both archival channels resolved and never summed), so that assessment now has a
 concrete tool surface to weigh rather than a sketch.
 
+**The harness half is now written down.** Running the agents that this programme's measurements
+depend on has its own operational facts — the 180-second per-call watchdog, the resume cache's
+byte-identical `(prompt, opts)` key, the model-pin hang, the read-only proof, quota losses, and what
+a fleet costs. They are in `Planning/Agentic-Harness-Runbook.md` (#1207), each marked measured or
+cited, so the next run does not re-learn them the expensive way.
+
 **Why this document exists.** `Docs/Agentic-Analysis-Guide.md` (v1.1, with its Appendix A on the
 semantic artifacts) documents how an outside AI agent reads `frus.db` and the vector layer. What
 it documents is folklore: the researcher must know the sandbox path, know `.backup` over `cp`,

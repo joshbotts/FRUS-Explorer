@@ -1957,7 +1957,9 @@ Cheap practices that make contesting possible:
    first call of every agent that used it; one agent run on the exact command against a known
    answer would have caught either in ten seconds, before the fleet launched. If your harness
    resumes a run from cache, a finished agent's prompt is frozen: append a correction only to the
-   agents still to run, or every finished one runs again.
+   agents still to run, or every finished one runs again. The operational half of all of this —
+   the watchdog's limit, the resume key, the model-pin diagnosis, the read-only proof, the cost of
+   a fleet — is in `Planning/Agentic-Harness-Runbook.md`, with each fact marked measured or cited.
 8. **Reconcile the report against its own tables before anyone else does.** Diff every figure that
    appears twice, and every prose sentence against the table beneath it. In one round ten of
    twenty-eight verdicts found a contradiction inside the report they were checking — a uniqueness
@@ -2503,6 +2505,14 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.19 — 2026-09-06: **#1207 closed.** §14.12 item 7 now points at
+  `Planning/Agentic-Harness-Runbook.md`, which carries the operational facts the guide
+  deliberately keeps out — the 180-second watchdog, the resume cache's byte-identical key, the
+  model-pin hang and how to diagnose it from an agent transcript, the read-only proof (and why
+  `BEGIN IMMEDIATE` alone proves nothing), quota losses, and cost. The `-uri` history is
+  recorded there with its correct attribution: the flag was never in this guide, it was in the
+  C-0 falsifier's runner prompt — where, measured 2026-09-06, it is still live.
 
 - 1.18 — 2026-09-06: **#1208 closed — the block is re-measured and declared the instrument.**
   C-0's design was re-run against the block at its current **143 lines** (not the 134 the issue
