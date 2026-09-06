@@ -43,6 +43,31 @@ largest coherent body of work left that needs nobody's permission.
 | **S-3** | **V-3 §6.2(a) / §7 item 2** — off-index volume-grain leads: *"N strong matches in a volume you don't have"*. A second Tier-1 Hamming scan in `SemanticSimilarityGenerator` | L |
 | **S-4** | **Map §7.3** — two more bundled corpus lenses (`allTerms`, `descriptors`). **Read the screen's warning first**: `WordCloudKit/WordCloudLens.swift:84`'s `bundledCloudLenses` is the GENERATOR'S ARTIFACT CONTRACT with six consumers, not the backdrop's cycle | S |
 
+**Reconnoitred 2026-09-06, and three of the four rows did not survive it.** The cluster was scoped
+from the designs; reading the code changed the answer for all but one.
+
+- **S-3 — SHIPPED** (PR below). The threshold the design leaves open turns out not to be a
+  constant, and that is measured: over 60 anchors the Hamming distance of the axis's own 120th
+  neighbour ranges **104–162**, while a random corpus pair sits at median 194 with a **minimum of
+  105** — the bands overlap, so any fixed cutoff admits nothing for some anchors and a swathe for
+  others. The rule shipped instead is the anchor's own band, taken from a scan that has already
+  run. Yield at half a library: a median of **94 documents across 19 volumes**, 0 of 20 anchors
+  empty. The scan cap is 4,096 rather than the rerank pool's 800 because at a **10% library** —
+  the reader this exists for — the median rises to 732 and an 800-cap would bind on **43%** of
+  anchors.
+- **S-1 — RECOMMENDED AGAINST.** The axis is generator-only by construction, not by omission:
+  making it a scorer needs a weight it does not have (it ships at 0, so the re-score would
+  contribute nothing until a reader moves the slider) and a zero it does not have either — cosine
+  has no natural zero, so every candidate any other axis produced would receive a non-zero
+  semantic score, changing the default ranking of every existing user.
+- **S-2 — BLOCKED ON A MEASUREMENT, not on effort.** A centroid over a project's seeds is only
+  cheaper if the seeds are homogeneous; for a heterogeneous project the centroid retrieves the
+  average of unlike things, which is nothing in particular. The `RecomputeCost` figure has to come
+  first.
+- **S-4 — PARKED, WIP on `claude/s4-two-more-corpus-lenses`.** The loader half builds; there is no
+  consumer for it, and the artifact contract warning on `bundledCloudLenses` is the reason to stop
+  rather than push through.
+
 ### 1c. Provenance and archival residue
 
 | Row | What | Size |
