@@ -88,6 +88,10 @@ public enum DecimalClassLabelRunner {
         print("[DecimalClassLabels] country table: \(countries.count) rows")
 
         var schedules: [DecimalClassLabels.Schedule] = []
+        // #1204: the refusals are recorded, not merely printed. A consumer asking "is there a
+        // 1958 schedule?" gets `no, and here is how short it fell` rather than a silence
+        // indistinguishable from an era nobody attempted.
+        var omissions: [DecimalClassLabels.Coverage.Omission] = []
         for source in sources {
             let text = try plainText(of: source.manualPath)
             let classes = parseClasses(text)
@@ -172,18 +176,38 @@ public enum DecimalClassLabelRunner {
             // A schedule that does not parse COMPLETELY is omitted rather than shipped thin.
             // Half a class table is worse than none: the keys it does not name render as bare
             // numbers indistinguishable from the ones it cannot reach, so a reader cannot tell
-            // an unlabelled class from an unlabellable one. The omission is printed, and the
-            // artifact says which eras it covers, so nothing about it is silent.
+            // an unlabelled class from an unlabellable one. The omission is printed, and
+            // `coverage.notShipped` records it with these counts, so nothing about it is silent.
+            //
+            // #1204 found the floor is sound for a REASON THIS COMMENT DID NOT STATE, and the
+            // difference matters to anyone tempted to lower it. `DecimalClassLabelTable.gloss`
+            // never reads `classes` at all — it needs a governing schedule,
+            // `countryArrangedClasses` and `countries`, and its last line returns a BARE COUNTRY
+            // NAME, shaped exactly like a complete gloss. The country table comes from a
+            // different, born-digital PDF that parses cleanly for all three eras (200 and 215
+            // codes here, both over the floor). So lowering `minClasses` would not yield a table
+            // that stays mostly silent; it would yield one that glosses nearly every post-1950
+            // country-arranged key, most of them down to that bare-country fallback. The
+            // thinness measured is not the thinness that gates display.
             let subjectCount = subjects.values.reduce(0) { $0 + $1.count }
             guard classes.count >= source.minClasses,
                   subjectCount >= source.minSubjects,
-                  byCode.count >= 100
+                  byCode.count >= Self.minCountries
             else {
+                let reason = "This scan needs a pass of its own — its text layer letter-spaces "
+                    + "every word, and a partially-named class table would mislabel rather than "
+                    + "label."
                 print("[DecimalClassLabels] SKIPPING \(source.id): \(classes.count) classes "
                     + "(floor \(source.minClasses)), \(subjectCount) subjects "
-                    + "(floor \(source.minSubjects)), \(byCode.count) countries (floor 100). "
-                    + "This scan needs a pass of its own — its text layer letter-spaces every "
-                    + "word, and a partially-named class table would mislabel rather than label.")
+                    + "(floor \(source.minSubjects)), \(byCode.count) countries "
+                    + "(floor \(Self.minCountries)). " + reason)
+                omissions.append(.init(
+                    scheduleId: source.id, startYear: source.start, endYear: source.end,
+                    source: source.title, reason: reason,
+                    parsed: .init(classes: classes.count, subjects: subjectCount,
+                                  countries: byCode.count),
+                    floors: .init(classes: source.minClasses, subjects: source.minSubjects,
+                                  countries: Self.minCountries)))
                 continue
             }
 
@@ -208,8 +232,37 @@ public enum DecimalClassLabelRunner {
                 + "label; the later schedules are additions, not substitutes.")
         }
 
+        // #1204: the era contract, built from the schedules that actually shipped rather than
+        // asserted, so it cannot drift from them. `renumberedAt` is the one constant — it is a
+        // fact about the classification, not about this build.
+        let coverage = DecimalClassLabels.Coverage(
+            renumberedAt: Self.renumberedAt,
+            decimalFileOpensIn: Self.decimalFileOpensIn,
+            glossableYears: schedules.map {
+                .init(scheduleId: $0.id, startYear: $0.startYear, endYear: $0.endYear)
+            },
+            keyOutsideGlossableYears: "no-gloss",
+            notShipped: omissions,
+            note: "A key is glossable only when the document's own date falls inside one of "
+                + "`glossableYears`. Outside them this file has NO gloss — do not compose one "
+                + "from a schedule that does not govern the key's era. The classification was "
+                + "renumbered in \(Self.renumberedAt), so composing across that year returns a "
+                + "plausible WRONG reading rather than a miss: `411` reads as Claims under the "
+                + "1910–1949 schedule where the editors gloss `411.48` as Poland, and `48` reads "
+                + "as British Africa — and `48` is live in TWO of this schedule's vocabularies "
+                + "at once (country `British Africa`, class-8 subject `Calamities. Disasters`), "
+                + "so a hand-composed reading has more than one way to be wrong. For years "
+                + "listed in `notShipped`, gloss from `volume_sources` instead. This governs "
+                + "GLOSSING only: whether a key is well-formed is a separate, deliberately "
+                + "era-blind test, so a post-1950 key composing against these vocabularies is "
+                + "expected and is not a licence to gloss it. If you are gating a whole VOLUME's "
+                + "coverage span rather than a document's date, clamp the span's lower bound to "
+                + "`decimalFileOpensIn` before testing containment — a volume covering 1861–1947 "
+                + "holds no pre-1910 decimal keys to mislabel, and literal containment would "
+                + "silence it.")
+
         let table = DecimalClassLabels(
-            schemaVersion: 1,
+            schemaVersion: 2,
             generated: environment["GENERATED_DATE"] ?? Self.today(),
             provenance: "Parsed from NARA's published classification manuals and the 1910–1963 "
                 + "country-number table. The manuals are not redistributed here; every vocabulary "
@@ -223,7 +276,8 @@ public enum DecimalClassLabelRunner {
                 + "are compound keys this table does not express. A gloss is the manual's wording "
                 + "and is not unique — `.711` and `.731` are both Laws and regulations, of postal "
                 + "and of cable service — so it supplements the key rather than replacing it.",
-            schedules: schedules)
+            schedules: schedules,
+            coverage: coverage)
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -231,6 +285,19 @@ public enum DecimalClassLabelRunner {
         try data.write(to: URL(fileURLWithPath: output))
         print("[DecimalClassLabels] wrote \(output) (\(data.count) bytes)")
     }
+
+    /// The floor a schedule's country table must clear to ship.
+    ///
+    /// Named rather than inline because `coverage.notShipped` publishes it: a floor a reader can
+    /// see beside the count that missed it is a measurement, where a bare `100` in a guard is not.
+    static let minCountries = 100
+
+    /// The year the classification was renumbered, after which the same digits mean other things.
+    static let renumberedAt = 1950
+
+    /// The year the central decimal file opens. Published so `glossableYears` is reproducible
+    /// against a span-gating consumer as well as a document-gating one — see `Coverage`.
+    static let decimalFileOpensIn = 1910
 
     /// The classes a schedule arranges by country.
     ///

@@ -622,7 +622,7 @@ struct ArchivalCollectionsData: Sendable {
     /// what it means.
     ///
     /// This is a **prerequisite, not a refinement**. With the band's span the two later schedules
-    /// would label nothing at all once parsed: band 1's 1960 falls outside 1951–59 and band 2's
+    /// would label nothing at all once parsed: band 1's 1960 falls outside 1950–59 and band 2's
     /// 1968 outside 1960–63, so every key in the eras those schedules exist for would still render
     /// bare.
     ///
