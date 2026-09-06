@@ -12269,7 +12269,7 @@ Archived at `Planning/c0b-falsifier/` (harness, block under test, rubric, all 8 
 logs, verdicts, arm key written after scoring) with the record at
 `Planning/C0b-Falsifier-2026-09-06.md`.
 
-## Session 2026-09-06f — #1207: the harness runbook (PR #TBD)
+## Session 2026-09-06f — #1207: the harness runbook (PR #1232)
 
 `Planning/Agentic-Harness-Runbook.md` — the operational facts that decide whether a multi-agent run
 finishes, which until now lived only in throw-away workflow scripts and an assistant memory note
