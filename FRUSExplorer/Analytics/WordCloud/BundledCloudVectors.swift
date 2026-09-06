@@ -123,8 +123,22 @@ enum BundledCloudVectors {
     static func terms(forScope scope: Scope, lens: WordCloudLens) -> (terms: [TermCount], provenance: Provenance)? {
         switch scope {
         case .corpus:
-            return list(in: core, scope: CloudVectorsAggregatorScopeKeys.corpus, lens: lens)
-                .map { ($0, .exact) }
+            if let own = list(in: core, scope: CloudVectorsAggregatorScopeKeys.corpus, lens: lens) {
+                return (own, .exact)
+            }
+            // Map §7.3: SIX corpus lenses are reachable, not four. `cloud-vectors-core.json`
+            // carries concepts/topics/actions/sentiment; `keyness-baseline.json` — packed by the
+            // SAME generator call, so same tokenisation, same provenance, same `generated` stamp —
+            // additionally carries `allTerms` and `descriptors` with raw corpus counts. Reading
+            // them costs a loader and no generator run, which is why the design calls this small.
+            //
+            // Corpus scope ONLY. The baseline is a corpus-wide reference and holds nothing per
+            // subseries or per volume, so the other two scopes fall through unchanged rather than
+            // silently answering a volume question with the whole series.
+            if let fromBaseline = BundledKeynessBaseline.corpusTerms(for: lens) {
+                return (fromBaseline, .exact)
+            }
+            return nil
 
         case .subseries(let id):
             return list(in: core, scope: id, lens: lens).map { ($0, .exact) }

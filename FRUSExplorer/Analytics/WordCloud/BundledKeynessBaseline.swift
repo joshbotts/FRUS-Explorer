@@ -144,6 +144,36 @@ enum BundledKeynessBaseline {
                           cutoffCount: lensFile.cutoffCount)
     }
 
+
+    /// A lens's corpus terms as a **display** list, ungated by the configuration check.
+    ///
+    /// ## Why this bypasses the gate `baseline(for:tuning:includeDiplomatic:)` enforces
+    /// That gate protects a **ratio**. Keyness divides a scope's frequency by this corpus
+    /// frequency, and dividing two differently-tokenised counts produces a number that looks fine
+    /// and means nothing — so a mismatch there must withhold.
+    ///
+    /// A corpus cloud is not a ratio. It is this artifact's own view of the corpus, the same thing
+    /// `cloud-vectors-core.json` ships for its four lenses — and that file is likewise packed at
+    /// `WordCloudTuning.standard` and does **not** follow the reader's live settings. Refusing to
+    /// show it because the reader has since changed `excludeBoilerplate` would withhold a corpus
+    /// figure on the grounds that a comparison nobody asked for would be invalid.
+    ///
+    /// The caller therefore owes the reader the artifact's own provenance rather than the reader's
+    /// settings — which `BundledCloudVectors.terms(forScope:lens:)` supplies.
+    ///
+    /// - Parameter lens: The lens wanted. `allTerms` and `descriptors` are the two this file
+    ///   carries and `cloud-vectors-core.json` does not.
+    /// - Returns: Terms in descending count order, ties broken by term so the order is stable
+    ///   across runs; `nil` when the artifact is absent or prices no such lens.
+    static func corpusTerms(for lens: WordCloudLens) -> [TermCount]? {
+        guard let lensFile = file?.lenses[lens.rawValue], !lensFile.terms.isEmpty else { return nil }
+        return lensFile.terms
+            .map { TermCount(term: $0.key, count: $0.value) }
+            // Count then term: `terms` is a dictionary, so without the tie-break the order would
+            // come out of the hash and a rebuild could reorder equal-count words on screen.
+            .sorted { $0.count == $1.count ? $0.term < $1.term : $0.count > $1.count }
+    }
+
     /// How much of the lens's corpus vocabulary the artifact prices, for the provenance line a
     /// keyness view shows. `nil` when the lens is unpriced.
     ///
