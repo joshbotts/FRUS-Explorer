@@ -145,6 +145,62 @@ struct DecimalClassLabelTests {
         }
     }
 
+    /// The seven codes #1201 reported, and what became of each.
+    ///
+    /// **Five were one bug wearing three faces.** Rows were being lost, and whatever survived took
+    /// the code by default: `Cook Islands` held 47h only because `New Zealand` never parsed, and
+    /// `Ruthenia` held 60f because `Czechoslovakia` lost a shortest-name tie-break. The losses had
+    /// three causes — a merged header line (`Country Country`), a note ending inside quotation
+    /// marks (`"Australia."`), and single-column rows dropped as unplaceable when the note names
+    /// the year that places them.
+    @Test("The country codes #1201 reported resolve, or stay honestly silent")
+    func reportedCountryCodes() throws {
+        let schedule = try #require(try table().schedules.first)
+
+        // Recovered by parsing, each from a complete row the scan had been throwing away.
+        #expect(schedule.countries["54"] == "Switzerland")
+        #expect(schedule.countries["43"] == "Newfoundland")
+        #expect(schedule.countries["11b"] == "Philippines")
+
+        // Recovered by parsing the row that had been losing to a survivor.
+        #expect(schedule.countries["47h"] == "New Zealand", """
+            47h glossed as "Cook Islands" because New Zealand's row was consumed by the preceding             note's closing quotation mark. Both are in the table; only one is the sovereign state.
+            """)
+
+        // Settled by curation, because the table names three claimants and no rule picks between
+        // them — see `corrections["1910-1949"]["60f"]`.
+        #expect(schedule.countries["60f"] == "Czechoslovakia", """
+            60f carries `Czechoslovakia`, `Czecho-Slovak Republic` and `Ruthenia` in the table.             The shortest-name tie-break took the province over the state, and 82 documents on             `611.60F31` are US–Czechoslovak commerce.
+            """)
+
+        // **Still unresolved, and that is the honest state rather than an oversight.** Canada (42)
+        // and Bulgaria (74) sit on pages whose text layer emits names and codes as separate
+        // blocks, so the document does not settle the pairing by any rule; the table stays silent
+        // rather than guessing, which is the standard the curated list is held to.
+        #expect(schedule.countries["42"] == nil, "42 became answerable — remove it from the report")
+        #expect(schedule.countries["74"] == nil, "74 became answerable — remove it from the report")
+    }
+
+    /// The rows recovered alongside them, so the fix is measured rather than asserted.
+    @Test("The recovered rows are in, and nothing that was right was lost")
+    func recoveredRows() throws {
+        let schedule = try #require(try table().schedules.first)
+        var found = 0
+        for (code, name) in [("60i", "Estonia"), ("90i", "Jordan"), ("53k", "Principe"),
+                             ("67k", "Crete"), ("50d", "Spitzbergen"), ("59d", "St. John Island")] {
+            #expect(schedule.countries[code] == name, "\(code) should be \(name)")
+            found += 1
+        }
+        #expect(found == 6, "the recovery sweep ran over \(found) codes")
+
+        // Crete, Spitzbergen and St. John Island each carry TWO 1910–49 codes because the file
+        // renumbered mid-period. Both must resolve: the artifact maps code to name, so neither
+        // pairing contradicts the other.
+        #expect(schedule.countries["68c"] == "Crete")
+        #expect(schedule.countries["57h"] == "Spitzbergen")
+        #expect(schedule.countries["11g"] == "St. John Island")
+    }
+
     @Test("Anything the table cannot place stays silent")
     func silence() throws {
         let table = try table()

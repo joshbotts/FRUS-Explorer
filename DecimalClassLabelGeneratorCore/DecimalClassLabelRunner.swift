@@ -107,35 +107,66 @@ public enum DecimalClassLabelRunner {
                     subjects["8", default: [:]][suffix] = gloss
                 }
             }
-            let era = countries.compactMapValues { $0.codes[source.countryColumn] }
+            let era: [(name: String, code: String)] = countries.compactMap { row in
+                row.codes[source.countryColumn].map { (name: row.name, code: $0) }
+            }
             // Several names legitimately share one code — 65 is both `Italy` and `Rhodes Island`,
             // because Italy held the Dodecanese for the period this schedule covers. First-wins
             // over a Dictionary resolved that by hash order, which is how the table came to gloss
             // 65 as "Rhodes Island". The shortest name wins instead, ties broken alphabetically:
             // deterministic, and it prefers the sovereign state over the territory filed under it.
             var byCode: [String: String] = [:]
+            var displaced: [String: [String]] = [:]
             var shared = 0
             // Sorted by the NAME's length — `lhs.key` — not the code's. Sorting on `value`
             // ordered by code length, which is nearly constant, so the tie-break never ran and
             // 51 came back as "Corsica" rather than "France".
             for (name, code) in era.sorted(by: { lhs, rhs in
-                lhs.key.count != rhs.key.count ? lhs.key.count < rhs.key.count : lhs.key < rhs.key
-            }).map({ ($0.key, $0.value) }) {
+                lhs.name.count != rhs.name.count ? lhs.name.count < rhs.name.count
+                                                 : lhs.name < rhs.name
+            }) {
                 let key = code.lowercased()
-                if byCode[key] == nil { byCode[key] = name } else { shared += 1 }
+                if byCode[key] == nil {
+                    byCode[key] = name
+                } else {
+                    shared += 1
+                    // **Which names lost, not just how many.** The count alone said 190 names
+                    // shared a taken code and named none of them, so a wrong winner — `60f` as
+                    // "Ruthenia" over "Czechoslovakia", 82 documents — was invisible in the log
+                    // and had to be found by reading the artifact. #1201.
+                    displaced[key, default: []].append(name)
+                }
             }
+            // **A curated row overrides the heuristic, it does not merely fill a gap.**
+            // `where byCode[code] == nil` meant a code the shortest-name rule had already answered
+            // wrongly could not be corrected at all — `60f` came back as "Ruthenia" over
+            // "Czechoslovakia" and the curated entry beside it was silently inert. The tie-break is
+            // a heuristic; an entry here is hand-verified against the source and carries the
+            // quotation that establishes it, so it is the better evidence and wins.
             var corrected = 0
-            for (code, entry) in Self.corrections[source.id] ?? [:] where byCode[code] == nil {
+            var overrode = 0
+            for (code, entry) in Self.corrections[source.id] ?? [:] {
+                if let sitting = byCode[code] {
+                    guard sitting != entry.name else { continue }
+                    overrode += 1
+                } else {
+                    corrected += 1
+                }
                 byCode[code] = entry.name
-                corrected += 1
             }
-            if corrected > 0 {
+            if corrected > 0 || overrode > 0 {
                 print("[DecimalClassLabels] \(source.id): \(corrected) curated corrections "
-                    + "applied for codes this scan mangles")
+                    + "applied for codes this scan mangles, \(overrode) overriding a parsed name")
             }
             if shared > 0 {
                 print("[DecimalClassLabels] \(source.id): \(shared) further names share a code "
                     + "already taken (territories filed under the power holding them)")
+                // The contested codes, so a wrong winner can be seen rather than discovered later
+                // in the artifact. Sorted for a reproducible log.
+                for key in displaced.keys.sorted() where byCode[key] != nil {
+                    print("[DecimalClassLabels]   \(key) = \(byCode[key]!) "
+                        + "(also: \(displaced[key]!.sorted().joined(separator: ", ")))")
+                }
             }
 
             // A schedule that does not parse COMPLETELY is omitted rather than shipped thin.
@@ -518,7 +549,7 @@ public enum DecimalClassLabelRunner {
     /// This is reading the source rather than inferring from layout, which is why it is the rule
     /// that ships.
     private static func parseCountries(at path: String)
-        throws -> [String: (codes: [String?], note: String?)]
+        throws -> [(name: String, codes: [String?], note: String?)]
     {
         let text = try plainText(of: path)
         let code = #"\d{1,3}[a-z]?"#
@@ -529,7 +560,13 @@ public enum DecimalClassLabelRunner {
             codeRegex.firstMatch(in: token, range: NSRange(token.startIndex..., in: token)) != nil
         }
 
-        var result: [String: (codes: [String?], note: String?)] = [:]
+        // **Rows, not a name-keyed dictionary, because a country legitimately has more than one
+        // code in one column.** `Crete 67k Discontinued 1920. See 68c.` and `Crete 68c 81a 81a
+        // Before 1920 see 67k.` are both 1910–49 codes — the file renumbered mid-period, and the
+        // artifact maps CODE to name, so both pairs are true and neither conflicts. Keyed by name,
+        // the first row seen silently displaced the second: 67k and 68c cannot both be "Crete".
+        // The same shape covers `Philippines 11b` / `Philippines 96` and `Spitzbergen 50d` / `57h`.
+        var result: [(name: String, codes: [String?], note: String?)] = []
         var ambiguous = 0
         var pendingName: [String] = []
         var open: (name: String, codes: [String], note: String)?
@@ -547,6 +584,32 @@ public enum DecimalClassLabelRunner {
                 for (offset, value) in row.codes.enumerated() {
                     placed[3 - row.codes.count + offset] = value
                 }
+            } else if row.codes.count == 1, let year = Self.discontinuedYear(in: note) {
+                // **The date the note states settles the column the old rule guessed at.**
+                //
+                // `Discontinued ⇒ left-align` was removed because `Arctic 01 Discontinued 1955.
+                // See 03.` is not a 1910–49 code, and left-aligning it glossed 4,513 documents as
+                // "Arctic". But dropping every such row over-corrected: `Newfoundland 43
+                // Discontinued 1949. See 42.` and `Philippines 11b Discontinued July 1946. See 96.`
+                // are unambiguous — a code discontinued in 1946 must have been in use before 1946,
+                // and the only column covering that year is 1910–49.
+                //
+                // So the rule is the year, not the word: a code discontinued in year Y belongs to
+                // the columns whose span reaches Y, and to no later one. Arctic's 1955 lands in
+                // 1950–59 and is kept out of 1910–49 — the case that removed the old rule is
+                // decided correctly by the new one, which is why this restores the rows without
+                // restoring the defect.
+                //
+                // **One code only, because two is the signature of a merged row.** The text layer
+                // runs adjacent columns together on some pages: `Azerbaijan Azores 90c 53b
+                // Discontinued May 1926. See 61.` is *two* rows, and reading its note as though it
+                // qualified both codes glossed 90c as "Azerbaijan Azores". A row that genuinely
+                // occupies one column carries one code.
+                for (index, span) in Self.columnSpans.enumerated() where year <= span.end {
+                    placed[index] = row.codes.first
+                    break
+                }
+                guard placed.contains(where: { $0 != nil }) else { ambiguous += 1; return }
             } else {
                 // The `Discontinued ⇒ left-align` rule is GONE, and its removal is a correctness
                 // fix rather than a tidy-up. `Arctic 01 Discontinued 1955. See 03.` does not mean
@@ -566,14 +629,17 @@ public enum DecimalClassLabelRunner {
             // A country name is a noun phrase. These reject note prose that the row builder let
             // through: `52` shipped as `Africa."` — the tail of *Formerly "German Southwest
             // Africa."* — and glossed 1,761 documents with it.
-            guard !name.contains("\""), !name.hasSuffix("."), !name.hasSuffix(","),
+            // A hyphen left dangling before a space is a wrap the text layer broke across two
+            // column entries — `Transcaucasia-` / `Vitanvalia` are not one country.
+            guard !name.contains("\""), !name.contains("- "),
+                  !name.hasSuffix("."), !name.hasSuffix(","),
                   name.split(separator: " ").count <= 6,
                   name.count >= 3,
                   name.range(of: #"^[A-Z]"#, options: .regularExpression) != nil,
                   !name.lowercased().hasPrefix("country"),
                   !name.lowercased().contains("number")
             else { return }
-            if result[name] == nil { result[name] = (placed, note.isEmpty ? nil : note) }
+            result.append((name: name, codes: placed, note: note.isEmpty ? nil : note))
         }
 
         /// Whether a code-less line continues the previous row's note rather than starting a name.
@@ -582,7 +648,15 @@ public enum DecimalClassLabelRunner {
         /// vocabulary does the work — `Discontinued`, `Established`, `Beginning`, `See`, `Prior
         /// to`, `Generally not used` — plus the ordinary marks of running prose.
         func looksLikeNote(_ line: String) -> Bool {
-            if line.hasSuffix(".") { return true }
+            // **A sentence can end inside quotation marks**, and missing that cost a whole row.
+            // The table's cross-references are quoted — `New South Wales 47a Generally not used.
+            // See` wraps onto a line reading `"Australia."` — and testing the raw line for a
+            // trailing full stop said no, because it ends with a quote. The fragment was then kept
+            // as a name, so the NEXT row parsed as `"Australia." New Zealand` and was thrown out by
+            // the quote guard in `close()`. That is why 47h glossed as "Cook Islands": New Zealand
+            // never reached the table at all (#1201).
+            let unquoted = line.trimmingCharacters(in: CharacterSet(charactersIn: "\"\u{201D}\u{201C}"))
+            if unquoted.hasSuffix(".") { return true }
             if let first = line.first, first.isLowercase || first.isNumber { return true }
             return ["Discontinued", "Established", "Beginning", "Restored", "See", "Prior to",
                     "Generally not used"].contains { line.contains($0) }
@@ -594,7 +668,7 @@ public enum DecimalClassLabelRunner {
             // The column headers repeat on every page, and a row straddling a page break has them
             // injected between its name and its codes — which is how `Germany` lost its 62.
             // Skipped without disturbing the pending name, so the row closes across the break.
-            if Self.pageFurniture.contains(line) { continue }
+            if Self.isPageFurniture(line) { continue }
             let range = NSRange(line.startIndex..., in: line)
             let tokens = line.split(separator: " ").map(String.init)
             let hasCode = tokens.contains(where: isCode)
@@ -703,6 +777,15 @@ public enum DecimalClassLabelRunner {
                 name: "Philippines",
                 evidence: "`Philippines 96 96 96 Beginning July 1946`, beside the superseded "
                     + "`Philippines 11b Discontinued July 1946. See 96.`"),
+            "60f": Correction(
+                name: "Czechoslovakia",
+                evidence: "Three names carry 60f in the table and two of them are the state: "
+                    + "`Czechoslovakia 60f 49 49`, `Czecho-Slovak Republic 60f`, and `Ruthenia 60f "
+                    + "49 49`. The shortest-name tie-break took Ruthenia — a region filed under the "
+                    + "state's own number, which is what the table's parent-plus-letter convention "
+                    + "produces when 60 is a REGION (`Eastern Continental Europe`) and its letters "
+                    + "are the states within it. FRUS files 82 documents on `611.60F31`, US–"
+                    + "Czechoslovak commerce."),
             "10": Correction(
                 name: "America. Pan-America",
                 evidence: "The name wraps as `America. Pan-` / `America` with `10` on the "
@@ -717,6 +800,43 @@ public enum DecimalClassLabelRunner {
     private static let pageFurniture: Set<String> = [
         "Country", "Number", "Notes", "1910-1949", "1950-1959", "1960-1963",
     ]
+
+    /// The last year each schedule column covers, in column order.
+    static let columnSpans: [(start: Int, end: Int)] = [(1910, 1949), (1950, 1959), (1960, 1963)]
+
+    /// The year a `Discontinued …` note names, or `nil` when it names none.
+    ///
+    /// Only `Discontinued` is read. `Established`/`Beginning` are handled by the right-alignment
+    /// rule above and mean the opposite thing — a code that starts mid-period cannot be in the
+    /// earliest column, where one that ENDS mid-period must be.
+    static func discontinuedYear(in note: String) -> Int? {
+        guard note.contains("Discontinued") else { return nil }
+        guard let match = note.range(of: #"Discontinued[^.]*?(19\d\d)"#,
+                                     options: .regularExpression) else { return nil }
+        return Int(note[match].suffix(4))
+    }
+
+    /// Whether a line is nothing but reprinted column headers, however they were glued together.
+    ///
+    /// **`Country Country` is the whole of a bug worth more than the one-line fix suggests**
+    /// (#1201). The header block is emitted once per page, and on nineteen of them the text layer
+    /// runs two header cells into a single line. `pageFurniture` held only the single words, so
+    /// that line fell through to the name builder, was kept as a name fragment, and the NEXT row's
+    /// name became `Country Country <Name>` — which `close()` then rejected by its own
+    /// `hasPrefix("country")` guard.
+    ///
+    /// Measured against the shipped table, that silently dropped **Switzerland (54), Newfoundland
+    /// (43), Estonia, Jordan, Palestine, Principe, Les Saintes, Abaco Island and Marianne
+    /// Islands** — and `Honduras (15)`, which had been hand-curated as unrecoverable when it is a
+    /// complete three-column row the parser was throwing away.
+    ///
+    /// Tested by composition rather than by listing the glued forms: any line made only of header
+    /// words is furniture, so a future scan that runs three of them together is already handled.
+    static func isPageFurniture(_ line: String) -> Bool {
+        let tokens = line.split(separator: " ")
+        guard !tokens.isEmpty else { return false }
+        return tokens.allSatisfy { pageFurniture.contains(String($0)) }
+    }
 
     /// Collapses the letter-spacing NARA's 1950s scans carry (`"Clas s 0"` → `"Class 0"`).
     private static func despace(_ text: String) -> String {
