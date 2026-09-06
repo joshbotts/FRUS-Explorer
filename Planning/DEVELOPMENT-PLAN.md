@@ -11889,7 +11889,7 @@ scans (SCHEDULE_DIR), no index bump, no CloudKit change.
 keys / 135,432 documents) need the owner's live index and cannot be computed here. The artifact-level
 count is the measurement this session can make.
 
-## Session 2026-09-05i — #1206: a secondary citation was being stored as the document's own lot (PR #C1206)
+## Session 2026-09-05i — #1206: a secondary citation was being stored as the document's own lot (PR #1223)
 
 `document_sources.lot_file` answers *where the printed document came from*. For two documents it was
 answering *where another copy is*: `frus1969-76v02/d1` and `/d11` both carried `75 D 229`, a lot
