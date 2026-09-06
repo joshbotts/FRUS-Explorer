@@ -604,6 +604,14 @@ struct PersonIndexDetailSheet: View {
                 // should know this is not something the app inferred from the documents.
                 Text(String(localized: "people.detail.career.source",
                             defaultValue: "From the Department’s Principal Officers and Chiefs of Mission register."))
+                // **The chip adds the half the sentence leaves out.** The sentence says whose
+                // records these are; it does not say that *attaching this career to this person*
+                // is a join the app made. The chip's method sentence does — "the join is this
+                // app's; a record it could not match is absent rather than wrong" — which is what
+                // a reader needs before concluding from an empty Career section that somebody held
+                // no post. This is also the footer grain the row had to compose in, beside the
+                // inline grain above.
+                ProvenanceChip(source: .ohPeopleRegister)
             }
             .font(.caption2)
         }
@@ -616,19 +624,32 @@ struct PersonIndexDetailSheet: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(indexEntry.entry.name)
                             .font(.title2.bold())
+                        // **The wave's clearest case, and the reason PV-5 badges per claim rather
+                        // than per screen.** The two lines below are both secondary-styled prose
+                        // about the same person, sitting one above the other — and they come from
+                        // different places. The description is the volumes' own words; the role is
+                        // the Office of the Historian's register. Nothing on screen distinguished
+                        // them, so a reader writing "FRUS describes him as…" had no way to know
+                        // which of the two they were quoting.
                         if let desc = indexEntry.entry.description, !desc.isEmpty {
-                            Text(desc)
-                                .font(.body)
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(desc)
+                                    .font(.body)
+                                    .foregroundStyle(.secondary)
+                                ProvenanceChip(source: .frusText)
+                            }
                         }
                         // The overlay's role text (#736). Shown only when it says something the
                         // volume's own description does not already say — upstream frequently
                         // repeats the editors' wording, and printing it twice looks like a bug.
                         if let role = authorityEntry?.r, !role.isEmpty,
                            role.caseInsensitiveCompare(indexEntry.entry.description ?? "") != .orderedSame {
-                            Text(role)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(role)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                ProvenanceChip(source: .ohPeopleRegister)
+                            }
                         }
                         if effectiveAuthorityId != nil {
                             Label(

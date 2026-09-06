@@ -11753,3 +11753,41 @@ the host. Twelve orphaned `yes` processes from an earlier session, burning ten c
 were the largest single load source and were found only by `ps aux | sort -k3`. Worth a sweep at
 some point: this project has **146 DerivedData directories totalling 34 GB**, one per worktree path
 the spawned sessions used.
+
+## Session 2026-09-05f — PV-5: the row that actually needed a per-claim badge (PR #1219)
+
+**Wave PV is complete.** Six rows: the tier made computable (PV-0), the export sentences (PV-1), the
+chip (PV-2), Source Explorer (PV-3), the capture moments (PV-4), person rollups (PV-5).
+
+**This is the row where the per-claim rule earned itself.** PV-3 expected §1c's
+boundary-inside-a-row and found instead that each Source Explorer section was uniformly one source,
+so a section badge was exact. Here it is not: the identity block puts
+`indexEntry.entry.description` — the volumes' own words — **directly above** `authorityEntry?.r`,
+the Office of the Historian's register. Two lines of secondary-styled prose about one person, from
+different places, with nothing to tell them apart. A reader quoting "FRUS describes him as…" could
+not know which line they had. Each now carries its own chip.
+
+**The career footer is the second grain, and the chip says what the sentence does not.** The footer
+already read "From the Department's Principal Officers and Chiefs of Mission register" — whose
+records these are. It never said that *attaching* this career to this person is a join the app made,
+which is what a reader needs before reading an empty Career section as "held no post". A test pins
+that the chip supplements the sentence rather than replacing it.
+
+**The People list stays unbadged on three measured legs — and checking them refuted one of PV-2's
+own survey premises.** The survey said the row subtitle "splices two tiers". It does not:
+`FRUSASTNode.roleEraSubtitle` is `role ?? description` plus the era, all read from the TEI, so the
+row is **uniformly Tier 1** and a chip there would never vary — §6's own refusal of search results.
+Beyond that the row already carries a name, subtitle, duplicate hint, count capsule and chevron; and
+it is a `Button` with `.accessibilityElement(children: .combine)` *and its own*
+`.accessibilityLabel`, the exact container PV-2 documented as swallowing a chip's announcement. A
+test pins all three legs, so whoever changes one is told the exclusion rested on it.
+
+Five mutations killed, including one that removes the row's container label — proving the exclusion
+test tracks its *reason* and not merely the absence of a chip.
+
+**The wedge cure from the last session went into the harness.** `runtests.sh` now heals a
+preflight/Busy failure with a hand `simctl install` rather than an erase, which is the rung that
+actually worked, is non-destructive, and is safe on a shared machine. It fired twice this session
+and cleared it both times.
+
+No CloudKit change, no index bump, no new bundled resource, no new files.

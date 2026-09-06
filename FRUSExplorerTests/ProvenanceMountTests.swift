@@ -202,6 +202,73 @@ struct ProvenanceMountTests {
         #expect(checked == 3, "the citation sweep ran over \(checked) payloads")
     }
 
+    // MARK: - Person rollups (PV-5)
+
+    /// **The wave's clearest per-claim case**: two secondary-styled lines about one person, one
+    /// above the other, from different sources.
+    ///
+    /// `indexEntry.entry.description` is the volumes' own words; `authorityEntry?.r` is the Office
+    /// of the Historian's register. Nothing distinguished them, so a reader quoting "FRUS describes
+    /// him as…" could not tell which line they had. Unlike PV-3's Source Explorer — where each
+    /// section turned out to be uniformly one source — this really is the §1c shape, and the badge
+    /// has to attach per claim.
+    @Test("The person card badges the volumes' description and the register's role differently")
+    func personIdentityClaimsAreBadgedSeparately() throws {
+        let file = try source("FRUSExplorer/Browser/PersonIndexView.swift")
+        let detail = try body(of: "private var detailList: some View {", in: file)
+        #expect(detail.contains("ProvenanceChip(source: .frusText)"),
+                "the volumes' own description must say it is the volumes'")
+        #expect(detail.contains("ProvenanceChip(source: .ohPeopleRegister)"),
+                "the register's role must not read as the volumes'")
+    }
+
+    /// The career footer is the second grain the chip had to compose in — a `Section` footer
+    /// beside existing prose, against the inline `VStack` above.
+    ///
+    /// The footer already named POCOM. What it did not say is that *attaching this career to this
+    /// person* is a join the app made, which is what a reader needs before concluding from an empty
+    /// Career section that somebody held no post.
+    @Test("The career section badges the join, not only the register")
+    func careerFooterBadgesTheJoin() throws {
+        let file = try source("FRUSExplorer/Browser/PersonIndexView.swift")
+        let career = try body(of: "private func careerSection(_ career: POCOMCareer) -> some View {",
+                              in: file)
+        #expect(career.contains("ProvenanceChip(source: .ohPeopleRegister)"),
+                "the career section does not say the attachment is a join")
+        #expect(career.contains("people.detail.career.source"),
+                "the chip supplements the POCOM sentence — it does not replace it")
+    }
+
+    /// **The People LIST is deliberately unbadged, and the reason is measured.**
+    ///
+    /// Three things rule it out and any one would be enough. Its subtitle is uniformly Tier 1 —
+    /// `FRUSASTNode.roleEraSubtitle` is `role ?? description` plus the era, all read from the TEI,
+    /// so a chip there would never vary (§6's refusal of search results). The row already carries a
+    /// name, a subtitle, a duplicate hint, a count capsule and a chevron. And it is a `Button` with
+    /// `.accessibilityElement(children: .combine)` **and its own** `.accessibilityLabel`, which is
+    /// exactly the container that swallows a chip's own announcement — so a chip there would be
+    /// silent to VoiceOver unless `accessibilityLabelText` folded the sentence in, which is why
+    /// `ProvenanceChip.accessibilityLabel(for:)` is callable on its own.
+    ///
+    /// This test pins the row's shape, so the day one of those three stops being true, whoever
+    /// changes it is told the exclusion rested on it.
+    @Test("The People list row stays unbadged, and the three reasons still hold")
+    func peopleListRowRemainsUnbadged() throws {
+        let file = try source("FRUSExplorer/Browser/PersonIndexView.swift")
+        let row = try body(of: "private struct PersonIndexRow: View {", in: file)
+        #expect(!row.contains("ProvenanceChip("),
+                "a chip in a dense list row would be invariant, crowded, and unannounced")
+        #expect(row.contains(".accessibilityElement(children: .combine)")
+                && row.contains(".accessibilityLabel(accessibilityLabelText)"),
+                "the container-label hazard that rules a chip out here is gone — revisit the exclusion")
+
+        // The subtitle's Tier-1 uniformity is the other leg, and it lives in the TEI type.
+        let ast = try source("FRUSExplorer/TEI/FRUSASTNode.swift")
+        let subtitle = try body(of: "var roleEraSubtitle: String? {", in: ast)
+        #expect(!subtitle.contains("authority") && !subtitle.contains("pocom"),
+                "the row subtitle now mixes sources, so the invariance argument no longer holds")
+    }
+
     // MARK: - The prohibition
 
     /// **The mount names the source; it never looks one up by artifact filename.**
