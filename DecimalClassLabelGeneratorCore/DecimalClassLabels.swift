@@ -44,6 +44,85 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
     public let provenance: String
     /// The schedules, earliest first and non-overlapping.
     public let schedules: [Schedule]
+    /// What this file can and cannot gloss, stated as data (#1204).
+    public let coverage: Coverage
+
+    /// The era contract, machine-readable, so a consumer fails closed instead of composing.
+    ///
+    /// ## Why this exists beside `provenance`, which already says it in words
+    /// `provenance` has carried the sentence *"a key resolves only against the schedule governing
+    /// its own era"* since #828, and it did not stop the failure #1204 reports: the
+    /// commercial-diplomacy run read `schedules[0]`, composed `411.48` for a 1958 document, and
+    /// got *Claims — British Africa* where the editors gloss it **Poland**. A **plausible wrong
+    /// answer, not a miss** — which is the whole hazard, because a reader cannot tell it is wrong.
+    ///
+    /// Prose in a long paragraph is not a contract a consumer can branch on. This is: one named
+    /// object, three fields to test, and `keyOutsideGlossableYears` states the required verdict
+    /// in a word rather than leaving it to be inferred.
+    ///
+    /// ## What it honestly cannot do
+    /// **JSON cannot force a consumer to check anything.** A caller who ignores this block
+    /// composes exactly the wrong gloss it composed before. What changed is that the correct
+    /// behaviour is now cheap, testable and citable — `Docs/Agentic-Analysis-Guide.md` points at
+    /// these fields — rather than buried in a paragraph about scanning. Treat the improvement as
+    /// *discoverability*, not enforcement, and do not let a future reader mistake it for a guard.
+    ///
+    /// ## `notShipped` is the part that is more than a warning
+    /// The generator parses all three manuals and skips two of them on measured floors. Recording
+    /// the omission **with its numbers** turns an absence into a stated fact: a consumer asking
+    /// "is there a 1958 schedule?" gets *no, and here is how short it fell*, where before it got
+    /// silence indistinguishable from a schedule nobody attempted.
+    public struct Coverage: Codable, Sendable, Equatable {
+
+        /// The year the classification was renumbered, so a key's meaning changes across it.
+        public let renumberedAt: Int
+        /// The spans this file can gloss — one per schedule actually shipped.
+        public let glossableYears: [Span]
+        /// The required verdict for a key dated outside every span above. Always `"no-gloss"`.
+        public let keyOutsideGlossableYears: String
+        /// The schedules that were parsed and refused, with the measurement that refused them.
+        public let notShipped: [Omission]
+        /// The rule in one sentence, for a reader who reaches this block before the guide.
+        public let note: String
+
+        /// One era's span.
+        public struct Span: Codable, Sendable, Equatable {
+            /// The schedule's stable id.
+            public let scheduleId: String
+            /// First year it governs.
+            public let startYear: Int
+            /// Last year it governs.
+            public let endYear: Int
+        }
+
+        /// A schedule this build parsed and did not ship.
+        public struct Omission: Codable, Sendable, Equatable {
+            /// The schedule's stable id.
+            public let scheduleId: String
+            /// First year it would have governed.
+            public let startYear: Int
+            /// Last year it would have governed.
+            public let endYear: Int
+            /// The publication it was read from.
+            public let source: String
+            /// Why it was refused, in the generator's own words.
+            public let reason: String
+            /// What this build actually parsed out of it.
+            public let parsed: Counts
+            /// The floors it had to clear.
+            public let floors: Counts
+        }
+
+        /// The three vocabularies a schedule needs, counted.
+        public struct Counts: Codable, Sendable, Equatable {
+            /// Class digits.
+            public let classes: Int
+            /// Subject suffixes, across every class.
+            public let subjects: Int
+            /// Country numbers.
+            public let countries: Int
+        }
+    }
 
     /// One era's classification schedule.
     public struct Schedule: Codable, Sendable, Equatable {
@@ -118,11 +197,12 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
 
     /// Creates the table.
     public init(schemaVersion: Int, generated: String, provenance: String,
-                schedules: [Schedule]) {
+                schedules: [Schedule], coverage: Coverage) {
         self.schemaVersion = schemaVersion
         self.generated = generated
         self.provenance = provenance
         self.schedules = schedules
+        self.coverage = coverage
     }
 }
 

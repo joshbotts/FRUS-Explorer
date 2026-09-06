@@ -1295,6 +1295,11 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
                                     lots converge on
     presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
     curated-lot-resolutions.json, digitized-ranges-index.json
+  decimal-class-labels.json gates itself: read `coverage.glossableYears` and gloss a key ONLY
+    when the DOCUMENT's own date falls inside a listed span. Outside them the file has no gloss
+    (`coverage.keyOutsideGlossableYears` says so) — composing anyway returns a plausible WRONG
+    reading, not a miss, because the classification was renumbered in 1950. `coverage.notShipped`
+    names the eras it could not parse, with the counts that fell short.
 - A CORPUS-SCOPING NEGATIVE IS NOT A RESEARCH NEGATIVE. "FRUS does not print this" is an
   invitation to answer "and here is the series that does". Never publish the first without
   having attempted the second.
@@ -1812,7 +1817,7 @@ The stack, and the question each artifact answers:
 | `lot-claimants-index.json` | when a lot has several correct NARA answers, which — and, run the other way over your resolved set, which NAIDs several lots converge on | 123 divided lots, up to 13 claimants |
 | `presidential-library-catalog.json` | the collections that sit outside every record group | 11 libraries, 3,837 collections, 14,656 series |
 | `volume-sources-index.json` | what the editors say they consulted, per volume | 3,412 rows, 251 volumes |
-| `decimal-class-labels.json` | what `812.6363` means, compositionally. **ONE schedule, 1910–49**, and the artifact's provenance says a key resolves only against its own era: run a post-1950 key through it and you get a plausible WRONG gloss (`411` = *Claims*; `48` = *British Africa* where the editors gloss `411.48` as Poland), not a miss — gloss 1950–63 keys from `volume_sources` (§4.4). Its 1910–49 country table **was** wrong or empty on several codes FRUS files commerce under; the build of 2026-09-05 fixed most of them (#1201). `60f` now glosses *Czechoslovakia* (was *Ruthenia*; 82 documents on `611.60F31`), `47h` *New Zealand* (was *Cook Islands*), and `43` Newfoundland, `54` Switzerland and `11b` Philippines are present where they were absent — 198 → **217** codes, with 19 others recovered and none lost. **`42` Canada and `74` Bulgaria are still absent, deliberately**: their pages in NARA's scan emit names and codes as separate blocks, so the document settles no pairing, and the table stays silent rather than guessing. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 1910–49 schedule; 9 classes, 217 countries, 693 suffixes |
+| `decimal-class-labels.json` | what `812.6363` means, compositionally. **ONE schedule, 1910–49**, and since #1204 the file states that as data: read `coverage.glossableYears` and gloss only when the DOCUMENT's date falls inside a listed span — `coverage.keyOutsideGlossableYears` is `no-gloss`, and `coverage.notShipped` names 1950–1959 and 1960–1963 with the counts that refused them (4 and 8 class headings against a floor of 10; their country and subject tables cleared theirs). Run a post-1950 key through the shipped schedule anyway and you get a plausible WRONG gloss, not a miss: `411.48` composes as *Claims — United States and British Africa* where the editors gloss it as U.S. trade with **Poland**, and `48` is live in two vocabularies at once (country *British Africa*, class-8 subject *Calamities. Disasters*). Gloss 1950–63 keys from `volume_sources` (§4.4). Note the gate is on GLOSSING only — whether a key is well-formed is a separate, deliberately era-blind test, so a post-1950 key composing here is expected. Its 1910–49 country table **was** wrong or empty on several codes FRUS files commerce under; the build of 2026-09-05 fixed most of them (#1201). `60f` now glosses *Czechoslovakia* (was *Ruthenia*; 82 documents on `611.60F31`), `47h` *New Zealand* (was *Cook Islands*), and `43` Newfoundland, `54` Switzerland and `11b` Philippines are present where they were absent — 198 → **217** codes, with 19 others recovered and none lost. **`42` Canada and `74` Bulgaria are still absent, deliberately**: their pages in NARA's scan emit names and codes as separate blocks, so the document settles no pairing, and the table stays silent rather than guessing. Keys are lowercase (`60f`; `document_sources` carries `60F`). The standing rule is unchanged, because a table can still be silent where you need it: before publishing a country name from any bundled table, read one document header filed under the key. | 1910–49 schedule; 9 classes, 217 countries, 693 suffixes |
 | `curated-lot-resolutions.json` / `-library-` | the targets NARA's catalogue cannot resolve | 20 lots, 185 library finding aids |
 | `digitized-ranges-index.json`, `roll-scans-index.json` | is it already digitised — do I need to travel | 624 ranges, 1,238 roll scans |
 | `provenance-flow-index.json` | where the editors sent the reader when they cross-referenced one document from another, as (unit → unit) pairs | 77,792 edges, 4,907 collection pairs; **95.3% are footnotes**, so it describes annotation practice |
@@ -2486,6 +2491,17 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.15 — 2026-09-05: **#1204 closed, so §12's artifact block and §14's
+  `decimal-class-labels.json` row now cite the file's own era contract** rather than warning about
+  its absence. The artifact is schema 2 and carries `coverage` — `glossableYears`,
+  `keyOutsideGlossableYears: "no-gloss"`, and a `notShipped` list naming 1950–1959 and 1960–1963
+  with the measured counts that refused them. The §14 example is corrected while it is being
+  rewritten: `411.48` composes as *Claims — United States and British Africa* (class 4, country
+  11, suffix read as a second country), not as *Claims* plus *British Africa* — v1.11 stated the
+  two halves separately and neither was the composed reading. The §4.4 predicate advice (bound by
+  `document_dates.date_iso` at 1950-01-01) is unaffected: it is about SQL over `document_sources`,
+  not about glossing, and stands verbatim.
 
 - 1.14 — 2026-09-05: **§14's `central-files-index.json` row corrected.** It offered `72 D 192` as
   an example of *an undivided lot [with] one answer*; `72 D 192` is one of the 123 lots NARA

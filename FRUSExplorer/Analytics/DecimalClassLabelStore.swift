@@ -76,7 +76,7 @@ struct DecimalClassLabelTable: Decodable, Sendable {
         ///
         /// Dropping it was live while one schedule shipped and would have become a mislabel with
         /// the second: a key cited by volumes covering 1945–1955 has an upper bound inside
-        /// 1951–59, and an upper-bound-only test would label it from a schedule that governs half
+        /// 1950–59, and an upper-bound-only test would label it from a schedule that governs half
         /// its documents. It has to stay bare.
         ///
         /// - Parameters:

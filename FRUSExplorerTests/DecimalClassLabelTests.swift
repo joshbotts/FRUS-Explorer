@@ -397,4 +397,161 @@ struct DecimalClassLabelTests {
             screen.
             """)
     }
+
+    // MARK: - The era contract as an OUTSIDE consumer sees it (#1204)
+
+    /// The artifact's raw JSON, decoded the way a non-Swift consumer reads it.
+    ///
+    /// Deliberately NOT `DecimalClassLabelTable`: the app's decoder does not carry `coverage`, and
+    /// the whole point of #1204 is what a consumer holding only the file can know. Reading it
+    /// through the app's model would test the app, which was never the defect.
+    private func rawArtifact() throws -> [String: Any] {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Resources/decimal-class-labels.json")
+        let object = try JSONSerialization.jsonObject(with: try Data(contentsOf: url))
+        return try #require(object as? [String: Any])
+    }
+
+    /// A hand composer that reads ONLY the JSON — the failing behaviour #1204 reports.
+    ///
+    /// This is the commercial-diplomacy run's move reproduced exactly: take `schedules[0]`, split
+    /// the key, look the class digit up in `classes` and the rest in `countries`, and join them.
+    /// It applies no era rule, because the artifact used to state none it could apply.
+    private func composeIgnoringEra(_ key: String, _ artifact: [String: Any]) -> String? {
+        guard let schedules = artifact["schedules"] as? [[String: Any]],
+              let first = schedules.first,
+              let classes = first["classes"] as? [String: String],
+              let countries = first["countries"] as? [String: String] else { return nil }
+        let parts = key.split(separator: ".")
+        let stem = parts.first.map(String.init) ?? key
+        guard let digit = stem.first, let className = classes[String(digit)] else { return nil }
+        let rest = stem.dropFirst().lowercased()
+        var country: String?
+        for length in [3, 2] where rest.count >= length && country == nil {
+            country = countries[String(rest.prefix(length))]
+        }
+        guard let country else { return nil }
+        // The suffix read as a SECOND country — the relations idiom the guide demonstrates with
+        // `611.41: U.S.-U.K. relations`. A naive composer applies it wherever the suffix happens
+        // to match a country number, which is how `.48` becomes "British Africa"; the schedule
+        // itself reserves that reading for `relationsClasses` (class 7 alone), but nothing in the
+        // file stops a consumer from taking it, and #1204's report is that one did.
+        if parts.count > 1, let second = countries[parts[1].lowercased()] {
+            return "\(className) — \(country) and \(second)"
+        }
+        return "\(className) — \(country)"
+    }
+
+    /// The same composer, now applying what `coverage` states. This is the fix, exercised.
+    private func composeUnderContract(_ key: String, year: Int,
+                                      _ artifact: [String: Any]) -> String? {
+        guard let coverage = artifact["coverage"] as? [String: Any],
+              let spans = coverage["glossableYears"] as? [[String: Any]] else { return nil }
+        let glossable = spans.contains { span in
+            guard let lo = span["startYear"] as? Int, let hi = span["endYear"] as? Int
+            else { return false }
+            return year >= lo && year <= hi
+        }
+        guard glossable else { return nil }
+        return composeIgnoringEra(key, artifact)
+    }
+
+    /// The defect is real and reachable from the file alone — then the contract stops it.
+    ///
+    /// The FIRST expectation is the one that makes this test mean anything. #1204's own wording
+    /// ("composing 411.48 with a 1958 date returns no gloss") is satisfied by the app **today**,
+    /// with no fix: `gloss(for:coveringYears:)` refuses class 4 outright because it is not
+    /// country-arranged, and `governs` refuses a 1958 span besides. A test written that way passes
+    /// against the unfixed artifact and proves nothing. So this drives a hand composer instead —
+    /// the actual failing consumer — and shows the wrong answer exists before showing it gone.
+    @Test("A consumer composing straight from the file gets a wrong reading; the era contract withholds it")
+    func eraContractStopsTheWrongGloss() throws {
+        let artifact = try rawArtifact()
+
+        // The hazard, demonstrated. If this ever returns nil the rest of the test is vacuous.
+        let ungated = composeIgnoringEra("411.48", artifact)
+        #expect(ungated == "Claims — United States and British Africa", """
+            The wrong reading must still be reachable by ignoring the era, or this test would \
+            pass against an artifact that had simply lost its class or country table. Got: \
+            \(ungated ?? "nil")
+            """)
+
+        // The contract applied: 1958 is outside every glossable span, so there is no gloss.
+        #expect(composeUnderContract("411.48", year: 1958, artifact) == nil,
+                "a 1958 document is outside the shipped schedule — the file must yield no gloss")
+        // And it does not simply refuse everything: inside the span the same key still composes.
+        #expect(composeUnderContract("411.48", year: 1935, artifact)
+                    == "Claims — United States and British Africa",
+                "the contract must gate on the year, not suppress the vocabulary")
+    }
+
+    /// `coverage` must describe the schedules actually shipped, not a remembered list.
+    @Test("The stated glossable years are exactly the shipped schedules' spans")
+    func coverageMatchesTheShippedSchedules() throws {
+        let artifact = try rawArtifact()
+        let coverage = try #require(artifact["coverage"] as? [String: Any])
+        let schedules = try #require(artifact["schedules"] as? [[String: Any]])
+        let spans = try #require(coverage["glossableYears"] as? [[String: Any]])
+
+        #expect(artifact["schemaVersion"] as? Int == 2, "the coverage block is schema 2")
+        #expect(coverage["keyOutsideGlossableYears"] as? String == "no-gloss", """
+            The verdict is stated in a word so a consumer need not infer it. Changing the \
+            spelling silently breaks every consumer branching on it.
+            """)
+        #expect(coverage["renumberedAt"] as? Int == 1950)
+
+        #expect(spans.count == schedules.count, """
+            A schedule that shipped without a matching span would be glossable in fact and \
+            ungovernable by the contract — the exact drift this block exists to prevent.
+            """)
+        for (span, schedule) in zip(spans, schedules) {
+            #expect(span["scheduleId"] as? String == schedule["id"] as? String)
+            #expect(span["startYear"] as? Int == schedule["startYear"] as? Int)
+            #expect(span["endYear"] as? Int == schedule["endYear"] as? Int)
+        }
+    }
+
+    /// The refused schedules are recorded WITH the measurement that refused them.
+    ///
+    /// An omission that met every floor would be a schedule wrongly withheld, so the assertion is
+    /// on the shortfall rather than on the presence of the row: recording the numbers is only
+    /// worth anything if they actually explain the refusal.
+    @Test("Every not-shipped schedule falls short of a stated floor, and the whole span is accounted for")
+    func notShippedIsMeasuredAndComplete() throws {
+        let artifact = try rawArtifact()
+        let coverage = try #require(artifact["coverage"] as? [String: Any])
+        let omissions = try #require(coverage["notShipped"] as? [[String: Any]])
+        #expect(!omissions.isEmpty, """
+            Two schedules are parsed and refused every build. An empty list would mean the \
+            refusal stopped being recorded, which is the silence #1204 is about.
+            """)
+
+        for omission in omissions {
+            let parsed = try #require(omission["parsed"] as? [String: Int])
+            let floors = try #require(omission["floors"] as? [String: Int])
+            let short = ["classes", "subjects", "countries"].filter { axis in
+                (parsed[axis] ?? 0) < (floors[axis] ?? 0)
+            }
+            #expect(!short.isEmpty, """
+                \(omission["scheduleId"] ?? "?") is recorded as not shipped while clearing every \
+                floor — either the floors moved or a good schedule is being withheld.
+                """)
+            #expect((omission["reason"] as? String)?.isEmpty == false)
+        }
+
+        // Nothing between 1910 and 1963 is silently unaccounted for: every year is either
+        // glossable or named as a gap. A year in neither list is the case a consumer cannot
+        // reason about at all.
+        let spans = try #require(coverage["glossableYears"] as? [[String: Any]])
+        func covered(_ year: Int) -> Bool {
+            (spans + omissions).contains { row in
+                guard let lo = row["startYear"] as? Int, let hi = row["endYear"] as? Int
+                else { return false }
+                return year >= lo && year <= hi
+            }
+        }
+        let uncovered = (1910...1963).filter { !covered($0) }
+        #expect(uncovered.isEmpty, "years accounted for by neither a schedule nor a gap: \(uncovered)")
+    }
 }
