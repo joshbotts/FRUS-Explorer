@@ -176,8 +176,19 @@ public enum DecimalClassLabelRunner {
             // A schedule that does not parse COMPLETELY is omitted rather than shipped thin.
             // Half a class table is worse than none: the keys it does not name render as bare
             // numbers indistinguishable from the ones it cannot reach, so a reader cannot tell
-            // an unlabelled class from an unlabellable one. The omission is printed, and the
-            // artifact says which eras it covers, so nothing about it is silent.
+            // an unlabelled class from an unlabellable one. The omission is printed, and
+            // `coverage.notShipped` records it with these counts, so nothing about it is silent.
+            //
+            // #1204 found the floor is sound for a REASON THIS COMMENT DID NOT STATE, and the
+            // difference matters to anyone tempted to lower it. `DecimalClassLabelTable.gloss`
+            // never reads `classes` at all — it needs a governing schedule,
+            // `countryArrangedClasses` and `countries`, and its last line returns a BARE COUNTRY
+            // NAME, shaped exactly like a complete gloss. The country table comes from a
+            // different, born-digital PDF that parses cleanly for all three eras (200 and 215
+            // codes here, both over the floor). So lowering `minClasses` would not yield a table
+            // that stays mostly silent; it would yield one that glosses nearly every post-1950
+            // country-arranged key, most of them down to that bare-country fallback. The
+            // thinness measured is not the thinness that gates display.
             let subjectCount = subjects.values.reduce(0) { $0 + $1.count }
             guard classes.count >= source.minClasses,
                   subjectCount >= source.minSubjects,
@@ -226,6 +237,7 @@ public enum DecimalClassLabelRunner {
         // fact about the classification, not about this build.
         let coverage = DecimalClassLabels.Coverage(
             renumberedAt: Self.renumberedAt,
+            decimalFileOpensIn: Self.decimalFileOpensIn,
             glossableYears: schedules.map {
                 .init(scheduleId: $0.id, startYear: $0.startYear, endYear: $0.endYear)
             },
@@ -243,7 +255,11 @@ public enum DecimalClassLabelRunner {
                 + "listed in `notShipped`, gloss from `volume_sources` instead. This governs "
                 + "GLOSSING only: whether a key is well-formed is a separate, deliberately "
                 + "era-blind test, so a post-1950 key composing against these vocabularies is "
-                + "expected and is not a licence to gloss it.")
+                + "expected and is not a licence to gloss it. If you are gating a whole VOLUME's "
+                + "coverage span rather than a document's date, clamp the span's lower bound to "
+                + "`decimalFileOpensIn` before testing containment — a volume covering 1861–1947 "
+                + "holds no pre-1910 decimal keys to mislabel, and literal containment would "
+                + "silence it.")
 
         let table = DecimalClassLabels(
             schemaVersion: 2,
@@ -278,6 +294,10 @@ public enum DecimalClassLabelRunner {
 
     /// The year the classification was renumbered, after which the same digits mean other things.
     static let renumberedAt = 1950
+
+    /// The year the central decimal file opens. Published so `glossableYears` is reproducible
+    /// against a span-gating consumer as well as a document-gating one — see `Coverage`.
+    static let decimalFileOpensIn = 1910
 
     /// The classes a schedule arranges by country.
     ///

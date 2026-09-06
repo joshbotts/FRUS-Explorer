@@ -501,6 +501,19 @@ struct DecimalClassLabelTests {
             """)
         #expect(coverage["renumberedAt"] as? Int == 1950)
 
+        // The clamp, published so a SPAN-gating consumer reproduces the app instead of
+        // undercounting it. `gloss(for:coveringYears:)` takes `floor` as the earliest schedule's
+        // start and tests `max(span.lowerBound, floor) >= startYear`, so the app DOES gloss a
+        // volume covering 1861–1947; a consumer applying literal containment to `glossableYears`
+        // refuses that volume, and the two then disagree about the era #828 exists for.
+        let opensIn = try #require(coverage["decimalFileOpensIn"] as? Int)
+        let earliest = try #require(schedules.compactMap { $0["startYear"] as? Int }.min())
+        #expect(opensIn == earliest, """
+            The published clamp must BE the app's floor, which is the earliest schedule's start \
+            year — a constant that drifted from it would send a consumer somewhere the app does \
+            not go.
+            """)
+
         #expect(spans.count == schedules.count, """
             A schedule that shipped without a matching span would be glossable in fact and \
             ungovernable by the contract — the exact drift this block exists to prevent.

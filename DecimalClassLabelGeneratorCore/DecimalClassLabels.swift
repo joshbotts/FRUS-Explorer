@@ -76,6 +76,16 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
 
         /// The year the classification was renumbered, so a key's meaning changes across it.
         public let renumberedAt: Int
+        /// The year the central decimal file opens — no decimal key predates it.
+        ///
+        /// Publishing this is what makes `glossableYears` reproducible against the app. The app
+        /// gates on a VOLUME's coverage span, not a document date, and clamps that span's lower
+        /// bound here before testing containment: a volume covering 1861–1947 carries no pre-1910
+        /// decimal keys to mislabel, so refusing it outright would silence the very era this file
+        /// exists to label. A consumer applying literal containment to a span instead drops those
+        /// volumes; a consumer gating a DOCUMENT's own date needs no clamp, because a document
+        /// dated before this year has no decimal key in the first place.
+        public let decimalFileOpensIn: Int
         /// The spans this file can gloss — one per schedule actually shipped.
         public let glossableYears: [Span]
         /// The required verdict for a key dated outside every span above. Always `"no-gloss"`.
