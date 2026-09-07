@@ -1,0 +1,257 @@
+# queries.log — every command that touched a surface, in order.
+# Surfaces: DB = /Users/jbotts/frus-analysis/frus-copy.db (read-only) ; JSON = /Applications/FRUS Explorer.app/Contents/Resources/
+# Scripts written by me and kept on disk in this directory are named at the point they were run; their SQL predicates are pasted below each.
+
+[1] mkdir -p "<rundir>" && sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+
+[2] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+[2b] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache"
+[2c] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents"
+
+[3] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+SELECT 'POSITIVE_ctrl_docs', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';
+SELECT 'POSITIVE_ctrl_vols', COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';
+SELECT 'NEGATIVE_ctrl', COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';
+"
+
+[4] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('neutral','neutralis','neutrality','contraband','blockad','belliger','maritim','prize','visit','search','submarin','embargo','neutraliz') ORDER BY term;"
+
+[5] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+SELECT volume_id FROM document_cache GROUP BY volume_id
+EXCEPT
+SELECT DISTINCT volume_id FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';"
+
+[6] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT DISTINCT volume_id FROM document_cache WHERE volume_id LIKE '%Supp%' OR volume_id LIKE 'frus191%' OR volume_id LIKE 'frus190%' ORDER BY volume_id;"
+
+[7] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema volume_structures"
+[7b] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT * FROM volume_structures LIMIT 3;"
+[7c] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_dates"
+[7d] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_sources"
+[7e] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema external_citations"
+
+[8] python3 -u headings.py > headings.txt        # script ON DISK: headings.py
+    SQL it ran:  SELECT volume_id, structure_json FROM volume_structures
+    (then a Python regex walk over section titles; regex =
+     r"neutral|maritim|blockad|contraband|belliger|submarin|freedom of the seas|prize|visit and search|shipping|merchant vessel|armed merchant|war zone|sea", re.I)
+
+[9] awk -F'\t' '$4>0' headings.txt | grep -iE "neutral|blockad|contraband|belliger|maritim|freedom of the seas|visit and search|war zone|submarin" | sort -t$'\t' -k4,4nr | head -45      [no surface touched; reads headings.txt]
+
+[10] awk -F'\t' '$4>0' headings.txt | grep -iE "neutral (rights|commerce|trade|vessel|ship|flag)|rights of neutral|neutral rights|maritime (rights|law|neutrality|war)|freedom of the seas|visit and search|right of search|contraband|blockade|prize court|declaration of london|declaration of paris|armed merchant|war zone|neutral commerce" | cut -f1,4,5 | sed 's/\(.\{220\}\).*/\1…/' | head -60      [no surface touched]
+
+[11] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) FROM document_cache WHERE volume_id LIKE '%Ed2%' GROUP BY volume_id;"
+[11b] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+SELECT substr(dd.date_iso,1,3)||'0s' AS decade, COUNT(*)
+FROM document_cache dc JOIN document_dates dd ON dd.volume_id=dc.volume_id AND dd.document_id=dc.document_id
+WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso IS NOT NULL
+  AND dc.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+GROUP BY decade ORDER BY decade;"
+
+[12] python3 -u counts.py | tee counts_raw.txt      # script ON DISK: counts.py
+     SQL it ran, once per phrase in a 32-phrase list (list is in counts.py and echoed in counts_raw.txt):
+       SELECT COUNT(*), COUNT(DISTINCT f.volume_id)
+       FROM frus_documents f
+       JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+       WHERE f.frus_documents MATCH ? AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+         AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+
+[13] python3 -u decades.py | tee decades.txt        # script ON DISK: decades.py
+     denominator SQL:
+       SELECT substr(dd.date_iso,1,3)||'0s', COUNT(*)
+       FROM document_cache dc JOIN document_dates dd USING(volume_id,document_id)
+       WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso IS NOT NULL
+         AND dc.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1
+     per-family SQL (10 families, MATCH strings listed in decades.py / decades.txt):
+       SELECT substr(dd.date_iso,1,3)||'0s' d, COUNT(*)
+       FROM frus_documents f
+       JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+       JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id
+       WHERE f.frus_documents MATCH ? AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+         AND dd.date_iso IS NOT NULL AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+       GROUP BY d ORDER BY d
+
+[14] python3 -u topvols.py | tee topvols.txt        # script ON DISK: topvols.py
+     SELECT f.volume_id, COUNT(*) n
+     FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+     WHERE f.frus_documents MATCH ? AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+       AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+     GROUP BY f.volume_id ORDER BY n DESC
+     (? = the 19-phrase UNION family, verbatim in topvols.py and echoed in topvols.txt)
+     SELECT volume_id, COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY volume_id
+
+[15] python3 -u shares.py 2>&1 | tee shares.txt     # script ON DISK: shares.py  -> writes share_misses.txt
+     hit-list SQL, once per family:
+       SELECT f.volume_id, f.document_id FROM frus_documents f
+       JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+       WHERE f.frus_documents MATCH ? AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+         AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+       ORDER BY f.volume_id, f.document_id
+     text SQL, once per tested document:
+       SELECT header,COALESCE(dateline,''),COALESCE(source_note,''),body_text FROM document_cache WHERE volume_id=? AND document_id=?
+     STRICT regex = \b + words joined by single spaces + \b, re.IGNORECASE
+     TOLERANT regex = \b + per-word inflection alternations (table TOL in shares.py) joined by [ \-,().]+ + \b, re.IGNORECASE
+     Text was header+dateline+source_note+body_text joined by spaces and whitespace-collapsed with re.sub(r"\s+"," ",...).
+
+[16] cat share_misses.txt
+[16b] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id||'/'||document_id, substr(replace(replace(body_text,char(10),' '),char(13),' '),1,200) FROM document_cache WHERE (volume_id,document_id) IN (VALUES ('frus1918Supp01v02','d431'),('frus1918Supp01v01','d208'));"
+     [this pair was a mis-typed probe: those two ids are not the tolerant misses; superseded by 17]
+
+[17] python3 -u - <<'PY' ... PY   (inline, body ELIDED for length; it ran, per (volume_id,document_id) in
+     [("frus1915Supp","d831"),("frus1939v01","d824"),("frus1886","d173"),("frus1887","d332")]:
+       SELECT header||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text FROM document_cache WHERE volume_id=? AND document_id=?
+     then re.finditer of, respectively,
+       r"neutral\w*\W+right\w*|right\w*\W+neutral\w*", r"neutral\w*\W+trad\w*|trad\w*\W+neutral\w*",
+       r"visit\w*\W+\w{0,6}\W*search\w*" (twice), all re.I, printing +/-60 chars of context)
+
+[18] python3 -u - <<'PY' ... PY | tee maritime_neutrality_referent.txt   (inline, body ELIDED; output file on disk)
+       SELECT f.volume_id,f.document_id FROM frus_documents f
+       JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+       WHERE f.frus_documents MATCH '"maritime neutrality"' AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+         AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY 1,2
+       then per hit: SELECT header, header||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text FROM document_cache WHERE volume_id=? AND document_id=?
+       and re.search(r"maritim\w*\W+neutral\w*", ..., re.I) printing +/-90 chars.
+
+[19] python3 -u - <<'PY' ... PY | tee falsefriend_and_scope.txt   (inline, body ELIDED; output file on disk; writes scope_volumes.txt)
+       SELECT volume_id,COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1
+       SELECT f.volume_id,COUNT(*) FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+         WHERE f.frus_documents MATCH ? AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND f.volume_id NOT IN (...Ed2...) GROUP BY 1
+       SELECT COUNT(*) FROM frus_documents f JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+         WHERE f.frus_documents MATCH ? AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND f.volume_id NOT IN (...Ed2...) [AND f.volume_id IN (<18 scope volumes>)]
+       scope rule: hits >= 15 AND hits/volume_non_apparatus_docs >= 0.05
+
+[20] SC=$(cat scope_volumes.txt | ...) && sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+SELECT 'CAME_FROM rows in scope', COUNT(*) FROM document_sources WHERE volume_id IN ($SC);
+SELECT citation_era, COUNT(*) FROM document_sources WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 2 DESC;
+SELECT COALESCE(repository,'(null)'), COUNT(*) FROM document_sources WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 2 DESC LIMIT 12;
+SELECT COALESCE(series_name,'(null)'), COUNT(*) FROM document_sources WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 2 DESC LIMIT 12;"
+   ($SC = the 18 quoted scope volume ids, listed in scope_volumes.txt and in the memo)
+
+[21] sqlite3 -readonly ... "SELECT volume_id, COUNT(*), SUM(decimal_class IS NOT NULL) FROM document_sources WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 1;"
+[21b] sqlite3 -readonly ... "SELECT decimal_class, COUNT(*) n, COUNT(DISTINCT volume_id) v FROM document_sources WHERE volume_id IN ($SC) AND decimal_class IS NOT NULL GROUP BY 1 ORDER BY n DESC LIMIT 25;"
+
+[22] ls "/Applications/FRUS Explorer.app/Contents/Resources" | head -40
+[22b] python3 -u -c "import json,sys
+for f in ['decimal-class-labels.json','collection-usage-index.json','external-citation-index.json','series-facts-index.json','central-files-index.json']:
+    d=json.load(open('<Resources>/'+f)); print(f,'->',list(d.keys())[:14])"
+
+[23] python3 -u -c "..."   (JSON: decimal-class-labels.json; printed type/len of d['schedules'], keys of schedules[0], d.get('coverage'))
+
+[24] python3 -u - <<'PY' ... PY | tee decimal_gloss.txt   (JSON decimal-class-labels.json + DB; body ELIDED; output on disk)
+       SELECT ds.decimal_class, COUNT(*) n, COUNT(DISTINCT ds.volume_id) v, MIN(dd.date_iso), MAX(dd.date_iso)
+       FROM document_sources ds LEFT JOIN document_dates dd USING(volume_id,document_id)
+       WHERE ds.volume_id IN (<18 scope volumes>) AND ds.decimal_class IS NOT NULL
+       GROUP BY 1 ORDER BY n DESC LIMIT 20
+       [FIRST ATTEMPT — composed the suffix against a FLAT subjects table; superseded by 25]
+
+[25] python3 -u - <<'PY' ... PY | tee decimal_gloss2.txt   (JSON only; body ELIDED; output on disk)
+       re-composed the same 13 class keys using schedules[0].relationsClasses / countryArrangedClasses
+
+[26] python3 -u -c "..."   (JSON decimal-class-labels.json; printed countries['72'/'63'/'41'], len(subjects['6']), len(subjects['8']), lookups of '.119','.11','.1','.115','.62','.711','.731','.857','.85','.48')
+
+[27] SC=... && sqlite3 -readonly ... "
+SELECT 'POINTED_AT rows in scope', COUNT(*), COUNT(DISTINCT volume_id||'/'||document_id) FROM external_citations WHERE volume_id IN ($SC);
+SELECT volume_id, COUNT(*) FROM external_citations WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 2 DESC;
+SELECT anchor, COUNT(*) FROM external_citations WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 2 DESC LIMIT 10;
+SELECT COALESCE(repository,'-')||' :: '||COALESCE(collection,'-'), COUNT(*) FROM external_citations WHERE volume_id IN ($SC) GROUP BY 1 ORDER BY 2 DESC LIMIT 10;
+SELECT decimal_class, COUNT(*) FROM external_citations WHERE volume_id IN ($SC) AND decimal_class IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 12;"
+
+[28] python3 -u - <<'PY' ... PY | tee collection_usage_scope.txt   (JSON collection-usage-index.json; body ELIDED; printed schemaVersion/generated/coverage and block types)
+[29] python3 -u - <<'PY' ... PY | tee collection_usage_scope2.txt  (JSON; body ELIDED; printed row shapes of collections[0], classes[0], categories, volumeCategories[0], collectionIds[:3], classKeys[:3], volumeNoteCounts[:5])
+[30] python3 -u - <<'PY' ... PY | tee collection_usage_ranked.txt  (JSON; body ELIDED; FIRST READING treated row["n"] as volume indices — WRONG, superseded by 31)
+[31] python3 -u - <<'PY' ... PY | tee collection_usage_ranked2.txt (JSON; body ELIDED; CORRECT READING k=key index, v=volume index, n=document count; output on disk)
+
+[32] python3 -u - <<'PY' ... PY | tee central_files_probe.txt      (JSON central-files-index.json; body ELIDED; printed keys, numericalFile, countrySeries[0], lotFiles[0])
+[33] python3 -u - <<'PY' ... PY | tee countryseries_probe.txt      (JSON central-files-index.json; body ELIDED; listed the 12 countrySeries categories and searched diplomaticDespatches/Instructions rolls for a Great Britain file unit spanning 1863)
+[34] python3 -u - <<'PY' ... PY | tee series_facts_probe.txt       (JSON series-facts-index.json; body ELIDED; looked up byNaId for 654171, 177380725, 177380755, 2555709, 302021)
+
+[35] sqlite3 -readonly ... ".schema document_subjects"
+[35b] sqlite3 -readonly ... "SELECT * FROM document_subjects WHERE name LIKE '%neutral%' OR ... ;"   [ERRORED: no such column: name]
+[36] sqlite3 -readonly ... ".schema document_subject_refs" ; ".schema document_subject_volumes"
+[36b] python3 -u -c "..."   (JSON document-subject-index.json; printed keys, type/len of d.get('subjects') -> None, then traceback)
+[37] python3 -u - <<'PY' ... PY | tee subjects_probe.txt   (JSON + DB; body ELIDED; FIRST ATTEMPT keyed vocab entries on 'name' -> KeyError; no counts produced)
+[38] python3 -u - <<'PY' ... PY | tee subjects_probe.txt   (JSON + DB; body ELIDED; output on disk)
+       vocab regex r"neutral|blockad|maritim|contraband|submarin|shipping|naval|freedom of|sea" over document-subject-index.json['vocab'][i]['n']
+       SELECT COUNT(*),COUNT(DISTINCT r.volume_id) FROM document_subject_refs r
+         JOIN document_cache dc ON dc.volume_id=r.volume_id AND dc.document_id=r.document_id
+         WHERE r.subject=? AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND r.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+       SELECT COUNT(*) FROM document_subject_refs r JOIN document_cache dc ... WHERE r.subject=? AND ... AND r.volume_id IN (<18 scope volumes>)
+
+[39] python3 -u - <<'PY' ... PY | tee tag_precision.txt   (DB; body ELIDED; output on disk)
+       SELECT r.volume_id,r.document_id FROM document_subject_refs r
+         JOIN document_cache dc ON dc.volume_id=r.volume_id AND dc.document_id=r.document_id
+         WHERE r.subject=? AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND r.volume_id IN (<18 scope volumes>) ORDER BY 1,2
+       SELECT header||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text FROM document_cache WHERE volume_id=? AND document_id=?
+       Python re, IGNORECASE: r"anti[- ]?submarine" (subject 348), r"neutral" (374), r"contraband" (358), r"blockad" (132)
+
+[40] sqlite3 -readonly ... "
+SELECT dc.volume_id||'/'||dc.document_id, length(dc.body_text), substr(replace(dc.header,char(10),' '),1,90), dd.date_iso
+FROM document_cache dc LEFT JOIN document_dates dd USING(volume_id,document_id)
+WHERE dc.volume_id='frus1915Supp' AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+  AND dd.date_iso='1915-10-21' AND dc.body_text LIKE '%neutral%' ORDER BY dc.document_id;"
+[40b] sqlite3 -readonly ... "
+SELECT dc.volume_id||'/'||dc.document_id, length(dc.body_text), substr(replace(dc.header,char(10),' '),1,80), dd.date_iso
+FROM document_cache dc LEFT JOIN document_dates dd USING(volume_id,document_id)
+WHERE dc.volume_id='frus1939v01' AND dc.is_front_matter=0 AND dc.is_editorial_note=0
+  AND dc.document_id IN ('d1','d2','d3','d4','d5') ORDER BY CAST(substr(dc.document_id,2) AS INT);"
+
+[41] mkdir -p read && python3 -u - <<'PY' ... PY | tee reading_pass.txt   (DB; body ELIDED; output + read/*.txt on disk)
+       SELECT f.volume_id,f.document_id,length(dc.body_text),substr(replace(dc.header,char(10),' '),1,80),dd.date_iso
+         FROM frus_documents f JOIN document_cache dc ... LEFT JOIN document_dates dd ...
+         WHERE f.frus_documents MATCH '"reserve" AND "rights" AND "neutral"' AND f.volume_id='frus1939v01'
+           AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso>='1939-09-01' ORDER BY dd.date_iso LIMIT 5
+       SELECT ... WHERE f.frus_documents MATCH '"rights of neutrals" OR "neutral rights"' AND f.volume_id IN ('frus1861','frus1862','frus1863p1')
+           AND dc.is_front_matter=0 AND dc.is_editorial_note=0 ORDER BY dd.date_iso LIMIT 5
+       SELECT header,COALESCE(dateline,''),COALESCE(source_note,''),body_text FROM document_cache WHERE volume_id=? AND document_id=?   [x5, written to read/]
+       SELECT length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?                                                  [x5, the capture check]
+
+[42] tr '\n' ' ' < read/frus1915Supp_d837.txt | grep -oE ".{0,160}rights of neutrals.{0,160}" | head -2 ; ... ; head -c 900 read/frus1928v01_d367.txt ; ...   [grep -oE failed with "exceeds complexity limits" on two of three; the head -c 900 succeeded]
+
+[43] python3 -u - <<'PY' ... PY | tee quotes.txt   (reads read/*.txt on disk; body ELIDED; output on disk)
+       whitespace-collapse then re.finditer of r"rights of neutrals" (frus1915Supp_d837), r"declaration of paris|neutral" (frus1861_d4),
+       r"arm" (frus1939v01_d737), r"maritime neutrality" (frus1872p2v3_d40), all re.I, +/-180 chars
+
+[44] python3 -u - <<'PY' ... PY | tee digitized_probe.txt   (JSON digitized-ranges-index.json; body ELIDED)
+[44b] python3 -u -c "..."   (reads read/frus1915Supp_d837.txt; whitespace-collapse, print first 520 chars, count re.findall of 'neutral','contraband','blockad','Declaration of London' re.I)
+
+[45] python3 -u - <<'PY' ... PY | tee digitized_763.txt    (JSON digitized-ranges-index.json; body ELIDED; output on disk)
+[46] python3 -u - <<'PY' ... PY | tee digitized_serial_lookup.txt   (JSON digitized-ranges-index.json; body ELIDED; output on disk)
+
+[47] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+SELECT dd.date_iso, f.volume_id||'/'||f.document_id, substr(replace(dc.header,char(10),' '),1,75)
+FROM frus_documents f
+JOIN document_cache dc ON dc.volume_id=f.volume_id AND dc.document_id=f.document_id
+JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id
+WHERE f.frus_documents MATCH '\"neutral rights\" OR \"rights of neutrals\" OR \"contraband of war\" OR \"free ships\" OR \"neutral vessels\" OR \"visit and search\" OR \"right of search\" OR \"declaration of paris\"'
+  AND dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso < '1861-01-01'
+ORDER BY dd.date_iso;"
+[47b] sqlite3 -readonly ... "SELECT COUNT(*) FROM document_cache dc JOIN document_dates dd USING(volume_id,document_id) WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso < '1861-01-01';"
+
+ELIDED: the following were shortened above and are NOT reproduced verbatim here —
+  (a) the bodies of every `python3 -u - <<'PY' ... PY` heredoc at [17], [18], [19], [24], [25], [28], [29], [30], [31], [32], [33], [34], [37], [38], [39], [41], [43], [44], [45], [46], and the two `python3 -u -c "..."` one-liners at [23], [26], [36b], [44b]. Their SQL predicates and regexes are pasted above; the scripts saved to disk (headings.py, counts.py, decades.py, topvols.py, shares.py) are complete files in this directory, the inline heredocs are not saved and exist only in the session transcript.
+  (b) the 32-phrase list in [12] and the 19-phrase UNION MATCH string in [14]/[19] — abbreviated as "the 32-phrase list"/"the 19-phrase UNION family"; both are printed in full in counts_raw.txt (column 1) and topvols.py respectively.
+  (c) the 18 quoted scope volume ids, written above as $SC / "<18 scope volumes>"; the full list is in scope_volumes.txt and is printed in the memo.
+  (d) the `sed`/`tr` pipeline that built $SC from scope_volumes.txt, written as "cat scope_volumes.txt | ...".
+  (e) the 10 family MATCH strings in [13] — named but not pasted; they are in decades.py and echoed as section headers in decades.txt.
+  (f) `head`/`tail`/`wc`/`cut`/`sed` truncations of output at [8], [9], [10], [22], [42]; the untruncated outputs of [8] and [12]-[46] are on disk in this directory.
+
+[48] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "
+SELECT 'dated_nonapparatus_total', COUNT(*) FROM document_cache dc JOIN document_dates dd USING(volume_id,document_id)
+ WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND dc.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT 'nonapparatus_total', COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');
+SELECT 'undated_nonapparatus', COUNT(*) FROM document_cache dc LEFT JOIN document_dates dd USING(volume_id,document_id)
+ WHERE dc.is_front_matter=0 AND dc.is_editorial_note=0 AND dd.date_iso IS NULL AND dc.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+
+[49] ls -la /Users/jbotts/Development/frus/volumes/ | head -3 ; for v in $(cat scope_volumes.txt); do ls -l "/Users/jbotts/Development/frus/volumes/$v.xml" | awk '{print $9, $5}'; done | sed 's#...##'
+
+[50] python3 -u tei_variants.py 0 9      # script ON DISK: tei_variants.py  (TEI surface: /Users/jbotts/Development/frus/volumes/<vol>.xml)
+[51] python3 -u tei_variants.py 9 18
+     Counting surface: tag-stripped (re.sub(r"<[^>]+>"," ")) + whitespace-collapsed; OCCURRENCE counts, not document counts.
+     Footnote channel: the concatenation of re.findall(r"<note\b.*?</note>", raw, re.S), tag-stripped the same way.
+     21 variant regexes + 2 controls; the full table is in tei_variants.py and in tei_variants_0_9.tsv / tei_variants_9_18.tsv.
+[52] python3 -u -c "..."  | tee tei_variants_merged.txt   (merges the two TSVs; body ELIDED, output on disk)
+
+ELIDED (addendum): the 21-entry VAR regex table in [50]/[51] is named but not pasted here; it is the dict VAR in tei_variants.py in this directory. The `python3 -u -c` body at [52] is elided. The `sed` in [49] is abbreviated.
+
+[53] python3 - <<'PY' ... PY   (edits report.md only; touches no research surface. Body ELIDED: two literal string replacements
+     — "seventeen-eighteenths pre-1940" -> "every volume is dated 1939 or earlier", and a rewrite of the §5 footnote-markup
+     caveat to name the six Civil War volumes and the two 1872 volumes' note-text sizes, both figures taken from the
+     stdout of [50]/[51].)

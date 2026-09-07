@@ -61,7 +61,24 @@ cost it *silently*.
 Python here is **3.9**: no backslash inside an f-string expression, and `csv` needs
 `csv.field_size_limit(10**9)` for this corpus's longest table-of-contents heads.
 
+## 1b. Do not ask an agent for a guarantee it cannot give
+
+**[VERIFIED, C-0c, 2026-09-06.]** The runner prompt in that experiment asked, in both arms, for
+`queries.log` holding *"EVERY command you ran that touched a surface, one per line, verbatim, in
+order."* **All four block-arm agents restated that sentence as their log header — and all four then
+elided command bodies**, because a hundred-character `python3 -c` body does not fit one line. The
+rubric item scoring the guide's don't-overclaim rule came back **0 of 4**, in both arms.
+
+The instruction created the false claim it was then scored against. Two consequences:
+
+- **Ask for the exception, not the guarantee.** Require an `ELIDED:` line naming what was
+  shortened, not an assurance that nothing was. The first is checkable and survives a long command;
+  the second is a sentence anyone can type.
+- **A measurement that scores an agent for a claim the harness demanded is scoring the harness.**
+  When an item fails in *every* cell of *both* arms, suspect the prompt before the guidance.
+
 ## 2. The per-call watchdog: 180 seconds of silence and the call is killed
+
 
 **[FROM THE RUN]** A tool call that produces no output for 180 s is killed, and everything not yet
 on disk is lost. A single call that scans all 552 TEI volumes, or reads all of `body_text`, dies

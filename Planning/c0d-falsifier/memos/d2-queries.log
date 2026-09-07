@@ -1,0 +1,174 @@
+# queries.log — corpus scoping pass, "How did the United States negotiate and administer international postal conventions?"
+# Surfaces touched: SQLite index (S), bundled JSON (J), local scratch scripts (P). TEI XML: NOT touched (see report).
+# DB always opened read-only as: sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db
+
+# --- 1. COVERAGE (S)
+mkdir -p "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0d/runs/d2" && sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+
+# --- 2. SCHEMA (S)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents"
+
+# --- 3. CONTROLS (S) — positive + negative in the same pass
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"Department of State\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+# (this next one FAILED with "database is locked (5)" — fts5 internal shadow table; abandoned, `terms` used instead)
+sqlite3 -readonly $D "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('postal','postag','post','mail','mails','univers','union','parcel','postmast','telegraph','cabl') ORDER BY cnt DESC;"
+
+# --- 4. GLOSSARY (S)
+sqlite3 -readonly $D ".schema terms"
+sqlite3 -readonly $D "SELECT * FROM terms LIMIT 5;"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM terms;"
+sqlite3 -readonly $D "SELECT volume_id, term, replace(definition,char(10),' ') FROM terms WHERE term LIKE '%UPU%' OR definition LIKE '%postal%' OR definition LIKE '%Post Office%' LIMIT 40;"
+
+# --- 5. PHRASE FAMILY COUNTS (S) — bash loop over 15 phrases $P, each run as:
+for P in "postal convention" "postal union" "Universal Postal Union" "General Postal Union" "Postmaster General" "Post Office Department" "parcel post" "postal service" "postal treaty" "postal agreement" "postal congress" "postal arrangement" "money order" "postal rates" "postal card"; do sqlite3 -readonly $D "SELECT COUNT(*)||'|'||COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"$P\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"; done
+
+# --- 6. NEGOTIATION-CORE FAMILY: volumes + total (S)
+sqlite3 -readonly $D "SELECT f.volume_id, COUNT(*) AS n FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"postal convention\" OR \"postal union\" OR \"postal treaty\" OR \"postal congress\" OR \"postal arrangement\" OR \"postal agreement\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY f.volume_id ORDER BY n DESC LIMIT 30;"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"postal convention\" OR \"postal union\" OR \"postal treaty\" OR \"postal congress\" OR \"postal arrangement\" OR \"postal agreement\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+
+# --- 7. DECADE SHAPE, raw + per-1,000 of that decade's dated non-apparatus documents (S)
+sqlite3 -readonly $D "WITH hits AS (SELECT f.volume_id, f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"postal convention\" OR \"postal union\" OR \"postal treaty\" OR \"postal congress\" OR \"postal arrangement\" OR \"postal agreement\"' AND d.is_front_matter=0 AND d.is_editorial_note=0), den AS (SELECT substr(dd.date_iso,1,3)||'0' AS dec, COUNT(*) AS m FROM document_dates dd JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL GROUP BY dec), num AS (SELECT substr(dd.date_iso,1,3)||'0' AS dec, COUNT(*) AS n FROM hits h JOIN document_dates dd ON dd.volume_id=h.volume_id AND dd.document_id=h.document_id WHERE dd.date_iso IS NOT NULL GROUP BY dec) SELECT den.dec, COALESCE(num.n,0) AS hits, den.m AS dated_docs, ROUND(1000.0*COALESCE(num.n,0)/den.m,3) AS per_1000 FROM den LEFT JOIN num ON num.dec=den.dec ORDER BY den.dec;"
+sqlite3 -readonly $D ".schema document_dates"
+
+# --- 8. EDITORS' CHAPTER HEADINGS (S via P) — script kept at $SD/headings.py, output at $SD/headings.txt
+sqlite3 -readonly $D ".schema volume_structures"
+sqlite3 -readonly $D "SELECT * FROM volume_structures LIMIT 3;"
+python3 -u "$SD/headings.py" > "$SD/headings.txt" 2> "$SD/headings.err"
+# headings.py runs exactly one SQL statement: SELECT volume_id, structure_json FROM volume_structures
+grep -Ei 'postal|parcel|mail' "$SD/headings.txt" | grep -Evi '\bpost,|, post\b|steamship|steamer|mail boat' | sed -E 's/^(frus[^|]*)\|[^|]*\|/\1 :: /'
+
+# --- 9. HIT LISTS WITH HEADERS + DATES (S)
+sqlite3 -readonly -separator ' :: ' $D "SELECT f.volume_id, f.document_id, substr(replace(replace(d.header,char(10),' '),'  ',' '),1,110), substr(COALESCE(dd.date_iso,'?'),1,10) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '\"postal convention\" OR \"postal union\" OR \"postal treaty\" OR \"postal congress\" OR \"postal arrangement\" OR \"postal agreement\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND COALESCE(dd.date_iso,'1900') < '1900' ORDER BY dd.date_iso;"
+sqlite3 -readonly -separator ' :: ' $D "SELECT f.volume_id, f.document_id, substr(replace(d.header,char(10),' '),1,95), substr(COALESCE(dd.date_iso,'?'),1,10) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '\"postal convention\" OR \"postal union\" OR \"postal treaty\" OR \"postal congress\" OR \"postal arrangement\" OR \"postal agreement\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND COALESCE(dd.date_iso,'1900') >= '1900' ORDER BY dd.date_iso;"
+
+# --- 10. LITERAL-SHARE TEST, pass 1 (S via P) — script $SD/share.py, results $SD/share-results.json
+python3 -u "$SD/share.py" "$SD/share-results.json"
+# share.py runs, per phrase $p, exactly: SELECT f.volume_id,f.document_id, COALESCE(d.header,'')||' '||COALESCE(d.dateline,'')||' '||COALESCE(d.source_note,'')||' '||d.body_text FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY f.volume_id, f.document_id   [param = '"<phrase>"']
+
+# --- 11. READING THE TOLERANT MISSES (S via P) — script $SD/misses.py
+python3 -u "$SD/misses.py" 2>&1 | grep -Ei 'postal|Post Office' | head -25
+# misses.py runs, per (v,d) pair: SELECT COALESCE(header,'')||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text FROM document_cache WHERE volume_id=? AND document_id=?
+
+# --- 12. LITERAL-SHARE TEST pass 2 (fixed -y/-ies inflection) + REFERENT TESTS (S via P) — script $SD/share2.py
+python3 -u "$SD/share2.py" "$SD/share2-results.json"
+# share2.py runs the same SELECT as share.py for 4 phrases, plus two referent SELECTs:
+#   SELECT f.volume_id,f.document_id, COALESCE(d.header,'')||' '||d.body_text FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '"money order"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY f.volume_id,f.document_id
+#   ... same with MATCH '"Postmaster General"'
+
+# --- 13. FALSE-FRIEND TEST (S)
+sqlite3 -readonly $D "SELECT (SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'convention' AND d.is_front_matter=0 AND d.is_editorial_note=0) AS with_convention, (SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0) AS all_docs;"
+sqlite3 -readonly $D "SELECT v, (SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'convention' AND f.volume_id=v AND d.is_front_matter=0 AND d.is_editorial_note=0) AS conv, (SELECT COUNT(*) FROM document_cache WHERE volume_id=v AND is_front_matter=0 AND is_editorial_note=0) AS tot FROM (SELECT 'frus1934v03' v UNION SELECT 'frus1951v02' UNION SELECT 'frus1875v01' UNION SELECT 'frus1878' UNION SELECT 'frus1898');"
+sqlite3 -readonly $D "SELECT v, (SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'postal' AND f.volume_id=v AND d.is_front_matter=0 AND d.is_editorial_note=0) AS postal, (SELECT COUNT(*) FROM document_cache WHERE volume_id=v AND is_front_matter=0 AND is_editorial_note=0) AS tot FROM (SELECT 'frus1934v03' v UNION SELECT 'frus1951v02' UNION SELECT 'frus1875v01' UNION SELECT 'frus1878' UNION SELECT 'frus1898');"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'postal' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+
+# --- 14. POSTMASTER GENERAL AS CORRESPONDENT (S)
+sqlite3 -readonly -separator ' :: ' $D "SELECT volume_id, document_id, substr(replace(header,char(10),' '),1,110) FROM document_cache WHERE header LIKE '%Postmaster General%' AND is_front_matter=0 AND is_editorial_note=0 ORDER BY volume_id, document_id;"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_cache WHERE header LIKE '%Postmaster General%' AND is_front_matter=0 AND is_editorial_note=0;"
+sqlite3 -readonly -separator ' :: ' $D "SELECT volume_id, document_id, substr(replace(header,char(10),' '),1,110) FROM document_cache WHERE header LIKE '%Post Office Department%' AND is_front_matter=0 AND is_editorial_note=0 ORDER BY volume_id;"
+
+# --- 15. frus1941v04 DECOY CHECK + first two whole-document reads (S)
+sqlite3 -readonly -separator '|' $D "SELECT document_id, length(body_text), CASE WHEN body_text LIKE '%postal%' OR body_text LIKE '%post office%' OR body_text LIKE '%mail%' THEN 'POSTAL-WORD' ELSE 'no-postal-word' END FROM document_cache WHERE volume_id='frus1941v04' AND header LIKE '%Postmaster General%' AND is_front_matter=0 AND is_editorial_note=0 ORDER BY document_id;"
+sqlite3 -readonly -separator '|' $D "SELECT volume_id, document_id, length(body_text) FROM document_cache WHERE (volume_id='frus1947v01' AND document_id='d20') OR (volume_id='frus1934v03' AND document_id='d173');"
+sqlite3 -readonly $D "SELECT body_text FROM document_cache WHERE volume_id='frus1947v01' AND document_id='d20';" > "$SD/read-frus1947v01-d20.txt"
+sqlite3 -readonly $D "SELECT body_text FROM document_cache WHERE volume_id='frus1934v03' AND document_id='d173';" > "$SD/read-frus1934v03-d173.txt"
+grep -o -E '.{300}[Pp]ostal.{500}' "$SD/read-frus1947v01-d20.txt" | head -2
+head -c 1400 "$SD/read-frus1934v03-d173.txt"
+
+# --- 16. ARCHIVAL SCHEMAS (S)
+sqlite3 -readonly $D ".schema document_sources"
+sqlite3 -readonly $D ".schema external_citations"
+sqlite3 -readonly $D "SELECT * FROM document_sources LIMIT 3;"
+sqlite3 -readonly $D "SELECT * FROM external_citations LIMIT 3;"
+
+# --- 17. TWO ARCHIVAL CHANNELS OVER THE 221-DOC CORE (S). $Q = the six-phrase OR used above.
+sqlite3 -readonly -separator '|' $D "WITH h AS (SELECT f.volume_id v, f.document_id dd FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$Q' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT s.citation_era, COUNT(*) FROM h JOIN document_sources s ON s.volume_id=h.v AND s.document_id=h.dd GROUP BY 1 ORDER BY 2 DESC;"
+sqlite3 -readonly -separator '|' $D "WITH h AS (...same...) SELECT s.decimal_class, COUNT(*) FROM h JOIN document_sources s ON s.volume_id=h.v AND s.document_id=h.dd WHERE s.decimal_class IS NOT NULL AND s.decimal_class<>'' GROUP BY 1 ORDER BY 2 DESC LIMIT 20;"
+sqlite3 -readonly -separator '|' $D "WITH h AS (...same...) SELECT s.lot_file_norm, COUNT(*) FROM h JOIN document_sources s ON s.volume_id=h.v AND s.document_id=h.dd WHERE s.lot_file_norm IS NOT NULL AND s.lot_file_norm<>'' GROUP BY 1 ORDER BY 2 DESC LIMIT 20;"
+sqlite3 -readonly -separator '|' $D "WITH h AS (...same...) SELECT e.anchor, COUNT(*) FROM h JOIN external_citations e ON e.volume_id=h.v AND e.document_id=h.dd GROUP BY 1 ORDER BY 2 DESC;"
+sqlite3 -readonly -separator '|' $D "WITH h AS (...same...) SELECT COALESCE(e.decimal_class,'(none)'), COALESCE(e.lot_file_norm,''), COALESCE(e.collection,''), COUNT(*) FROM h JOIN external_citations e ON e.volume_id=h.v AND e.document_id=h.dd GROUP BY 1,2,3 ORDER BY 4 DESC LIMIT 25;"
+
+# --- 18. DECIMAL SCHEDULE (J) — /Applications/FRUS Explorer.app/Contents/Resources/decimal-class-labels.json
+python3 -u -c "import json; d=json.load(open('$R/decimal-class-labels.json')); print('TOP KEYS:', list(d.keys())); print('schemaVersion', d.get('schemaVersion')); cov=d.get('coverage',{}); print('coverage keys:', list(cov.keys())); print('glossableYears:', cov.get('glossableYears')); print('notShipped:', str(cov.get('notShipped'))[:300])"
+python3 -u -c "<read schedules[0] field shapes and classes dict — full body elided, see ELIDED>"
+python3 -u -c "<grep subjects['8'] for postal/mail/telegraph glosses; print class 6 subjects; print countries 99/40/39 — full body elided, see ELIDED>"
+python3 -u -c "<print subjects['8'] keys 7,70,71,711,712,713,715,716,718,719,73,75,76 and all keys starting '71'/'7' — full body elided, see ELIDED>"
+
+# --- 19. DECIMAL CHANNEL, CORPUS-WIDE (S)
+sqlite3 -readonly -separator '|' $D "SELECT s.decimal_class, COUNT(*) AS n, COUNT(DISTINCT s.volume_id) AS vols FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '[0-9][0-9][0-9].71*' GROUP BY 1 ORDER BY 2 DESC LIMIT 30;"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT s.volume_id) FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '[0-9][0-9][0-9].71*';"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT s.volume_id) FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id JOIN document_dates dt ON dt.volume_id=s.volume_id AND dt.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '[0-9][0-9][0-9].71*' AND dt.date_iso BETWEEN '1910-01-01' AND '1949-12-31';"
+sqlite3 -readonly -separator '|' $D "SELECT e.decimal_class, COUNT(*) n, COUNT(DISTINCT e.volume_id) vols FROM external_citations e WHERE e.decimal_class GLOB '[0-9][0-9][0-9].71*' GROUP BY 1 ORDER BY 2 DESC LIMIT 25;"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT volume_id||'/'||document_id) FROM external_citations WHERE decimal_class GLOB '[0-9][0-9][0-9].71*';"
+sqlite3 -readonly -separator '|' $D "SELECT 'came-from', decimal_class, raw_text, volume_id, document_id FROM document_sources WHERE decimal_class LIKE '%UPU%' OR raw_text LIKE '%UPU%';"
+sqlite3 -readonly -separator '|' $D "SELECT 'pointed-at', decimal_class, raw_text, volume_id, document_id FROM external_citations WHERE decimal_class LIKE '%UPU%' OR raw_text LIKE '%UPU%';"
+
+# --- 20. REFINED DECIMAL COUNTS after the %UPU%-matches-"scrupulous" trap (S)
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_sources WHERE decimal_class = '399.10-UPU';"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT s.volume_id) FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*';"
+sqlite3 -readonly -separator '|' $D "SELECT s.volume_id, COUNT(*) FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*' GROUP BY 1 ORDER BY 2 DESC LIMIT 15;"
+sqlite3 -readonly $D "SELECT COUNT(*), COUNT(DISTINCT s.volume_id) FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '[0-9][0-9][0-9].71*' AND s.decimal_class NOT GLOB '8[0-9][0-9].71*';"
+sqlite3 -readonly $D "WITH dec AS (SELECT s.volume_id v, s.document_id dd FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '[0-9][0-9][0-9].71*'), txt AS (SELECT f.volume_id v, f.document_id dd FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'postal' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT (SELECT COUNT(*) FROM dec) AS decimal_docs, (SELECT COUNT(*) FROM txt) AS postal_word_docs, (SELECT COUNT(*) FROM dec JOIN txt USING(v,dd)) AS both;"
+
+# --- 21. RECORD GROUPS (S)
+sqlite3 -readonly -separator '|' $D "SELECT record_group, COUNT(*) FROM document_sources WHERE record_group IS NOT NULL AND record_group<>'' GROUP BY 1 ORDER BY 2 DESC LIMIT 15;"
+sqlite3 -readonly -separator '|' $D "SELECT 'came-from', record_group, COUNT(*) FROM document_sources WHERE record_group IN ('28','43','RG 28','RG 43') GROUP BY 2;"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text LIKE '%RG 28%' OR raw_text LIKE '%RG 43%' OR raw_text LIKE '%Post Office Department%';"
+sqlite3 -readonly -separator '|' $D "SELECT volume_id, document_id, substr(raw_text,1,150) FROM document_sources WHERE raw_text LIKE '%RG 43%' OR raw_text LIKE '%Post Office Department%' LIMIT 12;"
+sqlite3 -readonly -separator '|' $D "SELECT volume_id, document_id, substr(raw_text,1,140) FROM external_citations WHERE raw_text LIKE '%RG 43%' OR raw_text LIKE '%Post Office%' OR raw_text LIKE '%RG 28%' LIMIT 12;"
+sqlite3 -readonly -separator '|' $D "SELECT s.lot_file_norm, COUNT(*) FROM document_sources s WHERE s.decimal_class GLOB '[0-9][0-9][0-9].71*' AND s.lot_file_norm<>'' AND s.lot_file_norm IS NOT NULL GROUP BY 1 ORDER BY 2 DESC;"
+sqlite3 -readonly $D "SELECT MIN(dt.date_iso) FROM external_citations e JOIN document_dates dt ON dt.volume_id=e.volume_id AND dt.document_id=e.document_id;"
+
+# --- 22. THE 'RG 28' SUBSTRING TRAP, AND ITS FIX (S)
+sqlite3 -readonly -separator '|' $D "SELECT substr(raw_text, instr(raw_text,'RG 28'), 12), COUNT(*) FROM document_sources WHERE raw_text LIKE '%RG 28%' GROUP BY 1 ORDER BY 2 DESC LIMIT 10;"
+# these three used [!0-9], which SQLite GLOB reads as the literal set {!,0-9}; the RG 59 positive control returning 0 is what exposed it
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 28[!0-9]*' OR raw_text GLOB '*RG 28';"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 43[!0-9]*' OR raw_text GLOB '*RG 43';"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text LIKE '%Post Office Department%';"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 59[!0-9]*' OR raw_text GLOB '*RG 59';"
+# corrected with [^0-9]:
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 59[^0-9]*' OR raw_text GLOB '*RG 59';"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 99999[^0-9]*';"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 28[^0-9]*' OR raw_text GLOB '*RG 28';"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM document_sources WHERE raw_text GLOB '*RG 43[^0-9]*' OR raw_text GLOB '*RG 43';"
+sqlite3 -readonly $D "SELECT (SELECT COUNT(*) FROM external_citations WHERE raw_text GLOB '*RG 59[^0-9]*'), (SELECT COUNT(*) FROM external_citations WHERE raw_text GLOB '*RG 28[^0-9]*'), (SELECT COUNT(*) FROM external_citations WHERE raw_text GLOB '*RG 43[^0-9]*');"
+sqlite3 -readonly $D ".schema volume_sources"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM volume_sources;"
+
+# --- 23. VOLUME FRONT-MATTER SOURCE LISTS (S)
+sqlite3 -readonly -separator '|' $D "SELECT volume_id, record_group, substr(entry_text,1,130) FROM volume_sources WHERE entry_text LIKE '%postal%' OR series_name LIKE '%postal%' OR entry_text LIKE '%Post Office%' LIMIT 20;"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM volume_sources WHERE entry_text LIKE '%postal%' OR entry_text LIKE '%Post Office%';"
+sqlite3 -readonly -separator '|' $D "SELECT record_group, COUNT(*) FROM volume_sources WHERE record_group IS NOT NULL AND record_group<>'' GROUP BY 1 ORDER BY 2 DESC LIMIT 20;"
+
+# --- 24. BUNDLED ARCHIVAL AUTHORITIES (J)
+python3 -u -c "import json; [print(f,'->',list(json.load(open('$R/'+f)).keys())[:12],'schemaVersion=',json.load(open('$R/'+f)).get('schemaVersion')) for f in ['series-facts-index.json','central-files-index.json','collection-authority.json']]"
+python3 -u -c "<series-facts byNaId/headings postal grep + collection-authority postal grep — full body elided, see ELIDED>"
+
+# --- 25. SECOND-EDITION SUPPRESSION CHECK (S)
+sqlite3 -readonly $D "SELECT DISTINCT f.volume_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'postal' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id LIKE '%Ed2%';"
+sqlite3 -readonly $D "SELECT DISTINCT volume_id FROM document_cache WHERE volume_id LIKE '%Ed2%';"
+
+# --- 26. BUNDLED USAGE INDEX, CLASS AXIS (J) — corroborates the SQL decimal counts
+python3 -u -c "<print collection-usage-index.json top keys and container lengths — full body elided, see ELIDED>"
+python3 -u -c "<print coverage, classes[0], classKeys[:5], collections[0], collectionIds[:3], volumes[:3] — full body elided, see ELIDED>"
+python3 -u -c "<aggregate class rows matching ^8\d\d\.71 by volume and by class key; also list UPU-bearing class keys; writes $SD/usage-class8-postal.json — full body elided, see ELIDED>"
+
+# --- 27. THE 1874 FOUNDING (S)
+sqlite3 -readonly -separator ' :: ' $D "SELECT f.volume_id, f.document_id, substr(replace(d.header,char(10),' '),1,80), COALESCE(dt.date_iso,'?') FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH '\"General Postal Union\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY dt.date_iso;"
+sqlite3 -readonly -separator ' :: ' $D "SELECT f.volume_id, f.document_id, substr(replace(d.header,char(10),' '),1,70), COALESCE(dt.date_iso,'?') FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH 'postal AND (Berne OR Bern)' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY dt.date_iso LIMIT 25;"
+sqlite3 -readonly -separator '|' $D "SELECT f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'postal' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id IN ('frus1873p1v1','frus1873p1v2','frus1873p2','frus1874','frus1875v01','frus1875v02','frus1876','frus1877','frus1878','frus1879') GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly $D "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'postal' AND f.volume_id='frus1874' AND (d.is_front_matter=1 OR d.is_editorial_note=1);"
+
+# --- 28. TWO MORE WHOLE-DOCUMENT READS (S) — first attempt mis-named the files (zsh word splitting), redone
+sqlite3 -readonly -separator '|' $D "SELECT volume_id, document_id, length(body_text), substr(replace(header,char(10),' '),1,90) FROM document_cache WHERE (volume_id='frus1951v02' AND document_id IN ('d181','d138')) OR (volume_id='frus1952-54v03' AND document_id='d48');"
+sqlite3 -readonly "$D" "SELECT body_text FROM document_cache WHERE volume_id='frus1951v02' AND document_id='d181';" > "$SD/read-frus1951v02-d181.txt"
+sqlite3 -readonly "$D" "SELECT body_text FROM document_cache WHERE volume_id='frus1952-54v03' AND document_id='d48';" > "$SD/read-frus1952-54v03-d48.txt"
+head -c 1300 "$SD/read-frus1951v02-d181.txt"
+grep -o -E '.{150}[Pp]ostal.{350}' "$SD/read-frus1952-54v03-d48.txt" | head -1
+
+# --- 29. TOP-VOLUME SHARE OF EACH DECADE'S NUMERATOR (S)
+sqlite3 -readonly -separator '|' $D "WITH hits AS (SELECT f.volume_id v, f.document_id dd FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"postal convention\" OR \"postal union\" OR \"postal treaty\" OR \"postal congress\" OR \"postal arrangement\" OR \"postal agreement\"' AND d.is_front_matter=0 AND d.is_editorial_note=0), hd AS (SELECT h.v, substr(dt.date_iso,1,3)||'0' dec FROM hits h JOIN document_dates dt ON dt.volume_id=h.v AND dt.document_id=h.dd WHERE dt.date_iso IS NOT NULL), per AS (SELECT dec, v, COUNT(*) c FROM hd GROUP BY dec, v), tot AS (SELECT dec, SUM(c) t FROM per GROUP BY dec) SELECT tot.dec, tot.t AS decade_hits, (SELECT v FROM per p WHERE p.dec=tot.dec ORDER BY c DESC, v LIMIT 1) AS top_vol, (SELECT c FROM per p WHERE p.dec=tot.dec ORDER BY c DESC, v LIMIT 1) AS top_vol_hits FROM tot ORDER BY tot.dec;"
+
+ELIDED: (1) In sections 18, 24 and 26 I wrote `<... full body elided ...>` in place of six `python3 -u -c "..."` one-liner bodies that read the bundled JSON; each is a pure read of the named file plus printing/filtering, no SQL, and their outputs are reproduced in the report. (2) In section 17 I wrote `WITH h AS (...same...)` for four queries instead of repeating the identical 3-line CTE; the CTE is spelled out in full in the first query of that section and $Q is the six-phrase OR spelled out in section 6. (3) Section 5's loop is one line covering 15 separate sqlite3 invocations. (4) Section 8's `headings.py`, section 10's `share.py`, section 11's `misses.py` and section 12's `share2.py` are invoked by path, not pasted; every SQL statement each of them issues is pasted underneath as a comment, and all four files are on disk in the run directory. (5) Section 9's two hit-list queries returned 79 and 142 rows; the full row sets are in this session's tool output, not re-pasted here — the report names the (volume_id, document_id) pairs it actually relies on. (6) Section 14's first query returned all 45 rows and section 19's first returned 30; both are summarised, not re-listed, in the report. (7) Section 8's `cat "$SD/headings.txt"` produced 31.2KB that the harness truncated to a 2KB preview and spilled to a tool-results file; I read the filtered subset instead, and only the filtered subset is quoted.

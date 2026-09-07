@@ -1,0 +1,244 @@
+# queries.log — corpus-scoping pass, "How did the United States negotiate and administer
+# international postal conventions?"  Run 2026-09-06.  Commands in order.
+# DB always opened read-only.  Working dir for sqlite3 calls: /Users/jbotts/frus-analysis
+# Shell variables used repeatedly:
+#   CORE='"postal convention" OR "postal conventions" OR "Universal Postal Union" OR "General Postal Union" OR "postal union" OR "postal congress" OR "Universal Postal Congress" OR "postal treaty" OR "postal arrangement" OR "postal agreement" OR "international postal"'
+#   MAIL='"censorship of the mails" OR "censorship of mails" OR "interference with the mails" OR "detention of mails" OR "seizure of mails" OR "mail censorship"'
+#   Q   = CORE plus "postal administration", "postal relations", "parcel post", "postal money order"
+#   TOPV="'frus1871','frus1878','frus1879','frus1875v01','frus1863p2','frus1906p2','frus1934v03','frus1898'"
+#   R="/Applications/FRUS Explorer.app/Contents/Resources"
+#   D=/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0d/runs/d1
+
+# --- 1. mandatory coverage query ---
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+
+# --- 2. schema inspection ---
+sqlite3 -readonly frus-copy.db ".tables"
+sqlite3 -readonly frus-copy.db ".schema document_cache"
+sqlite3 -readonly frus-copy.db ".schema frus_documents"
+sqlite3 -readonly frus-copy.db ".schema document_dates"
+sqlite3 -readonly frus-copy.db ".schema volume_structures"
+sqlite3 -readonly frus-copy.db ".schema document_sources"
+sqlite3 -readonly frus-copy.db ".schema external_citations"
+sqlite3 -readonly frus-copy.db ".schema cross_references"
+sqlite3 -readonly frus-copy.db ".schema document_subjects"
+sqlite3 -readonly frus-copy.db ".schema document_subject_refs"
+sqlite3 -readonly frus-copy.db ".schema document_subject_volumes"
+
+# --- 3. CONTROLS + first term census (loop over $q; predicate shown once, ran once per term) ---
+for q in '"Department of State"' '"ZZZ_IMPOSSIBLE_ZZZ"' '"postal convention"' '"Universal Postal Union"' '"postal union"' '"Postmaster General"' '"parcel post"' '"postal congress"'; do
+  sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$q' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+done
+
+# --- 4. wider vocabulary census, same predicate, 25 terms ---
+for q in '"General Postal Union"' '"postal treaty"' '"postal arrangement"' '"postal service"' '"Post Office Department"' '"money order"' '"postal money order"' '"international postal"' '"postal rates"' '"postage"' '"Universal Postal Congress"' '"Pan American Postal"' '"Postal Union of the Americas"' '"postal administration"' '"postal relations"' '"mail service"' '"letter mail"' '"postal card"' '"Bureau of the Universal Postal Union"' '"Berne"' '"Union Postale"' '"transit charges"' '"sea postage"' '"mail steamers"' '"postal agreement"'; do
+  sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$q' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+done
+
+# --- 5. union set $Q: size, volume count, top-30 volumes ---
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$Q' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$Q' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly frus-copy.db "SELECT f.volume_id, COUNT(*) c FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$Q' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY f.volume_id ORDER BY c DESC LIMIT 30;"
+
+# --- 6. decade denominators and numerators (periodised on document_dates.date_iso; Ed2 dupes suppressed) ---
+sqlite3 -readonly frus-copy.db "SELECT substr(dd.date_iso,1,3)||'0s' dec, COUNT(*) FROM document_dates dd JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY dec ORDER BY dec;"
+sqlite3 -readonly frus-copy.db "SELECT substr(dd.date_iso,1,3)||'0s' dec, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '$Q' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY dec ORDER BY dec;"
+
+# --- 7. top-volume share per decade ---
+sqlite3 -readonly frus-copy.db "
+WITH hits AS (
+ SELECT f.volume_id v, substr(dd.date_iso,1,3)||'0s' dec
+ FROM frus_documents f
+ JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id
+ JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id
+ WHERE frus_documents MATCH '$Q' AND d.is_front_matter=0 AND d.is_editorial_note=0
+   AND dd.date_iso IS NOT NULL AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+), per AS (SELECT dec, v, COUNT(*) c FROM hits GROUP BY dec, v),
+tot AS (SELECT dec, COUNT(*) n FROM hits GROUP BY dec)
+SELECT tot.dec, tot.n, per.v, per.c FROM tot JOIN per ON per.dec=tot.dec
+WHERE per.c = (SELECT MAX(c) FROM per p2 WHERE p2.dec=tot.dec) ORDER BY tot.dec;"
+
+# --- 8. editors' section headings.  Scripts, kept on disk. ---
+sqlite3 -readonly frus-copy.db "SELECT volume_id, substr(structure_json,1,300) FROM volume_structures LIMIT 1;"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM volume_structures;"
+# $D/headings.py  — SELECT volume_id, structure_json FROM volume_structures
+#                   ; walks sections/subsections, keeps titles matching
+#                   re.compile(r'post(al|age|s?[- ]office)|mail|parcel', re.I); prints a Counter.
+python3 -u $D/headings.py
+# $D/headings2.py — same SELECT, ORDER BY volume_id; prints volume, len(documentIds), title.
+python3 -u $D/headings2.py
+
+# --- 9. literal STRICT/TOLERANT share verification (house rule (a)/(b)) ---
+# $D/fams.json = ["postal convention","Universal Postal Union","postal union","parcel post",
+#                 "Postmaster General","postal administration","international postal",
+#                 "postal treaty","postal congress","Post Office Department"]
+# $D/share.py runs, per family:
+#   SELECT f.volume_id, f.document_id FROM frus_documents f
+#     JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id
+#     WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+#     ORDER BY f.volume_id, f.document_id
+#   then, per hit:
+#   SELECT header||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text
+#     FROM document_cache WHERE volume_id=? AND document_id=?
+#   whitespace-collapsed; STRICT = re.escape(phrase), re.I; TOLERANT = inflected words joined by
+#   r'[\s\-,\(\)\.]+', re.I.  Every family had M<=300 so the whole hit list was censused.
+#   Python re with re.I throughout (NOT SQL LIKE) — stated in the memo.
+python3 -u $D/share.py $D/fams.json | tee $D/shares.txt
+
+# --- 10. CORE family: size, 19th-century listing ---
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly -separator '  |  ' frus-copy.db "SELECT f.volume_id||'/'||f.document_id, COALESCE(dd.date_iso,'?'), substr(replace(d.header,char(10),' '),1,95) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id < 'frus1900' ORDER BY f.volume_id, f.document_id;"
+
+# --- 11. thematic split; mail-interference family; overlap; post-1945 listing ---
+sqlite3 -readonly frus-copy.db "SELECT CASE WHEN dd.date_iso<'1900' THEN 'pre-1900' WHEN dd.date_iso<'1946' THEN '1900-1945' ELSE '1946+' END era, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL GROUP BY era ORDER BY era;"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$MAIL' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM (SELECT f.volume_id v,f.document_id dq FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0 INTERSECT SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$MAIL' AND d.is_front_matter=0 AND d.is_editorial_note=0);"
+sqlite3 -readonly -separator '  |  ' frus-copy.db "SELECT f.volume_id||'/'||f.document_id, dd.date_iso, substr(replace(d.header,char(10),' '),1,80) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso>='1946' ORDER BY dd.date_iso;"
+
+# --- 12. reading.  lengths, then whole retrieval, then whole-capture verification ---
+for pair in "frus1871|d4" "frus1898|d1190b" "frus1952-54v03|d61" "frus1863p2|d454" "frus1906p1|d113"; do
+  sqlite3 -readonly frus-copy.db "SELECT length(body_text) FROM document_cache WHERE volume_id='$v' AND document_id='$dq';"
+done
+for pair in "frus1871|d4" "frus1898|d1190b" "frus1952-54v03|d61" "frus1863p2|d454"; do
+  sqlite3 -readonly frus-copy.db "SELECT header||char(10)||COALESCE(dateline,'')||char(10)||'SOURCE: '||COALESCE(source_note,'(none)')||char(10)||body_text FROM document_cache WHERE volume_id='$v' AND document_id='$dq';" > $D/reads/$v.$dq.txt
+  sqlite3 -readonly frus-copy.db "SELECT body_text FROM document_cache WHERE volume_id='$v' AND document_id='$dq';" > $D/reads/$v.$dq.body.txt
+  # inline python3 -c compared len(file) against SELECT length(body_text) FROM document_cache
+  # WHERE volume_id=? AND document_id=? — reported whole=True for all four.  [BODY ELIDED]
+done
+cat $D/reads/frus1952-54v03.d61.txt
+cat $D/reads/frus1863p2.d454.txt
+head -c 1600 $D/reads/frus1898.d1190b.txt
+# inline python3 -c over $D/reads/frus1871.d4.txt: whitespace-collapse, then
+# re.finditer(r'postal (union|convention|treaty|congress)', t, re.I), +-320 chars.  [BODY ELIDED]
+
+# --- 13. Postmaster General as correspondent; decade shape ---
+sqlite3 -readonly -separator '  |  ' frus-copy.db "SELECT volume_id||'/'||document_id, length(body_text), substr(replace(header,char(10),' '),1,70) FROM document_cache WHERE header LIKE '%Postmaster General%' AND is_front_matter=0 ORDER BY volume_id;"
+sqlite3 -readonly frus-copy.db "SELECT substr(dd.date_iso,1,3)||'0s' dec, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '\"Postmaster General\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY dec ORDER BY dec;"
+
+# --- 14. the frus1941v04 Postmaster-General false friend ---
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_cache WHERE volume_id='frus1941v04' AND header LIKE '%Postmaster General%' AND (body_text LIKE '%postal%' OR body_text LIKE '%postage%' OR body_text LIKE '%parcel%');"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_cache WHERE volume_id='frus1941v04' AND header LIKE '%Postmaster General%';"
+sqlite3 -readonly frus-copy.db "SELECT substr(body_text,1,420) FROM document_cache WHERE volume_id='frus1941v04' AND document_id='d45';"
+
+# --- 15. FALSE-FRIEND TEST (SQL LIKE, case-insensitive, non-apparatus).  Loop over 4 terms. ---
+sqlite3 -readonly frus-copy.db "SELECT 'corpus', COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND body_text LIKE '%postal%';"
+sqlite3 -readonly frus-copy.db "SELECT 'corpus_total', COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0;"
+for t in postal convention negotiat "Department of State"; do
+  sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id IN ($TOPV) AND body_text LIKE '%$t%';"
+  sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND volume_id IN ($TOPV);"
+  sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND body_text LIKE '%$t%';"
+  # inline python3 -c formatted the ratio only; no surface touched.  [BODY ELIDED]
+done
+
+# --- 16. CHANNEL 1, came-from: document_sources over the CORE set ---
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_sources s WHERE (s.volume_id,s.document_id) IN (SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0);"
+sqlite3 -readonly frus-copy.db "SELECT s.citation_era, COUNT(*) c FROM document_sources s WHERE (s.volume_id,s.document_id) IN (SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0) GROUP BY s.citation_era ORDER BY c DESC;"
+sqlite3 -readonly frus-copy.db "SELECT s.decimal_class, COUNT(*) c FROM document_sources s WHERE s.decimal_class IS NOT NULL AND (s.volume_id,s.document_id) IN (SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0) GROUP BY s.decimal_class ORDER BY c DESC LIMIT 25;"
+sqlite3 -readonly frus-copy.db "SELECT s.lot_file_norm, COUNT(*) c FROM document_sources s WHERE s.lot_file_norm IS NOT NULL AND (s.volume_id,s.document_id) IN (SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0) GROUP BY s.lot_file_norm ORDER BY c DESC LIMIT 20;"
+
+# --- 17. decimal-class glossing [JSON].  Inline python3 -c over decimal-class-labels.json. ---
+python3 -c "... json.load(open(R+'decimal-class-labels.json')); print top keys, coverage ..."   # [BODY ELIDED]
+python3 -c "... print schedules[0] field summary ..."                                            # [BODY ELIDED]
+python3 -c "... print classes; print subjects['8'] entries whose key starts 71 or 99; print countries for 93/91/41/63/52/60; print countryArrangedClasses, relationsClasses ..."  # [BODY ELIDED]
+python3 -c "... print countries for 11,93,41,37,51,52,94,62,63,67,58,10,00,12,17 ..."           # [BODY ELIDED]
+
+# --- 18. archival-first route: class-8 .71x (Post) documents, independent of text search ---
+sqlite3 -readonly frus-copy.db "SELECT s.decimal_class, COUNT(*) c FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*' GROUP BY s.decimal_class ORDER BY c DESC;"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT s.volume_id) FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*';"
+sqlite3 -readonly frus-copy.db "SELECT s.decimal_class, COUNT(*) c FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '5*' AND (d.body_text LIKE '%postal%' OR d.body_text LIKE '%Postal%') GROUP BY s.decimal_class ORDER BY c DESC LIMIT 15;"
+sqlite3 -readonly frus-copy.db "SELECT s.volume_id||'/'||s.document_id, s.decimal_class, substr(s.raw_text,1,90) FROM document_sources s WHERE s.decimal_class LIKE '%UPU%' OR s.raw_text LIKE '%UPU%';"
+sqlite3 -readonly frus-copy.db "
+WITH t AS (SELECT f.volume_id v,f.document_id q FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0),
+a AS (SELECT s.volume_id v,s.document_id q FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*')
+SELECT (SELECT COUNT(*) FROM t) AS text_only_set, (SELECT COUNT(*) FROM a) AS archival_set,
+ (SELECT COUNT(*) FROM t JOIN a ON a.v=t.v AND a.q=t.q) AS both;"
+sqlite3 -readonly frus-copy.db "SELECT s.volume_id, COUNT(*) c FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*' GROUP BY s.volume_id ORDER BY c DESC LIMIT 15;"
+
+# --- 19. CHANNEL 2, pointed-at: external_citations ---
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM external_citations e WHERE (e.volume_id,e.document_id) IN (SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0);"
+sqlite3 -readonly frus-copy.db "SELECT COALESCE(e.repository,'-')||' | '||COALESCE(e.collection,'-')||' | lot='||COALESCE(e.lot_file_norm,'-')||' | class='||COALESCE(e.decimal_class,'-') k, COUNT(*) c FROM external_citations e WHERE (e.volume_id,e.document_id) IN (SELECT f.volume_id,f.document_id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0) GROUP BY k ORDER BY c DESC LIMIT 20;"
+sqlite3 -readonly frus-copy.db "SELECT COALESCE(e.decimal_class,'(no class)') k, COUNT(*) c FROM external_citations e WHERE (e.volume_id,e.document_id) IN (SELECT s.volume_id,s.document_id FROM document_sources s JOIN document_cache d ON d.volume_id=s.volume_id AND d.document_id=s.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class GLOB '8[0-9][0-9].71*') GROUP BY k ORDER BY c DESC LIMIT 20;"
+
+# --- 20. bundled JSON [JSON] ---
+ls "$R"
+# $D/jsonprobe.py — json.load of digitized-ranges-index.json, central-files-index.json,
+#   collection-usage-index.json, series-facts-index.json, external-citation-index.json;
+#   prints each file's top-level keys and container sizes.
+python3 -u $D/jsonprobe.py
+# $D/digi.py — containment test of postal decimal classes against digitized-ranges-index.json
+#   ranges.  THIS TEST WAS WRONG (compared a full class number to within-class sub-numbers);
+#   its output is retained on disk but is NOT used in the memo.
+python3 -u $D/digi.py
+python3 -c "... collections.Counter(r['decimalClass'] for r in ranges); sample titles; naId counter ..."  # [BODY ELIDED] — this is the corrected reading
+# $D/usage.py — first attempt at collection-usage-index.json accessor; CRASHED (TypeError:
+#   'int' object is not iterable) because row['k'] is a scalar key index, not a list.
+python3 -u $D/usage.py
+# $D/usage2.py — corrected accessor: for each of frus1934v03, frus1951v02, frus1916Supp,
+#   frus1936v03, frus1871, ranks collections and classes by that volume's document count.
+python3 -u $D/usage2.py
+# $D/lots.py — resolves lot numbers 59D237, 60D512, 53D26, M88, 53D250, 78D300, 82D103, 81F1,
+#   60D224 against central-files-index.json's lotFiles list (keyed on the lotNumber field),
+#   then series-facts-index.json byNaId, then lot-claimants-index.json lots.
+python3 -u $D/lots.py
+python3 -u -c "... decode series-facts headings/statuses for naIds 2103077,16905055,2108774,592873,109272536; regex headings for post/postal/postmaster; Counter of recordGroup over central-files lotFiles; print countrySeries categories; regex lotFiles titles for 'post' ..."  # [BODY ELIDED]
+python3 -u -c "... print countrySeries rows for domesticLetters/lettersReceived/diplomaticInstructions/notesToForeignMissions with their seriesNaId and any series-facts row ..."  # [BODY ELIDED]
+
+# --- 21. archival apparatus coverage of the CORE set, by era ---
+sqlite3 -readonly frus-copy.db "
+WITH t AS (SELECT f.volume_id v,f.document_id q, dd.date_iso dt FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0)
+SELECT CASE WHEN dt<'1900' THEN 'pre-1900' WHEN dt<'1946' THEN '1900-1945' WHEN dt IS NULL THEN '(undated)' ELSE '1946+' END era,
+COUNT(*) total, SUM(CASE WHEN s.volume_id IS NOT NULL THEN 1 ELSE 0 END) with_source
+FROM t LEFT JOIN document_sources s ON s.volume_id=t.v AND s.document_id=t.q GROUP BY era ORDER BY era;"
+
+# --- 22. subject axis [JSON] ---
+sqlite3 -readonly frus-copy.db "SELECT * FROM document_subjects WHERE name LIKE '%ostal%' ...;"   # FAILED: no such column: name
+python3 -u -c "... document-subject-index.json top keys; regex over subjects list ..."           # [BODY ELIDED]
+python3 -u -c "... print len(vocab), sorted set of vocab categories, names matching post|mail|telegraph|communicat, sample Science-and-Technology names ..."  # [BODY ELIDED]
+
+# --- 23. citation graph and family summary table ---
+sqlite3 -readonly frus-copy.db "
+WITH t AS (SELECT f.volume_id v,f.document_id q FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0)
+SELECT COUNT(*) FROM cross_references c JOIN t s ON s.v=c.source_volume_id AND s.q=c.source_document_id JOIN t g ON g.v=c.target_volume_id AND g.q=c.target_document_id WHERE c.is_broken=0;"
+sqlite3 -readonly frus-copy.db "
+WITH t AS (SELECT f.volume_id v,f.document_id q FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '$CORE' AND d.is_front_matter=0 AND d.is_editorial_note=0)
+SELECT COUNT(*) FROM cross_references c JOIN t s ON s.v=c.source_volume_id AND s.q=c.source_document_id WHERE c.is_broken=0;"
+for p in "postal convention" "postal conventions" "Universal Postal Union" "General Postal Union" "postal union" "postal congress" "postal treaty" "postal arrangement" "postal agreement" "international postal" "postal administration" "parcel post" "postal money order" "money order" "postal service" "Post Office Department" "Postmaster General"; do
+ sqlite3 -readonly -separator '  ' frus-copy.db "SELECT COUNT(*)||' docs', COUNT(DISTINCT f.volume_id)||' vols', COALESCE(MIN(dd.date_iso),'-')||' .. '||COALESCE(MAX(dd.date_iso),'-') FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dd ON dd.volume_id=f.volume_id AND dd.document_id=f.document_id WHERE frus_documents MATCH '\"$p\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+done
+
+# --- 24. the 1951 UPU run and the 1932-34 Manchukuo episode ---
+sqlite3 -readonly -separator '  |  ' frus-copy.db "SELECT document_id, substr(replace(header,char(10),' '),1,88) FROM document_cache WHERE volume_id='frus1951v02' AND document_id IN ('d138','d139','d141','d145','d150','d153','d156','d179','d181') ORDER BY CAST(substr(document_id,2) AS INTEGER);"
+sqlite3 -readonly frus-copy.db "SELECT body_text FROM document_cache WHERE volume_id='frus1951v02' AND document_id='d139';" > $D/reads/frus1951v02.d139.body.txt
+sqlite3 -readonly frus-copy.db "SELECT length(body_text) FROM document_cache WHERE volume_id='frus1951v02' AND document_id='d139';"
+head -c 1500 $D/reads/frus1951v02.d139.body.txt
+sqlite3 -readonly -separator '  |  ' frus-copy.db "SELECT document_id, substr(replace(header,char(10),' '),1,86) FROM document_cache d WHERE volume_id='frus1934v03' AND is_front_matter=0 AND is_editorial_note=0 AND (body_text LIKE '%postal convention%' OR body_text LIKE '%postal union%' OR body_text LIKE '%parcel post%' OR body_text LIKE '%postal agreement%') ORDER BY CAST(substr(document_id,2) AS INTEGER) LIMIT 16;"
+for p in "closed mail" "closed mails" "mail convention" "exchange of correspondence" "letter postage" "ocean postage" "international postage" "postal service" "mail packet" "packet service" "postal bureau" "Bern" "Berne" "Manchukuo" "postal separation" "franking privilege" "postal card convention"; do
+ sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"$p\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+done
+sqlite3 -readonly -separator '  |  ' frus-copy.db "SELECT volume_id||'/'||document_id, substr(replace(header,char(10),' '),1,70) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND body_text LIKE '%Manchukuo%' AND (body_text LIKE '%postal%' OR body_text LIKE '%parcel post%') LIMIT 12;"
+sqlite3 -readonly frus-copy.db "SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND body_text LIKE '%Manchukuo%' AND body_text LIKE '%postal%';"
+
+# --- 25. rate arithmetic (no surface touched; numerators/denominators typed in from steps 6-7) ---
+python3 -u -c "... per-1,000 table from the num/den/top dicts ..."   # [BODY ELIDED]
+
+ELIDED: the following were shortened above, and each is named at the point it occurs.
+ (1) Every `for` loop body is written once with the shell variable in place of the literal; the
+     loop ran once per listed term, and the full term list is printed in each loop header.
+ (2) Six inline `python3 -c` bodies are replaced by a one-line description followed by
+     "[BODY ELIDED]": the whole-capture length check (step 12), the frus1871/d4 concordance
+     (step 12), the false-friend ratio formatter (step 15), the four decimal-class-labels
+     probes (step 17), the corrected digitised-ranges reading, the series-facts/record-group
+     probe and the countrySeries probe (step 20), the two document-subject-index probes
+     (step 22), and the rate arithmetic (step 25).
+ (3) Six standalone scripts are described by their SQL and their transform rather than pasted:
+     $D/headings.py, $D/headings2.py, $D/share.py, $D/jsonprobe.py, $D/digi.py, $D/usage.py,
+     $D/usage2.py, $D/lots.py.  All eight files are on disk in $D and were not edited after
+     the runs recorded here.
+ (4) In step 10 the 19th-century listing returned 81 rows; the memo reproduces 12 of them.
+     In step 11 the post-1945 listing returned 51 rows; the memo reproduces 12.  In step 13
+     the Postmaster-General header listing returned 45 rows; the memo names 6 volumes.
+     In step 18 the .71x class listing returned 32 distinct classes; the memo prints 9.
+     The full outputs are in this session's transcript, not on disk.
+ (5) Two commands FAILED and are recorded above with their errors rather than removed:
+     the document_subjects `name` column query (step 22) and $D/usage.py (step 20).
+ (6) $D/digi.py's containment test was methodologically wrong and its numbers are not used.

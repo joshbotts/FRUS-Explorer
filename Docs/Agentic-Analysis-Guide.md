@@ -1261,11 +1261,14 @@ REPORTING
 - Show the exact SQL for every number you report — including SQL a script ran for you: paste the
   predicate, not just the script's name. WHERE A NUMBER DOES NOT COME FROM SQL AT ALL — a
   multi-stage pass over the TEI, a script over the bundled JSON — name the script, keep it and its
-  output on disk, and say which file holds which number. What is not acceptable either way is a log
-  claiming a completeness it does not have. Measured over eight threads, every one headed its log
-  as complete — "every command that touched a surface, verbatim, in order", or "ALL commands … in
-  order" — above a log with an elided command body or an elided id list; in one the elided list on
-  disk held 42 (volume_id, document_id) pairs where the memo said 43. Elide nothing you rely on.
+  output on disk, and say which file holds which number.
+- DO NOT CLAIM YOUR LOG IS COMPLETE. **Declare what you left out instead.** End the log with an
+  `ELIDED:` line naming every command body, id list or output you shortened, or `ELIDED: nothing`
+  if that is true. A blanket "every command, verbatim" header is a violation of this rule even when
+  it happens to be accurate, because it is unverifiable — and measured across twelve runs, every
+  single log that carried one had an elided command body underneath it, once hiding a list of 42
+  (volume_id, document_id) pairs where the memo said 43. You will need to elide a hundred-character
+  `python3 -c` body; that is expected and permitted. Saying you did not is the failure.
 - Give proportions as "N of M" with the denominator, never as a bare percentage.
 - If a query returns no rows, say so explicitly and verify the query can return rows at all
   before drawing any conclusion from the emptiness.
@@ -1366,13 +1369,14 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
 
 The block was measured at its **v1.19 length of 143 lines** and scored **100% compliance against a
 no-rules control's 77.6%** (C-0b, 2026-09-06, `Planning/C0b-Falsifier-2026-09-06.md`) — so the block
-below, not v1.10's shorter one, is the instrument. **At its current 181 lines it was re-measured by
-C-0c (2026-09-06) at 95.2% against a 77.8% control** — the control replicating C-0b's 77.6% to
+below, not v1.10's shorter one, is the instrument. **At 181 lines it was re-measured by C-0c
+(2026-09-06) at 95.2% against a 77.8% control** — the control replicating C-0b's 77.6% to
 within 0.2 points on two entirely different questions. **The added length is not costing attention:
 not one of the 26 items carried from C-0b lost a single run under the block, and every one of the
 block arm's six violations falls on the two items scoring the rules v1.20 rewrote.** One of those,
-the SQL/log rule below, still scores **0 of 4** — see its own note. Record:
-`Planning/C0c-Falsifier-2026-09-06.md`. It was separately measured to hold across a doubled
+the SQL/log rule, scored **0 of 4** there; v1.21 rewrote it again and **C-0d measured the 184-line
+text at 99.2%, with that rule at 4 of 4**. Records: `Planning/C0c-Falsifier-2026-09-06.md` and
+`Planning/C0d-Falsifier-2026-09-06.md`. It was separately measured to hold across a doubled
 session at its v1.10 length (C-2); that survival test has not been repeated on the longer text. Its
 blocks are not equally reachable in any case. This is what an agent handed only the database can and cannot do:
 
@@ -2634,6 +2638,26 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.21 — 2026-09-06: **the log rule, rewritten a second time and measured working.** C-0c had scored
+  v1.20's version at **0 of 4 under the block**, and §14.15a diagnosed why: it still asked for a
+  blanket assurance, so it got the assurance rather than the behaviour — all four cells headed
+  `queries.log` "nothing is elided" and then elided command bodies. The rule now demands the
+  **exception, not the guarantee**: an `ELIDED:` line naming what was shortened, with a completeness
+  header a violation *even when accurate*, because it is unverifiable.
+
+  **C-0d re-tested it the same day and the item went 0 of 4 to 4 of 4**, with the block arm at
+  **124/125 = 99.2%** over 184 lines. The test was single-arm and deliberately narrow — C-0c had
+  measured the item at 0 of 4 in *both* arms, so there was no control difference left to detect —
+  and **the harness prompt was left byte-identical**, still asking for "EVERY command … verbatim",
+  so the rule had to beat the same invitation to overclaim. It did.
+
+  Two other results are recorded rather than buried. **P5, the literal-share denominator half, went
+  2 of 4 to 4 of 4 with its rule unchanged**, so C-0c's low score was noise at n=4 or a property of
+  that question pair. And **one pre-registered reading was NOT met**: A6 lost a single run, on the
+  thinner question, where the agent named 3 NAIDs against 8–10 elsewhere and said the bundled stack
+  does not reach those units. At n=4 this run cannot separate "the question" from "the three added
+  lines", and `Planning/C0d-Falsifier-2026-09-06.md` says so instead of choosing.
 
 - 1.20 — 2026-09-06: **revisions a two-round field run earned.** The guide had been measured
   (C-0b, 100% against a 77.6% control) but only at C-0 length — 30–60 tool calls in fresh context.

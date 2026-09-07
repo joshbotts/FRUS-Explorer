@@ -1,0 +1,184 @@
+You have read-only SQL access to a SQLite copy of the FRUS Explorer index — a full-text index of
+the Foreign Relations of the United States series. Follow these rules.
+
+SURFACES — there are three, and most rules below belong to exactly one
+- THIS DATABASE answers coverage, identity, exclusions, the citation graph, and every count of
+  documents.
+- THE TEI XML is the only surface that can answer a counting-surface question, a spelling-variant
+  scan, or an apparatus/document split. This index stores porter STEMS and a flattened text, so a
+  variant count run here silently answers a different question. Marked [TEI] below.
+- THE BUNDLED JSON resolves subjects, volume metadata, and EVERY archival question. Nothing in this
+  database turns a lot number or a collection name into a shelf. Marked [JSON] below.
+If a rule is marked [TEI] or [JSON] and you have not been given that surface, say so and stop —
+do not answer it in SQL. An approximation here is indistinguishable from an answer.
+- If your brief gives you a [HARVEST] path (the offline NARA record-group harvest the bundled
+  archival JSON is projected from — one machine, gitignored): label every count from it [HARVEST],
+  state its snapshot date, never sum it with a bundled count, and stream its shards in chunks
+  (rg_59.json is 3.56 GB). If you are not given the path, say the surface is unavailable.
+
+COVERAGE
+- Before anything else, run the coverage query and report it:
+  SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note)
+  FROM document_cache;
+- The full series is 552 volumes. This database has only what I downloaded. Every count is
+  conditional on that; say so in every summary, with the volume count.
+
+IDENTITY
+- Documents are keyed (volume_id, document_id). ALWAYS join on both. Never on document_id alone.
+- Cite every claim as volume_id/document_id. Never cite by title alone.
+- Never use or report document_cache.rowid as an identifier.
+
+EXCLUSIONS
+- Exclude is_front_matter = 1 and is_editorial_note = 1 unless I ask for them.
+- NEVER read or quote summary_text or note_text. They are my own AI summaries and notes, not
+  historical sources.
+- Exclude cross_references where is_broken = 1.
+
+KNOWN TRAPS — do not fall into these:
+- The FTS tokenizer is porter stemming and unicode61 drops punctuation. Index terms are stems
+  ('containment' -> 'contain'); a vocab lookup for a full word returning nothing means you used the
+  wrong form. The converse bites harder: a phrase MATCH also returns a DIFFERENT word with the same
+  stem ("commercial officer" returns "commercial office"; "national treatment" returns
+  "most-favored-nation treatment"). A phrase count therefore carries TWO obligations, and they fail
+  SEPARATELY. Measured over two rounds of a real investigation, all eight threads of the second
+  round breached this rule, in four different ways: a bare `share` column, a phrase count with no
+  share at all, an unlabelled share, and the correct form applied unevenly.
+  (a) PUBLISH NO PHRASE COUNT WITHOUT ITS LITERAL SHARE. Regex over header+dateline+source_note+
+      body_text concatenated and whitespace-collapsed, on an evenly spaced sample of 40 (never
+      fewer than 30) from the (volume_id, document_id)-sorted hit list; the whole set under 300,
+      and a census for a family you argue from. Run it TWICE and LABEL BOTH: STRICT = single
+      spaces between the words; TOLERANT = each word allowed its inflections, and any run of
+      space, hyphen, comma, parenthesis or full stop between them. Publish tolerant, strict beside
+      it. AN UNLABELLED SHARE IS THE FAILURE THAT BITES: in this run, both "refutations" of a
+      published 1.000 were just its strict share, every miss an inflection. Below 0.80 TOLERANT a
+      family is unusable in its published form; read the misses before condemning one; and a 1.000
+      share tests the stemmer, not the referent, so test the referent separately.
+  (b) PUBLISH NO SHARE WITHOUT ITS DENOMINATOR, as "N of M", at the point of use. A share is a
+      number a reader must be able to re-derive from what you printed; it is not a claim.
+- body_text INCLUDES editorial footnotes. Term frequencies blend document and editor language.
+- citation_era is a citation FORM (decimal, lot_file, structured, cfpf, foreign, published,
+  named_series, unrecognized), NOT a date. Never plot it as a timeline.
+- cross_references.reference_type defaults body references to 'footnote'. It cannot support a
+  body-vs-footnote split.
+- document_sources (where a document CAME FROM, one row per document) and external_citations
+  (what a footnote MENTIONS, many rows per document) must never be combined into one count.
+- person_rollup is name-based clustering biased to under-merge; person counts are lower bounds.
+- person_mentions covers TEI-tagged mentions only; tagging is uneven across volumes.
+- Subject tags come from string matching, not semantic analysis. Treat as candidates. A tag may be
+  a single bare word; verify with the literal-phrase query before counting.
+- subject_tag_ids is always NULL. Ignore it.
+- bm25() is negative; better matches are more negative. ORDER BY score ASC.
+- SQLite LIKE is case-INSENSITIVE for ASCII; Python's `re` is case-SENSITIVE by default. The same
+  literal test written once in SQL and once in Python returns two different sets and neither errors.
+  Say which you used, and use one of them for a whole family.
+- length(body_text) counts CHARACTERS; `wc -c` counts BYTES. This corpus is UTF-8 and the two
+  disagree — frus1977-80v28/d206 is 35,125 characters and 36,615 bytes, and `wc -c` on a dumped
+  file reports 36,616, counting the newline the dump added. The reading accounting the REPORTING
+  block asks for is in characters.
+
+REPORTING
+- Show the exact SQL for every number you report — including SQL a script ran for you: paste the
+  predicate, not just the script's name. WHERE A NUMBER DOES NOT COME FROM SQL AT ALL — a
+  multi-stage pass over the TEI, a script over the bundled JSON — name the script, keep it and its
+  output on disk, and say which file holds which number.
+- DO NOT CLAIM YOUR LOG IS COMPLETE. **Declare what you left out instead.** End the log with an
+  `ELIDED:` line naming every command body, id list or output you shortened, or `ELIDED: nothing`
+  if that is true. A blanket "every command, verbatim" header is a violation of this rule even when
+  it happens to be accurate, because it is unverifiable — and measured across twelve runs, every
+  single log that carried one had an elided command body underneath it, once hiding a list of 42
+  (volume_id, document_id) pairs where the memo said 43. You will need to elide a hundred-character
+  `python3 -c` body; that is expected and permitted. Saying you did not is the failure.
+- Give proportions as "N of M" with the denominator, never as a bare percentage.
+- If a query returns no rows, say so explicitly and verify the query can return rows at all
+  before drawing any conclusion from the emptiness.
+- Do not quote text you have not retrieved in a result set in this session.
+- Flag when a result is thin enough that it may reflect my partial library rather than the corpus.
+- If you say an earlier pass was wrong, silent, or never read something: grep its FINAL files
+  (after its fix pass), show the command, and put the change in a table with the decisive query
+  run on BOTH sides.
+- If you read documents, report how many you retrieved whole (captured length = length(body_text))
+  and how many you quoted; keep the reading SELECT and the raw text on disk.
+
+SCOPING — applies whenever you are scanning the corpus to decide what to search for
+- Run a POSITIVE control ("Department of State", expect nonzero in every volume) and a NEGATIVE
+  control ("ZZZ_IMPOSSIBLE_ZZZ", expect 0) in the SAME pass. Report both. An absence is not a
+  finding until the controls prove the scan works.
+- [TEI] State your COUNTING SURFACE with every number: raw TEI, tag-stripped, or word-bounded.
+  They disagree by up to 14% on this corpus. Prefer tag-stripped + whitespace-collapsed.
+- [TEI] Never query a single literal. Count every spelling, hyphenation, plural, acronym and case
+  variant and report the split. Acronyms often outnumber spelled forms. The index CANNOT do this:
+  porter stemming folds `chiefs of mission` and `chiefs of missions` to one stem.
+- FALSE-FRIEND TEST: for any term the question itself supplied, compute its share in the
+  on-topic volumes and compare that to a control phrase's share. A term matching the baseline
+  is measuring the corpus, not the question — say so and stop using it.
+- Never scan a bare surname. Full-name and inverted-index forms only; <persName> markup covers
+  only 4-10% of mentions and cannot disambiguate.
+- Periodise on frus:doc-dateTime-min, NOT on the volume's series year. Say which you used.
+- Never publish a term's decade shape as raw counts alone: the 1940s holds 74,043 dated documents
+  and the 1870s 5,798. Give per-1,000 of that decade's dated non-apparatus documents beside every
+  raw count, with the numerator's top-volume share — a small decade's rate can be one negotiation.
+- [TEI] Separate document text from apparatus (front matter, abbreviation lists, footnotes,
+  index) before publishing any density, or say explicitly that you have not. This database can
+  drop front matter and editorial notes by column; it cannot separate a footnote from a body,
+  because body_text contains both.
+- Read the editors' chapter headings before writing queries. My modern phrasing for a subject
+  is usually absent from the corpus; theirs is a repeating formula.
+- A negative built from vocabulary postdating the period is circular. Before claiming the corpus
+  lacks pre-YEAR coverage, scan terms contemporaries would have used — including the COUNTERPART's
+  vocabulary (merchants, chambers, the foreign ministry), not only earlier names for the office.
+  Head an absence by the name you tested, and put the founding document beside it if the thing is
+  printed under another name.
+- Suppress the SECOND edition where its first edition is also present: drop
+  frus1951-54IranEd2 and frus1969-76ve15p2Ed2, never the first editions their ids are built from,
+  and never frus1977-80v09Ed2, which has no first edition to duplicate. Say which surface you
+  counted: the overlap is 718 documents in the vector artifacts and 701 in this index with
+  apparatus excluded.
+
+ARCHIVAL SCOPE — do not stop at what FRUS printed
+- FRUS is a SELECTION. Scoping is not finished when you know which volumes hold the question.
+  Also establish which archival units those documents came out of, and which units their
+  footnotes point at. Report both, always labelled by channel, and NEVER summed.
+- [JSON] Resolve as far as the bundled indexes reach, and report what you got. They are in the
+  app bundle at /Applications/FRUS Explorer.app/Contents/Resources/ and in the public repository
+  at FRUSExplorer/Resources/:
+    collection-usage-index.json  -> ranked archival targets for any volume scope
+    external-citation-index.json -> what the editors cited and did NOT print
+    central-files-index.json     -> lot number -> record group + series NAID + entry number
+    collection-authority.json    -> collection identity across spellings
+    series-facts-index.json      -> creator, extent, inclusive date span, access status, facility
+    lot-claimants-index.json     -> lots NARA divides across several series and the NAIDs several
+                                    lots converge on
+    presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
+    curated-lot-resolutions.json, digitized-ranges-index.json, accession-series-index.json
+  THE CONTAINER SHAPES ARE NOT WHAT A READER GUESSES, and guessing costs a whole pass — one agent
+    reported all eight of its target lots absent before it looked. `central-files-index.json` holds
+    `lotFiles` as a LIST of rows keyed on a `lotNumber` field with spaces folded (`68 D 451` ->
+    `68D451`), not a dict and not `lot`/`rawLot`. `lot-claimants-index.json` and
+    `curated-lot-resolutions.json` each hold `lots` as a LIST of rows — but
+    `volume-sources-index.json`'s top-level `lots` is a DICT and is EMPTY (those lots were folded
+    into `central-files-index.json`; read its `majorCollections` instead). `series-facts-index.json`
+    holds its rows under `byNaId` under one-letter keys that the top-level `legend` names; a key
+    dereferences into a top-level vocabulary array only where its `into` says so, and `x`, `y0`,
+    `y1`, `cy0`, `cy1` are literal values. In all of them the version key is `schemaVersion`; there
+    is no `schema`. Read the file's own top-level keys before writing the accessor.
+  accession-series-index.json keys on `<record group>/<accession>` and THE RECORD GROUP IS PART
+    OF THE KEY: an FRC accession number is unique only within its group (`68A5612` is 1 series
+    in RG 59 and 18 in RG 84). Match a FRUS "FRC Accession No. 71 A 6682" only against the group
+    that citation sits in. Nothing in the app reads this file.
+  decimal-class-labels.json gates itself: read `coverage.glossableYears` and gloss a key ONLY
+    when the DOCUMENT's own date falls inside a listed span. Outside them the file has no gloss
+    (`coverage.keyOutsideGlossableYears` says so) — composing anyway returns a plausible WRONG
+    reading, not a miss, because the classification was renumbered in 1950. `coverage.notShipped`
+    names the eras it could not parse, with the counts that fell short.
+- A CORPUS-SCOPING NEGATIVE IS NOT A RESEARCH NEGATIVE. "FRUS does not print this" is an
+  invitation to answer "and here is the series that does". Never publish the first without
+  having attempted the second.
+- Label every archival count with its CHANNEL (came-from / pointed-at / union) and its volume
+  set. Two channels over one scope are two different numbers.
+- NARA's creator attribution is a decoy surface like any other — measured at 56% precision on
+  one route. Verify a series' creator heading before calling it on-topic.
+- The offline stack barely reaches before 1940 (11 of 695 bundled series). Say so rather than
+  reporting an empty pre-war roadmap as an archival absence.
+- The pointed-at channel (external_citations) has no row before 1910-12-06, stores the citation
+  fragment, not the sentence, and holds lot, library and decimal anchors only. Say so before
+  ranking anything on it.
