@@ -324,9 +324,27 @@ public struct GroupBuildResult: Sendable {
 /// (`PROJECT_ONLY=1`): the raw bytes are already on disk, so fixing a projection costs seconds
 /// rather than another 22 GB.
 ///
-/// One group is built at a time and its records handed straight to the writer, so peak memory is one
-/// group's projection rather than the whole corpus. That matters at `DEPTH=all`, where RG 59's item
-/// records run into the millions.
+/// One group is built at a time and its records handed straight to the writer, so peak memory is
+/// dominated by one group's projection rather than by the whole corpus.
+///
+/// **Two qualifications, both added at P-2 after measuring, because the sentence above used to be
+/// stated without them.**
+///
+/// 1. *Dominated by*, not *equal to*. `RecordGroupCatalogRunner`'s `sampleRecords` accumulates
+///    across the WHOLE run (declared at `:291`, appended at `:571`), at one record in `sampleEvery`.
+///    It is harmless today only because RG 59 is **second** in ``defaultRecordGroupNumbers``, so it
+///    holds about a megabyte when the largest group peaks. Reorder that array and the property
+///    degrades silently.
+/// 2. The peak is roughly **twice** the projected array, not equal to it, because
+///    ``RecordGroupCatalogWriter/writeShard(_:)`` used to encode the whole shard to one `Data`
+///    before writing. Measured over four real shards, that transient was 3.5–5.1× the output bytes.
+///    P-2 streams the write, so the peak is now the array plus one encoded record — a 2.14–2.36×
+///    cut. The table is on `writeShard`.
+///
+/// What is NOT fixed: the array is linear in the group's size and still resident, because the shard
+/// sorts by NAID and the runner walks the sorted array after the write. `DEPTH=all` remains out of
+/// reach; how many item records RG 59 would add at that depth has never been measured, and the
+/// "millions" this comment used to assert was not supported by anything in the artifacts.
 ///
 /// Version history:
 ///   1.0 — Session 2026-07-29: initial implementation

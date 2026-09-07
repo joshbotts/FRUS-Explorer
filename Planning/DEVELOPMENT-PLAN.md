@@ -12483,3 +12483,88 @@ localization keys — every chip string already lives in `ProvenanceSource`.
 `.namedFileSeries` Record Group row uses the same "Record Group" label and is uniformly
 `.naraCatalog`, but it is outside the row's three sections, and `provenanceSection` is a `switch`, so
 a reader never sees it beside the badged lot row — only across documents.
+
+## Session 2026-09-07c — P-2: the shard write streams, and the row's headline is retracted
+
+`RecordGroupCatalogWriter.writeShard` encoded a whole record group to one `Data` before writing.
+It now encodes one record at a time. The row framed this as the fix for `DEPTH=all`; it is not, and
+saying so is half the work.
+
+**What was measured, four real shards, one arm per process.**
+
+| shard | JSON out | records array | whole-encode peak | streamed peak | ratio |
+|---|---|---|---|---|---|
+| `rg_239` | 78.3 MiB | 197.1 | 474.4 | 200.8 | 2.36× |
+| `rg_469` | 163.1 MiB | 728.3 | 1,558.6 | 728.7 | 2.14× |
+| `rg_306` | 212.5 MiB | 830.6 | 1,799.2 | 831.6 | 2.16× |
+| `rg_84` | 293.3 MiB | 1,004.9 | 2,171.1 | 1,011.8 | 2.15× |
+
+The streamed peak lands within **0.7–6.9 MiB** of the resident array, which is the claim that
+matters: the transient really is one record, not one shard.
+
+**Measure one arm per process.** My first run reported 1.37× / 2.13× / 1.43× and appeared to refute
+the reconnaissance. The fault was the experiment: both arms ran in one process, and malloc does not
+return the first arm's high-water mark to the OS, so the streamed peak inherited it. Separate
+processes give a consistent 2.14–2.36×. The trap is recorded on `writeShard`.
+
+**`DEPTH=all` IS NOT FIXED, and CLAUDE.md's claim is retracted rather than left to be fulfilled.**
+The records array must stay resident for two independent reasons, both verified in the code:
+`RecordGroupIndexShard.init` sorts by NAID for a stable diff, and `RecordGroupCatalogRunner` walks
+the sorted array *after* `writeShard` returns to build `series-sample.json`. At 2.5–4.5× the output
+bytes it is the other half of the peak and is linear in group size. Applying the ratio to the old
+~18.5 GB figure gives roughly **8.6 GB — a 53% cut, not a fix** — and that is an extrapolation, not
+a measurement: `rg_59.json` is 3,394 MiB, twelve times the largest shard measurable here, and the
+raw store this generator harvests into no longer exists, so the full build cannot be re-run at all.
+Making `DEPTH=all` finish needs an external sort over spilled per-record blobs. Separate work.
+
+**Byte identity, and why it had to be proved rather than argued.** The prologue and epilogue are
+encoder-authored: the shard is encoded once with an empty records array and split at its own
+`"records":[]`, so `.sortedKeys` ordering, the omission of a nil `title`, number formatting and
+escaping stay decided by the encoder that produced today's artifacts. **Nothing in the repo pinned
+these bytes before this session** — `RunnerEndToEndTests.isDeterministic` compares two fresh runs
+against each other rather than a golden, and `harvestsEndToEnd` decodes rather than compares, so
+both stay green under any encoder that round-trips. Parity is now pinned against the 500 committed
+sample records, plus the boundaries the corpus never exercises (0, 1, 2 records; nil title;
+adversarial escaping).
+
+**Atomicity kept, because losing it would have been quiet.** A truncated shard does not fail its
+consumers loudly: `SeriesFactsIndexRunner` throws only on *zero* creators, `AccessionSeriesIndexRunner`
+only on an *empty* map — so a 60% shard yields a 60% shipped artifact and exit 0. The write stages to
+`.json.partial` and renames, the shape `RecordGroupHarvester.openStagingWriter` already uses. **The
+extension is load-bearing**: two consumers filter this directory on `pathExtension == "json"` with no
+`rg_` guard, and `AccessionSeriesIndexRunner` derives the record group from the *filename*, so a
+staging file named `rg_59.tmp.json` would be read as group `"59.tmp"` and corrupt every key in a
+shipped artifact.
+
+**12 mutations, 0 survivors — after two harness faults, both mine.**
+
+1. *The classifier was measuring itself.* The first sweep reported five COMPILE-FAILs. `swift test`
+   prints `Caught error: ` for a thrown error, and my `error: ` grep read that as a compile failure.
+   Five "inconclusive" results were really kills. Verdict order now checks the run summary first.
+2. *A mutation that only edited a comment passed as a survivor.* `perl -0p` without `/g` replaced the
+   first occurrence of `.json.partial` — in the doc block, not the code — and my md5 no-op check was
+   satisfied because the file *had* changed. The harness now compares the **comment-stripped** file
+   and reports `NO-OP-ON-CODE`. This is the same family as P-1's M-5, one turn later and caught by a
+   guard rather than by luck.
+
+**One survivor was real, and fixing it improved the code.** Weakening `guard occurrences == 1` to
+`>= 0` survived — correctly. With the split written inline, no shard could reach that guard, because
+a string value containing the marker has its quotes escaped by JSON; I tried a poisoned title and it
+did not collide. The guard's actual purpose is to catch a change to `compactEncoder.outputFormatting`
+— `.prettyPrinted` emits `"records" : []`, matching **zero** times, and the writer would otherwise
+emit a truncated shard silently. Extracting `split(emptyRecordsSkeleton:)` makes that reachable from
+a test, and the re-run killed the mutation.
+
+**Two other doc claims corrected while here.** `CatalogIndexBuilder`'s "peak memory is one group's
+projection" omitted that `sampleRecords` accumulates across the whole run (harmless only because RG
+59 sits *second* in `defaultRecordGroupNumbers` — reorder it and the property degrades silently), and
+its "RG 59's item records run into the millions" was unsupported by anything in the artifacts. The
+writer's artifact table said `series/rg_<N>.json` totals "~165 MB"; it is **4.5 GB**, with
+`rg_59.json` alone at 3.56 GB — out by 27×.
+
+**Adjacent, cheaper, and deliberately NOT done here.** Three shipped generators still read
+`rg_59.json` whole through `HarvestShardReader.read(_:)` (documented 7.01 GB resident) —
+`LotClaimantsIndexRunner:105`, `SeriesFactsIndexRunner:437`, `AccessionSeriesIndexRunner:221`. All
+three consume records one at a time into small dictionaries; `forEachRecord` already exists in the
+same target, is already a dependency, and is already parity-pinned by `HarvestShardStreamingTests`.
+Unlike P-2 it is testable against the real 3.56 GB shard on this machine today. It is a separate row.
