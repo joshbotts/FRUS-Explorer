@@ -340,7 +340,7 @@ of the editors' source note. This answers *where the printed document came from*
 | Column | Meaning |
 |---|---|
 | `repository` | `Department of State`, `National Archives`, a presidential library, `Central Intelligence Agency`, … The vocabulary is closed (Department of State 212,858 · National Archives 10,514 · Nixon 8,014 · Johnson 4,693 · …); it has **no Commerce value**, so a repository the parser does not recognise falls to `raw_text`/`series_name`, not to a new label. |
-| `record_group` | NARA record group number, where asserted. |
+| `record_group` | NARA record group number, where asserted — **and it is spelled two ways inside this one column, so a bare `GROUP BY record_group` splits a record group in half.** Measured 2026-09-06: `RG-59` 206,766 rows against a bare `59` 11,907, and `RG-84` 487 against `84` 148. Only those two are dual-spelled; `RG-256` (1,547) is prefixed only and the remaining 31 of the 34 record groups are bare only. RG 59 alone is 218,673 of the 223,372 rows that carry a record group, so the trap fires on almost every row. `volume_sources.record_group` is bare only, so a comparison or join between the two tables on the raw spelling silently drops all 206,766 `RG-59` rows. Normalise before grouping or comparing (`REPLACE(record_group, 'RG-', '')`). |
 | `lot_file`, `lot_file_norm` | Lot file as cited, and its canonical compact key (`64D199`) for joining. |
 | `series_name` | Series or file designation as parsed. |
 | `decimal_class` | Central-file class key (`751.00`, `POL 27 ARAB-ISR`), canonicalized. The schedule was **renumbered in 1950** (the artifact's own `provenance` string says so): class 4 is *Claims* before and *U.S. trade* after; class 6 is *Commerce* before and bilateral *political relations* after (`611.41: U.S.-U.K. relations` in the editors' own gloss; `611.31` is U.S.–Venezuela commerce after 1950); country numbers move too. A prefix is a false friend across 1950-01-01 — bound every `decimal_class` family by `document_dates.date_iso` at that date, publish the two halves as two sets, and print the predicate beside the count. Measured on the working scope: `411.*` = 327 documents in 46 volumes after, 259 in 29 before (44% of the undated union are claims cases). Country numbers carry a **letter** for dependencies and derived states (`41D` Ireland, `11B` Philippines) and the corpus writes punctuation variants (`611.37.31`, `611.60c.31`): never let the schedule's shape decide the predicate — `GLOB '611.[0-9][0-9]31'` looks like the careful choice and silently drops Ireland (20 documents) and the Philippines (12), while `LIKE '611.%31'` admits the renumbered post-1950 class. Use the date. And `document_sources` stores the letter in upper case (`60F`) where `decimal-class-labels.json` keys it lower (`60f`); one thread's "all bare" claim was a case-sensitive lookup. |
@@ -731,7 +731,8 @@ ORDER BY docs DESC;
 ```
 
 Label the output "citation form", not "era". For a repository breakdown use `repository` and
-`record_group`; for lot-file work join on `lot_file_norm`, never on the raw `lot_file` spelling,
+`REPLACE(record_group, 'RG-', '')` — never the raw `record_group`, which is dual-spelled
+([§4.4](#44-archival-provenance)); for lot-file work join on `lot_file_norm`, never on the raw `lot_file` spelling,
 which varies (`64 D 199`, `64D199`, `64 D199`).
 `lot_file_norm` is a parse, not an assertion, and the parser bounds — but does not eliminate — the
 way a secondary citation can be captured as the document's own. The two Nixon Presidential Materials
@@ -1019,7 +1020,12 @@ returns a large, plausible, meaningless result set. So does a filter that forgot
 
 A protocol that catches most of it:
 
-1. **Make the agent show the SQL for every number.** No exceptions, including numbers in prose. Read
+1. **Make the agent show the SQL for every number — including SQL a script ran for it.** No
+   exceptions, including numbers in prose. Where a number genuinely has no SQL behind it (a
+   multi-stage pass over the TEI, a script over the bundled JSON), require the script and its
+   output on disk instead, plus a line saying which file holds which number: §12 admits that route
+   and this protocol must too, or a reading round scores zero here for a reason that is not the
+   agent's fault. Read
    the `WHERE` clause. Most errors are visible there in five seconds. Then resolve five report
    labels at random against the log. A label that resolves to nothing, a regex elided with "…", or a
    printed query returning a different number from the one beside it leaves the number unverified
@@ -1214,9 +1220,22 @@ KNOWN TRAPS — do not fall into these:
   ('containment' -> 'contain'); a vocab lookup for a full word returning nothing means you used the
   wrong form. The converse bites harder: a phrase MATCH also returns a DIFFERENT word with the same
   stem ("commercial officer" returns "commercial office"; "national treatment" returns
-  "most-favored-nation treatment"). Publish no phrase count without its literal share, sampled over
-  header+dateline+source_note+body_text, tolerant with strict beside it; below 0.80 tolerant is
-  unusable; read the misses before calling a family unusable; a 1.000 share does not test the referent.
+  "most-favored-nation treatment"). A phrase count therefore carries TWO obligations, and they fail
+  SEPARATELY. Measured over two rounds of a real investigation, all eight threads of the second
+  round breached this rule, in four different ways: a bare `share` column, a phrase count with no
+  share at all, an unlabelled share, and the correct form applied unevenly.
+  (a) PUBLISH NO PHRASE COUNT WITHOUT ITS LITERAL SHARE. Regex over header+dateline+source_note+
+      body_text concatenated and whitespace-collapsed, on an evenly spaced sample of 40 (never
+      fewer than 30) from the (volume_id, document_id)-sorted hit list; the whole set under 300,
+      and a census for a family you argue from. Run it TWICE and LABEL BOTH: STRICT = single
+      spaces between the words; TOLERANT = each word allowed its inflections, and any run of
+      space, hyphen, comma, parenthesis or full stop between them. Publish tolerant, strict beside
+      it. AN UNLABELLED SHARE IS THE FAILURE THAT BITES: in this run, both "refutations" of a
+      published 1.000 were just its strict share, every miss an inflection. Below 0.80 TOLERANT a
+      family is unusable in its published form; read the misses before condemning one; and a 1.000
+      share tests the stemmer, not the referent, so test the referent separately.
+  (b) PUBLISH NO SHARE WITHOUT ITS DENOMINATOR, as "N of M", at the point of use. A share is a
+      number a reader must be able to re-derive from what you printed; it is not a claim.
 - body_text INCLUDES editorial footnotes. Term frequencies blend document and editor language.
 - citation_era is a citation FORM (decimal, lot_file, structured, cfpf, foreign, published,
   named_series, unrecognized), NOT a date. Never plot it as a timeline.
@@ -1230,9 +1249,23 @@ KNOWN TRAPS — do not fall into these:
   a single bare word; verify with the literal-phrase query before counting.
 - subject_tag_ids is always NULL. Ignore it.
 - bm25() is negative; better matches are more negative. ORDER BY score ASC.
+- SQLite LIKE is case-INSENSITIVE for ASCII; Python's `re` is case-SENSITIVE by default. The same
+  literal test written once in SQL and once in Python returns two different sets and neither errors.
+  Say which you used, and use one of them for a whole family.
+- length(body_text) counts CHARACTERS; `wc -c` counts BYTES. This corpus is UTF-8 and the two
+  disagree — frus1977-80v28/d206 is 35,125 characters and 36,615 bytes, and `wc -c` on a dumped
+  file reports 36,616, counting the newline the dump added. The reading accounting the REPORTING
+  block asks for is in characters.
 
 REPORTING
-- Show the exact SQL for every number you report.
+- Show the exact SQL for every number you report — including SQL a script ran for you: paste the
+  predicate, not just the script's name. WHERE A NUMBER DOES NOT COME FROM SQL AT ALL — a
+  multi-stage pass over the TEI, a script over the bundled JSON — name the script, keep it and its
+  output on disk, and say which file holds which number. What is not acceptable either way is a log
+  claiming a completeness it does not have. Measured over eight threads, every one headed its log
+  as complete — "every command that touched a surface, verbatim, in order", or "ALL commands … in
+  order" — above a log with an elided command body or an elided id list; in one the elided list on
+  disk held 42 (volume_id, document_id) pairs where the memo said 43. Elide nothing you rely on.
 - Give proportions as "N of M" with the denominator, never as a bare percentage.
 - If a query returns no rows, say so explicitly and verify the query can return rows at all
   before drawing any conclusion from the emptiness.
@@ -1295,6 +1328,17 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
                                     lots converge on
     presidential-library-catalog.json, volume-sources-index.json, decimal-class-labels.json,
     curated-lot-resolutions.json, digitized-ranges-index.json, accession-series-index.json
+  THE CONTAINER SHAPES ARE NOT WHAT A READER GUESSES, and guessing costs a whole pass — one agent
+    reported all eight of its target lots absent before it looked. `central-files-index.json` holds
+    `lotFiles` as a LIST of rows keyed on a `lotNumber` field with spaces folded (`68 D 451` ->
+    `68D451`), not a dict and not `lot`/`rawLot`. `lot-claimants-index.json` and
+    `curated-lot-resolutions.json` each hold `lots` as a LIST of rows — but
+    `volume-sources-index.json`'s top-level `lots` is a DICT and is EMPTY (those lots were folded
+    into `central-files-index.json`; read its `majorCollections` instead). `series-facts-index.json`
+    holds its rows under `byNaId` under one-letter keys that the top-level `legend` names; a key
+    dereferences into a top-level vocabulary array only where its `into` says so, and `x`, `y0`,
+    `y1`, `cy0`, `cy1` are literal values. In all of them the version key is `schemaVersion`; there
+    is no `schema`. Read the file's own top-level keys before writing the accessor.
   accession-series-index.json keys on `<record group>/<accession>` and THE RECORD GROUP IS PART
     OF THE KEY: an FRC accession number is unique only within its group (`68A5612` is 1 series
     in RG 59 and 18 in RG 84). Match a FRUS "FRC Accession No. 71 A 6682" only against the group
@@ -1320,9 +1364,11 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
 
 ### Which surface answers which block
 
-The block was re-measured at its current 143 lines and scored **100% compliance against a no-rules
-control's 77.6%** (C-0b, 2026-09-06, `Planning/C0b-Falsifier-2026-09-06.md`) — so the block below,
-not v1.10's shorter one, is the instrument. It was separately measured to hold across a doubled
+The block was measured at its **v1.19 length of 143 lines** and scored **100% compliance against a
+no-rules control's 77.6%** (C-0b, 2026-09-06, `Planning/C0b-Falsifier-2026-09-06.md`) — so the block
+below, not v1.10's shorter one, is the instrument. **It is now 181 lines and that score does not
+cover it**: v1.20 rewrote two rules that failed in all eight threads of a field run, and a C-0c at
+the new length is owed before the 100% may be quoted of this text. It was separately measured to hold across a doubled
 session at its v1.10 length (C-2); that survival test has not been repeated on the longer text. Its
 blocks are not equally reachable in any case. This is what an agent handed only the database can and cannot do:
 
@@ -2505,6 +2551,45 @@ SEMANTIC VECTORS
 ---
 
 *Version history*
+
+- 1.20 — 2026-09-06: **revisions a two-round field run earned.** The guide had been measured
+  (C-0b, 100% against a 77.6% control) but only at C-0 length — 30–60 tool calls in fresh context.
+  A 53-agent, 12.8 M-token investigation of chief-of-mission authority ran it over two rounds and
+  630 documents read whole (14 in round 1, 616 in round 2), scoring every thread against the
+  block's own rules. **Two rules failed in all eight threads of round 2 — round 1's per-rule
+  verdicts were withheld as unreliable — and both are revised here rather than restated.**
+
+  **§12's literal-share rule is split in two**, because it was failing four different ways under one
+  sentence — a bare share column, a count with no share at all, an **unlabelled share**, and
+  correct form applied unevenly. The measurement filed the third as a *refuted* `1.000`;
+  re-checking it here, both such refutations were the STRICT share recomputed against a TOLERANT
+  claim, every miss an inflection (*Chiefs of Station*, *letter of instruction*) — which §7.1
+  already rules harmless. None of the four is dishonesty-shaped; they are omissions and missing
+  labels one sentence could not tell apart, so (a) now carries the strict/tolerant definitions and
+  the sample rule outright, because no agent reads §7. **§12's "show the exact SQL"
+  rule now admits the script-and-output route**, because it is unachievable as written in a reading
+  round where numbers come out of multi-stage passes over the TEI — and the verifiers were in fact
+  marking *elision*, not defiance: eight of eight logs headed themselves as complete — four in the
+  words "every command … verbatim", the rest in their own — above an elided command body or id
+  list, one above a list holding 42 (volume_id, document_id) pairs where the memo said 43.
+
+  **§4.4 gains a data defect, not a usage trap: `document_sources.record_group` is spelled two ways
+  in the same column**, so a bare `GROUP BY` splits a record group in half — `RG-59` 206,766 against
+  a bare `59` 11,907, and `RG-84` 487 against `84` 148. Only those two of 34 record groups are
+  dual-spelled, and RG 59 is 218,673 of the 223,372 rows that carry one, so the trap fires on almost
+  every row. **§12's artifact list gains the container shapes** that cost an agent a whole pass
+  (`lotFiles` and `lots` are LISTS — except `volume-sources-index.json`'s `lots`, which is an EMPTY
+  DICT; `series-facts` rows sit under `byNaId` and dereference through `legend` only where the
+  legend's `into` says so), and **two known traps**: SQLite `LIKE` is
+  case-insensitive where Python's `re` is not, so the same literal test written twice returns two
+  sets and neither errors; and `length(body_text)` counts characters where `wc -c` counts bytes.
+
+  **THE CAVEAT THIS VERSION CARRIES, and it is the same one v1.11 carried until #1208 discharged
+  it.** §12's block goes **143 lines to 181**. C-0b measured the 143-line text and declared it the
+  instrument; that measurement does not cover 27% more text. The revisions are *responses to
+  measured failures* rather than additions on taste, and the two rewritten rules replace text that
+  scored 0 of 8 — but a **C-0c** at the new length is owed before the block's score may be quoted
+  again. Record: `~/frus-analysis/chief-of-mission/logs/measurement.md` and `measurement-r2.md`.
 
 - 1.19 — 2026-09-06: **#1207 closed.** §14.12 item 7 now points at
   `Planning/Agentic-Harness-Runbook.md`, which carries the operational facts the guide
