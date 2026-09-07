@@ -1,0 +1,19 @@
+{
+ "_note": "C-0d is SINGLE-ARM: every cell is a BLOCK cell. Frozen before launch.",
+ "d1": {
+  "arm": "BLOCK",
+  "question": "international postal conventions"
+ },
+ "d2": {
+  "arm": "BLOCK",
+  "question": "international postal conventions"
+ },
+ "d3": {
+  "arm": "BLOCK",
+  "question": "maritime neutrality in wartime"
+ },
+ "d4": {
+  "arm": "BLOCK",
+  "question": "maritime neutrality in wartime"
+ }
+}
