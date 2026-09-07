@@ -12695,3 +12695,95 @@ a passing one.
 
 Opened from this row: **R-1c** (per-volume shard invalidation), **R-1d** (the refresh placement),
 **R-1e** (revision stamping on re-index — reported as data-loss, *not verified by me*).
+
+## Session 2026-09-07f — A-1 / W-12: the parallel-series concordance, scored and deferred
+
+An assessment session, modelled on the W-15 geographic one. The deliverable is
+`Planning/W12-Parallel-Series-Concordance-Assessment-2026-09-07.md`, and **the owner's decision on
+reading it was to defer the feature indefinitely** — so the document was reframed as a **scoring
+report**: a record of research, not a plan of work. Nothing is queued, no artifact was created, and
+the costings and sequence it carries are explicitly recorded pricing rather than a commitment.
+
+The research still earned its place. The feature as briefed does not survive it, and the scoring
+report exists so the backlog text is not re-proposed on premises this session refuted.
+
+**Two candidates fell away and the join key was wrong.**
+
+- **The Wilson Center Digital Archive is off the internet.** `digitalarchive.wilsoncenter.org`
+  CNAMEs to a Cloudflare target that returns no address; the control `www.wilsoncenter.org` resolves,
+  so this is the host, not the network. Every Wayback capture from 2026-01-16 to 2026-04-20 is 403 and
+  there is none after that. It would have been refused anyway: its unit is a thematic *Collection*,
+  and the archived API records carry no coverage dates at either grain — only ingest timestamps.
+- **DBPO earns one row, not thirty.** Thematic rather than chronological, 27 of 29 volumes paywalled
+  so real coverage cannot be checked, and the one volume where it could be checked contradicted its
+  own title range.
+- **`dateRange` alone is not the clean join key**, though the brief's three numbers about it are all
+  correct. Long spans are *editorial tails*: `frus1872p2v5` runs 1620→1872 because an 1872 annual
+  prints a 1620 enclosure; `frus1952-54Guat` runs to 1975. Joining on it floods — a **median of 6**
+  counterpart volumes from AAPD and DBPO alone, max 18.
+
+**The fix costs nothing and was already in the bundle.** `manifest.json` carries `subseries` on every
+volume, and all **107** distinct values parse as a year or year range. Intersecting the two collapses
+the span to **median 0 years, max 10, with 0 empty intersections across all 552** — a display-time
+computation over two existing fields. No parse change, no index-version bump, no re-index.
+
+**What the reduced version *would* have been** — recorded, not taken: ~187 curated rows — AAPD 40 (annual, and the coverage year is a *field*, so the
+table is derivable rather than curated), Dodis 34 (open API + SQL dump, CC BY 4.0 — but the official
+dump has two verified date errors, so curate rather than import), DDF 113 of 185 (tiers 1–2; the
+1863–1914 tier has no per-volume date source and is deferred), DBPO 1 at series grain. Rendered as
+**one collapsed row per series**, because the flood measurement makes a flat list unusable — and the
+most valuable output is often *"no volume covers this period."*
+
+**I re-ran every join figure myself rather than inheriting it, and found one wrong.** Volumes with a
+span ≥ 20 years is **12, not 14** — checked by year subtraction and by exact days ÷ 365.2425, both
+give 12. The twelve are 1872p2v1/p2v2/p2v5, 1873p1v2, 1873p2v3, 1879, 1894app2, 1902app1, 1902app2,
+1925v02, 1929v01 and 1952-54Guat — nine of them 19th-century annuals with historical enclosures, which
+is the phenomenon the `subseries` intersection exists to collapse. The correction touches no
+conclusion; the argument rests on the shape of the tail, not its size. §8 of the assessment records
+what is verified and what is the researchers' own measurement.
+
+**Why deferred — the owner's reason, and I had inferred a different one.** Stated: *expanded
+maintenance obligations for only a partial internationalisation of perspective — all series would have
+been European.* I had written the deferral up as turning on the re-stamp cadence alone, which is half
+of it and misses the half that decides it. Corrected in the report and the plan of record.
+
+The four tractable targets are **Germany, Switzerland, France and the United Kingdom**. A panel
+captioned *"parallel editions"* on a corpus documenting US relations with the whole world would in
+practice mean *"what Western Europe published about the same months"* — a widening of view in exactly
+one direction. **And the refusal is what caused the skew**: the Wilson Center was the only candidate
+carrying non-Western material (translated Soviet, Chinese, East European and Korean documents), so
+losing it to §1.3 did not cost one source in five — it removed the only non-European perspective and
+left a set that is uniformly European by accident. Against that partial gain sits a permanent
+obligation: every target is a foreign ministry's website, two have changed publisher mid-series, one
+sits behind a proof-of-work wall, and one vanished during the research week.
+
+**What would reopen it** is therefore a *keyable non-European source* — a Soviet/Russian, Chinese,
+Japanese, Indian, Latin American, African or Middle Eastern series with per-volume dates — which would
+change the feature's meaning rather than its row count. An upstream machine-readable concordance would
+lower the cost, but cost was not the deciding factor and lowering it does not by itself reopen this.
+
+**The report marks its own shelf life (§8).** §2's per-series counts, access splits and URLs are
+**expired by default** on any revisit; only §1 — the join key, the flood, and why the Wilson Center was
+unkeyable even when it was up — was measured against this repository and survives.
+
+**A methodology note that cost me a wrong number earlier in the session.** Re-checking the brief's
+"a volume touches a mean of 4.66 of 7 regions", I first measured **4.21 and 51 all-seven volumes**
+against the brief's 4.66 and 95, and was ready to call the brief wrong. The brief was right: I had
+counted only the taxonomy's literal `other` subcategory, where `GeographicRegion.from(subcategory:)`
+routes all ~68 territory slugs to `.other` through its **default arm**. Measuring through the shipped
+rule reproduces 4.66 and 95 exactly. Same lesson as the #675 Python-proxy errors: measure through the
+code that ships.
+
+**A plan defect fixed in passing.** This plan of record carried **two different rows both called
+`A-1`** — §1d's concordance assessment and §2's owner-blocked "Meaning-mode prompts". Anyone told to
+"start A-1" could have begun either. The blocked one is renamed `A-2b`, with the collision recorded so
+the rename is legible.
+
+**And a workflow failure worth recording.** The five-way research fan-out hung: four researchers
+returned, the Wilson Center agent stopped mid-message, and because `parallel()` is a barrier the
+synthesis phase would have waited forever. Nothing had been written for over two hours and no
+completion notification was due — an indefinite wait that only ended because the owner asked what the
+task was doing. Diagnosed from the journal (4 of 5 results durable), stopped, the Wilson prompt
+time-boxed at 12 fetches, and resumed from the run id: the other four replayed from cache and only
+Wilson re-ran. **The lesson is not "workflows hang" — it is that a long-running fan-out over the open
+web needs a watchdog, because silence and progress look identical from outside.**
