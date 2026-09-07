@@ -22,7 +22,7 @@ import GeneratorKit
 /// | `manifest.json` | ~40 KB | yes — the provenance and self-assessment |
 /// | `census/*.csv` | ~100 KB–1 MB | yes — the field, value, control-number and creator inventories |
 /// | `harvest-report.txt` | ~10 KB | yes — the human review block |
-/// | `series/rg_<N>.json` | ~165 MB total | **no** — regenerate; RG 59 alone is tens of MB |
+/// | `series/rg_<N>.json` | **~4.5 GB total** at `seriesAndFileUnits` | **no** — regenerate; `rg_59.json` alone is **3.56 GB** |
 /// | `series-sample.json` | ~1 MB | yes — every Nth record, so the shape is reviewable in a diff |
 /// | `creators/creator-authority.json` | a few MB | yes — small, and the creator prose is the point |
 ///
@@ -93,13 +93,176 @@ public struct RecordGroupCatalogWriter: Sendable {
             atPath: seriesDirectory.appendingPathComponent("rg_\(recordGroup).json").path)
     }
 
-    /// Writes one record group's index shard.
+    /// Errors the shard writer can raise.
+    public enum ShardWriteError: Error, Equatable {
+        /// The `"records":[]` marker did not occur exactly once in the empty-records skeleton, so
+        /// the split point is not decidable.
+        ///
+        /// **This cannot be triggered by data, and that is worth knowing rather than assuming.** A
+        /// `title` set to the literal `records":[]` was tried and did *not* collide: JSON escapes
+        /// the embedded quote, so the encoded form is `records\":[]` and the marker stays unique.
+        /// What the guard actually protects against is a change to ``compactEncoder``'s
+        /// `outputFormatting` — `.prettyPrinted` emits `"records" : []`, which matches **zero**
+        /// times, and without this guard the writer would happily produce a truncated shard. The
+        /// zero case is the reachable one.
+        case ambiguousRecordsMarker(occurrences: Int)
+    }
+
+    /// Path for a shard's **staging** file — written during the encode, swapped in only on success.
+    ///
+    /// The extension is `.json.partial`, and that is load-bearing rather than cosmetic. Three
+    /// generators enumerate this directory, and two of them filter on `pathExtension == "json"`
+    /// with **no `rg_` prefix guard** (`SeriesFactsIndexRunner.swift:429`,
+    /// `AccessionSeriesIndexRunner.swift:211`; only `LotClaimantsIndexRunner.swift:96` checks the
+    /// prefix). Worse, `AccessionSeriesIndexRunner.swift:218-220` derives the record group from the
+    /// file *name*, so a staging file called `rg_59.tmp.json` would be read as record group
+    /// `"59.tmp"` and would silently corrupt every key in a shipped artifact. The `pathExtension`
+    /// of `rg_59.json.partial` is `partial`, which all three filters skip.
+    func stagingURL(recordGroup: Int) -> URL {
+        seriesDirectory.appendingPathComponent("rg_\(recordGroup).json.partial")
+    }
+
+    /// Splits an empty-records skeleton into the bytes that go before and after the record list.
+    ///
+    /// Extracted so the guard below is reachable from a test. Left inline it was **provably
+    /// untestable**: `occurrences` is always exactly 1 for any shard, because a string value that
+    /// contained the marker would have its quotes escaped — a mutation weakening the guard survived
+    /// a nine-mutation sweep for precisely that reason. Given a skeleton this function can be handed
+    /// one the encoder would never produce, which is the case worth guarding.
+    ///
+    /// - Parameter emptyRecordsSkeleton: a shard encoded with `records == []`.
+    /// - Returns: the bytes up to and including `[`, and the bytes from `]` onward.
+    /// - Throws: ``ShardWriteError/ambiguousRecordsMarker(occurrences:)`` when the marker does not
+    ///   occur exactly once — which is what happens if `compactEncoder`'s `outputFormatting` ever
+    ///   gains `.prettyPrinted`, since that emits `"records" : []` and matches **zero** times.
+    static func split(emptyRecordsSkeleton bytes: Data) throws -> (Data, Data) {
+        let marker = Data("\"records\":[]".utf8)
+        var occurrences = 0
+        var markerStart: Data.Index?
+        var search = bytes.startIndex..<bytes.endIndex
+        while let found = bytes.range(of: marker, in: search) {
+            occurrences += 1
+            if markerStart == nil { markerStart = found.lowerBound }
+            search = found.upperBound..<bytes.endIndex
+        }
+        guard occurrences == 1, let markerStart else {
+            throw ShardWriteError.ambiguousRecordsMarker(occurrences: occurrences)
+        }
+        // Split BETWEEN the `[` and the `]`, so the empty-records case emits `[]` with no separator
+        // and needs no special branch.
+        let split = markerStart + marker.count - 1
+        return (bytes[bytes.startIndex..<split], bytes[split..<bytes.endIndex])
+    }
+
+    /// Writes one record group's index shard, one record at a time.
+    ///
+    /// ## Why this does not encode the shard whole
+    /// `JSONEncoder.encode(shard)` builds an intermediate representation for every record before a
+    /// byte reaches disk, then materialises the finished bytes as one `Data`. Measured on these
+    /// types against three shipped shards, that transient is **3.98–5.09× the output size**:
+    ///
+    /// | shard | JSON out | records array | peak, whole encode | peak, streamed | ratio |
+    /// |---|---|---|---|---|---|
+    /// | `rg_239` | 78.3 MiB | 197.1 MiB | 474.4 MiB | 200.8 MiB | 2.36× |
+    /// | `rg_469` | 163.1 MiB | 728.3 MiB | 1,558.6 MiB | 728.7 MiB | 2.14× |
+    /// | `rg_306` | 212.5 MiB | 830.6 MiB | 1,799.2 MiB | 831.6 MiB | 2.16× |
+    /// | `rg_84` | 293.3 MiB | 1,004.9 MiB | 2,171.1 MiB | 1,011.8 MiB | 2.15× |
+    ///
+    /// A **2.14–2.36× cut in peak footprint**. The streamed peak lands within **0.7–6.9 MiB** of
+    /// the resident records array, which is the claim that matters: the transient really is one
+    /// record, not one shard.
+    ///
+    /// **Measure one arm per process.** Taking both in sequence understates the win badly — malloc
+    /// does not return the first arm's high-water mark to the OS, so the streamed peak inherits it
+    /// and `rg_306` reads 1.43× instead of 2.16×. `phys_footprint` sampled at 0.3 ms; the input
+    /// shard mapped `.alwaysMapped` so file pages are not charged.
+    ///
+    /// ## What this does NOT fix, stated because the plan row claimed otherwise
+    /// The records array stays resident, and it must: ``RecordGroupIndexShard/init`` sorts by NAID
+    /// for a stable diff, and `RecordGroupCatalogRunner` walks the sorted array *after* this
+    /// returns to build `series-sample.json`. At a measured 3.4–4.4× the output bytes that array is
+    /// the other half of the peak, and it is linear in the group's size. Applying the measured ratio
+    /// to CLAUDE.md's ~18.5 GB full-build figure gives roughly **8.6 GB — a 53% cut, not a fix** —
+    /// though treat that as an extrapolation and not a measurement: `rg_59.json` is 3,394 MiB,
+    /// twelve times the largest shard measured above, and it could not be run here because the raw
+    /// store this generator harvests into no longer exists. **`DEPTH=all` is still not finishable.**
+    /// Removing the array needs an external sort over spilled per-record blobs — retain
+    /// `(naId, offset, length)` per record, sort the keys, copy blobs in order — which makes peak
+    /// independent of group size and is a different, larger piece of work.
+    ///
+    /// ## Why the bytes cannot drift
+    /// The prologue and epilogue are **not hand-written**. The shard is encoded once with an empty
+    /// records array through the same ``compactEncoder``, and that skeleton is split at its literal
+    /// `"records":[]`. So `.sortedKeys` ordering, the omission of a nil `title`, number formatting
+    /// and every escaping rule are decided by the encoder that produced today's artifacts — and stay
+    /// decided by it if a field is ever added to the shard header. Every conformance in the shard
+    /// tree is synthesized (no `CodingKeys`, no custom `encode(to:)` anywhere under
+    /// `HarvestedRecord`), so encoding one record yields exactly the bytes the array encode would
+    /// have produced for that element.
+    ///
+    /// ## Atomicity is preserved, and its loss would have been quiet
+    /// The previous `.atomic` write is what made a crash mid-write leave the last good shard
+    /// intact, and the runner's materially-short guard above depends on that. A truncated shard
+    /// does not fail its consumers loudly: `SeriesFactsIndexRunner` throws only when creators
+    /// resolve to *zero* and `AccessionSeriesIndexRunner` only when the map is *empty*, so a 60%
+    /// shard yields a 60% artifact and exit 0. Hence the stage-then-rename below, the same shape
+    /// `RecordGroupHarvester.openStagingWriter` uses sixty lines away.
+    ///
+    /// - Returns: the number of bytes actually written, which the runner prints in its log line.
     @discardableResult
     public func writeShard(_ shard: RecordGroupIndexShard) throws -> Int {
-        let data = try Self.compactEncoder.encode(shard)
+        var skeleton = shard
+        skeleton.records = []
+        let skeletonBytes = try Self.compactEncoder.encode(skeleton)
+        let (prologue, epilogue) = try Self.split(emptyRecordsSkeleton: skeletonBytes)
+
         let url = seriesDirectory.appendingPathComponent("rg_\(shard.recordGroup).json")
-        try data.write(to: url, options: .atomic)
-        return data.count
+        let staging = stagingURL(recordGroup: shard.recordGroup)
+        if FileManager.default.fileExists(atPath: staging.path) {
+            try FileManager.default.removeItem(at: staging)
+        }
+        FileManager.default.createFile(atPath: staging.path, contents: nil)
+        let handle = try FileHandle(forWritingTo: staging)
+
+        var written = 0
+        do {
+            try handle.write(contentsOf: prologue)
+            written += prologue.count
+            let separator = Data(",".utf8)
+            for (offset, record) in shard.records.enumerated() {
+                if offset > 0 {
+                    try handle.write(contentsOf: separator)
+                    written += separator.count
+                }
+                let encoded = try Self.compactEncoder.encode(record)
+                try handle.write(contentsOf: encoded)
+                written += encoded.count
+            }
+            try handle.write(contentsOf: epilogue)
+            written += epilogue.count
+            try handle.synchronize()
+            try handle.close()
+        } catch {
+            // Leave the previous good shard in place, and leave no `.partial` behind for an
+            // operator to mistake for a live file.
+            try? handle.close()
+            try? FileManager.default.removeItem(at: staging)
+            throw error
+        }
+
+        // The swap is inside the same failure discipline as the write: a throwing `moveItem` would
+        // otherwise leave the previous good shard in place (correct) but strand a `.partial` an
+        // operator cannot distinguish from a live staging file (not correct).
+        do {
+            if FileManager.default.fileExists(atPath: url.path) {
+                try FileManager.default.removeItem(at: url)
+            }
+            try FileManager.default.moveItem(at: staging, to: url)
+        } catch {
+            try? FileManager.default.removeItem(at: staging)
+            throw error
+        }
+        return written
     }
 
     /// Writes the committed sample.
