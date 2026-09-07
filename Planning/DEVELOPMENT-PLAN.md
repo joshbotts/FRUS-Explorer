@@ -12787,3 +12787,73 @@ task was doing. Diagnosed from the journal (4 of 5 results durable), stopped, th
 time-boxed at 12 fetches, and resumed from the run id: the other four replayed from cache and only
 Wilson re-ran. **The lesson is not "workflows hang" — it is that a long-running fan-out over the open
 web needs a watchdog, because silence and progress look identical from outside.**
+
+## Session 2026-09-07g — the R-1 rows: two fixes, one row closed as not-a-defect
+
+The three follow-ups R-1a opened, taken together because R-1c and R-1d both touch
+`FRUSExplorerApp.swift` and separate branches would have conflicted.
+
+**R-1e — checked, and NOT a defect.** It was opened explicitly unverified, on a reconnaissance report
+alleging data loss. The mechanism is real: `auxMarkVanishedRevisions` runs on a `.rebaseline` pass, so
+a **parser** change that stops emitting a document stamps it `'vanished'` and nulls `reviewed_at`
+though no file changed. The data-loss reading is not, and the implied fix would have been a
+regression. Three facts settle it, each read directly:
+
+1. `auxDeleteVanishedCacheRows` runs unconditionally on the **same surviving-id set**, immediately
+   after. So the document really is gone from this device's index and every annotation anchored to it
+   really is an orphan, whatever caused it — and the mark is the only thing that says so. Four
+   surfaces read the kind (`ResearchView`, `VolumeUpdateReview`, `DocumentChangeBanner`, and
+   `ExcerptVerifier`, which upgrades a `documentNotIndexed` miss to `documentVanished` only when the
+   kind is exactly `"vanished"`). Suppress it and the reader gets silent orphans plus an export report
+   advising them to download a volume they already have.
+2. Nothing is destroyed. Row and hashes are kept; the `reviewed_at` null is deliberate and pinned by
+   `AnnotationReviewTests` — a review of the document is not a review of its disappearance.
+3. `storeIndexData` opens with `guard !data.documentCache.isEmpty else { return }`, so a failed parse
+   stamps nothing.
+
+Recorded on the method so nobody "fixes" it. It did surface one real defect, in **copy**: the row
+reads *"No longer in the volume after an update"*, attributing our parser change to the Office of the
+Historian. Opened as **R-1f**.
+
+**R-1d — the answer was neither placement R-1a considered.** R-1a framed it as "which download site
+gets the call" and deferred because none was safe. Neither is: `enqueueDownload` only *enqueues*, so a
+call beside any of them runs before the transfer, let alone the re-index. The hook belongs at the
+**batch teardown** — `endIndexingBatch` → a new `corpusSettled()` — which fires once after indexing
+settles, and batches what would otherwise be a full person re-cluster per volume during a corpus
+download. The context is now **non-optional** rather than guarded, so a future caller cannot write the
+`nil` bug at all.
+
+On R-1a's stated hazard, which I had inherited without checking: *"discards the reader's manual
+person-cluster decisions"* is **true of the materialised rollup and false of the records**.
+`consolidatePersonRollup` deletes exactly `person_rollup`, `person_rollup_member` and
+`person_cluster_candidate`; `PersonClusterOverride` rows are only ever removed by the reader. A `nil`
+context would rebuild without overrides *and* stamp the empty-set fingerprint — visibly wrong until
+something passes a real context, but recoverable. Smaller than R-1a assumed, still worth refusing.
+
+**R-1c — built, with the migration case as the trap.** `purgeShardsFailingBundledDigest` compares each
+on-disk shard against the bundled manifest's per-shard SHA. **An absent record means VERIFY, not
+TRUST**: no device has a sidecar yet, and recording the bundled digest without hashing would bless
+exactly the stale shard the row exists to catch. So the first launch hashes what is on disk once, and
+steady state opens no file. Two guards kept and tested: no expectations ⇒ no purge (a build with no
+shard manifest must not delete a reader's vectors), and a volume the manifest does not mention is left
+alone.
+
+**The sweep: 4 killed, 1 equivalent, 0 real survivors — and it took three tries to be worth reading.**
+
+- **M-5 genuinely survived**, and it was the important one: deleting `corpusSettled()` — R-1d's entire
+  fix — left the whole suite green. Now pinned by `CorpusSettleHookTests`, verified to fail without
+  the call. A source scan, and the suite says why: the hook fires from a private method behind a
+  watchdog, so a behavioural test would pin the watchdog rather than the hook.
+- **M-3 survived and should have.** Dropping `!expectedDigests.isEmpty` is an **equivalent mutant** —
+  with an empty dictionary the loop's inner `guard let expected … else { continue }` skips every
+  volume and returns the same `[]`. The outer check only saves a directory scan. Confirmed by reading
+  rather than by contriving a test to kill it.
+- **The simulator wedged three times**, twice mid-sweep and once during the follow-up investigation.
+  The harness now retries once with a reset per mutation and reports `WEDGED-TWICE` rather than a
+  verdict — but the investigation run wedged too and returned *zero* failing tests, which I nearly
+  read as "M-2 survives". A hard reset plus an unmutated control settled it.
+- **The harness reported the wrong killer for M-2.** It takes `sort -u | head -1` of the failing
+  tests, which is alphabetical, not causal — it named a test that should not fail under that mutation.
+  Re-run on a healthy simulator, M-2 is killed by the two tests that should kill it. **The lesson is
+  the P-1 one again: read *which* test killed a mutation, not that something did** — and a harness
+  that reports one arbitrary killer makes that harder, so it should report all of them.

@@ -1084,6 +1084,14 @@ final class AppState {
     /// recompute the citation engine's downloaded-volume set after a rebuild.
     var volumesDirectory: URL?
 
+    /// The app's SwiftData container, retained so main-actor work `AppState` itself initiates — the
+    /// post-indexing corpus refresh — can reach `PersonClusterOverride` without a view's
+    /// `@Environment(\.modelContext)` (R-1d).
+    ///
+    /// Not a `@Model` and not a stored property on one, so `frusModelTypes` is unchanged and no
+    /// CloudKit deploy is implied.
+    var modelContainer: ModelContainer?
+
     /// Reopens the read-only SQLite stores (`crossReferenceStore`, `personMentionStore`,
     /// `pageRangeStore`) and the `citationMatchingEngine` that captures one, against the settled
     /// database after an index rebuild. Call this whenever the index tables are rebuilt in-session —
@@ -1115,8 +1123,11 @@ final class AppState {
     /// open filter chips and dashboards can re-resolve the ids they are holding.
     ///
     /// - Parameter context: the main-actor context holding `PersonClusterOverride`. Required for
-    ///   correctness, not convenience — see `PersonRollupRefresh.afterCorpusChange`.
-    func refreshAfterCorpusChange(context: ModelContext?) {
+    ///   correctness, not convenience — see `PersonRollupRefresh.afterCorpusChange`. **Non-optional
+    ///   since R-1d**: a `nil` here snapshotted no overrides and stamped the empty-set fingerprint,
+    ///   rebuilding a rollup that ignored the reader's merges. The type now refuses it, which is
+    ///   stronger than a guard because a future caller cannot write the bug at all.
+    func refreshAfterCorpusChange(context: ModelContext) {
         refreshReadOnlyStores()
         // #777: a side-loaded volume is a corpus change the catalogue cannot see. Reconciling here
         // means the volume is browsable the moment its import finishes, and — because this also
@@ -1861,6 +1872,40 @@ final class AppState {
         guard let batch = indexingBatch else { return }
         completedIndexingBatchVolumeCount = batch.completed > 1 ? batch.completed : nil
         indexingBatch = nil
+        corpusSettled()
+    }
+
+    /// The one place an indexing-driven corpus change reaches ``refreshAfterCorpusChange(context:)``
+    /// (R-1d).
+    ///
+    /// ## Why here, and not at the download
+    /// `refreshAfterCorpusChange` had 16 call sites and **all of them were in the two storage hubs**.
+    /// No download path called it, so a downloaded or corrected volume's people stayed invisible and
+    /// its read-only stores stale until the next launch. There is no per-call-site fix worth having:
+    /// many `enqueueDownload` calls across the app produce a download, and `enqueueDownload` merely
+    /// *enqueues* — a refresh beside one runs before the transfer, let alone before the re-index, and
+    /// would be a call that looks right and does nothing.
+    ///
+    /// Every completion reaches this teardown instead, which runs only once the watchdog has seen the
+    /// batch generation unchanged with no indexing in flight.
+    ///
+    /// ## Why batched rather than per volume
+    /// `refreshAfterCorpusChange` reopens three SQLite connections, rebuilds the citation engine,
+    /// rescans the volumes directory and runs the person-rollup drift check — which on a drifted
+    /// corpus is a full re-cluster of the `persons` table. A per-volume call would run that once per
+    /// volume during a corpus download. Every bulk path in the hubs already calls it once after its
+    /// loop; this is the same convention, applied to the path that had none.
+    private func corpusSettled() {
+        guard let container = modelContainer else {
+            // Never the full refresh without a context. `PersonRollupRefresh.afterCorpusChange`
+            // would snapshot NO overrides and stamp the empty-set fingerprint, rebuilding a rollup
+            // that ignores the reader's merges until something passes a real context. The override
+            // ROWS survive either way — only the materialised rollup goes wrong — but a stale rollup
+            // is the smaller wrong answer than a confidently wrong one.
+            refreshReadOnlyStores()
+            return
+        }
+        refreshAfterCorpusChange(context: container.mainContext)
     }
 
     /// Arms the stall timeout described on ``indexingBatchWatchdog``.

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import CryptoKit
 import Foundation
 
 /// The device's Tier-2 store: per-volume int8 shards on disk, mapped on demand.
@@ -213,6 +214,87 @@ public actor SemanticShardStore {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try? current.write(to: generationMarkerURL, atomically: true, encoding: .utf8)
         return present.count
+    }
+
+    /// Per shard, the manifest SHA-256 this store has verified the file against (R-1c).
+    ///
+    /// A pure cache of a derivable fact — an entry means *this file was hashed and matched the digest
+    /// recorded here*. Deleting it costs a re-hash, never a re-download.
+    private var verifiedDigestsURL: URL { directory.appendingPathComponent(".verified-digests.json") }
+
+    /// The recorded digests, or an empty map when absent or unreadable.
+    private func verifiedDigests() -> [String: String] {
+        guard let data = try? Data(contentsOf: verifiedDigestsURL),
+              let map = try? JSONDecoder().decode([String: String].self, from: data) else { return [:] }
+        return map
+    }
+
+    /// Records the digests. Best-effort: a write failure costs a re-hash next launch, never
+    /// correctness.
+    private func writeVerifiedDigests(_ map: [String: String]) {
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(map) else { return }
+        try? data.write(to: verifiedDigestsURL, options: .atomic)
+    }
+
+    /// Discards shards whose bundled manifest digest has moved since they were adopted (R-1c).
+    ///
+    /// ## The hole this closes
+    /// ``purgeIfGenerationChanged()`` is the FAMILY gate and stays one string comparison, but its key
+    /// — `provenance.digestHex` — has **no corpus term** in its preimage: model, model-file SHA,
+    /// dims, chunking, prefix, pooling, quantization. Re-harvesting one corrected volume under the
+    /// same model family leaves that digest identical by design, and `EXPECT_DIGEST` enforces that it
+    /// stay identical. Meanwhile the three checks on the shard itself cannot see the change either:
+    /// the provenance digest is the same corpus-free value, `expectedDocumentCount` is unchanged when
+    /// the correction preserves the count, and the length check measures the file against **its own
+    /// header**. Measured over all 552 shipped shards, `bytes == 64 + n × (dims + 4)` holds 552/552
+    /// and 96 byte-lengths are shared by more than one volume — so shard length is a bijection with
+    /// document count and cannot distinguish two editions of the same size.
+    ///
+    /// The manifest's per-shard SHA-256 is the only byte-exact proof, and it was verified **at fetch
+    /// only**. Nothing re-checked a file already on disk.
+    ///
+    /// ## Cost, and why an absent record means VERIFY rather than TRUST
+    /// Steady state opens **no file**: a shard whose recorded digest already equals the bundled one is
+    /// skipped by string comparison, matching the family gate's design. A shard is hashed only when
+    /// its record is absent or differs.
+    ///
+    /// On the first launch after this ships, every record is absent — so every shard on disk is hashed
+    /// once. That one-time cost is the point: recording the bundled digest without hashing would bless
+    /// whatever is already there, including the stale shard this exists to catch, and the reader would
+    /// be no better off than before.
+    ///
+    /// - Parameter expectedDigests: per-volume manifest SHA-256, from
+    ///   `SemanticShardFetcher.bundledExpectations()`. Pass `nil` to skip — a build whose shard
+    ///   manifest is missing or from another generation has nothing to compare against, and a purge
+    ///   on no evidence would delete every shard the reader has.
+    /// - Returns: the volume ids discarded, so a caller can log or re-fetch them.
+    @discardableResult
+    public func purgeShardsFailingBundledDigest(_ expectedDigests: [String: String]?) -> [String] {
+        guard let expectedDigests, !expectedDigests.isEmpty else { return [] }
+        var recorded = verifiedDigests()
+        var discarded: [String] = []
+        var changed = false
+
+        for volumeID in volumeIDsOnDisk() {
+            guard let expected = expectedDigests[volumeID] else { continue }
+            if recorded[volumeID] == expected { continue }
+            let url = shardURL(for: volumeID)
+            guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
+            let actual = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+            changed = true
+            if actual == expected {
+                recorded[volumeID] = expected
+            } else {
+                try? FileManager.default.removeItem(at: url)
+                recorded[volumeID] = nil
+                discarded.append(volumeID)
+            }
+        }
+        // Records for shards no longer present would grow without bound across removals.
+        recorded = recorded.filter { expectedDigests[$0.key] != nil }
+        if changed { writeVerifiedDigests(recorded) }
+        return discarded.sorted()
     }
 
     /// Removes every shard — the corpus-wide teardown partner.
