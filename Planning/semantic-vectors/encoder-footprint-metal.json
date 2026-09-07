@@ -1,0 +1,206 @@
+{
+  "what": "The query encoder's in-app memory footprint under Metal, macOS. Plan-of-record A-2 \u2014 the measurement half of B-4. The CPU shape (iPhone-16e simulator) and the CLI ceiling were already known; this is the third and last point.",
+  "harness": "FRUSExplorer/App/SemanticEncoderFootprintRunner.swift, DEBUG-only, armed by FRUS_ENCODER_FOOTPRINT. Samples task_vm_info phys_footprint/resident_size at four points: before, after load, after 25 encodes, after unload (+2 s settle).",
+  "platform": "macOS 26.6.2 (25G83), 10 active processors, n_gpu_layers default -1 (all layers)",
+  "reproduce": "Launch with `open -n --env FRUS_ENCODER_FOOTPRINT=1 -a <app>`, NOT by running the binary from a shell. A shell-launched app is never frontmost, App Nap throttles the runner's .utility detached Task, and the run takes ~116 s instead of ~10 s (three attempts produced no JSON at all inside a 150 s window). Run 1 below was taken that way; its three encoder points agree with the rest and only its BASELINE is high, which is what App Nap leaves resident.",
+  "runs": [
+    {
+      "run": 1,
+      "launch": "shell (App Nap throttled; JSON after ~116 s)",
+      "measured": "2026-09-07T05:13:13Z",
+      "samples": [
+        {
+          "stage": "before",
+          "footprintMB": 181.3,
+          "residentMB": 309.3
+        },
+        {
+          "stage": "after load",
+          "footprintMB": 266.9,
+          "residentMB": 611.6
+        },
+        {
+          "stage": "after 25 encodes",
+          "footprintMB": 299.7,
+          "residentMB": 642.3
+        },
+        {
+          "stage": "after unload",
+          "footprintMB": 138.2,
+          "residentMB": 349.7
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "launch": "open -n --env (frontmost; JSON after ~10 s)",
+      "measured": "2026-09-07T05:27:38Z",
+      "samples": [
+        {
+          "stage": "before",
+          "footprintMB": 148.9,
+          "residentMB": 275.1
+        },
+        {
+          "stage": "after load",
+          "footprintMB": 268.0,
+          "residentMB": 610.9
+        },
+        {
+          "stage": "after 25 encodes",
+          "footprintMB": 305.3,
+          "residentMB": 647.2
+        },
+        {
+          "stage": "after unload",
+          "footprintMB": 143.9,
+          "residentMB": 360.5
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "launch": "open -n --env (frontmost; JSON after ~10 s)",
+      "measured": "2026-09-07T05:28:15Z",
+      "samples": [
+        {
+          "stage": "before",
+          "footprintMB": 147.7,
+          "residentMB": 275.2
+        },
+        {
+          "stage": "after load",
+          "footprintMB": 260.3,
+          "residentMB": 607.7
+        },
+        {
+          "stage": "after 25 encodes",
+          "footprintMB": 299.8,
+          "residentMB": 645.1
+        },
+        {
+          "stage": "after unload",
+          "footprintMB": 140.3,
+          "residentMB": 356.0
+        }
+      ]
+    },
+    {
+      "run": 4,
+      "launch": "open -n --env (frontmost; JSON after ~10 s)",
+      "measured": "2026-09-07T05:28:24Z",
+      "samples": [
+        {
+          "stage": "before",
+          "footprintMB": 147.7,
+          "residentMB": 273.1
+        },
+        {
+          "stage": "after load",
+          "footprintMB": 261.8,
+          "residentMB": 607.1
+        },
+        {
+          "stage": "after 25 encodes",
+          "footprintMB": 301.3,
+          "residentMB": 644.6
+        },
+        {
+          "stage": "after unload",
+          "footprintMB": 140.4,
+          "residentMB": 355.4
+        }
+      ]
+    },
+    {
+      "run": 5,
+      "launch": "open -n --env (frontmost; JSON after ~10 s)",
+      "measured": "2026-09-07T05:28:34Z",
+      "samples": [
+        {
+          "stage": "before",
+          "footprintMB": 146.7,
+          "residentMB": 272.3
+        },
+        {
+          "stage": "after load",
+          "footprintMB": 261.9,
+          "residentMB": 606.8
+        },
+        {
+          "stage": "after 25 encodes",
+          "footprintMB": 300.0,
+          "residentMB": 642.8
+        },
+        {
+          "stage": "after unload",
+          "footprintMB": 141.1,
+          "residentMB": 356.4
+        }
+      ]
+    }
+  ],
+  "footprintMB_across_runs_2_5": {
+    "before": {
+      "min": 146.7,
+      "max": 148.9,
+      "mean": 147.8
+    },
+    "after load": {
+      "min": 260.3,
+      "max": 268.0,
+      "mean": 263.0
+    },
+    "after 25 encodes": {
+      "min": 299.8,
+      "max": 305.3,
+      "mean": 301.6
+    },
+    "after unload": {
+      "min": 140.3,
+      "max": 143.9,
+      "mean": 141.4
+    }
+  },
+  "residentMB_across_runs_2_5": {
+    "before": {
+      "min": 272.3,
+      "max": 275.2,
+      "mean": 273.9
+    },
+    "after load": {
+      "min": 606.8,
+      "max": 610.9,
+      "mean": 608.1
+    },
+    "after 25 encodes": {
+      "min": 642.8,
+      "max": 647.2,
+      "mean": 644.9
+    },
+    "after unload": {
+      "min": 355.4,
+      "max": 360.5,
+      "mean": 357.1
+    }
+  },
+  "readings": [
+    "Peak footprint is ~301 MB and the post-unload floor ~141 MB, so the encoder costs about 160 MB of footprint while loaded.",
+    "It releases COMPLETELY: the fourth point lands 6 MB BELOW the run's own baseline (mean 141.4 against 147.8). The plan's CPU-shape claim holds under Metal.",
+    "Metal peaks ~91 MB LOWER than the CPU shape (301 vs 393), because the GGUF is mmapped and its clean pages are resident without being charged to phys_footprint \u2014 visible in the resident column, which peaks ~645 MB against a 229 MB model file.",
+    "Both are far under the CLI ceiling (639 MB footprint / 861 MB peak RSS), as the spike said a ceiling should be.",
+    "Load-on-demand plus unload is comfortable at the 3 GB iPadOS floor: the cost is transient and fully returned."
+  ],
+  "comparators": {
+    "CPU shape (iPhone-16e simulator, footprint MB)": [
+      141,
+      349,
+      393,
+      140
+    ],
+    "CLI spike (ceiling)": {
+      "peakRSS_MB": 861,
+      "footprint_MB": 639
+    }
+  }
+}

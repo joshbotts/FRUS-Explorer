@@ -130,7 +130,7 @@ from the designs; reading the code changed the answer for all but one.
 | Row | What | Size |
 |---|---|---|
 | **A-1** | **C-1 / Tier-E W-12** — the parallel-series concordance assessment (DBPO/DDF/AAPD/Dodis/Wilson Center). The 2026-08-28 plan calls it "the last startable Tier C row"; model it on the W-15 assessment | M |
-| **A-2** | **B-4 measurement half** — the query encoder's in-app Metal footprint. The obvious route has two documented obstacles and one broken command; read the screen note before starting | S |
+| ~~**A-2**~~ | ~~**B-4 measurement half** — the query encoder's in-app Metal footprint~~ **DONE 2026-09-07.** Peak footprint **301.6 MB**, post-unload floor **141.4 MB** — ~160 MB while loaded, released completely (ends below its own baseline). Metal peaks **~91 MB LOWER** than the CPU shape (301.6 vs 393), because the mmapped GGUF is resident without being charged to `phys_footprint`. `Planning/semantic-vectors/encoder-footprint-metal.json` | S |
 | **A-3** | **VM §3.2 M-6** — measure the in-app decade-accumulation cost, then scope or refuse it. Needs a small DEBUG driver first: there is no in-app decade-stepping affordance | M |
 
 ### 1e. Release readiness, startable before the volumes exist

@@ -9850,7 +9850,10 @@ ITSELF between `-ngl 0` and Metal at min 0.99987 over the same queries, so the b
 load 349 → after 25 encodes 393 → **after unload 140**. The encoder costs ~250 MB while
 in use and releases COMPLETELY — far under the spike's 639–861 MB CLI ceiling, and
 comfortable at the 3 GB iPadOS floor with load-on-demand + unload, which is the shipped
-shape. The Metal in-app number (devices/Mac) still unmeasured; the CLI ceiling bounds it.
+shape. **The Metal in-app number was measured at A-2 (2026-09-07)** and is the session entry
+at the end of this file: peak footprint **301.6 MB**, post-unload floor **141.4 MB**, so the
+encoder costs ~160 MB while loaded and releases below its own baseline. Metal peaks ~91 MB
+LOWER than this CPU shape, not higher.
 
 **Distribution, in the runbook's mandatory order.** (1) `frus-semantic-vectors` got its
 Model-weights README section + NOTICE first (commit `fb33b4f`); (2) THEN release
@@ -12347,3 +12350,70 @@ because they were in a different file, which is luck rather than method.
 
 Also: `Plan-Of-Record-2026-08-28.md` is marked superseded rather than deleted — its tier structure
 and §7–§9 reasoning are still worth reading, and the successor does not repeat them.
+
+## Session 2026-09-07 — A-2: the encoder's Metal footprint, and Metal is the cheaper backend
+
+The last of the three memory points. The CPU shape was measured at s2 (iPhone-16e simulator) and
+the CLI ceiling at the spike; the in-app **Metal** number was the one the plan said was "still
+unmeasured", and it is the number load-on-demand was designed against.
+
+**Why it rides the app.** Neither cheaper route can produce it, and both failures are already
+documented: the **simulator cannot**, because `SemanticQueryEncoder.load` forces `n_gpu_layers = 0`
+under `targetEnvironment(simulator)` — the paravirtual GPU runs the Metal kernels *wrong* rather
+than slowly (cosine ≈ −0.12, no error raised) — so a simulator run re-measures the CPU shape; and
+the **CLI is a ceiling, not a prediction**, taken before the app's mmap pin, its absence of a JSON
+dump, and its encode-then-release lifecycle. The macOS app is the one place full Metal offload, the
+shipped load path, and an in-process sampler hold at once. `SemanticEncoderFootprintRunner` is
+DEBUG-only and armed by `FRUS_ENCODER_FOOTPRINT`; it samples `task_vm_info` at four points and
+writes JSON into the container, because the Mac app is sandboxed and cannot write an arbitrary path
+(the sibling `CSUserQueryEvalRunner` records that same failure).
+
+**Metal is really in effect, and it is not taken on trust.** `llama_model_default_params()` in the
+vendored xcframework returns `n_gpu_layers = -1` — *"a negative value means all layers"* — measured
+by compiling C against the macOS slice rather than by reading the comment beside the call. The
+runner reports the value it observed, so an upstream bump that changes the default surfaces in the
+output instead of silently turning this into a second CPU measurement.
+
+**The numbers.** Five runs; footprint MB, mean of the four homogeneous ones (spread in brackets):
+
+| point | Metal, in-app (this session) | CPU shape (s2) |
+|---|---|---|
+| before | 147.8 [146.7–148.9] | 141 |
+| after load | 263.0 [260.3–268.0] | 349 |
+| after 25 encodes | **301.6** [299.8–305.3] | **393** |
+| after unload | **141.4** [140.3–143.9] | **140** |
+
+Three readings, and the middle one reverses an expectation:
+
+- **The encoder costs ~160 MB while loaded** (peak 301.6 against the 141.4 floor).
+- **Metal peaks ~91 MB LOWER than CPU, not higher.** The GGUF is mmapped and its clean pages are
+  resident without being charged to `phys_footprint` — visible in the resident column, which peaks
+  ~645 MB against a 229 MB model file. Both are far under the 639–861 MB CLI ceiling, which is what
+  a ceiling should do.
+- **It releases completely.** The fourth point lands ~6 MB *below* the run's own baseline. The s2
+  claim holds under Metal, and load-on-demand + unload is comfortable at the 3 GB iPadOS floor.
+
+**Two process notes, both worth more than the numbers.**
+
+*A provisional reading was wrong and was caught by re-running rather than by reasoning.* The first
+armed launch showed the footprint ending ~122 MB **above** its baseline, which would have
+contradicted "releases COMPLETELY". It was contaminated: #1239's index-version bump forced a full
+reindex, and 50 volumes parsed *during* the measurement. Found by grepping the run log for
+`parseVolumeFull` — a check made because the number was surprising, not because anything failed.
+The clean runs end below baseline.
+
+*A shell-launched macOS GUI app is not a neutral harness.* Run 1 took ~116 s to produce its JSON;
+three later attempts produced none at all inside a 150 s window, at 0 % CPU with RSS flat — the app
+had finished booting and simply never ran the work. The cause is App Nap: the app launched from a
+shell is never frontmost, and the runner's `.utility` detached Task is throttled to a standstill.
+Launched with `open -n --env FRUS_ENCODER_FOOTPRINT=1 -a <app>` the same run completes in ~10 s,
+every time. Run 1 is kept in the artifact rather than discarded: its three encoder points agree
+with the other four runs and only its *baseline* is high, which is exactly what App Nap leaves
+resident — so it is evidence about the harness, not a fifth measurement of the encoder. Note also
+that `print()` to a redirected stdout is block-buffered, so an empty log is not evidence of an
+empty run; the JSON file is the only reliable channel, and it is written on **every** path
+including the guard failures — which is what made "no file at all" diagnosable as "the runner never
+ran" rather than "the model was missing".
+
+Artifact: `Planning/semantic-vectors/encoder-footprint-metal.json` (all five runs, the spreads, and
+the reproduction rule).
