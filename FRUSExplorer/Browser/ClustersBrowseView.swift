@@ -508,7 +508,10 @@ struct ClusterDocumentsView: View {
     @ViewBuilder
     private func actionsSection(_ cluster: SemanticMapArtifacts.Cluster) -> some View {
         Section {
-            if let onSeeMap, let digest = BundledSemanticMap.index?.provenanceDigest {
+            // R-1b: the LAYOUT identity, not the family digest. A cluster id means nothing outside
+            // the layout that minted it, and the family digest is unchanged by a relayout — see
+            // `SemanticMapArtifacts.MapIndex.layoutIdentity`.
+            if let onSeeMap, let digest = BundledSemanticMap.index?.layoutIdentity {
                 Button {
                     onSeeMap(SemanticMapRequest(
                         volumeIDs: nil, scopeLabel: nil,

@@ -528,7 +528,7 @@ final class SemanticMapModel {
         }
         pendingFocusRegion = nil
         guard Self.regionFocusApplies(requestDigest: digest,
-                                      artifactDigest: BundledSemanticMap.index?.provenanceDigest),
+                                      artifactDigest: BundledSemanticMap.index?.layoutIdentity),
               let region = clusters.first(where: { $0.id == id }) else {
             #if DEBUG
             print("[SemanticMapModel] focusRegion(\(id)) refused: digest or id did not land")
