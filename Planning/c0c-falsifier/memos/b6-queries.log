@@ -1,0 +1,194 @@
+# queries.log — EVERY command that touched a surface, verbatim, in order.
+# Surfaces: DB   = sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db
+#           TEI  = /Users/jbotts/Development/frus/volumes/*.xml
+#           JSON = /Applications/FRUS Explorer.app/Contents/Resources/
+# Scripts referenced below are kept in this directory; their outputs are named at each step.
+# Shorthand used in shell loops is expanded where a loop generated more than one distinct predicate.
+
+# ---------- 0. setup + mandatory coverage ----------
+mkdir -p "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer/02d9a891-c562-471b-845c-53aa054cd34e/scratchpad/c0c/runs/b6"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache" ".schema frus_documents" ".schema document_dates" ".schema external_citations" ".schema document_sources"
+
+# ---------- 1. scoping controls (DB) ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'POSCTRL_docs', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'POSCTRL_vols', COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'NEGCTRL', COUNT(*) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+
+# ---------- 2. stemming probe: raw term counts, NO exclusions (to expose the porter fold) ----------
+# loop over t in: quarantine quarantin sanitary sanitari lazaretto pratique cholera "yellow fever" plague fumigation disinfection
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"<t>\"';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '\"<t>\"';"
+
+# ---------- 3. phrase families, apparatus excluded + Ed2 suppressed ----------
+# loop over q in: "sanitary convention" "sanitary conference" "international sanitary" "sanitary code"
+#   "pan american sanitary" "sanitary bureau" "sanitary regulations" "quarantine regulations"
+#   "quarantine station" "bill of health" "bills of health" "office international" "hygiene publique"
+#   "world health organization" "international office of public health" "marine hospital service"
+#   "public health service" "board of health" "surgeon general" "epidemic"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"<q>\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"<q>\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+
+# ---------- 4. volume ranking of the 10-term core family ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id, COUNT(*) AS n FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine OR \"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR lazaretto OR pratique OR \"bill of health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1 ORDER BY n DESC LIMIT 40;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'TOTAL_core_family', COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine OR \"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR lazaretto OR pratique OR \"bill of health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+
+# ---------- 5. 'quarantine' era/volume split ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'quarantine_all', COUNT(*), COUNT(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'quarantine_pre1910docs', COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dt.date_iso < '1910-01-01';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'quarantine_1945plus', COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dt.date_iso >= '1945-01-01';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'quarantine_cuba_vols', COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id LIKE 'frus1961-63%';"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(dt.date_iso,1,3)||'0s' AS decade, COUNT(*) AS hits FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND dt.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+
+# ---------- 6. decade denominators (dated, non-apparatus, Ed2 suppressed) ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(dt.date_iso,1,3)||'0s' AS decade, COUNT(*) AS dated_nonapparatus FROM document_cache d JOIN document_dates dt ON dt.volume_id=d.volume_id AND dt.document_id=d.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND dt.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT substr(dt.date_iso,1,3)||'0s' AS decade, COUNT(*) AS hits FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH 'sanitary' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND dt.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+
+# ---------- 7. document headers naming the topic ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id, f.document_id, substr(replace(d.header,char(10),' '),1,95) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'header:sanitary OR header:quarantine OR header:cholera OR header:\"yellow fever\" OR header:hygiene OR header:epidemic' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY f.volume_id, f.document_id;"
+
+# ---------- 8. the editors' CHAPTER HEADINGS (volume_structures) ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema volume_structures" ".schema volume_sources" ".schema document_subjects" ".schema document_subject_refs"
+# script headings.py -> headings_all.txt (66 headings). Its only SQL:
+#   SELECT volume_id, structure_json FROM volume_structures ORDER BY volume_id
+python3 -u headings.py > headings_all.txt 2> headings_err.txt
+# script chapters.py -> chapters.tsv (60 chapters, 435 documentIds). Same SQL as above.
+python3 -u chapters.py
+# curation of chapters.tsv into the core set -> core_chapters_final.tsv, core_docs.tsv (24 chapters / 100 docs / 21 volumes)
+#   inclusion regex : sanitary convention|sanitary conference|international sanitary|international office of public health|pan[- ]american sanitary|quarantine|sanitary commission for turkey|sanitary council
+#   exclusion regex : plant quarantine act|animal health|barley|health and sanitation program|school hygiene|Commonwealth
+python3 -u build_core_docs.py   # writes core_docs.tsv (all 100 volume_id/document_id pairs) + core_chapters_final.tsv (the 24 chapters with their documentId lists)
+
+# ---------- 9. named conferences / conventions: presence tests ----------
+# loop over q in the following, each run through this predicate shape:
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT '<q>' || '||' || COUNT(*) || '||' || IFNULL(group_concat(DISTINCT f.volume_id),'-') FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '<q>' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+#   q values, in order:
+#   "international sanitary conference" / "sanitary conference" / "international sanitary convention"
+#   "pan american sanitary code" / "pan-american sanitary" / "international office of public health"
+#   "office international dhygiene publique" / "international sanitary regulations" / "cordon sanitaire"
+#   "superior board of health" / "international quarantine board" / "quarantine board"
+#   "world health organization" / "world health assembly" / "international sanitary conference" OR "sanitary congress"
+#   "conseil sanitaire" / "board of health at constantinople" / "constantinople board of health"
+#   "sanitary council" / "venice" AND sanitary / "dresden" AND sanitary / "international health"
+#   smallpox / "epidemic intelligence"
+#   (two runs ERRORED and returned nothing: 'sanitary NEAR/6 conference' and 'quarantine NEAR/4 cholera'
+#    -> Error: stepping, fts5: syntax error near "/" ; no number in this memo comes from them)
+
+# ---------- 10. FALSE-FRIEND TEST ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'DENOM_ontopic', COUNT(*) FROM document_cache d WHERE d.volume_id IN ('frus1905','frus1906p2','frus1907p1','frus1907p2','frus1908','frus1909','frus1924v01','frus1926v01','frus1927v01','frus1935v04','frus1938v01','frus1940v05') AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'DENOM_corpus', COUNT(*) FROM document_cache d WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+# loop over t in: sanitary quarantine "bill of health" cholera treaty commerce "good offices" extradition
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"<t>\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN ('frus1905','frus1906p2','frus1907p1','frus1907p2','frus1908','frus1909','frus1924v01','frus1926v01','frus1927v01','frus1935v04','frus1938v01','frus1940v05');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"<t>\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+
+# ---------- 11. LITERAL-SHARE CENSUS (script share.py -> share_out.txt) ----------
+# python3, re module, re.IGNORECASE, whole hit set (census) for each family; surface =
+#   header||' '||dateline||' '||source_note||' '||body_text, whitespace-collapsed.
+# The SQL share.py runs, once per family, is exactly:
+#   SELECT d.volume_id, d.document_id, d.header||' '||IFNULL(d.dateline,'')||' '||IFNULL(d.source_note,'')||' '||d.body_text
+#   FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id
+#   WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+#     AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY d.volume_id, d.document_id
+python3 -u share.py "international sanitary convention" "sanitary convention" "sanitary conference" "bill of health" "quarantine regulations" "pan american sanitary" "quarantine station" "sanitary bureau" | tee share_out.txt
+
+# ---------- 12. REFERENT test for 'quarantine' ----------
+# (a) proximity classifier, script referent.py -> referent_out.txt + quarantine_classified.tsv.
+#     Its SQL:  ... WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0
+#               AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY d.volume_id, d.document_id
+python3 -u referent.py | tee referent_out.txt
+# (b) the SQL version actually reported in the memo (document-level co-occurrence), three statements:
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH q AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT 'quarantine_total', COUNT(*) FROM q;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH q AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')), dis AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'cholera OR \"yellow fever\" OR smallpox OR typhus OR epidemic OR sanitary OR pratique OR lazaretto OR \"bill of health\" OR disinfection OR fumigation OR pestilence OR bubonic' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT 'quarantine_WITH_disease_vocab', COUNT(*) FROM q WHERE EXISTS (SELECT 1 FROM dis WHERE dis.v=q.v AND dis.id=q.id);"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH q AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')), dis AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'cholera OR \"yellow fever\" OR smallpox OR typhus OR epidemic OR sanitary OR pratique OR lazaretto OR \"bill of health\" OR disinfection OR fumigation OR pestilence OR bubonic' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT substr(dt.date_iso,1,3)||'0s', SUM(CASE WHEN EXISTS(SELECT 1 FROM dis WHERE dis.v=q.v AND dis.id=q.id) THEN 1 ELSE 0 END) AS with_disease, COUNT(*) AS all_quarantine FROM q JOIN document_dates dt ON dt.volume_id=q.v AND dt.document_id=q.id WHERE dt.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+
+# ---------- 13. REFERENT test for 'sanitary' (the pork/cattle false friend) ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH san AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'sanitary' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')), ani AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'pork OR swine OR trichina OR trichinosis OR \"hog cholera\" OR cattle OR \"foot and mouth\" OR \"salted meats\" OR bacon OR hogs OR livestock OR \"live stock\"' AND d.is_front_matter=0 AND d.is_editorial_note=0), hum AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'cholera OR \"yellow fever\" OR smallpox OR typhus OR quarantine OR \"bill of health\" OR pratique OR lazaretto OR \"public health\" OR \"board of health\" OR plague' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT substr(dt.date_iso,1,3)||'0s' dec, COUNT(*) sanitary_docs, SUM(CASE WHEN EXISTS(SELECT 1 FROM ani WHERE ani.v=san.v AND ani.id=san.id) THEN 1 ELSE 0 END) with_animal_meat_vocab, SUM(CASE WHEN EXISTS(SELECT 1 FROM hum WHERE hum.v=san.v AND hum.id=san.id) THEN 1 ELSE 0 END) with_human_disease_vocab FROM san JOIN document_dates dt ON dt.volume_id=san.v AND dt.document_id=san.id WHERE dt.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+
+# ---------- 14. the frus1938v01 compilation ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT structure_json FROM volume_structures WHERE volume_id='frus1938v01';"   # piped to python to print the 'Sanitary' chapter node verbatim
+
+# ---------- 15. READING PASS (full documents, kept on disk) ----------
+# read1.sql -> stdout (7 rows: header/dateline/source_note/length only)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < read1.sql
+# read2.sql -> read2_raw.txt (14 documents, whole body_text)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < read2.sql > read2_raw.txt
+# capture check: captured chars == length(body_text) for 14 of 14
+# read3.sql -> read3_raw.txt (6 documents, whole body_text)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < read3.sql > read3_raw.txt
+# read4.sql -> read4_raw.txt (3 documents, whole body_text)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < read4.sql > read4_raw.txt
+
+# ---------- 16. ARCHIVAL CHANNELS (DB) ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_sources"
+# core_vals.txt = the 100 (volume_id,document_id) VALUES rows built from core_docs.tsv:
+awk '{printf "(%s%s%s,%s%s%s),", "\x27",$1,"\x27","\x27",$2,"\x27"}' core_docs.tsv | sed 's/,$//' > core_vals.txt
+# channels.sql (six statements, each opening WITH core(v,id) AS (VALUES <the 100 pairs>)).
+# The 100 pairs are NOT elided: they are on disk, one per line, in core_docs.tsv (100 lines) and
+# inline-formatted in core_vals.txt (2,183 bytes), both in this directory. channels.sql itself is here too.
+#   SELECT 'CAME_FROM rows (document_sources)', COUNT(*) FROM core JOIN document_sources s ON s.volume_id=core.v AND s.document_id=core.id;
+#   SELECT 'CAME_FROM by citation_era: '||IFNULL(s.citation_era,'NULL'), COUNT(*) ... GROUP BY s.citation_era ORDER BY 2 DESC;
+#   SELECT 'CAME_FROM decimal_class '||IFNULL(s.decimal_class,'-'), COUNT(*) ... WHERE s.decimal_class IS NOT NULL GROUP BY s.decimal_class ORDER BY 2 DESC LIMIT 25;
+#   SELECT 'CAME_FROM record_group '||IFNULL(s.record_group,'-')||' | repo '||IFNULL(s.repository,'-'), COUNT(*) ... GROUP BY 1 ORDER BY 2 DESC LIMIT 15;
+#   SELECT 'POINTED_AT rows (external_citations)', COUNT(*) FROM core JOIN external_citations e ON e.volume_id=core.v AND e.document_id=core.id;
+#   SELECT 'POINTED_AT docs with >=1 row', COUNT(DISTINCT e.volume_id||'/'||e.document_id) FROM core JOIN external_citations e ON ...;
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < channels.sql
+
+# ---------- 17. archival channels over the 13-term family (538 docs) ----------
+# FAM = '"sanitary convention" OR "sanitary conference" OR "international sanitary" OR "sanitary code" OR "sanitary bureau" OR "sanitary regulations" OR "quarantine regulations" OR "quarantine station" OR "quarantine board" OR lazaretto OR pratique OR "bill of health" OR "international office of public health"'
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH fam AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR \"quarantine regulations\" OR \"quarantine station\" OR \"quarantine board\" OR lazaretto OR pratique OR \"bill of health\" OR \"international office of public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT 'FAMILY_docs', COUNT(*), COUNT(DISTINCT v) FROM fam;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH fam AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR \"quarantine regulations\" OR \"quarantine station\" OR \"quarantine board\" OR lazaretto OR pratique OR \"bill of health\" OR \"international office of public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT 'CAME_FROM era '||s.citation_era, COUNT(*) FROM fam JOIN document_sources s ON s.volume_id=fam.v AND s.document_id=fam.id GROUP BY 1 ORDER BY 2 DESC;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH fam AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR \"quarantine regulations\" OR \"quarantine station\" OR \"quarantine board\" OR lazaretto OR pratique OR \"bill of health\" OR \"international office of public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT 'POINTED_AT rows', COUNT(*), COUNT(DISTINCT e.volume_id||'/'||e.document_id) FROM fam JOIN external_citations e ON e.volume_id=fam.v AND e.document_id=fam.id;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH fam AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR \"quarantine regulations\" OR \"quarantine station\" OR \"quarantine board\" OR lazaretto OR pratique OR \"bill of health\" OR \"international office of public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT 'POINTED_AT '||IFNULL(e.repository,'-')||' | '||IFNULL(e.collection,'-')||' | lot '||IFNULL(e.lot_file,'-')||' | class '||IFNULL(e.decimal_class,'-'), COUNT(*) FROM fam JOIN external_citations e ON e.volume_id=fam.v AND e.document_id=fam.id GROUP BY 1 ORDER BY 2 DESC LIMIT 20;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH fam AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR \"quarantine regulations\" OR \"quarantine station\" OR \"quarantine board\" OR lazaretto OR pratique OR \"bill of health\" OR \"international office of public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')) SELECT CASE WHEN dt.date_iso<'1910-01-01' THEN 'pre-1910' WHEN dt.date_iso IS NULL THEN 'undated' ELSE '1910+' END era, COUNT(*) docs, SUM(CASE WHEN s.volume_id IS NOT NULL THEN 1 ELSE 0 END) with_source_row FROM fam LEFT JOIN document_dates dt ON dt.volume_id=fam.v AND dt.document_id=fam.id LEFT JOIN document_sources s ON s.volume_id=fam.v AND s.document_id=fam.id GROUP BY 1 ORDER BY 2 DESC;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH fam AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"sanitary convention\" OR \"sanitary conference\" OR \"international sanitary\" OR \"sanitary code\" OR \"sanitary bureau\" OR \"sanitary regulations\" OR \"quarantine regulations\" OR \"quarantine station\" OR \"quarantine board\" OR lazaretto OR pratique OR \"bill of health\" OR \"international office of public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')), den AS (SELECT substr(dt.date_iso,1,3)||'0s' dec, COUNT(*) n FROM document_cache d JOIN document_dates dt ON dt.volume_id=d.volume_id AND dt.document_id=d.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') AND dt.date_iso IS NOT NULL GROUP BY 1) SELECT substr(dt.date_iso,1,3)||'0s' dec, COUNT(*) hits, den.n AS dated_nonapparatus, ROUND(1000.0*COUNT(*)/den.n,3) AS per_1000, (SELECT f2.v||':'||COUNT(*) FROM fam f2 JOIN document_dates d2 ON d2.volume_id=f2.v AND d2.document_id=f2.id WHERE substr(d2.date_iso,1,3)=substr(dt.date_iso,1,3) GROUP BY f2.v ORDER BY COUNT(*) DESC LIMIT 1) AS top_volume FROM fam JOIN document_dates dt ON dt.volume_id=fam.v AND dt.document_id=fam.id JOIN den ON den.dec=substr(dt.date_iso,1,3)||'0s' WHERE dt.date_iso IS NOT NULL GROUP BY 1 ORDER BY 1;"
+
+# ---------- 18. BUNDLED JSON ----------
+# archival.py / archival2.py / archival3.py / archival4.py / archival5.py + one inline block, all read-only json.load of:
+#   /Applications/FRUS Explorer.app/Contents/Resources/decimal-class-labels.json
+#   /Applications/FRUS Explorer.app/Contents/Resources/collection-usage-index.json
+#   /Applications/FRUS Explorer.app/Contents/Resources/central-files-index.json
+#   /Applications/FRUS Explorer.app/Contents/Resources/digitized-ranges-index.json
+#   /Applications/FRUS Explorer.app/Contents/Resources/series-facts-index.json
+#   /Applications/FRUS Explorer.app/Contents/Resources/external-citation-index.json
+#   /Applications/FRUS Explorer.app/Contents/Resources/lot-claimants-index.json
+python3 -u gloss.py            # prints the 1910-1949 schedule's shape (stderr)
+python3 -u archival.py         # collection-usage coverage + container shapes
+python3 -u archival2.py | tee archival2_out.txt   # 512.4* class rows; public-health class rows; collection axis for the 12 core post-1910 volumes
+python3 -u archival3.py        # central-files numericalFile/countrySeries/lotFiles shapes; digitized-ranges shape
+python3 -u archival4.py        # digitized ranges filtered to decimalClass in {512,893,883,867,711}; series-facts legend/byNaId probe
+python3 -u archival5.py        # series-facts sample row + creator headings matching health/sanitar/quarantin/hygien/medical/surgeon; central-files countrySeries listing
+python3 -u lot_lookup.py > lot_lookup_out.txt   # central-files-index lotFiles keyed on lotNumber for 64D199 and 54D423; lot-claimants-index lots scan
+
+# ---------- 19. TEI PASS: apparatus split + spelling-variant census ----------
+# tei_split.py: xml.etree over /Users/jbotts/Development/frus/volumes/<vol>.xml; only <div type="document">;
+#   COUNTING SURFACE = tag-stripped + whitespace-collapsed; body = the div with <note> subtrees removed,
+#   notes = the concatenation of every <note> in the div; python re, IGNORECASE except the WHO acronym.
+python3 -u tei_split.py frus1874 frus1879 frus1880 frus1881 frus1888p1 frus1895p1 frus1896 frus1900 frus1901 frus1903 frus1904 frus1905 frus1906p1 frus1906p2 frus1907p1 frus1907p2 frus1908 frus1909 frus1912 | tee tei_split_pre1910.txt
+sed -i.bak 's/"WHO acronym": r"\\bWHO\\b"/"WHO acronym (case-SENSITIVE)": r"(?-i:\\bWHO\\b)"/' tei_split.py
+python3 -u tei_split.py frus1920v01 frus1923v01 frus1924v01 frus1924v02 frus1926v01 frus1927v01 frus1928v01 frus1928v02 frus1929v02 frus1930v02 frus1932v02 frus1933v04 frus1935v04 frus1938v01 frus1940v05 frus1944v02 frus1948v01p1 frus1951v05 frus1952-54v03 frus1977-80v02 | tee tei_split_modern.txt
+# also, one raw TEI read to confirm the compilation/document nesting:
+python3 -u -c "...open('/Users/jbotts/Development/frus/volumes/frus1938v01.xml') ... print(repr(s[i-1500:i+400]))"
+ls /Users/jbotts/Development/frus/volumes/*.xml | wc -l
+ls -la /Users/jbotts/Development/frus/volumes/frus1938v01.xml /Users/jbotts/Development/frus/volumes/frus1880.xml
+
+# ---------- 20. WHO era, PASB, persons ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'WHO-era volumes with World Health Organization', f.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"world health organization\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY f.volume_id ORDER BY 3 DESC LIMIT 12;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'smallpox eradication', COUNT(*), group_concat(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"smallpox eradication\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'pan american sanitary bureau', COUNT(*), group_concat(DISTINCT f.volume_id) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"pan american sanitary bureau\" OR \"pan-american sanitary bureau\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+# loop over n in: "Hugh S. Cumming" "Walter Wyman" "John B. Hamilton" "John M. Woodworth" "Rupert Blue" "Thomas Parran"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT '<n>' || ' | ' || COUNT(*) || ' | ' || IFNULL(group_concat(DISTINCT f.volume_id),'-') FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"<n>\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT CASE WHEN dt.date_iso<'1946-01-01' THEN 'pre-1946' ELSE '1946+' END, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id LEFT JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH '\"Hugh S. Cumming\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY 1;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) AS 'Cumming AND sanitary-or-quarantine' FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"Hugh S. Cumming\" AND (sanitary OR quarantine OR \"public health\")' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+
+# ---------- 21. pre-1910 quarantine-practice volume ranking; frus1881-83 spot list ----------
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH q AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'quarantine' AND d.is_front_matter=0 AND d.is_editorial_note=0), dis AS (SELECT f.volume_id v, f.document_id id FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'cholera OR \"yellow fever\" OR smallpox OR typhus OR epidemic OR sanitary OR pratique OR lazaretto OR \"bill of health\" OR disinfection OR fumigation OR pestilence OR bubonic' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT q.v, COUNT(*) FROM q JOIN dis ON dis.v=q.v AND dis.id=q.id JOIN document_dates dt ON dt.volume_id=q.v AND dt.document_id=q.id WHERE dt.date_iso < '1910-01-01' GROUP BY 1 ORDER BY 2 DESC LIMIT 18;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id||'/'||f.document_id||' | '||substr(replace(d.header,char(10),' '),1,70)||' | '||substr(replace(IFNULL(d.dateline,''),char(10),' '),1,40) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH 'sanitary' AND f.volume_id IN ('frus1881','frus1882','frus1883') AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY f.volume_id, f.document_id LIMIT 30;"
+
+# ---------- 22. final consistency re-runs (numbers corrected in the memo) ----------
+# loop over t in: plague epidemic sanitary
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT '<t> excl: ' || COUNT(*) || ' docs / ' || COUNT(DISTINCT f.volume_id) || ' vols' FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"<t>\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'WHA earliest date_iso: ' || MIN(dt.date_iso) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH '\"world health assembly\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'WHO earliest date_iso: ' || MIN(dt.date_iso) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id JOIN document_dates dt ON dt.volume_id=f.volume_id AND dt.document_id=f.document_id WHERE frus_documents MATCH '\"world health organization\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+# persisted the two formerly-inline python blocks so §8/§18 point at real files:
+python3 -u build_core_docs.py
+python3 -u lot_lookup.py > lot_lookup_out.txt

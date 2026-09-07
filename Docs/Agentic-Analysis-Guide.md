@@ -1366,9 +1366,13 @@ ARCHIVAL SCOPE — do not stop at what FRUS printed
 
 The block was measured at its **v1.19 length of 143 lines** and scored **100% compliance against a
 no-rules control's 77.6%** (C-0b, 2026-09-06, `Planning/C0b-Falsifier-2026-09-06.md`) — so the block
-below, not v1.10's shorter one, is the instrument. **It is now 181 lines and that score does not
-cover it**: v1.20 rewrote two rules that failed in all eight threads of a field run, and a C-0c at
-the new length is owed before the 100% may be quoted of this text. It was separately measured to hold across a doubled
+below, not v1.10's shorter one, is the instrument. **At its current 181 lines it was re-measured by
+C-0c (2026-09-06) at 95.2% against a 77.8% control** — the control replicating C-0b's 77.6% to
+within 0.2 points on two entirely different questions. **The added length is not costing attention:
+not one of the 26 items carried from C-0b lost a single run under the block, and every one of the
+block arm's six violations falls on the two items scoring the rules v1.20 rewrote.** One of those,
+the SQL/log rule below, still scores **0 of 4** — see its own note. Record:
+`Planning/C0c-Falsifier-2026-09-06.md`. It was separately measured to hold across a doubled
 session at its v1.10 length (C-2); that survival test has not been repeated on the longer text. Its
 blocks are not equally reachable in any case. This is what an agent handed only the database can and cannot do:
 
@@ -2112,6 +2116,28 @@ written and false after the fix pass, became the next memo's false sentence.
 
 ---
 
+### 14.15a A rule that is satisfiable is not yet a rule that is satisfied
+
+C-0c measured the SQL/log rule at **0 of 4 under the block** — unchanged from the 0 of 8 it scored
+before it was rewritten to admit the script route. The diagnosis is worth more than the number.
+Every block cell headed its log with the strongest available completeness claim (*"Nothing is
+elided"*) and then elided command bodies, because a hundred-character `python3 -c` body does not fit
+a one-command-per-line log.
+
+**A rule that asks for a blanket assurance gets the assurance, not the behaviour.** The
+rewrite removed the *impossibility* — a reading round now has a way to comply — without removing the
+*incentive to overclaim*, and an agent that cannot fully comply will assert compliance rather than
+report the shortfall. The general form: **ask for the exception, not the guarantee.** "Say what you
+elided" is checkable and survives contact with a long command; "nothing is elided" is a sentence
+anyone can type.
+
+Watch for the harness inviting the overclaim too. In C-0c the runner's own deliverable line asked
+for *"EVERY command … verbatim, in order"* in both arms, and the agents restated it verbatim as
+their log header. A measurement that scores the block for a claim the harness demanded is scoring
+the harness.
+
+---
+
 ### 14.16 What a round owes the historian, beyond the memo
 
 A research memo records what was measured. It is the wrong shape for the person who commissioned it,
@@ -2644,12 +2670,27 @@ SEMANTIC VECTORS
   case-insensitive where Python's `re` is not, so the same literal test written twice returns two
   sets and neither errors; and `length(body_text)` counts characters where `wc -c` counts bytes.
 
-  **THE CAVEAT THIS VERSION CARRIES, and it is the same one v1.11 carried until #1208 discharged
-  it.** §12's block goes **143 lines to 181**. C-0b measured the 143-line text and declared it the
-  instrument; that measurement does not cover 27% more text. The revisions are *responses to
-  measured failures* rather than additions on taste, and the two rewritten rules replace text that
-  scored 0 of 8 — but a **C-0c** at the new length is owed before the block's score may be quoted
-  again. Record: `~/frus-analysis/chief-of-mission/logs/measurement.md` and `measurement-r2.md`.
+  **THE CAVEAT THIS VERSION CARRIED IS NOW HALF DISCHARGED AND HALF NOT, and the half that is not is
+  the more interesting.** §12's block went **143 lines to 181**, and **C-0c re-measured it the same
+  day: BLOCK 95.2%, CONTROL 77.8%** (`Planning/C0c-Falsifier-2026-09-06.md`), on two fresh questions
+  with the arms verified before launch.
+
+  **Discharged — the length is not costing attention.** Not one of the 26 items carried from C-0b
+  lost a run under the block, and the control replicated C-0b's 77.6% to within 0.2 points, which is
+  the strongest evidence in the series that the instrument is stable.
+
+  **Not discharged — one of the two rewrites did not work, and this version says so because the
+  reading was registered before the run.** The SQL/log rule scores **0 of 4** under the block, the
+  same as the 0 of 8 it scored in the field run; the literal-share rule's new denominator half
+  scores 2 of 4, *below the control's 3 of 4*. All four block cells headed `queries.log` with the
+  strongest possible completeness claim and then elided command bodies. Part of that is the
+  harness's fault — its own deliverable line asks for "EVERY command … verbatim" and the agents
+  restated it — but the finding stands: **the rewrite made the rule satisfiable without making it
+  satisfied, because it still asks for a blanket claim.** The next revision should require the log
+  to declare what it elided rather than assert it elided nothing. That change is deliberately NOT
+  made here: C-0c measured this text, and editing the block now would spend the measurement.
+
+  Records: `~/frus-analysis/chief-of-mission/logs/measurement.md` and `measurement-r2.md`.
 
   **NEW §14.16 — what a round owes the historian beyond the memo**, added because the same run
   produced the first worked example of it. A reading round owes three artifacts: the memo (the audit

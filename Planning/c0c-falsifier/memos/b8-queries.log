@@ -1,0 +1,178 @@
+# EVERY command that touched a surface, verbatim, in order. Nothing elided.
+# Surfaces: DB  = /Users/jbotts/frus-analysis/frus-copy.db (SQLite, read-only)
+#           TEI = /Users/jbotts/Development/frus/volumes/*.xml
+#           JSON= /Applications/FRUS Explorer.app/Contents/Resources/
+# Scripts named below live in this same directory; their outputs are named at each step.
+# NOTE: several scripts embed SQL. The predicate is pasted here, not just the script name.
+
+### 1. COVERAGE (DB)
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache"
+sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents"
+
+### 2. CONTROLS (DB)
+sqlite3 -readonly $DB "SELECT 'POS Department of State', COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';"
+sqlite3 -readonly $DB "SELECT 'NEG ZZZ_IMPOSSIBLE_ZZZ', COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+
+### 3. STEM PROBES (DB) -- loop over terms; predicate shown once
+# for t in quarantin sanitari sanitary cholera lazaret pratiqu fumigat disinfect epidem pestilen contagio plague smallpox typhus fever hygien pandem inocul vaccinat plagu
+sqlite3 -readonly $DB "SELECT COALESCE(SUM(cnt),0)||'|'||COALESCE(SUM(doc),0) FROM frus_documents_vocab WHERE term='$t';"
+sqlite3 -readonly $DB ".schema frus_documents_vocab"
+sqlite3 -readonly $DB "SELECT * FROM frus_documents_vocab LIMIT 3;"
+# for t in fumig contagi typhu vaccin pestil bacteriolog cordon lazarett prophylax malaria typhoid influenza yellow diseas infecti quarantine derat immun serum vaccine
+sqlite3 -readonly $DB "SELECT COALESCE(doc,0)||' docs, '||COALESCE(cnt,0)||' occ' FROM frus_documents_vocab WHERE term='$t';"
+
+### 4. PHRASE PROBES (DB) -- loop; predicate shown once
+# for p in "sanitary convention" "sanitary conference" "sanitary bureau" "sanitary regulations" "sanitary code" "sanitary convention of paris" "international sanitary" "pan american sanitary" "quarantine regulations" "quarantine station" "bill of health" "bills of health" "public health service" "marine hospital service" "office international d hygiene publique" "world health organization" "sanitary cordon" "quarantine officer" "quarantine laws"
+sqlite3 -readonly $DB "SELECT COUNT(*)||' docs / '||COUNT(DISTINCT volume_id)||' vols' FROM frus_documents WHERE frus_documents MATCH '\"$p\"';"
+
+### 5. SCHEMAS (DB)
+sqlite3 -readonly $DB ".schema document_dates"
+sqlite3 -readonly $DB "SELECT * FROM document_dates LIMIT 2;"
+sqlite3 -readonly $DB ".schema document_sources"
+sqlite3 -readonly $DB ".schema external_citations"
+
+### 6. QUARANTINE BY VOLUME (DB)
+sqlite3 -readonly $DB "SELECT d.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH 'quarantin' AND d.is_front_matter=0 AND d.is_editorial_note=0 GROUP BY d.volume_id ORDER BY COUNT(*) DESC LIMIT 25;"
+
+### 7. DECADE DENOMINATORS + Ed2 CENSUS (DB)
+sqlite3 -readonly $DB "SELECT substr(dd.date_iso,1,3)||'0s' AS dec, COUNT(*) FROM document_cache d JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND dd.date_iso<>'' AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY dec ORDER BY dec;"
+sqlite3 -readonly $DB "SELECT volume_id, COUNT(*) FROM document_cache WHERE volume_id LIKE '%Ed2%' GROUP BY volume_id;"
+# two probes below FAILED with 'ambiguous column name: volume_id' and were re-run qualified in step 8
+sqlite3 -readonly $DB "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH 'quarantin AND (cuba OR missile OR blockade OR interdiction)' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly $DB "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH 'quarantin AND (cholera OR plagu OR sanitari OR fever OR diseas OR epidem OR disinfect OR health)' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+
+### 8. QUARANTINE SENSE SPLIT + DECADE SHAPE (DB)
+sqlite3 -readonly $DB "SELECT 'ALL quarantin', COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH 'quarantin' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') UNION ALL SELECT 'quarantin + health words', COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH 'quarantin AND (cholera OR plagu OR sanitari OR fever OR diseas OR epidem OR disinfect OR health OR hygien OR pratiqu)' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') UNION ALL SELECT 'quarantin, NO health words', COUNT(*), COUNT(DISTINCT d.volume_id) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH 'quarantin NOT (cholera OR plagu OR sanitari OR fever OR diseas OR epidem OR disinfect OR health OR hygien OR pratiqu)' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly $DB "SELECT substr(dd.date_iso,1,3)||'0s' dec, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH 'quarantin' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND dd.date_iso<>'' AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY dec ORDER BY dec;"
+
+### 9. 'sanitary convention' HIT LIST (DB)
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, COALESCE(dd.date_iso,'?'), substr(replace(d.header,char(10),' '),1,90) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH '\"sanitary convention\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id, d.document_id;"
+
+### 10. EDITORS' CHAPTER HEADINGS (DB) -- script headings.py -> headings-out.txt
+# headings.py SQL: SELECT volume_id, structure_json FROM volume_structures ORDER BY volume_id
+# then a Python regex over every section/subsection title:
+#   sanitar|quarantin|cholera|plague|yellow fever|epidemic|hygien|health|disease|pestilen|smallpox|typhus|contagio|medical|lazaret|pratique|bubonic
+sqlite3 -readonly $DB ".schema volume_structures"
+sqlite3 -readonly $DB "SELECT * FROM volume_structures LIMIT 2;"
+python3 -u headings.py > headings-out.txt          # -> 76 matching section titles
+
+### 11. SCOPE FROM THOSE CHAPTERS (DB) -- script scope.py -> scope-ids.tsv
+# scope.py SQL: SELECT volume_id, structure_json FROM volume_structures ORDER BY volume_id
+#   and per candidate: SELECT is_front_matter,is_editorial_note FROM document_cache WHERE volume_id=? AND document_id=?
+python3 -u scope.py                                 # -> HUMAN 129 / ANIMAL 58 / PROGRAM 5; 0 apparatus in any
+
+### 12. LITERAL-SHARE PASS, STRICT + TOLERANT (DB) -- script litshare.py -> litshare-out.json
+# litshare.py SQL (once per family): SELECT d.volume_id,d.document_id,
+#   COALESCE(d.header,'')||' '||COALESCE(d.dateline,'')||' '||COALESCE(d.source_note,'')||' '||COALESCE(d.body_text,'')
+#   FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid
+#   WHERE f.frus_documents MATCH '"<phrase>"' AND d.is_front_matter=0 AND d.is_editorial_note=0
+#     AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ORDER BY d.volume_id, d.document_id
+# Regex: STRICT = \b<words joined by single spaces>\b ; TOLERANT = inflected words joined by [ \-,\(\)\.]+ ; both re.I (case-INSENSITIVE Python re)
+python3 -u litshare.py                              # all 8 families CENSUSED (M<=300)
+
+### 13. REFERENT TESTS (DB) -- script referent.py -> referent-quarantine.json, referent-sanconv.json
+# referent.py SQL: same SELECT as litshare.py, with MATCH 'quarantin' and MATCH '"sanitary convention"'
+# Windows: +/-200 chars around each literal \bquarantin\w* ; +/-400 chars around each \bsanitar(y|ies)[ \-,\(\)\.]+conventions?\b
+python3 -u referent.py
+
+### 14. CROSS-TAB: referent x editors' chapters x decade (DB) -- script crosstab.py
+# crosstab.py SQL: SELECT d.volume_id,d.document_id FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid
+#   WHERE f.frus_documents MATCH '"sanitary convention"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id,d.document_id
+#   and: SELECT volume_id,document_id,date_iso FROM document_dates WHERE date_iso IS NOT NULL AND date_iso<>''
+python3 -u crosstab.py
+
+### 15. FALSE-FRIEND TEST (DB)
+# first attempt, shell loop; the two quoted-phrase terms died on shell quoting and were re-run in falsefriend.py
+sqlite3 -readonly $DB "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '$term' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN ($VOLS);"
+sqlite3 -readonly $DB "SELECT COUNT(*) FROM document_cache d WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN ($VOLS);"
+sqlite3 -readonly $DB "SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '$term' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+sqlite3 -readonly $DB "SELECT COUNT(*) FROM document_cache d WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+# VOLS = the 22 volumes carrying an editor-headed HUMAN chapter (listed in the memo)
+# re-run complete, script falsefriend.py, same four predicates parameterised:
+python3 -u falsefriend.py
+
+### 16. ARCHIVAL CHANNELS (DB) -- script archival.py
+# archival.py SQL, per scope document:
+#   SELECT citation_era,record_group,lot_file_norm,decimal_class,raw_text,repository,series_name FROM document_sources WHERE volume_id=? AND document_id=?
+#   SELECT anchor,repository,collection,lot_file_norm,decimal_class FROM external_citations WHERE volume_id=? AND document_id=?
+python3 -u archival.py
+
+### 17. DECIMAL-CLASS GLOSS (JSON + DB) -- script gloss.py -> class-keys.json
+python3 -u -c "<inspect /Applications/FRUS Explorer.app/Contents/Resources/decimal-class-labels.json top-level keys, schemaVersion, coverage>"
+python3 -u -c "<read schedules[0]: classes, countries, countryArrangedClasses, startYear, endYear, subjects>"
+python3 -u -c "<print subjects['6'] and subjects['8'], and the health-matching glosses>"
+# gloss.py SQL: SELECT decimal_class,raw_text FROM document_sources WHERE volume_id=? AND document_id=?
+#           and SELECT date_iso FROM document_dates WHERE volume_id=? AND document_id=?
+# Gate applied: gloss ONLY when the DOCUMENT's own year is within the schedule's startYear..endYear (1910-1949).
+python3 -u gloss.py
+
+### 18. ARCHIVAL JSON SHAPES + DIGITISED RANGES (JSON)
+python3 -u -c "<print top-level keys + row0 keys of digitized-ranges-index.json, collection-usage-index.json, central-files-index.json, series-facts-index.json>"
+python3 -u jsonarch.py      # FIRST, WRONG containment test: compared 883.12 against ranges' low/high IGNORING each range's own decimalClass
+python3 -u jsonarch2.py     # CORRECTED: match decimalClass first, then the file-number range. Result: no coverage for any topic class.
+
+### 19. PRE-1910 NUMERICAL FILE RESOLUTION (JSON + DB) -- scripts numfile.py, numfile2.py
+# SQL in both: SELECT raw_text FROM document_sources WHERE volume_id=? AND document_id=?
+#              SELECT date_iso FROM document_dates WHERE volume_id=? AND document_id=?
+python3 -u numfile.py       # FIRST, WRONG: regex 'File\s*No\.?\s*(\d+)' read the 1911 decimal class 158.931 as case 158
+python3 -u numfile2.py      # form gate (?!\.\d) + date gate (<1910-08-01); first form-gate regex was (?![\d]*\.) which wrongly dropped "File No. 20272."
+sed -i.bak "s|NUM=re.compile(...)|NUM=re.compile(r'File\\s*No\\.?\\s*(\\d+)(?!\\.\\d)')|" numfile2.py
+python3 -u numfile2.py      # FINAL: 9 of 22 resolved, 2 rolls, both with a scan row
+
+### 20. COLLECTION-USAGE OVER THE ON-TOPIC VOLUMES (JSON) -- script usage.py
+python3 -u usage.py
+
+### 21. TEI VARIANT SCAN (TEI) -- script teiscan.py, five chunks -> tei-*.json ; aggregated by teiagg.py -> tei-agg.json
+# teiscan.py SQL (to pick the file list only): SELECT DISTINCT volume_id FROM document_cache ORDER BY volume_id
+# COUNTING SURFACE: raw bytes, ALL tags stripped to a space (<[^>]*>), whitespace-collapsed. Case-INSENSITIVE Python re. Apparatus NOT separated.
+du -sh /Users/jbotts/Development/frus/volumes/ ; ls /Users/jbotts/Development/frus/volumes/*.xml | wc -l
+python3 -u teiscan.py 0 80
+python3 -u teiscan.py 80 200
+python3 -u teiscan.py 200 300
+python3 -u teiscan.py 300 420
+python3 -u teiscan.py 420 552
+python3 -u teiagg.py
+
+### 22. PRE-1895 MATERIAL AND THE EARLY CONFERENCES (DB)
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, COALESCE(dd.date_iso,'?'), substr(replace(d.header,char(10),' '),1,70) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH 'quarantin OR \"sanitary conference\" OR \"sanitary convention\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND d.volume_id IN ('frus1879','frus1881','frus1882','frus1883','frus1884','frus1885','frus1886','frus1887') ORDER BY d.volume_id, CAST(replace(d.document_id,'d','') AS INTEGER);"
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, substr(replace(d.header,char(10),' '),1,70) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid WHERE f.frus_documents MATCH '(\"international sanitary conference\" OR \"sanitary conference\") AND (washington OR 1881)' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id;"
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, COALESCE(dd.date_iso,'?'), substr(replace(d.header,char(10),' '),1,60) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH '\"sanitary conference\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY d.volume_id;"
+
+### 23. READING (DB) -- script read.py -> reads/*.txt (10 documents, all captured whole)
+# read.py SQL: SELECT header,dateline,source_note,body_text,length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?
+python3 -u read.py
+head -c 1600 reads/frus1880_d4.txt ; head -c 1600 reads/frus1866p2_d205.txt ; head -c 1600 reads/frus1874_d26.txt
+
+### 24. POST-1945 SUCCESSOR REGIME (DB)
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, COALESCE(dd.date_iso,'?'), substr(replace(d.header,char(10),' '),1,60) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid LEFT JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH '\"international sanitary regulations\"' AND d.is_front_matter=0 AND d.is_editorial_note=0;"
+sqlite3 -readonly $DB "SELECT substr(dd.date_iso,1,3)||'0s', COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH '\"world health organization\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso<>'' GROUP BY 1 ORDER BY 1;"
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, dd.date_iso, substr(replace(d.header,char(10),' '),1,58) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH 'quarantin AND (cholera OR sanitari OR epidem OR \"public health\" OR \"yellow fever\" OR smallpox)' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso>='1946' ORDER BY dd.date_iso;"
+# literal verification of the two 'international sanitary regulations' hits:
+python3 -u -c "SELECT header||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text FROM document_cache WHERE volume_id=? AND document_id=?  -- for ('frus1880','d4') and ('frus1888p1','d6'); then re.finditer(r'international[ \-,\(\)\.]+sanitar(?:y|ies)[ \-,\(\)\.]+regulations?', txt, re.I)"
+
+### 25. POST-1945 ARCHIVAL LOCATION (DB + JSON)
+sqlite3 -readonly $DB "SELECT s.decimal_class, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_sources s ON s.volume_id=d.volume_id AND s.document_id=d.document_id WHERE f.frus_documents MATCH '\"world health organization\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND s.decimal_class IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 12;"
+sqlite3 -readonly $DB "SELECT s.lot_file_norm, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_sources s ON s.volume_id=d.volume_id AND s.document_id=d.document_id WHERE f.frus_documents MATCH '\"world health organization\" OR \"public health\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND s.lot_file_norm IS NOT NULL AND s.lot_file_norm<>'' GROUP BY 1 ORDER BY 2 DESC LIMIT 12;"
+sqlite3 -readonly $DB -separator ' | ' "SELECT d.volume_id||'/'||d.document_id, dd.date_iso, substr(replace(d.header,char(10),' '),1,55) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH '\"world health organization\" OR smallpox OR quarantin' AND d.volume_id='frus1977-80v02' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY dd.date_iso LIMIT 14;"
+python3 -u lots.py     # central-files-index.json lotFiles + series-facts-index.json byNaId + lot-claimants-index.json lots
+
+### 26. DECADE RATES WITH DENOMINATORS (DB) -- script rates.py
+# rates.py SQL denominator: SELECT substr(dd.date_iso,1,3)||'0s', COUNT(*) FROM document_cache d JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso<>'' AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1
+# rates.py SQL numerator (per family): SELECT substr(dd.date_iso,1,3)||'0s', d.volume_id, COUNT(*) FROM frus_documents f JOIN document_cache d ON d.rowid=f.rowid JOIN document_dates dd ON dd.volume_id=d.volume_id AND dd.document_id=d.document_id WHERE f.frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso<>'' AND d.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1,2
+# families: 'quarantin' ; 'quarantin AND (cholera OR plagu OR sanitari OR fever OR diseas OR epidem OR disinfect OR health OR hygien OR pratiqu)' ; '"sanitary convention" OR "sanitary conference" OR "international sanitary" OR "sanitary bureau"'
+python3 -u rates.py
+
+### 27. POINTED-AT CHANNEL AND SUBJECT TAGS (DB + JSON)
+sqlite3 -readonly $DB "SELECT COUNT(*) AS rows_total, COUNT(DISTINCT ec.volume_id||'/'||ec.document_id) AS docs, MIN(ec.decimal_class) FROM external_citations ec;"
+sqlite3 -readonly $DB "SELECT ec.decimal_class, COUNT(*) FROM external_citations ec WHERE ec.decimal_class LIKE '%.12' OR ec.decimal_class LIKE '%.124%' OR ec.decimal_class LIKE '512.%' GROUP BY 1 ORDER BY 2 DESC LIMIT 15;"
+sqlite3 -readonly $DB ".schema document_subjects"
+sqlite3 -readonly $DB "SELECT * FROM document_subjects WHERE name LIKE '%health%' ...;"    # FAILED: no such column: name
+sqlite3 -readonly $DB ".schema document_subject_refs" ; sqlite3 -readonly $DB ".schema document_subject_volumes"
+sqlite3 -readonly $DB "SELECT * FROM document_subject_refs LIMIT 3;"
+python3 -u -c "<read document-subject-index.json; first attempt used s.get('name') and matched 0 of 491>"
+python3 -u -c "<corrected: the vocabulary field is 'n'; then per matching id: SELECT COUNT(*) FROM document_subject_refs WHERE subject=? and SELECT COUNT(DISTINCT volume_id) FROM document_subject_refs WHERE subject=?>"
+python3 -u -c "SELECT COUNT(*) / recall / literal census for subject 102 'Public Health':
+   SELECT volume_id,document_id FROM document_subject_refs WHERE subject=102
+   SELECT header||' '||body_text FROM document_cache WHERE volume_id=? AND document_id=?   -- 914 documents, tolerant regex \bpublic[ \-,\(\)\.]+healths?\b, re.I"

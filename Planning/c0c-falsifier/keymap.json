@@ -1,0 +1,35 @@
+{
+ "_note": "Which arm each cell was. Frozen BEFORE launch; the scorers are not told and cannot infer it from their prompts, which are identical across arms.",
+ "b1": {
+  "arm": "CONTROL",
+  "question": "isthmian canal"
+ },
+ "b2": {
+  "arm": "BLOCK",
+  "question": "isthmian canal"
+ },
+ "b3": {
+  "arm": "CONTROL",
+  "question": "isthmian canal"
+ },
+ "b4": {
+  "arm": "BLOCK",
+  "question": "isthmian canal"
+ },
+ "b5": {
+  "arm": "CONTROL",
+  "question": "sanitary conventions and quarantine"
+ },
+ "b6": {
+  "arm": "BLOCK",
+  "question": "sanitary conventions and quarantine"
+ },
+ "b7": {
+  "arm": "CONTROL",
+  "question": "sanitary conventions and quarantine"
+ },
+ "b8": {
+  "arm": "BLOCK",
+  "question": "sanitary conventions and quarantine"
+ }
+}

@@ -1,0 +1,159 @@
+# queries.log — every command I ran that touched a surface, verbatim, in order.
+# Surfaces: [SQL]  /Users/jbotts/frus-analysis/frus-copy.db, opened read-only
+#           [TEI]  /Users/jbotts/Development/frus/volumes/*.xml
+#           [JSON] /Applications/FRUS Explorer.app/Contents/Resources/
+# Where a script ran SQL for me, the script is named AND its predicate is pasted below it.
+# Scripts and their outputs are on disk in this directory; file names are given inline.
+# Nothing in this log is elided.
+
+# ---------- 1. coverage (mandatory first query) ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note) FROM document_cache;"
+
+# ---------- 2. schema orientation ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".tables"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema document_cache"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents"
+[SQL] for t in document_dates cross_references document_sources external_citations volume_structures document_subjects document_subject_refs document_subject_volumes page_ranges terms volume_sources; do echo "=== $t ==="; sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema $t"; done
+
+# ---------- 3. controls (positive + negative, same pass) ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH '\"Department of State\"';"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM frus_documents WHERE frus_documents MATCH 'ZZZ_IMPOSSIBLE_ZZZ';"
+
+# ---------- 4. stem vocabulary ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema frus_documents_vocab"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term IN ('canal','isthmian','isthmus','interocean','interoceanic','panama','nicaragua','tehuantepec','darien','clayton','bulwer','pauncefot','pauncefote','herran','varilla','lock','sealevel','transit','concess','zone') ORDER BY cnt DESC;"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT term, doc, cnt FROM frus_documents_vocab WHERE term LIKE 'isthm%' OR term LIKE 'canal%' OR term LIKE 'interocean%' OR term LIKE 'torrijo%' OR term LIKE 'bunau%' OR term LIKE 'wyse%' OR term LIKE 'nicaragu%' ORDER BY doc DESC LIMIT 40;"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id, COUNT(*) n FROM frus_documents WHERE frus_documents MATCH 'canal' GROUP BY volume_id ORDER BY n DESC LIMIT 45;"
+
+# ---------- 5. phrase family, raw counts ----------
+[SQL] for q in '"isthmian canal"' '"interoceanic canal"' '"ship canal"' '"Panama Canal"' '"canal zone"' '"Clayton Bulwer"' '"Hay Pauncefote"' '"Hay Herran"' '"Bunau Varilla"' '"Isthmus of Panama"' '"Isthmus of Tehuantepec"' '"Isthmus of Darien"' '"Nicaragua Canal"' '"Nicaraguan Canal"' '"canal treaty"' '"Suez Canal"' '"Panama Canal Company"' '"New Panama Canal Company"'; do printf "%-30s " "$q"; sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*)||' docs / '||COUNT(DISTINCT volume_id)||' vols' FROM frus_documents WHERE frus_documents MATCH '$q';"; done
+
+# ---------- 6. editors' chapter headings [SQL over volume_structures] ----------
+[SQL] python3 -u -c "... sqlite3 ... db.execute('SELECT volume_id, structure_json FROM volume_structures')"   # recursive walk of every dict node's title/name/label, regex canal|isthm|interocean, case-insensitive; 552 rows read, 128 headings matched
+[SQL] python3 -u -c "... same walk, plus a second regex suez|kiel|grand canal|lynn canal|haro|baltic|massena|huai|great lakes|kaiser wilhelm to drop non-isthmian canals; 127 distinct -> 98 isthmian-relevant"
+
+# ---------- 7. Suez contamination in the ambiguous phrases ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"canal zone\"'), (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"canal zone\" AND suez'), (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"canal zone\" AND (panama OR isthmian OR isthmu)');"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"ship canal\"'), (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"ship canal\" AND suez'), (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"ship canal\" AND (panama OR nicaragua OR isthmu OR isthmian OR darien OR tehuantepec)');"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"canal treaty\"'), (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"canal treaty\" AND suez'), (SELECT COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"canal treaty\" AND (panama OR nicaragua OR isthmian)');"
+
+# ---------- 8. the core set ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT DISTINCT volume_id FROM document_cache WHERE volume_id LIKE '%Ed2%';"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) docs, COUNT(DISTINCT f.volume_id) vols FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"isthmian canal\" OR \"interoceanic canal\" OR \"inter oceanic canal\" OR \"Panama Canal\" OR \"Nicaragua Canal\" OR \"Nicaraguan Canal\" OR \"Clayton Bulwer\" OR \"Hay Pauncefote\" OR \"Hay Herran\" OR \"Bunau Varilla\" OR \"Isthmus of Panama\" OR \"Isthmus of Darien\" OR \"Isthmus of Tehuantepec\" OR \"canal treaty\" OR \"canal zone\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"
+# core_set.sql (kept on disk; its output is core_set.tsv, 3241 lines, pipe-separated):
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db < core_set.sql > core_set.tsv
+#   SELECT f.volume_id, f.document_id
+#   FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id
+#   WHERE frus_documents MATCH '"isthmian canal" OR "interoceanic canal" OR "inter oceanic canal" OR "Panama Canal" OR "Nicaragua Canal" OR "Nicaraguan Canal" OR "Clayton Bulwer" OR "Hay Pauncefote" OR "Hay Herran" OR "Bunau Varilla" OR "Isthmus of Panama" OR "Isthmus of Darien" OR "Isthmus of Tehuantepec" OR "canal treaty" OR "canal zone"'
+#     AND d.is_front_matter=0 AND d.is_editorial_note=0
+#     AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+#   ORDER BY f.volume_id, f.document_id;
+# core_cte.sql (kept on disk) is the same predicate wrapped as "WITH core AS (...)" and is prefixed
+# to every query below that says $(cat core_cte.sql).
+
+# ---------- 9. decade shape, numerator and denominator ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH core AS ( SELECT f.volume_id vid, f.document_id did FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"isthmian canal\" OR \"interoceanic canal\" OR \"inter oceanic canal\" OR \"Panama Canal\" OR \"Nicaragua Canal\" OR \"Nicaraguan Canal\" OR \"Clayton Bulwer\" OR \"Hay Pauncefote\" OR \"Hay Herran\" OR \"Bunau Varilla\" OR \"Isthmus of Panama\" OR \"Isthmus of Darien\" OR \"Isthmus of Tehuantepec\" OR \"canal treaty\" OR \"canal zone\"' AND d.is_front_matter=0 AND d.is_editorial_note=0 AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') ), den AS ( SELECT substr(dd.date_iso,1,3)||'0' dec, COUNT(*) n FROM document_dates dd JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND dd.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2') GROUP BY 1 ), num AS ( SELECT substr(dd.date_iso,1,3)||'0' dec, COUNT(*) n FROM core c JOIN document_dates dd ON dd.volume_id=c.vid AND dd.document_id=c.did WHERE dd.date_iso IS NOT NULL GROUP BY 1 ) SELECT den.dec, COALESCE(num.n,0) canal_docs, den.n dated_docs, ROUND(1000.0*COALESCE(num.n,0)/den.n,2) per_1000 FROM den LEFT JOIN num ON num.dec=den.dec ORDER BY den.dec;"
+[SQL] cut -d'|' -f1 core_set.tsv | sort | uniq -c | sort -rn | head -30
+[SQL] python3 -u -c "... db.execute('SELECT volume_id,document_id,date_iso FROM document_dates WHERE date_iso IS NOT NULL') ..."   # per-decade top-volume share over core_set.tsv
+
+# ---------- 10. literal-share checks (share.py, kept on disk; results in share_results.json) ----------
+# share.py hit list per phrase:
+#   SELECT f.volume_id, f.document_id FROM frus_documents f
+#   JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id
+#   WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0
+#     AND f.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2')
+#   ORDER BY f.volume_id, f.document_id            -- ? bound to '"<phrase>"'
+# then per selected doc:
+#   SELECT header,dateline,source_note,body_text FROM document_cache WHERE volume_id=? AND document_id=?
+# regex surface: those four columns joined by ' ', then re.sub(r'\s+',' ',...). Python re, re.I (case-INSENSITIVE).
+#   STRICT   = r'\b' + ' '.join(escape(w)) + r'\b'
+#   TOLERANT = r'\b' + SEP.join(escape(w)+SUF) + r'\b'  with SUF=(?:s|es|ed|ing|'s|’s)?  SEP=[ \-,().‐-―]+
+[SQL] python3 -u share.py "isthmian canal" "interoceanic canal" "ship canal" "Clayton Bulwer" "Hay Pauncefote" "Hay Herran" "Bunau Varilla" "Nicaragua Canal" "Nicaraguan Canal" "Isthmus of Panama"
+[SQL] python3 -u share.py "canal treaty" "Panama Canal" "canal zone" "Panama Canal Company" "canal tolls"
+[SQL] python3 -u -c "... SELECT header,dateline,source_note,body_text FROM document_cache WHERE volume_id=? AND document_id=? ... for frus1913/d231, frus1940v05/d1194, frus1939v05/d668, frus1951v02/d749 ... regex [Ii]sthmus\W{1,4}\w{0,3}\W{0,3}Panam\w* and [Ii]nter\W{0,3}ocean\w*\W{1,4}canal\w*"
+[SQL] python3 -u -c "... SELECT COUNT(*) FROM document_cache WHERE (header||' '||COALESCE(body_text,'')) LIKE ? ... for '%Hay-Herran%','%Hay-Herrán%','%Herrán%','%Herran%'"
+[SQL] python3 -u -c "... regex [Cc]anal\W{1,3}[Tt]reat\w* over frus1964-68v31/d390, frus1977-80v03/d306, frus1977-80v29/d270, frus1977-80v24/d237; regex [Cc]anal\W{1,6}[Tt]oll\w*|[Tt]oll\w*\W{1,6}[Cc]anal over frus1892/d231, frus1927v01/d391, frus1955-57v16/d301, frus1958-60v07p1/d309"
+[SQL] python3 -u -c "... same hit list for '\"canal treaty\"', TOLERANT2 = r'\bcanals?[ \-,().]+treat(?:y|ies|ys)\b', re.I, 40-doc evenly spaced sample"
+
+# ---------- 11. false-friend test ----------
+[SQL] python3 -u -c "... SELECT COUNT(*) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH ? AND d.is_front_matter=0 AND d.is_editorial_note=0 [AND f.volume_id=?] ... and SELECT COUNT(*) FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 [AND volume_id=?] ... for terms canal, \"isthmian canal\", isthmu, \"Department of State\", \"canal zone\", concess, \"most favored nation\" over volumes frus1903, frus1912, frus1977-80v29, frus1904, frus1916"
+
+# ---------- 12. period floor and founding instruments ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "WITH core AS ( SELECT f.volume_id vid, f.document_id did FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '\"isthmian canal\" OR \"interoceanic canal\" OR \"Panama Canal\" OR \"Nicaragua Canal\" OR \"Nicaraguan Canal\" OR \"Clayton Bulwer\" OR \"Isthmus of Panama\" OR \"Isthmus of Darien\" OR \"Isthmus of Tehuantepec\" OR \"canal treaty\" OR \"ship canal\"' AND d.is_front_matter=0 AND d.is_editorial_note=0) SELECT dd.date_iso, c.vid||'/'||c.did, substr(d.header,1,80) FROM core c JOIN document_dates dd ON dd.volume_id=c.vid AND dd.document_id=c.did JOIN document_cache d ON d.volume_id=c.vid AND d.document_id=c.did WHERE dd.date_iso IS NOT NULL ORDER BY dd.date_iso LIMIT 15;"
+[SQL] for lit in '%Clayton-Bulwer%' '%treaty of 1846%' '%Bidlack%' '%Mallarino%' '%New Granada%' '%Treaty of Guadalupe%' '%Dickinson-Ayon%' '%Cass-Yrisarri%' '%Chamorro-Bryan%' '%Bryan-Chamorro%' '%Hay-Bunau-Varilla%' '%Torrijos%' '%Wyse Concession%'; do printf "%-26s " "$lit"; sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*)||' docs / '||COUNT(DISTINCT volume_id)||' vols' FROM document_cache WHERE is_front_matter=0 AND is_editorial_note=0 AND (header||' '||COALESCE(dateline,'')||' '||COALESCE(source_note,'')||' '||body_text) LIKE '$lit';"; done
+
+# ---------- 13. channel 1, came-from (document_sources) ----------
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT (SELECT COUNT(*) FROM core), COUNT(*) FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT s.citation_era, COUNT(*) n FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did GROUP BY 1 ORDER BY n DESC;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT COALESCE(s.record_group,'(null)'), COALESCE(s.series_name,'(null)'), COUNT(*) n FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did GROUP BY 1,2 ORDER BY n DESC LIMIT 20;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT s.lot_file_norm, COUNT(*) n FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did WHERE s.lot_file_norm IS NOT NULL AND s.lot_file_norm<>'' GROUP BY 1 ORDER BY n DESC LIMIT 20;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT s.decimal_class, COUNT(*) n FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did WHERE s.decimal_class IS NOT NULL AND s.decimal_class<>'' GROUP BY 1 ORDER BY n DESC LIMIT 20;"
+
+# ---------- 14. channel 2, pointed-at (external_citations) ----------
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT (SELECT COUNT(*) FROM core), COUNT(DISTINCT c.vid||'/'||c.did), COUNT(*) FROM core c JOIN external_citations e ON e.volume_id=c.vid AND e.document_id=c.did;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT COALESCE(e.repository,'(null)'), COALESCE(e.collection,'(null)'), COUNT(*) n FROM core c JOIN external_citations e ON e.volume_id=c.vid AND e.document_id=c.did GROUP BY 1,2 ORDER BY n DESC LIMIT 15;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT e.lot_file_norm, COUNT(*) n FROM core c JOIN external_citations e ON e.volume_id=c.vid AND e.document_id=c.did WHERE e.lot_file_norm IS NOT NULL AND e.lot_file_norm<>'' GROUP BY 1 ORDER BY n DESC LIMIT 12;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT e.decimal_class, COUNT(*) n FROM core c JOIN external_citations e ON e.volume_id=c.vid AND e.document_id=c.did WHERE e.decimal_class IS NOT NULL AND e.decimal_class<>'' GROUP BY 1 ORDER BY n DESC LIMIT 12;"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT MIN(dd.date_iso) FROM external_citations e JOIN document_dates dd ON dd.volume_id=e.volume_id AND dd.document_id=e.document_id;"
+
+# ---------- 15. bundled JSON ----------
+[JSON] ls "/Applications/FRUS Explorer.app/Contents/Resources"
+[JSON] python3 -u -c "... json.load of central-files-index.json, decimal-class-labels.json, series-facts-index.json, lot-claimants-index.json, collection-usage-index.json, external-citation-index.json; print top-level keys"
+[JSON] python3 -u resolve.py                 # schemaVersions, container shapes; output above resolve_out.txt
+[JSON+SQL] python3 -u resolve2.py | tee resolve_out.txt   # top lots per channel -> RG/NAID/entry/creator/extent/claimants (first, wrong, gloss attempt)
+[JSON] python3 -u -c "... schedules['1910-1949'] subjects/classes/countries shapes; countries 11,11F,11f,19,17,11A..11G"
+[JSON] python3 -u -c "... regex canal|panama|zone over countries; regex canal over subjects['8']; suffix probes"
+[JSON+SQL] python3 -u gloss.py | tee gloss_out.txt        # corrected gloss (dotless suffix keys), gated on the document's own date
+#   gloss.py SQL, in order:
+#     $(core_cte) SELECT s.decimal_class, COUNT(*) n, SUM(CASE WHEN dd.date_iso>='1910' AND dd.date_iso<'1950' THEN 1 ELSE 0 END) inwin, MIN(dd.date_iso), MAX(dd.date_iso) FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did LEFT JOIN document_dates dd ON dd.volume_id=c.vid AND dd.document_id=c.did WHERE s.decimal_class IS NOT NULL AND s.decimal_class<>'' GROUP BY 1 ORDER BY n DESC LIMIT 22
+#     SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_sources WHERE decimal_class LIKE '8__.812%'
+#     SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_sources WHERE decimal_class LIKE '%.812%'
+#     SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_sources WHERE decimal_class LIKE '811f%' OR decimal_class LIKE '811F%'
+#     SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_sources WHERE decimal_class LIKE '711f%' OR decimal_class LIKE '711F%'
+#     SELECT decimal_class, COUNT(*) n FROM document_sources WHERE decimal_class LIKE '%.812%' GROUP BY 1 ORDER BY n DESC LIMIT 14
+
+# ---------- 16. verifying the 11F gloss against real documents ----------
+[SQL] python3 -u -c "... SELECT s.volume_id,s.document_id,substr(c.header,1,90),substr(s.raw_text,1,90),dd.date_iso FROM document_sources s JOIN document_cache c ON c.volume_id=s.volume_id AND c.document_id=s.document_id LEFT JOIN document_dates dd ON dd.volume_id=s.volume_id AND dd.document_id=s.document_id WHERE s.decimal_class LIKE '711F.1914%' ORDER BY dd.date_iso LIMIT 6"
+[SQL] python3 -u -c "... same, WHERE s.decimal_class LIKE '817.812%' ORDER BY dd.date_iso LIMIT 6"
+[SQL] python3 -u -c "... same, WHERE s.decimal_class LIKE '811f.812%' OR s.decimal_class LIKE '811F.812%' ORDER BY dd.date_iso LIMIT 5"
+
+# ---------- 17. TEI variant census (tei_variants.py, kept on disk; tei_chunk_*.json + tei_variants.json) ----------
+# COUNTING SURFACE: tag-stripped + whitespace-collapsed. bytes -> strip <!--...--> -> strip <...> -> \s+ => ' '.
+# Whole volume files, so APPARATUS IS INCLUDED. Ed2 duplicates skipped inside the script.
+[TEI] for a in 0 60 120 180 240 300 360 420 480 540; do b=$((a+60)); python3 -u tei_variants.py $a $b; done
+[TEI] python3 -u -c "... aggregate tei_chunk_*.json into tei_variants.json and print the variant table"
+
+# ---------- 18. verifying the tokenizer blind spots the TEI census implies ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'MATCH \"interoceanic canal\"', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"interoceanic canal\"' UNION ALL SELECT 'MATCH \"inter oceanic canal\"', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"inter oceanic canal\"' UNION ALL SELECT 'LIKE %inter-oceanic canal% (case-insens)', COUNT(*) FROM document_cache WHERE body_text LIKE '%inter-oceanic canal%' UNION ALL SELECT 'both phrases OR-ed', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"interoceanic canal\" OR \"inter oceanic canal\"';"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'vocab stem sealevel (docs)', doc FROM frus_documents_vocab WHERE term='sealevel' UNION ALL SELECT 'MATCH \"sea level canal\"', COUNT(*) FROM frus_documents WHERE frus_documents MATCH '\"sea level canal\"' UNION ALL SELECT 'LIKE %sea-level canal%', COUNT(*) FROM document_cache WHERE body_text LIKE '%sea-level canal%' UNION ALL SELECT 'LIKE %sea level canal%', COUNT(*) FROM document_cache WHERE body_text LIKE '%sea level canal%';"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT 'Bryan-Chamorro only', COUNT(*) FROM document_cache WHERE body_text LIKE '%Bryan-Chamorro%' AND body_text NOT LIKE '%Chamorro-Bryan%' UNION ALL SELECT 'Chamorro-Bryan only', COUNT(*) FROM document_cache WHERE body_text LIKE '%Chamorro-Bryan%' AND body_text NOT LIKE '%Bryan-Chamorro%' UNION ALL SELECT 'both', COUNT(*) FROM document_cache WHERE body_text LIKE '%Chamorro-Bryan%' AND body_text LIKE '%Bryan-Chamorro%';"
+
+# ---------- 19. citation graph, subjects, persons ----------
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT x.target_volume_id||'/'||x.target_document_id AS tgt, COUNT(*) inbound, substr(dc.header,1,70) FROM cross_references x JOIN core c ON c.vid=x.source_volume_id AND c.did=x.source_document_id LEFT JOIN document_cache dc ON dc.volume_id=x.target_volume_id AND dc.document_id=x.target_document_id WHERE x.is_broken=0 AND x.target_volume_id IS NOT NULL GROUP BY 1 ORDER BY inbound DESC LIMIT 12;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT r.subject, COUNT(*) n FROM core c JOIN document_subject_refs r ON r.volume_id=c.vid AND r.document_id=c.did GROUP BY 1 ORDER BY n DESC LIMIT 15;"
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT p.name, COUNT(DISTINCT c.vid||'/'||c.did) n FROM core c JOIN person_mentions m ON m.volume_id=c.vid AND m.document_id=c.did JOIN persons p ON p.volume_id=m.volume_id AND p.ref=m.person_ref GROUP BY 1 ORDER BY n DESC LIMIT 15;"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db ".schema persons" ".schema person_mentions"
+[JSON] python3 -u -c "... document-subject-index.json top keys; d['subjects'] -> None"
+[JSON] python3 -u -c "... d['vocab'] is a list of 491 {'c','df','n','r','s'} rows; print rows 452,56,41,236,11,460,144,54,397,442,374,434,396,237,122"
+[JSON+SQL] python3 -u -c "... SELECT COUNT(DISTINCT volume_id||document_id) FROM document_subject_refs; $(core_cte) SELECT r.subject, COUNT(*) n ... LIMIT 25; lift = (n/3241)/(df/238302); $(core_cte) SELECT COUNT(*) ... WHERE r.subject=325"
+
+# ---------- 20. collection-usage-index (volume-grain) ----------
+[JSON] python3 -u usage.py                    # container shapes, coverage block
+[JSON] python3 -u usage2.py | tee usage_out.txt   # 18-volume canal scope; collections and classes rankings
+
+# ---------- 21. reading (raw text kept in read_docs/) ----------
+[SQL] python3 -u read_docs.py   # SELECT header, dateline, source_note, body_text, length(body_text) FROM document_cache WHERE volume_id=? AND document_id=?  -- for frus1912/d658, frus1913/d1310, frus1903/d326, frus1904/d497, frus1916/d1101, frus1977-80v29/d1, frus1865p4/d130, frus1948v09/d442
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT volume_id||'/'||document_id, source_note, substr(header,1,90) FROM document_cache WHERE (volume_id='frus1903' AND document_id='d326') OR (volume_id='frus1904' AND document_id='d497') OR (volume_id='frus1948v09' AND document_id='d442') OR (volume_id='frus1865p4' AND document_id='d130');"
+[SQL] head -c 260 read_docs/frus1903__d326.txt ; head -c 200 read_docs/frus1904__d497.txt
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT f.volume_id||'/'||f.document_id, ROUND(bm25(frus_documents),2), substr(d.header,1,66) FROM frus_documents f JOIN document_cache d ON d.volume_id=f.volume_id AND d.document_id=f.document_id WHERE frus_documents MATCH '(\"isthmian canal\" OR \"interoceanic canal\" OR \"ship canal\") AND (treaty OR convention OR concession OR negotiat*)' AND d.is_front_matter=0 AND d.is_editorial_note=0 ORDER BY bm25(frus_documents) ASC LIMIT 14;"
+[SQL] python3 -u -c "... SELECT header,dateline,source_note,body_text,length(body_text) FROM document_cache WHERE volume_id=? AND document_id=? -- for frus1901/d233, frus1903/d321, frus1912/d756, frus1916/d1255, frus1948v09/d480, frus1969-76ve10/d541; then print first 420 chars of three of them"
+
+# ---------- 22. record groups and the reach of the offline stack ----------
+[SQL] sqlite3 -readonly ... "$(cat core_cte.sql) SELECT s.record_group, COUNT(*) n FROM core c JOIN document_sources s ON s.volume_id=c.vid AND s.document_id=c.did WHERE s.record_group IS NOT NULL AND s.record_group<>'' GROUP BY 1 ORDER BY n DESC;"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM document_sources WHERE record_group IN ('185','RG-185','RG 185');"
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*), COUNT(DISTINCT volume_id) FROM document_sources WHERE raw_text LIKE '%185%' AND raw_text LIKE '%Record Group%';"
+[JSON] python3 -u -c "... central-files-index lotFiles grouped by recordGroup; numericalFile keys; countrySeries keys; series-facts headings matched by regex panama|isthm|canal"
+[JSON+SQL] python3 -u -c "... for each byNaId row whose 'c' heading index is in {128,136,140,163,164,253,344,366,367}: print NAID, y0-y1, statuses[as], extent, creator heading, and each central-files lot on that NAID with SELECT COUNT(*) FROM document_sources WHERE lot_file_norm=? and SELECT COUNT(*) FROM external_citations WHERE lot_file_norm=?"
+
+# ---------- 23. verification of three numbers in the draft ----------
+[SQL] sqlite3 -readonly /Users/jbotts/frus-analysis/frus-copy.db "SELECT COUNT(*) FROM document_dates dd JOIN document_cache d ON d.volume_id=dd.volume_id AND d.document_id=dd.document_id WHERE d.is_front_matter=0 AND d.is_editorial_note=0 AND dd.date_iso IS NOT NULL AND dd.date_iso < '1860' AND dd.volume_id NOT IN ('frus1951-54IranEd2','frus1969-76ve15p2Ed2');"   -- 462, correcting a 457 I had summed by hand
