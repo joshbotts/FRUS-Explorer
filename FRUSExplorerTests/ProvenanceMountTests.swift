@@ -281,13 +281,16 @@ struct ProvenanceMountTests {
         var scanned = 0
         for path in ["FRUSExplorer/SourceExplorer/CollectionDetailView.swift",
                      "FRUSExplorer/SourceExplorer/SourceExplorerView.swift",
-                     "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"] {
+                     "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift",
+                     // P-1's shared per-row rules decide a source from values in scope; they must
+                     // not start resolving it from the artifact a value was read out of either.
+                     "FRUSExplorer/SourceExplorer/SourceExplorerProvenance.swift"] {
             let file = try code(path)
             #expect(!file.contains("source(ofArtifact:"),
                     Comment(rawValue: "\(path) resolves a chip's source by filename"))
             scanned += 1
         }
-        #expect(scanned == 3, "the mount sweep ran over \(scanned) files")
+        #expect(scanned == 4, "the mount sweep ran over \(scanned) files")
     }
 }
 

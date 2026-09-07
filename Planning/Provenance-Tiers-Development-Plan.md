@@ -292,6 +292,30 @@ built before PV-1 and PV-2 settle the vocabulary.
   These are the §1c shape — the boundary inside a row — and they are where PV-3's per-claim rule
   would actually have had to split a row. Badging them needs a per-row branch, not a section chip.
 
+  **CORRECTED AT P-1 (2026-09-07). Two of the three sentences above are wrong, and both were wrong
+  in the direction of making the row sound simpler than it is.**
+  - The **pre-1906 country series is NOT Tier 2 throughout.** The `#965` despatch-serial block sits
+    inside the same Section/GroupBox, and its value comes from
+    `IndexingPipeline.extractDespatchSerial` — a walk over the parsed TEI, no catalogue involved.
+    Its own shipped caption says so: *"It is not a NARA identifier and does not resolve to a catalog
+    record."* The section is genuinely mixed, but **between two sibling blocks**, not per row — the
+    PV-3 shape, not the §1c one. It takes two static chips and no branch.
+  - **"Pointed At, Not Printed" is the wrong section name.** That literal header is
+    `CollectionDetailView.swift:813`, whose rows are pre-aggregated per-volume counts from
+    `ExternalCitationIndex` with no `ExternalCitation` and no `anchor` in scope — the branch this
+    entry mandates is impossible there, and an implementation written against the header string
+    lands in the wrong file. The branchable section is **"Unprinted Material"**
+    (`source.explorer.unprinted.header`), in both twins.
+  - The **lot file's record group** sentence is correct, except for its parenthetical: the curated
+    disclosure is **not** mounted. §8's Q-3 correction put that sentence in `curatedLotSection` /
+    `curatedLotBox`, and all 20 curated lots render that card in the same panel, so repeating it on
+    the chip would reinstate the redundancy Q-3 removed. A test pins the absence.
+  - Also measured at P-1, and it decides the rule's shape: over the shipped
+    `curated-lot-resolutions.json` all 20 curated lots resolve to a record group and **19 of the 20
+    are byte-identical to the parser's answer** (only `M88` differs, `RG-43` against `RG-59`). So
+    the branch must key on *which lookup answered*; a value comparison would call 19 of 20 curated
+    rows uncurated, and the single row it got right would make it look correct.
+
 **Surveyed at PV-2, two constraints verified:**
 
 - **The twins do not share a container.** `SourceExplorerView` is a `Form` of nine `Section`s;
