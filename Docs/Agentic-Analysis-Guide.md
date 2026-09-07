@@ -340,7 +340,7 @@ of the editors' source note. This answers *where the printed document came from*
 | Column | Meaning |
 |---|---|
 | `repository` | `Department of State`, `National Archives`, a presidential library, `Central Intelligence Agency`, … The vocabulary is closed (Department of State 212,858 · National Archives 10,514 · Nixon 8,014 · Johnson 4,693 · …); it has **no Commerce value**, so a repository the parser does not recognise falls to `raw_text`/`series_name`, not to a new label. |
-| `record_group` | NARA record group number, where asserted — **and it is spelled two ways inside this one column, so a bare `GROUP BY record_group` splits a record group in half.** Measured 2026-09-06: `RG-59` 206,766 rows against a bare `59` 11,907, and `RG-84` 487 against `84` 148. Only those two are dual-spelled; `RG-256` (1,547) is prefixed only and the remaining 31 of the 34 record groups are bare only. RG 59 alone is 218,673 of the 223,372 rows that carry a record group, so the trap fires on almost every row. `volume_sources.record_group` is bare only, so a comparison or join between the two tables on the raw spelling silently drops all 206,766 `RG-59` rows. Normalise before grouping or comparing (`REPLACE(record_group, 'RG-', '')`). |
+| `record_group` | NARA record group number, where asserted — bare (`59`), **and it was spelled two ways in this one column until #1239.** An index written by an earlier build stores both, so a bare `GROUP BY record_group` splits a record group in half. Measured 2026-09-06 before the fix: `RG-59` 206,766 rows against a bare `59` 11,907, and `RG-84` 487 against `84` 148 — only those two of 34 record groups were dual-spelled, but RG 59 alone is 218,673 of the 223,372 rows carrying one, so the trap fired on almost every row. `volume_sources.record_group` was always bare, so a join between the two tables on the raw spelling dropped all 206,766 prefixed rows. **Since #1239 the write is normalised, an idempotent UPDATE strips the prefix when the database is opened, and the index version is bumped so a re-parse rewrites every row — but the heal runs at OPEN, so a copy of a database that has not been opened by a current build still holds both.** Normalise anyway if you did not write the file you are reading (`REPLACE(record_group, 'RG-', '')`); it costs nothing on a healed index. |
 | `lot_file`, `lot_file_norm` | Lot file as cited, and its canonical compact key (`64D199`) for joining. |
 | `series_name` | Series or file designation as parsed. |
 | `decimal_class` | Central-file class key (`751.00`, `POL 27 ARAB-ISR`), canonicalized. The schedule was **renumbered in 1950** (the artifact's own `provenance` string says so): class 4 is *Claims* before and *U.S. trade* after; class 6 is *Commerce* before and bilateral *political relations* after (`611.41: U.S.-U.K. relations` in the editors' own gloss; `611.31` is U.S.–Venezuela commerce after 1950); country numbers move too. A prefix is a false friend across 1950-01-01 — bound every `decimal_class` family by `document_dates.date_iso` at that date, publish the two halves as two sets, and print the predicate beside the count. Measured on the working scope: `411.*` = 327 documents in 46 volumes after, 259 in 29 before (44% of the undated union are claims cases). Country numbers carry a **letter** for dependencies and derived states (`41D` Ireland, `11B` Philippines) and the corpus writes punctuation variants (`611.37.31`, `611.60c.31`): never let the schedule's shape decide the predicate — `GLOB '611.[0-9][0-9]31'` looks like the careful choice and silently drops Ireland (20 documents) and the Philippines (12), while `LIKE '611.%31'` admits the renumbered post-1950 class. Use the date. And `document_sources` stores the letter in upper case (`60F`) where `decimal-class-labels.json` keys it lower (`60f`); one thread's "all bare" claim was a case-sensitive lookup. |
@@ -2112,6 +2112,63 @@ written and false after the fix pass, became the next memo's false sentence.
 
 ---
 
+### 14.16 What a round owes the historian, beyond the memo
+
+A research memo records what was measured. It is the wrong shape for the person who commissioned it,
+who wants to know the answer and where to look next — so a round that has done reading owes **three
+artifacts, not one**, and the memo is the least immediately useful of them.
+
+**This applies to a reading round only.** A scoping round's product is a scope memo; it has not read
+anything yet, and a collection built from it would be a list of documents nobody has opened. Round
+1 of the worked example produced nine axis reports and read fourteen documents; the collection and
+overview came out of round 2, which read 616.
+
+**1 — the memo, unchanged.** The raw record of methodology and findings, including the numbers that
+were refuted and by what. It is the audit trail, and nothing below replaces it.
+
+**2 — a `.fruscollection` the historian can edit** (§15 is the format; do not restate it here).
+**Scope it by a rule, not by a number.** The rule that works is *every document the argument rests
+on, and nothing else* — it is checkable, it explains itself, and in the worked example it produced
+**74 documents in 33 volumes** where a "most relevant documents" instruction would have produced an
+argument. A collection of 400 is a corpus; a collection of 74 is a reading list.
+
+Order it under headings that follow the overview, so the two objects are the same argument in two
+forms, and date-order within each heading. Verify every pair exists before writing the file — the
+manifest companion (a table of date, id, header, URL) costs one query and is what a historian
+actually reads first. Include a positively documented **absence** where you have one: the worked
+example keeps an editorial note recording that a Presidential letter was drafted four times and
+never sent, which the standing apparatus exclusion removes from every count.
+
+**The collection is the feedback channel, and say so in the overview.** The historian's additions
+are worth more to the next round than any query you could write, because they carry a thread your
+vocabulary could not reach — and §14.5 has already shown that the question's own words often do not
+retrieve the question's own instruments. Name the specific threads you could not follow, so an
+addition has somewhere to attach.
+
+**3 — an overview that answers the question.** Three parts, in this order:
+
+- **A bottom line up front, one page.** The answer FRUS gives *directly*, and the archival sources it
+  points at for work beyond the printed record. **Put the negative results in this page, not in an
+  appendix.** In the worked example the most useful paragraph for the reader is the one saying there
+  is no aggregate, no personnel consequence and almost nothing from the post's own side — that is
+  what stops a week being spent on a question the corpus cannot answer, and a deliverable rule that
+  asked only for findings would let it fall to the back.
+- **The body: thematic or chronological takeaways, placed in the narrative the corpus documents.**
+  Not a list of counts. The reader wants the argument, with every instrument attributed and quoted
+  from a document that was actually retrieved.
+- **A short methodological close.** What kinds of query proved useful, and how the leads were
+  pursued between rounds. Be specific and be willing to report that the obvious approach failed: the
+  worked example's most useful single finding was a *negative* one about vocabulary — the question's
+  own words do not retrieve its own instruments, and a **citation** (`"May 29, 1961"`) outperformed
+  every subject phrase — because that is what redirected the second round from counting to reading.
+
+**Do not let the overview quietly become a second memo.** It may not carry a number the memo does
+not, and every quotation in it must come from a document retrieved in the run. Cross-check it: in
+the worked example every document the overview cites was confirmed present in the corpus *and*
+present in the collection, which is a two-line check and catches the citation that drifted.
+
+---
+
 ## 15. Writing a collection the app can open
 
 Everything above is read-only. This section is the one place the traffic runs the other way: an
@@ -2573,11 +2630,14 @@ SEMANTIC VECTORS
   words "every command … verbatim", the rest in their own — above an elided command body or id
   list, one above a list holding 42 (volume_id, document_id) pairs where the memo said 43.
 
-  **§4.4 gains a data defect, not a usage trap: `document_sources.record_group` is spelled two ways
+  **§4.4 gains a data defect, not a usage trap: `document_sources.record_group` was spelled two ways
   in the same column**, so a bare `GROUP BY` splits a record group in half — `RG-59` 206,766 against
   a bare `59` 11,907, and `RG-84` 487 against `84` 148. Only those two of 34 record groups are
   dual-spelled, and RG 59 is 218,673 of the 223,372 rows that carry one, so the trap fires on almost
-  every row. **§12's artifact list gains the container shapes** that cost an agent a whole pass
+  every row — **fixed at the source in #1239, which normalises the write, heals an existing index at
+  open and bumps the index version; the note stays because a database not yet opened by a current
+  build still holds both.** **§12's artifact list gains the container shapes** that cost an agent a
+  whole pass
   (`lotFiles` and `lots` are LISTS — except `volume-sources-index.json`'s `lots`, which is an EMPTY
   DICT; `series-facts` rows sit under `byNaId` and dereference through `legend` only where the
   legend's `into` says so), and **two known traps**: SQLite `LIKE` is
@@ -2590,6 +2650,18 @@ SEMANTIC VECTORS
   measured failures* rather than additions on taste, and the two rewritten rules replace text that
   scored 0 of 8 — but a **C-0c** at the new length is owed before the block's score may be quoted
   again. Record: `~/frus-analysis/chief-of-mission/logs/measurement.md` and `measurement-r2.md`.
+
+  **NEW §14.16 — what a round owes the historian beyond the memo**, added because the same run
+  produced the first worked example of it. A reading round owes three artifacts: the memo (the audit
+  trail, unchanged), a `.fruscollection` **scoped by a rule rather than a number** — *every document
+  the argument rests on, and nothing else*, which yielded 74 documents in 33 volumes where "the most
+  relevant documents" would have yielded an argument — and an **overview whose one-page bottom line
+  carries the negative results**, because the most useful paragraph for the reader is the one saying
+  what the corpus cannot answer. The collection is also the **feedback channel**: the historian's
+  additions reach the next round where a vocabulary search cannot, which is §14.5's finding put to
+  work. Deliberately in §14 and **not** in §12's block: these are obligations on a round's synthesis,
+  which a thread-level agent cannot discharge, and the block is already carrying a length caveat.
+
 
 - 1.19 — 2026-09-06: **#1207 closed.** §14.12 item 7 now points at
   `Planning/Agentic-Harness-Runbook.md`, which carries the operational facts the guide
