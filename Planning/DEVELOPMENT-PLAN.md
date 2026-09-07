@@ -12568,3 +12568,59 @@ writer's artifact table said `series/rg_<N>.json` totals "~165 MB"; it is **4.5 
 three consume records one at a time into small dictionaries; `forEachRecord` already exists in the
 same target, is already a dependency, and is already parity-pinned by `HarvestShardStreamingTests`.
 Unlike P-2 it is testable against the real 3.56 GB shard on this machine today. It is a separate row.
+
+## Session 2026-09-07d — A-3: the accumulation step measured, and M-6 refused
+
+M-6 was deferred pending measurement, on the argument that the repo's only figure — 103.8 ms per
+frame — *"includes readback and PNG encode the on-screen path does not pay"*. That is true. It also
+points the wrong way, and only a measurement could show which.
+
+**The split, over 553 steps, twice.**
+
+| stage | run 1 | run 2 | share |
+|---|---|---|---|
+| **scope step** — mask rebuild + flag write, *what a screen pays* | **73.9 ms** | **76.8 ms** | **57.1% / 58.1%** |
+| render + readback + PNG encode — offline only | 55.5 ms | 55.3 ms | ~43% |
+| total | 129.4 ms | 132.1 ms | |
+
+Stripping the offline-only stages leaves the **larger** half, not a remainder. And the step is not
+flat: **44 ms** at the first decile against **93 ms** at the last, because it is a fixed whole-corpus
+mask rebuild *plus* a marking pass over the cumulative union. That also corrects a claim carried into
+this row from reconnaissance — that per-step cost is "O(corpus), not O(volumes added)". It is both.
+
+**The verdict.** 44–93 ms of main-actor CPU per step against a 16.7 ms frame budget is three to six
+frame budgets blocked. At decade grain, 17 steps summing to **1.14 s** — seventeen visible hitches.
+**M-6 is refused as designed.** It becomes viable only if the step is made incremental: accumulation
+is monotonic, so a step need only mark the newly added rows and increment `regionCounts` for those —
+O(added) rather than O(corpus). `scopeMask` rebuilds from scratch because it is general over any
+scope set; an accumulation path would not have to. That is separate work, and the measurement should
+be re-run after it rather than before.
+
+**Two false doc comments found in the instrument itself.** `FrameRecord.renderMilliseconds` and the
+type header both described the timed span as *"mask + upload + render + readback"*. `render` has
+always called `writeFrame` — PNG encode and disk write — **inside** that span. So every figure ever
+quoted from it (103.8, 100.8, 104.9 ms) includes an encode and a disk write nobody accounted for, and
+the split was unrecoverable from any existing artifact, `frames.csv` included. Both corrected; the
+CSV gains a `scope_ms` column at **three** decimals, because at `%.1f` a sub-millisecond step rounds
+to `0.0` and the column would report zero for exactly the measurement it exists to make. A test pins
+that.
+
+**The route the row prescribed was attempted and abandoned, and that is the honest outcome rather
+than a shortfall.** A-3 says *"needs a small DEBUG driver first: there is no in-app decade-stepping
+affordance"*. The driver was written and could not be run. The macOS Semantic Analytics window is a
+singleton that does not open at launch; the map's `.task` — which hosts the driver — never runs until
+it does. A DEBUG auto-open failed as well: `.task` is cancelled when `ContentViewWithSplash` changes
+identity at the splash transition, so the sleep before `openWindow` never completed, and an
+unstructured task did not fix it either. Shipping a measurement seam never observed to produce a
+number is the defect class §1a of the plan of record exists to catch, so it was reverted rather than
+committed. The question is answerable *better* without it: the step's CPU work is identical whether
+the subsequent draw goes to a window or offscreen, and the headless harness already runs, is already
+tested, and has a documented invocation.
+
+**Bounds on the numbers, stated because they are not decoration.** The absolute total runs ~24% above
+the runbook's 104.9 ms on the same device class, reproducibly across both runs — so the **share** is
+the robust finding and the absolute is this machine's. And the measured step is the offline harness's
+`model.setScope`; an on-screen `applyScope` adds two `@State` writes on top of it.
+
+Data: `Planning/semantic-map/accumulation-cost.json` (both runs, the decile curve, the 17 decade
+step costs at their measured cumulative scopes).

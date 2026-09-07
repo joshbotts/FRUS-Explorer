@@ -118,14 +118,32 @@ struct SemanticMapFrameSequenceTests {
             index: 0, volumeID: "frus1861",
             volumeTitle: #"Foreign Relations, 1861, "Part I""#,
             published: "1861", coverageStart: "1861-03-04", cumulativeVolumes: 1,
-            cumulativeDocuments: 312, renderMilliseconds: 12.34)]
+            cumulativeDocuments: 312, scopeMilliseconds: 1.234,
+            renderMilliseconds: 12.34)]
         let csv = SemanticMapFrameSequence.framesCSV(records)
         let lines = csv.split(separator: "\n")
-        #expect(lines[0] == "frame,volume_id,volume_title,published,coverage_start,cumulative_volumes,cumulative_documents,render_ms")
+        #expect(lines[0] == "frame,volume_id,volume_title,published,coverage_start,cumulative_volumes,cumulative_documents,scope_ms,render_ms")
         // The ordering key is a COLUMN, not just an argument: a reader of the film has to be able
         // to see what the sequence was sorted by without reading the source.
         #expect(lines[1].contains("\"1861\",\"1861-03-04\""))
-        #expect(lines[1] == #"0,"frus1861","Foreign Relations, 1861, ""Part I""","1861","1861-03-04",1,312,12.3"#)
+        #expect(lines[1] == #"0,"frus1861","Foreign Relations, 1861, ""Part I""","1861","1861-03-04",1,312,1.234,12.3"#)
+    }
+
+    /// A-3: the two figures are different columns at different precisions, and the scope one is the
+    /// half an on-screen accumulation would pay.
+    ///
+    /// Three decimals rather than one, because the whole point of the split is that the scope step
+    /// is small next to the render — at `%.1f` a sub-millisecond step rounds to `0.0`, and the
+    /// column would report zero for exactly the measurement it was added to make.
+    @Test("scope_ms keeps sub-millisecond resolution the render column would round away")
+    func scopeColumnKeepsResolution() {
+        let records = [SemanticMapFrameSequence.FrameRecord(
+            index: 0, volumeID: "v", volumeTitle: "t", published: "1861",
+            coverageStart: "1861", cumulativeVolumes: 1, cumulativeDocuments: 1,
+            scopeMilliseconds: 0.049, renderMilliseconds: 103.8)]
+        let row = SemanticMapFrameSequence.framesCSV(records).split(separator: "\n")[1]
+        #expect(row.hasSuffix(",0.049,103.8"), "row was \(row)")
+        #expect(!row.hasSuffix(",0.0,103.8"), "the scope column must not round to zero")
     }
 
     @Test("provenance.txt leads with the grain sentence and carries the map's methods block")

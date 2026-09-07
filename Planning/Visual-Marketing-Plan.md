@@ -242,6 +242,53 @@ splash is the only surface that would hold the field the code was written for, l
 and the queue banner expands to six Dynamic-Type-scalable rows. The strip can reach it; the argument
 for the splash rests on duration and composition, not on the strip's ceiling.)*
 
+**M-6 · In-app decade accumulation — MEASURED 2026-09-07 (A-3). The deferral is lifted, and the
+answer is NOT VIABLE AS DESIGNED.**
+
+The premise below is true and points the wrong way. The 103.8 ms figure does include readback and
+PNG encode that the screen never pays — but stripping them leaves the **larger** half, not a
+remainder. Measured over 553 steps, twice:
+
+| stage | mean | share |
+|---|---|---|
+| **scope step** — mask rebuild + flag write, *what a screen pays* | **73.9 / 76.8 ms** | **57.1% / 58.1%** |
+| render + readback + PNG encode — offline only | 55.5 / 55.3 ms | 43% |
+| total | 129.4 / 132.1 ms | |
+
+And it is not flat. Cost grows with the accumulated scope — **44 ms** at the first decile against
+**93 ms** at the last — because a step is a fixed whole-corpus mask rebuild *plus* a marking pass
+over the cumulative union that roughly doubles by the end.
+
+So an in-app step costs **44–93 ms of main-actor CPU** against a 16.7 ms frame budget: three to six
+frame budgets blocked, per step. At decade grain that is 17 steps summing to **1.14 s** of blocked
+main actor — seventeen visible hitches, not an animation.
+
+**What would make it viable, and it is a different piece of work.** Accumulation is *monotonic* —
+volumes are only ever added — so a step need only mark the newly added volumes' rows and increment
+`regionCounts` for those: **O(added)** instead of O(corpus). `SemanticMapColouring.scopeMask`
+rebuilds from scratch because it is general over any scope set; an accumulation-specific path would
+not have to. Measure again after that, not before.
+
+*Two caveats, stated because they bound the numbers.* The absolute total runs ~24% above the
+runbook's 104.9 ms on the same device class, reproducibly across both runs — the **share** is the
+robust finding, the absolute is this machine's. And the measurement is the OFFLINE harness's scope
+step, which is `model.setScope`; an on-screen `applyScope` adds two `@State` writes on top.
+
+Full data: `Planning/semantic-map/accumulation-cost.json`.
+
+**The route this row prescribed was attempted and abandoned.** An in-app DEBUG driver was built and
+could not be run: the macOS Semantic Analytics window is a singleton that does not open at launch,
+the map's `.task` — which would host the driver — never runs until it does, and a DEBUG auto-open
+failed too (`.task` is cancelled when `ContentViewWithSplash` changes identity at the splash
+transition; an unstructured task did not fix it either). Shipping a measurement seam never observed
+to produce a number would be the defect class this repo keeps finding, so it was reverted. The
+question is answerable better through the headless harness, because the step's CPU work is identical
+whether the draw goes to a window or offscreen.
+
+---
+
+**The original deferral text, kept because its reasoning is still the right shape:**
+
 **M-6 · In-app decade accumulation — DEFERRED pending measurement.** The ordering function is
 app-side and GPU-free and each step is one dirty mark, but the only cost figure in the repo
 (103.8 ms/frame) **includes readback and PNG encode the on-screen path does not pay**. Measure the
