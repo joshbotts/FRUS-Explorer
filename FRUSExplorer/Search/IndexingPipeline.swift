@@ -4508,6 +4508,24 @@ public actor IndexingPipeline {
             try resolvePageBasedCrossReferences(volumeId: data.volumeId)
         }
 
+        // R-1a: scrub before inserting, for the four per-volume tables whose inserts are plain
+        // `INSERT OR REPLACE`.
+        //
+        // **A corrected volume is the case this exists for, and without it "Update" and
+        // "delete then re-download" leave different index states.** `REPLACE` overwrites a row
+        // with the same key and does nothing about a key that stopped being produced, so a
+        // correction that REMOVES a person, a glossary term, a dated document or a source note
+        // strands that row forever. `auxDeleteVolume` scrubs all four (`:7707`), which is what
+        // makes the removal path clean and this one not — the asymmetry, not the deletion, is the
+        // defect.
+        //
+        // The removal matters most for `persons`: the rollup drift check is a COUNT
+        // (`PersonMentionStore` compares `members` against `persons`), so a removal leaves the
+        // count unchanged and the materialised rollup never rebuilds — not even at next launch.
+        //
+        // Not folded into `auxDeleteVanishedCacheRows`: that deletes from `document_cache` alone
+        // and is about documents, where this is about four independently-keyed tables.
+        try auxDeletePerVolumeRows(forVolumeId: data.volumeId)
         try auxInsertDocumentDates(data.documentDates)
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
@@ -7702,6 +7720,25 @@ public actor IndexingPipeline {
             }
         }
         return marked
+    }
+
+    /// Clears the per-volume tables whose re-index inserts are plain `INSERT OR REPLACE`.
+    ///
+    /// These four are keyed on `(volume_id, …)` and are rewritten wholesale by every re-index, so
+    /// a row the new parse does not produce has nothing to overwrite it. Every other per-volume
+    /// table in ``auxDeleteVolume`` already has its own delete-then-insert in `storeIndexData`
+    /// (`cross_references`, `person_mentions`, `page_ranges`, `external_citations`,
+    /// `volume_sources`) or is handled per document (`document_cache`, via
+    /// ``auxDeleteVanishedCacheRows``) — these were the residue.
+    ///
+    /// - Parameter volumeId: the volume being re-indexed.
+    private func auxDeletePerVolumeRows(forVolumeId volumeId: String) throws {
+        for table in ["document_dates", "persons", "terms", "document_sources"] {
+            let stmt = try auxPrepare("DELETE FROM \(table) WHERE volume_id = ?")
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            try auxStep(stmt)
+        }
     }
 
     private func auxDeleteVolume(_ volumeId: String) throws {

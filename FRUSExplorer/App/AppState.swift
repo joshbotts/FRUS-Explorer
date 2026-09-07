@@ -594,7 +594,15 @@ final class AppState {
         var awaiting: [String] = []
         for entry in known where scope == .entireCorpus
                                  || downloads.isVolumeDownloaded(entry.volumeId) {
-            guard !onDisk.contains(entry.volumeId) else { continue }
+            // R-1a: a REFUSED shard is on disk and unusable, so `onDisk` alone hides it from
+            // every repair route. `SemanticShardStore.refuse` records a shard whose header failed
+            // its provenance, count or length check — exactly what a corrected volume produces —
+            // and `volumeIDsOnDisk()` does not filter those out. Before this, neither "Download
+            // Missing Vectors" nor the whole-corpus button could replace one, while `diskUsage()`
+            // went on counting its bytes as present; it was repaired only by accident, when a
+            // reader happened onto a surface for an axis that ships at weight zero.
+            let refused = await store.refusal(for: entry.volumeId) != nil
+            guard refused || !onDisk.contains(entry.volumeId) else { continue }
             guard await fetcher.hasShard(for: entry.volumeId) else { continue }
             awaiting.append(entry.volumeId)
         }
