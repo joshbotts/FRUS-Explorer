@@ -1567,11 +1567,23 @@ struct FRUSExplorerApp: App {
                         // precisely what the 256 → 512 move would have produced on every device
                         // that already had vectors. One string comparison; see the method.
                         let discarded = await store.purgeIfGenerationChanged()
+                        // R-1c: the family gate above cannot see a CORRECTED volume. Its key has no
+                        // corpus term, so a re-harvested shard for one volume ships under the same
+                        // digest by design — and the shard's own checks miss it too when the
+                        // correction preserves the document count. The manifest's per-shard SHA is
+                        // the only byte-exact proof and was verified at fetch only. Steady state
+                        // opens no file; see the method for why an absent record means verify.
+                        let staleShards = await store.purgeShardsFailingBundledDigest(
+                            SemanticShardFetcher.bundledExpectations()?.mapValues(\.sha256))
                         appState.semanticShardStore = store
                         #if DEBUG
                         if discarded > 0 {
                             print("[FRUSExplorer] discarded \(discarded) shards from a previous "
                                 + "vector generation")
+                        }
+                        if !staleShards.isEmpty {
+                            print("[FRUSExplorer] discarded \(staleShards.count) shard(s) whose "
+                                + "bundled digest moved: \(staleShards.joined(separator: ", "))")
                         }
                         #endif
                         // The two bundled manifests must describe the same generation, or the app
@@ -2027,6 +2039,9 @@ struct FRUSExplorerApp: App {
         // Retained so any in-session index rebuild can reopen the read-only stores against them (#275).
         appState.databaseURL = dbURL
         appState.volumesDirectory = volumesDir
+        // R-1d: the settle hook's context. `container.mainContext` is the same context the hubs get
+        // from `@Environment(\.modelContext)` — every scene is `.modelContainer(modelContainer)`.
+        appState.modelContainer = modelContainer
 
         // Surface the CloudKit init result in AppState so the status bar and settings
         // panel can show a "Local Only" warning when sync is unavailable.

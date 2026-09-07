@@ -6371,6 +6371,30 @@ public actor IndexingPipeline {
     /// existed on this device, and every annotation anchored to it is now an orphan the reader has
     /// to be shown. A document that later reappears under the same id is handled by the upsert,
     /// which resets the kind from its hashes.
+    ///
+    /// ## Deliberately mode-blind — checked at R-1e, 2026-09-07, and NOT a defect
+    /// This runs on a `.rebaseline` pass too, so a **parser** change that stops emitting a document
+    /// marks it `'vanished'` even though no file changed. That was reported as data loss. It is not,
+    /// and suppressing it would be a regression — three facts settle it:
+    ///
+    /// 1. **The cache row is deleted in both modes.** `auxDeleteVanishedCacheRows` runs
+    ///    unconditionally on the same surviving-id set, immediately after this call. So the document
+    ///    really is gone from this device's index and every annotation anchored to it really is an
+    ///    orphan, whatever caused it. This mark is the only thing that says so — four surfaces read
+    ///    the kind (`ResearchView`, `VolumeUpdateReview`, `DocumentChangeBanner`, and
+    ///    `ExcerptVerifier`, which upgrades a `documentNotIndexed` miss to `documentVanished` only
+    ///    when the kind is exactly `"vanished"`). Suppress it and the reader gets silent orphans and
+    ///    an export report advising them to download a volume they already have.
+    /// 2. **Nothing is destroyed.** The row and its hashes are kept. `reviewed_at` is nulled
+    ///    deliberately — a review of the document is not a review of its disappearance, which
+    ///    `AnnotationReviewTests` pins.
+    /// 3. **A parse regression cannot mass-stamp.** `storeIndexData` opens with
+    ///    `guard !data.documentCache.isEmpty else { return }`, so a volume that parses to nothing
+    ///    stamps nothing, and a volume that fails to parse never reaches storage.
+    ///
+    /// What *is* wrong is copy, not control flow: the vanished row reads "No longer in the volume
+    /// after an update", which attributes a parser change to the Office of the Historian. Recorded
+    /// as its own row rather than fixed here.
     private func auxMarkVanishedRevisions(volumeId: String, survivingDocumentIds: [String]) throws {
         try auxExec("CREATE TEMP TABLE IF NOT EXISTS surviving_doc_ids (d TEXT PRIMARY KEY)")
         try auxExec("DELETE FROM surviving_doc_ids")

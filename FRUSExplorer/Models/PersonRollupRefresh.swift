@@ -74,10 +74,10 @@ enum PersonRollupRefresh {
     ///
     /// - Returns: `true` if the rollup was rebuilt, and the generation therefore published.
     @discardableResult
-    static func afterCorpusChange(context: ModelContext?,
+    static func afterCorpusChange(context: ModelContext,
                                   pipeline: IndexingPipeline,
                                   appState: AppState) async -> Bool {
-        let overrides = context.map { PersonClusterOverrideStore.snapshot(context: $0) } ?? []
+        let overrides = PersonClusterOverrideStore.snapshot(context: context)
         let rebuilt = (try? await pipeline.consolidatePersonRollupIfNeeded(overrides: overrides)) ?? false
         if rebuilt { appState.personRollupGeneration += 1 }
         return rebuilt
