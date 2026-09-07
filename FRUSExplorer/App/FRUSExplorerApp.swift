@@ -1597,6 +1597,12 @@ struct FRUSExplorerApp: App {
                             expectedSHA256: semanticIndex.provenance.modelFileSHA256)
                         let purgedModel = await modelStore.purgeIfPinChanged()
                         appState.semanticModelStore = modelStore
+                        #if DEBUG
+                        // A-2 / B-4's measurement half — inert unless FRUS_ENCODER_FOOTPRINT is
+                        // set. Placed here because it needs the verified-model door, which only
+                        // exists once the pin has loaded.
+                        SemanticEncoderFootprintRunner.runIfRequested(store: modelStore)
+                        #endif
                         appState.semanticModelFetcher = SemanticModelFetcher(store: modelStore)
                         #if DEBUG
                         if purgedModel {
