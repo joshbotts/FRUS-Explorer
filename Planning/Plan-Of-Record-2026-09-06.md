@@ -131,7 +131,7 @@ from the designs; reading the code changed the answer for all but one.
 |---|---|---|
 | **A-1** | **C-1 / Tier-E W-12** — the parallel-series concordance assessment (DBPO/DDF/AAPD/Dodis/Wilson Center). The 2026-08-28 plan calls it "the last startable Tier C row"; model it on the W-15 assessment | M |
 | ~~**A-2**~~ | ~~**B-4 measurement half** — the query encoder's in-app Metal footprint~~ **DONE 2026-09-07.** Peak footprint **301.6 MB**, post-unload floor **141.4 MB** — ~160 MB while loaded, released completely (ends below its own baseline). Metal peaks **~91 MB LOWER** than the CPU shape (301.6 vs 393), because the mmapped GGUF is resident without being charged to `phys_footprint`. `Planning/semantic-vectors/encoder-footprint-metal.json` | S |
-| **A-3** | **VM §3.2 M-6** — measure the in-app decade-accumulation cost, then scope or refuse it. Needs a small DEBUG driver first: there is no in-app decade-stepping affordance | M |
+| ~~**A-3**~~ | ~~**VM §3.2 M-6** — measure the in-app decade-accumulation cost~~ **DONE 2026-09-07 — MEASURED, and M-6 is REFUSED as designed.** The row's premise points the wrong way: stripping readback+PNG from the 103.8 ms leaves the **larger** half. The scope step is **57–58% of the frame** (73.9/76.8 ms over two 553-step runs) and **grows 44→93 ms** with the accumulated scope. At decade grain that is 17 steps summing to **1.14 s of blocked main actor** — 17 hitches, not an animation. Viable only if the step is made incremental (accumulation is monotonic ⇒ O(added), not O(corpus)). **The prescribed DEBUG driver was built, could not be run, and was reverted rather than shipped unobserved** | M |
 
 ### 1e. Release readiness, startable before the volumes exist
 

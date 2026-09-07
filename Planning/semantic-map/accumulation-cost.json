@@ -1,0 +1,144 @@
+{
+  "what": "What one accumulation step costs, split into the half an on-screen accumulation would pay and the half only the offline film pays. Plan-of-record A-3, for Visual-Marketing plan \u00a73.2 M-6.",
+  "why": "M-6 deferred pending measurement, arguing the repo's only figure (103.8 ms/frame) 'includes readback and PNG encode the on-screen path does not pay'. That is true and it is the wrong way round: the scope step is the LARGER half.",
+  "harness": "SemanticMapFrameSequence, instrumented at A-3 with a scopeMilliseconds split. TEST_RUNNER_RENDER_MAP_FRAMES_DIR=<dir> xcodebuild test -only-testing FRUSExplorerTests/SemanticMapFrameSequenceTests, iPhone 17 simulator, erased first.",
+  "runs": {
+    "run1": {
+      "steps": 553,
+      "scopeMeanMs": 73.88,
+      "scopeMedianMs": 78.95,
+      "scopeMinMs": 22.36,
+      "scopeMaxMs": 112.44,
+      "offlineOnlyMeanMs": 55.51,
+      "totalMeanMs": 129.39,
+      "scopeSharePct": 57.1
+    },
+    "run2": {
+      "steps": 553,
+      "scopeMeanMs": 76.75,
+      "scopeMedianMs": 82.12,
+      "scopeMinMs": 24.77,
+      "scopeMaxMs": 107.14,
+      "offlineOnlyMeanMs": 55.34,
+      "totalMeanMs": 132.09,
+      "scopeSharePct": 58.1
+    }
+  },
+  "findings": [
+    "The scope step is 57-58% of the frame, not a remainder. Stripping the offline-only stages leaves the larger half.",
+    "Per-step cost GROWS with the accumulated scope: 44 ms at the first decile, 93 ms at the last. It is a fixed whole-corpus mask rebuild PLUS a marking pass over the cumulative union.",
+    "44-93 ms of MAIN-ACTOR CPU per step against a 16.7 ms frame budget at 60fps: three to six frame budgets blocked per step.",
+    "The absolute total (129-132 ms) runs ~24% above the runbook's 104.9 ms on the same device class, reproducibly across two runs. The SHARE is the robust finding; the absolute is this machine's."
+  ],
+  "decadeProjection": {
+    "note": "A decade run is 17 steps. A step's cost is set by the cumulative scope it rebuilds, so each decade step costs what the volume-grain step at the same cumulative document count cost. These are measured values at those points, not extrapolations.",
+    "steps": [
+      {
+        "decade": "1860s",
+        "endsAtStep": 18,
+        "cumulativeDocuments": 10870,
+        "measuredScopeMsAtThatScope": 44.69
+      },
+      {
+        "decade": "1870s",
+        "endsAtStep": 37,
+        "cumulativeDocuments": 17219,
+        "measuredScopeMsAtThatScope": 46.22
+      },
+      {
+        "decade": "1880s",
+        "endsAtStep": 47,
+        "cumulativeDocuments": 23347,
+        "measuredScopeMsAtThatScope": 49.77
+      },
+      {
+        "decade": "1890s",
+        "endsAtStep": 60,
+        "cumulativeDocuments": 31389,
+        "measuredScopeMsAtThatScope": 49.81
+      },
+      {
+        "decade": "1900s",
+        "endsAtStep": 73,
+        "cumulativeDocuments": 40936,
+        "measuredScopeMsAtThatScope": 47.75
+      },
+      {
+        "decade": "1910s",
+        "endsAtStep": 80,
+        "cumulativeDocuments": 47203,
+        "measuredScopeMsAtThatScope": 53.04
+      },
+      {
+        "decade": "1920s",
+        "endsAtStep": 88,
+        "cumulativeDocuments": 59686,
+        "measuredScopeMsAtThatScope": 53.15
+      },
+      {
+        "decade": "1930s",
+        "endsAtStep": 113,
+        "cumulativeDocuments": 80334,
+        "measuredScopeMsAtThatScope": 52.41
+      },
+      {
+        "decade": "1940s",
+        "endsAtStep": 155,
+        "cumulativeDocuments": 105289,
+        "measuredScopeMsAtThatScope": 59.14
+      },
+      {
+        "decade": "1950s",
+        "endsAtStep": 201,
+        "cumulativeDocuments": 144589,
+        "measuredScopeMsAtThatScope": 64.73
+      },
+      {
+        "decade": "1960s",
+        "endsAtStep": 239,
+        "cumulativeDocuments": 180793,
+        "measuredScopeMsAtThatScope": 72.93
+      },
+      {
+        "decade": "1970s",
+        "endsAtStep": 288,
+        "cumulativeDocuments": 216281,
+        "measuredScopeMsAtThatScope": 81.75
+      },
+      {
+        "decade": "1980s",
+        "endsAtStep": 342,
+        "cumulativeDocuments": 242892,
+        "measuredScopeMsAtThatScope": 86.83
+      },
+      {
+        "decade": "1990s",
+        "endsAtStep": 415,
+        "cumulativeDocuments": 271014,
+        "measuredScopeMsAtThatScope": 88.43
+      },
+      {
+        "decade": "2000s",
+        "endsAtStep": 469,
+        "cumulativeDocuments": 289543,
+        "measuredScopeMsAtThatScope": 90.25
+      },
+      {
+        "decade": "2010s",
+        "endsAtStep": 537,
+        "cumulativeDocuments": 309469,
+        "measuredScopeMsAtThatScope": 95.33
+      },
+      {
+        "decade": "2020s",
+        "endsAtStep": 551,
+        "cumulativeDocuments": 314483,
+        "measuredScopeMsAtThatScope": 100.33
+      }
+    ],
+    "sumMs": 1136.6,
+    "meanMs": 66.86,
+    "maxMs": 100.33
+  },
+  "verdict": "M-6 is NOT viable as designed. Seventeen steps of 44-93 ms main-actor CPU is 17 visible hitches, not an animation. It becomes viable only if the step is made incremental: accumulation is MONOTONIC, so a step need only mark the newly added volumes' rows and increment regionCounts for those - O(added) rather than O(corpus). SemanticMapColouring.scopeMask rebuilds from scratch because it is general over any scope set; an accumulation-specific path would not have to."
+}

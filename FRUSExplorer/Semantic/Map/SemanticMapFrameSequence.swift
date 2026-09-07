@@ -44,9 +44,16 @@ import CoreGraphics
 ///
 /// ## Cost, measured rather than assumed
 /// The design flags `setScopeFlags` — a CPU loop writing one byte per document — as the cost
-/// to know before driving it per frame. Each ``FrameRecord`` carries its measured wall-clock
-/// milliseconds (mask + upload + render + readback), so the answer ships with every run
-/// instead of going stale in a comment.
+/// to know before driving it per frame. Each ``FrameRecord`` carries **two** measured wall-clock
+/// figures, so the answer ships with every run instead of going stale in a comment:
+/// `scopeMilliseconds` (the mask rebuild and flag write — the half an on-screen accumulation would
+/// pay) and `renderMilliseconds` (that plus the offscreen render, the readback, **and the caller's
+/// PNG encode and disk write**).
+///
+/// The split was added at A-3. Before it there was one scalar, this comment said the span covered
+/// "mask + upload + render + readback", and `render` had always called `writeFrame` inside the
+/// timed region — so the split was unrecoverable from any existing artifact, `frames.csv`
+/// included, and the one published figure silently overstated what a screen would pay.
 ///
 /// ## Hosting
 /// Driven by `SemanticMapFrameSequenceTests` in the app test target — the harness needs the
@@ -88,7 +95,20 @@ enum SemanticMapFrameSequence {
         /// Documents lit after this frame (the mask's own count; the whole corpus for the
         /// closing frame).
         let cumulativeDocuments: Int
-        /// Measured wall-clock cost of this frame — mask, upload, render, readback.
+        /// Measured wall-clock cost of the SCOPE STEP alone — `setScope`, i.e. the whole-corpus
+        /// mask rebuild plus the strided flag write.
+        ///
+        /// **This is the half an on-screen accumulation would pay** (plan-of-record A-3, VM §3.2
+        /// M-6), and until it was split out the repo's only figure was `renderMilliseconds`, which
+        /// bundles it with three stages the screen never pays.
+        let scopeMilliseconds: Double
+        /// Measured wall-clock cost of the whole frame — the scope step above, plus the offscreen
+        /// render and readback, **plus the caller's `writeFrame`: PNG encode and disk write**.
+        ///
+        /// The last clause is not a detail. This field's own description used to stop at
+        /// "readback", as did the type's header, while `render` has always called `writeFrame`
+        /// inside the timed span — so every figure quoted from it (103.8 ms, 100.8 ms, 104.9 ms)
+        /// includes an encode and a disk write nobody accounted for.
         let renderMilliseconds: Double
     }
 
@@ -165,6 +185,9 @@ enum SemanticMapFrameSequence {
             let started = Date()
             cumulative.insert(entry.volumeId)
             model.setScope(volumeIDs: cumulative)
+            // A-3: the scope step ends here. Everything after it — render, readback, PNG encode,
+            // disk write — is the offline path's alone.
+            let scoped = Date()
             // **REFUSE, do not skip.** This used to `continue`, and the consequence was not a
             // missing frame — it was a corrupted sequence that looked complete. `writeFrame` takes
             // the LOOP index while the closing frame below takes `records.count`, so one skipped
@@ -187,6 +210,7 @@ enum SemanticMapFrameSequence {
                 coverageStart: entry.dateRange.earliest ?? "",
                 cumulativeVolumes: model.scope?.volumeCount ?? cumulative.count,
                 cumulativeDocuments: model.scope?.documentCount ?? 0,
+                scopeMilliseconds: scoped.timeIntervalSince(started) * 1000,
                 renderMilliseconds: Date().timeIntervalSince(started) * 1000))
         }
 
@@ -194,6 +218,9 @@ enum SemanticMapFrameSequence {
         // sequence ends on the map the reader knows.
         let started = Date()
         model.setScope(volumeIDs: nil)
+        // A-3: same split as the loop. Lifting the scope is the cheapest step of all — `scopeMask`
+        // returns nil for a nil id set without touching the corpus — so this row is the floor.
+        let scoped = Date()
         if let image = renderer.renderOffscreen(pixelSize: pixelSize, supersample: supersample) {
             let index = records.count
             try writeFrame(index, image)
@@ -206,6 +233,7 @@ enum SemanticMapFrameSequence {
                 coverageStart: "",
                 cumulativeVolumes: ordered.count,
                 cumulativeDocuments: renderer.uploadedPointCount,
+                scopeMilliseconds: scoped.timeIntervalSince(started) * 1000,
                 renderMilliseconds: Date().timeIntervalSince(started) * 1000))
         }
         return records
@@ -239,12 +267,13 @@ enum SemanticMapFrameSequence {
         func quote(_ field: String) -> String {
             "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
         }
-        var rows = ["frame,volume_id,volume_title,published,coverage_start,cumulative_volumes,cumulative_documents,render_ms"]
+        var rows = ["frame,volume_id,volume_title,published,coverage_start,cumulative_volumes,cumulative_documents,scope_ms,render_ms"]
         for r in records {
             rows.append([String(r.index), quote(r.volumeID), quote(r.volumeTitle),
                          quote(r.published), quote(r.coverageStart),
                          String(r.cumulativeVolumes),
                          String(r.cumulativeDocuments),
+                         String(format: "%.3f", r.scopeMilliseconds),
                          String(format: "%.1f", r.renderMilliseconds)].joined(separator: ","))
         }
         return rows.joined(separator: "\n") + "\n"
