@@ -12624,3 +12624,74 @@ the robust finding and the absolute is this machine's. And the measured step is 
 
 Data: `Planning/semantic-map/accumulation-cost.json` (both runs, the decile curve, the 17 decade
 step costs at their measured cumulative scopes).
+
+## Session 2026-09-07e — R-1a: what a corrected volume does, answered — and four defects
+
+NVR §13 left two questions unanswered: whether a re-download should force a re-index, and how a
+correction that changes document counts propagates through the semantic row order. Both are answered
+now, and neither answer is the one the question implied.
+
+**Q1 needs no work, and that is the finding.** A re-download already forces an unconditional
+re-index. Both hubs' `updateVolume` are byte-identical and do one thing — `enqueueDownload(force:
+true)` — and the re-index is the download manager's completion callback. `indexVolume` has exactly
+one guard, file existence: no already-indexed short-circuit, no digest test, no version test.
+
+**What was wrong was the scrubbing around it.** `document_dates`, `persons`, `terms` and
+`document_sources` are per-volume tables (`PRIMARY KEY (volume_id, …)`) written with plain
+`INSERT OR REPLACE`. `REPLACE` overwrites a row with the same key and does nothing about a key that
+stopped being produced — so a correction that REMOVED a person, a glossary term, a dated document or
+a source note stranded that row forever. `auxDeleteVolume` scrubs all four, which is what made
+*delete-then-re-download* clean and *Update* not: **the asymmetry was the defect, not the deletion.**
+The `persons` case is the worst, because the rollup drift check is a **count** — a removal leaves the
+count unchanged, so the materialised rollup never rebuilds, not even at next launch.
+
+Fixed by `auxDeletePerVolumeRows` before the four inserts. Two tests, and the first fails without it
+(*"a removed document kept its document_dates row"*). **They read the raw tables deliberately**: the
+public accessors join `document_cache`, which *is* scrubbed, so a test written through them would
+pass over an orphan it never saw. The second test pins that the scrub is per volume, because one that
+took everything would satisfy the first.
+
+**Q2 is not a row-order problem.** Row order is safe by construction, and that was checked rather
+than assumed: the index's 552 volume rows are in `volumeId` order with `rowOffset` exactly cumulative,
+and identity comes from the run-length segments. §5's "nothing is silently wrong" holds *for the
+build*.
+
+**The device is where it bites, and §5's `.vec` sentence needed its scope stated.** *"The per-volume
+shards are not affected"* is right about an insertion — a shard's inputs are volume-local, so every
+other shard is byte-identical — and wrong about the corrected volume itself, for the reason the
+sentence gives: a shard is positional over its own volume and borrows identity from the bundled
+index. Three checks exist and only one moves with a correction. Measured over all 552 shipped
+shards, `bytes == 64 + n × (512 + 4)` holds **552/552**, and 96 byte-lengths are shared by more than
+one volume — so shard length is a bijection with document count and cannot tell two editions of the
+same size apart. The manifest's per-shard SHA-256 is the only byte-exact proof and is checked at
+**fetch only**; `purgeIfGenerationChanged` compares the corpus-free provenance digest, the one field
+`EXPECT_DIGEST` exists to hold constant. So a same-count correction is **accepted silently** and
+scores come from the previous edition's vectors. Opened as R-1c; the data for the fix already ships.
+
+**Also fixed: a refused shard was invisible to every repair route.**
+`semanticShardsAwaitingDownload` guarded on `!onDisk.contains(...)`, and a refused shard is on disk —
+so neither "Download Missing Vectors" nor the whole-corpus button could replace one, while
+`diskUsage()` counted its bytes as present. `SemanticShardStore.refusal(for:)` already existed. One
+line.
+
+**A window nobody had named.** The index, binary and map are *bundle* resources; the volume text is
+*live*. A correction reaches a device with no app update, so between the correction and the next
+release the local TEI describes edition N while every bundled semantic artifact describes N−1, and
+nothing compares them. **This cannot be fixed, only disclosed** — the vectors for the corrected text
+do not exist until someone re-runs the harvest.
+
+**One fix deliberately NOT made.** `refreshAfterCorpusChange` is never called on any download path —
+16 call sites, all in the two hub views, and neither `updateVolume` nor a plain download is among
+them. But **the placement is the open question, not the omission**: `updateVolume` is fire-and-forget,
+so a call there would run before the re-index and no-op — a fix that looks right and does nothing,
+which is the class this repo keeps finding. The completion callback has no main-actor `ModelContext`,
+and passing `nil` makes `PersonRollupRefresh` snapshot no overrides, discarding the reader's manual
+person-cluster decisions. Opened as R-1d rather than guessed at.
+
+**A harness note.** The mutation run that proves the scrub test non-vacuous first came back with no
+output at all, then with `Application failed preflight checks … Busy` — the simulator app-host wedge,
+not a kill. `simctl shutdown all` + erase, and the re-run killed it cleanly. An empty verdict is not
+a passing one.
+
+Opened from this row: **R-1c** (per-volume shard invalidation), **R-1d** (the refresh placement),
+**R-1e** (revision stamping on re-index — reported as data-loss, *not verified by me*).

@@ -261,7 +261,15 @@ those segments rather than derived from position (that design exists because the
 
 - `semantic-vectors-binary.bin` is rewritten end to end (19.52 MB in the bundle);
 - `semantic-map.bin` must be rebuilt in the same order (§4.5);
-- the per-volume `.vec` shards are **not** affected — they carry no row rows and no ids.
+- the per-volume `.vec` shards are **not** affected *by the insertion* — they carry no row rows
+  and no ids. **Verified at R-1a**, and the scope needs stating: `SemanticVectorsRunner` passes a
+  shard only `codes/scales/dims/provenance`, and the header is magic / version / dims /
+  documentCount / digest — no rowOffset, no ids — so every *other* volume's shard is byte-identical
+  across an insertion. **But the CORRECTED volume's own shard is invalidated**, for the same reason
+  the sentence gives: a shard is positional over its own volume and borrows identity from the
+  bundled index (`SemanticVectorReaders.swift:146-152` — *"row k is the kth document of that volume
+  in the bundled index's order"*). Change that volume's document set, count or order and row *k* is
+  a different document. See §13.
 
 ---
 
@@ -552,9 +560,61 @@ dark for everyone).
   `Volume-Update-Annotation-Integrity-Design.md`, written 2026-09-02 — and its P1 (record the
   per-document change set at re-index time) is worth shipping **in the same release as the next
   volume batch**, because a revision table that starts recording before the first correction lands
-  is one that can answer the question the first time it is asked. What remains unanswered here is
-  the artifact side: whether a re-download should force a re-index, and how a correction that
-  changes document counts propagates through the semantic row order (§5).
+  is one that can answer the question the first time it is asked.
+
+  **THE ARTIFACT SIDE IS ANSWERED — R-1a, 2026-09-07.**
+
+  ***Q1: should a re-download force a re-index? It already does, unconditionally — there is no work
+  to invent here.*** Both hubs' `updateVolume` are byte-identical and do one thing: `enqueueDownload
+  (force: true)`. `force` bypasses only the already-downloaded guard; the re-index is the download
+  manager's completion callback (`FRUSExplorerApp.swift:2396-2398` — drop the AST cache, then
+  `indexVolume`). `indexVolume` has exactly one guard, file existence: no already-indexed
+  short-circuit, no digest test, no version test. It re-parses and re-stores every time.
+
+  What was wrong was the *scrubbing* around it, and R-1a fixed it: `document_dates`, `persons`,
+  `terms` and `document_sources` are per-volume tables written with plain `INSERT OR REPLACE`, so a
+  correction that REMOVED a person, term, dated document or source note stranded that row forever —
+  while `auxDeleteVolume` scrubs all four, which made *delete-then-re-download* clean and *Update*
+  not. The `persons` case was the worst: the rollup drift check is a **count**, so a removal leaves
+  the count unchanged and the materialised rollup never rebuilds, not even at next launch.
+
+  ***Q2: how a changed document count propagates. It is not a row-order problem.*** Row order is
+  safe by construction and that was checked numerically, not assumed: the index's 552 volume rows
+  are in `volumeId` order with `rowOffset` exactly cumulative over the per-volume counts, and
+  identity is read from the run-length segments rather than derived from position. §5's *"nothing is
+  silently wrong"* holds **for the build**.
+
+  **The device is where it bites, and one case is silent.** Three checks exist on a shard, and only
+  one moves with a correction:
+
+  | check | covers |
+  |---|---|
+  | provenance digest | model / dims / chunking / pooling / quantization — **no corpus term** |
+  | `expectedDocumentCount` | document count only |
+  | length | the file against **its own header** |
+
+  Measured over all 552 shipped shards, `bytes == 64 + n × (512 + 4)` holds **552/552**, and 96
+  byte-lengths are already shared by more than one volume — so shard length is a bijection with
+  document count and cannot distinguish two editions of the same size. The manifest's per-shard
+  SHA-256 is the only byte-exact proof and is checked **at fetch only**; nothing re-verifies a file
+  already on disk, and `purgeIfGenerationChanged` compares the corpus-free provenance digest — the
+  one field `EXPECT_DIGEST` exists to hold constant across a re-pack. So:
+
+  - **count changes** → shard refused, degrades to Tier 1, self-heals. Correct.
+  - **count unchanged, text edited or documents renumbered** → **accepted silently**, and scores come
+    from the previous edition's vectors. This is the one to fix; see the new row R-1c.
+
+  **And there is a window nobody had named.** The index, binary and map are *bundle* resources; the
+  volume text is *live*. A correction reaches a device with no app update, so between the correction
+  and the next release the local TEI describes edition N while every bundled semantic artifact
+  describes N−1, and nothing compares them. An added document has no row and reads as unvectorised;
+  a removed one still occupies a row and is cut at `limit` **before** the `document_cache` fence, so
+  each phantom silently *shortens* a neighbour list rather than yielding to the next real candidate.
+  **This window cannot be fixed, only disclosed** — the vectors for the corrected text do not exist
+  until someone re-runs the harvest.
+
+  ***The release rule this produces:*** a corrected volume's shard must be re-published **and devices
+  must be made to re-fetch it**. Today nothing does.
 - **A volume that will not parse.** `LocalVolumeCatalog.entry` returns `nil` rather than inventing
   a title, and the volume goes unlisted. Fine for side-load; unexamined for the catalogue path.
 - **The `newlyAvailable` doc-comment defect** is recorded here (§1) but not filed. It should be an
