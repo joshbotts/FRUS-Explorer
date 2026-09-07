@@ -362,6 +362,12 @@ struct MacSourceExplorerView: View {
                                     .foregroundStyle(.secondary)
                                     .labelStyle(.titleAndIcon)
                             }
+                            // P-1: the unit named here is FRUS's own words when the footnote
+                            // pointed at a lot or a library, but a central-file class reached this
+                            // list only because the State Department's schedule composed it. The
+                            // branch is per row — see `SourceExplorerProvenance`.
+                            ProvenanceChip(source: SourceExplorerProvenance.unprintedPointerSource(
+                                for: pointer.citation))
                         }
                         if let record = pointer.record {
                             Button {
@@ -572,11 +578,19 @@ struct MacSourceExplorerView: View {
                     // every non-`F` lot to RG 59 and so mislabels at least one curated
                     // collection that NARA holds in RG 43 (#375). Mirrors the iOS
                     // `lotFilePanel` override — keep in sync.
-                    if let r = CuratedLotResolutionsStore.shared?.recordGroup(forRawLot: lot) ?? rg {
+                    // P-1: the `??` collapses two provenances into one String, so the curated
+                    // answer is kept under its own name. Which lookup answered is the only signal
+                    // there is — 19 of the 20 shipped curated lots resolve to the same string the
+                    // parser would have produced. Mirrors the iOS `lotFilePanel` — keep in sync.
+                    let curatedRG = CuratedLotResolutionsStore.shared?.recordGroup(forRawLot: lot)
+                    if let r = curatedRG ?? rg {
                         // `rg` already carries the "RG-" prefix (e.g. "RG-59"); normalise to
                         // "RG 59" so the row doesn't read "RG RG-59".
-                        provenanceRow(label: "Record Group",
-                                      value: r.replacingOccurrences(of: "RG-", with: "RG "))
+                        provenanceRow(label: String(localized: "source.explorer.lotFile.rg",
+                                                    defaultValue: "Record Group"),
+                                      value: r.replacingOccurrences(of: "RG-", with: "RG "),
+                                      provenance: SourceExplorerProvenance.lotRecordGroupSource(
+                                          curated: curatedRG))
                     }
                     provenanceRow(label: String(localized: "source.explorer.lotFile.lot",
                                                defaultValue: "Lot Number"),
@@ -856,6 +870,29 @@ struct MacSourceExplorerView: View {
                 .font(.callout)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// A provenance row that says where its value came from (P-1).
+    ///
+    /// A separate overload rather than a defaulted parameter on the two-argument form: a default
+    /// would compile at every existing call site and badge none of them, which is indistinguishable
+    /// from success. The chip sits under the value rather than beside the label, so it lines up
+    /// with the claim it qualifies instead of with the box's edge.
+    private func provenanceRow(label: String, value: String,
+                               provenance: ProvenanceSource) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 100, alignment: .trailing)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(value)
+                    .font(.callout)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                ProvenanceChip(source: provenance)
+            }
         }
     }
 
@@ -1522,6 +1559,11 @@ struct MacSourceExplorerView: View {
                                     defaultValue: "FRUS prints this number above the document — the post’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        // P-1: the serial is read from the volumes' own text (`IndexingPipeline
+                        // .extractDespatchSerial` walks the TEI) and resolves to no catalogue record, so it
+                        // is FRUS's, inside a section whose other block is NARA's. That split between
+                        // blocks is why this section stayed unbadged at PV-3.
+                        ProvenanceChip(source: .frusText)
                     }
                 }
                 if showsPartLabels {
@@ -1535,6 +1577,12 @@ struct MacSourceExplorerView: View {
                         HStack(spacing: 6) {
                             Text(c.category.displayName).font(.callout.weight(.semibold))
                             ConfidenceChip(confidence: c.confidence)
+                            // P-1: the series, and the rolls under it, exist here only because the
+                            // bundled NARA artifact answered — `resolveCountrySeries` appends
+                            // nothing otherwise. The chip sits beside the confidence capsule, where
+                            // it reads as *this NARA series, attributed with this confidence by
+                            // us*, rather than around the app's own rationale below.
+                            ProvenanceChip(source: .naraCatalog)
                         }
                         if showsPartLabels {
                             Text(resolution.part.displayName)

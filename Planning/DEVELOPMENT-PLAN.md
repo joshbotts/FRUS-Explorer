@@ -12417,3 +12417,69 @@ ran" rather than "the model was missing".
 
 Artifact: `Planning/semantic-vectors/encoder-footprint-metal.json` (all five runs, the spreads, and
 the reproduction rule).
+
+## Session 2026-09-07b — P-1: the three mixed sections, and two of the three were described wrongly
+
+PV-3 badged the Source Explorer sections that are uniformly one tier and deliberately left three
+alone, because their tier is decided per row and a section chip there would be wrong. P-1 is the row
+that badges them. **Reading the code changed the work for two of the three**, and both errors ran in
+the same direction — they made the row sound simpler than it is.
+
+**The pre-1906 country series is not "Tier 2 throughout".** The `#965` despatch-serial block sits
+inside the same Section/GroupBox, and its value comes from `IndexingPipeline.extractDespatchSerial`,
+a walk over the parsed TEI with no catalogue involved. Its own shipped caption says so — *"It is not
+a NARA identifier and does not resolve to a catalog record."* So the section IS mixed, but between
+two sibling blocks rather than inside a row: the PV-3 shape, not the §1c one. Two static chips, no
+branch.
+
+**"Pointed At, Not Printed" is the wrong section.** That literal header is
+`CollectionDetailView.swift:813`, whose rows are pre-aggregated per-volume counts from
+`ExternalCitationIndex` — no `ExternalCitation`, no `anchor` in scope, so the branch the plan
+mandates is impossible there and an implementation written against the header string lands in the
+wrong file. The branchable section is **"Unprinted Material"**, in both twins.
+
+**The lot-file rule was right, and its measurement is what decides its shape.** Over the shipped
+`curated-lot-resolutions.json` all 20 curated lots resolve to a record group and **19 of the 20 are
+byte-identical to the string `SourceNoteParser.lotFileRecordGroup` would have produced** — only
+`M88` differs (`RG-43` against `RG-59`). So the branch keys on *which lookup answered*; a value
+comparison would call 19 of 20 curated rows uncurated, and the single row it got right would make it
+look correct. The view's `??` collapsed the two provenances one line from where they were needed, so
+the whole "model change" risk was a two-line split.
+
+**One refusal.** The row's own text asks for the curated disclosure on the `.naraCatalog` chip. It is
+not mounted: PV-3's §8 Q-3 correction put that sentence in `curatedLotSection`/`curatedLotBox`, and
+all 20 curated lots render that card in the same panel, so repeating it would reinstate exactly the
+redundancy that correction removed. A test pins the absence.
+
+**Shape.** One `SourceExplorerProvenance` namespace holds both rules, so they are written once and
+both twins call them — the twins are hand-maintained copies, and `showsPartLabels` is the cautionary
+precedent (its doc comment claims to be one property and it is declared twice). The Mac row helper
+gained an **explicit three-argument overload rather than a defaulted parameter**, because a default
+would compile at all ~30 existing call sites and badge none of them, which is indistinguishable from
+success.
+
+**Verification: 10 of 10 mutations killed, and one of them was initially a false positive.** M-5
+("drop the iOS serial chip") reported KILLED — by a *PV-3* test. The mutation had removed PV-3's
+collection-card chip instead, because `.frusText` appears at the same indentation in both mounts and
+the patch took the first occurrence. Caught by reading **which** test killed it rather than that
+something did; re-run against the serial chip's own comment block, it was killed by the
+country-series test as intended. A test I added mid-build is also load-bearing: the rule tests
+exercise the *function*, so passing `effectiveRG` instead of `curatedRG` at a call site would leave
+every chip present, correctly typed, and always wrong — mutations 8 and 9 prove the argument scan
+catches it.
+
+**A process failure worth recording, because it is the fifth of its kind.** I edited a planning
+document while the mutation sweep was live, and the sweep's `git checkout -- .` discarded it. The
+standing memory says "issue no git command that stages or commits during a sweep" — and I issued
+none; this was a plain file write, to a file the sweep never mutates. The correct rule is about the
+working tree, not about git commands: **while a sweep is live, do not write to the repository at
+all.** Nothing was lost because the edit was already a script, which is itself the argument for
+scripting doc edits.
+
+No index-version bump (no parse output moves), no `@Model` change, no CloudKit deploy, and no new
+localization keys — every chip string already lives in `ProvenanceSource`.
+
+**Left deliberately unbadged, and it is a judgement call rather than an oversight**: the
+`.namedFileSeries` Record Group row uses the same "Record Group" label and is uniformly
+`.naraCatalog`, but it is outside the row's three sections, and `provenanceSection` is a `switch`, so
+a reader never sees it beside the badged lot row — only across documents.

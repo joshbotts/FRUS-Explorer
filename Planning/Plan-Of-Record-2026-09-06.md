@@ -122,7 +122,7 @@ from the designs; reading the code changed the answer for all but one.
 
 | Row | What | Size |
 |---|---|---|
-| **P-1** | **PV-3's three MIXED sections** — per-row provenance chips for the Source Explorer sections that are mixed per row. Both twins (`SourceExplorerView` + `MacSourceExplorerView`) | M |
+| ~~**P-1**~~ | ~~**PV-3's three MIXED sections** — per-row provenance chips~~ **DONE 2026-09-07.** Eight mounts, four per twin, behind one shared `SourceExplorerProvenance`. **Two of the row's three sections were described wrongly** and reading the code changed the work: the pre-1906 country series is NOT "Tier 2 throughout" (its despatch serial is read from the TEI and its own caption says it resolves to no catalogue record) and is mixed between BLOCKS, not per row; and "Pointed At, Not Printed" names `CollectionDetailView`, which has no `anchor` in scope — the branchable section is "Unprinted Material". The lot rule keys on WHICH lookup answered, because **19 of the 20 curated lots return the parser's own string**. 10/10 mutations killed | M |
 | **P-2** | **NARA streaming shard write** — 18.5 GB peak; `DEPTH=all` cannot finish. One change across three sites, starting at `RecordGroupCatalogWriter.swift:98-103` | M |
 
 ### 1d. Assessments and measurements owed
