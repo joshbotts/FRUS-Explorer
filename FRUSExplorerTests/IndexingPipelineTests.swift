@@ -5315,3 +5315,139 @@ struct CIAJobNeighborTests {
         }
     }
 }
+
+// MARK: - RecordGroupSpellingTests (#1239)
+
+/// The record group must reach `document_sources` in ONE spelling.
+///
+/// Measured on a full 552-volume index before the fix: `RG-59` 206,766 rows against a bare `59`
+/// 11,907, and `RG-84` 487 against `84` 148 — so `GROUP BY record_group` split RG 59 in half and an
+/// equality join dropped whichever form the caller did not guess. The split was exactly by producer:
+/// `.centralFiles` and `.lotFile` carry hardcoded `"RG-59"`/`"RG-84"` literals while
+/// `.naraCollection` (bare, from the note's own text) and `.cfpfFile` do not.
+///
+/// **This drives the real emitter.** Both fixtures are real corpus note shapes taken from
+/// `SourceNoteKitTests` — the `.naraCollection` one is the string `naraNarrativeUnchanged` asserts
+/// parses with `rg == "59"` — written into a TEI volume and put through `indexVolume`, so the
+/// assertion is on what the pipeline actually stored, not on a re-implementation of the rule.
+@Suite("IndexingPipeline — record group spelling (#1239)")
+struct RecordGroupSpellingTests {
+
+    private func writeVolume(to url: URL, volumeId: String,
+                             documents: [(id: String, note: String)]) throws {
+        let blocks = documents.map { doc in
+            """
+            <div type="document" subtype="historical-document" n="\(doc.id.dropFirst())" \
+            xml:id="\(doc.id)"><head>Doc \(doc.id)<note n=" 1" type="source" \
+            xml:id="\(doc.id)fn1">\(doc.note)</note></head><p>Body.</p></div>
+            """
+        }.joined(separator: "\n")
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+          <publicationStmt><date>2010</date></publicationStmt>
+          <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><body>
+            <div type="compilation" xml:id="comp1"><head>Compilation</head>
+            \(blocks)
+            </div>
+          </body></text>
+        </TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: url)
+    }
+
+    /// Every stored `(document_id, record_group, citation_era)` for a volume.
+    private func storedRecordGroups(dbURL: URL, volumeId: String) throws -> [(String, String?, String)] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
+              let handle = db else {
+            sqlite3_close(db)
+            throw NSError(domain: "RecordGroupSpellingTests", code: 1)
+        }
+        defer { sqlite3_close_v2(handle) }
+        var stmt: OpaquePointer?
+        let sql = """
+            SELECT document_id, record_group, citation_era FROM document_sources
+             WHERE volume_id = ? ORDER BY document_id
+            """
+        guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "RecordGroupSpellingTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var out: [(String, String?, String)] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            out.append((String(cString: sqlite3_column_text(stmt, 0)),
+                        sqlite3_column_text(stmt, 1).map { String(cString: $0) },
+                        String(cString: sqlite3_column_text(stmt, 2))))
+        }
+        return out
+    }
+
+    @Test("both note shapes store the record group bare, so a GROUP BY cannot split one group")
+    func bothShapesStoreOneSpelling() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let url = dir.appendingPathComponent("volumes").appendingPathComponent("frus1961-63v25.xml")
+            try writeVolume(to: url, volumeId: "frus1961-63v25", documents: [
+                // -> .centralFiles, which emitted a hardcoded "RG-59" before this fix.
+                ("d1", "Source: Department of State, Central Files, 611.41/3&#8211;553. Secret."),
+                // -> .naraCollection, whose record group is bare because it comes from the text.
+                ("d2", "Source: National Archives, RG 59, Central Decimal File 1910&#8211;1929, Box 736."),
+            ])
+            try await pipeline.indexVolume("frus1961-63v25")
+
+            let rows = try storedRecordGroups(
+                dbURL: dir.appendingPathComponent("test.sqlite"), volumeId: "frus1961-63v25")
+            #expect(rows.count == 2, "both documents should produce a source row: \(rows)")
+
+            // The two producers are genuinely exercised — without this the fixture could pass by
+            // hitting the same parser arm twice and never testing the disagreement at all.
+            let eras = Set(rows.map(\.2))
+            #expect(eras == ["decimal", "structured"], "expected both producers, got \(eras)")
+
+            for (docId, rg, era) in rows {
+                let stored = try #require(rg, "\(docId) (\(era)) stored no record group")
+                #expect(stored == "59", """
+                    \(docId) (\(era)) stored record_group \(stored) — expected the bare "59". \
+                    Two spellings in this column split one record group across two rows under \
+                    GROUP BY and drop half of it under an equality join.
+                    """)
+                #expect(stored.uppercased().hasPrefix("RG") == false)
+            }
+        }
+    }
+
+    /// The open-time migration heals a database written by an older build, so an existing index is
+    /// correct before the version-bumped re-parse has run — the re-parse takes minutes over 552
+    /// volumes and every grouping query is wrong until it finishes.
+    @Test("an already-written prefixed row is healed at open, without a reindex")
+    func migrationHealsAnExistingIndex() async throws {
+        try await withTempDir { dir in
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            do {
+                let (pipeline, _) = try await makeTestPipeline(dir: dir)
+                let url = dir.appendingPathComponent("volumes").appendingPathComponent("frus1961-63v25.xml")
+                try writeVolume(to: url, volumeId: "frus1961-63v25", documents: [
+                    ("d1", "Source: Department of State, Central Files, 611.41/3&#8211;553. Secret."),
+                ])
+                try await pipeline.indexVolume("frus1961-63v25")
+            }
+            // Put the old spelling back, exactly as a pre-#1239 build would have left it.
+            var db: OpaquePointer?
+            #expect(sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+            #expect(sqlite3_exec(db, "UPDATE document_sources SET record_group = 'RG-59'",
+                                 nil, nil, nil) == SQLITE_OK)
+            sqlite3_close_v2(db)
+            let before = try storedRecordGroups(dbURL: dbURL, volumeId: "frus1961-63v25")
+            #expect(before.first?.1 == "RG-59", "the fixture must actually be in the old form")
+
+            // Re-opening runs the schema pass, which carries the heal.
+            _ = try await makeTestPipeline(dir: dir)
+            let after = try storedRecordGroups(dbURL: dbURL, volumeId: "frus1961-63v25")
+            #expect(after.first?.1 == "59", "open-time migration should have stripped the prefix")
+        }
+    }
+}

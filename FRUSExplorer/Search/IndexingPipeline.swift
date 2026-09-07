@@ -775,7 +775,7 @@ public actor IndexingPipeline {
     ///   bundled artifact, and the measurement. `ibidStandsAlone` is unchanged: the explicit
     ///   `Ibid., Central Files, X` form was already harvested, because the class is in the
     ///   clause. No schema change (the columns all exist); rows appear on re-parse.
-    public static let currentDateIndexVersion: Int = 49
+    public static let currentDateIndexVersion: Int = 50
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -6123,6 +6123,33 @@ public actor IndexingPipeline {
         // collection-authority side (which volumes cite lot X?).
         try exec("CREATE INDEX IF NOT EXISTS idx_vol_src_lot_norm ON volume_sources(lot_file_norm)")
 
+        // #1239: heal the dual-spelled record group on an EXISTING index, at open.
+        //
+        // Placed HERE, after both tables and their record-group indexes exist, because that is the
+        // constraint an earlier placement got wrong: run beside the `document_sources` deletes
+        // above and `volume_sources` has not been created yet, which throws
+        // `no such table: volume_sources` on a fresh database and takes the whole schema pass with
+        // it. The tests below catch exactly that.
+        //
+        // The write side is normalised at the bind, and `currentDateIndexVersion` is bumped so a
+        // re-parse rewrites every row — but that re-parse takes minutes over 552 volumes, and
+        // until it finishes every `GROUP BY record_group` still splits RG 59 in two. This
+        // idempotent UPDATE corrects the column on the next open instead: the same trade the
+        // footnote-row delete makes, for the same reason.
+        //
+        // Deliberately unanchored to a version key. It is a no-op once the rows are bare (the
+        // WHERE matches nothing), so it cannot run twice to any effect.
+        try exec("""
+            UPDATE document_sources
+               SET record_group = LTRIM(SUBSTR(record_group, 4))
+             WHERE record_group LIKE 'RG-%'
+            """)
+        try exec("""
+            UPDATE volume_sources
+               SET record_group = LTRIM(SUBSTR(record_group, 4))
+             WHERE record_group LIKE 'RG-%'
+            """)
+
         // Session 2026-06-09: Browser structure cache. One JSON-encoded
         // `VolumeStructure` per indexed volume so browsing never re-parses XML.
         try exec("""
@@ -6827,7 +6854,29 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 1, row.volumeId,   -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 3, row.repository)
-                auxBindOptional(stmt, 4, row.recordGroup)
+                // #1239: the record group is normalised to its BARE form at the write, because
+                // the parser emits two spellings and nothing downstream wants both. Measured on a
+                // full 552-volume index before this fix: `RG-59` 206,766 rows against a bare `59`
+                // 11,907, and `RG-84` 487 against `84` 148 — so `GROUP BY record_group` split RG 59
+                // in half and an equality join dropped whichever form the caller did not guess.
+                // The split is exactly by producer: `.centralFiles` and `.lotFile` carry hardcoded
+                // `"RG-59"`/`"RG-84"`/`"RG-256"` literals, while `.naraCollection` (bare, from the
+                // note's own text) and `.cfpfFile` (a bare `"59"` literal) do not — verified by
+                // citation_era with zero exceptions (prefixed = decimal 194,836 + lot_file 13,964;
+                // bare = structured 10,514 + cfpf 4,058).
+                //
+                // BARE is canonical, on four independent witnesses rather than on row counts:
+                // `SourceNoteParser`'s own doc comments say bare (`// e.g. "59", "330", "306"`),
+                // `volume_sources.record_group` is 100% bare so a join between the two tables on
+                // the raw spelling silently dropped all 206,766 prefixed rows,
+                // `central-files-index.json` stores `recordGroup: "59"`, and `NARACatalogClient`
+                // already passes bare into `LotResolutionAcceptance`.
+                //
+                // Normalised HERE and not in `SourceNoteKit`: the parser's in-memory spelling is
+                // read by the offline generators that build the bundled artifacts, so changing it
+                // is an artifact-regeneration change, not an indexing one. `CollectionKeying.bareRG`
+                // is reused rather than reimplemented — it already existed for this exact prefix.
+                auxBindOptional(stmt, 4, CollectionKeying.bareRG(row.recordGroup))
                 auxBindOptional(stmt, 5, row.lotFile)
                 auxBindOptional(stmt, 6, row.lotFileNorm)
                 auxBindOptional(stmt, 7, row.seriesName)
@@ -7050,7 +7099,11 @@ public actor IndexingPipeline {
             for row in rows {
                 sqlite3_bind_text(stmt, 1, row.volumeId, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(stmt, 2, row.repository)
-                auxBindOptional(stmt, 3, row.recordGroup)
+                // #1239: normalised for the same reason as the document_sources bind above. This
+                // table is already 100% bare in a full index — front matter never printed the
+                // prefix — so this changes no row today and keeps it true if a prefixed producer
+                // ever reaches here.
+                auxBindOptional(stmt, 3, CollectionKeying.bareRG(row.recordGroup))
                 auxBindOptional(stmt, 4, row.lotFile)
                 auxBindOptional(stmt, 5, row.lotFileNorm)
                 auxBindOptional(stmt, 6, row.seriesName)
@@ -9267,7 +9320,10 @@ public actor IndexingPipeline {
     ) -> (clause: String, params: [String])? {
         let s = series.trimmingCharacters(in: .whitespaces)
         guard s.count >= 4 else { return nil }
-        // Accept the RG in either stored form regardless of the caller's form.
+        // Normalise the CALLER's form. Since #1239 the column stores the bare form only, but a
+        // caller may still hand us `"RG-59"`, so both are passed and the second now matches
+        // nothing on a healed index — kept because it costs one bound parameter and a database
+        // that has not yet been opened by a build carrying the #1239 migration still holds both.
         let bareRG = recordGroup
             .replacingOccurrences(of: #"^RG[\s\-]*"#, with: "",
                                   options: [.regularExpression, .caseInsensitive])
