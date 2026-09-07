@@ -39,6 +39,28 @@ sqlite3 "file:/path/to.db?mode=ro" "BEGIN; CREATE TABLE zz(x); ROLLBACK;"
 A failure there is the proof. **`BEGIN IMMEDIATE; ROLLBACK;` alone proves nothing** — on a
 read-only handle it exits 0 and prints nothing, because it never attempts a write.
 
+## 1a. Four things that are not on this machine, or not what you think
+
+**[VERIFIED, 53 agents over two rounds, 2026-09-06.]** Each of these cost real work, and the first
+cost it *silently*.
+
+- **`timeout` DOES NOT EXIST on macOS.** Three round-1 agents wrote `timeout 170 python3 …`; one
+  **lost four batches with no error at all** — the loop failed, the file count did not advance,
+  nothing printed. There is no `gtimeout` either unless coreutils is installed and you have checked.
+  Chunk and flush instead; do not reach for a timeout.
+- **There is a ~120-second FOREGROUND tool limit, separate from the 180-second silence watchdog.**
+  A call can be killed for taking too long *while printing*. It fired twice in round 2, both times
+  on the 3.45 GB database. Put anything longer in the background and poll a file.
+- **zsh does not word-split an unquoted `$VAR`** — only `$(cmd)`. An agent passed 550 volume ids as
+  ONE argument, scanned zero volumes and printed `TOTAL 0`, twice. **It was caught only because a
+  three-volume control contradicted the 550-volume absence.** Pass a file of ids, or an array.
+- **`tee` buffers, and `tee | head` SIGPIPEs the writer.** A background job's harness output file
+  read empty for ~60 s while the tee'd target already held rows — polling the wrong file reads as a
+  failed job. Poll the redirect target. And `| head` truncates the file mid-write.
+
+Python here is **3.9**: no backslash inside an f-string expression, and `csv` needs
+`csv.field_size_limit(10**9)` for this corpus's longest table-of-contents heads.
+
 ## 2. The per-call watchdog: 180 seconds of silence and the call is killed
 
 **[FROM THE RUN]** A tool call that produces no output for 180 s is killed, and everything not yet
@@ -133,6 +155,7 @@ carries one; neither does C-0's or C-2's.
 |---|---|---|---|---|
 | Commercial diplomacy, 3 rounds **[FROM THE RUN]** | ~207 sessions | 2.94 B | — | 95.9% cache reads; ≈$2,800 at first-party rates. **Half of all output tokens were adversarial refuters.** |
 | C-0b falsifier **[VERIFIED]** | 16 agents (8 passes + 8 blind scorers) | 3.17 M | 35.2 min | 701 tool calls, 0 errors. `Planning/C0b-Falsifier-2026-09-06.md` |
+| Chief-of-mission field run **[VERIFIED]** | 53 agents over 2 rounds (17 readers, 34 refuters, 2 synthesis) | 12.81 M | 4 h 02 m | 3,549 tool calls, **0 errored** (round 2 also 0 empty). 630 documents read whole (14 in round 1, 616 in round 2). `~/frus-analysis/chief-of-mission/logs/measurement*.md` |
 
 The refuter share is the number to plan around: an adversarial pass is not a rounding error on the
 budget, it is half of it.
