@@ -559,8 +559,43 @@ dark for everyone).
   a title, and the volume goes unlisted. Fine for side-load; unexamined for the catalogue path.
 - **The `newlyAvailable` doc-comment defect** is recorded here (§1) but not filed. It should be an
   issue whichever way D-1 goes: either the code grows a consumer or the comment stops claiming one.
-- **Whether any persisted user state names a semantic cluster id.** §4.5 flags it; verifying it is
-  a code read this document did not do.
+- ~~**Whether any persisted user state names a semantic cluster id.**~~ **ANSWERED 2026-09-07 (R-1b),
+  and it found a live defect rather than a clean negative.**
+
+  **Exactly one carrier exists**, and four independent sweeps plus an adversary could not find a
+  second: `SemanticMapRequest.focusClusterID`. It is not in SwiftData (all 23 `@Model` types read
+  property-by-property, including the Codable blobs — `SavedSearch.parametersData` decodes to 26
+  fields with no semantic filter at all), not in UserDefaults, `@AppStorage`, `SettingsKeys` or
+  `SyncedPreferences`, and not in Handoff — `AppActivityTypes.Key` has no cluster entry, so the
+  field is dropped outright. It reaches durability through **SwiftUI value-based window
+  restoration** (`WindowGroup(for: SemanticMapRequest.self)`), iOS/iPadOS only, and only where a
+  second window really exists.
+
+  **The guard beside it was real, unbypassable, and inert against exactly this release.** It
+  compared `focusClusterDigest` against the map's `provenanceDigest` — the **vector family** pin,
+  whose preimage is model, model-file SHA, dims, chunking, prefix, pooling and quantization. No
+  corpus, no layout, no document count. Adding a volume re-derives every cluster id and repacks
+  under the *same* family — §5 requires that, and `EXPECT_DIGEST` enforces it — so the digests
+  matched, the guard passed, and a restored window would focus whatever different cluster now wore
+  the number. One digest was answering two questions, *"are these vectors compatible"* and *"are
+  these the same clusters"*, and only the first was in its preimage.
+
+  **Fixed** by pinning on `SemanticMapArtifacts.MapIndex.layoutIdentity`
+  (`provenanceDigest:generated:documentCount`) at both ends. `generated` carries the weight;
+  `documentCount` alone would not, because a **corrected** volume (below) can relayout without
+  changing how many documents are placed.
+
+  **And the test that named this scenario was a tautology.** `regionFocusDigestGuard` asserted
+  *"ids re-mint per generation — a stale focus must open the map unfocused"* while comparing `"abc"`
+  against `"def"` — in the scenario those words describe the two strings are IDENTICAL, so anyone
+  grepping the suite for the protection found it and concluded it was covered. Replaced by
+  `regionFocusRefusedAcrossRelayout`, which drives the **shipped artifact** and asserts the two
+  family digests are EQUAL, so the refusal is meaningful rather than trivially true.
+
+  One thing that is NOT this defect class, recorded so it is not re-raised: `WorkingCorpus` rows
+  saved from a cluster store **materialised document keys** and take their name from the cluster's
+  label terms. That is a frozen snapshot, not a pointer — a rebuild cannot re-aim it. At worst the
+  name reads as a stale description of a set that is still exactly the documents captured.
 
 ---
 

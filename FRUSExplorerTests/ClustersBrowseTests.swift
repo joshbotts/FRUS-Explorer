@@ -116,15 +116,66 @@ struct ClustersAxisTests {
 
     // MARK: The digest guard
 
-    /// The never-persist rule's runtime edge: a cluster focus applies only when the
-    /// request's digest matches the loaded artifact's.
-    @Test("A cluster focus applies only on a digest match")
+    /// The comparison's MECHANICS only — equality, and that either side missing refuses.
+    ///
+    /// **This test cannot see the release scenario, and its message used to claim it could.**
+    /// It compared `"abc"` against `"def"` under the words *"ids re-mint per generation"*, which is
+    /// a tautology: in the scenario those words describe, the two strings are IDENTICAL. Anyone
+    /// grepping the suite for that protection found this and concluded it was covered. R-1b found
+    /// it was not. `regionFocusRefusedAcrossRelayout` below is the test those words belong to.
+    @Test("The digest guard's mechanics: equal applies, unequal or missing refuses")
     func regionFocusDigestGuard() {
         #expect(SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: "abc"))
-        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: "def"),
-                "ids re-mint per generation — a stale focus must open the map unfocused, never land on the re-minted cluster")
+        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: "def"))
         #expect(!SemanticMapModel.regionFocusApplies(requestDigest: nil, artifactDigest: "abc"))
         #expect(!SemanticMapModel.regionFocusApplies(requestDigest: "abc", artifactDigest: nil))
+    }
+
+    /// R-1b: a cluster focus minted before a relayout must not apply after it — driven against
+    /// the SHIPPED artifact, because the whole difficulty is that the obvious pin does not move.
+    ///
+    /// Adding a volume re-runs the layout stage and re-derives every cluster id, then repacks
+    /// under the **same vector family** — the release plan requires that, and `EXPECT_DIGEST`
+    /// enforces it. So a guard on `provenanceDigest` sees no change across precisely the event
+    /// that invalidates every id. This test asserts the two families are EQUAL, which is what
+    /// makes the refusal below meaningful rather than trivially true.
+    @Test("A cluster focus is refused across a relayout that keeps the vector family")
+    func regionFocusRefusedAcrossRelayout() throws {
+        let url = try #require(Bundle.main.url(forResource: "semantic-map-index",
+                                               withExtension: "json"))
+        let raw = try Data(contentsOf: url)
+        let shipped = try JSONDecoder().decode(SemanticMapArtifacts.MapIndex.self, from: raw)
+
+        // The next release, modelled on the artifact itself: same family pin, new generation.
+        var object = try #require(JSONSerialization.jsonObject(with: raw) as? [String: Any])
+        object["generated"] = "2099-01-01"
+        let rebuilt = try JSONDecoder().decode(
+            SemanticMapArtifacts.MapIndex.self,
+            from: JSONSerialization.data(withJSONObject: object))
+
+        #expect(rebuilt.provenanceDigest == shipped.provenanceDigest, """
+            The premise: a relayout keeps the vector family. If this ever fails the scenario has \
+            changed and the rest of this test no longer measures what it claims.
+            """)
+        #expect(rebuilt.layoutIdentity != shipped.layoutIdentity,
+                "the layout identity must move when the family digest does not")
+
+        #expect(SemanticMapModel.regionFocusApplies(requestDigest: shipped.layoutIdentity,
+                                                    artifactDigest: shipped.layoutIdentity))
+        #expect(!SemanticMapModel.regionFocusApplies(requestDigest: shipped.layoutIdentity,
+                                                     artifactDigest: rebuilt.layoutIdentity), """
+            A focus minted before the relayout applied after it — it would land on whatever \
+            different cluster now wears that id, which is the NVR §4.5 hazard this guard exists \
+            to prevent.
+            """)
+
+        // The defect itself, pinned so nobody "simplifies" the guard back onto the family digest.
+        #expect(SemanticMapModel.regionFocusApplies(requestDigest: shipped.provenanceDigest,
+                                                    artifactDigest: rebuilt.provenanceDigest), """
+            Documents what R-1b found: a guard comparing the vector family digest PASSES across a \
+            relayout. This assertion is expected to hold; it is here so that a change making it \
+            fail is noticed as a change of premise, not as a fix.
+            """)
     }
 
     // MARK: Membership enumeration — the real packer, the real reader

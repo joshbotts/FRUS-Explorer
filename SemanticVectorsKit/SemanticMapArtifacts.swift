@@ -97,6 +97,28 @@ public enum SemanticMapArtifacts {
         /// The clusters, by ascending id.
         public let clusters: [Cluster]
 
+        /// What a **cluster id** is only meaningful against — the identity anything carrying one
+        /// across a launch must be checked with.
+        ///
+        /// **`provenanceDigest` alone cannot do this job, and R-1b found it being asked to.**
+        /// That digest is the vector FAMILY pin: SHA-256 over model, model file SHA, dims,
+        /// chunking, prefix, pooling and quantization
+        /// (`SemanticVectorsArtifacts.Provenance.digest`). The corpus is not in its preimage —
+        /// no document set, no layout, no seed, no cluster table. Adding a volume re-runs
+        /// `build_layout.py` and **re-derives every cluster id**, then repacks under the *same*
+        /// family; the release plan requires exactly that, and `EXPECT_DIGEST` refuses to write
+        /// under a different family unless one is intended. So the family digest matches across
+        /// precisely the event that invalidates every id, and a guard built on it passes when it
+        /// must fail.
+        ///
+        /// `generated` moves on every rebuild and is what carries the weight — `documentCount`
+        /// rides along because it is free, but it cannot be relied on alone: a **corrected**
+        /// volume (New-Volume-Release-Plan §13) can relayout the map without changing how many
+        /// documents are placed.
+        public var layoutIdentity: String {
+            "\(provenanceDigest):\(generated):\(documentCount)"
+        }
+
         /// The layout stage's parameters and cost.
         public struct Layout: Codable, Sendable {
             /// Projection method.

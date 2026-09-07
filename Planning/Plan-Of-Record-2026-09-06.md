@@ -140,7 +140,7 @@ Both de-risk R-1 without an Office of the Historian publication.
 | Row | What | Size |
 |---|---|---|
 | **R-1a** | **NVR §13** — what a *corrected* volume does to the artifacts. Pure code reading today: the re-download → re-index chain from `VolumesStorageHubView.updateVolume` and its Mac twin | S–M |
-| **R-1b** | **NVR §13's open code question** — whether any persisted user state names a semantic cluster id, which §4.5 flags as a relayout hazard. A grep over the SwiftData models and `SyncedPreferences` | S |
+| ~~**R-1b**~~ ✓ | ~~**NVR §13's open code question** — whether any persisted user state names a semantic cluster id~~ **ANSWERED 2026-09-07, and it was not a clean negative.** One carrier (`SemanticMapRequest.focusClusterID`, via window restoration); its guard compared the **vector family** digest, which a relayout does not move, so it passed across precisely the event that invalidates every id. Fixed on a layout identity; the test that named the scenario was a tautology and is replaced | ✓ |
 
 ### 1f. One that reduces the owner's own queue
 
