@@ -302,6 +302,18 @@ struct SubjectNumericGroupingTests {
             ("UN 6 CHICOM", "UN 6"),
             // The parenthesised agency qualifier the parser's grammar already accepts.
             ("AID (US) 15-4 UAR", "AID (US) 15-4"),
+            // ONE-LETTER CATEGORY. `E` is Economic Affairs, and the pattern's old `{2,6}` floor
+            // refused every one of the corpus's eight `E …` keys — they fell out of the
+            // subject-numeric lens entirely rather than grouping.
+            ("E 1 JAPAN-US", "E 1"),
+            ("E 1-1 INDON", "E 1-1"),
+            ("E 11-2 MEKONG", "E 11-2"),
+            // MISSING SPACE. The corpus writes the same heading both ways; rebuilding the group
+            // from its parts rather than slicing the match is what makes these one group and not
+            // two. Measured over the shipped index, this and the rule above newly group 10 keys
+            // and move none.
+            ("DEF1-1", "DEF 1-1"),
+            ("FT7", "FT 7"),
         ]
         for (leaf, group) in cases {
             #expect(CollectionKeying.isSubjectNumericClass(leaf), "\(leaf) opens with letters")

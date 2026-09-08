@@ -297,23 +297,50 @@ struct DecimalClassLabelTests {
         #expect(band0.count > 3_000)
         #expect(band0.contains { $0.id == "812.6363" && $0.gloss == "Mexico — Petroleum" })
 
-        // Band 1 spans 1948–1960 and is covered by NO schedule, so under the band's own years it
-        // labelled nothing whatever. Its keys are another matter: 310 of them are cited only by
-        // volumes inside the 1910–49 file.
+        // Band 1 spans 1948–1960 and is covered by NO schedule — 1948 sits in the 1910–49 table
+        // and 1960 in the 1960–63 one, so the straddle rule refuses the band's own years exactly
+        // as it did before those tables existed. Its keys are another matter: 310 of them are
+        // cited only by volumes inside the 1910–49 file.
         let band1 = glossed(ArchivalEraBand.all[1])
         #expect(band1.count > 250, """
-            The band-span rule labelled zero rows here, and would still label zero with all three             schedules parsed — 1960 falls outside 1951–59 as surely as outside 1910–49.
+            The band-span rule labels zero rows here and always will; every row in this list is \
+            one the per-key span rescued.
             """)
         #expect(band1.contains { $0.id == "862.00" && $0.gloss == "Germany — Political affairs" })
 
-        // And the later bands stay silent, because their schedules are not parsed yet. This is
-        // the guard that would catch a rule that labelled by proximity rather than by coverage.
-        for index in 2...4 {
-            #expect(glossed(ArchivalEraBand.all[index]).isEmpty, """
-                Band \(index) opens in 1961. Nothing in the bundled table covers it, and a label \
-                there could only come from reading a key against the wrong schedule.
-                """)
-        }
+        // Bands 2–4 open in 1961. All three labelled nothing while the file carried one schedule.
+        // Band 2 labels now, out of the schedule governing each key's own citing volumes — never
+        // the band's, whose 1961–1968 span no schedule covers. Bands 3 and 4 stay at zero, and
+        // that is the guard: they open in 1969 and 1977, so a label there could only come from a
+        // rule reading a key against a nearby schedule rather than its own evidence. Measured
+        // 448 / 0 / 0.
+        let laterCounts = (2...4).map { glossed(ArchivalEraBand.all[$0]).count }
+        #expect(laterCounts[0] > 400, """
+            Band 2's keys are cited by volumes sitting inside 1960–63, so the two schedules added \
+            here are what label them. Got \(laterCounts[0]).
+            """)
+        #expect(laterCounts[1] == 0 && laterCounts[2] == 0, """
+            The decimal file closes in 1963. Every key in these bands is cited by volumes that \
+            postdate every schedule, so a gloss could only be a guess. Got \(laterCounts).
+            """)
+
+        // Two keys in band 2 show the schedule is CHOSEN and not merely reached for, and neither
+        // is reachable from the 1910–49 table this file used to hold alone. `51J` is a country
+        // number that only the 1960–63 table has; and `611.61` reads as a PAIR only where class 6
+        // is the relations class, which it is after the renumbering and is not before it — the
+        // pre-1950 table answers "United States" and stops.
+        let band2 = glossed(ArchivalEraBand.all[2])
+        #expect(band2.contains { $0.id == "751J.00" && $0.gloss == "Laos" }, """
+            Country 51J exists in the 1960–63 table and in neither earlier one, so this label \
+            cannot be produced by reading the key against the wrong schedule.
+            """)
+        #expect(band2.contains {
+            $0.id == "611.61"
+                && $0.gloss == "United States and Union of Soviet Socialist Republics"
+        }, """
+            Class 6 is Commerce before 1950 and International Political Relations after, and only \
+            the later reading takes the suffix as a second country.
+            """)
     }
 
     /// Source with comment LINES removed, so prose about a call is never counted as the call.
@@ -418,11 +445,16 @@ struct DecimalClassLabelTests {
     /// This is the commercial-diplomacy run's move reproduced exactly: take `schedules[0]`, split
     /// the key, look the class digit up in `classes` and the rest in `countries`, and join them.
     /// It applies no era rule, because the artifact used to state none it could apply.
-    private func composeIgnoringEra(_ key: String, _ artifact: [String: Any]) -> String? {
-        guard let schedules = artifact["schedules"] as? [[String: Any]],
-              let first = schedules.first,
-              let classes = first["classes"] as? [String: String],
-              let countries = first["countries"] as? [String: String] else { return nil }
+    private func composeIgnoringEra(_ key: String, _ artifact: [String: Any],
+                                    scheduleId: String? = nil) -> String? {
+        guard let schedules = artifact["schedules"] as? [[String: Any]] else { return nil }
+        let match = schedules.first { schedule in
+            guard let scheduleId else { return true }
+            return schedule["id"] as? String == scheduleId
+        }
+        guard let table = match,
+              let classes = table["classes"] as? [String: String],
+              let countries = table["countries"] as? [String: String] else { return nil }
         let parts = key.split(separator: ".")
         let stem = parts.first.map(String.init) ?? key
         guard let digit = stem.first, let className = classes[String(digit)] else { return nil }
@@ -448,13 +480,18 @@ struct DecimalClassLabelTests {
                                       _ artifact: [String: Any]) -> String? {
         guard let coverage = artifact["coverage"] as? [String: Any],
               let spans = coverage["glossableYears"] as? [[String: Any]] else { return nil }
-        let glossable = spans.contains { span in
+        // The contract is a date-to-table LOOKUP, not a date filter, which is why every span
+        // carries a `scheduleId`. While the file held one schedule the two were the same thing.
+        // They are not now: a consumer that gates on the year and then reads `schedules.first`
+        // satisfies every in-span/out-of-span assertion and still answers a 1958 document out
+        // of the pre-1950 country table, where 48 is British Africa rather than Poland.
+        let governing = spans.first { span in
             guard let lo = span["startYear"] as? Int, let hi = span["endYear"] as? Int
             else { return false }
             return year >= lo && year <= hi
         }
-        guard glossable else { return nil }
-        return composeIgnoringEra(key, artifact)
+        guard let scheduleId = governing?["scheduleId"] as? String else { return nil }
+        return composeIgnoringEra(key, artifact, scheduleId: scheduleId)
     }
 
     /// The defect is real and reachable from the file alone — then the contract stops it.
@@ -462,9 +499,18 @@ struct DecimalClassLabelTests {
     /// The FIRST expectation is the one that makes this test mean anything. #1204's own wording
     /// ("composing 411.48 with a 1958 date returns no gloss") is satisfied by the app **today**,
     /// with no fix: `gloss(for:coveringYears:)` refuses class 4 outright because it is not
-    /// country-arranged, and `governs` refuses a 1958 span besides. A test written that way passes
-    /// against the unfixed artifact and proves nothing. So this drives a hand composer instead —
-    /// the actual failing consumer — and shows the wrong answer exists before showing it gone.
+    /// country-arranged under the 1910–49 schedule. A test written that way passes against the
+    /// unfixed artifact and proves nothing. So this drives a hand composer instead — the actual
+    /// failing consumer — and shows the wrong answer exists before showing it gone.
+    ///
+    /// ## What the contract means now that three schedules ship
+    /// #1204 was written against a one-schedule file, where the contract could only be a date
+    /// FILTER: in span, or no gloss. With 1950–59 and 1960–63 beside the original it is a
+    /// date-to-table LOOKUP, and `411.48` is the key that shows the difference — country 48 is
+    /// **British Africa** before the 1950 renumbering and **Poland** after it. A consumer that
+    /// kept the filter reading passes #1204's own assertion for 1935, and hands a 1958 document
+    /// a wrong country. The out-of-span case did not disappear; it moved to 1968, where the
+    /// decimal file itself had been replaced by the subject-numeric system.
     @Test("A consumer composing straight from the file gets a wrong reading; the era contract withholds it")
     func eraContractStopsTheWrongGloss() throws {
         let artifact = try rawArtifact()
@@ -477,13 +523,32 @@ struct DecimalClassLabelTests {
             \(ungated ?? "nil")
             """)
 
-        // The contract applied: 1958 is outside every glossable span, so there is no gloss.
-        #expect(composeUnderContract("411.48", year: 1958, artifact) == nil,
-                "a 1958 document is outside the shipped schedule — the file must yield no gloss")
-        // And it does not simply refuse everything: inside the span the same key still composes.
+        // Inside the first schedule's span the same key still composes, unchanged.
         #expect(composeUnderContract("411.48", year: 1935, artifact)
                     == "Claims — United States and British Africa",
                 "the contract must gate on the year, not suppress the vocabulary")
+
+        // 1958 is glossable and disagrees. This is the assertion the old filter reading could
+        // not make: it is not that the key is withheld, but that it reads out of a different
+        // table, and the difference is a country name a reader would take at face value.
+        let inFiftyEight = composeUnderContract("411.48", year: 1958, artifact)
+        #expect(inFiftyEight?.hasSuffix("United States and Poland") == true, """
+            Country 48 is Poland from 1950. A consumer gating on the year and then reading \
+            `schedules.first` answers "British Africa" here and looks correct. Got: \
+            \(inFiftyEight ?? "nil")
+            """)
+        #expect(inFiftyEight != ungated, """
+            The whole point of publishing `scheduleId` beside each span is that the two readings \
+            differ. If they ever coincide this test has stopped exercising the lookup.
+            """)
+
+        // And outside every schedule there is still no gloss at all, at both ends.
+        #expect(composeUnderContract("411.48", year: 1968, artifact) == nil, """
+            The decimal file closes in 1963 — a 1968 document was filed under the \
+            subject-numeric system, and no table here speaks for it.
+            """)
+        #expect(composeUnderContract("411.48", year: 1905, artifact) == nil,
+                "the decimal file opens in 1910; nothing before it can be composed")
     }
 
     /// `coverage` must describe the schedules actually shipped, not a remembered list.
@@ -525,20 +590,69 @@ struct DecimalClassLabelTests {
         }
     }
 
-    /// The refused schedules are recorded WITH the measurement that refused them.
+    /// Each schedule ships the layers its manual was read well enough to state — and no others.
+    ///
+    /// The three schedules do NOT carry the same fields, and that asymmetry is deliberate. Both
+    /// post-1950 handbooks also print an alphabetical INDEX pairing a subject name with a class
+    /// reference (`Silk 8**.355`), which the subdivision-tree parser reads backwards: measured,
+    /// 399 of 507 entries for 1950–59 and 205 of 311 for 1960–63 came out carrying a stray class
+    /// reference, and `795.00` glossed as *Korea — Amusements 8\*\*.45*. The layer is refused
+    /// wholesale rather than shipped mislabelling.
+    ///
+    /// This is worth a test of its own because the refusal is INVISIBLE at every other surface: a
+    /// key with no subject reading falls back to its country, which is a correct answer, so a
+    /// regression that started shipping the index would show up as *better* coverage.
+    @Test("The post-1950 schedules ship a class and country table and no subject table")
+    func postWarSchedulesWithholdTheirSubjectLayer() throws {
+        let artifact = try rawArtifact()
+        let schedules = try #require(artifact["schedules"] as? [[String: Any]])
+        #expect(schedules.count == 3, "1910–49, 1950–59, 1960–63")
+
+        for schedule in schedules {
+            let id = schedule["id"] as? String
+            let subjects = try #require(schedule["subjects"] as? [String: [String: String]])
+            let classes = try #require(schedule["classes"] as? [String: String])
+            let countries = try #require(schedule["countries"] as? [String: String])
+            let suffixes = subjects.values.reduce(0) { $0 + $1.count }
+
+            // Every schedule states its classes and its countries, or it would not have shipped.
+            #expect(classes.count >= 9, "\(id ?? "?") classes: \(classes.count)")
+            #expect(countries.count >= 100, "\(id ?? "?") countries: \(countries.count)")
+
+            if id == "1910-1949" {
+                #expect(suffixes == 693, """
+                    The subdivision tree the 1910–49 manual prints, unchanged by #1210. A drop \
+                    here means the shared parse regressed while adding the later manuals.
+                    """)
+            } else {
+                #expect(suffixes == 0, """
+                    \(id ?? "?") must ship no subject suffixes. Non-zero means the alphabetical \
+                    index is being read as a subdivision table again, and the damage reads as a \
+                    plausible gloss: Korea — Amusements 8**.45.
+                    """)
+            }
+        }
+    }
+
+    /// Every year of the decimal file is either glossable or a recorded gap, and a gap carries
+    /// the measurement that refused it.
     ///
     /// An omission that met every floor would be a schedule wrongly withheld, so the assertion is
     /// on the shortfall rather than on the presence of the row: recording the numbers is only
     /// worth anything if they actually explain the refusal.
-    @Test("Every not-shipped schedule falls short of a stated floor, and the whole span is accounted for")
+    ///
+    /// ## `notShipped` is empty today, and that is the claim being made
+    /// It carried two rows while the 1950–59 and 1960–63 class tables were parsed short. Both are
+    /// now read — the 1950–59 one off page geometry, because its `CLASSES OF RECORDS` block
+    /// flattens two columns into unreadable text — so the refusal has nothing left to record. The
+    /// test asserts the STRONGER thing an empty list has to earn: the shipped spans, on their
+    /// own, tile 1910 through 1963 with no gap. An empty list beside an untiled span would be the
+    /// silence #1204 is about, and only the tiling check can tell the two apart.
+    @Test("Every year of the decimal file is glossable or a recorded gap, and a gap states its shortfall")
     func notShippedIsMeasuredAndComplete() throws {
         let artifact = try rawArtifact()
         let coverage = try #require(artifact["coverage"] as? [String: Any])
         let omissions = try #require(coverage["notShipped"] as? [[String: Any]])
-        #expect(!omissions.isEmpty, """
-            Two schedules are parsed and refused every build. An empty list would mean the \
-            refusal stopped being recorded, which is the silence #1204 is about.
-            """)
 
         for omission in omissions {
             let parsed = try #require(omission["parsed"] as? [String: Int])
@@ -570,14 +684,28 @@ struct DecimalClassLabelTests {
         // glossable or named as a gap. A year in neither list is the case a consumer cannot
         // reason about at all.
         let spans = try #require(coverage["glossableYears"] as? [[String: Any]])
+        func span(_ row: [String: Any]) -> ClosedRange<Int>? {
+            guard let lo = row["startYear"] as? Int, let hi = row["endYear"] as? Int, lo <= hi
+            else { return nil }
+            return lo...hi
+        }
         func covered(_ year: Int) -> Bool {
-            (spans + omissions).contains { row in
-                guard let lo = row["startYear"] as? Int, let hi = row["endYear"] as? Int
-                else { return false }
-                return year >= lo && year <= hi
-            }
+            (spans + omissions).contains { span($0)?.contains(year) == true }
         }
         let uncovered = (1910...1963).filter { !covered($0) }
         #expect(uncovered.isEmpty, "years accounted for by neither a schedule nor a gap: \(uncovered)")
+
+        // The stronger claim an empty `notShipped` has to earn. Without this the two states an
+        // empty list can describe — nothing left to refuse, and the refusal stopped being
+        // recorded — are indistinguishable from the file.
+        if omissions.isEmpty {
+            let glossable = (1910...1963).filter { year in
+                spans.contains { span($0)?.contains(year) == true }
+            }
+            #expect(glossable.count == 54, """
+                Nothing is refused, so the shipped schedules must themselves cover 1910–1963 \
+                end to end. Covered years: \(glossable.count) of 54.
+                """)
+        }
     }
 }

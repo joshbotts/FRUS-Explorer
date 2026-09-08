@@ -507,22 +507,42 @@ public enum CollectionKeying {
     ///
     /// The leaf grain is too thin to rank: measured on the 2026-08-08 usage index, the corpus's
     /// 1,362 subject-numeric leaves carry 6,876 documents, of which 691 leaves — half of them —
-    /// have exactly one, and only 8 reach a hundred. Folded, 326 groups remain, 13 of them past a
-    /// hundred documents (`POL 27` 1,197, `POL 7` 490, `DEF 12-5` 218), which is a list a reader
+    /// have exactly one, and only 8 reach a hundred. Folded, **321** groups remain, 13 of them past
+    /// a hundred documents (`POL 27` 1,197, `POL 7` 490, `DEF 12-5` 218), which is a list a reader
     /// can actually work with. This is the grain owner decision **D-3** admits the subject-numeric
-    /// lens at.
+    /// lens at. (The figure read 326 against the 2026-08-08 index and 316 against the shipped one;
+    /// re-measured here rather than carried forward.)
+    ///
+    /// ## The result is REBUILT, not the matched substring
+    /// Returning the raw match would key `DEF1-1` and `DEF 1-1` as two different groups for one
+    /// heading. Category, optional qualifier and number are captured separately and rejoined with a
+    /// single space, so spelling variance in the source folds away.
+    ///
+    /// ## One letter, not two
+    /// The pattern required `{2,6}` category letters and a mandatory space, which refused every
+    /// key in the corpus's one-letter category — `E`, Economic Affairs. Measured over the shipped
+    /// usage index, widening to `{1,6}` with an optional space newly groups **10 keys** (8 of them
+    /// `E …`, plus `DEF1-1` and `FT7`) carrying 25 documents, and — the part that made it safe to
+    /// ship — moves **0** existing keys to a different group and costs **0** their grouping.
     public static func subjectNumericGroup(_ classKey: String) -> String? {
         guard isSubjectNumericClass(classKey) else { return nil }
         guard let match = subjectNumericGroupRegex?.firstMatch(
             in: classKey, range: NSRange(classKey.startIndex..., in: classKey)),
-              let range = Range(match.range(at: 0), in: classKey) else { return nil }
-        return String(classKey[range]).trimmingCharacters(in: .whitespaces)
+              let category = Range(match.range(at: 1), in: classKey).map({ String(classKey[$0]) }),
+              let number = Range(match.range(at: 4), in: classKey).map({ String(classKey[$0]) })
+        else { return nil }
+        let qualifier = Range(match.range(at: 3), in: classKey).map { String(classKey[$0]) }
+        if let qualifier, !qualifier.isEmpty { return "\(category) (\(qualifier)) \(number)" }
+        return "\(category) \(number)"
     }
 
     /// Category letters, an optional parenthesised agency qualifier, then the number — which may
     /// itself be hyphenated (`POL 23-9`, `DEF 12-5`).
+    ///
+    /// Four capture groups, because the caller rebuilds rather than slices: 1 category,
+    /// 3 qualifier (inside the parentheses), 4 number.
     private static let subjectNumericGroupRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^[A-Z]{2,6}(\s*\([^)]*\))?\s+\d+(-\d+)*"#)
+        pattern: #"^([A-Z]{1,6})(\s*\(([^)]*)\))?\s*(\d+(?:-\d+)*)"#)
 
     /// The `decimal_class` derivation for a parsed note — the pipeline's
     /// `decimalClassColumn` gating verbatim.
