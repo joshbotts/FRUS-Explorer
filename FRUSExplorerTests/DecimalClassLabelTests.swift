@@ -408,15 +408,31 @@ struct DecimalClassLabelTests {
                   // A guard that reads an explanation of an absence as the thing being absent is
                   // the defect this repo keeps re-finding; the sibling scan in
                   // `HandoffVisibilityTests` strips comments for the same reason.
-                  Self.codeOnly(text).contains(".gloss(for:"),
-                  url.lastPathComponent != "DecimalClassLabelStore.swift"
+                  Self.codeOnly(text).contains(".gloss(for:")
+                      // #1254 gave the subject-numeric table its own composed reading; scanning
+                      // for the decimal call alone would have left that one unguarded.
+                      || Self.codeOnly(text).contains(".leafGloss(for:"),
+                  url.lastPathComponent != "DecimalClassLabelStore.swift",
+                  url.lastPathComponent != "SubjectNumericLabelStore.swift"
             else { continue }
             callers.append(url.lastPathComponent)
         }
-        #expect(callers == ["ArchivalCollectionsData.swift"], """
+        // TWO CALL SITES, AND THE SECOND IS THE EXCEPTION THIS GUARD EXISTS TO MAKE VISIBLE.
+        //
+        // `ArchivalCollectionsData` glosses a key by the coverage of the volumes CITING it, which
+        // is right everywhere a row stands for its own evidence. `ArchivesClassAxis` (#1255)
+        // deliberately scopes differently: it asks each era's schedule what the key means under
+        // THAT schedule, because its whole purpose is to show `POL 24` as SUBVERSION in one
+        // section and SANCTIONS in the next. The citing-volume scoping structurally cannot answer
+        // that question — it returns one reading per key.
+        //
+        // So the warning this assertion carried is now realised on purpose rather than avoided,
+        // and the mitigation is that the class lens says which scoping it used in its own caption.
+        // A THIRD caller still fails here, which is the point: the exception is named, not opened.
+        #expect(callers.sorted() == ["ArchivalCollectionsData.swift", "ArchivesClassAxis.swift"], """
             The table is looked up in \(callers.sorted()). Attached in a view instead, every other \
-            surface — the CSV especially — would still ship bare numbers, and a second call site \
-            could scope the lookup differently from the first.
+            surface — the CSV especially — would still ship bare numbers, and an unnamed second \
+            call site could scope the lookup differently from the first without saying so.
             """)
     }
 
