@@ -28,13 +28,26 @@ import SwiftUI
 /// 1. **Mechanical** (`mechanicallyNormalized`): whitespace collapse, `"J ."` → `"J."`,
 ///    `"E.R."` → `"E. R."`, and a trailing-period strip that spares initials and
 ///    Jr./Sr. suffixes — this alone folds the punctuation variants
-///    (`"E.R. Perkins"`, `"Robert J . McMahon"`, `"Henry P. Beers."`).
+///    (`"E.R. Perkins"`, `"Robert J . McMahon"`, `"Henry P. Beers."`) — and, since #1253, the
+///    surname-first inversions (`"Kane, N. Stephen"`).
 /// 2. **Curated aliases** (`aliases`): the measured spelling-variant clusters, folded to
 ///    the MOST FREQUENTLY PRINTED form (ties → the fuller form). Curated by hand and
 ///    reviewable in one sitting, because the obvious rule over-merges: Shirley L.
 ///    Phillips (23 volumes) and Steven E. Phillips (2) collide on surname + initial and
 ///    are two different historians — the pair is deliberately ABSENT from this table,
 ///    and a test pins that they stay separate rows.
+///
+/// ## Where the table's evidence comes from, and where it does not
+/// Most rows are a spelling variant one can see in the two strings — an expanded initial, a
+/// dropped middle name. `Owen Sappington` → `N. O. Sappington` is not: it asserts the man went
+/// by his middle name, which no comparison of the strings can establish. It is here on the
+/// owner's determination, and it is commented as such at the row, so a later reader does not
+/// mistake it for something the rule could have derived.
+///
+/// ## What is NOT normalized here, and could not be
+/// A `Jr.` is never stripped mechanically. The suffix is printed precisely when a father and son
+/// share a name, so a rule that ignored it would merge the two people it exists to distinguish.
+/// The two suffix variants the corpus actually splits are curated by name.
 ///
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
@@ -81,6 +94,10 @@ enum EditorIndexGrouping {
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+        // "Kane, N. Stephen" → "N. Stephen Kane", FIRST, so every rule below sees a name in
+        // natural order — the trailing-period strip and the surname finder both read the LAST
+        // token, and on an inverted credit that token is a given name.
+        name = uninverted(name)
         // "Robert J . McMahon" → "Robert J. McMahon"
         name = name.replacingOccurrences(of: " .", with: ".")
         // "E.R. Perkins" → "E. R. Perkins" (insert a space between initial pairs)
@@ -98,7 +115,48 @@ enum EditorIndexGrouping {
         return name
     }
 
-    /// The curated variant → canonical table (35 clusters, 39 rows), applied AFTER
+    /// Un-inverts a surname-first credit: `"Kane, N. Stephen"` → `"N. Stephen Kane"`.
+    ///
+    /// ## Why this is mechanical where the spelling variants are curated
+    /// The curated table exists because the obvious rule over-merges — Shirley L. Phillips and
+    /// Steven E. Phillips collide on surname plus initial and are two different historians. This
+    /// rule cannot make that mistake, because it merges nothing: it reorders the tokens of ONE
+    /// credit. Whether two credits then fold together is decided afterwards, by exact equality,
+    /// exactly as it is for every name the manifest already prints in natural order.
+    ///
+    /// Measured over the shipped manifest, five printed credits contain a comma and two are
+    /// inversions — `Claussen, Paul` beside `Paul Claussen` (13 volumes) and `Kane, N. Stephen`
+    /// beside `N. Stephen Kane` (6). Both split a row in the index, and each also filed its two
+    /// halves under DIFFERENT letters, because the surname finder takes the last token and on an
+    /// inverted credit that is a given name: `Kane, N. Stephen` sat under S.
+    ///
+    /// ## A trailing suffix is held aside, not inverted
+    /// The other three comma credits are `Jr.` suffixes, and inverting one would produce
+    /// `Jr. William F. Sanford`. So a suffix is removed before the test and restored after, which
+    /// also means `Smith, John, Jr.` inverts correctly rather than being refused for having two
+    /// commas.
+    ///
+    /// - Parameter name: A whitespace-collapsed credit.
+    /// - Returns: The name in natural order, or unchanged when it is not an inversion.
+    static func uninverted(_ name: String) -> String {
+        guard name.contains(",") else { return name }
+        var parts = name.split(separator: ",").map {
+            $0.trimmingCharacters(in: .whitespaces)
+        }.filter { !$0.isEmpty }
+        var suffix: String?
+        if let last = parts.last,
+           suffixes.contains(last.trimmingCharacters(in: CharacterSet(charactersIn: ".")).lowercased()) {
+            suffix = last
+            parts.removeLast()
+        }
+        // EXACTLY two parts. A credit with more commas than this is not a surname-first name and
+        // is left alone rather than reassembled into a guess.
+        guard parts.count == 2 else { return name }
+        let natural = "\(parts[1]) \(parts[0])"
+        return suffix.map { "\(natural), \($0)" } ?? natural
+    }
+
+    /// The curated variant → canonical table (38 clusters, 43 rows), applied AFTER
     /// mechanical normalization. Canonical = the most frequently printed form, ties
     /// broken toward the fuller form — measured against the shipped manifest, not
     /// guessed. The Phillips pair is deliberately absent (two people; see the type doc).
@@ -108,6 +166,9 @@ enum EditorIndexGrouping {
         "Velma H. Cassidy": "Velma Hastings Cassidy",
         "Rogers Platt Churchill": "Rogers P. Churchill",
         "Bradley L. Coleman": "Bradley Lynn Coleman",
+        // Initials prepended to a name the other credit prints whole — the same shape as
+        // Nina Howland / Nina Davis Howland below.
+        "G. M. Richardson Dougall": "Richardson Dougall",
         "Evan Duncan": "Evan M. Duncan",
         "David I. Goldman": "David Goldman",
         "Ralph E. Goodwin": "Ralph R. Goodwin",
@@ -115,6 +176,11 @@ enum EditorIndexGrouping {
         "Susan Holly": "Susan K. Holly",
         "Nina D. Howland": "Nina Davis Howland",
         "Nina Howland": "Nina Davis Howland",
+        // SUFFIX VARIANTS, curated rather than ruled. Stripping `Jr.` mechanically would merge a
+        // father and son, which is exactly when the suffix is printed; both of these are one
+        // person printed two ways, and the canonical is the more frequent form (Sanford 7 to 3)
+        // or, on a tie, the fuller one (Jones 1 to 1).
+        "John Rison Jones": "John Rison Jones, Jr.",
         "William Klingaman": "Will Klingaman",
         "William K. Klingaman": "Will Klingaman",
         "Peter Kraemer": "Peter A. Kraemer",
@@ -131,7 +197,13 @@ enum EditorIndexGrouping {
         "Neil H. Petersen": "Neal H. Petersen",
         "Linda W. Qaimmaqami": "Linda Qaimmaqami",
         "John Gilbert Reid": "John G. Reid",
+        "William F. Sanford": "William F. Sanford, Jr.",
         "Newton O. Sappington": "N. O. Sappington",
+        // Folded on the owner's determination that this is the same man. It is not a reading the
+        // table could reach on its own: unlike `Newton O.`, which expands an initial the canonical
+        // form already prints, this one asserts he went by his middle name — so it rests on
+        // knowledge of the Office's own editors rather than on the shape of the two strings.
+        "Owen Sappington": "N. O. Sappington",
         "Harriet Dashiell Schwar": "Harriet D. Schwar",
         "James F. Siekmeier": "James Siekmeier",
         "William Slany": "William Z. Slany",

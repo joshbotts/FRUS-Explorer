@@ -176,6 +176,52 @@ struct EditorIndexGroupingTests {
         #expect(EditorIndexGrouping.mechanicallyNormalized("N. O. Sappington") == "N. O. Sappington")
     }
 
+    @Test func surnameFirstCreditsAreUninverted() {
+        // The owner's report. Measured over the shipped manifest, exactly two credits are printed
+        // surname-first, and each split a row: `Claussen, Paul` beside `Paul Claussen` (13
+        // volumes) and `Kane, N. Stephen` beside `N. Stephen Kane` (6).
+        #expect(EditorIndexGrouping.mechanicallyNormalized("Claussen, Paul") == "Paul Claussen")
+        #expect(EditorIndexGrouping.mechanicallyNormalized("Kane, N. Stephen")
+                == "N. Stephen Kane")
+    }
+
+    @Test func aSuffixIsHeldAsideRatherThanInverted() {
+        // Three of the five comma credits are suffixes, and inverting one yields
+        // "Jr. William F. Sanford". The suffix is removed before the test and restored after,
+        // which also makes a surname-first name WITH a suffix inverr correctly instead of being
+        // refused for having two commas.
+        #expect(EditorIndexGrouping.mechanicallyNormalized("John Rison Jones, Jr.")
+                == "John Rison Jones, Jr.")
+        #expect(EditorIndexGrouping.uninverted("Smith, John, Jr.") == "John Smith, Jr.")
+    }
+
+    @Test func aCreditThatIsNotAnInversionIsLeftAlone() {
+        // Reordering is only safe where the shape is unambiguous. Anything else is returned as
+        // printed rather than reassembled into a guess.
+        #expect(EditorIndexGrouping.uninverted("Office, of the Historian, Department of State")
+                == "Office, of the Historian, Department of State")
+        #expect(EditorIndexGrouping.uninverted("Paul Claussen") == "Paul Claussen")
+    }
+
+    @Test func inversionCannotMergeTwoPeople() {
+        // The reason this layer is MECHANICAL where the spelling variants are curated: it
+        // reorders the tokens of one credit and merges nothing. Two different people whose
+        // credits both invert stay two rows, decided afterwards by exact equality.
+        let rows = EditorIndexGrouping.rows(from: [
+            entry(id: "frus-a", editors: ["Phillips, Shirley L."]),
+            entry(id: "frus-b", editors: ["Phillips, Steven E."]),
+        ])
+        #expect(rows.count == 2)
+    }
+
+    @Test func anInvertedCreditFilesUnderItsSurname() {
+        // The second symptom of the same defect, and the one that scatters a name across the
+        // index: `surname(of:)` takes the last token, so before the fix `Kane, N. Stephen` filed
+        // under S while `N. Stephen Kane` filed under K.
+        #expect(EditorIndexGrouping.surname(of:
+            EditorIndexGrouping.canonicalName("Kane, N. Stephen")) == "Kane")
+    }
+
     // MARK: Aliases
 
     @Test func aliasFoldRunsAfterMechanicalNormalization() {
@@ -184,6 +230,44 @@ struct EditorIndexGroupingTests {
         #expect(EditorIndexGrouping.canonicalName("E.B. Perkins") == "E. R. Perkins")
         #expect(EditorIndexGrouping.canonicalName("Fredrick Aandahl") == "Frederick Aandahl")
         #expect(EditorIndexGrouping.canonicalName("William Slany") == "William Z. Slany")
+    }
+
+    @Test func suffixVariantsAreCuratedRatherThanRuled() {
+        // A `Jr.` is never stripped mechanically: the suffix is printed precisely when a father
+        // and son share a name, so a rule ignoring it would merge the two people it exists to
+        // distinguish. The two the corpus actually splits are curated, canonical = the more
+        // frequent form (Sanford 7 to 3) or, on a tie, the fuller one (Jones 1 to 1).
+        #expect(EditorIndexGrouping.canonicalName("William F. Sanford")
+                == "William F. Sanford, Jr.")
+        #expect(EditorIndexGrouping.canonicalName("John Rison Jones")
+                == "John Rison Jones, Jr.")
+        // And nothing mechanical is doing it — a name with a suffix nobody curated keeps it.
+        #expect(EditorIndexGrouping.canonicalName("C. Thomas Thorne, Jr.")
+                == "C. Thomas Thorne, Jr.")
+    }
+
+    @Test func initialsPrependedToAWholeNameFold() {
+        #expect(EditorIndexGrouping.canonicalName("G. M. Richardson Dougall")
+                == "Richardson Dougall")
+    }
+
+    @Test func aDeterminationTheStringsCannotSupportIsStillCurated() {
+        // All three Sappington spellings are one person. `Newton O.` → `N. O.` expands an initial
+        // the canonical form already prints, which the two strings show; `Owen` → `N. O.` asserts
+        // he went by his middle name, which they cannot. That row is here on the owner's
+        // determination, and this test exists so the distinction is not quietly lost — a future
+        // rule that tried to DERIVE this fold would be reaching past what the strings say.
+        #expect(EditorIndexGrouping.canonicalName("Owen Sappington") == "N. O. Sappington")
+        #expect(EditorIndexGrouping.canonicalName("Newton O. Sappington") == "N. O. Sappington")
+    }
+
+    @Test func distinctPeopleWhoLookAlikeStaySplit() {
+        // Two different people who share a surname and a particle.
+        let vanHook = EditorIndexGrouping.rows(from: [
+            entry(id: "frus-a", editors: ["James C. Van Hook"]),
+            entry(id: "frus-b", editors: ["Laurie Van Hook"]),
+        ])
+        #expect(vanHook.count == 2)
     }
 
     @Test func thePhillipsPairStaysSplit() {
@@ -282,5 +366,24 @@ struct EditorIndexGroupingTests {
         }
         // The corpus-shaped sanity band: ~170 people from 552 volumes.
         #expect(rows.count > 140 && rows.count < 220)
+
+        // #1253: every one of the four clusters the owner's report and the sweep behind it
+        // identified now folds, over the REAL manifest rather than a fixture.
+        for surname in ["Claussen", "Kane", "Sanford", "Dougall", "Sappington"] {
+            #expect(rows.filter { $0.name.contains(surname) }.count == 1,
+                    "\(surname) is still split across rows")
+        }
+        // Jones is three people, not one: Halbert, and John Rison — whose two spellings fold.
+        #expect(rows.filter { $0.name.contains("Jones") }.count == 2)
+
+        // AND NO ROW IS STILL PRINTED SURNAME-FIRST. A row whose name carries a comma that is
+        // not a suffix means an inversion escaped the fold and is filed under a given name.
+        let inverted = rows.map(\.name).filter { name in
+            guard let tail = name.split(separator: ",").last else { return false }
+            let last = tail.trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            return name.contains(",") && !["Jr", "Sr", "II", "III", "IV"].contains(last)
+        }
+        #expect(inverted.isEmpty, "rows still printed surname-first: \(inverted)")
     }
 }
