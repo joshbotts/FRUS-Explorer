@@ -150,14 +150,16 @@ enum ArchivesAxis {
 ///   1.0 — #1051 B-5: initial implementation
 struct ArchivesIndexView: View {
 
+    /// The volume universe, for the class lens's era buckets.
+    let entries: [VolumeManifestEntry]
     /// A provenance-type door's drill.
     let onSelectCategory: @MainActor (VolumeListSpec) -> Void
     /// A collection row's drill (the push-hosted detail).
     let onSelectCollection: @MainActor (AuthorityCollectionRecord) -> Void
 
-    /// The two sibling lenses.
+    /// The three sibling lenses.
     private enum Lens: String, CaseIterable, Identifiable {
-        case types, collections
+        case types, collections, classes
         var id: String { rawValue }
 
         var label: String {
@@ -168,11 +170,18 @@ struct ArchivesIndexView: View {
             case .collections:
                 return String(localized: "browser.archives.lens.collections",
                               defaultValue: "Collections")
+            case .classes:
+                return String(localized: "browser.archives.lens.classes",
+                              defaultValue: "Classes")
             }
         }
     }
 
     @State private var lens: Lens = .types
+    /// The class lens's eras and rows, built off `body` — the sweep is over ten thousand class
+    /// keys and is not work for a view update.
+    @State private var classSections: [(era: ArchivesClassAxis.FilingEra,
+                                        rows: [ArchivesClassAxis.ClassRow])] = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -192,12 +201,85 @@ struct ArchivesIndexView: View {
                 typesList
             case .collections:
                 collectionsLens
+            case .classes:
+                classesLens
             }
         }
         .navigationTitle(String(localized: "browser.archives.title", defaultValue: "Archives"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    // MARK: Central-file classes
+
+    /// The classes, divided by filing era.
+    ///
+    /// The division is the point rather than a tidying: a class key means different things under
+    /// different schedules — `POL 24` is *SUBVERSION. ESPIONAGE.* in 1963 and *SANCTIONS* from
+    /// 1964, and the 1950 decimal renumbering moved class 7 outright — so one flat list would have
+    /// to pick a reading and be wrong for the other era. Here the same designator appears in two
+    /// sections saying two different things.
+    @ViewBuilder
+    private var classesLens: some View {
+        List {
+            Section {
+                Text(String(localized: "browser.archives.classes.caption",
+                            defaultValue: """
+                                Central-file classes, grouped by the filing schedule in force.                                 A volume is counted in the era its coverage falls inside; one                                 spanning two schedules is counted in neither, because the same                                 number means different things on either side. Readings come from                                 the Department's own filing manuals.
+                                """))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            ForEach(classSections, id: \.era.id) { section in
+                Section(section.era.title) {
+                    if section.rows.isEmpty {
+                        Text(String(localized: "browser.archives.classes.empty",
+                                    defaultValue: "No volumes fall inside this schedule."))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                    ForEach(section.rows) { row in
+                        Button {
+                            guard let usage = CollectionUsageIndexStore.shared else { return }
+                            onSelectCategory(ArchivesClassAxis.spec(for: row, era: section.era,
+                                                                    usage: usage))
+                        } label: {
+                            HStack(alignment: .firstTextBaseline) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(row.key)
+                                        .font(.body.monospaced())
+                                    if let gloss = row.gloss {
+                                        Text(gloss)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(String(localized: "browser.archives.classes.count",
+                                            defaultValue: "\(row.documents) docs"))
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .task(id: entries.count) { await buildClassSections() }
+    }
+
+    /// Builds the class sections off the main actor's critical path.
+    private func buildClassSections() async {
+        guard classSections.isEmpty, let usage = CollectionUsageIndexStore.shared else { return }
+        let coverage = ArchivalVolumeCoverage.map(from: entries)
+        let built = ArchivesClassAxis.eras().map { era in
+            (era: era, rows: ArchivesClassAxis.rows(inEra: era, usage: usage, coverage: coverage))
+        }
+        classSections = built
     }
 
     // MARK: Provenance types
@@ -296,6 +378,7 @@ struct BrowseArchivesLevel: View {
 
     var body: some View {
         ArchivesIndexView(
+            entries: vm.allVolumes,
             onSelectCategory: { [vm] spec in vm.navigationPath.append(.volumeList(spec)) },
             onSelectCollection: { [vm] record in
                 vm.navigationPath.append(.archivalCollection(id: record.id, name: record.name))

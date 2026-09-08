@@ -256,6 +256,7 @@ struct CorpusBrowserWindowView: View {
                         )
                     case .archives?:
                         ArchivesIndexView(
+                            entries: allEntries,
                             onSelectCategory: { spec in detailPath.append(.axisList(spec)) },
                             onSelectCollection: { record in
                                 detailPath.append(.collection(collectionId: record.id))
