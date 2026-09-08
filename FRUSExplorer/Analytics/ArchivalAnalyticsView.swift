@@ -978,8 +978,22 @@ struct ArchivalAnalyticsView: View {
                                     : $0.key < $1.key
                             }) { leaf in
                                 HStack(alignment: .firstTextBaseline) {
-                                    Text(leaf.key)
-                                        .font(.caption.monospaced())
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(leaf.key)
+                                            .font(.caption.monospaced())
+                                        // #1254: the country element belongs to the leaf, not to
+                                        // the row above it — `POL 27 VIET S` and `POL 27 CYP` are
+                                        // two countries' files under one subject — so this is
+                                        // where the reading can be given. It is composed in the
+                                        // order NARA FILES the records, country then subject,
+                                        // which is not the order the citation writes them in.
+                                        if let gloss = leaf.gloss {
+                                            Text(gloss)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
                                     // #838(6): a leaf is one file, and the row is otherwise a bare
                                     // designator that reads like another grouping. The family
                                     // header above already counts "N in family", so this says what

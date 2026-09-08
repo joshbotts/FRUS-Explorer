@@ -64,8 +64,14 @@ enum CountryAbbreviationReader {
             let lines = OutlinePageReader.lines(of: page, maxX: .greatestFiniteMagnitude)
                 .filter { $0.y > 100 && !OutlineEntryParser.isFurniture($0.text) }
             let middle = Double(bounds.midX)
-            for half in [lines.filter { $0.x < middle }, lines.filter { $0.x >= middle }] {
-                let found = isReverseHalf(half) ? reversePairs(inHalf: half) : pairs(inHalf: half)
+            let halves = [lines.filter { $0.x < middle }, lines.filter { $0.x >= middle }]
+            // DIRECTION IS A PROPERTY OF THE PAGE, not of a half. Deciding per half lets a few
+            // OCR-damaged leading tokens flip one side of a reverse page into the forward reading,
+            // whose parser then takes the code as part of the name — measured, that is where names
+            // like `& NYAS Rhodesia and Nyasaland Federation` came from. Both halves vote.
+            let reverse = isReverseHalf(halves[0]) || isReverseHalf(halves[1])
+            for half in halves {
+                let found = reverse ? reversePairs(inHalf: half) : pairs(inHalf: half)
                 out.append(contentsOf: found)
             }
         }
@@ -159,13 +165,20 @@ enum CountryAbbreviationReader {
         }
 
         for row in grouped {
-            if row.x <= codeX + 6, let (head, rest) = splitLeadingCode(row.text) {
+            // A ROW AT THE CODE COLUMN IS A NEW ENTRY, whatever condition the scan left it in.
+            // Letting one that fails to parse fall through to the continuation branch glues it to
+            // the entry above: measured, that produced names like `0 Pacific Ocean PAl<: Pakistan`
+            // and `& NYAS Rhodesia and Nyasaland Federation` — two entries in one string, and the
+            // leading junk (`&`, `0`) is why the row failed to open in the first place.
+            guard row.x > codeX + 6 else {
                 close()
-                code = head
-                name = rest.isEmpty ? [] : [rest]
-            } else if code != nil {
-                name.append(row.text)
+                if let (head, rest) = splitLeadingCode(row.text) {
+                    code = head
+                    name = rest.isEmpty ? [] : [rest]
+                }
+                continue
             }
+            if code != nil { name.append(row.text) }
         }
         close()
         return out
@@ -271,6 +284,53 @@ enum CountryAbbreviationReader {
 // MARK: - Choosing a code's own name
 
 extension CountryAbbreviationReader {
+
+    /// Resolves a tail as the corpus WRITES it, against the names the handbook prints.
+    ///
+    /// ## NARA's rule is generative, not a vocabulary
+    /// The archivists' own description: country, region and organization names "may be spelled out
+    /// in full or they may be abbreviated using a common abbreviation (USSR … UN …) or the first
+    /// few letters of the name (POL for Poland and KOR N for North Korea)". There is no code table
+    /// to look a tail up in — there is a NAME, and a filer's abbreviation of it.
+    ///
+    /// That is why matching the printed codes failed on the heaviest tails. The 1963 appendix
+    /// prints `S VIET` against *South Vietnam*, and the corpus writes `VIET S`; both are the same
+    /// rule applied to the same name, and NARA's own `KOR N` example shows which way round the
+    /// filer worked — the name is inverted to its index form and then truncated. Matching against
+    /// the NAME rather than against the printed code makes the two spellings one question, and the
+    /// order-free cover below answers it without having to know which form a filer chose.
+    ///
+    /// - Parameters:
+    ///   - tail: The tail as a source note wrote it.
+    ///   - names: Every name the handbook prints.
+    ///   - abbreviations: The common-abbreviation table, for the `USSR` and `UN` route.
+    /// - Returns: The name, or `nil` when nothing covers the tail exactly once.
+    static func resolveTail(_ tail: String, names: [String],
+                           abbreviations: [String: String]) -> String? {
+        let code = normalizedCode(tail)
+        guard !code.isEmpty else { return nil }
+        // The common-abbreviation route first: it is the handbook's own assertion, where the
+        // truncation route is an inference about what a filer did.
+        if let common = abbreviations[code] { return common }
+
+        var best: String?
+        var bestLength = Int.max
+        var ambiguous = false
+        for name in names where headEntryScore(name: name, code: code) >= minimumHeadEntryScore {
+            let length = name.count
+            if length < bestLength {
+                best = name
+                bestLength = length
+                ambiguous = false
+            } else if length == bestLength, let current = best, current != name {
+                ambiguous = true
+            }
+        }
+        // Two different names of equal length both covering the tail is a coin toss, and a wrong
+        // country is worse than a bare code — the same verdict this file reaches about a partial
+        // cover, for the same reason.
+        return ambiguous ? nil : best
+    }
 
     /// The weakest reading of a code accepted as its name.
     ///

@@ -109,6 +109,14 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
 struct ArchivalClassLeaf: Identifiable, Sendable, Equatable {
     /// The full class key, as a source note wrote it and as a pull slip needs it.
     let key: String
+    /// The leaf's reading in words, composed in NARA's filing order — country then subject —
+    /// or `nil` when no table can say (#1254).
+    ///
+    /// Carried at the LEAF and not at the row above it because the country element belongs to the
+    /// leaf: a row is `POL 27` and its leaves are `POL 27 VIET S`, `POL 27 CYP` and the rest, which
+    /// are different countries' files under one subject. This is also the grain a researcher writes
+    /// on a pull slip.
+    let gloss: String?
     /// Documents this leaf supplies in the band.
     let documents: Int
     /// Volumes citing this leaf in the band.
@@ -462,14 +470,21 @@ struct ArchivalCollectionsData: Sendable {
             volumeCounts[band] = volumeSets[band].mapValues(\.count)
             let volumesByLeaf = leafVolumes[band]
             leaves[band] = leafDocuments[band].map { group, byLeaf in
-                (group, byLeaf
-                    .map { ArchivalClassLeaf(
-                        key: $0.key, documents: $0.value,
-                        volumes: volumesByLeaf[group]?[$0.key]?.count ?? 0) }
-                    // Heaviest first, then by key: a total order, so the expansion a reader sees
-                    // is the same on every launch.
-                    .sorted { $0.documents != $1.documents ? $0.documents > $1.documents
-                                                           : $0.key < $1.key })
+                var built: [ArchivalClassLeaf] = []
+                built.reserveCapacity(byLeaf.count)
+                for (leafKey, leafDocuments) in byLeaf {
+                    let leafVolumeCount = volumesByLeaf[group]?[leafKey]?.count ?? 0
+                    // The reading is attached in `mergedLeaves`, which is where the coverage span
+                    // that chooses a schedule is known.
+                    built.append(ArchivalClassLeaf(key: leafKey, gloss: nil,
+                                                   documents: leafDocuments,
+                                                   volumes: leafVolumeCount))
+                }
+                // Heaviest first, then by key: a total order, so the expansion a reader sees is
+                // the same on every launch.
+                built.sort { $0.documents != $1.documents ? $0.documents > $1.documents
+                                                          : $0.key < $1.key }
+                return (group, built)
             }.reduce(into: [String: [ArchivalClassLeaf]]()) { $0[$1.0] = $1.1 }
         }
         return (volumeCounts, leaves)
@@ -668,6 +683,38 @@ struct ArchivalCollectionsData: Sendable {
         return labels?.gloss(for: key, coveringYears: low...high)
     }
 
+    /// The union of the coverage spans of the volumes citing one class key.
+    ///
+    /// - Parameters:
+    ///   - key: A folded class key.
+    ///   - bands: The band indices being ranked.
+    /// - Returns: The span, or `nil` when no band records one.
+    private func coverageSpan(forKey key: String, bands: [Int]) -> ClosedRange<Int>? {
+        var low: Int?
+        var high: Int?
+        for index in bands {
+            guard let span = classSpans[index][key] else { continue }
+            low = min(low ?? span.lowerBound, span.lowerBound)
+            high = max(high ?? span.upperBound, span.upperBound)
+        }
+        guard let low, let high else { return nil }
+        return low...high
+    }
+
+    /// One leaf's reading, for the subject-numeric system only.
+    ///
+    /// The decimal table has nothing to add at this grain: a decimal leaf IS its key, with no
+    /// further element beneath the one the row already glosses.
+    ///
+    /// - Parameters:
+    ///   - key: The full leaf key.
+    ///   - span: The citing volumes' coverage span.
+    /// - Returns: The reading, or `nil`.
+    private func leafGloss(_ key: String, span: ClosedRange<Int>?) -> String? {
+        guard let span, CollectionKeying.isSubjectNumericClass(key) else { return nil }
+        return SubjectNumericLabelStore.shared?.leafGloss(for: key, coveringYears: span)
+    }
+
     /// One class key's leaves across several bands, folded and re-ranked.
     ///
     /// Both figures add across bands for the reason the ranking's own note gives — the bands
@@ -678,7 +725,16 @@ struct ArchivalCollectionsData: Sendable {
     ///   - bands: The band indices to combine.
     /// - Returns: The merged leaves, heaviest by documents first, then by key.
     private func mergedLeaves(forKey key: String, bands: [Int]) -> [ArchivalClassLeaf] {
-        if bands.count == 1 { return classLeaves[bands[0]][key] ?? [] }
+        // The leaf reading is attached HERE rather than where the leaves are accumulated, because
+        // it needs the coverage span of the key's citing volumes — the same span the row's own
+        // gloss is chosen by — and that is only known once the bands are combined.
+        let span = coverageSpan(forKey: key, bands: bands)
+        if bands.count == 1 {
+            return (classLeaves[bands[0]][key] ?? []).map { leaf in
+                ArchivalClassLeaf(key: leaf.key, gloss: leafGloss(leaf.key, span: span),
+                                  documents: leaf.documents, volumes: leaf.volumes)
+            }
+        }
         var documents: [String: Int] = [:]
         var volumes: [String: Int] = [:]
         for index in bands {
@@ -688,7 +744,8 @@ struct ArchivalCollectionsData: Sendable {
             }
         }
         return documents
-            .map { ArchivalClassLeaf(key: $0.key, documents: $0.value,
+            .map { ArchivalClassLeaf(key: $0.key, gloss: leafGloss($0.key, span: span),
+                                     documents: $0.value,
                                      volumes: volumes[$0.key] ?? 0) }
             .sorted { a, b in
                 if a.documents != b.documents { return a.documents > b.documents }
