@@ -208,7 +208,8 @@ struct OutlineLayoutTests {
         // So the pair is not two tunings of one idea: each rule is blind where the other works,
         // which is why the edition says which typography to expect instead of a page being asked.
         #expect(OutlinePageLayout.dominantFarColumn(in: positions, pageWidth: 616) == nil, """
-            A single "find the instruction column" rule cannot serve both handbooks; if this ever             returns a value the two layouts have been conflated.
+            A single "find the instruction column" rule cannot serve both handbooks; if this \
+            ever returns a value the two layouts have been conflated.
             """)
     }
 
@@ -249,6 +250,90 @@ struct SubjectNumericKeyTests {
         #expect(sorted == ["9", "10", "27", "27-2", "27-14"], """
             A lexical sort puts 10 before 9 and 27-14 before 27-2, which makes the diagnostic \
             dump unreadable exactly where the tables are densest. Got \(sorted).
+            """)
+    }
+}
+
+// MARK: - AbbreviationTests
+
+/// Reading the COMMON ABBREVIATIONS appendix, which is what identifies an organization file
+/// (#1211).
+@Suite("Abbreviations — the appendix that names an organization")
+struct AbbreviationTests {
+
+    @Test("A code opens an entry with or without its dash")
+    func theDashIsOptional() {
+        // The scan loses it often enough that requiring it folds the next entry into the previous
+        // one: `SACLANT` and `SC` both arrive without one.
+        #expect(SubjectNumericLabelRunner.leadingAbbreviation(
+            "NATO - North Atlantic Treaty Organization")?.0 == "NATO")
+        #expect(SubjectNumericLabelRunner.leadingAbbreviation(
+            "SC Security Council (UN)")?.1 == "Security Council (UN)")
+        #expect(SubjectNumericLabelRunner.leadingAbbreviation(
+            "SACLANT Supreme Allied Command of the Atlantic")?.0 == "SACLANT")
+        // A wrapped continuation opens nothing — it is prose, not a code.
+        #expect(SubjectNumericLabelRunner.leadingAbbreviation(
+            "(Australia, New Zealand, Pakistan,") == nil)
+    }
+
+    @Test("An expansion that swallowed the next entry is refused, however plausible it reads")
+    func mergedExpansionsAreRefused() {
+        // The 1965 appendix produced this, and it is three entries in a row. Shipping it would be
+        // the mistake the decimal generator's refused subject layer exists to remember.
+        #expect(SubjectNumericLabelRunner.isMergedExpansion(
+            "General Assembly - Department Telegram - Distant Early Warning System"))
+        // LENGTH IS NOT THE SIGNAL AND MUST NOT BECOME ONE. The handbook is discursive: CENTO's
+        // real entry names its members and its headquarters and runs to 180 characters. A rule
+        // that capped length would drop it and keep nothing better.
+        #expect(SubjectNumericLabelRunner.isMergedExpansion("""
+            Central Treaty Organization (Iran, Pakistan, U.S. and Turkey. U.S. is a member of the \
+            economic and military committees. Successor to the Baghdad Pact). Headquarters in \
+            Ankara.
+            """) == false)
+        #expect(SubjectNumericLabelRunner.isMergedExpansion("United Nations") == false)
+    }
+}
+
+// MARK: - OrganizationLookupTests
+
+/// Choosing between an outline and the administrative-subject list (#1211).
+@Suite("Organization files — the order between the two lookups")
+struct OrganizationLookupTests {
+
+    private func schedule() -> Schedule {
+        Schedule(id: "1963", startYear: 1963, endYear: 1963, source: "test",
+                 categories: ["POL": "POLITICAL AFFAIRS & RELATIONS"],
+                 subjects: ["POL": ["27": "MILITARY OPERATIONS", "6": "PEOPLE. BIOGRAPHIC DATA."]],
+                 organizationSubjects: ["6": "MEMBERSHIP. ASSOCIATION."],
+                 abbreviations: ["UN": "United Nations"])
+    }
+
+    @Test("A primary subject reads from its own outline, never from the shared list")
+    func theOutlineWinsForAPrimarySubject() {
+        // `6` exists in BOTH tables and means different things. If the order were reversed, every
+        // POL, DEF and E key with a designator the list also carries would take the wrong subject
+        // — and each would look perfectly reasonable on screen.
+        #expect(schedule().subject(category: "POL", designator: "6")
+                    == "PEOPLE. BIOGRAPHIC DATA.")
+        #expect(schedule().organizationName(for: "POL") == nil)
+    }
+
+    @Test("An organization reads from the list, under the name the appendix gives it")
+    func organizationsReadFromTheList() {
+        #expect(schedule().subject(category: "UN", designator: "6")
+                    == "MEMBERSHIP. ASSOCIATION.")
+        #expect(schedule().organizationName(for: "UN") == "United Nations")
+    }
+
+    @Test("A prefix the appendix does not name is refused, because the list would fit it")
+    func unknownPrefixesAreRefused() {
+        // THIS IS THE GUARD, and it is not hypothetical: the corpus carries `PSL 27 VIET S`, a
+        // one-character corruption of POL, and `NSSD 05-82`, a National Security Study Directive.
+        // Both would take a subject from the list without complaint.
+        #expect(schedule().subject(category: "PSL", designator: "27") == nil)
+        #expect(schedule().subject(category: "NSSD", designator: "6") == nil, """
+            NSSD 6 would read as "MEMBERSHIP. ASSOCIATION." if the appendix check were dropped, \
+            and nothing on screen would say the key is not a central-file class at all.
             """)
     }
 }

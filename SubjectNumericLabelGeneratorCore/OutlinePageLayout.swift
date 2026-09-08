@@ -109,7 +109,8 @@ enum OutlinePageLayout {
     static func columnStarts(_ sorted: [Double]) -> [Double] {
         guard let first = sorted.first else { return [] }
         var starts = [first]
-        for (previous, current) in zip(sorted, sorted.dropFirst()) where current - previous > columnGap {
+        for (previous, current) in zip(sorted, sorted.dropFirst())
+        where current - previous > columnGap {
             starts.append(current)
         }
         return starts

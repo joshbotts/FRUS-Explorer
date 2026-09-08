@@ -50,6 +50,11 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         let categories: [String: String]
         /// `POL` -> `27` -> `MILITARY OPERATIONS`.
         let subjects: [String: [String: String]]
+        /// `6` -> `MEMBERSHIP. ASSOCIATION.` — the list an ORGANIZATION's file is arranged by.
+        let organizationSubjects: [String: String]
+        /// `NATO` -> `North Atlantic Treaty Organization`, from the handbook's own abbreviations
+        /// appendix. Its presence is what identifies a prefix as an organization file.
+        let abbreviations: [String: String]
 
         /// Whether this schedule speaks for a coverage span.
         ///
@@ -103,7 +108,22 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
             $0.governs(span, floor: coverage.systemOpensIn)
         }) else { return nil }
         guard let (category, designator) = Self.split(key) else { return nil }
-        return schedule.subjects[category]?[designator]
+
+        // A PRIMARY SUBJECT file is arranged by its own outline; an ORGANIZATION file is arranged
+        // by the international-organizations instruction's list of administrative subjects. The
+        // category is tried first, and the list only when the handbook's abbreviations appendix
+        // names the prefix — which is what stops the list being applied to `PSL 27` (a
+        // one-character corruption of POL) and `NSSD 05-82` (a National Security Study Directive),
+        // both of which would take a plausible subject from it otherwise.
+        if let outline = schedule.subjects[category] { return outline[designator] }
+        guard let organization = schedule.abbreviations[category],
+              let subject = schedule.organizationSubjects[designator]
+        else { return nil }
+        // The organization's name is worth saying: a reader knows UN, and CENTO and SEATO are
+        // another matter, and the key itself only ever shows the abbreviation.
+        return String(format: String(localized: "archival.classLabel.organization %@ %@",
+                                     defaultValue: "%1$@ — %2$@"),
+                      organization, subject)
     }
 
     /// Splits a class key into its category and its designator.

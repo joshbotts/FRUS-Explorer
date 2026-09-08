@@ -183,6 +183,34 @@ enum OutlinePageReader {
         return nil
     }
 
+    /// The SPECIAL INSTRUCTION number printed in a page's corner (`10 (p. 3)`).
+    ///
+    /// The handbooks' special instructions are numbered rather than lettered, so they carry the
+    /// same corner mark shape with a number where a category code would be — which is why
+    /// ``cornerCode`` cannot read them and, just as importantly, cannot MISread them as a category.
+    ///
+    /// - Parameter page: The page to read.
+    /// - Returns: The instruction number and the page within it, or `nil`.
+    static func numericCorner(of page: PDFPage) -> (instruction: Int, printedPage: Int)? {
+        let bounds = page.bounds(for: .mediaBox)
+        let strip = CGRect(x: bounds.minX, y: bounds.maxY - 60,
+                           width: bounds.width, height: 60)
+        let text = (page.selection(for: strip)?.string ?? "")
+            .replacingOccurrences(of: "\n", with: " ")
+        guard let match = numericCornerRegex.firstMatch(
+                in: text, range: NSRange(text.startIndex..., in: text)),
+              let instruction = Range(match.range(at: 1), in: text).flatMap({ Int(text[$0]) }),
+              let printed = Range(match.range(at: 2), in: text).flatMap({ Int(text[$0]) })
+        else { return nil }
+        return (instruction, printed)
+    }
+
+    /// `10 (p. 3)`, tolerating the scan's spacing.
+    private static let numericCornerRegex: NSRegularExpression = {
+        // swiftlint:disable:next force_try
+        try! NSRegularExpression(pattern: #"(\d{1,2})\s*\(\s*p\s*\.\s*(\d{1,2})\s*\)"#)
+    }()
+
     /// A known category code appearing anywhere in the page's top strip.
     ///
     /// ## The third channel, and why a vocabulary makes it safe
