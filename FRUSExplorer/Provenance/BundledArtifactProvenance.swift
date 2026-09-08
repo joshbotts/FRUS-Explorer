@@ -162,9 +162,14 @@ enum BundledArtifactProvenance {
         // the usage index beside the manuals because that is a real input, not a convenience: the
         // floor the build refuses on is the schedule's measured reach over the corpus, since every
         // way this parse breaks shows up as a collapse in reach rather than as an error.
+        // DECIMAL_LABELS is a real input, not a convenience: since #1254 the country element is
+        // resolved against a UNION of the handbook's own appendix and the decimal schedules'
+        // country tables, because neither list alone covers the corpus's tails. Both sources are
+        // the same Department's own vocabulary, so the tier is unchanged.
         "subject-numeric-labels.json": .init(
             generator: "SubjectNumericLabel",
-            inputs: ["SCHEDULE_DIR", "COLLECTION_USAGE_INDEX"], source: .stateDeptSchedule),
+            inputs: ["SCHEDULE_DIR", "COLLECTION_USAGE_INDEX", "DECIMAL_LABELS"],
+            source: .stateDeptSchedule),
         "external-citation-index.json": .init(
             generator: "ExternalCitationIndex",
             inputs: ["VOLUMES_DIR", "MANIFEST", "COLLECTION_AUTHORITY", "DECIMAL_LABELS"],
