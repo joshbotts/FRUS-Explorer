@@ -662,6 +662,23 @@ struct DecimalClassLabelTests {
         #expect(table.gloss(for: "POL 6", coveringYears: 1963...1963)?
                     .contains("Membership") == false)
 
+        // THE COUNTRY ELEMENT, COMPOSED IN NARA'S FILING ORDER. A citation writes class, number,
+        // country — `POL 27 VIET S` — while NARA files the records class, then country, then
+        // number. The label follows the FILING, which is also the shape the decimal table's own
+        // glosses take (`Mexico — Petroleum`), because there the two orders coincide.
+        #expect(table.leafGloss(for: "POL 27 VIET S", coveringYears: 1963...1963)
+                    == "Vietnam, South — MILITARY OPERATIONS")
+        // The two spellings of one country read the same: the handbook prints `S VIET` and the
+        // corpus writes `VIET S`, and 830 documents ride on them agreeing.
+        #expect(table.leafGloss(for: "POL 27 S VIET", coveringYears: 1963...1963)
+                    == table.leafGloss(for: "POL 27 VIET S", coveringYears: 1963...1963))
+        // A key with no country element is not an omission — the handbooks keep general files for
+        // each primary subject — so it reads as its subject alone.
+        #expect(table.leafGloss(for: "POL 27", coveringYears: 1963...1963) == "MILITARY OPERATIONS")
+        // And an organization file names the organization first, which is its filing level.
+        #expect(table.leafGloss(for: "UN 6", coveringYears: 1963...1963)
+                    == "United Nations — MEMBERSHIP. ASSOCIATION.")
+
         // And the injection point: the ranking hands the same reading to every surface that draws
         // a class row, which is what keeps one label source honest across two filing systems.
         let usage = try #require(CollectionUsageIndexStore.shared)

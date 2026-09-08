@@ -55,6 +55,9 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         /// `NATO` -> `North Atlantic Treaty Organization`, from the handbook's own abbreviations
         /// appendix. Its presence is what identifies a prefix as an organization file.
         let abbreviations: [String: String]
+        /// `VIET S` -> `Vietnam, South` — the country, region or organization the file is
+        /// arranged under, resolved for every tail the corpus writes.
+        let areas: [String: String]
 
         /// Whether this schedule speaks for a coverage span.
         ///
@@ -70,6 +73,22 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         func governs(_ span: ClosedRange<Int>, floor: Int) -> Bool {
             guard span.upperBound >= floor else { return false }
             return max(span.lowerBound, floor) >= startYear && span.upperBound <= endYear
+        }
+
+        /// A key's subject, from its own outline or from the organization list.
+        ///
+        /// The outline is tried FIRST and the shared list only when the category is not a primary
+        /// subject, because designators collide across the two: `POL 6` is *People. Biographic
+        /// Data.* and the list's `6` is *Membership. Association.*
+        ///
+        /// - Parameters:
+        ///   - category: The key's category letters.
+        ///   - designator: Its number.
+        /// - Returns: The subject, or `nil`.
+        func subject(category: String, designator: String) -> String? {
+            if let outline = subjects[category] { return outline[designator] }
+            guard abbreviations[category] != nil else { return nil }
+            return organizationSubjects[designator]
         }
     }
 
@@ -124,6 +143,69 @@ struct SubjectNumericLabelTable: Decodable, Sendable {
         return String(format: String(localized: "archival.classLabel.organization %@ %@",
                                      defaultValue: "%1$@ — %2$@"),
                       organization, subject)
+    }
+
+    /// A leaf key's full reading, composed in the order NARA FILES the records.
+    ///
+    /// ## The filing order is not the citation order, and the label follows the filing
+    /// A citation writes class, number, country — `POL 27 VIET S`. NARA files the records class,
+    /// then country, then number: the country is the second level the drawers are organised on and
+    /// the third element of the designation. So the label reads *Vietnam, South — Military
+    /// Operations*, which is also the shape the decimal table's own glosses take (*Mexico —
+    /// Petroleum*), because for the decimal file the written order and the filing order coincide.
+    /// One reading for both filing systems is worth having: they share a lens.
+    ///
+    /// A key with no country element is not an omission — the handbooks provide general files for
+    /// each primary subject, kept at the beginning or the end of its run — so such a key reads as
+    /// its subject alone.
+    ///
+    /// - Parameters:
+    ///   - key: A full leaf key as a source note wrote it (`"POL 27 VIET S"`).
+    ///   - span: The coverage years the surface's figures describe.
+    /// - Returns: The composed reading, or `nil` when the table can say nothing at all.
+    func leafGloss(for key: String, coveringYears span: ClosedRange<Int>) -> String? {
+        guard let schedule = schedules.first(where: {
+            $0.governs(span, floor: coverage.systemOpensIn)
+        }), let (category, designator) = Self.split(key) else { return nil }
+
+        var parts: [String] = []
+        if let organization = schedule.subjects[category] == nil
+            ? schedule.abbreviations[category] : nil {
+            parts.append(organization)
+        }
+        if let tail = Self.tail(of: key), !tail.isEmpty,
+           let area = schedule.areas[Self.normalizedTail(tail)] {
+            parts.append(area)
+        }
+        if let subject = schedule.subject(category: category, designator: designator) {
+            parts.append(subject)
+        }
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: " — ")
+    }
+
+    /// Whatever follows a key's group — the country, region or organization element.
+    ///
+    /// - Parameter key: A class key.
+    /// - Returns: The tail, or `nil`.
+    static func tail(of key: String) -> String? {
+        guard let splitRegex,
+              let match = splitRegex.firstMatch(
+                in: key, range: NSRange(key.startIndex..., in: key)),
+              let whole = Range(match.range, in: key)
+        else { return nil }
+        return String(key[whole.upperBound...]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// A tail keyed the way the artifact stores it.
+    ///
+    /// - Parameter raw: The tail as a source note wrote it.
+    /// - Returns: Upper case, punctuation dropped, spacing collapsed.
+    static func normalizedTail(_ raw: String) -> String {
+        raw.uppercased()
+            .replacingOccurrences(of: #"[^A-Z0-9 -]"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
     }
 
     /// Splits a class key into its category and its designator.

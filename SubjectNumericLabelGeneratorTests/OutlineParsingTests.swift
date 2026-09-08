@@ -309,7 +309,8 @@ struct OrganizationLookupTests {
                  // tell a correct `organizationName` from one that never checks whether the
                  // prefix is a primary subject. Measured, five of the 55 category codes head an
                  // abbreviations entry — POL among them — so the overlap is the real case.
-                 abbreviations: ["UN": "United Nations", "POL": "Political Officer"])
+                 abbreviations: ["UN": "United Nations", "POL": "Political Officer"],
+                 areas: [:])
     }
 
     @Test("A primary subject reads from its own outline, never from the shared list")

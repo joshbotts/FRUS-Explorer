@@ -31,6 +31,8 @@ struct Schedule: Encodable, Sendable {
     /// appendix, which is what identifies a prefix as an ORGANIZATION file rather than a
     /// primary subject.
     let abbreviations: [String: String]
+    /// `VIET S` -> `Vietnam, South` — the country/organization tail 90% of keys carry.
+    let areas: [String: String]
 
     /// A key's subject, or `nil` when this schedule cannot say.
     ///

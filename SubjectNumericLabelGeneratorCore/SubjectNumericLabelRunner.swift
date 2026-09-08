@@ -84,6 +84,8 @@ public enum SubjectNumericLabelRunner {
             ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: "Downloads").path
         let diagnose = environment["DIAGNOSE"] == "1"
 
+        let usagePath = environment["COLLECTION_USAGE_INDEX"]
+            ?? "FRUSExplorer/Resources/collection-usage-index.json"
         var schedules: [Schedule] = []
         for source in sources {
             let path = "\(scheduleDir)/\(source.fileName)"
@@ -94,16 +96,27 @@ public enum SubjectNumericLabelRunner {
             let names = readCategoryNames(document)
             let organizations = readAdministrativeSubjects(document, layout: source.layout)
             let abbreviations = readAbbreviations(document)
+            let areaPairs = CountryAbbreviationReader.pairs(in: document)
+            // TWO NAME SOURCES, because neither is complete. The decimal schedules' country tables
+            // already ship and are already verified, but they are the 1910–63 vocabulary and carry
+            // no Cambodia, Saudi Arabia or Libya; the handbook's own appendix carries those and is
+            // a rougher scan. Their union is what the resolver reads.
+            let areaNames = Array(Set(areaPairs.map(\.name)).union(decimalCountryNames(environment)))
+                .sorted()
             let total = outlines.values.reduce(0) { $0 + $1.count }
             print("[SubjectNumericLabels] \(source.id): \(outlines.count) categories, "
                   + "\(names.count) named, \(total) designators, "
                   + "\(organizations.count) organization subjects, "
-                  + "\(abbreviations.count) abbreviations")
+                  + "\(abbreviations.count) abbreviations, "
+                  + "\(areaNames.count) area names from \(areaPairs.count) rows")
             schedules.append(Schedule(id: source.id, startYear: source.start,
                                       endYear: source.end, source: source.title,
                                       categories: names, subjects: outlines,
                                       organizationSubjects: organizations,
-                                      abbreviations: abbreviations))
+                                      abbreviations: abbreviations,
+                                      areas: resolveTails(names: areaNames,
+                                                          organizations: abbreviations,
+                                                          usagePath: usagePath)))
             if diagnose {
                 for code in outlines.keys.sorted() {
                     let entries = outlines[code] ?? [:]
@@ -118,8 +131,6 @@ public enum SubjectNumericLabelRunner {
                 }
             }
         }
-        let usagePath = environment["COLLECTION_USAGE_INDEX"]
-            ?? "FRUSExplorer/Resources/collection-usage-index.json"
         let measurements = try measure(schedules, usagePath: usagePath)
 
         // FLOORS. Both are read off this build and set below it, because the failure they exist to
@@ -203,6 +214,74 @@ public enum SubjectNumericLabelRunner {
 
     // MARK: Measurement
 
+    /// Resolves every tail the corpus writes against the names the handbook prints.
+    ///
+    /// Corpus-scoped, like every other index here: the artifact answers the vocabulary FRUS
+    /// actually cites, and is regenerated when that changes. Shipping the whole name list and
+    /// matching on device would answer tails nobody has written, at the cost of running the
+    /// cover test inside a render pass.
+    ///
+    /// - Parameters:
+    ///   - names: Every name the handbook prints.
+    ///   - abbreviations: The common-abbreviation table.
+    ///   - usagePath: Path to `collection-usage-index.json`.
+    /// - Returns: `tail -> name` for the tails that resolve.
+    static func resolveTails(names: [String], organizations: [String: String],
+                             usagePath: String) -> [String: String] {
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: usagePath)),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let keys = object["classKeys"] as? [String]
+        else { return [:] }
+        var out: [String: String] = [:]
+        for key in keys {
+            guard let tail = tail(of: key), !tail.isEmpty else { continue }
+            let code = AreaResolver.normalized(tail)
+            guard out[code] == nil,
+                  let name = AreaResolver.resolve(tail, names: names,
+                                                  organizations: organizations,
+                                                  curated: curatedAreas)
+            else { continue }
+            out[code] = name
+        }
+        return out
+    }
+
+    /// Readings no rule reaches, each checked against the handbook or the record itself.
+    ///
+    /// Curated rather than ruled for the reason the decimal generator gives about its own
+    /// corrections: these are blends and collectives, not truncations, so no rule over names can
+    /// produce them without licensing readings the sources do not support. `ARAB-ISR` is the case
+    /// that forced the table — left to the rules it resolved to *Arabia and Israel*, naming a
+    /// country for what is a conflict between a bloc and a state, over 313 documents.
+    static let curatedAreas: [String: String] = [
+        "ARAB-ISR": "Arab–Israeli",
+        // The 1963 country appendix prints this expansion against the code.
+        "CHICOM": "China (Communist)",
+        "CHINAT": "China (Nationalist)",
+        // The decimal country tables carry this name; the tail drops `Republic of`, which no
+        // full-cover rule may restore without also licensing partial covers everywhere.
+        "THE CONGO": "Congo, Republic of the",
+    ]
+
+    /// Country names from the decimal schedules that already ship beside this one.
+    ///
+    /// - Parameter environment: Process environment, for `DECIMAL_LABELS`.
+    /// - Returns: Every country name the decimal tables carry.
+    static func decimalCountryNames(_ environment: [String: String]) -> Set<String> {
+        let path = environment["DECIMAL_LABELS"]
+            ?? "FRUSExplorer/Resources/decimal-class-labels.json"
+        guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let schedules = object["schedules"] as? [[String: Any]]
+        else { return [] }
+        var out: Set<String> = []
+        for schedule in schedules {
+            guard let countries = schedule["countries"] as? [String: String] else { continue }
+            out.formUnion(countries.values)
+        }
+        return out
+    }
+
     /// Reports what the parsed tables would actually read, against the corpus that has to be read.
     ///
     /// The manuals' own counts are the wrong denominator. What matters is the share of the keys
@@ -245,6 +324,28 @@ public enum SubjectNumericLabelRunner {
                     missingCategories.insert(category)
                 }
             }
+            // TAIL COVERAGE, measured separately: it is a different question from whether the
+            // subject is named, and averaging the two would hide whichever is worse.
+            var tails = 0, namedTails = 0, tailDocuments = 0, namedTailDocuments = 0
+            var unresolvedTails: [String: Int] = [:]
+            for (key, count) in documents {
+                guard let tail = Self.tail(of: key), !tail.isEmpty else { continue }
+                tails += 1
+                tailDocuments += count
+                if schedule.areas[AreaResolver.normalized(tail)] != nil {
+                    namedTails += 1
+                    namedTailDocuments += count
+                } else {
+                    unresolvedTails[tail, default: 0] += count
+                }
+            }
+            print(String(format: "    tails: %d of %d keys named, %d of %d documents (%.1f%%)",
+                         namedTails, tails, namedTailDocuments, tailDocuments,
+                         tailDocuments == 0 ? 0
+                             : Double(namedTailDocuments) / Double(tailDocuments) * 100))
+            let worst = unresolvedTails.sorted { $0.value > $1.value }.prefix(15)
+            print("    heaviest unresolved tails: "
+                  + worst.map { "\($0.key)(\($0.value))" }.joined(separator: " "))
             let share = total == 0 ? 0 : Double(namedDocuments) / Double(total) * 100
             print(String(format: "[SubjectNumericLabels] %@ reads %d of %d corpus keys, "
                          + "%d of %d documents (%.1f%%)",
@@ -287,6 +388,18 @@ public enum SubjectNumericLabelRunner {
         return (String(key[category]).uppercased(),
                 String(key[number]).replacingOccurrences(
                     of: #"\s"#, with: "", options: .regularExpression))
+    }
+
+    /// Whatever follows a key's group — the country or organization the file is arranged under.
+    ///
+    /// - Parameter key: A class key as a source note wrote it.
+    /// - Returns: The tail, or `nil` when the key is not subject-numeric.
+    static func tail(of key: String) -> String? {
+        guard let match = groupRegex.firstMatch(
+                in: key, range: NSRange(key.startIndex..., in: key)),
+              let whole = Range(match.range, in: key)
+        else { return nil }
+        return String(key[whole.upperBound...]).trimmingCharacters(in: .whitespaces)
     }
 
     /// Category letters, an optional parenthesised agency qualifier, then the number.
