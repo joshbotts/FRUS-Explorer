@@ -94,16 +94,19 @@ public enum SubjectNumericLabelRunner {
             let names = readCategoryNames(document)
             let organizations = readAdministrativeSubjects(document, layout: source.layout)
             let abbreviations = readAbbreviations(document)
+            let areaPairs = CountryAbbreviationReader.pairs(in: document)
+            let areas = CountryAbbreviationReader.canonicalNames(from: areaPairs)
             let total = outlines.values.reduce(0) { $0 + $1.count }
             print("[SubjectNumericLabels] \(source.id): \(outlines.count) categories, "
                   + "\(names.count) named, \(total) designators, "
                   + "\(organizations.count) organization subjects, "
-                  + "\(abbreviations.count) abbreviations")
+                  + "\(abbreviations.count) abbreviations, "
+                  + "\(areas.count) areas from \(areaPairs.count) rows")
             schedules.append(Schedule(id: source.id, startYear: source.start,
                                       endYear: source.end, source: source.title,
                                       categories: names, subjects: outlines,
                                       organizationSubjects: organizations,
-                                      abbreviations: abbreviations))
+                                      abbreviations: abbreviations, areas: areas))
             if diagnose {
                 for code in outlines.keys.sorted() {
                     let entries = outlines[code] ?? [:]
@@ -245,6 +248,33 @@ public enum SubjectNumericLabelRunner {
                     missingCategories.insert(category)
                 }
             }
+            // TAIL COVERAGE, measured separately: it is a different question from whether the
+            // subject is named, and averaging the two would hide whichever is worse.
+            var tails = 0, namedTails = 0, tailDocuments = 0, namedTailDocuments = 0
+            var unresolvedTails: [String: Int] = [:]
+            for (key, count) in documents {
+                guard let tail = Self.tail(of: key), !tail.isEmpty else { continue }
+                tails += 1
+                tailDocuments += count
+                let code = CountryAbbreviationReader.normalizedCode(tail)
+                let reversed = code.split(separator: " ").reversed().joined(separator: " ")
+                if schedule.areas[code] != nil {
+                    namedTails += 1
+                    namedTailDocuments += count
+                } else if schedule.areas[reversed] != nil {
+                    namedTails += 1
+                    namedTailDocuments += count
+                } else {
+                    unresolvedTails[tail, default: 0] += count
+                }
+            }
+            print(String(format: "    tails: %d of %d keys named, %d of %d documents (%.1f%%)",
+                         namedTails, tails, namedTailDocuments, tailDocuments,
+                         tailDocuments == 0 ? 0
+                             : Double(namedTailDocuments) / Double(tailDocuments) * 100))
+            let worst = unresolvedTails.sorted { $0.value > $1.value }.prefix(15)
+            print("    heaviest unresolved tails: "
+                  + worst.map { "\($0.key)(\($0.value))" }.joined(separator: " "))
             let share = total == 0 ? 0 : Double(namedDocuments) / Double(total) * 100
             print(String(format: "[SubjectNumericLabels] %@ reads %d of %d corpus keys, "
                          + "%d of %d documents (%.1f%%)",
@@ -287,6 +317,18 @@ public enum SubjectNumericLabelRunner {
         return (String(key[category]).uppercased(),
                 String(key[number]).replacingOccurrences(
                     of: #"\s"#, with: "", options: .regularExpression))
+    }
+
+    /// Whatever follows a key's group — the country or organization the file is arranged under.
+    ///
+    /// - Parameter key: A class key as a source note wrote it.
+    /// - Returns: The tail, or `nil` when the key is not subject-numeric.
+    static func tail(of key: String) -> String? {
+        guard let match = groupRegex.firstMatch(
+                in: key, range: NSRange(key.startIndex..., in: key)),
+              let whole = Range(match.range, in: key)
+        else { return nil }
+        return String(key[whole.upperBound...]).trimmingCharacters(in: .whitespaces)
     }
 
     /// Category letters, an optional parenthesised agency qualifier, then the number.
