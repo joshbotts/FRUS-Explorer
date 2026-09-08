@@ -219,6 +219,23 @@ let package = Package(
             path: "DecimalClassLabelGeneratorCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
+        .target(
+            name: "SubjectNumericLabelGeneratorCore",
+            path: "SubjectNumericLabelGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .executableTarget(
+            name: "SubjectNumericLabelGenerator",
+            dependencies: [.target(name: "SubjectNumericLabelGeneratorCore")],
+            path: "SubjectNumericLabelGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "SubjectNumericLabelGeneratorTests",
+            dependencies: [.target(name: "SubjectNumericLabelGeneratorCore")],
+            path: "SubjectNumericLabelGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
         .executableTarget(
             name: "DecimalClassLabelGenerator",
             dependencies: [.target(name: "DecimalClassLabelGeneratorCore")],

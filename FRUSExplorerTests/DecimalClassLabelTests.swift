@@ -308,20 +308,29 @@ struct DecimalClassLabelTests {
             """)
         #expect(band1.contains { $0.id == "862.00" && $0.gloss == "Germany — Political affairs" })
 
-        // Bands 2–4 open in 1961. All three labelled nothing while the file carried one schedule.
-        // Band 2 labels now, out of the schedule governing each key's own citing volumes — never
-        // the band's, whose 1961–1968 span no schedule covers. Bands 3 and 4 stay at zero, and
-        // that is the guard: they open in 1969 and 1977, so a label there could only come from a
-        // rule reading a key against a nearby schedule rather than its own evidence. Measured
-        // 448 / 0 / 0.
+        // Bands 2–4 open in 1961. All three labelled nothing while the file carried one decimal
+        // schedule; band 2 labelled 448 once the 1950s and 1960s decimal schedules were parsed;
+        // and #1211's two subject-numeric schedules take the three to 549 / 65 / 0. Every one of
+        // those rows is labelled out of the schedule governing its own citing volumes, never the
+        // band's — no schedule of either filing system covers 1961–1968 or 1969–1976 outright.
+        //
+        // BAND 4'S ZERO IS THE GUARD AND IT HAS TO SURVIVE EVERY TABLE ADDED. It opens in 1977,
+        // after the decimal file closed in 1963 and after the subject-numeric schedules end in
+        // 1973, so a label there could only come from a rule reading a key against a nearby
+        // schedule rather than against its own evidence.
         let laterCounts = (2...4).map { glossed(ArchivalEraBand.all[$0]).count }
-        #expect(laterCounts[0] > 400, """
-            Band 2's keys are cited by volumes sitting inside 1960–63, so the two schedules added \
-            here are what label them. Got \(laterCounts[0]).
+        #expect(laterCounts[0] > 500, """
+            Band 2 draws on both filing systems — the 1960–63 decimal schedule and the 1963 \
+            subject-numeric one. Got \(laterCounts[0]).
             """)
-        #expect(laterCounts[1] == 0 && laterCounts[2] == 0, """
-            The decimal file closes in 1963. Every key in these bands is cited by volumes that \
-            postdate every schedule, so a gloss could only be a guess. Got \(laterCounts).
+        #expect(laterCounts[1] > 50, """
+            Band 3 opens in 1969 and labelled nothing at all until the subject-numeric schedules \
+            shipped; its rows are keys cited by volumes sitting inside 1964–1973. Got \
+            \(laterCounts[1]).
+            """)
+        #expect(laterCounts[2] == 0, """
+            Nothing after 1973 has a schedule in either filing system, so a gloss in band 4 could \
+            only be a guess. Got \(laterCounts[2]).
             """)
 
         // Two keys in band 2 show the schedule is CHOSEN and not merely reached for, and neither
@@ -589,6 +598,63 @@ struct DecimalClassLabelTests {
             #expect(span["endYear"] as? Int == schedule["endYear"] as? Int)
         }
     }
+
+    /// The subject-numeric keys reach a label through the same single injection point, and read
+    /// out of the edition that governs them.
+    ///
+    /// These keys are not a fringe of the class lens — measured, they are 1,362 leaves folding to
+    /// 323 groups over 6,882 documents, and they dominate its later era bands — and every one of
+    /// them rendered bare before #1211, because `DecimalClassLabelStore.gloss` refuses a key that
+    /// opens with letters at two separate guards.
+    @Test("A subject-numeric key reads out of the edition that governs it")
+    func subjectNumericKeysReadFromTheirOwnEdition() throws {
+        let table = try #require(SubjectNumericLabelStore.shared)
+
+        // THE CASE THAT FORCES TWO SCHEDULES. The 1965 arrangement reused this designator for a
+        // different subject and moved subversion to POL 23-7. POL carries about two thirds of the
+        // corpus's subject-numeric documents, so a single merged table would mislabel the
+        // most-cited category in the vocabulary.
+        #expect(table.gloss(for: "POL 24", coveringYears: 1963...1963)
+                    == "SUBVERSION. ESPIONAGE. SABOTAGE.")
+        #expect(table.gloss(for: "POL 24", coveringYears: 1965...1968) == "SANCTIONS")
+
+        // A span crossing the renumbering says nothing, exactly as the decimal table does across
+        // 1950 — and this is the assertion that would fail first if the two schedules were ever
+        // merged for coverage.
+        #expect(table.gloss(for: "POL 24", coveringYears: 1963...1966) == nil, """
+            1963 and 1964–1973 disagree about this designator, so a span holding both can only be \
+            guessed at.
+            """)
+
+        // Outside the system entirely: the subject-numeric file opens in 1963 and these schedules
+        // end in 1973.
+        #expect(table.gloss(for: "POL 24", coveringYears: 1950...1955) == nil)
+        #expect(table.gloss(for: "POL 24", coveringYears: 1975...1980) == nil)
+
+        // The tail is NOT read, and a key carrying one still resolves to its group's subject —
+        // the surface is what must print the rest, and the coverage note says so.
+        #expect(table.gloss(for: "POL 27 VIET S", coveringYears: 1963...1963)
+                    == "MILITARY OPERATIONS")
+        #expect(table.coverage.note.contains("VIET S"), """
+            The 90.4% of keys carrying a country tail is the caveat every surface owes a reader; \
+            dropping it from the note would let a screen look complete while naming half the key.
+            """)
+
+        // And the injection point: the ranking hands the same reading to every surface that draws
+        // a class row, which is what keeps one label source honest across two filing systems.
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self,
+                                               from: Data(contentsOf: url))
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: usage,
+            coverage: ArchivalVolumeCoverage.map(from: entries))
+        let rows = data.ranking(band: ArchivalEraBand.all[3], lens: .centralFileClasses,
+                                weight: .documents, hidingUmbrella: false, limit: .max).rows
+        #expect(rows.contains { CollectionKeying.isSubjectNumericClass($0.id) && $0.gloss != nil },
+                "band 3's labelled rows are subject-numeric and must arrive through the ranking")
+    }
+
 
     /// Each schedule ships the layers its manual was read well enough to state — and no others.
     ///

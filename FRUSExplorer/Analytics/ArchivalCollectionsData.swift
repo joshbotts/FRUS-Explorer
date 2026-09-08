@@ -656,6 +656,15 @@ struct ArchivalCollectionsData: Sendable {
             high = max(high ?? span.upperBound, span.upperBound)
         }
         guard let low, let high else { return nil }
+        // TWO FILING SYSTEMS REACH THIS ONE CALL. The class vocabulary holds decimal file numbers
+        // and subject-numeric designators, and no decimal rule can read the latter: the digit gate
+        // and the country-arranged-class test in `DecimalClassLabelStore.gloss` both refuse a key
+        // that opens with letters, which is why they rendered bare rather than wrongly. The branch
+        // is on the shared `CollectionKeying` test, so the two tables divide the vocabulary exactly
+        // as the usage index does.
+        if CollectionKeying.isSubjectNumericClass(key) {
+            return SubjectNumericLabelStore.shared?.gloss(for: key, coveringYears: low...high)
+        }
         return labels?.gloss(for: key, coveringYears: low...high)
     }
 
