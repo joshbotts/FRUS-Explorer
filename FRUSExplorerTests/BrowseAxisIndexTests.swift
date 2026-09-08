@@ -251,12 +251,17 @@ struct EditorIndexGroupingTests {
                 == "Richardson Dougall")
     }
 
-    @Test func theUncertainPairsStaySplit() {
-        // `Owen Sappington` (one volume, 1972) is NOT folded into `N. O. Sappington`. Doing so
-        // asserts the man went by his middle name — a weaker inference than the `Newton O.` →
-        // `N. O.` expansion curated beside it, and nothing available settles it. Left for the
-        // owner rather than guessed.
-        #expect(EditorIndexGrouping.canonicalName("Owen Sappington") == "Owen Sappington")
+    @Test func aDeterminationTheStringsCannotSupportIsStillCurated() {
+        // All three Sappington spellings are one person. `Newton O.` → `N. O.` expands an initial
+        // the canonical form already prints, which the two strings show; `Owen` → `N. O.` asserts
+        // he went by his middle name, which they cannot. That row is here on the owner's
+        // determination, and this test exists so the distinction is not quietly lost — a future
+        // rule that tried to DERIVE this fold would be reaching past what the strings say.
+        #expect(EditorIndexGrouping.canonicalName("Owen Sappington") == "N. O. Sappington")
+        #expect(EditorIndexGrouping.canonicalName("Newton O. Sappington") == "N. O. Sappington")
+    }
+
+    @Test func distinctPeopleWhoLookAlikeStaySplit() {
         // Two different people who share a surname and a particle.
         let vanHook = EditorIndexGrouping.rows(from: [
             entry(id: "frus-a", editors: ["James C. Van Hook"]),
@@ -364,7 +369,7 @@ struct EditorIndexGroupingTests {
 
         // #1253: every one of the four clusters the owner's report and the sweep behind it
         // identified now folds, over the REAL manifest rather than a fixture.
-        for surname in ["Claussen", "Kane", "Sanford", "Dougall"] {
+        for surname in ["Claussen", "Kane", "Sanford", "Dougall", "Sappington"] {
             #expect(rows.filter { $0.name.contains(surname) }.count == 1,
                     "\(surname) is still split across rows")
         }

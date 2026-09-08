@@ -35,10 +35,14 @@ import SwiftUI
 ///    reviewable in one sitting, because the obvious rule over-merges: Shirley L.
 ///    Phillips (23 volumes) and Steven E. Phillips (2) collide on surname + initial and
 ///    are two different historians — the pair is deliberately ABSENT from this table,
-///    and a test pins that they stay separate rows. `Owen Sappington` (1 volume, 1972) is
-///    absent for the same reason: folding it into `N. O. Sappington` means asserting the
-///    man went by his middle name, which is a different and weaker inference than the
-///    `Newton O.` → `N. O.` expansion already curated beside it, and nothing here settles it.
+///    and a test pins that they stay separate rows.
+///
+/// ## Where the table's evidence comes from, and where it does not
+/// Most rows are a spelling variant one can see in the two strings — an expanded initial, a
+/// dropped middle name. `Owen Sappington` → `N. O. Sappington` is not: it asserts the man went
+/// by his middle name, which no comparison of the strings can establish. It is here on the
+/// owner's determination, and it is commented as such at the row, so a later reader does not
+/// mistake it for something the rule could have derived.
 ///
 /// ## What is NOT normalized here, and could not be
 /// A `Jr.` is never stripped mechanically. The suffix is printed precisely when a father and son
@@ -152,7 +156,7 @@ enum EditorIndexGrouping {
         return suffix.map { "\(natural), \($0)" } ?? natural
     }
 
-    /// The curated variant → canonical table (38 clusters, 42 rows), applied AFTER
+    /// The curated variant → canonical table (38 clusters, 43 rows), applied AFTER
     /// mechanical normalization. Canonical = the most frequently printed form, ties
     /// broken toward the fuller form — measured against the shipped manifest, not
     /// guessed. The Phillips pair is deliberately absent (two people; see the type doc).
@@ -195,6 +199,11 @@ enum EditorIndexGrouping {
         "John Gilbert Reid": "John G. Reid",
         "William F. Sanford": "William F. Sanford, Jr.",
         "Newton O. Sappington": "N. O. Sappington",
+        // Folded on the owner's determination that this is the same man. It is not a reading the
+        // table could reach on its own: unlike `Newton O.`, which expands an initial the canonical
+        // form already prints, this one asserts he went by his middle name — so it rests on
+        // knowledge of the Office's own editors rather than on the shape of the two strings.
+        "Owen Sappington": "N. O. Sappington",
         "Harriet Dashiell Schwar": "Harriet D. Schwar",
         "James F. Siekmeier": "James Siekmeier",
         "William Slany": "William Z. Slany",
