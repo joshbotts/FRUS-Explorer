@@ -84,7 +84,7 @@ enum BundledArtifactProvenance {
         "VOLUMES_DIR", "MANIFEST", "ADMINISTRATIONS",
         "CENTRAL_FILES_INDEX", "COLLECTION_AUTHORITY", "VOLUME_SOURCES_INDEX",
         "HARVEST_DIR", "CATALOG_API_KEY", "CURATED_LOTS", "CITATIONS_CSV",
-        "DECIMAL_LABELS", "SCHEDULE_DIR",
+        "DECIMAL_LABELS", "SCHEDULE_DIR", "COLLECTION_USAGE_INDEX",
         "DOCUMENT_SUBJECTS",
         "PEOPLE_DATA_DIR", "PERSONS_COMPLETE", "MERGE_AUDIT_CSV", "POCOM_DIR", "AUTHORITY_INDEX",
         "LEXICONS", "STOPWORDS", "STORE", "LAYOUT_DIR",
@@ -158,6 +158,13 @@ enum BundledArtifactProvenance {
         // ── Tier 2: the State Department's classification schedule ──────────────────────────
         "decimal-class-labels.json": .init(
             generator: "DecimalClassLabel", inputs: ["SCHEDULE_DIR"], source: .stateDeptSchedule),
+        // Its sibling for the filing system that REPLACED the decimal file in 1963. It declares
+        // the usage index beside the manuals because that is a real input, not a convenience: the
+        // floor the build refuses on is the schedule's measured reach over the corpus, since every
+        // way this parse breaks shows up as a collapse in reach rather than as an error.
+        "subject-numeric-labels.json": .init(
+            generator: "SubjectNumericLabel",
+            inputs: ["SCHEDULE_DIR", "COLLECTION_USAGE_INDEX"], source: .stateDeptSchedule),
         "external-citation-index.json": .init(
             generator: "ExternalCitationIndex",
             inputs: ["VOLUMES_DIR", "MANIFEST", "COLLECTION_AUTHORITY", "DECIMAL_LABELS"],
