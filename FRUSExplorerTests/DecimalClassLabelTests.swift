@@ -640,6 +640,28 @@ struct DecimalClassLabelTests {
             dropping it from the note would let a screen look complete while naming half the key.
             """)
 
+        // AN ORGANIZATION FILE IS NOT A PRIMARY SUBJECT. `UN` has no outline in either handbook;
+        // its file is arranged by the international-organizations instruction's list, under the
+        // name the abbreviations appendix gives the prefix. Measured, reading that list lifted the
+        // 1963 schedule from 5,727 to 6,091 of the corpus's 6,882 subject-numeric documents.
+        #expect(table.gloss(for: "UN 6 CHICOM", coveringYears: 1963...1963)
+                    == "United Nations — MEMBERSHIP. ASSOCIATION.")
+
+        // AND THE GUARD ON IT. The list would fit these too, and both are real keys in the corpus:
+        // `PSL 27 VIET S` is a one-character corruption of POL, and `NSSD 05-82` is a National
+        // Security Study Directive, not a central-file class at all. Neither prefix is in the
+        // handbook's abbreviations appendix, which is what refuses them.
+        #expect(table.gloss(for: "PSL 27 VIET S", coveringYears: 1963...1963) == nil, """
+            Without the appendix check this reads as whatever the administrative-subject list has \
+            at 27, and looks like a finding rather than a corrupted key.
+            """)
+        #expect(table.gloss(for: "NSSD 05-82", coveringYears: 1963...1963) == nil)
+
+        // A designator the outline carries and the list also carries must come from the OUTLINE.
+        // `POL 6` is People. Biographic Data.; the list's 6 is Membership. Association.
+        #expect(table.gloss(for: "POL 6", coveringYears: 1963...1963)?
+                    .contains("Membership") == false)
+
         // And the injection point: the ranking hands the same reading to every surface that draws
         // a class row, which is what keeps one label source honest across two filing systems.
         let usage = try #require(CollectionUsageIndexStore.shared)

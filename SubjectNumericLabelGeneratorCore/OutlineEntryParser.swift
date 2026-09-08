@@ -144,7 +144,9 @@ enum OutlineEntryParser {
     /// - Returns: `true` when the row is furniture.
     static func isFurniture(_ text: String) -> Bool {
         let upper = text.uppercased()
-        if upper.contains("RECORDS CLASSIF") || upper.contains("CLASSIFICATION HANDBOOK") { return true }
+        if upper.contains("RECORDS CLASSIF") || upper.contains("CLASSIFICATION HANDBOOK") {
+            return true
+        }
         if upper.contains("TL:RC") || upper.contains("TL: RC") { return true }
         if upper.replacingOccurrences(of: " ", with: "").contains("(P.") { return true }
         // The running head, `POL - POLITICAL AFFAIRS & RELATIONS`. Anchored, so a label that

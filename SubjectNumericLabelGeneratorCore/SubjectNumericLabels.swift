@@ -24,6 +24,44 @@ struct Schedule: Encodable, Sendable {
     let categories: [String: String]
     /// `POL` -> `27` -> `MILITARY OPERATIONS`.
     let subjects: [String: [String: String]]
+    /// `6` -> `MEMBERSHIP. ASSOCIATION.` — the schedule an ORGANIZATION's file is arranged by,
+    /// which is where `UN 6` and `NATO 3` are read from.
+    let organizationSubjects: [String: String]
+    /// `NATO` -> `North Atlantic Treaty Organization` — the handbook's own abbreviations
+    /// appendix, which is what identifies a prefix as an ORGANIZATION file rather than a
+    /// primary subject.
+    let abbreviations: [String: String]
+
+    /// A key's subject, or `nil` when this schedule cannot say.
+    ///
+    /// ## Two filing shapes, and the order between them is the guard
+    /// A PRIMARY SUBJECT file is arranged by its own outline, so `POL 27` is read from the POL
+    /// outline. An ORGANIZATION file is arranged by the international-organizations instruction's
+    /// list of administrative subjects, so `UN 6` is read from that list under the name `UN`.
+    ///
+    /// The category is tried first and the organization list only when it is not a primary
+    /// subject AND the handbook's own abbreviations appendix names it. That second condition is
+    /// what stops the list being applied to everything it would fit: `PSL 27 VIET S` is a
+    /// one-character corruption of `POL 27` and `NSSD 05-82` is a National Security Study
+    /// Directive, and both would take a plausible subject from the list without it.
+    ///
+    /// - Parameters:
+    ///   - category: The key's category letters.
+    ///   - designator: Its number.
+    /// - Returns: The subject, or `nil`.
+    func subject(category: String, designator: String) -> String? {
+        if let outline = subjects[category] { return outline[designator] }
+        guard abbreviations[category] != nil else { return nil }
+        return organizationSubjects[designator]
+    }
+
+    /// The organization's name, when the category is one.
+    ///
+    /// - Parameter category: The key's category letters.
+    /// - Returns: `"United Nations"`, or `nil` for a primary subject.
+    func organizationName(for category: String) -> String? {
+        subjects[category] == nil ? abbreviations[category] : nil
+    }
 }
 
 // MARK: - SubjectNumericLabels
