@@ -91,7 +91,12 @@ struct AreaResolverTests {
 
     @Test("Two equally good readings are refused rather than guessed between")
     func ambiguityIsRefused() {
-        #expect(AreaResolver.match("XX", names: ["Aaa", "Bbb"]) == nil)
+        // BOTH names must actually MATCH, and be the same length, or the fixture cannot fail:
+        // a code matching neither returns nil whether the refusal is there or not.
+        #expect(AreaResolver.match("CHA", names: ["Chad", "Chat"]) == nil, """
+            Two four-letter names both truncate to CHA. Picking either is a coin toss, and a \
+            wrong country is worse than a bare code.
+            """)
         // A shorter unique reading still wins — this is not a blanket refusal of overlap.
         #expect(AreaResolver.match("IND", names: ["India", "Indonesia"]) == "India")
     }
