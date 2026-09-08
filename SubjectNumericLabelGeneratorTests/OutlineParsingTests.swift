@@ -305,7 +305,11 @@ struct OrganizationLookupTests {
                  categories: ["POL": "POLITICAL AFFAIRS & RELATIONS"],
                  subjects: ["POL": ["27": "MILITARY OPERATIONS", "6": "PEOPLE. BIOGRAPHIC DATA."]],
                  organizationSubjects: ["6": "MEMBERSHIP. ASSOCIATION."],
-                 abbreviations: ["UN": "United Nations"])
+                 // POL IS IN THE APPENDIX TOO, and leaving it out makes the fixture unable to
+                 // tell a correct `organizationName` from one that never checks whether the
+                 // prefix is a primary subject. Measured, five of the 55 category codes head an
+                 // abbreviations entry — POL among them — so the overlap is the real case.
+                 abbreviations: ["UN": "United Nations", "POL": "Political Officer"])
     }
 
     @Test("A primary subject reads from its own outline, never from the shared list")
@@ -315,7 +319,11 @@ struct OrganizationLookupTests {
         // — and each would look perfectly reasonable on screen.
         #expect(schedule().subject(category: "POL", designator: "6")
                     == "PEOPLE. BIOGRAPHIC DATA.")
-        #expect(schedule().organizationName(for: "POL") == nil)
+        #expect(schedule().organizationName(for: "POL") == nil, """
+            POL heads an abbreviations entry as well as an outline. Reading the appendix without \
+            first asking whether the prefix is a primary subject would caption every POL row with \
+            an unrelated expansion.
+            """)
     }
 
     @Test("An organization reads from the list, under the name the appendix gives it")
