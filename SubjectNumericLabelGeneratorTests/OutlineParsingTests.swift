@@ -80,6 +80,52 @@ struct OutlineRowTests {
                                                 label: "Meetings & Conferences")])
     }
 
+    @Test("A row's pieces are joined left to right, whatever order they arrive in")
+    func rowPiecesAreOrderedByX() {
+        // `rows` is fed by `OutlinePageReader.lines`, which sorts, so this contract is never
+        // violated in the running generator — and it is exactly the kind of guarantee that gets
+        // quietly dropped as redundant. Pinned directly, because the failure it prevents is a
+        // label printed before its own designator.
+        let scrambled = [
+            PageLine(text: "Immunities. Privileges.", x: 139.6, y: 637.2),
+            PageLine(text: "17-2", x: 84.6, y: 637.3),
+        ]
+        #expect(OutlineEntryParser.rows(scrambled).map { $0.text }
+                    == ["17-2 Immunities. Privileges."])
+    }
+
+    @Test("Furniture is refused BY THE PARSE, not merely recognised")
+    func parseDropsFurniture() {
+        // `isFurniture` is pinned above; this pins that `parse` actually calls it. Without the
+        // call the running head opens no entry — it carries no designator — so it would be
+        // appended to whatever entry preceded it, which on a continuation page is the label
+        // carried over from the page before.
+        let lines = [
+            PageLine(text: "17-5 Arrival & Departure.", x: 85.0, y: 512.2),
+            PageLine(text: "POL - POLITICAL AFFAIRS & RELATIONS", x: 82.5, y: 500.0),
+            PageLine(text: "TL:RC - 1 3/1/63", x: 84.9, y: 489.0),
+        ]
+        let parsed = OutlineEntryParser.parse(lines, footerFloor: 100)
+        #expect(parsed.entries == [OutlineEntry(designator: "17-5",
+                                                label: "Arrival & Departure.")], """
+            The running head and the transmittal stamp were folded into the label. Got \
+            \(parsed.entries).
+            """)
+        #expect(parsed.refused.count == 2)
+    }
+
+    @Test("The cue cut is applied BY THE PARSE, not merely available")
+    func parseCutsInstructionProse() {
+        // Same species as the furniture test: `cutAtInstructionCue` is pinned above, and this
+        // pins that `tidy` reaches for it.
+        let lines = [
+            PageLine(text: "27 MILITARY OPERATIONS", x: 86.6, y: 654.5),
+            PageLine(text: "Use for declared or undeclared warfare involving", x: 104.6, y: 642.3),
+        ]
+        let parsed = OutlineEntryParser.parse(lines, footerFloor: 100)
+        #expect(parsed.entries == [OutlineEntry(designator: "27", label: "MILITARY OPERATIONS")])
+    }
+
     @Test("Running heads, corner marks and transmittal stamps are furniture")
     func furnitureIsRefused() {
         #expect(OutlineEntryParser.isFurniture("POL - POLITICAL AFFAIRS & RELATIONS"))
@@ -136,8 +182,15 @@ struct OutlineLayoutTests {
         // Wrapped labels sit at 116–152 and carry a line or two each; the instruction column at
         // 321 carries most of the page. Taking the nearest would cut the labels away.
         let labelColumn: [Double] = [84, 84, 116, 128, 139, 139, 151]
-        let positions = labelColumn + Array(repeating: 321.0, count: 20)
-        #expect(OutlinePageLayout.dominantFarColumn(in: positions, pageWidth: 616) == 320)
+        // A SECOND far cluster, thinly populated. Without it "busiest" and "nearest" agree on this
+        // page and the rule under test is not exercised at all — the mutation that swaps one for
+        // the other survives against a single-cluster fixture.
+        let strayFarLines = Array(repeating: 262.0, count: 3)
+        let positions = labelColumn + strayFarLines + Array(repeating: 321.0, count: 20)
+        #expect(OutlinePageLayout.dominantFarColumn(in: positions, pageWidth: 616) == 320, """
+            The instruction column is the one carrying most of the page, not the leftmost thing \
+            in its half — a stray wrapped line further left must not become the cut.
+            """)
     }
 
     @Test("The 1965 instruction indent is the nearest step, not the busiest")
