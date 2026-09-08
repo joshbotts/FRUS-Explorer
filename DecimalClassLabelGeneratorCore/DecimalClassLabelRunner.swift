@@ -44,6 +44,24 @@ public enum DecimalClassLabelRunner {
         /// Floors, measured on the shipped scans.
         let minClasses: Int
         let minSubjects: Int
+        /// Whether this manual's subject-suffix layer is trustworthy enough to ship (#1210).
+        ///
+        /// The 1910–49 manual states its subdivisions in a subdivision TREE, which
+        /// ``parseSubjects`` reads cleanly: 693 suffixes, of which 6 carry a `**` — and those six
+        /// are the manual's own placeholder for a country ("Naval and coaling stations of country
+        /// ** in country ††"), not parse noise.
+        ///
+        /// The 1950–59 and 1960–63 handbooks also carry an **alphabetical index**, which pairs a
+        /// subject NAME with a class reference (`Silk 8**.355`). The same pattern reads those
+        /// backwards, filing a class-8 subject under whatever digit precedes it: measured, **399 of
+        /// 507** entries for 1950–59 and **205 of 311** for 1960–63 carry a stray class reference,
+        /// and the damage is not cosmetic — `795.00` glossed as *Korea — Amusements 8\*\*.45*.
+        ///
+        /// So the layer is refused wholesale rather than shipped mislabelling. The class, country
+        /// and relations layers are verified and DO ship, which is what makes `611.93` read
+        /// *United States and China*. A future pass that bounds the scan to the subdivision tables
+        /// can turn this back on; until then a suffix simply does not narrow a post-1950 gloss.
+        let shipsSubjects: Bool
     }
 
     /// Runs the generator.
@@ -69,17 +87,17 @@ public enum DecimalClassLabelRunner {
                    // sits just under that rather than at the old 60, because 60 is met by the
                    // stem pass ALONE — a nested pass that silently stopped matching would leave a
                    // table that still passes, still ships, and still labels `812.6363` "Mexico".
-                   minClasses: 9, minSubjects: 650),
+                   minClasses: 9, minSubjects: 650, shipsSubjects: true),
             Source(id: "1950-1959", start: 1950, end: 1959, countryColumn: 1,
                    manualPath: path("MANUAL_1950_59", downloads + "/manual-1950-59.pdf"),
                    title: "Records Codification Manual, Department of State "
                         + "(adopted 1 January 1950) (National Archives and Records Administration)",
-                   minClasses: 10, minSubjects: 20),
+                   minClasses: 10, minSubjects: 0, shipsSubjects: false),
             Source(id: "1960-1963", start: 1960, end: 1963, countryColumn: 2,
                    manualPath: path("MANUAL_1960_63", downloads + "/manual-1960-63.pdf"),
                    title: "Records Classification Handbook, Department of State (1960–1963) "
                         + "(National Archives and Records Administration)",
-                   minClasses: 10, minSubjects: 20),
+                   minClasses: 10, minSubjects: 0, shipsSubjects: false),
         ]
 
         let countryTitle = "Department of State 1910–1963 Central Decimal File Country Numbers "
@@ -94,7 +112,27 @@ public enum DecimalClassLabelRunner {
         var omissions: [DecimalClassLabels.Coverage.Omission] = []
         for source in sources {
             let text = try plainText(of: source.manualPath)
-            let classes = parseClasses(text)
+            var classes = parseClasses(text)
+            // #1210: when the flattened text layer cannot pair a label with its gloss, read the
+            // block off the PAGE instead. Only when the text pass came up short, so a manual that
+            // parses cleanly is never re-read by a geometry pass that could only agree with it.
+            if classes.count < source.minClasses,
+               let byGeometry = classesByGeometry(of: source.manualPath),
+               byGeometry.count > classes.count {
+                print("[DecimalClassLabels] \(source.id): text layer gave \(classes.count) classes, "
+                      + "page geometry gave \(byGeometry.count)")
+                classes = byGeometry
+            }
+            // Curated class glosses override the parse, the same precedence the country table uses:
+            // a hand-checked reading beats OCR damage, and each override is printed for review.
+            var glossed = classes
+            for (digit, entry) in Self.classCorrections[source.id] ?? [:] {
+                if glossed[digit] != entry.name {
+                    print("[DecimalClassLabels] \(source.id) class \(digit) corrected: "
+                          + "\(glossed[digit] ?? "(absent)") -> \(entry.name)")
+                }
+                glossed[digit] = entry.name
+            }
             var subjects = parseSubjects(text)
             // The stem pass runs FIRST so the 62 entries it already ships keep their values
             // exactly, and the nested pass adds only suffixes it left unclaimed.
@@ -189,7 +227,17 @@ public enum DecimalClassLabelRunner {
             // that stays mostly silent; it would yield one that glosses nearly every post-1950
             // country-arranged key, most of them down to that bare-country fallback. The
             // thinness measured is not the thinness that gates display.
-            let subjectCount = subjects.values.reduce(0) { $0 + $1.count }
+            // Refused layers are emptied BEFORE the floor is measured, so the count that gates
+            // and the table that ships are the same object — a floor reported over rows nobody
+            // will read is the kind of number that looks like verification and is not.
+            let shippableSubjects = source.shipsSubjects ? subjects : [:]
+            let subjectCount = shippableSubjects.values.reduce(0) { $0 + $1.count }
+            // `classes`, NOT `glossed`: the floor measures what the PARSER achieved. Counting the
+            // curated map instead would let a hand list buy its way past a floor that exists to say
+            // the scan was not read well enough — and the floor would then be measuring curation
+            // effort rather than parse quality. Both current corrections repair a gloss the parser
+            // already found, so the two counts agree today; the distinction is for the day they
+            // would not.
             guard classes.count >= source.minClasses,
                   subjectCount >= source.minSubjects,
                   byCode.count >= Self.minCountries
@@ -215,10 +263,10 @@ public enum DecimalClassLabelRunner {
                 + "\(byCode.count) countries, \(subjectCount) subject suffixes")
             schedules.append(DecimalClassLabels.Schedule(
                 id: source.id, startYear: source.start, endYear: source.end, source: source.title,
-                classes: classes,
+                classes: glossed,
                 countryArrangedClasses: countryArranged(for: source.id),
                 relationsClasses: relationsClasses(for: source.id),
-                countries: byCode, subjects: subjects,
+                countries: byCode, subjects: shippableSubjects,
                 sources: .init(schedule: source.title, countries: countryTitle)))
         }
 
@@ -352,7 +400,7 @@ public enum DecimalClassLabelRunner {
     /// Telegraphy has the number 8**…" as the gloss for class 8. A label table that mislabels is
     /// worse than one that omits, so the search window is bounded to the block that is a list of
     /// classes by construction.
-    private static func parseClasses(_ text: String) -> [String: String] {
+    static func parseClasses(_ text: String) -> [String: String] {
         var result: [String: String] = [:]
         // The SUMMARY block runs FIRST because it is authoritative: it is a list of classes by
         // construction. The `Class N` headings are the fallback, and left first they lose — the
@@ -368,10 +416,71 @@ public enum DecimalClassLabelRunner {
                 ?? text.endIndex
             collect(regex, in: String(text[summary.upperBound..<end]), into: &result)
         }
+        // BEFORE the line-bounded fallback, for the reason the SUMMARY pass runs before it too: the
+        // block is a list of classes by construction, and the fallback stops at end-of-line. Left
+        // second, the fallback claimed class 3 as "International Conferences, Congresses, Meetings
+        // and" — a gloss ending on the word "and" — and this pass then skipped it as already known.
+        collectFromRecordsBlock(text, into: &result)
         if let regex = try? NSRegularExpression(pattern: #"Clas\s*s\s+(\d)\s+([A-Z][^\n]{4,90})"#) {
             collect(regex, in: text, into: &result)
         }
         return result
+    }
+
+    /// The post-1950 manuals' `CLASSES OF RECORDS` block, whose glosses WRAP and whose word
+    /// "Class" is itself letter-spaced on some rows (#1210).
+    ///
+    /// ## Two things the `Clas s N` fallback cannot do here
+    /// **The word is spaced through, not just once.** The 1960–63 handbook heads most rows `Class 4`
+    /// but two of them `C l a s s 4` — measured, exactly classes 4 and 5 — so a pattern that tolerates
+    /// one interior space finds eight of ten and reports a schedule that misses precisely
+    /// *International Trade and Commerce* and *International Informational and Educational Relations*.
+    ///
+    /// **The gloss runs past the line.** Class 3's is `International Conferences, Congresses,
+    /// Meetings and` / `Organizations.` / `United Nations. Multilateral Treaties.` — a line-bounded
+    /// capture ends it on the word "and". Every gloss in the shipped 1910–49 schedule is a complete
+    /// phrase, so a truncated one is not a thin label but a wrong one.
+    ///
+    /// So this pass runs to the NEXT heading rather than to end-of-line, and is bounded to the block
+    /// that is a list of classes by construction — the same reasoning the SUMMARY window above rests
+    /// on, and for the same reason: matched over the whole document, `Class 3` also catches
+    /// `Pacific Salmon Fisheries Commission 611.4261` out of the index.
+    ///
+    /// Runs AFTER the 1910–49 summary window, so it can never displace it — that manual has no such
+    /// block and this pass finds nothing in it — and BEFORE the line-bounded `Clas s N` fallback, which
+    /// would otherwise claim class 3 with a gloss ending on the word "and" and leave this pass nothing
+    /// to correct.
+    static func collectFromRecordsBlock(_ text: String, into result: inout [String: String]) {
+        // The block heading is letter-spaced too: `C L A S S E S  O F  R E C O R D S`.
+        guard let headingRegex = try? NSRegularExpression(
+                pattern: #"C\s*L\s*A\s*S\s*S\s*E\s*S\s+O\s*F\s+R\s*E\s*C\s*O\s*R\s*D\s*S"#),
+              let start = headingRegex.firstMatch(
+                in: text, range: NSRange(text.startIndex..., in: text)),
+              let startRange = Range(start.range, in: text)
+        else { return }
+        // The block ends at the manual's own note beneath it, or after a bounded window — never at
+        // end of document, or class 9's gloss would swallow the rest of the manual.
+        let afterHeading = startRange.upperBound
+        let cap = text.index(afterHeading, offsetBy: 3_000, limitedBy: text.endIndex) ?? text.endIndex
+        let end = text.range(of: "Note:", range: afterHeading..<cap)?.lowerBound ?? cap
+        let block = String(text[afterHeading..<end])
+
+        guard let classRegex = try? NSRegularExpression(
+                pattern: #"C\s*l\s*a\s*s\s*s\s+(\d)\b"#) else { return }
+        let matches = classRegex.matches(in: block, range: NSRange(block.startIndex..., in: block))
+        for (index, match) in matches.enumerated() {
+            guard let digit = Range(match.range(at: 1), in: block).map({ String(block[$0]) }),
+                  let headEnd = Range(match.range, in: block)?.upperBound else { continue }
+            let glossEnd = index + 1 < matches.count
+                ? (Range(matches[index + 1].range, in: block)?.lowerBound ?? block.endIndex)
+                : block.endIndex
+            guard headEnd < glossEnd else { continue }
+            let cleaned = trimGloss(tightenPunctuation(despace(String(block[headEnd..<glossEnd]))))
+            // A run-together label column ("Class 1 Class 2 …") yields an empty or tiny gloss here,
+            // because the next heading follows immediately — which is exactly how the 1950–59
+            // manual's flattened block declines to be read, rather than being read wrongly.
+            if result[digit] == nil, cleaned.count >= 5 { result[digit] = cleaned }
+        }
     }
 
     /// Files every match of `regex` that names a class not already known.
@@ -858,6 +967,15 @@ public enum DecimalClassLabelRunner {
                 evidence: "The name wraps as `America. Pan-` / `America` with `10` on the "
                     + "following line."),
         ],
+        "1960-1963": [
+            "51j": Correction(
+                name: "Laos",
+                evidence: "The born-digital country table prints this row's name twice, so the "
+                    + "parse reads `Laos Laos`. Not repaired by a rule: a name whose words repeat "
+                    + "is not by itself an error — Pago Pago and Walla Walla are real places — so "
+                    + "collapsing repeats mechanically would license a rewrite the source does not "
+                    + "support. The 1950–59 column of the same table reads `Laos` once."),
+        ],
     ]
 
     /// The column headers reprinted on every page of the country table.
@@ -920,6 +1038,134 @@ public enum DecimalClassLabelRunner {
             if let range = gloss.range(of: marker) { gloss = String(gloss[..<range.lowerBound]) }
         }
         return gloss.trimmingCharacters(in: CharacterSet(charactersIn: " .,;:"))
+    }
+
+    /// Class glosses the scan mangles beyond mechanical recovery, supplied by curation (#1210).
+    ///
+    /// The same posture as ``corrections`` for countries, and for the same reason: these rows did
+    /// not come from the parser, so each carries the evidence that establishes it. Both entries are
+    /// single-word OCR damage in the 1960–63 handbook's `CLASSES OF RECORDS` block — the parse is
+    /// otherwise complete and correct, and neither could be repaired by a rule without licensing a
+    /// rule that rewrites words, which is how a label table starts inventing readings.
+    ///
+    /// Deliberately NOT applied to 1910–49: that manual's glosses parse clean, and an empty table
+    /// for it is the honest statement that nothing there needed a hand.
+    static let classCorrections: [String: [String: Correction]] = [
+        "1960-1963": [
+            "1": Correction(
+                name: "Administration of the United States Government",
+                evidence: "The scan renders the final word `Governinenl`; the 1950–59 manual's "
+                    + "same block reads `Administration of the United States Government,` and the "
+                    + "1910–49 schedule's class 1 is `Administrations, United States Government`."),
+            "5": Correction(
+                name: "International Informational and Educational Relations. Cultural Affairs. "
+                    + "Psychological Warfare",
+                evidence: "The scan splits the first word as `Inte rnational`; the 1950–59 manual's "
+                    + "same block reads `International Informational and Educational Relations,`."),
+        ],
+    ]
+
+    /// The `CLASSES OF RECORDS` block read off the PAGE, for a scan whose text layer flattens it.
+    ///
+    /// ## Why geometry is needed at all
+    /// The 1950–59 manual sets this block in two columns, and `PDFPage.string` flattens them into a
+    /// single run: the nine labels arrive together as `Class 1 Class 2 … Class 9` followed by nine
+    /// unlabelled glosses. No pattern over that string can pair a class with its own gloss — matched
+    /// anyway, `Class 3` binds to `Pacific Salmon Fisheries Commission 611.4261` out of the index.
+    ///
+    /// ## Why `characterBounds(at:)` alone does NOT work, which this file warned about
+    /// The index that `string` uses and the index that `characterBounds` uses **disagree** on this
+    /// page. Pairing the i-th character with the i-th box reconstructs lines like `s 1 Clas` — the
+    /// letters of "Class 1" redistributed across columns. Verified before this was written.
+    ///
+    /// What *is* reliable is `selection(for:)`: ask the page for the text inside a RECTANGLE and it
+    /// answers correctly. So this reads bands rather than characters — the label strip down the left
+    /// to find each `Class N` and its y, then the full-width band from that y to the next label's,
+    /// which captures a wrapped gloss without needing to guess where one ends.
+    ///
+    /// The strip is a FRACTION of the page's own width, never a fixed coordinate, so a differently
+    /// sized scan is read on its own terms.
+    ///
+    /// - Parameter path: the manual.
+    /// - Returns: digit → gloss, or `nil` when the page holding the block cannot be found.
+    static func classesByGeometry(of path: String) -> [String: String]? {
+        guard let document = PDFDocument(url: URL(fileURLWithPath: path)) else { return nil }
+        // The block's own page, found on the letter-spacing-tolerant heading.
+        guard let headingRegex = try? NSRegularExpression(
+                pattern: #"C\s*L\s*A\s*S\s*S\s*E\s*S\s+O\s*F\s+R\s*E\s*C\s*O\s*R\s*D\s*S"#)
+        else { return nil }
+        var page: PDFPage?
+        for index in 0..<document.pageCount {
+            guard let candidate = document.page(at: index) else { continue }
+            let text = candidate.string ?? ""
+            if headingRegex.firstMatch(in: text,
+                                       range: NSRange(text.startIndex..., in: text)) != nil {
+                page = candidate
+                break
+            }
+        }
+        guard let page else { return nil }
+
+        let bounds = page.bounds(for: .mediaBox)
+        let labelStripWidth = bounds.width * 0.35
+        func read(_ rect: CGRect) -> String {
+            (page.selection(for: rect)?.string ?? "")
+                .replacingOccurrences(of: "\n", with: " ")
+                .trimmingCharacters(in: .whitespaces)
+        }
+        guard let labelRegex = try? NSRegularExpression(pattern: #"Class\s+(\d)"#) else { return nil }
+
+        // Walk the page in 1-point bands, recording where each class label first appears.
+        var rows: [(digit: String, y: CGFloat)] = []
+        var y = bounds.maxY
+        while y > bounds.minY {
+            let strip = read(CGRect(x: bounds.minX, y: y - 2, width: labelStripWidth, height: 11))
+            let ns = strip as NSString
+            if let match = labelRegex.firstMatch(in: strip,
+                                                 range: NSRange(location: 0, length: ns.length)) {
+                let digit = ns.substring(with: match.range(at: 1))
+                if !rows.contains(where: { $0.digit == digit }) { rows.append((digit, y)) }
+            }
+            y -= 1
+        }
+        guard rows.count >= 2 else { return nil }
+        rows.sort { $0.y > $1.y }
+
+        var result: [String: String] = [:]
+        for (index, row) in rows.enumerated() {
+            // Down to just above the next label, so a wrapped gloss is included whole.
+            let bottom = index + 1 < rows.count ? rows[index + 1].y + 9 : max(row.y - 60, bounds.minY)
+            guard row.y + 11 > bottom else { continue }
+            let band = read(CGRect(x: bounds.minX, y: bottom,
+                                   width: bounds.width, height: row.y + 11 - bottom))
+            // Drop the label itself; the column boundary can split a word, so this cuts after the
+            // matched `Class N` rather than at a fixed offset.
+            var gloss = band
+            let ns = band as NSString
+            if let match = labelRegex.firstMatch(in: band,
+                                                 range: NSRange(location: 0, length: ns.length)) {
+                gloss = ns.substring(from: match.range.location + match.range.length)
+            }
+            let cleaned = trimGloss(tightenPunctuation(despace(gloss)))
+            if cleaned.count >= 5 { result[row.digit] = cleaned }
+        }
+        return result.isEmpty ? nil : result
+    }
+
+    /// Removes the space a letter-spaced scan leaves before punctuation.
+    ///
+    /// `despace` rejoins letters split inside a word, but the 1960–63 scan also spaces the mark
+    /// itself: `Commerce . Trade`, `Economic , Industrial`, `Affairs .`. The shipped 1910–49 glosses
+    /// carry no such spacing, so leaving it would make the two schedules read as different kinds of
+    /// data rather than the same field from two manuals.
+    ///
+    /// Punctuation only — it never joins words, so it cannot invent a reading.
+    static func tightenPunctuation(_ text: String) -> String {
+        var out = text
+        for mark in [".", ",", ";", ":"] {
+            out = out.replacingOccurrences(of: " \(mark)", with: mark)
+        }
+        return out.replacingOccurrences(of: "  ", with: " ")
     }
 
     /// Today, as `yyyy-MM-dd`.

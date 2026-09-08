@@ -507,10 +507,31 @@ public enum CollectionKeying {
     ///
     /// The leaf grain is too thin to rank: measured on the 2026-08-08 usage index, the corpus's
     /// 1,362 subject-numeric leaves carry 6,876 documents, of which 691 leaves — half of them —
-    /// have exactly one, and only 8 reach a hundred. Folded, 326 groups remain, 13 of them past a
-    /// hundred documents (`POL 27` 1,197, `POL 7` 490, `DEF 12-5` 218), which is a list a reader
+    /// have exactly one, and only 8 reach a hundred. Folded, **323** groups remain, 13 of them past
+    /// a hundred documents (`POL 27` 1,197, `POL 7` 490, `DEF 12-5` 218), which is a list a reader
     /// can actually work with. This is the grain owner decision **D-3** admits the subject-numeric
-    /// lens at.
+    /// lens at. (326 before the one-letter widening below.)
+    ///
+    /// ## One letter, not two
+    /// The pattern required `{2,6}` category letters, which refused every key in the corpus's
+    /// one-letter category — `E`, Economic Affairs — so those keys fell out of the lens entirely
+    /// rather than grouping. Measured over the shipped usage index, widening to `{1,6}` moves
+    /// **7 keys** carrying **22 documents** into a group (326 groups to 323) and moves **0** key
+    /// that already had one. That is a small number of documents, and the change is not worth
+    /// having for them: it is worth having because it CLOSES the two cross-family leaks
+    /// `ClassFamilyDefinitionTests` had pinned as a bounded residue: `E 1` reached `E 1 JAPAN-US`
+    /// and `E 1 US` precisely because it could not be parsed and each became its own group.
+    ///
+    /// ## The group is the MATCHED PREFIX, never a rebuilt string
+    /// Rebuilding it from the captures reads better — it would key `DEF1-1` and `DEF 1-1` as one
+    /// heading — and it is wrong here, because #841's decision is that *the fold is the definition
+    /// and the query follows it*. The query is
+    /// `IndexingPipeline.classLeafPatterns`, a set of SQL `LIKE` prefixes, so a group that is not
+    /// a literal prefix of its own leaves names a family whose members it cannot find: measured,
+    /// folding `DEF1-1` to `DEF 1-1` gave that family a query matching none of its one document.
+    /// SQL `LIKE` cannot express "any run of whitespace", so the query could not be made to
+    /// follow a normalising fold; the fold stays literal instead. The anchored match starts at
+    /// index 0 and ends on a digit, so the returned substring is a prefix by construction.
     public static func subjectNumericGroup(_ classKey: String) -> String? {
         guard isSubjectNumericClass(classKey) else { return nil }
         guard let match = subjectNumericGroupRegex?.firstMatch(
@@ -521,8 +542,13 @@ public enum CollectionKeying {
 
     /// Category letters, an optional parenthesised agency qualifier, then the number — which may
     /// itself be hyphenated (`POL 23-9`, `DEF 12-5`).
+    ///
+    /// The space before the number is OPTIONAL, which costs nothing and says something: a key
+    /// written `FT7` then folds to `FT7` rather than to `nil`, so every subject-numeric key has a
+    /// group. It is deliberately NOT a normalisation — see the caller on why the group must stay a
+    /// literal prefix.
     private static let subjectNumericGroupRegex: NSRegularExpression? = try? NSRegularExpression(
-        pattern: #"^[A-Z]{2,6}(\s*\([^)]*\))?\s+\d+(-\d+)*"#)
+        pattern: #"^[A-Z]{1,6}(\s*\([^)]*\))?\s*\d+(-\d+)*"#)
 
     /// The `decimal_class` derivation for a parsed note — the pipeline's
     /// `decimalClassColumn` gating verbatim.

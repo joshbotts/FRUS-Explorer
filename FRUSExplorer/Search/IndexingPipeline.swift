@@ -9332,13 +9332,20 @@ public actor IndexingPipeline {
     /// definition exists to disagree with, and the corpus writes `611.51-A` style subdivisions
     /// that a reader asking for `611.51` means to include.
     ///
-    /// ## The residue, which is bounded rather than excused
-    /// The fold's regex requires two-to-six category letters, so the ten single-letter `E …`
-    /// keys in the shipped vocabulary cannot be parsed and each becomes its own group. Two of
-    /// them are prefixes of others, and the space branch — the one that finds `POL 27 VIET S`
-    /// under `POL 27` — therefore still matches across them: `E 1` reaches `E 1 JAPAN-US` and
-    /// `E 1 US`. Exactly those two, pinned as a set by `ClassFamilyDefinitionTests`, so a new
-    /// leak from either definition fails a test rather than going unnoticed.
+    /// ## The residue is gone, and it was never a limit of prefix matching
+    /// #841 recorded two leaks it could not remove: `E 1` reached `E 1 JAPAN-US` and `E 1 US`.
+    /// The cause was upstream, in the fold — its regex required two-to-six category letters, so
+    /// the shipped vocabulary's single-letter `E` keys could not be parsed and `?? key` made each
+    /// its own group, whereupon the space branch that finds `POL 27 VIET S` under `POL 27` quite
+    /// correctly matched across what were really one family's members. Widening the fold's floor
+    /// to one letter puts all three in one family and the leaks disappear with them.
+    /// `ClassFamilyDefinitionTests` pins the leak set as an exact set, now empty, so a new leak
+    /// from either definition fails a test rather than going unnoticed.
+    ///
+    /// The reverse obligation binds too: the fold must return a **literal prefix** of its leaves,
+    /// never a normalised rebuild. These patterns are SQL `LIKE`, which cannot express "any run
+    /// of whitespace", so a fold that keyed `DEF1-1` under `DEF 1-1` would name a family whose
+    /// query finds none of its members. `CollectionKeying.subjectNumericGroup` says so at length.
     /// Internal rather than private so the family definition can be driven directly: it is the
     /// half of #841 that a source scan cannot check, since the defect was which *rows* matched.
     nonisolated static func classLeafPatterns(forCanonicalKey key: String) -> [String]? {

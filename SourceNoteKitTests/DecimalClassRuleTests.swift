@@ -302,6 +302,21 @@ struct SubjectNumericGroupingTests {
             ("UN 6 CHICOM", "UN 6"),
             // The parenthesised agency qualifier the parser's grammar already accepts.
             ("AID (US) 15-4 UAR", "AID (US) 15-4"),
+            // ONE-LETTER CATEGORY. `E` is Economic Affairs, and the pattern's old `{2,6}` floor
+            // refused every one of the corpus's eight `E …` keys — they fell out of the
+            // subject-numeric lens entirely rather than grouping. Measured over the shipped
+            // usage index, widening the floor moves 7 keys carrying 22 documents into a group
+            // (326 groups to 323) and moves none that already had one.
+            ("E 1 JAPAN-US", "E 1"),
+            ("E 1-1 INDON", "E 1-1"),
+            ("E 11-2 MEKONG", "E 11-2"),
+            // A KEY WRITTEN WITHOUT ITS SPACE FOLDS TO ITSELF, NOT TO THE SPACED SPELLING. The
+            // tidier reading — one heading for `DEF1-1` and `DEF 1-1` — is refused because #841
+            // makes the fold the definition and `IndexingPipeline.classLeafPatterns` follow it
+            // with SQL `LIKE` prefixes. A group that is not a literal prefix of its own leaves
+            // names a family whose query finds none of them, which is what `DEF 1-1` did.
+            ("DEF1-1", "DEF1-1"),
+            ("FT7", "FT7"),
         ]
         for (leaf, group) in cases {
             #expect(CollectionKeying.isSubjectNumericClass(leaf), "\(leaf) opens with letters")
@@ -313,7 +328,7 @@ struct SubjectNumericGroupingTests {
     @Test("Folding collapses the leaves — which is the reason it exists")
     func foldingActuallyGroups() {
         // Measured on the shipped usage index: 1,362 leaves, half of them holding one document,
-        // fold to 326 groups of which 13 pass a hundred documents. A fold that returned the leaf
+        // fold to 323 groups of which 13 pass a hundred documents. A fold that returned the leaf
         // would leave the lens unrankable while every assertion above still passed.
         let leaves = ["POL 27 VIET S", "POL 27 ARAB-ISR", "POL 27 CYP", "POL 7 US", "POL 7 UK"]
         let groups = Set(leaves.compactMap { CollectionKeying.subjectNumericGroup($0) })

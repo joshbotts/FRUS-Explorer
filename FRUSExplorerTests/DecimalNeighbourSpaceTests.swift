@@ -146,14 +146,17 @@ struct ClassFamilyDefinitionTests {
         }
         #expect(checked > 1_000, "the sweep covered \(checked) keys, which is too few")
 
-        // THE RESIDUE, bounded rather than excused. The fold's regex needs two-to-six category
-        // letters, so the ten single-letter `E …` keys cannot be parsed and each becomes its own
-        // group. Two of them are prefixes of others, and a prefix query cannot tell them apart
-        // without a rule that would also break `POL 27` → `POL 27 VIET S`. Pinned as an exact
-        // set: a NEW leak — from any change to either definition — fails here.
-        #expect(leaks == ["E 1 → E 1 JAPAN-US", "E 1 → E 1 US"], """
+        // THE RESIDUE IS GONE, and the way it went is the point. It was never a limit of prefix
+        // matching: the fold's regex required two-to-six category letters, so the corpus's
+        // single-letter `E` keys could not be parsed and `?? key` made each its own group —
+        // whereupon `E 1`'s space branch reached `E 1 JAPAN-US` and `E 1 US`, which under any
+        // correct fold are its own members. Widening the floor to one letter puts all three in
+        // one family and the leak disappears with them. Pinned as an exact set, empty: a NEW
+        // leak — from any change to either definition — fails here.
+        #expect(leaks.isEmpty, """
             The cross-family leaks are \(leaks.sorted()). Before #841 this was 38 of the 102 \
-            class rows the ranking draws, with POL 15 sweeping 73 keys.
+            class rows the ranking draws, with POL 15 sweeping 73 keys; the last two closed when \
+            the fold learned to parse a one-letter category.
             """)
     }
 

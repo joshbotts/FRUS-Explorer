@@ -621,16 +621,18 @@ struct ArchivalCollectionsData: Sendable {
     /// `862.00` is cited only by volumes covering 1948–1949, and the 1910–49 schedule says exactly
     /// what it means.
     ///
-    /// This is a **prerequisite, not a refinement**. With the band's span the two later schedules
-    /// would label nothing at all once parsed: band 1's 1960 falls outside 1950–59 and band 2's
-    /// 1968 outside 1960–63, so every key in the eras those schedules exist for would still render
-    /// bare.
+    /// This is a **prerequisite, not a refinement**, and #1210 is what proved it. With the band's
+    /// span the two later schedules label nothing at all: band 1's 1960 falls outside 1950–59 and
+    /// band 2's 1968 outside 1960–63, so every key in the eras those schedules exist for would
+    /// still render bare — the tables would have shipped and changed nothing on screen.
     ///
-    /// Measured on the shipped artifact, which carries the 1910–49 schedule alone: band 0 is
-    /// unchanged key for key, band 1 gains 310 keys and **966 documents**, and bands 2–4 gain
-    /// nothing until their schedules are parsed. A merged-band selection — which no class-lens
-    /// surface makes today, though the entry point exists — goes from labelling **nothing** to
-    /// 67,213 documents, because the union of two bands' years is covered by no schedule at all.
+    /// Measured against the one-schedule artifact this rule was written for: band 0 is unchanged
+    /// key for key, band 1 gains 310 keys and **966 documents**, bands 2–4 gain nothing. Measured
+    /// again with all three schedules shipped: **band 2 labels 448 rows**, every one of them by
+    /// its own keys' coverage, and bands 3 and 4 stay at zero because they open in 1969 and 1977,
+    /// after the decimal file closes. A merged-band selection — which no class-lens surface makes
+    /// today, though the entry point exists — goes from labelling **nothing** to 67,213 documents,
+    /// because the union of two bands' years is covered by no schedule at all.
     ///
     /// ## The span is a union, and it can only take a label away
     /// A key cited by volumes running 1930–1940 and 1955–1960 yields 1930...1960, which no schedule
