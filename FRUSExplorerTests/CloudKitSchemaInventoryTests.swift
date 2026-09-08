@@ -252,4 +252,97 @@ struct CloudKitSchemaInventoryTests {
         #expect(CloudKitSchemaInventory.digest(of: base).count == 64,
                 "SHA-256 hex is 64 characters")
     }
+    // MARK: - R-1g: awaiting a deploy vs awaiting a writer
+
+    /// The split must not have moved anything into the deployed set.
+    ///
+    /// This is the correctness property of R-1g. `deployedBaseline` is `installed − awaiting`, and
+    /// splitting the pending list would silently have moved an identifier OUT of the subtrahend and
+    /// INTO the baseline — converting "not deployed" into a claim that it was, which is the exact
+    /// attestation this file exists to make explicit. The baseline subtracts both lists, so the
+    /// count and digest are unchanged by the split; `deployedBaselineIsPinned` above proves that
+    /// against the checked-in marker, and this proves the mechanism directly.
+    @Test("Nothing awaiting a writer is counted as deployed")
+    func reservedIdentifiersAreNotInTheBaseline() {
+        let baseline = Set(CloudKitSchemaInventory.deployedBaseline)
+        for id in CloudKitSchemaInventory.identifiersAwaitingWriter {
+            #expect(!baseline.contains(id),
+                    "\(id) awaits a writer but is counted as deployed")
+        }
+    }
+
+    /// A reserved identifier must not raise the #488 alarm.
+    ///
+    /// The alarm's remedy is "CloudKit Dashboard → Deploy Schema Changes to Production", and for
+    /// these that action does not exist: CloudKit materialises a field from the first record
+    /// carrying a non-nil value, so a field nothing writes cannot be promoted. Before R-1g this
+    /// printed on every launch with no way to clear it — and a permanent warning nobody can act on
+    /// is how a real one gets scrolled past.
+    @Test("Awaiting a writer does not report an outstanding deploy")
+    func reservedIdentifiersDoNotRaiseTheDeployAlarm() {
+        #expect(CloudKitSchemaInventory.identifiersAwaitingDeploy.isEmpty,
+                "this assertion's premise: nothing is currently awaiting a deploy")
+        #expect(!CloudKitSchemaInventory.identifiersAwaitingWriter.isEmpty,
+                "and something IS awaiting a writer, or this test proves nothing")
+        #expect(CloudKitSchemaInventory.isProductionSchemaCurrent,
+                "a reserved identifier must not read as an outstanding deploy")
+    }
+
+    /// The two lists describe different states and may never overlap.
+    @Test("The pending lists are disjoint, and both name real identifiers")
+    func pendingListsAreDisjointAndReal() {
+        let deploy = Set(CloudKitSchemaInventory.identifiersAwaitingDeploy)
+        let writer = Set(CloudKitSchemaInventory.identifiersAwaitingWriter)
+        #expect(deploy.isDisjoint(with: writer),
+                "an identifier cannot both await a deploy and await a writer")
+        let installed = Set(CloudKitSchemaInventory.installedIdentifiers)
+        for id in writer {
+            #expect(installed.contains(id),
+                    "\(id) awaits a writer but this build does not mirror it")
+        }
+    }
+
+    /// **The obligation the reserved list carries, made mechanical.**
+    ///
+    /// The inventory's own comment says no test can catch a missing writer, because the identifier
+    /// is a real member either way. That is true of the *absence* — but the moment someone ADDS a
+    /// writer, this fires and says what to do. `AnnotationReview.annotationId` is `UUID? = nil`, and
+    /// today no call site outside the model passes it at all; both writers record a `document`-grain
+    /// row. Minting the first non-nil value is a Production deploy, so it must be exercised on a
+    /// Development build and promoted before shipping.
+    @Test("No writer mints the reserved annotationId without moving it to awaiting-deploy")
+    func theReservedFieldStillHasNoWriter() throws {
+        guard CloudKitSchemaInventory.identifiersAwaitingWriter
+            .contains("CD_AnnotationReview.CD_annotationId") else { return }
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        var offenders: [String] = []
+        var scanned = 0
+        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let url = files?.nextObject() as? URL {
+            guard url.pathExtension == "swift",
+                  url.lastPathComponent != "AnnotationReview.swift" else { continue }
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            scanned += 1
+            for line in text.split(separator: "\n") where line.contains("annotationId:") {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("//") || trimmed.hasPrefix("///") { continue }
+                if trimmed.contains("annotationId: nil") { continue }
+                offenders.append("\(url.lastPathComponent): \(trimmed)")
+            }
+        }
+        // Without this the sweep could pass over an empty enumeration.
+        #expect(scanned > 100, "scanned only \(scanned) source files")
+        #expect(offenders.isEmpty, """
+        A writer now mints CD_AnnotationReview.CD_annotationId:
+        \(offenders.joined(separator: "\n"))
+
+        That is a CloudKit schema change. Exercise it once on a Development build with iCloud signed
+        in, promote it (CloudKit Dashboard → Schema → Deploy Schema Changes to Production), then move
+        the identifier from identifiersAwaitingWriter to identifiersAwaitingDeploy and follow the
+        usual checklist.
+        """)
+    }
+
 }

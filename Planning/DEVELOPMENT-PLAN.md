@@ -12857,3 +12857,55 @@ alone.
   Re-run on a healthy simulator, M-2 is killed by the two tests that should kill it. **The lesson is
   the P-1 one again: read *which* test killed a mutation, not that something did** — and a harness
   that reports one arbitrary killer makes that harder, so it should report all of them.
+
+## Session 2026-09-07h — R-1g: a CloudKit warning that could never be acted on
+
+Reported by the owner from the Mac console, with the right diagnosis attached: *"there is no schema
+change ready to deploy."* Both halves were true at once, and that was the defect.
+
+**What was happening.** `CD_AnnotationReview.CD_annotationId` sat in `identifiersAwaitingDeploy`, so
+every launch printed the #488 alarm and its remedy — *"CloudKit Dashboard → Schema → Deploy Schema
+Changes to Production"* — an action the owner could not perform. CloudKit materialises a field from
+the **first record carrying a non-nil value**, and nothing writes this one: verified at R-1g that
+`AnnotationReview.annotationId` is `UUID? = nil` and both call sites
+(`VolumeUpdateReviewSection`, `DocumentChangeReviewSheet`) record a `document`-grain row without it.
+So the field cannot exist in the Development schema and cannot be promoted. There was nothing to
+press the button on.
+
+The inventory's own comment said as much and listed it honestly rather than attested — the right call
+at the time. But four phases (P3b-4 through P3b-7) then shipped in that state, each declining to mint
+a writer because doing so costs a Production promotion. **It was the steady state, not a transient
+one**, and #488's whole value is that the warning means *act now*. A permanent instance nobody can
+act on teaches the reader to scroll past it, including on the day a genuinely deployable identifier
+appears.
+
+**The split.** A second list, `identifiersAwaitingWriter`, for identifiers that cannot be deployed
+because nothing writes them. They are reported on their own line, DEBUG-only, without the #488 remedy;
+`isProductionSchemaCurrent` ignores them, because they are not an outstanding deploy. Settings gains a
+**Reserved** section so the commitment stays visible rather than vanishing when the status row reads
+"Up to date", and the diagnostics report names them distinctly so a pasted report cannot imply a
+deploy is due.
+
+**The one thing that had to be right.** `deployedBaseline` is `installed − awaiting`, and it is what
+the count-and-digest marker attests. Splitting the pending list would otherwise have moved an
+identifier **out of the subtrahend and into the baseline** — silently converting "not deployed" into a
+claim that it was, which is precisely the attestation this file exists to make explicit. The baseline
+now subtracts both lists, so the count and digest are unchanged by the split.
+
+**That property is what the sweep proved, and by two independent routes.** Making the baseline forget
+the writer list is killed by the new `reservedIdentifiersAreNotInTheBaseline` **and** by the
+pre-existing `deployedBaselineIsPinned` — the digest catches it on its own, which is the mechanism
+working exactly as designed. 3 of 3 mutations killed, 0 survivors.
+
+**A test that converts "no test can catch this" into "a test tells you when it changes."** The
+inventory says no test can catch a missing writer, because the identifier is a real member either way.
+True of the *absence* — but `theReservedFieldStillHasNoWriter` sweeps the app sources and fails the
+moment someone passes a non-nil `annotationId`, with the promotion checklist in the failure message.
+It carries an anti-vacuity floor (`scanned > 100`) so an empty enumeration cannot pass.
+
+**Harness note, third session running.** The simulator wedged twice more, and one mutation
+(`M-3-drop-the-reserved-entry`) removed the **wrong occurrence** — the identifier appears twice, once
+in `installedIdentifiers` and once in the new list, and the pattern took the first. It reported KILLED,
+by tests that had nothing to do with the intended mutation. Re-targeted at the correct line it is
+killed by the right two. Same class as P-1's M-5 and P-2's M-7: **a mutation that "passes" against the
+wrong site is not evidence, and reading which test killed it is what catches that.**

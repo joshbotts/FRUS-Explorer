@@ -450,6 +450,26 @@ struct SchemaDeployStatusView: View {
                 }
             }
 
+            // R-1g: reserved fields are shown even when the schema is up to date, because they are
+            // still an outstanding commitment — but under their own header and without the
+            // "will fail to upload" warning, which is false of them: nothing writes them, so no
+            // record can carry one.
+            if !CloudKitSchemaInventory.identifiersAwaitingWriter.isEmpty {
+                Section {
+                    ForEach(CloudKitSchemaInventory.identifiersAwaitingWriter, id: \.self) { id in
+                        Text(id)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
+                } header: {
+                    Text(String(localized: "settings.dataRecovery.schema.reserved.header",
+                                defaultValue: "Reserved"))
+                } footer: {
+                    Text(String(localized: "settings.dataRecovery.schema.reserved.footer",
+                                defaultValue: "Fields the app declares but nothing writes yet. They cannot be published until a future version records one, and nothing syncs differently because of them."))
+                }
+            }
+
             Section {
                 Button {
                     copyReport()
@@ -500,6 +520,13 @@ struct SchemaDeployStatusView: View {
         if !CloudKitSchemaInventory.isProductionSchemaCurrent {
             lines.append("awaiting deploy:")
             lines.append(contentsOf: CloudKitSchemaInventory.identifiersAwaitingDeploy
+                .map { "  \($0)" })
+        }
+        if !CloudKitSchemaInventory.identifiersAwaitingWriter.isEmpty {
+            // Distinct from "awaiting deploy" on purpose: a reader pasting this report should not
+            // be told a deploy is outstanding when none is possible.
+            lines.append("reserved, awaiting a first writer (no deploy possible):")
+            lines.append(contentsOf: CloudKitSchemaInventory.identifiersAwaitingWriter
                 .map { "  \($0)" })
         }
         return lines.joined(separator: "\n")
