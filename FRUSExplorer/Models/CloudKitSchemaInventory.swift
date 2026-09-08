@@ -445,29 +445,63 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // The NINTH promotion ran 2026-09-03 (build 44): nine of R-5 P3b-2's ten identifiers are
-        // in Production. `CD_AnnotationReview.CD_annotationId` is NOT, and cannot be until a
-        // build writes one — CloudKit creates a field from the first record that carries a value,
-        // and every writer in this build records a `document`-grain row whose `annotationId` is
-        // nil. It is listed here honestly rather than attested. An earlier version of this comment
-        // named P3b-4/P3b-5 as "the phases that give the reserved kinds their writers": all four of
-        // P3b-4, P3b-5, P3b-6 and P3b-7 have now shipped WITHOUT one, each refusing a ledger row
-        // because minting the first non-nil `annotationId` costs a tenth Production promotion. So
-        // this identifier still awaits a writer, and whichever phase adds one must exercise it on a
-        // Development build and promote it before shipping. `CloudKitSchemaInventoryTests` cannot
-        // catch this: the identifier is a real member of the inventory either way.
+        // Empty since R-1g. The NINTH promotion ran 2026-09-03 (build 44) and carried nine of R-5
+        // P3b-2's ten identifiers; the tenth moved to ``identifiersAwaitingWriter`` below, because
+        // it is not awaiting a deploy — no deploy is possible for it. See that list.
+    ]
+
+    /// Identifiers this build mirrors that **cannot be deployed yet, because nothing writes them**.
+    ///
+    /// ## Why this is a separate list, and not a footnote on the one above
+    /// CloudKit materialises a field from the **first record that carries a non-nil value**. An
+    /// optional property no code path ever populates therefore cannot appear in the Development
+    /// schema, and cannot be promoted: there is nothing to press the button on. Listing such an
+    /// identifier as *awaiting deploy* produced a launch warning whose own remedy — "CloudKit
+    /// Dashboard → Schema → Deploy Schema Changes to Production" — the owner could not follow, on
+    /// every launch, indefinitely.
+    ///
+    /// That is worse than untidy. #488's whole value is that the warning means **act now**; a
+    /// permanent instance nobody can act on teaches the reader to scroll past it, including on the
+    /// day a genuinely deployable identifier appears. Four phases (P3b-4 through P3b-7) shipped with
+    /// this one pending, each declining to mint a writer because doing so costs a Production
+    /// promotion — so it was the steady state, not a transient one.
+    ///
+    /// ## The obligation this list carries
+    /// An entry here is still a schema commitment. Whichever phase adds the first writer must
+    /// exercise it on a Development build and promote it **before shipping** — at which point the
+    /// identifier moves to ``identifiersAwaitingDeploy`` and then into the baseline, by the usual
+    /// checklist. `deployedBaseline` subtracts this list too, so nothing here is ever counted as
+    /// deployed.
+    ///
+    /// No test can catch a missing writer: the identifier is a real member of the inventory either
+    /// way. What the split does is stop the report from claiming an action exists when it does not.
+    static let identifiersAwaitingWriter: [String] = [
+        // R-5 P3b-2's tenth identifier. Every writer in this build records a `document`-grain row
+        // whose `annotationId` is nil — verified at R-1g: `AnnotationReview.annotationId` is
+        // `UUID? = nil` and the two call sites (`VolumeUpdateReviewSection`,
+        // `DocumentChangeReviewSheet`) both pass `kind: .document` without it.
         "CD_AnnotationReview.CD_annotationId",
     ]
 
     // MARK: - Derived state
 
-    /// `true` when every mirrored identifier in this build has been promoted to Production.
+    /// `true` when nothing in this build is waiting for a Production deploy.
+    ///
+    /// ``identifiersAwaitingWriter`` deliberately does **not** count against this. Those identifiers
+    /// cannot be deployed at all until something writes them, so treating them as an outstanding
+    /// deploy reports a failure against an action nobody can take. They are surfaced by
+    /// ``logDeployStateIfNeeded()`` on their own line, without the #488 remedy.
     static var isProductionSchemaCurrent: Bool { identifiersAwaitingDeploy.isEmpty }
 
     /// The identifiers the Production schema is attested to carry: the installed set minus
-    /// whatever is still awaiting a deploy.
+    /// whatever is still awaiting a deploy **and** whatever is awaiting a writer.
+    ///
+    /// **Both subtractions are load-bearing.** Splitting the pending list at R-1g would otherwise
+    /// have moved an identifier out of the subtrahend and into the baseline — silently converting
+    /// "not deployed" into a claim that it was, which is exactly the attestation this file exists to
+    /// make explicit. The count and digest are unchanged by the split, and a test asserts that.
     static var deployedBaseline: [String] {
-        let pending = Set(identifiersAwaitingDeploy)
+        let pending = Set(identifiersAwaitingDeploy).union(identifiersAwaitingWriter)
         return installedIdentifiers.filter { !pending.contains($0) }
     }
 
@@ -530,6 +564,13 @@ enum CloudKitSchemaInventory {
             #if DEBUG
             print("[CloudKitSchema] Production schema current — deployed through build "
                   + "\(deployedThroughBuild) (\(deployedOn))")
+            // Reported at a lower key and DEBUG-only, because there is no action to take: these
+            // cannot be promoted until something writes them. Saying so beats saying nothing —
+            // the commitment is still outstanding — but it is not the #488 warning.
+            if !identifiersAwaitingWriter.isEmpty {
+                print("[CloudKitSchema] Reserved, awaiting a first writer (no deploy possible): "
+                      + identifiersAwaitingWriter.joined(separator: ", "))
+            }
             #endif
             return
         }
