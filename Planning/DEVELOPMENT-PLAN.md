@@ -12909,3 +12909,67 @@ in `installedIdentifiers` and once in the new list, and the pattern took the fir
 by tests that had nothing to do with the intended mutation. Re-targeted at the correct line it is
 killed by the right two. Same class as P-1's M-5 and P-2's M-7: **a mutation that "passes" against the
 wrong site is not evidence, and reading which test killed it is what catches that.**
+
+## Session 2026-09-09 — Build 46 and its TestFlight notes
+
+**Build 46 across all three targets** — `project.yml` (3 occurrences) and `project.pbxproj` (9),
+edited directly, no `xcodegen`, per the standing rule; `README.md`'s two-line "Current build:" line
+with it. `MARKETING_VERSION` stays 0.2. The built Mac bundle reports `CFBundleVersion` 46.
+
+**The notes' headline is the opposite of build 45's, and this one is the expensive direction.**
+`currentDateIndexVersion` moved **47 → 50** in three steps — #1206 (`e309cbde`), #1206-again
+(`f0874a25`) and #1239 (`1012948f`) — so build 46 re-indexes every downloaded volume in the
+background on first launch. Nothing else costs anything: the semantic provenance digest and shard
+manifest are unmoved, so no shard is re-fetched; no `@Model` or stored property changed, so
+`deployedThroughBuild` stays **"44"** and no CloudKit promotion is owed; the bundle grows 822 KB
+(605 of it the accession artifact nothing reads).
+
+**`IndexingPipeline`'s own version history stopped at `v46→47`.** Three bumps had shipped without a
+line each, so the file asserted 47 while the constant read 50 — and that history is the only record
+of *why* testers pay a re-index. All three are now written down: the secondary-clause lot fix, the
+fourth extraction site that made the first fix ineffective, and the two spellings of
+`document_sources.record_group`.
+
+**A defect found while writing the notes, on the headline feature's own screen.** The caption above
+Browse ▸ Archives ▸ **Classes** (#1255) was a `"""` literal whose lines had been joined without `\`
+continuations, so it shipped with four runs of 33 spaces mid-sentence and a straight apostrophe
+among curly ones. Fixed and checked by evaluating the literal, not by reading it.
+
+**Six auditors, and the first run of them cost nothing because the account hit its weekly limit
+mid-flight.** The mechanical half was then done by hand — every quoted UI string located in source,
+every path walked to its mounting view — which is what caught the worst error before any agent
+reported it: **`795.00` does not read "Korea — Political affairs"**. Subject suffixes exist for
+classes 6 and 8 only, so a class-7 key falls back to its country and reads "Korea" — and it already
+did at build 45, making it a bad example twice over. Both files now use **`874.00` → *Bulgaria —
+Political affairs***, which is genuinely new: at build 45 country `74` had no name at all, nor did
+`42` (Canada), and only the 1910–1949 decimal table shipped.
+
+**Four more must-fixes came back from the audit, each confirmed against source before acting:**
+
+1. *"Empty Classes sections on a small library"* was listed as a non-bug and is **false**. The lens
+   is handed `manifestStore.browsableEntries` — the whole 552-volume catalogue — and counts out of
+   the bundled usage index, so library size cannot empty a section. The sentence would have told a
+   tester to ignore a real defect, and it contradicted "it works with nothing downloaded" two
+   paragraphs above. Replaced with a non-bug that is real: a class row whose key the schedule
+   cannot read.
+2. *"Analytics ▸ Archival"* is the **macOS** menu path; the `CommandMenu` is inside `#if
+   os(macOS)`. On iOS the door is the Browse toolbar's **Analysis Tools** menu.
+3. The divided-lot disclosure (#1205) is a render-time read of `lot-claimants-index.json` landing in
+   a volume's **Sources** outline — not in Archival Neighbors, and not gated on the re-index. Only
+   the #1206 half is both. The two were folded into one sentence and are now separate.
+4. *"Two of those four tables are new"* undercounts twice: **five** schedules ship (three decimal
+   arrangements plus the subject-numeric file's 1963 and 1964–1973 editions) and **four** are new,
+   since build 45 carried the 1910–1949 decimal table alone and `subject-numeric-labels.json` did
+   not exist. It also contradicted the "five sections" bullet directly below it.
+
+**And three smaller corrections of the same kind:** the results header prints the *shown* count, so
+quoting "100 closest matches" invites a bug report whenever it differs; "collection pages" reads as
+the reader's own Collections, where the provenance capsules are not (they are on the **archival**
+collection page); and the decimal file breaks at 1960 as well as 1950, so the straddling rule now
+says "either side of each boundary" rather than naming two of the three.
+
+Both files are under the 4,000-character cap measured with `wc -m`: **iOS 3,921, Mac 3,967**.
+4,623 tests in 601 suites; `FRUSExplorerMac` builds clean with the two known non-source warnings.
+
+**Owner note: there is no `build-45` tag**, though `build-42`, `build-43` and `build-44` all sit on
+their bump commits. This session compared against build 45's bump commit `0d88e7e5` instead.
