@@ -136,6 +136,23 @@ struct CountryTableGeometryTests {
         #expect(parsed[0].note == "Discontinued 1962. See 70y and 70z.")
     }
 
+    @Test("Only a code is taken from a code column")
+    func nonCodeCellsAreRefused() throws {
+        // The bands are read off the page, so anything the scan drops into one arrives here — a
+        // page number, a stray mark, a word from a note whose column bled. A cell is not a code
+        // because of where it sits; it has to look like one, or a row ships a country keyed on
+        // whatever the strip happened to catch.
+        let path = try makePDF([
+            [(0, "Poland"), (1, "60"), (2, "see"), (3, "48")],
+        ])
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let parsed = try rows(path)
+        #expect(parsed.count == 1)
+        #expect(parsed[0].codes == ["60", nil, "48"], """
+            `see` sits in the 1950–59 band and is not a code. Got \(parsed[0].codes).
+            """)
+    }
+
     @Test("Rows are grouped by their own leading, not by proximity")
     func rowGrouping() {
         let lines = [
