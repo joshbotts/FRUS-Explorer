@@ -173,12 +173,53 @@ struct DecimalClassLabelTests {
             60f carries `Czechoslovakia`, `Czecho-Slovak Republic` and `Ruthenia` in the table.             The shortest-name tie-break took the province over the state, and 82 documents on             `611.60F31` are US–Czechoslovak commerce.
             """)
 
-        // **Still unresolved, and that is the honest state rather than an oversight.** Canada (42)
-        // and Bulgaria (74) sit on pages whose text layer emits names and codes as separate
-        // blocks, so the document does not settle the pairing by any rule; the table stays silent
-        // rather than guessing, which is the standard the curated list is held to.
-        #expect(schedule.countries["42"] == nil, "42 became answerable — remove it from the report")
-        #expect(schedule.countries["74"] == nil, "74 became answerable — remove it from the report")
+        // **ANSWERED SINCE #1256, and how they were answered is the point.** Canada (42) and
+        // Bulgaria (74) were the two codes #1201 recorded as structurally unanswerable: their
+        // pages emit names and codes as separate blocks, so the TEXT LAYER settles no pairing and
+        // the table stayed silent rather than guessing. The pairing was never missing from the
+        // document — only from the projection of it the parser was reading. Reading the columns
+        // by their own geometry supplies it, which is the clearest evidence the change is
+        // recovering the source rather than inferring harder.
+        #expect(schedule.countries["42"] == "Canada")
+        #expect(schedule.countries["74"] == "Bulgaria")
+    }
+
+    /// The entries the column inference got wrong, now read off the page (#1256).
+    ///
+    /// Each of these was a plausible name in a wrong column, which is the failure mode that does
+    /// not announce itself: a code in the wrong era still glosses, it just names another era's
+    /// country.
+    @Test("The codes the alignment rules misplaced now read out of their own column")
+    func geometryFixesTheMisplacedCodes() throws {
+        let table = try table()
+        func schedule(_ id: String) throws -> DecimalClassLabelTable.Schedule {
+            try #require(table.schedules.first { $0.id == id })
+        }
+        let fifties = try schedule("1950-1959")
+        let sixties = try schedule("1960-1963")
+
+        // FABRICATED CELLS. The document leaves Amhara's 1960–63 cell empty and gives 77 to the
+        // Somali Republic, established July 1960; the right-alignment rule invented the entry.
+        #expect(sixties.countries["77"] == "Somali Republic")
+        // Trieste is printed in the 1910–49 column and was right-aligned into 1960–63, a column
+        // whose span excludes its own stated year.
+        #expect(sixties.countries["60s"] == nil)
+        // 65d is a 1910–49 code that reached the 1950–59 table the same way.
+        #expect(fifties.countries["65d"] == nil)
+
+        // WELDED ROWS. `selectionsByLine()` returns some printed rows as one line beginning at the
+        // name column, which minted names of no country at all.
+        for schedule in table.schedules {
+            for name in schedule.countries.values {
+                #expect(name != "Niger, Republic of Nigeria")
+                #expect(!name.contains("Bijagoz"))
+            }
+        }
+
+        // THE TIE-BREAK reads the column span before the name length, so a head entry beats a
+        // redirect row that merely has a shorter name.
+        #expect(sixties.countries["75"] == "Ethiopia", "not Galla, which takes 75 only from 1960")
+        #expect(fifties.countries["51f"] == "French India", "not Mahe, one of six claimants")
     }
 
     /// The rows recovered alongside them, so the fix is measured rather than asserted.
