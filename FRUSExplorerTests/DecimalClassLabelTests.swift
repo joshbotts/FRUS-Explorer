@@ -547,6 +547,37 @@ struct DecimalClassLabelTests {
             """)
     }
 
+    @Test("Every surface that shows a gloss also says when it is one of several")
+    func disclosureFollowsTheGloss() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+        var linked: [String] = []
+        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let url = files?.nextObject() as? URL {
+            guard url.pathExtension == "swift",
+                  let text = try? String(contentsOf: url, encoding: .utf8),
+                  Self.codeOnly(text).contains("GlossAlternatesLink(")
+            else { continue }
+            linked.append(url.lastPathComponent)
+        }
+        // The two surfaces that print a gloss where a reader can point at it. A third that grew
+        // a gloss without the link would ship the tie-break's choice as the answer — which is
+        // the whole thing #1257 exists to stop — so this fails rather than widens.
+        #expect(linked.sorted() == ["ArchivalAllUnitsSheet.swift", "ArchivesBrowseView.swift"], """
+            The link appears in \(linked.sorted()). Adding a gloss to a view without it asserts \
+            `11g` is one island.
+            """)
+
+        // The chart is the named exception, and it is not an omission: its Y axis carries the
+        // bare key, the gloss reaches the reader only through VoiceOver, and a popover cannot
+        // hang off a chart mark. So the count goes into the spoken label instead.
+        let chart = try String(
+            contentsOf: root.appendingPathComponent("Analytics/ArchivalAnalyticsView.swift"),
+            encoding: .utf8)
+        #expect(chart.contains("archival.gloss.andOthers"))
+        #expect(chart.contains("Int64(row.glossAlternates.count)"))
+    }
+
     @Test("The uncapped list and its CSV both carry the gloss")
     func listAndExport() throws {
         let sheet = try String(

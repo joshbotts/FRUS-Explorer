@@ -183,6 +183,11 @@ struct DecimalClassLabelTable: Decodable, Sendable {
               let schedule = schedules.first(where: { $0.governs(span, floor: floor) })
         else { return [] }
         let parts = key.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+        // `first.isNumber` is subsumed by the class-set test against every schedule that
+        // ships — all three list digits — and a mutation sweep duly survives its removal. It
+        // stays because `gloss(for:coveringYears:)` above reads the key through exactly these
+        // two tests, and the two must agree about which keys are readable: a row cannot be
+        // given a name by one rule and its co-claimants by another.
         guard let head = parts.first, let first = head.first, first.isNumber,
               schedule.countryArrangedClasses.contains(String(first))
         else { return [] }
