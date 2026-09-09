@@ -136,19 +136,6 @@ struct CountryTableGeometryTests {
         #expect(parsed[0].note == "Discontinued 1962. See 70y and 70z.")
     }
 
-    @Test("Column bands cover their own origin and stop before the next")
-    func columnBands() {
-        #expect(CountryTableGeometry.column(forX: 72.0) == 0)
-        #expect(CountryTableGeometry.column(forX: 180.9) == 1)
-        #expect(CountryTableGeometry.column(forX: 248.5) == 2)
-        #expect(CountryTableGeometry.column(forX: 315.9) == 3)
-        #expect(CountryTableGeometry.column(forX: 383.5) == 4)
-        // A wrapped line indented a few points inside its own column still belongs to it.
-        #expect(CountryTableGeometry.column(forX: 88.0) == 0)
-        // Nothing sits left of the table.
-        #expect(CountryTableGeometry.column(forX: 20.0) == nil)
-    }
-
     @Test("Rows are grouped by their own leading, not by proximity")
     func rowGrouping() {
         let lines = [

@@ -75,25 +75,6 @@ enum CountryTableGeometry {
     /// whose columns are sparsely filled.
     static let columnOrigins: [Double] = [72.0, 180.9, 248.5, 315.9, 383.5]
 
-    /// How far right of its origin a line may start and still belong to that column.
-    ///
-    /// The columns are ~67 points apart and their contents are left-aligned, so a generous band
-    /// still cannot reach the next origin. It has to be generous rather than exact because a
-    /// wrapped note line is indented a few points.
-    static let columnTolerance: Double = 60
-
-    /// Which column a line begins in, or `nil` when it starts left of the table.
-    ///
-    /// - Parameter x: The line's left edge.
-    /// - Returns: 0 for the name column, 1–3 for the era columns, 4 for notes.
-    static func column(forX x: Double) -> Int? {
-        for (index, origin) in columnOrigins.enumerated().reversed()
-        where x >= origin - 4 && x < origin + columnTolerance {
-            return index
-        }
-        return nil
-    }
-
     /// Every line of a page, read COLUMN BY COLUMN and tagged with the column it came from.
     ///
     /// ## One selection per column, not one per page
