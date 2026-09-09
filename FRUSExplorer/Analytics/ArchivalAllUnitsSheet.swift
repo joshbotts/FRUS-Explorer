@@ -119,9 +119,14 @@ struct ArchivalAllUnitsSheet: View {
                     // #828: the key stays, because the key is what a pull slip needs; the gloss
                     // sits under it so a reader who does not already know `793.94` can read it.
                     if let gloss = row.gloss {
-                        Text(gloss)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(gloss)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            // #1257: the code names other places too, and the name alone would
+                            // assert otherwise.
+                            GlossAlternatesLink(alternates: row.glossAlternates, key: row.label)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -175,11 +180,23 @@ struct ArchivalAllUnitsSheet: View {
                 String(localized: "archival.table.custodian", defaultValue: "Custodian"),
                 weight.title,
             ],
-            rowCells: ranking.rows.map {
+            rowCells: ranking.rows.map { row in
                 // The gloss travels into the CSV too: a spreadsheet of bare decimal numbers is
                 // the same problem one layer out.
-                [[$0.label, $0.gloss].compactMap { $0 }.joined(separator: " — "),
-                 $0.category.displayName, "\($0.value)"]
+                //
+                // #1257: a spreadsheet cannot pop over, and a bare name would assert the code
+                // means one place. The COUNT travels instead of the list — twenty-one cay names
+                // in one cell is not a readable export, and the reader who needs them has the
+                // key and the app.
+                let reading = row.gloss.map { gloss -> String in
+                    row.glossAlternates.isEmpty
+                        ? gloss
+                        : String(format: String(localized: "archival.export.andOthers %@ %lld",
+                                                defaultValue: "%1$@ (and %2$lld others)"),
+                                 gloss, Int64(row.glossAlternates.count))
+                }
+                return [[row.label, reading].compactMap { $0 }.joined(separator: " — "),
+                        row.category.displayName, "\(row.value)"]
             })
     }
 

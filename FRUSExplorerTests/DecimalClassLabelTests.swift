@@ -173,12 +173,118 @@ struct DecimalClassLabelTests {
             60f carries `Czechoslovakia`, `Czecho-Slovak Republic` and `Ruthenia` in the table.             The shortest-name tie-break took the province over the state, and 82 documents on             `611.60F31` are US–Czechoslovak commerce.
             """)
 
-        // **Still unresolved, and that is the honest state rather than an oversight.** Canada (42)
-        // and Bulgaria (74) sit on pages whose text layer emits names and codes as separate
-        // blocks, so the document does not settle the pairing by any rule; the table stays silent
-        // rather than guessing, which is the standard the curated list is held to.
-        #expect(schedule.countries["42"] == nil, "42 became answerable — remove it from the report")
-        #expect(schedule.countries["74"] == nil, "74 became answerable — remove it from the report")
+        // **ANSWERED SINCE #1256, and how they were answered is the point.** Canada (42) and
+        // Bulgaria (74) were the two codes #1201 recorded as structurally unanswerable: their
+        // pages emit names and codes as separate blocks, so the TEXT LAYER settles no pairing and
+        // the table stayed silent rather than guessing. The pairing was never missing from the
+        // document — only from the projection of it the parser was reading. Reading the columns
+        // by their own geometry supplies it, which is the clearest evidence the change is
+        // recovering the source rather than inferring harder.
+        #expect(schedule.countries["42"] == "Canada")
+        #expect(schedule.countries["74"] == "Bulgaria")
+    }
+
+    /// The entries the column inference got wrong, now read off the page (#1256).
+    ///
+    /// Each of these was a plausible name in a wrong column, which is the failure mode that does
+    /// not announce itself: a code in the wrong era still glosses, it just names another era's
+    /// country.
+    @Test("The codes the alignment rules misplaced now read out of their own column")
+    func geometryFixesTheMisplacedCodes() throws {
+        let table = try table()
+        func schedule(_ id: String) throws -> DecimalClassLabelTable.Schedule {
+            try #require(table.schedules.first { $0.id == id })
+        }
+        let fifties = try schedule("1950-1959")
+        let sixties = try schedule("1960-1963")
+
+        // FABRICATED CELLS. The document leaves Amhara's 1960–63 cell empty and gives 77 to the
+        // Somali Republic, established July 1960; the right-alignment rule invented the entry.
+        #expect(sixties.countries["77"] == "Somali Republic")
+        // Trieste is printed in the 1910–49 column and was right-aligned into 1960–63, a column
+        // whose span excludes its own stated year.
+        #expect(sixties.countries["60s"] == nil)
+        // 65d is a 1910–49 code that reached the 1950–59 table the same way.
+        #expect(fifties.countries["65d"] == nil)
+
+        // WELDED ROWS. `selectionsByLine()` returns some printed rows as one line beginning at the
+        // name column, which minted names of no country at all.
+        for schedule in table.schedules {
+            for name in schedule.countries.values {
+                #expect(name != "Niger, Republic of Nigeria")
+                #expect(!name.contains("Bijagoz"))
+            }
+        }
+
+        // THE TIE-BREAK reads the column span before the name length, so a head entry beats a
+        // redirect row that merely has a shorter name.
+        #expect(sixties.countries["75"] == "Ethiopia", "not Galla, which takes 75 only from 1960")
+        #expect(fifties.countries["51f"] == "French India", "not Mahe, one of six claimants")
+    }
+
+    /// One code, several places — vended honestly (#1257).
+    ///
+    /// The Department filed a territory under the number of the power holding it, so a code
+    /// carries a parent and its dependencies. Measured over the shipped corpus, a QUARTER of the
+    /// documents a schedule can gloss sit on such a code, so the single name the table vends is an
+    /// assertion it cannot support on its own.
+    @Test("A shared code names its other places, and never itself")
+    func sharedCodesCarryTheirOtherClaimants() throws {
+        let table = try table()
+        func schedule(_ id: String) throws -> DecimalClassLabelTable.Schedule {
+            try #require(table.schedules.first { $0.id == id })
+        }
+
+        // THE CURATED HEAD TERMS. The tie-break takes the shortest name, which for these is a
+        // constituent of one of its own co-claimants — a part standing for the whole.
+        let early = try schedule("1910-1949")
+        #expect(early.countries["11f"] == "Panama Canal Zone", "not Naos Island, which is in it")
+        #expect(early.countries["51g"] == "Indo China", "not Annam, which is a region of it")
+        #expect(early.countries["90f"] == "Saudi Arabia", "not Nejd, which is a region of it")
+        #expect(try schedule("1960-1963").countries["91"] == "India",
+                "not Mahe, a French enclave in it — 1,721 documents")
+
+        // AND THE DISCLOSURE. The name the tie-break displaced is still reachable.
+        let alternates = try #require(early.countryAlternates?["11f"])
+        #expect(alternates.contains("Naos Island"))
+        #expect(alternates.contains("Culebra Island"))
+
+        // A LIST NEVER CONTAINS THE NAME BESIDE IT. `displaced` is built during the tie-break,
+        // before a curated correction can override the winner, so using it directly shipped
+        // `11f = Panama Canal Zone (also: … Panama Canal Zone)`.
+        for schedule in table.schedules {
+            for (code, others) in schedule.countryAlternates ?? [:] {
+                let vended = try #require(schedule.countries[code],
+                                          "\(code) has alternates but no name of its own")
+                #expect(!others.contains(vended), "\(code) lists its own vended name")
+                #expect(!others.isEmpty)
+                #expect(others == others.sorted(), "\(code) is unsorted, so a rebuild would differ")
+            }
+        }
+    }
+
+    @Test("The alternates come from the schedule the gloss came from")
+    func alternatesFollowTheEra() throws {
+        let table = try table()
+        // `91` is Iran before the renumbering and India after it, and the claimant sets differ
+        // with them. Asking with the wrong span would show one era's places beside another
+        // era's name.
+        #expect(table.alternates(for: "891.00", coveringYears: 1920...1930).contains("Persia"))
+        #expect(table.alternates(for: "891.00", coveringYears: 1961...1963).contains("Mahe"))
+
+        // A class that is not country-arranged never resolves a country at all — and the
+        // fixture has to collide, or the guard is untested. Class 5 is NOT country-arranged
+        // before 1950 but IS after it, and `11f` carries four claimants in every schedule, so
+        // `511f.00` is refused here and answered on the other side of the renumbering. A key
+        // like `501.BB`, whose digits name no shared code, would pass with the guard deleted.
+        #expect(table.alternates(for: "511f.00", coveringYears: 1920...1930).isEmpty, """
+            Class 5 is Protection of Interests before 1950, so `11f` is not a country number \
+            here and must not be dressed as one.
+            """)
+        #expect(table.alternates(for: "511f.00", coveringYears: 1955...1958).contains("Naos Island"),
+                "the control: the same digits ARE a country number once class 5 is country-arranged")
+        // Outside every schedule there is nothing to say.
+        #expect(table.alternates(for: "891.00", coveringYears: 1850...1860).isEmpty)
     }
 
     /// The rows recovered alongside them, so the fix is measured rather than asserted.
@@ -198,7 +304,12 @@ struct DecimalClassLabelTests {
         // pairing contradicts the other.
         #expect(schedule.countries["68c"] == "Crete")
         #expect(schedule.countries["57h"] == "Spitzbergen")
-        #expect(schedule.countries["11g"] == "St. John Island")
+        // St. John's other code, `11g`, is now CURATED to the whole it is a part of (#1257) —
+        // the recovered row is still there, as one of the three islands `11g` covers, and this
+        // asserts the recovery rather than the tie-break's choice among them.
+        #expect(schedule.countries["11g"] == "Virgin Islands (U.S.)")
+        #expect(schedule.countryAlternates?["11g"]?.contains("St. John Island") == true)
+        #expect(schedule.countries["59d"] == "St. John Island")
     }
 
     @Test("Anything the table cannot place stays silent")
@@ -436,6 +547,37 @@ struct DecimalClassLabelTests {
             """)
     }
 
+    @Test("Every surface that shows a gloss also says when it is one of several")
+    func disclosureFollowsTheGloss() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+        var linked: [String] = []
+        let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        while let url = files?.nextObject() as? URL {
+            guard url.pathExtension == "swift",
+                  let text = try? String(contentsOf: url, encoding: .utf8),
+                  Self.codeOnly(text).contains("GlossAlternatesLink(")
+            else { continue }
+            linked.append(url.lastPathComponent)
+        }
+        // The two surfaces that print a gloss where a reader can point at it. A third that grew
+        // a gloss without the link would ship the tie-break's choice as the answer — which is
+        // the whole thing #1257 exists to stop — so this fails rather than widens.
+        #expect(linked.sorted() == ["ArchivalAllUnitsSheet.swift", "ArchivesBrowseView.swift"], """
+            The link appears in \(linked.sorted()). Adding a gloss to a view without it asserts \
+            `11g` is one island.
+            """)
+
+        // The chart is the named exception, and it is not an omission: its Y axis carries the
+        // bare key, the gloss reaches the reader only through VoiceOver, and a popover cannot
+        // hang off a chart mark. So the count goes into the spoken label instead.
+        let chart = try String(
+            contentsOf: root.appendingPathComponent("Analytics/ArchivalAnalyticsView.swift"),
+            encoding: .utf8)
+        #expect(chart.contains("archival.gloss.andOthers"))
+        #expect(chart.contains("Int64(row.glossAlternates.count)"))
+    }
+
     @Test("The uncapped list and its CSV both carry the gloss")
     func listAndExport() throws {
         let sheet = try String(
@@ -444,9 +586,20 @@ struct DecimalClassLabelTests {
                 .appendingPathComponent("FRUSExplorer/Analytics/ArchivalAllUnitsSheet.swift"),
             encoding: .utf8)
         #expect(sheet.contains("if let gloss = row.gloss"))
-        #expect(sheet.contains("[$0.label, $0.gloss].compactMap { $0 }.joined(separator: \" — \")"), """
+        #expect(sheet.contains("[row.label, reading].compactMap { $0 }.joined(separator: \" — \")"), """
             A spreadsheet of bare decimal numbers is the same problem one layer out from the \
             screen.
+            """)
+        // And the CSV says when a name is one of several claimants. On screen that disclosure is
+        // a popover, which an export cannot carry — so it is written out as a count, and a reader
+        // who has only the spreadsheet still knows the name is not the whole answer.
+        #expect(sheet.contains("archival.export.andOthers"), """
+            The `and N others` link is the ONLY thing telling a reader that `11g` covers three \
+            islands. Dropped from the export, the CSV asserts a single name the screen refuses to.
+            """)
+        #expect(sheet.contains("Int64(row.glossAlternates.count)"), """
+            The count must come from the row's OWN alternates. Formatting a constant, or the \
+            popover's list length, would put a number in the cell that no longer describes it.
             """)
     }
 

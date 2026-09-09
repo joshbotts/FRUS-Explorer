@@ -164,6 +164,17 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
         public let countries: [String: String]
         /// `classDigit` → (`suffix` → gloss), e.g. `"8"` → `"72"` → `"Telegraph"`.
         public let subjects: [String: [String: String]]
+        /// The OTHER names the table files under a code this schedule already answers (#1257).
+        ///
+        /// The table gives one number to several places — 44e is the Bahamas and twenty-one of
+        /// its cays; 11f is the Panama Canal Zone and four islands in it — and `countries` can
+        /// hold only one. Before this field the losers were logged by the generator and dropped,
+        /// so the app vended a single name and could not say there were others. Measured, a
+        /// quarter of the documents a schedule can gloss sit on a code with more than one
+        /// claimant, which is far too many to leave undisclosed.
+        ///
+        /// Sorted, so a rebuild is byte-identical.
+        public let countryAlternates: [String: [String]]
         /// Where each vocabulary came from, for the per-row stamp D-2 requires.
         public let sources: Sources
 
@@ -185,6 +196,7 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
         public init(id: String, startYear: Int, endYear: Int, source: String,
                     classes: [String: String], countryArrangedClasses: [String],
                     relationsClasses: [String], countries: [String: String],
+                    countryAlternates: [String: [String]],
                     subjects: [String: [String: String]], sources: Sources) {
             self.relationsClasses = relationsClasses
             self.id = id
@@ -194,6 +206,7 @@ public struct DecimalClassLabels: Codable, Sendable, Equatable {
             self.classes = classes
             self.countryArrangedClasses = countryArrangedClasses
             self.countries = countries
+            self.countryAlternates = countryAlternates
             self.subjects = subjects
             self.sources = sources
         }

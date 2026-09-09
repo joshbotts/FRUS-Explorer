@@ -71,6 +71,8 @@ enum ArchivesClassAxis {
         let key: String
         /// Its reading under THIS era's schedule, or `nil` when that schedule cannot say.
         let gloss: String?
+        /// The other places this key's country code also names under THIS era's schedule (#1257).
+        let glossAlternates: [String]
         /// Documents this class supplies from volumes in the era.
         let documents: Int
         /// The citing volumes, heaviest first — the drill's members.
@@ -185,6 +187,7 @@ enum ArchivesClassAxis {
                 $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value
             }
             out.append(ClassRow(key: key, gloss: gloss(for: key, era: era),
+                                glossAlternates: alternates(for: key, era: era),
                                 documents: documents, volumeIds: ordered.map(\.key)))
         }
         // Heaviest first, then by key: a total order, so the list is the same on every launch.
@@ -209,6 +212,22 @@ enum ArchivesClassAxis {
         case .subjectNumeric:
             return SubjectNumericLabelStore.shared?.leafGloss(for: key, coveringYears: era.span)
         }
+    }
+
+    /// The other places a key's country code names, under this era's schedule.
+    ///
+    /// Asked with the ERA'S OWN SPAN for the same reason the gloss is: the reader is looking at
+    /// this era, so the list must be this era's schedule's. Decimal only — the subject-numeric
+    /// table refuses an ambiguous country reading outright, so a key that glosses there has one
+    /// answer by construction.
+    ///
+    /// - Parameters:
+    ///   - key: A class key.
+    ///   - era: The era.
+    /// - Returns: The other names, or empty.
+    static func alternates(for key: String, era: FilingEra) -> [String] {
+        guard era.system == .decimal else { return [] }
+        return DecimalClassLabelStore.shared?.alternates(for: key, coveringYears: era.span) ?? []
     }
 
     // MARK: Drill

@@ -149,25 +149,50 @@ public enum DecimalClassLabelRunner {
                     subjects["8", default: [:]][suffix] = gloss
                 }
             }
-            let era: [(name: String, code: String)] = countries.compactMap { row in
-                row.codes[source.countryColumn].map { (name: row.name, code: $0) }
+            // The COLUMN SPAN of each claim — how many eras this row holds this code across.
+            // A head entry keeps its number as the file is reissued; a redirect row takes it in
+            // one era only. That is the document distinguishing them, and it is the signal the
+            // tie-break below reads first.
+            let era: [(name: String, code: String, span: Int)] = countries.compactMap { row in
+                guard let code = row.codes[source.countryColumn] else { return nil }
+                let span = row.codes.filter { $0?.lowercased() == code.lowercased() }.count
+                return (name: row.name, code: code, span: span)
             }
             // Several names legitimately share one code — 65 is both `Italy` and `Rhodes Island`,
             // because Italy held the Dodecanese for the period this schedule covers. First-wins
             // over a Dictionary resolved that by hash order, which is how the table came to gloss
-            // 65 as "Rhodes Island". The shortest name wins instead, ties broken alphabetically:
-            // deterministic, and it prefers the sovereign state over the territory filed under it.
+            // 65 as "Rhodes Island".
+            //
+            // **THE COLUMN SPAN IS TRIED BEFORE THE NAME LENGTH, and reading the columns is what
+            // made that necessary.** Shortest-name alone prefers the sovereign state over the
+            // territory filed under it often enough to look like a rule — `France` over `Corsica`
+            // — but it is a proxy, and once #1256 stopped inventing columns the proxy started
+            // losing: `75` gained its redirect rows and came back as `Galla` (5 letters) rather
+            // than `Ethiopia` (8), and `51f` as `Mahe` rather than `French India`. The span says
+            // the same thing the length was standing in for, and says it from the document:
+            // Ethiopia holds 75 in two eras where Galla holds it in one.
+            //
+            // Length remains the second key and alphabetical order the third, so the result is
+            // still total and deterministic.
             var byCode: [String: String] = [:]
             var displaced: [String: [String]] = [:]
+            // EVERY name the table files under a code, winner included. `displaced` cannot serve:
+            // it is built during the tie-break, before the curated corrections override a winner,
+            // so a corrected code would list its own vended name as an alternate and omit the
+            // name it replaced. Measured, that shipped `11f = Panama Canal Zone (also: … Panama
+            // Canal Zone)`.
+            var claimants: [String: Set<String>] = [:]
             var shared = 0
             // Sorted by the NAME's length — `lhs.key` — not the code's. Sorting on `value`
             // ordered by code length, which is nearly constant, so the tie-break never ran and
             // 51 came back as "Corsica" rather than "France".
-            for (name, code) in era.sorted(by: { lhs, rhs in
-                lhs.name.count != rhs.name.count ? lhs.name.count < rhs.name.count
-                                                 : lhs.name < rhs.name
+            for (name, code, _) in era.sorted(by: { lhs, rhs in
+                if lhs.span != rhs.span { return lhs.span > rhs.span }
+                if lhs.name.count != rhs.name.count { return lhs.name.count < rhs.name.count }
+                return lhs.name < rhs.name
             }) {
                 let key = code.lowercased()
+                claimants[key, default: []].insert(name)
                 if byCode[key] == nil {
                     byCode[key] = name
                 } else {
@@ -205,9 +230,17 @@ public enum DecimalClassLabelRunner {
                     + "already taken (territories filed under the power holding them)")
                 // The contested codes, so a wrong winner can be seen rather than discovered later
                 // in the artifact. Sorted for a reproducible log.
-                for key in displaced.keys.sorted() where byCode[key] != nil {
+                //
+                // Printed from the SHIPPED list, not from `displaced`: the two differ on exactly
+                // the codes curation touched, and the scans are not in the repository, so this
+                // log is the review surface. Printing `displaced` had `91` reading
+                // `India (also: India, Karikal, …)` — the vended name among its own alternates
+                // and `Mahe`, the name curation replaced, missing — while the artifact beside it
+                // was right.
+                let shipped = Self.alternates(claimants: claimants, vended: byCode)
+                for key in shipped.keys.sorted() {
                     print("[DecimalClassLabels]   \(key) = \(byCode[key]!) "
-                        + "(also: \(displaced[key]!.sorted().joined(separator: ", ")))")
+                        + "(also: \(shipped[key]!.joined(separator: ", ")))")
                 }
             }
 
@@ -266,7 +299,11 @@ public enum DecimalClassLabelRunner {
                 classes: glossed,
                 countryArrangedClasses: countryArranged(for: source.id),
                 relationsClasses: relationsClasses(for: source.id),
-                countries: byCode, subjects: shippableSubjects,
+                countries: byCode,
+                // The claimants the tie-break did not take. Already computed to be logged; now
+                // shipped, so a surface can say a code names more than one place.
+                countryAlternates: Self.alternates(claimants: claimants, vended: byCode),
+                subjects: shippableSubjects,
                 sources: .init(schedule: source.title, countries: countryTitle)))
         }
 
@@ -697,110 +734,40 @@ public enum DecimalClassLabelRunner {
         return lines[lines.index(after: start)..<end].joined(separator: "\n")[...]
     }
 
-    /// The three-era country table: name → the codes for 1910–49, 1950–59, 1960–63.
+    /// The country-number table, read by the document's own column geometry (#1256).
     ///
-    /// ## The problem: a partial row does not say which column it fills
-    /// The table has three code columns, and many rows fill only some. `Arctic 01 Discontinued
-    /// 1955` carries one code; `Arctic 03 03 Beginning 1955` carries two. In the PDF's text layer
-    /// both are just "a name and some numbers" — **nothing in reading order says which era a lone
-    /// code belongs to**, and placing one by guess would file a country under another era's number
-    /// and gloss a citation with the wrong nation, an error no reader could catch because the
-    /// output still looks like an answer.
+    /// ## The columns are READ, not inferred, and that is the whole change
+    /// This table is one document with three code columns, one per era, and every label the
+    /// artifact composes depends on knowing which column a code sits in. The text layer discards
+    /// that, so the parse this replaces INFERRED it — three codes filled the columns in order, a
+    /// partial row was left-aligned when its note said `Discontinued` and right-aligned when it
+    /// said `Beginning` or `Established`. `CountryTableGeometry` reads the position instead. The
+    /// defects that motivated it, each measured against the source, are documented there.
     ///
-    /// Two routes were measured and rejected before this one:
-    /// - **Drop every partial row.** Honest, and expensive: 176 of the 353 codes in the 1910–49
-    ///   column, resolving 80.0% of classed documents against the 98.1% a full table reaches.
-    /// - **Place codes by their x position.** The column centres calibrate cleanly (x ≈ 125 / 224 /
-    ///   293), but `PDFPage.characterBounds(at:)` does not agree with `PDFPage.string`'s ordering
-    ///   on these files — names come back at wildly inconsistent x — so the positions cannot be
-    ///   trusted to belong to the tokens they are read for.
+    /// The NAME guards below are kept verbatim from the text parse, because they are about OCR
+    /// damage rather than about layout and geometry does not make them unnecessary.
     ///
-    /// ## The rule: read NARA's own annotations
-    /// The notes column says which end of the period a partial row occupies — 135 rows carry
-    /// `Discontinued`, 66 `Established`, 40 `Beginning`. So a partial row is **left-aligned when
-    /// it was discontinued** (the code ran from the start of the table until it lapsed) and
-    /// **right-aligned when it began or was established** (the code appears only after). A partial
-    /// row with no annotation is genuinely ambiguous and is dropped, counted, and reported.
-    ///
-    /// This is reading the source rather than inferring from layout, which is why it is the rule
-    /// that ships.
+    /// - Parameter path: The country-number PDF.
+    /// - Returns: One row per printed entry, its codes placed by column.
+    /// - Throws: ``GenerationError`` when the table cannot be opened or parses short.
     private static func parseCountries(at path: String)
         throws -> [(name: String, codes: [String?], note: String?)]
     {
-        let text = try plainText(of: path)
-        let code = #"\d{1,3}[a-z]?"#
-        guard let codeRegex = try? NSRegularExpression(pattern: "^\(code)$"),
-              let leadRegex = try? NSRegularExpression(pattern: "^(.*?)((?:\\s*\(code))+)\\s*(.*)$")
-        else { throw GenerationError(description: "country-table patterns failed to compile") }
+        guard let document = PDFDocument(url: URL(fileURLWithPath: path)) else {
+            throw GenerationError(description: "cannot open \(path)")
+        }
+        guard let codeRegex = try? NSRegularExpression(pattern: #"^\d{1,3}[a-z]?$"#) else {
+            throw GenerationError(description: "country-table patterns failed to compile")
+        }
         func isCode(_ token: String) -> Bool {
-            codeRegex.firstMatch(in: token, range: NSRange(token.startIndex..., in: token)) != nil
+            let bare = token.trimmingCharacters(in: CharacterSet(charactersIn: ".,;:"))
+            return codeRegex.firstMatch(
+                in: bare, range: NSRange(bare.startIndex..., in: bare)) != nil
         }
 
-        // **Rows, not a name-keyed dictionary, because a country legitimately has more than one
-        // code in one column.** `Crete 67k Discontinued 1920. See 68c.` and `Crete 68c 81a 81a
-        // Before 1920 see 67k.` are both 1910–49 codes — the file renumbered mid-period, and the
-        // artifact maps CODE to name, so both pairs are true and neither conflicts. Keyed by name,
-        // the first row seen silently displaced the second: 67k and 68c cannot both be "Crete".
-        // The same shape covers `Philippines 11b` / `Philippines 96` and `Spitzbergen 50d` / `57h`.
         var result: [(name: String, codes: [String?], note: String?)] = []
-        var ambiguous = 0
-        var pendingName: [String] = []
-        var open: (name: String, codes: [String], note: String)?
-
-        /// Files whatever row is open, once its note has been gathered.
-        func close() {
-            guard let row = open else { return }
-            open = nil
-            let note = row.note
-            var placed: [String?] = [nil, nil, nil]
-            if row.codes.count >= 3 {
-                for index in 0..<3 { placed[index] = row.codes[index] }
-            } else if note.contains("Beginning") || note.contains("Established") {
-                // The code appears only in the later part of the period, so it is right-aligned.
-                for (offset, value) in row.codes.enumerated() {
-                    placed[3 - row.codes.count + offset] = value
-                }
-            } else if row.codes.count == 1, let year = Self.discontinuedYear(in: note) {
-                // **The date the note states settles the column the old rule guessed at.**
-                //
-                // `Discontinued ⇒ left-align` was removed because `Arctic 01 Discontinued 1955.
-                // See 03.` is not a 1910–49 code, and left-aligning it glossed 4,513 documents as
-                // "Arctic". But dropping every such row over-corrected: `Newfoundland 43
-                // Discontinued 1949. See 42.` and `Philippines 11b Discontinued July 1946. See 96.`
-                // are unambiguous — a code discontinued in 1946 must have been in use before 1946,
-                // and the only column covering that year is 1910–49.
-                //
-                // So the rule is the year, not the word: a code discontinued in year Y belongs to
-                // the columns whose span reaches Y, and to no later one. Arctic's 1955 lands in
-                // 1950–59 and is kept out of 1910–49 — the case that removed the old rule is
-                // decided correctly by the new one, which is why this restores the rows without
-                // restoring the defect.
-                //
-                // **One code only, because two is the signature of a merged row.** The text layer
-                // runs adjacent columns together on some pages: `Azerbaijan Azores 90c 53b
-                // Discontinued May 1926. See 61.` is *two* rows, and reading its note as though it
-                // qualified both codes glossed 90c as "Azerbaijan Azores". A row that genuinely
-                // occupies one column carries one code.
-                for (index, span) in Self.columnSpans.enumerated() where year <= span.end {
-                    placed[index] = row.codes.first
-                    break
-                }
-                guard placed.contains(where: { $0 != nil }) else { ambiguous += 1; return }
-            } else {
-                // The `Discontinued ⇒ left-align` rule is GONE, and its removal is a correctness
-                // fix rather than a tidy-up. `Arctic 01 Discontinued 1955. See 03.` does not mean
-                // 01 is a 1910–49 code — the row is annotated from the perspective of the column
-                // it actually occupies, which the text does not name. Left-aligned, `01` entered
-                // the 1910–49 table and glossed **4,513 documents** as "Arctic", among them
-                // `501.BB` (1,628), which is a United Nations key and names no country at all.
-                // `11h` (Alaska) arrived the same way.
-                //
-                // `Beginning`/`Established` is kept because it is directional in the other sense:
-                // a code that BEGINS mid-period cannot be in the earliest column, so right-
-                // alignment removes possibilities rather than inventing one.
-                ambiguous += 1
-                return
-            }
+        var refused = 0
+        for row in CountryTableGeometry.rows(in: document, isCode: isCode) {
             let name = row.name
             // A country name is a noun phrase. These reject note prose that the row builder let
             // through: `52` shipped as `Africa."` — the tail of *Formerly "German Southwest
@@ -814,79 +781,13 @@ public enum DecimalClassLabelRunner {
                   name.range(of: #"^[A-Z]"#, options: .regularExpression) != nil,
                   !name.lowercased().hasPrefix("country"),
                   !name.lowercased().contains("number")
-            else { return }
-            result.append((name: name, codes: placed, note: note.isEmpty ? nil : note))
+            else { refused += 1; continue }
+            result.append((name: name, codes: row.codes,
+                           note: row.note.isEmpty ? nil : row.note))
         }
 
-        /// Whether a code-less line continues the previous row's note rather than starting a name.
-        ///
-        /// Notes are sentences and cross-references; names are noun phrases. The table's own
-        /// vocabulary does the work — `Discontinued`, `Established`, `Beginning`, `See`, `Prior
-        /// to`, `Generally not used` — plus the ordinary marks of running prose.
-        func looksLikeNote(_ line: String) -> Bool {
-            // **A sentence can end inside quotation marks**, and missing that cost a whole row.
-            // The table's cross-references are quoted — `New South Wales 47a Generally not used.
-            // See` wraps onto a line reading `"Australia."` — and testing the raw line for a
-            // trailing full stop said no, because it ends with a quote. The fragment was then kept
-            // as a name, so the NEXT row parsed as `"Australia." New Zealand` and was thrown out by
-            // the quote guard in `close()`. That is why 47h glossed as "Cook Islands": New Zealand
-            // never reached the table at all (#1201).
-            let unquoted = line.trimmingCharacters(in: CharacterSet(charactersIn: "\"\u{201D}\u{201C}"))
-            if unquoted.hasSuffix(".") { return true }
-            if let first = line.first, first.isLowercase || first.isNumber { return true }
-            return ["Discontinued", "Established", "Beginning", "Restored", "See", "Prior to",
-                    "Generally not used"].contains { line.contains($0) }
-        }
-
-        for rawLine in text.split(separator: "\n", omittingEmptySubsequences: false) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
-            if line.isEmpty { continue }
-            // The column headers repeat on every page, and a row straddling a page break has them
-            // injected between its name and its codes — which is how `Germany` lost its 62.
-            // Skipped without disturbing the pending name, so the row closes across the break.
-            if Self.isPageFurniture(line) { continue }
-            let range = NSRange(line.startIndex..., in: line)
-            let tokens = line.split(separator: " ").map(String.init)
-            let hasCode = tokens.contains(where: isCode)
-
-            if hasCode, let match = leadRegex.firstMatch(in: line, range: range) {
-                func group(_ index: Int) -> String {
-                    Range(match.range(at: index), in: line).map { String(line[$0]) } ?? ""
-                }
-                close()
-                let inline = group(1).trimmingCharacters(in: .whitespaces)
-                let name = (pendingName + [inline])
-                    .joined(separator: " ")
-                    .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
-                    .trimmingCharacters(in: .whitespaces)
-                pendingName = []
-                open = (name: name,
-                        codes: group(2).split(separator: " ").map(String.init).filter(isCode),
-                        note: group(3).trimmingCharacters(in: .whitespaces))
-            } else if open != nil, looksLikeNote(line) {
-                // A note continuation for the row still open.
-                open?.note += " " + line
-                if line.hasSuffix(".") { close() }
-            } else {
-                // Not a note: it is the START OF THE NEXT NAME, so the open row ends here.
-                // Without this test every line after a code row was swallowed as note text, and
-                // a name that wraps — `Union of Soviet Socialist Republics` runs to three lines
-                // before its codes — was consumed by the row above it. That is why 61 and 62,
-                // the Soviet Union and Germany, were missing from a 429-row table.
-                close()
-                // A wrapped name fragment. Notes are sentences; names are not.
-                if line.count < 60, !line.hasSuffix(".") {
-                    pendingName.append(line)
-                    if pendingName.count > 3 { pendingName.removeFirst(pendingName.count - 3) }
-                } else {
-                    pendingName = []
-                }
-            }
-        }
-        close()
-
-        print("[DecimalClassLabels] country rows: \(result.count) placed; "
-            + "\(ambiguous) partial rows dropped as unannotated and therefore unplaceable")
+        print("[DecimalClassLabels] country rows: \(result.count) placed by column geometry; "
+            + "\(refused) refused by the name guards")
         guard result.count >= 400 else {
             throw GenerationError(description:
                 "country table parsed \(result.count) rows, expected 400+. The shipped table has "
@@ -924,6 +825,28 @@ public enum DecimalClassLabelRunner {
     ///
     /// This list is deliberately short. It is not a place to make the coverage number look
     /// better; 124 further codes remain unresolved and are reported as such.
+    /// The OTHER places a code files, for every code that files more than one.
+    ///
+    /// Two rules, and each was a shipped defect before it was a rule. The name the schedule vends
+    /// is REMOVED here rather than at the tie-break, because a curated correction overrides the
+    /// tie-break's winner afterwards — subtracting `displaced` instead would have `11f` listing
+    /// *Panama Canal Zone* among the other things `11f` might mean. And a code with nothing left
+    /// after the subtraction is ABSENT, not present-and-empty, so a consumer's `isEmpty` test and
+    /// its `nil` test agree about whether there is anything to disclose.
+    ///
+    /// - Parameters:
+    ///   - claimants: every name the table files under each code, the vended one included.
+    ///   - vended: the name the schedule ships for each code, after curation.
+    /// - Returns: the remaining names per code, sorted, omitting codes with none.
+    static func alternates(claimants: [String: Set<String>],
+                           vended: [String: String]) -> [String: [String]] {
+        claimants.reduce(into: [String: [String]]()) { out, entry in
+            guard let name = vended[entry.key] else { return }
+            let others = entry.value.filter { $0 != name }.sorted()
+            if !others.isEmpty { out[entry.key] = others }
+        }
+    }
+
     static let corrections: [String: [String: Correction]] = [
         "1910-1949": [
             "62": Correction(
@@ -966,8 +889,116 @@ public enum DecimalClassLabelRunner {
                 name: "America. Pan-America",
                 evidence: "The name wraps as `America. Pan-` / `America` with `10` on the "
                     + "following line."),
+            "11e": Correction(
+                name: "American Samoa",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 11e carries Tutuilla, "
+                    + "American Samoa, Manua Islands and Swains Island; Tutuila is American Samoa's main "
+                    + "island."),
+            "11f": Correction(
+                name: "Panama Canal Zone",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 11f carries Naos Island, "
+                    + "Culebra Island, Flamenco Island, Perico Island and the Panama Canal Zone; the four "
+                    + "islands are all in the Zone."),
+            "11g": Correction(
+                name: "Virgin Islands (U.S.)",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 11g carries St. John Island, "
+                    + "St. Croix Island, St. Thomas Island and Virgin Islands (U.S.); the three islands are "
+                    + "the Virgin Islands."),
+            "46i": Correction(
+                name: "British Borneo",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 46i carries Brunei, British "
+                    + "Borneo, North Borneo and Sarawak; the other three are the territories British Borneo "
+                    + "comprised."),
+            "51g": Correction(
+                name: "Indo China",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 51g carries Annam, Cambodia, "
+                    + "Cochin China, Indo China, Laos, Tongking and Vietnam; Annam is one region of French "
+                    + "Indo-China and the rest are its neighbours within it."),
+            "90f": Correction(
+                name: "Saudi Arabia",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 90f carries Nejd, Hedjaz, "
+                    + "Hejaz and Nejd, Kuwait, Muscat, Saudi Arabia and the Trucial Coast; Nejd is the "
+                    + "central region of Saudi Arabia."),
+        ],
+        "1950-1959": [
+            "11e": Correction(
+                name: "American Samoa",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Tutuilla against American Samoa, Manua Islands and Swains Island."),
+            "11f": Correction(
+                name: "Panama Canal Zone",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Naos Island against the Panama Canal Zone it sits in."),
+            "11g": Correction(
+                name: "Virgin Islands (U.S.)",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: St. John Island against the Virgin Islands (U.S.)."),
+            "51g": Correction(
+                name: "Indo China",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Annam against Indo China, of "
+                    + "which it is a region."),
+            "91": Correction(
+                name: "India",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 91 carries Mahe, India, "
+                    + "Karikal, Pondicherry and Yanaon; Mahe and the others are the French enclaves in "
+                    + "India, and India is the code's own term. FRUS files 1,721 documents on this code in "
+                    + "each of the later eras."),
         ],
         "1960-1963": [
+            "11e": Correction(
+                name: "American Samoa",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Tutuilla against American Samoa, Manua Islands and Swains Island."),
+            "11f": Correction(
+                name: "Panama Canal Zone",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Naos Island against the Panama Canal Zone it sits in."),
+            "11g": Correction(
+                name: "Virgin Islands (U.S.)",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: St. John Island against the Virgin Islands (U.S.)."),
+            "51g": Correction(
+                name: "Indo China",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Annam against Indo China, of "
+                    + "which it is a region."),
+            "91": Correction(
+                name: "India",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 91 carries Mahe, India, "
+                    + "Karikal, Pondicherry and Yanaon; Mahe and the others are the French enclaves in "
+                    + "India, and India is the code's own term. FRUS files 1,721 documents on this code in "
+                    + "each of the later eras."),
             "51j": Correction(
                 name: "Laos",
                 evidence: "The born-digital country table prints this row's name twice, so the "

@@ -101,6 +101,36 @@ struct ArchivesClassAxisTests {
             """)
     }
 
+    @Test("The co-claimants come from the era's own schedule too")
+    func alternatesFollowTheEraTheGlossCameFrom() throws {
+        let eras = ArchivesClassAxis.eras()
+        let preWar = try #require(eras.first { $0.system == .decimal && $0.span.upperBound == 1949 })
+        let sixties = try #require(eras.first {
+            $0.system == .decimal && $0.span.lowerBound == 1960
+        })
+        let subjectNumeric = try #require(eras.first { $0.system == .subjectNumeric })
+
+        // `91` is Iran under the pre-1950 arrangement and India after the renumbering, and the
+        // places filed under it differ with the name. Asking one schedule for the gloss and
+        // another for its alternates would list one era's territories beside the other era's
+        // country — the #1257 counterpart of the renumbering trap the gloss test above pins.
+        #expect(ArchivesClassAxis.alternates(for: "891.00", era: preWar).contains("Persia"))
+        #expect(ArchivesClassAxis.alternates(for: "891.00", era: sixties).contains("Mahe"))
+        #expect(ArchivesClassAxis.alternates(for: "891.00", era: preWar)
+                    != ArchivesClassAxis.alternates(for: "891.00", era: sixties))
+
+        // The subject-numeric system has its own country table and no claimant question, so the
+        // decimal lookup is refused by the SYSTEM, not by the key failing to parse. The fixture
+        // has to collide for that to be tested: the 1963 subject-numeric era spans a single year
+        // that the 1960–63 DECIMAL schedule also governs, so without the system guard a decimal
+        // key asked under it comes back with India's territories.
+        let sixtyThree = try #require(eras.first {
+            $0.system == .subjectNumeric && $0.span.upperBound == 1963
+        })
+        #expect(ArchivesClassAxis.alternates(for: "891.00", era: sixtyThree).isEmpty)
+        #expect(ArchivesClassAxis.alternates(for: "POL 27 VIET S", era: subjectNumeric).isEmpty)
+    }
+
     @Test("Over the real corpus every era carries rows, and they are ordered and drillable")
     func realCorpusRows() throws {
         let usage = try #require(CollectionUsageIndexStore.shared)
