@@ -31,6 +31,8 @@ struct DecimalClassKeyTests {
             countries: ["61": "Union of Soviet Socialist Republics", "62": "Germany",
                         "11": "United States", "51": "France", "51r": "Algeria", "91": "Iran",
                         "93": "China"],
+            // These fixtures exercise key COMPOSITION, which never reads the co-claimant list.
+            countryAlternates: [:],
             subjects: ["8": ["11": "Public order, safety, health, works"]],
             sources: .init(schedule: "test", countries: "test"))
     }
@@ -43,6 +45,7 @@ struct DecimalClassKeyTests {
             countryArrangedClasses: ["3", "4", "5", "6", "7", "8", "9"],
             relationsClasses: ["6"],
             countries: ["88": "Iran", "62": "Germany"],
+            countryAlternates: [:],
             subjects: [:],
             sources: .init(schedule: "test", countries: "test"))
     }

@@ -250,10 +250,15 @@ struct ArchivesIndexView: View {
                                     Text(row.key)
                                         .font(.body.monospaced())
                                     if let gloss = row.gloss {
-                                        Text(gloss)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .fixedSize(horizontal: false, vertical: true)
+                                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                            Text(gloss)
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                                .fixedSize(horizontal: false, vertical: true)
+                                            // #1257: one code, several places.
+                                            GlossAlternatesLink(alternates: row.glossAlternates,
+                                                                key: row.key)
+                                        }
                                     }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)

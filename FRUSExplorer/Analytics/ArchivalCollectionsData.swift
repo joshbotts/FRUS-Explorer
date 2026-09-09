@@ -88,6 +88,13 @@ struct ArchivalRankingRow: Identifiable, Sendable, Equatable {
     /// what NARA is asked for, so folding it out of sight without a way back would trade a
     /// rankable chart for an unusable one.
     var leaves: [ArchivalClassLeaf] = []
+    /// The OTHER places this row's country code also names, or empty (#1257).
+    ///
+    /// Carried beside the gloss and computed at the same call, because they answer one question:
+    /// the gloss says what the code is called and this says that the name stands for several
+    /// places. Measured, a quarter of the documents a schedule can gloss sit on such a code, so a
+    /// surface showing the name alone asserts more than the table knows.
+    var glossAlternates: [String] = []
 
     /// Whether this row folds names a reader would need to see to act on it.
     var isFamily: Bool {
@@ -613,6 +620,8 @@ struct ArchivalCollectionsData: Sendable {
                 return ArchivalRankingRow(id: key, label: key, name: key,
                                           category: .stateDepartment, value: value,
                                           leaves: mergedLeaves(forKey: key, bands: indices),
+                                          glossAlternates: alternates(forKey: key,
+                                                                      bands: indices),
                                           gloss: gloss(forKey: key, bands: indices))
             }
         }
@@ -699,6 +708,24 @@ struct ArchivalCollectionsData: Sendable {
         }
         guard let low, let high else { return nil }
         return low...high
+    }
+
+    /// The other places a class key's country code also names.
+    ///
+    /// Asked of the same schedule the gloss came from — through the same span — so the list can
+    /// never belong to a different era than the name beside it. Decimal only: the subject-numeric
+    /// table resolves its country element generatively and REFUSES an ambiguous reading outright,
+    /// so a key that glosses there has exactly one answer by construction.
+    ///
+    /// - Parameters:
+    ///   - key: A folded class key.
+    ///   - bands: The band indices being ranked.
+    /// - Returns: The other names, or empty.
+    private func alternates(forKey key: String, bands: [Int]) -> [String] {
+        guard !CollectionKeying.isSubjectNumericClass(key),
+              let span = coverageSpan(forKey: key, bands: bands)
+        else { return [] }
+        return labels?.alternates(for: key, coveringYears: span) ?? []
     }
 
     /// One leaf's reading, for the subject-numeric system only.

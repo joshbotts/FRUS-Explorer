@@ -44,6 +44,11 @@ struct DecimalClassLabelTable: Decodable, Sendable {
         let countryArrangedClasses: [String]
         /// `"62"` → `"Germany"`, for this era only.
         let countries: [String: String]
+        /// The OTHER names the table files under a code `countries` already answers (#1257).
+        ///
+        /// Absent from schema-1 artifacts, so it decodes to empty rather than failing — a table
+        /// without it simply has nothing more to say.
+        let countryAlternates: [String: [String]]?
         /// `classDigit` → (`suffix` → gloss).
         ///
         /// Class 8's entries run the manual's whole tree, not just its ten stems: `.6363` is
@@ -154,6 +159,34 @@ struct DecimalClassLabelTable: Decodable, Sendable {
                           Self.readable(nation), subject)
         }
         return Self.readable(nation)
+    }
+
+    /// The other places this key's country code also names, or empty.
+    ///
+    /// ## Why a key can name more than one place
+    /// The Department filed a territory under the number of the power holding it, so one code
+    /// carries a parent and its dependencies — `44e` is the Bahamas and twenty-one of its cays,
+    /// `11f` the Panama Canal Zone and four islands in it. The table can vend only one name, and
+    /// measured over the shipped corpus **a quarter of the documents a schedule can gloss sit on
+    /// a code with more than one claimant**. Before #1257 the others were dropped at generation
+    /// time, so a reader saw one name with no sign that it stood for several.
+    ///
+    /// Answered through the same schedule the gloss came from, so the list a surface shows can
+    /// never belong to a different era than the name beside it.
+    ///
+    /// - Parameters:
+    ///   - key: A class key as a source note wrote it.
+    ///   - span: The coverage years the surface's figures describe.
+    /// - Returns: The other names, alphabetically; empty when the code names one place.
+    func alternates(for key: String, coveringYears span: ClosedRange<Int>) -> [String] {
+        guard let floor = schedules.map(\.startYear).min(),
+              let schedule = schedules.first(where: { $0.governs(span, floor: floor) })
+        else { return [] }
+        let parts = key.split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+        guard let head = parts.first, let first = head.first, first.isNumber,
+              schedule.countryArrangedClasses.contains(String(first))
+        else { return [] }
+        return schedule.countryAlternates?[String(head.dropFirst()).lowercased()] ?? []
     }
 
     /// Un-inverts the table's index forms — `"World, The"` reads as `"The World"`.

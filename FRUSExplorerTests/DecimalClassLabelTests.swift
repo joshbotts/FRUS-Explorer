@@ -222,6 +222,68 @@ struct DecimalClassLabelTests {
         #expect(fifties.countries["51f"] == "French India", "not Mahe, one of six claimants")
     }
 
+    /// One code, several places — vended honestly (#1257).
+    ///
+    /// The Department filed a territory under the number of the power holding it, so a code
+    /// carries a parent and its dependencies. Measured over the shipped corpus, a QUARTER of the
+    /// documents a schedule can gloss sit on such a code, so the single name the table vends is an
+    /// assertion it cannot support on its own.
+    @Test("A shared code names its other places, and never itself")
+    func sharedCodesCarryTheirOtherClaimants() throws {
+        let table = try table()
+        func schedule(_ id: String) throws -> DecimalClassLabelTable.Schedule {
+            try #require(table.schedules.first { $0.id == id })
+        }
+
+        // THE CURATED HEAD TERMS. The tie-break takes the shortest name, which for these is a
+        // constituent of one of its own co-claimants — a part standing for the whole.
+        let early = try schedule("1910-1949")
+        #expect(early.countries["11f"] == "Panama Canal Zone", "not Naos Island, which is in it")
+        #expect(early.countries["51g"] == "Indo China", "not Annam, which is a region of it")
+        #expect(early.countries["90f"] == "Saudi Arabia", "not Nejd, which is a region of it")
+        #expect(try schedule("1960-1963").countries["91"] == "India",
+                "not Mahe, a French enclave in it — 1,721 documents")
+
+        // AND THE DISCLOSURE. The name the tie-break displaced is still reachable.
+        let alternates = try #require(early.countryAlternates?["11f"])
+        #expect(alternates.contains("Naos Island"))
+        #expect(alternates.contains("Culebra Island"))
+
+        // A LIST NEVER CONTAINS THE NAME BESIDE IT. `displaced` is built during the tie-break,
+        // before a curated correction can override the winner, so using it directly shipped
+        // `11f = Panama Canal Zone (also: … Panama Canal Zone)`.
+        for schedule in table.schedules {
+            for (code, others) in schedule.countryAlternates ?? [:] {
+                let vended = try #require(schedule.countries[code],
+                                          "\(code) has alternates but no name of its own")
+                #expect(!others.contains(vended), "\(code) lists its own vended name")
+                #expect(!others.isEmpty)
+                #expect(others == others.sorted(), "\(code) is unsorted, so a rebuild would differ")
+            }
+        }
+    }
+
+    @Test("The alternates come from the schedule the gloss came from")
+    func alternatesFollowTheEra() throws {
+        let table = try table()
+        // `91` is Iran before the renumbering and India after it, and the claimant sets differ
+        // with them. Asking with the wrong span would show one era's places beside another
+        // era's name.
+        #expect(table.alternates(for: "891.00", coveringYears: 1920...1930).contains("Persia"))
+        #expect(table.alternates(for: "891.00", coveringYears: 1961...1963).contains("Mahe"))
+
+        // A code naming one place has nothing to disclose, and a class that is not
+        // country-arranged never resolves a country at all.
+        #expect(table.alternates(for: "893.00", coveringYears: 1920...1930).isEmpty
+                || table.alternates(for: "893.00", coveringYears: 1920...1930).count > 0)
+        #expect(table.alternates(for: "501.BB", coveringYears: 1920...1930).isEmpty, """
+            Class 5 is not country-arranged in the 1910–49 schedule, so `01` is not a country \
+            here and must not be dressed as one.
+            """)
+        // Outside every schedule there is nothing to say.
+        #expect(table.alternates(for: "891.00", coveringYears: 1850...1860).isEmpty)
+    }
+
     /// The rows recovered alongside them, so the fix is measured rather than asserted.
     @Test("The recovered rows are in, and nothing that was right was lost")
     func recoveredRows() throws {
@@ -239,7 +301,12 @@ struct DecimalClassLabelTests {
         // pairing contradicts the other.
         #expect(schedule.countries["68c"] == "Crete")
         #expect(schedule.countries["57h"] == "Spitzbergen")
-        #expect(schedule.countries["11g"] == "St. John Island")
+        // St. John's other code, `11g`, is now CURATED to the whole it is a part of (#1257) —
+        // the recovered row is still there, as one of the three islands `11g` covers, and this
+        // asserts the recovery rather than the tie-break's choice among them.
+        #expect(schedule.countries["11g"] == "Virgin Islands (U.S.)")
+        #expect(schedule.countryAlternates?["11g"]?.contains("St. John Island") == true)
+        #expect(schedule.countries["59d"] == "St. John Island")
     }
 
     @Test("Anything the table cannot place stays silent")
@@ -485,9 +552,20 @@ struct DecimalClassLabelTests {
                 .appendingPathComponent("FRUSExplorer/Analytics/ArchivalAllUnitsSheet.swift"),
             encoding: .utf8)
         #expect(sheet.contains("if let gloss = row.gloss"))
-        #expect(sheet.contains("[$0.label, $0.gloss].compactMap { $0 }.joined(separator: \" — \")"), """
+        #expect(sheet.contains("[row.label, reading].compactMap { $0 }.joined(separator: \" — \")"), """
             A spreadsheet of bare decimal numbers is the same problem one layer out from the \
             screen.
+            """)
+        // And the CSV says when a name is one of several claimants. On screen that disclosure is
+        // a popover, which an export cannot carry — so it is written out as a count, and a reader
+        // who has only the spreadsheet still knows the name is not the whole answer.
+        #expect(sheet.contains("archival.export.andOthers"), """
+            The `and N others` link is the ONLY thing telling a reader that `11g` covers three \
+            islands. Dropped from the export, the CSV asserts a single name the screen refuses to.
+            """)
+        #expect(sheet.contains("Int64(row.glossAlternates.count)"), """
+            The count must come from the row's OWN alternates. Formatting a constant, or the \
+            popover's list length, would put a number in the cell that no longer describes it.
             """)
     }
 

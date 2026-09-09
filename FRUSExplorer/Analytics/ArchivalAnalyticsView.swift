@@ -1131,7 +1131,15 @@ struct ArchivalAnalyticsView: View {
                 // #828: the axis keeps the bare key — it is the disambiguation key, and a chart
                 // silently merges two bars sharing a label — but VoiceOver reads the gloss, which
                 // is the one place a reader cannot glance at the row beneath for it.
-                .accessibilityLabel(Text([row.label, row.gloss].compactMap { $0 }
+                // #1257: VoiceOver hears the alternates count too, since the popover that
+                // carries it on screen is not reachable from the chart.
+                .accessibilityLabel(Text([row.label, row.gloss,
+                                          row.glossAlternates.isEmpty ? nil
+                                              : String(format: String(
+                                                  localized: "archival.gloss.andOthers %lld",
+                                                  defaultValue: "and %lld others"),
+                                                  Int64(row.glossAlternates.count))]
+                                            .compactMap { $0 }
                     .joined(separator: ", ")))
                 .accessibilityValue(Text(accessibilityValue(for: row)))
             }

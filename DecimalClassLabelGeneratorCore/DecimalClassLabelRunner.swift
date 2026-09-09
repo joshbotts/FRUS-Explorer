@@ -176,6 +176,12 @@ public enum DecimalClassLabelRunner {
             // still total and deterministic.
             var byCode: [String: String] = [:]
             var displaced: [String: [String]] = [:]
+            // EVERY name the table files under a code, winner included. `displaced` cannot serve:
+            // it is built during the tie-break, before the curated corrections override a winner,
+            // so a corrected code would list its own vended name as an alternate and omit the
+            // name it replaced. Measured, that shipped `11f = Panama Canal Zone (also: … Panama
+            // Canal Zone)`.
+            var claimants: [String: Set<String>] = [:]
             var shared = 0
             // Sorted by the NAME's length — `lhs.key` — not the code's. Sorting on `value`
             // ordered by code length, which is nearly constant, so the tie-break never ran and
@@ -186,6 +192,7 @@ public enum DecimalClassLabelRunner {
                 return lhs.name < rhs.name
             }) {
                 let key = code.lowercased()
+                claimants[key, default: []].insert(name)
                 if byCode[key] == nil {
                     byCode[key] = name
                 } else {
@@ -223,9 +230,17 @@ public enum DecimalClassLabelRunner {
                     + "already taken (territories filed under the power holding them)")
                 // The contested codes, so a wrong winner can be seen rather than discovered later
                 // in the artifact. Sorted for a reproducible log.
-                for key in displaced.keys.sorted() where byCode[key] != nil {
+                //
+                // Printed from the SHIPPED list, not from `displaced`: the two differ on exactly
+                // the codes curation touched, and the scans are not in the repository, so this
+                // log is the review surface. Printing `displaced` had `91` reading
+                // `India (also: India, Karikal, …)` — the vended name among its own alternates
+                // and `Mahe`, the name curation replaced, missing — while the artifact beside it
+                // was right.
+                let shipped = Self.alternates(claimants: claimants, vended: byCode)
+                for key in shipped.keys.sorted() {
                     print("[DecimalClassLabels]   \(key) = \(byCode[key]!) "
-                        + "(also: \(displaced[key]!.sorted().joined(separator: ", ")))")
+                        + "(also: \(shipped[key]!.joined(separator: ", ")))")
                 }
             }
 
@@ -284,7 +299,11 @@ public enum DecimalClassLabelRunner {
                 classes: glossed,
                 countryArrangedClasses: countryArranged(for: source.id),
                 relationsClasses: relationsClasses(for: source.id),
-                countries: byCode, subjects: shippableSubjects,
+                countries: byCode,
+                // The claimants the tie-break did not take. Already computed to be logged; now
+                // shipped, so a surface can say a code names more than one place.
+                countryAlternates: Self.alternates(claimants: claimants, vended: byCode),
+                subjects: shippableSubjects,
                 sources: .init(schedule: source.title, countries: countryTitle)))
         }
 
@@ -806,6 +825,28 @@ public enum DecimalClassLabelRunner {
     ///
     /// This list is deliberately short. It is not a place to make the coverage number look
     /// better; 124 further codes remain unresolved and are reported as such.
+    /// The OTHER places a code files, for every code that files more than one.
+    ///
+    /// Two rules, and each was a shipped defect before it was a rule. The name the schedule vends
+    /// is REMOVED here rather than at the tie-break, because a curated correction overrides the
+    /// tie-break's winner afterwards — subtracting `displaced` instead would have `11f` listing
+    /// *Panama Canal Zone* among the other things `11f` might mean. And a code with nothing left
+    /// after the subtraction is ABSENT, not present-and-empty, so a consumer's `isEmpty` test and
+    /// its `nil` test agree about whether there is anything to disclose.
+    ///
+    /// - Parameters:
+    ///   - claimants: every name the table files under each code, the vended one included.
+    ///   - vended: the name the schedule ships for each code, after curation.
+    /// - Returns: the remaining names per code, sorted, omitting codes with none.
+    static func alternates(claimants: [String: Set<String>],
+                           vended: [String: String]) -> [String: [String]] {
+        claimants.reduce(into: [String: [String]]()) { out, entry in
+            guard let name = vended[entry.key] else { return }
+            let others = entry.value.filter { $0 != name }.sorted()
+            if !others.isEmpty { out[entry.key] = others }
+        }
+    }
+
     static let corrections: [String: [String: Correction]] = [
         "1910-1949": [
             "62": Correction(
@@ -848,8 +889,116 @@ public enum DecimalClassLabelRunner {
                 name: "America. Pan-America",
                 evidence: "The name wraps as `America. Pan-` / `America` with `10` on the "
                     + "following line."),
+            "11e": Correction(
+                name: "American Samoa",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 11e carries Tutuilla, "
+                    + "American Samoa, Manua Islands and Swains Island; Tutuila is American Samoa's main "
+                    + "island."),
+            "11f": Correction(
+                name: "Panama Canal Zone",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 11f carries Naos Island, "
+                    + "Culebra Island, Flamenco Island, Perico Island and the Panama Canal Zone; the four "
+                    + "islands are all in the Zone."),
+            "11g": Correction(
+                name: "Virgin Islands (U.S.)",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 11g carries St. John Island, "
+                    + "St. Croix Island, St. Thomas Island and Virgin Islands (U.S.); the three islands are "
+                    + "the Virgin Islands."),
+            "46i": Correction(
+                name: "British Borneo",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 46i carries Brunei, British "
+                    + "Borneo, North Borneo and Sarawak; the other three are the territories British Borneo "
+                    + "comprised."),
+            "51g": Correction(
+                name: "Indo China",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 51g carries Annam, Cambodia, "
+                    + "Cochin China, Indo China, Laos, Tongking and Vietnam; Annam is one region of French "
+                    + "Indo-China and the rest are its neighbours within it."),
+            "90f": Correction(
+                name: "Saudi Arabia",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 90f carries Nejd, Hedjaz, "
+                    + "Hejaz and Nejd, Kuwait, Muscat, Saudi Arabia and the Trucial Coast; Nejd is the "
+                    + "central region of Saudi Arabia."),
+        ],
+        "1950-1959": [
+            "11e": Correction(
+                name: "American Samoa",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Tutuilla against American Samoa, Manua Islands and Swains Island."),
+            "11f": Correction(
+                name: "Panama Canal Zone",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Naos Island against the Panama Canal Zone it sits in."),
+            "11g": Correction(
+                name: "Virgin Islands (U.S.)",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: St. John Island against the Virgin Islands (U.S.)."),
+            "51g": Correction(
+                name: "Indo China",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Annam against Indo China, of "
+                    + "which it is a region."),
+            "91": Correction(
+                name: "India",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 91 carries Mahe, India, "
+                    + "Karikal, Pondicherry and Yanaon; Mahe and the others are the French enclaves in "
+                    + "India, and India is the code's own term. FRUS files 1,721 documents on this code in "
+                    + "each of the later eras."),
         ],
         "1960-1963": [
+            "11e": Correction(
+                name: "American Samoa",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Tutuilla against American Samoa, Manua Islands and Swains Island."),
+            "11f": Correction(
+                name: "Panama Canal Zone",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: Naos Island against the Panama Canal Zone it sits in."),
+            "11g": Correction(
+                name: "Virgin Islands (U.S.)",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Same claimant set as the "
+                    + "1910-1949 column: St. John Island against the Virgin Islands (U.S.)."),
+            "51g": Correction(
+                name: "Indo China",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. Annam against Indo China, of "
+                    + "which it is a region."),
+            "91": Correction(
+                name: "India",
+                evidence: "A PART STANDING FOR THE WHOLE. The table files several places under one number and "
+                    + "the tie-break takes the shortest name, which here is a constituent of one of its own "
+                    + "co-claimants rather than the term the code stands for. 91 carries Mahe, India, "
+                    + "Karikal, Pondicherry and Yanaon; Mahe and the others are the French enclaves in "
+                    + "India, and India is the code's own term. FRUS files 1,721 documents on this code in "
+                    + "each of the later eras."),
             "51j": Correction(
                 name: "Laos",
                 evidence: "The born-digital country table prints this row's name twice, so the "
