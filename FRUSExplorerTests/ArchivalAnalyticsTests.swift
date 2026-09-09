@@ -1332,6 +1332,45 @@ struct ArchivalCollectionsDataTests {
             """)
     }
 
+    @Test("A row says when its country number names more than one place")
+    func rowCarriesCoClaimants() throws {
+        // `11f` is the Panama Canal Zone AND the four islands in it, so a row reading
+        // `Panama Canal Zone — Political affairs` states one of five answers as though it were
+        // the answer. `POL 27` beside it is the other filing system, whose country element is a
+        // separate table with no claimant question at all (#1257).
+        let index = try Self.usage(
+            volumes: ["v1938"], noteCounts: [40],
+            classKeys: ["811f.00", "893.00", "POL 27 VIET S"],
+            rows: [(key: 0, volumes: [0], counts: [9]),
+                   (key: 1, volumes: [0], counts: [7]),
+                   (key: 2, volumes: [0], counts: [5])])
+        let data = ArchivalCollectionsData.make(
+            authority: [], usage: index,
+            coverage: ["v1938": ArchivalVolumeCoverage(firstYear: 1938, lastYear: 1939)])
+        let rows = data.ranking(bands: [ArchivalEraBand.all[0]], lens: .centralFileClasses,
+                                weight: .documents, hidingUmbrella: false).rows
+
+        let shared = try #require(rows.first { $0.id == "811f.00" })
+        #expect(shared.gloss?.hasPrefix("Panama Canal Zone") == true)
+        #expect(shared.glossAlternates.contains("Naos Island"), """
+            The row carries the OTHER claimants, or the `and N others` link has nothing to open \
+            and the disclosure exists only in the artifact.
+            """)
+        #expect(shared.glossAlternates.contains("Panama Canal Zone") == false)
+
+        // A code naming one place has nothing to disclose — the link must be absent, not empty.
+        let sole = try #require(rows.first { $0.id == "893.00" })
+        #expect(sole.gloss != nil, "the control: this row IS glossed, it simply has no others")
+        #expect(sole.glossAlternates.isEmpty)
+
+        // And the subject-numeric half of the vocabulary is refused outright rather than run
+        // through the decimal table, where `POL 27 VIET S` has no country number to look up.
+        // Folded to its family, as every subject-numeric key is — the row is `POL 27` and the
+        // country lives on its leaves.
+        let subjectNumeric = try #require(rows.first { $0.id == "POL 27" })
+        #expect(subjectNumeric.glossAlternates.isEmpty)
+    }
+
     @Test("A key's span reaches back to its earliest citing volume, not just its latest")
     func spanWidensBackwards() throws {
         // Unobservable against the shipped table, which carries one schedule: every lower bound
