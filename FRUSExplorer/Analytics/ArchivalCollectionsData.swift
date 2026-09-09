@@ -722,9 +722,12 @@ struct ArchivalCollectionsData: Sendable {
     ///   - bands: The band indices being ranked.
     /// - Returns: The other names, or empty.
     private func alternates(forKey key: String, bands: [Int]) -> [String] {
-        guard !CollectionKeying.isSubjectNumericClass(key),
-              let span = coverageSpan(forKey: key, bands: bands)
-        else { return [] }
+        // No subject-numeric test here, deliberately. `isSubjectNumericClass` is "the first
+        // character is not a digit" and the decimal table's own guard is "the first character
+        // is a digit", so a copy of the rule at this level can only ever agree — while giving a
+        // reader a second place to maintain it and a mutation sweep a guard nothing can kill.
+        // The table is the authority on which keys it can read.
+        guard let span = coverageSpan(forKey: key, bands: bands) else { return [] }
         return labels?.alternates(for: key, coveringYears: span) ?? []
     }
 

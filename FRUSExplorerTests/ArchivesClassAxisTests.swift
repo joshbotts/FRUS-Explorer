@@ -120,7 +120,14 @@ struct ArchivesClassAxisTests {
                     != ArchivesClassAxis.alternates(for: "891.00", era: sixties))
 
         // The subject-numeric system has its own country table and no claimant question, so the
-        // decimal lookup is refused rather than run over a key it cannot parse.
+        // decimal lookup is refused by the SYSTEM, not by the key failing to parse. The fixture
+        // has to collide for that to be tested: the 1963 subject-numeric era spans a single year
+        // that the 1960–63 DECIMAL schedule also governs, so without the system guard a decimal
+        // key asked under it comes back with India's territories.
+        let sixtyThree = try #require(eras.first {
+            $0.system == .subjectNumeric && $0.span.upperBound == 1963
+        })
+        #expect(ArchivesClassAxis.alternates(for: "891.00", era: sixtyThree).isEmpty)
         #expect(ArchivesClassAxis.alternates(for: "POL 27 VIET S", era: subjectNumeric).isEmpty)
     }
 

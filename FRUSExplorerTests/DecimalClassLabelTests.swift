@@ -272,14 +272,17 @@ struct DecimalClassLabelTests {
         #expect(table.alternates(for: "891.00", coveringYears: 1920...1930).contains("Persia"))
         #expect(table.alternates(for: "891.00", coveringYears: 1961...1963).contains("Mahe"))
 
-        // A code naming one place has nothing to disclose, and a class that is not
-        // country-arranged never resolves a country at all.
-        #expect(table.alternates(for: "893.00", coveringYears: 1920...1930).isEmpty
-                || table.alternates(for: "893.00", coveringYears: 1920...1930).count > 0)
-        #expect(table.alternates(for: "501.BB", coveringYears: 1920...1930).isEmpty, """
-            Class 5 is not country-arranged in the 1910–49 schedule, so `01` is not a country \
+        // A class that is not country-arranged never resolves a country at all — and the
+        // fixture has to collide, or the guard is untested. Class 5 is NOT country-arranged
+        // before 1950 but IS after it, and `11f` carries four claimants in every schedule, so
+        // `511f.00` is refused here and answered on the other side of the renumbering. A key
+        // like `501.BB`, whose digits name no shared code, would pass with the guard deleted.
+        #expect(table.alternates(for: "511f.00", coveringYears: 1920...1930).isEmpty, """
+            Class 5 is Protection of Interests before 1950, so `11f` is not a country number \
             here and must not be dressed as one.
             """)
+        #expect(table.alternates(for: "511f.00", coveringYears: 1955...1958).contains("Naos Island"),
+                "the control: the same digits ARE a country number once class 5 is country-arranged")
         // Outside every schedule there is nothing to say.
         #expect(table.alternates(for: "891.00", coveringYears: 1850...1860).isEmpty)
     }
