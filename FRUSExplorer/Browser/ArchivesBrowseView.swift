@@ -226,7 +226,11 @@ struct ArchivesIndexView: View {
             Section {
                 Text(String(localized: "browser.archives.classes.caption",
                             defaultValue: """
-                                Central-file classes, grouped by the filing schedule in force.                                 A volume is counted in the era its coverage falls inside; one                                 spanning two schedules is counted in neither, because the same                                 number means different things on either side. Readings come from                                 the Department's own filing manuals.
+                                Central-file classes, grouped by the filing schedule in force. \
+                                A volume is counted in the era its coverage falls inside; one \
+                                spanning two schedules is counted in neither, because the same \
+                                number means different things on either side. Readings come from \
+                                the Department’s own filing manuals.
                                 """))
                 .font(.caption)
                 .foregroundStyle(.secondary)

@@ -1,32 +1,36 @@
-# What's New Since Build 44 (Mac)
+# What's New Since Build 45 (Mac)
 
-The headline: **what the app does when the Office of the Historian corrects a volume you already hold**.
+The headline: **a central-file number now says what it means**, and the Corpus Browser gains a way to browse by it.
 
-**Build 44's two one-time costs are gone.** No index change shipped this time, so there is no re-index and no Spotlight re-donation on first launch.
+**One cost, on first launch.** Build 46 re-indexes every downloaded volume in the background — minutes on a large library. Search and browsing keep working, but People, cross-reference analytics and archival attributions are in flux until it settles. Nothing is re-downloaded and none of your own work is touched.
 
-## When a volume is corrected
+## Classes, read from the Department's own filing manuals
 
-FRUS volumes are corrected after publication, and until now that landed silently under your notes, highlights and quotations. The app now records each document's change set as it indexes, and says so.
+`874.00` and `POL 27 VIET S` used to render as bare numbers. The app now reads the Department's own schedules — the decimal file in its 1910–1949, 1950–1959 and 1960–1963 arrangements, and the subject-numeric file that replaced it in 1963 — and composes a reading in NARA's filing order: *Bulgaria — Political affairs*; *Vietnam, South — MILITARY OPERATIONS*. Four of those five tables are new here, and so are Bulgaria and Canada, which the country table could not name. It needs nothing downloaded.
 
-- A **banner** on a changed document states whether its **text moved** or only its **notes and heading** changed — only the first can strand a highlight. A document an update *removed* still opens; its review sheet is the only route left to it.
-- The **review sheet** (the banner's Review…, or Review Changes… in the Research window) walks your work on it: **Confirm**, **Remove** or **Move Here** each highlight; every quotation frozen from it is re-checked against the new text; notes, tags and archive-visit plans open from it; **Summarize Again**; **Mark Reviewed**.
-- The **Research window** (⌘⌥R) gains a **Changed by an update** filter across six kinds of annotation, and **Settings ▸ Volumes & Storage** an **After an Update** summary per volume.
-- Review state **syncs** — mark a document reviewed here and your iPhone stops listing it.
+- **Corpus Browser ▸ Archives ▸ Classes** is new: five sections, one per schedule, each row carrying a document count and drilling to the volumes citing it.
+- The same readings run through **Archival Analytics**, under *Show: Central-file classes*.
+- The Department filed a territory under the number of the power holding it, so one number often names several places. Where it does, the reading carries **"and N others"** and clicking opens the list, rather than the app asserting one name.
+- A volume whose coverage straddles two schedules is counted in **neither** section. The same number means different things either side of each boundary.
 
-**Expect silence, and check that you get it.** The change set is written at index time, and a document's *first* indexing records a baseline and reports nothing. So on a library you already hold these surfaces stay quiet in build 45 by design; they light up from the next correction onward. The bug worth reporting is the opposite one — a document claiming an update changed it when none did. To see the whole flow you need a volume corrected since you downloaded it: **Volumes & Storage ▸ Check for Corrections** will say.
+## Where each fact on screen came from
+
+Capsules now label provenance — **FRUS text**, **FRUS + NARA catalog**, **FRUS + OH people register**, **This app's model** — in Source Explorer, on archival collection and person pages, in the Add to Collection sheet, and on the semantic map. Exports gain a **Where this came from** block naming the sources they drew on.
 
 ## Also
 
-**Project coverage**: how much of a working corpus a project has actually engaged — a badge on each row (Untouched / Opened / In a collection / Annotated), a coverage line above the list, a Project Home tile, and a coverage statement in all three exports. **Enclosures**: Source Explorer gives a 19th-century document's enclosures their own archival home — each was filmed in its own originating series, not with the despatch that carried it. **Getting data out**: Export Research Database… (Settings ▸ Data & Recovery), and Copy Research-State Record (Volumes & Storage ▸ Advanced), and `frusexplorer://` document links. Exported figures now carry their caveats and credit the Office of the Historian. The splash drifts.
+A lot cited only as where *another* copy sits is no longer the document's own source — visible in **Archival Neighbors…** after the re-index. A lot NARA divided across several series says so in a volume's **Sources** list. In **Meaning** mode the header names the closest matches found, not a total that never existed, and **Facets** counts the semantic results themselves, not a keyword set it never had. The Research window (⌘⌥R) stops beachballing on a large annotated library; titles fill in faster. A headerless editorial note reads **Editorial Note 304**, not a blank. The **Search in** chips carry a checkmark, not colour alone.
 
 ## What to test
 
-1. Open documents you have annotated. Nothing should claim an update changed them. Anything that does is a bug — report the document id.
-2. Volumes & Storage ▸ **Check for Corrections**. If one comes back for a volume you have worked in, take it and open a changed document: is the text-vs-notes claim right? Does the sheet find your highlights in the new text?
-3. Mark one document reviewed; confirm it leaves **Changed by an update** on another device.
-4. **Corpus Browser ▸ Clusters — the verdict we still owe.** Open several and read what is in them. Coherent research leads, or arbitrary piles? "Piles" is the most useful answer you can give: it means we remove the feature in one commit.
-5. Meaning search, if you took the model: do the top matches deserve opening? Still unanswered from build 44.
-6. A project with real work in it: does the coverage line match what you remember doing, and does the exported statement agree?
-7. Source Explorer on a 19th-century document with enclosures — right archival home for the enclosure?
+1. **Read down Archives ▸ Classes against codes you know cold. Are the readings right?** Then: is counting a straddling volume in *neither* era right, or does it hide volumes you wanted listed?
+2. **"and N others"** — honest compression, or does naming one place mislead? Would you rather see the claimants inline?
+3. Time the first-launch re-index, and say how big your library is. Did People and the analytics recover **without** a relaunch?
+4. After it finishes: **Archival Neighbors…** on documents whose note names a lot. Does every lot still listed really belong to that document?
+5. Do the provenance capsules change what you would claim in print, or are they clutter?
+6. Meaning search ▸ **Facets**: narrow to a row, and confirm you get that row's documents. Should Facets be on in Meaning mode on iPhone and iPad too? It is off there by choice.
+7. **Related ▸ Adjust weights ▸ Semantically similar** above 0, then **Beyond your library**, new here — are those volumes ones you would have wanted?
 
-Include macOS version, clicks, expected vs. actual. Thanks!
+Not bugs: a class row with a number and no reading; iCloud Schema reading "Up to date" beside "Reserved".
+
+Include macOS version, clicks, expected vs. actual — and for anything archival, the document id. Thanks!

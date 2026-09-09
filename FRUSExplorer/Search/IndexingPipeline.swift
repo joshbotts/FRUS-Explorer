@@ -775,6 +775,37 @@ public actor IndexingPipeline {
     ///   bundled artifact, and the measurement. `ibidStandsAlone` is unchanged: the explicit
     ///   `Ibid., Central Files, X` form was already harvested, because the class is in the
     ///   clause. No schema change (the columns all exist); rows appear on re-parse.
+    /// - v47→48 — #1206: `document_sources.lot_file` answers where the printed document CAME
+    ///   FROM, and for two documents it was answering where another copy IS. `frus1969-76v02`
+    ///   d1 and d11 both carried `75 D 229`, named 1,247 and 340 characters into their notes as
+    ///   the home of related drafts, inflating that lot's document count from three to five.
+    ///   `lotClaimScope` already bounded the span a `Lot` token speaks for, but only when the
+    ///   leading sentence names a competing repository — and that test read `libraryKeywords`,
+    ///   which carries "Nixon Presidential Library" and not "Nixon Presidential Materials". The
+    ///   phrase went into a NEW list rather than into `libraryKeywords`, because that list is
+    ///   also read by `tryPresidentialLibrary` to decide what the note IS, and widening it there
+    ///   would have reclassified notes as a side-effect. Measured over 268,750 notes: 13,287
+    ///   name a lot, 1,927 name one only outside the leading sentence, and 63 of those lead with
+    ///   "Presidential Materials". The other 1,864 are deliberately untouched — the 1961–63
+    ///   abstract notes legitimately put their lot in the tail, and refusing every out-of-lead
+    ///   lot would break 1,006 correct classifications.
+    /// - v48→49 — #1206 again: the v47→48 fix did NOT fix the two reported documents.
+    ///   `lotClaimScope` bounds three lot strategies and `tryNARACollection` is a FOURTH — it
+    ///   read the whole body, and it runs BEFORE both presidential-library arms, so a
+    ///   Nixon-materials note naming `RG 59` anywhere (including inside the very secondary
+    ///   clause that caused the bug) arrived there with a non-nil record group and re-imported
+    ///   the same lot. The column cannot tell the two apart: a `.naraCollection` lot is written
+    ///   into `lot_file`/`lot_file_norm` through the same call as a `.lotFile` one, and
+    ///   `relatedByLotFile` keys on `lot_file_norm` with no era predicate.
+    /// - v49→50 — #1239: `document_sources.record_group` was written in TWO spellings, so
+    ///   `GROUP BY record_group` split one record group across two rows and an equality join
+    ///   dropped whichever form the caller did not guess. Measured on a full 552-volume index:
+    ///   `RG-59` 206,766 rows against a bare `59` 11,907, `RG-84` 487 against `84` 148. The
+    ///   split is exactly by producer, with zero exceptions by `citation_era`: `.centralFiles`
+    ///   and `.lotFile` carry hardcoded `RG-` literals in `SourceNoteParser` while
+    ///   `.naraCollection` takes its bare number from the note's own text. Re-parsing writes the
+    ///   single spelling; an idempotent healing UPDATE strips the prefix from rows already
+    ///   stored, so an index that is not re-parsed is corrected in place too.
     public static let currentDateIndexVersion: Int = 50
 
     /// UserDefaults key under which the installed date-index version is persisted.
