@@ -160,7 +160,7 @@ largest coherent body of work left that needs nobody's permission.
 
 | Row | What | Size |
 |---|---|---|
-| **S-1** | **V-3 §6.1 item 2** — the semantic axis is generator-only; it never re-scores the other generators' candidates. `RelatedDocumentsEngine.swift:144` | M |
+| ~~**S-1**~~ ✓ | ~~**V-3 §6.1 item 2** — the semantic axis is generator-only; it never re-scores the other generators' candidates~~ **SHIPPED 2026-09-10. The row was recorded REFUTED below; D-D retired the premise that refutation rested on** | ✓ |
 | ~~**S-2**~~ ✓ | ~~**V-3 §6.2 / OS-27 §5.5** — Project Leads runs N per-seed engine ranks where one centroid retrieval would do~~ **SHIPPED 2026-09-10 as the re-scoped row, not the original one** | ✓ |
 | ~~**S-3**~~ ✓ | ~~**V-3 §6.2(a) / §7 item 2** — off-index volume-grain leads: *"N strong matches in a volume you don't have"*. A second Tier-1 Hamming scan in `SemanticSimilarityGenerator`~~ **SHIPPED 2026-09-06, PR #1235** | ✓ |
 | **S-4** | **Map §7.3** — two more bundled corpus lenses (`allTerms`, `descriptors`). **Read the screen's warning first**: `WordCloudKit/WordCloudLens.swift:84`'s `bundledCloudLenses` is the GENERATOR'S ARTIFACT CONTRACT with six consumers, not the backdrop's cycle | S |
@@ -177,24 +177,51 @@ from the designs; reading the code changed the answer for all but one.
   empty. The scan cap is 4,096 rather than the rerank pool's 800 because at a **10% library** —
   the reader this exists for — the median rises to 732 and an 800-cap would bind on **43%** of
   anchors.
-- **S-1 — REFUTED, and the reason is stronger than the one first recorded here.** The axis is
-  generator-only by construction, not by omission. The ranker consults the **weight before the
-  score** (`RelatedDocumentsEngine.swift:87-92` — `guard weight > 0 else { continue }` precedes the
-  `isGenerator` ternary), so a fully populated semantic strength map at the shipped weight of 0
-  never enters `axisScores`, never reaches `total`, and cannot reorder, add or drop one row. The
-  change is invisible to every reader who has not deliberately raised an experimental slider.
-  Worse for the row's premise, **S-1 cannot serve the population the axis exists for**: it
-  re-scores candidates the *other* generators produced, and the 45,030 documents with an empty
-  Related list — the axis's whole justification — have none. Its entire addressable effect is
-  reordering rows for readers who both raised the slider and already had candidates. When it is
-  eventually taken, three constraints already established should ride with it: write into
-  `generatorStrengths` and never `scorerScores` (the ternary would silently discard a scorer on the
-  same axis, compiling clean and producing byte-identical output, and scorer scores are used
-  **unclamped**, so a negative cosine would read as "no contribution" rather than "dissimilar");
-  gate on `weights[.semanticSimilarity] > 0` rather than on data availability, or it falsifies the
-  premise `AppState.swift:715-722` rests on when it exempts `.readerAskedForSemantics` from the
-  #926 switch; and settle the score floor first, because cosine has no zero and the corpus median
-  is ~0.49 — an unfloored re-score puts a "Semantic match · 48%" chip on rows scoring at chance.
+- **S-1 — SHIPPED 2026-09-10. The refutation below was correct on 2026-09-06 and its own premise
+  expired four days later**, which is why it is kept in full rather than deleted: the argument
+  turned on the axis shipping at weight **0**, and D-D raised the default to **0.5**. Everything
+  the paragraph says about `weights` preceding `isGenerator` is still true of the code; what
+  changed is which branch every reader takes. The second objection — that S-1 cannot serve the
+  45,030 documents with an empty Related list — also still stands, and is the reason this is a
+  ranking fix rather than a coverage one: it closes a discontinuity for readers who *have*
+  candidates, and claims nothing for readers who do not.
+
+  **All three riding constraints were honoured**, and the third was settled by measurement before
+  any code was written: the re-score writes into `generatorStrengths` and never `scorerScores`; it
+  gates on `runsGenerator(.semanticSimilarity, at: weights)` rather than on data availability; and
+  the floor is **the anchor's own weakest vended neighbour**, not a constant. The constant the row
+  worried about cannot exist — measured over 60 anchors against the shipped artifacts, chance sits
+  at a median **0.472** while the anchor's own rank-120 cosine runs **0.543–0.836**, so any fixed
+  value is above some anchors' bands and well below others'. That is S-3's finding again, on the
+  cosine side. The pass also **fetches nothing** — it takes a `SemanticShardStore` rather than the
+  `AppState` its siblings take, so it structurally cannot widen the ~31 MB burst onto the other
+  axes' pools.
+
+  The original refutation, kept verbatim:
+
+  > The axis is
+  > generator-only by construction, not by omission. The ranker consults the **weight before the
+  > score** (`RelatedDocumentsEngine.swift:87-92` — `guard weight > 0 else { continue }` precedes the
+  > `isGenerator` ternary), so a fully populated semantic strength map at the shipped weight of 0
+  > never enters `axisScores`, never reaches `total`, and cannot reorder, add or drop one row. The
+  > change is invisible to every reader who has not deliberately raised an experimental slider.
+  > Worse for the row's premise, **S-1 cannot serve the population the axis exists for**: it
+  > re-scores candidates the *other* generators produced, and the 45,030 documents with an empty
+  > Related list — the axis's whole justification — have none. Its entire addressable effect is
+  > reordering rows for readers who both raised the slider and already had candidates. When it is
+  > eventually taken, three constraints already established should ride with it: write into
+  > `generatorStrengths` and never `scorerScores` (the ternary would silently discard a scorer on the
+  > same axis, compiling clean and producing byte-identical output, and scorer scores are used
+  > **unclamped**, so a negative cosine would read as "no contribution" rather than "dissimilar");
+  > gate on `weights[.semanticSimilarity] > 0` rather than on data availability, or it falsifies the
+  > premise `AppState.swift:715-722` rests on when it exempts `.readerAskedForSemantics` from the
+  > #926 switch; and settle the score floor first, because cosine has no zero and the corpus median
+  > is ~0.49 — an unfloored re-score puts a "Semantic match · 48%" chip on rows scoring at chance.
+
+  One line of that quotation has since expired on its own: the `.readerAskedForSemantics`
+  exemption from the #926 switch was removed at PR #1267, so the premise it warned about
+  falsifying no longer exists. The gate it asks for is the one that shipped regardless.
+
 - **S-2 — REFUTED BY MEASUREMENT. This row previously read "blocked on a measurement"; that was
   wrong, and the measurement had in fact already been taken.** Three independent grounds, two of
   them measured against the shipped artifacts:

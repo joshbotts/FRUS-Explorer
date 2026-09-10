@@ -236,6 +236,33 @@ enum RelatedDocumentsEngine {
             offIndexLeads = .none
         }
 
+        // S-1: give the semantic axis the candidates the OTHER generators produced.
+        //
+        // Without this the axis scores only its own vended neighbours, and every other candidate
+        // reads `?? 0` below however near it is — a discontinuity at the axis's own rank `limit`,
+        // invisible while the axis shipped at weight 0 and in every ranking since D-D raised the
+        // default to 0.5. The floor is the axis's own weakest vended neighbour, for the reason
+        // `SemanticSimilarityGenerator.reScore` measures: a fixed cutoff cannot work when the
+        // anchor's own band runs 0.543 to 0.836 across anchors while chance sits at 0.472.
+        //
+        // `applyReScore` owns the fold — the `max` merge and the evidence chip a re-scored row
+        // needs in order to explain its own position.
+        if Self.runsGenerator(.semanticSimilarity, at: weights),
+           let vended = generatorStrengths[.semanticSimilarity],
+           let shardStore = appState.semanticShardStore,
+           let plan = SemanticSimilarityGenerator.rescorePlan(
+               vended: vended,
+               allCandidates: Set(generatorStrengths.values.flatMap(\.keys)),
+               anchor: anchor) {
+            let rescored = await SemanticSimilarityGenerator.reScore(
+                anchor: anchor, candidates: plan.targets, floor: plan.floor, store: shardStore)
+            let folded = SemanticSimilarityGenerator.applyReScore(
+                rescored, strengths: vended,
+                labels: generatorEvidenceLabel[.semanticSimilarity] ?? [:])
+            generatorStrengths[.semanticSimilarity] = folded.strengths
+            generatorEvidenceLabel[.semanticSimilarity] = folded.labels
+        }
+
         let candidateKeys = Array(Set(generatorStrengths.values.flatMap(\.keys)).subtracting([anchor]))
         guard !candidateKeys.isEmpty else {
             return RelatedDocumentsResult(rows: [], totalBeforeLimit: 0, offIndexLeads: offIndexLeads)
