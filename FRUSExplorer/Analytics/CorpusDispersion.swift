@@ -45,7 +45,7 @@ struct CorpusDispersion: Equatable {
 
     /// How many volumes are indexed on this device.
     ///
-    /// The denominator is deliberately the device's index, not the manifest's 552 published volumes:
+    /// The denominator is deliberately the device's index, not the manifest's 553 published volumes:
     /// a share of the published series would be a claim about data this device does not have.
     let indexedVolumeCount: Int
 
@@ -59,8 +59,9 @@ struct CorpusDispersion: Equatable {
     ///
     /// Two conditions, both load-bearing:
     ///
-    /// - **≥ 25%** — following `FacetPanelView`'s precedent ("Computed, never templated"): across 552
-    ///   volumes a common term's top three hold about 1.7%, and announcing that as a concentration
+    /// - **≥ 25%** — following `FacetPanelView`'s precedent ("Computed, never templated"): measured
+    ///   across 552 volumes, a common term's top three hold about 1.7%, and announcing that as a
+    ///   concentration
     ///   would train the reader to ignore the line.
     /// - **more than three volumes** — with three or fewer, "the top 3 hold 100%" is arithmetic, not
     ///   a finding. The volume count already said it.

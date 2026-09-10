@@ -165,7 +165,7 @@ public final class ManifestStore {
     /// Recomputed whenever `diffResult` or `bundledEntries` changes (no manual caching
     /// needed because `@Observable` tracks property access automatically).
     ///
-    /// Typical result for the full 552-volume corpus: `1861-01-01...1992-12-31`.
+    /// Typical result for the full 553-volume corpus: `1861-01-01...1992-12-31`.
     public var corpusDateRange: ClosedRange<Date> {
         let source = diffResult?.known ?? bundledEntries
         let minYear = source.compactMap { Int($0.subseries.prefix(4)) }.min() ?? 1861
@@ -261,7 +261,7 @@ public final class ManifestStore {
 
     /// `volumeId` → entry, over whichever list ``entry(forVolumeId:)`` is answering from.
     ///
-    /// This was a `.first { $0.volumeId == id }` scan over all 552 manifest entries, and it
+    /// This was a `.first { $0.volumeId == id }` scan over all 553 manifest entries, and it
     /// is the O(n) primitive under a surprising amount of the render loop. During a
     /// subseries index the indexing banner alone resolved it once per queued volume for the
     /// word-cloud scope and once per download-queue entry for the pending list — five times

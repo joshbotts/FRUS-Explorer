@@ -96,7 +96,7 @@ import SwiftData
     var sourceDescription: String?
 
     /// How many volumes were indexed on the capturing device. A corpus captured against 40 volumes
-    /// and one captured against 552 are different evidence, and nothing else records the difference.
+    /// and one captured against 553 are different evidence, and nothing else records the difference.
     var indexedVolumeCountAtCapture: Int?
 
     /// Whether the capturing fetch reached every matching document, or stopped short of them.

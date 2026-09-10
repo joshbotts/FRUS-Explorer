@@ -40,7 +40,7 @@ enum ArchivalFlowDirection: String, CaseIterable, Identifiable, Sendable {
 ///
 /// - ``betweenPrinted`` counts references from one **printed** document to another
 ///   (`provenance-flow-index.json`, #764). Structurally empty before 1945: the `dN` cross-reference
-///   idiom postdates the war, and 298 of 552 volumes contribute no edge at all.
+///   idiom postdates the war, and 299 of 553 volumes contribute no edge at all.
 /// - ``toUnprinted`` counts references to material FRUS **did not print**
 ///   (`external-citation-index.json`, #784) — the third body of archival evidence, and the one
 ///   thing the Flows mode could not previously show.
@@ -413,8 +413,8 @@ struct ArchivalFlowsData: Sendable, Equatable {
 
     /// Makes block labels unique, for the same reason the Network and the Collections ranking do.
     ///
-    /// Measured over the 1,111 collections that appear in the flow vocabulary: 16 names are
-    /// carried by more than one record, covering 38 nodes. `White House Central Files` is six
+    /// Measured over the 1,106 collections that appear in the flow vocabulary: 17 names are
+    /// carried by more than one record, covering 40 nodes. `White House Central Files` is six
     /// distinct blocks, one per repository.
     static func disambiguate(_ endpoints: [ArchivalFlowEndpoint]) -> [ArchivalFlowEndpoint] {
         var seen = Set<String>()

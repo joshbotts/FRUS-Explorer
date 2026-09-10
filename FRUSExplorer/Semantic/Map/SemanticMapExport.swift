@@ -14,7 +14,7 @@ import Foundation
 /// (UI review M-20 / F-28).
 ///
 /// ## Why a table of regions and not a table of documents
-/// The map draws 314,483 points, and "the data behind it" read literally is 314,483 coordinate
+/// The map draws 314,571 points, and "the data behind it" read literally is 314,571 coordinate
 /// rows — a file nobody can check against anything. The regions table is the one the reader can
 /// audit: every row is a label they can see on screen, with the count the map itself drew it
 /// from. It is also the only grain at which the artifact has something to say beyond position.
@@ -67,7 +67,7 @@ enum SemanticMapExport {
     /// Figure-only, and `nil` everywhere else on purpose. The regions CSV lists every region
     /// regardless of what was on screen, so a frame sentence there would describe a framing the
     /// table does not depend on. The frame sequence is a moving camera; one frame's numbers would
-    /// be false of the other 552.
+    /// be false of the other 553.
     struct FigureFrame: Equatable, Sendable {
         /// The camera the plate was rendered through.
         let camera: SemanticMapCamera
@@ -84,7 +84,7 @@ enum SemanticMapExport {
     /// **`corpusStatement` is supplied and must stay supplied.** `AnalyticsProvenance`'s default
     /// corpus caveat says counts "cover only the N volume(s) indexed on this device" — which is
     /// false here and would be a false methods statement in a file written to outlive the screen.
-    /// The map is a bundled whole-series artifact: it draws all 314,483 documents with zero
+    /// The map is a bundled whole-series artifact: it draws all 314,571 documents with zero
     /// volumes downloaded. That is precisely the case `corpusStatement` was added for.
     ///
     /// - Parameters:
@@ -199,7 +199,7 @@ enum SemanticMapExport {
         ]
         // The lens's OWN caveat, which until now reached only the on-screen legend. A lens carries
         // a caption exactly when its colouring would otherwise overstate the evidence — the
-        // provenance lens's categories are a plurality, not a majority, for 73 of 522 volumes — so
+        // provenance lens's categories are a plurality, not a majority, for 73 of 523 volumes — so
         // an export without it is an export that overstates. Appended last, beside the lens line
         // it qualifies.
         if let caption = lens.caption { lines.append(caption) }

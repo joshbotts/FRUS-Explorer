@@ -201,7 +201,7 @@ public actor SemanticShardFetcher {
 
     /// Total bytes every published shard would occupy, from the bundled manifest.
     ///
-    /// The denominator a storage screen needs to say "8 of 552" and "12 MB of 79 MB".
+    /// The denominator a storage screen needs to say "8 of 553" and "12 MB of 162 MB".
     public var publishedTotals: (volumes: Int, bytes: Int) {
         (expectations.count, expectations.values.reduce(0) { $0 + $1.bytes })
     }

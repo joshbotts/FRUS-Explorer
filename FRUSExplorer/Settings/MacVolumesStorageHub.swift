@@ -1429,10 +1429,10 @@ private struct MacAllVolumesSheet: View {
 
 /// The GitHub download browser, behind the hub's "Download from GitHub…" door (S-2b).
 ///
-/// The 552-row catalogue leaves the settings form entirely: choosing what to download is its own
+/// The 553-row catalogue leaves the settings form entirely: choosing what to download is its own
 /// task, and inlining it made the hub's other five sections unreachable without scrolling past a
 /// list of every volume ever published. A filter field leads, because picking one volume out of
-/// 552 by scrolling a disclosure tree is not a real interaction.
+/// 553 by scrolling a disclosure tree is not a real interaction.
 ///
 /// Version history:
 ///   1.0 — S-2b: initial implementation, from `SettingsAddVolumesPane.downloadSection`
@@ -1658,7 +1658,7 @@ private struct MacDownloadVolumesSheet: View {
     /// The catalogue, minus anything too small to be a real volume.
     ///
     /// The size floor guards against placeholder or stub XML appearing in a *live* manifest
-    /// refresh; measured against the bundled manifest it currently excludes nothing (0 of 552
+    /// refresh; measured against the bundled manifest it currently excludes nothing (0 of 553
     /// entries fall under it).
     private var allVolumes: [VolumeManifestEntry] {
         let source = appState.manifestStore.diffResult?.known ?? appState.manifestStore.bundledEntries
@@ -1759,6 +1759,8 @@ private struct MacDownloadVolumesSheet: View {
 /// Per-volume index contribution is estimated at **2.8×** the XML file size
 /// (`StorageReport.indexOverheadFactor`) — the cross-platform mean measured against a full
 /// 552-volume download; individual volumes range from roughly 2.5× (short) to 3.0× (long).
+/// The 552 is the corpus that measurement ran over, not today's 553: a ratio re-stated against a
+/// denominator nobody re-measured would be a different claim wearing the same number.
 /// The UI prefixes every estimate with "~" and explains the methodology.
 ///
 /// Version history:

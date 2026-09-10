@@ -345,7 +345,7 @@ struct EditorIndexView: View {
     /// Row action — the mount's navigation, handed the ready-built drill spec.
     let onSelect: @MainActor (VolumeListSpec) -> Void
 
-    /// The rows, built once per appearance — canonicalizing 552 entries is cheap but is
+    /// The rows, built once per appearance — canonicalizing 553 entries is cheap but is
     /// not work for `body`.
     @State private var rows: [EditorIndexGrouping.EditorRow] = []
     @State private var query = ""

@@ -15,7 +15,7 @@ import Foundation
 ///
 /// The subject-numeric system replaced the decimal file in 1963 and the app had no label table
 /// for it until #1211, so every one of these keys rendered bare. Measured on the shipped corpus
-/// they are not a fringe: 1,362 leaves folding to 323 groups over 6,882 documents, and they
+/// they are not a fringe: 1,362 leaves folding to 323 groups over 6,883 documents, and they
 /// dominate the class lens in the later era bands.
 ///
 /// ## Two editions, and reading a key against the wrong one is not a near miss

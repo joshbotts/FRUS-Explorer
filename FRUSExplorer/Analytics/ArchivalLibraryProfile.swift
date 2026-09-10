@@ -63,7 +63,7 @@ struct ArchivalLibraryCollection: Identifiable, Sendable, Equatable {
 ///   the indexed document count, because not every FRUS document has a source note, and the
 ///   copy must never call it a document total.
 /// - ``volumeCount`` counts volumes that contributed at least one note — also smaller than the
-///   number of volumes indexed, since 51 of the series' 552 volumes carry no source notes at
+///   number of volumes indexed, since 51 of the series' 553 volumes carry no source notes at
 ///   all.
 ///
 /// ## What the collection ranking resolves, and what it cannot

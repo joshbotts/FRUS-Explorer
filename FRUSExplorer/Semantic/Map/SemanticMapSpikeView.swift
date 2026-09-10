@@ -160,7 +160,7 @@ final class SemanticMapModel {
     ///
     /// Two things happen here and both are necessary. A region with (almost) nothing in scope is
     /// **dropped**, because the artifact's cluster centres are whole-corpus and scoping to one
-    /// subseries otherwise left the label layer choosing its dozen from all 179 regions, most of them
+    /// subseries otherwise left the label layer choosing its dozen from all 171 regions, most of them
     /// naming a place that now held nothing but ghosts.
     /// And a surviving region's `documentCount` is **replaced by its in-scope count**, because the
     /// label layer ranks by size and keeps a dozen: rank by the series and a narrow scope gives its
@@ -178,7 +178,7 @@ final class SemanticMapModel {
 
     /// The volumes chosen as the axis's poles, low end first.
     ///
-    /// Poles are picked by **tapping a document**, not from a list. 552 volumes and 107 subseries do
+    /// Poles are picked by **tapping a document**, not from a list. 553 volumes and 107 subseries do
     /// not fit in a menu anyone would read, and the reader is already pointing at the thing they mean
     /// — "away from what this document is, toward what that one is" is the question a slice answers.
     private(set) var poles: (negative: String?, positive: String?) = (nil, nil)
@@ -474,7 +474,7 @@ final class SemanticMapModel {
     /// The three ways a reveal can end.
     ///
     /// **`.notReady` exists because collapsing it into failure shipped a broken feature.** The map
-    /// opens, `prepare()` starts uploading 314,483 points, and the continuation can arrive before
+    /// opens, `prepare()` starts uploading 314,571 points, and the continuation can arrive before
     /// the index exists — at which point a `Bool`-returning reveal says "false", the caller records
     /// the continuation as applied, and the retry that would have worked never happens. The document
     /// simply never gets selected, which is exactly what a reader reported. `setScope` had solved
@@ -492,7 +492,7 @@ final class SemanticMapModel {
     ///
     /// **The same shape as `requestedScope`, and for the same reason.** The caller's copy of the
     /// request does not survive: measured on macOS, the continuation reaches the view, `reveal`
-    /// answers `.notReady` because `prepare()` is still uploading 314,483 points, and by the time
+    /// answers `.notReady` because `prepare()` is still uploading 314,571 points, and by the time
     /// prepare finishes the view's `continued` has gone back to nil — so a retry driven from the
     /// caller's value finds nothing to apply. Storing the key HERE makes the retry independent of
     /// whatever happens to the caller's state.
@@ -507,7 +507,7 @@ final class SemanticMapModel {
     /// Focuses a region by artifact cluster id (#1051 B-7 — Browse's "See on the semantic map").
     ///
     /// The reveal's twin, with the reveal's `.notReady` deferral — a focus that arrives while
-    /// `prepare()` is still uploading 314,483 points is stored and re-applied, never dropped. The
+    /// `prepare()` is still uploading 314,571 points is stored and re-applied, never dropped. The
     /// one extra guard is the DIGEST: cluster ids re-mint per artifact generation, and this request
     /// can ride window restoration across an app update that regenerated the artifact, so a focus
     /// whose digest does not match the loaded artifact is refused (`.notFound` — the map opens
@@ -811,7 +811,7 @@ final class SemanticMapModel {
     ///
     /// **x is the projection, y is the volume's coverage year** — the design's "drive the x-axis with
     /// it while y stays date". The date is the *volume's* coverage midpoint, not the document's,
-    /// because that is what the bundle knows for all 552 volumes; a per-document date exists only for
+    /// because that is what the bundle knows for all 553 volumes; a per-document date exists only for
     /// volumes this device has indexed, and a y-axis that meant one thing for some rows and another
     /// for the rest would be worse than a coarse one that means the same thing everywhere.
     ///
@@ -838,8 +838,8 @@ final class SemanticMapModel {
         }
         guard let index, let vectors = BundledSemanticVectors.corpusVectors else { return }
 
-        // Year per ROW, resolved once per volume rather than once per document: 552 lookups instead
-        // of 314,483.
+        // Year per ROW, resolved once per volume rather than once per document: 553 lookups instead
+        // of 314,571.
         var yearByRow = [Int16](repeating: 0, count: map.documentCount)
         var minYear = Int.max, maxYear = Int.min
         for volume in index.volumes {
@@ -968,7 +968,7 @@ final class SemanticMapModel {
     /// **A camera write is exactly one frame.** The renderer is `isPaused = true` with
     /// `enableSetNeedsDisplay`, and `camera` carries `didSet { setNeedsRedraw() }`, so a transit is
     /// N dirty marks and costs nothing when idle. That property is why this is affordable on a
-    /// 314,483-point map at all.
+    /// 314,571-point map at all.
     private func moveCamera(to target: SemanticMapCamera) {
         transitTask?.cancel()
         transitTask = nil
@@ -1086,7 +1086,7 @@ final class SemanticMapModel {
     /// **A dip, not a cross-dissolve, and that is forced by the artifact.** `colourIndex` means a
     /// different thing under each lens — region id here, era there — so interpolating between two
     /// palettes produces colours that belong to neither, and a true dissolve needs two draws of
-    /// 314,483 points. Fading through the floor is the honest form: it says *the colouring is
+    /// 314,571 points. Fading through the floor is the honest form: it says *the colouring is
     /// changing* without asserting an intermediate colouring that means nothing.
     ///
     /// The swap happens at the BOTTOM of the dip, so the reader never sees the two colourings at
@@ -1145,7 +1145,7 @@ final class SemanticMapModel {
 
 /// The corpus as a map of its own vocabulary.
 ///
-/// Draws the bundled Tier-0 artifact — 314,483 documents placed by the layout stage, coloured by a
+/// Draws the bundled Tier-0 artifact — 314,571 documents placed by the layout stage, coloured by a
 /// lens the reader picks, with tap-to-open, lasso capture and axis slices over it.
 ///
 /// It is the body of `SemanticAnalyticsView`, which is where it ended up after starting as a
@@ -1596,7 +1596,7 @@ struct SemanticMapSpikeView: View {
         // **Recorded LAST, and that ordering is the whole fix.** This assignment used to be the
         // first line of the method, so the continuation was banked before the reveal was even
         // attempted — and since recording it is exactly what stops the retry, a reveal that arrived
-        // while `prepare()` was still uploading 314,483 points was discarded and never asked again.
+        // while `prepare()` was still uploading 314,571 points was discarded and never asked again.
         // The map opened with nothing selected, which is what a reader reported.
         guard Self.continuationIsSettled(outcome) else { return }
         appliedContinuation = continued
@@ -1690,7 +1690,7 @@ struct SemanticMapSpikeView: View {
 
     /// A volume's coverage midpoint year, for the slice's vertical axis.
     ///
-    /// The VOLUME's, not the document's: the manifest knows a coverage range for all 552 volumes,
+    /// The VOLUME's, not the document's: the manifest knows a coverage range for all 553 volumes,
     /// where a per-document date exists only for volumes this device has indexed. A y-axis that meant
     /// one thing for some rows and another for the rest would be worse than a coarse one that means
     /// the same everywhere — and the caveat says which it is.
@@ -1710,7 +1710,7 @@ struct SemanticMapSpikeView: View {
 
     /// The fewest source notes a volume needs before the lens will colour it.
     ///
-    /// **Ten, and the number is a judgement backed by a measurement.** Fifteen of the 522 covered
+    /// **Ten, and the number is a judgement backed by a measurement.** Fifteen of the 523 covered
     /// volumes rest on a single parsed note — `frus1898` carries 1,194 documents on the map and one
     /// note — and the argmax over one note is not a finding about an archive. Twenty-four volumes sit
     /// at ten or fewer and twenty-nine at twenty or fewer, so the curve is flat here and the exact
@@ -1724,7 +1724,7 @@ struct SemanticMapSpikeView: View {
 
     /// The category a volume's source notes name most often, when there are enough of them.
     ///
-    /// **A plurality, not a majority** — it holds under half the notes for 73 of the 522 covered
+    /// **A plurality, not a majority** — it holds under half the notes for 73 of the 523 covered
     /// volumes — and the caption under the map says so. Ties break on the category order in
     /// `SourceProvenanceCategory.allCases` rather than arbitrarily, because a Swift dictionary has no
     /// stable iteration order and a tie broken by iteration would recolour the map between launches.
@@ -1754,8 +1754,8 @@ struct SemanticMapSpikeView: View {
     /// The dominant-category table, built once and kept.
     ///
     /// **A `@State` cache, not a computed property, and the difference was about a second of frozen
-    /// UI.** The first version computed the whole 522-volume table inside `provenanceForVolume`, which
-    /// the colouring calls once per volume — so one recolour rebuilt it 552 times, 552 × 522 × 10
+    /// UI.** The first version computed the whole 523-volume table inside `provenanceForVolume`, which
+    /// the colouring calls once per volume — so one recolour rebuilt it 553 times, 553 × 523 × 10
     /// comparisons on the main actor, while a doc comment two lines above claimed it was "built once
     /// per lens application and cached". It was neither.
     @State private var dominantProvenance: [String: SourceProvenanceCategory] = [:]
@@ -2200,8 +2200,16 @@ struct SemanticMapSpikeView: View {
     /// histogram since the map shipped, stored — in its own words — "so a cluster tooltip can say
     /// *when* as well as *what*", and until now nothing in the app read it. The region names told
     /// you what a cluster is about; nothing told you which decades it came from, which is often
-    /// the more interesting half (`shah iran iranian mosadeq` is 1,444 documents from 1900–1944
-    /// and 3,855 from 1945–1990; `nanking shanghai hankow chinese` is overwhelmingly pre-war).
+    /// the more interesting half (`mikolajczyk, soviet, polish, stalin` is 1,552 documents from
+    /// 1900–1944 and 830 from 1945–1990; `bolshevik, siberia, petrograd, kolchak` is 3,215 of
+    /// 3,220 pre-war).
+    ///
+    /// **Both examples were re-chosen on 2026-09-10, not re-counted**, and the reason is the rule
+    /// §14.10 of the Agentic Guide states: cluster ids and their labels re-mint on every relayout.
+    /// The pair this named before — `shah iran iranian mosadeq` and `nanking shanghai hankow
+    /// chinese` — do not exist in the 2026-09-09 artifact under those labels, so their counts could
+    /// not be bumped, only replaced. Quote a label matched on WHOLE terms and its `documentCount`,
+    /// never an id.
     ///
     /// Two rules the rows follow, both of which look like fussiness and are not:
     ///
@@ -2349,12 +2357,13 @@ struct SemanticMapSpikeView: View {
     /// **Reuses `SemanticSimilarityGenerator`, which is the answer to "does the Related Documents
     /// axis provide this path".** It does, and taking it whole rather than re-deriving the funnel
     /// means a neighbour here is a neighbour there: the same Tier-1 Hamming candidates over all
-    /// 314,483 documents, the same exact int8 rerank, the same tie-breaks, the same shard fetches
+    /// 314,571 documents, the same exact int8 rerank, the same tie-breaks, the same shard fetches
     /// queued for next time. A second implementation would be a second thing to drift.
     ///
     /// **What it inherits is a fence, and the map is exactly where that matters.** The generator
     /// scores against Tier-2 shards and *drops* a candidate whose shard is absent rather than
-    /// ranking it by Hamming — raw binary recalls 0.53 against the funnel's 0.745 and the two are
+    /// ranking it by Hamming — raw binary recalled 0.53 of the exact top ten at 256, where the
+    /// shipped 512-width funnel recalls 0.851, and the two are
     /// different scales, so a mixed list would be sorted by a number meaning different things in
     /// different rows. On a map that draws the whole published series including volumes the reader
     /// does not have, that means this list is drawn from a **subset of what is on screen**, and the
@@ -2673,7 +2682,7 @@ struct SemanticMapSpikeView: View {
                 }
                 // **A lasso is the first capture path that can enclose documents this device cannot
                 // search.** Every corpus before it came from a search result set, so its members
-                // were indexed by construction; the map draws all 552 volumes. Applying a corpus
+                // were indexed by construction; the map draws all 553 volumes. Applying a corpus
                 // silently narrows to the indexed keys, and one with none is refused outright — so
                 // the coverage is stated here, at capture, rather than discovered later in Search.
                 if result.total > 0 {
@@ -2821,7 +2830,7 @@ struct SemanticMapSpikeView: View {
     /// against a layout none of them produced.
     ///
     /// The population is the **series**, not the reader's library — `SemanticVectorIndex.volumes`,
-    /// the 552 the artifact covers — for the reason Archival Analytics gives: this derivation is
+    /// the 553 the artifact covers — for the reason Archival Analytics gives: this derivation is
     /// bundled and is honest with nothing downloaded. The `availability` lens is where the library
     /// enters, and it stays a lens rather than becoming a scope.
     @ViewBuilder
@@ -2930,7 +2939,7 @@ struct SemanticMapSpikeView: View {
     ///
     /// Uses `labelledClusters` — the scope-aware list, whose counts are re-tallied against the
     /// current scope — so the numbers in the file are the numbers on the screen. Under no scope
-    /// that property returns the whole set, so the unscoped export is the full 179 regions.
+    /// that property returns the whole set, so the unscoped export is the full 171 regions.
     private func exportRegionsCSV() {
         guard let index = BundledSemanticMap.index else { return }
         let clusters = model.labelledClusters
@@ -3019,7 +3028,7 @@ struct SemanticMapSpikeView: View {
     ///
     /// Two rules inherited from those precedents: list what the **data** has rather than what the
     /// drawing had room for (the canvas keeps ~22 labels; this lists every region), and state what
-    /// the list cannot cover — 88,207 of 314,483 documents sit between regions, and a region list
+    /// the list cannot cover — 89,449 of 314,571 documents sit between regions, and a region list
     /// is structurally incapable of reaching them.
     @ViewBuilder
     private var mapAccessibilityList: some View {
@@ -3100,7 +3109,7 @@ struct SemanticMapSpikeView: View {
     private func applyScope(_ ids: [String]?, label: String?) {
         // **The set is compared before the mask is rebuilt**, because `AnalyticsScopeBar` writes its
         // two bindings separately: one menu tap calls this twice, once for the ids and once for the
-        // label. Rebuilding on both meant two passes over 314,483 rows per selection, the second of
+        // label. Rebuilding on both meant two passes over 314,571 rows per selection, the second of
         // them redundant. The label still updates either way.
         let changed = ids.map(Set.init) != scopeVolumeIds.map(Set.init)
         scopeVolumeIds = ids
@@ -3369,7 +3378,7 @@ struct SemanticMapSurface {
         // `enableSetNeedsDisplay` makes a dirty mark the thing that produces a frame; the renderer
         // marks itself dirty from every mutator (`SemanticMapRenderer.register(_:)` and its `didSet`
         // hooks). The map is a still image unless the camera moves, so the free-running loop this
-        // replaces spent 60 identical 314,483-point draw calls a second for as long as a window
+        // replaces spent 60 identical 314,571-point draw calls a second for as long as a window
         // stayed open — which was a fair trade for a spike being measured and is not one for a
         // window a reader leaves open beside their work.
         view.enableSetNeedsDisplay = true

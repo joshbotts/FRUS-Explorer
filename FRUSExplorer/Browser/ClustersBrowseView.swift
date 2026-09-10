@@ -380,7 +380,7 @@ struct ClustersIndexView: View {
 // MARK: - ClusterDocumentsView
 
 /// One cluster's document drill (#1051 B-7): the R-3 degraded-row list over the
-/// cluster's whole membership, paged — cluster 8 holds 38,652 documents against the
+/// cluster's whole membership, paged — cluster 15 holds 37,865 documents against the
 /// ~250 floor, and Browse has no precedent for a list that size (the map's only
 /// enumeration is a capped capture). Reuses `CorporaAxis`'s key-generic grouping,
 /// ordering and row-state logic verbatim, and the B-4 bulk metadata loads.
@@ -702,7 +702,7 @@ struct ClusterDocumentsView: View {
     }
 
     /// The bulk metadata load for the VISIBLE slice — one chunked call per store,
-    /// never per-key queries (the B-4 rule; a page is 500 keys, not 38,652).
+    /// never per-key queries (the B-4 rule; a page is 500 keys, not 37,865).
     private func loadMetadata() async {
         let visible = Array(keys.prefix(shownCount))
         guard !visible.isEmpty else { return }

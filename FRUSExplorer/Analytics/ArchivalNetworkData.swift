@@ -353,8 +353,8 @@ enum ArchivalNetworkBuilder {
 
     /// Makes labels unique within the graph.
     ///
-    /// Measured on the shipped authority, 16 names are carried by more than one record among the
-    /// 1,111 that appear in the flow vocabulary alone — `White House Central Files` is six
+    /// Measured on the shipped authority, 17 names are carried by more than one record among the
+    /// 1,106 that appear in the flow vocabulary alone — `White House Central Files` is six
     /// distinct nodes across six repositories. Two identically-labelled circles in the same
     /// sector are indistinguishable, and the reader has no way to tell which one they tapped.
     static func disambiguate(_ nodes: [ArchivalNetworkNode],

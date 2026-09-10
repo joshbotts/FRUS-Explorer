@@ -20,7 +20,7 @@ import SwiftUI
 /// archives cite each other. The share is recomputed from the artifact so it cannot go stale.
 ///
 /// ## No silent truncation
-/// A focused collection can have up to 238 destinations. The diagram draws the ten heaviest as
+/// A focused collection can have up to 240 destinations. The diagram draws the ten heaviest as
 /// blocks and folds every remaining one into a single dashed remainder block that states its own
 /// count and reference total, and expands to a full list. Nothing is dropped without being
 /// counted somewhere the reader can see.

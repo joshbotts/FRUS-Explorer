@@ -818,7 +818,7 @@ struct ArchivalAnalyticsView: View {
     /// A share, never rounded to a number that reads as nothing.
     ///
     /// `fractionLength` has a *minimum* of zero, so a plain percent style renders the class
-    /// lens's 1977–1992 share — 3 documents in 12,609 notes — as "0%", which states that the
+    /// lens's 1977–1992 share — 3 documents in 12,697 notes — as "0%", which states that the
     /// rows below account for none of the era while three bars sit under it. Anything below a
     /// percent says so in words instead.
     static func shareText(_ share: Double) -> String {
@@ -1685,7 +1685,7 @@ struct ArchivalAnalyticsView: View {
     /// Deliberately NOT `appState.indexedVolumeIds`, which is what every other analytics surface
     /// scopes over. Those surfaces read the local index and can only describe what is
     /// downloaded; this mode's derivation is the bundled corpus-wide authority and usage index,
-    /// and it is honest about all 552 volumes with none of them downloaded. Intersecting with
+    /// and it is honest about all 553 volumes with none of them downloaded. Intersecting with
     /// the library would silently answer a different question for every reader — "the collections
     /// of the 1969–76 subseries" would mean the eleven volumes they happen to hold.
     private var scopableVolumeIds: Set<String> {

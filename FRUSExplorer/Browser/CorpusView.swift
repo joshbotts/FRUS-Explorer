@@ -481,7 +481,7 @@ struct CorpusView: View {
         }
     }
 
-    /// "552 volumes by era, 1861–1988" — counts and years from the live manifest, never
+    /// "553 volumes by era, 1861–1989" — counts and years from the live manifest, never
     /// hard-coded (side-loaded volumes move both). The year scan lives on
     /// `VolumeCatalogueGrouping`, NOT here: a `View`'s statics are MainActor-isolated, so a
     /// helper parked on the view type crashes a nonisolated test that calls it (the

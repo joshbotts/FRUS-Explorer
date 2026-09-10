@@ -13544,3 +13544,59 @@ three-volume fixture with a zero-document volume sharing an offset — which is 
 artifacts cannot produce and therefore the case no test could otherwise reach.
 
 4,647 iOS tests / 603 suites (+2) + 37 UI tests; swift test 1,371 / 162; macOS clean. Build stays 47.
+
+## Session 2026-09-10l — The corpus-figure residue #1262 left, and two tests that proved nothing
+
+Three of the four items the owner queued for build 47. S-1 follows separately, as its own change.
+
+**449 lines classified, 110 changed.** #1262 bounded itself to "finish every file this pass touched"
+and enumerated the rest; this is that rest. Five agents swept the tree by directory and reported
+EVERY line examined, not only the ones they changed — 110 edits against **339 deliberately left**, in
+four populations: 153 already correct, 81 dated records, 62 live-index counts, 43 not corpus figures
+at all. The completeness is the deliverable: a sweep that lists only its survivors invites the same
+re-derivation next month.
+
+**It could not have been a `sed`, and the leaves prove it.** Seven sites are RIGHT at 552 because the
+Office of the Historian's subject drop genuinely covers 552 volumes (`document-subject-index.json`,
+generated 2026-08-21, with vol. XVI its one disclosed gap). `43,552` is a vector count and
+`711.00/11–552` a decimal file number. And the live-index family — 316,839 documents, the person
+rollups, "the owner's 552-volume index" — cannot be answered by any bundled artifact.
+
+**Six figures were RE-MEASURED rather than bumped, because their numerators moved too.**
+`SourceExplorerView`'s "414 of the 622 series … restricted" is **483 of 698**;
+`ArchivalFlowsData`'s "298 of 552 volumes contribute no edge" is **299 of 553** (the numerator moved
+because `volumesWithEdges` did NOT); `SemanticMapLens`'s "wins 55 volumes — 9% of the plane" is
+**32 volumes / 4.5%**, obtained by replaying the app's own `dominantProvenance` rule over the current
+artifact — and that one moved with #1206/#1225's parser change, not with vol. XVI at all.
+
+**One had no mechanical fix and had to be re-chosen.** `SemanticMapSpikeView`'s worked example named
+`shah iran iranian mosadeq` and `nanking shanghai hankow chinese`; neither label exists in the
+2026-09-09 relayout, so the counts could not be bumped. Replaced with two clusters read from the
+shipped artifact, and the comment now states the §14.10 rule that makes this recur: **cluster ids and
+labels re-mint on every relayout**, so quote a label matched on whole terms and its `documentCount`,
+never an id.
+
+**Three surviving 552s were DATED rather than left bare** — the 1.7% top-three concentration (twice)
+and the 2.8× index-overhead factor. Each is a real measurement whose numerator nobody re-ran, so a
+bare 552 beside it reads as an oversight and would be re-raised by the next sweep. Saying which
+corpus the measurement ran over is what closes it.
+
+**A find that was not in scope: the corpus repository moved under us mid-session.** OH merged PR #462
+(a new 2001–08 subseries) while this pass ran, taking `frus/volumes` from **694 to 744 files**. That
+made #1263's "All 694 corpus files" a dated measurement of a corpus that had already grown — so the
+scan was re-run over all 744, including the 50 new files: still **zero** non-BMP characters, zero
+combining marks, zero CR. The claim holds on a wider base and both comments say 744.
+
+**Two tests passed vacuously and now cannot.** `CorpusAnalyticsServiceTests`'
+`subseriesMatchesBundledManifest` is the ONLY assertion that the analytics subseries derivation
+agrees with the manifest for every volume — which is exactly what a new volume-id shape breaks, and a
+new volume is the event that just happened. It guarded `!entries.isEmpty` and returned; so did the
+label-uniqueness test, whose proof over zero labels is trivially true. Both now
+`try #require(entries.count > 500, …)`, the repo's own pattern from three neighbouring suites.
+**Mutation-checked**: raising the floor to 5,000 fails both with "(entries.count → 553) > 5000".
+
+**And `VolumeCatalogueView` stopped contradicting itself.** #1258 updated the type header to "two full
+ISO dates" and left `publicationYear(of:)` 116 lines below saying "exactly one" — the precise failure
+#1262's rule exists to prevent, created four days ago by the ingest in a file that pass never opened.
+
+4,647 iOS tests / 603 suites + 37 UI tests; swift test 1,371 / 162; macOS clean. Build stays 47.

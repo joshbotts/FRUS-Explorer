@@ -124,7 +124,7 @@ public actor SemanticShardStore {
     /// Volume ids with a shard file on disk, by listing the directory.
     ///
     /// The filesystem is the source of truth, so this is what "which volumes are semantic-ready"
-    /// means. Cheap enough to call on demand: 552 entries is one `contentsOfDirectory`.
+    /// means. Cheap enough to call on demand: 553 entries is one `contentsOfDirectory`.
     ///
     /// - Returns: The volume ids, sorted.
     public func volumeIDsOnDisk() -> [String] {
@@ -189,8 +189,8 @@ public actor SemanticShardStore {
     /// A stale shard is otherwise discovered one at a time, by `shard(for:)` throwing
     /// `provenanceMismatch` when some surface happens to ask — so after a generation change the
     /// bytes sit on disk indefinitely, the storage screen counts them as present, and the reader is
-    /// told they have vectors they cannot use. Verifying them eagerly means opening 552 files and
-    /// reading 552 headers at launch. One marker file makes it one string comparison.
+    /// told they have vectors they cannot use. Verifying them eagerly means opening 553 files and
+    /// reading 553 headers at launch. One marker file makes it one string comparison.
     ///
     /// ## An ABSENT marker is treated as stale, deliberately
     /// Shards written before this mechanism existed carry no marker and their generation cannot be
@@ -247,7 +247,7 @@ public actor SemanticShardStore {
     /// stay identical. Meanwhile the three checks on the shard itself cannot see the change either:
     /// the provenance digest is the same corpus-free value, `expectedDocumentCount` is unchanged when
     /// the correction preserves the count, and the length check measures the file against **its own
-    /// header**. Measured over all 552 shipped shards, `bytes == 64 + n × (dims + 4)` holds 552/552
+    /// header**. Measured over all 553 shipped shards, `bytes == 64 + n × (dims + 4)` holds 553/553
     /// and 96 byte-lengths are shared by more than one volume — so shard length is a bijection with
     /// document count and cannot distinguish two editions of the same size.
     ///
@@ -301,7 +301,7 @@ public actor SemanticShardStore {
     ///
     /// `ResetService.resetLocalData` deletes volume XML directly through `FileManager`, bypassing
     /// `DownloadManager.deleteVolume` entirely, so without an explicit call here a "reset local data"
-    /// would leave 79 MB of vectors behind for volumes that no longer exist.
+    /// would leave 162 MB of vectors behind for volumes that no longer exist.
     public func removeAllShards() {
         mapped.removeAll()
         refused.removeAll()

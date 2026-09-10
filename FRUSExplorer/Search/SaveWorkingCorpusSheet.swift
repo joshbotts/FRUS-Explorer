@@ -25,7 +25,7 @@ import SwiftUI
 /// ## What it captures, and what it does not
 /// The **whole retained result set**, not the page — a corpus is the answer to a query, and a page
 /// is an accident of pagination. It records the query text and the device's indexed-volume count
-/// alongside, because a corpus captured against 40 volumes and one captured against 552 are
+/// alongside, because a corpus captured against 40 volumes and one captured against 553 are
 /// different evidence and nothing else would say so.
 ///
 /// It does **not** record the query as a re-resolution rule. The keys are the artifact; see

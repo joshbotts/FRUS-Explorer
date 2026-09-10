@@ -22,7 +22,7 @@ import Foundation
 /// Wave R's decision **D5** declines to auto-prune the research trail *because* the query log is
 /// exported as a method appendix: a recorded query with its real hit count — **including the
 /// zeros** — is what makes a claim of absence checkable. "I searched for X and found nothing" is
-/// an assertion; "I searched for X on this date, over these 552 volumes, with these fields, and it
+/// an assertion; "I searched for X on this date, over these 553 volumes, with these fields, and it
 /// returned 0" is evidence. This type is the second half of that promise. The trail has been in
 /// the JSON export since Wave R-5; JSON is not a methods section.
 ///

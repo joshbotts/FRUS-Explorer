@@ -31,7 +31,7 @@ import Foundation
 ///
 /// ## Why the filesystem is the registry
 ///
-/// Same argument as `SemanticShardStore`, one file instead of 552: presence is a `stat`, and a
+/// Same argument as `SemanticShardStore`, one file instead of 553: presence is a `stat`, and a
 /// table recording it would drift the first time the file was removed outside the app.
 ///
 /// Version history:

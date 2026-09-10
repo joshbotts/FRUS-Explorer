@@ -1343,7 +1343,7 @@ private struct DownloadedVolumesListView: View {
                 }
             }
         }
-        // `.always`, not the default: this screen exists because 552 rows are unusable without
+        // `.always`, not the default: this screen exists because 553 rows are unusable without
         // a filter, so the field has to be visible rather than hidden until the user thinks to
         // pull down on the list.
         .searchable(text: $filter,
@@ -1450,8 +1450,8 @@ private struct DownloadedVolumesListView: View {
 /// The GitHub download browser, behind the hub's "Download from GitHub…" row (S-2c).
 ///
 /// The catalogue leaves the settings form entirely: choosing what to download is its own task, and
-/// inlining 552 rows made the hub's other sections unreachable without scrolling past every volume
-/// ever published. Search leads, because picking one volume out of 552 by scrolling is not a real
+/// inlining 553 rows made the hub's other sections unreachable without scrolling past every volume
+/// ever published. Search leads, because picking one volume out of 553 by scrolling is not a real
 /// interaction.
 ///
 /// Version history:
@@ -1604,7 +1604,7 @@ private struct DownloadVolumesBrowseView: View {
     /// The catalogue, minus anything too small to be a real volume.
     ///
     /// The size floor guards against placeholder or stub XML appearing in a *live* manifest
-    /// refresh; measured against the bundled manifest it currently excludes nothing (0 of 552
+    /// refresh; measured against the bundled manifest it currently excludes nothing (0 of 553
     /// entries fall under it). The old iOS pane applied no floor and the macOS one did — this is
     /// the two platforms agreeing.
     private var allVolumes: [VolumeManifestEntry] {

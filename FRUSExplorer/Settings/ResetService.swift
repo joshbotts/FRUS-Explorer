@@ -159,7 +159,7 @@ struct ResetService {
         // Semantic shards live in their own directory and are deleted per volume by
         // `onVolumeDeleted` — which this path never fires, because it removes files directly rather
         // than through `DownloadManager.deleteVolume`. Without this call a reset would leave up to
-        // 79 MB of vectors for volumes that no longer exist.
+        // 162 MB of vectors for volumes that no longer exist.
         await appState.semanticShardStore?.removeAllShards()
 
         // Remove the search index — one bulk DELETE per table, not one call per manifest entry.

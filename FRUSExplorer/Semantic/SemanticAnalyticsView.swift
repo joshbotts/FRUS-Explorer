@@ -19,7 +19,7 @@ import SwiftUI
 /// A sibling of Corpus, Person, Cross-Reference and Archival Analytics, reached from the same
 /// Analytics menu, and the home the map earned by becoming usable: it began as a `#if DEBUG`
 /// diagnostics row in Settings ▸ Data & Recovery, where it sat because it was a *measurement* —
-/// could one draw call hold 314,483 points — and stayed there through labels, tap-to-open, lasso
+/// could one draw call hold 314,571 points — and stayed there through labels, tap-to-open, lasso
 /// capture and slices, long after it had stopped being one.
 ///
 /// ## What it is honest about

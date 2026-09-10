@@ -103,7 +103,7 @@ public enum CrossReferenceStats {
 
     /// Picks the top-N volumes by **total citation degree** (inbound + outbound ref counts)
     /// from the aggregated volume-to-volume connection edges, for the readable bounded heat
-    /// matrix. A full 552×552 grid is unusable, so the matrix is scoped to the most-connected
+    /// matrix. A full 553×553 grid is unusable, so the matrix is scoped to the most-connected
     /// volumes; the caller discloses the bound (no silent truncation).
     ///
     /// Total degree for a volume = Σ ref_count over every edge where it is the source

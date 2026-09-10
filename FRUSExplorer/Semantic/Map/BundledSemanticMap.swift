@@ -18,7 +18,7 @@ import Foundation
 ///
 /// Follows `BundledSemanticVectors` — `@MainActor` enum, idempotent `async prepare()`, work off the
 /// main actor, never first-touched on a render path — and loads **only when a map surface asks for
-/// it**. The map is 1.89 MB of placements plus a 25 KB index that nothing on the launch path needs,
+/// it**. The map is 1.89 MB of placements plus a 24 KB index that nothing on the launch path needs,
 /// so unlike the vector tiers this is not prepared at start-up.
 ///
 /// It refuses a map whose provenance digest disagrees with the loaded vectors. That is not

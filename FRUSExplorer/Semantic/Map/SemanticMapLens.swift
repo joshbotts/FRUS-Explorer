@@ -80,7 +80,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     /// `provenance` is the one that needs it, and the first draft of this caption was itself wrong.
     /// It is a **per-volume** reading — the category a volume's source notes name most often — on a
     /// map whose points are documents, so every point in a volume takes one colour. The draft called
-    /// that colour the volume's "larger half", which is false for **73 of the 522** covered volumes,
+    /// that colour the volume's "larger half", which is false for **73 of the 523** covered volumes,
     /// where the winner holds under half the notes; it is a plurality. The caption now says so, and
     /// names the evidence floor, because a solid block of colour otherwise reads as a stronger claim
     /// than the data makes.
@@ -97,13 +97,13 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
             return nil
         case .provenance:
             return String(localized: "semanticMap.lens.provenance.caption.v2",
-                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of the 498 volumes it colors. Volumes with fewer than ten notes are left uncolored.")
+                          defaultValue: "Each volume takes the category its source notes name most often — a plurality, not a majority, for 73 of the 499 volumes it colors. Volumes with fewer than ten notes are left uncolored.")
         }
     }
 
     /// Whether the key under the map can name every colour the lens produces.
     ///
-    /// **`cluster` cannot, and says so rather than pretending.** It cycles 179 regions through 15
+    /// **`cluster` cannot, and says so rather than pretending.** It cycles 171 regions through 15
     /// slots — adjacency, not identity, is what its colour conveys, and the region *names* are drawn
     /// on the map itself. Every other lens names each colour exactly once, and
     /// `SemanticMapSurfaceTests` holds them to it against the slots the colouring actually hands out.
@@ -119,7 +119,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
     var legend: [String] {
         switch self {
         case .cluster:
-            // One entry, and `namesEveryColour` is false: the other fifteen slots cycle through 179
+            // One entry, and `namesEveryColour` is false: the other fifteen slots cycle through 171
             // regions, which the map labels by name where they sit.
             return [String(localized: "semanticMap.legend.unclustered",
                            defaultValue: "Between regions")]
@@ -147,7 +147,7 @@ enum SemanticMapLens: String, CaseIterable, Identifiable, Sendable {
 ///
 /// The work is deliberately **per volume, not per document**: every lens except `cluster` is a
 /// property of the volume, and the map's rows are contiguous per volume, so a lens is a few hundred
-/// range fills rather than 314,483 lookups. `cluster` reads the map's own bytes.
+/// range fills rather than 314,571 lookups. `cluster` reads the map's own bytes.
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
@@ -176,7 +176,7 @@ enum SemanticMapColouring {
         var colours = [UInt8](repeating: 0, count: map.documentCount)
         switch lens {
         case .cluster:
-            // Clusters are cycled through the palette rather than given unique colours: there are 179
+            // Clusters are cycled through the palette rather than given unique colours: there are 171
             // of them and 16 slots, and a map that tried to distinguish all of them by hue would
             // distinguish none of them. Adjacency, not identity, is what the colour conveys — the
             // label at a region's centre is what names it.
@@ -342,7 +342,7 @@ enum SemanticMapColouring {
             let hues: [Float] = [0.58, 0.52, 0.08, 0.12, 0.95, 0.75, 0.32, 0.44, 0.68, 0.10]
             let saturations: [Float] = [0.70, 0.55, 0.75, 0.85, 0.60, 0.65, 0.60, 0.55, 0.45, 0.12]
             // `unrecognized` is last, and it is deliberately the DIMMEST of the ten rather than a
-            // full-brightness hue. It wins 55 volumes — 9% of the plane — and it means *the parser
+            // full-brightness hue. It wins 32 volumes — 4.5% of the plane — and it means *the parser
             // could not classify these notes*, so drawing it as confidently as "Presidential
             // Libraries" would put the map's loudest claim on its weakest evidence. The first draft
             // gave it saturation 0 at brightness 0.95, i.e. white: the brightest thing on screen.

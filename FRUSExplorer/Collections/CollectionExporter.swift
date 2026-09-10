@@ -347,7 +347,7 @@ struct ExportHighlight: Sendable {
 /// astral character or combining sequence earlier in the document shifted every later
 /// PDF/DOCX shading by one, and kept shifting.
 ///
-/// **Measured 2026-09-10: no shippable volume can trigger it.** All 694 corpus files carry
+/// **Measured 2026-09-10: no shippable volume can trigger it.** All 744 corpus files carry
 /// zero non-BMP characters, zero combining marks and zero CR, and the only numeric character
 /// references are `&#x93;`/`&#x94;`, both BMP. So the correction changes no export today —
 /// which is also why nothing caught it, since this type had no tests at all and the
