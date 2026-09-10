@@ -46,9 +46,11 @@ struct SemanticSubstrateTests {
         // The two tiers must describe the same corpus, or a row means different things to each.
         #expect(vectors.documentCount == index.documentCount)
         #expect(vectors.dims == index.provenance.shippingDims)
-        #expect(index.volumes.count == 552)
-        #expect(index.documentCount == 314_483)
-        // 552 volume centroids + 107 subseries centroids.
+        // 552 → 553 and 314,483 → 314,571 when FRUS 1981–1988 vol. XVI was harvested and packed.
+        #expect(index.volumes.count == 553)
+        #expect(index.documentCount == 314_571)
+        // 553 volume centroids + 107 subseries centroids. The subseries count does not move —
+        // v16 joins the existing 1981-88 group rather than opening one.
         #expect(vectors.centroidCount == index.volumes.count + index.file.subseries.count)
     }
 

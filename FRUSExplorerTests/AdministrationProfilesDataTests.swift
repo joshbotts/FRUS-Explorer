@@ -414,7 +414,8 @@ struct AdministrationProfilesDataTests {
         let data = try Data(contentsOf: url)
         let index = try JSONDecoder().decode(AdministrationProfilesIndex.self, from: data)
         #expect(index.schemaVersion == 1)
-        #expect(index.volumesCovered == 552)
+        // 552 → 553 when FRUS 1981–1988 vol. XVI joined the manifest (OH PR #460).
+        #expect(index.volumesCovered == 553)
 
         // ~26 administrations are populated (Lincoln … G.H.W. Bush).
         let populated = index.administrations.filter { $0.pointDocCount > 0 || $0.rangeDocCount > 0 }

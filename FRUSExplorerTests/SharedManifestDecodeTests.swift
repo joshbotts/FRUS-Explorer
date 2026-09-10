@@ -91,4 +91,32 @@ struct SharedManifestDecodeTests {
         }
         #expect(checked > 0, "no volume in the bundled manifest carries any tag")
     }
+
+    @Test("Every catalogued volume states a publication date")
+    func everyVolumeIsDated() {
+        let entries = AppState().manifestStore.bundledEntries
+        #expect(!entries.isEmpty)
+        let undated = entries.filter { ($0.publicationDate ?? "").isEmpty }.map(\.volumeId)
+        // `frus1981-88v16` was the one volume of 553 with no date, because OH ships an empty
+        // `publicationStmt/date` while a volume is in progress and states the real one in
+        // `revisionDesc` instead. It reads "n.d." on screen and cites as a year 0 — which
+        // `CitationFormatter.publisher(forYear:)` turns into the pre-2014 GPO name.
+        #expect(undated.isEmpty, "undated: \(undated)")
+    }
+
+    @Test("The catalogue records a volume's own account of whether it is finished")
+    func partialVolumesAreRecordedAsPartial() {
+        let entries = AppState().manifestStore.bundledEntries
+        let partial = Set(entries.filter { $0.status == .partiallyPublished }.map(\.volumeId))
+        // Measured over the corpus, reading each header WHOLE: exactly three shipped volumes say
+        // `partially-published` in `revisionDesc`. All three were recorded as fully published
+        // until the manifest started reading that attribute. `frus1981-88v16` ships four of its
+        // eleven chapters; the other seven are `being-cleared`.
+        #expect(partial == ["frus1969-76ve10", "frus1977-80v27", "frus1981-88v16"])
+        // And the rest are published — nothing was demoted on the way through. `.planned` has no
+        // members: a planned volume is not in the published listing this manifest is built from.
+        let published = entries.filter { $0.status == .published }.count
+        #expect(published == entries.count - partial.count)
+        #expect(!entries.contains { $0.status == .planned })
+    }
 }

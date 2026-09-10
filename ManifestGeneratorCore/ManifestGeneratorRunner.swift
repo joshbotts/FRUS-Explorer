@@ -30,7 +30,9 @@ import TEIHeaderKit
 /// wired to the `VOLUMES_DIR` env var), the runner does NOT hit GitHub. Instead it loads
 /// the existing manifest at `outputPath` as the base and, for each entry, re-parses only
 /// the local `<teiHeader>` at `VOLUMES_DIR/<entry.filename>`, overriding **only**
-/// `publicationDate` and `dateRange` while preserving every other field byte-for-byte.
+/// `publicationDate`, `dateRange` and `status` while preserving every other field byte-for-byte.
+/// `status` joined that list in September 2026: re-deriving the date from a header while leaving
+/// the status that header also states is how two modes of one generator come to disagree.
 /// This yields an offline, deterministic, date-only semantic diff — the mode used to
 /// enrich the bundled manifest with true print years + coverage ranges (SA-1a). Entries
 /// whose local file is missing are logged and left unchanged.
@@ -39,6 +41,70 @@ import TEIHeaderKit
 ///   1.0 — Session 02: initial implementation
 ///   1.1 — SA-1a: local overlay mode (VOLUMES_DIR) that re-derives only date fields offline.
 public struct ManifestGeneratorRunner {
+
+    /// The publication date to record: the printed year if the volume states one, else the date
+    /// its `revisionDesc` says it was published.
+    ///
+    /// A **fallback, never an override**, and the numbers are why. Over the 553 shipped volumes,
+    /// where both a `publicationStmt` print year and a `revisionDesc` published `@when` exist, the
+    /// four-digit years **agree in 525 and differ in 26** — `frus1950v01` prints 1977 and was
+    /// published digitally in 1998. They are two different facts, so the printed year keeps the
+    /// field whenever the volume prints one, and the digital date is admitted only where there is
+    /// nothing else to say.
+    ///
+    /// Measured, it fills exactly **one** volume: `frus1981-88v16`, released mid-run with an empty
+    /// `publicationStmt/date` and `<change corresp="#frus1981-88v16" status="published"
+    /// when="2026-09-18"/>`. It retires itself — when OH fills the printed year in, that wins with
+    /// no edit here.
+    ///
+    /// - Parameters:
+    ///   - header: The parsed TEI header.
+    /// - Returns: The date to store, or nil when the header states neither.
+    static func publicationDate(from header: ParsedTEIHeader) -> String? {
+        if let printed = header.publicationDate, !printed.isEmpty { return printed }
+        return header.publishedWhen
+    }
+
+    /// The manifest status for a volume, from `revisionDesc/@status`.
+    ///
+    /// The header's six words map onto three manifest cases, and the mapping is narrow because the
+    /// shipped set is narrow. Measured over the **553 volumes the app carries**, `revisionDesc`
+    /// says `published` 550 times and `partially-published` **3** times — `frus1969-76ve10`,
+    /// `frus1977-80v27` and `frus1981-88v16`. The four in-progress states occur only among the 141
+    /// corpus files the app does not ship.
+    ///
+    /// **An absent `revisionDesc` stays `.published`**, which is a guard rather than a case: every
+    /// one of the 694 corpus files carries one. It exists for a side-loaded or hand-edited header,
+    /// where reading silence as "not published" would demote a volume the reader can plainly see.
+    ///
+    /// **`planned` is honoured** — it maps one-to-one onto a case that exists for exactly it, and
+    /// `VolumeStatus.planned`'s own documentation says such a volume "may appear in manifests as a
+    /// placeholder". No shipped volume is planned today.
+    ///
+    /// **The three `being-*` words, and anything unrecognised, stay `.published` and say so.** A
+    /// volume in this listing has content the app can download, so demoting it would contradict
+    /// the file just parsed, and there is no measurement behind any other choice. Nothing reaches
+    /// that branch today, which is exactly why it prints rather than guessing quietly.
+    ///
+    /// - Parameters:
+    ///   - header: The parsed TEI header.
+    ///   - volumeId: The volume, for the log line.
+    /// - Returns: The status to record.
+    static func status(from header: ParsedTEIHeader, volumeId: String) -> VolumeStatus {
+        switch header.publicationStatus {
+        case "published", nil:
+            return .published
+        case _ where header.isPartiallyPublished:
+            return .partiallyPublished
+        case "planned":
+            return .planned
+        case .some(let other):
+            print("[ManifestGenerator] \(volumeId) is in the published listing but its revisionDesc "
+                + "says \"\(other)\" — recorded as published. If this is now common, the mapping "
+                + "in ManifestGeneratorRunner.status(from:volumeId:) needs a decision.")
+            return .published
+        }
+    }
 
     /// Default output path relative to the project root.
     public static let defaultOutputPath = "FRUSExplorer/Resources/manifest.json"
@@ -135,7 +201,7 @@ public struct ManifestGeneratorRunner {
 
     // MARK: - Local Overlay Mode
 
-    /// Offline pass that overrides ONLY `publicationDate` and `dateRange` on each existing
+    /// Offline pass that overrides ONLY `publicationDate`, `dateRange` and `status` on each existing
     /// manifest entry from the locally-parsed `<teiHeader>`, preserving all other fields.
     ///
     /// - Parameters:
@@ -194,8 +260,12 @@ public struct ManifestGeneratorRunner {
                 subseries: entry.subseries,
                 title: entry.title,
                 dateRange: DateRange(earliest: header.earliestDate, latest: header.latestDate),
-                publicationDate: header.publicationDate,
-                status: entry.status,
+                publicationDate: Self.publicationDate(from: header),
+                // Now re-derived here too. The overlay's contract was publicationDate + dateRange
+                // only, and preserving a stale status while re-deriving the date beside it is the
+                // drift this repository keeps rediscovering: two modes, one artifact, different
+                // answers.
+                status: Self.status(from: header, volumeId: entry.volumeId),
                 editors: entry.editors,
                 generalEditor: entry.generalEditor,
                 documentCount: entry.documentCount,
@@ -267,11 +337,11 @@ public struct ManifestGeneratorRunner {
             subseries: parsed.subseries,
             title: header.title,
             dateRange: DateRange(earliest: header.earliestDate, latest: header.latestDate),
-            publicationDate: header.publicationDate,
-            // The TEI header carries no publication status, so the parser never set one and this
-            // was always the `.published` default. Stated explicitly now that `ParsedTEIHeader`
-            // lives in TEIHeaderKit and owns no manifest types (#777).
-            status: .published,
+            publicationDate: Self.publicationDate(from: header),
+            // Was hardcoded `.published` behind a comment saying the TEI header carries no
+            // publication status. It does — `revisionDesc/@status` — and two shipped volumes were
+            // being recorded as fully published while their own headers said otherwise.
+            status: Self.status(from: header, volumeId: parsed.volumeId),
             editors: header.editors,
             generalEditor: header.generalEditor,
             documentCount: header.documentCount,

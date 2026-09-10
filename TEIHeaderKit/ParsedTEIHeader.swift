@@ -27,13 +27,19 @@ import Foundation
 /// `VolumeStatus` and `DateRange`, and the app cannot see the generator's.
 ///
 /// The resolution is that **the kit owns the grammar and each consumer owns its model.** Nothing
-/// here is a manifest type. It is also not a loss: `TEIHeaderParser` never set `status` — the TEI
-/// header does not carry publication status — so the field was only ever the `.published` default,
-/// supplied now by whichever consumer needs it.
+/// here is a manifest type. When that was written the parser never set `status` and the note said
+/// the TEI header does not carry publication status; **that was wrong**, or has since become so —
+/// `revisionDesc/@status` carries it, and 3 of the 553 shipped volumes say `partially-published`
+/// there while the manifest recorded them as published. The header's own words are now read into
+/// ``publicationStatus`` and mapped to a manifest status by whoever builds a manifest, which keeps
+/// this type a faithful report of the document.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09 (#777): extracted from `ManifestGeneratorCore/ManifestModels.swift`
 ///         so the app can read a side-loaded volume's header with the generator's own grammar
+///   1.1 — Session 2026-09-09: `publicationStatus` and `publishedWhen`, read from `revisionDesc`.
+///         OH's release of `frus1981-88v16` arrived with an empty `publicationStmt` print year and
+///         both facts stated in `revisionDesc` instead.
 public struct ParsedTEIHeader: Sendable, Equatable {
 
     /// The volume's full title, e.g. *Foreign Relations of the United States, 1969–1976, Volume I*.
@@ -62,6 +68,47 @@ public struct ParsedTEIHeader: Sendable, Equatable {
 
     /// The volume's subject tags.
     public var tags: [String] = []
+
+    /// `revisionDesc/@status` verbatim — `published`, `partially-published`, `being-cleared`,
+    /// `planned`, `being-researched`, `being-digitized` — or nil when the header has no
+    /// `revisionDesc` at all.
+    ///
+    /// Reported, never interpreted: mapping these six words onto a manifest's three-case status is
+    /// the manifest builder's policy, not the document's meaning. Measured over all 694 corpus
+    /// files, reading each header WHOLE: published 551, being-cleared 51, planned 42,
+    /// being-researched 37, being-digitized 10, partially-published 3 — and **every file has one**,
+    /// so nil is a guard rather than a case. Among the 553 shipped volumes only two of the six
+    /// occur (published 550, partially-published 3), because the in-progress states belong to
+    /// volumes the app does not carry.
+    ///
+    /// A first pass at these numbers read only each file's first 20 KB and reported 20 files with
+    /// no `revisionDesc` and 2 partially-published. Both were artefacts of the truncation — the
+    /// element sits at the END of the header, past 20 KB in the longer volumes — and the third
+    /// partially-published volume, `frus1969-76ve10`, was hidden by it.
+    public var publicationStatus: String? = nil
+
+    /// The `@when` of the `<change>` that marks THIS volume published, or nil when there is none.
+    ///
+    /// The entry is identified by `corresp="#<the volume's own frus idno>"`, never by position: a
+    /// partially-published volume lists a `<change>` per chapter, and `frus1981-88v16` states four
+    /// published chapters among eleven, the other seven `being-cleared`. Measured over the 694
+    /// corpus files: **553** carry a self-corresp published change WITH a `@when`, **11 more carry
+    /// one WITHOUT** (`frus1958-60v05mSupp` among the shipped) and must come back nil rather than
+    /// borrowing a sibling's date, and **not one** file carries a published `@when` whose
+    /// `@corresp` names something other than itself — so the rule never has to guess.
+    ///
+    /// This is a *digital publication* date and ``publicationDate`` is the *print* year. They are
+    /// not the same fact and must not be merged: over the shipped volumes where both exist the
+    /// years agree in 525 and **differ in 26** (`frus1950v01` prints 1977 and was published
+    /// digitally in 1998).
+    public var publishedWhen: String? = nil
+
+    /// Whether the volume's own header says it is only partly out.
+    ///
+    /// One definition of the word, shared by the manifest generator and by the app's side-loaded
+    /// catalogue, so the two cannot come to different conclusions about the same file. Three of
+    /// the 553 shipped volumes say it.
+    public var isPartiallyPublished: Bool { publicationStatus == "partially-published" }
 
     /// Creates an empty header, which is what the parser fills in place.
     public init() {}

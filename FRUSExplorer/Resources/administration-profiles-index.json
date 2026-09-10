@@ -4701,12 +4701,12 @@
       "id" : "reagan",
       "number" : 40,
       "party" : "Republican",
-      "pointDocCount" : 3980,
+      "pointDocCount" : 4063,
       "president" : "Ronald Reagan",
-      "rangeDocCount" : 296,
+      "rangeDocCount" : 301,
       "start" : "1981-01-20",
-      "volumeCount" : 16,
-      "volumeCountPointOnly" : 16,
+      "volumeCount" : 17,
+      "volumeCountPointOnly" : 17,
       "volumes" : [
         {
           "pointDocs" : 447,
@@ -4767,6 +4767,11 @@
           "pointDocs" : 173,
           "rangeDocs" : 10,
           "volumeId" : "frus1981-88v06"
+        },
+        {
+          "pointDocs" : 83,
+          "rangeDocs" : 5,
+          "volumeId" : "frus1981-88v16"
         },
         {
           "pointDocs" : 4,
@@ -4901,10 +4906,10 @@
       ]
     }
   ],
-  "generated" : "2026-07-05",
+  "generated" : "2026-09-09",
   "schemaVersion" : 1,
-  "totalDocumentsPointDated" : 303276,
-  "totalDocumentsRangeDated" : 11207,
+  "totalDocumentsPointDated" : 303359,
+  "totalDocumentsRangeDated" : 11212,
   "totalDocumentsUndated" : 0,
   "volumeTotals" : {
     "frus1861" : {
@@ -7642,6 +7647,11 @@
       "rangeDocs" : 14,
       "undatedDocs" : 0
     },
+    "frus1981-88v16" : {
+      "pointDocs" : 83,
+      "rangeDocs" : 5,
+      "undatedDocs" : 0
+    },
     "frus1981-88v24" : {
       "pointDocs" : 448,
       "rangeDocs" : 11,
@@ -7668,5 +7678,5 @@
       "undatedDocs" : 0
     }
   },
-  "volumesCovered" : 552
+  "volumesCovered" : 553
 }

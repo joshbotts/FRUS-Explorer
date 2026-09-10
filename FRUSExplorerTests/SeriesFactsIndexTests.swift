@@ -400,10 +400,17 @@ struct SeriesCatalogFactsTests {
         let index = try shipped()
         let withCoverage = index.byNaId.values.filter { $0.coverageStartYear != nil }
         #expect(withCoverage.count >= 150, """
-            NARA publishes a coverage pair for a minority of series — 173 of 695 when this \
-            shipped. A collapse to near zero means the harvest field stopped decoding.
+            NARA publishes a coverage pair for a minority of series — 173 of 695 when #1202 \
+            shipped, 174 of 698 today. A collapse to near zero means the harvest field stopped \
+            decoding.
             """)
-        #expect(index.byNaId.count == 695, "row count must not move: this change is additive")
+        // 695 → 698 when a keyed NARA run resolved five more lot files (53D211, 53D403, 57D618,
+        // 58D78, 64D148), which reached three more series NAIDs. The pin was written to say that
+        // #1202's schema bump added fields without dropping rows; it is not a claim that the row
+        // count is fixed for ever, and rows arrive whenever the lot route reaches further into
+        // the catalogue. Re-measure with the artifact rather than loosening this to an inequality:
+        // a silent collapse is exactly what it exists to catch.
+        #expect(index.byNaId.count == 698)
 
         let counterexample = try #require(index.byNaId["604801"], """
             naId 604801 is the case that disproves containment; if it left the artifact, find \

@@ -90,13 +90,19 @@ public struct ASTToRenderNodeConverter {
 
     /// Whether a `<ref>` is upstream autolink noise rather than a link an editor wrote.
     ///
-    /// Two clauses, and **both are load-bearing**. Measured over all 552 shippable volumes there
-    /// are 619 `http(s)` refs inside documents; this predicate de-links exactly 22 and keeps 597.
+    /// Two clauses, and **both are load-bearing**. Measured over the 552 shippable volumes of
+    /// build 45 there are 619 `http(s)` refs inside documents; this predicate de-links exactly 22
+    /// and keeps 597. The counts have not been re-measured since; OH's PR #460 moved one of the
+    /// named examples out of the bare-host class, and `frus1981-88v16` arrived after it.
     ///
     /// 1. **The target is a bare host** — no path, no query, no fragment. Every one of the 22 is
     ///    (`http://must.be`); every deep link in the corpus is real. This clause alone is not
     ///    enough: thirty genuine bare-host links exist (`http://bookstore.gpo.gov`,
-    ///    `http://www.un.org`, `http://uwdc.library.wisc.edu/`).
+    ///    `http://www.un.org`). A third example stood here — `http://uwdc.library.wisc.edu/`, the
+    ///    Wisconsin digitisation credit in `frus1914Supp` — until PR #460 repointed it at
+    ///    `https://www.library.wisc.edu/uwdcc/`. That target has a path, so clause 1 now saves it
+    ///    outright and it is no longer one of the thirty; the old spelling survives only as the
+    ///    ref's link TEXT, and a scan of the corpus finds the target zero times.
     /// 2. **The link text does not announce itself as a URL.** All thirty genuine bare-host links
     ///    are written with the URL as their own link text; all twenty-two autolinks are written
     ///    over prose. This clause alone is not enough either: five real links — the

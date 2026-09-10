@@ -201,6 +201,92 @@ enum TEIFixtures {
     </teiHeader></TEI>
     """
 
+    /// A partially-published volume that states its date only in `revisionDesc` — the real
+    /// `frus1981-88v16` shape after OH's PR #461.
+    ///
+    /// The chapter changes are the point. The volume's own entry is deliberately NOT first, and
+    /// the chapters carry a DIFFERENT `@when`, so a rule that took the first published `<change>`
+    /// would return `2026-07-01` and this fixture would fail. Matching on
+    /// `corresp="#<the frus idno>"` is what makes it `2026-09-18`.
+    static let partiallyPublishedFromRevisionDesc = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+      <fileDesc>
+        <titleStmt>
+          <title type="complete">Foreign Relations of the United States, 1981–1988, Volume XVI</title>
+        </titleStmt>
+        <publicationStmt>
+          <publisher>Department of State</publisher>
+          <pubPlace>Washington</pubPlace>
+          <date calendar="gregorian" type="publication-date"/>
+          <idno type="frus">frus1981-88v16</idno>
+          <date calendar="gregorian" notAfter="1988-12-30T15:35:00-05:00"
+              notBefore="1981-02-05T11:07:00-05:00" type="content-date">1981 to 1988</date>
+        </publicationStmt>
+      </fileDesc>
+      <revisionDesc status="partially-published">
+        <change corresp="#ch7" status="published" when="2026-07-01"/>
+        <change corresp="#ch1" status="being-cleared"/>
+        <change corresp="#frus1981-88v16" status="published" when="2026-09-18"/>
+        <change corresp="#ch8" status="published" when="2026-07-01"/>
+      </revisionDesc>
+    </teiHeader></TEI>
+    """
+
+    /// A published `<change>` that names no date at all — 11 corpus files look like this,
+    /// `frus1958-60v05mSupp` among the shipped ones.
+    ///
+    /// The volume is published and says so; it just does not say when. `publishedWhen` must come
+    /// back nil rather than borrowing the sibling chapter's date sitting right beside it.
+    static let publishedChangeWithoutAWhen = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+      <fileDesc>
+        <titleStmt>
+          <title type="complete">Foreign Relations of the United States, 1958–1960, Supplement</title>
+        </titleStmt>
+        <publicationStmt>
+          <publisher>Department of State</publisher>
+          <pubPlace>Washington</pubPlace>
+          <date calendar="gregorian" type="publication-date"/>
+          <idno type="frus">frus1958-60v05mSupp</idno>
+        </publicationStmt>
+      </fileDesc>
+      <revisionDesc status="published">
+        <change corresp="#ch1" status="published" when="2013-04-01"/>
+        <change corresp="#frus1958-60v05mSupp" status="published"/>
+      </revisionDesc>
+    </teiHeader></TEI>
+    """
+
+    /// A fully published volume whose printed year and digital publication date DISAGREE — the
+    /// real `frus1950v01` shape, which prints 1977 and was published digitally in 1998.
+    ///
+    /// Measured over the shipped corpus, 26 volumes look like this. It is the control for the
+    /// fallback: if `publicationDate` ever came back `1998` the print year would have been lost.
+    static let printYearAndDigitalDateDisagree = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+      <fileDesc>
+        <titleStmt>
+          <title type="complete">Foreign Relations of the United States, 1950, Volume I</title>
+        </titleStmt>
+        <publicationStmt>
+          <publisher>Department of State</publisher>
+          <pubPlace>Washington</pubPlace>
+          <date calendar="gregorian" type="publication-date">1977</date>
+          <idno type="frus">frus1950v01</idno>
+        </publicationStmt>
+      </fileDesc>
+      <revisionDesc status="published">
+        <change corresp="#frus1950v01" status="published" when="1998"/>
+      </revisionDesc>
+    </teiHeader></TEI>
+    """
+
     /// Oldest-volumes legacy print-year encoding (real `frus1862` shape): the
     /// `type="publication-date"` element is an EMPTY self-closing `@when` build stamp, and the
     /// real historical print year lives on a SIBLING UNTYPED `<date calendar="gregorian">1862</date>`.

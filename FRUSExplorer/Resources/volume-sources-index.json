@@ -1,5 +1,5 @@
 {
-  "generated" : "2026-08-19",
+  "generated" : "2026-09-10",
   "lots" : {
 
   },
@@ -387,7 +387,7 @@
     {
       "isHeading" : true,
       "key" : "txt:central intelligence agency",
-      "occurrences" : 88,
+      "occurrences" : 89,
       "repository" : "Central Intelligence Agency",
       "text" : "Central Intelligence Agency",
       "volumeIds" : [
@@ -478,6 +478,7 @@
         "frus1981-88v05",
         "frus1981-88v06",
         "frus1981-88v13",
+        "frus1981-88v16",
         "frus1981-88v41"
       ]
     },
@@ -3934,6 +3935,28 @@
     },
     {
       "isHeading" : true,
+      "key" : "txt:department of state, washington, d.c.",
+      "occurrences" : 13,
+      "repository" : "Department of State",
+      "text" : "Department of State, Washington, D.C.",
+      "volumeIds" : [
+        "frus1964-68v29p2",
+        "frus1964-68v33",
+        "frus1977-80v01",
+        "frus1977-80v02",
+        "frus1977-80v11p1",
+        "frus1977-80v12",
+        "frus1977-80v15",
+        "frus1977-80v17p1",
+        "frus1977-80v19",
+        "frus1977-80v24",
+        "frus1977-80v29",
+        "frus1981-88v11",
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : true,
       "key" : "txt:nixon presidential materials project, national archives and records administration, college park, maryland (now at the nixon presidential library and museum, yorba linda, california)",
       "occurrences" : 13,
       "repository" : "National Archives",
@@ -4123,27 +4146,6 @@
     },
     {
       "isHeading" : true,
-      "key" : "txt:department of state, washington, d.c.",
-      "occurrences" : 12,
-      "repository" : "Department of State",
-      "text" : "Department of State, Washington, D.C.",
-      "volumeIds" : [
-        "frus1964-68v29p2",
-        "frus1964-68v33",
-        "frus1977-80v01",
-        "frus1977-80v02",
-        "frus1977-80v11p1",
-        "frus1977-80v12",
-        "frus1977-80v15",
-        "frus1977-80v17p1",
-        "frus1977-80v19",
-        "frus1977-80v24",
-        "frus1977-80v29",
-        "frus1981-88v11"
-      ]
-    },
-    {
-      "isHeading" : true,
       "key" : "txt:documentary collections and periodicals",
       "occurrences" : 12,
       "text" : "Documentary Collections and Periodicals",
@@ -4314,6 +4316,26 @@
       ]
     },
     {
+      "isHeading" : false,
+      "key" : "lot:96D262",
+      "lotFile" : "96D262",
+      "occurrences" : 11,
+      "text" : "Office of the Secretariat Staff, Special Handling Restrictions Memos, 1979-1983, Lot 96D262",
+      "volumeIds" : [
+        "frus1977-80v09Ed2",
+        "frus1977-80v12",
+        "frus1977-80v19",
+        "frus1981-88v01",
+        "frus1981-88v03",
+        "frus1981-88v04",
+        "frus1981-88v10",
+        "frus1981-88v11",
+        "frus1981-88v13",
+        "frus1981-88v16",
+        "frus1981-88v38"
+      ]
+    },
+    {
       "isHeading" : true,
       "key" : "txt:papers of president lyndon b. johnson",
       "occurrences" : 11,
@@ -4443,25 +4465,6 @@
         "frus1981-88v24",
         "frus1981-88v38",
         "frus1981-88v44p1"
-      ]
-    },
-    {
-      "isHeading" : false,
-      "key" : "lot:96D262",
-      "lotFile" : "96D262",
-      "occurrences" : 10,
-      "text" : "Office of the Secretariat Staff, Special Handling Restrictions Memos, 1979-1983, Lot 96D262",
-      "volumeIds" : [
-        "frus1977-80v09Ed2",
-        "frus1977-80v12",
-        "frus1977-80v19",
-        "frus1981-88v01",
-        "frus1981-88v03",
-        "frus1981-88v04",
-        "frus1981-88v10",
-        "frus1981-88v11",
-        "frus1981-88v13",
-        "frus1981-88v38"
       ]
     },
     {
@@ -5122,6 +5125,22 @@
     },
     {
       "isHeading" : true,
+      "key" : "txt:ronald reagan presidential library, simi valley, california",
+      "occurrences" : 8,
+      "text" : "Ronald Reagan Presidential Library, Simi Valley, California",
+      "volumeIds" : [
+        "frus1977-80v04",
+        "frus1981-88v03",
+        "frus1981-88v04",
+        "frus1981-88v05",
+        "frus1981-88v06",
+        "frus1981-88v11",
+        "frus1981-88v13",
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : true,
       "key" : "txt:united states mission to the united nations, new york",
       "occurrences" : 8,
       "text" : "United States Mission to the United Nations, New York",
@@ -5420,21 +5439,6 @@
         "frus1964-68v05",
         "frus1964-68v06",
         "frus1964-68v07"
-      ]
-    },
-    {
-      "isHeading" : true,
-      "key" : "txt:ronald reagan presidential library, simi valley, california",
-      "occurrences" : 7,
-      "text" : "Ronald Reagan Presidential Library, Simi Valley, California",
-      "volumeIds" : [
-        "frus1977-80v04",
-        "frus1981-88v03",
-        "frus1981-88v04",
-        "frus1981-88v05",
-        "frus1981-88v06",
-        "frus1981-88v11",
-        "frus1981-88v13"
       ]
     },
     {
@@ -6544,6 +6548,20 @@
     },
     {
       "isHeading" : false,
+      "key" : "lot:87D327",
+      "lotFile" : "87D327",
+      "occurrences" : 5,
+      "text" : "Lot 87D327: Executive Secretariat, S\/S Files, Secretary Haig Memcons and Whitehead Briefing",
+      "volumeIds" : [
+        "frus1981-88v01",
+        "frus1981-88v03",
+        "frus1981-88v13",
+        "frus1981-88v16",
+        "frus1981-88v38"
+      ]
+    },
+    {
+      "isHeading" : false,
       "key" : "lot:90D165",
       "lotFile" : "90 D 165",
       "occurrences" : 5,
@@ -7632,19 +7650,6 @@
         "frus1981-88v13",
         "frus1981-88v38",
         "frus1981-88v41"
-      ]
-    },
-    {
-      "isHeading" : false,
-      "key" : "lot:87D327",
-      "lotFile" : "87D327",
-      "occurrences" : 4,
-      "text" : "Lot 87D327: Executive Secretariat, S\/S Files, Secretary Haig Memcons and Whitehead Briefing",
-      "volumeIds" : [
-        "frus1981-88v01",
-        "frus1981-88v03",
-        "frus1981-88v13",
-        "frus1981-88v38"
       ]
     },
     {
@@ -9438,6 +9443,18 @@
       ]
     },
     {
+      "isHeading" : false,
+      "key" : "lot:91D371",
+      "lotFile" : "91D371",
+      "occurrences" : 3,
+      "text" : "Lot 91D371, Country\/Subject Files—Special Collections—Luigi Einaudi’s Country Files",
+      "volumeIds" : [
+        "frus1969-76v22",
+        "frus1977-80v29",
+        "frus1981-88v16"
+      ]
+    },
+    {
       "isHeading" : true,
       "key" : "lot:92D306",
       "lotFile" : "92 D 306",
@@ -9447,6 +9464,18 @@
         "frus1964-68v05",
         "frus1964-68v06",
         "frus1964-68v07"
+      ]
+    },
+    {
+      "isHeading" : false,
+      "key" : "lot:94D432",
+      "lotFile" : "94D432",
+      "occurrences" : 3,
+      "text" : "Lot 94D432: Executive Secretariat, S\/S Records, 1987 Nodis and Exdis Memorandums",
+      "volumeIds" : [
+        "frus1981-88v16",
+        "frus1981-88v24",
+        "frus1981-88v44p1"
       ]
     },
     {
@@ -10511,6 +10540,17 @@
       "text" : "Job 90B01013R",
       "volumeIds" : [
         "frus1981-88v10",
+        "frus1981-88v41"
+      ]
+    },
+    {
+      "isHeading" : false,
+      "jobNumber" : "90T00114R",
+      "key" : "job:90T00114R",
+      "occurrences" : 2,
+      "text" : "Job 90T00114R: Intelligence Publications Files (1986–1987)",
+      "volumeIds" : [
+        "frus1981-88v16",
         "frus1981-88v41"
       ]
     },
@@ -13867,17 +13907,6 @@
     },
     {
       "isHeading" : false,
-      "key" : "lot:91D371",
-      "lotFile" : "91D371",
-      "occurrences" : 2,
-      "text" : "Lot 91D371, Country\/Subject Files—Special Collections—Luigi Einaudi’s Country Files",
-      "volumeIds" : [
-        "frus1969-76v22",
-        "frus1977-80v29"
-      ]
-    },
-    {
-      "isHeading" : false,
       "key" : "lot:92D252",
       "lotFile" : "92D252",
       "occurrences" : 2,
@@ -13918,17 +13947,6 @@
       "volumeIds" : [
         "frus1981-88v05",
         "frus1981-88v11"
-      ]
-    },
-    {
-      "isHeading" : false,
-      "key" : "lot:94D432",
-      "lotFile" : "94D432",
-      "occurrences" : 2,
-      "text" : "Lot 94D432: Executive Secretariat, 1987 Nodis and Exdis Memoranda",
-      "volumeIds" : [
-        "frus1981-88v24",
-        "frus1981-88v44p1"
       ]
     },
     {
@@ -15384,6 +15402,26 @@
     },
     {
       "isHeading" : false,
+      "jobNumber" : "04T00367R",
+      "key" : "job:04T00367R",
+      "occurrences" : 1,
+      "text" : "Job 04T00367R: Intelligence Publication Files–Production Case Files (1984)",
+      "volumeIds" : [
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : false,
+      "jobNumber" : "04T00794R",
+      "key" : "job:04T00794R",
+      "occurrences" : 1,
+      "text" : "Job 04T00794R: Intelligence Publication Files—Production Case Files (1986)",
+      "volumeIds" : [
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : false,
       "jobNumber" : "05S00620R",
       "key" : "job:05S00620R",
       "occurrences" : 1,
@@ -16174,6 +16212,16 @@
     },
     {
       "isHeading" : false,
+      "jobNumber" : "82T00565R",
+      "key" : "job:82T00565R",
+      "occurrences" : 1,
+      "text" : "Job 82T00565R: Production Case Files (1981)",
+      "volumeIds" : [
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : false,
       "jobNumber" : "83-00036R",
       "key" : "job:8300036R",
       "occurrences" : 1,
@@ -16374,6 +16422,16 @@
     },
     {
       "isHeading" : false,
+      "jobNumber" : "86T01017R",
+      "key" : "job:86T01017R",
+      "occurrences" : 1,
+      "text" : "Job 86T01017R: Intell Publications Files (1985–87)",
+      "volumeIds" : [
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : false,
       "jobNumber" : "87T00573R",
       "key" : "job:87T00573R",
       "occurrences" : 1,
@@ -16490,16 +16548,6 @@
       "text" : "Job 90T00100R",
       "volumeIds" : [
         "frus1981-88v10"
-      ]
-    },
-    {
-      "isHeading" : false,
-      "jobNumber" : "90T00114R",
-      "key" : "job:90T00114R",
-      "occurrences" : 1,
-      "text" : "Office of Support Services (DI), Job 90T00114R: Intelligence Publications Files (1986–1987)",
-      "volumeIds" : [
-        "frus1981-88v41"
       ]
     },
     {
@@ -23792,6 +23840,16 @@
     },
     {
       "isHeading" : false,
+      "key" : "lot:95D407",
+      "lotFile" : "95D407",
+      "occurrences" : 1,
+      "text" : "Lot 95D407: Bureau of Inter-American Affairs, Assistant Secretary Files, Special Collection—Iran Contra—Noriega",
+      "volumeIds" : [
+        "frus1981-88v16"
+      ]
+    },
+    {
+      "isHeading" : false,
       "key" : "lot:96D234",
       "lotFile" : "96D234",
       "occurrences" : 1,
@@ -29001,6 +29059,15 @@
       "text" : "George Elsey Papers",
       "volumeIds" : [
         "frus1964-68v05"
+      ]
+    },
+    {
+      "isHeading" : true,
+      "key" : "txt:george h.w. bush presidential library, college station, texas",
+      "occurrences" : 1,
+      "text" : "George H.W. Bush Presidential Library, College Station, Texas",
+      "volumeIds" : [
+        "frus1981-88v16"
       ]
     },
     {
@@ -37907,6 +37974,13 @@
     }
   ],
   "recordGroups" : {
+    "107" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/436",
+      "matchType" : "api",
+      "naId" : "436",
+      "recordGroup" : "107",
+      "title" : "Records of the Office of the Secretary of War"
+    },
     "16" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/345",
       "matchType" : "api",
@@ -38019,6 +38093,13 @@
       "recordGroup" : "334",
       "title" : "Records of Interservice Agencies"
     },
+    "353" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/661",
+      "matchType" : "api",
+      "naId" : "661",
+      "recordGroup" : "353",
+      "title" : "Records of Interdepartmental and Intradepartmental Committees (State Department)"
+    },
     "359" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/666",
       "matchType" : "api",
@@ -38068,6 +38149,13 @@
       "recordGroup" : "429",
       "title" : "Records of Organizations in the Executive Office of the President"
     },
+    "457" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/734",
+      "matchType" : "api",
+      "naId" : "734",
+      "recordGroup" : "457",
+      "title" : "Records of the National Security Agency\/Central Security Service"
+    },
     "46" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/375",
       "matchType" : "api",
@@ -38096,6 +38184,13 @@
       "recordGroup" : "472",
       "title" : "Records of the U.S. Forces in Southeast Asia"
     },
+    "51" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/380",
+      "matchType" : "api",
+      "naId" : "380",
+      "recordGroup" : "51",
+      "title" : "Records of the Office of Management and Budget"
+    },
     "56" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/385",
       "matchType" : "api",
@@ -38116,6 +38211,13 @@
       "naId" : "392",
       "recordGroup" : "63",
       "title" : "Records of the Committee on Public Information"
+    },
+    "80" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/409",
+      "matchType" : "api",
+      "naId" : "409",
+      "recordGroup" : "80",
+      "title" : "General Records of the Department of the Navy"
     },
     "84" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/413",

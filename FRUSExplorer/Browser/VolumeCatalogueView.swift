@@ -19,7 +19,8 @@ import SwiftUI
 ///   Relations of the United States" and 142 begin "Papers Relating…", so the Title mode
 ///   files by the DISTINCTIVE segment (`distinctiveTitleKey`) — the part after the volume
 ///   designator, or after the boilerplate + year for older forms.
-/// - **`publicationDate` is a free-form string** (551 bare "YYYY" + one full ISO date), so
+/// - **`publicationDate` is a free-form string** (551 bare "YYYY" + two full ISO dates —
+/// `frus1969-76v32` and, since it stated its date in `revisionDesc`, `frus1981-88v16`), so
 ///   the Published mode parses through `FRUSVolumeMetadata.firstYear(in:)`, never string
 ///   sort. And it is the PRINT year — the axis is labelled "publication year", never
 ///   release/declassification semantics.

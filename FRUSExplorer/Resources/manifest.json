@@ -4752,7 +4752,7 @@
     "filename" : "frus1914Supp.xml",
     "generalEditor" : "Tyler Dennett",
     "publicationDate" : "1928",
-    "sizeBytes" : 8157489,
+    "sizeBytes" : 8157496,
     "status" : "published",
     "subseries" : "1914",
     "tags" : [
@@ -29519,7 +29519,7 @@
     "generalEditor" : "Edward C. Keefer",
     "publicationDate" : "2009",
     "sizeBytes" : 8817153,
-    "status" : "published",
+    "status" : "partiallyPublished",
     "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
@@ -31469,7 +31469,7 @@
     "generalEditor" : "Kathleen B. Rasmussen",
     "publicationDate" : "2025",
     "sizeBytes" : 1925322,
-    "status" : "published",
+    "status" : "partiallyPublished",
     "subseries" : "1977-80",
     "tags" : [
       "carter-jimmy",
@@ -31846,7 +31846,7 @@
     "filename" : "frus1981-88v05.xml",
     "generalEditor" : "Kathleen B. Rasmussen",
     "publicationDate" : "2020",
-    "sizeBytes" : 8158079,
+    "sizeBytes" : 8158085,
     "status" : "published",
     "subseries" : "1981-88",
     "tags" : [
@@ -32075,6 +32075,27 @@
     ],
     "title" : "Foreign Relations of the United States, 1981–1988, Volume\n                    XIII, Conflict in the South Atlantic, 1981–1984",
     "volumeId" : "frus1981-88v13"
+  },
+  {
+    "dateRange" : {
+      "earliest" : "1981-02-05T11:07:00-05:00",
+      "latest" : "1988-12-30T15:35:00-05:00"
+    },
+    "documentCount" : 0,
+    "editors" : [
+      "Nathaniel L. Smith"
+    ],
+    "filename" : "frus1981-88v16.xml",
+    "generalEditor" : "Kathleen B. Rasmussen",
+    "publicationDate" : "2026-09-18",
+    "sizeBytes" : 1277887,
+    "status" : "partiallyPublished",
+    "subseries" : "1981-88",
+    "tags" : [
+
+    ],
+    "title" : "Foreign Relations of the United States, 1981–1988, Volume\n                    XVI, South America",
+    "volumeId" : "frus1981-88v16"
   },
   {
     "dateRange" : {
