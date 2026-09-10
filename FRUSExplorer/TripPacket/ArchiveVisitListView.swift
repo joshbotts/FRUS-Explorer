@@ -56,18 +56,18 @@ struct ArchiveVisitListView: View {
                 Section {
                     ContentUnavailableView(
                         String(localized: "archiveVisit.empty.title",
-                               defaultValue: "No Archive Visits"),
+                               defaultValue: "No Archives Visits"),
                         systemImage: "building.columns",
                         description: Text(String(
                             localized: "archiveVisit.empty.detail",
-                            defaultValue: "An Archive Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
+                            defaultValue: "An Archives Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
                 }
             } else {
                 Section {
                     ForEach(plans) { plan in row(plan) }
                 } footer: {
                     Text(String(localized: "archiveVisit.list.footer",
-                                defaultValue: "An Archive Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices."))
+                                defaultValue: "An Archives Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -78,7 +78,7 @@ struct ArchiveVisitListView: View {
             // S-3b: every list ends with its New row — reachable from the empty state too.
             Section {
                 SettingsNewItemRow(label: String(localized: "archiveVisit.new",
-                                                 defaultValue: "New Archive Visit")) {
+                                                 defaultValue: "New Archives Visit")) {
                     let plan = ArchiveVisitPlan(name: "")
                     modelContext.insert(plan)
                     try? modelContext.save()
@@ -87,7 +87,7 @@ struct ArchiveVisitListView: View {
             }
         }
         .navigationTitle(String(localized: "archiveVisit.list.title",
-                                defaultValue: "Archive Visits"))
+                                defaultValue: "Archives Visits"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -95,7 +95,7 @@ struct ArchiveVisitListView: View {
             ArchiveVisitEditorView(plan: plan)
         }
         .alert(String(localized: "archiveVisit.rename.title",
-                      defaultValue: "Rename Archive Visit"),
+                      defaultValue: "Rename Archives Visit"),
                isPresented: Binding(get: { renaming != nil },
                                     set: { if !$0 { renaming = nil } })) {
             TextField(String(localized: "archiveVisit.rename.placeholder", defaultValue: "Name"),
@@ -107,7 +107,7 @@ struct ArchiveVisitListView: View {
         }
         .confirmationDialog(
             String(localized: "archiveVisit.delete.title",
-                   defaultValue: "Delete this Archive Visit?"),
+                   defaultValue: "Delete this Archives Visit?"),
             isPresented: Binding(get: { deleting != nil },
                                  set: { if !$0 { deleting = nil } }),
             titleVisibility: .visible

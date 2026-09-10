@@ -31,7 +31,7 @@ Setup once: full 552-volume corpus, index settled, a project active. Capture via
 | A7 | 🆕 `ipad/corpus-drill.png` | iOS §6.1f placeholder | A corpus drill: the amber coverage line, an indexed volume's titled rows, and an unindexed volume's gray rows with the Download button. |
 | A8 | 🆕 `ipad/archives-axis.png` | iOS §6.1g placeholder | Browse ▸ Archives: the Provenance Types doors with counts; the Collections lens; a collection's detail (pushed) with its citing volumes. |
 | A9 | 🆕 `ipad/clusters.png` | iOS §6.1h placeholder | Browse ▸ Clusters: labels, counts, era histograms; a cluster's drill with the coverage line and Save-as-Corpus; the map focused on the cluster after "See on the semantic map". |
-| A10 | 🆕 `ipad/archive-visit.png` | iOS §14.8 placeholder | Collections ▸ a collection ▸ Archive Visit: a generated packet with a target's **two claim lists** visible, the **Options menu open** showing the repository scope, and the Share buttons. *(#1081 calls this slot `trip-packet.png` with an older caption — the manual's caption is newer; filename is the owner's choice, note it in the manual if it differs.)* |
+| A10 | 🆕 `ipad/archive-visit.png` | iOS §14.8 placeholder | Collections ▸ a collection ▸ Archives Visit: a generated packet with a target's **two claim lists** visible, the **Options menu open** showing the repository scope, and the Share buttons. *(#1081 calls this slot `trip-packet.png` with an older caption — the manual's caption is newer; filename is the owner's choice, note it in the manual if it differs.)* |
 | A11 | 🆕 `ipad/people-list.png` + 🆕 `ipad/people-detail.png` | iOS §6.5 (replace the two "(iPhone capture)" embeds) | Browse ▸ People: the alphabetical list; the reconciled "Kissinger, Henry A." detail. Capture only after the rollup consolidation settles (see README's People note). |
 | A12 | 🆕 `ipad/analytics.png` | iOS §15.1 (replaces `ios/analytics.png`) | Corpus Analytics with **% of documents** on and the inline toolbar **Export** menu visible. |
 | A13 | 🆕 `ipad/chronology.png` | iOS §15.7 (replaces `ios/chronology.png`) | Chronology on iPad. |
@@ -72,7 +72,7 @@ Volumes selected, catalog in the detail column), `people-list` + `people-detail`
 `chronology` (§15.7), `series-production` (§16), `collections` (§12.1 — the current window; the
 old file shows retired chrome and is embedded nowhere until this lands).
 
-Plus the second §14.8 placeholder: 🆕 `macos/archive-visit.png` — the Archive Visit sheet in the
+Plus the second §14.8 placeholder: 🆕 `macos/archive-visit.png` — the Archives Visit sheet in the
 Collections window, same content rule as A10.
 
 New-slot backlog (all 🆕): `macos/crossref-analytics`, `macos/archival-analytics`,

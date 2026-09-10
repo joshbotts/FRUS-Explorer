@@ -403,7 +403,7 @@ struct MainWindowView: View {
                 // opens, so no provenance bind.
                 Button { openWindow.fronting(id: "frus.archiveVisits") } label: {
                     Label(String(localized: "mainwindow.tools.archiveVisits",
-                                 defaultValue: "Archive Visits"),
+                                 defaultValue: "Archives Visits"),
                           systemImage: "building.columns")
                 }
                 // #652: the History window's second door. Until now it was reachable only from the
@@ -435,7 +435,7 @@ struct MainWindowView: View {
             // old key with new text is a silent i18n collision, the failure this repo versions
             // around (`.v2` was minted for the same reason when History joined).
             .help(String(localized: "mainwindow.tools.myResearch.help.v3",
-                         defaultValue: "Research window (⌘⌥R), Collections (⇧⌘K), Archive Visits, and Complete History"))
+                         defaultValue: "Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits, and Complete History"))
 
             Divider().frame(height: 20)
 

@@ -17,7 +17,7 @@ import Foundation
 
 // MARK: - TripPacketEntryPointParityTests
 
-/// Pins the Archive Visit entry-point wiring, on every platform (#830; Phase 3).
+/// Pins the Archives Visit entry-point wiring, on every platform (#830; Phase 3).
 ///
 /// ## The defect class this exists for, and why the obvious test would have missed it
 /// The original collection entry point shipped in T-2 and **never worked on any platform**: the
@@ -34,13 +34,13 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-23: #830, the dead collection entry point
-///   2.0 — Archive Visits Phase 3: the collection surfaces' verb becomes Add to Archive
+///   2.0 — Archives Visits Phase 3: the collection surfaces' verb becomes Add to Archive
 ///          Visit (§7.3 — the ephemeral verb was kept only through Phases 1–2), Project
 ///          Home becomes create-or-open over the persistent plan, and the new surfaces —
 ///          the Research-tab list, the macOS window + menus, the Source Explorer three-way
 ///          add on both platforms, and the Neighbors control in the SHARED content core —
 ///          are pinned with the same discipline
-@Suite("Archive Visit entry-point parity (#830 / Phase 3)")
+@Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
     private static var repoRoot: URL {
@@ -88,7 +88,7 @@ struct TripPacketEntryPointParityTests {
 
     /// The action must be reachable at BOTH size classes on iOS — the original defect was
     /// specifically that `iPadAddMenu` had no item at regular width.
-    @Test("Both iOS add-menus offer Add to Archive Visit")
+    @Test("Both iOS add-menus offer Add to Archives Visit")
     func bothIOSMenusOfferTheAction() throws {
         let text = try Self.source(Self.editor)
         for menu in ["iPhoneAddMenu", "iPadAddMenu"] {
@@ -102,7 +102,7 @@ struct TripPacketEntryPointParityTests {
             let end = rest.range(of: "\n    private var ")?.lowerBound ?? rest.endIndex
             let menuBody = rest[..<end]
             #expect(menuBody.contains(Self.addToVisitKey), """
-                \(menu) does not offer Add to Archive Visit. Every collection add-menu must, or \
+                \(menu) does not offer Add to Archives Visit. Every collection add-menu must, or \
                 the route disappears at one size class.
                 """)
             #expect(menuBody.contains("TripPacketSeed.resolve("), """
@@ -205,7 +205,7 @@ struct TripPacketEntryPointParityTests {
     /// The iOS Research tab carries the plan list, pinned beside Project Home, presented as a
     /// sheet with its own stack (the typed path is a one-deep projection no editor push could
     /// enter — the Project Home precedent).
-    @Test("The Research tab offers the Archive Visits list")
+    @Test("The Research tab offers the Archives Visits list")
     func researchTabOffersTheList() throws {
         let research = try Self.source("FRUSExplorer/Research/ResearchView.swift")
         #expect(research.contains("research.sidebar.archiveVisits"),
@@ -221,15 +221,15 @@ struct TripPacketEntryPointParityTests {
     /// The macOS window and both its doors: the scene, the Research command menu, and the
     /// main-window My Research toolbar menu (whose fronting is separately pinned by
     /// `MacWindowFrontingTests`).
-    @Test("macOS carries the Archive Visits window and both its doors")
+    @Test("macOS carries the Archives Visits window and both its doors")
     func macCarriesWindowAndDoors() throws {
         let app = try Self.source("FRUSExplorer/App/FRUSExplorerApp.swift")
         #expect(app.contains("id: \"frus.archiveVisits\""), "the window scene is missing")
         #expect(app.contains("menu.research.archiveVisits"),
-                "the Research command menu has no Archive Visits item")
+                "the Research command menu has no Archives Visits item")
         let main = try Self.source("FRUSExplorer/App/MainWindowView.swift")
         #expect(main.contains("mainwindow.tools.archiveVisits"),
-                "the My Research toolbar menu has no Archive Visits item")
+                "the My Research toolbar menu has no Archives Visits item")
     }
 
     /// Source Explorer's three-way add exists on BOTH platforms — the Mac twin is
@@ -298,14 +298,14 @@ struct TripPacketEntryPointParityTests {
 
     // MARK: - The macOS window shape (UI pass)
 
-    /// The macOS Archive Visits window is the Collections window's shape — a flat pane with
+    /// The macOS Archives Visits window is the Collections window's shape — a flat pane with
     /// a toolbar plan picker and a Manage sheet — NOT the iOS push-navigation shell (which
     /// put a back chevron and an iOS header inside a Mac singleton window, the owner-reported
     /// defect the UI pass fixed).
     @Test("The macOS window hosts the Mac manager, not the iOS push shell")
     func macWindowHostsTheManager() throws {
         let app = try Self.source("FRUSExplorer/App/FRUSExplorerApp.swift")
-        // Scope to the Archive Visits Window block: from its scene id to the next Window/MARK.
+        // Scope to the Archives Visits Window block: from its scene id to the next Window/MARK.
         let sceneRange = try #require(app.range(of: "id: \"frus.archiveVisits\""))
         let after = app[sceneRange.upperBound...]
         let blockEnd = after.range(of: ".defaultSize")?.lowerBound ?? after.endIndex
@@ -313,7 +313,7 @@ struct TripPacketEntryPointParityTests {
         #expect(block.contains("MacArchiveVisitManagerView()"),
                 "the window scene no longer hosts the Mac manager root")
         #expect(!block.contains("NavigationStack"), """
-            The Archive Visits window wraps its content in a NavigationStack again. That is \
+            The Archives Visits window wraps its content in a NavigationStack again. That is \
             the iOS push shell — a back chevron in a Mac singleton window — which the UI pass \
             replaced with the Collections window's flat-pane + toolbar-picker shape.
             """)
