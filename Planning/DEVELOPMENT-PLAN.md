@@ -13430,3 +13430,49 @@ they key off the LIVE weight, not the default, so "Off. Raise it to…" still ap
 reader has zeroed the axis.
 
 4,643 iOS tests / 603 suites + 37 UI tests; swift test 1,371 / 162; macOS clean.
+
+## Session 2026-09-10i — The #926 exemption is gated, and the argument I gave for keeping it was wrong
+
+**A correction first.** #1264 kept `SemanticShardFetchReason.readerAskedForSemantics` exempt from the
+"Download With Volumes" switch on a replacement argument, since D-D had destroyed the original one
+(that reaching the path required deliberately raising an experimental axis). The replacement read:
+the lazy path "asks for the shard of a volume the reader has already downloaded — ~294 KB against
+the ~6 MB they already spent, **one volume at a time as they read**, never the 162 MB corpus".
+
+**It is not one volume at a time.** `SemanticSimilarityGenerator` accumulates `missingVolumes` across
+the whole rerank pool and then loops, so one Related-panel open queues a shard for every candidate
+volume whose shard is absent, in one burst of detached fetches. Measured over 60 anchors against the
+shipped 20 MB block: the top-800 Tier-1 candidates span a **median of 104 distinct volumes, mean 107,
+max 227** — **~31 MB per panel open** at the median, ~67 MB at the tail, bounded only by how much of
+the library the reader holds (candidates are fenced to indexed volumes). On the one path the
+reader's own off switch could not reach.
+
+**So the switch now governs both reasons**, on the owner's instruction. The decision is extracted as
+`AppState.startsAutomaticShardFetch(reason:automaticDownloads:)` — the `runsGenerator` /`runsScan`
+pattern — so the policy is driven by a test rather than asserted by a grep over an inline condition,
+and a future policy that separates the two paths again has to move a tested rule. The `reason`
+parameter stays although the rule no longer branches on it, for that reason.
+
+**The cost is real and is the case the exemption existed to prevent.** The generator needs the
+anchor's own shard to build a query vector, so a reader who turns automatic downloads off and leaves
+the semantic axis up gets an axis that scores nothing. Two things keep that from being silent, and
+one of them is new: Settings' semantic storage section already counted the missing shards and
+offered **Download Missing Vectors** (which still ignores the switch — pressing a button is the
+consent it withholds, and a test now pins that it stays ungoverned); the row's detail line now also
+**names the switch as the cause while it is off**, because the count alone states a symptom a reader
+who set the switch months ago has no reason to connect to it.
+
+**What still works with the switch off**, which makes the degradation coherent rather than total:
+S-3's off-index section and S-2's project reach scan read only the bundled sign bits, so both still
+run. What is lost is the on-index Tier-2 rerank, which is the half that needs shards.
+
+**Four D-D residues swept in the same pass, because build 47 would otherwise ship them.** One is a
+user-facing string: Settings ▸ Semantic Match Feedback told readers the axis "is off by default —
+raise its weight to try it". Also `AppState`'s ride-along comment still calling the axis "off by
+default" three lines from the paragraph explaining it is not, `SimilarityModel`'s `offIndexLeads`
+"deliberate opt-in", and a test named `semanticDefaultOff` asserting 0.5.
+
+**The gate test kills its mutant**: restoring `reason == .readerAskedForSemantics || automaticDownloads`
+fails it with "readerAskedForSemantics ignored the reader's off switch".
+
+4,645 iOS tests / 603 suites + 37 UI tests; swift test 1,371 / 162; macOS clean.

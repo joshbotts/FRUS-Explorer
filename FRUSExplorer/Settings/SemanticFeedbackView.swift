@@ -42,8 +42,10 @@ struct SemanticFeedbackView: View {
                     defaultValue: """
                         The “Semantically similar (experimental)” axis in Related Documents finds \
                         documents by the shape of their language rather than by citations or \
-                        archival provenance. It is off by default — raise its weight in any Related \
-                        Documents view to try it.
+                        archival provenance. It contributes to every Related Documents list unless \
+                        you lower its weight there. It is still experimental: how well it works on \
+                        nineteenth-century material is not established, which is what the verdicts \
+                        below are for.
                         """))
                 Text(String(
                     localized: "settings.semanticFeedback.unknown",

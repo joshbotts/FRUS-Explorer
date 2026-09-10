@@ -209,8 +209,8 @@ struct SemanticAxisTests {
         #expect(RelatedDocumentsEngine.runsGenerator(.archivalProvenance, at: allZero))
         #expect(!RelatedDocumentsEngine.runsGenerator(.semanticSimilarity, at: allZero))
 
-        // The axis enters the ranker self-normalised (#643) and ships at 0 — the two facts the
-        // old source scan was reaching for.
+        // The axis enters the ranker self-normalised (#643) and, since D-D, ships at 0.5 — the
+        // two facts the old source scan was reaching for.
         #expect(SimilarityAxis.semanticSimilarity.isSelfNormalising)
         #expect(AxisWeights.default[.semanticSimilarity] == 0.5)
     }

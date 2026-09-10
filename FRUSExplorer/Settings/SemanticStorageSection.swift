@@ -171,14 +171,40 @@ struct SemanticStorageSection: View {
                 label: String(localized: "settings.vectors.download.label",
                               defaultValue: "Download Missing Vectors"),
                 systemImage: "arrow.down.circle",
-                detail: String(
-                    format: String(localized: "settings.vectors.download.detail.v3 %lld %@",
-                                   defaultValue: "%lld volumes on this device are missing this file. About %@ to download, and Related Documents gets better for those volumes."),
-                    Int64(awaiting.count), Self.bytes(awaiting.count * report.perVolumeEstimate))
+                detail: Self.downloadDetail(
+                    missing: awaiting.count,
+                    estimate: Self.bytes(awaiting.count * report.perVolumeEstimate))
             )
         }
         .buttonStyle(.plain)
         .disabled(busy || !appState.isOnline)
+    }
+
+    /// The download row's detail line, which **names the switch when the switch is the cause**.
+    ///
+    /// Since 2026-09-10 `automaticSemanticShardDownloads` governs the lazy path too, so a reader who
+    /// turned it off no longer gets shards as they read — which is the right answer to a 31 MB
+    /// burst per Related-panel open (the measurement is on `SemanticShardFetchReason`), and it is
+    /// also the case the old exemption existed to prevent: the semantic axis needs the anchor's own
+    /// shard to build a query vector, so with the switch off and no shard it scores nothing.
+    ///
+    /// That silence has to be explainable somewhere the remedy also is, and this is that place. The
+    /// count alone would not do it: "97 volumes are missing this file" states the symptom, and a
+    /// reader who set the switch months ago has no reason to connect the two.
+    ///
+    /// - Parameters:
+    ///   - missing: Volumes on this device with no shard.
+    ///   - estimate: The formatted download size.
+    /// - Returns: The detail sentence.
+    private static func downloadDetail(missing: Int, estimate: String) -> String {
+        let base = String(
+            format: String(localized: "settings.vectors.download.detail.v3 %lld %@",
+                           defaultValue: "%lld volumes on this device are missing this file. About %@ to download, and Related Documents gets better for those volumes."),
+            Int64(missing), estimate)
+        guard !AppState.automaticSemanticShardDownloads else { return base }
+        return base + " " + String(
+            localized: "settings.vectors.download.detail.switchOff",
+            defaultValue: "Download With Volumes is off, so these will not arrive on their own.")
     }
 
     /// Fetches every remaining shard, including for volumes whose text is not on this device.
