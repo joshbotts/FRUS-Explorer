@@ -74,7 +74,7 @@ struct SemanticStorageReport: Equatable, Sendable {
     ///
     /// Derived from the two authoritative totals rather than stored, so it cannot disagree with
     /// them. It is a **mean and says so** wherever it is shown ("about"): measured over the shipped
-    /// manifest the shards run from 584 B to 497,964 B, so no single figure describes a particular
+    /// manifest the shards run from 1,096 B to 988,204 B, so no single figure describes a particular
     /// volume and the screen must not imply one does.
     var perVolumeEstimate: Int {
         volumesPublished > 0 ? bytesPublished / volumesPublished : 0

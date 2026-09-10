@@ -29,8 +29,8 @@ import simd
 ///
 /// ## What the poles can be, and what they cannot
 ///
-/// The bundle carries **int8 centroids for every volume and subseries** (659 of them) and, per
-/// document, only **256 sign bits**. So volume and subseries poles are exact to int8; a *cluster*
+/// The bundle carries **int8 centroids for every volume and subseries** (660 of them) and, per
+/// document, only **512 sign bits**. So volume and subseries poles are exact to int8; a *cluster*
 /// pole is not offerable at all, because the Tier-0 map records a cluster's centre in 2-D layout
 /// coordinates and nowhere records one in the embedding space. Free-text poles would need an
 /// on-device encoder, which the design puts last and calls optional. Offering a pole the data cannot

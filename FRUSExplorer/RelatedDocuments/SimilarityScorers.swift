@@ -87,7 +87,7 @@ struct DateProximityScorer: SimilarityScorer {
 /// main thread.
 ///
 /// The subseries lookup goes through `ManifestStore.entry(forVolumeId:)` directly. This used to
-/// build a 552-entry `[volumeId: subseries]` map per call to avoid what a stale comment described
+/// build a 553-entry `[volumeId: subseries]` map per call to avoid what a stale comment described
 /// as a linear scan; the method is an `entryIndex[id]` dictionary hit and has been for some time,
 /// so the map was strictly more expensive than the lookups it replaced.
 ///

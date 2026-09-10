@@ -20,7 +20,7 @@ import Foundation
 /// ## Two files, loaded on different schedules
 /// - **Core** (~255 KB — corpus + all 107 subseries) is loaded once, early, and **off the
 ///   main actor**. It backs the splash, Welcome, Ready, and the Corpus and Subseries scopes.
-/// - **Volumes** (~1.26 MB — all 552) is loaded lazily, the first time the Volume segment is
+/// - **Volumes** (~1.26 MB — all 553) is loaded lazily, the first time the Volume segment is
 ///   selected, behind a screen the user is already reading.
 ///
 /// ## The one rule

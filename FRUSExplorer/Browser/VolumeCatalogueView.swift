@@ -15,7 +15,7 @@ import SwiftUI
 /// for testability, the Topic Index (`SubjectIndexGrouping`) pattern.
 ///
 /// ## The two data truths this encodes
-/// - **Naive alphabetical title sort is degenerate**: 409 of 552 titles begin "Foreign
+/// - **Naive alphabetical title sort is degenerate**: 410 of 553 titles begin "Foreign
 ///   Relations of the United States" and 142 begin "Papers Relating…", so the Title mode
 ///   files by the DISTINCTIVE segment (`distinctiveTitleKey`) — the part after the volume
 ///   designator, or after the boilerplate + year for older forms.
@@ -135,8 +135,13 @@ enum VolumeCatalogueGrouping {
 
     // MARK: Years
 
-    /// The volume's print year, parsed leniently — 551 entries are bare "YYYY" and exactly
-    /// one is a full ISO date, so this goes through `firstYear(in:)`, never string sort.
+    /// The volume's print year, parsed leniently — 551 entries are bare "YYYY" and **two** are
+    /// full ISO dates, so this goes through `firstYear(in:)`, never string sort.
+    ///
+    /// It read "exactly one" until 2026-09-10 while the type header 116 lines above already said
+    /// two: #1258 added `frus1981-88v16` (2026-09-18, taken from `revisionDesc`) and updated the
+    /// header alone. A file that states the same fact twice will eventually state it two ways,
+    /// which is why the count lives in one sentence here and the header points at it.
     ///
     /// - Parameter entry: The manifest entry.
     /// - Returns: The 4-digit print year, or `nil`.
@@ -378,7 +383,7 @@ struct VolumeCatalogueView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            // Above the rows, not in a footer — a caveat below 552 rows cannot do its job
+            // Above the rows, not in a footer — a caveat below 553 rows cannot do its job
             // (the Topic Index pattern). "Publication year" is the print year, deliberately:
             // promising release/declassification semantics would be a false-premise repeat.
             Text(String(localized: "browser.catalogue.coverage",
@@ -439,7 +444,7 @@ struct VolumeCatalogueView: View {
         let state = status(entry.volumeId)
         if sortMode == .title {
             // Title mode files by the distinctive segment, so the row LEADS with it —
-            // 552 rows starting "Foreign Relations of the United States" cannot be scanned.
+            // 553 rows starting "Foreign Relations of the United States" cannot be scanned.
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(VolumeCatalogueGrouping.distinctiveTitleKey(entry.title))

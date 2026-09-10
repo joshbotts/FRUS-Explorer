@@ -76,7 +76,7 @@ public final class BrowserViewModel {
         /// The subseries directory (#1051 B-1) — the era hierarchy the 2a root moves
         /// behind its double-width tile. Payload-less, like `.people`/`.subjects`.
         case subseriesIndex
-        /// The All Volumes catalogue (#1051 A-1/A-2) — all 552 volumes under one
+        /// The All Volumes catalogue (#1051 A-1/A-2) — all 553 volumes under one
         /// searchable level with Title / Published / Era / Length presentations.
         case catalogue
         /// An arbitrary ordered cross-subseries volume list (#1051 R-1) — the shared

@@ -101,12 +101,22 @@ struct CorpusAnalyticsServiceTests {
         #expect(sub("frusABCD") == nil)
     }
 
+    /// The only assertion that `CorpusAnalyticsService`'s subseries derivation agrees with the
+    /// manifest for **every** volume — which is exactly what a new volume-id shape breaks, and a new
+    /// volume is the event that just happened (`frus1981-88v16`, #1258).
+    ///
+    /// **It used to `return` on an empty manifest and pass having measured nothing.** The comment
+    /// called that "empty during development"; the effect was that the one guard against a
+    /// volume-id shape this derivation cannot parse was also the one that reported success when the
+    /// corpus failed to load at all. `#require` is the repo's own pattern for this
+    /// (`SemanticMapFrameSequenceTests`, `CaptureStateSeederTests`, `SharedManifestDecodeTests`),
+    /// and the floor is well below 553 so it survives a corpus that shrinks without becoming
+    /// vacuous again.
     @Test("subseries(fromVolumeId:) equals every bundled manifest entry's subseries (whole-corpus browser parity)")
     @MainActor
-    func subseriesMatchesBundledManifest() {
+    func subseriesMatchesBundledManifest() throws {
         let entries = ManifestStore().bundledEntries
-        // The test bundle's manifest.json can be empty during development; assert only when present.
-        guard !entries.isEmpty else { return }
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         for entry in entries {
             #expect(CorpusAnalyticsService.subseries(fromVolumeId: entry.volumeId) == entry.subseries,
                     "\(entry.volumeId): analytics subseries must equal the manifest's '\(entry.subseries)'")
@@ -143,11 +153,14 @@ struct CorpusAnalyticsServiceTests {
         #expect(!appendix.contains("Sup "))
     }
 
+    /// Label collisions are a whole-corpus property, so an empty manifest cannot show one. This
+    /// guarded with `return` and passed on nothing; see `subseriesMatchesBundledManifest` for why
+    /// that is the worse half of the pair — a uniqueness proof over zero labels is trivially true.
     @Test("distilledVolumeLabel is unique across the whole bundled corpus (#208)")
     @MainActor
-    func distilledLabelUniqueAcrossBundledCorpus() {
+    func distilledLabelUniqueAcrossBundledCorpus() throws {
         let entries = ManifestStore().bundledEntries
-        guard !entries.isEmpty else { return }  // empty test-bundle manifest during development
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         var seen: [String: String] = [:]
         for entry in entries {
             let label = ChronologyViewModel.distilledVolumeLabel(

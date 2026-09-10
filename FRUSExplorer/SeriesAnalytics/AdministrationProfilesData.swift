@@ -344,7 +344,7 @@ enum PoliticalParty: String, CaseIterable, Sendable, Hashable {
 /// **coverage** — which administration's foreign policy the published documents
 /// concern — not production (when volumes were printed). Because attribution is
 /// *any-overlap*, a volume spanning two administrations is counted in both, so
-/// summed volume counts exceed the 552-volume corpus and per-volume proportions
+/// summed volume counts exceed the 553-volume corpus and per-volume proportions
 /// can sum to over 100% across administrations. That is expected and disclosed.
 ///
 /// Zero-document administrations (later presidencies FRUS has not yet published)

@@ -177,7 +177,7 @@ enum ArchivalUmbrellaExpansion: String, CaseIterable, Identifiable, Sendable {
 /// ## What each case really tests
 /// The rule is deliberately narrow, and the labels say only what the rule proves. In
 /// particular ``stateDepartment`` is *not* "central files": measured over the shipped
-/// authority, 392 records reach it, and while the four `Central Files` records carry the bulk
+/// authority, 395 records reach it, and while the four `Central Files` records carry the bulk
 /// of the documents, the tail includes post files (`Accra Consulate Files`) and Department
 /// series that are not central filing at all. Calling the bucket "Central Files" would be a
 /// claim the data does not support, so it is called what it is.
@@ -212,7 +212,7 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
     /// Repository keywords that name a presidential library but do not end in `" Library"`.
     ///
     /// One entry, and it is not an edge case: `Nixon` is how the corpus cites the Nixon
-    /// presidential materials, and it carries `NSC Files` — 7,056 documents, the second-largest
+    /// presidential materials, and it carries `NSC Files` — 7,062 documents, the second-largest
     /// collection in the series. Dropping it would put the single biggest bar of the 1969–1976
     /// era in the wrong colour.
     private static let presidentialRepositories: Set<String> = ["Nixon"]
@@ -276,7 +276,7 @@ enum ArchivalRepositoryCategory: String, CaseIterable, Identifiable, Sendable, H
 /// Three of those four are exact unions of existing eras; `1946` is not — the axis runs
 /// `1941–1947` as one war-years bucket, so a band starting in 1946 would have to split it.
 /// More importantly, the four bands leave out everything before 1946, which is **261 of the
-/// 552 volumes**. Those volumes are nearly absent from the named-collection lens (131
+/// 553 volumes**. Those volumes are nearly absent from the named-collection lens (135
 /// collections reached, the largest supplying 1,063 documents) and dominant in the class lens
 /// (`793.94` alone supplies 4,956). That asymmetry is the thing the mock's own "unit-switch
 /// pointer" footnote is about, so the band exists and the footnote points at it.
@@ -320,7 +320,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 
     /// The bands a year range OVERLAPS (#835).
     ///
-    /// Overlap, not containment: the first band runs 1861–1947 and holds 261 of the 552 volumes,
+    /// Overlap, not containment: the first band runs 1861–1947 and holds 261 of the 553 volumes,
     /// so "the band starts inside the range" would drop it for any range beginning after 1861 —
     /// silently discarding almost half the series.
     ///

@@ -104,7 +104,7 @@ import SwiftData
 
     /// How many volumes this device had indexed when the search ran — the denominator every count
     /// needs, and M-2's named one. A count of nine means something different against 40 volumes
-    /// than against 552.
+    /// than against 553.
     var indexedVolumeCount: Int?
 
     /// The scope the query ran under, as a canonical non-localized key.

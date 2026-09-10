@@ -287,7 +287,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
     ///
     /// **The map draws on demand, not on a clock.** It is a static image unless the camera moves,
     /// the lens changes or the corpus is re-uploaded, so a free-running display link re-issued the
-    /// same 314,483-point draw call sixty times a second for as long as a window stayed open —
+    /// same 314,571-point draw call sixty times a second for as long as a window stayed open —
     /// affordable while this was a spike being measured, not for a window a reader leaves open
     /// beside their work. Every mutator above marks the surface instead, which is why they are
     /// `didSet` rather than plain stored properties.
@@ -905,7 +905,7 @@ final class SemanticMapRenderer: NSObject, MTKViewDelegate {
         // the same weight whatever lens is showing.
         // (2) The in-scope points get a FLOOR while a scope is active, because the ghost grey and the
         // cluster lens's own achromatic ground for the unclustered 28% composited to within 6% of
-        // each other — so ~88,000 in-scope documents were indistinguishable from excluded ones on
+        // each other — so ~89,000 in-scope documents were indistinguishable from excluded ones on
         // the map's default lens.
         if ((p.flags & 1u) != 0u) {
             float grey = dot(colour.rgb, float3(0.2126, 0.7152, 0.0722)) * 0.55;

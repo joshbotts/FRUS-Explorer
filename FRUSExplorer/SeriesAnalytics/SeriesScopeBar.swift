@@ -55,7 +55,7 @@ struct SeriesScope: Sendable, Equatable {
 /// entries rather than indexed volumes.
 ///
 /// Volume-level scope is deliberately omitted: a single volume yields a degenerate
-/// series chart (one point / one bar) and the manifest's ~552 volumes would make a
+/// series chart (one point / one bar) and the manifest's ~553 volumes would make a
 /// giant nested menu. The per-volume story is already told by SA-2b's detail volume list.
 ///
 /// The parent owns the `SeriesScope` as a binding and supplies the manifest entries to

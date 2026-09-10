@@ -290,7 +290,7 @@ public struct DocumentBrowserEntry: Sendable, Identifiable, Hashable {
 }
 
 // `CorpusStats` — removed #1051 B-1. Its display left in Session 130 (CorpusView 1.3), and its
-// `totalDocuments` summed the manifest's structurally-dead `documentCount` field (0 in all 552
+// `totalDocuments` summed the manifest's structurally-dead `documentCount` field (0 in all 553
 // entries — the header parser cannot compute it), so the value was a permanently-zero lie.
 // Per-volume document counts now come from `AdministrationProfilesStore.documentCount(forVolumeId:)`
 // (R-2), the one named seam over the bundled `volumeTotals` table.
@@ -322,7 +322,8 @@ public struct SubseriesGroup: Sendable, Identifiable {
 
     /// Published BY THE CATALOGUE. A side-loaded entry mints `status: .published` (the TEI
     /// header carries no status), and counting it here read "553 of 552" against a series
-    /// that has 552 published volumes (#777). Side-loaded files are counted separately.
+    /// that has 553 catalogued volumes, 550 of them `published` and 3 partially (#777).
+    /// Side-loaded files are counted separately.
     public var publishedCount: Int {
         volumes.filter { $0.status == .published && $0.provenance != .sideloaded }.count
     }

@@ -67,7 +67,7 @@ public struct VolumeManifestEntry: Codable, Sendable, Identifiable, Equatable {
 
     /// Where this entry came from — the published catalogue, or the user's own file (#777).
     ///
-    /// Defaulted and **not decoded**, so `manifest.json` is unchanged and every one of its 552
+    /// Defaulted and **not decoded**, so `manifest.json` is unchanged and every one of its 553
     /// entries is `.publishedCatalogue` without a byte moving. Only `LocalVolumeCatalog` mints
     /// the other case.
     public var provenance: VolumeOrigin = .publishedCatalogue

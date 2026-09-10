@@ -302,7 +302,7 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// the JS appends a single `"\n"` for the first, and `escaped()` emits only
     /// `& < > " '`, every one a single BMP character in the DOM.
     ///
-    /// **Measured 2026-09-10: no shippable volume can trigger it.** All 694 corpus files
+    /// **Measured 2026-09-10: no shippable volume can trigger it.** All 744 corpus files
     /// carry zero non-BMP characters, zero combining marks and zero CR — and the only
     /// numeric character references anywhere are `&#x93;`/`&#x94;`, both BMP. So this is
     /// a correctness fix with no observable change to any export today, and the absence

@@ -1666,7 +1666,7 @@ struct SourceExplorerView: View {
                 )
             }
             // #663 / F-7: NARA's own trip-planning facts. Access status first because it is the
-            // one that decides whether the trip is worth taking — 414 of the 622 series the app
+            // one that decides whether the trip is worth taking — 483 of the 698 series the app
             // can name are restricted in some degree.
             if let facts = SeriesFactsIndex.facts(for: entry) {
                 if let access = facts.accessStatus {

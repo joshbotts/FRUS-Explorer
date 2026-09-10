@@ -20,7 +20,7 @@ import simd
 ///
 /// ## Why a linear scan is the right answer here
 ///
-/// 314,483 positions is a contiguous array read straight through — no pointer chasing, no
+/// 314,571 positions is a contiguous array read straight through — no pointer chasing, no
 /// allocation, perfectly predictable. A spatial index would be faster asymptotically and slower in
 /// practice at this size, and it would be a second structure to keep in step. The scan also runs
 /// **once per tap**, not per frame: the budget is a human's patience, not a frame. The suite measures
@@ -74,7 +74,7 @@ enum SemanticMapPicking {
         let regionName: String?
         /// Whether this device can actually open it.
         ///
-        /// **The map draws all 552 volumes and a reader has downloaded some of them.** Without this
+        /// **The map draws all 553 volumes and a reader has downloaded some of them.** Without this
         /// the obvious implementation offers "Open" on every document and fails on most of them; the
         /// `availability` lens exists to show the same fact at corpus scale.
         let isDownloaded: Bool
@@ -118,7 +118,7 @@ enum SemanticMapPicking {
     /// Finds every document inside a freeform region the reader drew.
     ///
     /// The path arrives in **view points** and is converted to grid space once, rather than
-    /// projecting 314,483 documents into view space — same reason the tap radius is converted rather
+    /// projecting 314,571 documents into view space — same reason the tap radius is converted rather
     /// than the corpus: the transform is affine, so doing it to the small side is both cheaper and
     /// exactly equivalent.
     ///
@@ -173,7 +173,7 @@ enum SemanticMapPicking {
         // truncation note — which compares the two — would call the difference a cap.
         //
         // Unwrapped to a plain array and a `Bool` before the loop rather than tested as an optional
-        // inside it: this scan runs over all 314,483 rows and has a measured budget, and an
+        // inside it: this scan runs over all 314,571 rows and has a measured budget, and an
         // `if let` per row spends an optional check on the unscoped path that pays for nothing.
         let mask = (scopeMask?.count == positions.count) ? (scopeMask ?? []) : []
         let isScoped = !mask.isEmpty
@@ -199,7 +199,7 @@ enum SemanticMapPicking {
     /// restatement of the numerator, and the mask gates the total as well as the kept rows.
     ///
     /// Takes a closure rather than an array so the caller can read cluster ids straight out of the
-    /// mapped artifact without materialising 314,483 `UInt16`s, while a test can pass a synthetic
+    /// mapped artifact without materialising 314,571 `UInt16`s, while a test can pass a synthetic
     /// corpus. One implementation, two callers, no second copy of the rule to drift.
     ///
     /// - Parameters:

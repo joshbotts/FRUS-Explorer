@@ -235,7 +235,7 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
         //
         // Anchored on `d\d+` rather than on any `fn` so a document id that merely contains "fn"
         // cannot be split — measured over every document `xml:id` in the shippable corpus, this
-        // pattern captures 0 of 314,483.
+        // pattern captures 0 of 314,571.
         if let match = anchor.wholeMatch(of: /(.*d\d+[A-Za-z]?)fn[\w-]*/) {
             return .footnote(volumeId: vol, documentId: String(match.1), anchor: anchor)
         }

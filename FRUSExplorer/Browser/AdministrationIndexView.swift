@@ -20,7 +20,7 @@ import SwiftUI
 ///   or when a volume was published, so every caption says "covering", never
 ///   "published under".
 /// - **Any-overlap double counting is disclosed, not hidden**: a volume spanning two
-///   administrations appears under both, so memberships sum well past the corpus's 552.
+///   administrations appears under both, so memberships sum well past the corpus's 553.
 /// - The drill keeps the artifact's own order (`volumes` is pre-sorted by `pointDocs`
 ///   descending) — the R-1 contract: order is the axis's payload, never re-sorted.
 ///

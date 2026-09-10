@@ -2464,7 +2464,7 @@ struct AnalyticsView: View {
     ///    to the volume-start-year fallback that makes undated documents land in a manufactured year
     ///    bucket. A "spans N years" figure from `yearData` would inherit that fabrication, which is
     ///    why there isn't one.
-    /// 3. **The denominator is volumes indexed on this device**, not the manifest's 552. A share of
+    /// 3. **The denominator is volumes indexed on this device**, not the manifest's 553. A share of
     ///    the published series would be a claim about data the device does not have.
     ///
     /// Returns `nil` while comparing (the sentence would need a subject) or with no volume data.
@@ -2480,8 +2480,9 @@ struct AnalyticsView: View {
     /// The dispersion footnote: how many volumes hold the match, and — only when it is genuinely a
     /// concentration — how much of it the top three hold.
     ///
-    /// The 25% gate follows `FacetPanelView`'s precedent ("Computed, never templated"): across 552
-    /// volumes a common term's top three hold ~1.7%, and announcing that as a concentration would
+    /// The 25% gate follows `FacetPanelView`'s precedent ("Computed, never templated"): measured
+    /// across 552 volumes, a common term's top three hold ~1.7%, and announcing that as a
+    /// concentration would
     /// train the reader to ignore the line. Above the gate it is the finding.
     @ViewBuilder
     private var dispersionFootnote: some View {

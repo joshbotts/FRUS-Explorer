@@ -192,7 +192,7 @@ enum SemanticMapFrameSequence {
             // missing frame — it was a corrupted sequence that looked complete. `writeFrame` takes
             // the LOOP index while the closing frame below takes `records.count`, so one skipped
             // render leaves a hole in the numbering *and* makes the closing frame overwrite a real
-            // one: 552 files where 553 are expected, a gap that stops `ffmpeg` at the hole, and a
+            // one: 553 files where 554 are expected, a gap that stops `ffmpeg` at the hole, and a
             // frame silently replaced. The plan's remedy was a manual pre-flight — `ls | wc -l`
             // against `records.count` — before assembling. A throw makes the ritual unnecessary,
             // which is this repo's posture everywhere else a generator can produce a plausible

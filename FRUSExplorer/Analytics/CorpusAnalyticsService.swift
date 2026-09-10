@@ -901,7 +901,7 @@ actor CorpusAnalyticsService {
     /// manifest-free fallback; consumers that have a `ManifestStore` prefer its precomputed
     /// `VolumeManifestEntry.subseries` field, which this exactly mirrors.
     ///
-    /// The previous trailing-`v\d+`-strip algorithm diverged from the browser for ~158 of the 552
+    /// The previous trailing-`v\d+`-strip algorithm diverged from the browser for ~158 of the 553
     /// bundled volumes: it returned `nil` for any id without a `vNN` marker (all pre-1918 annuals,
     /// Vietnam extras, conference-only ids) and kept the area token for the rest.
     ///

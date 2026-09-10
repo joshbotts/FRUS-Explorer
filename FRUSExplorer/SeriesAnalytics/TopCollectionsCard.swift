@@ -31,7 +31,7 @@ import SwiftUI
 ///
 /// ## Three things this card must say, and does
 /// 1. **Its population is not the charts' population.** `SourceProvenanceData` floors at decade
-///    1900 and its artifact covers 522 volumes; the archival authority covers 552 and has no
+///    1900 and its artifact covers 523 volumes; the archival authority covers 553 and has no
 ///    floor. Sixty-eight volumes sit in coverage decades before 1900. Rows here can therefore rest
 ///    on volumes no chart above draws.
 /// 2. **Its colours are not the charts' colours.** Above, ten `SourceProvenanceCategory` cases
@@ -114,7 +114,7 @@ struct TopCollectionsCard: View {
 
     /// The era bands the page's year range OVERLAPS.
     ///
-    /// Overlap, not containment: the first band runs 1861–1947 and holds 261 of the 552 volumes,
+    /// Overlap, not containment: the first band runs 1861–1947 and holds 261 of the 553 volumes,
     /// so "the band starts inside the range" would drop it for any range beginning after 1861 —
     /// silently discarding almost half the series. The default 1861…1993 selects all five.
     private var bands: [ArchivalEraBand] {

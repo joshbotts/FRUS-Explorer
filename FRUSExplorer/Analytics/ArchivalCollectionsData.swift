@@ -152,7 +152,7 @@ struct ArchivalRanking: Sendable, Equatable {
     ///
     /// `nil` means nothing was hidden — either the filter is off, or the umbrella contributes
     /// nothing to this band. The two are different and the disclosure line says which: the
-    /// umbrella supplies 12,060 documents to the 1948–1960 band and **none at all** before
+    /// umbrella supplies 12,067 documents to the 1948–1960 band and **none at all** before
     /// 1948, so a fixed "157 volumes hidden" sentence would be wrong in three bands of five.
     let hiddenUmbrellaValue: Int?
     /// Units with a non-zero value in this band, before the row cap.
@@ -226,8 +226,8 @@ struct ArchivalCollectionsData: Sendable {
     /// The authority id of the `Central Files` umbrella — the record the design hides by
     /// default.
     ///
-    /// Measured on the shipped authority: 157 citing volumes and 17,587 documents, against
-    /// 7,056 for the next-largest collection in the series. Hiding it is a scale decision, not
+    /// Measured on the shipped authority: 157 citing volumes and 17,606 documents, against
+    /// 7,062 for the next-largest collection in the series. Hiding it is a scale decision, not
     /// a claim that it is uninteresting, which is why the filter is a visible chip and the
     /// hidden value is always stated.
     ///

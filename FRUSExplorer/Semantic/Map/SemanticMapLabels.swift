@@ -75,7 +75,7 @@ struct SemanticMapLabel: Identifiable, Equatable {
 
 /// Chooses which regions get named, and where the names go.
 ///
-/// The map has **179 regions and room for perhaps two dozen names**. Drawing them all produces an
+/// The map has **171 regions and room for perhaps two dozen names**. Drawing them all produces an
 /// unreadable thicket and drawing the nearest ones produces a different set every frame, so the rule
 /// is: rank by document count, project, drop anything off screen, and keep a name only when it clears
 /// every name already kept. Ranking by size rather than by proximity is what makes the labelling
