@@ -3,7 +3,7 @@
 This file contains the user-facing editorial prose across FRUS Explorer: the About screen, the
 onboarding welcome, the in-app FRUS Research Guide, the Series and Archival analytics dashboards,
 the analytics info popovers and captions, the Source Explorer panels, the methods statements
-stamped on every export, the Archive Visit planner and its trip packet, the Browse-axis coverage
+stamped on every export, the Archives Visit planner and its trip packet, the Browse-axis coverage
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
@@ -17,7 +17,7 @@ this file does not carry (`packet.title`). The build-43/44 feature PRs that adde
 mostly added their blocks as they went (§1.4a–d, §7.12, §13.5's lexical twin), which is why the
 sweep found no rot — the additions below are the surfaces that DIDN'T bring their blocks:
 
- - **§15 Archive Visits** — the build-44 flagship (#1086–#1097) shipped ~120 new strings and none
+ - **§15 Archives Visits** — the build-44 flagship (#1086–#1097) shipped ~120 new strings and none
    had a block: the plan list and Mac manager, the editor's coverage/derivation states, the
    research-targets info popover (the two-claims definition and both sparsity disclosures), the
    tier/orphan/substitution prose, and the rescoped packet sheet's empty states and topic captions.
@@ -2620,7 +2620,7 @@ Every cross-reference in the printed FRUS volumes that points to a document, pag
 
 <!-- Wave R-5, NEW key (`settings.export.json.footer` listed six things; the file now carries seven). The research trail is named explicitly rather than folded into "your research data" because it is the part a reader would not assume was in there — and the part they may want to check before sharing the file, since it includes the text of every search they ran. -->
 
-<!-- Archive Visits Phase 2, NEW key (`…json.footer.trail` listed seven things; the file now also carries archive visit plans). -->
+<!-- Archives Visits Phase 2, NEW key (`…json.footer.trail` listed seven things; the file now also carries archive visit plans). -->
 
 <!-- SOURCE: FRUSExplorer/Export/ResearchDataExportView.swift | DataExportSections JSON section footer | key: settings.export.json.footer.visits | shared: iOS+macOS (single edit point — hosted by Data & Recovery on both) -->
 
@@ -6613,12 +6613,12 @@ Corpus, Person, Cross-Reference, Archival, and Semantic analytics, Chronology, a
 
 <!-- END SOURCE: mainwindow.tools.analytics.menu.help.v3 -->
 
-#### Research window (⌘⌥R), Collections (⇧⌘K), Archive Visits…
-<!-- Archive Visits Phase 3, NEW key (`…help.v2` named three windows; the menu carries four now — the same re-mint `.v2` itself was). -->
+#### Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits…
+<!-- Archives Visits Phase 3, NEW key (`…help.v2` named three windows; the menu carries four now — the same re-mint `.v2` itself was). -->
 
 <!-- SOURCE: FRUSExplorer/App/MainWindowView.swift | key: mainwindow.tools.myResearch.help.v3 -->
 
-Research window (⌘⌥R), Collections (⇧⌘K), Archive Visits, and Complete History
+Research window (⌘⌥R), Collections (⇧⌘K), Archives Visits, and Complete History
 
 <!-- END SOURCE: mainwindow.tools.myResearch.help.v3 -->
 
@@ -6741,9 +6741,9 @@ Undoing a correction restores FRUS’s own classification and syncs across your 
 
 ---
 
-## 15. Archive Visits — the research-trip planner
+## 15. Archives Visits — the research-trip planner
 
-*Build 44's flagship (#1086–#1097): an Archive Visit turns documents' source notes and their
+*Build 44's flagship (#1086–#1097): an Archives Visit turns documents' source notes and their
 footnotes' citations to unprinted material into a prioritized plan for a research trip. The prose
 below is the feature's entire editorial voice — the two-claims vocabulary (**drawn from** = the
 document's own source note; **pointed at** = a footnote citing something unprinted) and the rule
@@ -6759,21 +6759,21 @@ the feature but was rescoped by Phase 0 (#1088) and its empty states rewritten.*
 <!-- Shared: the same key is used by ArchiveVisitListView (iOS) and MacArchiveVisitManagerView. -->
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 58 | key: archiveVisit.empty.title -->
 
-No Archive Visits
+No Archives Visits
 
 <!-- END SOURCE: archiveVisit.empty.title -->
 
 #### Empty state — detail
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 61–62 | key: archiveVisit.empty.detail -->
 
-An Archive Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.
+An Archives Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.
 
 <!-- END SOURCE: archiveVisit.empty.detail -->
 
 #### List footer — what a plan is
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 69–70 | key: archiveVisit.list.footer -->
 
-An Archive Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.
+An Archives Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.
 
 <!-- END SOURCE: archiveVisit.list.footer -->
 
@@ -6788,7 +6788,7 @@ An Archive Visit is your plan for consulting the records behind these documents 
 #### Mac manager — no selection
 <!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 60 | key: archiveVisit.mac.noSelection.title -->
 
-No Archive Visit Selected
+No Archives Visit Selected
 
 <!-- END SOURCE: archiveVisit.mac.noSelection.title -->
 
@@ -6845,7 +6845,7 @@ No documents seeded
 
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 558–559 | key: archiveVisit.editor.noSeeds.detail -->
 
-Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archive Visit.
+Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archives Visit.
 
 <!-- END SOURCE: archiveVisit.editor.noSeeds.detail -->
 

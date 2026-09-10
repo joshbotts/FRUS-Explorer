@@ -342,7 +342,7 @@ struct CollectionDetailView: View {
                     } label: {
                         Label(String(format: String(
                             localized: "collection.detail.addToVisit %lld",
-                            defaultValue: "Add the %lld citing documents to an Archive Visit…"),
+                            defaultValue: "Add the %lld citing documents to an Archives Visit…"),
                             Int64(stats.documentCount)),
                               systemImage: "building.columns")
                     }

@@ -1144,7 +1144,7 @@ struct FRUSExplorerApp: App {
         // Archive Visits Phase 3 (§4a); rebuilt in the UI pass to the Collections window's
         // shape: a flat pane with a toolbar plan picker and a Manage sheet — the iOS
         // push-navigation shell put a back chevron in a Mac singleton window.
-        Window(String(localized: "archiveVisit.window.title", defaultValue: "Archive Visits"),
+        Window(String(localized: "archiveVisit.window.title", defaultValue: "Archives Visits"),
                id: "frus.archiveVisits") {
             MacArchiveVisitManagerView()
                 .environment(appState)
@@ -3807,7 +3807,7 @@ struct ResearchMenuContent: View {
 
         // Archive Visits Phase 3 (§4a): the plan list's macOS door. No key equivalent — the
         // Analytics menu's precedent — and no provenance bind (it never routes document opens).
-        Button(String(localized: "menu.research.archiveVisits", defaultValue: "Archive Visits")) {
+        Button(String(localized: "menu.research.archiveVisits", defaultValue: "Archives Visits")) {
             openWindow.fronting(id: "frus.archiveVisits")
         }
 

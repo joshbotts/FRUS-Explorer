@@ -135,7 +135,7 @@ struct ArchiveVisitEditorView: View {
         // The screen's ROLE, not the plan's name — the name is the editable field right
         // below, and printing it twice made the field read as a redundant static title.
         .navigationTitle(String(localized: "archiveVisit.editor.title",
-                                defaultValue: "Archive Visit"))
+                                defaultValue: "Archives Visit"))
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar { editorToolbar }
@@ -153,7 +153,7 @@ struct ArchiveVisitEditorView: View {
         #endif
         #if os(macOS)
         .alert(String(localized: "archiveVisit.rename.title",
-                      defaultValue: "Rename Archive Visit"),
+                      defaultValue: "Rename Archives Visit"),
                isPresented: $showRenameAlert) {
             TextField(String(localized: "archiveVisit.rename.placeholder", defaultValue: "Name"),
                       text: $nameDraft)
@@ -199,7 +199,7 @@ struct ArchiveVisitEditorView: View {
         }
         .confirmationDialog(
             String(localized: "archiveVisit.delete.title",
-                   defaultValue: "Delete this Archive Visit?"),
+                   defaultValue: "Delete this Archives Visit?"),
             isPresented: $showDeleteConfirm, titleVisibility: .visible
         ) {
             Button(String(localized: "common.delete", defaultValue: "Delete"),
@@ -557,7 +557,7 @@ struct ArchiveVisitEditorView: View {
             systemImage: "building.columns",
             description: Text(String(
                 localized: "archiveVisit.editor.noSeeds.detail",
-                defaultValue: "Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archive Visit.")))
+                defaultValue: "Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archives Visit.")))
     }
 
     /// Resets every Targets-tab filter to its unfiltered state.

@@ -274,11 +274,11 @@ struct MacSourceExplorerView: View {
                 }
             } label: {
                 Label(String(localized: "source.explorer.addVisit",
-                             defaultValue: "Add to Archive Visit"),
+                             defaultValue: "Add to Archives Visit"),
                       systemImage: "building.columns")
             }
             .help(String(localized: "source.explorer.addVisit.help",
-                         defaultValue: "Seed an Archive Visit from this document’s archival claims"))
+                         defaultValue: "Seed an Archives Visit from this document’s archival claims"))
             .disabled(documentVolumeId == nil || documentId == nil
                       || (!hasSourceNote && unprintedPointers.isEmpty))
         }

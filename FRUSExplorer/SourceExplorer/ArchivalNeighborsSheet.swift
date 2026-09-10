@@ -370,7 +370,7 @@ struct ArchivalNeighborsContent: View {
                         } label: {
                             Label(String(format: String(
                                 localized: "archivalNeighbors.addToVisit %lld",
-                                defaultValue: "Add the %lld shown to an Archive Visit…"),
+                                defaultValue: "Add the %lld shown to an Archives Visit…"),
                                 Int64(docs.count)),
                                   systemImage: "building.columns")
                                 .font(.callout)

@@ -1338,7 +1338,7 @@ struct CollectionEditorView: View {
                 }
             } label: {
                 Label(String(localized: "collection.addToVisit",
-                             defaultValue: "Add to Archive Visit…"),
+                             defaultValue: "Add to Archives Visit…"),
                       systemImage: "building.columns")
             }
             // Content or a saved search — the export sheet's own rule. A smart collection's
@@ -1416,7 +1416,7 @@ struct CollectionEditorView: View {
                 }
             } label: {
                 Label(String(localized: "collection.addToVisit",
-                             defaultValue: "Add to Archive Visit…"),
+                             defaultValue: "Add to Archives Visit…"),
                       systemImage: "building.columns")
             }
             // Content or a saved search — the export sheet's own rule. A smart collection's

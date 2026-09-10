@@ -1321,7 +1321,7 @@ private struct CollectionDetailPane: View {
                     }
                 } label: {
                     Label(String(localized: "collection.addToVisit",
-                                 defaultValue: "Add to Archive Visit…"),
+                                 defaultValue: "Add to Archives Visit…"),
                           systemImage: "building.columns")
                 }
                 // Content or a saved search — the same rule `canExport` applies (:848) and the

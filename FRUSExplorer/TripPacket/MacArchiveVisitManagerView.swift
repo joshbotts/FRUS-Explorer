@@ -58,14 +58,14 @@ struct MacArchiveVisitManagerView: View {
             } else {
                 ContentUnavailableView {
                     Label(String(localized: "archiveVisit.mac.noSelection.title",
-                                 defaultValue: "No Archive Visit Selected"),
+                                 defaultValue: "No Archives Visit Selected"),
                           systemImage: "building.columns")
                 } description: {
                     Text(String(localized: "archiveVisit.mac.noSelection.detail",
                                 defaultValue: "Choose a plan from the picker in the toolbar, or create a new one. Plans can also be seeded from Source Explorer, Archival Neighbors, a collection, or a project."))
                 } actions: {
                     Button(String(localized: "archiveVisit.new",
-                                  defaultValue: "New Archive Visit")) {
+                                  defaultValue: "New Archives Visit")) {
                         createPlan()
                     }
                     .buttonStyle(.borderedProminent)
@@ -105,14 +105,14 @@ struct MacArchiveVisitManagerView: View {
                 createPlan()
             } label: {
                 Label(String(localized: "archiveVisit.picker.new",
-                             defaultValue: "New Archive Visit…"),
+                             defaultValue: "New Archives Visit…"),
                       systemImage: "plus")
             }
             Button {
                 showManage = true
             } label: {
                 Label(String(localized: "archiveVisit.picker.manage",
-                             defaultValue: "Manage Archive Visits…"),
+                             defaultValue: "Manage Archives Visits…"),
                       systemImage: "list.bullet")
             }
         } label: {
@@ -120,7 +120,7 @@ struct MacArchiveVisitManagerView: View {
                 Image(systemName: "line.3.horizontal")
                 Text(selectedPlan?.displayName
                      ?? String(localized: "archiveVisit.list.title",
-                               defaultValue: "Archive Visits"))
+                               defaultValue: "Archives Visits"))
                     .fontWeight(.semibold)
                 if let plan = selectedPlan {
                     Text(verbatim: (plan.documents ?? []).count.formatted())
@@ -164,7 +164,7 @@ private struct MacManageArchiveVisitsSheet: View {
         VStack(spacing: 0) {
             HStack {
                 Text(String(localized: "archiveVisit.manage.title",
-                            defaultValue: "Manage Archive Visits"))
+                            defaultValue: "Manage Archives Visits"))
                     .font(.headline)
                 Spacer()
                 Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
@@ -175,7 +175,7 @@ private struct MacManageArchiveVisitsSheet: View {
             if plans.isEmpty {
                 ContentUnavailableView {
                     Label(String(localized: "archiveVisit.empty.title",
-                                 defaultValue: "No Archive Visits"),
+                                 defaultValue: "No Archives Visits"),
                           systemImage: "building.columns")
                 }
                 .frame(maxHeight: .infinity)
@@ -192,7 +192,7 @@ private struct MacManageArchiveVisitsSheet: View {
         .frame(minWidth: 440, minHeight: 420)
         .confirmationDialog(
             String(localized: "archiveVisit.delete.title",
-                   defaultValue: "Delete this Archive Visit?"),
+                   defaultValue: "Delete this Archives Visit?"),
             isPresented: Binding(get: { deleting != nil },
                                  set: { if !$0 { deleting = nil } }),
             titleVisibility: .visible

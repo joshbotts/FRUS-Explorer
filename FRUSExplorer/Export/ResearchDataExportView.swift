@@ -99,7 +99,7 @@ struct DataExportSections: View {
                 LabeledContent(String(localized: "settings.export.collections", defaultValue: "Collections"), value: "\(collections.count)")
                 LabeledContent(String(localized: "settings.export.prompts", defaultValue: "Custom Prompts"), value: "\(userPromptCount)")
                 LabeledContent(String(localized: "settings.export.projects", defaultValue: "Projects"), value: "\(projects.count)")
-                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archive Visits"), value: "\(archiveVisits.count)")
+                LabeledContent(String(localized: "settings.export.archiveVisits", defaultValue: "Archives Visits"), value: "\(archiveVisits.count)")
                 // Wave R-5. The three trail rows are worded exactly as the History screen's
                 // section headers, so the same recorded thing is not called two different names
                 // in two places. New keys rather than reuse of the `history.section.*` ones: no

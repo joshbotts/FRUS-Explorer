@@ -93,7 +93,7 @@ struct PlanPickerSheet: View {
     }
 
     private var pickerTitle: String {
-        String(localized: "archiveVisit.picker.title", defaultValue: "Add to Archive Visit")
+        String(localized: "archiveVisit.picker.title", defaultValue: "Add to Archives Visit")
     }
 
     /// The banner: what is being added, under which claims, from where.
@@ -171,7 +171,7 @@ struct PlanPickerSheet: View {
             createAndAdd()
         } label: {
             Label(String(localized: "archiveVisit.picker.new",
-                         defaultValue: "New Archive Visit"),
+                         defaultValue: "New Archives Visit"),
                   systemImage: "plus.circle")
                 .foregroundStyle(Color.accentColor)
         }
@@ -201,7 +201,7 @@ struct PlanPickerSheet: View {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(.tertiary)
                     TextField(String(localized: "archiveVisit.picker.search.placeholder",
-                                     defaultValue: "Search Archive Visits…"), text: $searchText)
+                                     defaultValue: "Search Archives Visits…"), text: $searchText)
                         .textFieldStyle(.plain)
                 }
                 .padding(.horizontal, 20)
@@ -247,7 +247,7 @@ struct PlanPickerSheet: View {
             .listStyle(.insetGrouped)
             .searchable(text: $searchText,
                         prompt: String(localized: "archiveVisit.picker.search.prompt",
-                                       defaultValue: "Search Archive Visits"))
+                                       defaultValue: "Search Archives Visits"))
             .navigationTitle(pickerTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

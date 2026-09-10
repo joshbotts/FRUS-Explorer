@@ -145,7 +145,7 @@ import SwiftData
     /// The fallback display name for a plan with an empty `name` (§4a: created plans auto-name
     /// from their seed; an unseeded plan is untitled and renameable in place).
     static var untitledName: String {
-        String(localized: "archiveVisit.untitled.name", defaultValue: "Untitled Archive Visit")
+        String(localized: "archiveVisit.untitled.name", defaultValue: "Untitled Archives Visit")
     }
 
     /// The name shown in lists — the stored name, or the untitled fallback.

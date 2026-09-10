@@ -513,7 +513,7 @@ struct ResearchView: View {
                     Label {
                         VStack(alignment: .leading, spacing: 1) {
                             Text(String(localized: "research.sidebar.archiveVisits",
-                                        defaultValue: "Archive Visits"))
+                                        defaultValue: "Archives Visits"))
                                 .foregroundStyle(.primary)
                             Text(String(localized: "research.sidebar.archiveVisits.caption",
                                         defaultValue: "Plans for consulting the records behind your documents"))

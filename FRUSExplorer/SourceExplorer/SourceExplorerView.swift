@@ -457,7 +457,7 @@ struct SourceExplorerView: View {
                 }
             } label: {
                 Label(String(localized: "source.explorer.addVisit",
-                             defaultValue: "Add to Archive Visit"),
+                             defaultValue: "Add to Archives Visit"),
                       systemImage: "building.columns")
                     .font(.caption)
             }

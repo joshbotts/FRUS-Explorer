@@ -554,7 +554,7 @@ Switch the active project from the menu bar (**Research ▸ Switch Project**) or
 
 Clicking a lead, a recently visited document, or a note opens it in whichever document window you used last — and if no document window is open at all (Project Home is its own window, so you can close the main one and keep working), a new one opens. The click always goes somewhere.
 
-Beside the Collections section header sits **Plan a Visit** — create-or-open for the project's **Archive Visit** (Section 14.8). A new plan seeds from the project's engaged documents (the same set that seeds the leads engine) with the research question as the inquiry's topic sentence; thereafter the button opens the existing plan, and **Re-seed from Project** in the plan's menu pulls in new engaged documents on request — never automatically.
+Beside the Collections section header sits **Plan a Visit** — create-or-open for the project's **Archives Visit** (Section 14.8). A new plan seeds from the project's engaged documents (the same set that seeds the leads engine) with the research question as the inquiry's topic sentence; thereafter the button opens the existing plan, and **Re-seed from Project** in the plan's menu pulls in new engaged documents on request — never automatically.
 
 ---
 
@@ -614,7 +614,7 @@ The window has no permanent sidebar; you switch collections from the **collectio
 
 | Control | What it does |
 |---------|--------------|
-| **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts), an **Apparatus ▸** submenu of the five generated blocks, and **Add to Archive Visit…** — seeds a plan from this collection's documents (14.8) |
+| **＋ Add** | Insert content: **Add Documents…** (⇧⌘A), **Add Section Heading**, **Add Note Block**, **Add Passages…** (highlight excerpts), an **Apparatus ▸** submenu of the five generated blocks, and **Add to Archives Visit…** — seeds a plan from this collection's documents (14.8) |
 | **Sort** | Re-order documents chronologically, in one of two modes (12.4) |
 | **⚙ Collection** | The collection-settings popover — name, private working note, title-page front matter, composition presets and settings (12.6) |
 | **Export…** | The export sheet — format + destination (12.9) |
@@ -847,11 +847,11 @@ Lot-file lookups — and the presidential-library citations the bundled catalog 
 
 When a source note records the original document's classification markings (*"Secret; Nodis"*, or *"No classification marking"*), the app separates them from the archival citation and shows them as a quiet capsule chip — in the Source Explorer window, next to the source footnote in the reading view, and on search results. The chip is historical metadata about how the record was originally handled, not a property of the published, declassified text — a distinction students in particular should hear once.
 
-### 14.8 The Archive Visit Packet
+### 14.8 The Archives Visit Packet
 
-Everything this chapter teaches document by document, the **Archive Visit** assembles in one pass — and since it is a saved plan, keeps assembling as your library grows. An Archive Visit is a persistent, synced research plan: documents seed it, the app derives **research targets** from their source notes and footnotes, and you prioritize, annotate, and export from the plan. Reach your plans from the **Research menu ▸ Archive Visits** (or the toolbar's My Research menu), and seed them from four surfaces: **Project Home ▸ Plan a Visit** (create-or-open — a new plan seeds from the project's engaged documents; Section 10.4), the Collections window's **＋ Add ▸ Add to Archive Visit…** (Section 12.1), **Source Explorer**'s section menu (per document, with a three-way choice: its archival source, its unprinted references, or both — the reference count shown before you choose), and **Archival Neighbors** (add the documents shown, as archival sources). A collection's detail page adds at the unit grain — **Add the N citing documents to an Archive Visit…** seeds every indexed document drawn from that unit, the count stated before anything is written.
+Everything this chapter teaches document by document, the **Archives Visit** assembles in one pass — and since it is a saved plan, keeps assembling as your library grows. An Archives Visit is a persistent, synced research plan: documents seed it, the app derives **research targets** from their source notes and footnotes, and you prioritize, annotate, and export from the plan. Reach your plans from the **Research menu ▸ Archives Visits** (or the toolbar's My Research menu), and seed them from four surfaces: **Project Home ▸ Plan a Visit** (create-or-open — a new plan seeds from the project's engaged documents; Section 10.4), the Collections window's **＋ Add ▸ Add to Archives Visit…** (Section 12.1), **Source Explorer**'s section menu (per document, with a three-way choice: its archival source, its unprinted references, or both — the reference count shown before you choose), and **Archival Neighbors** (add the documents shown, as archival sources). A collection's detail page adds at the unit grain — **Add the N citing documents to an Archives Visit…** seeds every indexed document drawn from that unit, the count stated before anything is written.
 
-The **Archive Visits window** works like the Collections window: a **plan picker in the toolbar** switches between plans (its menu also holds **New Archive Visit…** and **Manage Archive Visits…** — rename inline, duplicate, or delete from the Manage sheet), and the selected plan's editor fills the window. The **Targets | Documents** switcher sits in the title bar, filters live in the toolbar's **Filter** menu, and renaming is also in the editor's **⋯ menu ▸ Rename**.
+The **Archives Visits window** works like the Collections window: a **plan picker in the toolbar** switches between plans (its menu also holds **New Archives Visit…** and **Manage Archives Visits…** — rename inline, duplicate, or delete from the Manage sheet), and the selected plan's editor fills the window. The **Targets | Documents** switcher sits in the title bar, filters live in the toolbar's **Filter** menu, and renaming is also in the editor's **⋯ menu ▸ Rename**.
 
 The plan editor is a **target list**: targets grouped by repository with each repository's visit-planning links in the header, grouped inside by your own **priority tiers** (create, rename, reorder, and delete any number — deleting a tier moves its targets to Unprioritized and removes nothing), each row expandable to its verbatim seeding contexts. A **Documents** tab lists the seeds — each labeled by its document heading with the volume beneath, with the two contribution checkboxes, and a right-click to **open the document in the reader** or remove it; a stored target whose key no longer derives from the seeds is kept and labeled, never deleted. Exclusions, tiers, and notes travel to the exported packet.
 
@@ -869,7 +869,7 @@ The **Options** menu can also scope the export to a **single repository** — a 
 
 Two honesty rules run through every section: an institutional fact nobody has verified is **omitted, never printed undated**, and availability is never promised — the packet says "confirm with staff" where confirmation is the truth. **Share** exports the packet as plain text (the inquiry drafts survive pasting into a mail client); **Share as PDF** exports the same text paginated for printing. The packet is generated in English by design — its letters address U.S. archives staff and its quotations are NARA's own words.
 
-[SCREENSHOT: the Archive Visit sheet in the Collections window — a generated packet with a target's two claim lists visible, the Options menu open showing the repository scope, and the Share buttons.]
+[SCREENSHOT: the Archives Visit sheet in the Collections window — a generated packet with a target's two claim lists visible, the Options menu open showing the repository scope, and the Share buttons.]
 
 ---
 
@@ -1138,11 +1138,11 @@ Quantitative or quasi-quantitative claims about the record ("mentions of X colla
 - **Mind the stated gaps**: analytics cover your indexed volumes and say so; capped counts are floors (`count_basis` in the method appendix); Person Analytics and Corpus Analytics count different populations.
 - **Export the method appendix** (17.5) when you write the methodology section — especially for the searches that found *nothing*, which are findings only if you can state their scope and date.
 
-### 18.3 Preparing an Archive Visit
+### 18.3 Preparing an Archives Visit
 
 Before travel to College Park or a presidential library:
 
-1. **Build the Archive Visit** (14.8): from Project Home click **Plan a Visit**, or seed a plan from the Collections window (**＋ Add ▸ Add to Archive Visit…**), Source Explorer, or Archival Neighbors. This automates what used to be this recipe's first six steps — the plan resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, lets you prioritize them into your own tiers, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
+1. **Build the Archives Visit** (14.8): from Project Home click **Plan a Visit**, or seed a plan from the Collections window (**＋ Add ▸ Add to Archives Visit…**), Source Explorer, or Archival Neighbors. This automates what used to be this recipe's first six steps — the plan resolves every source note and footnote citation into research targets with the RG / entry / series / NAID lines staff ask you to quote, lets you prioritize them into your own tiers, drafts the advance inquiries, and marks restricted series and mandatory substitutes on the targets and documents they belong to.
 2. Add a **NARA API key** first (14.6) so lot-file lookups run at full precision before the packet is built.
 3. Read the packet's **Access restrictions** chapter before booking anything — a fully restricted series can change whether the trip is worth taking, and the advance-inquiry draft is where to raise it.
 4. Send the **advance inquiry** well ahead (the checklist says how far), including the help-me-locate items — NARA's own guidance is that poorly described records are resolved by writing ahead, not at the reading-room desk.
