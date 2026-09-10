@@ -91,15 +91,24 @@ public struct ParsedTEIHeader: Sendable, Equatable {
     ///
     /// The entry is identified by `corresp="#<the volume's own frus idno>"`, never by position: a
     /// partially-published volume lists a `<change>` per chapter, and `frus1981-88v16` states four
-    /// published chapters among eleven, the other seven `being-cleared`. Measured: 553 of the 694
-    /// corpus files carry such an entry, and **not one** file carries a published `@when` without a
-    /// matching self-corresp — so the rule never has to guess between siblings.
+    /// published chapters among eleven, the other seven `being-cleared`. Measured over the 694
+    /// corpus files: **553** carry a self-corresp published change WITH a `@when`, **11 more carry
+    /// one WITHOUT** (`frus1958-60v05mSupp` among the shipped) and must come back nil rather than
+    /// borrowing a sibling's date, and **not one** file carries a published `@when` whose
+    /// `@corresp` names something other than itself — so the rule never has to guess.
     ///
     /// This is a *digital publication* date and ``publicationDate`` is the *print* year. They are
     /// not the same fact and must not be merged: over the shipped volumes where both exist the
     /// years agree in 525 and **differ in 26** (`frus1950v01` prints 1977 and was published
     /// digitally in 1998).
     public var publishedWhen: String? = nil
+
+    /// Whether the volume's own header says it is only partly out.
+    ///
+    /// One definition of the word, shared by the manifest generator and by the app's side-loaded
+    /// catalogue, so the two cannot come to different conclusions about the same file. Three of
+    /// the 553 shipped volumes say it.
+    public var isPartiallyPublished: Bool { publicationStatus == "partially-published" }
 
     /// Creates an empty header, which is what the parser fills in place.
     public init() {}

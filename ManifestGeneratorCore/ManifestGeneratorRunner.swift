@@ -30,7 +30,9 @@ import TEIHeaderKit
 /// wired to the `VOLUMES_DIR` env var), the runner does NOT hit GitHub. Instead it loads
 /// the existing manifest at `outputPath` as the base and, for each entry, re-parses only
 /// the local `<teiHeader>` at `VOLUMES_DIR/<entry.filename>`, overriding **only**
-/// `publicationDate` and `dateRange` while preserving every other field byte-for-byte.
+/// `publicationDate`, `dateRange` and `status` while preserving every other field byte-for-byte.
+/// `status` joined that list in September 2026: re-deriving the date from a header while leaving
+/// the status that header also states is how two modes of one generator come to disagree.
 /// This yields an offline, deterministic, date-only semantic diff — the mode used to
 /// enrich the bundled manifest with true print years + coverage ranges (SA-1a). Entries
 /// whose local file is missing are logged and left unchanged.
@@ -75,10 +77,14 @@ public struct ManifestGeneratorRunner {
     /// one of the 694 corpus files carries one. It exists for a side-loaded or hand-edited header,
     /// where reading silence as "not published" would demote a volume the reader can plainly see.
     ///
-    /// **An in-progress or unrecognised word also stays `.published`, and says so.** A volume in
-    /// this listing has content the app can download, so calling it planned would contradict the
-    /// file just parsed. Nothing reaches that branch today, which is exactly why it prints rather
-    /// than guessing quietly.
+    /// **`planned` is honoured** — it maps one-to-one onto a case that exists for exactly it, and
+    /// `VolumeStatus.planned`'s own documentation says such a volume "may appear in manifests as a
+    /// placeholder". No shipped volume is planned today.
+    ///
+    /// **The three `being-*` words, and anything unrecognised, stay `.published` and say so.** A
+    /// volume in this listing has content the app can download, so demoting it would contradict
+    /// the file just parsed, and there is no measurement behind any other choice. Nothing reaches
+    /// that branch today, which is exactly why it prints rather than guessing quietly.
     ///
     /// - Parameters:
     ///   - header: The parsed TEI header.
@@ -88,7 +94,7 @@ public struct ManifestGeneratorRunner {
         switch header.publicationStatus {
         case "published", nil:
             return .published
-        case "partially-published":
+        case _ where header.isPartiallyPublished:
             return .partiallyPublished
         case "planned":
             return .planned
@@ -195,7 +201,7 @@ public struct ManifestGeneratorRunner {
 
     // MARK: - Local Overlay Mode
 
-    /// Offline pass that overrides ONLY `publicationDate` and `dateRange` on each existing
+    /// Offline pass that overrides ONLY `publicationDate`, `dateRange` and `status` on each existing
     /// manifest entry from the locally-parsed `<teiHeader>`, preserving all other fields.
     ///
     /// - Parameters:

@@ -90,6 +90,17 @@ struct TEIHeaderParserTests {
         #expect(result.publicationDate != result.publishedWhen)
     }
 
+    @Test("A published change with no date yields no date")
+    func publishedChangeWithoutAWhenYieldsNil() throws {
+        let result = try parse(TEIFixtures.publishedChangeWithoutAWhen)
+        #expect(result.publicationStatus == "published")
+        // A chapter's dated change sits immediately before the volume's undated one, so a rule
+        // that fell back to "any published @when" would answer 2013-04-01 here. 11 corpus files
+        // have this shape.
+        #expect(result.publishedWhen == nil)
+        #expect(result.publicationDate == nil)
+    }
+
     @Test("A header with no revisionDesc reports neither status nor published date")
     func revisionDescAbsent() throws {
         let result = try parse(TEIFixtures.inProgressModernVolume)

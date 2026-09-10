@@ -77,6 +77,32 @@ struct ManifestStatusPolicyTests {
                                                volumeId: "v") == .planned)
     }
 
+    @Test("Both arms of the generator go through these rules")
+    func bothArmsUseThePolicy() throws {
+        // The policy tests above drive the helpers directly, which says nothing about whether the
+        // code that writes the manifest calls them. Mutating a helper kills those tests; deleting
+        // a CALL survives every one of them. This is the guard for that — the failure it exists
+        // to catch is an arm quietly going back to `header.publicationDate` or `.published`.
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("ManifestGeneratorCore/ManifestGeneratorRunner.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let code = source
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+
+        // Two arms: the GitHub pass and the offline VOLUMES_DIR overlay.
+        #expect(code.components(separatedBy: "Self.publicationDate(from: header)").count - 1 == 2,
+                "both arms must resolve the date through the fallback rule")
+        #expect(code.components(separatedBy: "Self.status(from: header").count - 1 == 2,
+                "both arms must resolve the status from the header")
+        #expect(!code.contains("publicationDate: header.publicationDate"),
+                "an arm taking the printed year directly skips the revisionDesc fallback")
+        #expect(!code.contains("status: .published"),
+                "an arm hardcoding .published is the defect this change removed")
+    }
+
     @Test("Silence, and words nobody has shipped, both stay published")
     func unknownAndAbsentStayPublished() {
         // Absent: a guard, not a case — all 694 corpus files carry a revisionDesc — but a

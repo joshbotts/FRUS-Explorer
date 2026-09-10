@@ -58,7 +58,7 @@ import Foundation
 ///         `<change>` whose `@corresp` names this volume. Both are REPORTED, not applied:
 ///         `publicationDate` is still the print year and still never a `@when`. The prohibition
 ///         above is about the `<bibl>` build stamps, and `publishedWhen` is a different field
-///         holding a different fact — over the shipped volumes the two years differ in 22 cases.
+///         holding a different fact — over the shipped volumes the two years differ in 26 cases.
 public struct TEIHeaderParser {
 
     private init() {}

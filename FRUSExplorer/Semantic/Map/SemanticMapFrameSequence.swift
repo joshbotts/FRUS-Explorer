@@ -138,7 +138,7 @@ enum SemanticMapFrameSequence {
     /// reads that opening as *the record begins in 1620*, which is false — the series begins in
     /// 1861, and under publication order frame 0 is `frus1861`, which is exactly right.
     ///
-    /// Every one of the 552 bundled volumes carries a `publicationDate`, so the `"9999"` fallback
+    /// Every one of the 553 bundled volumes carries a `publicationDate`, so the `"9999"` fallback
     /// is defensive rather than load-bearing; a volume without one sorts last rather than first,
     /// which is the safe direction for a sequence about release.
     ///

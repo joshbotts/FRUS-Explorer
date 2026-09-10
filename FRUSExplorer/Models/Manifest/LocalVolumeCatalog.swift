@@ -78,10 +78,17 @@ public struct LocalVolumeCatalog: Sendable {
             subseries: subseries(for: volumeId),
             title: title.isEmpty ? volumeId : title,
             dateRange: DateRange(earliest: header.earliestDate, latest: header.latestDate),
-            publicationDate: header.publicationDate,
-            // The TEI header carries no publication status. `.published` is what the manifest
-            // generator records for every volume for the same reason.
-            status: .published,
+            // Same two rules the manifest generator applies, so a side-loaded copy of a volume
+            // and the catalogued one do not describe themselves differently. The printed year
+            // wins where the volume prints one; `revisionDesc`'s publication date fills the gap
+            // where it does not (`frus1981-88v16` prints nothing and states 2026-09-18 there).
+            publicationDate: header.publicationDate ?? header.publishedWhen,
+            // Was hardcoded `.published` behind a comment saying the TEI header carries no
+            // publication status. It does — `revisionDesc/@status` — and `isPartiallyPublished`
+            // is the one definition of that word, shared with the generator. The generator's
+            // fuller mapping is not needed here: a file the reader added is one they can open,
+            // whatever stage its header claims.
+            status: header.isPartiallyPublished ? .partiallyPublished : .published,
             editors: header.editors,
             generalEditor: header.generalEditor,
             documentCount: header.documentCount,

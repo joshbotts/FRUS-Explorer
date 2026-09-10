@@ -234,6 +234,33 @@ enum TEIFixtures {
     </teiHeader></TEI>
     """
 
+    /// A published `<change>` that names no date at all — 11 corpus files look like this,
+    /// `frus1958-60v05mSupp` among the shipped ones.
+    ///
+    /// The volume is published and says so; it just does not say when. `publishedWhen` must come
+    /// back nil rather than borrowing the sibling chapter's date sitting right beside it.
+    static let publishedChangeWithoutAWhen = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+    <teiHeader>
+      <fileDesc>
+        <titleStmt>
+          <title type="complete">Foreign Relations of the United States, 1958–1960, Supplement</title>
+        </titleStmt>
+        <publicationStmt>
+          <publisher>Department of State</publisher>
+          <pubPlace>Washington</pubPlace>
+          <date calendar="gregorian" type="publication-date"/>
+          <idno type="frus">frus1958-60v05mSupp</idno>
+        </publicationStmt>
+      </fileDesc>
+      <revisionDesc status="published">
+        <change corresp="#ch1" status="published" when="2013-04-01"/>
+        <change corresp="#frus1958-60v05mSupp" status="published"/>
+      </revisionDesc>
+    </teiHeader></TEI>
+    """
+
     /// A fully published volume whose printed year and digital publication date DISAGREE — the
     /// real `frus1950v01` shape, which prints 1977 and was published digitally in 1998.
     ///

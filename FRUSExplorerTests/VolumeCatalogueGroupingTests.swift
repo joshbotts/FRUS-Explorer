@@ -15,7 +15,7 @@ import Foundation
 /// Pure-logic tests for the All Volumes catalogue (#1051 B-1): the distinctive-title
 /// extraction that makes an A–Z filing usable at all (409 of 552 titles share one
 /// boilerplate prefix), the four sort modes' ordering contracts, and the year parse that
-/// must survive the manifest's one full-ISO `publicationDate` among 551 bare years.
+/// must survive the manifest's two full-ISO `publicationDate`s among 551 bare years.
 ///
 /// Also pins the B-1 foundations that live beside the catalogue: the R-2 accessor against
 /// the real bundled artifact, `VolumeListSpec`'s axis-key identity, and the Q-5
@@ -99,10 +99,13 @@ struct VolumeCatalogueGroupingTests {
     // MARK: Publication year parse
 
     @Test func bareYearAndFullISOParseIdentically() {
-        // The manifest holds 551 bare "YYYY" strings and exactly ONE full ISO date —
-        // string sort would misfile it; `firstYear(in:)` must not.
+        // The manifest holds 551 bare "YYYY" strings and exactly TWO full ISO dates —
+        // string sort would misfile them; `firstYear(in:)` must not.
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "a", publicationDate: "1987")) == 1987)
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "b", publicationDate: "2010-11-05")) == 2010)
+        // The second one: `frus1981-88v16` states its date in `revisionDesc` and the manifest
+        // stores that verbatim rather than truncating OH's own assertion to a year.
+        #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "v16", publicationDate: "2026-09-18")) == 2026)
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "c", publicationDate: nil)) == nil)
     }
 
