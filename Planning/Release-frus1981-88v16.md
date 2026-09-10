@@ -262,11 +262,23 @@ Two more artifact-pinned figures had to be re-measured, both 552/314,483 →
 Per D-4. The subject tags and the person crosswalk degrade per volume: v16 simply carries none until
 the upstream drops include it. Nothing else waits on this.
 
-### Phase F — code, tests, release ⏸️
-- §7.1 (the "552" strings) is **already handled**: W-2 / PR #1178 made all nine derive their numbers
+### Phase F — code, tests, release ✅ 2026-09-10
+- §7.1 (the "552" strings) was **already handled**: W-2 / PR #1178 made all nine derive their numbers
   live. The remaining `552`s in the tree are doc comments.
 - §7.2 does not apply — v16 covers 1981–1988, not 1993+.
-- Build number: next is **47**.
+- Build number: **47**, edited directly in `project.yml` (3) and `project.pbxproj` (9), no `xcodegen`.
+  README's "Current build:" line and its "manifest covers 552 volumes" both moved with it.
+- **D-B's condition was verified in both directions before the bump**, which matters more than the
+  listing being live. `history.state.gov/historicaldocuments/frus1981-88v16` is published — and its
+  own `/d1` still returns *"This document will be published once its chapter has been cleared"*, so
+  the local corpus copy is CURRENT rather than stale: the app's 88 documents are exactly OH's four
+  cleared chapters of eleven, and the `partiallyPublished` badge is right. Had the site been ahead of
+  our copy, the bump would have shipped a volume more incomplete than the one a reader could see.
+- TestFlight notes rewritten for both platforms (iOS 3,855 / Mac 3,983 characters, `wc -m`, cap
+  4,000). **Their headline is D-D, not the volume**: the semantic default going 0 → 0.5 is what a
+  tester will actually notice, and the volume is partial.
+- **Build 47 costs no re-index** — `currentDateIndexVersion` is unmoved since build 46 — and no mass
+  shard re-fetch, since the provenance digest is unchanged and only v16's shard is new.
 
 ---
 

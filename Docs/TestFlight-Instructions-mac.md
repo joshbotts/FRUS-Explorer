@@ -1,36 +1,39 @@
-# What's New Since Build 45 (Mac)
+# What's New Since Build 46 (Mac)
 
-The headline: **a central-file number now says what it means**, and the Corpus Browser gains a way to browse by it.
+The headline: **semantic matching is now on by default.** It shipped switched off, you had to find a slider to try it, and almost nobody did. It is now weighted 0.5 out of the box — still labelled experimental, because how well it reads nineteenth-century prose is genuinely not established.
 
-**One cost, on first launch.** Build 46 re-indexes every downloaded volume in the background — minutes on a large library. Search and browsing keep working, but People, cross-reference analytics and archival attributions are in flux until it settles. Nothing is re-downloaded and none of your own work is touched.
+**No re-index this time.** Build 46 rebuilt every downloaded volume; build 47 does not. Nothing is re-downloaded except the new volume's own vector file.
 
-## Classes, read from the Department's own filing manuals
+## Semantic matches, on by default
 
-`874.00` and `POL 27 VIET S` used to render as bare numbers. The app now reads the Department's own schedules — the decimal file in its 1910–1949, 1950–1959 and 1960–1963 arrangements, and the subject-numeric file that replaced it in 1963 — and composes a reading in NARA's filing order: *Bulgaria — Political affairs*; *Vietnam, South — MILITARY OPERATIONS*. Four of those five tables are new here, and so are Bulgaria and Canada, which the country table could not name. It needs nothing downloaded.
+Every Related Documents list now includes matches found by the shape of the language rather than by citations or archival provenance. Two knock-on effects worth knowing:
 
-- **Corpus Browser ▸ Archives ▸ Classes** is new: five sections, one per schedule, each row carrying a document count and drilling to the volumes citing it.
-- The same readings run through **Archival Analytics**, under *Show: Central-file classes*.
-- The Department filed a territory under the number of the power holding it, so one number often names several places. Where it does, the reading carries **"and N others"** and clicking opens the list, rather than the app asserting one name.
-- A volume whose coverage straddles two schedules is counted in **neither** section. The same number means different things either side of each boundary.
+- **Vector files now download as you read.** Opening a document's Related panel asks for the vector files of the volumes its matches sit in — **measured at a median of 104 volumes, about 31 MB, for a full library.** They are small files for volumes you already have, but there are a lot of them at once.
+- **"Download With Volumes" now governs that too.** Previously the switch covered only the files riding along with a volume download; the read-as-you-go path ignored it. It no longer does. **There is still no separate cellular or metered check** — on a tethered link, turn the switch off (Settings ▸ Storage ▸ vectors) and use **Download Missing Vectors** later instead. That row now says when the switch is the reason nothing is arriving.
+- Taking the axis back down to 0 in **Related ▸ Adjust weights** switches all of it off, including the downloads.
 
-## Where each fact on screen came from
+## FRUS 1981–1988, Volume XVI, South America
 
-Capsules now label provenance — **FRUS text**, **FRUS + NARA catalog**, **FRUS + OH people register**, **This app's model** — in Source Explorer, on archival collection and person pages, in the Add to Collection sheet, and on the semantic map. Exports gain a **Where this came from** block naming the sources they drew on.
+New, and **partially published** — the Office of the Historian has cleared 4 of its 11 chapters, so the app carries **88 of its 485 documents** and shows an orange *Partial* badge in the Corpus Browser. That is OH's state, not a download problem; the rest arrive when they clear. The corpus is now **553 volumes**.
+
+## Beyond your library, now for a whole project
+
+The Project window gains a section under Suggested Next: volumes you have **not** downloaded that your project's own documents point into, ranked by **how many of your documents reach each one** rather than by how many matches it holds. The Related panel has had the per-document version since build 46; this is the project-wide one.
 
 ## Also
 
-A lot cited only as where *another* copy sits is no longer the document's own source — visible in **Archival Neighbors…** after the re-index. A lot NARA divided across several series says so in a volume's **Sources** list. In **Meaning** mode the header names the closest matches found, not a total that never existed, and **Facets** counts the semantic results themselves, not a keyword set it never had. The Research window (⌘⌥R) stops beachballing on a large annotated library; titles fill in faster. A headerless editorial note reads **Editorial Note 304**, not a blank. The **Search in** chips carry a checkmark, not colour alone.
+"Archive Visits" is now **"Archives Visits"** throughout, including the exported trip packet's filename. Highlights in exported PDF, DOCX and HTML use a corrected offset rule — you should see no difference, which is the point.
 
 ## What to test
 
-1. **Read down Archives ▸ Classes against codes you know cold. Are the readings right?** Then: is counting a straddling volume in *neither* era right, or does it hide volumes you wanted listed?
-2. **"and N others"** — honest compression, or does naming one place mislead? Would you rather see the claimants inline?
-3. Time the first-launch re-index, and say how big your library is. Did People and the analytics recover **without** a relaunch?
-4. After it finishes: **Archival Neighbors…** on documents whose note names a lot. Does every lot still listed really belong to that document?
-5. Do the provenance capsules change what you would claim in print, or are they clutter?
-6. Meaning search ▸ **Facets**: narrow to a row, and confirm you get that row's documents. Should Facets be on in Meaning mode on iPhone and iPad too? It is off there by choice.
-7. **Related ▸ Adjust weights ▸ Semantically similar** above 0, then **Beyond your library**, new here — are those volumes ones you would have wanted?
+1. **The default change is the whole build.** Read Related lists on documents you know well, in the document window and in Find Related (⌘⌥F). Do the semantic matches earn their place, or push better rows down? Would you have chosen 0.5?
+2. **Nineteenth-century material especially.** This is the declared unknown. If it is bad there, say so plainly — that is the finding.
+3. **Watch the network.** Open a few Related panels and check Settings ▸ Storage. Did vector files arrive faster than you expected? Was 31 MB a surprise?
+4. Turn **Download With Volumes** off, open a Related panel, and confirm the semantic section goes quiet — then that Settings tells you why, and that **Download Missing Vectors** still works.
+5. **FRUS 1981–1988 vol. XVI** — download it. Does the *Partial* badge read as "OH hasn't finished" rather than "this failed"?
+6. **Project ▸ Beyond your library** — are those volumes ones you would actually fetch? Is "reached from 7 of yours" the number you want, or would you rather see match counts?
+7. Anything that got slower, in any window. The Related panel now does more work on every open.
 
-Not bugs: a class row with a number and no reading; iCloud Schema reading "Up to date" beside "Reserved".
+Not bugs: a class row with a number and no reading; Facets off in Meaning mode; iCloud Schema "Up to date" beside "Reserved"; vol. XVI's missing chapters.
 
-Include macOS version, clicks, expected vs. actual — and for anything archival, the document id. Thanks!
+Include macOS version, the window and the clicks, expected, actual — and for anything archival, the document id. Thanks!

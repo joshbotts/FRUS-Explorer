@@ -13476,3 +13476,44 @@ default" three lines from the paragraph explaining it is not, `SimilarityModel`'
 fails it with "readerAskedForSemantics ignored the reader's off switch".
 
 4,645 iOS tests / 603 suites + 37 UI tests; swift test 1,371 / 162; macOS clean.
+
+## Session 2026-09-10j — Build 47, and Phase F closed
+
+**D-B's condition was verified in both directions before the bump, and the second direction is the
+one that mattered.** `history.state.gov/historicaldocuments/frus1981-88v16` is published — but the
+question was never only "has OH released it", it was "is our copy current". OH's own `/d1` still
+returns *"This document will be published once its chapter has been cleared for publication"*, so
+the local corpus copy is CURRENT rather than stale: the app's **88 documents are exactly OH's four
+cleared chapters of eleven**, and the `partiallyPublished` badge is right. Had the site been ahead of
+our copy, the bump would have shipped a volume more incomplete than the one a reader could see on
+the web, with nothing on screen saying so.
+
+**Build 47 across all three targets** — `project.yml` (3) and `project.pbxproj` (9), edited directly,
+no `xcodegen`, per the standing rule; `README.md`'s "Current build:" line with it, and its "manifest
+covers 552 volumes" moved to 553 in the same pass. `MARKETING_VERSION` stays 0.2. The built Mac
+bundle reports `CFBundleVersion` **47**.
+
+**Build 47 costs testers nothing on first launch**, which is the opposite of build 46 and worth
+saying in the notes: `currentDateIndexVersion` is unmoved, so no re-index; the semantic provenance
+digest is unmoved and only v16's shard is new, so no mass re-fetch.
+
+**The notes' headline is D-D, not the volume**, and that is a deliberate inversion of what the
+release runbook expected. A partially published volume the reader may not even hold is a smaller
+change than the semantic axis arriving switched on in every Related list — so the notes open on the
+default change, disclose the ~31 MB-per-panel vector traffic it brings with it, and tell a metered
+reader exactly which switch turns it off. iOS 3,855 / Mac 3,983 characters (`wc -m`, cap 4,000).
+
+**Two errors caught before they shipped, both in the notes' own figures.** The first draft said "4 of
+its 12 chapters" — it is 4 of 11 (four `chapter`, seven `chapter-pending`). And the Mac file came in
+at 4,008 characters, eight over the cap, which `wc -m` caught and reading would not have.
+
+**A regex lesson worth recording, because it produced a wrong number twice in this session.**
+`<div[^>]*?type="([^"]+)"` matches `subtype="..."` as well, since `subtype=` ends with `type=`. It
+reported 485 `historical-document` divs in v16 — those are `subtype` values; the real `type` count is
+0, and the volume's 88 documents come from the artifact the parser wrote. Any count of TEI div types
+needs `\btype=`, and the artifact is better evidence than either.
+
+4,643 iOS tests / 603 suites + 37 UI tests; macOS clean, `CFBundleVersion` 47.
+
+**Owner steps, outside the repo:** archive and upload both targets, then tag `build-47` on the merge
+commit (the convention `build-45`/`build-46` restored).
