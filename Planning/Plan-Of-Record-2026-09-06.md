@@ -107,7 +107,7 @@ largest coherent body of work left that needs nobody's permission.
 | Row | What | Size |
 |---|---|---|
 | **S-1** | **V-3 §6.1 item 2** — the semantic axis is generator-only; it never re-scores the other generators' candidates. `RelatedDocumentsEngine.swift:144` | M |
-| **S-2** | **V-3 §6.2 / OS-27 §5.5** — Project Leads runs N per-seed engine ranks where one centroid retrieval would do. `ProjectLeadsService.swift:33-39` | M |
+| ~~**S-2**~~ ✓ | ~~**V-3 §6.2 / OS-27 §5.5** — Project Leads runs N per-seed engine ranks where one centroid retrieval would do~~ **SHIPPED 2026-09-10 as the re-scoped row, not the original one** | ✓ |
 | ~~**S-3**~~ ✓ | ~~**V-3 §6.2(a) / §7 item 2** — off-index volume-grain leads: *"N strong matches in a volume you don't have"*. A second Tier-1 Hamming scan in `SemanticSimilarityGenerator`~~ **SHIPPED 2026-09-06, PR #1235** | ✓ |
 | **S-4** | **Map §7.3** — two more bundled corpus lenses (`allTerms`, `descriptors`). **Read the screen's warning first**: `WordCloudKit/WordCloudLens.swift:84`'s `bundledCloudLenses` is the GENERATOR'S ARTIFACT CONTRACT with six consumers, not the backdrop's cycle | S |
 
@@ -176,12 +176,42 @@ from the designs; reading the code changed the answer for all but one.
   declaration and that assignment — so `RecomputeCost`'s "for the in-app report" describes a report
   that does not exist.
 
-  **Re-scoped, the row is still worth doing**, but as a different thing: *give Project Leads a
-  semantic lead source at all — one corpus scan instead of forty* — aimed at the 45,030 empty-list
-  documents, not at making the shipped default cheaper. The cheapest alternative if leads *quality*
-  is the goal is to raise or drop `perSeedRelatedLimit`'s truncation for the semantic contribution,
-  which is the only behavioural difference the centroid actually delivers and keeps per-seed
-  attribution honest by construction.
+  **Re-scoped, the row was still worth doing**, and SHIPPED 2026-09-10 as that different thing:
+  *give Project Leads a semantic lead source at all — one corpus scan instead of forty.*
+
+  **What was actually missing turned out to be sharper than "a semantic lead source".** The
+  per-seed ranks already carry the semantic axis whenever the reader raises its weight; what they
+  cannot carry is the axis's one unique capability, reaching past the reader's library, because
+  `ProjectLeadsService` passes `includeOffIndexLeads: false` — the S-3 scan is a full corpus pass
+  and that loop runs up to forty times. So a project, the scope where *what am I missing?* is most
+  worth asking, was the one scope that could not ask it.
+
+  **The 4× is measured, and two plausible fused loops are slower than not fusing at all.** On the
+  shipped 20 MB block, 314,571 rows at 512, 40 probes, a 10% library: **52.07 ms** for 40 per-seed
+  S-3 scan pairs against **13.09 ms** fused, with a stream-only floor of 0.68 ms — so the pass is
+  compute-bound, not bandwidth-bound, and amortising the row load over 40 probes buys almost the
+  whole difference. Writing the inner loop the way `SemanticRetrievalKernel` writes it (re-loading
+  the row words inside the probe loop) measures 40.0 ms, and keeping a per-probe distance array is
+  slower per probe than 40 separate scans. `SemanticMultiProbeScan` carries all of it.
+
+  **No centroid, by construction rather than by promise** — every probe keeps its own row, its own
+  cut and its own attribution, so there is nothing for the refutation above to apply to. **No
+  CloudKit field**: which volumes a device lacks is a fact about one disk, so the finding is handed
+  to the view and never written to the mirrored `ProjectLeadEntry`. **And it is invisible at the
+  shipped default**, gated on `weights[.semanticSimilarity] > 0` exactly as S-3 is.
+
+  Two decisions worth keeping. The register ranks by **how many of the reader's own documents reach
+  a volume**, not by how many documents it admits: that is the only quantity commensurable across
+  seeds, and ranking by documents would let one seed in a sparse neighbourhood outvote the other
+  thirty-nine and would systematically recommend the largest volumes. And the caption compares
+  against *each seed's own nearest neighbours already on the device* rather than against the leads
+  above it — the leads are a four-axis weighted aggregate and an admitted volume cleared one seed's
+  binary band on one axis, so "as close as the leads above" would have mixed two scales.
+
+  The alternative this row also named — raising or dropping `perSeedRelatedLimit`'s truncation for
+  the semantic contribution — is **untaken and now measured as beside the point**: the generator
+  fences its candidates to eligible volumes *inside* the scan, so the truncation closes none of the
+  off-library gap.
 - **S-4 — PARKED, WIP on `claude/s4-two-more-corpus-lenses`.** The loader half builds; there is no
   consumer for it, and the artifact contract warning on `bundledCloudLenses` is the reason to stop
   rather than push through.

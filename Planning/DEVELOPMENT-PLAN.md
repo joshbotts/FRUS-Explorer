@@ -13311,3 +13311,82 @@ because the units coincide there.
 Character from scalar.
 
 4,634 iOS tests / 602 suites (+9, +1 suite) + 37 UI tests; swift test 1,364 / 161; macOS clean.
+
+## Session 2026-09-10g — S-2: Project Leads gets a semantic lead source, in one pass instead of forty
+
+The plan of record's S-2 was refuted in its original framing (a project centroid) and re-scoped to
+*give Project Leads a semantic lead source at all — one corpus scan instead of forty.* This ships
+that, and the re-scoping was still one step short of the real gap.
+
+**What was actually missing.** The per-seed ranks already carry the semantic axis whenever the
+reader raises its weight. What they cannot carry is the axis's one unique capability — reaching past
+the reader's library — because `ProjectLeadsService` passes `includeOffIndexLeads: false`, since the
+S-3 scan is a full corpus pass and that loop runs up to forty times. So a project, the scope where
+*what am I missing?* is most worth asking, was the one scope that could not ask it.
+
+**The 4× is measured, and it decided the build.** Three designs were written independently and each
+adversarially reviewed; two of them disagreed about whether fusing the probes was worth anything at
+all, with one critic measuring only 1.56×. Rather than adjudicate, the benchmark was run against the
+shipped 20 MB block — 314,571 rows at 512, 40 probes, a 10% library:
+
+| | |
+|---|---|
+| 40 seeds × the S-3 scan pair | **52.07 ms** |
+| fused multi-probe, one pass | **13.09 ms** |
+| stream-only floor | 0.68 ms |
+
+**4.0×**, and the floor says why it is available: at 5% of the time the pass is compute-bound, not
+bandwidth-bound, so amortising the row load over 40 probes buys nearly the whole difference. Two
+plausible fused shapes are *slower* than not fusing — the shipped kernel's loop form (re-loading row
+words inside the probe loop) measures 40.0 ms, and keeping a per-probe distance array loses to 40
+separate scans because 40 × 629 KB of output destroys the locality the single-probe loop enjoys.
+
+**Parity is the safety argument, and it is pinned against the shipped artifacts.** The reference side
+of `SemanticMultiProbeScanTests` is not a re-implementation: it is `hammingCandidates` and
+`binarySimilarity` — the two calls `offIndexLeads` itself makes — composed in the same order, so a
+change to either kernel entry point moves both sides together. One probe admits exactly what the
+per-anchor path admits, per volume as well as in total; five probes admit exactly the union.
+
+**Two tails diverged from S-3 and were found by writing the parity test, not by reading.** With fewer
+held rows than the cut rank, S-3 takes its short list's LAST entry as the cut; a histogram that never
+reaches the rank would instead have admitted the whole corpus, for exactly the reader who holds
+least. With no held rows at all, S-3's guard fails and yields nothing; a cut of -1 is unreachable, so
+the probe admits nothing rather than everything.
+
+**No centroid, by construction.** Every probe keeps its own row, its own cut and its own attribution,
+so there is nothing for the refutation to apply to — and `Set(probeCuts).count > 1` is asserted,
+which is what would catch a regression to a single shared cutoff.
+
+**No CloudKit field.** Which volumes a device lacks is a fact about one disk; writing it to the
+mirrored `ProjectLeadEntry` would sync one machine's library gaps to every other, which is the
+reasoning `SettingsKeys.autoDownloadSemanticShards` already applies to its own device-local switch.
+The finding is returned to the view and recomputed, which costs one bundled scan.
+
+**Invisible at the shipped default**, gated on `weights[.semanticSimilarity] > 0` exactly as S-3 is,
+because `semanticSimilarity.defaultWeight` is 0.0. That is the consent contract, not an oversight,
+and it is what keeps `AppState`'s `.readerAskedForSemantics` exemption from the #926 switch honest.
+The scan reads only the bundled sign bits, so it queues no shard either.
+
+**Two decisions the reviews sharpened.** The register ranks by **how many of the reader's own
+documents reach a volume**, not by how many documents it admits: `reachingSeeds` is the only quantity
+commensurable across seeds — each contributes at most 1 — where the document count is bounded only by
+the volume's size, so ranking by documents would let one seed in a sparse neighbourhood outvote the
+other thirty-nine and would recommend the 1910s annuals to almost every project (the shipped index
+runs 2–1,915 documents per volume, median 480). And the caption compares against *each seed's own
+nearest neighbours already on this device* rather than against the leads above it: the leads are a
+four-axis weighted aggregate and an admitted volume cleared one seed's binary band on one axis, so
+"as close as the leads above" would have mixed two scales — the mistake `SemanticSimilarityGenerator`
+refuses by name elsewhere.
+
+**Cancellation was a real defect in the first draft.** `Task.detached` does not inherit cancellation,
+and this is superseded on every project switch, so a reader flipping between projects could stack
+passes nothing could stop. The worker is now `nonisolated async` — off the actor, inside the same
+Task — and the scan polls every 4,096 rows.
+
+**The alternative the row also named is untaken and now measured as beside the point**: raising or
+dropping `perSeedRelatedLimit`'s truncation closes none of the off-library gap, because the generator
+fences its candidates to eligible volumes *inside* the scan.
+
+4,642 iOS tests / 603 suites (+8, +1 suite) + 37 UI tests; swift test 1,371 / 162 (+7, +1 suite);
+macOS clean. Two new source files, so `xcodegen generate` + the scheme restore; build number
+untouched at 46.
