@@ -59,11 +59,15 @@ struct SimilarityAxisTests {
                                     .semanticSimilarity, .lexicalSimilarity])
     }
 
-    /// V-3 ships the semantic axis opt-in, and the reason is not caution about the ranker: the
-    /// blind panel that would have graded its early-era quality was retired as a gate, so this
-    /// weight is what stands between an unmeasured axis and every user's Related list.
-    @Test("semantic similarity defaults to weight 0 (experimental, opt-in)")
-    func semanticDefaultOff() {
+    /// V-3 shipped this axis opt-in at weight 0, and this test's own doc used to say that weight
+    /// "is what stands between an unmeasured axis and every user's Related list". **The owner
+    /// removed it on 2026-09-10 (D-D)**, on a verdict from use rather than a measurement: the blind
+    /// panel that would have graded early-era quality is still retired as a gate, and the automatic
+    /// gate still reaches only 572 pre-1900 queries. So the axis is now in every reader's list and
+    /// "experimental" in its display name is the only thing left saying so — which is why
+    /// `SemanticAxisTests` asserts that word beside the number.
+    @Test("semantic similarity defaults to weight 0.5 (experimental, but on)")
+    func semanticDefaultIsNowOn() {
         #expect(SimilarityAxis.semanticSimilarity.defaultWeight == 0.5)
         #expect(SimilarityAxis.semanticSimilarity.isGenerator)
     }

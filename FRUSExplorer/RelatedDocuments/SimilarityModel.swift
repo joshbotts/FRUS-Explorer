@@ -519,7 +519,8 @@ struct RelatedDocumentsResult: Sendable {
     /// never be ranked beside the others even if a surface wanted to.
     ///
     /// Populated only when the semantic axis carries weight (it ships at 0, so this is a
-    /// deliberate opt-in), and only for callers that asked for it.
+    /// deliberate opt-OUT since the default went to 0.5 on 2026-09-10), and only for callers that
+    /// asked for it.
     let offIndexLeads: SemanticOffIndexLeads
 
     /// The empty result — no live index, or no candidates.

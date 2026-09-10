@@ -242,6 +242,41 @@ struct SemanticStorageReportTests {
         #expect(AppState.automaticSemanticShardDownloads)
     }
 
+    @Test("The off switch governs BOTH fetch reasons since 2026-09-10")
+    func theSwitchGovernsBothReasons() {
+        // It governed only `.volumeDownloaded` until then. `.readerAskedForSemantics` was exempt on
+        // the argument that reaching it required a deliberate raise of an experimental axis — which
+        // D-D removed by raising the default to 0.5 — and was kept for one day on a replacement
+        // argument that measurement refuted: the lazy path does not ask for one volume, it asks for
+        // every candidate volume in the rerank pool whose shard is absent, a median of 104 and up to
+        // 227, ~31 MB per Related-panel open, on the one path the switch could not reach.
+        for reason in [AppState.SemanticShardFetchReason.volumeDownloaded, .readerAskedForSemantics] {
+            #expect(AppState.startsAutomaticShardFetch(reason: reason, automaticDownloads: true))
+            #expect(!AppState.startsAutomaticShardFetch(reason: reason, automaticDownloads: false),
+                    "\(reason) ignored the reader's off switch")
+        }
+    }
+
+    @Test("Pressing the button is still the consent the switch withholds")
+    func theManualPathIsNotGoverned() {
+        // `downloadAllSemanticShards` deliberately does not consult the rule at all — #926's own
+        // design treats the press as consent. This pins that the rule is not wired into it, so a
+        // future tightening of the switch cannot silently disable the remedy the switch creates the
+        // need for.
+        let source = try? String(
+            contentsOf: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent().deletingLastPathComponent()
+                .appending(path: "FRUSExplorer/App/AppState.swift"),
+            encoding: .utf8)
+        let body = source?.components(separatedBy: "func downloadAllSemanticShards").last ?? ""
+        let untilNextFunc = body.components(separatedBy: "\n    func ").first ?? ""
+        #expect(!untilNextFunc.contains("startsAutomaticShardFetch"), """
+            `downloadAllSemanticShards` must stay ungoverned: with the switch off it is the ONLY \
+            way to get shards, and the semantic axis needs the anchor's own shard to score at all.
+            """)
+        #expect(untilNextFunc.contains("clearFailures"), "the parse found the wrong function body")
+    }
+
     @Test("bulk progress is a count, and reports its own fraction safely")
     func downloadProgressIsCounted() {
         var p = AppState.SemanticShardDownloadProgress(completed: 0, total: 340, failed: 0)

@@ -727,31 +727,65 @@ final class AppState {
     enum SemanticShardFetchReason {
         /// A volume finished downloading and its shard is riding along. **Honours the switch** —
         /// these are the bytes #926 is about: 553 requests fired by a corpus download for an axis
-        /// that is off by default and may never be read.
+        /// the reader may never open. (It said "off by default" until 2026-09-10; the default is
+        /// now 0.5, which makes the ride-along MORE likely to be read, not less — the switch is
+        /// about the reader's bandwidth, not about the axis's odds.)
         case volumeDownloaded
         /// A semantic surface is being used right now and wants this shard. **Ignores the switch.**
         ///
-        /// **The argument for this exemption WEAKENED on 2026-09-10 and is recorded here rather
-        /// than quietly kept.** It read: reaching here required a finer and later act of consent
-        /// than the toggle, because `.semanticSimilarity` had `defaultWeight` 0 and
-        /// `skipsGenerationAtZeroWeight`, so the generator did not run until the reader
-        /// deliberately raised an experimental axis off zero. The owner raised that default to 0.5,
-        /// so for a reader who has never touched the sliders there is now **no** later act of
-        /// consent — the axis is simply on, and this path fires when they open a document.
+        /// **This case NO LONGER ignores the switch, and the sentence it used to carry was wrong.**
         ///
-        /// It is kept, and the reason it is still defensible is a matter of what it costs. The
-        /// exemption governs only the LAZY path, which asks for the shard of a volume the reader
-        /// has already downloaded — ~294 KB against the ~6 MB they already spent, one volume at a
-        /// time as they read, never the 162 MB corpus. The ride-along, which is what "Download With
-        /// Volumes" says on screen and what #926 was actually about, still honours the switch.
-        /// And the counter-argument that put the exemption here has not changed: gate this too and
-        /// a reader who deliberately raises the axis gets one that scores nothing, forever, with
-        /// the remedy buried in Settings.
+        /// The original exemption was argued from consent: `.semanticSimilarity` had `defaultWeight`
+        /// 0 and `skipsGenerationAtZeroWeight`, so reaching here required the reader to have
+        /// deliberately raised an experimental axis off zero — a finer and later act of consent than
+        /// the toggle, which a coarse earlier setting should not overrule. Raising the default to
+        /// 0.5 (2026-09-10, D-D) removed that: for a reader who never touched the sliders there is
+        /// no later act of consent at all.
         ///
-        /// **This is the owner's policy to settle, not the code's.** If the answer is that a reader
-        /// who turned the switch off should get no shard fetch at all, the change is one line here
-        /// — and the "scores nothing forever" case comes back with it.
+        /// It was kept for one day on a replacement argument — that the lazy path costs "~294 KB
+        /// against the ~6 MB already spent, one volume at a time" — **and that argument was false.**
+        /// `SemanticSimilarityGenerator` collects `missingVolumes` across the WHOLE rerank pool and
+        /// then loops, so one Related-panel open queues a shard for every candidate volume whose
+        /// shard is absent, in one burst. Measured over 60 anchors against the shipped 20 MB block:
+        /// the top-800 candidates span a **median of 104 distinct volumes, mean 107, max 227**, so a
+        /// full library is **~31 MB per panel open** and up to ~67 MB — on the one path the reader's
+        /// own "Download With Volumes" switch did not reach.
+        ///
+        /// So the switch now governs both reasons. **The cost of that is real and is the case the
+        /// exemption originally existed to prevent**: a reader who turns automatic downloads off and
+        /// then raises the semantic axis gets an axis that scores nothing, because the generator
+        /// needs the anchor's shard to build its query vector at all. The remedy is not silent —
+        /// Settings' semantic storage section counts the missing shards, names this switch as the
+        /// cause while it is off, and offers **Download Missing Vectors**, which deliberately
+        /// ignores the switch because pressing a button is the consent it withholds.
+        ///
+        /// The enum case is kept rather than collapsed into one reason: the two paths still mean
+        /// different things, the call sites still state which they are, and a future policy that
+        /// separates them again should not have to reintroduce the distinction.
         case readerAskedForSemantics
+    }
+
+    /// Whether an automatic shard fetch starts, given why it was asked for and the reader's switch.
+    ///
+    /// Extracted for the reason `RelatedDocumentsEngine.runsGenerator` and
+    /// `SemanticProjectReach.runsScan` were: a policy a reader's bandwidth depends on should be
+    /// driven by a test, not asserted by a grep over an inline condition. **Both reasons are
+    /// governed since 2026-09-10** — the argument, and the measurement that ended the exemption, are
+    /// on ``SemanticShardFetchReason/readerAskedForSemantics``.
+    ///
+    /// The `reason` parameter is deliberately still here although the rule no longer branches on it.
+    /// It is what makes a future policy that separates the two paths again a change to THIS
+    /// function, with these tests in front of it, rather than a re-litigation at the call site.
+    ///
+    /// - Parameters:
+    ///   - reason: Why the shard was asked for.
+    ///   - automaticDownloads: The reader's `Download With Volumes` setting.
+    /// - Returns: `true` when the fetch should start.
+    nonisolated static func startsAutomaticShardFetch(
+        reason: SemanticShardFetchReason, automaticDownloads: Bool
+    ) -> Bool {
+        _ = reason
+        return automaticDownloads
     }
 
     func fetchSemanticShardIfNeeded(for volumeID: String,
@@ -762,10 +796,15 @@ final class AppState {
         // straight from `UserDefaults` with the default spelled here, so no view owns it and a
         // device that has never seen the toggle behaves as it always did.
         //
-        // It applies to the ride-along only. That is what the control says on screen — "Download
-        // With Volumes" — and a switch that quietly governed more than its label would be the
-        // defect this review keeps removing, committed in the copy instead of the code.
-        if reason == .volumeDownloaded, !Self.automaticSemanticShardDownloads { return }
+        // **It applies to BOTH reasons since 2026-09-10**, where it governed the ride-along alone.
+        // The reason it once governed less than its label is recorded on `readerAskedForSemantics`,
+        // along with the measurement that retired it: that path does not ask for one volume, it asks
+        // for every candidate volume in the rerank pool whose shard is absent — a median of 104 and
+        // up to 227 for a full library, ~31 MB in a burst — so leaving it exempt meant a reader who
+        // switched automatic downloads OFF got 31 MB per Related-panel open. A switch that governs
+        // less than its label is a defect; one that governs more than the reader expects is worse.
+        guard Self.startsAutomaticShardFetch(
+            reason: reason, automaticDownloads: Self.automaticSemanticShardDownloads) else { return }
         Task.detached(priority: .utility) {
             guard await store.shard(for: volumeID) == nil else { return }
             guard await fetcher.hasShard(for: volumeID) else { return }
