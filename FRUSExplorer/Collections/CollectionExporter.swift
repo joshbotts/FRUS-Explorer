@@ -337,9 +337,22 @@ struct ExportHighlight: Sendable {
 /// count (list bullets, table-cell join strings, footnote labels, figure captions,
 /// paragraph spacing, etc.) must NOT be passed to `partition(_:)`, or the internal
 /// position counter will drift out of alignment with the stored offsets. Each call
-/// advances that counter by `text.count` — Swift's Character (grapheme-cluster) count, while
-/// `DocumentHighlight.startOffset`/`endOffset` are UTF-16 code units. The two agree on BMP text
-/// carrying no combining marks, which is what FRUS body text is.
+/// advances that counter by `text.utf16.count`.
+///
+/// ## The unit is UTF-16
+/// `DocumentHighlight.startOffset`/`endOffset` are UTF-16 code-unit positions — the JS
+/// `charToNode` map holds one entry per code unit — so both the counter and the slicing
+/// index in UTF-16. This counted in Swift `Character` (grapheme clusters) on both, which
+/// made `hl.startOffset - chunkStart` a UTF-16 number minus a grapheme-space one; a single
+/// astral character or combining sequence earlier in the document shifted every later
+/// PDF/DOCX shading by one, and kept shifting.
+///
+/// **Measured 2026-09-10: no shippable volume can trigger it.** All 694 corpus files carry
+/// zero non-BMP characters, zero combining marks and zero CR, and the only numeric character
+/// references are `&#x93;`/`&#x94;`, both BMP. So the correction changes no export today —
+/// which is also why nothing caught it, since this type had no tests at all and the
+/// serializer's suite minted its offsets with `String.distance`, in the walker's own
+/// wrong unit.
 ///
 /// Overlapping highlights are resolved by preferring the one that opens first,
 /// mirroring `FRUSRenderNodeHTMLSerializer.injectHighlights`.
@@ -367,35 +380,62 @@ final class HighlightPaintTracker {
     ///   empty, returns the whole string as a single unhighlighted span.
     func partition(_ text: String) -> [(range: Range<String.Index>, color: DocumentHighlight.Color?)] {
         let chunkStart = flatPos
-        let chunkLen = text.count
+        let chunkLen = text.utf16.count
         flatPos += chunkLen
 
         guard isActive, chunkLen > 0 else {
             return [(text.startIndex..<text.endIndex, nil)]
         }
 
+        // Every Character boundary of `text`, as a (UTF-16 offset, index) pair. Built in
+        // one pass so a cut costs a lookup rather than a re-walk, and so a cut can be
+        // SNAPPED rather than dropped: the returned spans must concatenate to cover all
+        // of `text`, so a cut that is not on a boundary has to move to one, never vanish.
+        var boundaryOffsets: [Int] = []
+        var boundaryIndices: [String.Index] = []
+        var offset = 0
+        var index = text.startIndex
+        while true {
+            boundaryOffsets.append(offset)
+            boundaryIndices.append(index)
+            if index == text.endIndex { break }
+            offset += text[index].utf16.count
+            index = text.index(after: index)
+        }
+
+        /// The boundary at or immediately after `utf16Offset`. A stored offset can only
+        /// fall inside a grapheme cluster if the web view produced a mid-cluster
+        /// selection; shading half a cluster is not representable, so the whole cluster
+        /// goes to the span that follows.
+        func boundarySlot(_ utf16Offset: Int) -> Int {
+            var lo = 0, hi = boundaryOffsets.count - 1
+            while lo < hi {
+                let mid = (lo + hi) / 2
+                if boundaryOffsets[mid] < utf16Offset { lo = mid + 1 } else { hi = mid }
+            }
+            return lo
+        }
+
         // Collect every highlight start/end boundary that falls strictly inside
         // this chunk — those are the only points where the active colour can change.
-        var boundaries = Set<Int>([0, chunkLen])
+        var slots = Set<Int>([0, boundaryOffsets.count - 1])
         for hl in sorted {
             let s = hl.startOffset - chunkStart
             let e = hl.endOffset - chunkStart
-            if s > 0, s < chunkLen { boundaries.insert(s) }
-            if e > 0, e < chunkLen { boundaries.insert(e) }
+            if s > 0, s < chunkLen { slots.insert(boundarySlot(s)) }
+            if e > 0, e < chunkLen { slots.insert(boundarySlot(e)) }
         }
-        let cuts = boundaries.sorted()
+        let cuts = slots.sorted()
 
         var spans: [(Range<String.Index>, DocumentHighlight.Color?)] = []
         spans.reserveCapacity(cuts.count - 1)
         for i in 0..<(cuts.count - 1) {
-            let localStart = cuts[i], localEnd = cuts[i + 1]
-            guard localStart < localEnd,
-                  let startIdx = text.index(text.startIndex, offsetBy: localStart, limitedBy: text.endIndex),
-                  let endIdx = text.index(text.startIndex, offsetBy: localEnd, limitedBy: text.endIndex)
-            else { continue }
-            // Probe the midpoint-equivalent (the span start) to find the
-            // overlapping highlight, preferring the earliest-opening one.
-            let probe = chunkStart + localStart
+            let startSlot = cuts[i], endSlot = cuts[i + 1]
+            let startIdx = boundaryIndices[startSlot], endIdx = boundaryIndices[endSlot]
+            guard startIdx < endIdx else { continue }
+            // Probe the span start to find the overlapping highlight, preferring the
+            // earliest-opening one. The probe is a UTF-16 position, matching the offsets.
+            let probe = chunkStart + boundaryOffsets[startSlot]
             let color = sorted.first { $0.startOffset <= probe && probe < $0.endOffset }?.color
             spans.append((startIdx..<endIdx, color))
         }

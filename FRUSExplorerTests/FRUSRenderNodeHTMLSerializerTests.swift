@@ -756,15 +756,29 @@ struct HighlightInjectionTests {
     /// Serialises `body` with a single yellow highlight over the flat-text range of
     /// `substring`. Offsets come from `flatText(of:)`, the exact space stored
     /// `DocumentHighlight` offsets live in.
+    ///
+    /// **The offsets are minted in UTF-16, and that is the point.** This used
+    /// `String.distance`, which counts Swift Characters — the same wrong unit
+    /// `injectHighlights` was walking in, so the two agreed and every fixture passed
+    /// however wrong the walker was. Every existing ASCII fixture still passes with
+    /// `NSString` arithmetic, because the units coincide there; a fixture carrying an
+    /// astral character or a combining mark now fails against a Character-counting
+    /// walker, which is what the two tests at the end of this suite exist to prove.
+    /// Do not "simplify" this back to `distance(from:to:)`.
+    private func utf16Range(of substring: String, in flat: String) -> (Int, Int)? {
+        let ns = flat as NSString
+        let r = ns.range(of: substring)
+        guard r.location != NSNotFound else { return nil }
+        return (r.location, r.location + r.length)
+    }
+
     private func highlighted(_ body: [FRUSRenderNode], mark substring: String,
                              color: DocumentHighlight.Color = .yellow) -> String {
         let flat = flatText(of: body)
-        guard let r = flat.range(of: substring) else {
+        guard let (start, end) = utf16Range(of: substring, in: flat) else {
             Issue.record("substring \(substring) not present in flat text \(flat)")
             return ""
         }
-        let start = flat.distance(from: flat.startIndex, to: r.lowerBound)
-        let end   = flat.distance(from: flat.startIndex, to: r.upperBound)
         return s.serialize(model(body), includeFootnotes: true,
                            highlights: [ExportHighlight(startOffset: start, endOffset: end, color: color)])
     }
@@ -932,9 +946,9 @@ struct HighlightInjectionTests {
             children: [.paragraph([.plainText("Aside body text.")])]
         )
         let flat = flatText(of: body)   // "AlphaBravo"
-        let r = flat.range(of: "Bravo")!
-        let start = flat.distance(from: flat.startIndex, to: r.lowerBound)
-        let end   = flat.distance(from: flat.startIndex, to: r.upperBound)
+        guard let (start, end) = utf16Range(of: "Bravo", in: flat) else {
+            Issue.record("fixture substring missing"); return
+        }
         let out = s.serialize(
             FRUSDocumentRenderModel(documentId: "doc-1", bodyNodes: body, footnotes: [footnote]),
             includeFootnotes: true,
@@ -943,6 +957,49 @@ struct HighlightInjectionTests {
         // The aside's own text is never wrapped in a mark.
         #expect(out.contains("Aside body text."))
         #expect(!out.contains("<mark class=\"hl-green\">Aside"))
+    }
+
+    // MARK: - The offset unit is UTF-16, not Swift's Character
+
+    // Stored offsets are UTF-16 code-unit positions: the JS `charToNode` map holds one
+    // entry per code unit. `injectHighlights` walks by Swift Character, which is a
+    // grapheme cluster, so it must advance `flatPos` by `ch.utf16.count` — it advanced by
+    // one. Every fixture above is ASCII, where the two units coincide, and the helper
+    // used to mint its offsets with `String.distance`, in the walker's own wrong unit;
+    // between them nothing in this suite could see the difference. These three can.
+    //
+    // Counts verified: "𝐀 target here" is 13 Characters / 13 scalars / **14 UTF-16**, and
+    // "target" sits at UTF-16 (3,9) against Character (2,8). "Café note" (e + U+0301) is
+    // 9 Characters / 10 scalars / **10 UTF-16**, with "note" at (6,10) against (5,9). The
+    // pair is deliberate: the astral case also catches a *scalar*-counting walker (the
+    // unit the older docs wrongly named), because scalars and Characters agree there,
+    // while the combining case separates Character from scalar.
+
+    @Test("An astral character before a highlight does not shift it")
+    func astralCharacterDoesNotShiftTheMark() {
+        let out = highlighted([.paragraph([.plainText("\u{1D400} target here")])], mark: "target")
+        #expect(out.contains("<mark class=\"hl-yellow\">target</mark>"))
+        // Counting Characters put the mark one position early, over "arget ".
+        #expect(!out.contains("hl-yellow\">arget"))
+    }
+
+    @Test("A combining sequence counts as its two UTF-16 units, and the mark stays in the paragraph")
+    func combiningSequenceDoesNotShiftTheMark() {
+        let out = highlighted([.paragraph([.plainText("Cafe\u{0301} note")])], mark: "note")
+        #expect(out.contains("<mark class=\"hl-yellow\">note</mark>"))
+        // The failure was not a shifted mark but an unclosed one: with the counter
+        // permanently short, `openEnd == flatPos` never held and the `</mark>` was
+        // emitted at end of document, past the paragraph and the document div.
+        #expect(!out.contains("</p></div></mark>"))
+    }
+
+    @Test("An astral character INSIDE the highlighted span does not lengthen it")
+    func astralCharacterInsideTheSpan() {
+        let out = highlighted([.paragraph([.plainText("pre \u{1D400}mark post")])],
+                              mark: "\u{1D400}mark")
+        #expect(out.contains("<mark class=\"hl-yellow\">\u{1D400}mark</mark>"))
+        // A six-Character span read against a six-UTF-16-unit range swallowed the space.
+        #expect(!out.contains("\u{1D400}mark </mark>"))
     }
 }
 

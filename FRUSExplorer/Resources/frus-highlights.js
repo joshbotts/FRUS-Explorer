@@ -31,7 +31,7 @@
  * Builds a DOM Range array for the character range [start, end) using the
  * charToNode map produced by frus-offset-engine.js.
  *
- * @param {number} start - Inclusive start offset (Unicode scalar position).
+ * @param {number} start - Inclusive start offset (UTF-16 code-unit position).
  * @param {number} end   - Exclusive end offset.
  * @returns {Range[]} Array with 0 or 1 Range objects.
  */
