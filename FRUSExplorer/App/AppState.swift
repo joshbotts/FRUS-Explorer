@@ -600,7 +600,9 @@ final class AppState {
             // and `volumeIDsOnDisk()` does not filter those out. Before this, neither "Download
             // Missing Vectors" nor the whole-corpus button could replace one, while `diskUsage()`
             // went on counting its bytes as present; it was repaired only by accident, when a
-            // reader happened onto a surface for an axis that ships at weight zero.
+            // reader happened onto a surface for an axis that shipped at weight zero (0.5 since
+            // 2026-09-10; the sentence is kept in the past tense because it describes why the
+            // guard was written, and the guard is still right for a reader who zeroes the axis).
             let refused = await store.refusal(for: entry.volumeId) != nil
             guard refused || !onDisk.contains(entry.volumeId) else { continue }
             guard await fetcher.hasShard(for: entry.volumeId) else { continue }
@@ -729,13 +731,26 @@ final class AppState {
         case volumeDownloaded
         /// A semantic surface is being used right now and wants this shard. **Ignores the switch.**
         ///
-        /// Reaching here already required a finer and later act of consent than the toggle:
-        /// `.semanticSimilarity` has `defaultWeight` 0 and is the only axis with
-        /// `skipsGenerationAtZeroWeight`, so `RelatedDocumentsEngine` does not even run the
-        /// generator until the reader has deliberately raised an experimental axis off zero.
-        /// Gating this as well would let a coarse, earlier setting overrule a specific, later
-        /// request — and the result would be an axis the reader switched on that scores nothing,
-        /// forever, with the remedy buried in Settings.
+        /// **The argument for this exemption WEAKENED on 2026-09-10 and is recorded here rather
+        /// than quietly kept.** It read: reaching here required a finer and later act of consent
+        /// than the toggle, because `.semanticSimilarity` had `defaultWeight` 0 and
+        /// `skipsGenerationAtZeroWeight`, so the generator did not run until the reader
+        /// deliberately raised an experimental axis off zero. The owner raised that default to 0.5,
+        /// so for a reader who has never touched the sliders there is now **no** later act of
+        /// consent — the axis is simply on, and this path fires when they open a document.
+        ///
+        /// It is kept, and the reason it is still defensible is a matter of what it costs. The
+        /// exemption governs only the LAZY path, which asks for the shard of a volume the reader
+        /// has already downloaded — ~294 KB against the ~6 MB they already spent, one volume at a
+        /// time as they read, never the 162 MB corpus. The ride-along, which is what "Download With
+        /// Volumes" says on screen and what #926 was actually about, still honours the switch.
+        /// And the counter-argument that put the exemption here has not changed: gate this too and
+        /// a reader who deliberately raises the axis gets one that scores nothing, forever, with
+        /// the remedy buried in Settings.
+        ///
+        /// **This is the owner's policy to settle, not the code's.** If the answer is that a reader
+        /// who turned the switch off should get no shard fetch at all, the change is one line here
+        /// — and the "scores nothing forever" case comes back with it.
         case readerAskedForSemantics
     }
 

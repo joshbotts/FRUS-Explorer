@@ -148,6 +148,15 @@ struct ProjectHomeView: View {
     @State private var recomputeTask: Task<Void, Never>?
     @State private var isRecomputing = false
 
+    /// What the project reaches beyond the reader's library (S-2), from the last recompute.
+    ///
+    /// **View state, never persisted.** Which volumes a reader lacks is a fact about one device's
+    /// disk; writing it to the CloudKit-mirrored `ProjectLeadEntry` would sync one machine's
+    /// library gaps to every other — the reasoning `SettingsKeys.autoDownloadSemanticShards`
+    /// already applies to its own device-local switch (#926). Recomputing it costs one bundled
+    /// scan, which is cheaper than getting it wrong.
+    @State private var reach = ProjectReach.none
+
     /// Live draft of this project's per-project lead axis weights (#377 Phase 3b), seeded from the
     /// effective weights (project override → global preference → default) on appearance. Editing a
     /// slider updates this immediately for live feedback; the value is persisted to
@@ -188,6 +197,7 @@ struct ProjectHomeView: View {
                     focusSubjectsSection(project)
                     focusTagsSection(project)
                     leadsSection
+                    beyondLibrarySection
                     recentSection
                     quickActions
                 }
@@ -665,6 +675,56 @@ struct ProjectHomeView: View {
     /// no `document_cache` row, and its row simply renders as it did before.
     @State private var leadSnippets: [String: String] = [:]
 
+    // MARK: - Beyond your library (S-2)
+
+    /// Volumes the project reaches into but the reader does not hold.
+    ///
+    /// The twin of the Related panel's S-3 section, at project grain, and it reads as the same
+    /// feature on purpose — same header, same glyph, same comparative claim.
+    ///
+    /// **The caption compares like with like, which is harder than it looks.** S-3 can say "as
+    /// close to this one as the matches ranked above" because both sides of that sentence are the
+    /// same anchor's binary neighbour list. Here they are not: the leads above are an aggregate of
+    /// four weighted axes over up to forty seeds, and an admitted volume cleared ONE seed's
+    /// binary-Hamming band on ONE axis. Saying "as close as the leads above" would mix two scales
+    /// that mean different things — the mistake `SemanticSimilarityGenerator` refuses by name when
+    /// it declines to rank binary and reranked scores in one list. So the comparison is drawn
+    /// against what it really is: each of the reader's own documents, and the neighbours of that
+    /// document already on this device.
+    @ViewBuilder
+    private var beyondLibrarySection: some View {
+        if !reach.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Label(String(localized: "project.reach.header",
+                             defaultValue: "Beyond your library"),
+                      systemImage: SemanticGlyph.feature)
+                    .font(.headline)
+                Text(reachCaption)
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(reach.volumes, id: \.volumeID) { lead in
+                    ProjectReachVolumeRow(
+                        lead: lead,
+                        title: appState.manifestStore.entry(forVolumeId: lead.volumeID)?.title,
+                        isDownloadable: appState.manifestStore
+                            .entry(forVolumeId: lead.volumeID)?.downloadUrl != nil)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The section's opening sentence.
+    private var reachCaption: String {
+        String(format: String(
+            localized: "project.reach.caption %lld %lld",
+            defaultValue: """
+                %lld documents in volumes you have not downloaded read as close to one of this \
+                project's %lld documents as that document's nearest neighbours already on this device.
+                """),
+            Int64(reach.documentCount), Int64(reach.seedsProbed))
+    }
+
     @ViewBuilder
     private var leadsSection: some View {
         let leads = projectLeads
@@ -900,10 +960,12 @@ struct ProjectHomeView: View {
             if !immediate { try? await Task.sleep(for: .milliseconds(800)) }
             guard !Task.isCancelled else { return }
             isRecomputing = true
-            await ProjectLeadsService.recompute(forProject: projectId, appState: appState, in: modelContext)
+            let found = await ProjectLeadsService.recompute(
+                forProject: projectId, appState: appState, in: modelContext)
             // A superseding schedule (or view teardown) cancelled us while `recompute` ran — leave
             // the flag for the live task to own, so its spinner state isn't stomped by our exit.
             guard !Task.isCancelled else { return }
+            reach = found
             isRecomputing = false
         }
     }
@@ -1431,5 +1493,68 @@ struct ProjectFocusTagsEditor: View {
             ids.append(tagId)
         }
         project.defaultUserTagIds = ids
+    }
+}
+
+// MARK: - ProjectReachVolumeRow
+
+/// One volume the project reaches into but does not hold (S-2).
+///
+/// A sibling of `RelatedDocumentsView`'s `OffIndexVolumeRow` rather than a reuse of it, for one
+/// reason: **it carries the attribution line, and that line is the whole point of the section.**
+/// The S-3 row answers "how many documents", which is all a single anchor can say; a project can
+/// say how many of the reader's OWN documents point at the volume, and that is the number the
+/// ranking turns on. Sharing the row would have meant either widening its parameter list for a
+/// caller that does not exist on the other side, or ranking by the number the reader is not shown.
+private struct ProjectReachVolumeRow: View {
+
+    /// The volume, its document count, and how many seeds reached it.
+    let lead: ProjectReach.VolumeLead
+    /// The manifest title, or `nil` for a volume the manifest does not carry.
+    let title: String?
+    /// Whether the manifest carries a download URL (side-loaded volumes do not).
+    let isDownloadable: Bool
+
+    @Environment(AppState.self) private var appState
+    /// Local queued-state so the button reads "queued" after the tap — `OffIndexVolumeRow`'s
+    /// pattern, so the two surfaces behave identically.
+    @State private var downloadQueued = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title ?? lead.volumeID)
+                .font(.callout)
+                .multilineTextAlignment(.leading)
+            HStack(spacing: 12) {
+                Text(String(format: String(
+                    localized: "project.reach.volumeDetail %lld %lld",
+                    defaultValue: "%lld documents · reached from %lld of yours"),
+                    Int64(lead.documentCount), Int64(lead.reachingSeeds)))
+                    .font(.caption).foregroundStyle(.secondary)
+                if downloadQueued {
+                    Text(String(localized: "project.reach.downloadQueued",
+                                defaultValue: "Download queued"))
+                        .font(.caption).foregroundStyle(.secondary)
+                } else if isDownloadable {
+                    Button {
+                        queueDownload()
+                    } label: {
+                        Text(String(localized: "project.reach.download",
+                                    defaultValue: "Download Volume"))
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!appState.isOnline)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Queues the volume, mirroring `OffIndexVolumeRow.queueDownload`.
+    private func queueDownload() {
+        guard let entry = appState.manifestStore.entry(forVolumeId: lead.volumeID) else { return }
+        appState.downloadManager?.enqueueDownload(entry)
+        downloadQueued = true
     }
 }

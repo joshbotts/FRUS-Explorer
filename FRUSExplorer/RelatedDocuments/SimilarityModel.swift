@@ -54,11 +54,21 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// `SemanticSimilarityGenerator`).** This comment previously said 46,234, a figure inherited
     /// from the lexical-neighbours assessment without the rule that produced it.
     ///
-    /// **Ships experimental and opt-in at weight 0.** Owner decision 2026-08-12: the blind panel that
-    /// would have graded pre-1900 quality was retired as a gate in favour of tester feedback, so
-    /// early-era quality here is a declared unknown rather than a measured pass. The corpus-scale
-    /// automatic gate reaches only 572 pre-1900 queries, because the citation idiom it needs
-    /// postdates 1945.
+    /// **Ships at weight 0.5 — raised from 0 by owner decision 2026-09-10**, following the
+    /// `sharedSubjects` precedent, and following the plan of record's D-A: the clusters and Meaning
+    /// search came back valuable from use, so the axis stops being scoped as though it were on
+    /// probation. **"Experimental" stays in its name** — that is a statement about maturity and
+    /// about what a similarity ranking can promise, not a hedge about whether it is worth having.
+    ///
+    /// 0.5 is deliberately below `archivalProvenance` and `crossReference` (1.0) and below
+    /// `sharedPersons` (0.7), for the same reason `sharedSubjects` sits there: the axis shapes
+    /// results without dominating them, and the reader can still move the slider either way.
+    ///
+    /// What has NOT changed is the evidence: the blind panel that would have graded pre-1900
+    /// quality was retired as a gate in favour of tester feedback (owner decision 2026-08-12), so
+    /// early-era quality here is a declared unknown rather than a measured pass, and the
+    /// corpus-scale automatic gate reaches only 572 pre-1900 queries because the citation idiom it
+    /// needs postdates 1945. The default moved on a verdict from use, which is what D-A says it is.
     case semanticSimilarity
     /// Nearness of wording, computed live from the local FTS5 index (W-17: the approved
     /// query-time variant of the withdrawn lexical-neighbors artifact). The anchor's most
@@ -161,14 +171,17 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// The engine deliberately runs generators regardless of weight, because a candidate one axis
     /// produced can still be ranked by another — narrowing that would change results for every
     /// existing user. The semantic axis is the exception, and for a reason no other axis has: its
-    /// generation can trigger a **network fetch** of the Tier-2 shards it scores with. Doing that for
-    /// a user who has left the axis at its default 0 would spend their bandwidth on a feature they
-    /// have not opted into.
+    /// generation can trigger a **network fetch** of the Tier-2 shards it scores with, so a reader
+    /// who takes the slider back to 0 must get no fetch at all — that is what the rule is for now
+    /// that the default is 0.5 (2026-09-10). It was written when the default was 0 and the sentence
+    /// was "spending the bandwidth of a user who never opted in"; the mechanism is unchanged and
+    /// the population it protects is now the reader who opted OUT.
     /// The lexical axis also skips at weight 0, for a different reason than the semantic
     /// one's network fetch: running its FTS5 query for a user who left the default 0 would
     /// add candidate rows other axes then rank — CHANGING the default results of every
-    /// existing user for a feature nobody opted into. Byte-identical defaults are the
-    /// experimental-axis contract.
+    /// existing user for a feature nobody opted into. **That contract still binds `lexical`,
+    /// whose default is still 0**; the semantic axis is out from under it by the owner decision
+    /// recorded on the case above, which is precisely a decision to change default results.
     var skipsGenerationAtZeroWeight: Bool {
         switch self {
         case .semanticSimilarity, .lexicalSimilarity: return true
@@ -180,6 +193,8 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
     /// The out-of-the-box weight for this axis. Generators and shared people start meaningful;
     /// date and subseries are mild refinements; **shared subjects defaults to 0.5** — raised from
     /// 0 by owner decision 2026-08-21, now that the axis has data and a scorer that discriminates.
+    /// **Semantic similarity was raised the same way on 2026-09-10**, to the same 0.5 and for a
+    /// structurally similar reason; see that case for the decision.
     ///
     /// It was 0 because the index was never bundled (#308 Phase 3 gated on #261) and the scorer was
     /// plain Jaccard over subject sets, which counts a shared `War` — 58,480 documents — exactly as
@@ -200,7 +215,7 @@ enum SimilarityAxis: String, CaseIterable, Codable, Hashable, Sendable, Identifi
         case .subseries:          return 0.3
         case .sharedPersons:      return 0.7
         case .sharedSubjects:     return 0.5
-        case .semanticSimilarity: return 0.0
+        case .semanticSimilarity: return 0.5
         case .lexicalSimilarity:  return 0.0
         }
     }

@@ -179,7 +179,8 @@ struct RelatedDocumentsContent: View {
     /// When a generator's candidate pool was cut, how many candidates it had (#645).
     @State private var poolCutFrom: Int?
     /// What the semantic axis saw beyond this device's library (S-3). `.none` whenever the axis
-    /// is at weight 0, which is where it ships.
+    /// is at weight 0 — which since 2026-09-10 is a value the reader chooses, not the one it ships
+    /// at (the default was raised from 0 to 0.5).
     @State private var offIndexLeads: SemanticOffIndexLeads = .none
     @State private var isLoading = true
     /// Bumped when a weight slider settles, to re-fire the load without putting the continuously
@@ -516,11 +517,14 @@ struct RelatedDocumentsContent: View {
     ///
     /// **This axis was the only one nobody could learn about from its own surface.** Every other
     /// axis names itself adequately — "Shared people", "Close in date", "Archival provenance" — but
-    /// "Semantically similar (experimental)" says nothing about what it matches on, and it ships at
-    /// weight 0, so a reader who never drags this slider never sees a single semantic result. The
-    /// only prose describing it lived in Settings ▸ Data & Recovery ▸ Semantic Match Feedback, a
-    /// screen reached for an entirely different purpose. The app's most usable semantic feature was
-    /// its least discoverable.
+    /// "Semantically similar (experimental)" says nothing about what it matches on — and when this
+    /// was written it also shipped at weight 0, so a reader who never dragged the slider never saw
+    /// a single semantic result, while the only prose describing it lived in Settings ▸ Data &
+    /// Recovery ▸ Semantic Match Feedback, a screen reached for an entirely different purpose. The
+    /// app's most usable semantic feature was its least discoverable. **Half of that is now fixed
+    /// from the other end**: the default was raised to 0.5 on 2026-09-10, so the results arrive
+    /// whether or not the reader finds this caption — which makes the caption's job explaining what
+    /// they are looking at, rather than persuading anyone to turn it on.
     ///
     /// Two states, because the useful sentence differs. At zero the reader needs to know what
     /// turning it on would buy and what it costs in confidence; above zero they need to know that

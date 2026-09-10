@@ -78,6 +78,42 @@ because it is what makes the feature not free**: recording *which* collection a 
 means `SearchHistoryEntry.appliedCollectionId` — a stored property on a CloudKit-mirrored `@Model`,
 so the #488 deploy gate applies and step 3 of it is owner-only.
 
+### D-D. The semantic axis default is raised to 0.5
+
+**Owner decision 2026-09-10.** `SimilarityAxis.semanticSimilarity.defaultWeight` goes from **0.0 to
+0.5**, following the `sharedSubjects` precedent (raised the same way, to the same number, on
+2026-08-21) and following D-A: the clusters and Meaning search came back valuable from use, so the
+axis stops being scoped as though it were on probation. **"Experimental" stays in its name** — that
+is a statement about maturity, not about worth, and nothing about the evidence moved. The early-era
+question is still open: the blind panel was retired as a gate, and the automatic gate reaches only
+572 pre-1900 queries.
+
+**It reaches existing readers, and the mechanism for that already existed.** Since #1021 the
+serializer omits any axis sitting at its default, so a reader who never moved the semantic slider
+has no token for it and is backfilled from the new default; a reader whose stored string predates
+#1021 matches a `legacyDefaultVectors` row and is amnestied to today's defaults wholesale. Both land
+on 0.5 without a migration.
+
+**One case the encoding cannot distinguish, stated because it is a real cost.** A reader who
+deliberately set the axis back to 0 *after* #1021 stored no token for it — 0 was the default then —
+so they are indistinguishable from a reader who never touched it, and they get 0.5. That is inherent
+to omitting axes at their default and is the same trade `sharedSubjects` made at #308 Phase 3.
+
+**What now runs that did not.** The generator's corpus Hamming scan and Tier-2 rerank on every
+Related panel; S-3's off-index scan beside it; and S-2's project reach scan on every leads
+recompute. All were gated on this weight and all were previously dead at the default.
+
+**One question this raises is the owner's to settle, and it is flagged rather than decided.**
+`AppState.SemanticShardFetchReason.readerAskedForSemantics` is exempt from the #926 "Download With
+Volumes" switch, and its written justification was *"`defaultWeight` 0 … the generator does not even
+run until the reader has deliberately raised an experimental axis off zero"*. That premise is gone.
+The exemption is kept, and the comment now says why it is still defensible — it governs only the
+LAZY path, which asks for the shard of a volume already downloaded (~294 KB against ~6 MB already
+spent, one volume at a time, never the 162 MB corpus), while the ride-along the switch is named for
+still honours it. **If the answer should instead be that a reader who turned the switch off gets no
+shard fetch at all, that is one line** — and it brings back the case the exemption exists to
+prevent, an axis the reader deliberately raised that scores nothing forever.
+
 ---
 
 ## §1 — The week's work
@@ -107,7 +143,7 @@ largest coherent body of work left that needs nobody's permission.
 | Row | What | Size |
 |---|---|---|
 | **S-1** | **V-3 §6.1 item 2** — the semantic axis is generator-only; it never re-scores the other generators' candidates. `RelatedDocumentsEngine.swift:144` | M |
-| **S-2** | **V-3 §6.2 / OS-27 §5.5** — Project Leads runs N per-seed engine ranks where one centroid retrieval would do. `ProjectLeadsService.swift:33-39` | M |
+| ~~**S-2**~~ ✓ | ~~**V-3 §6.2 / OS-27 §5.5** — Project Leads runs N per-seed engine ranks where one centroid retrieval would do~~ **SHIPPED 2026-09-10 as the re-scoped row, not the original one** | ✓ |
 | ~~**S-3**~~ ✓ | ~~**V-3 §6.2(a) / §7 item 2** — off-index volume-grain leads: *"N strong matches in a volume you don't have"*. A second Tier-1 Hamming scan in `SemanticSimilarityGenerator`~~ **SHIPPED 2026-09-06, PR #1235** | ✓ |
 | **S-4** | **Map §7.3** — two more bundled corpus lenses (`allTerms`, `descriptors`). **Read the screen's warning first**: `WordCloudKit/WordCloudLens.swift:84`'s `bundledCloudLenses` is the GENERATOR'S ARTIFACT CONTRACT with six consumers, not the backdrop's cycle | S |
 
@@ -176,12 +212,44 @@ from the designs; reading the code changed the answer for all but one.
   declaration and that assignment — so `RecomputeCost`'s "for the in-app report" describes a report
   that does not exist.
 
-  **Re-scoped, the row is still worth doing**, but as a different thing: *give Project Leads a
-  semantic lead source at all — one corpus scan instead of forty* — aimed at the 45,030 empty-list
-  documents, not at making the shipped default cheaper. The cheapest alternative if leads *quality*
-  is the goal is to raise or drop `perSeedRelatedLimit`'s truncation for the semantic contribution,
-  which is the only behavioural difference the centroid actually delivers and keeps per-seed
-  attribution honest by construction.
+  **Re-scoped, the row was still worth doing**, and SHIPPED 2026-09-10 as that different thing:
+  *give Project Leads a semantic lead source at all — one corpus scan instead of forty.*
+
+  **What was actually missing turned out to be sharper than "a semantic lead source".** The
+  per-seed ranks already carry the semantic axis whenever the reader raises its weight; what they
+  cannot carry is the axis's one unique capability, reaching past the reader's library, because
+  `ProjectLeadsService` passes `includeOffIndexLeads: false` — the S-3 scan is a full corpus pass
+  and that loop runs up to forty times. So a project, the scope where *what am I missing?* is most
+  worth asking, was the one scope that could not ask it.
+
+  **The 4× is measured, and two plausible fused loops are slower than not fusing at all.** On the
+  shipped 20 MB block, 314,571 rows at 512, 40 probes, a 10% library: **52.07 ms** for 40 per-seed
+  S-3 scan pairs against **13.09 ms** fused, with a stream-only floor of 0.68 ms — so the pass is
+  compute-bound, not bandwidth-bound, and amortising the row load over 40 probes buys almost the
+  whole difference. Writing the inner loop the way `SemanticRetrievalKernel` writes it (re-loading
+  the row words inside the probe loop) measures 40.0 ms, and keeping a per-probe distance array is
+  slower per probe than 40 separate scans. `SemanticMultiProbeScan` carries all of it.
+
+  **No centroid, by construction rather than by promise** — every probe keeps its own row, its own
+  cut and its own attribution, so there is nothing for the refutation above to apply to. **No
+  CloudKit field**: which volumes a device lacks is a fact about one disk, so the finding is handed
+  to the view and never written to the mirrored `ProjectLeadEntry`. It is gated on
+  `weights[.semanticSimilarity] > 0` exactly as S-3 is — **and it shipped alongside D-D, which
+  raised that axis's default to 0.5, so it runs for every reader who has not zeroed the axis rather
+  than for almost nobody.**
+
+  Two decisions worth keeping. The register ranks by **how many of the reader's own documents reach
+  a volume**, not by how many documents it admits: that is the only quantity commensurable across
+  seeds, and ranking by documents would let one seed in a sparse neighbourhood outvote the other
+  thirty-nine and would systematically recommend the largest volumes. And the caption compares
+  against *each seed's own nearest neighbours already on the device* rather than against the leads
+  above it — the leads are a four-axis weighted aggregate and an admitted volume cleared one seed's
+  binary band on one axis, so "as close as the leads above" would have mixed two scales.
+
+  The alternative this row also named — raising or dropping `perSeedRelatedLimit`'s truncation for
+  the semantic contribution — is **untaken and now measured as beside the point**: the generator
+  fences its candidates to eligible volumes *inside* the scan, so the truncation closes none of the
+  off-library gap.
 - **S-4 — PARKED, WIP on `claude/s4-two-more-corpus-lenses`.** The loader half builds; there is no
   consumer for it, and the artifact contract warning on `bundledCloudLenses` is the reason to stop
   rather than push through.

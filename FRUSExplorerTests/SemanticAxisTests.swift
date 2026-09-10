@@ -30,13 +30,18 @@ struct SemanticAxisTests {
 
     // MARK: - Axis declaration
 
-    @Test("The axis is a generator, ships opt-in at weight 0, and says experimental in its name")
+    @Test("The axis is a generator, ships at 0.5, and still says experimental in its name")
     func axisDeclaration() {
         let axis = SimilarityAxis.semanticSimilarity
         #expect(axis.isGenerator)
-        #expect(axis.defaultWeight == 0.0)
-        #expect(axis.displayName.lowercased().contains("experimental"),
-                "the axis ships without its quality gate; the slider must say so")
+        #expect(axis.defaultWeight == 0.5, "raised from 0 by owner decision 2026-09-10 (D-D)")
+        #expect(axis.displayName.lowercased().contains("experimental"), """
+            The default moved; the label did not, and the pairing is the point. "Experimental" is \
+            about maturity — the blind pre-1900 panel was retired as a gate, and the automatic gate \
+            reaches only 572 pre-1900 queries — not about whether the axis is worth having, which \
+            D-A settled. Raising the weight without keeping the word would have turned an \
+            unmeasured axis on silently.
+            """)
         #expect(!axis.systemImage.isEmpty)
         #expect(SimilarityAxis.allCases.contains(.semanticSimilarity))
     }
@@ -207,7 +212,7 @@ struct SemanticAxisTests {
         // The axis enters the ranker self-normalised (#643) and ships at 0 — the two facts the
         // old source scan was reaching for.
         #expect(SimilarityAxis.semanticSimilarity.isSelfNormalising)
-        #expect(AxisWeights.default[.semanticSimilarity] == 0)
+        #expect(AxisWeights.default[.semanticSimilarity] == 0.5)
     }
 
     // MARK: - Off-index volume leads (V-3 §6.2(a))

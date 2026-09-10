@@ -221,7 +221,9 @@ enum ProjectLeadsService {
         }
     }
 
-    static func recompute(forProject projectId: UUID, appState: AppState, in context: ModelContext) async {
+    @discardableResult
+    static func recompute(forProject projectId: UUID, appState: AppState,
+                          in context: ModelContext) async -> ProjectReach {
         // Flush pending main-context edits before reading the seed on a *separate* background
         // context: a document just added to (or removed from) a collection is only in the main
         // context's memory until the app autosaves, and `gatherSeed`'s fresh `ModelContext` sees
@@ -237,7 +239,7 @@ enum ProjectLeadsService {
             forProject: projectId, container: context.container)
         if Task.isCancelled {
             signposter.endInterval("recompute", recomputeState, "cancelled")
-            return
+            return .none
         }
         let weights = effectiveWeights(projectRaw: projectWeightsRaw)
         let liveAxes = SimilarityAxis.allCases.filter { weights[$0] > 0 }
@@ -250,7 +252,7 @@ enum ProjectLeadsService {
             // since its cleanup deletes any entry absent from an empty candidate set — would lose the
             // dismissals and resurface those leads as NEW once the seed repopulates.
             clearVisibleLeads(forProject: projectId, in: context)
-            return
+            return .none
         }
         let seedSet = Set(seedKeys)
         var perSeed: [(seed: String, related: [(key: String, score: Double)])] = []
@@ -262,7 +264,7 @@ enum ProjectLeadsService {
         for seedKey in seedKeys.prefix(seedCap) {
             if Task.isCancelled {
                 signposter.endInterval("recompute", recomputeState, "cancelled")
-                return
+                return .none
             }
             guard let anchor = DocumentKey(compositeString: seedKey) else { continue }
             // Leads never render the snippet, so skip the batched snippet extraction (× up to seedCap).
@@ -289,7 +291,7 @@ enum ProjectLeadsService {
         }
         if Task.isCancelled {
             signposter.endInterval("recompute", recomputeState, "cancelled")
-            return
+            return .none
         }
         // The keys the researcher has dismissed from Suggested Next — so the aggregator can backfill
         // their display slots with the next-best leads while keeping the dismissed ones hidden. A
@@ -302,6 +304,15 @@ enum ProjectLeadsService {
         let candidates = ProjectLeadsAggregator.aggregate(
             perSeedRelated: perSeed, seedKeys: seedSet, dismissedKeys: dismissedKeys, limit: leadLimit)
         applyLeads(candidates, records: recordByKey, forProject: projectId, in: context)
+
+        // S-2: what the project reaches BEYOND the reader's library — one multi-probe pass over
+        // the bundled sign bits, probed by every seed at once, on the same consent gate the axis
+        // itself uses. It runs AFTER `applyLeads` so the leads the reader came for are on screen
+        // before the wider question is asked, and it is the reason `recompute` returns a value at
+        // all: the finding is a fact about one device's disk, so it is handed to the caller rather
+        // than persisted (see `ProjectReach`).
+        let reach = await SemanticProjectReach.reach(
+            seedKeys: Array(seedKeys.prefix(seedCap)), weights: weights, appState: appState)
 
         let cost = RecomputeCost(seedsRanked: seedsRanked, total: clock.now - startedAt,
                                  ranking: rankingTime, slowestSeed: slowestSeed, liveAxes: liveAxes,
@@ -318,6 +329,7 @@ enum ProjectLeadsService {
             live axes: \(liveAxes.map(\.rawValue).sorted().joined(separator: ","))
             """)
         #endif
+        return reach
     }
 
     /// Deletes a project's **visible** (non-dismissed) `ProjectLeadEntry` records, leaving its
