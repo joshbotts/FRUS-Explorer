@@ -13252,3 +13252,62 @@ covers 552 volumes, vol. XVI being the disclosed gap.
 stale in the next contradicts itself, which is worse than being uniformly out of date. The corpus
 drift in files this pass did NOT open — chiefly the semantic-map views, `VolumeCatalogueView`,
 `ManifestModels`, `CorpusDispersion`, `TopCollectionsCard` — is enumerated and left for a follow-up.
+
+## Session 2026-09-10f — The flat-text offset unit, and the two walkers that had it wrong
+
+Out of #1262's comment sweep: `CollectionExporter`'s highlight partitioner claimed `text.count`
+was a "Unicode scalar count, matching `DocumentHighlight.startOffset`". It is neither — `String.count`
+is grapheme clusters, and the offsets are UTF-16.
+
+**The producer is UTF-16 by construction, not by agreement.** `frus-offset-engine.js` builds
+`charToNode` with `for (let i = 0; i < val.length; i++)` while `flatText` grows by the same `val`, so
+`charToNode.length === flatText.length` and the index IS the UTF-16 offset — and DOM `CharacterData`
+offsets are UTF-16 too, so `localOffset` shares that space by construction. Nothing on the Swift
+bridge converts. `flatTextRange`, `HighlightReanchor` and the excerpt anchors all read it correctly.
+
+**Two walkers did not, and they are the whole export path.**
+
+- `HighlightPaintTracker.partition` (PDF + DOCX) counted `text.count` AND sliced with
+  `index(_:offsetBy:)`, so `hl.startOffset - chunkStart` was a UTF-16 number minus a grapheme-space
+  one. Both halves are fixed; the slicing now maps a UTF-16 cut through a one-pass table of Character
+  boundaries, snapping rather than dropping, because the returned spans must still cover the chunk.
+- `injectHighlights` (HTML) advanced `flatPos += 1` per Character.
+
+**The failure was not a shifted mark. It was no mark, or an unclosed one** — because the boundary
+tests were equalities, and a counter permanently short never equals the stored offset. Driven under
+the control, `"Cafe\u{0301} note"` produced `Café n<mark>ote</p></div></mark>`: the mark escaping the
+paragraph and the document div, which is the boundary-crossing HTML that function's skip-subtree
+handling exists to prevent. `flatPos` now advances by `ch.utf16.count` and the tests are half-open
+ranges — exactly the old equalities for a one-unit character, which is why all 11 pre-existing
+injection tests still pass untouched.
+
+**A third defect surfaced while reading, unit-independent.** `serialize` appended
+`footnoteSectionHTML` — which sits OUTSIDE `.frus-document` and carries no `data-skip="1"` — and then
+injected into body+footnotes. `injectHighlights` has no root concept, so `flatPos` kept advancing
+over footnote prose, and a stale highlight (the resolver filters on volume/document/selected-ids,
+never on `renderingVersion`) could open a `<mark>` there and close it after `</section>`. The
+injection now runs before the section is appended, so the walked string and the offset space are the
+same string.
+
+**IT IS LATENT, AND THAT IS MEASURED RATHER THAN ASSUMED.** All 694 corpus files carry **zero**
+non-BMP characters, **zero** combining marks and **zero** CR; the only numeric character references
+anywhere are `&#x93;`/`&#x94;`, both BMP. So no export changes today. The corpus is not a closed set
+— vol. XVI arrived four days ago — and the measurement cannot be pinned in CI (the corpus is not in
+the repo), which is the argument for fixing the walkers rather than pinning the property.
+
+**Why it survived is the sharper finding: the test helper counted in the walker's own wrong unit.**
+`FRUSRenderNodeHTMLSerializerTests` minted its offsets with `String.distance` — grapheme distance —
+so helper and walker agreed and every fixture passed however wrong the walker was. And
+`HighlightPaintTracker` had **no tests at all**: every exporter call in the tree passes documents
+with empty `highlights`, so the PDF/DOCX painting path was untested end to end. The helper now mints
+UTF-16 (both copies — there was an inline duplicate), which every existing ASCII fixture still passes
+because the units coincide there.
+
+**The A/B control ran, and all six new tests fail against `v2`**: `𝐀 t<mark>arget </mark>here`,
+`Café n<mark>ote</p></div></mark>`, `<mark>𝐀mark </mark>`, and the tracker returning `["arget "]`,
+`["ote"]`, `["𝐀mark "]`. Fixture counts are stated in both suites and were verified under
+`xcrun swift`. Both an astral and a combining fixture are needed: the astral case also catches a
+*scalar*-counting walker (scalars and Characters agree there), the combining case separates
+Character from scalar.
+
+4,634 iOS tests / 602 suites (+9, +1 suite) + 37 UI tests; swift test 1,364 / 161; macOS clean.

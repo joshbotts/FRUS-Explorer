@@ -205,12 +205,12 @@ struct FRUSCollectionFile: Codable, Sendable, Equatable {
         /// on another user's device the id simply won't resolve and the resolver falls
         /// back to any stored summary (or the placeholder).
         var headnoteSummaryId: UUID?
-        /// Excerpt anchor: unicode-scalar start offset in the source document's flat
+        /// Excerpt anchor: UTF-16 start offset in the source document's flat
         /// text (excerpt entries only; v2 optional key). Anchors travel so precision
         /// rendering (A9) stays possible on the recipient's device; the frozen `text`
         /// remains the rendering source of truth. **Never a highlight UUID.**
         var excerptStart: Int?
-        /// Excerpt anchor: unicode-scalar end offset (exclusive) — see `excerptStart`.
+        /// Excerpt anchor: UTF-16 end offset (exclusive) — see `excerptStart`.
         var excerptEnd: Int?
         /// Excerpt anchor: the source document's `renderingVersion` at excerpt creation
         /// (excerpt entries only; v2 optional key).

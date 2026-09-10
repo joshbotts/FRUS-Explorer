@@ -404,7 +404,9 @@ public func buildFlatTextBlocks(from model: FRUSDocumentRenderModel) -> [String]
 /// `nil` zero times. A caller that guards on `nil` for that case is guarding against
 /// something that cannot happen, and a test asserting `!= nil` there passes against a
 /// wrong answer. (No shippable volume contains a non-BMP or combining character, measured
-/// across all 552, so this is a contract statement rather than a live hazard.)
+/// across all 553 as of 2026-09-10 — zero non-BMP characters, zero combining marks, zero
+/// CR, and the only numeric character references in the corpus are `&#x93;`/`&#x94;`, both
+/// BMP — so this is a contract statement rather than a live hazard.)
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 5 review fixes: initial implementation

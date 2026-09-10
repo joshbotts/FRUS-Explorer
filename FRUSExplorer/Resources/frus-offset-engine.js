@@ -50,7 +50,10 @@ window.FRUSOffsets = (() => {
    * @param {Node} node
    */
   function walk(node) {
-    // Text nodes: each character gets its own charToNode entry.
+    // Text nodes: each UTF-16 CODE UNIT gets its own charToNode entry — `val.length`
+    // is code units, and flatText grows by the same `val`, so charToNode.length ===
+    // flatText.length and the index IS the UTF-16 offset. DOM CharacterData offsets are
+    // UTF-16 too, so localOffset shares that space by construction, not by agreement.
     if (node.nodeType === Node.TEXT_NODE) {
       const val = node.nodeValue;
       for (let i = 0; i < val.length; i++) {

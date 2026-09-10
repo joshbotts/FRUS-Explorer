@@ -255,13 +255,21 @@ public struct FRUSRenderNodeHTMLSerializer {
 
         html += "</div>"
 
-        if includeFootnotes, !model.footnotes.isEmpty {
-            html += footnoteSectionHTML(model.footnotes)
-        }
-
-        // Inject inline highlight annotations if any were requested.
+        // Inject inline highlight annotations BEFORE the footnote section is appended.
+        // The offset space ends at this `</div>`: the JS engine roots its DFS at
+        // `.frus-document`, and `footnoteSectionHTML` sits outside it carrying no
+        // `data-skip="1"`. `injectHighlights` has no root concept — it walks whatever
+        // string it is given — so injecting into body+footnotes let `flatPos` keep
+        // advancing over the footnote prose, where a STALE highlight (the resolver
+        // filters on volume/document/selected-ids, never on `renderingVersion`) could
+        // open a `<mark>` and close it after `</section>`. Appending afterwards makes
+        // the walked string and the offset space the same string.
         if !highlights.isEmpty {
             html = injectHighlights(into: html, highlights: highlights)
+        }
+
+        if includeFootnotes, !model.footnotes.isEmpty {
+            html += footnoteSectionHTML(model.footnotes)
         }
 
         return html
@@ -274,9 +282,31 @@ public struct FRUSRenderNodeHTMLSerializer {
     /// The algorithm walks the HTML character by character, tracking a `flatPos`
     /// counter that mirrors the JS offset engine's flat-text coordinate space
     /// (`frus-offset-engine.js`) exactly — the same space `ExportHighlight` offsets
-    /// (verbatim `DocumentHighlight.startOffset`/`endOffset`) live in. `flatPos`
-    /// advances by one for each character that appears in that flat text; at each
+    /// (verbatim `DocumentHighlight.startOffset`/`endOffset`) live in; at each
     /// highlight boundary the algorithm inserts `<mark>` or `</mark>` tags.
+    ///
+    /// ## The unit is UTF-16, not the Character this walked in
+    /// `charToNode` holds one entry per **UTF-16 code unit** (`for (let i = 0; i <
+    /// val.length; i++)`), so every stored offset is a UTF-16 position. This walk steps
+    /// by Swift `Character`, which is a grapheme cluster, and advanced `flatPos` by one
+    /// per step — so an astral character or a combining sequence anywhere earlier in the
+    /// document left `flatPos` short of the truth for the whole rest of the walk.
+    ///
+    /// **The consequence was not a shifted mark, it was no mark or an unclosed one**,
+    /// because the boundary tests were equalities: a counter that is permanently one
+    /// behind never equals the stored offset, so `<mark>` either never opened or never
+    /// closed and leaked past `</p></div>` — the boundary-crossing HTML this function's
+    /// skip-subtree handling exists to prevent. `flatPos` now advances by
+    /// `ch.utf16.count` and the tests are half-open ranges, which are exactly the old
+    /// equalities for a one-unit character. `<br>` and an escaped entity stay at one:
+    /// the JS appends a single `"\n"` for the first, and `escaped()` emits only
+    /// `& < > " '`, every one a single BMP character in the DOM.
+    ///
+    /// **Measured 2026-09-10: no shippable volume can trigger it.** All 694 corpus files
+    /// carry zero non-BMP characters, zero combining marks and zero CR — and the only
+    /// numeric character references anywhere are `&#x93;`/`&#x94;`, both BMP. So this is
+    /// a correctness fix with no observable change to any export today, and the absence
+    /// of a failing test before it is not evidence the walk was right.
     ///
     /// ## Offset-space fidelity (issue: Session 7 #240B adversarial review)
     /// The flat-text space the offsets index deliberately **excludes** any
@@ -329,9 +359,17 @@ public struct FRUSRenderNodeHTMLSerializer {
         // highlight that opens here, and (re)open the <mark> tag when a highlight
         // is logically active but the tag is closed (freshly opened, or previously
         // hoisted around a skip subtree).
-        func openMarkIfNeeded() {
+        //
+        // `width` is how many flat-text positions the character about to be emitted
+        // occupies — its UTF-16 code-unit count, because that is the unit the stored
+        // offsets are in. The test is a half-open RANGE rather than equality: a stored
+        // start can fall INSIDE a multi-unit character, and a `<mark>` cannot split a
+        // grapheme cluster, so it opens at the character containing the start. For a
+        // one-unit character `flatPos <= s < flatPos + 1` is exactly `s == flatPos`,
+        // which is what this was and what every existing test pins.
+        func openMarkIfNeeded(width: Int) {
             if openEnd < 0 {
-                for hl in sorted where hl.startOffset == flatPos {
+                for hl in sorted where hl.startOffset >= flatPos && hl.startOffset < flatPos + width {
                     openEnd = hl.endOffset; openCSS = cssClass(hl.color)
                     break
                 }
@@ -359,11 +397,11 @@ public struct FRUSRenderNodeHTMLSerializer {
                 // offset engine's `.lineBreak → "\n"` so highlights after a line
                 // break stay aligned. Treated exactly like a regular character.
                 if Self.openTagName(tag) == "br" {
-                    openMarkIfNeeded()
+                    openMarkIfNeeded(width: 1)
                     result += tag
                     flatPos += 1
                     idx = tagEnd
-                    if openEnd == flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
+                    if openEnd >= 0 && openEnd <= flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
                     continue
                 }
 
@@ -420,20 +458,27 @@ public struct FRUSRenderNodeHTMLSerializer {
                 if entEnd < html.endIndex { entEnd = html.index(after: entEnd) }
                 let entity = String(html[idx..<entEnd])
 
-                openMarkIfNeeded()
+                openMarkIfNeeded(width: 1)
                 result += entity
                 flatPos += 1
                 idx = entEnd
-                if openEnd == flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
+                if openEnd >= 0 && openEnd <= flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
                 continue
             }
 
             // ── Regular flat-text character ──
-            openMarkIfNeeded()
+            // Advance by the character's UTF-16 code-unit count, not by one. The
+            // offsets are UTF-16 (the JS `charToNode` map holds one entry per code
+            // unit), while `html[idx]` steps by Swift Character, so a step of 1 put
+            // every position after an astral character or a combining sequence one
+            // short — and because the boundary tests were equalities, the `<mark>`
+            // did not open late, it never opened or never closed.
+            let width = ch.utf16.count
+            openMarkIfNeeded(width: width)
             result += String(ch)
-            flatPos += 1
+            flatPos += width
             idx = html.index(after: idx)
-            if openEnd == flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
+            if openEnd >= 0 && openEnd <= flatPos { closeMarkTag(); openEnd = -1; openCSS = "" }
         }
 
         // Close any highlight still physically open at end of document.
