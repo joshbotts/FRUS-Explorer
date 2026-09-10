@@ -1,28 +1,28 @@
-collection-authority.json regeneration report — 2026-08-19
+collection-authority.json regeneration report — 2026-09-10
 ============================================================
-volumes parsed:            501
-document notes parsed:     264464
-authority records:         4429 (lot-keyed: 1722, with NAID: 1018)
-sub-series children:       7706
-alias forms:               5579
+volumes parsed:            502
+document notes parsed:     264552
+authority records:         4432 (lot-keyed: 1718, with NAID: 1014)
+sub-series children:       7715
+alias forms:               5584
 unclusterable references:  0
-artifact size:             1925799 bytes
+artifact size:             1927661 bytes
 
 Coverage — Phase-3-keyed front-matter items landing in an authority record:
-  lot-keyed:   4256/4256 (100.0%)
+  lot-keyed:   4261/4261 (100.0%)
   class-keyed: 3294/4022 (81.9%)
-  text-keyed:  8769/11811 (74.2%)
-  overall:     16319/20089 (81.2%)
+  text-keyed:  8775/11821 (74.2%)
+  overall:     16330/20104 (81.2%)
 
 Coverage — document source notes by era (parsed → clusterable → landed):
-  1946–1960: 73657 notes → 27758 clusterable (37.7%) → 27435 landed (37.2% of notes, 98.8% of clusterable)
-  1961–1968: 22481 notes → 19737 clusterable (87.8%) → 19062 landed (84.8% of notes, 96.6% of clusterable)
-  1969–1976: 18489 notes → 15912 clusterable (86.1%) → 15501 landed (83.8% of notes, 97.4% of clusterable)
-  1977–1988: 12083 notes → 9182 clusterable (76.0%) → 8431 landed (69.8% of notes, 91.8% of clusterable)
+  1946–1960: 73657 notes → 27757 clusterable (37.7%) → 27433 landed (37.2% of notes, 98.8% of clusterable)
+  1961–1968: 22481 notes → 19714 clusterable (87.7%) → 19033 landed (84.7% of notes, 96.5% of clusterable)
+  1969–1976: 18489 notes → 15872 clusterable (85.8%) → 15452 landed (83.6% of notes, 97.4% of clusterable)
+  1977–1988: 12171 notes → 9227 clusterable (75.8%) → 8495 landed (69.8% of notes, 92.1% of clusterable)
   1989–…: 239 notes → 169 clusterable (70.7%) → 88 landed (36.8% of notes, 52.1% of clusterable)
-  …–1945: 137515 notes → 4275 clusterable (3.1%) → 3981 landed (2.9% of notes, 93.1% of clusterable)
+  …–1945: 137515 notes → 4275 clusterable (3.1%) → 3980 landed (2.9% of notes, 93.1% of clusterable)
 
-Ambiguous clusters left unmerged (same leading segment, different repositories): 458
+Ambiguous clusters left unmerged (same leading segment, different repositories): 462
   advisory committee on foreign aid: frc 74 a 58  ←  national archives | washington national records center
   advisory committees on foreign aid: frc 73 a 159  ←  national archives | washington national records center
   african affairs directorate  ←  department of state | reagan library
@@ -48,6 +48,7 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   brzezinski  ←  department of state | national archives
   brzezinski donated material  ←  carter library | department of state | national archives
   brzezinski material  ←  carter library | department of state
+  bureau of european affair  ←  department of state | national archives
   bureau of information  ←  (unattributed) | national archives
   bureau of intelligence and research  ←  department of state | national archives
   burke paper  ←  (unattributed) | naval historical
@@ -222,5 +223,4 @@ Ambiguous clusters left unmerged (same leading segment, different repositories):
   national security council file  ←  (unattributed) | carter library | department of state | national archives | nixon
   national security council institutional file  ←  (unattributed) | carter library | ford library | national archives | nixon
   national security council institutional files (h-files)  ←  (unattributed) | ford library | national archives | nixon
-  national security council staff record  ←  (unattributed) | eisenhower library
-  … 258 more
+  … 262 more

@@ -123,7 +123,36 @@ with removing seventeen lot files.
    majorCollections 3,412 → 3,418; `lots: {}` as expected; record groups preserved at 31 (keyless run
    cannot re-derive them, and the generator refuses to write an empty map rather than silently
    dropping them — it did refuse once, correctly, before the existing artifact was seeded).
-5. ⚠️ **§6's NARA chain is triggered but cannot be run here.** v16 introduces six archival units the
+5. ✅ **§6's NARA chain RAN, with the owner's `CATALOG_API_KEY` — and `95D407` did not resolve.**
+   NARA answered five *other* lots and all 36 record groups, but not the one v16 introduced. That is
+   a property of the catalogue rather than of the key: the keyed route asks for the CITED spelling,
+   and NARA indexes many State lots only expanded (`80D135` is held solely as `1980D0135`). v16
+   therefore ships with one archival unit unresolved, which is §6's own stated default — `lot:95D407`
+   still gets a collection record, so it browses and groups; it simply has no NARA series behind it.
+
+   **What the keyed run did buy**, none of it related to v16 and all of it carried in this PR at the
+   owner's direction:
+   - **5 lot files resolved**: `53D211`, `53D403`, `57D618`, `58D78`, `64D148` — all RG 59, all with
+     catalog URLs. `central-files-index.json` 1,065 → **1,070**.
+   - **Record groups 31 → 36.** Every offline run could only carry forward the 31 already resolved;
+     the keyed pass re-derived all 36, newly answering RG **51** (OMB), **80** (Navy), **107**
+     (Secretary of War), **353** (Interdepartmental Committees) and **457** (NSA/CSS).
+   - `series-facts-index.json` **695 → 698** creators / 397 → 398 headings, because those five lots
+     reach three more series NAIDs.
+
+   The eight-step chain ran in its documented order and the re-derive emptied `lots` back to `{}`,
+   so `ArchivalResolverTests.lotMapsAreDisjoint` holds. `lot-claimants-index.json` is unchanged at
+   123 divided lots — none of the five is divided.
+
+   **`collection-authority.json`, `collection-usage-index.json` and `lot-claimants-index.json` came
+   back identical apart from their `generated` stamp**, so they were reverted rather than committed:
+   an artifact diff is this project's review surface and a date-only entry in it carries nothing.
+   That also settles the downstream question — with the authority unmoved, `external-citation-index`
+   and `provenance-flow-index` cannot move either, and were not re-run.
+
+*(Superseded — kept for the record: §6's chain was originally deferred because no key was available
+here, and the offline route was exhausted.)*
+   ⚠️ **The offline route remains exhausted for `95D407`.** v16 introduces six archival units the
    bundle has not seen: four CIA job numbers, the George H.W. Bush Library as a repository, and one
    **lot file, `95D407`** (Bureau of Inter-American Affairs, Assistant Secretary…), which
    `central-files-index.json` cannot answer.

@@ -78293,7 +78293,7 @@
       "seriesNaId" : "871874"
     }
   ],
-  "generated" : "2026-08-27",
+  "generated" : "2026-09-10",
   "lotFiles" : [
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124670",
@@ -78328,6 +78328,14 @@
       "lotNumber" : "52D432",
       "matchType" : "control",
       "naId" : "2124668",
+      "recordGroup" : "59",
+      "title" : "Office Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124683",
+      "lotNumber" : "53D211",
+      "matchType" : "control",
+      "naId" : "2124683",
       "recordGroup" : "59",
       "title" : "Office Files"
     },
@@ -78390,6 +78398,14 @@
       "naId" : "27022956",
       "recordGroup" : "59",
       "title" : "General Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2124688",
+      "lotNumber" : "53D403",
+      "matchType" : "control",
+      "naId" : "2124688",
+      "recordGroup" : "59",
+      "title" : "Subject Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2600741",
@@ -78936,6 +78952,14 @@
       "title" : "Briefing Materials Prepared for the Richards Mission to the Middle East"
     },
     {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2113320",
+      "lotNumber" : "57D618",
+      "matchType" : "control",
+      "naId" : "2113320",
+      "recordGroup" : "59",
+      "title" : "Supplemental Subject Files"
+    },
+    {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2108781",
       "hmsMlrEntryNumbers" : [
         "A1 1136A"
@@ -79333,6 +79357,14 @@
       "naId" : "596518",
       "recordGroup" : "59",
       "title" : "Subject Files"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2108792",
+      "lotNumber" : "58D78",
+      "matchType" : "control",
+      "naId" : "2108792",
+      "recordGroup" : "59",
+      "title" : "Records Relating to El Salvador and Guatemala"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/2544397",
@@ -81550,6 +81582,14 @@
       "naId" : "1799574",
       "recordGroup" : "59",
       "title" : "Records Relating to Colombia"
+    },
+    {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1160760",
+      "lotNumber" : "64D148",
+      "matchType" : "control",
+      "naId" : "1160760",
+      "recordGroup" : "59",
+      "title" : "Administrative Files"
     },
     {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/1160760",

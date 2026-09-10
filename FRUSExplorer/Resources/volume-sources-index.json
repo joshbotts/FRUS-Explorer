@@ -1,5 +1,5 @@
 {
-  "generated" : "2026-09-09",
+  "generated" : "2026-09-10",
   "lots" : {
 
   },
@@ -37974,6 +37974,13 @@
     }
   ],
   "recordGroups" : {
+    "107" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/436",
+      "matchType" : "api",
+      "naId" : "436",
+      "recordGroup" : "107",
+      "title" : "Records of the Office of the Secretary of War"
+    },
     "16" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/345",
       "matchType" : "api",
@@ -38086,6 +38093,13 @@
       "recordGroup" : "334",
       "title" : "Records of Interservice Agencies"
     },
+    "353" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/661",
+      "matchType" : "api",
+      "naId" : "661",
+      "recordGroup" : "353",
+      "title" : "Records of Interdepartmental and Intradepartmental Committees (State Department)"
+    },
     "359" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/666",
       "matchType" : "api",
@@ -38135,6 +38149,13 @@
       "recordGroup" : "429",
       "title" : "Records of Organizations in the Executive Office of the President"
     },
+    "457" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/734",
+      "matchType" : "api",
+      "naId" : "734",
+      "recordGroup" : "457",
+      "title" : "Records of the National Security Agency\/Central Security Service"
+    },
     "46" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/375",
       "matchType" : "api",
@@ -38163,6 +38184,13 @@
       "recordGroup" : "472",
       "title" : "Records of the U.S. Forces in Southeast Asia"
     },
+    "51" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/380",
+      "matchType" : "api",
+      "naId" : "380",
+      "recordGroup" : "51",
+      "title" : "Records of the Office of Management and Budget"
+    },
     "56" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/385",
       "matchType" : "api",
@@ -38183,6 +38211,13 @@
       "naId" : "392",
       "recordGroup" : "63",
       "title" : "Records of the Committee on Public Information"
+    },
+    "80" : {
+      "catalogURL" : "https:\/\/catalog.archives.gov\/id\/409",
+      "matchType" : "api",
+      "naId" : "409",
+      "recordGroup" : "80",
+      "title" : "General Records of the Department of the Navy"
     },
     "84" : {
       "catalogURL" : "https:\/\/catalog.archives.gov\/id\/413",
