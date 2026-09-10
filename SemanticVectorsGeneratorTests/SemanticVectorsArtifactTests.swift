@@ -278,10 +278,14 @@ struct SemanticVectorsArtifactTests {
     /// Pins the corpus the artifacts were built from. A regeneration that moves these has either
     /// re-harvested or changed the extraction boundary, and either way the recall numbers in
     /// `Phase3-Store-Assessment.md` describe a different corpus than the one shipping.
-    @Test("Artifact covers the measured 552-volume, 314,483-document corpus")
+    @Test("Artifact covers the measured 553-volume, 314,571-document corpus")
     func corpusFactsAreThePinnedOnes() {
-        #expect(Self.index.volumes.count == 552)
-        #expect(Self.index.documentCount == 314_483)
+        // 552 → 553 and 314,483 → 314,571 when FRUS 1981–1988 vol. XVI was harvested and packed
+        // (OH PR #460/#461). The +88 is that volume's own document count, and it is the same 88
+        // the manifest, the administration profiles and the collection-usage index each arrived
+        // at independently. `subseries` does not move: v16 joins the existing 1981-88 group.
+        #expect(Self.index.volumes.count == 553)
+        #expect(Self.index.documentCount == 314_571)
         #expect(Self.index.subseries.count == 107)
     }
 }

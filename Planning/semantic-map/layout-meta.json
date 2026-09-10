@@ -1,22 +1,22 @@
 {
-  "documents": 314483,
+  "documents": 314571,
   "firstKey": {
     "chars": 1013,
     "d": "d1",
     "o": 0,
     "v": "frus1861"
   },
-  "generated": "2026-08-12T22:35:52",
+  "generated": "2026-09-09T23:38:40",
   "grid": {
     "extent": 30000.0,
     "layout": "int16 x, int16 y, uint16 cluster (0xFFFF=none)"
   },
   "hdbscan": {
-    "clusters": 179,
+    "clusters": 171,
     "minClusterSize": 250,
     "minSamples": 10,
-    "seconds": 489.6,
-    "unclustered": 88207
+    "seconds": 103.4,
+    "unclustered": 89449
   },
   "pca": {
     "components": 50,
@@ -25,12 +25,12 @@
   "projectedFromDims": 256,
   "seed": 18610810,
   "sourceMatrix": "doc_f32_768.npy",
-  "sourceMatrixSHA256": "7f6d4f7a173964d9fc7c4f9f30e1950cd7258ca97c5cd7fc0d3ebe36e5e7590a",
+  "sourceMatrixSHA256": "d9063b29588a98a861a20b91f0aae324635a93a1e58ed5ef7a6329983ca571c0",
   "umap": {
     "metric": "cosine",
     "minDist": 0.1,
     "nNeighbors": 15,
-    "seconds": 397.5
+    "seconds": 108.4
   },
   "versions": {
     "numpy": "2.0.2",

@@ -180,15 +180,58 @@ with removing seventeen lot files.
   fails because the semantic index covers 552 volumes and the manifest now names 553. **This branch
   must not merge until Phase D closes it.**
 
-### Phase D — semantic 🔴 **[owner]**
-Not started; the long pole, and steps 10 and 13 cannot be done from this machine.
-**Nothing in Phase D is deferrable** — the plan's own minimum-viable path says so: without the pack,
-v16 is absent from search-by-meaning and from the map; without the shard push its fetch 404s; without
-the relayout the map goes dark for everyone (D-2).
+### Phase D — semantic ✅ **run on the Air, not the Studio**
+Runbook and the environment check: `Phase-D-on-the-Air.md`. The Studio was unavailable, so the store
+was copied to the MacBook Air (Mac17,4, M5) and the whole phase ran there.
 
-### Phase E — gated extras ⏸️
-Not started. Deferrable per D-4 — check whether the OH subject export and the people registry yet
-carry v16.
+**The precondition that decided it:** the GGUF on the Air hashes to `5a9e0645…de09020`, identical to
+what the Studio harvest recorded. That is the input the corpus-wide provenance digest is built from.
+
+- **Harvest** — 88 documents, 257 chunks, **9.4 seconds**. The contract diff came back clean: only
+  `generated`, `machine`, `models_listing`, `volumes_requested`, `totals_this_run` and
+  `script_sha256` moved. That last one is PR #1177's contract guard changing the harvester itself;
+  it is **not** an input to the digest and reaches the index as a separate field. §4.2's allowed
+  list predates it. None of the six that must not move — `model`, `model_file_sha256`, `dim`,
+  `chunk_chars`, `overlap_chars`, `prefix` — appear in the diff at all.
+- v16's `head.json` is the **first in the store to record the full contract** (`prefix`,
+  `chunk_chars`, `overlap_chars` beside `model` and `dim`); the 552 Studio-era heads carry only the
+  latter two, which is exactly what #1177 added and why the packer can now check per volume.
+- **Relayout** — PCA 58.36% explained variance, **identical to the Studio's run to two decimals**
+  over a different matrix; UMAP 1.8 min, HDBSCAN 1.7 min. Clusters **179 → 171**, unclustered 28.0%
+  → 28.4%. Every parameter that should be identical is, including the venv resolving to the
+  Studio's exact pins. See the runbook for the spurious numpy/Accelerate PCA warnings and the
+  evidence they are harmless.
+- **Pack** — `DIMS=512`, `EXPECT_DIGEST` pinned. **Digest unchanged at `a726ca60…`.** 553 volumes,
+  **314,571 documents** (+88), 660 centroids (553 + 107 subseries), 1,607 id segments.
+- **Shards** — 553 files. **All 552 pre-existing rows are byte-identical**: zero moved in
+  `semantic-shards-manifest.json`, so no installed device re-downloads anything. The new
+  `frus1981-88v16.vec` is 45,472 bytes, sha `ca8219e8…97a7aa3`.
+- **Published and verified on the remote.** Fetched from the URL the app itself builds
+  (`SemanticShardFetcher.defaultBaseURL` + `/frus1981-88v16.vec`): HTTP 200, byte-exact against the
+  manifest. Five pre-existing shards spot-checked — the largest, the smallest and three at random —
+  6 of 6 match, so the push disturbed nothing.
+
+**The labels were read, not glanced at.** Zero of the 171 carry a label of three or more generic
+corpus-wide words, which is the `british, united, war, american` failure mode that once put 168 of
+179 wrong. What ships is properly distinctive — `falkland, galtieri, argentine, thatcher`;
+`tshombe, adoula, katanga, congo`; `overlord, husky, brooke, burma`; `behring, bering, pauncefote,
+fur`; `arica, plebiscitary, tacna, chile`. Only 12 tuples survive verbatim, but most changes are the
+same cluster reordered or one term swapped (`ababa, ethiopia, addis, engert` →
+`ababa, addis, ethiopia, engert`): the structure held, the weights moved under one more volume.
+
+**And v16 landed where a South America volume should.** Its 88 documents went to four clusters —
+52 `venezuela, perez, venezuelan, febre`, 20 `somoza, guatemala, nicaragua, guatemalan`, 2
+`latin, venezuelan, venezuela, nsc`, 1 `allende, frei, chile, chilean` — with 13 unclustered
+(14.8%, well under the corpus's 28.4%). Its row segments are `d368`–`d413` and `d444`–`d485`, two
+runs with a gap: four published chapters out of eleven, visible in the artifact.
+
+Two more artifact-pinned figures had to be re-measured, both 552/314,483 →
+553/314,571: `SemanticVectorsArtifactTests.corpusFactsAreThePinnedOnes` and
+`SemanticSubstrateTests`' bundled-tier check.
+
+### Phase E — gated extras ⏸️ **DEFERRED by the owner**
+Per D-4. The subject tags and the person crosswalk degrade per volume: v16 simply carries none until
+the upstream drops include it. Nothing else waits on this.
 
 ### Phase F — code, tests, release ⏸️
 - §7.1 (the "552" strings) is **already handled**: W-2 / PR #1178 made all nine derive their numbers
