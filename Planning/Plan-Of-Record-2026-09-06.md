@@ -51,6 +51,33 @@ The state to hold in mind while it waits: `v2` carries a **553-volume** manifest
 build reflects. Anything measuring "the corpus" from the tree gets 553; anything measuring it from a
 device gets 552 until the bump ships.
 
+### D-C. Collection search was designed and DECLINED
+
+Asked *"what would collection search look like?"* on 2026-09-10, answered with a design, and
+**declined by the owner the same day.** It is recorded here because the tree was inviting the
+opposite, and doing so on two false premises.
+
+Two comments — `MacSearchViewModel.swift`'s `scopeCollections` note and its twin in
+`SearchSheet.swift` — told a future session that restoring the removed Collections chip was *"a
+one-line change on the day `includeCollections` reaches `SearchParameters`"*. Both halves of that
+sentence were false:
+
+1. **`includeCollections` has never existed.** `git log -S'includeCollections' --all` returns
+   exactly one commit — `0e821faa`, the one that coined the word inside the comment. The property
+   that really was removed is `scopeCollections`, entered at `c031dabe`, never given a reader, and
+   deleted fifteen months later.
+2. **A collection scope is not a scope FLAG.** The three toggles the comment pointed at are FTS5
+   *column selectors*, and neither FTS5 table has a collection column — both are
+   `content='document_cache'`, keyed `(volume_id, document_id)`. Collections live in SwiftData.
+   Scoping a search to one would be a document-ID set, resolved through `WorkingCorpusResolver` and
+   composed by `DocumentScopeGate.combine` into the existing `SearchParameters.documentIds`,
+   alongside the working corpus and the project History gate that already land there.
+
+Both comments now say this, so a reopening does not re-derive it. **One fork is worth keeping,
+because it is what makes the feature not free**: recording *which* collection a search ran inside
+means `SearchHistoryEntry.appliedCollectionId` — a stored property on a CloudKit-mirrored `@Model`,
+so the #488 deploy gate applies and step 3 of it is owner-only.
+
 ---
 
 ## §1 — The week's work

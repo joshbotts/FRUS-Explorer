@@ -245,7 +245,7 @@ final class AppState {
     ///
     /// ## Why the app is worth entering empty
     /// A great deal of FRUS Explorer needs no downloads at all: the bundled volume manifest the
-    /// Browse tab lists (and downloads from), the word-cloud vectors, the semantic map's 314,483
+    /// Browse tab lists (and downloads from), the word-cloud vectors, the semantic map's 314,571
     /// placements, and every archival-analytics index. Declining the 3.3 GB is a reasonable
     /// first-run choice, and it should not cost the reader the app.
     ///
@@ -611,7 +611,7 @@ final class AppState {
 
     /// Fetches every shard the device is missing for the volumes it holds.
     ///
-    /// Serial, deliberately: 552 shards at ~145 KB are many small requests rather than a few large
+    /// Serial, deliberately: 553 shards at ~294 KB are many small requests rather than a few large
     /// ones, and the app's own volume downloads are already queued through `DownloadManager` with a
     /// concurrency limit the reader controls. Racing an unbounded fan-out against that would
     /// contend with the downloads this feature exists to accompany.
@@ -724,7 +724,7 @@ final class AppState {
     /// answer silently.
     enum SemanticShardFetchReason {
         /// A volume finished downloading and its shard is riding along. **Honours the switch** —
-        /// these are the bytes #926 is about: 552 requests fired by a corpus download for an axis
+        /// these are the bytes #926 is about: 553 requests fired by a corpus download for an axis
         /// that is off by default and may never be read.
         case volumeDownloaded
         /// A semantic surface is being used right now and wants this shard. **Ignores the switch.**
@@ -1018,9 +1018,9 @@ final class AppState {
     /// writer was gated from its first commit for the same reason: an ungated one would have
     /// started collecting search text on a platform that was not.
     ///
-    /// `ResearchTrailMigration` deliberately does **not** consult it: moving records the user
-    /// already has is not collection, and skipping the move when the switch is off would destroy
-    /// them instead of preserving them.
+    /// `ResearchTrailMigration` deliberately did **not** consult it: moving records the user
+    /// already had was not collection, and skipping the move when the switch was off would have
+    /// destroyed them instead of preserving them. (That pass was itself retired in R-2b, #981.)
     ///
     /// An **absent** value means **on**. Both the app gate and
     /// `SettingsSyncCoordinator`'s pull rely on that convention; a well-meaning change to
@@ -1052,8 +1052,8 @@ final class AppState {
     //   • note saves are dropped — `ResearchNote` timestamps itself (contract D2).
     //
     // Sessions are now derived from those tables' timestamps by `ResearchTrailSessions`, whose
-    // `idleInterval` is the 30 minutes this constant used to hold. `ResearchTrailMigration` moves
-    // what is worth keeping out of the legacy tables.
+    // `idleInterval` is the 30 minutes this constant used to hold. `ResearchTrailMigration` moved
+    // what was worth keeping out of the legacy tables and was itself retired in R-2b (PR #981).
 
     /// The shared cross-reference store. Created at boot alongside `indexingPipeline`;
     /// `nil` if the database could not be opened.

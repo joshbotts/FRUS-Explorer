@@ -72,8 +72,9 @@ import Foundation
 /// unchanged: they live inside `CentralFilesIndex.lotFile(forRawLot:)` and
 /// `VolumeSourcesIndex.resolution`, and this type calls both rather than reimplementing
 /// either. Measured on the shipped bundles both guards currently refuse **nothing** (1,058 of
-/// 1,065 central-files entries are `series`-level and none is flagged — the 7 with no level at
-/// all are the item-1 fold's, which the #321/#351 guards pass and `evidence` would not; the
+/// 1,070 central-files entries are `series`-level and none is flagged — the 12 with no level at
+/// all are the item-1 fold's seven plus the five the 2026-09-10 keyed run added (53D211, 53D403,
+/// 57D618, 58D78, 64D148), which the #321/#351 guards pass and `evidence` would not; the
 /// volume-sources lot map is empty) — they are dormant, not dead, and a re-harvest can
 /// re-arm them. The fold itself applies the same two refusals before admitting a row, so a
 /// flagged orphan stays in volume-sources rather than crossing over.

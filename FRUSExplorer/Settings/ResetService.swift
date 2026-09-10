@@ -76,10 +76,10 @@ enum ResetInventory {
     /// rather than a dangling reference to a deleted parent. Two cases are documented scars —
     /// `DocumentTagAssignment` before `UserTag`, or the boot-time `OrphanedTagRepair` resurrects
     /// deleted tags as "Recovered Tag" placeholders (#406); and `CollectionEntry` before
-    /// `Collection`, whose delete rule is `.nullify`, not cascade. `SessionEvent` precedes
-    /// `ResearchSession` for the same `.nullify` reason. The three added in #746 that reference a
-    /// parent by raw `UUID` — `ProjectLeadEntry.projectId`, `WorkingCorpus`, `SavedSearch` — go
-    /// before `Project` on the same principle, even though no `@Relationship` makes it structural.
+    /// `Collection`, whose delete rule is `.nullify`, not cascade. The three added in #746 that
+    /// reference a parent by raw `UUID` — `ProjectLeadEntry.projectId`, `WorkingCorpus`,
+    /// `SavedSearch` — go before `Project` on the same principle, even though no `@Relationship`
+    /// makes it structural.
     static let erased: [any PersistentModel.Type] = [
         // Dependents first.
         // R-5 P3b-2: the review ledger references annotations and documents by raw id, so it goes

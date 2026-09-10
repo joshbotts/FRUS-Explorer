@@ -2287,8 +2287,9 @@ public struct SourceNoteParser {
     /// not a lot key, `lot_file_norm` is joined against `central-files-index.json`'s lot table,
     /// and folding the two namespaces together would have a Job looked up as a lot. Measured over
     /// the corpus the two spaces do not currently intersect (395 job norms vs 1,734 lot norms,
-    /// **0 collisions**), and `JobNumberNormTests` pins that so a future corpus cannot quietly
-    /// introduce one.
+    /// **0 collisions**). Nothing pins that at corpus scale: `CIAJobKeyingTests` and
+    /// `JobKeyingTests` pin only that the two grammars never cross-recognise on fixtures, and
+    /// that a job number folds under `job:` rather than `lot:`.
     public static func jobNumberNorm(_ job: String) -> String {
         String(job.unicodeScalars.filter(CharacterSet.alphanumerics.contains))
             .uppercased()

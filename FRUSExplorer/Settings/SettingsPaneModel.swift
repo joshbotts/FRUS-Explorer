@@ -44,8 +44,9 @@ enum SettingsGroup: String, CaseIterable, Identifiable, Hashable, Sendable {
 
 /// Which renderer a pane appears in.
 ///
-/// The two Settings surfaces are not yet symmetric — macOS has a Notes pane iOS lacks, iOS has a
-/// Sideload row and an in-app Research Guide entry macOS reaches from a menu instead. Declaring
+/// The two Settings trees are symmetric except for iCloud Sync, which only macOS renders as a
+/// pushed destination (`platforms` returns `[.macOS]` for `.sync`) because iOS presents sync as
+/// the inline toggle section at the top of its Settings root. Declaring
 /// that here keeps the asymmetry *stated* rather than implied by two divergent view bodies, which
 /// is what let the trees drift apart in the first place.
 ///
@@ -170,8 +171,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
 
     /// Which renderers show this pane. See `SettingsPlatform` for why the two differ today.
     ///
-    /// After S-2c the Library group holds exactly one pane on both platforms; the remaining
-    /// asymmetries are all in Research and System.
+    /// After S-2c the Library group holds exactly one pane on both platforms, and since the iOS
+    /// Notes pane came back the only asymmetry left is `.sync`, in System.
     var platforms: Set<SettingsPlatform> {
         switch self {
         // iOS presents iCloud sync as an inline toggle section, not a pushed destination.

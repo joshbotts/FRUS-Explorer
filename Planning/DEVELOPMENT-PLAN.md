@@ -13154,3 +13154,101 @@ Measured: 553 shards, mean 294 KB, largest 988 KB, 162 MB total.
 **Vol. XVI's subject gap is disclosed rather than silent.** It is the only one of 553 volumes the
 subject aggregate does not cover, and the Top-subjects section simply vanished —
 indistinguishable from a volume with no characteristic subjects, which is a different fact.
+## Session 2026-09-10c — CLAUDE.md re-measured against the artifacts (PR #1260)
+
+CLAUDE.md is the file every session reads first, and three weeks of merges had moved figures all
+through it. **Forty-four were re-measured** against the artifact each describes; six source comments
+carrying the same numbers moved with them.
+
+**Three were contradictions rather than staleness**, which matter more because a reader cannot tell
+which figure to trust. `external-citation-index.json` was given TWO decimal-reference counts in one
+entry — 28,721 in the headline and 29,985 ten lines below — which never matched each other and were
+both stale against the artifact's 31,259. `series-facts-index.json` said "129 with a predecessor" in
+its headline and "UNRENDERED (117 series)" further down, while the generator's own doc comment said
+118; 129 is right and always was. And `decimal-class-labels.json`'s head sentence said 217/200/215
+countries while the #1256 paragraph in the SAME entry said 287/252/263.
+
+**And one was an editing instruction committed verbatim.** "Move the bullet into the Enforced list
+above, reworded:" had sat in Coding Standards since #1085 and was never carried out. The move is
+done, and two gates that were never listed now are — including that `keyViewsUseLocalization` opens
+exactly three views and asserts only that each mentions `localized:` *somewhere*, which is much
+weaker than the section implied.
+
+**Roughly thirty MORE figures were deliberately LEFT**, each a dated measurement or an experiment's
+own denominator: rewriting those falsifies a record of what was true then. The consolidation lists
+them so the next sweep does not reopen them. Also logs the nine PRs missing from this file.
+
+## Session 2026-09-10d — "Archives Visits" (PR #1261)
+
+A label change, and the interesting half is what did not move. Forty user-facing strings across 16
+Swift files, the exported packet's filename, both manuals, the `EditableContent` mirrors, the shot
+list, and 12 prose occurrences in the parity test.
+
+**Three things were deliberately left alone, each for a different reason.** The **155
+`archiveVisit.*` localization keys** stay: they are identifiers, and `TripPacketEntryPointParityTests`
+scans `collection.addToVisit` — the KEY — which is exactly why the rename left its assertions
+meaningful rather than hollow. The three CloudKit `@Model` types (`ArchiveVisitPlan`,
+`ArchiveVisitDocument`, `ArchiveVisitTarget`) stay because renaming a mirrored model trips the #488
+deploy gate, and a Production promotion is not a price worth paying for a noun. And doc comments
+naming the development wave stay, because they name a wave rather than a feature.
+
+## Session 2026-09-10e — Collection search declined, and the claims the tree had outgrown
+
+**The owner declined collection search**, and the tree was inviting the opposite. `MacSearchViewModel`'s
+`scopeCollections` note and its twin in `SearchSheet` told a future session that restoring the removed
+chip was *"a one-line change on the day `includeCollections` reaches `SearchParameters`"* — and both
+halves of that sentence were false. `includeCollections` has never existed (`git log -S` returns only
+the commit that coined the word inside the comment); and a collection scope is not a scope FLAG at
+all, because the three toggles the comment pointed at are FTS5 COLUMN SELECTORS and neither FTS5
+table has a collection column — both are `content='document_cache'`, keyed `(volume_id, document_id)`.
+It would be a document-ID set through `WorkingCorpusResolver` and `DocumentScopeGate.combine` into
+the existing `SearchParameters.documentIds`. Recorded as §0 D-C of the plan of record and at both
+comment sites, so a reopening does not re-derive it — including the one fork that makes it not free,
+`SearchHistoryEntry.appliedCollectionId`, which trips the #488 deploy gate.
+
+**Three files owed a runtime probe that had already been taken.** `#241 review finding; runtime probe
+still owed` sat on the `supportsMultipleWindows` gate in `CrossReferenceGraphView`, `CompilationView`
+and `CollectionDetailView`, and `BrowserView` said `(F-18, still unprobed)` — while
+`FRUSExplorerApp`'s scene table, twelve files away, records the probe: W-2d ran it on 2026-08-27 and
+a Full Screen Apps iPad reports `true` **truthfully**, opening a real second full-screen scene. The
+tree contradicted itself in five places about the same measurement.
+
+**`presentSemanticMap`'s doc comment had been sitting on `presentAnalytics` since #905** — CW-9b
+added the new function above the old one and its doc block was appended after the existing one
+rather than the block being moved, so Corpus Analytics has been documented as the semantic map,
+measurement and all, for five weeks.
+
+**Forty more claims were found by sweep and then adversarially verified before any was applied** —
+eight finders over the whole app tree and the shared kits, then ten skeptics prompted to REFUTE.
+Nothing was refuted outright and two were corrected: the semantic shard mean is 294 KB and not the
+287 KB the finder proposed (the app's own `ByteCountFormatter` is 1000-based and four sibling
+comments agree), and the raw-binary recall figure could not be silently re-attributed because 0.53
+is V-0's 256-width number against the shipped funnel's 0.851.
+
+The classes, and each one is a claim a reader would have acted on: symbols that no longer exist
+(`ResearchTrailMigration`, `FRUSDocumentRenderer`, `ReindexView`, `SessionEvent`) named in the
+present tense; two test suites cited by names that never existed (`JobNumberNormTests`,
+`SemanticVectorsLatencyHarness`) as pinning properties nothing pins; questions declared open that
+shipped (`W-9`'s five analytics value types; `RepositoryFactTable` "ships with zero rows" when
+`current` carries eleven; the subject-numeric country tail "not read yet" when #1254 reads 94.6% of
+it; "only the 1910-1949 schedule ships" when three do); an off-by-one that arrived with a feature
+(`FacetSection` gained `subjects` at #1018, so "five dimensions" became six and a user-tag section
+would be the seventh); and the corpus figures the vol. XVI ingest moved under everything — 552→553,
+314,483→314,571, 179 clusters→171, 4,423 authority records→4,432, 622 series→698.
+
+**And one claim was wrong from the day it was written, not stale**: `ArchivalAnalyticsAxes` said
+2,846 records "cite one or two volumes". 2,846 was the count of records citing exactly ONE volume on
+the 2026-08-06 artifact; one-or-two was 3,610. Its twin in `CollectionRelations` had the wording
+right and the number stale. Both now read 2,852 of 4,432, exactly one volume.
+
+**What was deliberately left, and this is the harder half.** Every dated measurement — the iPad
+sheet geometry "measured on a booted iPad Pro 13-inch", the `168 of 179` label regeneration, the
+`1.43 ms` scan disclosed as 256-width beside its 512 re-measurement, the live-index counts that no
+bundled artifact can answer. Rewriting those falsifies a record of what was true then. Also left:
+`IndexingPipeline`'s "the artifact covers all 552", which is CORRECT — the subject drop genuinely
+covers 552 volumes, vol. XVI being the disclosed gap.
+
+**Bounded by one rule: finish every file this pass touched.** A file corrected in one line and
+stale in the next contradicts itself, which is worse than being uniformly out of date. The corpus
+drift in files this pass did NOT open — chiefly the semantic-map views, `VolumeCatalogueView`,
+`ManifestModels`, `CorpusDispersion`, `TopCollectionsCard` — is enumerated and left for a follow-up.

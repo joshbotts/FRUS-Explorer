@@ -17,11 +17,11 @@ import SwiftData
 /// membership enumeration — split from the views for testability.
 ///
 /// ## What this axis is, and the disclosures it owes
-/// The 179 clusters are HDBSCAN's grouping of the corpus's own language, read from the
+/// The 171 clusters are HDBSCAN's grouping of the corpus's own language, read from the
 /// bundled `semantic-map-index.json`. Three disclosures are mandatory on every surface
 /// (the design-requirements A-8 list) and each is a sentence this axis renders:
-/// labels are sampled c-TF-IDF terms, **not subject headings**; 88,207 documents
-/// (28.0%) belong to no cluster and are unreachable from any cluster list; era
+/// labels are sampled c-TF-IDF terms, **not subject headings**; 89,449 documents
+/// (28.4%) belong to no cluster and are unreachable from any cluster list; era
 /// histograms bucket each document by its VOLUME's coverage era, not its own date.
 /// Every figure is computed from the live artifact — never hard-coded — so a
 /// regenerated artifact re-states its own truth.
@@ -151,7 +151,7 @@ enum ClustersAxis {
     /// implementation, so the browse drill and the map's capture cannot disagree about
     /// membership) with the raw-pointer read `SemanticMapColouring.scopeMask` uses,
     /// because the obvious alternative — `placement(at:)` per row — re-enters
-    /// `withUnsafeBytes` 314,483 times per scan.
+    /// `withUnsafeBytes` 314,571 times per scan.
     ///
     /// `nonisolated`, deliberately: both inputs are `Sendable` value types over an
     /// mmapped file, so the scan runs off the main actor.

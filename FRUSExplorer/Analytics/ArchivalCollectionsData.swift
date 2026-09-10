@@ -193,7 +193,7 @@ struct ArchivalRanking: Sendable, Equatable {
 ///   *or* a document source note names the collection.
 ///
 /// Those two populations are not the same, and the difference is the point rather than a
-/// defect: 2,595 of the authority's 4,423 records are named in a volume's front matter and
+/// defect: 2,599 of the authority's 4,432 records are named in a volume's front matter and
 /// never resolved from a document note, so they rank under Volumes and vanish under Documents.
 /// The mode's footnote block says so. The class lens has no such split — a class key only ever
 /// comes from a parsed document note — so both weights there are computed from the usage index.
@@ -652,11 +652,14 @@ struct ArchivalCollectionsData: Sendable {
     ///
     /// Measured against the one-schedule artifact this rule was written for: band 0 is unchanged
     /// key for key, band 1 gains 310 keys and **966 documents**, bands 2–4 gain nothing. Measured
-    /// again with all three schedules shipped: **band 2 labels 448 rows**, every one of them by
-    /// its own keys' coverage, and bands 3 and 4 stay at zero because they open in 1969 and 1977,
-    /// after the decimal file closes. A merged-band selection — which no class-lens surface makes
-    /// today, though the entry point exists — goes from labelling **nothing** to 67,213 documents,
-    /// because the union of two bands' years is covered by no schedule at all.
+    /// again with all three decimal schedules and both subject-numeric ones shipped: **band 2
+    /// labels 599 of 804 rows** (484 decimal, 115 subject-numeric) and band 3 labels 69 of 181,
+    /// all subject-numeric. Only band 4 stays at zero — it opens in 1977, after the decimal file
+    /// closed in 1963 and after the subject-numeric schedules end in 1973 — and that zero is the
+    /// standing guard that no label ever comes from proximity. A merged-band selection — which no
+    /// class-lens surface makes today, though the entry point exists — goes from labelling
+    /// **nothing** to 67,213 documents, because the union of two bands' years is covered by no
+    /// schedule at all.
     ///
     /// ## The span is a union, and it can only take a label away
     /// A key cited by volumes running 1930–1940 and 1955–1960 yields 1930...1960, which no schedule

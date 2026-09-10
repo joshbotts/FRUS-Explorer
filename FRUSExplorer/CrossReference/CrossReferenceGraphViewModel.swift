@@ -17,11 +17,11 @@ import SwiftUI
 /// `DecimalClassLabelStore.gloss(for:coveringYears:)` needs the coverage span of the material being
 /// labelled, because the classification was RENUMBERED in 1950: class 7 is Political Relations of
 /// States before that date and Internal Political and National Defense Affairs after it, and Iran
-/// moves from 91 to 88. Only the 1910-1949 schedule ships. A node here knows its CITING document,
-/// not the span of the file it points at, so glossing against the one shipped schedule would
-/// confidently mislabel every post-1949 key — and #828's standard is that where the table cannot
-/// place something it says NOTHING, because a wrong gloss on an archival citation is worse than a
-/// bare number: the reader cannot tell it is wrong.
+/// moves from 91 to 88. Three schedules ship — 1910-1949, 1950-1959, 1960-1963 — and `gloss`
+/// picks among them BY SPAN. A node here knows its CITING document, not the span of the file it
+/// points at, so no schedule can be selected for it — and #828's standard is that where the
+/// table cannot place something it says NOTHING, because a wrong gloss on an archival citation
+/// is worse than a bare number: the reader cannot tell it is wrong.
 ///
 /// The `gloss` field stays on the case so a later version can fill it once a span is available (the
 /// citing volume's manifest coverage is the obvious source) rather than being retro-fitted through
@@ -771,11 +771,12 @@ final class CrossReferenceGraphViewModel {
     /// `DecimalClassLabelStore.gloss(for:coveringYears:)` needs the coverage span of the material
     /// being labelled, because the classification was RENUMBERED in 1950: class 7 is Political
     /// Relations of States before that date and Internal Political and National Defense Affairs
-    /// after it, and Iran moves from 91 to 88. Only the 1910-1949 schedule ships. A node here knows
-    /// its CITING document, not the span of the file it points at, so glossing against the one
-    /// shipped schedule would confidently mislabel every post-1949 key — and #828's standard is
-    /// that where the table cannot place something it says NOTHING, because a wrong gloss on an
-    /// archival citation is worse than a bare number: the reader cannot tell it is wrong.
+    /// after it, and Iran moves from 91 to 88. Three schedules ship — 1910-1949, 1950-1959,
+    /// 1960-1963 — and `gloss` picks among them BY SPAN. A node here knows its CITING document,
+    /// not the span of the file it points at, so no schedule can be selected for it — and #828's
+    /// standard is that where the table cannot place something it says NOTHING, because a wrong
+    /// gloss on an archival citation is worse than a bare number: the reader cannot tell it is
+    /// wrong.
     ///
     /// The `gloss` field stays on the case so a later version can fill it once a span is available
     /// (the citing volume's manifest coverage is the obvious source), rather than being retro-fitted

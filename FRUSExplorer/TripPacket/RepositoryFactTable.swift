@@ -152,10 +152,11 @@ struct RepositoryLink: Equatable, Sendable, Identifiable {
 
 /// The curated repository table (#830 T-1, decisions D2 / D7 / D12).
 ///
-/// **Ships with zero rows, deliberately.** T-1 may not print an institutional fact the owner has
-/// not confirmed, and the empty-table-that-still-builds shape is what makes that separation
-/// enforceable rather than aspirational: every consumer must already handle "no row", so the day
-/// the first curated row lands, nothing else has to change.
+/// **Shipped with zero rows at T-1; `current` now carries eleven** — College Park plus the ten
+/// presidential libraries, every link stamped 2026-08-28. T-1 may not print an institutional fact
+/// the owner has not confirmed, and the empty-table-that-still-builds shape is what made that
+/// separation enforceable rather than aspirational: every consumer already handled "no row", so
+/// when the first curated rows landed at T-2, nothing else had to change.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1

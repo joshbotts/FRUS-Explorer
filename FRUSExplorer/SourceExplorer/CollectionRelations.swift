@@ -124,7 +124,7 @@ enum CollectionRelations {
     ///
     /// A floor is not a nicety here, it is what makes the metric mean anything. The overlap
     /// coefficient is `shared ÷ min(|A|,|B|)`, so it reaches 1.0 for *any* record whose
-    /// citing-volume list is a subset of the focus record's — and 2,846 of the 4,423 shipped
+    /// citing-volume list is a subset of the focus record's — and 2,852 of the 4,432 shipped
     /// records cite exactly one volume. Measured on the 2026-08-06 artifact, **77.8% of all
     /// co-citing pairs score exactly 1.000**, so what a list looks like is decided by the
     /// tie-breaks far more often than by the score.

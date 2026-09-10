@@ -984,8 +984,8 @@ struct ArchivalNetworkView: View {
 
     /// Rebuilds the neighbourhood **off the main actor**.
     ///
-    /// The scan touches every one of the 4,423 authority records with two set intersections, and
-    /// an expanded umbrella additionally walks 10,435 class keys. That is not main-thread work,
+    /// The scan touches every one of the 4,432 authority records with two set intersections, and
+    /// an expanded umbrella additionally walks 10,446 class keys. That is not main-thread work,
     /// and the threshold slider fires it on every step.
     /// Exports the drawn neighbourhood — exactly what the graph shows, with the caveats that
     /// make a link readable.

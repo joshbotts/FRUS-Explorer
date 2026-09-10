@@ -25,8 +25,9 @@ import Foundation
 /// the funnel at 512. The conclusion below survives the width change; neither quoted number does.
 /// An approximate index would trade
 /// exactness and determinism for time this feature does not need to save. (Both figures are desktop;
-/// the oldest supported device is still owed its own measurement, which is what
-/// `SemanticVectorsLatencyHarness` exists to take.)
+/// the oldest supported device is still owed its own measurement, and no harness exists to take
+/// it — the nearest thing is `SemanticVectorsKitTests/DimensionLadderBenchmark`, which times the
+/// scan at both widths on a desktop.)
 ///
 /// The funnel and its tie-breaks are not free choices. Every recall number the program has
 /// (`Planning/semantic-spike/Phase3-Store-Assessment.md` §5) describes *this* procedure, and a

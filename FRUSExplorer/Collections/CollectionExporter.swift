@@ -337,8 +337,9 @@ struct ExportHighlight: Sendable {
 /// count (list bullets, table-cell join strings, footnote labels, figure captions,
 /// paragraph spacing, etc.) must NOT be passed to `partition(_:)`, or the internal
 /// position counter will drift out of alignment with the stored offsets. Each call
-/// advances that counter by `text.count` (Unicode scalar count, matching
-/// `DocumentHighlight.startOffset`/`endOffset`).
+/// advances that counter by `text.count` — Swift's Character (grapheme-cluster) count, while
+/// `DocumentHighlight.startOffset`/`endOffset` are UTF-16 code units. The two agree on BMP text
+/// carrying no combining marks, which is what FRUS body text is.
 ///
 /// Overlapping highlights are resolved by preferring the one that opens first,
 /// mirroring `FRUSRenderNodeHTMLSerializer.injectHighlights`.

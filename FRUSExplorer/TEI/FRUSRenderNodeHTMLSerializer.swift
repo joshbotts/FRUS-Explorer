@@ -55,8 +55,9 @@ import Foundation
 /// custom URLs, dispatched by `FRUSURLSchemeHandler` (Session 142).
 ///
 /// ## Relation to HTMLCollectionExporter
-/// Session 146 will refactor `HTMLCollectionExporter` to delegate document-body
-/// rendering to this type, eliminating the divergent HTML-generation paths.
+/// Session 146 unified collection HTML export on this type; the call now comes from
+/// `CollectionItemHTMLRenderer` (Authoring Phase 2b), with `HTMLCollectionExporter` a thin
+/// assemble-and-write wrapper over it.
 ///
 /// Version history:
 ///   1.0 — Session 140: initial implementation

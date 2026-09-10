@@ -39,10 +39,11 @@ public enum SemanticUnavailable: Error, Equatable, Sendable {
 
 /// Mmap-backed reader for the bundled corpus tier (`semantic-vectors-binary.bin`).
 ///
-/// The app had no precedent for reading a binary bundle resource — every one of its 31 bundled
-/// artifacts is JSON — so the rules this type follows are stated rather than inherited. It maps
-/// rather than reads: 10.23 MB of sign bits are touched a few hundred thousand rows at a time by a
-/// scan that runs in ~1.4 ms, and paging them in on demand costs less than decoding them ever could.
+/// The app had no precedent for reading a binary bundle resource — every bundled artifact it had
+/// was JSON — so the rules this type follows are stated rather than inherited. It maps
+/// rather than reads: ~20.1 MB of sign bits are touched a few hundred thousand rows at a time by a
+/// scan that runs in 1.53–1.68 ms at the shipped 512 width, and paging them in on demand costs
+/// less than decoding them ever could.
 /// Nothing is copied into Swift arrays; every accessor hands back a pointer into the mapping.
 public struct SemanticCorpusVectors: Sendable {
 
@@ -113,7 +114,7 @@ public struct SemanticCorpusVectors: Sendable {
     /// Runs `body` over the raw sign-bit block.
     ///
     /// The block is exposed as a pointer rather than as rows because the scan reads it as
-    /// `UInt64` quads; handing out `[UInt8]` per row would allocate 314,483 arrays per query.
+    /// `UInt64` quads; handing out `[UInt8]` per row would allocate 314,571 arrays per query.
     ///
     /// - Parameter body: Receives a pointer to the first row and the row count.
     /// - Returns: Whatever `body` returns.

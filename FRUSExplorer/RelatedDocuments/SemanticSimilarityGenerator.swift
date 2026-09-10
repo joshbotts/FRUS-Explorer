@@ -38,15 +38,17 @@ import Foundation
 ///
 /// **Coverage against that population, which is the half the design actually asks for:** the
 /// bundled index holds a vector for **43,552 of the 45,030 (96.7%)**; **1,478 are unreachable
-/// because they carry no vector at all**, the corpus being 314,483 vectored rows against 316,839
+/// because they carry no vector at all**, the corpus being 314,571 vectored rows against 316,839
 /// display rows. Do NOT compare this with the lexical axis's 32,956 — that measures a different
 /// population (source-noted rows only, 264,487) under a stricter served rule.
 ///
 /// ## The pipeline, and why each stage is where it is
 ///
-/// 1. **Candidates come from the bundled Tier-1 block**, a sign vector per document (one bit per shipping dimension) for all
-///    314,483 documents — so candidate generation works with *zero volumes downloaded* and reaches
-///    volumes the reader does not have. A full corpus scan is 1.43 ms.
+/// 1. **Candidates come from the bundled Tier-1 block**, a sign vector per document (one bit per
+///    shipping dimension) for all 314,571 documents — so candidate generation works with *zero
+///    volumes downloaded* and reaches volumes the reader does not have. A full corpus scan is
+///    1.43 ms, measured at the 256 width on an M1 Max; the ladder spike puts the same kernel
+///    about 1.6x slower at the shipped 512.
 /// 2. **The display fence is applied inside the scan**, as a precomputed per-row eligibility byte
 ///    array built from the indexed volumes' row ranges. Filtering afterwards would let ineligible
 ///    rows consume the candidate pool — measured in V-2 as a 50-candidate request returning 28.
@@ -59,9 +61,10 @@ import Foundation
 /// ## What it deliberately does not do
 ///
 /// It does not fall back to ranking by Hamming distance when a shard is missing. Raw binary recalls
-/// 0.53 of the exact top ten against the reranked funnel's 0.745, and the two are different scales —
-/// a list mixing them would be sorted by a number that means one thing in some rows and another
-/// thing in the rest. Fewer honest rows beat more incomparable ones.
+/// 0.53 of the exact top ten at 256 (V-0's raw binary tier) where the shipped 512-width funnel
+/// recalls 0.851, and the two are different scales — a list mixing them would be sorted by a
+/// number that means one thing in some rows and another thing in the rest. Fewer honest rows
+/// beat more incomparable ones.
 ///
 /// ## Experimental
 ///
@@ -338,8 +341,8 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     /// **Scoring the pool and cutting afterwards is the point, not an accident of structure.** The
     /// walk is in Hamming order and the display is in cosine order; a version of this that stopped
     /// walking once it had `limit` rows would show the first five by Hamming, merely re-sorted —
-    /// which is exactly the funnel the on-index path exists to avoid (binary recalls 0.53 of the
-    /// exact top ten against the reranked 0.745).
+    /// which is exactly the funnel the on-index path exists to avoid (binary recalled 0.53 of the
+    /// exact top ten at 256, where the shipped 512-width funnel recalls 0.851).
     private static func offIndexDocuments(
         anchor: DocumentKey,
         anchorRow: Int,

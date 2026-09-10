@@ -13,9 +13,9 @@ import Foundation
 /// The Department's subject-numeric filing schedules, so `POL 27` reads as *Military
 /// Operations* rather than as a code (#1211).
 ///
-/// The subject-numeric system replaced the decimal file in 1963 and the app has never had a label
-/// table for it, so every one of these keys renders bare. Measured on the shipped corpus, they are
-/// not a fringe: they are 1,362 leaves folding to 323 groups over 6,882 documents, and they
+/// The subject-numeric system replaced the decimal file in 1963 and the app had no label table
+/// for it until #1211, so every one of these keys rendered bare. Measured on the shipped corpus
+/// they are not a fringe: 1,362 leaves folding to 323 groups over 6,882 documents, and they
 /// dominate the class lens in the later era bands.
 ///
 /// ## Two editions, and reading a key against the wrong one is not a near miss
@@ -29,10 +29,13 @@ import Foundation
 ///
 /// ## What this table names, and what it does not
 /// It names the GROUP — the category and its number. Measured, 90.4% of the corpus's
-/// subject-numeric keys also carry a trailing country or party string (`VIET S`, `ARAB-ISR`), which
-/// comes from the handbooks' country-abbreviations appendix and is not read yet. A surface showing
-/// `POL 27 VIET S` must therefore print the tail as the source wrote it; glossing the group and
-/// dropping the rest would name half the key and look complete.
+/// subject-numeric keys also carry a trailing country or party string (`VIET S`, `ARAB-ISR`), and
+/// since #1254 it IS read: `Schedule.areas` resolves it — 1,132 of 1,231 tail-bearing keys and
+/// 94.6% of their documents — from the decimal schedules' country tables UNIONED with the 1963
+/// handbook's abbreviations appendix (the 1965 handbook has none). `leafGloss` then composes the
+/// reading in NARA's FILING order rather than the citation's, so `POL 27 VIET S` renders as
+/// *Vietnam, South — MILITARY OPERATIONS*. A key with no tail reads as its subject alone, which
+/// is the general file and not an omission.
 ///
 /// Version history:
 ///   1.0 — #1211: initial implementation

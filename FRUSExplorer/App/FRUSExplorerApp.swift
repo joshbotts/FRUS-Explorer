@@ -1378,14 +1378,15 @@ struct FRUSExplorerApp: App {
     ///
     /// It was also the cheapest: `SemanticMapRequest` already existed for Handoff (#897) and was
     /// one synthesised `Hashable` from being a window value, and `SemanticAnalyticsView` already
-    /// accepted it as its initial-state channel. The other five analytics surfaces have no such
-    /// value type yet, which is why W-9 remains open.
+    /// accepted it as its initial-state channel. The other five analytics surfaces have since
+    /// been given their own value types and window scenes (CW-9b–CW-9e, PRs #905–#917), closing
+    /// W-9's F-11 half; its chart-height rider (F-4) is what still keeps the row open.
     ///
     /// ## iOS ONLY, unlike its two sibling scenes — and that is deliberate
     /// `archivalNeighborsScene` and `relatedDocumentsScene` are referenced from both platform
     /// regions because neither platform had them. macOS has had a semantic-map window since
-    /// CW-7c: the singleton `Window("Semantic Analytics", id: "frus.semanticAnalytics")` at
-    /// `:769`. Converting *that* to this value-based group is review finding **M-2**, not this
+    /// CW-7c: the singleton `Window("Semantic Analytics", id: "frus.semanticAnalytics")` declared
+    /// below. Converting *that* to this value-based group is review finding **M-2**, not this
     /// one, and it is not free — `openWindow.fronting(id:)` is id-only with no value-based
     /// analogue, `MacWindowFrontingTests` fails the build on a bare `openWindow(id:)`, and a
     /// `WindowGroup(for:)` loses its automatic macOS Window-menu entry (the cost #363 had to pay
@@ -1402,7 +1403,7 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
         }
-        // Wider and taller than the two sibling scenes on purpose: this one draws a 314,483-point
+        // Wider and taller than the two sibling scenes on purpose: this one draws a 314,571-point
         // projection, where they show a list.
         .defaultSize(width: 900, height: 720)
     }
@@ -1548,7 +1549,7 @@ struct FRUSExplorerApp: App {
                     // `.unavailable(.noArtifact)` — a failure indistinguishable from a missing
                     // bundle resource, so the feature would look wired and be permanently dark.
                     await BundledKeynessBaseline.prepare()
-                    // Same schedule again: the semantic index decode and the 10.23 MB binary's
+                    // Same schedule again: the semantic index decode and the 19.52 MB binary's
                     // mapping both belong after the first frame. The shard store is built only
                     // once the pin it validates against exists, so a build with missing or
                     // mismatched artifacts leaves it nil and every semantic surface reports

@@ -60,7 +60,7 @@ enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
 /// shipped authority, that produces a hairball the slider cannot thin: the median focus has
 /// **35 partners at ≥ 0.25**, and `Central Files` has **1,000** — still **810** at ≥ 0.75. The
 /// coefficient saturates at exactly 1.000 for *any* partner whose volume list is a subset of the
-/// focus's, and 2,846 of the 4,423 shipped records cite one or two volumes. So the top eight
+/// focus's, and 2,852 of the 4,432 shipped records cite exactly one volume. So the top eight
 /// neighbours of the `Whitman File` under that weighting are two-to-seven-volume lot files
 /// scoring 1.000 with between zero and ten documents in common — noise that outranks the Dulles
 /// Papers, and noise a higher threshold *keeps*.
@@ -399,7 +399,7 @@ struct ArchivalEraBand: Identifiable, Sendable, Equatable, Hashable {
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 1
 enum ArchivalUnitLens: String, CaseIterable, Identifiable, Sendable {
-    /// Authority collections — the 4,423-record cross-volume clustering.
+    /// Authority collections — the 4,432-record cross-volume clustering.
     case namedCollections
     /// Central-file class keys: decimal classes (`763.72`) and the 1963–1973 subject-numeric
     /// designators (`POL 27 VIET S`) the same grammar produces.
