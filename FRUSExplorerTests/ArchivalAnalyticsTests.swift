@@ -521,11 +521,14 @@ struct ArchivalCollectionsDataTests {
         for span in coverage.values {
             counts[ArchivalEraBand.band(forMidpointYear: span.midpointYear).index] += 1
         }
-        #expect(counts == [261, 120, 64, 66, 41], """
+        // The last band gained one when FRUS 1981–1988 vol. XVI (coverage 1981–1988, midpoint
+        // 1985) joined the manifest at OH PR #460. Looked at before updating, as the message asks:
+        // the manifest changed, the coverage builder did not.
+        #expect(counts == [261, 120, 64, 66, 42], """
             The band distribution moved. Either the manifest changed or the coverage builder \
             re-dated volumes; both need a look before this number is updated.
             """)
-        #expect(coverage.count == 552, "every catalogued volume must carry a parseable span")
+        #expect(coverage.count == 553, "every catalogued volume must carry a parseable span")
     }
 
     // MARK: - The shared coverage-map builder (#835)

@@ -232,11 +232,13 @@ struct SourceProvenanceDataTests {
         let data = try Data(contentsOf: url)
         let index = try JSONDecoder().decode(SourceProvenanceIndex.self, from: data)
         #expect(index.schemaVersion == 2, "schema 2 adds byVolume (#267)")
-        // Unchanged across the schema-2 regeneration, which is the evidence that adding the
-        // per-volume table was additive: the same scan, one more view of it.
-        #expect(index.totalSourceNotes == 268757)
-        #expect(index.volumesCovered == 522)
-        #expect(index.byVolume?.count == 522,
+        // These were unchanged across the schema-2 regeneration, which was the evidence that
+        // adding the per-volume table was additive: the same scan, one more view of it. They moved
+        // at OH PR #460, when FRUS 1981–1988 vol. XVI added 491 source notes across one volume —
+        // 268,757 → 269,248 and 522 → 523, which reconciles exactly to that volume's own count.
+        #expect(index.totalSourceNotes == 269248)
+        #expect(index.volumesCovered == 523)
+        #expect(index.byVolume?.count == 523,
                 "schema 2 must carry one row per covered volume; got \(index.byVolume?.count ?? -1)")
         #expect(index.byDecade.count == 16, "SA-3a ships 16 coverage decades; got \(index.byDecade.count)")
         #expect(index.categories.count == 10)

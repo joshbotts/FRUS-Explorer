@@ -237,8 +237,9 @@ struct VolumeDocumentCountAccessorTests {
         let store = AdministrationProfilesStore()
         let index = try #require(store.index, "bundled administration-profiles-index.json must decode")
         let sum = index.volumeTotals.keys.reduce(0) { $0 + (store.documentCount(forVolumeId: $1) ?? 0) }
-        #expect(sum == 314_483)
-        #expect(index.volumeTotals.count == 552)
+        // 314,483 → 314,571 and 552 → 553 at OH PR #460 (FRUS 1981–1988 vol. XVI).
+        #expect(sum == 314_571)
+        #expect(index.volumeTotals.count == 553)
     }
 
     @Test func knownVolumeAndUnknownVolume() {
