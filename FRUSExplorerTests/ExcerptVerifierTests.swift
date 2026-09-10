@@ -297,6 +297,9 @@ struct ExcerptVerificationWiringTests {
 
     /// R-5 P3b-1 (design Q-7 g): a document an update removed is named as such, not as "volume
     /// not downloaded"; the report is not clean while one is present; one and many read as English.
+    /// The wording lost "an update removed" at R-1f (2026-09-10): the same row is stamped when OUR
+    /// OWN parser stops emitting a document, so attributing it to the Office of the Historian was
+    /// false. The bucket, the counts and the one/many split are unchanged.
     @Test("A vanished document's quotation is its own bucket, with a one-form and a many-form")
     func vanishedBucket() {
         let a = ExcerptVerifier.Request(volumeId: "v1", documentId: "d1", text: "some quoted words here")
@@ -306,10 +309,10 @@ struct ExcerptVerificationWiringTests {
         #expect(one.vanished == [a])
         #expect(one.unindexed == [unindexed])
         #expect(!one.isClean && !one.hasFailures)
-        #expect((one.summary ?? "").contains("One quotation cites a document that an update removed from its volume."))
+        #expect((one.summary ?? "").contains("One quotation cites a document that is no longer in its volume."))
         #expect((one.summary ?? "").contains("1 could not be checked"))
         let many = ExcerptVerificationReport(outcomes: [a: .documentVanished, b: .documentVanished])
-        #expect((many.summary ?? "").contains("2 quotations cite documents that an update removed from their volumes."))
+        #expect((many.summary ?? "").contains("2 quotations cite documents that are no longer in their volumes."))
     }
 
     /// The rule that turns a verifier miss into the vanished bucket: only a `documentNotIndexed`

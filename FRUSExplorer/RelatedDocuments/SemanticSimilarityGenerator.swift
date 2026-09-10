@@ -54,7 +54,7 @@ import Foundation
 ///    does not hold is **dropped, not scored** — an absent shard is missing evidence, and a zero
 ///    would be a claim of dissimilarity.
 /// 4. **Missing shards are queued for fetch**, so a library that has never used the axis warms up
-///    across a few uses rather than downloading 82 MB the first time anyone opens it.
+///    across a few uses rather than downloading ~162 MB the first time anyone opens it.
 ///
 /// ## What it deliberately does not do
 ///

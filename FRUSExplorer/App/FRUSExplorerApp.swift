@@ -2448,8 +2448,9 @@ struct FRUSExplorerApp: App {
                         )
                     }
 
-                    // Semantic-ready when search-ready: 148 KB beside the ~6 MB volume the user
-                    // just chose to download.
+                    // Semantic-ready when search-ready: ~294 KB beside the ~6 MB volume the user
+                    // just chose to download. (Was written as 148 KB, the 256-dim figure; the pack
+                    // has shipped at 512 since #933.)
                     await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
                     // R-5 P3b-2: the mount that survives the upsert. A ledger row carrying the
                     // POST-correction hash cannot match anything until this device has re-indexed

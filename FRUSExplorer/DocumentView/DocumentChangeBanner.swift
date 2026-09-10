@@ -111,7 +111,7 @@ struct DocumentChangeBanner: View {
                           defaultValue: "Footnotes, the source note, or the heading changed in a volume update, and some highlights may be misaligned.")
         case ("vanished", _):
             return String(localized: "document.changed.vanished",
-                          defaultValue: "This document is no longer in the volume after an update.")
+                          defaultValue: "This document is no longer in the volume.")
         case (_, true):
             // A kind this build does not know, with stale highlights: the hedge still holds.
             return String(localized: "highlight.stale.warning",

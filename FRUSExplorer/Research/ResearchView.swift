@@ -1480,7 +1480,7 @@ enum ResearchDocumentAggregation {
     /// The one sentence for a document an update removed, shared by the unreviewed line and the
     /// reviewed-but-still-gone line.
     static var vanishedLine: String {
-        String(localized: "research.row.changed.vanished", defaultValue: "No longer in the volume after an update")
+        String(localized: "research.row.changed.vanished", defaultValue: "No longer in the volume")
     }
 
     /// The row's sentence for a recorded change, or `nil` for a kind the app does not know.

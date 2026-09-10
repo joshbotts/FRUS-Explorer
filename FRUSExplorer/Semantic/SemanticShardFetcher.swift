@@ -28,8 +28,9 @@ import Foundation
 ///   representable key and would land on top of the volume's own XML.
 /// * Its delegate callback is a **single slot** that `attach` replaces; a second attacher displaces
 ///   `DownloadManager`'s and breaks volume downloads.
-/// * A shard is ~148 KB. Background sessions exist for multi-megabyte transfers that must survive
-///   suspension; this is one request that either completes in a second or is retried later.
+/// * A shard is ~294 KB (largest 988 KB). Background sessions exist for multi-megabyte transfers
+///   that must survive suspension; this is one request that either completes in a second or is
+///   retried later.
 ///
 /// ## What it verifies
 ///

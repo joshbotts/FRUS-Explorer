@@ -19,13 +19,18 @@ import SwiftUI
 /// It renders from the bundled aggregate, so it works for volumes the user has not
 /// downloaded or indexed.
 ///
-/// Call sites gate on `VolumeSubjectsChips.hasContent(forVolumeId:)` so an empty profile
-/// shows no section at all.
+/// Call sites gate on `VolumeSubjectsChips.hasContent(forVolumeId:)`, which is true for a volume
+/// the aggregate covers **and** for one it does not — the second renders a line saying so rather
+/// than hiding the section. Silence would be indistinguishable from a volume that genuinely has no
+/// characteristic subjects, and it is not the same fact.
 ///
 /// Version history:
 ///   1.0 — Session 9: initial implementation
 ///   1.1 — Session 9 review: chip-row scroll indicators stay visible on macOS
 ///         (an indicator-less overflowing row gave no cue that more chips exist)
+///   1.2 — Session 2026-09-10: a volume the bundled aggregate does not cover says so. Measured, it
+///         is exactly one of 553 — `frus1981-88v16`, ingested ahead of the Office of the Historian's
+///         subject export — so this branch is narrow by construction, not a general empty state.
 struct VolumeSubjectsChips: View {
 
     /// The volume whose profile is shown.
@@ -38,11 +43,25 @@ struct VolumeSubjectsChips: View {
     /// The subject whose cross-volume sheet is open, or `nil`.
     @State private var selectedSubject: VolumeSubjectProfiles.ResolvedSubject?
 
-    /// `true` when the bundled aggregate carries at least one subject for the volume.
+    /// `true` when the section should be shown at all — subjects to list, or a reason there are none.
+    ///
+    /// The store answers `nil` for a volume it has never heard of and an empty array for one it
+    /// covers with nothing above the floor. Both reach the reader as the same sentence, because the
+    /// distinction is ours and not theirs; what matters is that neither is silence.
     ///
     /// - Parameter volumeId: The manifest volume id.
-    /// - Returns: Whether a non-empty profile exists (the gate for showing the section).
+    /// - Returns: Always `true` — kept as the call sites' gate so the decision stays in one place,
+    ///   and so a future reason to hide the section has somewhere to live.
     static func hasContent(forVolumeId volumeId: String) -> Bool {
+        _ = volumeId
+        return true
+    }
+
+    /// Whether the aggregate carries any subject for this volume.
+    ///
+    /// - Parameter volumeId: The manifest volume id.
+    /// - Returns: `true` when there is at least one subject to draw.
+    static func hasSubjects(forVolumeId volumeId: String) -> Bool {
         !(VolumeSubjectProfilesStore.shared?.topSubjects(forVolumeId: volumeId)?.isEmpty ?? true)
     }
 
@@ -52,6 +71,12 @@ struct VolumeSubjectsChips: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if groups.isEmpty {
+                Text(String(localized: "browser.volume.subjects.none",
+                            defaultValue: "No subjects detected for this volume yet. The topic data is the Office of the Historian's own subject export, and it does not cover this volume."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             ForEach(groups, id: \.category) { group in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(group.category)

@@ -705,10 +705,17 @@ final class AppState {
     /// Fetches a volume's semantic shard if it is missing, on a detached background task.
     ///
     /// Called from two places, and the split is deliberate. A volume's own download hook fetches
-    /// eagerly, because 148 KB beside a ~6 MB volume is invisible and it makes the volume
+    /// eagerly, because **~294 KB** beside a ~6 MB volume is invisible and it makes the volume
     /// semantic-ready exactly when it becomes search-ready. Everything already on disk is fetched
     /// **lazily**, when a semantic surface first wants that volume — so an existing library does not
-    /// silently pull 82 MB at launch to enable a feature the user has not opened yet.
+    /// silently pull **~162 MB** at launch to enable a feature the user has not opened yet.
+    ///
+    /// Both figures were HALF the truth until 2026-09-10 (they read 148 KB and 82 MB, from the
+    /// 256-dim pack; the shipped width has been 512 since #933). Measured from
+    /// `semantic-shards-manifest.json`: 553 shards, 162,354,028 bytes, mean 294 KB, largest 988 KB.
+    /// They are quoted here because they ARE the argument for the split — at the real numbers the
+    /// eager half is still invisible and the lazy half matters twice as much as this comment
+    /// claimed.
     ///
     /// - Parameter volumeID: Manifest `volumeId`.
     /// Why a shard fetch is being started — which decides whether the off switch applies.
