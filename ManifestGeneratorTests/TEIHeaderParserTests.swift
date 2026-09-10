@@ -68,6 +68,35 @@ struct TEIHeaderParserTests {
         #expect(result.latestDate == "1861-12-31T23:59:59-05:00")
     }
 
+    @Test("revisionDesc: the status, and the volume's own published date")
+    func revisionDescIsRead() throws {
+        let result = try parse(TEIFixtures.partiallyPublishedFromRevisionDesc)
+        #expect(result.publicationStatus == "partially-published")
+        #expect(result.publicationDate == nil, "the printed year is genuinely absent")
+        // The volume's entry is third in the fixture and the chapters published on a different
+        // day are first and last, so a positional rule returns 2026-07-01 and this fails.
+        #expect(result.publishedWhen == "2026-09-18",
+                "the `<change>` matched must be the one whose corresp names the volume")
+    }
+
+    @Test("The digital publication date never displaces a printed year")
+    func printYearSurvivesADisagreeingRevisionDesc() throws {
+        let result = try parse(TEIFixtures.printYearAndDigitalDateDisagree)
+        #expect(result.publicationDate == "1977", "the printed year, from publicationStmt")
+        #expect(result.publishedWhen == "1998", "the digital date, from revisionDesc")
+        #expect(result.publicationStatus == "published")
+        // The two are reported separately BECAUSE they disagree — 26 shipped volumes do. Merging
+        // them into one field would silently rewrite a quarter-century of print years.
+        #expect(result.publicationDate != result.publishedWhen)
+    }
+
+    @Test("A header with no revisionDesc reports neither status nor published date")
+    func revisionDescAbsent() throws {
+        let result = try parse(TEIFixtures.inProgressModernVolume)
+        #expect(result.publicationStatus == nil)
+        #expect(result.publishedWhen == nil)
+    }
+
     @Test("In-progress modern volume: empty publication-date → nil; content-date attrs → range")
     func inProgressModernVolumeDates() throws {
         let result = try parse(TEIFixtures.inProgressModernVolume)

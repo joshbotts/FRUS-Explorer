@@ -25,6 +25,8 @@ import Foundation
 /// | `//publicationStmt/date[@type="content-date"][@notBefore][@notAfter]` | `earliestDate`, `latestDate` |
 /// | `//profileDesc/creation/date[@from][@to]` (fallback `@notBefore`/`@notAfter`) | `earliestDate`, `latestDate` |
 /// | `//keywords[@scheme="https://history.state.gov/tags"]/term` | `tags` |
+/// | `//revisionDesc/@status` | `publicationStatus` |
+/// | `//revisionDesc/change[@corresp="#<idno>"][@status="published"]/@when` | `publishedWhen` |
 ///
 /// ### Date semantics
 /// - `publicationDate` is the historical **print year** — the *text content* of the
@@ -52,6 +54,11 @@ import Foundation
 ///   1.2 — SA-1a (review fix): fall back to an untyped `publicationStmt/date` text for the
 ///         print year when the typed `publication-date` element is empty (the legacy encoding
 ///         used by the 10 oldest 1860s volumes), still never taking `@when` or content-date.
+///   1.3 — Session 2026-09-09: read `revisionDesc` — its `@status`, and the `@when` of the
+///         `<change>` whose `@corresp` names this volume. Both are REPORTED, not applied:
+///         `publicationDate` is still the print year and still never a `@when`. The prohibition
+///         above is about the `<bibl>` build stamps, and `publishedWhen` is a different field
+///         holding a different fact — over the shipped volumes the two years differ in 22 cases.
 public struct TEIHeaderParser {
 
     private init() {}
@@ -74,7 +81,7 @@ public struct TEIHeaderParser {
             throw TEIHeaderParserError.xmlParseError(errorDescription)
         }
 
-        return delegate.result
+        return delegate.resolvedResult()
     }
 }
 
@@ -111,7 +118,29 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
     private var sawTypedPublicationDate = false
     private var untypedPublicationYearCandidate: String?
 
+    // revisionDesc resolution. The volume's own `<idno type="frus">` sits in `publicationStmt`,
+    // which precedes `revisionDesc` in every file measured — but candidates are collected and
+    // resolved at the END rather than matched as they arrive, so the parse does not depend on
+    // that ordering holding for a file nobody has looked at yet.
+    private var volumeIdno: String?
+    private var publishedChangeCandidates: [(corresp: String, when: String)] = []
+
     // MARK: - Convenience
+
+    /// The parse, with the `revisionDesc` candidates resolved against the volume's own id.
+    ///
+    /// Separate from `result` because the match needs a fact — the `<idno type="frus">` — that the
+    /// walk may not have reached when the `<change>` elements go by. Resolving at the end makes the
+    /// rule independent of sibling order inside the header.
+    ///
+    /// - Returns: The finished header.
+    func resolvedResult() -> ParsedTEIHeader {
+        var out = result
+        if let id = volumeIdno {
+            out.publishedWhen = publishedChangeCandidates.first { $0.corresp == "#\(id)" }?.when
+        }
+        return out
+    }
 
     private var depth: Int { elementStack.count }
 
@@ -140,6 +169,17 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
         characterBuffer = ""
 
         switch elementName {
+        case "revisionDesc":
+            result.publicationStatus = attributes["status"]
+
+        case "change" where attributes["status"] == "published":
+            // Both halves are required. A `<change>` with no `@when` states that something was
+            // published without saying when, and a `@when` with no `@corresp` cannot be shown to
+            // be about the volume rather than one of its chapters.
+            if let corresp = attributes["corresp"], let when = attributes["when"] {
+                publishedChangeCandidates.append((corresp: corresp, when: when))
+            }
+
         case "date" where hasAncestor("creation"):
             // Coverage range from profileDesc/creation/date: prefer @from/@to; fall back to
             // @notBefore/@notAfter. This is the historical fallback source; modern volumes
@@ -195,6 +235,11 @@ final class TEIHeaderParserDelegate: NSObject, XMLParserDelegate, @unchecked Sen
                 result.title = text
                 bestTitleType = titleType
             }
+
+        case "idno" where parent == "publicationStmt" && attrs["type"] == "frus":
+            // The volume's own id, kept only to identify which `<change>` in `revisionDesc`
+            // speaks for the volume rather than for one of its chapters.
+            if !text.isEmpty { volumeIdno = text }
 
         case "editor" where parent == "titleStmt":
             guard !text.isEmpty else { break }

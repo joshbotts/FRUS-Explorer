@@ -198,6 +198,51 @@ carry v16.
 
 ---
 
+## OH pushed again mid-run: PR #461
+
+The corpus moved from `13a56f8e5` (PR #460) to **`e744e71db`** (PR #461, *"add static files and
+keywords"*) while Phases A–C were running. Everything above was generated at #460, so the question
+is what has to be redone.
+
+**Only `manifest.json`.** The body after `</teiHeader>` is **byte-identical** across the two commits
+— same length, same SHA-1 (`73e8668b…`) — and #461 touches no other volume. The header grew from
+4,111 to 6,387 bytes and nothing else moved, so every corpus-derived artifact reads exactly the same
+bytes it read before. (`CrossRefValidationGenerator` does scan the whole file and will now see three
+more `<ref target>`s in the header, but they are `https://static.history.state.gov/…`, classified
+external and informational; the bundled index holds only broken refs.)
+
+**What #461 actually added, and it matters more than its size suggests:**
+
+- Three `<relatedItem>` blocks — the cover JPG, the EPUB and the MOBI are now published — each with
+  a `<date type="publication-date" when="2026-09-10T…"/>` **build stamp**, which is exactly the
+  timestamp `TEIHeaderParser` documents it must never take for `publicationDate`. It is right not to.
+- `<revisionDesc status="partially-published">` carrying
+  **`<change corresp="#frus1981-88v16" status="published" when="2026-09-18"/>`** plus per-chapter
+  entries (`#ch1` is `being-cleared`). **The corpus does state the publication date after all** — 18
+  September 2026 — just not in the element the parser reads.
+- A `<profileDesc>` whose `https://history.state.gov/tags` keywords block is **commented out**, which
+  is why v16 still has no tags. That is OH's deliberate choice, not a parse failure.
+
+### Recording it, and why not by curation
+
+Measured over all 694 corpus files, `revisionDesc/@status` is published 532 / being-cleared 51 /
+planned 42 / being-researched 37 / being-digitized 10 / **partially-published 2** / absent 20, and
+**534 files carry a `<change … status="published" … when="…">` for their own id**. Over the shipped
+553, where both a `publicationStmt` print year and a revisionDesc `@when` exist, the years **agree in
+510 and differ in 22** (`frus1950v01` is 1977 against 1998) — so the two are not interchangeable and
+the revisionDesc value can only ever be a **fallback**, never an override.
+
+As a fallback it fills **exactly one volume: `frus1981-88v16`, with `2026-09-18`.** That is better
+evidence than a curated table, because it comes from the document and retires itself when OH fills
+the primary element in.
+
+**Also surfaced, and deliberately not acted on:** `frus1977-80v27` is `partially-published` in its
+TEI and recorded `.published` in the manifest, because `ManifestGeneratorRunner` hardcodes
+`status: .published` behind a comment claiming "The TEI header carries no publication status". That
+comment is now false, `VolumeStatus.partiallyPublished` already exists and `SubseriesView` already
+renders a badge for it — but honouring it would change a volume this release was not asked to touch.
+See the decisions below.
+
 ## Owner decisions
 
 1. **`CATALOG_API_KEY` for `95D407`?** Provide it and §6's eight-step chain resolves one lot file;

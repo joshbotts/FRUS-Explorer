@@ -29519,7 +29519,7 @@
     "generalEditor" : "Edward C. Keefer",
     "publicationDate" : "2009",
     "sizeBytes" : 8817153,
-    "status" : "published",
+    "status" : "partiallyPublished",
     "subseries" : "1969-76",
     "tags" : [
       "nixon-richard",
@@ -31469,7 +31469,7 @@
     "generalEditor" : "Kathleen B. Rasmussen",
     "publicationDate" : "2025",
     "sizeBytes" : 1925322,
-    "status" : "published",
+    "status" : "partiallyPublished",
     "subseries" : "1977-80",
     "tags" : [
       "carter-jimmy",
@@ -32087,8 +32087,9 @@
     ],
     "filename" : "frus1981-88v16.xml",
     "generalEditor" : "Kathleen B. Rasmussen",
-    "sizeBytes" : 1275611,
-    "status" : "published",
+    "publicationDate" : "2026-09-18",
+    "sizeBytes" : 1277887,
+    "status" : "partiallyPublished",
     "subseries" : "1981-88",
     "tags" : [
 
