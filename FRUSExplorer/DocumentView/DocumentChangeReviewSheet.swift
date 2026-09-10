@@ -273,7 +273,7 @@ struct DocumentChangeReviewSheet: View {
                     .foregroundStyle(.secondary)
             } else if isVanished {
                 Label(String(localized: "document.review.vanished",
-                             defaultValue: "This document is no longer in the volume after an update. Everything you attached to it is kept until you remove it."),
+                             defaultValue: "This document is no longer in the volume — either a volume update removed it, or a change to how the app reads the volume no longer finds it. Everything you attached to it is kept until you remove it."),
                       systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
             } else if let line = DocumentChangeBanner.line(revision: revision, highlightsStale: highlightsStale) {

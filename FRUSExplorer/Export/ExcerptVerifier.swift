@@ -302,9 +302,9 @@ struct ExcerptVerificationReport: Equatable, Sendable {
         if !vanished.isEmpty {
             parts.append(vanished.count == 1
                 ? String(localized: "excerpt.verify.vanished.one",
-                         defaultValue: "One quotation cites a document that an update removed from its volume.")
+                         defaultValue: "One quotation cites a document that is no longer in its volume.")
                 : String(localized: "excerpt.verify.vanished.many %lld",
-                         defaultValue: "\(vanished.count) quotations cite documents that an update removed from their volumes."))
+                         defaultValue: "\(vanished.count) quotations cite documents that are no longer in their volumes."))
         }
         if !unindexed.isEmpty {
             parts.append(String(localized: "excerpt.verify.unindexed %lld",

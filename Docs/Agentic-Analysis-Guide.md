@@ -56,10 +56,16 @@ finding depends on how something was encoded, go back to the XML in
 `~/Library/Containers/bottsywattsy.FRUS-Explorer/Data/Library/Application Support/FRUSExplorer/Volumes/`
 or to [history.state.gov](https://history.state.gov/historicaldocuments).
 
-**It contains only what you downloaded.** The bundled manifest covers 552 volumes; the database
+**It contains only what you downloaded.** The bundled manifest covers 553 volumes; the database
 covers however many you have indexed. There is no row anywhere that says "and 410 volumes are
 missing." Every count you compute is conditional on your library, and it is your job — not the
 agent's — to say so. Start every session with the coverage query in [§6.1](#61-establish-coverage-first).
+
+**One number has two truthful values right now.** The repository tree carries a **553**-volume
+manifest; no shipped build reflects it yet, because FRUS 1981–1988 vol. XVI is fully ingested and
+held until the Office of the Historian publishes it. Measuring from the tree gives 553; measuring
+from an installed app or a device index gives **552**. Say which you read — and note that the
+subject artifacts still cover 552 either way, because the upstream tagging drop has not caught up.
 
 **It contains your own writing.** `document_cache.summary_text` and `document_cache.note_text` hold
 your AI-generated summaries and your research notes, mirrored out of SwiftData so search can reach
@@ -198,7 +204,7 @@ other than what they appear to (`citation_era` is not a date; `reference_type` d
 distinguish body from footnote; `subject_tag_ids` is always empty). The gotcha list is worth more
 context budget than the schema is.
 
-A note on scale: a full 552-volume index runs to several gigabytes, with `document_cache` alone at
+A note on scale: a full 553-volume index runs to several gigabytes, with `document_cache` alone at
 roughly 1.8 GB of text. Aggregate in SQL and return summaries. An agent that pulls `body_text` for
 20,000 rows into its context will exhaust the window before it reaches an answer.
 
@@ -206,7 +212,7 @@ roughly 1.8 GB of text. Aggregate in SQL and return summaries. An agent that pul
 call that produces no output for longer than their per-call timeout (three minutes, in the runs
 this guide draws on), and a killed call loses everything not yet on disk — one thread lost an hour
 and three-quarters of scans that way, and one 300-second query loop lost its results to Python's
-stdout buffer after it had computed them. So: never scan all 552 volumes or all of `body_text` in
+stdout buffer after it had computed them. So: never scan all 553 volumes or all of `body_text` in
 one call; slice by volume (ten to twenty per call), write each slice's result to a file in the
 agent's scratch directory as it completes (`print(…, flush=True)` or `python3 -u`), and merge.
 Never `SELECT body_text` without a `(volume_id, document_id)` pair or a tight filter and a `LIMIT`.
@@ -535,7 +541,7 @@ db.executemany("INSERT INTO volumes VALUES (?,?,?,?,?,?)", [
 
 Note the distinction the manifest makes and your prose must keep: **coverage** dates (what the
 volume documents) and **publication** date (when it was printed) are different axes, and they are
-far apart. Measured over the 552 bundled volumes that state both, the median gap between a volume's
+far apart. Measured over the 553 bundled volumes that state both, the median gap between a volume's
 last covered year and its publication year is **27 years**, and the largest is 95. Group by the
 wrong one and a chart of "FRUS documents per decade" becomes a chart of publishing schedules.
 
@@ -563,7 +569,7 @@ SELECT COUNT(DISTINCT volume_id) AS volumes,
 FROM document_cache;
 ```
 
-`volumes` against the manifest's 552 is the denominator for every claim that follows. The two flag
+`volumes` against the manifest's 553 is the denominator for every claim that follows. The two flag
 sums tell you how much of `rows_total` is not a historical document.
 
 Per volume, with its indexed date span:
@@ -1201,7 +1207,7 @@ COVERAGE
 - Before anything else, run the coverage query and report it:
   SELECT COUNT(DISTINCT volume_id), COUNT(*), SUM(is_front_matter), SUM(is_editorial_note)
   FROM document_cache;
-- The full series is 552 volumes. This database has only what I downloaded. Every count is
+- The full series is 553 volumes. This database has only what I downloaded. Every count is
   conditional on that; say so in every summary, with the volume count.
 
 IDENTITY
@@ -1538,7 +1544,7 @@ thread's whole first TEI table was built that way). Each document div carries
 `<front>`, `<body>` **and `<back>`** — FRUS puts administrative statements in `<back>` appendices,
 so a `<body>`-only heading pass is a narrowed surface in §14.2's sense. Prefer a parser
 (`lxml`/`ElementTree`) with the manifest as the file list, never a shell glob over the 694 files on
-disk (the manifest names 552).
+disk (the manifest names 553).
 
 Raw TEI, tag-stripped text, and word-bounded tokens are three different measurements of the same
 corpus, and on FRUS they disagree materially, because the XML hard-wraps prose and inline markup
@@ -1763,7 +1769,7 @@ the corpus's own words for your subject.
 
 ### 14.9 Where the corpus double-counts itself
 
-The 552 bundled volumes include **three second editions** — `frus1951-54IranEd2`,
+The 553 bundled volumes include **three second editions** — `frus1951-54IranEd2`,
 `frus1969-76ve15p2Ed2`, `frus1977-80v09Ed2` — and for two of them the first edition ships as well.
 Both editions appear in `manifest.json` and in `semantic-vectors-index.json`; this is deliberate
 publishing, not a defect — but suppress the second edition where a first edition is present before
@@ -1784,7 +1790,7 @@ both pairs the `Ed2` is the *later* publication (2018 over 2017; 2021 over 2014)
 fold — suppress the `Ed2` — keeps the earlier text, which is right for a count and wrong for a quote.
 If a claim turns on the wording of a document in either pair, read the volume.
 
-Related, and worth stating once: the semantic artifacts count **314,483** documents, while this
+Related, and worth stating once: the semantic artifacts count **314,571** documents, while this
 project's own settled corpus figure from its query work is **316,839**. The two count different
 surfaces. Whichever you use, name it — a run that publishes densities to two decimals owes the reader
 its denominator.
@@ -1812,21 +1818,37 @@ the profiles is by construction; rank it from `document_subject_refs` instead. S
 never a subcategory — *Trade and Commercial Policy/Agreements* has 17 members, eight of them prices,
 wages and credit.
 
-**`semantic-map-index.json`** carries 179 unsupervised cluster labels. It is a fast test of whether
+**`semantic-map-index.json`** carries 171 unsupervised cluster labels — read `len(clusters)` from
+the file rather than trusting this number.
+
+**A cluster id is a row number, not a name.** Ids are assigned when the layout is built, and a
+rebuild RE-PARTITIONS the corpus rather than renumbering it, so an id quoted in prose survives into
+the next artifact still resolving, still plausible, and naming another subject entirely. Quote three
+things and only three: the **label**, matched on WHOLE TERMS (`"tin" in c["terms"]`, never a
+substring — `tinoco`, `constantinople` and `argentina` all contain it); the cluster's
+`documentCount`; and the file's `generated` stamp beside `len(clusters)`. If either of the last two
+has moved since your reading, the reading is void — and a measured SHARE over a cluster's members is
+void first, because membership changes even where the label survives.
+
+It is a fast test of whether
 your subject forms a region of the corpus at all — and the answer differs sharply by question shape:
 
 | Question | Clusters found | Reading |
 |---|---|---|
-| Wartime critical materials | **4** clusters, 2,405 documents — `jordana, wolfram, hayes, wendelin`; `chrome, turkish, numan, turk`; `salazar, lagen, portuguese, azore`; `rubber, tin, vile, gwatkin` | Sustained named negotiations cluster hard. The vector layer is the right instrument. |
-| Foreign Service reform | **0** of 179 (controls pass: 15 match `soviet`, 5 match `nuclear`) | An institution is not a region of the semantic space. Vectors will not rescue the question. |
-| Commercial diplomacy, 1930s | label test: **1** of 179 (controls pass). Cluster-purity harvest: 4 clusters at 25–59% RTAA-stratum share held 1,030 non-stratum documents, 776 of 1,030 (75.3%) commercial by the editors' own headings after a refuter fixed an unanchored `tin` (it matched *PanamaContinued*), 284 of 849 unreachable by all twenty of the project's phrase families; corpus-wide they sized a third editorial stratum of 1,228 documents, 878 outside every prior stratum | A label test is a test of labelling. When a subject is filed by counterpart, the map labels by counterpart (cluster 92 is 59% reciprocal-trade documents and its label is `chalkley · australian · australia · sydney`). |
+| Wartime critical materials | **4** clusters, **2,514** documents in the 2026-09-09 layout — `jordana, wendelin, bowers, barcelona` (1,336); `chrome, turkish, clodius, numan` (436); `chalkley, rubber, tin, todd` (477); `salazar, azore, portuguese, lagen` (265). The 2026-08-16 layout also found four, at 2,405 documents, under labels reading differently (`wolfram`, `hayes`, `vile`, `gwatkin` are gone) — so re-derive before quoting either | Sustained named negotiations cluster hard, and did so across a relayout. The vector layer is the right instrument. |
+| Foreign Service reform | **0** of 171 in the 2026-09-09 layout (controls pass: 13 match `soviet`, 3 match `nuclear`) | This institution did not form a labelled region — but read the claim narrowly. Some institutions do cluster: `cia, nsc, dci, intelligence` is the seventeenth-largest region at 2,441 documents. |
+| Commercial diplomacy, 1930s | label test: **1** of 179 in the 2026-08-16 layout (controls pass). Cluster-purity harvest: 4 clusters at 25–59% RTAA-stratum share held 1,030 non-stratum documents, 776 of 1,030 (75.3%) commercial by the editors' own headings after a refuter fixed an unanchored `tin` (it matched *PanamaContinued*), 284 of 849 unreachable by all twenty of the project's phrase families; corpus-wide they sized a third editorial stratum of 1,228 documents, 878 outside every prior stratum | A label test is a test of labelling. When a subject is filed by counterpart, the map labels by counterpart (in the 2026-08-16 layout the cluster labelled `chalkley · australian · australia · sydney`, 363 documents, was 59% reciprocal-trade). **That reading is now void, and it shows exactly why an id must never be quoted:** the 2026-09-09 layout has no such cluster, its `chalkley` cluster reads `chalkley, rubber, tin, todd` at 477 documents, and id 92 there is `bulgarian, rumania, rumanian, soviet` at 2,830 — a subject with no relation to the reading. |
 
-The map's twenty largest clusters are, without exception, places and crises. That is what it is
-organised around, and it constrains what it can find for you. Note also the asymmetry *within* a
+The map's twenty largest clusters are overwhelmingly places and crises — but not without exception,
+and the exceptions matter to the row above. In the 2026-09-09 layout `nato, edc, ger, wld` (3,999),
+`pasvolsky, trusteeship, gromyko, soviet` (3,291), `cia, nsc, dci, intelligence` (2,441) and
+`winant, eito, irish, igc` (2,054) are institutions and negotiating bodies rather than countries.
+Places and crises are still what it is mostly organised around, and that constrains what it can find
+for you. Note also the asymmetry *within* a
 question: the wartime *denial* operations clustered; the hemispheric *acquisition* program did not,
 because it is distributed across many country files rather than concentrated in a few negotiations.
 
-A 0-of-179 label test rules out a *labelled* region, not the map. Before closing the route, harvest
+A 0-of-N label test rules out a *labelled* region, not the map. Before closing the route, harvest
 the clusters where a heading-defined stratum concentrates (≥25% purity) and triage the non-stratum
 members by the editors' headings — and budget one in four for geographic contamination. Read the
 corpus's own partition before choosing a memo's organising axis: one memo had no geography while the
@@ -2331,7 +2353,7 @@ The database is not the only structured layer FRUS Explorer ships. The app also 
 **semantic vector artifacts** — a neural embedding of every document in the corpus, quantized and
 packed for on-device retrieval — and they are just as usable by an outside agent as the SQLite
 index is. Everything in this appendix was verified against the shipped files: the binary headers
-parse as documented, the id encoding round-trips for all 552 volumes, and every worked example
+parse as documented, the id encoding round-trips for all 553 volumes, and every worked example
 below was executed as shown.
 
 One structural fact frames all of it: **the shipped artifacts are complete for document-to-document
@@ -2350,7 +2372,7 @@ to you.)*
 | Artifact | Contents | Where |
 |---|---|---|
 | `semantic-vectors-index.json` (~73 KB) | Identity and provenance: per-volume row offsets, run-length-encoded document ids, the provenance pin, measured retrieval parameters | App bundle `Resources/` |
-| `semantic-vectors-binary.bin` (~19.5 MB) | Tier 1: one 512-bit **sign vector** per document (314,483 of them), then 659 int8 **centroids** (552 volumes + 107 subseries) | App bundle `Resources/` |
+| `semantic-vectors-binary.bin` (~19.5 MB) | Tier 1: one 512-bit **sign vector** per document (314,571 of them), then 660 int8 **centroids** (553 volumes + 107 subseries) | App bundle `Resources/` |
 | `<volume>.vec` shards (~150 KB each) | Tier 2: full **int8 512-dim vectors** with a per-document scale, one file per volume | `…/Application Support/FRUSExplorer/SemanticVectors/` |
 | `semantic-map.bin` (~1.9 MB) | One `(int16 x, int16 y, uint16 cluster)` placement per document — a 2-D UMAP layout with HDBSCAN clusters | App bundle `Resources/` |
 | `semantic-map-index.json` (~25 KB) | Per-cluster labels (c-TF-IDF terms), centres, document counts, era histograms | App bundle `Resources/` |
@@ -2358,7 +2380,7 @@ to you.)*
 The bundle path on macOS is `/Applications/FRUS Explorer.app/Contents/Resources/`. The Tier-2
 shards live beside the database in Application Support and exist **only for volumes whose vectors
 have been fetched** (by default that tracks volume downloads; Settings ▸ Storage controls it) —
-whereas Tier 1 and the map cover the **entire 552-volume corpus regardless of your library**. That
+whereas Tier 1 and the map cover the **entire 553-volume corpus regardless of your library**. That
 asymmetry cuts both ways: semantic neighbors can point at documents you cannot open locally
 (resolve them via the canonical URL), and the semantic tier is the one place in the app's data
 where a claim about the *whole* corpus is actually possible.
@@ -2409,7 +2431,7 @@ def decode_segments(segments):          # one volume's "seg" array
 ```
 
 Run the round trip before trusting anything built on it — decoded length must equal `n` for every
-volume (verified: 552 of 552 on the shipped index).
+volume (verified: 553 of 553 on the shipped index).
 
 ### A.4 Binary layouts
 
@@ -2441,7 +2463,7 @@ semantic-map.bin
 ```
 
 Sign bits are packed **MSB-first, and a zero component packs as a set bit** (the rule is `>= 0`).
-Centroids follow the sign-bit block in a fixed order: the 552 volumes in index order, then the 107
+Centroids follow the sign-bit block in a fixed order: the 553 volumes in index order, then the 107
 subseries in the index's `subseries` order. Dequantize any int8 vector as `code × scale`.
 
 ### A.5 What an agent can do with no model
@@ -2510,7 +2532,7 @@ outlier detector: "the least typical document in this volume."
 cluster with sampled c-TF-IDF terms and an era histogram. Verified example: `frus1881/d625` sits
 in cluster 0, whose terms are `shah, iran, iranian, mosadeq` — a nineteenth-century Persia
 despatch landing in the same region as the 1950s Iran crisis, which is exactly the kind of
-long-arc continuity the layout exists to show. 88,207 of 314,483 placements (28.0%) are
+long-arc continuity the layout exists to show. 89,449 of 314,571 placements (28.4%) are
 unclustered (`0xFFFF`); that share is a property of the corpus, not an error, and any figure built
 on clusters owes the reader the number. The 28.0% is corpus-wide and strongly era-dependent — 46.7%
 of 1861–1899 documents are unclustered against 22.3% of 1945–1964 (working scope: apparatus
@@ -2618,7 +2640,7 @@ SEMANTIC VECTORS
   relationship. Similarity claims require reading the documents — and say which baseline each
   distance is measured against (random-pair mean 193 / sd 17, or the k-th-neighbour distribution)
   at the digest in use.
-- Tier-1 covers all 552 volumes even when the SQLite index does not: flag any neighbor whose
+- Tier-1 covers all 553 volumes even when the SQLite index does not: flag any neighbor whose
   volume is absent from document_cache, and cite it by its canonical URL.
 - Absence of a neighbor is not evidence of absence: the funnel's measured recall@10 is 0.851.
 ```
@@ -2909,7 +2931,7 @@ SEMANTIC VECTORS
   intact, and §14.5's decoy warning proved out there too — the audit itself mis-filed a Bureau of
   International Organization Affairs series as a management record.
 - 1.1 — 2026-08-29: Appendix A, the semantic vector artifacts. Binary layouts, id decoding,
-  and every worked example verified against the shipped files (552/552 id round-trip, digest
+  and every worked example verified against the shipped files (553/553 id round-trip, digest
   match across index/binary/map, executed neighbor/centroid/map examples).
 - 1.0 — 2026-08-24: initial guide. Schema documented against `IndexingPipeline` index format
   version 46 and `FTS5Types.frusDocuments`; all example queries executed against a fixture built

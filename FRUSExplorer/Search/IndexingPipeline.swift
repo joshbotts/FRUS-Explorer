@@ -6423,9 +6423,12 @@ public actor IndexingPipeline {
     ///    `guard !data.documentCache.isEmpty else { return }`, so a volume that parses to nothing
     ///    stamps nothing, and a volume that fails to parse never reaches storage.
     ///
-    /// What *is* wrong is copy, not control flow: the vanished row reads "No longer in the volume
-    /// after an update", which attributes a parser change to the Office of the Historian. Recorded
-    /// as its own row rather than fixed here.
+    /// What *was* wrong was copy, not control flow: four strings read "after an update", which
+    /// attributed to the Office of the Historian a row this function also stamps when OUR OWN
+    /// parser stops emitting a document. Fixed 2026-09-10 (R-1f) by deleting the attribution
+    /// rather than inventing a new phrase — three sibling strings already said only "no longer in
+    /// the volume", which is the whole of what two hashes prove. The review sheet, the one surface
+    /// with room and the one a reader lands on to act, names both causes.
     private func auxMarkVanishedRevisions(volumeId: String, survivingDocumentIds: [String]) throws {
         try auxExec("CREATE TEMP TABLE IF NOT EXISTS surviving_doc_ids (d TEXT PRIMARY KEY)")
         try auxExec("DELETE FROM surviving_doc_ids")

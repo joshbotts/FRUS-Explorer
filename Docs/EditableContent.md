@@ -1833,7 +1833,7 @@ Footnotes, the source note, or the heading changed in a volume update, and some 
 #### No longer in the volume
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeBanner.swift | lines: 103–104 | key: document.changed.vanished | shared: iOS+macOS (single edit point) -->
 
-This document is no longer in the volume after an update.
+This document is no longer in the volume.
 
 <!-- END SOURCE: document.changed.vanished -->
 
@@ -1863,7 +1863,7 @@ Footnotes, source note, or heading changed in an update — the text did not
 #### Row line — gone
 <!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1331–1332 | key: research.row.changed.vanished -->
 
-No longer in the volume after an update
+No longer in the volume
 
 <!-- END SOURCE: research.row.changed.vanished -->
 
@@ -1911,7 +1911,7 @@ What Changed
 #### What Changed — vanished
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentChangeReviewSheet.swift | lines: 158–159 | key: document.review.vanished | shared: iOS+macOS (single edit point) -->
 
-This document is no longer in the volume after an update. Everything you attached to it is kept until you remove it.
+This document is no longer in the volume — either a volume update removed it, or a change to how the app reads the volume no longer finds it. Everything you attached to it is kept until you remove it.
 
 <!-- END SOURCE: document.review.vanished -->
 
@@ -2400,14 +2400,14 @@ One quotation was not found in the document it cites.
 #### Export check — one document removed by an update
 <!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 304–305 | key: excerpt.verify.vanished.one | shared: iOS+macOS (single edit point) -->
 
-One quotation cites a document that an update removed from its volume.
+One quotation cites a document that is no longer in its volume.
 
 <!-- END SOURCE: excerpt.verify.vanished.one -->
 
 #### Export check — several documents removed by an update
 <!-- SOURCE: FRUSExplorer/Export/ExcerptVerifier.swift | lines: 306–307 | key: excerpt.verify.vanished.many %lld | shared: iOS+macOS (single edit point) -->
 
-%lld quotations cite documents that an update removed from their volumes.
+%lld quotations cite documents that are no longer in their volumes.
 
 <!-- END SOURCE: excerpt.verify.vanished.many %lld -->
 

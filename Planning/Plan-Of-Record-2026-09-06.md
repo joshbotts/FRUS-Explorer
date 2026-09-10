@@ -12,6 +12,47 @@ list is in §3, because a plan that only lists survivors invites the same re-der
 
 ---
 
+## §0 — Owner decisions, 2026-09-10
+
+Recorded here because a later session will look for them here, and because the first of them
+retires a question this project has carried through three builds.
+
+### D-A. The semantic verdict came back, and it is favourable
+
+**The semantic clusters and Meaning search are valuable. They stay.** The builds 43, 45 and 46
+tester notes asked *"coherent research leads, or arbitrary piles? — 'piles' is the most useful
+answer: it means we remove the feature"*, and the build-46 notes then dropped the ask entirely. The
+question is now **closed in favour of the features**.
+
+Three consequences, and the third is the one that changes day-to-day work:
+
+1. **The "experimental" label stays.** It is a statement about maturity and about the reader's
+   expectations of a similarity ranking, not a hedge about whether the thing is worth having.
+2. **No surface should any longer invite its own removal.** The leads-or-noise framing is retired
+   from the tester notes and from any document that lists it as a standing gate.
+3. **Stop scoping semantic work as though it were on probation.** Rows in §1b were argued partly
+   from "the axis runs at weight 0 and may not survive"; that premise is gone. The refutations of
+   S-1 and S-2 stand on their own measured grounds and are unaffected — what changes is that the
+   surrounding programme is no longer provisional.
+
+**What kind of evidence this is, stated plainly:** an owner judgement from use, not a measurement.
+No recall figure, no A/B, no annotated relevance set. It is the verdict the notes were asking for
+and it is sufficient to stop asking — it is not a number, and nothing downstream should cite it as
+one.
+
+### D-B. The build-47 bump is deferred
+
+**The app will not publish FRUS 1981–1988 vol. XVI until the Office of the Historian releases it on
+history.state.gov.** The volume is fully ingested — manifest, every corpus-derived artifact, the
+semantic pack and a published shard — and none of that is wasted; it simply waits. `Phase F` of
+`Release-frus1981-88v16.md` (the bump and the tester notes) is parked until the upstream release.
+
+The state to hold in mind while it waits: `v2` carries a **553-volume** manifest that no shipped
+build reflects. Anything measuring "the corpus" from the tree gets 553; anything measuring it from a
+device gets 552 until the bump ships.
+
+---
+
 ## §1 — The week's work
 
 Ordered by what a reader of the tree would want fixed first, not by size.
@@ -176,9 +217,10 @@ more useful for saying which.
 | M-3 / M-4 residue, B-5 residue | A composition verdict on a live device and a Mac window. Not a test assertion |
 | A-2b (Meaning-mode prompts) — **was mislabelled `A-1`** | An on-screen check the row itself assigns to the owner. **Renamed 2026-09-07**: this plan carried TWO different rows called `A-1` — §1d's concordance assessment (now struck) and this one, which is unrelated and owner-blocked. Anyone told to "start A-1" could have begun either |
 | B-2 — W-14 read-aloud | Owner deferral, 2026-09-01, with an explicit revisit point: "after the App Store push" |
+| ~~The clusters leads-or-noise verdict~~ | **ANSWERED 2026-09-10 — see §0 D-A.** Favourable; the features stay |
 | B-4 sitting half | Owner appetite plus the outstanding build-44/45 tester verdict |
 | B-7 — Differentiate Without Color on the map | A design decision: which second channel carries the encoding |
-| R-1 / NVR §10 | The Office of the Historian has not published. The volumes do not exist anywhere |
+| ~~R-1 / NVR §10~~ | **OVERTAKEN 2026-09-10.** OH published FRUS 1981–1988 vol. XVI; PR #1258 ingested it through Phase D. What remains is the build bump, and that is deferred by D-B until the volume appears on history.state.gov |
 | N-0 → N-1 → N-2 → N-3 (#234) | The M2a annotation sitting: a human reading 72 documents. Everything downstream is gated on it, and **N-3 is refused by name until N-1 returns a verdict** |
 | P10 — place_mentions | Owner curation of the top-300 toponym heads. *Note: the old plan defers it to "the next index bump"; two have shipped since (47→48, 48→49) and it did not ride either* |
 | #1081 screenshots, VoiceOver pass, archive-and-upload, launch territories, Gemma check | Owner-only by house rule or by App Store Connect |

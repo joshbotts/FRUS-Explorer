@@ -171,7 +171,12 @@ Mitigation, and it is not optional:
   with the same SHA — the packer refuses a `model_file_sha256` that is not 64 hex, but it cannot
   tell you that you hashed a *different* file.
 - **After the run:** diff the two. Only `generated`, `machine`, `models_listing`,
-  `volumes_requested` and `totals_this_run` may differ. Anything else — **stop, do not pack.**
+  `volumes_requested`, `totals_this_run` and **`script_sha256`** may differ. Anything else —
+  **stop, do not pack.** (`script_sha256` joined that list on 2026-09-10: PR #1177 changed
+  `harvest_embeddings.py` itself to add the contract guard, so the value moves for every store
+  harvested before it. It is not an input to the provenance digest — that is built from model,
+  GGUF SHA, dims, chunking, prefix, pooling and quantization — and it reaches the index as a
+  separate `harvestScriptSHA256` field. A run that stopped on it would be stopping on the guard.)
 - **Then:** confirm the packed `semantic-vectors-index.json` carries `provenanceDigest`
   `a726ca606bdf4d1984ba7cfda4d5605c2e9dc1a8320654a1b5742e06aa6e3a64`, unchanged from the shipped
   artifact. A changed digest means a changed family and a 162 MB re-download for every user.
@@ -385,16 +390,26 @@ Regenerating the artifacts will fail a family of tests that pin corpus-scale num
 suite working as designed — those assertions exist so that an artifact cannot change without a
 human looking. Known examples:
 
-| Test | Assertion |
-|---|---|
-| `VolumeCatalogueGroupingTests.swift:241` | `index.volumeTotals.count == 552` |
-| `AdministrationProfilesDataTests.swift:417` | `index.volumesCovered == 552` |
-| `AdministrationProfilesDataTests.swift:426–427` | Nixon `pointDocCount == 13611`, Ford `== 4333` |
-| `ArchivalAnalyticsTests.swift:528` | `coverage.count == 552` — "every catalogued volume must carry a parseable span" |
-| `ArchivalFlowsTests.swift:209–210` | `volumesWithEdges == 254`, `volumesScanned == 552` |
-| `BundledKeynessBaselineTests.swift:46` | `volumeCount: 552, documentCount: 314_479` |
-| `BrokenRefsIndexTests.swift:24` | `"seriesVolumeCount": 552` |
-| `SubjectFacetScopeTests`, `SemanticMapSurfaceTests`, `VolumeSubjectProfilesTests`, `CollectionUsageIndexTests`, `SourceProvenanceDataTests`, … | narrative counts in doc comments and fixtures |
+**Corrected 2026-09-10, after this list was used for the first real ingest** — three of its rows
+pointed at fixture literals no regeneration can reach, and the strongest real guard was missing.
+What actually failed, in the order it surfaced:
+
+| Test | Assertion | Moved |
+|---|---|---|
+| `BundledKeynessBaselineTests.generatedOverTheWholeCorpus` | `provenance.volumeCount == manifest.count` | **The one this list omitted, and the first to fail.** It compares the artifact against the manifest rather than against a literal, so it fires the moment the manifest grows and clears itself when `CloudVectorsGenerator` runs |
+| `SemanticVectorsArtifactTests` "Volumes are in manifest order and cover the manifest exactly" | the store and the manifest must hold the same set | Fails from the manifest bump until Phase D packs. **This is the gate that says Phase D is unfinished** |
+| `SemanticVectorsArtifactTests.corpusFactsAreThePinnedOnes` | `volumes.count == 552`, `documentCount == 314_483` | → 553 / 314,571 |
+| `SemanticSubstrateTests` (bundled tiers) | same two figures, app-side | → 553 / 314,571 |
+| `VolumeCatalogueGroupingTests` | `volumeTotals.count == 552`, `sum == 314_483` | → 553 / 314,571 |
+| `AdministrationProfilesDataTests` | `index.volumesCovered == 552` | → 553 |
+| `ArchivalAnalyticsTests` | band distribution `[261,120,64,66,41]`, `coverage.count == 552` | → `[…,42]` / 553 — the band that gains is the one whose span holds the new volume's midpoint |
+| `SourceProvenanceDataTests` | `totalSourceNotes == 268757`, `volumesCovered == 522` | → 269,248 / 523 |
+| `SeriesFactsIndexTests` | `byNaId.count == 695` | → 698, but only if a keyed NARA run resolves new lots |
+
+**Three rows this list carried are unreachable and were removed**: `BrokenRefsIndexTests.swift:24`
+(inside `fixtureJSON`, a hand-written fixture no regeneration touches), `ArchivalFlowsTests.swift`
+(asserts against literals declared in its own fixture), and `BundledKeynessBaselineTests.swift:46`
+(inside `makeFile`, likewise). Chasing them wastes the first hour of a release.
 
 Find the rest mechanically, after regeneration, by running both suites:
 
