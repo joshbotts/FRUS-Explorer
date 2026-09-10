@@ -49,7 +49,7 @@ public struct CollectionUsageIndex: Codable, Sendable, Equatable {
         /// Document counts, parallel to ``volumes``.
         public let counts: [Int]
 
-        /// One-letter wire names. The artifact carries 12,273 rows, and spelling the three field
+        /// One-letter wire names. The artifact carries 12,289 rows, and spelling the three field
         /// names out costs 307 KB — 38% of the file — for a machine-read index nobody opens by
         /// eye. The Swift properties stay spelled out; only the bytes are short.
         enum CodingKeys: String, CodingKey {

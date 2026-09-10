@@ -19,7 +19,11 @@ import Foundation
 ///
 /// **No ANN index, by design and now by measurement.** On an M1 Max, a full Hamming scan of all
 /// 314,483 documents takes **1.43 ms**, and this kernel's whole funnel — scan, select 800, rescore in
-/// int8 against mapped shards — takes **2.44 ms** per query. An approximate index would trade
+/// int8 against mapped shards — takes **2.44 ms** per query. **Both were measured at the 256 width,
+/// and the bundle has shipped at 512 since #933**: `Planning/semantic-vectors/Dimension-Ladder-Spike.md`
+/// drove this same kernel over both artifact sets and got 1.53–1.68 ms for the scan and ~1.64 ms for
+/// the funnel at 512. The conclusion below survives the width change; neither quoted number does.
+/// An approximate index would trade
 /// exactness and determinism for time this feature does not need to save. (Both figures are desktop;
 /// the oldest supported device is still owed its own measurement, which is what
 /// `SemanticVectorsLatencyHarness` exists to take.)

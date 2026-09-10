@@ -12910,6 +12910,80 @@ by tests that had nothing to do with the intended mutation. Re-targeted at the c
 killed by the right two. Same class as P-1's M-5 and P-2's M-7: **a mutation that "passes" against the
 wrong site is not evidence, and reading which test killed it is what catches that.**
 
+## Sessions 2026-09-07/08 — the filing schedules, so a central-file number says what it means (PRs #1250–#1252, #1254–#1256)
+
+Seven PRs across two days, one arc: the app could name a decimal class only under the 1910–1949
+schedule, and could not name a subject-numeric key at all. It can now name both, in NARA's own
+filing order, across five schedules. The findings, because each was bought by reading real output
+rather than by reasoning:
+
+**#1250 — the later decimal schedules come off page GEOMETRY, not the text layer.** The 1950–59
+scan flattens the `CLASSES OF RECORDS` block's two columns into a label run with the glosses
+elsewhere, so a text pass reads 5 of 10. Two rules were found by reading: the word `Class` is itself
+letter-spaced on some rows (`C l a s s 4` — measured, exactly classes 4 and 5 of the 1960–63
+handbook, the two a commercial-diplomacy reader most needs), and a gloss WRAPS past its line, so
+collecting to end-of-line shipped class 3 with a gloss ending on the word "and" — not a thin label
+but a wrong one. **The later two ship NO subject layer, and that is a refusal**: both post-1950
+handbooks print an alphabetical index the subdivision parser reads BACKWARDS, and a floor reported
+over rows nobody will read is a number that looks like verification and is not.
+
+**#1251/#1252 — the subject-numeric handbooks, where the text layer is unusable by design.**
+`PDFPage.string` does not emit the table's row order, so the parse is geometric. Four rules were
+load-bearing and each came from real output: the corner mark **alternates corners with the leaf**
+(recto right, verso left), so a right-half strip silently harvests half of every outline — POL came
+out with no entry for 22–26, including the `24 SUBVERSION` the two editions exist to distinguish;
+the instruction column is per-EDITION and no single rule finds both; some 1965 pages carry two entry
+columns and grouping by `y` alone merged `POL 3` with the whole of `POL 7`; and both channels that
+name a page's category fail together on some pages, so a third pass looks for a token already known
+to be a category — the vocabulary is what makes the guess safe. **An organization file is not a
+primary subject**, and getting the order of the two lookups wrong is silent: `POL 6` is *People.
+Biographic Data.* while the organizations list's `6` is *Membership. Association.* Reading that list
+took 1963 from 83.2% to **88.5%**.
+
+**#1254 — the country element is GENERATED, not a controlled vocabulary**, and NARA says so. So
+matching the handbook's printed codes fails exactly where it matters: the appendix prints `S VIET`
+where the corpus writes `VIET S`, and the heaviest tail in the channel (674 documents) resolved to
+nothing while its neighbours resolved. Matching the NAME instead makes the two spellings one
+question and reaches **94.6%**. Four refusals are each measured — a partial cover is refused because
+`GER W` matched *Saar (West Germany)*; a hyphen splits before any other position because searching
+first gave `KOR N-US` as *Korea and United States, North*; a one-letter half is refused because
+`GER B` read as *Germany and Bali*; and two equally good readings are refused rather than guessed
+between. **The label is composed in NARA's FILING order, not the citation's** — the records are
+filed class → country → number while a citation writes class → number → country.
+
+**#1255 — the Archives axis gains a Classes lens, divided by filing era.** The division is not
+tidying: a class key does not mean one thing. Class 7 is Political Relations of States before 1950
+and Internal Political and National Defense Affairs after; country 48 moves from British Africa to
+Poland; `POL 24` is SUBVERSION in 1963 and SANCTIONS from 1964. One flat list would have to pick a
+reading per key and be wrong for the other era. A volume straddling two schedules is counted in
+**neither**, deliberately.
+
+**#1256 — the country table's columns are READ, not inferred, and three failures were silent.** The
+table is one born-digital PDF with three code columns at constant x across 23 pages; the text layer
+discards that, so the old parse guessed a partial row's column from its note. Each branch was wrong
+somewhere and silently, because a code in the wrong column still glosses — it just names another
+era's country. Measured against the source: the right-alignment rule **fabricated 15 entries** that
+exist in no column of the document; the two branches are tested in the wrong ORDER, so a note
+stating both always right-aligned; and a code could land in a column whose span excludes its own
+year. **Reading each column as its own clipped strip is load-bearing** — `selectionsByLine()`
+sometimes returns a whole printed row as one line, which is how `Bijagoz Islands Billiton Island`,
+a name of no country, reached the artifact. Countries went **217/200/215 → 287/252/263**, and
+**42 (Canada) and 74 (Bulgaria), recorded by #1201 as structurally unanswerable, are answered** —
+the pairing was never missing from the document, only from the text layer's projection of it.
+
+**#1256 also shipped the co-claimants (#1257 in the doc comments).** One country number is often
+several places, because the Department filed a territory under the number of the power holding it:
+`11g` is three Virgin Islands, `99` twenty-one Pacific islands. Measured, **101 / 96 / 89 codes per
+schedule** carry more than one claimant and about a **quarter of glossable documents** sit on one.
+The list is subtracted from the VENDED name and never from the tie-break's `displaced` set —
+curation overrides the winner afterwards, so using `displaced` shipped `11f = Panama Canal Zone
+(also: … Panama Canal Zone)` with the name it replaced missing.
+
+**#1253 — editor credits fold.** *Paul Claussen* was two rows, one under C and one under P, because
+the front matter writes both `Paul Claussen` and `Claussen, Paul`.
+
+---
+
 ## Session 2026-09-09 — Build 46 and its TestFlight notes
 
 **Build 46 across all three targets** — `project.yml` (3 occurrences) and `project.pbxproj` (9),
@@ -12971,5 +13045,112 @@ says "either side of each boundary" rather than naming two of the three.
 Both files are under the 4,000-character cap measured with `wc -m`: **iOS 3,921, Mac 3,967**.
 4,623 tests in 601 suites; `FRUSExplorerMac` builds clean with the two known non-source warnings.
 
-**Owner note: there is no `build-45` tag**, though `build-42`, `build-43` and `build-44` all sit on
-their bump commits. This session compared against build 45's bump commit `0d88e7e5` instead.
+**Owner note: there was no `build-45` tag** when this session ran, though `build-42`, `build-43`
+and `build-44` all sat on their bump commits, so it compared against build 45's bump commit
+`0d88e7e5` instead. **Both tags were created afterwards** — `build-45` on `0d88e7e5` and `build-46`
+on the merge — annotated and pushed, so the convention is whole again.
+
+---
+
+## Session 2026-09-10 — Ingest FRUS 1981–1988 vol. XVI, Phases A–D (PR #1258)
+
+The first real execution of `New-Volume-Release-Plan.md`. The volume — *South America*, 88
+documents in 4 published chapters of 11, 491 source notes — is fully ingested: manifest, every
+corpus-derived artifact, the semantic pack, and a shard published to the shards repository. Full
+record in `Planning/Release-frus1981-88v16.md`; the findings worth keeping here:
+
+**The two corrections in the same release changed NO bundled artifact.** `frus1914Supp` repointed
+two `<ref target>` URLs and `frus1981-88v05` bracketed three `<pb n>` labels and moved one `<pb>`.
+A `<ref target>` is an attribute the text extractors never read, and a `<pb>` contributes zero
+characters with `normalizedWhitespace` absorbing the joining space at both positions — verified by
+hashing the tag-stripped stream on both sides of the merge, which is identical. Only
+`manifest.json`'s `sizeBytes` moved, and a reader correctly sees no correction banner.
+
+**The archival diff carried TWO changes and only one was the new volume.** Those artifacts were last
+stamped 2026-08-19; #1206 and #1225 changed `SourceNoteParser` on 2026-09-05 and were never followed
+by a regeneration. Eighteen collection ids disappear here, seventeen of them lot files with bare
+`Lot 78 D 155`-shaped names and no repository — exactly the secondary-citation shape #1206 stops
+storing. Notes in a collection go 74,914 → 74,910: **v16 +50, #1206 −54**. Reading that diff as
+v16's doing would credit a new volume with removing seventeen lot files.
+
+**OH pushed again mid-run (PR #461), and only the manifest had to be redone.** The body after
+`</teiHeader>` is byte-identical across the two commits — same SHA-1 — so every corpus-derived
+artifact reads the bytes it already read. What #461 added mattered more than its 50 lines: a
+`<revisionDesc status="partially-published">` stating **`when="2026-09-18"`**, three `<relatedItem>`
+build stamps, and a `history.state.gov/tags` keywords block that is **commented out** (which is why
+v16 still has no tags).
+
+**So the publication date and the partial status are read from the document, not curated.** A
+curated table was drafted and reverted. `publicationDate` falls back to
+`revisionDesc/change[@corresp="#<idno>"][@status="published"]/@when` **only when the printed year is
+absent** — measured, the two disagree in **26** of the shipped volumes (`frus1950v01` prints 1977
+and was published digitally in 1998), so it can never override. It fills exactly one volume. And
+`status` now comes from `revisionDesc/@status`, which moved **three** shipped volumes to
+`partiallyPublished` — `frus1969-76ve10`, `frus1977-80v27`, `frus1981-88v16` — lighting an orange
+badge and a subseries stat pill that had never been shown.
+
+**A measurement error worth recording because the generator caught it.** A first pass at the status
+distribution read only each file's first 20 KB and reported 20 files with no `revisionDesc` and 2
+partially-published. Both were artefacts of the truncation — the element sits at the END of a header
+that runs past 20 KB in the longer volumes — and it hid `frus1969-76ve10` entirely. Reading whole
+headers: all 694 files carry one.
+
+**Phase D ran on the Air, not the Studio** (`Planning/Phase-D-on-the-Air.md`). The precondition that
+decided it was safe: the GGUF on the Air hashes identically to what the Studio harvest recorded.
+The provenance digest is unchanged and **all 552 pre-existing shards are byte-identical**, so no
+device re-downloads its 162 MB. The relayout reproduced **PCA at 58.36% explained variance,
+identical to the Studio's run to two decimals over a different matrix**, which is also the evidence
+that the numpy/Accelerate PCA warnings on that machine are spurious. Clusters 179 → 171. **The
+labels were read rather than glanced at** — zero of the 171 carry three or more generic
+corpus-wide words — and v16's 88 documents landed in four South America clusters with 13
+unclustered, half the corpus rate.
+
+**`95D407` did not resolve**, with the owner's key or without it. The keyed run answered five other
+lots and all 36 record groups; NARA indexes many State lots only in expanded form, so asking for the
+cited spelling fails. v16 ships with one archival unit unresolved, which is §6's own default. Three
+artifacts came back identical apart from their `generated` stamp and were reverted rather than
+committed — an artifact diff is this project's review surface and a date-only row in it carries
+nothing.
+
+**Six artifact-pinned test figures were re-measured**, never loosened to an inequality.
+
+---
+
+## Session 2026-09-10b — Post-v16 docs pass, and the semantic verdict recorded (PR #1259)
+
+**Two owner decisions, recorded as §0 of the plan of record** so a later session finds them where it
+looks. The semantic clusters and Meaning search are **valuable and they stay** — the question builds
+43, 45 and 46 asked testers, and which build 46 then dropped, is closed. "Experimental" remains as a
+statement about maturity rather than a hedge about worth, and the note says plainly that this is an
+owner judgement from use and not a measurement, so nothing downstream cites it as a number. The
+build-47 bump is **deferred** until the Office of the Historian publishes vol. XVI on its website.
+
+**That deferral produced the rule that ordered the whole pass.** The tree carries a 553-volume
+manifest that no shipped build reflects, so documents describing the TREE were updated and documents
+describing the SHIPPED APP — manuals, README, store listing, TestFlight notes — were left correct at
+552 for build 46.
+
+**R-1f was four strings, not the one the plan named.** The banner, the review sheet and the excerpt
+verifier all blamed the Office of the Historian for a row our own parser stamps when it stops
+emitting a document. Three SIBLING strings already said only "no longer in the volume", so the fix
+was deleting the attribution rather than inventing a phrase.
+
+**The Agentic Guide's worked cluster example was wrong twice**, and it is the failure R-1b fixed in
+code — a cluster id invalidated by a relayout — that nobody applied to prose. The guide said "cluster
+92 is 59% reciprocal-trade, label `chalkley · australian · australia · sydney`"; id 92 is
+`bulgarian, rumania, rumanian, soviet` (2,830 documents) and the chalkley cluster is id 96 reading
+`chalkley, rubber, tin, todd` (477). §14.10 now states the rule — quote the label matched on WHOLE
+terms, the `documentCount` and the `generated` stamp, never the id — and its other three readings
+were re-derived rather than patched, which found a flat falsehood: the twenty largest clusters are
+**not** "without exception places and crises"; four are institutions.
+
+**Eighteen structural figures swept; fifteen deliberately left**, every one of those a dated
+measurement whose rewriting would falsify a record of what was true then.
+
+**The shard-size comments were half the truth, and they are the argument for the eager/lazy fetch
+split** — 148 KB and 82 MB are the 256-dim figures, and the pack has shipped at 512 since #933.
+Measured: 553 shards, mean 294 KB, largest 988 KB, 162 MB total.
+
+**Vol. XVI's subject gap is disclosed rather than silent.** It is the only one of 553 volumes the
+subject aggregate does not cover, and the Top-subjects section simply vanished —
+indistinguishable from a volume with no characteristic subjects, which is a different fact.
