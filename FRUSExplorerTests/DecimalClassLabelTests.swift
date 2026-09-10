@@ -421,9 +421,11 @@ struct DecimalClassLabelTests {
 
         // Bands 2–4 open in 1961. All three labelled nothing while the file carried one decimal
         // schedule; band 2 labelled 448 once the 1950s and 1960s decimal schedules were parsed;
-        // and #1211's two subject-numeric schedules take the three to 549 / 65 / 0. Every one of
-        // those rows is labelled out of the schedule governing its own citing volumes, never the
-        // band's — no schedule of either filing system covers 1961–1968 or 1969–1976 outright.
+        // and #1211's two subject-numeric schedules took the three to 549 / 65 / 0. Re-measured
+        // 2026-09-10, after #1254's country element, #1256's country-column rebuild and the
+        // vol. XVI ingest: **599 / 69 / 0**, over 804 / 181 / 3 rows. Every one of those rows is
+        // labelled out of the schedule governing its own citing volumes, never the band's — no
+        // schedule of either filing system covers 1961–1968 or 1969–1976 outright.
         //
         // BAND 4'S ZERO IS THE GUARD AND IT HAS TO SURVIVE EVERY TABLE ADDED. It opens in 1977,
         // after the decimal file closed in 1963 and after the subject-numeric schedules end in

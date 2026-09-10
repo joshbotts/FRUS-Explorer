@@ -36,7 +36,7 @@ import Foundation
 struct CollectionUsageIndex: Decodable, Sendable {
 
     /// One key's per-volume document counts. Wire names are one letter — the artifact carries
-    /// 12,273 rows and the field names would otherwise be 38% of the file.
+    /// 12,289 rows and the field names would otherwise be 38% of the file.
     struct UsageRow: Decodable, Sendable {
         /// Index into the owning vocabulary.
         let key: Int

@@ -39,7 +39,8 @@ import LotClaimantsIndexGeneratorCore
 /// Both the `Most Recent` creator and any `Predecessor`s are stored, though only the former has a
 /// surface today. The harvest pass is the expensive part; re-running it later to answer a question
 /// the same scan could have answered costs the same again — the principle the presidential-library
-/// harvester states for its deeper levels. 118 of the 622 series carry a predecessor.
+/// harvester states for its deeper levels. 129 of the 698 series carry a predecessor (118 of 622
+/// at the 2026-08-10 first run, which is the figure this line used to give).
 ///
 /// ## Measured, 2026-08-10
 /// - 8,234 NAIDs are reachable from the bundled indexes; 2,121 are series in the harvest;
