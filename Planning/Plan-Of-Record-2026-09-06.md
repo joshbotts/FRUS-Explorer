@@ -114,6 +114,24 @@ still honours it. **If the answer should instead be that a reader who turned the
 shard fetch at all, that is one line** — and it brings back the case the exemption exists to
 prevent, an axis the reader deliberately raised that scores nothing forever.
 
+### D-E. No cellular gate on the semantic shard path
+
+**Owner decision 2026-09-10**, answering the follow-on D-D raised and the gate in #1265 sharpened.
+
+The question: `AppState.fetchSemanticShardIfNeeded` guards on `isOnline` and nothing else, where
+`DownloadManager` consults a cellular preference for volume downloads. With the semantic axis on by
+default, one Related-panel open can queue a **median of 104 shards, ~31 MB** (measured, 60 anchors,
+shipped block) — and on a metered connection nothing stopped it.
+
+**The answer is no gate.** Recorded because the absence reads as an oversight to anyone comparing
+the two paths, and because this is now the second session to raise it: the code carries the decision
+at the guard, so a third does not.
+
+What makes it defensible, stated so a reviewer need not re-derive it: the reader already has a
+switch that stops all of it — `Download With Volumes`, which since #1265 governs this path too — and
+a per-document one, the axis's own weight. Two controls the reader can find beat a third they
+cannot, and a shard is fetched only for a volume they already chose to download.
+
 ---
 
 ## §1 — The week's work

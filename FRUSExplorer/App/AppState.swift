@@ -791,6 +791,14 @@ final class AppState {
     func fetchSemanticShardIfNeeded(for volumeID: String,
                                     reason: SemanticShardFetchReason) {
         guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
+        // **`isOnline` and nothing else — no cellular check, by owner decision D-E (2026-09-10).**
+        // Stated here because the absence reads as an oversight beside `DownloadManager`, which
+        // does consult a cellular preference, and because two sessions have now raised it. With the
+        // axis on by default one Related-panel open can queue a median of 104 shards (~31 MB,
+        // measured over 60 anchors on the shipped block), so the question was real; the answer is
+        // that the reader already has two controls that stop it — the switch below, which governs
+        // this path since #1265, and the axis's own weight — and a shard is only ever fetched for a
+        // volume they already chose to download.
         guard isOnline else { return }
         // **The off switch (#926)**, read the way `DownloadManager` reads its cellular twin —
         // straight from `UserDefaults` with the default spelled here, so no view owns it and a

@@ -148,22 +148,18 @@ enum SemanticProjectReach {
 
         let eligible = SemanticSimilarityGenerator.eligibleVolumeIDs(
             indexed: appState.indexedVolumeIds, scope: nil)
-        let starts = index.volumes.map(\.rowOffset).sorted()
+        let order = Self.slotOrder(index.volumes)
 
         let scan = await runScan(probeRows: probeRows, corpus: corpus, index: index,
-                                 eligible: eligible, groupStarts: starts)
+                                 eligible: eligible, groupStarts: order.starts)
         guard !scan.groups.isEmpty else { return .none }
 
-        let volumesByStart = Dictionary(
-            uniqueKeysWithValues: index.volumes.map { ($0.rowOffset, $0.volumeID) })
         var leads: [ProjectReach.VolumeLead] = []
         leads.reserveCapacity(scan.groups.count)
         for group in scan.groups {
-            guard group.slot < starts.count,
-                  let volumeID = volumesByStart[starts[group.slot]]
-            else { continue }
+            guard group.slot < order.volumeIDs.count else { continue }
             leads.append(ProjectReach.VolumeLead(
-                volumeID: volumeID,
+                volumeID: order.volumeIDs[group.slot],
                 documentCount: group.documentCount,
                 reachingSeeds: group.reachingProbes))
         }
@@ -171,6 +167,29 @@ enum SemanticProjectReach {
             volumes: rank(leads),
             documentCount: scan.admittedRows,
             seedsProbed: probeSeeds.count)
+    }
+
+    /// The volumes in row order, as the two parallel arrays the scan partitions by.
+    ///
+    /// **This replaced a `Dictionary(uniqueKeysWithValues:)` keyed on `rowOffset`, which could
+    /// trap.** Two volumes share a row offset exactly when one has zero documents, and that
+    /// initialiser is a runtime crash on a duplicate key — on Project Home, on a path D-D made
+    /// default-on. It was latent (the shipped index has 553 distinct offsets and its smallest
+    /// volume, `frus1919Parisv13`, has 2 documents), which is the worst shape for a defect: nothing
+    /// would have surfaced it until an artifact regeneration produced an empty volume.
+    ///
+    /// Returning the ids in the SAME order the starts are sorted in makes the lookup an index
+    /// rather than a search, so there is no key to collide: the scan hands back a `slot` into
+    /// `groupStarts`, and `volumeIDs[slot]` is that group's volume by construction. A duplicate
+    /// offset now costs a zero-width group the scan admits nothing into, rather than a crash.
+    ///
+    /// - Parameter volumes: The bundled index's volume entries, in any order.
+    /// - Returns: Row offsets ascending, and the volume ids in the same order.
+    nonisolated static func slotOrder(
+        _ volumes: [SemanticVectorsArtifacts.VolumeEntry]
+    ) -> (starts: [Int], volumeIDs: [String]) {
+        let ordered = volumes.sorted { $0.rowOffset < $1.rowOffset }
+        return (ordered.map(\.rowOffset), ordered.map(\.volumeID))
     }
 
     /// The pass itself, off the main actor.
