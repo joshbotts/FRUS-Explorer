@@ -397,6 +397,44 @@ struct SemanticProjectReachTests {
         #expect(ranked.first?.volumeID == "frus-0")
     }
 
+    // MARK: - The slot mapping (the trap that was there)
+
+    private func entry(_ id: String, at offset: Int, documents: Int)
+        -> SemanticVectorsArtifacts.VolumeEntry {
+        SemanticVectorsArtifacts.VolumeEntry(
+            volumeID: id, rowOffset: offset, documentCount: documents, idSegments: [])
+    }
+
+    @Test("Slots map to volumes by position, in row order")
+    func slotOrderIsRowOrder() {
+        let order = SemanticProjectReach.slotOrder([
+            entry("frus-c", at: 200, documents: 50),
+            entry("frus-a", at: 0, documents: 120),
+            entry("frus-b", at: 120, documents: 80),
+        ])
+        #expect(order.starts == [0, 120, 200])
+        #expect(order.volumeIDs == ["frus-a", "frus-b", "frus-c"])
+    }
+
+    @Test("A zero-document volume shares a row offset and does not trap")
+    func zeroDocumentVolumeDoesNotTrap() {
+        // The defect this replaced: `Dictionary(uniqueKeysWithValues:)` keyed on `rowOffset` is a
+        // runtime crash on a duplicate key, and two volumes share an offset exactly when one has
+        // zero documents. Latent against the shipped index — 553 distinct offsets, smallest volume
+        // 2 documents — so nothing would have surfaced it until a regeneration produced an empty
+        // volume, on a Project Home path the 0.5 default made reachable for everyone.
+        let order = SemanticProjectReach.slotOrder([
+            entry("frus-a", at: 0, documents: 120),
+            entry("frus-empty", at: 120, documents: 0),
+            entry("frus-b", at: 120, documents: 80),
+        ])
+        #expect(order.starts.count == 3)
+        #expect(order.volumeIDs.count == 3)
+        #expect(Set(order.volumeIDs) == ["frus-a", "frus-empty", "frus-b"])
+        // Ascending, duplicates included — the scan's cursor advances past a zero-width group.
+        #expect(order.starts == order.starts.sorted())
+    }
+
     @Test("An empty finding is empty")
     func emptyIsEmpty() {
         #expect(ProjectReach.none.isEmpty)

@@ -13517,3 +13517,30 @@ needs `\btype=`, and the artifact is better evidence than either.
 
 **Owner steps, outside the repo:** archive and upload both targets, then tag `build-47` on the merge
 commit (the convention `build-45`/`build-46` restored).
+
+## Session 2026-09-10k — D-E recorded, and a trap I left in #1264 removed
+
+**D-E: no cellular gate on the semantic shard path (owner decision).** `fetchSemanticShardIfNeeded`
+guards on `isOnline` and nothing else, where `DownloadManager` consults a cellular preference — and
+with the axis on by default one Related-panel open can queue a median of 104 shards, ~31 MB. The
+answer is no gate, and it is written at the guard as well as in §0, because the absence reads as an
+oversight beside `DownloadManager` and **two sessions have now raised it**; a comment there is what
+stops a third. What makes it defensible is that the reader already holds two controls that stop it —
+`Download With Volumes`, which governs this path since #1265, and the axis's own weight — and a
+shard is only ever fetched for a volume they already chose to download.
+
+**A latent trap of my own, from #1264, on a path D-D made default-on.** `SemanticProjectReach.reach`
+built `Dictionary(uniqueKeysWithValues:)` keyed on `rowOffset`. Two volumes share a row offset
+exactly when one has **zero documents**, and that initialiser is a runtime crash on a duplicate key —
+so a Project Home crash, waiting on an artifact regeneration that produced an empty volume. Latent
+against the shipped index (553 distinct offsets; the smallest volume, `frus1919Parisv13`, has 2
+documents), which is the worst shape a defect can take: nothing surfaces it until it fires.
+
+**Fixed structurally rather than defensively.** `uniquingKeysWith:` would have stopped the crash and
+left a silent wrong answer. Instead `slotOrder(_:)` returns the offsets and the ids in the SAME
+order, so the scan's `slot` indexes straight into the ids and there is no key to collide: a duplicate
+offset now costs a zero-width group the scan admits nothing into. Two tests, one of them a
+three-volume fixture with a zero-document volume sharing an offset — which is the case the shipped
+artifacts cannot produce and therefore the case no test could otherwise reach.
+
+4,647 iOS tests / 603 suites (+2) + 37 UI tests; swift test 1,371 / 162; macOS clean. Build stays 47.
