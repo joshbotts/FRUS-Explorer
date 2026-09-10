@@ -484,15 +484,19 @@ public struct FootnoteCitationScanner: Sendable {
         options: .caseInsensitive)
 }
 
-// MARK: - FootnoteClassCandidate (#834, measurement only)
+// MARK: - FootnoteClassCandidate (#834's measurement, harvested since #1009)
 
 /// A central-file **class number** seen in a footnote clause — the decimal channel #784 deferred
 /// and #834 exists to price.
 ///
-/// **This type is a measurement, not a harvest.** Nothing writes it to the bundled artifact and no
-/// app surface reads it. It exists so the gate #834 makes binding — "re-run the own-class
-/// measurement first" — can be cleared against the real corpus through the real clause splitter,
-/// before any grammar change is designed. See `FootnoteCitationScanner.classCandidates(inNote:)`.
+/// **This type began as #834's measurement and is now the harvest.** Since #1009 its candidates —
+/// serial-carrying keys that compose under the 1910–49 schedule and round-trip through
+/// `decimalClassKey`, subject-numeric excluded — are written into `external-citation-index.json`'s
+/// class axis (schema 2: 31,259 decimal references over 8,138 class pairs and 4,460 target keys)
+/// and into the app's `external_citations` table as `centralFileClass` rows. It began life as the
+/// instrument for the gate #834 made binding — "re-run the own-class measurement first" — which it
+/// cleared against the real corpus through the real clause splitter before the grammar changed.
+/// See `FootnoteCitationScanner.classCandidates(inNote:)`.
 public struct FootnoteClassCandidate: Sendable, Equatable {
 
     /// How self-identifying the clause was. A candidate carries all three verdicts rather than one
@@ -567,13 +571,15 @@ extension FootnoteCitationScanner {
     ///
     /// `decimalClassLocation` IS called here, which the issue forbids for the harvest. That is the
     /// point of a measurement: the forbidden rule is the upper bound the permitted ones are priced
-    /// against. Nothing in this function's output reaches a shipped artifact.
+    /// against. Its output no longer stops at the measurement: since #1009 these candidates,
+    /// filtered, are the decimal channel of `external-citation-index.json`.
     ///
     /// ## What it deliberately does NOT do
-    /// No `Ibid.` inheritance. The lot/library channel inherits an `Ibid.` only when nothing but a
-    /// box/folder/date follows it, and whether a class can be inherited the same way is a design
-    /// question for the harvest, not something to prejudge in the measurement — inheriting here
-    /// would inflate the numerator with references no rule has yet been agreed for.
+    /// No `Ibid.` inheritance — still, and now by division of labour rather than by deferral.
+    /// #1014 W-1 measured the gap (1,169 references, 4.1% of the channel) and #1009 shipped the
+    /// rule in `FootnoteIbidGapWalker`, which carries the cross-footnote state this function
+    /// deliberately lacks and re-derives the direct channel as it walks so the two must agree.
+    /// Inheriting here as well would double-count.
     ///
     /// - Parameter note: One footnote's text, as `DocumentFootnoteExtractor` yields it.
     /// - Returns: One candidate per clause that yields a class key. A clause naming two classes

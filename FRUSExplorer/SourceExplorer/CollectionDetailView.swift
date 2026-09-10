@@ -86,8 +86,14 @@ struct CollectionDetailView: View {
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
-    /// a Full Screen Apps-mode iPad may still report true, giving a full-screen window
-    /// (#241 review finding; runtime probe still owed).
+    /// a Full Screen Apps-mode iPad reports true and gives a full-screen window. **The #241
+    /// review finding is PROBED, not owed** (W-2d/F-18, 2026-08-27, iPad Pro 13-inch simulator,
+    /// iPadOS 26.5): the true report is TRUTHFUL. `openWindow` opened a real second full-screen
+    /// scene, reached through the app switcher — the mode governs how windows are ARRANGED, not
+    /// whether a scene can open, so no extra fallback is owed here. The measurement is stated
+    /// once, in `FRUSExplorerApp`'s scene table; it drove the standalone document scene rather
+    /// than this one, but both cross the same environment value and the same `openWindow`. The
+    /// sheet stays for iPhone, where the flag is false and `openWindow` really is a no-op.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     #endif
 
@@ -140,7 +146,7 @@ struct CollectionDetailView: View {
 
     /// The NARA series claiming this record's lot, when NARA divided it across more than one
     /// (#675). `nil` for every record that is not lot-keyed, and for the great majority of
-    /// those that are — 113 of the 4,423 shipped records reach a divided lot.
+    /// those that are — 117 of the 4,432 shipped records reach a divided lot.
     private var dividedLotClaimants: [LotClaimant]? {
         guard let lot = record.lotFileNorm else { return nil }
         return LotClaimantsIndexStore.shared?.claimants(forRawLot: lot)
@@ -271,8 +277,8 @@ struct CollectionDetailView: View {
     private var catalogSection: some View {
         Section(String(localized: "collection.detail.catalog.header",
                        defaultValue: "NARA Catalog")) {
-            // The other half of §1c's 77/23 split. Measured on the shipped authority, 1,018 of
-            // 4,429 collections carry an identifier here; the 3,411 that do not still have
+            // The other half of §1c's 77/23 split. Measured on the shipped authority, 1,014 of
+            // 4,432 collections carry an identifier here; the 3,418 that do not still have
             // everything in `overviewSection`, so the absence of this section is not a gap in the
             // record but the ordinary case.
             ProvenanceChip(source: .naraCatalog)
@@ -925,7 +931,7 @@ struct CollectionDetailView: View {
 
     /// Ranks the collections cited alongside this one (#762-A).
     ///
-    /// Off-main because it intersects this record's volume list against all 4,423 shipped
+    /// Off-main because it intersects this record's volume list against all 4,432 shipped
     /// records; sub-millisecond in practice, but it runs on the same appear as the SQLite
     /// local-stats query and neither should be able to hold a frame.
     private func loadRelated() async {

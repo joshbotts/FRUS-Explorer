@@ -42,7 +42,7 @@ struct LotClaimant: Codable, Sendable, Equatable {
 /// bundled `central-files-index.json` stores **one** `naId` per lot, so wherever NARA divided a
 /// lot the app named one series and silently dropped the rest.
 ///
-/// Measured on the shipped bundle: **118 lots, up to 13 claiming series on one lot** (`61D146`),
+/// Measured on the shipped bundle: **123 lots, up to 13 claiming series on one lot** (`61D146`),
 /// and six bundle rows collapse to the same naId — those citations were indistinguishable.
 /// `64D563` alone rides 245 FRUS documents across 12 series.
 ///

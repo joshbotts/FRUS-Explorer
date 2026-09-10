@@ -31,7 +31,7 @@ struct QueryInspection: Sendable, Equatable {
 
     /// How many volumes this device has indexed — the denominator every count needs.
     ///
-    /// Per-device and live. The corpus has 552 published volumes; what a count is "out
+    /// Per-device and live. The corpus has 553 published volumes; what a count is "out
     /// of" is how many of them are indexed *here*, which is the number the researcher's
     /// claim actually rests on.
     let indexedVolumeCount: Int

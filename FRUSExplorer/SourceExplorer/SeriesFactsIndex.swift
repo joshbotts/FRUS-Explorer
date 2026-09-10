@@ -14,8 +14,8 @@ import Foundation
 ///
 /// FRUS source notes name the container a document came out of (`Lot 64 D 199`), never the office
 /// that made it. NARA records the office on the series, and the app already stores the series
-/// NAIDs, so this is a join with no resolution work behind it — 622 series, 364 distinct headings,
-/// ~52 KB.
+/// NAIDs, so this is a join with no resolution work behind it — 698 series, 398 distinct headings,
+/// ~119 KB.
 ///
 /// Built offline by `SeriesFactsIndexGenerator` from the record-group harvest. See that runner
 /// for why the *similarity axis* half of #405 was measured and refused (2.8% corpus reachability),
@@ -50,9 +50,9 @@ struct SeriesFactsIndex: Codable, Sendable, Equatable {
         let endYear: Int?
         /// NARA's **coverage** start year, where it publishes one (#1202, schema 3).
         ///
-        /// The inclusive pair above is the narrower one. Measured over the 173 shipped rows that
-        /// carry both, coverage starts earlier in 141, the same year in 31 and LATER in 1 — naId
-        /// 519793189, NARA's *FRUS Clearance Files* — so it is usually wider and containment is
+        /// The inclusive pair above is the narrower one. Measured over the 174 shipped rows that
+        /// carry both, coverage starts earlier in 142, the same year in 31 and LATER in 1 — naId
+        /// 488743828, NARA's *Subject and Country Files* — so it is usually wider and containment is
         /// not guaranteed. **Not rendered**: the card's `years` line keeps the inclusive pair, so
         /// this ships as a fact for a date screen rather than a change to what a reader sees.
         let coverageStartYear: Int?
@@ -82,13 +82,13 @@ struct SeriesFactsIndex: Codable, Sendable, Equatable {
     /// not, whether what you find can be published, how much of it there is, where it physically
     /// is, and whether NARA has a folder list. FRUS's own citation says none of it.
     struct Facts: Sendable, Equatable {
-        /// e.g. `Restricted - Partly`. Measured: 414 of 622 app-reachable series are restricted
+        /// e.g. `Restricted - Partly`. Measured: 483 of 698 app-reachable series are restricted
         /// in some degree, so this is usually present and usually consequential.
         var accessStatus: String?
-        /// e.g. `FOIA (b)(1) National Security` — 338 of 622.
+        /// e.g. `FOIA (b)(1) National Security` — 400 of 698.
         var accessRestrictions: [String]
         var useStatus: String?
-        /// Chiefly `Copyright` — 205 of 622.
+        /// Chiefly `Copyright` — 227 of 698.
         var useRestrictions: [String]
         var extent: String?
         var referenceUnit: String?

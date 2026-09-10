@@ -24,7 +24,7 @@ import Foundation
 /// answer, and a packet that flattened them would print each in the same voice:
 ///
 /// - ``derived`` is NARA's own reference unit for a series, read out of `series-facts-index.json`.
-///   It is data. Measured across that index, **694 of 695 series** name "National Archives at
+///   It is data. Measured across that index, **697 of 698 series** name "National Archives at
 ///   College Park — Textual Reference", which is what let D2 scope hand-curation down to the tail.
 /// - ``servedAt`` is a citation naming a **creating agency**, not a place. *Department of State*
 ///   and *Central Intelligence Agency* are agencies; the records are consulted at College Park.
@@ -38,12 +38,15 @@ import Foundation
 ///   address.
 ///
 /// ## The curated tail is deliberately absent here
-/// D2 scopes hand-curation to the 11 presidential libraries and the non-NARA tail. Those rows are
-/// institutional facts the owner has not yet confirmed, and T-1 **may not print one**. So this type
-/// models the curated case by *not resolving it* — a library returns ``unknown`` today and will
-/// return a curated facility when the table exists. The packet builds either way, with a chapter
-/// that is honestly empty rather than one filled with a guess. That is the "empty table that still
-/// builds" shape the T-0 gate requires, expressed in the type rather than promised in prose.
+/// D2 scoped hand-curation to the presidential libraries and the non-NARA tail, and T-1 may not
+/// print an institutional fact the owner has not confirmed. So this type models the curated case
+/// by *not resolving it*: a library returns ``unknown`` here, and still does now that
+/// `RepositoryFactTable.current` carries eleven confirmed rows — because a library never resolves
+/// to a FACILITY heading (D3). The packet reaches those rows by another route,
+/// `TripPacketTarget.facts`, which `TripPacketExporter` prints as the confirm-before-you-travel
+/// links. The packet builds either way, with a chapter that is honestly empty rather than one
+/// filled with a guess — the "empty table that still builds" shape the T-0 gate requires,
+/// expressed in the type rather than promised in prose.
 enum ResearchFacility: Equatable, Sendable {
 
     /// NARA's own reference unit for the series, from `series-facts-index.json`.
@@ -92,7 +95,7 @@ enum ResearchFacilityResolver {
 
     /// The one place a researcher is served for records whose citation names an agency rather than
     /// a place (D3). Not a curated institutional fact: it is the reference unit NARA itself states
-    /// for 694 of the 695 series in `series-facts-index.json`, and the string is the same one.
+    /// for 697 of the 698 series in `series-facts-index.json`, and the string is the same one.
     static let collegePark = "National Archives at College Park"
 
     /// Repository strings that name a creating agency, not a visitable place (D3).

@@ -84,8 +84,8 @@ struct DocumentChangeBanner: View {
     ///
     /// Pure and static so a test can drive the whole table without a view host. A row counts as
     /// a change only while it is stamped (`changedAt`) and unreviewed (`reviewedAt == nil`): the
-    /// first index of a volume stamps nothing, and a review — when a later phase adds one — must
-    /// silence the banner without deleting the row.
+    /// first index of a volume stamps nothing, and a review (`markDocumentRevisionReviewed`,
+    /// driven by `DocumentChangeReviewSheet`) must silence the banner without deleting the row.
     static func line(revision: IndexingPipeline.DocumentRevision?, highlightsStale: Bool) -> String? {
         let kind: String? = {
             guard let revision, revision.changedAt != nil, revision.reviewedAt == nil else { return nil }

@@ -697,7 +697,8 @@ public enum IndexingStage: Sendable, Equatable {
 
 /// A fine-grained per-document progress event emitted by `IndexingPipeline.progressStream`.
 ///
-/// Unlike `IndexingProgress` (which tracks volume-level state for `ReindexView`), this
+/// Unlike `IndexingProgress` (the volume-level stream, whose consumer `ReindexView` was folded
+/// into `StorageManagementView` in Session 118 and which now has no app-side subscriber), this
 /// type carries per-document detail and throughput metrics for the inline `IndexingCapsule`
 /// shown in `VolumeRowLabel` on iOS.
 ///

@@ -18,14 +18,14 @@ import Foundation
 ///
 /// Follows `BundledCloudVectors`' shape — `@MainActor` enum, idempotent `async prepare()`, work done
 /// in `Task.detached(.utility)`, never first-touched on a render path — because the reason that shape
-/// exists applies here twice over. This artifact is 10.23 MB, and while the *mapping* is cheap, the
-/// index JSON decode is not something to discover during a view body.
+/// exists applies here twice over. This artifact is 19.52 MB at the shipped 512 width, and while
+/// the *mapping* is cheap, the index JSON decode is not something to discover during a view body.
 ///
 /// Two departures from the JSON loaders, both because this is the app's first binary bundle resource:
 ///
 /// * **The binary is mapped, never read.** `Data(contentsOf:options:.mappedIfSafe)` costs a few pages
-///   up front and faults the rest in as the scan touches it. Reading 10.23 MB into the heap to answer
-///   a 1.43 ms scan would be the expensive part of the feature.
+///   up front and faults the rest in as the scan touches it. Reading 19.52 MB into the heap to
+///   answer a scan of a millisecond or two would be the expensive part of the feature.
 /// * **The two files are loaded as a pair or not at all.** The index states a provenance digest and
 ///   the binary header carries one; a mismatch means two generations met, and the loader reports that
 ///   rather than serving vectors keyed by the wrong table. That is the family version-skew rule

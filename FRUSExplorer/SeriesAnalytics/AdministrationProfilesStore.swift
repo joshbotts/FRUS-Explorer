@@ -39,9 +39,9 @@ final class AdministrationProfilesStore {
     ///
     /// ## Why this artifact, and why a named accessor (R-2, #1051)
     /// `volumeTotals` is an exact per-volume count of `<div type="document">` elements for
-    /// all 552 volumes — verified against the raw TEI and summing to 314,483, the same
+    /// all 553 volumes — verified against the raw TEI and summing to 314,571, the same
     /// number the semantic pipeline counts independently. The manifest's `documentCount`
-    /// is structurally dead (the header parser cannot compute it; 0 in all 552 entries),
+    /// is structurally dead (the header parser cannot compute it; 0 in all 553 entries),
     /// so Browse reads counts HERE. The accessor exists so that dependency on an artifact
     /// named for another feature stays behind one seam — if the counts ever move into the
     /// manifest, this is the only method that changes.

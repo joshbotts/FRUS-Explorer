@@ -22,17 +22,17 @@ import Foundation
 /// each other". Any surface built on this owes that sentence.
 ///
 /// ## The two axes are not equals
-/// - **Collections** (``collectionFlows``): 20,837 references between different collections over
-///   4,356 pairs. The heaviest are legible — Nixon NSC Files → Central Files 1970-73 (449),
-///   Kennedy National Security File → Central Files (365), the Whitman File and Central Files in
-///   both directions (287 / 276).
-/// - **Classes** (``classFlows``): 4,663 references between different classes over 2,730 pairs —
+/// - **Collections** (``collectionFlows``): 20,687 references between different collections over
+///   4,341 pairs. The heaviest are legible — Nixon NSC Files → Central Files 1970-73 (459),
+///   Kennedy National Security File → Central Files (367), the Whitman File and Central Files in
+///   both directions (288 / 272).
+/// - **Classes** (``classFlows``): 4,672 references between different classes over 2,734 pairs —
 ///   **1.7 references per pair**, with a largest single cell of 31 that is one wartime file cited
 ///   two ways (`740.00119` → `740.0011-EW`). There is no head to this distribution: the top 100
-///   pairs hold 18.6% of it, against 42.5% on the collection axis.
+///   pairs hold 18.6% of it, against 42.6% on the collection axis.
 ///
 /// The class axis ships as a **measurement, not a feature**. The cause is structural: the `dN`
-/// cross-reference idiom does not exist before 1945 — 298 of 552 volumes contribute no edges at
+/// cross-reference idiom does not exist before 1945 — 299 of 553 volumes contribute no edges at
 /// all — while the decades that do cross-reference heavily cite lot files and libraries rather
 /// than decimal classes. Do not build a class-flow surface on it.
 ///

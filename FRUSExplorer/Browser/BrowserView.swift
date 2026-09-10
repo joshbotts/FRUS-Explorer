@@ -1014,20 +1014,6 @@ struct BrowserView: View {
         presentSemanticMap(request)
     }
 
-    /// Opens the semantic map in a window where one is available, and in the sheet where it is
-    /// not (UI review F-25 / CW-9a).
-    ///
-    /// **The window is not a nicety, it is the layout.** Measured on an iPad Pro 13-inch, the
-    /// sheet reports *compact* horizontal size class, so a 1032×1376pt tablet runs the map's
-    /// phone layout — folded display options, one action card at a time — and with the
-    /// explanatory header at its default expanded state the Metal canvas is ~582×201pt, about 8%
-    /// of the screen, for 314,483 documents. A window is regular width, so
-    /// `SemanticMapSpikeView.isCompactWidth` flips and the tablet layout comes back.
-    ///
-    /// The sheet stays for iPhone and for iPads without multi-window, following the gate shape
-    /// `DocumentView.openCrossReferenceGraph` uses. `supportsMultipleWindows` is plist-derived
-    /// and the repo already records doubt about whether it reflects Stage Manager on iPad
-    /// (F-18, still unprobed) — so the fallback is a real path, not a formality.
     /// Opens Corpus Analytics in a window where one is available, and in the sheet where it is
     /// not (UI review F-11 / CW-9b) — the twin of ``presentSemanticMap``.
     private func presentAnalytics(_ params: AnalyticsParameters?) {
@@ -1086,6 +1072,23 @@ struct BrowserView: View {
         showChronology = true
     }
 
+    /// Opens the semantic map in a window where one is available, and in the sheet where it is
+    /// not (UI review F-25 / CW-9a).
+    ///
+    /// **The window is not a nicety, it is the layout.** Measured on an iPad Pro 13-inch, the
+    /// sheet reports *compact* horizontal size class, so a 1032×1376pt tablet runs the map's
+    /// phone layout — folded display options, one action card at a time — and with the
+    /// explanatory header at its default expanded state the Metal canvas is ~582×201pt, about 8%
+    /// of the screen, for the whole corpus. A window is regular width, so
+    /// `SemanticMapSpikeView.isCompactWidth` flips and the tablet layout comes back.
+    ///
+    /// The sheet stays for iPhone and for iPads without multi-window, following the gate shape
+    /// `DocumentView.openCrossReferenceGraph` uses. `supportsMultipleWindows` is plist-derived,
+    /// and the doubt this comment used to record — whether it reflects Stage Manager on iPad —
+    /// is **settled: F-18 was PROBED (W-2d, 2026-08-27, iPad Pro 13-inch simulator, iPadOS 26.5)
+    /// and a Full Screen Apps iPad reports true TRUTHFULLY**, opening a real second full-screen
+    /// scene; `FRUSExplorerApp`'s scene table states the measurement. The fallback is still a
+    /// real path, but for iPhone, where the flag is false, rather than for a doubted iPad.
     private func presentSemanticMap(_ request: SemanticMapRequest?) {
         if supportsMultipleWindows {
             // A nil request is the whole-corpus map, which is this menu item's normal meaning.

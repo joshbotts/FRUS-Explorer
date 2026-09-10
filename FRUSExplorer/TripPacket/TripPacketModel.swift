@@ -430,7 +430,9 @@ struct TripPacketModel: Equatable, Sendable {
                     facts: facts, claimants: claimants)))
         }
         // Facility order first (the artifact groups by repository), label second — stable
-        // and deterministic, since Phase 1 has no user tiers yet.
+        // and deterministic. The user's priority tiers are a render-time overlay applied by
+        // `ArchiveVisitOverlay.tierOrderIndex` (TripPacketExporter, ArchiveVisitEditorView),
+        // never by this derivation, so they do not belong in this sort.
         targets.sort {
             let left = $0.facility.chapterHeading ?? "\u{FFFF}"
             let right = $1.facility.chapterHeading ?? "\u{FFFF}"

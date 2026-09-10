@@ -22,7 +22,7 @@ import Foundation
 /// needs: a fully restricted series changes whether the trip is worth taking, and an unrestricted
 /// one changes nothing.
 enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
-    /// NARA states the series is closed. 138 of 695 — 19.9%.
+    /// NARA states the series is closed. 138 of 698 — 19.8%.
     case fully = 0
     /// Some of it is closed.
     case partly = 1
@@ -74,7 +74,8 @@ enum RestrictionSeverity: Int, Comparable, Sendable, CaseIterable {
 ///
 /// ## Why this is in the first shipping cut
 /// It was scoped into T-3 and D4 moved it forward, and the measurement is the whole argument:
-/// **481 of 695 series (69.2%) carry some restriction and 138 (19.9%) are Restricted — Fully.**
+/// **483 of 698 series (69.2%) carry some restriction and 138 (19.8%) are Restricted — Fully**
+/// (series-facts-index.json, generated 2026-09-10; 481 of 695 when D4 was decided).
 /// A researcher who flies to College Park to pull a closed series has lost the trip. The data to
 /// warn them shipped with #663/F-7 months ago, and no other page in the packet answers a question
 /// that large.

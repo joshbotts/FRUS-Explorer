@@ -110,7 +110,7 @@ enum DocumentSheet: Identifiable {
 /// ## Layout (top to bottom)
 /// 1. Toolbar — research note, user tag, collection, citation, cross-reference, summarize actions
 /// 2. Summary strip — active generated summary with "View others" control and chunked indicator
-/// 3. Document body — `FRUSDocumentRenderer` with persName/gloss/ref callbacks
+/// 3. Document body — `FRUSDocumentWebView` (WKWebView) with persName/gloss/ref callbacks
 /// 4. Tag section — subject tag chips and user tag chips
 /// 5. Cross-project note indicator — disclosure if notes from other projects exist
 ///
@@ -1031,8 +1031,9 @@ struct DocumentView: View {
         .onChange(of: activeSheet?.id) { oldId, newId in
             sheetIdentityChanged(from: oldId, to: newId)
         }
-        // Handle frusexplorer:// deep-link URLs emitted by FRUSDocumentRenderer's
-        // AttributedString rendering path.  Three URL forms are supported:
+        // Handle frusexplorer:// deep-link URLs. The body's own links come from
+        // `FRUSRenderNodeHTMLSerializer` and are dispatched by `FRUSURLSchemeHandler`; this is the
+        // residual `openURL` route. Three URL forms are supported:
         //
         //   frusexplorer://doc/{volumeId}/{documentId}
         //     Cross-reference navigation.  volumeId is "_" when the renderer

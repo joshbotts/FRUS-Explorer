@@ -94,8 +94,14 @@ struct CompilationView: View {
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
-    /// a Full Screen Apps-mode iPad may still report true, giving a full-screen window
-    /// (#241 review finding; runtime probe still owed).
+    /// a Full Screen Apps-mode iPad reports true and gives a full-screen window. **The #241
+    /// review finding is PROBED, not owed** (W-2d/F-18, 2026-08-27, iPad Pro 13-inch simulator,
+    /// iPadOS 26.5): the true report is TRUTHFUL. `openWindow` opened a real second full-screen
+    /// scene, reached through the app switcher — the mode governs how windows are ARRANGED, not
+    /// whether a scene can open, so no extra fallback is owed here. The measurement is stated
+    /// once, in `FRUSExplorerApp`'s scene table; it drove the standalone document scene rather
+    /// than this one, but both cross the same environment value and the same `openWindow`. The
+    /// sheet stays for iPhone, where the flag is false and `openWindow` really is a no-op.
     @Environment(\.supportsMultipleWindows) private var supportsMultipleWindows
     /// Half the gate on the principal title's parent line (F-17) — see `parentVolumeLabel` for
     /// why the pad idiom is the other half and why size class alone is not enough.

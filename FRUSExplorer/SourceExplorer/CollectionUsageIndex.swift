@@ -26,7 +26,7 @@ import Foundation
 ///
 /// ## Reading a count honestly
 /// A collection absent from ``collectionIds`` has **no documents attributed to it**, which is not
-/// the same as being unused: 2,595 of the authority's 4,423 records are named in a volume's front
+/// the same as being unused: 2,599 of the authority's 4,432 records are named in a volume's front
 /// matter and never resolved from a document source note. ``documentCount(forCollectionId:)``
 /// returns zero for those, and a surface that shows the number should say which question it
 /// answered.

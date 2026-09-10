@@ -23,8 +23,8 @@ import Foundation
 /// | artifact | tier | where | size |
 /// |---|---|---|---|
 /// | `semantic-vectors-index.json` | keys + centroids metadata | bundled | ~73 KB |
-/// | `semantic-vectors-binary.bin` | Tier 1 (Hamming candidates, corpus-wide) | bundled | ~9.8 MiB |
-/// | `<volume>.vec` | Tier 2 (int8 cosine, exact) | downloaded per volume | ~150 KB each |
+/// | `semantic-vectors-binary.bin` | Tier 1 (Hamming candidates, corpus-wide) | bundled | ~19.5 MiB |
+/// | `<volume>.vec` | Tier 2 (int8 cosine, exact) | downloaded per volume | ~294 KB mean |
 ///
 /// **The version-skew rule is the family rule** (design §4.3, promoted from
 /// `BundledKeynessBaseline.configurationMismatch`): every artifact carries the same provenance
@@ -266,7 +266,7 @@ public enum SemanticVectorsArtifacts {
     /// ..  centroids       centroids × (dims + 4) B   int8 codes then Float32 scale
     /// ```
     ///
-    /// Centroids ride in this file rather than the index because they are vectors — 171 KB of them
+    /// Centroids ride in this file rather than the index because they are vectors — 341 KB of them
     /// — and base64 in a JSON the app parses at launch would cost more to decode than the whole
     /// Hamming scan they support.
     ///
@@ -321,7 +321,7 @@ public enum SemanticVectorsArtifacts {
     ///   prose said half. Float32 costs 629 KB across the whole corpus tier and removes a rounding
     ///   step between the score a device computes and the score the gates measured.
     /// * **No id rows.** The design put per-volume id exceptions in the shard; the bundled index
-    ///   already carries every volume's ids in 1,605 run segments (48 KB encoded), and a shard that
+    ///   already carries every volume's ids in 1,607 run segments (48 KB encoded), and a shard that
     ///   repeated them would be a second place for identity to be wrong.
     ///
     /// - Parameters:

@@ -1269,7 +1269,7 @@ public actor IndexingPipeline {
     nonisolated(unsafe) private var preparedCacheInsert: OpaquePointer? = nil
     private let databaseURL: URL
 
-    // MARK: - Progress stream (volume-level, consumed by ReindexView)
+    // MARK: - Progress stream (volume-level; no app-side subscriber, only the tests)
 
     private let progressContinuation: AsyncStream<IndexingProgress>.Continuation
     private let _progress: AsyncStream<IndexingProgress>
@@ -1568,7 +1568,7 @@ public actor IndexingPipeline {
                         emit(.indexing(volumeId: data.volumeId, current: progressNow, total: total))
                         logger.info("indexAllVolumes: [\(progressNow, privacy: .public)/\(total, privacy: .public)] stored \(data.volumeId, privacy: .public) — \(data.documentCache.count, privacy: .public) docs in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
                         // Checkpoint the WAL after each volume to prevent it growing
-                        // unboundedly during a large batch (e.g. 552-volume full corpus).
+                        // unboundedly during a large batch (e.g. 553-volume full corpus).
                         // PASSIVE mode: flushes WAL pages to the main DB file without
                         // blocking active readers. Keeps frus.db's WAL file bounded
                         // (~50 MB peak instead of potential 1+ GB), reducing both peak
@@ -1603,7 +1603,7 @@ public actor IndexingPipeline {
         }
 
         // Run FTS5 optimize() ONCE for the whole batch. This merges all b-tree segments
-        // written during the indexing run. With 552 volumes, this takes ~30–60s — but
+        // written during the indexing run. With 553 volumes, this takes ~30–60s — but
         // calling it after each volume (the old behaviour) scaled to O(n²) overall and
         // was the root cause of 60+ minute indexing runs.
         //
@@ -2975,7 +2975,7 @@ public actor IndexingPipeline {
     /// Deliberately **not** a `FacetSection`. The facet panel exists to triage dimensions too
     /// long to read — 552 volumes, 14,615 person rollups — and user tags are the opposite
     /// problem: measured on the real store, 67 of 316,839 documents carry a tag (0.021%), so a
-    /// permanent sixth section would render "Nothing to break down here" for almost every
+    /// permanent seventh section would render "Nothing to break down here" for almost every
     /// query and teach the researcher the dimension is broken. These counts belong on the
     /// filter sheet's existing My Tags toggles, which appear only when opened and already
     /// perform the narrowing.
@@ -5971,7 +5971,7 @@ public actor IndexingPipeline {
         // live archive-visit plan kept deriving a target from it. Every legitimate source row has a
         // cache row (both come from the same parse; `auxDeleteVolume` removes both), so the
         // anti-join is exact, idempotent, and a cleanup rather than a parse change — no
-        // index-version bump, because a bump would re-index 552 volumes to delete rows a
+        // index-version bump, because a bump would re-index 553 volumes to delete rows a
         // millisecond statement removes.
         try exec("""
             DELETE FROM document_sources
@@ -6181,7 +6181,7 @@ public actor IndexingPipeline {
         // it. The tests below catch exactly that.
         //
         // The write side is normalised at the bind, and `currentDateIndexVersion` is bumped so a
-        // re-parse rewrites every row — but that re-parse takes minutes over 552 volumes, and
+        // re-parse rewrites every row — but that re-parse takes minutes over 553 volumes, and
         // until it finishes every `GROUP BY record_group` still splits RG 59 in two. This
         // idempotent UPDATE corrects the column on the next open instead: the same trade the
         // footnote-row delete makes, for the same reason.
@@ -7203,7 +7203,7 @@ public actor IndexingPipeline {
     ///
     /// Central-files-shaped citations (`.centralFiles`, `.cfpfFile`, and
     /// `.naraCollection` whose series names the central files) additionally store the
-    /// canonical class location in `decimal_class` (`decimalClassRow(parsed:rawText:)`).
+    /// canonical class location in `decimal_class` (`decimalClassColumn(parsed:rawText:)`).
     nonisolated private static func documentSourceRow(
         volumeId: String, documentId: String,
         parsed: ParsedSourceNote, rawText: String

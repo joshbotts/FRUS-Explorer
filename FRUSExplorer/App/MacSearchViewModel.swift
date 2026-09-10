@@ -123,9 +123,23 @@ final class MacSearchViewModel {
 
     // `scopeCollections` was removed with its chip (UI review M-10). It was a stored property
     // nothing ever read: no `didSet`, no projection into `parameters`, no reader but the chip's
-    // own binding. Re-adding it means adding `includeCollections` to `SearchParameters` and a
-    // `didSet` matching the three above — in that order, so the control cannot ship ahead of the
-    // behaviour a second time.
+    // own binding.
+    //
+    // **COLLECTION SEARCH WAS DESIGNED AND DECLINED BY THE OWNER, 2026-09-10.** Nothing here is
+    // waiting on a re-add, and the re-add instruction this comment used to carry was wrong twice —
+    // recorded because both errors would have been believed:
+    //
+    //  1. `includeCollections` HAS NEVER EXISTED. `git log -S'includeCollections' --all` returns
+    //     exactly one commit, `0e821faa` — the one that coined the word inside this comment and
+    //     its twin in `SearchSheet`. Nothing was ever removed under that name.
+    //  2. A collection scope is not a sibling of the three toggles above. Those are FTS5 COLUMN
+    //     SELECTORS (`SearchModels.swift`: "they select which FTS5 columns are matched"), and
+    //     NEITHER FTS5 table has a collection column — both are `content='document_cache'`, keyed
+    //     `(volume_id, document_id)`. Collections live in SwiftData; the index has never heard of
+    //     them. Scoping to one would be a document-ID set — resolved through
+    //     `WorkingCorpusResolver`, composed by `DocumentScopeGate.combine`, landing in the
+    //     existing `SearchParameters.documentIds` beside the working corpus and the project
+    //     History gate. No new `Bool`, no new `didSet`, and no change to this file's shape.
 
     // MARK: - Initialisation
 

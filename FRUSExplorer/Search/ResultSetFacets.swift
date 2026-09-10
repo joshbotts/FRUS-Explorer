@@ -10,7 +10,8 @@ import Foundation
 
 // MARK: - FacetSection
 
-/// The five dimensions a result set is broken down by (R-1).
+/// The six dimensions a result set is broken down by (R-1) — subjects joined the original
+/// five at #1018.
 ///
 /// Version history:
 ///   1.0 — R-1a: initial implementation
@@ -40,7 +41,7 @@ enum FacetSection: String, Sendable, Equatable, CaseIterable {
     /// Subjects is bounded by construction: the vocabulary holds **106** `(category,
     /// subcategory)` buckets and a match set cannot produce a bucket that is not in it.
     ///
-    /// Volumes (552) and people (**16,385** distinct rollups on a whole-corpus match) are the
+    /// Volumes (553) and people (**16,385** distinct rollups on a whole-corpus match) are the
     /// two that genuinely need it.
     var hasBoundedDomain: Bool {
         switch self {

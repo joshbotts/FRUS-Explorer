@@ -912,8 +912,12 @@ struct MacSearchWindowView: View {
             // disabled with a visible reason, or it does not ship. Removal is the smallest honest
             // one while collection search is unimplemented — a disabled chip with visible
             // "not available" text would spend width in a row this review separately calls dense
-            // (M-4) to advertise a feature that does not exist. Restoring it is a one-line change
-            // on the day `includeCollections` reaches `SearchParameters`.
+            // (M-4) to advertise a feature that does not exist.
+            //
+            // **Collection search was designed and DECLINED by the owner, 2026-09-10**, so the
+            // chip is not coming back. This comment used to end "restoring it is a one-line change
+            // on the day `includeCollections` reaches `SearchParameters`"; that sentence was wrong
+            // in both halves, and `MacSearchViewModel`'s `scopeCollections` note records why.
         }
     }
 

@@ -74,7 +74,7 @@ struct SemanticStorageSection: View {
             // hedging: the semantic axis ships at weight 0 by owner decision, contributing
             // candidates but never to a document's aggregate score, and its early-era quality is a
             // declared unknown rather than a measured pass. A reader deciding whether to spend
-            // 155 MB deserves to know they are funding an experiment.
+            // 162 MB deserves to know they are funding an experiment.
             // **Plain-language pass, build 42.** The v2 wording opened on "Vectors let the app…",
             // which asks the reader to know what a vector is before the sentence will parse. It
             // now opens on what the reader gets and names the file second. The hedges are kept
@@ -117,7 +117,7 @@ struct SemanticStorageSection: View {
     // * **Within one shard there is nothing to read.** The transfer is a one-shot
     //   `URLSession.download(from:)` with no progress callback — passing a delegate to
     //   `download(from:delegate:)` compiles and delivers zero callbacks, so a bar would sit at 0%.
-    //   The file is ~145 KB and lands in about 0.1 s; a bar would be a flash even if it worked.
+    //   The file is ~294 KB and lands in about 0.1 s; a bar would be a flash even if it worked.
     // * **Across many shards the completed COUNT is observable and worth showing.** A manual
     //   download of 340 volumes is a minutes-long action, and "downloading 12 of 340" is a true
     //   sentence the app can produce. That is `AppState.SemanticShardDownloadProgress`.
@@ -317,7 +317,7 @@ struct SemanticStorageSection: View {
     ///
     /// Distinct from "nothing downloaded", which is a library state. This is a build state: the
     /// bundled artifacts are missing or pinned to a different generation, so the store cannot exist
-    /// at all. Saying "0 of 552" here would invite a reader to go looking for a download that
+    /// at all. Saying "0 of 553" here would invite a reader to go looking for a download that
     /// cannot happen.
     private var unavailableRow: some View {
         SettingsStatusRow(
