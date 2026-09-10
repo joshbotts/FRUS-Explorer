@@ -136,7 +136,8 @@ enum RelatedDocumentsEngine {
         // the others', so ordering changes nothing except which equivalent copy is kept.
         SemanticSimilarityGenerator(),
         // Same record-merge argument as the semantic axis above (W-17 session 2); both skip
-        // generation entirely at their default weight 0.
+        // generation entirely at weight 0 — which since 2026-09-10 is a value the reader has to
+        // choose for the semantic axis, rather than the one it ships at.
         LexicalSimilarityGenerator(),
     ]
 

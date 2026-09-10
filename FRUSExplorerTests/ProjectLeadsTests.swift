@@ -320,12 +320,22 @@ struct SemanticProjectReachTests {
 
     // MARK: - The consent gate
 
-    @Test("The scan does not run at the shipped default")
-    func offAtTheDefault() {
-        // `semanticSimilarity.defaultWeight` is 0.0, so the feature is invisible until the reader
-        // raises the slider. This is the same gate `RelatedDocumentsEngine.runsOffIndexScan`
-        // applies, and it is what keeps `AppState`'s `.readerAskedForSemantics` exemption honest.
-        #expect(!SemanticProjectReach.runsScan(weights: .default))
+    @Test("The scan runs at the shipped default, since the axis was raised to 0.5")
+    func onAtTheDefault() {
+        // Was the opposite until 2026-09-10, when the owner raised `semanticSimilarity` from 0 to
+        // 0.5. The gate is unchanged — it is still `weights[.semanticSimilarity] > 0`, the same one
+        // `RelatedDocumentsEngine.runsOffIndexScan` applies — what changed is where the default
+        // sits relative to it.
+        #expect(SemanticProjectReach.runsScan(weights: .default))
+    }
+
+    @Test("Taking the slider to zero switches the scan back off")
+    func offWhenTheReaderZeroesIt() {
+        // The population the gate now protects: not the reader who never opted in, but the reader
+        // who opted OUT.
+        var weights = AxisWeights.default
+        weights[.semanticSimilarity] = 0
+        #expect(!SemanticProjectReach.runsScan(weights: weights))
     }
 
     @Test("The scan runs once the reader raises the semantic weight")
@@ -335,12 +345,15 @@ struct SemanticProjectReachTests {
         #expect(SemanticProjectReach.runsScan(weights: weights))
     }
 
-    @Test("Another axis being raised does not turn the semantic scan on")
-    func onlyItsOwnAxisOpensTheGate() {
+    @Test("Another axis being zeroed does not turn the semantic scan off")
+    func onlyItsOwnAxisClosesTheGate() {
+        // The mirror of `offWhenTheReaderZeroesIt`: the gate reads exactly one axis, so a reader
+        // who has zeroed everything else still gets the scan, and a reader who has raised
+        // everything else but zeroed this one does not.
         var weights = AxisWeights.default
-        weights[.crossReference] = 1.0
-        weights[.sharedPersons] = 1.0
-        #expect(!SemanticProjectReach.runsScan(weights: weights))
+        weights[.crossReference] = 0
+        weights[.sharedPersons] = 0
+        #expect(SemanticProjectReach.runsScan(weights: weights))
     }
 
     // MARK: - The ranking

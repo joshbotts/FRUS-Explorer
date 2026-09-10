@@ -13390,3 +13390,43 @@ fences its candidates to eligible volumes *inside* the scan.
 4,642 iOS tests / 603 suites (+8, +1 suite) + 37 UI tests; swift test 1,371 / 162 (+7, +1 suite);
 macOS clean. Two new source files, so `xcodegen generate` + the scheme restore; build number
 untouched at 46.
+
+## Session 2026-09-10h — The semantic axis default goes to 0.5 (D-D)
+
+Owner decision, taken in the same PR as S-2 because it reverses that work's own stated premise.
+`SimilarityAxis.semanticSimilarity.defaultWeight` 0.0 → **0.5**, the `sharedSubjects` precedent
+(raised the same way, to the same number, 2026-08-21) and the consequence of D-A.
+
+**"Experimental" stays in the name, and the pairing is the point.** Nothing about the evidence
+moved: the blind pre-1900 panel is still retired as a gate and the automatic gate still reaches only
+572 pre-1900 queries. What moved is the verdict from use. Raising the weight while dropping the word
+would have turned an unmeasured axis on silently, so the test that pins the label now says why.
+
+**It reaches existing readers with no migration, because #1021 already built the mechanism.** The
+serializer omits any axis at its default, so an untouched reader has no token and backfills to 0.5;
+a pre-#1021 string matches a `legacyDefaultVectors` row and is amnestied wholesale. **One case the
+encoding cannot distinguish, and it is stated rather than hidden**: a reader who deliberately set
+the axis back to 0 after #1021 also stored no token — 0 was the default then — so they get 0.5 too.
+Inherent to omit-at-default, and the same trade `sharedSubjects` made at #308 Phase 3.
+
+**What now runs that was dead**: the generator's corpus scan and Tier-2 rerank on every Related
+panel, S-3's off-index scan beside it, and S-2's project reach scan on every leads recompute.
+
+**The one thing NOT decided, and flagged rather than quietly kept.**
+`AppState.SemanticShardFetchReason.readerAskedForSemantics` is exempt from the #926 "Download With
+Volumes" switch, and its written justification was *"`defaultWeight` 0 … the generator does not even
+run until the reader has deliberately raised an experimental axis off zero"*. **That premise is
+gone.** The exemption is kept and its comment now argues from what it actually costs — the lazy path
+asks for the shard of a volume already downloaded, ~294 KB against ~6 MB already spent, one volume
+at a time, never the 162 MB corpus, while the ride-along the switch is named for still honours it.
+If the owner wants a reader who turned that switch off to get no fetch at all, it is one line, and
+it brings back the case the exemption exists to prevent.
+
+**Six on-screen and in-code claims swept**, including one that would have shipped a falsehood: five
+doc comments saying the axis "ships at weight 0", and the assertion in `SemanticAxisTests` whose own
+message said "if this default ever moves off 0, the Reset button's copy and the caption that call
+the axis opt-in both need re-reading". They were re-read. The two slider captions needed no change —
+they key off the LIVE weight, not the default, so "Off. Raise it to…" still appears exactly when a
+reader has zeroed the axis.
+
+4,643 iOS tests / 603 suites + 37 UI tests; swift test 1,371 / 162; macOS clean.

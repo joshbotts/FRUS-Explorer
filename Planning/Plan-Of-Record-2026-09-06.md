@@ -78,6 +78,42 @@ because it is what makes the feature not free**: recording *which* collection a 
 means `SearchHistoryEntry.appliedCollectionId` — a stored property on a CloudKit-mirrored `@Model`,
 so the #488 deploy gate applies and step 3 of it is owner-only.
 
+### D-D. The semantic axis default is raised to 0.5
+
+**Owner decision 2026-09-10.** `SimilarityAxis.semanticSimilarity.defaultWeight` goes from **0.0 to
+0.5**, following the `sharedSubjects` precedent (raised the same way, to the same number, on
+2026-08-21) and following D-A: the clusters and Meaning search came back valuable from use, so the
+axis stops being scoped as though it were on probation. **"Experimental" stays in its name** — that
+is a statement about maturity, not about worth, and nothing about the evidence moved. The early-era
+question is still open: the blind panel was retired as a gate, and the automatic gate reaches only
+572 pre-1900 queries.
+
+**It reaches existing readers, and the mechanism for that already existed.** Since #1021 the
+serializer omits any axis sitting at its default, so a reader who never moved the semantic slider
+has no token for it and is backfilled from the new default; a reader whose stored string predates
+#1021 matches a `legacyDefaultVectors` row and is amnestied to today's defaults wholesale. Both land
+on 0.5 without a migration.
+
+**One case the encoding cannot distinguish, stated because it is a real cost.** A reader who
+deliberately set the axis back to 0 *after* #1021 stored no token for it — 0 was the default then —
+so they are indistinguishable from a reader who never touched it, and they get 0.5. That is inherent
+to omitting axes at their default and is the same trade `sharedSubjects` made at #308 Phase 3.
+
+**What now runs that did not.** The generator's corpus Hamming scan and Tier-2 rerank on every
+Related panel; S-3's off-index scan beside it; and S-2's project reach scan on every leads
+recompute. All were gated on this weight and all were previously dead at the default.
+
+**One question this raises is the owner's to settle, and it is flagged rather than decided.**
+`AppState.SemanticShardFetchReason.readerAskedForSemantics` is exempt from the #926 "Download With
+Volumes" switch, and its written justification was *"`defaultWeight` 0 … the generator does not even
+run until the reader has deliberately raised an experimental axis off zero"*. That premise is gone.
+The exemption is kept, and the comment now says why it is still defensible — it governs only the
+LAZY path, which asks for the shard of a volume already downloaded (~294 KB against ~6 MB already
+spent, one volume at a time, never the 162 MB corpus), while the ride-along the switch is named for
+still honours it. **If the answer should instead be that a reader who turned the switch off gets no
+shard fetch at all, that is one line** — and it brings back the case the exemption exists to
+prevent, an axis the reader deliberately raised that scores nothing forever.
+
 ---
 
 ## §1 — The week's work
@@ -197,8 +233,10 @@ from the designs; reading the code changed the answer for all but one.
   **No centroid, by construction rather than by promise** — every probe keeps its own row, its own
   cut and its own attribution, so there is nothing for the refutation above to apply to. **No
   CloudKit field**: which volumes a device lacks is a fact about one disk, so the finding is handed
-  to the view and never written to the mirrored `ProjectLeadEntry`. **And it is invisible at the
-  shipped default**, gated on `weights[.semanticSimilarity] > 0` exactly as S-3 is.
+  to the view and never written to the mirrored `ProjectLeadEntry`. It is gated on
+  `weights[.semanticSimilarity] > 0` exactly as S-3 is — **and it shipped alongside D-D, which
+  raised that axis's default to 0.5, so it runs for every reader who has not zeroed the axis rather
+  than for almost nobody.**
 
   Two decisions worth keeping. The register ranks by **how many of the reader's own documents reach
   a volume**, not by how many documents it admits: that is the only quantity commensurable across

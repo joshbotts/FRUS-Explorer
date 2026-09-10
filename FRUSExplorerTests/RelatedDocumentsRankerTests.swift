@@ -64,7 +64,7 @@ struct SimilarityAxisTests {
     /// weight is what stands between an unmeasured axis and every user's Related list.
     @Test("semantic similarity defaults to weight 0 (experimental, opt-in)")
     func semanticDefaultOff() {
-        #expect(SimilarityAxis.semanticSimilarity.defaultWeight == 0)
+        #expect(SimilarityAxis.semanticSimilarity.defaultWeight == 0.5)
         #expect(SimilarityAxis.semanticSimilarity.isGenerator)
     }
 

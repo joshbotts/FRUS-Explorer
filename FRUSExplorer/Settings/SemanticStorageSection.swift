@@ -71,15 +71,18 @@ struct SemanticStorageSection: View {
             Text(String(localized: "settings.vectors.header", defaultValue: "Semantic Vectors"))
         } footer: {
             // Says WHERE the benefit appears and WHAT ITS STANDING IS. "Experimental" is not
-            // hedging: the semantic axis ships at weight 0 by owner decision, contributing
-            // candidates but never to a document's aggregate score, and its early-era quality is a
+            // hedging, and it matters MORE since 2026-09-10, not less: the axis was raised from
+            // weight 0 to 0.5 by owner decision, so it now contributes to a document's aggregate
+            // score for every reader instead of none, while its early-era quality remains a
             // declared unknown rather than a measured pass. A reader deciding whether to spend
-            // 162 MB deserves to know they are funding an experiment.
+            // 162 MB deserves to know they are funding an experiment — and one that is now on.
             // **Plain-language pass, build 42.** The v2 wording opened on "Vectors let the app…",
             // which asks the reader to know what a vector is before the sentence will parse. It
             // now opens on what the reader gets and names the file second. The hedges are kept
-            // word for word: this ships at weight 0 and its early-era quality is a declared
-            // unknown, so "experimental" and "not yet established" are findings, not throat-clearing.
+            // word for word: the early-era quality is a declared unknown, so "experimental" and
+            // "not yet established" are findings rather than throat-clearing. (The clause that read
+            // "this ships at weight 0" went with the 2026-09-10 default change; the hedges it sat
+            // beside did not, because nothing about the evidence moved.)
             Text(String(
                 localized: "settings.vectors.footer.v3",
                 defaultValue: "The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it. The feature is experimental, and how well it works on nineteenth-century material is not yet established."))

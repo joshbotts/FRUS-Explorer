@@ -77,12 +77,16 @@ struct ProjectReach: Sendable, Equatable {
 /// from 2 to 1,915 documents per volume, median 480, so a raw count with no denominator recommends
 /// the 1910s annuals to almost every project.
 ///
-/// ## It is off unless the reader turned the axis on
-/// Gated on `weights[.semanticSimilarity] > 0`, which at `defaultWeight` **0.0** means it does not
-/// run and nothing appears. That is the same consent gate `RelatedDocumentsEngine.runsOffIndexScan`
-/// applies to S-3 and for the same reason, and it is what keeps `AppState`'s exemption of
-/// `.readerAskedForSemantics` from the #926 auto-download switch honest. The scan needs no shard —
-/// it reads only the bundled sign bits — so it queues no download either.
+/// ## It runs unless the reader turned the axis off
+/// Gated on `weights[.semanticSimilarity] > 0` — the same gate `RelatedDocumentsEngine`
+/// `runsOffIndexScan` applies to S-3, unchanged. What changed is where the default sits relative to
+/// it: the owner raised `semanticSimilarity.defaultWeight` from 0 to **0.5 on 2026-09-10**, so this
+/// runs for every reader who has not deliberately zeroed the axis, where it would have run for
+/// almost nobody. The population the gate protects is now the reader who opted OUT.
+///
+/// The scan needs no shard — it reads only the bundled sign bits — so it queues no download, which
+/// is worth stating now that it runs by default: the #926 question the default change does raise
+/// belongs to the per-anchor generator's Tier-2 rerank, not here.
 ///
 /// Version history:
 ///   1.0 — 2026-09-10: S-2, the project reach scan

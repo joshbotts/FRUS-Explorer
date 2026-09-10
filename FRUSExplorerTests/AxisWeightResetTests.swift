@@ -57,15 +57,19 @@ struct AxisWeightResetTests {
         #expect(AxisWeights.default[.sharedSubjects] == 0.5)
     }
 
-    /// The owner's ruling on the wrinkle: one meaning of "default". Semantic similarity ships as a
-    /// deliberate experimental opt-in at 0, so a reset switches it back off.
-    @Test("Reset returns semantic similarity to its opt-in zero, like every other axis")
+    /// Reset returns every axis to its default, semantic included — and since 2026-09-10 that
+    /// default is **0.5**, not the opt-in 0 this test was written against.
+    ///
+    /// The old version warned that "if this default ever moves off 0, the Reset button's copy and
+    /// the caption that calls the axis opt-in both need re-reading". It moved; they were re-read.
+    @Test("Reset returns semantic similarity to its default, like every other axis")
     func resetIncludesTheExperimentalAxis() {
-        #expect(SimilarityAxis.semanticSimilarity.defaultWeight == 0.0, """
-            If this default ever moves off 0, the Reset button's copy and the caption that calls the \
-            axis opt-in both need re-reading — the button silently changes meaning.
+        #expect(SimilarityAxis.semanticSimilarity.defaultWeight == 0.5, """
+            Raised from 0 by owner decision 2026-09-10. Moving it again means re-reading the Reset \
+            copy, the sliders' captions, and `.readerAskedForSemantics`, whose exemption from the \
+            #926 download switch is argued from what this number is.
             """)
-        #expect(AxisWeights.default[.semanticSimilarity] == 0.0)
+        #expect(AxisWeights.default[.semanticSimilarity] == 0.5)
     }
 
     // MARK: - The bug the reset exists to escape (#1021)
@@ -111,8 +115,15 @@ struct AxisWeightResetTests {
                 Read \(parsed?[.sharedSubjects] ?? -1). Through both eras the axis had no bundled \
                 index behind it, so such a vector is not evidence of a preference about it.
                 """)
-            #expect(parsed?[.semanticSimilarity] == 0.0,
-                    "\(label): the experimental axis must stay opt-in")
+            #expect(parsed?[.semanticSimilarity] == 0.5, """
+                \(label): a tuning identical to that era's defaults inherits today's 0.5 for the \
+                semantic axis too, since 2026-09-10 raised it. This is the amnesty doing its job — \
+                and it is also the one case the encoding cannot distinguish: a reader who \
+                deliberately set the axis back to 0 after #1021 stored no token for it (0 WAS the \
+                default then), so they are indistinguishable from a reader who never touched it and \
+                they get 0.5 as well. That trade is inherent to omitting axes at their default, and \
+                it is the same one `sharedSubjects` made at #308 Phase 3.
+                """)
             #expect(parsed?[.sharedPersons] == 0.7, "\(label): untouched axes are unchanged")
         }
     }

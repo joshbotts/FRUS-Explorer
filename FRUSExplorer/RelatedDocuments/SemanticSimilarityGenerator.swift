@@ -68,7 +68,8 @@ import Foundation
 ///
 /// ## Experimental
 ///
-/// The axis ships at weight 0 with "experimental" in its name. The blind panel that would have
+/// The axis ships at weight 0.5 since 2026-09-10 (raised from 0 by owner decision), and keeps
+/// "experimental" in its name — maturity, not worth. The blind panel that would have
 /// graded early-era quality was retired as a gate (owner decision 2026-08-12) in favour of tester
 /// feedback, so **pre-1900 quality is an unmeasured unknown** — the corpus-scale gate reaches 572
 /// pre-1900 queries because the `dN` citation idiom postdates 1945. Say so wherever this axis is
