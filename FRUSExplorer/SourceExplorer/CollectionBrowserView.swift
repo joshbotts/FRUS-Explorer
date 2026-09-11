@@ -29,36 +29,40 @@ import SwiftUI
 ///          list and PUSHES the shared detail in its stack instead of sheeting it; `nil`
 ///          keeps the sheet for the existing Source Explorer hosts, so one list serves
 ///          both without a third collection browser being born (#777 class)
+///   1.2 — 2026-09-10: the `arrangement` seam — the Browse Archives axis groups by repository
+///          or record group and sorts by documents or name; `nil` keeps Source Explorer's order.
+///          Both paths now build the same `ArchivesArrangement.CollectionSection`s
 struct CollectionBrowserView: View {
 
     /// When set, a row hands its record here instead of presenting the detail sheet —
     /// the #1051 B-5 push-hosting seam. `nil` (the default) keeps the sheet.
     var onSelect: ((AuthorityCollectionRecord) -> Void)? = nil
 
-    /// One repository bucket of the grouped authority.
-    private struct RepositoryGroup: Identifiable {
-        /// Display name (`"(Unattributed)"` for records with no repository).
-        let name: String
-        /// The bucket's records, most-cited first.
-        let records: [AuthorityCollectionRecord]
-        var id: String { name }
-    }
+    /// When set, the list is grouped and ordered this way and each row shows its document count —
+    /// the Browse Archives axis's controls. `nil` (the default) keeps the order Source Explorer has
+    /// always shown, so the two hosts that never asked for these controls do not change.
+    var arrangement: ArchivesArrangement.CollectionArrangement? = nil
 
     @State private var searchText = ""
-    /// The grouped authority, built once on appear (`nil` while loading).
-    @State private var groups: [RepositoryGroup]? = nil
+    /// The grouped authority (`nil` while loading), rebuilt when the arrangement changes.
+    @State private var sections: [ArchivesArrangement.CollectionSection]? = nil
     /// When set, the collection detail sheet presents. Anchored once, on the `List`.
     @State private var detailRecord: AuthorityCollectionRecord? = nil
+    /// The arrangement the current sections were built for. `.task` runs on EVERY appearance — a
+    /// pop back from a collection's detail included — and without this the whole authority would
+    /// be regrouped and re-sorted each time the list came back on screen.
+    @State private var builtFor: BuildKey? = nil
 
-    /// Display name for the no-repository bucket.
-    private static var unattributedName: String {
-        String(localized: "collection.browser.unattributed", defaultValue: "(Unattributed)")
+    /// The arrangement a build was for. A wrapper, so "built in Source Explorer's order" (`nil`
+    /// arrangement) and "not built yet" (`nil` key) stay two different states.
+    private struct BuildKey: Equatable {
+        let arrangement: ArchivesArrangement.CollectionArrangement?
     }
 
     var body: some View {
         Group {
-            if let groups {
-                let filtered = filteredGroups(groups)
+            if let sections {
+                let filtered = ArchivesArrangement.filter(sections, query: searchText)
                 if filtered.isEmpty {
                     ContentUnavailableView(
                         String(localized: "collection.browser.empty",
@@ -69,10 +73,10 @@ struct CollectionBrowserView: View {
                     )
                 } else {
                     List {
-                        ForEach(filtered) { group in
-                            Section(header: Text(verbatim: group.name)) {
-                                ForEach(group.records) { record in
-                                    recordRow(record)
+                        ForEach(filtered) { section in
+                            Section(header: Text(verbatim: section.title)) {
+                                ForEach(section.rows) { row in
+                                    recordRow(row)
                                 }
                             }
                         }
@@ -97,7 +101,9 @@ struct CollectionBrowserView: View {
         .sheet(item: $detailRecord) { record in
             CollectionDetailSheet(record: record)
         }
-        .task { await loadGroups() }
+        // Keyed on the arrangement, so a new grouping or sort rebuilds the sections; a host that
+        // passes none runs this once, as before.
+        .task(id: arrangement) { await loadSections() }
     }
 
     // MARK: - Rows
@@ -105,9 +111,10 @@ struct CollectionBrowserView: View {
     /// One collection row: a disclosure to its sub-series when it has any, else a
     /// plain row. The row itself opens the collection detail.
     @ViewBuilder
-    private func recordRow(_ record: AuthorityCollectionRecord) -> some View {
+    private func recordRow(_ row: ArchivesArrangement.CollectionRow) -> some View {
+        let record = row.record
         if record.children.isEmpty {
-            recordButton(record)
+            recordButton(row)
         } else {
             DisclosureGroup {
                 ForEach(Array(record.children.enumerated()), id: \.offset) { _, child in
@@ -123,14 +130,17 @@ struct CollectionBrowserView: View {
                     }
                 }
             } label: {
-                recordButton(record)
+                recordButton(row)
             }
         }
     }
 
-    /// The tappable collection label: canonical name plus its series-wide volume count.
-    private func recordButton(_ record: AuthorityCollectionRecord) -> some View {
-        Button {
+    /// The tappable collection label: canonical name plus its series-wide volume count — and, when
+    /// arranged, its document count, since a list ordered by documents that shows only volumes
+    /// would leave the reader no way to see why a row sits where it does.
+    private func recordButton(_ row: ArchivesArrangement.CollectionRow) -> some View {
+        let record = row.record
+        return Button {
             if let onSelect {
                 onSelect(record)
             } else {
@@ -150,9 +160,7 @@ struct CollectionBrowserView: View {
                     }
                 }
                 Spacer(minLength: 8)
-                Text(String(format: String(localized: "collection.browser.volumes %lld",
-                                           defaultValue: "%lld vols"),
-                            Int64(record.volumeIds.count)))
+                Text(countLabel(for: row))
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
             }
@@ -163,51 +171,59 @@ struct CollectionBrowserView: View {
                                   defaultValue: "Opens the collection’s detail"))
     }
 
-    // MARK: - Grouping & filtering
-
-    /// Groups the bundled authority by repository, most-cited records first within
-    /// each bucket; buckets sorted by record count (largest first), unattributed last.
-    private func loadGroups() async {
-        guard groups == nil else { return }
-        // One ~2 MB decode — warmed off the main thread (the bundled-store pattern).
-        let index = await Task.detached(priority: .userInitiated) {
-            CollectionAuthorityStore.shared
-        }.value
-        guard let index else {
-            groups = []
-            return
+    /// The row's trailing count.
+    ///
+    /// A collection with no documents shows its volumes alone rather than `0 docs`: it is cited in a
+    /// volume's front matter and under no document, which a zero would misstate as absence.
+    private func countLabel(for row: ArchivesArrangement.CollectionRow) -> String {
+        let volumes = Int64(row.record.volumeIds.count)
+        guard arrangement != nil, row.documents > 0 else {
+            return String(format: String(localized: "collection.browser.volumes %lld",
+                                         defaultValue: "%lld vols"), volumes)
         }
-        var buckets: [String: [AuthorityCollectionRecord]] = [:]
-        for record in index.collections {
-            buckets[record.repository ?? Self.unattributedName, default: []].append(record)
-        }
-        groups = buckets
-            .map { name, records in
-                RepositoryGroup(
-                    name: name,
-                    records: records.sorted {
-                        ($0.volumeIds.count, $1.name) > ($1.volumeIds.count, $0.name)
-                    })
-            }
-            .sorted {
-                if ($0.name == Self.unattributedName) != ($1.name == Self.unattributedName) {
-                    return $1.name == Self.unattributedName
-                }
-                return ($0.records.count, $1.name) > ($1.records.count, $0.name)
-            }
+        return String(format: String(localized: "collection.browser.docsAndVolumes %lld %lld",
+                                     defaultValue: "%1$lld docs · %2$lld vols"),
+                      Int64(row.documents), volumes)
     }
 
-    /// Applies the search text over canonical names and alias forms.
-    private func filteredGroups(_ groups: [RepositoryGroup]) -> [RepositoryGroup] {
-        let query = searchText.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else { return groups }
-        return groups.compactMap { group in
-            let hits = group.records.filter { record in
-                record.name.localizedCaseInsensitiveContains(query)
-                    || record.aliases.contains { $0.localizedCaseInsensitiveContains(query) }
-                    || record.lotFileNorm?.localizedCaseInsensitiveContains(query) == true
+    // MARK: - Grouping
+
+    /// Builds the sections, off the main actor: the arranged path sorts 4,432 records with a
+    /// reader's name comparison, which has no business on a frame.
+    private func loadSections() async {
+        let key = BuildKey(arrangement: arrangement)
+        guard sections == nil || builtFor != key else { return }
+        let arrangement = self.arrangement
+        let built = await Task.detached(priority: .userInitiated) {
+            // One ~2 MB decode on first use — warmed here, off the main thread (the bundled-store
+            // pattern).
+            guard let index = CollectionAuthorityStore.shared else {
+                return [ArchivesArrangement.CollectionSection]()
             }
-            return hits.isEmpty ? nil : RepositoryGroup(name: group.name, records: hits)
-        }
+            guard let arrangement else {
+                return ArchivesArrangement.sourceExplorerSections(records: index.collections)
+            }
+            let usage = CollectionUsageIndexStore.shared
+            let titles = arrangement.grouping == .recordGroup
+                ? (VolumeSourcesIndexStore.shared?.recordGroups.mapValues(\.title) ?? [:])
+                : [:]
+            return ArchivesArrangement.collectionSections(
+                records: index.collections,
+                documents: { usage?.documentCount(forCollectionId: $0) ?? 0 },
+                arrangement: arrangement,
+                recordGroupTitles: titles)
+        }.value
+        // `.task(id:)` cancels THIS task when the arrangement changes, but a detached build does
+        // not inherit that cancellation — it runs to completion, and `.value` returns regardless.
+        // Without this guard a build for the old arrangement that finished after the new one would
+        // replace it, leaving the list out of step with the menus that chose it. The window is widest
+        // on the FIRST load, when the menus stay live above the spinner while the 1.9 MB authority
+        // decodes and — grouped by record group — the 1.1 MB record-group titles after it; a
+        // repository build skips that second decode, so switching mid-load lets the newer build
+        // finish first. Two reviewers judged the race unreachable by hand on a warm list; a third
+        // showed the cold one.
+        guard !Task.isCancelled else { return }
+        sections = built
+        builtFor = key
     }
 }

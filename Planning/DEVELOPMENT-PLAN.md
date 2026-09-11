@@ -13696,3 +13696,115 @@ coverage. All three constraints the refutation said should ride with S-1 were ho
 it has since expired on its own: the `.readerAskedForSemantics` exemption it warns about falsifying
 was removed at #1267.
 
+
+## Session 2026-09-10n — Sorting the Archives axis, grouping collections by record group
+
+**The owner's request**: sorting for the Archives browse segments; Collections grouped by repository
+or record group "the same way classes groups by filing era"; both segments orderable by document
+count, ascending or descending.
+
+**What shipped.** Collections gained a **Group** menu (Repository, as before, or Record Group) and a
+**Sort** menu; Classes gained a **Sort** menu and keeps its era division, with the eras in
+chronological order whatever the sort because they are time. A sort is a key and a direction —
+Document Count or Name (Class Number on Classes), Ascending or Descending — and choosing a key starts
+it in its natural direction. Each lens remembers its own choice in `@AppStorage`: device-local, the
+catalogue's rule, no synced model and so no CloudKit gate. Provenance Types has no controls.
+
+**Three orderings that produce a plausible list rather than an error**, each pinned by a fixture
+named against its expectation:
+
+1. **A class number is not a string of numbers.** Decimal file numbers are decimal fractions after
+   the point, so `711.11` files before `711.2`. Measured over class 711, a numeric-aware comparison —
+   Finder's — scrambles the file (`711.00, 711.01, 711.002, 711.2, 711.2.1, 711.03…`), while plain
+   character order IS filing order. Subject-numeric designators are the opposite: `POL 7` before
+   `POL 27`, which character order reverses. One comparison per filing system, selected by
+   `CollectionKeying.isSubjectNumericClass` — the same test that admits a key to an era.
+2. **A record group is a number.** As text, RG 330 files before RG 40.
+3. **The unplaceable bucket stays last in both directions.** 2,381 of 4,432 collections name no
+   record group, nearly every presidential-library collection among them.
+
+**The Classes lens was silently showing 1,000 of 9,908 classes.** `rows(inEra:)` capped at 200 and the
+cap bound in every era — **6,118 / 1,922 / 548 / 249 / 1,071**, measured through the app's own
+`governs` — with nothing on screen saying so. Once the list can be reordered the cap stops being an
+omission and becomes a wrong answer: "fewest documents first" would show the 200 heaviest classes
+reversed, and class-number order in 1910–49 would never reach class 7. The cap is gone. It cost
+nothing to build — the sweep always constructed every row and discarded 8,908 afterwards, 0.10 s for
+all five eras on the simulator — only rows to render.
+
+**Source Explorer is unchanged and has its first test.** `CollectionBrowserView` has three hosts and
+only the Browse axis passes an arrangement. The two Source Explorer hosts keep their order (repository,
+citing-volume count, sections by collection count, unattributed last), which moved verbatim into
+`ArchivesArrangement.sourceExplorerSections` so the list has one render path — and that ordering had
+no test at all until now. Arranged rows show `N docs · M vols`; the 2,599 collections cited only in
+front matter show volumes alone, and the caption says what a count counts.
+
+**33-run mutation sweep, one named control** (decimal order reversed → killed, 4 failures). **30
+killed, 2 survivors, both predicted**: removing the explicit cross-system rule in `classKeyPrecedes`
+is equivalent under ASCII (digits already sort before letters — kept so the answer does not rest on
+how Foundation's undocumented `.numeric` compares a letter with a digit, and the test comment says it
+cannot pin it), and making `CollectionBrowserView` ignore its arrangement survives because no test
+drives a view.
+
+**The sweep found one hollow check, which is the finding worth keeping.** The real-corpus filing test
+listed `POL 3`/`POL 24` as its subject-numeric pair, and the two never occur together in any era — so
+a single counter passed on the decimal pair alone, and replacing the numeric comparison with character
+order was killed only by the fixture, never by the shipped data. The check now counts **per system**
+and uses pairs that are measured to co-occur and on which the two orders disagree (`POL 7 US` /
+`POL 27 VIET S`, `DEF 4 NATO` / `DEF 12-5 JORDAN`). Re-probed: that same mutation now fails the
+real-corpus test alone with three issues, where before it passed.
+
+**Docs.** iOS manual §6.1g said "two lenses" and had never described Classes, which shipped at #1255;
+it now describes three, the Sort and Group menus, and the three reading details (filing order,
+record-group remainder, front-matter-only collections). macOS manual §6 likewise. Shot list A8 and
+the §6.1g placeholder name the new menus.
+
+**A five-lens adversarial review ran against the committed change** (requirements, SwiftUI and
+platform, concurrency and performance, tests, copy and data), each lens's findings handed to a
+skeptic told to refute them against the commit object rather than the working tree — the mutation
+sweep was rewriting those files at the same time. What survived, and what did not:
+
+- **A superseded collection build could replace the newer one.** `.task(id:)` cancels its task when
+  the arrangement changes, but a detached build does not inherit that cancellation and `.value`
+  returns regardless, so a build for the old arrangement that finished last would win. Four lenses
+  saw the mechanism and two skeptics refuted it on timing, reasoning about a warm list. **A third
+  showed the cold one, and it is the one that matters**: on first load the menus stay live above the
+  spinner while the 1.9 MB authority decodes and, grouped by record group, the 1.1 MB record-group
+  titles after it — which a repository build skips, so switching mid-load lets the newer build finish
+  first and the older one overwrite it, stuck until the next change. I had first written the refuters
+  were "probably right"; the comment now says what the window actually is.
+- **A sort changed in one iPad window left another window's classes in the old order**, under a menu
+  naming the new one. The re-sort hung off the Classes `List`, which only exists while that lens is
+  on screen, while the stored choice is shared by every window. The build and the re-sort are now one
+  task on the whole axis, keyed on the sort, and the first build still waits for the lens to be
+  opened.
+- **Re-appearing rebuilt the whole authority.** The old `groups == nil` guard went with the refactor,
+  and `.task` runs on every appearance — a pop back from a collection's detail included. The list now
+  remembers which arrangement its sections were built for.
+- **"Every class is listed" was false: 991 of the 10,446 class keys appear in no era**, because every
+  volume citing them straddles two schedules or sits outside all five. Reproduced independently
+  (9,455 listed; the reproduction's 9,908 era rows match the app's own count, which cross-checks it).
+  The caption now says each era lists every class its volumes' source notes cite.
+- **My doc comment's "class-number order would never have reached class 7" was wrong** under the very
+  pipeline the sentence described: the cap applied before any re-sort, and the 200 heaviest 1910–49
+  classes include 51 keys opening with 7. The real failure is subtler and worse — a list that reads as
+  the whole file and omits 5,918 classes.
+- **Four test gaps, each with a mutation that would have survived**: a section's weight was never
+  told apart from its heaviest row (every fixture ordered the same way under both rules); ties
+  between sections were never tested, and the shipped data has them; the (No Record Group) remainder —
+  2,381 collections — was never tested for order; and subject-numeric count ties were never tested,
+  so a character-order tie-break would have passed. Each now has a fixture built to separate the two
+  rules, and **a second sweep confirms it: with a control, all four matching mutations are killed —
+  each by exactly the test written for it, and by no other**, which is the evidence those tests are
+  doing the separating rather than riding on an earlier assertion.
+- **Refuted**: that the Collections lens "loses" its volume-count order. It does change — the owner
+  asked for document count — and the PR says so.
+- **Recorded, not fixed**: nothing drives the view wiring. Deleting the arrangement argument, the task
+  key or the re-sort leaves every suite green, because no test mounts these views; the PR's visual
+  review is the check.
+
+- **The completeness critic found one more: the new menus failed Label in Name (WCAG 2.5.3).** Each
+  set its accessibility label to "Sort" / "Group By" and carried the visible text — "Document Count,
+  Descending", "By Repository" — only as the value. Voice Control and Full Keyboard Access match a
+  spoken or typed name against the input labels, which default to the label, so saying what is on the
+  button did nothing. VoiceOver was unaffected. Both menus now declare input labels carrying the
+  visible text, the key or grouping alone, and the generic name.
