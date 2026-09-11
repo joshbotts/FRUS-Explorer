@@ -184,6 +184,7 @@
 		20DB5A7E2D734E5CA460A136 /* SemanticMapSurfaceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1DBC8A05B4E925541FB9B76 /* SemanticMapSurfaceTests.swift */; };
 		20E54771F6F7FC4C78C94A37 /* BatchRunReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = B687777681B0B3DDDC53498E /* BatchRunReadiness.swift */; };
 		20FD93E148FBC9D2BA2F1C25 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F3C065FBA889092972C1DBB /* SettingsView.swift */; };
+		210008130B717597F8A33752 /* ArchivesArrangementControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA319EED6B57406042E8CD3 /* ArchivesArrangementControls.swift */; };
 		2108F9F96E1F44DAF8DB1DDF /* CorrectedVolumeReindexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96372A937081E49C326F2CE4 /* CorrectedVolumeReindexTests.swift */; };
 		2124188E9682E2ABFF6E5005 /* SemanticMapReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F23E171427878AB36A2FF2 /* SemanticMapReader.swift */; };
 		2135E20640318E392A07E7B7 /* ProjectLeadEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C58B5EBF62BA11E5AE2D3681 /* ProjectLeadEntry.swift */; };
@@ -902,6 +903,7 @@
 		A0C7E626BF78F426D7A4C5FE /* LotResolutionAcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA6F255DC9CBBE2FDB95737 /* LotResolutionAcceptanceTests.swift */; };
 		A11FD666BB0E2E1E09D2A476 /* FlowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72108A474E6E3556551B14BE /* FlowLayout.swift */; };
 		A12E59343194D5F2C8939826 /* SourceExplorerProvenance.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0FD42614205E86B225A6D65 /* SourceExplorerProvenance.swift */; };
+		A13347DB05A9A9A7C8271EEE /* ArchivesArrangementControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AA319EED6B57406042E8CD3 /* ArchivesArrangementControls.swift */; };
 		A14EBA2B619CFED32EA1D770 /* PromptEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2914FB296F951A74A8E2CE5 /* PromptEditorView.swift */; };
 		A1B070C74D7FF7DA58FC57C3 /* DocumentClassificationOverride.swift in Sources */ = {isa = PBXBuildFile; fileRef = D485BE468CA5EC3B5AADDAB5 /* DocumentClassificationOverride.swift */; };
 		A1BE3C1D2975DADA7A568388 /* cloud-vectors-core.json in Resources */ = {isa = PBXBuildFile; fileRef = DCA3FAB89C7BB20D082B2E3E /* cloud-vectors-core.json */; };
@@ -1672,6 +1674,7 @@
 		29C1043B976B3006ECBFDC35 /* SemanticStorageReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SemanticStorageReport.swift; sourceTree = "<group>"; };
 		2A0AAFED24EDBB210AFEE0B5 /* RefreshReadOnlyStoresTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshReadOnlyStoresTests.swift; sourceTree = "<group>"; };
 		2A3BDEFC55708A3A18DC1400 /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModelTests.swift; sourceTree = "<group>"; };
+		2AA319EED6B57406042E8CD3 /* ArchivesArrangementControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivesArrangementControls.swift; sourceTree = "<group>"; };
 		2B2CA7210A2DF4B1E8E567F1 /* RestrictionTriage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestrictionTriage.swift; sourceTree = "<group>"; };
 		2B59D9DE9BD8CF2987E9CD37 /* HistoryPaneSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryPaneSnapshotTests.swift; sourceTree = "<group>"; };
 		2B722F3C30E93C9D676CAE39 /* WordCloudBench.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudBench.swift; sourceTree = "<group>"; };
@@ -2464,6 +2467,7 @@
 			children = (
 				F34273EB0038A273F9448F13 /* AdministrationIndexView.swift */,
 				41C0E5A67BA73B412B58D281 /* ArchivesArrangement.swift */,
+				2AA319EED6B57406042E8CD3 /* ArchivesArrangementControls.swift */,
 				88A23A00DC740B0A596FB4AE /* ArchivesBrowseView.swift */,
 				167E82AECCC69740D7D9D1AA /* ArchivesClassAxis.swift */,
 				59E3205E3E4008F89BB4054C /* BrowserBreadcrumbBar.swift */,
@@ -4091,6 +4095,7 @@
 				95958F26F2F21DECFE6F8196 /* ArchiveVisitListView.swift in Sources */,
 				ACB1387F7BA416B66320972A /* ArchiveVisitPlan.swift in Sources */,
 				B184087FABFE00188E1D6578 /* ArchivesArrangement.swift in Sources */,
+				A13347DB05A9A9A7C8271EEE /* ArchivesArrangementControls.swift in Sources */,
 				57E4326D931B3EB32AFB7AAD /* ArchivesBrowseView.swift in Sources */,
 				FE465C516411DB43B2D1CF11 /* ArchivesClassAxis.swift in Sources */,
 				F900BA593D734EA910B7BB0A /* AxisWeightRow.swift in Sources */,
@@ -4608,6 +4613,7 @@
 				9D3529D3C69D258675B8D7DF /* ArchiveVisitListView.swift in Sources */,
 				595C4C2A727FEEF941FCAACA /* ArchiveVisitPlan.swift in Sources */,
 				71F8E277923F670A7F6B6FA7 /* ArchivesArrangement.swift in Sources */,
+				210008130B717597F8A33752 /* ArchivesArrangementControls.swift in Sources */,
 				8AA880D38EE969BA4F611D8E /* ArchivesBrowseView.swift in Sources */,
 				C6232E0FD58F2FA14B2588B7 /* ArchivesClassAxis.swift in Sources */,
 				94F233C7ED85386528D572B1 /* AxisWeightRow.swift in Sources */,

@@ -24,14 +24,16 @@ import Foundation
 /// - **The bucket a grouping cannot place stays last in both directions.** Reversing the order
 ///   must not float 2,381 collections with no record group to the top of the list.
 ///
-/// ## Source Explorer keeps its own order
-/// ``CollectionBrowserView`` serves three hosts. Only the Browse Archives axis offers these
-/// controls; the two Source Explorer hosts pass no arrangement and get
-/// ``sourceExplorerSections(records:)`` — the ordering they have always had, moved here verbatim so
-/// the list has one render path and that ordering has a test for the first time.
+/// ## Every host gets the same controls
+/// ``CollectionBrowserView`` serves three hosts — the Browse Archives axis, and Source Explorer on
+/// both platforms — and draws these controls itself, so the three cannot drift apart. Each host
+/// stores its own choices (``CollectionListHost``): grouping Browse by record group is not a request
+/// to regroup Source Explorer.
 ///
 /// Version history:
 ///   1.0 — 2026-09-10: sorting for both counting lenses, and record-group grouping for Collections
+///   1.1 — 2026-09-10: an Ungrouped option, collapsible sections, and the same controls in Source
+///          Explorer — whose volume-count order, kept apart in 1.0, is retired with its function
 enum ArchivesArrangement {
 
     // MARK: - Sort
@@ -101,6 +103,26 @@ enum ArchivesArrangement {
             ascending
                 ? String(localized: "browser.archives.sort.ascending", defaultValue: "Ascending")
                 : String(localized: "browser.archives.sort.descending", defaultValue: "Descending")
+        }
+    }
+
+    /// The sort button's text — `Document Count, Descending`.
+    static func sortSummary(_ sort: Sort, label: (SortKey) -> String) -> String {
+        String(format: String(localized: "browser.archives.sort.summary %@ %@",
+                              defaultValue: "%1$@, %2$@"),
+               label(sort.key), Sort.directionLabel(ascending: sort.ascending))
+    }
+
+    /// Every text the sort button can show.
+    ///
+    /// The button reserves the widest of these, so choosing a sort never changes its width. That is
+    /// the whole fix for a reflow the review confirmed: "Name, Ascending" growing into "Document
+    /// Count, Descending" pushed the row into another layout, rebuilt the menu the reader was using,
+    /// moved the list and dropped VoiceOver and keyboard focus. It only works if this set really
+    /// holds every label, which a test checks.
+    static func sortSummaries(label: (SortKey) -> String) -> [String] {
+        SortKey.allCases.flatMap { key in
+            [true, false].map { sortSummary(Sort(key: key, ascending: $0), label: label) }
         }
     }
 
@@ -175,6 +197,10 @@ enum ArchivesArrangement {
         case repository
         /// The National Archives record group the citations name.
         case recordGroup
+        /// One list, no sections — the only arrangement in which a document-count sort ranks every
+        /// collection against every other. Named `ungrouped` and never `none`: on an optional
+        /// grouping, `.none` silently means nil.
+        case ungrouped
 
         var id: String { rawValue }
 
@@ -187,11 +213,26 @@ enum ArchivesArrangement {
             case .recordGroup:
                 return String(localized: "browser.archives.group.recordGroup",
                               defaultValue: "Record Group")
+            case .ungrouped:
+                return String(localized: "browser.archives.group.ungrouped",
+                              defaultValue: "Ungrouped")
             }
         }
+
+        /// The menu button's text — `By Repository`, `By Record Group`, and plain `Ungrouped`,
+        /// because "By Ungrouped" is not English.
+        var summary: String {
+            guard self != .ungrouped else { return label }
+            return String(format: String(localized: "browser.archives.group.summary %@",
+                                         defaultValue: "By %@"), label)
+        }
+
+        /// Whether the list has sections a reader can collapse.
+        var hasSections: Bool { self != .ungrouped }
     }
 
-    /// A grouping and a sort — everything the Browse host hands the collection list.
+    /// A grouping and a sort — what the collection list builds its sections from, read from its
+    /// host's stored choices.
     struct CollectionArrangement: Equatable, Hashable, Sendable {
         /// What the list is grouped by.
         var grouping: CollectionGrouping
@@ -212,8 +253,13 @@ enum ArchivesArrangement {
 
     /// One section of the collection list.
     struct CollectionSection: Identifiable, Sendable {
-        /// Stable identity — the grouping's own key, never the display title.
+        /// Stable identity — the grouping's own key, never the display title. It carries the
+        /// grouping, so a section collapsed under one grouping is remembered, not confused with
+        /// another's.
         let id: String
+        /// The grouping that built it. The view reads THIS, not the menu's current choice, so a list
+        /// still showing the previous grouping mid-rebuild draws that grouping's headers.
+        let grouping: CollectionGrouping
         /// The header.
         let title: String
         /// The group's key: a repository name or a bare record-group number. Empty for the
@@ -232,6 +278,12 @@ enum ArchivesArrangement {
     /// The header for collections whose citations name no repository.
     static var unattributedTitle: String {
         String(localized: "collection.browser.unattributed", defaultValue: "(Unattributed)")
+    }
+
+    /// The single section's title when the list is ungrouped. Never drawn as a header; it is the
+    /// section's name for anything that reads one.
+    static var allCollectionsTitle: String {
+        String(localized: "browser.archives.group.allCollections", defaultValue: "All Collections")
     }
 
     /// The header for collections whose citations name no record group.
@@ -255,7 +307,7 @@ enum ArchivesArrangement {
                                      defaultValue: "Record Group %@"), number)
     }
 
-    /// The collection list, grouped and ordered for the Browse Archives axis.
+    /// The collection list, grouped and ordered — the same function for every host.
     ///
     /// - Parameters:
     ///   - records: The authority's collections.
@@ -269,6 +321,15 @@ enum ArchivesArrangement {
         arrangement: CollectionArrangement,
         recordGroupTitles: [String: String]
     ) -> [CollectionSection] {
+        if arrangement.grouping == .ungrouped {
+            let rows = records
+                .map { CollectionRow(record: $0, documents: documents($0.id)) }
+                .sorted { rowPrecedes($0, $1, by: arrangement.sort) }
+            guard !rows.isEmpty else { return [] }
+            return [CollectionSection(id: "ungrouped:", grouping: .ungrouped,
+                                      title: allCollectionsTitle, groupKey: "",
+                                      isRemainder: false, rows: rows)]
+        }
         var buckets: [String: [CollectionRow]] = [:]
         var remainder: [CollectionRow] = []
         for record in records {
@@ -277,6 +338,7 @@ enum ArchivesArrangement {
             switch arrangement.grouping {
             case .repository: key = record.repository
             case .recordGroup: key = record.recordGroup
+            case .ungrouped: key = nil        // returned above; here only so the switch is total
             }
             if let key = key?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty {
                 buckets[key, default: []].append(row)
@@ -289,6 +351,7 @@ enum ArchivesArrangement {
         var sections = buckets.map { key, rows in
             CollectionSection(
                 id: "\(arrangement.grouping.rawValue):\(key)",
+                grouping: arrangement.grouping,
                 title: arrangement.grouping == .recordGroup
                     ? recordGroupTitle(key, title: recordGroupTitles[key])
                     : key,
@@ -300,6 +363,7 @@ enum ArchivesArrangement {
         if !remainder.isEmpty {
             sections.append(CollectionSection(
                 id: "\(arrangement.grouping.rawValue):",
+                grouping: arrangement.grouping,
                 title: arrangement.grouping == .recordGroup ? noRecordGroupTitle : unattributedTitle,
                 groupKey: "",
                 isRemainder: true,
@@ -365,7 +429,7 @@ enum ArchivesArrangement {
             case (nil, _?): return false
             default: return a < b
             }
-        case .repository:
+        case .repository, .ungrouped:
             switch a.localizedStandardCompare(b) {
             case .orderedAscending: return true
             case .orderedDescending: return false
@@ -374,45 +438,148 @@ enum ArchivesArrangement {
         }
     }
 
-    // MARK: - Source Explorer's order
+    // MARK: - Hosts
 
-    /// The collection list as Source Explorer has always shown it: by repository, each section's
-    /// collections by citing-volume count, largest first, and the sections by how many collections
-    /// they hold, unattributed last.
+    /// Which host a collection list serves, and so where its choices are stored.
     ///
-    /// Moved here verbatim from `CollectionBrowserView.loadGroups` so the list has one render path.
-    /// **Deliberately not re-expressed as an ``Sort``**: its key is the volume count, which the
-    /// Browse controls do not offer, and its tie-breaks use plain character order where the
-    /// arrangement uses a reader's — folding it into the new rules would have changed a surface
-    /// nobody asked to change.
-    ///
-    /// - Parameter records: The authority's collections.
-    /// - Returns: The sections.
-    static func sourceExplorerSections(records: [AuthorityCollectionRecord]) -> [CollectionSection] {
-        let unattributed = unattributedTitle
-        var buckets: [String: [AuthorityCollectionRecord]] = [:]
-        for record in records {
-            buckets[record.repository ?? unattributed, default: []].append(record)
+    /// Each host keeps its own, the way each Archives lens keeps its own sort: a reader who groups
+    /// Browse by record group has not asked Source Explorer to change.
+    enum CollectionListHost: String, Sendable {
+        /// Browse ▸ Archives ▸ Collections.
+        case browseArchives
+        /// Source Explorer's collection list, on both platforms.
+        case sourceExplorer
+
+        /// The namespace. **Browse keeps the keys #1270 shipped**, so no reader's saved choice
+        /// resets; renaming them would do exactly that, silently.
+        var storagePrefix: String {
+            switch self {
+            case .browseArchives: return "browse.archives.collections"
+            case .sourceExplorer: return "sourceExplorer.collections"
+            }
         }
-        return buckets
-            .map { name, records in
-                (name: name,
-                 records: records.sorted {
-                     ($0.volumeIds.count, $1.name) > ($1.volumeIds.count, $0.name)
-                 })
-            }
-            .sorted {
-                if ($0.name == unattributed) != ($1.name == unattributed) {
-                    return $1.name == unattributed
-                }
-                return ($0.records.count, $1.name) > ($1.records.count, $0.name)
-            }
-            .map { group in
-                CollectionSection(
-                    id: group.name, title: group.name, groupKey: group.name,
-                    isRemainder: group.name == unattributed,
-                    rows: group.records.map { CollectionRow(record: $0, documents: 0) })
-            }
+
+        /// The stored grouping.
+        var groupingKey: String { "\(storagePrefix).grouping" }
+        /// The stored sort key.
+        var sortKeyKey: String { "\(storagePrefix).sortKey" }
+        /// The stored direction.
+        var ascendingKey: String { "\(storagePrefix).ascending" }
+    }
+
+    // MARK: - Captions and counts
+
+    /// What the list's counts are — and, grouped by record group, where the collections with none
+    /// went.
+    ///
+    /// - Parameter grouping: The grouping on screen.
+    /// - Returns: The caption.
+    static func collectionCaption(grouping: CollectionGrouping) -> String {
+        let counts = String(localized: "browser.archives.collections.counts",
+                            defaultValue: "Counts are documents whose printed source note names the collection; one cited only in a volume’s front matter shows its volumes alone.")
+        guard grouping == .recordGroup else { return counts }
+        let remainder = String(localized: "browser.archives.collections.noRecordGroup",
+                               defaultValue: "Record groups are the National Archives’ own divisions. Collections whose citations name none — nearly every presidential-library collection among them — are listed together last.")
+        return "\(counts) \(remainder)"
+    }
+
+    /// A collection section header's size — `1 collection`, `4,432 collections` — so a collapsed
+    /// section still says what it holds.
+    static func collectionCountLabel(_ count: Int) -> String {
+        count == 1
+            ? String(localized: "browser.archives.header.oneCollection", defaultValue: "1 collection")
+            : String(format: String(localized: "browser.archives.header.collections %@",
+                                    defaultValue: "%@ collections"), count.formatted())
+    }
+
+    /// A filing era header's size — `1 class`, `6,118 classes`.
+    static func classCountLabel(_ count: Int) -> String {
+        count == 1
+            ? String(localized: "browser.archives.header.oneClass", defaultValue: "1 class")
+            : String(format: String(localized: "browser.archives.header.classes %@",
+                                    defaultValue: "%@ classes"), count.formatted())
+    }
+
+    // MARK: - Expanding and collapsing
+
+    /// Whether a section's rows are shown.
+    ///
+    /// **A search overrides the collapse.** A reader typing a name wants every match, and a match
+    /// hidden inside a closed section would read as "no such collection". The collapse is kept, not
+    /// cleared, so ending the search restores the sections the reader had closed. Whitespace is not a
+    /// search — the filter ignores it, so the collapse holds.
+    ///
+    /// - Parameters:
+    ///   - sectionID: The section.
+    ///   - collapsed: The ids the reader has closed.
+    ///   - query: The search text.
+    /// - Returns: Whether its rows are drawn.
+    static func isExpanded(_ sectionID: String, collapsed: Set<String>, query: String) -> Bool {
+        !query.trimmingCharacters(in: .whitespaces).isEmpty || !collapsed.contains(sectionID)
+    }
+
+    /// Whether every section on screen is closed — what decides between Expand All and Collapse All.
+    ///
+    /// Ids closed under ANOTHER grouping do not count: the set remembers them so switching back
+    /// restores that grouping's state, but they are not sections on screen. An empty screen is not
+    /// "all collapsed".
+    static func allCollapsed(_ sectionIDs: [String], collapsed: Set<String>) -> Bool {
+        !sectionIDs.isEmpty && sectionIDs.allSatisfy(collapsed.contains)
+    }
+
+    /// The collapse state after Expand All or Collapse All.
+    ///
+    /// Opens every section on screen when all are closed, otherwise closes them all — touching only
+    /// the sections on screen, so another grouping's remembered state survives either way.
+    static func togglingAll(_ sectionIDs: [String], collapsed: Set<String>) -> Set<String> {
+        allCollapsed(sectionIDs, collapsed: collapsed)
+            ? collapsed.subtracting(sectionIDs)
+            : collapsed.union(sectionIDs)
+    }
+
+    /// What the Expand All / Collapse All button acts on, and whether it can act at all.
+    ///
+    /// **The ids are always the sections ON SCREEN, even while it is disabled**, because they decide
+    /// the button's label as well as its action, and an empty list reads "Collapse All". The
+    /// completeness critic found the first version withholding them for every rebuild: after Collapse
+    /// All, a sort change made a fully closed list offer to collapse itself, and VoiceOver announced
+    /// the name changing twice for one choice.
+    ///
+    /// **It is disabled only while those sections belong to another grouping** — not for every
+    /// rebuild. A section's id carries its grouping and not its sort, so part-way through a sort change
+    /// the ids on screen are already the right ones to act on.
+    ///
+    /// - Parameters:
+    ///   - onScreen: The sections drawn, or `nil` before the first build.
+    ///   - builtGrouping: The grouping those sections were built for.
+    ///   - current: The grouping the menu has chosen.
+    ///   - searching: Whether a search is showing every match regardless.
+    /// - Returns: The ids to label and act on, and whether the button is disabled.
+    static func expansionState(onScreen: [CollectionSection]?,
+                               builtGrouping: CollectionGrouping?,
+                               current: CollectionGrouping,
+                               searching: Bool) -> (sectionIDs: [String], isDisabled: Bool) {
+        let ids = (onScreen ?? []).filter(\.grouping.hasSections).map(\.id)
+        return (ids, searching || builtGrouping != current || ids.isEmpty)
+    }
+
+    /// The Expand All / Collapse All button's text.
+    static func expansionTitle(allCollapsed: Bool) -> String {
+        allCollapsed
+            ? String(localized: "browser.archives.expandAll", defaultValue: "Expand All")
+            : String(localized: "browser.archives.collapseAll", defaultValue: "Collapse All")
+    }
+
+    /// Both of the button's texts, which it reserves for the reason ``sortSummaries(label:)`` gives.
+    static var expansionTitles: [String] {
+        [expansionTitle(allCollapsed: true), expansionTitle(allCollapsed: false)]
+    }
+
+    /// The collapse state after one section's header is tapped.
+    static func toggling(_ sectionID: String, collapsed: Set<String>) -> Set<String> {
+        var next = collapsed
+        if next.remove(sectionID) == nil { next.insert(sectionID) }
+        return next
     }
 
     // MARK: - Search
@@ -445,7 +612,8 @@ enum ArchivesArrangement {
         return sections.compactMap { section in
             let rows = section.rows.filter { collectionMatches($0.record, query: query) }
             return rows.isEmpty ? nil : CollectionSection(
-                id: section.id, title: section.title, groupKey: section.groupKey,
+                id: section.id, grouping: section.grouping, title: section.title,
+                groupKey: section.groupKey,
                 isRemainder: section.isRemainder, rows: rows)
         }
     }

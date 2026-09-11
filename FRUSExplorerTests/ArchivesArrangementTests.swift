@@ -300,32 +300,254 @@ struct ArchivesArrangementTests {
         // they were built (a descending name sort), and the sections with no match are dropped.
         let policy = Arrangement.filter(built, query: "policy")
         #expect(policy.map(\.groupKey) == ["Department of State"])
+        // And the other half of the search-grouping rule: a searched GROUPED list keeps its headers.
+        #expect(policy.map(\.grouping) == [.repository])
         #expect(policy.first?.rows.map(\.id) == ["a", "n"])
         #expect(Arrangement.filter(built, query: "   ").map(\.id) == built.map(\.id))
     }
 
-    // MARK: Source Explorer's order
+    // MARK: Ungrouped
 
-    @Test("Source Explorer keeps its order: most-cited volumes first, sections by collection count")
-    func sourceExplorerOrderIsUnchanged() {
+    @Test("Ungrouped is one ranked list: every collection against every other, and no remainder")
+    func ungroupedIsOneRankedList() {
+        // The counts run against the names AND across the groups these would have sat in: grouped,
+        // Zulu (RG 59) and Alpha (no record group at all) could never be neighbours.
         let records = [
-            Self.record("1", "Able", repository: "Zebra", volumes: 1),
-            Self.record("2", "Zulu", repository: "Zebra", volumes: 5),
-            Self.record("3", "Mike", repository: "Zebra", volumes: 5),
-            Self.record("4", "Solo", repository: "Aardvark", volumes: 9),
-            Self.record("5", "U1"), Self.record("6", "U2"), Self.record("7", "U3"),
-            Self.record("8", "U4"),
+            Self.record("a", "Alpha"),
+            Self.record("m", "Mike", repository: "Johnson Library"),
+            Self.record("z", "Zulu", repository: "Department of State", recordGroup: "59"),
         ]
-        let sections = Arrangement.sourceExplorerSections(records: records)
-        // Zebra holds three collections and Aardvark one, so Zebra first — against the alphabet.
-        // The unattributed bucket holds four, more than either, and is last regardless.
-        #expect(sections.map(\.title) == ["Zebra", "Aardvark", Arrangement.unattributedTitle])
-        // By citing volumes, then name: Mike and Zulu tie at five.
-        #expect(sections.first?.rows.map(\.record.name) == ["Mike", "Zulu", "Able"])
-        #expect(sections.last?.isRemainder == true)
-        #expect(sections.allSatisfy { $0.rows.allSatisfy { $0.documents == 0 } }, """
-            Source Explorer's rows carry no document count, so its hosts keep showing volumes alone.
-            """)
+        let counts = ["a": 40, "m": 5, "z": 90]
+        func sections(_ sort: Sort) -> [Arrangement.CollectionSection] {
+            Arrangement.collectionSections(
+                records: records, documents: { counts[$0] ?? 0 },
+                arrangement: .init(grouping: .ungrouped, sort: sort), recordGroupTitles: [:])
+        }
+        let byCount = sections(Sort(key: .documents, ascending: false))
+        #expect(byCount.count == 1)
+        #expect(byCount.first?.grouping == .ungrouped)
+        #expect(byCount.first?.isRemainder == false, "ungrouped has nothing left over to put last")
+        #expect(byCount.first?.rows.map(\.record.name) == ["Zulu", "Alpha", "Mike"])
+        #expect(sections(Sort(key: .name, ascending: false)).first?.rows.map(\.record.name)
+                    == ["Zulu", "Mike", "Alpha"])
+        // A search rebuilds each section it keeps. If that rebuild forgot the grouping, the searched
+        // ungrouped list would suddenly draw a header — the view reads the section's grouping, not
+        // the menu's. The mutation sweep found nothing pinned it.
+        let searched = Arrangement.filter(byCount, query: "zulu")
+        #expect(searched.map(\.grouping) == [.ungrouped])
+        #expect(searched.first?.rows.map(\.record.name) == ["Zulu"])
+        #expect(Arrangement.collectionSections(
+            records: [], documents: { _ in 0 },
+            arrangement: .init(grouping: .ungrouped, sort: .standard),
+            recordGroupTitles: [:]).isEmpty, "no records is no section, not an empty one")
+    }
+
+    // MARK: Expanding and collapsing
+
+    @Test("A search shows every match, even inside a closed section — and only a real query does")
+    func searchOverridesCollapse() {
+        let collapsed: Set<String> = ["repository:Nixon"]
+        // One fixture per conjunct of `query is non-empty || section is not collapsed`.
+        #expect(!Arrangement.isExpanded("repository:Nixon", collapsed: collapsed, query: ""))
+        #expect(Arrangement.isExpanded("repository:Nixon", collapsed: collapsed, query: "nsc"))
+        #expect(Arrangement.isExpanded("repository:Carter Library", collapsed: collapsed, query: ""))
+        // Whitespace is not a search — the filter ignores it, so the collapse must hold too.
+        #expect(!Arrangement.isExpanded("repository:Nixon", collapsed: collapsed, query: "   "))
+    }
+
+    @Test("Expand All and Collapse All touch only the sections on screen")
+    func expandAndCollapseAllAreScopedToTheScreen() {
+        let onScreen = ["recordGroup:59", "recordGroup:84"]
+        // Closed under the OTHER grouping, and remembered so switching back restores it.
+        let remembered = "repository:Nixon"
+
+        #expect(!Arrangement.allCollapsed([], collapsed: [remembered]),
+                "an empty screen is not all-collapsed")
+        #expect(!Arrangement.allCollapsed(onScreen, collapsed: ["recordGroup:59", remembered]))
+        #expect(Arrangement.allCollapsed(onScreen, collapsed: Set(onScreen + [remembered])))
+
+        // One still open → Collapse All closes the rest, and keeps the remembered one.
+        #expect(Arrangement.togglingAll(onScreen, collapsed: ["recordGroup:59", remembered])
+                    == Set(onScreen + [remembered]))
+        // All closed → Expand All opens the ones on screen and STILL keeps the remembered one.
+        #expect(Arrangement.togglingAll(onScreen, collapsed: Set(onScreen + [remembered]))
+                    == [remembered])
+
+        #expect(Arrangement.toggling("recordGroup:84", collapsed: [remembered])
+                    == ["recordGroup:84", remembered])
+        #expect(Arrangement.toggling("recordGroup:84", collapsed: ["recordGroup:84", remembered])
+                    == [remembered])
+    }
+
+    // MARK: Headers, ids and host wiring
+
+    @Test("Grouped sections carry their grouping, and ids that cannot collide across groupings")
+    func groupedSectionsCarryTheirGroupingAndIDs() {
+        // The header switch and the collapse memory both read these. A grouped section tagged
+        // ungrouped loses its header and its chevron; two groupings' remainders sharing an id would
+        // close each other. Every earlier assertion used hand-written ids.
+        let records = [
+            Self.record("s", "State Files", repository: "Department of State", recordGroup: "59"),
+            Self.record("u", "Unplaced"),
+        ]
+        func sections(_ grouping: Arrangement.CollectionGrouping) -> [Arrangement.CollectionSection] {
+            Arrangement.collectionSections(
+                records: records, documents: { _ in 0 },
+                arrangement: .init(grouping: grouping, sort: .standard), recordGroupTitles: [:])
+        }
+        let byRepository = sections(.repository)
+        let byRecordGroup = sections(.recordGroup)
+        #expect(byRepository.map(\.grouping) == [.repository, .repository])
+        #expect(byRecordGroup.map(\.grouping) == [.recordGroup, .recordGroup])
+        #expect(Arrangement.CollectionGrouping.repository.hasSections)
+        #expect(Arrangement.CollectionGrouping.recordGroup.hasSections)
+        #expect(!Arrangement.CollectionGrouping.ungrouped.hasSections)
+        #expect(byRepository.map(\.id) == ["repository:Department of State", "repository:"])
+        #expect(byRecordGroup.map(\.id) == ["recordGroup:59", "recordGroup:"])
+        #expect(Set(byRepository.map(\.id)).isDisjoint(with: byRecordGroup.map(\.id)),
+                "the two remainders must not share an id, or closing one closes the other")
+    }
+
+    @Test("Mid-rebuild the expand button still describes the sections on screen; only a grouping change disables it")
+    func expansionStateTellsTheTruthMidRebuild() {
+        let records = [Self.record("n", "NSC Files", repository: "Nixon"),
+                       Self.record("c", "Subject File", repository: "Carter Library")]
+        func built(_ grouping: Arrangement.CollectionGrouping) -> [Arrangement.CollectionSection] {
+            Arrangement.collectionSections(
+                records: records, documents: { _ in 0 },
+                arrangement: .init(grouping: grouping, sort: .standard), recordGroupTitles: [:])
+        }
+        let byRepository = built(.repository)
+        let ids = byRepository.map(\.id)
+
+        // A SORT change: ids carry the grouping, not the sort, so the sections on screen are still the
+        // right ones — the button keeps its ids and stays usable. With every section closed it goes on
+        // reading Expand All, where the first version flipped to "Collapse All".
+        let sortChange = Arrangement.expansionState(
+            onScreen: byRepository, builtGrouping: .repository, current: .repository, searching: false)
+        #expect(sortChange.sectionIDs == ids)
+        #expect(!sortChange.isDisabled)
+        #expect(Arrangement.allCollapsed(sortChange.sectionIDs, collapsed: Set(ids)))
+
+        // A GROUPING change, mid-rebuild: the sections on screen are the old grouping's. Disabled — but
+        // the ids, and so the label, still describe what is drawn.
+        let groupingChange = Arrangement.expansionState(
+            onScreen: byRepository, builtGrouping: .repository, current: .recordGroup, searching: false)
+        #expect(groupingChange.sectionIDs == ids)
+        #expect(groupingChange.isDisabled)
+
+        // One fixture per remaining conjunct.
+        #expect(Arrangement.expansionState(
+            onScreen: byRepository, builtGrouping: .repository, current: .repository,
+            searching: true).isDisabled, "a search already shows every match")
+        #expect(Arrangement.expansionState(
+            onScreen: [], builtGrouping: .repository, current: .repository,
+            searching: false).isDisabled, "nothing on screen to act on")
+        // Ungrouped's single section is not collapsible, so it contributes no id.
+        let ungrouped = Arrangement.expansionState(
+            onScreen: built(.ungrouped), builtGrouping: .ungrouped, current: .ungrouped, searching: false)
+        #expect(ungrouped.sectionIDs.isEmpty)
+        #expect(ungrouped.isDisabled)
+    }
+
+    @Test("Each host passes its own storage, and each stored setting reads its own key")
+    func hostWiringIsPinned() throws {
+        // The persistence test below pins the key STRINGS. This pins that the right host reaches
+        // them and that no setting reads another's key: the host and the three keys are all plain
+        // values of one type, so a swap compiles, every other test stays green, and a reader's
+        // saved choice silently resets. Comments are stripped so a note naming a call is not
+        // mistaken for the call.
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent()
+        func code(_ path: String) throws -> String {
+            try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? String(line) }
+                .joined(separator: "\n")
+        }
+        let browse = try code("FRUSExplorer/Browser/ArchivesBrowseView.swift")
+        #expect(browse.contains("CollectionBrowserView(\n            host: .browseArchives,"))
+        #expect(!browse.contains("host: .sourceExplorer"))
+        for path in ["FRUSExplorer/App/SupportingViews.swift",
+                     "FRUSExplorer/SourceExplorer/SourceExplorerView.swift"] {
+            let text = try code(path)
+            #expect(text.contains("CollectionBrowserView(host: .sourceExplorer"), "\(path)")
+            #expect(!text.contains("host: .browseArchives"), "\(path)")
+        }
+        // Both hosts that tear the list down on a lens or mode switch hold its closed groups, so the
+        // switch does not reopen them. The iOS Source Explorer list is a pushed screen, and leaving it
+        // is meant to.
+        #expect(browse.contains("collapsed: $collapsedCollectionGroups"))
+        #expect(try code("FRUSExplorer/App/SupportingViews.swift")
+                    .contains("CollectionBrowserView(host: .sourceExplorer, collapsed: $collapsedCollectionGroups)"))
+        let list = try code("FRUSExplorer/SourceExplorer/CollectionBrowserView.swift")
+        #expect(list.contains("rawValue, host.groupingKey)"))
+        #expect(list.contains("Sort.standard.key.rawValue, host.sortKeyKey)"))
+        #expect(list.contains("Sort.standard.ascending, host.ascendingKey)"))
+    }
+
+    @Test("Every button reserves room for every label it can show, so a choice never reflows the row")
+    func buttonsReserveEveryLabel() {
+        // The review confirmed that "Name, Ascending" growing into "Document Count, Descending" pushed
+        // the row into another layout, rebuilt the menu the reader was using, moved the list and
+        // dropped focus. The buttons now reserve their widest label — which only works if the
+        // reserved set really contains every label a button can show.
+        let lenses: [(Arrangement.SortKey) -> String] = [{ $0.collectionLabel }, { $0.classLabel }]
+        for label in lenses {
+            let reserved = Arrangement.sortSummaries(label: label)
+            #expect(Set(reserved).count == 4)
+            for key in Arrangement.SortKey.allCases {
+                for ascending in [true, false] {
+                    let shown = Arrangement.sortSummary(Sort(key: key, ascending: ascending), label: label)
+                    #expect(reserved.contains(shown), "\(shown) is not reserved")
+                }
+            }
+        }
+        #expect(Arrangement.sortSummary(.standard, label: { $0.collectionLabel })
+                    == "Document Count, Descending")
+        #expect(Arrangement.expansionTitle(allCollapsed: true) == "Expand All")
+        #expect(Arrangement.expansionTitle(allCollapsed: false) == "Collapse All")
+        #expect(Set(Arrangement.expansionTitles) == ["Expand All", "Collapse All"])
+    }
+
+    // MARK: Persistence and labels
+
+    @Test("The stored names do not drift, and Browse keeps the keys #1270 shipped")
+    func persistenceTokensAreStable() {
+        #expect(Arrangement.CollectionGrouping.allCases.map(\.rawValue)
+                    == ["repository", "recordGroup", "ungrouped"])
+        #expect(Arrangement.SortKey.allCases.map(\.rawValue) == ["documents", "name"])
+        let browse = Arrangement.CollectionListHost.browseArchives
+        let browseKeys = [browse.groupingKey, browse.sortKeyKey, browse.ascendingKey]
+        #expect(browseKeys == ["browse.archives.collections.grouping",
+                               "browse.archives.collections.sortKey",
+                               "browse.archives.collections.ascending"],
+                "renaming these silently resets every reader's saved choice")
+        let explorer = Arrangement.CollectionListHost.sourceExplorer
+        #expect(Set([explorer.groupingKey, explorer.sortKeyKey, explorer.ascendingKey])
+                    .isDisjoint(with: browseKeys),
+                "Source Explorer must not share Browse's stored choices")
+    }
+
+    @Test("The menu and header labels read as English")
+    func labelsReadAsEnglish() {
+        #expect(Arrangement.CollectionGrouping.repository.summary == "By Repository")
+        #expect(Arrangement.CollectionGrouping.recordGroup.summary == "By Record Group")
+        #expect(Arrangement.CollectionGrouping.ungrouped.summary == "Ungrouped", "not \"By Ungrouped\"")
+        #expect(Arrangement.collectionCountLabel(1) == "1 collection")
+        #expect(Arrangement.collectionCountLabel(2) == "2 collections")
+        #expect(Arrangement.classCountLabel(1) == "1 class")
+        #expect(Arrangement.classCountLabel(2) == "2 classes")
+    }
+
+    @Test("Only the record-group grouping explains where its remainder went")
+    func captionFollowsTheGrouping() {
+        let repository = Arrangement.collectionCaption(grouping: .repository)
+        #expect(Arrangement.collectionCaption(grouping: .ungrouped) == repository)
+        #expect(!repository.contains("listed together last"))
+        let recordGroup = Arrangement.collectionCaption(grouping: .recordGroup)
+        #expect(recordGroup.hasPrefix(repository))
+        #expect(recordGroup.contains("listed together last"))
     }
 
     // MARK: The shipped data
@@ -336,7 +558,8 @@ struct ArchivesArrangementTests {
         let usage = try #require(CollectionUsageIndexStore.shared)
         let titles = try #require(VolumeSourcesIndexStore.shared).recordGroups.mapValues(\.title)
 
-        for grouping in Arrangement.CollectionGrouping.allCases {
+        // The two groupings that HAVE sections and a remainder; ungrouped has its own test below.
+        for grouping in [Arrangement.CollectionGrouping.repository, .recordGroup] {
             let sections = Arrangement.collectionSections(
                 records: authority.collections,
                 documents: { usage.documentCount(forCollectionId: $0) },
@@ -368,6 +591,29 @@ struct ArchivesArrangementTests {
             RG 59 carries the most sourced documents of any record group; if another section \
             outweighs it, the document join has broken.
             """)
+    }
+
+    @Test("Ungrouped over the shipped authority ranks all 4,432 collections, heaviest first")
+    func shippedUngroupedRanksEveryCollection() throws {
+        let authority = try #require(CollectionAuthorityStore.shared)
+        let usage = try #require(CollectionUsageIndexStore.shared)
+        let sections = Arrangement.collectionSections(
+            records: authority.collections,
+            documents: { usage.documentCount(forCollectionId: $0) },
+            arrangement: .init(grouping: .ungrouped, sort: .standard), recordGroupTitles: [:])
+        #expect(sections.count == 1)
+        // One section of every collection is not the same thing as one leftover bucket of them: the
+        // sweep sent ungrouped through the grouping loop, every record fell into "(Unattributed)",
+        // and every other assertion here still held.
+        #expect(sections.first?.grouping == .ungrouped)
+        #expect(sections.first?.isRemainder == false)
+        let rows = try #require(sections.first).rows
+        #expect(rows.count == authority.collections.count)
+        #expect(rows.map(\.documents) == rows.map(\.documents).sorted(by: >))
+        let heaviest = authority.collections.map { usage.documentCount(forCollectionId: $0.id) }.max()
+        #expect(rows.first?.documents == heaviest)
+        #expect((rows.first?.documents ?? 0) > 10_000,
+                "the heaviest collection, Central Files, carries 17,606 documents")
     }
 
     @Test("No era is cut short, and the real file's numbers come out in filing order")
