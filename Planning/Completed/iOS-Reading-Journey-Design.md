@@ -132,8 +132,10 @@ through `DocumentJump.apply`, exactly as in Browse and Search.
 document, presses Back, and requires the Research list — not the Browse root — with the Research tab still
 selected. On iPad the same suite reads a document in whichever layout the width gives, and on iPad mini
 rotates across the two-pane width and back while reading, requiring the document to stay open each way. That
-rotation passes on the pre-chain reader too (an A/B on one device): it guards the first document, and
-the position a page-turn or cross-reference reaches before the swap is not exercised at runtime. See `DEVELOPMENT-PLAN.md`, session 2026-09-11, for the probes and review.
+rotation passes on the pre-chain reader too (an A/B on one device): it guards the first document. The
+position a page-turn reaches is tested by `ResearchReadingDepthTests` (#1273) — on an iPad narrow enough in
+portrait to cross the gate when rotated (iPad mini; it skips on wider ones) — and that test fails when a
+page-turn is kept in the reader's own state; a cross-referenced position is still not exercised at runtime. See `DEVELOPMENT-PLAN.md`, session 2026-09-11, for the probes and review.
 
 ---
 

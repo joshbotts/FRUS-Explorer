@@ -18,7 +18,7 @@ import XCTest
 /// ## Launch configuration
 /// Every test injects two values before launch:
 ///   - `FRUS_UI_TEST_MODE = "1"` — tells `ModelContainer.makeFRUSContainer()` to use
-///     a local SQLite store instead of CloudKit. Without this, CloudKit's background
+///     an in-memory store instead of CloudKit (#555). Without this, CloudKit's background
 ///     sync setup fires a SIGTRAP ~30 s after launch when the entitlement is absent,
 ///     crashing the app under test before most tests can run.
 ///   - `-hasCompletedOnboarding 1` — populates `NSArgumentDomain` so

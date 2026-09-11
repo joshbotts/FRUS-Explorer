@@ -32,9 +32,10 @@ import Foundation
 /// volume. The value must be a volume ID that exists in the bundled manifest — the browser lists
 /// volumes from the manifest, so a made-up ID would be seeded to disk and never appear.
 ///
-/// The fixture is rewritten on every launch that requests it. That is deliberate: the UI-test
-/// store lives on disk and survives between runs, so a stale fixture from an older revision would
-/// otherwise persist (already indexed) into a run that expects the current one.
+/// The fixture is rewritten on every launch that requests it. That is deliberate: the volumes
+/// directory and the search index live on disk and survive between runs (only SwiftData is in
+/// memory under `FRUS_UI_TEST_MODE`), so a stale fixture from an older revision would otherwise
+/// persist (already indexed) into a run that expects the current one.
 ///
 /// Version history:
 ///   1.0 — Wave R / R-9: initial implementation

@@ -210,7 +210,8 @@ final class CompilationDocumentsTests: XCTestCase {
     /// Reaches the compilation level and asserts its **documents render**.
     ///
     /// This is the assertion R-9 blocked. Two paths reach it, and both are legitimate because the
-    /// UI-test store is on disk and survives between runs:
+    /// volumes directory and the search index live on disk and survive between runs (only SwiftData
+    /// is in memory under `FRUS_UI_TEST_MODE`):
     ///
     ///  - **Cold** (first run, or after erasing the simulator): the seeded volume is on disk but
     ///    unindexed, so "Index Required" is correct and the test taps "Index Now". Pre-fix that

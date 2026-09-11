@@ -29,12 +29,28 @@ import SwiftData
 /// ## Contract — mirrors `UITestVolumeSeeder` deliberately
 /// Gated twice over: `#if DEBUG` (absent from AppStore and DirectDistribution builds), and inert
 /// unless `FRUS_UI_TEST_SEED_NOTE` is set. The note's body is deliberately implausible as real
-/// research so nobody mistakes a seeded store for a used one. Idempotent by lookup on the body
-/// text: the UI-test store survives between runs, and a second launch must not mint a second row.
+/// research so nobody mistakes a seeded store for a used one. Under `FRUS_UI_TEST_MODE` the
+/// SwiftData store is in memory (`makeEphemeralContainer` in `ModelContainer+FRUS.swift`), so every
+/// launch starts empty and the lookup on the body text only stops a second seed within one process.
+/// This comment used to say the store survived between runs; it has not since that store landed.
+///
+/// ## Which document the note is on
+/// `"d01"` by default: an id no fixture volume contains, so the row opens a document that cannot
+/// load. That is all the obstruction and tab-scoped-reading suites need, and it keeps them clear of a
+/// live WKWebView, whose queries time out on iPhone. A test that must READ the document — turn its
+/// page, say — names a real one with `FRUS_UI_TEST_SEED_NOTE_DOCUMENT`, such as `d1` of the volume
+/// `FRUS_UI_TEST_SEED_VOLUME` seeds.
+///
+/// Version history:
+///   1.0 — #312: initial implementation
+///   1.1 — #1273: `FRUS_UI_TEST_SEED_NOTE_DOCUMENT`, and the persistence note corrected
 enum UITestResearchSeeder {
 
     /// The launch-environment key a UI test sets to request the seed.
     static let environmentKey = "FRUS_UI_TEST_SEED_NOTE"
+
+    /// The launch-environment key that puts the note on a named document instead of `"d01"`.
+    static let documentEnvironmentKey = "FRUS_UI_TEST_SEED_NOTE_DOCUMENT"
 
     /// The seeded note's body — the top-anchored row text scenario 5 asserts on.
     static let noteBody = "UI Test Research Note"
@@ -43,14 +59,15 @@ enum UITestResearchSeeder {
     /// container's `mainContext` (beside `DuplicateRecordCleanup`), so it needs no new plumbing.
     @MainActor
     static func seedIfRequested(context: ModelContext) {
-        guard ProcessInfo.processInfo.environment[environmentKey] == "1" else { return }
+        let environment = ProcessInfo.processInfo.environment
+        guard environment[environmentKey] == "1" else { return }
         let body = noteBody
         let existing = (try? context.fetchCount(FetchDescriptor<ResearchNote>(
             predicate: #Predicate { $0.bodyText == body }))) ?? 0
         guard existing == 0 else { return }
-        let volumeId = ProcessInfo.processInfo
-            .environment[UITestVolumeSeeder.environmentKey] ?? "frus1961-63v06"
-        let note = ResearchNote(documentId: "d01", volumeId: volumeId, bodyText: body)
+        let volumeId = environment[UITestVolumeSeeder.environmentKey] ?? "frus1961-63v06"
+        let documentId = environment[documentEnvironmentKey].flatMap { $0.isEmpty ? nil : $0 } ?? "d01"
+        let note = ResearchNote(documentId: documentId, volumeId: volumeId, bodyText: body)
         context.insert(note)
         try? context.save()
         print("[UITestResearchSeeder] Seeded one research note")
