@@ -146,7 +146,12 @@ struct SceneAddressingTests {
                 }
             }
         }
-        #expect(checked >= 10, """
+        // The floor was 10 against 12 producers. On 2026-09-11 three of them stopped handing off at
+        // all — Research's document lists, a collection, and the Archives Visit editor now read inside
+        // the tab or sheet they were opened from (`InPlaceDocumentReader`) — which leaves 9. The floor
+        // moved with them so the vacuity guard still means "the anchor was renamed", not "a decision
+        // was taken".
+        #expect(checked >= 8, """
             Only \(checked) producers found — the anchor `appState.openBrowseDocument(` has \
             probably been renamed, and this test is passing vacuously.
             """)

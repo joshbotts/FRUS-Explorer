@@ -256,8 +256,10 @@ struct DocumentView: View {
     /// a stack they never navigated, with their chronology or lookup context gone.
     ///
     /// A host that passes this keeps the jump inside its own stack, so the reader stays where they
-    /// are. `nil` (the Browse tab, the macOS document window, Search's pushed reader) keeps the
-    /// existing routing untouched.
+    /// are. Every iOS reader host now passes one — Browse, Search, the reader sheets, the standalone
+    /// window, and `InPlaceDocumentReader` for documents opened inside Research, Collections, Settings
+    /// and the Archives Visit editor (2026-09-11). `nil` falls back to the scene-addressed Browse
+    /// hand-off.
     var onNavigateToDocument: ((DocumentBrowserEntry, DocumentJump) -> Void)? = nil
 
     /// Point size of the "…unavailable" empty-state glyphs (person / gloss not
@@ -1247,14 +1249,11 @@ struct DocumentView: View {
     /// fragment after `#`). Determines the target volume from `targetVolumeId` if
     /// provided, otherwise falls back to the current document's volume.
     ///
-    /// If the target volume is not downloaded, falls back to the cross-reference
-    /// graph sheet (`showGraph = true`). Otherwise:
-    /// - **iOS**: sets `appState.pendingTab = .browse` so the Browse tab comes to
-    ///   the foreground, then writes `appState.pendingBrowseDocument`.
-    /// - **macOS**: writes `appState.pendingBrowseDocument` directly.
-    ///
-    /// `BrowserView.onChange(of: appState.pendingBrowseDocument)` observes the write
-    /// and appends the entry to the navigation stack/split-view path.
+    /// A footnote in this document is revealed in place, and a target in a volume that is not
+    /// downloaded offers the download. Otherwise the jump goes to `onNavigateToDocument` as a
+    /// `.push`, so the reader stays in the tab or sheet that hosts this view — every iOS reader host
+    /// passes one. Without a router it falls back to the scene-addressed Browse hand-off
+    /// (`openTab(.browse)` + `openBrowseDocument`), whose consumer appends to Browse's stack.
     ///
     /// The `DocumentBrowserEntry` is constructed with an empty `header` because the
     /// document title is not known until the XML is parsed. `DocumentView` repopulates
@@ -1515,9 +1514,9 @@ struct DocumentView: View {
     }
 
     /// Fulfils a rail tile/summary tap with `DocumentView`'s existing iOS presentation. Cite and
-    /// Summarize present consolidated sheets; Sources/Graph/Related reuse the same handlers the old
-    /// toolbar used (which open a Stage-Manager window when available, else an in-place sheet); Word
-    /// Cloud rides the app-level `pendingWordCloud` hand-off observed in `MainTabView`.
+    /// Summarize present consolidated sheets; Sources/Graph/Related/Semantic Map/Word Cloud open a
+    /// Stage-Manager window when available, else an in-place sheet; a topic chip leaves for the
+    /// Browse tab's Topic index.
     private func openRailTool(_ tool: ResearchRailTool, vm: DocumentViewModel) {
         switch tool {
         case .cite:
@@ -1546,6 +1545,16 @@ struct DocumentView: View {
             openSemanticMap()
         case .summarize:
             activeSheet = .summarizePromptPicker
+        case .topic(let request):
+            // The index is a Browse-tab level whose hand-off REPLACES Browse's path, and this document
+            // may be read in any tab — Research, Collections, Settings, Search. Handed off alone, the
+            // tap changed nothing the reader could see. So this is the "Find all mentions" shape:
+            // close the sheet (on iPhone the rail IS `activeSheet`; on iPad it is the inspector and
+            // this is a no-op), hand off, then bring Browse forward. A reader who came from another
+            // tab finds this document still on that tab's stack.
+            activeSheet = nil
+            appState.openSubjectExplorer(request, from: sceneID)
+            appState.openTab(.browse, from: sceneID)
         }
     }
 
@@ -1992,14 +2001,10 @@ struct DocumentView: View {
     /// Navigates to a sibling document within the same volume, triggered by the
     /// edge-tap "page-turn" gesture.
     ///
-    /// Reuses the same cross-reference navigation pathway as `handleCrossRefTap`
-    /// (`appState.pendingBrowseDocument`, observed by `BrowserView.onChange` which
-    /// appends the entry to the Browse tab's navigation stack) — the identical
-    /// mechanism `MacDocumentView`'s prev/next chevron buttons use on macOS
-    /// (`navigationPath.append(prev/next)`). `DocumentView` can be presented from
-    /// several navigation contexts (Search, Citation Lookup, Cross-Reference Graph,
-    /// Browse), so routing every document-to-document jump through the Browse tab
-    /// keeps behaviour predictable and consistent with existing in-document navigation.
+    /// Routes like `navigateToCrossRef`, but as a `.replace`: the host's router swaps the reading
+    /// position in place, so paging through a volume never deepens the stack (#751 / M-17a). Every
+    /// iOS reader host passes a router, so the page turns inside the tab or sheet the reader is in; a
+    /// host without one would fall back to the Browse hand-off, whose consumer appends.
     private func navigateToAdjacentDocument(_ adjacent: DocumentBrowserEntry) {
         // A sheet-hosted reader turns the page inside its own stack (#750).
         if let onNavigateToDocument {

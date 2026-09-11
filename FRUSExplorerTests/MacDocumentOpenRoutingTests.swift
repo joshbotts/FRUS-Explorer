@@ -211,8 +211,10 @@ struct MacDocumentOpenRoutingTests {
             using: openWindow) on macOS, so a click with no document window open mints one (#748).
             """)
 
-        // And the iOS arm must survive: it needs the tab switch, since Project Home is reached from
-        // the Settings tab and the document lands in Browse.
+        // And the iOS fallback must survive for a presenter that offers no stack. Every current iOS
+        // presenter does offer one — the two sheets and, since 2026-09-11, the Settings push — so the
+        // fallback runs only if a future presenter forgets `onOpenInSheet`, and then the tab switch is
+        // what keeps the hand-off from landing out of sight.
         #expect(source.contains("appState.openTab(.browse, from: sceneID)"),
                 "the iOS arm must still bring the Browse tab forward, or the tap looks like a no-op")
         #expect(source.contains("appState.openBrowseDocument(entry, from: sceneID)"),

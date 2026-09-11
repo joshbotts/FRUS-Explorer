@@ -129,6 +129,8 @@ import UIKit
 ///          compact Actions section) becomes a `Menu` offering the two
 ///          `CollectionDateSortScope`s via the shared `sortByDateScopeItems`; `sortByDate`
 ///          gains a `withinSections` parameter (default false = the original global sort)
+///   2026-09-11 — iOS: a document opened from a collection reads inside the collection's own
+///          stack (`readingChain`), so Back returns to the editor instead of Browse's history
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -205,6 +207,11 @@ struct CollectionEditorView: View {
     /// — set = show the entry inspector, `nil` = show the collection-metadata inspector
     /// (one inspector surface, either/or). On iPhone (compact) it drives the `.sheet`.
     @State private var inspectedEntryId: UUID?
+    #if os(iOS)
+    /// The documents opened from this collection, read INSIDE the stack hosting the editor (2026-09-11):
+    /// the Collections tab when pushed, the sheet's own stack otherwise. See `InPlaceDocumentReader`.
+    @State private var readingChain: [DocumentBrowserEntry] = []
+    #endif
     /// Pending inline note-create context (Collections Manager M2, D5): the "New Note…"
     /// affordance in the entry inspector's per-note list opens `InlineNoteCreateSheet`
     /// for this document, linking the created note to the entry when appropriate.
@@ -542,6 +549,9 @@ struct CollectionEditorView: View {
             : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        // Declared on `iOSContent`, which both presentation branches render, so the pushed editor
+        // and the sheet editor read the same way.
+        .inPlaceReader($readingChain)
         #endif
         .toolbar {
             // All edits save live (A1); a sheet still needs an explicit dismissal control.
@@ -1867,8 +1877,9 @@ struct CollectionEditorView: View {
     /// launched history.state.gov in a web browser — the published text, not the app's reader with
     /// its notes, highlights and cross-references.
     ///
-    /// Routes exactly like every other list: the provenance chain on macOS (which mints a window
-    /// when no host is live), the scene-addressed hand-off on iOS.
+    /// On macOS, the provenance chain (which mints a window when no host is live). On iOS the
+    /// document reads inside the stack hosting the editor, so Back returns to the collection — the
+    /// tab the reader is working in — rather than unwinding Browse's history (2026-09-11).
     private func openInReader(_ entry: CollectionEntry) {
         let browseEntry = DocumentBrowserEntry(
             documentId: entry.documentId,
@@ -1877,8 +1888,7 @@ struct CollectionEditorView: View {
         #if os(macOS)
         appState.openDocument(browseEntry, from: .global, using: openWindow)
         #else
-        appState.openTab(.browse, from: sceneID)
-        appState.openBrowseDocument(browseEntry, from: sceneID)
+        readingChain = [browseEntry]
         #endif
     }
 

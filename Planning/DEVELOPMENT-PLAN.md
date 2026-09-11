@@ -13919,3 +13919,97 @@ for it: the six test gaps the review confirmed; both reserved label sets losing 
 critic's defect (withholding the ids mid-rebuild, disabling on every rebuild, dropping the search or the
 empty-screen condition, an ungrouped section leaking an id); and the Source Explorer window forgetting its
 closed groups.
+
+## Session 2026-09-11 — A document opened inside a tab reads in that tab (O-3 point 2, reopened)
+
+**The owner's report**: a reader who opens a document from a Research-tab subview and presses Back lands
+in the Browse tab. The instruction: users stay within the tab they are working in.
+
+**This reverses a recorded decision, with the evidence it asked for.** O-3 (2026-08-19,
+`Planning/Completed/iOS-Reading-Journey-Design.md` §3b) kept Research and History handing off to Browse,
+and ended: reopen only with evidence that readers lose their place in Research specifically. The owner's
+report is that evidence; §3c records the reversal.
+
+**Mapped before designing** — a seven-reader workflow over every iOS document-open path: 52 distinct
+producers, each with its host tab, whether it sits in a sheet, the seams it could reuse, the tests that pin
+it, and the iPad multi-window rules. It found the four tab-hosted routes that leave their tab (Research's
+lists and History, a collection, Project Home from Settings) and a fifth that was already broken: the
+Archives Visit editor switched to Browse *without dismissing* the sheet every iOS host presents it in, so
+the document landed underneath it.
+
+**The mechanism is a self-contained reader, because the obvious one is the code O-3 was afraid of.**
+Browse and Search push documents onto a typed path. Research's path is a one-deep projection of its
+selection typed to `ResearchSidebarItem` — the #238/#272 iPadOS `.sidebarAdaptable` workaround — and the
+iPad two-pane Research has no path at all; Collections and Settings are path-less stacks navigating with
+state-driven destinations, where a path element appended beneath a state-driven push would land out of
+sight. `InPlaceDocumentReader` needs none of it: the producer's own view declares a state-driven
+destination, and every later document is another state-driven push on top, each showing one level of a
+**reading chain** the host owns. A cross-reference pushes and a page-turn replaces, through
+`DocumentJump.apply` — the rule Browse, Search and the reader sheets route through — so the reader behaves
+as it does in Browse and Search. No tab's path changes type.
+
+**What stays on Browse** has no tab to stay in: Spotlight, deep links, Handoff, iPad's Related Documents,
+Archival Neighbors, Source Explorer and Cross-Reference Analytics windows, and volume opens. (The
+cross-reference graph and semantic map windows already read documents inside themselves.)
+
+**Tests deliberately changed**, each because it pinned the old routing: `SceneAddressingTests`' vacuity
+floor (12 producers became 9; the floor moved from 10 to 8 so it still means "the anchor was renamed"),
+`CollectionsReaderRouteTests`' iOS half, and the rationale of
+`MacDocumentOpenRoutingTests.projectHomeUsesBothArms`, which cited the Settings push needing Browse. New:
+a per-producer pin (`tabHostedOpensReadInPlace`), a pin on the reader's own body
+(`inPlaceReaderUsesTheChain`), the chain-rule suite (`InPlaceReadingTests`, including its presentation
+binding), the rail chip (`railTopicChipSwitchesToBrowse`), the Archives Visit draft
+(`archiveVisitDraftSurvivesTheReader`), and **a UI test of the owner's exact report** — Research → the
+seeded document → Back must land on the Research list, never the Browse root, with Research still
+selected. It passed on the first run. Two iPad tests beside it read a document in whichever layout the width
+gives, and rotate an iPad mini across the two-pane width while reading.
+
+**Review — five lenses, a skeptic on each, and a completeness critic.** 19 findings confirmed (15
+distinct), 6 refuted, 1 from the critic. The one that mattered was a real defect in the first mechanism,
+confirmed from the code rather than reproduced: each reader kept its position — the page it had turned
+to, the cross-reference it had followed — in its own state, and on iPad Research a width crossing 820 pt
+swaps the stack for the two-pane, which rebuilds every view pushed on either and discards that state. The
+chain now lives on the host (on `ResearchView`, above the layout branch), each reader shows one level of
+it, and the rule it applies (`InPlaceReading.apply`) is driven directly by `InPlaceReadingTests` rather
+than pinned by a scan the helper enum satisfied.
+
+**What is verified at runtime, and what is not.** On iPad mini (A17 Pro) a document opened in portrait
+stays open through the rotation to landscape and back, and the test checks that the layout really
+changed. But an A/B on one device (iOS 26.3; the pre-chain half recompiled the restored sources) showed
+the same test passing on the pre-chain reader, whose first document already lived on `ResearchView` — so
+it guards the first document, not the fix. The position the chain exists to keep has no runtime test: the
+UI-test store holds no document to page through or follow a link from. The fix rests on its construction
+and on the rule's unit tests; a seeded-fixture UI test that must fail on the old reader is filed as a
+follow-up task.
+
+The rest: two doc comments orphaned by inserted declarations; producer pins a partial revert survived
+(Settings' reader unchecked, History's call to its opener unchecked, a leftover `openTab(.browse)`
+allowed); the manual claiming Research opens a document "scrolled to the relevant note or highlight",
+which nothing does and nothing ever did; "iPad's separate tool windows" sweeping in the cross-reference
+graph and semantic map windows, which read in place; the reader dropping the iPad "Working on:" subtitle
+Browse and Search show; and — exposed only because reading now pushes over it — the Archives Visit
+editor re-seeding its name field on every appearance, discarding a rename typed but not yet submitted.
+Refuted, and worth recording why: iPad's Related Documents, Archival Neighbors and Source Explorer windows
+still hand documents to the launching window's Browse tab. That is this change's scope decision, the same
+one Search made: a tool window has no tab of its own to stay in.
+
+**A regression this change exposed, fixed here: the rail's topic chip.** On iOS the Topic-index hand-off
+is consumed only by Browse, which replaces its whole path, and nothing switched tabs. From a document read
+in Browse that looked like working; from a document read anywhere else the tap did nothing visible and
+wiped Browse's history. The rail now asks its host, which closes the iPhone rail sheet, hands off, and
+brings Browse forward — the "Find all mentions" shape. The other "Browse all topics…" doors (Search's
+facets, the word cloud's scope menu, the analytics scope bars) have the same flaw independently of this
+change and are filed as a separate task.
+
+**Verification**, on the tree before the final squash (later changes are comments and docs): the iOS unit target passed 4,694
+tests in 605 suites (iPhone 17, iOS 26.5); the UI target ran 40 with 10 skipped and 0 failures (iPhone 17,
+iOS 26.4); on iPad Pro 13-inch (M5), iOS 26.4, the Research reading tests and `UIObstructionTests` ran 15
+with 5 skipped and 0 failures; on iPad mini (A17 Pro) the iPad reading and rotation tests passed on iOS
+26.3, 26.4 and 26.5; the macOS build succeeded; `swift test` passed 1,371 tests in 162 suites (no package
+target changed). **Probes, three sweeps:** 26 mutations and 3 named controls, all killed — the owner's
+original bug restored in Research among them, caught by both the UI test and the source pin.
+
+**Every verdict came from a run that executed tests.** The simulators wedged repeatedly (`Busy
+("Application failed preflight checks")`, 0 tests run), on roughly every other launch per device, and a
+wedged run reads as a result of neither kind; every mutation first reported as no-signal was re-run on a
+device that executed it, with every destination pinned by UDID.

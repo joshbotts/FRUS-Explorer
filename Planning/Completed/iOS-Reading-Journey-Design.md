@@ -103,6 +103,40 @@ are the decision.
 
 ---
 
+## 3c. O-3 point 2, REOPENED — 2026-09-11
+
+**The owner reopened it, with the evidence §3b asked for.** §3b ended: *"Anyone reopening point 2 should
+have new evidence that readers actually lose their place in Research or History specifically."* The
+owner's report was exactly that: a reader who opens a document from a Research-tab subview and presses
+Back is taken to the Browse tab instead of back to Research. The instruction: *users stay within the tab
+they are working in.*
+
+**The decision.** A document opened from inside a tab reads in that tab. That covers Research's lists and
+History, a collection in the Collections tab, Project Home reached through Settings, and the Archives
+Visit editor's documents (whose every iOS host is a sheet — the open used to switch to Browse *without
+dismissing*, leaving the document beneath a still-presented sheet, the #750 H-5 shape). What still opens
+in Browse is what has no tab to stay in: Spotlight, deep links, Handoff, iPad's Related Documents, Archival
+Neighbors, Source Explorer and Cross-Reference Analytics windows, and volume opens (a `VolumeView` needs
+Browse's view model). The cross-reference graph and semantic map windows already read in themselves.
+
+**The restructure §6 feared was not needed.** §6 reasoned that adopting Research meant replacing the
+one-deep `[ResearchSidebarItem]` projection (#238 / #272) and giving History a stack — code with a
+documented iPadOS regression history. `InPlaceDocumentReader` avoids both: the producer's own view declares
+a state-driven destination, and each document the reader opens after that is another state-driven push
+on top of it, showing one level of a reading chain the host owns — which is what lets a reading position
+survive iPad Research swapping its stack for the two-pane as the width crosses 820 pt. No tab's path changes type, the iPad two-pane is untouched, and the same
+reader serves the path-less Collections and Settings stacks. Cross-references push and page-turns replace,
+through `DocumentJump.apply`, exactly as in Browse and Search.
+
+**Verified at runtime:** a UI test (`ResearchReadingStaysInTabTests`, iPhone) opens the seeded Research
+document, presses Back, and requires the Research list — not the Browse root — with the Research tab still
+selected. On iPad the same suite reads a document in whichever layout the width gives, and on iPad mini
+rotates across the two-pane width and back while reading, requiring the document to stay open each way. That
+rotation passes on the pre-chain reader too (an A/B on one device): it guards the first document, and
+the position a page-turn or cross-reference reaches before the swap is not exercised at runtime. See `DEVELOPMENT-PLAN.md`, session 2026-09-11, for the probes and review.
+
+---
+
 ## 4. Options
 
 ### Option A — Keep the current design (do nothing but M-17a)

@@ -287,8 +287,8 @@ struct MainTabView: View {
             AppState.persistTabSeed(newValue)
         }
         // #316 — drain the consume-once cross-view hand-off request into this window's selection.
-        // The ~22 hand-off sites set `appState.pendingTab` alongside their `pendingX` content
-        // field; every open MainTabView adopts it and clears it (the standard pendingX pattern),
+        // The hand-off sites set `appState.pendingTab` alongside their `pendingX` content field; the
+        // MainTabView of the addressed window adopts it and clears it (the standard pendingX pattern),
         // so the hand-off's tab comes forward wherever the user is. Cleared so a later unrelated
         // change does not re-trigger it, and so a fresh window (nil) falls through to its seed.
         .onChange(of: appState.pendingTab) { _, _ in

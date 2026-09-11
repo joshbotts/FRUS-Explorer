@@ -601,6 +601,32 @@ private struct UserTagsView: View {
     }
 }
 
+#if os(iOS)
+// MARK: - ProjectHomeReadingHost
+
+/// Project Home pushed from Settings ▸ Projects, reading its documents inside the Settings tab.
+///
+/// The Research tab's and the project picker's Project Home sheets already read in their own stacks
+/// through `ProjectHomeView.onOpenInSheet` (#553 / O-3). The Settings push was the one presenter that
+/// passed nothing, so its leads and recent documents handed off to the Browse tab and the reader left
+/// Settings. This is that presenter's stack: a state-driven push, since the Settings stack is
+/// path-less and navigates with destination links. See `InPlaceDocumentReader`.
+///
+/// Version history:
+///   1.0 — 2026-09-11: initial implementation
+private struct ProjectHomeReadingHost: View {
+    /// The project whose home this is.
+    let projectId: UUID
+    /// The documents the reader opened from Project Home, while they are open.
+    @State private var readingChain: [DocumentBrowserEntry] = []
+
+    var body: some View {
+        ProjectHomeView(projectId: projectId, onOpenInSheet: { readingChain = [$0] })
+            .inPlaceReader($readingChain)
+    }
+}
+#endif
+
 // MARK: - ProjectsSettingsView
 
 /// iOS Settings → Research → Projects — the hub for the research trio (S-3b).
@@ -660,7 +686,13 @@ private struct ProjectsSettingsView: View {
 
                 if let pid = appState.activeProjectId, projects.contains(where: { $0.id == pid }) {
                     NavigationLink {
+                        #if os(iOS)
+                        // Reads a lead or recent document inside the Settings stack (2026-09-11) —
+                        // it used to hand off to Browse, leaving the reader in another tab.
+                        ProjectHomeReadingHost(projectId: pid)
+                        #else
                         ProjectHomeView(projectId: pid)
+                        #endif
                     } label: {
                         Label(String(localized: "settings.projects.home",
                                      defaultValue: "Project Home"),

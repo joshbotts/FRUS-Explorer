@@ -716,10 +716,10 @@ struct BrowserView: View {
     /// is better than the stack's Back rather than merely equal to it.
     ///
     /// **The two conditions are coupled, and decoupling them strands the reader.**
-    /// `consumePendingBrowseDocument` *appends*, so a document handed off from Research, Search or
-    /// a citation lands at depth 1 on a fresh Browse tab. With the list pane given up for the
-    /// reader's width (see `showsListPane`) a `count > 1` rule would leave that document with no
-    /// Back and no list — a dead end reachable from three surfaces. Popping to an empty path also
+    /// `consumePendingBrowseDocument` *appends*, so a document handed off to a fresh Browse tab — a
+    /// Spotlight result, a deep link, Handoff, or a tap in an iPad tool window — lands at depth 1.
+    /// With the list pane given up for the reader's width (see `showsListPane`) a `count > 1` rule
+    /// would leave that document with no Back and no list — a dead end reachable from each of them. Popping to an empty path also
     /// restores the list pane, because an empty path is not a document level.
     ///
     /// ## Titles and toolbars resolve to the OUTER bar, deliberately
