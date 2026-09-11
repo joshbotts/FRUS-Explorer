@@ -255,7 +255,7 @@ struct SourceExplorerView: View {
                 }
             }
             NavigationLink {
-                CollectionBrowserView()
+                CollectionBrowserView(host: .sourceExplorer)
                     .environment(appState)
             } label: {
                 Label(String(localized: "source.explorer.collection.browse",

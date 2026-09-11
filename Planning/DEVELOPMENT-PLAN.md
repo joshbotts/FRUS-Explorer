@@ -13808,3 +13808,114 @@ sweep was rewriting those files at the same time. What survived, and what did no
   spoken or typed name against the input labels, which default to the label, so saying what is on the
   button did nothing. VoiceOver was unaffected. Both menus now declare input labels carrying the
   visible text, the key or grouping alone, and the generic name.
+
+## Session 2026-09-10o — Collapsible groups, an Ungrouped option, and the same controls in Source Explorer
+
+**The owner's request**: expand/collapse controls for the groupings in both Archives lenses; an
+ungrouped option for Collections; then the same controls in Source Explorer.
+
+**The controls moved inside the list, which is what "the same controls" had to mean.**
+`CollectionBrowserView` has three hosts — Browse ▸ Archives, and Source Explorer on each platform — and
+in #1270 only Browse drew controls, above the list, while Source Explorer kept a separate volume-count
+order. Copying the row into two more hosts would have made three implementations to drift apart, the
+failure this repo has already recorded for the Source Explorer twin views. So the list draws its own
+Group, Sort and Expand All / Collapse All row, and a host passes only an `ArchivesArrangement.CollectionListHost`,
+which names where its choices are stored. **Browse keeps the exact keys #1270 shipped**, so no reader's
+saved grouping resets, and a test pins them; Source Explorer gets its own namespace, so arranging one
+leaves the other as it was. Source Explorer's volume-count order and the function that kept it are
+retired with the path that called them.
+
+**Ungrouped** is one headerless list — the only arrangement in which a document-count sort ranks every
+collection against every other (Central Files first, at 17,606 documents). The case is `ungrouped`,
+never `none`: on an optional grouping `.none` silently means nil.
+
+**Collapsing.** Each section header is a button — chevron, title, and the section's size, so a closed
+section still says what it holds — and the controls row has Expand All / Collapse All. Four rules, each
+pinned:
+- **A search overrides the collapse**, because a match hidden inside a closed section reads as "no such
+  collection"; the collapse is kept, so clearing the search restores what was closed. Whitespace is not
+  a search.
+- **Expand All and Collapse All touch only the sections on screen.** Section ids carry their grouping, so
+  closing a record group and switching to repository and back restores it — which only works if
+  Expand All subtracts the screen's ids rather than clearing the set.
+- **An empty screen is not all-collapsed**, or the button would offer Expand All over nothing.
+- **Mid-rebuild, the button is disabled** rather than acting on the previous grouping's ids.
+
+Headers are Buttons rather than `Section(isExpanded:)` because the system draws that disclosure only in
+sidebar-style lists and these are inset on both platforms. Sort and grouping persist; which groups are
+closed is session state.
+
+**The row degrades rather than overflowing.** `By Record Group`, `Document Count, Descending` and
+`Collapse All` do not fit one row on a narrow iPhone, so the row is a `ViewThatFits`: everything labelled,
+then the expand button as its icon alone (its title set explicitly as its accessibility name, since the
+custom label style drops it), then every control on its own line. **Which of those it picks depends only
+on the space**: every button reserves the width of the widest label it can show, and Collapse All stays
+in the row, disabled, when ungrouped — see the review section for what the first version did instead.
+The captions scroll with the list at every size, and at accessibility text sizes the controls do too.
+
+**23-run mutation sweep, one named control** (decimal order reversed → killed, 4 failures). **All 19
+rule mutations killed** — every Ungrouped branch, all four collapse rules and each of their branches,
+both storage namespaces, the three labels, and both halves of the caption — **and the 3 survivors were
+predicted in the harness's own names.** Two are view wiring no unit test can reach: the list ignoring
+its host's keys, and a closed section still drawing its rows. The PR's visual review is their check.
+
+**The third survivor was closable, and the sweep found one weaker spot beside it.** A search rebuilds
+each section it keeps, and a rebuild that forgot the section's grouping would give the searched
+ungrouped list a header — nothing pinned that, and one assertion now does. Separately, sending
+Ungrouped through the grouping loop dumps every collection into a single "(Unattributed)" bucket, and
+the shipped-data test **passed** that way: one section, 4,432 rows, heaviest first, every assertion
+true. Only the fixture caught it. The shipped test now also requires the section to BE ungrouped and
+not a remainder; re-probed, both mutations are killed by the test written for them.
+
+**A five-lens adversarial review ran against the committed change** (requirements, SwiftUI and platform,
+accessibility and layout, tests, copy and docs), each lens's findings handed to a skeptic told to refute
+them against the commit object — the sweep was rewriting the tree at the time. **Ten findings survived,
+plus the critic's one, and every one is fixed:**
+
+- **Closed collection groups reopened on a lens switch, while closed eras stayed shut** — two rules on one
+  screen, confirmed by two lenses. Leaving the Collections lens tears the list down, and its closed groups
+  went with it; the eras were held on the axis. The list now takes an optional binding for that state, and
+  Browse passes one held beside the eras. A host that passes none keeps the old behaviour.
+- **At accessibility text sizes the pinned controls and captions left the list a sliver of the screen** —
+  measured by the skeptic: the caption alone runs to about eight lines at the largest size, the record-group
+  paragraph adds seven to ten more, and the stacked controls take 230–430 pt. New in iOS Source Explorer,
+  which had drawn the list alone. The captions now scroll with the list at every size, as the Classes and
+  Provenance Types captions already did; at accessibility sizes the controls scroll too.
+- **Choosing a longer label reflowed the row and dropped focus.** The `ViewThatFits` branch depended on the
+  labels on show: measured, "Name, Ascending" fits the compact row on a large iPhone and "Document Count,
+  Descending" does not, so picking it swapped layouts — and because each layout builds its own copy of the
+  menus, the menu the reader had just used was rebuilt, the list jumped, and VoiceOver and keyboard focus
+  were lost. Each button now reserves the width of the widest label it can show, and Collapse All stays in
+  the row, disabled, when ungrouped, so neither a choice nor the grouping changes the row's width. The
+  reserved sets are pure and tested for coverage; dropping either direction or either title is killed.
+- **Four test gaps, each with a mutation that survived:** nothing pinned whether a grouped section keeps its
+  header (the switch the whole collapse feature turns on); the persistence test checked key STRINGS but not
+  which host passes them or which setting reads which key — all plain `String`s, so a swap compiles and
+  silently resets a reader's choice; a search keeping a grouped list's headers was untested (only the
+  ungrouped half had been pinned); and section ids were tested only as hand-written literals, so two
+  groupings' remainders could have shared an id and closed each other. Each now has a test, the host wiring
+  through a comment-stripped source scan of the three call sites and the three storage pairings, and a probe
+  run killed all six mutations.
+- **Two doc comments still described the retired Browse-only seam.** Refuted: that "session state" was a
+  false claim — the lifetime difference was real and is fixed above, but the comment meant "not persisted".
+
+**The completeness critic found one more, and it was the button telling a small lie.** To disable Expand
+All during a rebuild, the first version handed it no section ids — but the same ids set its label, and an
+empty set reads "Collapse All". So after Collapse All, a mere sort change made a fully closed list offer
+to collapse itself, and VoiceOver announced the name changing twice for one choice. Withholding them was
+not even needed for a sort: a section's id carries its grouping, not its sort. The rule is now
+`expansionState`, pure and tested per conjunct — the button always carries the ids on screen, so its label
+describes what is drawn, and it is disabled only when those sections belong to another grouping, during a
+search, or when there are none.
+
+**The SwiftUI skeptic's verdict also widened a confirmed finding past where I had fixed it.** The macOS
+Source Explorer window tears its Collections list down on every mode switch — including the AUTOMATIC
+switch to the source note whenever a document's Sources are opened — so its closed groups vanished too.
+That window now holds them as Browse does. The iOS Source Explorer list is a pushed screen, and leaving it
+is meant to discard them. A source scan pins both holding hosts.
+
+**Every fix was probed, against a control, and all fourteen probes were killed** — each by the test written
+for it: the six test gaps the review confirmed; both reserved label sets losing a label; every part of the
+critic's defect (withholding the ids mid-rebuild, disabling on every rebuild, dropping the search or the
+empty-screen condition, an ungrouped section leaking an id); and the Source Explorer window forgetting its
+closed groups.

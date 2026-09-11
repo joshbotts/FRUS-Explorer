@@ -1960,6 +1960,11 @@ struct SourceExplorerWindowView: View {
     /// targeted for the note view (#369 BUG-8). The note segment renders THIS, not the live globals,
     /// so a background document window's `loadDocument()` can't mutate the open explorer's content.
     @State private var noteSnapshot: SourceNoteSnapshot? = nil
+    /// The Collections view's closed groups, held on the window rather than in the list. The list is
+    /// torn down whenever the mode leaves Collections — including the automatic switch to the source
+    /// note when a document's Sources are opened — and would reopen every group each time. Browse holds
+    /// its own the same way, across a lens switch.
+    @State private var collapsedCollectionGroups: Set<String> = []
 
     /// Immutable copy of the Source Explorer note context, snapshotted on focus (see `noteSnapshot`).
     private struct SourceNoteSnapshot: Equatable {
@@ -1991,10 +1996,11 @@ struct SourceExplorerWindowView: View {
             case .note:
                 noteContent
             case .collections:
-                // The searchable, repository-grouped authority list; rows open the
-                // shared Collection detail.
+                // The searchable authority list, with the same Group, Sort and Expand/Collapse
+                // controls as the Corpus Browser's Archives axis — stored separately, so arranging
+                // one does not rearrange the other. Rows open the shared Collection detail.
                 NavigationStack {
-                    CollectionBrowserView()
+                    CollectionBrowserView(host: .sourceExplorer, collapsed: $collapsedCollectionGroups)
                 }
             case .naraLookup:
                 // Live catalog query form. `.id` re-keys the view per hand-off so a
