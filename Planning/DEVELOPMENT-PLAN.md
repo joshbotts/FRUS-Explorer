@@ -13979,8 +13979,7 @@ changed. But an A/B on one device (iOS 26.3; the pre-chain half recompiled the r
 the same test passing on the pre-chain reader, whose first document already lived on `ResearchView` — so
 it guards the first document, not the fix. The position the chain exists to keep has no runtime test: the
 UI-test store holds no document to page through or follow a link from. The fix rests on its construction
-and on the rule's unit tests; a seeded-fixture UI test that must fail on the old reader is filed as a
-follow-up task.
+and on the rule's unit tests; a seeded-fixture UI test that must fail on the old reader is #1273.
 
 The rest: two doc comments orphaned by inserted declarations; producer pins a partial revert survived
 (Settings' reader unchecked, History's call to its opener unchecked, a leftover `openTab(.browse)`
@@ -13999,7 +13998,7 @@ in Browse that looked like working; from a document read anywhere else the tap d
 wiped Browse's history. The rail now asks its host, which closes the iPhone rail sheet, hands off, and
 brings Browse forward — the "Find all mentions" shape. The other "Browse all topics…" doors (Search's
 facets, the word cloud's scope menu, the analytics scope bars) have the same flaw independently of this
-change and are filed as a separate task.
+change and are tracked as #1274.
 
 **Verification**, on the tree before the final squash (later changes are comments and docs): the iOS unit target passed 4,694
 tests in 605 suites (iPhone 17, iOS 26.5); the UI target ran 40 with 10 skipped and 0 failures (iPhone 17,
@@ -14013,3 +14012,76 @@ original bug restored in Research among them, caught by both the UI test and the
 ("Application failed preflight checks")`, 0 tests run), on roughly every other launch per device, and a
 wedged run reads as a result of neither kind; every mutation first reported as no-signal was re-run on a
 device that executed it, with every destination pinned by UDID.
+
+## Session 2026-09-11 (later) — A turned page must survive the iPad layout swap (#1273)
+
+**Why.** #1272 moved Research's reading position into a chain owned by `ResearchView`, because iPad
+Research swaps its stack for a two-pane at 820 pt and rebuilds everything pushed on either. Its rotation
+UI test opened only the first document, and an A/B showed it passing on the pre-chain reader: nothing at
+runtime tested what the chain exists to keep. #1273 is that test.
+
+**Mapped before designing** — six readers and a critic over the fixture, the page-turn trigger and the
+oracle. What changed the design: SwiftData is IN MEMORY under `FRUS_UI_TEST_MODE` (eight comments said it
+was on disk, and two readers believed them); the page-turn zones are accessibility buttons ("Next
+document", "Previous document") that exist only with the iPad research rail closed and a neighbour
+loaded from the index; a persisted interrupted-index marker can keep a volume out of every later launch's
+reconcile; and landscape crosses 820 pt only if the tab sidebar is not taking a column.
+
+**Probed before writing.** One run on iPad mini (A17 Pro, iOS 26.5) settled what reading could not:
+`-frus.document.researchPanel.visible NO` closes the rail for the launch without writing it back; the
+zone appears within a second of opening; the navigation bar's identifier is the document's title; queries
+took under 0.25 s with the web view on screen; and the Back button's label names the layout while reading —
+"All Research Documents" in the stack, "Research" over the two-pane — which lets the test prove the gate
+was crossed before it asserts what survived the crossing.
+
+**The test** (`ResearchReadingDepthTests`, beside the #1272 suite in `ResearchReadingStaysInTabTests.swift`):
+open the seeded note's document (`d1` of the synthetic volume), turn the page, rotate across the gate,
+require page two, and one Back to the list; then the same from the two-pane to the stack. The fixture
+gains an opt-in `FRUS_UI_TEST_SEED_NOTE_DOCUMENT` — the default `"d01"` stays, so no other suite starts
+opening a live web view — and `UITestFixtureVolumeTests` pins that the fixture reads `d1`, `d2`, `d3`
+under its own titles, so a fixture change fails in milliseconds with the cause named rather than minutes
+into a UI run.
+
+**The A/B.** On one pinned iPad mini (A17 Pro, iOS 26.5) the test passes on this branch, and FAILS when
+the reader keeps a page-turn in its own `@State` instead of the chain — at the post-rotation assertion
+("PAGE-TURN LOST ACROSS THE TWO-PANE SWAP: after rotating from the stack to the two-pane…"), not at a
+precondition. The mutation keeps `InPlaceReading.apply`'s call for cross-references, so
+`HandoffVisibilityTests.inPlaceReaderUsesTheChain` stays green under it: only this test catches it. The
+pre-chain reader was squashed before #1272 was pushed, so the mutation was written by hand rather than
+restored. The simulator wedge (`Busy ("Application failed preflight checks")`) recurred on consecutive
+launches of one device; rebooting ONLY that device before a run cleared it on the first attempt, where
+ending the app's processes and waiting had failed three times.
+
+**Also corrected: ten stale comments across seven files**, and they were not all the same claim. Six said
+the UI-test SwiftData store persists between runs (`UITestResearchSeeder`, `FRUSExplorerUITests`,
+`UIObstructionTests` twice, `AnalyticsRotationTests` twice). Two said "the UI-test store" persists where
+only the volumes directory and the search index do (`UITestVolumeSeeder`, `CompilationDocumentsTests`) —
+a scope correction, not a retraction. Two were inside `makeEphemeralContainer`'s own doc: a premise that
+no UI test terminates and relaunches (two obstruction scenarios do, to change launch arguments), and an
+opening paragraph that belonged to `makeLocalContainer` until #555 inserted the ephemeral store above it —
+which is how two readers came to believe the store persists. The review found five after the first pass. **Not here:** the cross-reference half of #1273. The fixture has no `<ref>`, a link
+lives inside the web view the suite avoids querying, and following one pushes a second level of the
+chain that needs two Backs — so a cross-referenced position across the swap still has no runtime test.
+
+**Review — four lenses, a skeptic on each, a completeness critic.** Seven confirmed, six refuted, and the
+critic found nothing. Two were real weaknesses in the new tests. `assertStillOnPageTwo` required the
+Previous zone with a bare `exists`, and the two oracles are not ready at the same moment: the bar title
+comes from the chain entry before the document parses, while the zone waits on the rebuilt reader's whole
+async load — so a slow rebuild would have emitted the very message the A/B reads as the defect. And the
+fixture guard compared the pipeline's headers against the constant the fixture is GENERATED from, so a
+rename moved both sides together and only the UI test, minutes later on a simulator, would have failed.
+The other five were stale comments the first sweep had missed, including `makeEphemeralContainer`'s own
+orphaned opening paragraph.
+
+**Two refutations corrected claims of mine**, which is what the skeptics are for: the note that this suite
+retires the page-turn tip now states only the mechanism in code and marks its effect unverified (nothing
+in the repo establishes whether `hideAllTipsForTesting()` also blocks the invalidation write), and the
+sweep's tally is split by what each comment actually claimed rather than lumped into one number.
+
+**Verification**, re-run after the review fixes at `91d18081` (the only later checkpoint is this record),
+every run a first attempt after rebooting only its own simulator: the iOS unit target passed **4,695 tests
+in 606 suites** and the UI target ran **41 with 11 skipped and 0 failures** (iPhone 17, iOS 26.5) — one
+test and one suite more than `v2` for the fixture-order guard, and one UI test more, which skips off iPad.
+On iPad mini (A17 Pro, iOS 26.5) the A/B ran again after those fixes: `ResearchReadingDepthTests` passes,
+and under the mutation fails at the post-rotation assertion. The macOS build succeeded, and `swift test`
+passed **1,371 tests in 162 suites** (no package target changed).

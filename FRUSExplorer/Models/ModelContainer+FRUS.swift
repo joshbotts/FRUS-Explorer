@@ -299,10 +299,6 @@ extension ModelContainer {
         return try ModelContainer(for: schema, configurations: [config])
     }
 
-    /// Creates a persistent local-only (non-CloudKit) container.
-    ///
-    /// Used as the fallback when CloudKit init fails, and as the primary container
-    /// when running under the XCTest host.
     /// A store that exists only for the lifetime of a test process.
     ///
     /// ## Why this is not the on-disk local store
@@ -322,9 +318,10 @@ extension ModelContainer {
     /// no file, so nothing can accumulate, and every launch starts from the same empty state.
     ///
     /// ## Safe because nothing needs to outlive a launch
-    /// Every UI test calls `XCUIApplication.launch()` exactly once and none terminates and
-    /// relaunches, so no test depends on state surviving a process boundary. In-memory data
-    /// persists for the whole process, which is all any of them use.
+    /// No UI test depends on SwiftData surviving a process boundary. Two `UIObstructionTests`
+    /// scenarios terminate and relaunch, but only to change launch arguments (a content size, and
+    /// onboarding); neither reads data from the first launch. In-memory data persists for the whole
+    /// process, which is all any test uses.
     ///
     /// Unit tests are unaffected either way: they build their own in-memory containers and
     /// never call ``makeFRUSContainer()``. They reach this path only as the app-hosted test
@@ -347,6 +344,13 @@ extension ModelContainer {
         }
     }
 
+    /// Creates the persistent local-only (non-CloudKit) store.
+    ///
+    /// A FALLBACK, not a test path: used when CloudKit init fails, and when the ephemeral store above
+    /// cannot be built. Under the XCTest host and `FRUS_UI_TEST_MODE` the primary container is
+    /// ``makeEphemeralContainer()`` (#555). The doc that said otherwise was this function's, orphaned
+    /// onto the ephemeral store when #555 inserted it above — which is how two readers of #1273 came to
+    /// believe UI-test data persists between runs.
     private static func makeLocalContainer() -> ModelContainer {
         do {
             let localSchema = Schema(frusModelTypes)

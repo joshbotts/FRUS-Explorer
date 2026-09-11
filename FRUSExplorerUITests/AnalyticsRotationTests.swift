@@ -251,12 +251,13 @@ final class AnalyticsRotationTests: XCTestCase {
         guard projects.waitForExistence(timeout: 10) else { throw XCTSkip("Projects pane not found") }
         projects.tap()
 
-        // Reuse the fixture project if a previous run already created it.
+        // Reuse the fixture project if this launch already created it.
         //
-        // This helper had no idempotence guard and created a new "Supply Chain" project on
-        // EVERY run. Under FRUS_UI_TEST_MODE the SwiftData store is the simulator's real
+        // This helper once had no idempotence guard and created a new "Supply Chain" project on
+        // EVERY run. Under FRUS_UI_TEST_MODE the SwiftData store was then the simulator's real
         // on-disk one, shared by every suite and never reset, so the projects accumulated —
-        // seven of them in a single afternoon of repeated full-suite runs.
+        // seven of them in a single afternoon of repeated full-suite runs. It has been in memory
+        // since #555 (2026-07-27), which ends that leak for every fixture; the guard stays.
         //
         // That is not merely untidy. Each row renders a three-line detail with no line limit,
         // so at seven rows "New Project…" is pushed below the fold of the Projects pane, and
@@ -266,7 +267,7 @@ final class AnalyticsRotationTests: XCTestCase {
         // fixture debris.
         let existing = app.buttons[Self.fixtureProjectName].firstMatch
         if existing.waitForExistence(timeout: 2) {
-            return   // already staged by an earlier run; nothing to create
+            return   // already staged in this launch; nothing to create
         }
 
         let newProject = app.buttons["New Project…"].firstMatch

@@ -5451,3 +5451,50 @@ struct RecordGroupSpellingTests {
         }
     }
 }
+
+#if DEBUG
+// MARK: - UITestFixtureVolumeTests
+
+/// The synthetic volume UI tests seed must be one a reader can page through.
+///
+/// `ResearchReadingDepthTests` (#1273) turns a page from `d1` and asserts it reached `d2`. The page-turn
+/// zone exists only when `readingSequence` gives the open document a neighbour, so a fixture change
+/// that dropped, reordered or re-nested its documents would surface as a precondition failure minutes
+/// into a UI run on a simulator. This says the same thing here, in milliseconds, with the cause named.
+///
+/// Version history:
+///   1.0 — #1273: initial implementation
+@Suite("UI-test fixture volume")
+struct UITestFixtureVolumeTests {
+
+    @Test("The seeded fixture reads d1, d2, d3 in order, under its own titles")
+    func fixtureReadsInOrder() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volumeId = "frus1961-63v06"
+            try UITestVolumeSeeder.fixtureXML(volumeId: volumeId)
+                .write(to: dir.appendingPathComponent("volumes/\(volumeId).xml"),
+                       atomically: true, encoding: .utf8)
+            try await pipeline.indexVolume(volumeId)
+
+            let sequence = try await pipeline.readingSequence(forVolume: volumeId)
+            #expect(sequence.map(\.documentId) == ["d1", "d2", "d3"], """
+                The UI-test fixture must read d1, d2, d3: the reading-depth UI test turns the page from \
+                d1 and requires d2. A document the structure walk cannot reach has no neighbours, and \
+                its page-turn zone never appears.
+                """)
+            // Literals, NOT `UITestVolumeSeeder.documentTitles`: the fixture XML is generated FROM that
+            // array, so comparing back to it moves both sides together and a rename passes here while
+            // failing the UI test minutes into a simulator run. `ResearchReadingDepthTests` hard-codes
+            // these same strings, and this is what pins them to the seeder.
+            #expect(sequence.map(\.header) == ["UI Test Document One",
+                                              "UI Test Document Two",
+                                              "UI Test Document Three"], """
+                The UI test identifies the page it turned to by these titles, which it hard-codes. \
+                Renaming the fixture's heads without updating that suite breaks it on a simulator.
+                """)
+        }
+    }
+}
+#endif
+

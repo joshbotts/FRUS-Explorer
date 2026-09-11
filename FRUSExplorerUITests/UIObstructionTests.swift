@@ -55,7 +55,7 @@ import UIKit
 ///
 /// ## Launch configuration (inherited from `FRUSExplorerUITests` pattern)
 /// Each test class configures `XCUIApplication` with:
-///   - `FRUS_UI_TEST_MODE = "1"` — local SQLite store, no CloudKit
+///   - `FRUS_UI_TEST_MODE = "1"` — an in-memory store, no CloudKit (#555)
 ///   - `-hasCompletedOnboarding 1` — skips OnboardingView, lands in MainTabView
 ///
 /// ## Accessibility identifiers relied upon
@@ -1134,9 +1134,9 @@ final class UIObstructionTests: XCTestCase {
     /// branch of `ProjectEditorView.saveProject()` assigns `appState.activeProjectId`, so saving is
     /// also what makes the new project active.
     ///
-    /// The UI-test store is on **disk** (`makeLocalContainer`), so a project created by an earlier
-    /// run survives into this one. This is therefore idempotent: it returns early when the banner
-    /// is already on screen. Creating a redundant second project would also trip the one-time
+    /// The UI-test store has been in memory since #555 (`makeEphemeralContainer`), so no project
+    /// survives from an earlier run; this still returns early when the banner is already on screen,
+    /// which keeps it safe to call twice in one launch. Creating a redundant second project would also trip the one-time
     /// second-project nudge alert (`SecondProjectNudgeModifier`) and block every later step.
     private func ensureActiveProjectWithResearchQuestion() throws {
         selectBrowseSection()
