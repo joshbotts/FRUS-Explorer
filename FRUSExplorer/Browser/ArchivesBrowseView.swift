@@ -179,9 +179,50 @@ struct ArchivesIndexView: View {
 
     @State private var lens: Lens = .types
     /// The class lens's eras and rows, built off `body` — the sweep is over ten thousand class
-    /// keys and is not work for a view update.
+    /// keys and is not work for a view update. Held in the order ``classSectionsSort`` names.
     @State private var classSections: [(era: ArchivesClassAxis.FilingEra,
                                         rows: [ArchivesClassAxis.ClassRow])] = []
+    /// The sort `classSections` is currently in, so a task that re-runs for another reason — a lens
+    /// switch, a re-appearance — does not re-sort 9,908 rows into the order they are already in.
+    @State private var classSectionsSort: ArchivesArrangement.Sort? = nil
+
+    // The arrangement, device-local and persistent — the catalogue's rule: browse state lives in
+    // UserDefaults, never on a synced model. Each lens keeps its own sort, because "Name" means a
+    // collection's name on one and a class number on the other.
+    @AppStorage("browse.archives.collections.grouping")
+    private var collectionGroupingRaw = ArchivesArrangement.CollectionGrouping.repository.rawValue
+    @AppStorage("browse.archives.collections.sortKey")
+    private var collectionSortKeyRaw = ArchivesArrangement.Sort.standard.key.rawValue
+    @AppStorage("browse.archives.collections.ascending")
+    private var collectionAscending = ArchivesArrangement.Sort.standard.ascending
+    @AppStorage("browse.archives.classes.sortKey")
+    private var classSortKeyRaw = ArchivesArrangement.Sort.standard.key.rawValue
+    @AppStorage("browse.archives.classes.ascending")
+    private var classAscending = ArchivesArrangement.Sort.standard.ascending
+
+    private var collectionGrouping: ArchivesArrangement.CollectionGrouping {
+        ArchivesArrangement.CollectionGrouping(rawValue: collectionGroupingRaw) ?? .repository
+    }
+
+    private var collectionSort: Binding<ArchivesArrangement.Sort> {
+        Binding(
+            get: {
+                ArchivesArrangement.Sort(
+                    key: ArchivesArrangement.SortKey(rawValue: collectionSortKeyRaw) ?? .documents,
+                    ascending: collectionAscending)
+            },
+            set: { collectionSortKeyRaw = $0.key.rawValue; collectionAscending = $0.ascending })
+    }
+
+    private var classSort: Binding<ArchivesArrangement.Sort> {
+        Binding(
+            get: {
+                ArchivesArrangement.Sort(
+                    key: ArchivesArrangement.SortKey(rawValue: classSortKeyRaw) ?? .documents,
+                    ascending: classAscending)
+            },
+            set: { classSortKeyRaw = $0.key.rawValue; classAscending = $0.ascending })
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -196,6 +237,10 @@ struct ArchivesIndexView: View {
             .padding(.horizontal)
             .padding(.vertical, 8)
 
+            // Pinned above the list rather than scrolled with it: the 1910–49 era alone is 6,118
+            // rows, and a control a reader has to scroll back to find is a control they stop using.
+            arrangementControls
+
             switch lens {
             case .types:
                 typesList
@@ -209,6 +254,73 @@ struct ArchivesIndexView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        // On the whole axis, not on the Classes list, and keyed on the sort. The stored choice is
+        // shared by every window, so on iPad a sort changed in one window while another shows a
+        // different lens must still reorder that other window's classes — an `.onChange` hung on
+        // the list only fires while the list is mounted, and left the rows in the old order under
+        // a menu naming the new one.
+        .task(id: ClassesTaskKey(volumes: entries.count, sort: classSort.wrappedValue,
+                                 showing: lens == .classes)) {
+            arrangeClassSections()
+        }
+    }
+
+    /// What the class sections depend on.
+    private struct ClassesTaskKey: Equatable {
+        let volumes: Int
+        let sort: ArchivesArrangement.Sort
+        /// Whether the Classes lens is on screen. The first build waits for it, so a reader who
+        /// never opens that lens never pays for ten thousand gloss lookups.
+        let showing: Bool
+    }
+
+    /// Builds the class sections the first time the Classes lens is shown, in the stored order, and
+    /// re-sorts them whenever that order changes afterwards.
+    private func arrangeClassSections() {
+        let sort = classSort.wrappedValue
+        if classSections.isEmpty {
+            guard lens == .classes, let usage = CollectionUsageIndexStore.shared else { return }
+            let coverage = ArchivalVolumeCoverage.map(from: entries)
+            classSections = ArchivesClassAxis.eras().map { era in
+                (era: era, rows: ArchivesArrangement.sortedClassRows(
+                    ArchivesClassAxis.rows(inEra: era, usage: usage, coverage: coverage), by: sort))
+            }
+            classSectionsSort = sort
+        } else if classSectionsSort != sort {
+            // A re-sort, not a rebuild: the rows and their glosses are already made, and the order
+            // is total, so sorting from any previous order gives the same list.
+            classSections = classSections.map {
+                (era: $0.era, rows: ArchivesArrangement.sortedClassRows($0.rows, by: sort))
+            }
+            classSectionsSort = sort
+        }
+    }
+
+    // MARK: Arrangement
+
+    /// The grouping and sort controls for the lens on screen. Provenance Types has none: its ten
+    /// doors are the artifact's own display order, and there are only ten.
+    @ViewBuilder
+    private var arrangementControls: some View {
+        switch lens {
+        case .types:
+            EmptyView()
+        case .collections:
+            HStack(spacing: 8) {
+                ArchivesGroupingMenu(groupingRaw: $collectionGroupingRaw)
+                ArchivesSortMenu(sort: collectionSort, label: \.collectionLabel)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 6)
+        case .classes:
+            HStack(spacing: 8) {
+                ArchivesSortMenu(sort: classSort, label: \.classLabel)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 6)
+        }
     }
 
     // MARK: Central-file classes
@@ -230,7 +342,10 @@ struct ArchivesIndexView: View {
                                 A volume is counted in the era its coverage falls inside; one \
                                 spanning two schedules is counted in neither, because the same \
                                 number means different things on either side. Readings come from \
-                                the Department’s own filing manuals.
+                                the Department’s own filing manuals. Each era lists every class \
+                                its volumes’ source notes cite; by class number, it follows its \
+                                own file — decimal numbers digit by digit, so 711.11 comes before \
+                                711.2, and subject-numeric designators by their numbers.
                                 """))
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -278,17 +393,6 @@ struct ArchivesIndexView: View {
                 }
             }
         }
-        .task(id: entries.count) { await buildClassSections() }
-    }
-
-    /// Builds the class sections off the main actor's critical path.
-    private func buildClassSections() async {
-        guard classSections.isEmpty, let usage = CollectionUsageIndexStore.shared else { return }
-        let coverage = ArchivalVolumeCoverage.map(from: entries)
-        let built = ArchivesClassAxis.eras().map { era in
-            (era: era, rows: ArchivesClassAxis.rows(inEra: era, usage: usage, coverage: coverage))
-        }
-        classSections = built
     }
 
     // MARK: Provenance types
@@ -369,8 +473,130 @@ struct ArchivesIndexView: View {
                     .padding(.horizontal)
                     .padding(.bottom, 6)
             }
-            CollectionBrowserView(onSelect: onSelectCollection)
+            // What the counts are, said once: 2,599 of the 4,432 collections are cited only in
+            // front matter, and a list sorted by documents drops every one of them to the end.
+            Text(collectionCountsCaption)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal)
+                .padding(.bottom, 6)
+            CollectionBrowserView(
+                onSelect: onSelectCollection,
+                arrangement: ArchivesArrangement.CollectionArrangement(
+                    grouping: collectionGrouping, sort: collectionSort.wrappedValue))
         }
+    }
+
+    /// The counts caption, and — grouped by record group — where the collections with none went.
+    private var collectionCountsCaption: String {
+        let counts = String(localized: "browser.archives.collections.counts",
+                            defaultValue: "Counts are documents whose printed source note names the collection; one cited only in a volume’s front matter shows its volumes alone.")
+        guard collectionGrouping == .recordGroup else { return counts }
+        let remainder = String(localized: "browser.archives.collections.noRecordGroup",
+                               defaultValue: "Record groups are the National Archives’ own divisions. Collections whose citations name none — nearly every presidential-library collection among them — are listed together last.")
+        return "\(counts) \(remainder)"
+    }
+}
+
+// MARK: - Arrangement controls
+
+/// The sort control both counting lenses share: a key and a direction, with the current choice
+/// named on the button so a reader can see what the list is ordered by without opening it.
+///
+/// Version history:
+///   1.0 — 2026-09-10: initial implementation
+private struct ArchivesSortMenu: View {
+    /// The lens's sort.
+    @Binding var sort: ArchivesArrangement.Sort
+    /// How this lens names each key — "Name" for collections, "Class Number" for classes.
+    let label: (ArchivesArrangement.SortKey) -> String
+
+    var body: some View {
+        Menu {
+            Picker(String(localized: "browser.archives.sort.by", defaultValue: "Sort By"),
+                   selection: Binding(get: { sort.key }, set: { sort = sort.selecting($0) })) {
+                ForEach(ArchivesArrangement.SortKey.allCases) { key in
+                    Text(label(key)).tag(key)
+                }
+            }
+            .pickerStyle(.inline)
+            Picker(String(localized: "browser.archives.sort.order", defaultValue: "Order"),
+                   selection: $sort.ascending) {
+                Text(ArchivesArrangement.Sort.directionLabel(ascending: true)).tag(true)
+                Text(ArchivesArrangement.Sort.directionLabel(ascending: false)).tag(false)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label(summary, systemImage: "arrow.up.arrow.down")
+                .labelStyle(.titleAndIcon)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .accessibilityLabel(String(localized: "browser.archives.sort.a11y", defaultValue: "Sort"))
+        .accessibilityValue(summary)
+        // Voice Control and Full Keyboard Access name a control by its INPUT labels, which default
+        // to the accessibility label — so without these, a reader who sees "Document Count,
+        // Descending" on the button and says it gets nothing (WCAG 2.5.3, Label in Name; found by
+        // the review's completeness critic). VoiceOver still reads the label and the value above.
+        .accessibilityInputLabels([
+            summary, label(sort.key),
+            String(localized: "browser.archives.sort.a11y", defaultValue: "Sort"),
+        ])
+    }
+
+    /// `Document Count, Descending`.
+    private var summary: String {
+        String(format: String(localized: "browser.archives.sort.summary %@ %@",
+                              defaultValue: "%1$@, %2$@"),
+               label(sort.key), ArchivesArrangement.Sort.directionLabel(ascending: sort.ascending))
+    }
+}
+
+/// The Collections lens's grouping control: repository or record group — the counterpart of the
+/// Classes lens's division by filing era.
+///
+/// Version history:
+///   1.0 — 2026-09-10: initial implementation
+private struct ArchivesGroupingMenu: View {
+    /// The stored grouping's raw value.
+    @Binding var groupingRaw: String
+
+    private var grouping: ArchivesArrangement.CollectionGrouping {
+        ArchivesArrangement.CollectionGrouping(rawValue: groupingRaw) ?? .repository
+    }
+
+    var body: some View {
+        Menu {
+            Picker(String(localized: "browser.archives.group.by", defaultValue: "Group By"),
+                   selection: Binding(get: { grouping }, set: { groupingRaw = $0.rawValue })) {
+                ForEach(ArchivesArrangement.CollectionGrouping.allCases) { option in
+                    Text(option.label).tag(option)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label(summary, systemImage: "rectangle.stack")
+                .labelStyle(.titleAndIcon)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .accessibilityLabel(String(localized: "browser.archives.group.a11y",
+                                   defaultValue: "Group By"))
+        .accessibilityValue(grouping.label)
+        // The visible text must be speakable, for the reason the sort menu's note gives.
+        .accessibilityInputLabels([
+            summary, grouping.label,
+            String(localized: "browser.archives.group.a11y", defaultValue: "Group By"),
+        ])
+    }
+
+    /// `By Record Group`.
+    private var summary: String {
+        String(format: String(localized: "browser.archives.group.summary %@",
+                              defaultValue: "By %@"), grouping.label)
     }
 }
 

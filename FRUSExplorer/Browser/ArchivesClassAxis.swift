@@ -31,6 +31,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1255: initial implementation
+///   1.1 — 2026-09-10: `rows(inEra:)` uncapped, so the lens's sort controls order the whole era
 enum ArchivesClassAxis {
 
     // MARK: Types
@@ -155,7 +156,18 @@ enum ArchivesClassAxis {
 
     // MARK: Rows
 
-    /// The classes an era carries, heaviest first.
+    /// Every class an era carries, heaviest first.
+    ///
+    /// **Uncapped since the sort controls.** This took a `limit` of 200, which bound in EVERY era
+    /// — measured over the shipped corpus the eras carry 6,118 / 1,922 / 548 / 249 / 1,071 classes,
+    /// so the lens showed 1,000 of 9,908 rows — and the screen never said so. That was a silent
+    /// truncation while the list was heaviest-first; once a reader can reorder it, it becomes a
+    /// wrong answer: "fewest documents first" would have shown the 200 heaviest classes reversed,
+    /// and class-number order would have filed those same 200 — a list that reads as the 1910–49
+    /// file and omits 5,918 of its classes. Lifting it costs nothing to
+    /// BUILD — the sweep below always constructed every row and the cap only discarded 8,908 of
+    /// them afterwards (0.10 s for all five eras on the simulator) — only more rows to render, and
+    /// `List` renders lazily.
     ///
     /// Only keys of the era's OWN filing system are admitted. The two vocabularies live in one
     /// column of the usage index and are told apart by `CollectionKeying.isSubjectNumericClass` —
@@ -167,11 +179,9 @@ enum ArchivesClassAxis {
     ///   - era: The era.
     ///   - usage: The bundled usage index.
     ///   - coverage: Volume coverage spans.
-    ///   - limit: Most rows to return.
     /// - Returns: The rows.
     static func rows(inEra era: FilingEra, usage: CollectionUsageIndex,
-                     coverage: [String: ArchivalVolumeCoverage],
-                     limit: Int = 200) -> [ClassRow] {
+                     coverage: [String: ArchivalVolumeCoverage]) -> [ClassRow] {
         let members = volumes(inEra: era, coverage: coverage)
         guard !members.isEmpty else { return [] }
         var out: [ClassRow] = []
@@ -192,7 +202,7 @@ enum ArchivesClassAxis {
         }
         // Heaviest first, then by key: a total order, so the list is the same on every launch.
         out.sort { $0.documents == $1.documents ? $0.key < $1.key : $0.documents > $1.documents }
-        return Array(out.prefix(limit))
+        return out
     }
 
     /// A key's reading under one era's schedule.
