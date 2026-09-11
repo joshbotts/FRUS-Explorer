@@ -2331,9 +2331,9 @@ final class AppState {
     #if os(iOS)
     /// A one-shot request to bring a tab forward, set by cross-view hand-offs (#316).
     ///
-    /// The ~22 cross-view hand-offs (search-from-person, browse-from-research, cross-ref tap,
-    /// Spotlight, open-with, …) write `pendingTab = .browse/.search/…` alongside their `pendingX`
-    /// content field. Each `MainTabView` consumes it into its own per-scene `@SceneStorage`
+    /// The cross-view hand-offs (search-from-person, Spotlight, open-with, the analytics sheets Browse
+    /// presents, …) write `pendingTab = .browse/.search/…` alongside their `pendingX` content field.
+    /// A document opened inside a tab no longer uses this channel: it reads in that tab (2026-09-11). Each `MainTabView` consumes it into its own per-scene `@SceneStorage`
     /// selection and clears it, exactly like the other `pendingX` hand-offs.
     ///
     /// This is deliberately a **consume-once optional**, not a persistent "current tab": the tab

@@ -85,15 +85,24 @@ struct CollectionsReaderRouteTests {
 
     @Test("The Collections module has a real route into the reader on both platforms")
     func moduleReachesTheReader() throws {
-        // iOS: the scene-addressed hand-off, like every other iOS list.
+        // iOS: the document reads INSIDE the collection's own stack (2026-09-11). It was a hand-off
+        // to the Browse tab from #755 until then, and Back from that document unwound Browse's history
+        // instead of returning to the collection.
         let editor = Self.codeLines(try Self.source("Collections/CollectionEditorView.swift"))
-        #expect(editor.contains { $0.text.contains("appState.openBrowseDocument(browseEntry, from: sceneID)") }, """
-            CollectionEditorView must hand the document to the Browse tab on iOS (#755 / M-18). The \
-            whole Collections module previously contained no such call — it was the only document \
-            list in the app with no way to open one.
+        #expect(editor.contains { $0.text.contains("readingChain = [browseEntry]") }, """
+            CollectionEditorView must open the document in its own stack on iOS (#755 / M-18, and the \
+            2026-09-11 tab-scoped rule). The whole Collections module once contained no route at all.
             """)
-        #expect(editor.contains { $0.text.contains("appState.openTab(.browse, from: sceneID)") },
-                "…and bring the Browse tab forward, or the hand-off lands out of sight")
+        #expect(editor.contains { $0.text.contains(".inPlaceReader($readingChain)") },
+                "…through the in-place reader the editor declares, or the chain is set and nothing is pushed")
+        #expect(!editor.contains { $0.text.contains("appState.openBrowseDocument(") }, """
+            CollectionEditorView hands a document to the Browse tab again. A reader working in \
+            Collections would leave the tab, and Back would unwind Browse's history.
+            """)
+        #expect(!editor.contains { $0.text.contains("openTab(.browse") }, """
+            CollectionEditorView switches to the Browse tab again. Even beside an in-place read, that \
+            takes a reader working in Collections out of the tab.
+            """)
 
         // macOS: the provenance chain, which mints a window when no host is live.
         let mac = Self.codeLines(try Self.source("Collections/MacCollectionManagerView.swift"))

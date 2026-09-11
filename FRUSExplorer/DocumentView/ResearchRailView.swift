@@ -33,6 +33,11 @@ enum ResearchRailTool {
     case semanticMap
     /// Generate a summary (iOS: the `.summarizePromptPicker` sheet).
     case summarize
+    /// Open the Topic index at one of this document's topics (iOS: close the rail sheet, hand the
+    /// request to Browse, and switch to it). The index is a Browse-tab level and a document can be
+    /// read in any tab, so only the host can make the tap visible — handed off from the rail, it
+    /// replaced Browse's path out of sight (2026-09-11).
+    case topic(SubjectExplorerRequest)
 }
 
 // MARK: - ResearchRailView
@@ -464,13 +469,16 @@ struct ResearchRailView: View {
     }
 
     /// Opens the Topic index at this topic — the same hand-off the volume pivot sheet uses (#1023).
+    ///
+    /// iOS asks the host rather than handing off from here (``ResearchRailTool/topic(_:)``): the index
+    /// is a Browse-tab level, and only `DocumentView` can close the iPhone rail sheet and switch tabs.
     private func openTopic(_ topic: VolumeSubjectProfiles.ResolvedSubject) {
         let request = SubjectExplorerRequest.subject(ref: topic.ref, name: topic.name)
         #if os(macOS)
         appState.openSubjectExplorer(request, from: sceneID)
         openWindow.fronting(id: "frus.subjects")
         #else
-        appState.openSubjectExplorer(request, from: sceneID)
+        onOpenTool(.topic(request))
         #endif
     }
 

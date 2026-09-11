@@ -100,6 +100,10 @@ struct ArchiveVisitEditorView: View {
     @State private var showDeleteConfirm = false
     /// iOS inline rename buffer — committed on submit, never written per keystroke.
     @State private var nameDraft = ""
+    #if os(iOS)
+    /// The plan and name `nameDraft` was last seeded from — see the `.task(id: plan.id)` that seeds it.
+    @State private var draftSeed: (plan: AnyHashable, name: String)?
+    #endif
     #if os(macOS)
     /// macOS renames through an explicit alert (the More menu's Rename…), matching the
     /// plan list; the Mac editor has no in-body name field.
@@ -115,6 +119,15 @@ struct ArchiveVisitEditorView: View {
     /// Compact width presents the About content as a sheet (a menu item cannot anchor a
     /// popover); regular width keeps the toolbar button's popover.
     @State private var showInfoSheet = false
+    #endif
+    #if os(iOS)
+    /// The seeded documents opened from this editor, read INSIDE the sheet that hosts it (2026-09-11).
+    ///
+    /// Every iOS host presents the editor in a sheet with a navigation stack — the Research tab's
+    /// Archives Visits list, Project Home's Plan a Visit, and Review Changes — and the open used to
+    /// switch the window to Browse without dismissing any of them, so the document landed underneath
+    /// a sheet that stayed up (the #750 H-5 shape). See `InPlaceDocumentReader`.
+    @State private var readingChain: [DocumentBrowserEntry] = []
     #endif
     /// The target key whose note is being edited, with the draft.
     @State private var noteEditingKey: String?
@@ -137,6 +150,7 @@ struct ArchiveVisitEditorView: View {
         .navigationTitle(String(localized: "archiveVisit.editor.title",
                                 defaultValue: "Archives Visit"))
         .navigationBarTitleDisplayMode(.inline)
+        .inPlaceReader($readingChain)
         #endif
         .toolbar { editorToolbar }
         .transientToast($duplicateToast)
@@ -148,7 +162,15 @@ struct ArchiveVisitEditorView: View {
             if !isNil { bump() }
         }
         #if os(iOS)
-        .task(id: plan.id) { nameDraft = plan.name }
+        // Seeds the draft when the plan changes, or when the reader has not typed since the last seed —
+        // never over a rename typed but not yet submitted. Opening a seeded document pushes the reader
+        // over this editor, so this task runs again on Back, and it used to discard that draft.
+        .task(id: plan.id) {
+            if draftSeed?.plan != AnyHashable(plan.id) || nameDraft == draftSeed?.name {
+                nameDraft = plan.name
+                draftSeed = (AnyHashable(plan.id), plan.name)
+            }
+        }
         .sheet(isPresented: $showInfoSheet) { infoPopover }
         #endif
         #if os(macOS)
@@ -1210,8 +1232,8 @@ struct ArchiveVisitEditorView: View {
         bump()
     }
 
-    /// Opens a seeded document in the app's reader — the `openInReader` route every other
-    /// document list uses (provenance chain on macOS, scene-addressed hand-off on iOS).
+    /// Opens a seeded document in the app's reader: the provenance chain on macOS, and on iOS a read
+    /// inside the sheet hosting this editor, so closing the document returns to the plan.
     private func openSeedInReader(_ seed: ArchiveVisitDocument) {
         guard let tuple = ArchiveVisitDerivation.documentTuple(fromKey: seed.documentKey)
         else { return }
@@ -1222,8 +1244,7 @@ struct ArchiveVisitEditorView: View {
         #if os(macOS)
         appState.openDocument(entry, from: .global, using: openWindow)
         #else
-        appState.openTab(.browse, from: sceneID)
-        appState.openBrowseDocument(entry, from: sceneID)
+        readingChain = [entry]
         #endif
     }
 

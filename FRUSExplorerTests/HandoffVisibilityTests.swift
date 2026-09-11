@@ -215,7 +215,8 @@ struct HandoffVisibilityTests {
                          "Browser/BrowserView.swift",      // #751 / M-17a: page-turns replace
                          "Chronology/ChronologyView.swift",
                          "Citation/CitationLookupView.swift",
-                         "CrossReference/CrossReferenceGraphView.swift"] {
+                         "CrossReference/CrossReferenceGraphView.swift",
+                         "DocumentView/InPlaceDocumentReader.swift"] {   // 2026-09-11: tab-scoped reads
             let source = try Self.source(relative)
             let passes = Self.codeLines(source).filter { $0.text.contains("onNavigateToDocument:") }
             #expect(!passes.isEmpty, """
@@ -263,7 +264,8 @@ struct HandoffVisibilityTests {
                          "CrossReference/CrossReferenceGraphView.swift",
                          "Research/ResearchView.swift", "ProjectContext/ProjectPickerMenu.swift",
                          "RelatedDocuments/RelatedDocumentsView.swift",
-                         "SourceExplorer/ArchivalNeighborsSheet.swift"] {
+                         "SourceExplorer/ArchivalNeighborsSheet.swift",
+                         "DocumentView/InPlaceDocumentReader.swift"] {
             // codeLines, NOT raw source: these files discuss the old behaviour in comments
             // constantly, which is precisely how the previous guard came to assert nothing.
             let code = Self.codeLines(try Self.source(relative))
@@ -273,6 +275,155 @@ struct HandoffVisibilityTests {
                 each in that host (#751 / M-17a).
                 """)
         }
+    }
+
+    /// A document opened inside a tab reads in that tab (the owner's 2026-09-11 decision, reopening
+    /// O-3's point 2).
+    ///
+    /// Each producer named here used to call `openTab(.browse)` + `openBrowseDocument`, so the document
+    /// opened in the Browse tab and Back unwound Browse's own history rather than returning to the
+    /// list the reader came from. They now reach `InPlaceDocumentReader` in their own stack. Named
+    /// per producer, because the invariant is per-route: a new list that forgets it reintroduces the
+    /// bug for its own readers only. Scanned as CODE lines — these files discuss the old routing in
+    /// comments, which is exactly how an earlier guard in this suite came to assert nothing.
+    @Test("A document opened inside a tab reads in that tab, not in Browse")
+    func tabHostedOpensReadInPlace() throws {
+        // Producers that always have a stack to read in: no Browse hand-off may remain — neither the
+        // document nor the tab switch, since a leftover `openTab(.browse)` beside an in-place read would
+        // still take the reader out of the tab they are working in.
+        for (relative, opener) in [("Research/ResearchView.swift", "readingChain = [browsEntry]"),
+                                   ("Collections/CollectionEditorView.swift", "readingChain = [browseEntry]"),
+                                   ("TripPacket/ArchiveVisitEditorView.swift", "readingChain = [entry]"),
+                                   ("Settings/SettingsView.swift", "onOpenInSheet: { readingChain = [$0] }")] {
+            let code = Self.codeLines(try Self.source(relative)).map(\.text)
+            #expect(code.contains { $0.contains(opener) },
+                    "\(relative) must open the document in its own stack (`\(opener)`)")
+            #expect(code.contains { $0.contains(".inPlaceReader($readingChain)") },
+                    "\(relative) must declare the in-place reader its opener drives, or nothing is pushed")
+            #expect(!code.contains { $0.contains("appState.openBrowseDocument(") }, """
+                \(relative) hands a document to the Browse tab again. The reader leaves the tab they \
+                are working in, and Back unwinds Browse's history instead of returning to this list.
+                """)
+            #expect(!code.contains { $0.contains("openTab(.browse") }, """
+                \(relative) switches to the Browse tab again. Even beside an in-place read, that takes \
+                the reader out of the tab they are working in.
+                """)
+        }
+
+        // History is hosted by Research, which passes the opener; the fallback stays for a host that
+        // offers no stack. The branch must CALL the opener and then RETURN — without the call the tap
+        // does nothing, and without the return it also hands the document to Browse.
+        let history = Self.codeLines(try Self.source("History/HistoryView.swift")).map(\.text)
+        #expect(history.contains("var onOpenDocument: ((DocumentBrowserEntry) -> Void)? = nil"))
+        let research = Self.codeLines(try Self.source("Research/ResearchView.swift")).map(\.text)
+        #expect(research.contains { $0.contains("HistoryView(onOpenDocument: { readingChain = [$0] })") },
+                "Research must pass History its opener, or the trail still hands off to Browse")
+        let historySource = try Self.source("History/HistoryView.swift")
+        let body = try Self.functionBody("private func openDocument(", in: historySource, limit: 1_400)
+        let branch = try #require(body.range(of: "if let onOpenDocument"))
+        let arm = String(body[branch.lowerBound...].prefix(160))
+        let call = try #require(arm.range(of: "onOpenDocument(entry)"),
+                                "History must hand the tapped document to its opener")
+        let exit = try #require(arm.range(of: "return"),
+                                "History must RETURN after reading in place, or it also hands the document to Browse")
+        #expect(call.lowerBound < exit.lowerBound, "History must read in place BEFORE it returns")
+
+        // Project Home reached from Settings reads through its host, like its two sheet presenters.
+        let settings = Self.codeLines(try Self.source("Settings/SettingsView.swift")).map(\.text)
+        #expect(settings.contains { $0.contains("ProjectHomeReadingHost(projectId: pid)") },
+                "Settings must push Project Home inside the host that gives it a stack")
+    }
+
+    /// Opening a seeded document pushes the reader over the Archives Visit editor, so the editor's
+    /// appear-time seeding runs again on Back — and it must not overwrite a rename the reader typed but
+    /// never submitted. Review found exactly that: while the open still switched tabs the editor never
+    /// disappeared and the draft survived, so reading in place is what exposed the unconditional seed.
+    @Test("Returning from a seeded document keeps an unsubmitted plan rename")
+    func archiveVisitDraftSurvivesTheReader() throws {
+        let code = Self.codeLines(try Self.source("TripPacket/ArchiveVisitEditorView.swift")).map(\.text)
+        #expect(!code.contains(".task(id: plan.id) { nameDraft = plan.name }"), """
+            The unconditional seed is back: every seeded document opened and closed discards the name \
+            the reader was typing.
+            """)
+        let seed = try #require(code.firstIndex(of: ".task(id: plan.id) {"),
+                                "the editor no longer seeds its name draft from a plan-keyed task")
+        let task = code[seed...].prefix(6)
+        #expect(task.contains { $0.contains("nameDraft == draftSeed?.name") },
+                "re-seed only when the reader has not typed since the last seed")
+        #expect(task.contains { $0.contains("draftSeed?.plan != AnyHashable(plan.id)") },
+                "a different plan must still re-seed, or one plan's draft shows under another's name")
+    }
+
+    /// The in-place reader applies every jump to its HOST's chain — pinned on the view, not the helper.
+    ///
+    /// The first version of this suite accepted `jump.apply(to:` anywhere in the reader's file, and the
+    /// helper enum satisfied it: review showed a reader whose closure pushed on every page-turn, ignored
+    /// page-turns, or never presented a cross-reference would all have stayed green. So this reads the
+    /// view's own body for the calls that do the work, and `InPlaceReadingTests` drives the rule they call.
+    @Test("The in-place reader routes every jump into its host's reading chain")
+    func inPlaceReaderUsesTheChain() throws {
+        let source = try Self.source("DocumentView/InPlaceDocumentReader.swift")
+        let view = try Self.functionBody("struct InPlaceDocumentReader: View", in: source, limit: 2_000)
+        let bodyStart = try #require(view.range(of: "var body: some View"), "the reader lost its body")
+        let bodyCode = String(view[bodyStart.lowerBound...])
+        #expect(bodyCode.contains("InPlaceReading.apply(jump, to: &chain, at: level, target: target)"), """
+            The reader must apply its document's jumps to the host's chain. Anything else loses page-turns \
+            or cross-references — or keeps them in views a layout change rebuilds.
+            """)
+        #expect(bodyCode.contains(".navigationDestination(isPresented: InPlaceReading.presentation(above: level, in: $chain))"),
+                "a cross-reference must present the next level of the chain, or the tap does nothing")
+        #expect(bodyCode.contains("InPlaceDocumentReader(chain: $chain, level: level + 1)"),
+                "the next level must be another in-place reader on the same chain")
+        #expect(bodyCode.contains(".workingOnSubtitle()"),
+                "Browse and Search keep the research question in the title on iPad; so must a document read in place")
+
+        let host = try Self.functionBody("func inPlaceReader(", in: source, limit: 400)
+        #expect(host.contains("navigationDestination(isPresented: InPlaceReading.presentation(above: -1, in: chain))"),
+                "a host's reader must present while its chain holds a document")
+        #expect(host.contains("InPlaceDocumentReader(chain: chain, level: 0)"),
+                "a host's reader must start at the bottom of its chain")
+
+        let rule = try Self.functionBody("static func apply(", in: source, limit: 500)
+        #expect(rule.contains("jump.apply(to: &visible, appending: target)"),
+                "the chain rule must be DocumentJump's — the one Browse and Search use")
+    }
+
+    /// A topic chip in the rail must reach the Topic index from a document read in ANY tab.
+    ///
+    /// The index is a Browse-tab level whose hand-off replaces Browse's path. Handed off from the
+    /// rail, the tap was visible only from a document read in Browse — so once documents read in their
+    /// own tabs, it changed nothing the reader could see from Research, Collections or Settings (and
+    /// never had from Search), while wiping Browse's history. The rail now asks its host, and the host
+    /// closes the iPhone rail sheet and brings Browse forward: the "Find all mentions" shape.
+    @Test("A rail topic chip brings the Browse tab forward, from whichever tab the document is in")
+    func railTopicChipSwitchesToBrowse() throws {
+        let rail = try Self.functionBody("private func openTopic(",
+                                         in: try Self.source("DocumentView/ResearchRailView.swift"))
+        let railLines = rail.split(separator: "\n").map(String.init)
+        let iOSStart = try #require(railLines.firstIndex(of: "#else"), "openTopic lost its iOS arm")
+        let iOSEnd = try #require(railLines[iOSStart...].firstIndex(of: "#endif"))
+        let iOSArm = railLines[(iOSStart + 1)..<iOSEnd]
+        #expect(iOSArm.contains("onOpenTool(.topic(request))"), """
+            The rail's topic chip must ask its host on iOS. Handed off from the rail, the Topic index \
+            changes Browse out of sight, and nothing happens for a reader in any other tab.
+            """)
+        #expect(!iOSArm.contains { $0.contains("appState.openSubjectExplorer(") },
+                "the rail must not hand off itself — only the host can close the rail sheet and switch tabs")
+
+        let host = try Self.functionBody("private func openRailTool(",
+                                         in: try Self.source("DocumentView/DocumentView.swift"),
+                                         limit: 2_400)
+        let hostLines = host.split(separator: "\n").map(String.init)
+        let armStart = try #require(hostLines.firstIndex(of: "case .topic(let request):"),
+                                    "DocumentView must handle the rail's topic request")
+        let arm = hostLines[(armStart + 1)...].prefix { !$0.hasPrefix("case ") && $0 != "}" }
+        #expect(arm.contains("activeSheet = nil"),
+                "on iPhone the rail is a sheet — switching tabs beneath it leaves it covering the index")
+        #expect(arm.contains("appState.openSubjectExplorer(request, from: sceneID)"))
+        #expect(arm.contains("appState.openTab(.browse, from: sceneID)"), """
+            The host must bring Browse forward. Without it the tap replaces Browse's path out of sight, \
+            from every tab but Browse.
+            """)
     }
 
     // MARK: - 3. The sheet channels drain on appear (H-8, H-11)
@@ -485,4 +636,106 @@ struct DocumentJumpPathTests {
         DocumentJump.push.apply(to: &path, appending: "cross-ref")
         #expect(path.count == 2, "a cross-reference inside the sheet must still be a descent")
     }
+}
+
+// MARK: - InPlaceReadingTests
+
+/// Drives `InPlaceReading` — the rule every in-place reader applies to its host's reading chain.
+///
+/// Each assertion is a resulting chain, not a source literal, and each fixture is chosen so a wrong rule
+/// gives a different chain: pushing where a page-turn should replace, replacing the wrong level, ignoring
+/// the level a jump came from, or popping more than Back asked for.
+///
+/// Version history:
+///   1.0 — 2026-09-11: initial implementation
+///   1.1 — 2026-09-11: the rule moved onto the host's chain (review: an iPad layout swap discarded a
+///          reading position kept inside the reader)
+@Suite("In-place reading")
+struct InPlaceReadingTests {
+
+    private static func entry(_ documentId: String,
+                              _ volumeId: String = "frus1961-63v06") -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: documentId, volumeId: volumeId, header: documentId)
+    }
+
+    private let listed = Self.entry("d1")
+    private let cited = Self.entry("d9", "frus1961-63v07")
+    private let deeper = Self.entry("d40", "frus1961-63v08")
+    private let neighbour = Self.entry("d2")
+
+    @Test("A cross-reference keeps the document and pushes its target")
+    func crossReferencePushes() {
+        var chain = [listed]
+        InPlaceReading.apply(.push, to: &chain, at: 0, target: cited)
+        #expect(chain == [listed, cited],
+                "a push must keep the citing document beneath its target, or Back has nowhere to return")
+    }
+
+    @Test("A page-turn swaps the document at its own level and pushes nothing")
+    func pageTurnReplaces() {
+        var chain = [listed, cited]
+        InPlaceReading.apply(.replace, to: &chain, at: 1, target: deeper)
+        #expect(chain == [listed, deeper],
+                "a page-turn must replace ITS level — not push, and not the level beneath")
+    }
+
+    @Test("Twenty page-turns still cost one Back")
+    func pagingNeverDeepens() {
+        var chain = [listed]
+        for n in 2...21 {
+            InPlaceReading.apply(.replace, to: &chain, at: 0, target: Self.entry("d\(n)"))
+        }
+        #expect(chain == [Self.entry("d21")],
+                "paging must not deepen the chain — M-17a, twenty pages for twenty Back taps")
+    }
+
+    @Test("A jump from beneath the top drops what stood above it")
+    func jumpFromBeneathTheTopTruncates() {
+        var pushed = [listed, cited, deeper]
+        InPlaceReading.apply(.push, to: &pushed, at: 0, target: neighbour)
+        #expect(pushed == [listed, neighbour], "a push from level 0 lands directly above level 0")
+
+        var paged = [listed, cited, deeper]
+        InPlaceReading.apply(.replace, to: &paged, at: 1, target: neighbour)
+        #expect(paged == [listed, neighbour], "a page-turn at level 1 replaces level 1 and drops level 2")
+    }
+
+    @Test("Back drops its reader and every one above, and nothing beneath")
+    func backDismissesOnlyAbove() {
+        var chain = [listed, cited, deeper]
+        #expect(InPlaceReading.isPresenting(above: -1, in: chain),
+                "the host presents while the chain holds a document")
+        #expect(InPlaceReading.isPresenting(above: 1, in: chain))
+        #expect(!InPlaceReading.isPresenting(above: 2, in: chain), "nothing stands above the top")
+
+        InPlaceReading.dismiss(above: 0, in: &chain)
+        #expect(chain == [listed], "Back from level 1 must leave level 0 open")
+        InPlaceReading.dismiss(above: 3, in: &chain)
+        #expect(chain == [listed], "dismissing above a level the chain never reached changes nothing")
+        InPlaceReading.dismiss(above: -1, in: &chain)
+        #expect(chain.isEmpty, "Back from level 0 closes the reader")
+        #expect(!InPlaceReading.isPresenting(above: -1, in: chain))
+    }
+
+    #if os(iOS)
+    /// A reference the binding under test can write through.
+    private final class ChainBox: @unchecked Sendable {
+        var chain: [DocumentBrowserEntry]
+        init(_ chain: [DocumentBrowserEntry]) { self.chain = chain }
+    }
+
+    @Test("The presentation binding reads the chain, and only a dismissal writes it")
+    @MainActor
+    func presentationBinding() {
+        let box = ChainBox([listed, cited, deeper])
+        let chain = Binding(get: { box.chain }, set: { box.chain = $0 })
+        let aboveListed = InPlaceReading.presentation(above: 0, in: chain)
+        #expect(aboveListed.wrappedValue)
+        aboveListed.wrappedValue = true
+        #expect(box.chain == [listed, cited, deeper], "re-asserting a presentation must not edit the chain")
+        aboveListed.wrappedValue = false
+        #expect(box.chain == [listed], "Back through the binding drops exactly the levels above")
+        #expect(!aboveListed.wrappedValue)
+    }
+    #endif
 }

@@ -86,8 +86,9 @@ struct ProjectHomeView: View {
     /// leave it `nil` and stay put. (#377 Phase 1 iOS follow-up.)
     var onNavigateAway: (() -> Void)? = nil
 
-    /// Opens a document **inside the presenting sheet's own stack** instead of handing it to Browse
-    /// (#553 / O-3). `nil` keeps the hand-off, which is what macOS and the Settings push use.
+    /// Opens a document **inside the presenter's own stack** instead of handing it to Browse
+    /// (#553 / O-3): a sheet's stack for the Research tab and the project picker, and the Settings
+    /// tab's stack for the Settings push (2026-09-11). `nil` keeps the hand-off, which macOS uses.
     ///
     /// Project Home was the last of the three sheet origins still dismissing to Browse; Related
     /// Documents and Archival Neighbours moved to in-sheet reading in #757, so a reader could not
@@ -1165,8 +1166,10 @@ struct ProjectHomeView: View {
             // `.global` resolves to the most-recently-key live host, else mints.
             appState.openDocument(entry, from: .global, using: openWindow)
             #else
-            // The document lands in the Browse tab's stack; bring that tab forward so the tap isn't a
-            // silent no-op (Project Home is reached from the Settings tab). Mirrors the other callers.
+            // No iOS presenter reaches this arm today: the Research sheet, the project picker and
+            // Settings ▸ Projects all pass `onOpenInSheet` and read in their own stacks. It stays as the
+            // fallback for a presenter with no stack, and brings Browse forward so the tap isn't a
+            // silent no-op.
             appState.openTab(.browse, from: sceneID)
             appState.openBrowseDocument(entry, from: sceneID)
             #endif

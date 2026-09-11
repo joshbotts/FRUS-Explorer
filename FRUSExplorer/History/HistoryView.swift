@@ -60,6 +60,13 @@ struct HistoryView: View {
     /// `AppState.isResearchLoggingEnabled(in:)` documents and `SettingsSyncCoordinator` relies on.
     @AppStorage(AppState.researchLoggingPreferenceKey) private var loggingEnabled = true
 
+    /// Opens a document in the hosting tab's own stack instead of handing it to Browse (iOS).
+    ///
+    /// The Research tab hosts History and passes this, so a document opened from the trail reads
+    /// inside Research and Back returns here (2026-09-11). `nil` keeps the scene-addressed Browse
+    /// hand-off, for a host with no stack to offer.
+    var onOpenDocument: ((DocumentBrowserEntry) -> Void)? = nil
+
     /// The loaded page. Replaced wholesale by ``refresh()``; never mutated in place.
     @State private var snapshot: HistoryPaneSnapshot = .empty
     /// Which slice of the trail to show. Global by default (contract D4).
@@ -452,8 +459,8 @@ struct HistoryView: View {
 
     // MARK: - Navigation
 
-    /// Re-opens the document: on macOS in this window's provenance host, on iOS as a
-    /// scene-addressed hand-off to the Browse tab (the shape `ResearchView.openDocument` uses).
+    /// Re-opens the document: on macOS in this window's provenance host; on iOS inside the hosting
+    /// tab when it passes `onOpenDocument`, and otherwise as a scene-addressed hand-off to Browse.
     private func openDocument(_ row: HistoryPaneSnapshot.DocumentRow) {
         let entry = DocumentBrowserEntry(
             documentId: row.documentId,
@@ -463,8 +470,12 @@ struct HistoryView: View {
         #if os(macOS)
         appState.openDocument(entry, from: .tool(.history), using: openWindow)
         #else
-        appState.openBrowseDocument(entry, from: sceneID)
+        if let onOpenDocument {
+            onOpenDocument(entry)
+            return
+        }
         appState.openTab(.browse, from: sceneID)
+        appState.openBrowseDocument(entry, from: sceneID)
         #endif
     }
 

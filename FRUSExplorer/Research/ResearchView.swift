@@ -216,6 +216,15 @@ struct ResearchView: View {
     @State private var selectedItem: ResearchSidebarItem?
     /// This container's measured width, driving the F-2 two-pane gate.
     @State private var containerWidth: CGFloat = 0
+    /// The documents the reader opened from this tab's lists, read INSIDE this tab (2026-09-11): the one
+    /// chosen from a list, then each a cross-reference pushed on top of it.
+    ///
+    /// State-driven pushes rather than elements on `researchNavigationPath`, which is a one-deep
+    /// projection of `selectedItem` typed to `ResearchSidebarItem` (#238 / #272) and cannot hold a
+    /// document — and the iPad two-pane has no path at all. Held HERE, above the layout branch, because
+    /// crossing the 820 pt gate swaps one NavigationStack for the other and rebuilds everything pushed on
+    /// it; kept in those views, the reading position was lost with them. See `InPlaceDocumentReader`.
+    @State private var readingChain: [DocumentBrowserEntry] = []
     #endif
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
     @State private var documentHeaders: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
@@ -261,7 +270,8 @@ struct ResearchView: View {
                     // `onNavigateAway` stays for `openSurface`'s tab hand-offs, which really are
                     // leaving. Deliberately this sheet's OWN stack, never the Research tab's typed
                     // `researchNavigationPath` — Project Home is a sheet precisely to stay clear of
-                    // that projection (#272/#238), and O-3 settled that Research keeps handing off.
+                    // that projection (#272/#238). Research's own lists read through `readingChain`,
+                    // a state-driven push that never enters that path either.
                     NavigationStack(path: $projectHomePath) {
                         ProjectHomeView(projectId: pid,
                                         onNavigateAway: { showProjectHome = false },
@@ -433,11 +443,30 @@ struct ResearchView: View {
     /// history is the research trail, a different list entirely (Wave R-3).
     @ViewBuilder
     private func destination(for item: ResearchSidebarItem) -> some View {
+        #if os(iOS)
+        Group {
+            if item == .history {
+                HistoryView(onOpenDocument: { readingChain = [$0] })
+            } else {
+                documentList(for: item)
+            }
+        }
+        // **A document opened from Research reads in Research** (2026-09-11). It used to hand off to
+        // the Browse tab, where Back unwound Browse's own history instead of returning to this list —
+        // the owner's report that reopened O-3, whose point 2 had kept exactly that routing. Declared
+        // here, on the view the reader is looking at, so it serves both layouts: in the stack it pushes
+        // over the category level, in the iPad two-pane over the whole two-pane, and in both Back
+        // returns to the list with its category still chosen. The chain it reads is `ResearchView`'s,
+        // above the layout branch, so a width change that swaps the layouts finds the chain where it left
+        // it, rather than losing it with the views the swap rebuilds.
+        .inPlaceReader($readingChain)
+        #else
         if item == .history {
             HistoryView()
         } else {
             documentList(for: item)
         }
+        #endif
     }
 
     /// A sidebar row that navigates correctly per platform: a `NavigationLink` push in the iOS
@@ -1022,8 +1051,8 @@ struct ResearchView: View {
 
     // MARK: - Actions
 
-    /// Opens the document in this Research window's provenance host (macOS) or
-    /// navigates to Browse (iOS).
+    /// Opens the document in this Research window's provenance host (macOS), or reads it inside the
+    /// Research tab (iOS) so Back returns to this list — see `readingChain`.
     private func openDocument(_ entry: ResearchDocumentEntry) {
         // R-5 P3b-1 (design Q-11 h): a document an update removed cannot load — both twins land on
         // "Failed to Load" — so its row opens the review sheet, the only surface that can say what
@@ -1045,8 +1074,7 @@ struct ResearchView: View {
         #if os(macOS)
         appState.openDocument(browsEntry, from: .tool(.research), using: openWindow)
         #else
-        appState.openBrowseDocument(browsEntry, from: sceneID)
-        appState.openTab(.browse, from: sceneID)
+        readingChain = [browsEntry]
         #endif
     }
 
