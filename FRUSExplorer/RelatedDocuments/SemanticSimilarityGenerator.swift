@@ -212,6 +212,160 @@ struct SemanticSimilarityGenerator: SimilarityGenerator {
     }
 
 
+    // MARK: - Re-scoring the other axes' candidates (S-1)
+
+    /// What a re-score pass should target, and the floor it must clear — the decision, separated
+    /// from the arithmetic so a test can drive it without a shard store.
+    ///
+    /// Returns `nil` when this axis vended nothing: with no band there is no floor, and a re-score
+    /// with no floor is the flat-lift failure the type's own note measures. **Refusing is the
+    /// answer, not falling back to a constant** — the anchor's band runs 0.543 to 0.836 across
+    /// anchors, so no constant is a stand-in for it.
+    ///
+    /// - Parameters:
+    ///   - vended: This axis's own candidates and their raw cosines.
+    ///   - allCandidates: Every key the generators produced.
+    ///   - anchor: The document being related, which is never its own candidate.
+    /// - Returns: The keys to score and the floor, or `nil` when there is no band to floor against.
+    nonisolated static func rescorePlan(
+        vended: [DocumentKey: Double], allCandidates: Set<DocumentKey>, anchor: DocumentKey
+    ) -> (targets: Set<DocumentKey>, floor: Double)? {
+        guard let floor = vended.values.min() else { return nil }
+        let targets = allCandidates.subtracting(vended.keys).subtracting([anchor])
+        guard !targets.isEmpty else { return nil }
+        return (targets, floor)
+    }
+
+    /// Folds a re-score back into what the generator pass produced for this axis.
+    ///
+    /// Separated from the engine for the reason ``rescorePlan(vended:allCandidates:anchor:)`` is:
+    /// the engine's own entry point needs a live `IndexingPipeline` and the whole app substrate, so
+    /// a rule left inline there is a rule no test drives.
+    ///
+    /// Two things happen, and the second is easy to forget. The scores merge with `max`, matching
+    /// how the generator loop merges duplicate candidates — though the two sides are disjoint by
+    /// construction, since `rescorePlan` subtracts the vended keys, so the closure can never
+    /// actually fire. And a re-scored candidate **gets the same evidence chip a vended one gets**,
+    /// from the same pure function of the score: it contributes to the ranker's `total` identically,
+    /// so a row that rises with no semantic chip is a row the panel cannot explain. Without it the
+    /// two populations differ on first paint — vended rows carry the generator's label, re-scored
+    /// rows fall through to `.percent` — until `SemanticSharedTerms` overwrites both with the
+    /// shared vocabulary. The floor is what makes the chip honest: it says the pair is at least as
+    /// near as the weakest neighbour this axis was already showing one for.
+    ///
+    /// An existing label is never overwritten, so a vended candidate keeps the generator's own.
+    ///
+    /// - Parameters:
+    ///   - rescored: What ``reScore(anchor:candidates:floor:store:)`` returned. Empty is a no-op.
+    ///   - strengths: This axis's vended strengths.
+    ///   - labels: This axis's vended evidence labels.
+    /// - Returns: The merged strengths and labels.
+    nonisolated static func applyReScore(
+        _ rescored: [DocumentKey: Double],
+        strengths: [DocumentKey: Double],
+        labels: [DocumentKey: String]
+    ) -> (strengths: [DocumentKey: Double], labels: [DocumentKey: String]) {
+        guard !rescored.isEmpty else { return (strengths, labels) }
+        var labels = labels
+        for (key, score) in rescored where labels[key] == nil {
+            labels[key] = Self.evidenceLabel(for: score)
+        }
+        return (strengths.merging(rescored) { max($0, $1) }, labels)
+    }
+
+    /// Scores candidates the OTHER generators produced, which this axis would otherwise leave at 0.
+    ///
+    /// ## The defect, and why D-D made it visible
+    /// The axis is a generator: it vends its own top `limit` neighbours and scores those. Every
+    /// other candidate reads `generatorNormalised[.semanticSimilarity]?[key] ?? 0` in the ranker, so
+    /// an archival or cross-reference candidate scores **zero on this axis however near it is** —
+    /// a discontinuity at the axis's own rank `limit`. That was invisible while the axis shipped at
+    /// weight 0; since D-D raised the default to 0.5 it is in every reader's ranking.
+    ///
+    /// It is not merely a boundary artefact. The Tier-1 funnel selects by **Hamming** and only then
+    /// reranks by int8 cosine, at a measured recall of 0.851 — so roughly a seventh of the true
+    /// nearest neighbours never reach the pool at all. Those are exactly the documents another axis
+    /// may have found by citation or provenance, and they are the population this serves.
+    ///
+    /// ## The floor is the anchor's own band, and a constant would be wrong
+    /// Cosine has no zero. **Measured over 60 anchors on the shipped artifacts: a random corpus pair
+    /// scores a median 0.472**, so re-scoring without a floor adds about half the axis's weight to
+    /// every row uniformly — compressing the ranking rather than discriminating within it.
+    ///
+    /// **But a fixed floor is wrong for the reason S-3 measured on the Hamming side.** The anchor's
+    /// own rank-120 cosine runs **0.543 to 0.836** across those same anchors (median 0.695), so any
+    /// constant sits above the band for some anchors — admitting nothing — and well below it for
+    /// others, admitting a swathe of chance. So the floor is the axis's **own worst vended
+    /// neighbour**: a re-scored candidate contributes exactly when it is at least as close as the
+    /// weakest document this axis was already willing to show. No constant, calibrated per anchor,
+    /// and it closes the discontinuity at its own edge rather than somewhere near it.
+    ///
+    /// ## What it deliberately does not do
+    /// **It fetches nothing.** It reads only shards already on disk and queues no download, unlike
+    /// ``candidates(for:anchorYear:limit:scopeVolumeIds:appState:)``, which asks for the shards its
+    /// pool needs. Re-scoring the whole candidate universe would otherwise widen the burst measured
+    /// at a median of 104 volumes per panel open onto the other axes' pools as well — and that path
+    /// now honours the reader's download switch, so a miss here means the reader declined, not that
+    /// something failed.
+    ///
+    /// - Parameters:
+    ///   - anchor: The document being related.
+    ///   - candidates: Keys the other generators produced that this axis has not scored.
+    ///   - floor: The cosine of this axis's own weakest vended neighbour.
+    ///   - store: The shard store, read-only. **Taking the store rather than the `AppState` its
+    ///     siblings take is what makes the paragraph above structural instead of a convention**:
+    ///     with no `AppState` in scope there is no `fetchSemanticShardIfNeeded` to call, so a later
+    ///     change cannot widen the burst here by accident. A test can pin an outcome; it cannot pin
+    ///     the absence of a call that nothing prevents.
+    /// - Returns: Cosines for the candidates that cleared the floor; empty when nothing did.
+    static func reScore(
+        anchor: DocumentKey,
+        candidates: Set<DocumentKey>,
+        floor: Double,
+        store: SemanticShardStore
+    ) async -> [DocumentKey: Double] {
+        // `candidates.isEmpty` is a COST guard and nothing more — it saves mapping the anchor's
+        // shard for a pass with nothing to score. The result is `[:]` either way, which is why no
+        // test pins it; `rescorePlan` is what actually refuses an empty target set.
+        guard !candidates.isEmpty,
+              let index = BundledSemanticVectors.index,
+              let anchorRow = index.row(documentID: anchor.documentId, volumeID: anchor.volumeId),
+              let anchorEntry = index.volume(anchor.volumeId),
+              let anchorShard = await store.shard(for: anchor.volumeId),
+              let query = anchorShard.vector(at: anchorRow - anchorEntry.rowOffset)
+        else { return [:] }
+
+        // The candidates arrive interleaved by volume, so the shards are cached across the loop.
+        // **Two dictionaries rather than one `[String: SemanticShard?]`**: assigning `nil` to a
+        // dictionary subscript REMOVES the key, so a single optional-valued map cannot remember
+        // that a volume has no shard — it would ask the store again for every candidate in it.
+        var shards: [String: SemanticShard] = [:]
+        var withoutShard: Set<String> = []
+        var scored: [DocumentKey: Double] = [:]
+        for candidate in candidates {
+            guard let row = index.row(documentID: candidate.documentId,
+                                      volumeID: candidate.volumeId),
+                  let entry = index.volume(candidate.volumeId)
+            else { continue }
+            if shards[candidate.volumeId] == nil, !withoutShard.contains(candidate.volumeId) {
+                if let shard = await store.shard(for: candidate.volumeId) {
+                    shards[candidate.volumeId] = shard
+                } else {
+                    withoutShard.insert(candidate.volumeId)
+                }
+            }
+            // A shard the reader does not hold is skipped in silence: this path queues no fetch,
+            // so an absent one is a reader's declined download rather than a fault to report.
+            guard let shard = shards[candidate.volumeId],
+                  let score = shard.cosine(row: row - entry.rowOffset,
+                                           query: query.codes, queryScale: query.scale),
+                  score >= floor
+            else { continue }
+            scored[candidate] = score
+        }
+        return scored
+    }
+
     /// The off-index scan, and the reason its threshold is derived rather than chosen.
     ///
     /// ## "Strong" cannot be a constant, and that is measured

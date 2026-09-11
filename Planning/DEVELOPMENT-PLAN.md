@@ -13600,3 +13600,99 @@ ISO dates" and left `publicationYear(of:)` 116 lines below saying "exactly one" 
 #1262's rule exists to prevent, created four days ago by the ingest in a file that pass never opened.
 
 4,647 iOS tests / 603 suites + 37 UI tests; swift test 1,371 / 162; macOS clean. Build stays 47.
+
+## Session 2026-09-10m — S-1: the semantic axis re-scores the other axes' candidates
+
+**The defect D-D made visible.** The semantic axis is a generator: it vends its own top `limit`
+neighbours and scores those, and every other candidate reads
+`generatorNormalised[.semanticSimilarity]?[key] ?? 0` in the ranker — so an archival or
+cross-reference candidate scored **zero on this axis however near it is**, a discontinuity at the
+axis's own rank 120. That was invisible while the axis shipped at weight 0. It has been in every
+reader's ranking since D-D raised the default to 0.5 four days ago.
+
+It is not only a boundary artefact: the Tier-1 funnel selects by Hamming and reranks by int8 cosine
+at a measured recall of **0.851**, so roughly a seventh of the true nearest neighbours never reach
+the axis's own pool. Those are exactly the documents another axis may have found by citation or
+provenance.
+
+**The floor is the anchor's own weakest vended neighbour, and that is measured, not preferred.**
+Driven over the shipped artifacts and all 553 local shards, 60 anchors:
+
+| int8 cosine | median | spread |
+|---|---|---|
+| random corpus pair (chance) | 0.472 | p95 0.604 |
+| the anchor's rank-1 | 0.847 | |
+| **the anchor's rank-120** (the axis's own cut) | 0.695 | **0.543 … 0.836** |
+| the anchor's rank-800 | 0.646 | |
+
+Only **0.3%** of random pairs reach the median rank-120 cosine. So an *unfloored* re-score adds
+about half the axis's weight to every row uniformly — compressing the ranking rather than
+discriminating within it — and a *fixed* floor is wrong because the band's spread is **0.29**: any
+constant sits above some anchors' bands, admitting nothing, and well below others', admitting
+chance. **This is S-3's finding again on the cosine side**, and the answer is the same one: the
+anchor's own band, taken from a scan that has already run.
+
+**The pass fetches nothing, and that is structural rather than a convention.** `reScore` takes a
+`SemanticShardStore` and not the `AppState` its sibling entry points take, so there is no
+`fetchSemanticShardIfNeeded` in scope for a later change to reach. Re-scoring the whole candidate
+universe through the fetching path would have widened the burst measured at a median of **104
+volumes / ~31 MB** per panel open onto the other axes' pools as well. Post-#1265 an absent shard
+means the reader declined the download, so a miss is silent by design.
+
+**A re-scored row carries the same chip as a vended one.** It contributes to `total` identically, so
+the engine fills `generatorEvidenceLabel` from the same pure function of the score. Without that the
+two populations differ on first paint — vended rows carry the generator's label, re-scored rows fall
+through to `.percent` — until `SemanticSharedTerms` overwrites both. The floor is what makes the
+chip honest: it reads "at least as near as the weakest neighbour this axis was already showing one
+for."
+
+**The decision is extracted so a test can drive it.** `rescorePlan(vended:allCandidates:anchor:)`
+returns the targets and the floor, or `nil` when the axis vended nothing — refusing rather than
+falling back to a constant. Its two subtractions (the axis's own keys, and the anchor) each have a
+violation in the fixture, so neither can be deleted silently. It also guarantees the targets are
+**disjoint from the vended keys**, which is why the engine's `max` merge can never overwrite a
+vended score.
+
+**Nine tests, four of them against real packer shards** adopted through the store's own
+`adoptShard` — so the header, provenance and count checks the device applies have all run. The floor
+test makes two passes over the same candidate set, one below every possible cosine and one at the
+median of the result, and requires the second to be a **proper, non-empty** subset: an
+implementation ignoring the floor returns everything, and one comparing the wrong way round returns
+the complement.
+
+**The mutation sweep found two of those tests self-consistent rather than correct, which is the
+finding worth keeping.** Replacing `anchorRow - anchorEntry.rowOffset` with
+`anchorRow % anchorEntry.documentCount` — a plausible-looking way to make a corpus row
+volume-relative, and wrong — SURVIVED, because the floor test makes two `reScore` passes and
+compares them, so a wrong query vector moved both together. So did the same substitution on the
+candidate side. That is this codebase's characteristic semantic failure: no crash, no error, just
+the wrong documents at entirely believable scores. The fix is the one ground truth here that is not
+a mirror of the code under test — **a document is its own nearest neighbour**. Scoring an anchor
+against every document of its own volume pins both arithmetics at once: a wrong query row means no
+candidate reaches 1.0, and a wrong candidate row permutes the mapping and puts the 1.0 on whichever
+document the permutation lands on. Both substitutions are now killed.
+
+`applyReScore` was extracted for the same reason `rescorePlan` was: the engine's own entry point
+needs a live `IndexingPipeline` and the whole app substrate, so a rule left inline there is a rule
+no test drives. **Its two collision rules — `max`, and fill-don't-overwrite for the chip — cannot
+fire through the engine at all**, because `rescorePlan` subtracts the vended keys; the sweep found
+both surviving for exactly that reason, and they are now driven at the function's own boundary. A
+guard nothing can reach is worth keeping only if something proves it works.
+
+18 mutations, one named control (`score >= floor` inverted, killed with 4 failures). **Two survivors
+are pure cost and are recorded rather than chased**: `guard !candidates.isEmpty` saves mapping the
+anchor's shard for a pass with nothing to score, and the negative shard cache saves an actor hop per
+candidate in a volume with no shard — both produce identical output either way. Rewriting the shard
+cache as `[String: SemanticShard]` plus a `Set` of misses came out of that: assigning `nil` to a
+dictionary subscript REMOVES the key, so the `[String: SemanticShard?]` it replaced could not
+remember that a volume had no shard and asked the store again for every candidate in it.
+
+**PoR §1b updated rather than rewritten.** S-1 was recorded REFUTED on 2026-09-06, and that
+refutation turned on the axis shipping at weight 0 — a premise D-D expired four days later. The
+original is kept verbatim as a blockquote, because the argument was right about the code and wrong
+only about which branch readers take; its second objection (S-1 cannot serve the 45,030 documents
+with an empty Related list) still stands and is why this ships as a ranking fix and claims no
+coverage. All three constraints the refutation said should ride with S-1 were honoured. One line of
+it has since expired on its own: the `.readerAskedForSemantics` exemption it warns about falsifying
+was removed at #1267.
+

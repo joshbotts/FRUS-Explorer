@@ -25,6 +25,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-3: initial implementation
+///   1.1 — 2026-09-10: S-1, re-scoring the other axes' candidates against the anchor's own band
 @Suite("Semantic similarity axis")
 struct SemanticAxisTests {
 
@@ -380,5 +381,336 @@ struct SemanticAxisTests {
         }
         #expect(distances.count == leads.rows.count)
         #expect(distances == distances.sorted(by: >))
+    }
+    // MARK: - Re-scoring the other axes' candidates (S-1)
+
+    /// A key, spelled once.
+    private static func key(_ volumeID: String, _ documentID: String) -> DocumentKey {
+        DocumentKey(volumeId: volumeID, documentId: documentID)
+    }
+
+    /// The floor is the axis's own weakest vended neighbour, and the targets are everything else.
+    ///
+    /// **The fixture carries one violation of each subtraction**, because `rescorePlan` subtracts
+    /// twice and a fixture exercising only one would leave the other free to be deleted: the anchor
+    /// is present in `allCandidates` (another generator may well have produced it), and so are the
+    /// axis's own vended keys. Dropping either subtraction changes the expected set.
+    @Test("The re-score floor is the axis's own weakest vended neighbour, never a constant")
+    func theFloorIsTheAxisOwnBand() throws {
+        let anchor = Self.key("frus1969-76v01", "d1")
+        let vended: [DocumentKey: Double] = [
+            Self.key("frus1969-76v01", "d40"): 0.91,
+            Self.key("frus1969-76v02", "d7"): 0.70,
+            Self.key("frus1969-76v03", "d9"): 0.62,       // the band's edge
+        ]
+        let others = [Self.key("frus1958-60v10p1", "d5"), Self.key("frus1955-57v12", "d88")]
+        let plan = try #require(SemanticSimilarityGenerator.rescorePlan(
+            vended: vended,
+            allCandidates: Set(vended.keys).union(others).union([anchor]),
+            anchor: anchor))
+
+        #expect(plan.floor == 0.62, """
+            The floor must be the MINIMUM of the vended scores. A maximum (0.91) admits almost \
+            nothing; a mean sits inside the axis's own band and rejects documents it already shows.
+            """)
+        #expect(plan.targets == Set(others), """
+            Targets must exclude the axis's own vended keys and the anchor itself. \
+            Got \(plan.targets.map(\.compositeString).sorted()).
+            """)
+        #expect(plan.targets.isDisjoint(with: vended.keys), """
+            The engine merges the re-scored scores into the vended ones. The two sides are disjoint \
+            BY CONSTRUCTION here, which is why that merge can never overwrite a vended score.
+            """)
+    }
+
+    /// With no band there is no floor, and the answer is to refuse rather than to invent one.
+    ///
+    /// This is the whole S-1 design decision in one assertion. Measured over 60 anchors on the
+    /// shipped artifacts, a random corpus pair scores a median **0.472** and the anchor's own
+    /// rank-120 cosine runs **0.543–0.836** — so an unfloored pass adds about half the axis's
+    /// weight to every row uniformly, and any constant sits above some anchors' bands and far
+    /// below others'.
+    @Test("No vended neighbours means no re-score, rather than a fallback constant")
+    func noVendedNeighboursMeansNoPlan() {
+        let anchor = Self.key("frus1969-76v01", "d1")
+        // A full candidate universe, so the refusal can only be coming from the absent band.
+        let candidates: Set<DocumentKey> = [
+            Self.key("frus1958-60v10p1", "d5"), Self.key("frus1955-57v12", "d88"),
+        ]
+        #expect(SemanticSimilarityGenerator.rescorePlan(
+            vended: [:], allCandidates: candidates, anchor: anchor) == nil)
+    }
+
+    /// Nothing to score is also nothing to do — the engine must not run a shard pass for an empty
+    /// set, which would resolve the anchor's shard for no reason.
+    @Test("A candidate set the axis already covers yields no re-score")
+    func nothingLeftToScoreMeansNoPlan() {
+        let anchor = Self.key("frus1969-76v01", "d1")
+        let vended: [DocumentKey: Double] = [Self.key("frus1969-76v02", "d7"): 0.70]
+        #expect(SemanticSimilarityGenerator.rescorePlan(
+            vended: vended,
+            allCandidates: Set(vended.keys).union([anchor]),
+            anchor: anchor) == nil)
+    }
+
+    /// A re-scored row carries the same chip a vended one carries, and a vended row keeps its own.
+    ///
+    /// The chip is not decoration: the ranker adds a re-scored score to `total` exactly as it adds
+    /// a vended one, so a row that rises with no semantic chip is a row the panel cannot explain.
+    /// The fixture puts a vended candidate WITH a label beside a re-scored one, so a mutation that
+    /// overwrote instead of filling would change the first and one that skipped the fill would
+    /// change the second.
+    @Test("A re-scored candidate gets the axis's own chip, and a vended one keeps the label it had")
+    func theFoldFillsChipsWithoutOverwritingThem() throws {
+        let vendedKey = Self.key("frus1969-76v02", "d7")
+        let rescoredKey = Self.key("frus1958-60v10p1", "d5")
+        let folded = SemanticSimilarityGenerator.applyReScore(
+            [rescoredKey: 0.81],
+            strengths: [vendedKey: 0.70],
+            labels: [vendedKey: "already set"])
+
+        #expect(folded.strengths == [vendedKey: 0.70, rescoredKey: 0.81])
+        #expect(folded.labels[vendedKey] == "already set", """
+            The generator's own label must survive the fold — overwriting it would replace a \
+            vended row's evidence with a recomputation of the same number.
+            """)
+        let minted = try #require(folded.labels[rescoredKey])
+        #expect(minted == SemanticSimilarityGenerator.evidenceLabel(for: 0.81), """
+            A re-scored row must get the axis's OWN chip function, not a different wording: \
+            got "\(minted)".
+            """)
+        #expect(minted.contains("81"))
+    }
+
+    /// The fold's two collision rules, exercised at the function's own boundary.
+    ///
+    /// **`rescorePlan` makes these collisions impossible today** — its targets are disjoint from
+    /// the vended keys — so neither rule can fire through the engine, and a mutation sweep found
+    /// both surviving because of it. They are still the function's stated contract, and they are
+    /// what a later change to the plan would land on: `max` so a document already vended keeps the
+    /// score it was vended with, and fill-don't-overwrite so it keeps the generator's own chip. A
+    /// guard nothing can reach is worth keeping only if something proves it works.
+    @Test("A colliding key keeps the better score and the label it already had")
+    func theFoldPrefersWhatWasAlreadyThere() throws {
+        let shared = Self.key("frus1969-76v02", "d7")
+        let folded = SemanticSimilarityGenerator.applyReScore(
+            [shared: 0.40],
+            strengths: [shared: 0.70],
+            labels: [shared: "already set"])
+        #expect(folded.strengths[shared] == 0.70, """
+            The vended score must win: `merging(rescored) { $1 }` would replace 0.70 with 0.40 \
+            and compile clean.
+            """)
+        #expect(folded.labels[shared] == "already set")
+    }
+
+    /// Nothing re-scored is nothing changed — not an emptied label table, and not a rebuilt one.
+    @Test("An empty re-score leaves the axis exactly as the generator left it")
+    func anEmptyFoldChangesNothing() {
+        let vendedKey = Self.key("frus1969-76v02", "d7")
+        let folded = SemanticSimilarityGenerator.applyReScore(
+            [:], strengths: [vendedKey: 0.70], labels: [vendedKey: "already set"])
+        #expect(folded.strengths == [vendedKey: 0.70])
+        #expect(folded.labels == [vendedKey: "already set"])
+    }
+
+    // MARK: - The re-score itself, against real shards
+
+    /// A store over a temporary directory holding exactly the shards named.
+    ///
+    /// Real packer shards from `Planning/semantic-vectors/shards`, adopted through the store's own
+    /// `adoptShard` — so the header, provenance and count checks the device applies have all run.
+    @MainActor
+    private static func store(holding volumeIDs: [String], _ index: SemanticVectorIndex)
+        async throws -> SemanticShardStore {
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("rescore-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let store = SemanticShardStore(
+            directory: directory,
+            provenance: index.provenance,
+            expectedCounts: Dictionary(
+                index.volumes.map { ($0.volumeID, $0.documentCount) },
+                uniquingKeysWith: { first, _ in first }))
+        for volumeID in volumeIDs {
+            try await store.adoptShard(from: RescoreFixtures.shardURL(volumeID), for: volumeID)
+        }
+        return store
+    }
+
+    /// The floor really cuts, and it cuts exactly where it says it does.
+    ///
+    /// Two passes over the SAME candidate set: one at a floor below every possible cosine, which
+    /// yields the true scores, and one at the median of those, which must return exactly the upper
+    /// half. The test asserts the result is a **proper, non-empty** subset — an implementation that
+    /// ignored the floor would return everything, and one that compared the wrong way round would
+    /// return the complement.
+    @MainActor
+    @Test("A candidate below the floor contributes nothing, and one above keeps its own cosine",
+          .enabled(if: RescoreFixtures.shardsPresent))
+    func theFloorAdmitsExactlyTheCandidatesThatClearIt() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let store = try await Self.store(
+            holding: [RescoreFixtures.anchorVolume, RescoreFixtures.candidateVolume], index)
+
+        let anchor = Self.key(RescoreFixtures.anchorVolume,
+                              try #require(index.documentIDs(forVolume: RescoreFixtures.anchorVolume)?.first))
+        let candidateIDs = try #require(index.documentIDs(forVolume: RescoreFixtures.candidateVolume))
+        let candidates = Set(candidateIDs.prefix(60).map { Self.key(RescoreFixtures.candidateVolume, $0) })
+
+        // A floor below every possible cosine: the unfiltered truth.
+        let all = await SemanticSimilarityGenerator.reScore(
+            anchor: anchor, candidates: candidates, floor: -1.1, store: store)
+        try #require(all.count == candidates.count,
+                     "every candidate's shard is on disk, so every one must score")
+
+        let sorted = all.values.sorted()
+        let floor = sorted[sorted.count / 2]
+        let expected = all.filter { $0.value >= floor }
+        try #require(!expected.isEmpty && expected.count < all.count, """
+            The fixture's cosines must straddle their own median for this to test anything — \
+            \(expected.count) of \(all.count) at floor \(floor).
+            """)
+
+        let kept = await SemanticSimilarityGenerator.reScore(
+            anchor: anchor, candidates: candidates, floor: floor, store: store)
+        #expect(Set(kept.keys) == Set(expected.keys), """
+            The floor must admit exactly the candidates at or above it: kept \(kept.count), \
+            expected \(expected.count) of \(all.count).
+            """)
+        #expect(kept.allSatisfy { all[$0.key] == $0.value }, """
+            A kept candidate carries its OWN cosine, not the floor and not a normalised rank — the \
+            axis is self-normalising (#643) and its scores enter the ranker raw.
+            """)
+    }
+
+    /// A document is its own nearest neighbour, and that is the only ground truth here that is not
+    /// a mirror of the code under test.
+    ///
+    /// **This test exists because a mutation sweep found the two it replaces were self-consistent
+    /// rather than correct.** The floor test above makes two `reScore` passes and compares them, so
+    /// replacing `anchorRow - anchorEntry.rowOffset` with `anchorRow % anchorEntry.documentCount`
+    /// — a plausible-looking way to make a corpus row volume-relative, and wrong — moved BOTH runs
+    /// together and survived. So did the same substitution on the candidate side. That is the
+    /// codebase's characteristic semantic failure: not a crash, not an error, just the wrong
+    /// documents at entirely believable scores, forever.
+    ///
+    /// Scoring an anchor against every document of its own volume pins both arithmetics at once,
+    /// because it is the one case where the answer is known independently. The anchor must come
+    /// back at 1.0 and nothing else may: a wrong QUERY row compares some other document against the
+    /// volume and no candidate reaches 1.0; a wrong CANDIDATE row permutes the mapping and puts the
+    /// 1.0 on whichever document the permutation lands on. Measured on `frus1895p1`, both
+    /// substitutions move the top score onto a different document.
+    @MainActor
+    @Test("The anchor scores 1.0 against itself and nothing else does",
+          .enabled(if: RescoreFixtures.shardsPresent))
+    func theAnchorIsItsOwnNearestNeighbour() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let store = try await Self.store(holding: [RescoreFixtures.anchorVolume], index)
+
+        let documentIDs = try #require(index.documentIDs(forVolume: RescoreFixtures.anchorVolume))
+        try #require(documentIDs.count > 100, "the fixture volume must be large enough to permute")
+        // The anchor sits at LOCAL ROW 0 of its volume, which is what makes the two wrong
+        // arithmetics land on different documents rather than coinciding at the same one.
+        let anchor = Self.key(RescoreFixtures.anchorVolume, documentIDs[0])
+        let candidates = Set(documentIDs.map { Self.key(RescoreFixtures.anchorVolume, $0) })
+
+        let scored = await SemanticSimilarityGenerator.reScore(
+            anchor: anchor, candidates: candidates, floor: -1.1, store: store)
+        #expect(scored.count == candidates.count)
+
+        let own = try #require(scored[anchor])
+        #expect(own > 0.999, """
+            The anchor scored \(own) against itself. Either the query vector or the candidate row             is being read from the wrong place in the shard.
+            """)
+        let others = scored.filter { $0.key != anchor }.values
+        #expect(others.max() ?? 0 < 0.999, """
+            Another document scored 1.0 against the anchor (best \(others.max() ?? 0)) — the             row-to-document mapping is permuted.
+            """)
+    }
+
+    /// It reads what is on disk and nothing else — no fetch, no queue, no new bytes.
+    ///
+    /// The candidate set spans a volume whose shard is present and one whose shard is not, and the
+    /// store's own directory listing is compared before and after. **The stronger half of this
+    /// guarantee is structural rather than tested**: `reScore` takes a `SemanticShardStore` and not
+    /// the `AppState` its sibling entry points take, so there is no `fetchSemanticShardIfNeeded` in
+    /// scope for a later change to reach. What remains for a test is the outcome — an absent shard
+    /// is a silent miss, not a fault and not a download.
+    @MainActor
+    @Test("A candidate whose shard is absent contributes nothing and pulls nothing",
+          .enabled(if: RescoreFixtures.shardsPresent))
+    func anAbsentShardIsASilentMiss() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let store = try await Self.store(
+            holding: [RescoreFixtures.anchorVolume, RescoreFixtures.candidateVolume], index)
+        let before = Set(await store.volumeIDsOnDisk())
+
+        let anchor = Self.key(RescoreFixtures.anchorVolume,
+                              try #require(index.documentIDs(forVolume: RescoreFixtures.anchorVolume)?.first))
+        let held = Set(try #require(index.documentIDs(forVolume: RescoreFixtures.candidateVolume))
+            .prefix(20).map { Self.key(RescoreFixtures.candidateVolume, $0) })
+        let absent = Set(try #require(index.documentIDs(forVolume: RescoreFixtures.absentVolume))
+            .prefix(20).map { Self.key(RescoreFixtures.absentVolume, $0) })
+
+        let scored = await SemanticSimilarityGenerator.reScore(
+            anchor: anchor, candidates: held.union(absent), floor: -1.1, store: store)
+        #expect(Set(scored.keys) == held, """
+            Only the held volume's candidates may score. Scoring the absent one would mean a fetch \
+            ran — the burst this path exists to avoid widening.
+            """)
+        let after = Set(await store.volumeIDsOnDisk())
+        #expect(after == before, """
+            The pass wrote to the store: \(before.sorted()) -> \(after.sorted()).
+            """)
+    }
+
+    /// Without the anchor's own shard there is no query vector, so the pass yields nothing rather
+    /// than falling back to the bundled sign bits — which would score a different arithmetic into
+    /// the same axis and put two incomparable scales in one ranking.
+    @MainActor
+    @Test("An anchor whose own shard is absent re-scores nothing",
+          .enabled(if: RescoreFixtures.shardsPresent))
+    func anAbsentAnchorShardReScoresNothing() async throws {
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let store = try await Self.store(holding: [RescoreFixtures.candidateVolume], index)
+
+        let anchor = Self.key(RescoreFixtures.anchorVolume,
+                              try #require(index.documentIDs(forVolume: RescoreFixtures.anchorVolume)?.first))
+        let candidates = Set(try #require(index.documentIDs(forVolume: RescoreFixtures.candidateVolume))
+            .prefix(20).map { Self.key(RescoreFixtures.candidateVolume, $0) })
+        let scored = await SemanticSimilarityGenerator.reScore(
+            anchor: anchor, candidates: candidates, floor: -1.1, store: store)
+        #expect(scored.isEmpty)
+    }
+}
+
+/// The real packer shards the S-1 re-score tests drive.
+///
+/// `Planning/semantic-vectors/shards` is gitignored — it is the download tier, not a bundled
+/// resource — so the tests that need it are gated rather than failing on a fresh clone.
+private enum RescoreFixtures {
+    static let anchorVolume = "frus1895p1"
+    static let candidateVolume = "frus1951-54IranEd2"
+    /// Named by the bundled index — the candidate keys are real — but deliberately NOT adopted
+    /// into the store under test, which is what makes it stand for a shard the reader declined.
+    static let absentVolume = "frus1958-60v10p1"
+
+    static var repoRoot: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    static func shardURL(_ volumeID: String) -> URL {
+        repoRoot.appendingPathComponent("Planning/semantic-vectors/shards/\(volumeID).vec")
+    }
+
+    static var shardsPresent: Bool {
+        // Only the two that are adopted: `absentVolume` is read out of the INDEX, never off disk.
+        [anchorVolume, candidateVolume]
+            .allSatisfy { FileManager.default.fileExists(atPath: shardURL($0).path) }
     }
 }
