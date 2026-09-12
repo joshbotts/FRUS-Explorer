@@ -14085,3 +14085,126 @@ test and one suite more than `v2` for the fixture-order guard, and one UI test m
 On iPad mini (A17 Pro, iOS 26.5) the A/B ran again after those fixes: `ResearchReadingDepthTests` passes,
 and under the mutation fails at the post-rotation assertion. The macOS build succeeded, and `swift test`
 passed **1,371 tests in 162 suites** (no package target changed).
+
+## Session 2026-09-11 (later still) — "Browse all topics…" switches to the Browse tab on iOS (#1274)
+
+**The defect, and why three doors had it at once.** On iOS the Topic-index hand-off has exactly one
+consumer — `BrowserView.consumePendingSubjectExplorer` — and `BrowserViewModel.select` REPLACES Browse's
+navigation path. So a door that writes the hand-off without `appState.openTab(.browse, from: sceneID)`
+does nothing the reader can see from any other tab, and silently discards wherever they were in Browse.
+#1272 fixed exactly this in the Research rail's topic chip; these three predate it. Search's facet panel
+(`SearchView`), the analytics scope bar (`AnalyticsScopeBar`, five hosts) and the series scope bar
+(`SeriesScopeBar`, the four *About the Series* dashboards) now close their host, hand off, and bring
+Browse forward, in that order.
+
+**The issue's fourth door does not exist on iOS, and that is the scope correction.** The word cloud's
+scope bar, its button, and the `WordCloudWindowContent` that is its only host are all inside one unbroken
+`#if os(macOS)` spanning `WordCloudView.swift:1687-2023` — the nested `#if os(macOS)` at :1841 is
+redundant and is what makes the door read as cross-platform. The three iOS presentations mount
+`WordCloudView(scope:)` bare, and the iOS cloud has no scope BAR (its only scope-shaped control is the
+overflow menu's compare picker, which retargets nothing). So there is no iOS arm to add a tab switch to.
+What shipped instead is a pin asserting ZERO iOS-reachable `openSubjectExplorer(` sites in that file, so
+an iOS scope bar cannot arrive later with an unpaired door.
+
+**A second defect the fix would otherwise have made worse, and the reason for the withhold.** Both scope
+bars render inside sheets and — `AnalyticsScopeBar` only — as the content of five iOS `WindowGroup`
+scenes, none of which applies `.auxWindowOrigin(appState)`, so `\.sceneID` is nil there. With an
+undeliverable scene the pair diverges: `openSubjectExplorer` writes the sentinel
+`SceneID("frus.sceneID.unreached")` that the strict `consumeHandoff` can never deliver, while `openTab`
+writes `.anyWindow`, which `MainTabView` accepts. Adding the switch alone would therefore have left a
+background main window sitting on an empty Browse tab — strictly worse than today's honest no-op. So the
+iOS arm withholds the door when the scene is nil **or `.anyWindow`**, which is non-nil and fails the same
+way: this is the one hand-off consumed strictly, and several `sceneID ?? .anyWindow` injections elsewhere
+in the tree are one presentation away from handing a bar that value. No withhold on macOS, where
+`openSubjectExplorer` self-addresses the Topics window and never reads the scene.
+
+**WHAT THE WITHHOLD COSTS, PLAINLY: on iPad the analytics scope bar's door goes away.** Every one of its
+five presenters gates on `supportsMultipleWindows` and opens an aux window instead of a sheet, and iPad
+reports that flag true — measured, including under Full Screen Apps (W-2d). So on iPad all five analytics
+dashboards lose the item, and on iPhone all five gain a working one. The door removed there was already
+dead: the hand-off it wrote could never be consumed. The two doors whose hosts are sheets on every device
+— Search's facet panel and the four guide dashboards — work on both. Both manuals now say this rather
+than implying the iPad case is an edge one. Making it work on iPad instead means applying
+`.auxWindowOrigin` to those six scenes, which is the owner call recorded below; the scene table argues
+against it on its own terms (with a window, "the tab hop is simply not needed").
+
+**The dismisser is injected, never `@Environment(\.dismiss)`.** In a window `dismiss()` closes the scene,
+and both bars render as window roots on both platforms — the CW-9e rule `CrossReferenceAnalyticsView`
+records. So `AnalyticsScopeBar` and `SeriesScopeBar` gained `onNavigateAway`, supplied by the sheet
+presentations and left nil by every window. Two hosts needed the property created (`AnalyticsView`,
+`PersonAnalyticsView`); `CrossReferenceAnalyticsView` already had one; the semantic map's is threaded
+through `SemanticAnalyticsView`; the four guide dashboards pass their own `dismiss()`.
+
+**`ArchivalAnalyticsView` is the one that had to close ITSELF, and the reason is a trap worth recording.**
+Its `onNavigateAway` is not a neutral callback: it doubles as the marker for "the Research Guide presented
+me", and the toolbar withholds the **About Archival Sourcing** link on it (#835). The obvious wiring —
+have `MainTabView.archivalSheet` supply a dismisser — therefore deleted that link from the app's primary
+iOS presentation of the surface, with no build error and no failing test (the existing pin asserts the
+literal `if appState != nil, onNavigateAway == nil`, which the change leaves standing while making its
+stated rationale false). The review caught it. The door now calls
+`ArchivalAnalyticsView.closeBehindTopicIndexDoor`, which dismisses this surface and then passes the
+message on — the shape the collection sheet's own hand-off already used — and the tab shell's call site is
+untouched.
+
+**A premise three surfaces rested on, measured rather than asserted: a sheet DOES inherit `\.sceneID`.**
+Only one of the guide's four iOS presenters injects it, and this repo's own comments say a sheet does not
+reliably inherit environment values. A probe sheet presented from `MainTabView` with no injection at all
+logged the tab shell's own scene id, so the three uninjected guide paths work and the withhold only ever
+closes a door in a window. The same measurement demoted this change's `.environment(\.sceneID, sceneID)`
+on the Person Analytics sheet from a fix to a consistency edit, and every copy of that claim was rewritten.
+
+**Eight pins, and the sweep is the one that earns its keep.** They live on `HandoffVisibilityTests` and
+key on file + declaration, never on the button title: the two bars share the localization key
+`analytics.scope.subject.browseIndex`, so a title match would let one bar's door satisfy the other's test.
+The sweep walks every `.swift` under `FRUSExplorer/` for iOS-reachable `openSubjectExplorer(` and requires
+each to pair an `openTab(.browse,` with a textually identical `from:`, consuming each switch so two doors
+cannot share one — six sites today, two exempt by name because they are Browse levels themselves. It
+needed an iOS twin of `MacDocumentOpenRoutingTests.macOSReachableLines`, carrying that function's own
+three soundness fixtures inverted plus a fourth for negated conditions, because its doc records that a
+hand-rolled version of the analysis once inverted the answer. Beside the source scans, one test DRIVES
+`AppState`: it writes both hand-offs for a live scene, for no scene and for `.anyWindow`, and asserts
+which of the two is deliverable in each — the table the withhold's condition is read off — bound to the
+private consumer by a single assertion that it still takes no `orAnyWindow:`.
+
+**Mutation sweep: 19 mutations, each killed by the pin that claims it, and two named controls.** Deleting
+either scope bar's `openTab` reddens that bar's pin and leaves the other two green, which is what proves
+the counters are per-door. Reading `\.dismiss` in `AnalyticsScopeBar`, moving `onNavigateAway?()` below the
+hand-off, weakening either withhold to `sceneID != nil`, unmounting either door from its menu, forwarding
+`ArchivalAnalyticsView`'s marker again, and making the analyser negation-blind each redden exactly one
+pin. The controls change the button's title in both bars and rewrite a doc comment; everything stays
+green, which is the evidence that the pins key on structure rather than on wording. **Three mutations
+survived a first pass and each found a real hole**: a 400-character window reached into the sibling sheet
+below and found ITS scene id; the door's mount was satisfied by the declaration the deletion leaves
+behind; and a 500-character window let the strict-consumer NEGATIVE pass on a sibling consumer that
+legitimately takes `orAnyWindow`. All three are now bounded by construction — the last by a `memberBody`
+helper that ends where the next declaration begins.
+
+**Review — five lenses, a skeptic on each, a completeness critic.** Eleven of thirty-four findings survived
+refutation and all eleven were taken. Three refutations corrected claims of this session's own: the
+mid-onboarding door is not "gained" by this change (it shipped unconditionally on v2 and merely worked
+invisibly), the analyser's negation blindness mis-analyses nothing in the tree today, and pin 1's
+overrunning window is bounded by its needle rather than by luck. The critic then found what all five
+lenses had argued around: nobody had asked which devices actually reach the withhold, and the answer —
+every iPad — is now the paragraph above.
+
+**Out of scope, and each was found rather than assumed.** `AnalyticsView.navigateToSearch` calls
+`dismiss()` in its iOS arm while being the root of a live iPad window — the same CW-9e defect, aimed at
+Search. `PersonAnalyticsView.openPersonMentions` switches tabs with no dismissal. Applying
+`.auxWindowOrigin` to the six analytics scenes, or bringing `pendingSubjectExplorer` into line with its
+five siblings (`?? .anyWindow` plus `orAnyWindow: true`), would each make the withheld door deliverable on
+iPad — two lines in the second case — but both change delivery for hand-offs that are already correct.
+Whether arriving at the Topic index from OUTSIDE Browse should append rather than replace Browse's path is
+a real question this change makes visible rather than creates: the replacement already happened, unseen.
+`BrowserView.pendingSubjectRequest` is assigned on every consume and never reset, so the corpus-root
+Topics tile — which calls `vm.select(.subjects)` with no hand-off — re-renders the last request; two
+iOS-reachable doors send a non-`.all` request, so that is reachable today rather than latent.
+
+**Verification**, re-run after the review fixes: the iOS unit target passed **4,708 tests in 606 suites**
+and the UI target ran **41 with 11 skipped and 0 failures** (iPhone 17, iOS 26.5, pinned by UDID, each run
+after rebooting only that device). On iPad Pro 13-inch (M5) `UIObstructionTests` ran **12 with 3 skipped
+and 0 failures**. The macOS build succeeded with no source warnings of ours, and `swift test` passed
+**1,371 tests in 162 suites** (no package target changed). The unit count is **+13 on `v2`** — eight pins,
+four analyser/helper fixtures and the delivery table — and `HandoffVisibilityTests` itself runs 28. **One pre-existing failure, not
+this change**: `UIObstructionTests.testSidebarCarriesResearcherObjectsOniPad` fails on iPad mini (A17 Pro)
+— it fails identically on `v2` on the same device and passes on the iPad Pro 13-inch that `CLAUDE.md`
+names for that suite — filed as its own task.

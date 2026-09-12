@@ -359,6 +359,12 @@ struct MainTabView: View {
     /// reliably inherit them, and this view reads all three.
     @ViewBuilder
     private func archivalSheet(_ handoff: Handoff<ArchivalScopeRequest>) -> some View {
+        // NO `onNavigateAway:` HERE, and it is not an oversight. That parameter doubles as
+        // `ArchivalAnalyticsView`'s marker for "the Research Guide is what presented me", and the
+        // surface withholds its **About Archival Sourcing** toolbar link on it (#835). Supplying
+        // one from the shell to close this sheet behind the scope bar's Topic-index door (#1274)
+        // silently deleted that link from the app's primary iOS presentation of the surface. The
+        // door closes this sheet through the view's own `dismiss()` instead.
         ArchivalAnalyticsView(initialScope: handoff.payload)
             .environment(appState)
             .modelContainer(modelContext.container)

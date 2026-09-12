@@ -68,6 +68,9 @@ struct SeriesScope: Sendable, Equatable {
 ///   1.1 — Session 3 review: the trailing reset button gains an `onReset` hook so
 ///         hosts can clear their year range with it (the plan's combined reset);
 ///         selected menu items carry `.isSelected` for VoiceOver
+///   1.2 — #1274: the Topic-index door switches to the Browse tab on iOS, tells its host to
+///         close the Research Guide sheet first, and is withheld where the hand-off cannot
+///         be delivered
 struct SeriesScopeBar: View {
 
     /// Shared app state — for the Topic-index door (#1040).
@@ -100,6 +103,15 @@ struct SeriesScopeBar: View {
     /// "reset affordances clear scope + range together" (#236). Selecting "Whole
     /// series" from the menu is scope *selection* and does not fire this.
     var onReset: () -> Void = {}
+    /// Invoked just before the Topic-index door navigates away, so the host can close the Research
+    /// Guide it is a page of (#1274). Defaulted, so no existing call site has to name it.
+    ///
+    /// Injected rather than read as `@Environment(\.dismiss)` here: on macOS the guide is its own
+    /// window (the value-based `ResearchGuideWindowID` scene, #363), and a `dismiss()` read inside
+    /// this bar would close it out from under a reader who only changed scope. Read in the host it
+    /// resolves to that host's own presentation — a sheet on iOS — which is the surface that has to
+    /// go.
+    var onNavigateAway: (() -> Void)? = nil
 
     /// One subseries' menu entry: its display name and member volume ids.
     private struct SubseriesBucket {
@@ -228,15 +240,59 @@ struct SeriesScopeBar: View {
             // #1040: where a reader goes when no topic AREA narrows enough. Subject grain does, and
             // since #1023 there is a surface for it. After the categories — the finer alternative,
             // not the headline.
-            Divider()
-            Button(String(localized: "analytics.scope.subject.browseIndex",
-                          defaultValue: "Browse all topics…")) {
-                appState.openSubjectExplorer(.all, from: sceneID)
-                #if os(macOS)
-                openWindow.fronting(id: "frus.subjects")
-                #endif
-            }
+            topicIndexDoor
           }
+        }
+    }
+
+    /// The Topic-index door, and — on iOS — whether it is offered at all (#1023, #1274).
+    ///
+    /// **On iOS the door is WITHHELD where this hand-off cannot be delivered.** The two halves fail
+    /// differently: the subject request is consumed STRICTLY, so a scene that is nil or `.anyWindow`
+    /// can never receive it, while the tab switch accepts `.anyWindow` — and the pair would leave
+    /// some window sitting on an empty Browse tab, worse than not offering the door at all.
+    ///
+    /// **It costs this bar's four hosts nothing today, and they are the reason it is stated rather
+    /// than assumed.** All four are Research Guide pages and the guide is a sheet on iOS; only one
+    /// of its four presenters injects `\.sceneID`, and the other three were measured on the
+    /// simulator to inherit it from the tab shell. That is the whole basis for the door working
+    /// from Settings ▸ About, from a guide link button, and mid-index — an inheritance this repo's
+    /// own comments elsewhere say is unreliable. The guard is what makes a future presenter that
+    /// really has no scene withhold the door instead of half-firing it.
+    ///
+    /// No withhold on macOS: `openSubjectExplorer` self-addresses the Topics window there and never
+    /// reads the scene.
+    @ViewBuilder
+    private var topicIndexDoor: some View {
+        #if os(macOS)
+        Divider()
+        topicIndexButton
+        #else
+        if let sceneID, sceneID != .anyWindow {
+            Divider()
+            topicIndexButton
+        }
+        #endif
+    }
+
+    /// The door itself: close the guide, hand the Topic index to this scene, then show it.
+    ///
+    /// On iOS the tab switch is the whole of #1274 — without it the index is written to a Browse tab
+    /// nobody is looking at, opening out of sight and replacing whatever history Browse held. The
+    /// host is notified BEFORE the hand-off, matching the ordering `CrossReferenceAnalyticsView`
+    /// records: a sheet's dismissal must not race the push it is getting out of the way of. On iOS
+    /// the guide is ALWAYS a sheet, so without that notification the index lands underneath it.
+    private var topicIndexButton: some View {
+        Button(String(localized: "analytics.scope.subject.browseIndex",
+                      defaultValue: "Browse all topics…")) {
+            #if os(macOS)
+            appState.openSubjectExplorer(.all, from: sceneID)
+            openWindow.fronting(id: "frus.subjects")
+            #else
+            onNavigateAway?()
+            appState.openSubjectExplorer(.all, from: sceneID)
+            appState.openTab(.browse, from: sceneID)
+            #endif
         }
     }
 

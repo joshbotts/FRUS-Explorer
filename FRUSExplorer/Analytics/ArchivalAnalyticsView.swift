@@ -56,6 +56,8 @@ import Charts
 ///   1.9 — Session 2026-08-11: #835 — `onNavigateAway`, so a presenter that is itself a sheet
 ///         closes behind a hand-off; a return link to the Research Guide; and the two store
 ///         touches move inside `loadCollections`'s detached block, off the main actor
+///   1.10 — #1274: the scope bar's Topic-index door gets the same `onNavigateAway`, so a door
+///         that leaves for the Browse tab closes the sheets standing over it
 private struct ArchivalAllUnitsPresentation: Identifiable {
     /// Fresh per presentation, which is all `.sheet(item:)` needs.
     let id = UUID()
@@ -606,6 +608,24 @@ struct ArchivalAnalyticsView: View {
     /// administration is a volume SET, taken from the bundled profile index's own per-volume
     /// breakdown, so "the Nixon administration" means the volumes that index attributes to it
     /// rather than a date window this surface would then have to reconcile with its era bands.
+    /// Closes this surface, and anything presenting it, behind the scope bar's Topic-index door.
+    ///
+    /// **Not `onNavigateAway` forwarded straight through, which is the shape that reads right and
+    /// is wrong.** That property doubles as the marker for "the Research Guide presented me" — the
+    /// **About Archival Sourcing** toolbar link is withheld on it (#835) — so wiring the tab
+    /// shell's own dismisser into it, to close this sheet, silently deleted that link from the
+    /// app's primary iOS presentation of this surface. So the surface closes ITSELF, exactly as
+    /// the collection sheet's hand-off does above, and then passes the message on.
+    ///
+    /// iOS only. The bar's macOS arm never calls this, and `dismiss()` in a macOS window would
+    /// close the scene; the `#if` makes that a property of this code rather than of its caller.
+    private func closeBehindTopicIndexDoor() {
+        #if os(iOS)
+        dismiss()
+        onNavigateAway?()
+        #endif
+    }
+
     @ViewBuilder
     private var scopeControls: some View {
         AnalyticsScopeBar(
@@ -619,6 +639,9 @@ struct ArchivalAnalyticsView: View {
             scopeLabel: Binding(get: { scopeLabel },
                                 set: { setScope(scopeVolumeIds, label: $0) }),
             onChange: { invalidateCollections() },
+            // The bar's Topic-index door leaves for the Browse tab, so this surface and anything
+            // presenting it have to close behind it (#1274).
+            onNavigateAway: closeBehindTopicIndexDoor,
             presentation: .chip)
         administrationMenu
     }

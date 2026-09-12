@@ -211,6 +211,8 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          so raw-mode By-Year/By-Decade Y labels keep Swift Charts' framework-default
 ///          thousands grouping ("4,187"), restoring byte-for-byte parity with the
 ///          pre-CA-4 axis instead of the no-grouping integer format
+///   1.8 — #1274: `onNavigate`, so the scope bar's Topic-index door closes the sheet it
+///          navigates out of — and only the sheet; every window still passes nil
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -342,6 +344,14 @@ struct AnalyticsView: View {
     /// toolbar-button / menu-command presentation paths.
     private let initialParameters: AnalyticsParameters?
 
+    /// Invoked after a door inside this view hands off and leaves — **the sheet passes a closure
+    /// that closes it; every window passes `nil`** (#1274).
+    ///
+    /// The shape `CrossReferenceAnalyticsView.onNavigate` established, for the reason it records:
+    /// this view is the root of window scenes on both platforms, where `dismiss()` closes the scene,
+    /// so a door that read `\.dismiss` itself would shut the window the reader was working in.
+    private let onNavigate: (() -> Void)?
+
     // MARK: - Single-term shims (D1)
 
     /// The primary committed term (first chip) or `""` — the single-term value behind the existing
@@ -394,8 +404,12 @@ struct AnalyticsView: View {
     ///   automatically as soon as the view appears, so the chart is already
     ///   populated — mirroring how `SearchView(initialParameters:)` immediately
     ///   reflects a `pendingSearch` handoff.
-    init(initialParameters: AnalyticsParameters? = nil) {
+    /// - Parameter onNavigate: Invoked just before a door inside this view navigates away, so a
+    ///   presentation that would otherwise sit over the destination can close. Sheets pass one;
+    ///   windows pass `nil`.
+    init(initialParameters: AnalyticsParameters? = nil, onNavigate: (() -> Void)? = nil) {
         self.initialParameters = initialParameters
+        self.onNavigate = onNavigate
     }
 
     // MARK: - Derived Properties
@@ -1371,6 +1385,9 @@ struct AnalyticsView: View {
                 guard !committedTerms.isEmpty else { return }
                 reloadData()
             },
+            // The bar's Topic-index door leaves this surface for the Browse tab, so a sheet
+            // presentation has to close behind it (#1274); a window passes nil and stays.
+            onNavigateAway: onNavigate,
             presentation: .chip
         )
     }

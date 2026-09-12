@@ -40,6 +40,8 @@ import SwiftUI
 ///   1.1 — V-4: the header collapses to its experimental warning rather than disappearing. The
 ///         dismiss was a one-way door — `@AppStorage` remembers it and nothing restored it — so one
 ///         tap on first open retired the caveat permanently on that device.
+///   1.2 — #1274: `onNavigate`, so the map's scope-bar Topic-index door closes the sheet it
+///         navigates out of — and only the sheet; every window still passes nil
 struct SemanticAnalyticsView: View {
 
     /// The app state the map's lenses and open actions need.
@@ -52,6 +54,14 @@ struct SemanticAnalyticsView: View {
     /// The scope and lens a Handoff continuation arrived with (UI review F-28), or `nil` for a map
     /// the reader opened here. Passed straight through to the map, which applies it once.
     var continued: SemanticMapRequest?
+
+    /// Invoked after a door inside the map hands off and leaves — **the sheet passes a closure that
+    /// closes it; every window passes `nil`** (#1274).
+    ///
+    /// Not `dismiss` above: that property is read by the Done button, which closing a window is the
+    /// right answer for, and this is a navigation, which closing a window is not. The shape
+    /// `CrossReferenceAnalyticsView.onNavigate` established, for the reason it records.
+    var onNavigate: (() -> Void)? = nil
 
     /// Whether the explanatory header is showing.
     ///
@@ -72,7 +82,8 @@ struct SemanticAnalyticsView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 if showsAbout { about } else { collapsedAbout }
-                SemanticMapSpikeView(appState: appState, continued: continued)
+                SemanticMapSpikeView(appState: appState, continued: continued,
+                                     onNavigateAway: onNavigate)
             }
             // Done button — iOS sheet only; on macOS this view is a Window scene and the close
             // button is the exit. **This sheet was the worst of the three that shipped without

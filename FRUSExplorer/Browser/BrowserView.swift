@@ -230,7 +230,11 @@ struct BrowserView: View {
             viewModel?.filterDownloadedOnly = flag
         }
         .sheet(isPresented: $showAnalytics) {
-            AnalyticsView(initialParameters: analyticsParameters)
+            // `onNavigate`: the scope bar's Topic-index door leaves for the Browse tab underneath
+            // this sheet, and this view is that tab — so without closing first the index opens
+            // where nobody can see it (#1274). The same argument as `dismissCrossRefSheet` below.
+            AnalyticsView(initialParameters: analyticsParameters,
+                          onNavigate: { showAnalytics = false })
                 .environment(appState)
                 // #258 P3 review (INFO, taken): the shared scope bar hosts a @Query;
                 // sheets inherit the WindowGroup's container today, but re-injecting
@@ -250,9 +254,17 @@ struct BrowserView: View {
                 .statusBarHidden(false)
         }
         .sheet(isPresented: $showPersonAnalytics) {
-            PersonAnalyticsView()
+            PersonAnalyticsView(onNavigate: { showPersonAnalytics = false })
                 .environment(appState)
                 .modelContainer(modelContext.container)
+                // #1274: this was the one of the four analytics sheets here that never published
+                // this window's scene id, and the shared scope bar now both addresses its
+                // Topic-index hand-off with it and withholds the door when it is nil. **Measured
+                // on the simulator, a sheet DOES inherit `\.sceneID` from the tab shell**, so this
+                // line changes no behaviour today — it makes the sheet match its three siblings
+                // rather than rest on that inheritance. The repo's re-injection comments say a
+                // sheet does not reliably inherit it; the probe that settled this said otherwise.
+                .environment(\.sceneID, sceneID)
                 // #498: same fix, same reason — this sheet's two person-search fields reproduced
                 // the cycle too (bounded, ~30 detections per rotation rather than a wedge, but the
                 // same defect). One line here covers every field on the sheet.
@@ -268,7 +280,8 @@ struct BrowserView: View {
             //
             // `item:` rather than `isPresented:` + a sibling request var — see the state
             // declaration for the measured #862 staleness this closes.
-            SemanticAnalyticsView(appState: appState, continued: sheet.request)
+            SemanticAnalyticsView(appState: appState, continued: sheet.request,
+                                  onNavigate: { semanticMapSheet = nil })
                 .environment(appState)
                 .modelContainer(modelContext.container)
                 .environment(\.sceneID, sceneID)

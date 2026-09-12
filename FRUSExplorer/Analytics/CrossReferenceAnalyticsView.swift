@@ -351,7 +351,10 @@ struct CrossReferenceAnalyticsView: View {
             volumeTitle: volumeTitle,
             scopeVolumeIds: $scopeVolumeIds,
             scopeLabel: $scopeLabel,
-            onChange: reloadForFilterChange
+            onChange: reloadForFilterChange,
+            // The scope bar's Topic-index door leaves this surface entirely, so the sheet must go
+            // the same way a row tap makes it go (#1274). Nil in the window, as ever.
+            onNavigateAway: onNavigate
         )
     }
 

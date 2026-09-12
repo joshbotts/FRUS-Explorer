@@ -270,6 +270,11 @@ struct AnalyticsViewModePicker: View {
 /// user change it from a menu, invoking `onChange` so the host can re-run its queries with the
 /// updated `scopeVolumeIds`. Uses the same `CorpusAnalyticsService.subseries(fromVolumeId:)`
 /// bucketing the charts use, so scope labels line up with the By-Subseries bars.
+///
+/// Version history:
+///   1.0 — #189-B: initial implementation
+///   1.1 — #1274: the Topic-index door switches to the Browse tab on iOS, tells a sheet host to
+///          close first, and is withheld where the hand-off cannot be delivered
 struct AnalyticsScopeBar: View {
 
     /// Shared app state — for the Topic-index door (#1040). `@Environment` is safe here for the
@@ -295,6 +300,17 @@ struct AnalyticsScopeBar: View {
     @Binding var scopeLabel: String?
     /// Invoked after the scope changes so the host can re-run its queries.
     let onChange: () -> Void
+    /// Invoked just before the Topic-index door navigates away, so a host presented as a SHEET can
+    /// close itself first (#1274). `nil` in a host that must stay — every window passes none.
+    ///
+    /// Injected rather than read as `@Environment(\.dismiss)`, because this bar is the content of
+    /// five iOS window scenes and five macOS windows as well as of seven iOS sheet presentations,
+    /// and in a window `dismiss()` closes the scene: the reader's first landmark tap would shut the
+    /// window they were reading. `CrossReferenceAnalyticsView` argues the same rule at its own
+    /// `onNavigate`. (The seven: `BrowserView`'s four, the tab shell's Archival Analytics sheet,
+    /// the semantic map opened from a document, and the Research Guide's own Archival sheet — the
+    /// nested one, where the door has two sheets to close and `ArchivalAnalyticsView` closes both.)
+    var onNavigateAway: (() -> Void)? = nil
 
     /// The distinct subseries spanned by the indexed corpus, sorted.
     private var indexedSubseries: [String] {
@@ -389,15 +405,65 @@ struct AnalyticsScopeBar: View {
             // #1040: where a reader goes when no topic AREA narrows enough. Subject grain does, and
             // since #1023 there is a surface for it. After the categories — the finer alternative,
             // not the headline.
-            Divider()
-            Button(String(localized: "analytics.scope.subject.browseIndex",
-                          defaultValue: "Browse all topics…")) {
-                appState.openSubjectExplorer(.all, from: sceneID)
-                #if os(macOS)
-                openWindow.fronting(id: "frus.subjects")
-                #endif
-            }
+            topicIndexDoor
           }
+        }
+    }
+
+    /// The Topic-index door, and — on iOS — whether it is offered at all (#1023, #1274).
+    ///
+    /// **On iOS the door is WITHHELD where this hand-off cannot be delivered**, because the two
+    /// halves of it fail differently and the pair is worse than neither. This bar is the content of
+    /// five iOS window scenes as well as of the sheets listed on `onNavigateAway`, and none of those
+    /// scenes publishes a scene id, so on a Full Screen Apps iPad `sceneID` is nil here. With an
+    /// undeliverable scene `openSubjectExplorer` addresses something no Browse view can consume,
+    /// while `openTab` falls back to ANY window — so the pair would leave a background main window
+    /// sitting on an empty Browse tab, which is worse than the honest no-op it replaced.
+    /// Withholding the control is the house answer to a door into a context that cannot receive it,
+    /// and it is what the facet panel already does with this same door.
+    ///
+    /// **`.anyWindow` is tested beside nil, and that is not belt-and-braces.** This is the one
+    /// hand-off consumed STRICTLY — `BrowserView.consumePendingSubjectExplorer` takes no
+    /// `orAnyWindow:` — so `.anyWindow` is as undeliverable here as nil while `openTab` accepts it.
+    /// Nothing hands this bar `.anyWindow` today; several `sceneID ?? .anyWindow` injections
+    /// elsewhere in the tree are one presentation away from it.
+    ///
+    /// **The sheet presentations are unaffected, and that was measured rather than assumed**:
+    /// a probe sheet presented from `MainTabView` with no injection at all read the tab shell's own
+    /// scene id, so a sheet inherits `\.sceneID` and the guard only ever closes a door in a window.
+    ///
+    /// No withhold on macOS: `openSubjectExplorer` self-addresses the Topics window there and
+    /// never reads the scene.
+    @ViewBuilder
+    private var topicIndexDoor: some View {
+        #if os(macOS)
+        Divider()
+        topicIndexButton
+        #else
+        if let sceneID, sceneID != .anyWindow {
+            Divider()
+            topicIndexButton
+        }
+        #endif
+    }
+
+    /// The door itself: hand the Topic index to this scene, then put it in front of the reader.
+    ///
+    /// On iOS the tab switch is the whole of #1274 — without it the index is written to a Browse
+    /// tab nobody is looking at, opening out of sight and replacing whatever history Browse held.
+    /// The host is notified BEFORE the hand-off, matching the ordering `CrossReferenceAnalyticsView`
+    /// records: a sheet's dismissal must not race the push it is getting out of the way of.
+    private var topicIndexButton: some View {
+        Button(String(localized: "analytics.scope.subject.browseIndex",
+                      defaultValue: "Browse all topics…")) {
+            #if os(macOS)
+            appState.openSubjectExplorer(.all, from: sceneID)
+            openWindow.fronting(id: "frus.subjects")
+            #else
+            onNavigateAway?()
+            appState.openSubjectExplorer(.all, from: sceneID)
+            appState.openTab(.browse, from: sceneID)
+            #endif
         }
     }
 

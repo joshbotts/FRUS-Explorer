@@ -159,7 +159,11 @@ struct SourceProvenanceDashboard: View {
                     SeriesScopeBar(entries: entries, scope: $scope, onReset: {
                         yearStart = SeriesChartKind.floorYear
                         yearEnd = Self.defaultEnd
-                    })
+                    },
+                    // The bar's Topic-index door leaves the guide for the Browse tab, so the
+                    // guide sheet has to close behind it (#1274) — read here rather than in
+                    // the bar, where on macOS it would close the guide WINDOW.
+                    onNavigateAway: { dismiss() })
                 }
                 yearRangeBar
                 categoryFilterBar

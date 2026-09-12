@@ -324,6 +324,8 @@ enum PersonRelationshipMath {
 ///         latest-fetch token guarding the trajectory refetch race
 ///   1.2 — CA-8 (analytics CA-track): Trends/Network mode picker, the co-mention ego
 ///         network (full-frame), and the two-person relationship-dynamics chart
+///   1.3 — #1274: `onNavigate`, so the scope bar's Topic-index door closes the sheet it
+///         navigates out of — and only the sheet; every window still passes nil
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -368,12 +370,24 @@ struct PersonAnalyticsView: View {
     /// or whichever the reader chose when opening a window.
     private let initialMode: PersonAnalyticsMode
 
+    /// Invoked after a door inside this view hands off and leaves — **the sheet passes a closure
+    /// that closes it; every window passes `nil`** (#1274).
+    ///
+    /// The shape `CrossReferenceAnalyticsView.onNavigate` established, for the reason it records:
+    /// this view is the root of window scenes on both platforms, where `dismiss()` closes the scene.
+    private let onNavigate: (() -> Void)?
+
     /// Creates the dashboard.
     ///
-    /// - Parameter initialMode: Which half to open in. Defaults to `.trends`, so every existing
-    ///   call site is unchanged.
-    init(initialMode: PersonAnalyticsMode = .trends) {
+    /// - Parameters:
+    ///   - initialMode: Which half to open in. Defaults to `.trends`, so every existing
+    ///     call site is unchanged.
+    ///   - onNavigate: Invoked just before a door inside this view navigates away, so a
+    ///     presentation that would otherwise sit over the destination can close. Sheets pass one;
+    ///     windows pass `nil`.
+    init(initialMode: PersonAnalyticsMode = .trends, onNavigate: (() -> Void)? = nil) {
         self.initialMode = initialMode
+        self.onNavigate = onNavigate
         _mode = State(initialValue: initialMode)
     }
 
@@ -776,7 +790,10 @@ struct PersonAnalyticsView: View {
             volumeTitle: { appState.manifestStore.entry(forVolumeId: $0)?.title ?? $0 },
             scopeVolumeIds: $scopeVolumeIds,
             scopeLabel: $scopeLabel,
-            onChange: reloadForScopeChange
+            onChange: reloadForScopeChange,
+            // The bar's Topic-index door leaves this surface for the Browse tab, so a sheet
+            // presentation has to close behind it (#1274); a window passes nil and stays.
+            onNavigateAway: onNavigate
         )
     }
 
