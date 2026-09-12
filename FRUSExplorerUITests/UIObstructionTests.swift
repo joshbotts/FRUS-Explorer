@@ -1328,10 +1328,14 @@ final class UIObstructionTests: XCTestCase {
         app.terminate()
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
-        app.launchArguments = [
-            "-hasCompletedOnboarding", "1",
-            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityL",
-        ]
+        // Through `UITestLaunch`, not a hand-built array (#1279). Spelled out here, this relaunch
+        // dropped `-frus.activeTab`, so the tab it came back on was whatever the scene had — the
+        // same class of defect as the bare guards #1279 converts, and invisible to that issue's
+        // sweep because it matches no `app.buttons["Browse"]`. (It is not the only hand-built array
+        // in the file: `testOnboardingDockIsCappedOniPad` builds its own to pass
+        // `-hasCompletedOnboarding 0`, which is the whole point of that test and not this defect.)
+        app.launchArguments = UITestLaunch.arguments(
+            contentSizeCategory: "UICTContentSizeCategoryAccessibilityL")
         app.launch()
         #else
         throw XCTSkip("UIKit-only test")

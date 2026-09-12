@@ -52,6 +52,20 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
 
     var app: XCUIApplication!
 
+    /// Read through a closure: `launch(forcingToolbarOverflow:)` mints a fresh `XCUIApplication`
+    /// inside each test, and a stored reference would leave the navigator driving a dead process.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    override func tearDownWithError() throws {
+        // This suite had no teardown at all, and it opens the analysis menu in all three tests
+        // (#1279). A menu is not a window, so it is the mildest of the three producers — but the
+        // rule is the rule, and this suite is also the one that was VICTIM of it, measuring another
+        // suite's leftover window and reporting on it as the Browse toolbar.
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
     // MARK: - Tests
 
     /// **The regression guard.** With the Browse toolbar forced into overflow on iPad, the
@@ -131,8 +145,16 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
     }
 
     private func gotoBrowse() {
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 15) { browse.tap() }
+        // Asserted, not attempted (#1279). This suite measures the BROWSE toolbar; the bare guard
+        // it replaces could not fail, so on a miss every assertion below read whatever toolbar was
+        // on screen and reported on it as Browse's. Measured at `69dfac7d` on iPad mini (A17 Pro),
+        // that is not hypothetical: after `AnalyticsKeyboardTests` left a sheet standing, all three
+        // tests here failed against the Corpus Analytics sheet's own buttons.
+        //
+        // `resolveTimeout: 15` keeps the tolerance the bare wait had: this runs immediately after
+        // `launch()`, and a cold start can take that long to draw a tab bar at all.
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
+                      "Could not open the Browse tab, so this suite would measure another screen.")
         _ = app.navigationBars.firstMatch.waitForExistence(timeout: 10)
     }
 
