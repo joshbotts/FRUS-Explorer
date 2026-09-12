@@ -14828,34 +14828,52 @@ The first M2a score read 23 documents while the collector reported 24, and nothi
 representational. `m2a-ground-truth.jsonl` holds one row per gold span, and the scorer built its document set
 from those rows, so a document annotated as naming no one had no row and was never scored. Every detection in
 such a document is a false positive, and none was counted. `frus1946v01/d483` hid 6 of the raw qwen3 sweep's,
-and they moved its strict F1 from 0.418 to 0.413. That is small on this sample. The skew is systematic,
-though: a sample richer in name-free documents would flatter precision, and most of all the precision of the
-detector that tags the most non-persons.
+and they moved its strict F1 from 0.418 to 0.413. That is small on this sample, but the skew is systematic: a
+sample richer in name-free documents would flatter precision, most of all for the detector that tags the most
+non-persons.
 
 **The fix is a second file from the same collection.** `COLLECT=1` now also writes
-`m2a-ground-truth-documents.jsonl`, one row per annotated document: `{"v","d","band","mentions","mark"}`. It is
-JSON lines with `v`/`d` on every row, the only fields both `ONLY_DOCUMENTS` readers take (`harvest_ner.py`, and
-the Swift control's `GroundTruthRow`, which decodes just those two). So a targeted detector pass can now be
-restricted by the list and scan the empty documents too. A pass restricted by the span file cannot, and the
-scorer now says so by name whenever a detector scored fewer documents than the ground truth holds for any
-reason other than a refused volume. The scorer loads the list beside the span file and scores a listed
-document with no spans as `gold = []`. `documents_scored`, the band tables and the written report
-(`documents_without_mentions`, `document_list`) all count it. The span file is unchanged, byte-identical when
-the real subset was re-collected, so every other consumer is untouched.
+`m2a-ground-truth-documents.jsonl`, one `{"v","d","band","mentions","mark"}` row per annotated document. Whether
+a document has mentions is its **span count, never its mark**. A `none` document that keeps an editor seed has
+one; a `y` document whose every seed was rejected has none. The scorer loads the list beside the span file and
+scores a listed document with no spans as `gold = []`, counted in `documents_scored`, the band tables and the
+report. The span file is unchanged: re-collecting the real subset left it byte-identical, so every other
+consumer is untouched. The list is JSON lines with `v`/`d` on every row, which is all both `ONLY_DOCUMENTS`
+readers need (`harvest_ner.py`, and the Swift control's `GroundTruthRow`).
 
-**Compatibility and staleness, each with its own fixture.** A span file with no list beside it still scores and
-prints a note naming what it cannot see. A list that disagrees with its span file is refused, because the two
-came from different collections: a document with spans the list omits, a mention count that differs, a band
-that differs, or a duplicated row. A collection whose only annotated document names no one is now written
-rather than refused as empty. The refusal used to trigger on "no span rows" rather than "nothing marked".
+**An independent review corrected the first draft, and the biggest finding was about the real data.** The
+three-lens review (27 agents, every finding adversarially verified) confirmed 22 of 24 findings. The draft's
+note — "some ground-truth documents were never scanned, restrict with the list" — subtracted refused volumes to
+avoid blaming a refusal on a thin sample, and on the real subset **that made it impossible to fire**. With one
+document per volume, d483 is alone in `frus1946v01`, and both `ONLY_DOCUMENTS` readers drop a volume the span
+file does not name. So a span-file-restricted pass writes no head for that volume, the scorer refused it under
+the wrong reason, and the subtraction zeroed the note. The fixture had passed only because its empty document
+shared a volume with documents that had spans. The notes are now decided **per document**:
+- every unscored document that names no one is named, even inside a refused volume, with the advice to restrict
+  with the list **into a fresh `OUT_DIR`**, because `harvest_ner.py` resumes by volume and would skip it (the
+  Swift control's `covers` check does not);
+- unscored documents with mentions get a neutral line that blames no file;
+- a refused volume's reason now includes "not run on it".
 
-**Verification.** The M2a suite went from 30 checks to **46, 0 failed**, through both
-`SELFTEST=1 python3 score_detections.py` and `stage_m2a.py`. It drives `main()` for the denominators and the
-note. The harvester self-test is **42, 0 failed** (a check for the list shape), and the Swift control's suite
-passes **22 tests** including a new one for it. A mutation sweep ran over 20 mutants, each in a temporary copy
-of the scripts so the checkout was never touched: **20 killed, 0 survived**. It covers every new refusal, the
-list-path derivation on both sides, the summary count, the note, and the note's second conjunct (a refused
-volume must not also be reported as unscanned). That conjunct needed a third detector in the `main()` run
-before its mutant died. On the real subset, re-collection left the span file byte-identical and listed all 24
-documents with d483 at 0 mentions. The five-arm score now reads 24 documents on every row, and raw qwen3 is
-0.413 strict / 0.514 relaxed, exactly the with-d483 variant computed by hand for #1286.
+The review also found:
+- the no-list note equated "marked `none`" with "no mentions";
+- a ground truth with no mentions scored every detector 0.000, a perfect one included, and is now refused;
+- the list passed as `GROUND_TRUTH` crashed with a bare `KeyError`, and is now refused by name;
+- with no list the report printed "0 of which name no one", a count it cannot know, and now says unknown;
+- the Swift control ran zero volumes and exited 0 on the empty span file the collector can now write, and now
+  refuses;
+- six test gaps: a fixture where "no spans" and "marked `none`" coincided, a count refusal tested in one
+  direction, an identical-row duplicate, one-row JSON-lines fixtures that never reached the real multi-row
+  parse path, and no check on the note's silence, the null branch or the printed counts.
+
+**Verification.** The M2a suite went from 30 checks to **54, 0 failed**, through both
+`SELFTEST=1 python3 score_detections.py` and `stage_m2a.py`, driving `main()` for every note. The harvester
+self-test is **42, 0 failed**, and the Swift control's suite passes **23 tests** (two new). Mutation was run in
+temporary copies of the scripts so the checkout was never touched:
+- **round 1:** 20 of 20 killed;
+- **round 2:** 36 mutants, covering round 1 re-anchored, the reviewers' surviving mutants (counting by mark,
+  identical-only duplicates, a one-row JSON-lines parse) and one per new guard and note. **36 of 36 killed**
+  after one fixture fix: the "differing" duplicate had set a mark the row already carried.
+
+On the real subset the scorer reads 24 documents on every arm, raw qwen3 0.413 strict / 0.514 relaxed, exactly
+the with-d483 variant computed by hand for #1286.

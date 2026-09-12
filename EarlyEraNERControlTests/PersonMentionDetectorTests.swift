@@ -223,6 +223,18 @@ struct StoreIOTests {
         #expect(grouped["frusB"] == ["d7"])
     }
 
+    @Test("A ground-truth file that names no documents is refused, not run as an empty restriction")
+    func refusesGroundTruthNamingNothing() throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        // What the collector writes as the span file when every annotated document names no one.
+        let url = directory.appendingPathComponent("m2a-ground-truth.jsonl")
+        try Data().write(to: url)
+        #expect(throws: DetectorError.self) {
+            try NERStoreIO.groundTruthDocuments(at: url)
+        }
+    }
+
     @Test("head.json keys are the snake_case names the Python scorer reads")
     func summaryEncodesScorerKeys() throws {
         let summary = VolumeSummary(

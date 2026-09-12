@@ -449,6 +449,9 @@ def collect():
     print("  %d annotated document(s) name no one; every annotated document is listed in %s,"
           "\n  so the scorer counts each detection in them as a false positive"
           % (without_mentions, documents_path))
+    if not total:
+        print("  no mentions at all yet: the scorer refuses a ground truth with nothing to recall, so key a"
+              "\n  document that names someone before scoring")
     if total:
         print("  measured markup share: %.1f%%  (M1a's regex proxy estimated ~34%% and "
               "called itself a lower bound — this is the real measurement)"

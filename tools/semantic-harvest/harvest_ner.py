@@ -54,7 +54,9 @@ Environment:
   ONLY_DOCUMENTS path to m2a-manifest.json, m2a-ground-truth-documents.jsonl, or
                  m2a-ground-truth.jsonl — restrict the detector to exactly those documents
                  (the span file has no row for a document that names no one, so after the
-                 sitting use the documents file); (the targeted pass scoring needs;
+                 sitting use the documents file; a volume already finished in OUT is skipped
+                 whatever documents it scanned, so re-restricting needs a fresh OUT_DIR);
+                 (the targeted pass scoring needs;
                  detection reads only the document list, never gold spans). Exempt from
                  the FULL_SWEEP refusal; sampled_doc_ids are recorded.
 

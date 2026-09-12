@@ -587,7 +587,7 @@ with, as needed:
 | `STORE` | the NER store with `scope.json` + `marked/` (default `~/frus-ner-raw`) |
 | `TEXT_DIR` | the embeddings store's `text/` (default `~/frus-semantic-raw/text`) |
 | `OUT_DIR` | its own store (default `~/frus-ner-raw-control`) |
-| `ONLY_DOCUMENTS` | an `m2a-ground-truth-documents.jsonl` (or the span file, `m2a-ground-truth.jsonl`) — restricts the pass to the annotated documents, which is what makes it scoreable in minutes rather than hours. Prefer the documents file: the span file has no row for a document that names no one, so a pass restricted by it never scans one |
+| `ONLY_DOCUMENTS` | an `m2a-ground-truth-documents.jsonl` (or the span file, `m2a-ground-truth.jsonl`) — restricts the pass to the annotated documents, which is what makes it scoreable in minutes rather than hours. Prefer the documents file: the span file has no row for a document that names no one, so a pass restricted by it never scans one. A file naming no documents is refused rather than run as an empty restriction |
 | `LANGUAGE` | `english` (default, matching `WordCloudKit`) or `auto` |
 
 It reads the **R-0 text layer, not the TEI**, so its offsets are the marked layer's offsets by
@@ -616,7 +616,7 @@ That was the ride-along's M2a, and it is now two mechanical halves around one ir
 
 ```
 cd tools/semantic-harvest
-SELFTEST=1 python3 stage_m2a.py            # 46 checks, no corpus needed — run this first
+SELFTEST=1 python3 stage_m2a.py            # 54 checks, no corpus needed — run this first
 python3 stage_m2a.py                       # stage ~72 documents, era-stratified
 #   ... the sitting: read M2a-INSTRUCTIONS.md in the output directory, annotate,
 #       and mark each finished file `y` in progress.csv ...
@@ -648,10 +648,14 @@ span, so a document with no spans — read and found to name no individual — h
 therefore also writes `m2a-ground-truth-documents.jsonl`, one row per annotated document
 (`{"v","d","band","mentions","mark"}`), and the scorer reads the two together. Without the list such a
 document silently left the sample: the first score read 23 documents where 24 were keyed, and the 6 false
-positives the raw sweep emitted in `frus1946v01/d483` went uncounted (§7.1). The summary reports
-`documents_without_mentions`, and a collection whose only document names no one is written rather than
-refused as empty. The list is JSON lines with `v`/`d` on every row, so it is also the file to hand a targeted
-detector pass (`ONLY_DOCUMENTS`).
+positives the raw sweep emitted in `frus1946v01/d483` went uncounted (§7.1). **Whether a document has
+mentions is its span count, never its mark**: a `none` document that keeps an editor seed has one, and a `y`
+document whose every seed was rejected has none. The summary reports `documents_without_mentions`. A
+collection whose only documents name no one is written rather than refused as empty, but the scorer refuses to
+score it: with nothing to recall, a detector that predicts nothing would tie with one that predicts noise. The
+list is JSON lines with `v`/`d` on every row, so it is also the file to hand a targeted detector pass
+(`ONLY_DOCUMENTS`) — into a fresh `OUT_DIR` if that store already holds a restricted pass, because
+`harvest_ner.py` resumes by volume and skips a finished volume whatever documents it scanned.
 
 The seeding has a cost and the script says so: it biases an annotator toward accepting editor
 markup. The instructions ask for each seeded span to be checked; `editor_spans_rejected` in the
@@ -755,13 +759,18 @@ an error:
 * it scores a detector **only over documents it actually scanned**, and refuses a store that sampled
   without recording which (or whose run was killed mid-volume, leaving a body with no head);
 * it reads `m2a-ground-truth-documents.jsonl` beside the span file and **refuses a list that disagrees
-  with it** — a document with spans the list omits, a different mention count, a different band, or a
-  duplicated row — because the two are then from different collections. A span file with **no** list (one
-  collected before the list existed) still scores, with a note saying a document marked `none` is missing
-  from it; re-run `COLLECT=1` to fix that;
-* when a detector scores fewer documents than the ground truth holds for any reason other than a refused
-  volume, it **says so and names the list** as the file to restrict a targeted pass with, since a pass
-  restricted by the span file cannot see a document that names no one;
+  with it** — a document with spans the list omits, a mention count that differs in either direction, a
+  different band, or a duplicated row — because the two are then from different collections. It refuses
+  the list handed over as `GROUND_TRUTH` by name, and a ground truth holding no mentions at all. A span file
+  with **no** list (one collected before the list existed) still scores, with a note that any annotated
+  document with no mentions is missing from it, and reports the empty-document count as unknown rather than
+  as 0; re-run `COLLECT=1` to fix that;
+* it **names the documents each detector's denominator left out, by kind.** A document that names no one is
+  named with the advice to restrict a targeted pass with the list, into a fresh `OUT_DIR`, and it is named
+  **even inside a refused volume**. That is the real sample's shape: with one document per volume, a pass
+  restricted by the span file writes no head for d483's volume at all, so the volume is refused rather than
+  thinly sampled. A document with mentions outside a detector's sample gets a neutral line that blames no
+  file. A refused volume's reason now includes "not run on it";
 * it refuses to run at all when `STORE` has no `marked/` layer, because the baseline row would
   otherwise read 0.000 recall and look like a finding.
 
@@ -945,7 +954,7 @@ SHA256SUMS`, and every line must say `OK`. An unverified transfer is not a raw s
 | `WORKERS` | 1 | concurrent detector requests; 4 is the Studio's knee (§4.8.2). The store is byte-identical at any width, selftest-pinned |
 | `RETRY_BACKOFFS` | `5,15,45,120,300,300,300` | seconds between retries of one chunk — a sweep runs for days, so patience is cheap |
 | `FAILURE_ABORT` | 20 | consecutive permanently failed chunks that stop the run: a dead server, not a bad chunk |
-| `ONLY_DOCUMENTS` | — | an `m2a-manifest.json`, `m2a-ground-truth-documents.jsonl` or `m2a-ground-truth.jsonl`; restricts detection to those documents, exempt from §4.4, and records `sampled_doc_ids`. After the sitting prefer the documents file — the span file has no row for a document that names no one |
+| `ONLY_DOCUMENTS` | — | an `m2a-manifest.json`, `m2a-ground-truth-documents.jsonl` or `m2a-ground-truth.jsonl`; restricts detection to those documents, exempt from §4.4, and records `sampled_doc_ids`. After the sitting prefer the documents file — the span file has no row for a document that names no one — and write a re-restricted pass to a fresh `OUT_DIR`: a finished volume is skipped whatever documents it scanned |
 
 `EarlyEraNERControl` (§5) takes `STORE`, `TEXT_DIR`, `OUT_DIR`, `VOLUMES`, `ONLY_DOCUMENTS`,
 `LANGUAGE`, `GENERATED_DATE`. `stage_m2a.py` (§6) takes `STORE`, `TEXT_DIR`, `OUT_DIR`, `DOCS` (72),
@@ -968,18 +977,21 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py
 - `filter_detections.py` — the five-arm filter (20 checks, including acceptance through the real scorer)
 - `provenance/` — the exact harness bytes the sweep's manifests hash, which match no commit
 - `stage_m2a.py` / `score_detections.py` / `ner_store.py` / `selftest_m2a.py` — the ground-truth
-  loop and the scorer (46 checks, one round trip: stage → annotate → collect → score, including a document
+  loop and the scorer (54 checks, one round trip: stage → annotate → collect → score, including a document
   that names no one)
 - `EarlyEraNERControlCore/` + `EarlyEraNERControl/` — the control detector; `swift test` covers the
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
   1.6 — 2026-09-12: a document that names no one reaches the score (§6–7). The collector also writes
-        `m2a-ground-truth-documents.jsonl`, one row per annotated document; the scorer scores a listed document
-        with no spans as empty gold, refuses a list that disagrees with its span file, still scores a span file
-        with no list (with a note), and names the list when a detector left documents unscanned. Both
-        `ONLY_DOCUMENTS` readers take the list. Self-test 30 → 46 checks; 20 of 20 mutants killed; the real
-        subset re-collected with its span file byte-identical and now scores 24 documents.
+        `m2a-ground-truth-documents.jsonl`, one row per annotated document, counted by spans and never by
+        mark; the scorer scores a listed document with no spans as empty gold, refuses a list that disagrees
+        with its span file (four ways), the list passed as GROUND_TRUTH, and a ground truth with no
+        mentions; a span file with no list still scores, with a note and an unknown empty count. Unscored
+        documents are named per detector and by kind — a document that names no one even inside a refused
+        volume, the real sample's shape, which a first draft's arithmetic silenced. Both `ONLY_DOCUMENTS`
+        readers take the list, and the Swift control refuses a file naming nothing. Self-test 30 → 54 checks;
+        an independent review confirmed 22 of 24 findings, all addressed; 36 of 36 mutants killed.
   1.5 — 2026-09-12: the first score (§7.1). The 24-document subset is keyed, collected (156 mentions, markup
         share 19.2%) and scored. The frozen stopping rule is not met (strict gap 6.3, band winners mixed),
         so the remaining 48 are to be keyed. Relaxed matching already favours NLTagger over the raw sweep by 23

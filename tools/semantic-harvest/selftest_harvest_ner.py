@@ -237,18 +237,24 @@ def run():
               open(only_manifest, "w"))
     check("ONLY_DOCUMENTS reads the staged-manifest shape",
           hn.load_only_documents(only_manifest) == {"frusNOLIST": {"d2"}})
+    # Every JSON-lines fixture here has MORE THAN ONE ROW. A one-row file is itself valid JSON, so it
+    # never reaches the line-by-line fallback that every real ground truth (156 rows) and document list
+    # (24 rows) takes — a fixture of one row pinned a path no real file uses.
     gold = os.path.join(root, "gold.jsonl")
-    open(gold, "w").write(json.dumps({"v": "frusNOLIST", "d": "d2",
-                                      "s": 0, "e": 4, "n": "x"}) + "\n")
-    check("ONLY_DOCUMENTS reads the ground-truth shape",
-          hn.load_only_documents(gold) == {"frusNOLIST": {"d2"}})
+    open(gold, "w").write(json.dumps({"v": "frusNOLIST", "d": "d2", "s": 0, "e": 4, "n": "x"}) + "\n"
+                          + json.dumps({"v": "frusNOLIST", "d": "d2", "s": 9, "e": 12, "n": "y"}) + "\n"
+                          + json.dumps({"v": "frusOTHER", "d": "d5", "s": 1, "e": 3, "n": "z"}) + "\n")
+    check("ONLY_DOCUMENTS reads the ground-truth shape, every row",
+          hn.load_only_documents(gold) == {"frusNOLIST": {"d2"}, "frusOTHER": {"d5"}})
     # The collector's annotated-document list has no span fields at all, and it is the file that
     # names a document with no mentions — the one a pass restricted by the span file cannot see.
     listing = os.path.join(root, "gold-documents.jsonl")
     open(listing, "w").write(json.dumps({"v": "frusNOLIST", "d": "d2", "band": "1861-1899",
-                                         "mentions": 0, "mark": "none"}) + "\n")
-    check("ONLY_DOCUMENTS reads the annotated-document list shape",
-          hn.load_only_documents(listing) == {"frusNOLIST": {"d2"}})
+                                         "mentions": 2, "mark": "y"}) + "\n"
+                             + json.dumps({"v": "frusOTHER", "d": "d7", "band": "1946-",
+                                           "mentions": 0, "mark": "none"}) + "\n")
+    check("ONLY_DOCUMENTS reads the annotated-document list shape, every row",
+          hn.load_only_documents(listing) == {"frusNOLIST": {"d2"}, "frusOTHER": {"d7"}})
     out2 = os.path.join(root, "store-only-docs")
     hn.OUT = out2
     hn.SAMPLE_DOCS = 0

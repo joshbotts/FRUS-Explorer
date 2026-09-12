@@ -191,12 +191,16 @@ public struct RunManifest: Codable, Sendable {
 ///   - `TEXT_DIR` — the embeddings store's `text/` (default `~/frus-semantic-raw/text`)
 ///   - `OUT_DIR` — where this store is written (default `~/frus-ner-raw-control`)
 ///   - `VOLUMES` — comma-separated ids, overriding the derived scope
-///   - `ONLY_DOCUMENTS` — an `m2a-ground-truth.jsonl`, restricting the run to annotated documents
+///   - `ONLY_DOCUMENTS` — an `m2a-ground-truth-documents.jsonl` (or the span file,
+///     `m2a-ground-truth.jsonl`), restricting the run to annotated documents. Prefer the documents
+///     file: the span file has no row for a document that names no one, so a run restricted by it
+///     never scans one and drops its volume entirely
 ///   - `LANGUAGE` — `english` (default) or `auto`
 ///   - `GENERATED_DATE` — date-stamp override
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-11: #234 R-1 control detector.
+///   1.1 — 2026-09-12: `ONLY_DOCUMENTS` documents the annotated-document list as the preferred input.
 public enum EarlyEraNERControlRunner {
 
     /// Runs the control pass.
