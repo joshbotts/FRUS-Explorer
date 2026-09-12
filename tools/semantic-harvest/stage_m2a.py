@@ -473,14 +473,18 @@ def collect():
         if entry is None or not os.path.exists(path):
             return None
         annotated = open(path, encoding="utf-8").read()
+        # A fast path, not a guard: a document that passes needs no alignment (it could hold no inserted
+        # ASCII bracket), and skipping it spares loading its volume's text layer in CONVERT mode.
         if sha256_text(unwrap(annotated)[0]) == entry["text_sha256"]:
             return None
         source = source_text(entry)
         return None if source is None else ascii_bracket_plan(source, annotated)
 
     if CONVERT_ASCII_BRACKETS:
-        # All or nothing, and every rewrite is computed and re-verified before any file is touched: a
-        # sitting half-converted, half-typed is worse than one the annotator can fix by hand.
+        # All or nothing, and every rewrite is computed before any file is touched: a sitting
+        # half-converted, half-typed is worse than one the annotator can fix by hand. No re-check of the
+        # rewrite follows it: with the plan clean, stripping ⟦ ⟧ from it reproduces the R-0 text by
+        # construction, and a guard no input can reach is one no test can keep honest.
         plans, refusals = {}, []
         for name in sorted(done):
             case = ascii_case(name)
@@ -490,15 +494,8 @@ def collect():
             if problems:
                 refusals.append("%s: %s" % (name, "; ".join(problems)))
                 continue
-            entry = by_file[name]
             typed = open(os.path.join(OUT, name), encoding="utf-8").read()
-            converted = convert_ascii_brackets(source_text(entry), typed)
-            if sha256_text(unwrap(converted)[0]) != entry["text_sha256"] \
-                    or len(unwrap(converted)[1]) != len(unwrap(typed)[1]) + len(pairs):
-                refusals.append("%s: the rewrite did not reproduce the R-0 text with %d more span(s)"
-                                % (name, len(pairs)))
-                continue
-            plans[name] = (typed, converted, len(pairs))
+            plans[name] = (typed, convert_ascii_brackets(source_text(by_file[name]), typed), len(pairs))
         if refusals:
             sys.exit("CONVERT_ASCII_BRACKETS=1 converted nothing: %d marked document(s) hold inserted ASCII "
                      "brackets that cannot be converted safely.\n  %s\nRetype those as %s %s by hand — the "

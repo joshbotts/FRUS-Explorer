@@ -16,8 +16,9 @@ synthetic detectors plus the editor baseline. What it pins:
     brackets (printed ones untouched), keeps the files as typed, and collects the same ground truth as a
     sitting typed correctly; it converts NOTHING when any inserted bracket touches a printed one, opens
     inside another, closes nothing, is never closed, is empty, or overlaps a ⟦ ⟧ span (one fixture each,
-    each tripping only its own refusal); a real prose edit beside ASCII brackets — changed, deleted or
-    inserted letter — is still rejected with the original message, in both modes; and so is a document
+    each tripping only its own refusal), and a conversion never writes into an earlier one's backups; a
+    real prose edit beside ASCII brackets — a changed, deleted or inserted letter, or a trimmed final
+    character — is still rejected with the original message, in both modes; and so is a document
     whose staged text cannot be recovered exactly (no text layer, or one that has moved on);
   * a document whose prose was edited under the brackets is REJECTED, not collected —
     the failure that would otherwise shift every later span silently, and so are a stray
@@ -404,7 +405,19 @@ def run():
           and read(doc_a) == typed_a and read(doc_b) == typed_b,
           (message or "")[-400:])
 
-    message, output = collecting(True)
+    # A conversion in the same second as an earlier one must not write into the earlier one's backups.
+    # The clock is pinned so the collision happens on every run instead of one run in a million.
+    fixed_stamp = "20990101T000000"
+    earlier = os.path.join(out_dir, "ascii-bracket-originals", fixed_stamp)
+    os.makedirs(earlier)
+    with open(os.path.join(earlier, "earlier.keep"), "w", encoding="utf-8") as handle:
+        handle.write("an earlier conversion's backups")
+    real_strftime = stage.time.strftime
+    stage.time.strftime = lambda fmt, *rest: fixed_stamp
+    try:
+        message, output = collecting(True)
+    finally:
+        stage.time.strftime = real_strftime
     backups = sorted(glob.glob(os.path.join(out_dir, "ascii-bracket-originals", "*", "*.txt")))
     check("CONVERT_ASCII_BRACKETS=1 rewrites exactly the inserted brackets and leaves the printed ones",
           message is None and read(doc_a) == typed_bodies[doc_a] and read(doc_b) == typed_bodies[doc_b]
@@ -419,6 +432,10 @@ def run():
           and ("converted %d inserted ASCII [ ] pair(s)" % (pairs_a + pairs_b)) in output
           and "in 2 document(s)" in output,
           (backups, output[:300]))
+    check("...into a directory of its own when one from the same second already exists",
+          {os.path.basename(os.path.dirname(path)) for path in backups} == {fixed_stamp + "-2"}
+          and os.listdir(earlier) == ["earlier.keep"],
+          (backups, os.listdir(earlier)))
 
     REFUSALS = ("touches a printed", "opens inside", "closes nothing", "is never closed", "is empty", "overlaps the")
 
@@ -477,7 +494,10 @@ def run():
     put(doc_b, typed_bodies[doc_b])
     for label, edit in (("a changed letter", lambda text: text.replace("winter", "wintor", 1)),
                         ("a deleted letter", lambda text: text.replace("winter", "wintr", 1)),
-                        ("an inserted letter", lambda text: text.replace("winter", "winterx", 1))):
+                        ("an inserted letter", lambda text: text.replace("winter", "winterx", 1)),
+                        # The one deletion an alignment can mistake for nothing: at the END, where the file
+                        # simply runs out — and the one an editor trimming trailing whitespace makes.
+                        ("a deleted final character", lambda text: text[:-1])):
         edited = edit(retype(doc_a, ascii_where_safe))
         put(doc_a, edited)
         message, _ = collecting(False)
