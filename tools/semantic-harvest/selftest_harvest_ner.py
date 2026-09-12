@@ -242,6 +242,13 @@ def run():
                                       "s": 0, "e": 4, "n": "x"}) + "\n")
     check("ONLY_DOCUMENTS reads the ground-truth shape",
           hn.load_only_documents(gold) == {"frusNOLIST": {"d2"}})
+    # The collector's annotated-document list has no span fields at all, and it is the file that
+    # names a document with no mentions — the one a pass restricted by the span file cannot see.
+    listing = os.path.join(root, "gold-documents.jsonl")
+    open(listing, "w").write(json.dumps({"v": "frusNOLIST", "d": "d2", "band": "1861-1899",
+                                         "mentions": 0, "mark": "none"}) + "\n")
+    check("ONLY_DOCUMENTS reads the annotated-document list shape",
+          hn.load_only_documents(listing) == {"frusNOLIST": {"d2"}})
     out2 = os.path.join(root, "store-only-docs")
     hn.OUT = out2
     hn.SAMPLE_DOCS = 0

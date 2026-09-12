@@ -51,8 +51,10 @@ Environment:
                  The LM Studio server batches: 3.92x at 4 workers is the measured knee
                  on the Studio (NER-RUNBOOK.md §4.8.2). Only the HTTP round-trips
                  parallelize — the store is byte-identical at any width (selftest-pinned).
-  ONLY_DOCUMENTS path to m2a-manifest.json OR m2a-ground-truth.jsonl — restrict the
-                 detector to exactly those documents (the targeted pass scoring needs;
+  ONLY_DOCUMENTS path to m2a-manifest.json, m2a-ground-truth-documents.jsonl, or
+                 m2a-ground-truth.jsonl — restrict the detector to exactly those documents
+                 (the span file has no row for a document that names no one, so after the
+                 sitting use the documents file); (the targeted pass scoring needs;
                  detection reads only the document list, never gold spans). Exempt from
                  the FULL_SWEEP refusal; sampled_doc_ids are recorded.
 
@@ -539,8 +541,10 @@ def load_only_documents(path):
 
     Reads either shape the M2a loop produces, so the targeted detector pass can run
     BEFORE the sitting (against the staged m2a-manifest.json, whose "documents" rows
-    carry volume/document) or AFTER it (against m2a-ground-truth.jsonl, whose rows are
-    {"v","d",...} — the same file the control's ONLY_DOCUMENTS reads). Detection reads
+    carry volume/document) or AFTER it (against m2a-ground-truth-documents.jsonl or
+    m2a-ground-truth.jsonl, whose rows are {"v","d",...} — the files the control's ONLY_DOCUMENTS
+    reads too). Prefer the documents file: the span file has no row for a document that names no
+    one, so a pass restricted by it never scans one and the scorer cannot score it. Detection reads
     only the document list from either; gold spans are never seen by this pass.
     """
     by_volume = {}

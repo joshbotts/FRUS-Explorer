@@ -20,6 +20,13 @@ Two matching rules are reported and neither is the "real" one on its own:
     title ends, which is the commonest boundary quarrel in this corpus
     ("Mr. Bevin" vs "Bevin", "Sir Edward Grey" vs "Edward Grey").
 
+The ground truth is TWO files from one collection: `m2a-ground-truth.jsonl`, one row per gold
+span, and `m2a-ground-truth-documents.jsonl` beside it, one row per annotated document. The second is
+what makes a document that names no one scoreable — it has no span rows, so without the list it is not
+in the sample at all and every detection in it goes uncounted. A ground truth with no list beside it
+(collected before the list existed) still scores, with a note saying what it cannot see; a list that
+disagrees with its span file is refused, because the two came from different collections.
+
 A detector is scored ONLY over documents it actually scanned. A sampled run records its
 document ids in `detected/<vol>.head.json`; a store that sampled without recording them
 is refused rather than scored, because a document the detector never saw would otherwise
@@ -47,8 +54,21 @@ TEXT_DIR = os.path.expanduser(os.environ.get("TEXT_DIR", "~/frus-semantic-raw/te
 OUT = os.path.expanduser(os.environ.get("OUT", "./score-detections.json"))
 
 
+def documents_path(path):
+    """The annotated-document list the collector writes beside a ground-truth span file."""
+    base = path[:-len(".jsonl")] if path.endswith(".jsonl") else path
+    return base + "-documents.jsonl"
+
+
 def load_ground_truth(path):
-    """{(volume, document): [(s, e, surface)]} plus {(volume, document): band}."""
+    """{(volume, document): [(s, e, surface)]} plus {(volume, document): band}.
+
+    A document that names no one is present with an EMPTY span list, read from the document list
+    beside the span file — `match()` scores an empty gold list as all false positives, which is the
+    point. Without that list the document set is whatever the span rows name, which is how
+    frus1946v01/d483 dropped out of the first score: the collector reported 24 documents, the scorer
+    23, and nothing said so.
+    """
     if not os.path.exists(path):
         raise SystemExit("no ground truth at %s.\nM2a is the gate: stage it with "
                          "stage_m2a.py, key it, collect it (COLLECT=1), then score."
@@ -61,6 +81,45 @@ def load_ground_truth(path):
             row = json.loads(line)
             key = (row["v"], row["d"])
             gold.setdefault(key, []).append((row["s"], row["e"], row["n"]))
+            bands[key] = row.get("band")
+
+    listing = documents_path(path)
+    if not os.path.exists(listing):
+        print("note: no %s beside the ground truth. It was collected before annotated documents\n"
+              "      were listed, so a document marked `none` (it names no one) is missing from this\n"
+              "      score and every detection in it goes uncounted. Re-run COLLECT=1 to include it."
+              % os.path.basename(listing))
+    else:
+        listed = {}
+        with open(listing, encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                key = (row["v"], row["d"])
+                if key in listed:
+                    sys.exit("%s lists %s/%s twice. A document counted twice doubles the false "
+                             "positives of every detector that tags anything in it." % (listing, key[0], key[1]))
+                listed[key] = row
+        # Staleness, in each direction the two files can disagree. The collector writes both from one
+        # pass, so any disagreement means they are from different collections — scoring the union
+        # would mix two samples, and scoring either alone would silently drop the other's documents.
+        unlisted = sorted(set(gold) - set(listed))
+        if unlisted:
+            sys.exit("%s names %d document(s) with mentions that %s does not list (first: %s/%s).\n"
+                     "The two files are from different collections; re-run COLLECT=1."
+                     % (path, len(unlisted), listing, unlisted[0][0], unlisted[0][1]))
+        for key, row in sorted(listed.items()):
+            held = len(gold.get(key, []))
+            if row.get("mentions") != held:
+                sys.exit("%s lists %s/%s with %r mention(s), but %s holds %d for it.\n"
+                         "The two files are from different collections; re-run COLLECT=1."
+                         % (listing, key[0], key[1], row.get("mentions"), path, held))
+            if key in bands and bands[key] != row.get("band"):
+                sys.exit("%s puts %s/%s in band %r, but %s puts it in %r.\n"
+                         "The two files are from different collections; re-run COLLECT=1."
+                         % (listing, key[0], key[1], row.get("band"), path, bands[key]))
+            gold.setdefault(key, [])
             bands[key] = row.get("band")
     return {key: sorted(spans) for key, spans in gold.items()}, bands
 
@@ -294,7 +353,10 @@ def main():
         results.append(score_one(os.path.basename(expanded.rstrip("/")), predictions,
                                  gold, bands, refused))
 
+    listing = documents_path(GROUND_TRUTH)
     json.dump({"ground_truth": GROUND_TRUTH, "documents": len(gold),
+               "document_list": listing if os.path.exists(listing) else None,
+               "documents_without_mentions": sum(1 for v in gold.values() if not v),
                "mentions": sum(len(v) for v in gold.values()), "results": results},
               open(OUT, "w"), indent=1, sort_keys=True)
 
@@ -310,9 +372,22 @@ def main():
         if result["volumes_refused"]:
             print("    refused (unfinished, or sampled without recording document ids): %s"
                   % ", ".join(result["volumes_refused"]))
-    print("\nGround truth: %d mentions over %d documents. Full detail, including false "
-          "positives\nand misses to read by hand: %s"
-          % (sum(len(v) for v in gold.values()), len(gold), OUT))
+        # A detector scored over fewer documents than the ground truth holds, for a reason OTHER than
+        # a refused volume, is one whose sample left documents out. The commonest way to get there is
+        # a targeted pass restricted by the SPAN file, which has no row for a document that names no
+        # one — so say which file to restrict it with rather than let its denominator shrink quietly.
+        refused = set(result["volumes_refused"])
+        unscanned = (result["documents_in_ground_truth"] - result["documents_scored"]
+                     - sum(1 for volume, _ in gold if volume in refused))
+        if unscanned > 0:
+            print("    %d ground-truth document(s) were never scanned by this detector and are not "
+                  "scored.\n    A pass restricted with ONLY_DOCUMENTS=m2a-ground-truth.jsonl cannot "
+                  "see a document that\n    names no one; restrict it with %s instead."
+                  % (unscanned, os.path.basename(documents_path(GROUND_TRUTH))))
+    print("\nGround truth: %d mentions over %d documents, %d of which name no one. Full detail,\n"
+          "including false positives and misses to read by hand: %s"
+          % (sum(len(v) for v in gold.values()), len(gold),
+             sum(1 for v in gold.values() if not v), OUT))
     print("The baseline row is the editors' own markup scored as if it were a detector — "
           "its\nrecall is the share of mentions the free layer already gives you.")
 

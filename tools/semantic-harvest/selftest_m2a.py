@@ -22,7 +22,13 @@ synthetic detectors plus the editor baseline. What it pins:
     one gold mention cannot be matched twice, precision and recall use their own
     denominators (pinned on a fixture where the two counts differ), and a detector is
     scored only over the documents it scanned;
-  * a detector that sampled without recording its document ids is refused, not scored.
+  * a detector that sampled without recording its document ids is refused, not scored;
+  * a document annotated as naming no one is LISTED by the collector and scored as empty gold, so a
+    detection in it lowers precision and the document counts in `documents_scored` and its band —
+    driven through `main()`; a ground truth with no list still scores, and says what it cannot see;
+    a list that disagrees with its span file (a missing document, a wrong count, a wrong band, a
+    duplicate) is refused, each by its own fixture; and a collection whose only document names no one
+    is written rather than refused as empty.
 """
 
 import csv
@@ -454,6 +460,190 @@ def run():
     open(os.path.join(ambiguous, volumes[0] + ".jsonl"), "w").write("")
     check("the text layer refuses a volume present as both .jsonl and .jsonl.gz",
           _raises(lambda: ner_store.volume_text(ambiguous, volumes[0])))
+
+    print("\n== a document that names no one ==")
+    # The span file holds one row per gold span, so a document read and marked `none` had no row and
+    # vanished from scoring: every detection in it was a false positive nobody counted. The unfinished
+    # document is made that case here — every bracket removed (its seed rejected, nothing added) and
+    # marked `none` — so the checks above keep the sample they were written against.
+    gt_path = os.path.join(out_dir, "m2a-ground-truth.jsonl")
+    docs_path = os.path.join(out_dir, "m2a-ground-truth-documents.jsonl")
+    empty_entry = staged[unfinished]
+    empty_key = (empty_entry["volume"], empty_entry["document"])
+    empty_text = documents[empty_entry["volume"]][empty_entry["document"]]
+    with open(os.path.join(out_dir, unfinished), "w", encoding="utf-8") as handle:
+        handle.write(empty_text)
+    write_progress([dict(row, annotated="none" if row["file"] == unfinished else row["annotated"])
+                    for row in saved_rows])
+    stage.collect()
+    listed = [json.loads(line) for line in open(docs_path, encoding="utf-8") if line.strip()]
+    truth_now = [json.loads(line) for line in open(gt_path, encoding="utf-8") if line.strip()]
+    summary_now = json.load(open(os.path.join(out_dir, "m2a-collection-summary.json")))
+    empty_rows = [row for row in listed if (row["v"], row["d"]) == empty_key]
+    check("the collector lists a document that names no one, with no span rows for it",
+          len(empty_rows) == 1 and empty_rows[0]["mentions"] == 0
+          and empty_rows[0]["band"] == empty_entry["band"] and empty_rows[0]["mark"] == "none"
+          and empty_key not in {(r["v"], r["d"]) for r in truth_now},
+          (empty_rows, len(truth_now)))
+    check("the document list names every annotated document with its own mention count",
+          len(listed) == summary_now["documents_annotated"] == len(saved_rows)
+          and all(row["mentions"] == sum(1 for t in truth_now if (t["v"], t["d"]) == (row["v"], row["d"]))
+                  for row in listed)
+          and any(row["mentions"] > 0 for row in listed),
+          listed)
+    check("the collection summary counts documents that name no one",
+          summary_now["documents_without_mentions"] == 1, summary_now)
+
+    gold_e, bands_e = score_detections.load_ground_truth(gt_path)
+    check("the scorer loads that document as empty gold, in its band",
+          gold_e.get(empty_key) == [] and bands_e.get(empty_key) == empty_entry["band"]
+          and len(gold_e) == len(listed),
+          (gold_e.get(empty_key), bands_e.get(empty_key), len(gold_e)))
+
+    pair = ("Hamilton Fish", "Seward") if empty_key[0] == "frus1872p1" else ("Mr. Bevin", "Marshall")
+    tagged = []
+    for name in pair:
+        at = empty_text.find(name)
+        while at != -1:
+            tagged.append((at, at + len(name), name))
+            at = empty_text.find(name, at + 1)
+    tagged.sort()
+    overeager = {key: list(spans) for key, spans in gold_e.items()}
+    overeager[empty_key] = tagged
+    everything = {}
+    for volume, document in gold_e:
+        everything.setdefault(volume, set()).add(document)
+    overeager_store = write_detector(root, "det-overeager", overeager, sampled_ids=everything)
+    predictions, refused = score_detections.collect_predictions(overeager_store, "detected",
+                                                                gold_e, False)
+    result = score_detections.score_one("overeager", predictions, gold_e, bands_e, refused)
+    mentioned = sum(len(spans) for spans in gold_e.values())
+    check("detections in a document that names no one lower precision and leave recall alone",
+          len(tagged) >= 2 and result["strict"]["recall"] == 1.0
+          and result["strict"]["predicted"] == mentioned + len(tagged)
+          and result["strict"]["precision"] == round(mentioned / (mentioned + len(tagged)), 4),
+          (result["strict"], len(tagged)))
+    in_band = sum(1 for row in listed if row["band"] == empty_entry["band"])
+    check("documents_scored and the band table both count the empty document",
+          result["documents_scored"] == len(listed)
+          and result["by_band"][empty_entry["band"]]["documents"] == in_band
+          and result["by_band"][empty_entry["band"]]["strict"]["predicted"]
+          == sum(len(overeager[k]) for k in overeager if bands_e[k] == empty_entry["band"]),
+          (result["documents_scored"], result["by_band"]))
+
+    # Backward compatibility: a ground truth collected before the list existed still scores — and
+    # scores exactly as the gap did, which is why it has to say so.
+    os.rename(docs_path, docs_path + ".hidden")
+    captured, real_stdout = io.StringIO(), sys.stdout
+    sys.stdout = captured
+    try:
+        gold_old, bands_old = score_detections.load_ground_truth(gt_path)
+    finally:
+        sys.stdout = real_stdout
+    os.rename(docs_path + ".hidden", docs_path)
+    predictions, refused = score_detections.collect_predictions(overeager_store, "detected",
+                                                                gold_old, False)
+    old_result = score_detections.score_one("overeager", predictions, gold_old, bands_old, refused)
+    check("without a document list the scorer loads the span file and names what it cannot see",
+          empty_key not in gold_old and "Re-run COLLECT=1" in captured.getvalue()
+          and "m2a-ground-truth-documents.jsonl" in captured.getvalue(),
+          captured.getvalue()[:160])
+    check("...and scores precision exactly as the gap hid it",
+          old_result["strict"]["precision"] == 1.0
+          and old_result["documents_scored"] == len(listed) - 1, old_result["strict"])
+
+    # A list that disagrees with its span file is from another collection. One fixture per way it can.
+    listing_text = open(docs_path, encoding="utf-8").read()
+    list_lines = [line for line in listing_text.splitlines() if line.strip()]
+    with_mentions = next(line for line in list_lines if json.loads(line)["mentions"] > 0)
+    def rewrite(lines_out):
+        with open(docs_path, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(lines_out) + "\n")
+    def refusal(expected):
+        try:
+            score_detections.load_ground_truth(gt_path)
+        except SystemExit as exit_code:
+            return expected in str(exit_code)
+        return False
+    rewrite([line for line in list_lines if line != with_mentions])
+    check("a list missing a document that has mentions is refused",
+          refusal("does not list"))
+    rewrite([json.dumps(dict(json.loads(line), mentions=json.loads(line)["mentions"] + 1))
+             if line == with_mentions else line for line in list_lines])
+    check("a list whose mention count disagrees with the span file is refused",
+          refusal("mention(s)"))
+    rewrite([json.dumps(dict(json.loads(line), band="1900-1929"))
+             if line == with_mentions else line for line in list_lines])
+    check("a list that puts a document in another band is refused",
+          refusal("in band"))
+    rewrite(list_lines + [with_mentions])
+    check("a list naming a document twice is refused", refusal("twice"))
+    with open(docs_path, "w", encoding="utf-8") as handle:
+        handle.write(listing_text)
+
+    # Through main(): the denominators it writes, and the note for a detector whose sample left the
+    # empty document out — which is what a pass restricted by the SPAN file produces.
+    spans_only = {}
+    for volume, document in gold_e:
+        if gold_e[(volume, document)]:
+            spans_only.setdefault(volume, set()).add(document)
+    targeted_store = write_detector(root, "det-targeted",
+                                    {k: v for k, v in gold_e.items() if v}, sampled_ids=spans_only)
+    scored_empty = os.path.join(root, "scored-empty.json")
+    saved = (score_detections.GROUND_TRUTH, score_detections.DETECTORS,
+             score_detections.MARKED_STORE, score_detections.TEXT_DIR, score_detections.OUT)
+    captured, real_stdout = io.StringIO(), sys.stdout
+    try:
+        score_detections.GROUND_TRUTH = gt_path
+        score_detections.DETECTORS = [overeager_store, targeted_store, partial_store]
+        score_detections.MARKED_STORE = store_dir
+        score_detections.TEXT_DIR = text_dir
+        score_detections.OUT = scored_empty
+        score_detections.TEXT_CACHE.clear()
+        sys.stdout = captured
+        score_detections.main()
+    finally:
+        sys.stdout = real_stdout
+        (score_detections.GROUND_TRUTH, score_detections.DETECTORS,
+         score_detections.MARKED_STORE, score_detections.TEXT_DIR,
+         score_detections.OUT) = saved
+    written_empty = json.load(open(scored_empty, encoding="utf-8"))
+    by_name = {row["detector"]: row for row in written_empty["results"]}
+    check("main() writes the empty document into every denominator it reports",
+          written_empty["documents"] == len(listed)
+          and written_empty["documents_without_mentions"] == 1
+          and written_empty["document_list"] == docs_path
+          and by_name["det-overeager"]["documents_scored"] == len(listed)
+          and by_name["det-overeager"]["strict"]["precision"] < 1.0,
+          (written_empty["documents"], written_empty["documents_without_mentions"],
+           by_name["det-overeager"]["documents_scored"]))
+    output = captured.getvalue()
+    # det-partial is in the run for the note's OTHER conjunct: its missing documents are explained by a
+    # refused volume, so the note must not blame its sample for them as well.
+    check("main() says when a detector never scanned a listed document, and names the file to use",
+          by_name["det-targeted"]["documents_scored"] == len(listed) - 1
+          and by_name["det-partial"]["volumes_refused"]
+          and output.count("were never scanned by this detector") == 1
+          and "restrict it with m2a-ground-truth-documents.jsonl" in output,
+          output[-600:])
+
+    # A collection whose only annotated document names no one is still a ground truth; nothing
+    # marked at all is still refused.
+    write_progress([dict(row, annotated="none" if row["file"] == unfinished else "")
+                    for row in saved_rows])
+    stage.collect()
+    only_listed = [json.loads(line) for line in open(docs_path, encoding="utf-8") if line.strip()]
+    check("a collection whose only document names no one is written, not refused as empty",
+          open(gt_path, encoding="utf-8").read().strip() == ""
+          and [(r["v"], r["d"], r["mentions"]) for r in only_listed] == [empty_key + (0,)],
+          only_listed)
+    write_progress([dict(row, annotated="") for row in saved_rows])
+    try:
+        stage.collect()
+        check("nothing marked at all is still refused", False, "it collected")
+    except SystemExit as exit_code:
+        check("nothing marked at all is still refused",
+              "nothing marked annotated" in str(exit_code), exit_code)
 
     shutil.rmtree(root, ignore_errors=True)
     failed = [label for label, ok, _ in CHECKS if not ok]
