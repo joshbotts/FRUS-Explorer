@@ -14710,3 +14710,58 @@ three of its files carry a truncated header; `AnalyticsRotationTests.openCorpusA
 pass or skip without measuring what their name claims — the year-popover scenario's focus proof, the
 #1070 assertion inside an un-counted `if`, and the hardware-keyboard skip that is the default state
 of the documented test command.
+
+## #234 R-1 — the sweep landed, its harness recovered, and a filter frozen before the sitting
+
+The Studio's qwen3-14b no-think sweep finished on 2026-09-10. This session checked it, recovered the
+harness that ran it, and built the one piece of scoring machinery that had to exist before any ground
+truth: a filter. Nothing ships. The M2a gate is still closed, and the owner is keying a 24-document
+stratified subset (`frus-m2a/SUBSET.md`) so the first score can be read.
+
+**The sweep, verified from the heads rather than the manifest.** 267 volumes, 197,534 documents and
+679,401,514 characters in **11.55 days**. It produced **3,656,238 mentions** (the NLTagger control
+produced 1,353,849 in 476 s), with 3.38% of returned strings unlocated and 0 failed chunks. The
+figures were summed from all 267 `detected/*.head.json` in each store. `run-manifest.json`'s
+`totals_this_run` reports 184,389 documents, and that count covers **only the last resumed
+invocation**. Anyone reading the manifest would have missed 13,145 documents and 68 million characters.
+
+**The harness that ran it was not in the repo.** Both `script_sha256` values in the Studio's manifests
+match no commit on any branch. The Studio's copies do match (`13b70f9e` harvest_ner.py, `77a1af99`
+harvest_embeddings.py), so this change lands harvest_ner.py and its self-test from the Studio. The
+self-test now runs 41 checks. The exact bytes are also kept in `tools/semantic-harvest/provenance/`,
+because the committed file carries a docstring correction and would no longer hash to what ran. One
+thing cannot be recovered. The sweep ran as four invocations under **two** harness revisions, and the
+revision that wrote the first 27 volumes (all pre-1873, four of them gold volumes) was overwritten
+before anything hashed it. That segment differs from the rest (6.32% vs 3.06% unlocated, 23.27 vs
+18.17 mentions per document), and harness, server context and era are confounded inside it. The
+runbook's §4.8.3 records this.
+
+**A filter, and why it had to come first.** A raw LLM store fails precision on things its own prompt
+excludes: pronouns, bare titles, institutions, place names, and spans that start or end mid-word.
+Scoring only the raw store would compare an uncleaned LLM against an NLTagger that has none of those
+habits. `filter_detections.py` applies **the same six rules to both detectors**. It writes three new
+stores beside the raw ones: the sweep with the boundary fix only, the sweep with every rule, and the
+control with every rule. The scorer therefore reads five arms plus the editor baseline. The rules were
+**frozen before ground truth existed and were never tuned against the editors' `<persName>` layer**,
+which is a scored arm. Overlap with that layer is reported as a cost and nothing more. Version 1.1
+narrowed the title rule after the first run's own example output showed `General Pope` and
+`Admiral King` being removed. A mutation sweep over the filter's self-test ended at **23 of 23 killed**,
+after three survivors each got a fixture of their own (`my Lord Duke` among them).
+
+**Measured.** The filter keeps 71.0% of the sweep (2,597,043) and 93.2% of the control (1,261,852), and
+417 and 103 removed spans overlap an editor person span in place. A second census asked which removed
+*surfaces* the editors mark as a person anywhere. The alarming raw count — 201,043 title removals —
+comes from bare titles the editors mark only a handful of times, and M2a-INSTRUCTIONS.md excludes
+those by definition. A short list of ambiguous words carries the real loss risk: bare `King` (5,769
+sweep removals, editors mark it 163 times), `Washington`, `Canada`, `Jordan`, `Victoria`, `Salvador`.
+It is recorded in the runbook's §7 as what to read in the miss lists, and the rules were not edited.
+A smoke run of the scorer loaded all five arms over the same 53 documents with no refusal. It is
+labelled there as pipeline acceptance, not a result.
+
+**Also corrected.** The runbook's §7 still told the operator to run a targeted pass over the gold
+documents. The sweep made that unnecessary, and a broken code fence had swallowed the paragraph after
+it.
+
+**Next.** Josh keys the subset, then `COLLECT=1` and the five-arm score. The stopping rule in SUBSET.md
+compares the two **raw** detectors only. If the filtered rows could end the sitting, the comparison
+would be chosen after seeing the scores.
