@@ -75,7 +75,7 @@ final class KeyboardDismissBarReachTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 

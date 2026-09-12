@@ -23,6 +23,10 @@ import XCTest
 /// Version history:
 ///   1.0 — #861/#862 reproduction
 final class CustomScopeSaveTests: XCTestCase {
+    /// Resolves tab destinations across every representation, including the floating iPad bar when
+    /// it has paged a tab off screen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
 
     var app: XCUIApplication!
 
@@ -30,7 +34,7 @@ final class CustomScopeSaveTests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 
@@ -79,15 +83,14 @@ final class CustomScopeSaveTests: XCTestCase {
         throw XCTSkip("UIKit-only test")
         #endif
 
-        // Settings tab — the sidebar representations on iPad expose it as a cell.
-        let settings = [app.tabBars.firstMatch.buttons["Settings"].firstMatch,
-                        app.buttons["Settings"].firstMatch,
-                        app.cells["Settings"].firstMatch]
-        var opened = false
-        for candidate in settings where candidate.waitForExistence(timeout: 5) {
-            candidate.tap(); opened = true; break
-        }
-        try XCTSkipUnless(opened, "Settings tab not reachable on this device")
+        // Settings tab. Through the navigator, because the three-candidate ladder that used to
+        // live here could not reach a tab the floating iPad bar had paged off screen — and it
+        // reported that as `XCTSkipUnless(opened, "Settings tab not reachable on this device")`,
+        // a GREEN skip naming a device limit for a helper's gap. Settings is reachable on every
+        // canvas measured, so failing to reach it is now a failure.
+        XCTAssertTrue(navigator.select(.settings).tapped,
+                      "Settings is reachable on every canvas measured — page 2 of the floating bar "
+                          + "on a narrow iPad — so not reaching it is a defect, not a device limit")
         Thread.sleep(forTimeInterval: 1.0)
 
         // **Matched on the STATIC TEXT, not the cell.** A dump of this screen shows every settings

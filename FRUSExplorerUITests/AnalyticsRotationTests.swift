@@ -7,6 +7,9 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import XCTest
+#if canImport(UIKit)
+import UIKit
+#endif
 
 /// Rotation stability for the analytics sheets (#498).
 ///
@@ -50,6 +53,10 @@ import XCTest
 ///          when the toolbar overflows. That fallback existed because the overflowed item
 ///          announced `chart.bar.xaxis`; it now announces "Analysis Tools".
 final class AnalyticsRotationTests: XCTestCase {
+    /// Resolves tab destinations across every representation, including the floating iPad bar when
+    /// it has paged a tab off screen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
 
     var app: XCUIApplication!
 
@@ -60,7 +67,7 @@ final class AnalyticsRotationTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 
@@ -199,11 +206,18 @@ final class AnalyticsRotationTests: XCTestCase {
     /// which is a `.safeAreaInset(edge: .top)` applied OUTSIDE BrowserView's NavigationStack
     /// (MainTabView.swift:313, the #486 defect), makes the rotation worse.
     func testRotateWithProjectBannerActive() throws {
+        // **iPhone only, and the gate is new.** `WorkingOnBanner.canRenderInTopInset` suppresses the
+        // banner on a regular-width iPad (#461/#462), so the assertion below cannot pass there. Until
+        // now the only thing keeping this test off an iPad screen was the `XCTSkip("Settings tab not
+        // found")` inside the helper — an accident that became load-bearing the moment the helper
+        // learned to reach Settings on a paginated bar. Stating the real condition instead.
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone,
+                          "iPhone-only: the Working-on banner is suppressed on a regular-width iPad")
+
         try giveActiveProjectAResearchQuestion()
 
         // Confirm the banner is actually on screen before drawing any conclusion from this test.
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 10) { browse.tap() }
+        navigator.select(.browse)
         let banner = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'Working on:'")).firstMatch
         XCTAssertTrue(banner.waitForExistence(timeout: 10),
                       "The Working-on banner should be visible before testing rotation with it")
@@ -243,9 +257,10 @@ final class AnalyticsRotationTests: XCTestCase {
     private static let fixtureProjectName = "Supply Chain"
 
     private func giveActiveProjectAResearchQuestion() throws {
-        let settings = app.buttons["Settings"].firstMatch
-        guard settings.waitForExistence(timeout: 10) else { throw XCTSkip("Settings tab not found") }
-        settings.tap()
+        // Through the navigator: the bare `app.buttons["Settings"]` this replaces could not see a
+        // tab the floating iPad bar had paged off screen, and reported it as
+        // `XCTSkip("Settings tab not found")` — a green skip for a helper's gap.
+        guard navigator.select(.settings).tapped else { throw XCTSkip("Settings tab not reachable") }
 
         let projects = app.buttons["Projects"].firstMatch
         guard projects.waitForExistence(timeout: 10) else { throw XCTSkip("Projects pane not found") }
@@ -392,9 +407,7 @@ final class AnalyticsRotationTests: XCTestCase {
     /// sheet, and its stack is not nested inside another presented controller. If this hangs, the
     /// defect is app-wide and must be fixed globally.
     func testRotateWithFocusedSearchFieldIsSafe() throws {
-        let search = app.buttons["Search"].firstMatch
-        guard search.waitForExistence(timeout: 10) else { throw XCTSkip("Search tab not found") }
-        search.tap()
+        guard navigator.select(.search).tapped else { throw XCTSkip("Search tab not reachable") }
 
         // `.searchable` surfaces as a searchField, not a textField.
         var field = app.searchFields.firstMatch
@@ -488,8 +501,7 @@ final class AnalyticsRotationTests: XCTestCase {
 
     /// Opens Browse ▸ Analysis Tools ▸ the named item.
     private func openAnalysisItem(_ label: String) throws {
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 10) { browse.tap() }
+        navigator.select(.browse)
         let menu = app.buttons["Analysis Tools"]
         guard menu.waitForExistence(timeout: 10) else { throw XCTSkip("Analysis Tools menu not found") }
         menu.tap()
@@ -500,8 +512,7 @@ final class AnalyticsRotationTests: XCTestCase {
 
     /// Opens Browse ▸ the analysis menu ▸ Corpus Analytics.
     private func openCorpusAnalytics() throws {
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 10) { browse.tap() }
+        navigator.select(.browse)
 
         // The grouped analysis menu — an explicit Menu rather than toolbar overflow (BrowserView).
         // Its accessibility LABEL is the short name from `.controlHelp(_:detail:)`; the long

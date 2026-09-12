@@ -38,7 +38,7 @@ final class AnalyticsKeyboardTests: XCTestCase {
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         // Without this the app launches into onboarding, "Analysis Tools" is never reachable,
         // and every test in this suite SKIPS — reporting success having measured nothing.
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 

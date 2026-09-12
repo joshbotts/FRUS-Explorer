@@ -179,6 +179,7 @@
 		1F63F2D832C63DBA55439C17 /* FRUSASTNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B5A88FD6AE12C259469664C /* FRUSASTNode.swift */; };
 		1F650339D24571AB59FF0D52 /* SeriesGeographyDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29C137D8C090CFE9C39769E /* SeriesGeographyDashboard.swift */; };
 		1F9934683E4ACA22BE6F146E /* MacSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EEE03B3F3FCFFBE22AA9245 /* MacSearchViewModel.swift */; };
+		1FA625EF91FEA88F0ED42AE9 /* TabBarNavigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D43ED2EB33A6A7DAD4A355C6 /* TabBarNavigator.swift */; };
 		208708C1BB4AA3A5E8DC51E6 /* ChronologyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FBFDE9A0F70D3F83ED561B6 /* ChronologyViewModel.swift */; };
 		209063A7FB3FD9DAC85D85DD /* frus-print.css in Resources */ = {isa = PBXBuildFile; fileRef = 39BF8068D53FC3128464360F /* frus-print.css */; };
 		20AE4370B9444BF975385BC6 /* GlossAlternatesLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFA9DA87259AA7406EB8858 /* GlossAlternatesLink.swift */; };
@@ -2288,6 +2289,7 @@
 		D3958699425F29C38EAE2D01 /* ClassificationCorrectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassificationCorrectionsView.swift; sourceTree = "<group>"; };
 		D40555A8F50EB80F861F74C4 /* WordCloudDriftRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudDriftRenderTests.swift; sourceTree = "<group>"; };
 		D4103BB6952CE42F549C81F1 /* BibTeXCollectionExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BibTeXCollectionExporter.swift; sourceTree = "<group>"; };
+		D43ED2EB33A6A7DAD4A355C6 /* TabBarNavigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarNavigator.swift; sourceTree = "<group>"; };
 		D46B5580B9C2E24CFD661D4E /* AnalyticsValueUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsValueUnitTests.swift; sourceTree = "<group>"; };
 		D4822CCAB395C9147304BB90 /* AppActivityTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppActivityTypes.swift; sourceTree = "<group>"; };
 		D485BE468CA5EC3B5AADDAB5 /* DocumentClassificationOverride.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentClassificationOverride.swift; sourceTree = "<group>"; };
@@ -2887,6 +2889,7 @@
 				75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */,
 				C906B62CA370B36A4234EE3F /* KeyboardDismissBarReachTests.swift */,
 				07C9404769BA8D295007A11E /* ResearchReadingStaysInTabTests.swift */,
+				D43ED2EB33A6A7DAD4A355C6 /* TabBarNavigator.swift */,
 				7493530A4C1DF09F9B10A046 /* ToolbarOverflowAccessibilityTests.swift */,
 				5801BA86B99454226BB89290 /* TwoPaneDocumentTests.swift */,
 				224A890D46A896064CB945BB /* UIObstructionTests.swift */,
@@ -4057,6 +4060,7 @@
 				43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */,
 				08C6F42004E557E73717C883 /* KeyboardDismissBarReachTests.swift in Sources */,
 				1E2494FB2C0DB6F16F6A1CB6 /* ResearchReadingStaysInTabTests.swift in Sources */,
+				1FA625EF91FEA88F0ED42AE9 /* TabBarNavigator.swift in Sources */,
 				0EB1D91A89EC7FA28878158D /* ToolbarOverflowAccessibilityTests.swift in Sources */,
 				8EFB545F3319B1899D81C0D3 /* TwoPaneDocumentTests.swift in Sources */,
 				02CFB3D51254CB1FA9A12543 /* UIObstructionTests.swift in Sources */,
