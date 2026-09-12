@@ -32,6 +32,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — S-5b: initial implementation
+///   1.1 — #1275: a second consumer — the Research tab's notes destination. The Settings pane
+///          this type is named for is retired; the snapshot outlived it.
 struct NotesPaneSnapshot: Equatable, Sendable {
 
     /// One note, with everything the row needs already resolved.

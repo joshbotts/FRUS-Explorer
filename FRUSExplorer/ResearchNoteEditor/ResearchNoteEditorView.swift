@@ -44,6 +44,10 @@ struct ResearchNoteEditorView: View {
     @Environment(AppState.self) private var appState
 
     @State private var vm: ResearchNoteEditorViewModel
+
+    /// Whether the body is edited as rich text (#1275). Device-local on purpose — see
+    /// ``noteBodySection``. Defaults ON, so the feature is discoverable without a settings visit.
+    @AppStorage(SettingsKeys.noteEditorRichText) private var richTextEnabled = true
     private let indexingPipeline: IndexingPipeline?
     /// When non-nil, the saved note's UUID is written back to `DocumentHighlight.noteId`
     /// for the highlight with this ID. Set when the editor is opened from a selected passage.
@@ -181,16 +185,64 @@ struct ResearchNoteEditorView: View {
 
     // MARK: - Note Body
 
+    /// The note body — rich text since #1275, plain `TextEditor` when the reader turns it off.
+    ///
+    /// ## Why the formatting is optional at all
+    /// #1275 asks for "optional rich text controls", and the option earns its keep: the macOS
+    /// formatting bar costs a row of chrome above a field that is often three words long, and a
+    /// reader who never formats anything should not pay for it. The preference is device-local —
+    /// whether this Mac shows a formatting bar is a property of how this reader works here, not of
+    /// the research, which is the same line `autoDownloadSemanticShards` draws.
+    ///
+    /// ## What is stored either way
+    /// `RichTextEditor` hands back `(rtf, plain)` on every edit and both are kept: `richText` is
+    /// what this editor reloads, `bodyText` is what search, the exports, Zotero and all five in-app
+    /// previews read. Turning the switch OFF discards nothing by itself — the reader may turn it
+    /// straight back on — but the first plain keystroke goes through `setPlainBody`, which drops the
+    /// formatted copy it has just made stale. Without that the rich editor would prefer the old RTF
+    /// on reopen and show the reader yesterday's prose, then overwrite today's with it on the next
+    /// keystroke.
+    ///
+    /// ## `.id(vm.bodyRevision)`
+    /// `RichTextEditor` loads `initialRTF` ONCE by design. The Insert-summary button writes the
+    /// body from code, which that design cannot see, so the counter remounts the editor exactly
+    /// when — and only when — something other than typing changed the text.
     @ViewBuilder
     private var noteBodySection: some View {
         @Bindable var vm = vm
-        Section(String(localized: "note.editor.body.header", defaultValue: "Note")) {
-            TextEditor(text: $vm.bodyText)
+        Section {
+            if richTextEnabled {
+                RichTextEditor(initialRTF: vm.richText, plainFallback: vm.bodyText) { rtf, plain in
+                    vm.richText = rtf
+                    vm.bodyText = plain
+                }
+                .id(vm.bodyRevision)
                 .frame(minHeight: 180)
                 .accessibilityLabel(
                     String(localized: "note.editor.body.a11y",
                            defaultValue: "Research note body")
                 )
+            } else {
+                TextEditor(text: Binding(get: { vm.bodyText },
+                                         set: { vm.setPlainBody($0) }))
+                    .frame(minHeight: 180)
+                    .accessibilityLabel(
+                        String(localized: "note.editor.body.a11y",
+                               defaultValue: "Research note body")
+                    )
+            }
+        } header: {
+            HStack {
+                Text(String(localized: "note.editor.body.header", defaultValue: "Note"))
+                Spacer()
+                Toggle(String(localized: "note.editor.body.rich",
+                              defaultValue: "Formatting"), isOn: $richTextEnabled)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .labelsHidden()
+                    .accessibilityLabel(String(localized: "note.editor.body.rich.a11y",
+                                               defaultValue: "Formatted text"))
+            }
         }
     }
 
@@ -199,17 +251,21 @@ struct ResearchNoteEditorView: View {
     @ViewBuilder
     private var userTagsSection: some View {
         @Bindable var vm = vm
-        Section(String(localized: "note.editor.userTags.header", defaultValue: "Tags")) {
-            ForEach(vm.availableUserTags) { tag in
-                Toggle(
-                    tag.name,
-                    isOn: Binding(
-                        get: { vm.userTagIds.contains(tag.id) },
-                        set: { _ in vm.toggleUserTag(tag.id) }
-                    )
-                )
-                .accessibilityLabel("\(tag.name), user tag")
-            }
+        NoteAssignmentPicker(
+            title: String(localized: "note.editor.userTags.header", defaultValue: "Tags"),
+            items: vm.availableUserTags.map { .init(id: $0.id, name: $0.name) },
+            selection: Binding(get: { vm.userTagIds }, set: { vm.userTagIds = $0 }),
+            pickerTitle: String(localized: "note.editor.userTags.picker", defaultValue: "Tags"),
+            emptySelectionLabel: String(localized: "note.editor.userTags.none",
+                                        defaultValue: "No tags"),
+            emptyCatalogLabel: String(localized: "note.editor.userTags.empty",
+                                      defaultValue: "No tags yet — add one below."),
+            orderedList: .tags)
+
+        // The create field stays in the editor rather than moving into the picker sheet: naming a
+        // new tag is how most of them get made, and burying it one sheet deeper would cost the
+        // commonest action to save the rarer one.
+        Section {
             HStack {
                 TextField(
                     String(localized: "note.editor.newTag.placeholder",
@@ -232,26 +288,18 @@ struct ResearchNoteEditorView: View {
 
     @ViewBuilder
     private var projectTagsSection: some View {
-        Section(String(localized: "note.editor.projects.header",
-                       defaultValue: "Projects")) {
-            if vm.availableProjects.isEmpty {
-                Text(String(localized: "note.editor.projects.empty",
-                            defaultValue: "No projects yet."))
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
-            } else {
-                ForEach(vm.availableProjects) { project in
-                    Toggle(
-                        project.name,
-                        isOn: Binding(
-                            get: { vm.projectIds.contains(project.id) },
-                            set: { _ in vm.toggleProjectTag(project.id) }
-                        )
-                    )
-                    .accessibilityLabel("\(project.name), project tag")
-                }
-            }
-        }
+        @Bindable var vm = vm
+        NoteAssignmentPicker(
+            title: String(localized: "note.editor.projects.header", defaultValue: "Projects"),
+            items: vm.availableProjects.map { .init(id: $0.id, name: $0.name) },
+            selection: Binding(get: { vm.projectIds }, set: { vm.projectIds = $0 }),
+            pickerTitle: String(localized: "note.editor.projects.picker",
+                                defaultValue: "Projects"),
+            emptySelectionLabel: String(localized: "note.editor.projects.none",
+                                        defaultValue: "No projects"),
+            emptyCatalogLabel: String(localized: "note.editor.projects.empty",
+                                      defaultValue: "No projects yet."),
+            orderedList: .projects)
     }
 
     // MARK: - Generated Summaries
@@ -289,13 +337,25 @@ struct ResearchNoteEditorView: View {
         let vid = vm.volumeId
         let did = vm.documentId
         let text = vm.bodyText
-        let tagString = vm.userTagIds.map(\.uuidString).joined(separator: " ")
+        // **Text only, and the `userTagIds:` overload must never be called from here.**
+        //
+        // NOTE, because the fix is narrower than it looks: `note_text` — the argument that REMAINS —
+        // is a per-document column too, and this still writes one note's body into it. A document
+        // can carry several notes, so all but one are invisible to search and the boot replay picks
+        // the winner in unsorted fetch order. That is the same shape as the tag defect below and it
+        // is NOT fixed here: collapsing many notes into one indexed text is a search-behaviour
+        // decision with its own questions (what separator, what happens on delete, whether the index
+        // version must move). Tracked separately; do not read the comment below as covering it.
+        // `user_tag_ids` is a per-DOCUMENT column whose authoritative writer is
+        // `UserTagPickerSheet.saveAndDismiss`, which sends the document's whole assigned set.
+        // This editor knows only ONE note's tags, so passing them wrote a narrower set over a
+        // wider one — and a note with no tags of its own passed `nil`, which the column binder
+        // writes as SQL NULL rather than skipping, erasing the document's tags outright. Search
+        // opts into this column, so the damage showed up as search-by-tag missing documents until
+        // the next launch's replay put them back. The sibling defect in `CollectionEntryRows` was
+        // fixed the same way, and the text-only overload exists precisely for callers like this.
         Task {
-            try? await pipeline.updateNoteText(
-                volumeId: vid, documentId: did,
-                bodyText: text,
-                userTagIds: tagString.isEmpty ? nil : tagString
-            )
+            try? await pipeline.updateNoteText(volumeId: vid, documentId: did, bodyText: text)
         }
     }
 

@@ -57,7 +57,11 @@ struct ResearchNoteEditorTests {
 
     // MARK: - Tag Inheritance
 
-    @Test("Active project tag is auto-applied at init and removable via toggleProjectTag")
+    /// Removal goes through the SELECTION, as the picker does, since #1275 retired the per-row
+    /// toggles: `NoteAssignmentPicker` binds `vm.projectIds` wholesale, so `toggleProjectTag` lost
+    /// its last caller and was deleted. A test that kept calling it would have gone on advertising
+    /// a removal path nothing ships.
+    @Test("Active project tag is auto-applied at init and removable from the selection")
     func tagInheritanceAutoAppliedAndRemovable() {
         let projectId = UUID()
         let vm = ResearchNoteEditorViewModel(
@@ -69,8 +73,8 @@ struct ResearchNoteEditorTests {
         // Auto-applied
         #expect(vm.projectIds.contains(projectId))
 
-        // User removes it
-        vm.toggleProjectTag(projectId)
+        // User removes it — exactly what the picker's binding does.
+        vm.projectIds.removeAll { $0 == projectId }
         #expect(!vm.projectIds.contains(projectId))
     }
 

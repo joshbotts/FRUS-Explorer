@@ -89,15 +89,18 @@ struct SettingsPaneModelTests {
     /// The asymmetries are deliberate and documented; pinning them means a future change to one
     /// renderer has to change the model — which is the whole point.
     ///
-    /// Notes used to be pinned here as macOS-only and no longer is. That assertion did its job:
-    /// it was the speed bump that made promoting the pane a decision rather than an accident.
-    /// The decision was taken because the pane owns the Log Research Sessions switch, which iOS
-    /// had no control for at all.
+    /// Notes used to be pinned here as macOS-only, was promoted to both platforms, and has now
+    /// retired entirely (#1275) — its list moved to Research and it held no settings. Each of those
+    /// three states was a deliberate decision, and this assertion is what made each of them one.
     @Test("Platform-specific panes stay platform-specific")
     func platformAsymmetry() {
         #expect(SettingsPane.sync.platforms == [.macOS])
-        #expect(SettingsPane.notes.platforms == [.iOS, .macOS])
         #expect(SettingsPane.display.platforms == [.iOS, .macOS])
+        #expect(!SettingsPane.allCases.contains { $0.rawValue == "notes" }, """
+            The Notes pane is back. It retired in #1275 because it held a list of the reader's \
+            notes and not one setting — the same ground `.researchGuide` retired on. If it has \
+            returned, it should be because it now owns a real setting.
+            """)
     }
 
     /// The research-session switch has its own pane now. It was a section of Notes only because
@@ -118,15 +121,23 @@ struct SettingsPaneModelTests {
         #expect(SettingsPane.researchSessions.platforms == [.iOS, .macOS])
     }
 
-    /// And Notes goes back to being about notes: it must not still claim the recording vocabulary,
-    /// or both panes surface for "privacy" and the split has bought nothing.
-    @Test("Notes no longer answers for the recording switch")
-    func notesReleasedTheLoggingKeywords() {
+    /// The recording vocabulary belonged to Notes only because Notes was where the switch sat.
+    /// With the pane retired (#1275) no pane may claim it but the one that owns the switch — and a
+    /// reader typing "research notes" must not be sent to Settings at all, because the notes list
+    /// is in Research now.
+    @Test("No pane claims the recording vocabulary except the one that owns the switch")
+    func onlyResearchSessionsAnswersForTheRecordingSwitch() {
         for query in ["logging", "privacy", "recording", "trail", "session log"] {
-            #expect(!SettingsPane.notes.matches(query), "Notes still matches \(query)")
+            let claimants = SettingsPane.allCases.filter { $0.matches(query) }
+            #expect(claimants == [.researchSessions], """
+                \(query) is answered by \(claimants.map(\.rawValue)) — it belongs to the pane \
+                that owns the switch, and to no other.
+                """)
         }
-        #expect(SettingsPane.notes.matches("research notes"))
-        #expect(SettingsPane.notes.platforms.contains(.iOS))
+        #expect(!SettingsPane.allCases.contains { $0.matches("research notes") }, """
+            A pane still answers for "research notes". The notes list moved to the Research tab in \
+            #1275, so Settings search sending a reader here would send them nowhere.
+            """)
     }
 
     /// S-2 merged Storage + Add Volumes + Sideload into one destination on each platform. The

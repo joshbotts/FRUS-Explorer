@@ -278,14 +278,35 @@ struct CloudKitSchemaInventoryTests {
     /// carrying a non-nil value, so a field nothing writes cannot be promoted. Before R-1g this
     /// printed on every launch with no way to clear it — and a permanent warning nobody can act on
     /// is how a real one gets scrolled past.
+    /// **Asserted as an IMPLICATION, not as today's state.**
+    ///
+    /// This test used to open by requiring `identifiersAwaitingDeploy.isEmpty` "as its premise",
+    /// and then assert `isProductionSchemaCurrent` — which is *defined* as that same emptiness. So
+    /// it did not merely lose meaning while a deploy was pending: it FAILED, on two expectations,
+    /// the moment anyone followed step 2 of this gate's own documented checklist. #1275 was the
+    /// first change since R-1g to add a deployable identifier and the first to hit it.
+    ///
+    /// The claim being made has never been about the current state. It is that the WRITER list does
+    /// not feed the deploy alarm — that a field nothing writes, which can never be promoted, must
+    /// not raise a warning whose only remedy is to promote it. Written as an equivalence, that
+    /// claim holds in both states and is strictly stronger than the original: it would now catch
+    /// `isProductionSchemaCurrent` being wired to the reserved list in either direction, which the
+    /// old form could only catch while the deploy list happened to be empty.
+    ///
+    /// Its sibling `theReservedFieldStillHasNoWriter` below already used a `guard` for the same
+    /// problem; a guard would have been enough here too, but it would have gone silent exactly when
+    /// a deploy is pending — which is when someone is most likely to touch this wiring.
     @Test("Awaiting a writer does not report an outstanding deploy")
     func reservedIdentifiersDoNotRaiseTheDeployAlarm() {
-        #expect(CloudKitSchemaInventory.identifiersAwaitingDeploy.isEmpty,
-                "this assertion's premise: nothing is currently awaiting a deploy")
         #expect(!CloudKitSchemaInventory.identifiersAwaitingWriter.isEmpty,
-                "and something IS awaiting a writer, or this test proves nothing")
-        #expect(CloudKitSchemaInventory.isProductionSchemaCurrent,
-                "a reserved identifier must not read as an outstanding deploy")
+                "something IS awaiting a writer, or this test proves nothing")
+        #expect(CloudKitSchemaInventory.isProductionSchemaCurrent
+                    == CloudKitSchemaInventory.identifiersAwaitingDeploy.isEmpty, """
+                    The deploy alarm must be driven by the deploy list ALONE. A reserved identifier \
+                    — mirrored, but unwritten and therefore unpromotable — must never make it read \
+                    as an outstanding deploy, because the warning's own remedy is an action nobody \
+                    can take for it.
+                    """)
     }
 
     /// The two lists describe different states and may never overlap.

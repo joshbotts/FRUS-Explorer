@@ -31,6 +31,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Optional iCloud settings sync
+///   1.1 — #1275: `listOrderJSON`, the reader's own order for the tag and project lists
 @Model
 final class SyncedPreferences {
 
@@ -64,6 +65,25 @@ final class SyncedPreferences {
     var defaultDocumentModeRaw: String = ""
     /// Whether research sessions are logged.
     var researchLoggingEnabled: Bool = true
+
+    /// The reader's own order for the tag and project lists, as JSON (#1275).
+    ///
+    /// One property rather than two, holding `{"tags": [uuid…], "projects": [uuid…]}` — the
+    /// `wcGlobalStopwordsJSON` shape, and one CloudKit identifier instead of two. Empty means "no
+    /// custom order", which is not the same as an empty order: a reader who has never reordered
+    /// gets the alphabetical baseline, and so does one whose stored order no longer names anything
+    /// that exists.
+    ///
+    /// **Synced rather than device-local, by owner decision.** "My current research priorities" is
+    /// a property of the research, not of the iPad — a reorder on one device should follow the
+    /// reader to the other. That choice is what puts this identifier in
+    /// `CloudKitSchemaInventory.identifiersAwaitingDeploy`; a device-local `@AppStorage` would have
+    /// cost nothing and synced nothing.
+    ///
+    /// IDs are stored rather than positions, so a tag renamed, merged or deleted elsewhere does not
+    /// renumber the rest — `ListOrderPreferences` drops unknown ids on read and appends unordered
+    /// newcomers at the end.
+    var listOrderJSON: String = ""
 
     /// Creates an empty preferences record with default values.
     init() {}

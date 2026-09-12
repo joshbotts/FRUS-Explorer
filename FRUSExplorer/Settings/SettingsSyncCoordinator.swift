@@ -196,6 +196,36 @@ final class SettingsSyncCoordinator {
         }
     }
 
+    /// Fills a brand-new record from this device's current settings (#1275).
+    ///
+    /// **For a creator that is not this coordinator.** `ListOrderPreferences` mints the record when
+    /// the reader reorders a tag list, which is not the sync opt-in — and ``handleEnabledChange``
+    /// decides between seeding the cloud and adopting from it purely on whether a record exists. A
+    /// record left at type defaults would therefore turn the reader's next "turn sync on" into an
+    /// adopt, overwriting their own thresholds, stop lists and logging switch with blanks. Seeding
+    /// makes that adopt a no-op: it writes back what the device already has.
+    ///
+    /// Static and non-isolated from the coordinator's own lifecycle on purpose — the caller has a
+    /// record and a context, not a coordinator.
+    ///
+    /// - Parameter record: The freshly created record, before it is inserted.
+    @MainActor
+    static func seedFromDeviceDefaults(_ record: SyncedPreferences) {
+        let store = UserDefaults.standard
+        record.wcMinLength = WordCloudSettings.minimumLength
+        record.wcMinCount = WordCloudSettings.minimumCount
+        record.wcFoldPlurals = WordCloudSettings.foldPlurals
+        record.wcFilterMarkings = WordCloudSettings.filterMarkings
+        record.wcExcludeBoilerplate =
+            (store.object(forKey: WordCloudSettings.Keys.excludeBoilerplate) as? Bool) ?? true
+        record.researchLoggingEnabled = AppState.isResearchLoggingEnabled(in: store)
+        record.citationStyleRaw = store.string(forKey: SettingsKeys.citationStyle) ?? ""
+        record.defaultDocumentModeRaw = store.string(forKey: SettingsKeys.defaultDocumentMode) ?? ""
+        record.wcGlobalStopwordsJSON = Self.encodeStringArray(WordCloudSettings.globalStopwords)
+        record.wcLensStopwordsJSON = store.data(forKey: WordCloudSettings.Keys.lensStopwords)
+            .flatMap { String(data: $0, encoding: .utf8) } ?? ""
+    }
+
     /// Copies `UserDefaults` values into the model, only writing where they differ.
     /// Returns `true` when anything changed.
     private func applyDefaultsToModel(_ p: SyncedPreferences) -> Bool {
@@ -217,7 +247,7 @@ final class SettingsSyncCoordinator {
         update(\.citationStyleRaw, store.string(forKey: SettingsKeys.citationStyle) ?? "")
         update(\.defaultDocumentModeRaw, store.string(forKey: SettingsKeys.defaultDocumentMode) ?? "")
 
-        let globalJSON = encodeStringArray(WordCloudSettings.globalStopwords)
+        let globalJSON = Self.encodeStringArray(WordCloudSettings.globalStopwords)
         update(\.wcGlobalStopwordsJSON, globalJSON)
 
         let lensJSON = store.data(forKey: WordCloudSettings.Keys.lensStopwords)
@@ -250,7 +280,7 @@ final class SettingsSyncCoordinator {
         return array
     }
 
-    private func encodeStringArray(_ array: [String]) -> String {
+    private static func encodeStringArray(_ array: [String]) -> String {
         guard let data = try? JSONEncoder().encode(array),
               let json = String(data: data, encoding: .utf8) else { return "" }
         return json

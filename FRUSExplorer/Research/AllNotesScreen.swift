@@ -5,207 +5,53 @@
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import SwiftUI
 import SwiftData
 
-// MARK: - NotesSettingsView
-
-/// Settings → Research → Notes — every research note on this device.
-///
-/// Shared by both platforms. It was macOS-only until the research-session gap was traced — the
-/// "Log Research Sessions" switch used to live here, and iOS had no control for it at all. The
-/// switch has since moved to its own `ResearchSessionsView`, where it belongs; what this pane
-/// keeps is the reason iOS still wants it: a flat, note-grained browser the platform never had
-/// (its Research tab lists documents, never notes).
-///
-/// ## What changed in S-5b (macOS)
-/// - Native `Form(.grouped)` replaces the bespoke split layout (a padded header block, a
-///   `Divider`, then a greedy full-height `List`), which was the last hand-rolled pane.
-/// - The pane shows the five most recent notes and puts the whole list behind one door — the
-///   grammar the Volumes & Storage hub already ships for downloaded volumes. A `Form` cannot
-///   host a full-height scrolling list, and a `Section` of three hundred notes would be three
-///   hundred eagerly-composed rows inside another scroll view.
-/// - Three live `@Query`s become one `NotesPaneSnapshot`, refreshed on appear and after every
-///   mutation. See that type for why.
-/// - Rows are `Button`s, not `.onTapGesture` on a `VStack` — a tap gesture is invisible to
-///   VoiceOver and unreachable from the keyboard.
-/// - The "Untagged" project filter used to be tagged with the all-zeros UUID and matched with
-///   `projectIds.contains(_:)`, so it could never return anything. It is a real case now.
-/// - The editor sheet receives `indexingPipeline` and `AppState`, so a note edited here reaches
-///   FTS5 like one edited anywhere else. It did not before.
-struct NotesSettingsView: View {
-
-    /// How many notes the pane lists before deferring to the full-list sheet. The hub uses three
-    /// for one-line volume rows; note rows are two lines, and five is about a screen-third —
-    /// enough to answer "did my last note save?" without the pane becoming a list.
-    private static let inlineNoteLimit = 5
-
-    @Environment(\.modelContext) private var modelContext
-    @Environment(AppState.self) private var appState
-    #if os(macOS)
-    /// Whether the Settings window is the active one. On macOS Settings is a sibling window, not
-    /// a modal — the main window stays live behind it, so a note written or deleted there must
-    /// re-read here when the user comes back. A one-shot `.task` alone would show them the state
-    /// of the world when they opened the pane.
-    @Environment(\.controlActiveState) private var controlActiveState
-    #else
-    /// The iOS equivalent of the above: Settings is a tab, and a note can be written in the
-    /// Research tab or a document while this view stays alive in the background.
-    @Environment(\.scenePhase) private var scenePhase
-    #endif
-
-    @State private var snapshot: NotesPaneSnapshot = .empty
-    @State private var editingNote: ResearchNote?
-    @State private var showsAllNotes = false
-
-    var body: some View {
-        Form {
-            notesSection
-        }
-        #if os(macOS)
-        .formStyle(.grouped)
-        #endif
-        .navigationTitle(String(localized: "settings.pane.notes", defaultValue: "Notes"))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
-        #if os(macOS)
-        .frame(maxWidth: .infinity)
-        .scrollIndicators(.visible)
-        #endif
-        .task { refresh() }
-        #if os(macOS)
-        .onChange(of: controlActiveState) { _, state in
-            if state != .inactive { refresh() }
-        }
-        #else
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .active { refresh() }
-        }
-        #endif
-        // The whole list is a sheet on macOS (the Settings window has no navigation chrome to
-        // push into) and a push on iOS (where it does, and where a second modal over a tab reads
-        // as a dead end). Same screen either way.
-        #if os(macOS)
-        .sheet(isPresented: $showsAllNotes, onDismiss: refresh) {
-            AllNotesScreen(snapshot: snapshot, onChanged: refresh)
-        }
-        #else
-        .navigationDestination(isPresented: $showsAllNotes) {
-            AllNotesScreen(snapshot: snapshot, onChanged: refresh)
-                .onDisappear { refresh() }
-        }
-        #endif
-        .sheet(item: $editingNote, onDismiss: refresh) { note in
-            noteEditorSheet(for: note)
-        }
-    }
-
-    // MARK: - Sections
-
-    @ViewBuilder
-    private var notesSection: some View {
-        Section {
-            if snapshot.total == 0 {
-                Text(String(localized: "settings.notes.empty",
-                            defaultValue: "No notes yet. Notes you write from a document appear here."))
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(snapshot.rows.prefix(Self.inlineNoteLimit)) { row in
-                    noteRow(row)
-                }
-                Button {
-                    showsAllNotes = true
-                } label: {
-                    HStack {
-                        Label(String(localized: "settings.notes.showAll", defaultValue: "All Notes"),
-                              systemImage: "note.text")
-                            .labelStyle(.titleAndIcon)
-                        Spacer(minLength: 8)
-                        Text(NotesPaneSnapshot.noteCount(snapshot.total))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                        Image(systemName: "chevron.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        } header: {
-            Text(String(localized: "settings.notes.recent.header", defaultValue: "Recent Notes"))
-        } footer: {
-            if snapshot.total > 0 {
-                Text(NotesPaneSnapshot.showingCount(
-                    shown: min(Self.inlineNoteLimit, snapshot.total), of: snapshot.total))
-            }
-        }
-    }
-
-    // MARK: - Rows
-
-    @ViewBuilder
-    private func noteRow(_ row: NotesPaneSnapshot.Row) -> some View {
-        Button {
-            // A nil lookup means the snapshot is stale — the note went away since the row was
-            // drawn. Re-read rather than leave a ghost row that does nothing when clicked.
-            guard let note = NotesPaneSnapshot.note(id: row.id, in: modelContext) else {
-                refresh()
-                return
-            }
-            editingNote = note
-        } label: {
-            HStack {
-                SettingsNavRow(label: row.title,
-                               detail: row.detail,
-                               value: row.lastModified.map {
-                                   $0.formatted(date: .abbreviated, time: .omitted)
-                               })
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .lineLimit(2)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityHint(String(localized: "settings.notes.row.a11y",
-                                  defaultValue: "Opens the research note editor"))
-    }
-
-    // MARK: - Editor
-
-    private func noteEditorSheet(for note: ResearchNote) -> some View {
-        ResearchNoteEditorView(
-            documentId: note.documentId,
-            volumeId: note.volumeId,
-            activeProjectId: nil,
-            noteToEdit: note,
-            indexingPipeline: appState.indexingPipeline
-        )
-        .environment(appState)
-    }
-
-    // MARK: - State
-
-    private func refresh() {
-        snapshot = NotesPaneSnapshot.fetch(from: modelContext)
-    }
-}
-
 // MARK: - AllNotesScreen
 
-/// The whole note list, behind the Notes pane's one door (S-5b).
+/// The whole note list (S-5b), now a Research destination rather than a Settings door (#1275).
 ///
 /// A real `List` rather than a `Form` section, because this is the surface that has to stay
 /// usable at three hundred notes. The filters the old pane crammed into a 180-point `HStack`
 /// live here as labelled controls and gain a text field — the thing actually missing once the
 /// list is long enough to need filtering at all.
-private struct AllNotesScreen: View {
+///
+/// ## Why it moved
+/// It was reached through Settings ▸ Notes, a pane that held no settings at all — a list of content
+/// behind a gear icon. #1275 moves the list to the Research tab, where the reader's other research
+/// objects already live, and retires the pane on the precedent `SettingsPaneModel` set when
+/// `.researchGuide` left for the same reason: "it is content, not a setting".
+///
+/// ## Two presentations, one screen
+/// ``Presentation/sheet`` keeps the chrome the Settings door needed — a macOS header and a Done
+/// footer, an iOS principal title — while ``Presentation/embedded`` drops all of it, because in
+/// Research the surrounding split view or navigation stack supplies the title and the way back.
+/// The list, its filters and its editor are identical either way.
+///
+/// Version history:
+///   1.0 — S-5b: the Notes pane's one door
+///   1.1 — #1275: moved out of `NotesSettingsView` into Research; gained ``Presentation``
+struct AllNotesScreen: View {
+
+    /// Where this screen is being shown, which decides only its chrome.
+    enum Presentation {
+        /// Presented modally with its own header/footer (the macOS Settings door; retired with the
+        /// pane, kept because a sheet host may want it again).
+        case sheet
+        /// Embedded in a navigation container that supplies the title and the way back.
+        case embedded
+    }
+
+    /// Which chrome to draw. Defaults to the historical sheet shape.
+    var presentation: Presentation = .sheet
 
     /// The rows to browse. Passed in rather than re-fetched so the sheet and the pane behind it
     /// cannot disagree about what exists.
@@ -242,32 +88,50 @@ private struct AllNotesScreen: View {
     var body: some View {
         VStack(spacing: 0) {
             #if os(macOS)
-            header
-            Divider()
+            if presentation == .sheet {
+                header
+                Divider()
+            }
             #endif
             filters
             Divider()
             list
             #if os(macOS)
-            Divider()
-            footer
+            if presentation == .sheet {
+                Divider()
+                footer
+            }
             #endif
         }
+        // #1070's affordance. The field was three taps deep in Settings; #1275 makes it a top-level
+        // Research destination, which is a material change in how often an iPhone reader meets a
+        // search field with no way to put the keyboard away.
+        .keyboardDismissBar()
         #if os(macOS)
-        .frame(minWidth: 560, minHeight: 480)
+        .frame(minWidth: presentation == .sheet ? 560 : 420,
+               minHeight: presentation == .sheet ? 480 : 320)
         #else
         // Pushed, so the navigation bar carries the title and the count the macOS header block
         // draws for itself, and the system supplies the way back.
+        //
+        // **The principal item is sheet-only.** In the iPad two-pane Research layout the sidebar and
+        // the detail are siblings inside ONE `NavigationStack`, so a `.principal` item installed
+        // here writes into the same navigation bar the sidebar's own title uses — no other Research
+        // detail does that, and `documentList` sets a plain `.navigationTitle` and nothing else.
         .navigationTitle(String(localized: "settings.notes.all.title", defaultValue: "All Notes"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
-                VStack(spacing: 1) {
-                    Text(String(localized: "settings.notes.all.title", defaultValue: "All Notes"))
-                        .font(.headline)
-                    Text(NotesPaneSnapshot.showingCount(shown: filtered.count, of: current.total))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                if presentation == .sheet {
+                    VStack(spacing: 1) {
+                        Text(String(localized: "settings.notes.all.title",
+                                    defaultValue: "All Notes"))
+                            .font(.headline)
+                        Text(NotesPaneSnapshot.showingCount(shown: filtered.count,
+                                                            of: current.total))
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
         }
@@ -461,4 +325,3 @@ private struct AllNotesScreen: View {
         onChanged()
     }
 }
-

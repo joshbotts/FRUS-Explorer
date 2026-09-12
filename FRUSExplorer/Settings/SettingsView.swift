@@ -198,8 +198,6 @@ struct SettingsView: View {
             NavigationLink { DataRecoveryView() } label: { paneLabel(pane) }
         case .about:
             NavigationLink { AboutView() } label: { paneLabel(pane) }
-        case .notes:
-            NavigationLink { NotesSettingsView() } label: { paneLabel(pane) }
         case .researchSessions:
             NavigationLink { ResearchSessionsView() } label: { paneLabel(pane) }
         // macOS-only pane (see `SettingsPane.platforms`): iOS renders sync as the inline section
@@ -1966,6 +1964,16 @@ enum SettingsKeys {
     /// already required raising an experimental axis off its zero default — a finer and later
     /// consent that a coarser earlier setting should not overrule.
     static let autoDownloadSemanticShards = "frus.semantic.autoDownloadShards"
+
+    /// UserDefaults key (Bool, default `true`) controlling whether the note editor edits its body
+    /// as RICH text (#1275).
+    ///
+    /// Device-local rather than on `SyncedPreferences`, and the line is the same one
+    /// ``autoDownloadSemanticShards`` draws: whether this Mac shows a formatting bar above a
+    /// three-word note is a property of how the reader works on this device, not of the research.
+    /// The note's CONTENT syncs either way — `ResearchNote.richText` is a mirrored property; this
+    /// only decides which editor draws it here.
+    static let noteEditorRichText = "frus.notes.editor.richText"
 
     /// UserDefaults key (Bool, default `true`) controlling whether the document
     /// reader's invisible leading/trailing edge-tap zones page through to the

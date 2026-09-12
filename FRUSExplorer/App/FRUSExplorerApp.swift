@@ -2344,12 +2344,9 @@ struct FRUSExplorerApp: App {
                     let vid = note.volumeId
                     let did = note.documentId
                     let text = note.bodyText
-                    let tagString = note.userTagIds.map(\.uuidString).joined(separator: " ")
-                    try? await pipeline.updateNoteText(
-                        volumeId: vid, documentId: did,
-                        bodyText: text,
-                        userTagIds: tagString.isEmpty ? nil : tagString
-                    )
+                    // Text only — see `ResearchNoteEditorView.pushNoteToFTS5`. Replaying a note's
+                    // own tags into the document's column made "whichever note sorts last wins".
+                    try? await pipeline.updateNoteText(volumeId: vid, documentId: did, bodyText: text)
                 }
 
                 // #279 / W-4: replay the user's document-classification overrides into the
@@ -2441,12 +2438,9 @@ struct FRUSExplorerApp: App {
                     for note in notes {
                         let did = note.documentId
                         let text = note.bodyText
-                        let tagString = note.userTagIds.map(\.uuidString).joined(separator: " ")
-                        try? await pipeline.updateNoteText(
-                            volumeId: vid, documentId: did,
-                            bodyText: text,
-                            userTagIds: tagString.isEmpty ? nil : tagString
-                        )
+                        // Text only — see `ResearchNoteEditorView.pushNoteToFTS5`.
+                        try? await pipeline.updateNoteText(volumeId: vid, documentId: did,
+                                                           bodyText: text)
                     }
 
                     // Semantic-ready when search-ready: ~294 KB beside the ~6 MB volume the user
