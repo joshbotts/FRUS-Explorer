@@ -16,7 +16,12 @@ harvest_embeddings.py was handed over under: the harvest is verified against a m
   * grounding: a name the model invents is counted `unlocated` and stored nowhere;
   * de-duplication of the same occurrence seen through two overlapping chunks;
   * resume (a completed volume is skipped) and byte-stable gzip across runs;
-  * the refusal to start an unsampled LLM sweep over the whole scope.
+  * the refusal to start an unsampled LLM sweep over the whole scope;
+  * ONLY_DOCUMENTS (both file shapes) restricting the detector to exactly the listed
+    documents, exempt from the sweep refusal, with sampled_doc_ids recorded;
+  * WORKERS>1 writing a byte-identical store — only the HTTP calls parallelize, and
+    the fixture's overlapping chunks make ordering visible (an out-of-order merge
+    flips which chunk's `ci` claims a de-duplicated row).
 """
 
 import gzip
@@ -35,6 +40,9 @@ import harvest_ner as hn
 # for), "Ghost Person" is not in the text at all (the hallucination the store must not
 # accept), and the two marked names test agreement with the editors' markup.
 MOCK_MENTIONS = ["Hamilton Fish", "Mr. Bevin", "Seward", "Ghost Person"]
+
+# The phrase that marks the one chunk the "poison" mock refuses to serve.
+POISON = "well past the first chunk"
 
 NO_LIST_VOLUME = """<?xml version="1.0"?>
 <TEI><text><body>
@@ -67,7 +75,17 @@ WITH_LIST_VOLUME = """<?xml version="1.0"?>
 
 
 class MockHandler(BaseHTTPRequestHandler):
-    """Just enough of LM Studio: a model listing and a schema-abiding chat reply."""
+    """Just enough of LM Studio: a model listing and a schema-abiding chat reply.
+
+    `fail_mode` makes it misbehave the way the real server did on 2026-08-28, when it
+    returned HTTP 400 to every in-flight request 27 volumes into the sweep: "always"
+    fails everything (a dead server), "poison" fails only the chunks carrying POISON
+    (one unservable chunk among healthy ones). "poison" keys on the REQUEST BODY rather
+    than on a request counter: a counter-based flake is cured by the very next retry, so
+    it never exhausts a retry schedule and never exercises the failure path at all.
+    """
+
+    fail_mode = None          # None | "always" | "poison"
 
     def log_message(self, *args):
         pass
@@ -84,7 +102,14 @@ class MockHandler(BaseHTTPRequestHandler):
         self._send({"data": [{"id": "mock-chat-model"}]})
 
     def do_POST(self):
-        self.rfile.read(int(self.headers.get("Content-Length", "0")))
+        raw = self.rfile.read(int(self.headers.get("Content-Length", "0")))
+        # The warm-up is always served: a server that cannot answer it makes main() exit
+        # before reaching the failure handling these modes exist to test.
+        warmup = hn.WARMUP_PASSAGE.encode() in raw
+        if not warmup and (MockHandler.fail_mode == "always" or (
+                MockHandler.fail_mode == "poison" and POISON.encode() in raw)):
+            self.send_error(400, "mock server failure")
+            return
         self._send({
             "choices": [{"finish_reason": "stop",
                          "message": {"content": json.dumps({"mentions": MOCK_MENTIONS})}}],
@@ -205,6 +230,89 @@ def run():
     check("token usage recorded", summary["prompt_tokens"] > 0 and summary["chunks"] > 1, summary)
     check("rows are sorted by (ordinal, start)",
           detected == sorted(detected, key=lambda r: (r["o"], r["s"], r["e"])))
+
+    print("\n== pass 3b: ONLY_DOCUMENTS — the targeted pass ==")
+    only_manifest = os.path.join(root, "m2a-manifest.json")
+    json.dump({"documents": [{"volume": "frusNOLIST", "document": "d2"}]},
+              open(only_manifest, "w"))
+    check("ONLY_DOCUMENTS reads the staged-manifest shape",
+          hn.load_only_documents(only_manifest) == {"frusNOLIST": {"d2"}})
+    gold = os.path.join(root, "gold.jsonl")
+    open(gold, "w").write(json.dumps({"v": "frusNOLIST", "d": "d2",
+                                      "s": 0, "e": 4, "n": "x"}) + "\n")
+    check("ONLY_DOCUMENTS reads the ground-truth shape",
+          hn.load_only_documents(gold) == {"frusNOLIST": {"d2"}})
+    out2 = os.path.join(root, "store-only-docs")
+    hn.OUT = out2
+    hn.SAMPLE_DOCS = 0
+    hn.ONLY_DOCUMENTS = only_manifest
+    hn.ONLY_DOCS_BY_VOLUME = None
+    hn.main()   # unsampled, no VOLUMES, no FULL_SWEEP: the restriction must exempt it
+    check("a restricted unsampled run is exempt from the sweep refusal", True)
+    head_only = json.load(open(os.path.join(out2, "detected", "frusNOLIST.head.json")))
+    check("only the listed document is scanned, and it is recorded",
+          head_only["docs_scanned"] == 1 and head_only["sampled_doc_ids"] == ["d2"],
+          (head_only["docs_scanned"], head_only["sampled_doc_ids"]))
+    only_rows = read_gz(os.path.join(out2, "detected", "frusNOLIST.jsonl.gz"))
+    check("no rows from unlisted documents",
+          only_rows and all(r["d"] == "d2" for r in only_rows),
+          sorted({r["d"] for r in only_rows}))
+    hn.ONLY_DOCUMENTS = ""
+    hn.ONLY_DOCS_BY_VOLUME = None
+
+    print("\n== pass 3c: WORKERS — concurrent requests, identical store ==")
+    out3 = os.path.join(root, "store-workers")
+    hn.OUT = out3
+    hn.SAMPLE_DOCS = 2
+    hn.WORKERS = 3
+    hn.main()
+    hn.WORKERS = 1
+    check("a WORKERS>1 run writes a byte-identical detected layer",
+          sha256(os.path.join(out3, "detected", "frusNOLIST.jsonl.gz"))
+          == sha256(os.path.join(out, "detected", "frusNOLIST.jsonl.gz")))
+    check("...and a byte-identical marked layer",
+          sha256(os.path.join(out3, "marked", "frusNOLIST.jsonl.gz")) == digest_before)
+    head_workers = json.load(open(os.path.join(out3, "detected", "frusNOLIST.head.json")))
+    check("the width is recorded in the head", head_workers.get("workers") == 3,
+          head_workers.get("workers"))
+    hn.OUT = out
+
+    print("\n== pass 3d: a chunk that never answers does not kill the run ==")
+    saved_backoffs, saved_abort = hn.RETRY_BACKOFFS, hn.FAILURE_ABORT
+    out4 = os.path.join(root, "store-chunk-failure")
+    hn.OUT = out4
+    hn.RETRY_BACKOFFS = [0]            # exhaust retries instantly
+    hn.FAILURE_ABORT = 99              # well above what "alternate" can reach
+    MockHandler.fail_mode = "poison"
+    hn.main()                          # must COMPLETE, not raise
+    MockHandler.fail_mode = None
+    check("a run survives chunks that exhaust their retries", True)
+    head_fail = json.load(open(os.path.join(out4, "detected", "frusNOLIST.head.json")))
+    check("a failed chunk is counted in the head",
+          head_fail.get("failed_chunks", 0) > 0, head_fail.get("failed_chunks"))
+    check("...and the volume is NOT marked done, so a re-run redoes it",
+          hn.layer_done("detected", "frusNOLIST") is False)
+    check("the surviving chunks still produced rows",
+          len(read_gz(os.path.join(out4, "detected", "frusNOLIST.jsonl.gz"))) > 0)
+
+    print("\n== pass 3e: a dead server aborts instead of writing empty layers ==")
+    out5 = os.path.join(root, "store-server-down")
+    hn.OUT = out5
+    hn.FAILURE_ABORT = 3
+    MockHandler.fail_mode = "always"
+    try:
+        hn.main()
+        check("a dead server aborts the run", False, "it reported success")
+    except SystemExit as exit_code:
+        check("a dead server aborts the run", exit_code.code == 1, exit_code.code)
+    MockHandler.fail_mode = None
+    check("the volume in flight is left unmarked",
+          not os.path.exists(os.path.join(out5, "detected", "frusNOLIST.head.json")))
+    manifest_down = json.load(open(os.path.join(out5, "run-manifest.json")))
+    check("the abort is recorded in provenance",
+          bool(manifest_down.get("aborted")), manifest_down.get("aborted"))
+    hn.RETRY_BACKOFFS, hn.FAILURE_ABORT = saved_backoffs, saved_abort
+    hn.OUT = out
 
     print("\n== pass 4: the R-0 store check ==")
     text_dir = os.path.join(root, "r0-text")

@@ -502,6 +502,10 @@ burst, not a sustained run, so the honest re-price is a §4.8.1-procedure pilot 
 a time; the change it needs is a per-volume thread pool whose results merge back in chunk order,
 selftest-pinned to write a byte-identical store at any width.
 
+> **Superseded by §4.8.3 (2026-09-12).** The thread pool landed (`WORKERS`, §9) and the sweep ran at
+> 4 workers. Sustained over 330,979 chunks it bought **1.55×**, not this burst's 3.9×: 3.01 s/chunk
+> against the pilot's serial 4.68. The sweep took **11.55 days**, between the ~18.4 and ~4.7 above.
+
 **Two scoring facts found while staging (2026-08-25), both worth knowing before planning arms.**
 The staged M2a volumes (6 per band, drawn from the whole band pools) share **zero volumes** with
 M1a's twelve — §4.3's "the sample the M2a ground truth will be drawn from" did not survive
@@ -511,6 +515,58 @@ Scoring the LLM route therefore needs a **targeted pass over exactly the gold do
 chunks, ~8 min serial on the Studio — which in turn needs `ONLY_DOCUMENTS` support in
 `harvest_ner.py` (the control already has it; the harness does not). Consequently the full sweep
 is not needed for scoring at all: it is what the scoring verdict authorizes, never its input.
+
+> **Superseded by §4.8.3 (2026-09-12).** The full sweep ran before any verdict, so no targeted pass
+> is needed: the sweep and the control are both unsampled passes over every document of all 267
+> volumes, and cover all 72 gold documents between them. `harvest_ner.py` has `ONLY_DOCUMENTS` now,
+> for any future targeted run.
+
+### 4.8.3 The sweep, run (2026-08-28 → 09-10, Mac Studio)
+
+Every figure below is summed from the 267 `detected/*.head.json` in each store and checked against
+`runs.jsonl`; none is taken from a run manifest (see the trap after the table).
+
+| | qwen3-14b sweep | NLTagger control |
+|---|---|---|
+| volumes · documents scanned | 267 · 197,534 | 267 · 197,534 |
+| characters | 679,401,514 | 679,401,514 |
+| mentions | **3,656,238** | **1,353,849** |
+| novel (not on an editor span) | 3,406,323 | 1,273,179 |
+| landing on an editor `<persName>` (§4.8's upper bound) | 249,915 = **101.7%** of 245,747 | 80,670 = **32.8%** |
+| time | 997,808 s = **11.55 days** | **476 s** |
+
+Per-volume document counts match between the two arms in all 267 volumes, and neither sampled. The
+sweep ran 330,979 chunks: 2,601,312 strings returned, **88,009 unlocated (3.38%)**, 155 truncated
+(0.047%), 0 unparsable, 0 failed chunks, 220,645,005 prompt and 21,131,474 completion tokens.
+
+**`run-manifest.json`'s `totals_this_run` is not the sweep's total.** It reports 184,389 documents,
+610,973,307 characters and 890,913 s — the last resumed invocation only. Sum the heads instead.
+
+**Four invocations, two harness revisions, one server change.** The logs are on the Studio beside the
+script:
+
+| log | began | outcome |
+|---|---|---|
+| `ner-sweep-qwen3-14b-nothink-studio.log` | 2026-08-28 | 27 volumes, then a traceback on HTTP 400 |
+| `ner-sweep-resume.log` | 2026-08-31 | hardened harness; every chunk failed HTTP 400; stopped with no volume written |
+| `ner-sweep-resume2.log` | 2026-08-31 | same, now logging the server's reason: *"Context size has been exceeded."* |
+| `ner-sweep-ctx16k.log` | 2026-08-31 | context raised to 16k; the remaining 240 volumes, to 2026-09-10 |
+
+So the store was written by **two harness revisions**. `script_sha256` names only the last one
+(`13b70f9e`, now kept byte-for-byte in `provenance/`); the revision that wrote the first 27 volumes —
+`frus1861` … `frus1872p2v5` — predates the retry hardening, its heads carry no `failed_chunks`, and its
+bytes were overwritten before anything hashed them. The two segments differ: **23.27 vs 18.17
+mentions per document, 6.32% vs 3.06% unlocated, 3.47 vs 2.97 s/chunk**. Segment 1 is entirely pre-1873,
+so harness revision, server context and era are confounded and the store cannot say which moved.
+**Four of the 24 gold volumes are in segment 1** — `frus1864p2`, `frus1865p1`, `frus1866p3`,
+`frus1872p2v5`, all in the 1861–1899 band — so that band's score mixes configurations. Read it with
+that in mind.
+
+**The control's baseline is the same data, and this is where that is recorded.** The control's
+manifest names `~/frus-ner-raw` — the MacBook store of 2026-08-11 — not the Studio store the sweep
+wrote. All **267 `marked/*.jsonl.gz` bodies are byte-identical** between the two, compared through both
+`SHA256SUMS`; the heads differ only in `secs`. The comparison is sound by verification, not by
+coincidence.
 
 ---
 
@@ -597,25 +653,80 @@ called itself a lower bound. This is the real measurement, on a proper exhaustiv
 
 ## 7. Phase N-5 — scoring
 
-```
-**The pilot stores are not scoring inputs.** M2a's volumes share none with M1a's twelve (§4.8.2), so every
-existing `detected/` store — both LLM pilots *and* the control — covers 0 of the 72 gold documents, and the
-scorer scores a detector only over documents it scanned. Give each arm a targeted pass over exactly the gold
-documents first (~90 chunks, ~8 min serial on the Studio):
+**Both detector stores are scoring inputs as they stand.** The sweep and the control each scanned every
+document of all 267 volumes without sampling (§4.8.3), so both cover all 72 gold documents and no
+targeted pass is needed. The scorer scores only documents present in the ground truth, so a
+**partly keyed sample is valid input** — a stratified subset, one document per staged volume, can settle
+a lopsided result before the rest is keyed, and keying more later only needs another `COLLECT=1`.
+
+**Score five arms, not two.** Beside the raw stores, `filter_detections.py` writes the sweep with only
+the word-boundary grounding fix, the sweep with every rule, and the control with every rule — the SAME
+rules for both detectors, or the filter is a thumb on one scale. The rules come from the detector
+prompt's own exclusion sentence, were fixed before any ground truth existed, and each store records the
+script's SHA-256 and a hash of its vocabularies. Read the filtered rows as *what mechanical cleanup could
+buy*, not as a product; each store's `run-manifest.json` measures every rule's cost against the editors'
+`<persName>` layer.
 
 ```
-ONLY_DOCUMENTS=~/frus-m2a/m2a-ground-truth.jsonl OUT_DIR=~/frus-ner-raw-gold-control \
-  swift run -c release EarlyEraNERControl        # the control; the LLM harness needs the same flag added
-```
+# <sweep> is the store the sweep wrote: ~/frus-ner-raw on the Studio, the copy's path elsewhere.
+# STORE must hold a marked/ layer; the MacBook's ~/frus-ner-raw does, and its bodies are identical.
+for rules in boundary all; do
+  SOURCE=<sweep> OUT_DIR=~/frus-ner-raw-filtered$([ $rules = boundary ] && echo -boundary) \
+    RULES=$rules python3 filter_detections.py
+done
+SOURCE=~/frus-ner-raw-control OUT_DIR=~/frus-ner-raw-control-filtered python3 filter_detections.py
 
-then score:
-
-```
 GROUND_TRUTH=~/frus-m2a/m2a-ground-truth.jsonl \
-DETECTORS=~/frus-ner-raw-gold-<model>,~/frus-ner-raw-gold-control \
+DETECTORS=<sweep>,~/frus-ner-raw-filtered-boundary,~/frus-ner-raw-filtered,~/frus-ner-raw-control,~/frus-ner-raw-control-filtered \
 python3 score_detections.py
 ```
-```
+
+**The filtered arms, measured (2026-09-12, filter `dd64d8dc`, before any ground truth).** Summed from each
+store's `run-manifest.json`. The bracketed figure is how many removed spans overlap an editor
+`<persName>` in place — a lower bound on what a rule costs, since the editors mark only some persons.
+
+| rule | qwen3-14b sweep | NLTagger control |
+|---|---|---|
+| source mentions | 3,656,238 | 1,353,849 |
+| boundary | 82,167 (69) | 404 (5) |
+| pronoun | 22,969 (0) | 154 (0) |
+| title | 340,160 (213) | 28,519 (85) |
+| institution | 211,865 (25) | 1,345 (0) |
+| place | 208,236 (39) | 12,127 (3) |
+| curated | 193,798 (71) | 49,448 (10) |
+| **kept** | **2,597,043 = 71.0%** (417 editor-overlapping removals) | **1,261,852 = 93.2%** (103) |
+
+The boundary-only arm keeps 3,574,071 of the sweep's mentions. The same rules remove 29% of one
+detector and 7% of the other. The filter therefore moves the sweep's precision far more than the
+control's, and that asymmetry is why both detectors are filtered and scored.
+
+**In-place overlap is not the whole cost, so a second census was run.** For each removed span it asks
+whether the editors mark that *surface* as a person anywhere in the 267 volumes. Weighted by how often
+the detectors emit a surface it looks alarming — 201,043 of the sweep's title removals — and that
+weighting misleads. The editors mark `the Secretary of State` as a person 16 times in 8 volumes,
+`President` 10 times, and M2a-INSTRUCTIONS.md excludes a bare title by definition. What survives is
+a short list of genuinely ambiguous words, and each is a candidate for real loss:
+
+| surface | editors mark it | removed from the sweep | removed from the control |
+|---|---|---|---|
+| bare `King` (title) | 163 times in 32 volumes | 5,769 | 12 |
+| `Washington` (curated) | 86 in 13 | 18,772 | 3 |
+| `Canada` (place) | 89 in 4 | 2,086 | 0 |
+| `Jordan` (place) | 30 in 5 | 859 | 16 |
+| `Victoria` (place) | 2 in 1 | 188 | 140 |
+| `Salvador`, `Marion` (place) | never | 860, 10 | 1,134, 36 |
+
+Nothing was changed in response. The rules were frozen before this census ran, and editing them against
+the editors' layer would tune the filter against the baseline arm. These words are what to look for in
+the scorer's miss lists.
+
+**The five arms load.** A smoke run built its ground truth from the 92 editor spans seeded into the
+72 staged documents. Every arm and the baseline were read over the same 53 documents with no refusal.
+That proves the pipeline accepts the stores and nothing else: seeded spans are the editors' own layer,
+so the baseline scores 1.000 by construction and every precision figure is meaningless. One reading
+does hold. Against those 92 spans, recall is identical within each detector across its arms — the
+sweep 0.620 strict and 0.989 relaxed, the control 0.206 and 0.326 — so no rule changed a match against
+an editor span in that sample.
 
 One table, one row per detector, plus **the editors' own markup scored as if it were a detector** —
 its recall is the share of mentions the free layer already gives you, and it is the number that
@@ -663,6 +774,13 @@ frus-ner-raw-control/         # EarlyEraNERControl: one store per detector, same
   detected/<vol>.head.json    # + the OS build, because NLTagger's output is a property of it
   run-manifest.json           # totals re-derived from every head.json, so a resumed run
                               # reports what a single run would
+
+frus-ner-raw-filtered*/       # filter_detections.py: one store per (detector, rule set)
+  detected/<vol>.jsonl[.gz]   # the source rows no rule removed — same shape, same extension
+  detected/<vol>.head.json    # the source head's identity fields, `sampled` and `sampled_doc_ids`
+                              # verbatim, `mentions` = kept, and a `filter` block: rules, script and
+                              # vocabulary SHA-256, removals per rule, editor-marked persons among them
+  run-manifest.json           # totals per rule; the gazetteer's two source artifacts and their SHA-256
 
 frus-m2a/                     # stage_m2a.py: the ground truth
   <vol>__<doc>.txt            # the R-0 text with mentions wrapped in ⟦…⟧
@@ -715,13 +833,21 @@ SHA256SUMS`, and every line must say `OK`. An unverified transfer is not a raw s
 | `MODEL` / `MODEL_FILE` | — | required for `DETECT=llm`; never auto-picked |
 | `CHUNK_CHARS` / `OVERLAP_CHARS` | 3200 / 480 | the embeddings' chunk shape |
 | `MAX_TOKENS` / `TEMPERATURE` | 1024 / 0 | recorded in provenance |
-| `BATCH_SLEEP` | 0 | seconds between requests, for thermal headroom on the Air |
+| `BATCH_SLEEP` | 0 | seconds between requests, for thermal headroom on the Air (serial path only) |
+| `WORKERS` | 1 | concurrent detector requests; 4 is the Studio's knee (§4.8.2). The store is byte-identical at any width, selftest-pinned |
+| `RETRY_BACKOFFS` | `5,15,45,120,300,300,300` | seconds between retries of one chunk — a sweep runs for days, so patience is cheap |
+| `FAILURE_ABORT` | 20 | consecutive permanently failed chunks that stop the run: a dead server, not a bad chunk |
+| `ONLY_DOCUMENTS` | — | an `m2a-manifest.json` or `m2a-ground-truth.jsonl`; restricts detection to those documents, exempt from §4.4, and records `sampled_doc_ids` |
 
 `EarlyEraNERControl` (§5) takes `STORE`, `TEXT_DIR`, `OUT_DIR`, `VOLUMES`, `ONLY_DOCUMENTS`,
 `LANGUAGE`, `GENERATED_DATE`. `stage_m2a.py` (§6) takes `STORE`, `TEXT_DIR`, `OUT_DIR`, `DOCS` (72),
 `VOLS_PER_BAND` (6), `MIN_CHARS`/`MAX_CHARS` (800/8000 — a stated sampling bias: it excludes both
 the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py` (§7) takes
-`GROUND_TRUTH`, `DETECTORS`, `STORE`, `TEXT_DIR`, `OUT`.
+`GROUND_TRUTH`, `DETECTORS`, `STORE`, `TEXT_DIR`, `OUT`. `filter_detections.py` (§7) takes `SOURCE`,
+`OUT_DIR`, `TEXT_DIR`, `MARKED_STORE`, `RULES` (`all`, or a comma list of `boundary`, `pronoun`, `title`,
+`institution`, `place`, `curated`), `TAXONOMY`, `DECIMAL_LABELS`, `FORCE`, `GENERATED_DATE`. `harvest_ner.py`,
+`stage_m2a.py`, `score_detections.py` and `filter_detections.py` each run their self-test under
+`SELFTEST=1`; `selftest_harvest_contract.py` runs directly, and the control is covered by `swift test`.
 
 ## 10. Related
 
@@ -730,13 +856,25 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py
 - `Planning/M2-Semantic-Pipeline-Ride-Along.md` — the stage list (R-0…R-4) and the cost model
 - `Planning/semantic-spike/V0-Spike-Verdict.md` — the spike this runbook's sibling is waiting on
 - `README.md` — the embeddings harvest, whose extractor and store discipline this reuses
-- `harvest_ner.py` / `selftest_harvest_ner.py` — the scope, marked and LLM-detected layers (26 checks)
+- `harvest_ner.py` / `selftest_harvest_ner.py` — the scope, marked and LLM-detected layers (41 checks)
+- `filter_detections.py` — the five-arm filter (20 checks, including acceptance through the real scorer)
+- `provenance/` — the exact harness bytes the sweep's manifests hash, which match no commit
 - `stage_m2a.py` / `score_detections.py` / `ner_store.py` / `selftest_m2a.py` — the ground-truth
   loop and the scorer (30 checks, one round trip: stage → annotate → collect → score)
 - `EarlyEraNERControlCore/` + `EarlyEraNERControl/` — the control detector; `swift test` covers the
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
+  1.4 — 2026-09-12: the sweep RAN (§4.8.3) — 267 volumes in 11.55 days, not ~18.4 or ~4.7 — over four
+        invocations, two harness revisions and a server context change, confounded with era in the
+        first 27 volumes, four of them gold. The store's `script_sha256` resolved to no commit, so
+        `harvest_ner.py` and its self-test land from the Studio and the exact bytes that ran are kept
+        in `provenance/`. §7's targeted-pass instruction is retired (its code fence was also broken
+        and swallowed the paragraph); scoring gains three filtered arms from `filter_detections.py`;
+        `totals_this_run` is documented as the last invocation only, and the control's baseline is
+        recorded as verified byte-identical. §7 carries the filter's measured cost per rule and
+        arm, a census of ambiguous surfaces, and a smoke run showing all five arms load. Still
+        un-keyed, so §0's rule is unchanged.
   1.3 — 2026-08-25: the Studio arm lands (§4.8.2): 4.1× the Air over the same 824 chunks, the
         full sweep re-priced at ~18.4 days, behaviour machine-invariant (3.6% unlocated and ~20
         mentions/doc on both machines). Corrects §4.7's prompt-token expectation for no-think
