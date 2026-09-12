@@ -206,6 +206,35 @@ struct StoreIOTests {
         #expect(grouped["frusB"] == ["d1"])
     }
 
+    @Test("The annotated-document list, which carries no span fields, groups documents by volume")
+    func readsAnnotatedDocumentList() throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("m2a-ground-truth-documents.jsonl")
+        // `frusB/d7` names no one: it is in this file and in no row of the span file, which is why a
+        // targeted run should be restricted by this one.
+        try Data("""
+            {"v":"frusA","d":"d1","band":"1861-1899","mentions":2,"mark":"y"}
+            {"v":"frusB","d":"d7","band":"1946-","mentions":0,"mark":"none"}
+
+            """.utf8).write(to: url)
+        let grouped = try NERStoreIO.groundTruthDocuments(at: url)
+        #expect(grouped["frusA"] == ["d1"])
+        #expect(grouped["frusB"] == ["d7"])
+    }
+
+    @Test("A ground-truth file that names no documents is refused, not run as an empty restriction")
+    func refusesGroundTruthNamingNothing() throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        // What the collector writes as the span file when every annotated document names no one.
+        let url = directory.appendingPathComponent("m2a-ground-truth.jsonl")
+        try Data().write(to: url)
+        #expect(throws: DetectorError.self) {
+            try NERStoreIO.groundTruthDocuments(at: url)
+        }
+    }
+
     @Test("head.json keys are the snake_case names the Python scorer reads")
     func summaryEncodesScorerKeys() throws {
         let summary = VolumeSummary(

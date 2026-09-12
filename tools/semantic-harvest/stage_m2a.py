@@ -8,7 +8,8 @@ from an unscored extraction. This script is the two mechanical halves around the
 part that is irreducibly owner work.
 
     python3 stage_m2a.py              # stage: write the annotation files + progress.csv
-    COLLECT=1 python3 stage_m2a.py    # collect: parse them back into ground-truth spans
+    COLLECT=1 python3 stage_m2a.py    # collect: parse them back into ground-truth spans, plus
+                                      # the list of annotated documents (m2a-ground-truth-documents.jsonl)
     SELFTEST=1 python3 stage_m2a.py   # round-trip over fixtures (see selftest_m2a.py)
 
 Annotation is by editing text, not by typing offsets. Each sampled document is written
@@ -345,6 +346,12 @@ def collect():
 
     rows, rejected_total, added_total = [], 0, 0
     per_band = {}
+    # One row per ANNOTATED DOCUMENT, beside the one-row-per-span ground truth. The span file cannot
+    # represent a document that names no one: a document read and marked `none` yields zero spans,
+    # so it produced zero rows, and the scorer — which built its document set from those rows —
+    # never saw it. Every detection in such a document is a false positive and none were counted.
+    # Measured on the first 24-document sitting, frus1946v01/d483 hid 6 of the qwen3 sweep's.
+    annotated_documents = []
     for name in sorted(done):
         entry = by_file.get(name)
         if entry is None:
@@ -397,12 +404,15 @@ def collect():
         band["seeded_kept"] += len(seeded & kept)
         band["added"] += added
         band["rejected"] += rejected
+        annotated_documents.append({"v": entry["volume"], "d": entry["document"],
+                                    "band": entry["band"], "mentions": len(spans),
+                                    "mark": marks[name]})
         for start, end, surface in spans:
             rows.append({"v": entry["volume"], "d": entry["document"], "s": start,
                          "e": end, "n": surface, "seeded": (start, end) in seeded,
                          "band": entry["band"]})
 
-    if not rows:
+    if not done:
         sys.exit("nothing marked annotated in progress.csv — no ground truth to collect.\n"
                  "That is the gate, not a bug: mark documents `y` as you finish them.")
 
@@ -410,12 +420,21 @@ def collect():
     with open(out_path, "w", encoding="utf-8") as handle:
         for row in sorted(rows, key=lambda r: (r["v"], r["d"], r["s"], r["e"])):
             handle.write(json.dumps(row, separators=(",", ":"), ensure_ascii=False) + "\n")
+    # JSON lines with `v`/`d` on every row, the shape both ONLY_DOCUMENTS readers already take, so a
+    # targeted detector pass can be pointed at THIS file and scan the documents that name no one too.
+    # One restricted by the span file cannot: it has no row for them.
+    documents_path = os.path.join(OUT, "m2a-ground-truth-documents.jsonl")
+    with open(documents_path, "w", encoding="utf-8") as handle:
+        for row in sorted(annotated_documents, key=lambda r: (r["v"], r["d"])):
+            handle.write(json.dumps(row, separators=(",", ":"), ensure_ascii=False) + "\n")
+    without_mentions = sum(1 for row in annotated_documents if row["mentions"] == 0)
 
     total = len(rows)
     kept_seeded = sum(b["seeded_kept"] for b in per_band.values())
     summary = {
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "documents_annotated": len(done), "documents_staged": len(by_file),
+        "documents_without_mentions": without_mentions,
         "mentions": total, "from_editor_markup": kept_seeded, "added_by_annotator": added_total,
         "editor_spans_rejected": rejected_total,
         "measured_markup_share": round(kept_seeded / total, 4) if total else None,
@@ -427,6 +446,12 @@ def collect():
           % (total, len(done), len(by_file), out_path))
     print("  %d from editor markup, %d added, %d editor spans rejected"
           % (kept_seeded, added_total, rejected_total))
+    print("  %d annotated document(s) name no one; every annotated document is listed in %s,"
+          "\n  so the scorer counts each detection in them as a false positive"
+          % (without_mentions, documents_path))
+    if not total:
+        print("  no mentions at all yet: the scorer refuses a ground truth with nothing to recall, so key a"
+              "\n  document that names someone before scoring")
     if total:
         print("  measured markup share: %.1f%%  (M1a's regex proxy estimated ~34%% and "
               "called itself a lower bound — this is the real measurement)"

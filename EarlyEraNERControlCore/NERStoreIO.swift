@@ -71,6 +71,9 @@ public struct MarkedMention: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-11: #234 R-1 control detector.
+///   1.1 — 2026-09-12: `groundTruthDocuments` documents the annotated-document list as the preferred
+///         `ONLY_DOCUMENTS` input, since the span file has no row for a document that names no one, and
+///         refuses a file that names no documents rather than restricting the run to nothing.
 public enum NERStoreIO {
 
     // MARK: Reading
@@ -126,7 +129,12 @@ public enum NERStoreIO {
     /// Used by `ONLY_DOCUMENTS` to restrict a run to the annotated documents, which is what makes
     /// the control immediately scoreable without a full-corpus pass.
     ///
-    /// - Parameter url: Path to `m2a-ground-truth.jsonl`.
+    /// Only `v` and `d` are read, so either file the collector writes works: the span file, or
+    /// `m2a-ground-truth-documents.jsonl`. Prefer the documents file — the span file has no row for a
+    /// document the annotator found names no one, so a run restricted by it never scans that document
+    /// and the scorer cannot count what the detector would have tagged there.
+    ///
+    /// - Parameter url: Path to `m2a-ground-truth-documents.jsonl` or `m2a-ground-truth.jsonl`.
     /// - Returns: Document ids grouped by volume.
     /// - Throws: ``DetectorError/missingInput(_:)`` when the file is absent.
     public static func groundTruthDocuments(at url: URL) throws -> [String: Set<String>] {
@@ -138,6 +146,14 @@ public enum NERStoreIO {
         for line in lines(of: data) {
             let row = try decoder.decode(GroundTruthRow.self, from: line)
             grouped[row.v, default: []].insert(row.d)
+        }
+        // A file naming nothing would restrict the run to zero volumes and exit 0 — a clean-looking
+        // run that scanned nothing. The span file IS empty when every annotated document names no one,
+        // which the collector writes deliberately, so the message names the file that is not.
+        guard !grouped.isEmpty else {
+            throw DetectorError.missingInput(url.path + " names no documents — a run restricted to "
+                + "nothing would scan nothing. If every annotated document names no one the span file is "
+                + "empty by design: restrict with m2a-ground-truth-documents.jsonl")
         }
         return grouped
     }
