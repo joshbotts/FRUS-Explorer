@@ -14765,3 +14765,59 @@ it.
 **Next.** Josh keys the subset, then `COLLECT=1` and the five-arm score. The stopping rule in SUBSET.md
 compares the two **raw** detectors only. If the filtered rows could end the sitting, the comparison
 would be chosen after seeing the scores.
+
+## #234 R-1 — the first M2a score: 24 documents keyed, collected, scored and audited
+
+Josh keyed the 24-document stratified subset. This session collected it, scored the five arms #1285 built, and
+audited the gold independently. **The stopping rule frozen in SUBSET.md is not met, so the remaining 48
+documents are to be keyed.** The full reading is in the runbook's new §7.1.
+
+**The collector refused the sitting, correctly, and the cause took a diff to find.** Every added mention was
+typed as ASCII `[…]` rather than `⟦…⟧`, so stripping the real brackets left text that no longer matched R-0. A
+difflib pass showed the only edits were 126 inserted bracket pairs. FRUS prints square brackets of its own
+(`[Translation.]`, `[it]`), so the conversion took the R-0 text as the authority on which brackets were inserted.
+Every pair was checked for alternation, non-emptiness, overlap with seeds and adjacency to a printed bracket, and
+the typed files were backed up with SHA256SUMS before anything was rewritten. The unmodified collector then
+accepted it: **156 mentions, 30 from editor markup, 126 added, 0 seeds rejected, a measured markup share of
+19.2%** against M1a's ~34% proxy.
+
+**Scored.** Strict F1: sweep 0.418, filtered sweep 0.518, NLTagger 0.481. Relaxed: 0.520, 0.641, 0.753. The rule
+needs a 10-point strict gap and one winner in every band; it got 6.3 points and a split (the sweep takes
+1861–1899). A document bootstrap agrees the strict gap is noise at this size (−8.1 to +18.5). **Relaxed is not
+noise.** NLTagger beats the raw sweep by 23 points (interval +10 to +34) and wins every band. Against the filtered
+sweep it leads by 11 (interval −0.8 to +22). The detectors fail in complementary ways. NLTagger misses the
+editors' own mentions disproportionately (it reaches 11 of 30 seeded mentions but 97 of 126 added), so editor
+markup plus NLTagger reaches 0.825 relaxed against 0.623 for editor markup plus the filtered sweep. That comparison was not
+planned before scoring, and it is recorded as a direction, not a result.
+
+**Strict F1 at this size is measuring a boundary convention.** The owner included attached titles as the
+instructions say. Thirteen editor seeds leave theirs out (`Bragg` beside `Mr. Bragg`), because the instructions
+said to remove a wrong seed, not extend it. Extending those 13 turns raw strict round (NLTagger +6.8 becomes the
+sweep +2.0) and widens the filtered sweep's lead from 3.5 to 13.9 points. That is a decision about the gold to
+make before the next sitting. It applies the rule as written and does not touch the frozen stopping rule.
+
+**The audit (ultracode workflow, 10 agents).** Two blind adjudicators per era band judged all 476
+disagreement items, and a tiebreaker settled the 7 splits. The A/B merge was **recomputed in Python from the
+journal** rather than trusted from the workflow. Findings:
+- **Missed mentions:** 6. Beauregard ×2, Braden and Linder ×2 are agreed; `Wolf, Rudolf` inside a file caption
+  is a contested 1–1 split.
+- **Boundaries:** 3 of the owner's spans miss an attached `Hon.`, alongside the 13 seeds.
+- **Wrongly marked:** no gold span is judged not to be a person.
+- **Spot-check:** the adjudicators' judgements were checked against context on every person-looking false
+  positive. `President Harding` is a ship, Hunzedal a company, `Zecho` telegraphese for Czechoslovakia.
+
+Rescoring on edited copies moves relaxed by at most 2 points and never meets the stopping rule. The proposals are
+in `frus-m2a/AUDIT-PROPOSED-CORRECTIONS.md`, **not applied**. The scripts, packets and journal are archived in
+`frus-m2a/audit-2026-09-12/`, and the harness first reproduced the scorer's F1 exactly for all six rows before
+any variant was trusted.
+
+**The filter held on real gold.** It removed 106 sweep spans and touched 2 gold mentions, both partial
+(`Generalissimo`, and `King` in `King’s`, one of #1285's census words), for **+10.1 strict F1, interval +6.0 to
++13.7**.
+
+**Filed as separate tasks, not done here:** the collector should diagnose ASCII-bracket annotation, and a `none`
+document never reaches the score. `frus1946v01/d483` hid 6 of the sweep's false positives, because the ground
+truth holds one row per span and an empty document has none.
+
+**Next.** Josh decides the audit items, the seed-title convention and the possessive convention, then keys the
+other 48 with `⟦ ⟧`.

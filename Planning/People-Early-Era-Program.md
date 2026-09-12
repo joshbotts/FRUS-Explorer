@@ -147,10 +147,11 @@ TEI-rule scope (§3's 253,919 is the 268-volume app view) — need no model and 
 layer is deliberately sampled, and the estimates that argued for sampling have since been measured: the
 shortlisted Qwen3 14 B runs at 4.68 s/chunk on the Studio, pricing a full sweep at **~18.4 days** (~4.7 with
 the probed 4-worker pool), while Qwen3 1.7 B is disqualified on verbatim-copy discipline. The free `NLTagger`
-control is **built** (`EarlyEraNERControl`) and measured at **~8 min** over the same scope. The sweep is not a
-scoring input: M2a is staged but un-keyed, and scoring needs a targeted pass over the gold documents only
-(NER-RUNBOOK §4.7–4.8.2, §7). Nothing it produces may
-ship until M2a is keyed.
+control is **built** (`EarlyEraNERControl`) and measured at **~8 min** over the same scope. The sweep then RAN in full
+(2026-08-28 → 09-10, 11.55 days; NER-RUNBOOK §4.8.3), so both detectors cover every gold document. **M2a is
+partly keyed:** the first 24 of the 72 documents were scored on 2026-09-12 (§7.1), and the frozen stopping rule
+was not met. The remaining 48 are owed, and three conventions in the gold — audit corrections, seed titles,
+possessives — must be settled before them. Nothing the detectors produce may ship until M2a is keyed.
 
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
 discipline, same hardware window, and the embedding model doubles as a mention-context
