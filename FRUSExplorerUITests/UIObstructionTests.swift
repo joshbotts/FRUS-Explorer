@@ -197,10 +197,21 @@ final class UIObstructionTests: XCTestCase {
 
     var app: XCUIApplication!
 
-    /// Set when scenario 4 toggles the iPad sidebar representation, so `tearDown` can
-    /// restore it (the representation is system-persisted per install and would otherwise
-    /// leak into later tests / runs).
-    private var didToggleSidebar = false
+    /// The `.sidebarAdaptable` representation as THIS launch found it.
+    ///
+    /// The representation is system-persisted per install, so "restore" means "put it back to what
+    /// this install had", not "collapse it". Replaces `didToggleSidebar`, a Bool tracking NET
+    /// displacement, which had three failure modes and now has none: it could not express two
+    /// displacements (the old `tearDown` tapped once for either), it was set on the line AFTER each
+    /// toggle so an abort in between leaked with nothing recording it, and a helper that opens and
+    /// closes the sidebar left it stale-true — after which `tearDown` OPENED the sidebar. A leaked
+    /// expanded sidebar is not read as a leak: it takes real layout width, drops an iPad Pro under
+    /// the 820 pt two-pane gate, and reads as an app layout regression in two other suites.
+    private var baselineSidebarExpanded = false
+
+    /// Resolves tab destinations across every representation, including the paginated floating bar.
+    /// The closure keeps it pointed at the CURRENT `app` across the relaunches two scenarios do.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -209,57 +220,53 @@ final class UIObstructionTests: XCTestCase {
         // #312: seed a research note so scenario 5's detail list has top-anchored CONTENT to
         // gate — an empty list's centered placeholder cannot distinguish the fix from the bug.
         app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
+        baselineSidebarExpanded = navigator.sidebarIsExpanded
     }
 
     override func tearDownWithError() throws {
-        // timeout: 0 — restoring the representation is best-effort; if the control is already
-        // gone there is nothing to restore and tearDown should not stall polling for it.
-        if didToggleSidebar, let toggle = sidebarToggleButton(timeout: 0), toggle.exists {
+        // Restore to the BASELINE, whoever displaced it — a flag cannot say which way the
+        // representation moved, and this runs after an `XCTFail` unwind that no flag set around a
+        // tap survives. A short poll rather than `timeout: 0`: the toggle is briefly absent while a
+        // dismissing overlay animates, and skipping the restore is how the leak used to ship.
+        if navigator.sidebarIsExpanded != baselineSidebarExpanded,
+           let toggle = navigator.sidebarToggleButton(timeout: 2) {
             toggle.tap()
-            didToggleSidebar = false
         }
         app = nil
     }
 
     // MARK: - Helpers
 
-    /// Selects a tab section by label, resolving the control across the iPhone bottom tab bar
-    /// and the iPad `.sidebarAdaptable` sidebar / floating-top-tab-bar representations
-    /// (where the tab items surface as buttons, sidebar cells, or plain labelled elements
-    /// depending on the representation). Fails the test (rather than silently skipping, as
-    /// the earlier `if browseTab.exists` guards did on iPad) when no control can be
-    /// found — and dumps the element tree so the failure describes what it actually saw.
+    /// Selects a tab section by label. A thin wrapper over ``TabBarNavigator``, which resolves the
+    /// control across the iPhone bottom tab bar, the iPad sidebar, and — the case this helper's own
+    /// doc comment used to NAME and not handle — a floating top tab bar too narrow for five tabs,
+    /// which pages Settings and Collections off screen and out of the accessibility tree entirely.
     ///
-    /// - Parameter label: The tab's label, e.g. "Browse", "Search", "Research".
+    /// That is what made `testSidebarCarriesResearcherObjectsOniPad` red on a narrow iPad, in its
+    /// own setup rather than at its assertion.
+    ///
+    /// - Parameters:
+    ///   - label: The tab's label, e.g. "Browse", "Search", "Research".
+    ///   - file: Forwarded so a failure reports the caller's line.
+    ///   - line: Forwarded so a failure reports the caller's line.
     @discardableResult
-    private func selectSection(_ label: String) -> Bool {
-        // Every candidate is resolved with .firstMatch: some representations expose more
-        // than one element with the tab's label (e.g. the collapsed top bar plus the sidebar
-        // row mid-transition), and tapping an ambiguous element fails with
-        // "multiple matching elements found".
-        let candidates = [
-            app.tabBars.firstMatch.buttons[label].firstMatch,
-            app.buttons[label].firstMatch,
-            app.cells[label].firstMatch,
-            app.cells.containing(NSPredicate(format: "label CONTAINS[c] %@", label)).firstMatch,
-            app.descendants(matching: .any).matching(
-                NSPredicate(format: "label == %@", label)).firstMatch,
-        ]
-        for control in candidates where control.waitForExistence(timeout: 3) {
-            control.tap()
-            return true
+    private func selectSection(_ label: String,
+                               file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        guard let destination = TabDestination(rawValue: label) else {
+            XCTFail("'\(label)' is not one of MainTabView's five tabs", file: file, line: line)
+            return false
         }
-        print("[UIObstructionTests] \(label) control not found; element tree:\n\(app.debugDescription)")
-        XCTFail("Could not find a '\(label)' control in any tab-bar / sidebar representation "
-                + "(element tree printed to the test log)")
-        return false
+        return navigator.select(destination, file: file, line: line).tapped
     }
 
-    /// Selects the Browse section. Thin wrapper over `selectSection(_:)`.
+    /// Selects the Browse section. `file`/`line` are forwarded so the nine Browse call sites report
+    /// their own line rather than this wrapper's.
     @discardableResult
-    private func selectBrowseSection() -> Bool { selectSection("Browse") }
+    private func selectBrowseSection(file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        selectSection("Browse", file: file, line: line)
+    }
 
     /// The OS-provided control that toggles the `.sidebarAdaptable` TabView between its
     /// leading-sidebar and floating-top-tab-bar representations. On iPadOS 26 it carries the
@@ -278,23 +285,7 @@ final class UIObstructionTests: XCTestCase {
     /// - Returns: The toggle, or `nil` if it never appeared. On an iPad destination `nil` means
     ///   something is genuinely wrong — prefer failing over skipping.
     private func sidebarToggleButton(timeout: TimeInterval = 5) -> XCUIElement? {
-        let deadline = Date().addingTimeInterval(timeout)
-        repeat {
-            let byIdentifier = app.buttons["ToggleSideBar"]
-            if byIdentifier.exists { return byIdentifier }
-            // Built fresh each iteration, deliberately: NSPredicate is not Sendable, and the iOS 26
-            // SDK isolates XCUI APIs to the main actor, so `matching(_:)` sends it out of this
-            // nonisolated context. A predicate hoisted above the loop would be sent on the first
-            // pass and used again on the second — "sending 'predicate' risks causing data races",
-            // a hard error under Swift 6. Re-creating it keeps each send a fresh transfer.
-            let predicate = NSPredicate(format:
-                "label CONTAINS[c] 'sidebar' OR label CONTAINS[c] 'tab bar'")
-            let matches = app.buttons.matching(predicate)
-            if matches.count > 0 { return matches.firstMatch }
-            if timeout <= 0 { break }
-            Thread.sleep(forTimeInterval: 0.25)
-        } while Date() < deadline
-        return nil
+        navigator.sidebarToggleButton(timeout: timeout)
     }
 
     // MARK: - 1. Tab bar does not obstruct the last browser row
@@ -674,7 +665,6 @@ final class UIObstructionTests: XCTestCase {
         // re-evaluates its layout on the switch. Log the matched control for diagnosis.
         print("[UIObstructionTests] Tapping representation toggle: label='\(toggle.label)' id='\(toggle.identifier)'")
         toggle.tap()
-        didToggleSidebar = true
         Thread.sleep(forTimeInterval: 0.7)
 
         XCTAssertTrue(
@@ -1001,7 +991,6 @@ final class UIObstructionTests: XCTestCase {
         // class stays .regular, so the tab's content never re-evaluates its layout on the switch.
         print("[UIObstructionTests] Tapping representation toggle: label='\(toggle.label)' id='\(toggle.identifier)'")
         toggle.tap()
-        didToggleSidebar = true
         Thread.sleep(forTimeInterval: 0.7)
 
         // Do NOT re-select the tab here. The tab selection survives the representation switch
@@ -1583,7 +1572,25 @@ final class UIObstructionTests: XCTestCase {
         archival.tap()
 
         // The surface's landmark: its mode control names whichever view is showing.
-        let currentMode = app.buttons["Collections"].firstMatch
+        //
+        // **Scoped to the NAVIGATION BAR, not `app.buttons["Collections"]`.** A bare label match is
+        // satisfied by the COLLECTIONS TAB, which the iPhone bottom bar carries on every screen —
+        // so the landmark passed whether or not Archival Analytics opened, after which the real
+        // assertion below passed vacuously because no segmented control existed at all. The same
+        // false-green shape scenario 12 already defends against by matching an identifier.
+        //
+        // Not `segmentedControls` either, which is the obvious tightening and is wrong HERE: the
+        // whole point of this scenario is that on iPhone the mode control is NOT a segmented
+        // control — it folds to a `.menu` Picker, and scoping to `segmentedControls` made this test
+        // fail on the one platform it runs on.
+        //
+        // The label is MEASURED, not guessed. A dump taken with the surface open reads
+        // `Button, label: 'Mode, Collections'` inside the sheet's own navigation bar — SwiftUI
+        // labels a menu Picker `<title>, <selection>` — while the tab item two hundred lines up the
+        // same tree reads `identifier: 'tray.2', label: 'Collections'`. That is the collision, and
+        // the comma is what separates them. If the Picker's title ever changes this fails loudly
+        // with this message, which is the right direction for a landmark to break in.
+        let currentMode = app.navigationBars.buttons["Mode, Collections"].firstMatch
         XCTAssertTrue(currentMode.waitForExistence(timeout: 20),
                       "Archival Analytics never appeared, or its mode control does not name the "
                           + "current view")
@@ -1636,7 +1643,6 @@ final class UIObstructionTests: XCTestCase {
                           + "there is no footer to assert on")
         }
         toggle.tap()
-        didToggleSidebar = true
 
         // Matched by IDENTIFIER, not by label. "Projects" also names a row in Settings, and
         // `ensureActiveProjectWithResearchQuestion` above navigates through exactly that row — so
@@ -1760,5 +1766,168 @@ final class UIObstructionTests: XCTestCase {
                                  "depth \(step): the detail pane holds no cells.")
             if step < 3, !openInDetail("depth \(step)") { break }
         }
+    }
+
+    // MARK: - Helpers · arrival, and a relaunch that pins the launch tab
+
+    /// Asserts the app really is showing `destination`, both ways.
+    ///
+    /// Two oracles because neither alone is evidence. The navigation bar proves the CONTENT
+    /// changed — scoped to `navigationBars` because three of the five bars carry the tab's own word
+    /// and a bare label match is satisfied by the tab item itself. The selection state proves the
+    /// BAR agrees, which is what distinguishes "the tap opened the right tab" from "the tap landed
+    /// on something else that happened to show a similar screen".
+    private func assertArrived(at destination: TabDestination,
+                               file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(
+            app.navigationBars[destination.rootNavigationBar].waitForExistence(timeout: 10),
+            "Tapped '\(destination.label)' but its root ('\(destination.rootNavigationBar)') never "
+                + "appeared — the tap landed somewhere else.",
+            file: file, line: line)
+        XCTAssertTrue(navigator.isSelected(destination),
+                      "'\(destination.label)' content is showing but the tab item does not report "
+                          + "itself selected.", file: file, line: line)
+    }
+
+    /// Relaunches, optionally forcing a content-size category. Pins the launch tab like `setUp`.
+    private func relaunch(contentSizeCategory: String? = nil) {
+        app.terminate()
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchArguments = UITestLaunch.arguments(contentSizeCategory: contentSizeCategory)
+        app.launch()
+    }
+
+    // MARK: - Scenario 14 · every tab is reachable, and the bar comes BACK
+
+    /// The plain case: each of the five tabs opens, and Browse opens again from the last of them.
+    ///
+    /// The trailing return to Browse is the only assertion in the bundle that requires the bar to
+    /// be paged BACKWARD. The bar follows the selected tab, so after Settings, Browse is behind the
+    /// current page — and on a narrow iPad there is no forward chevron to reach it with.
+    func testEveryTabIsReachableInThisRepresentation() throws {
+        for destination in TabDestination.allCases {
+            XCTAssertTrue(navigator.select(destination).tapped,
+                          "Could not reach the '\(destination.label)' tab")
+            assertArrived(at: destination)
+        }
+        let home = navigator.select(.browse)
+        XCTAssertTrue(home.tapped, "Could not get back to Browse from a tab on a later page")
+        assertArrived(at: .browse)
+    }
+
+    // MARK: - Scenario 14a · the same, with pagination FORCED
+
+    /// Forces an accessibility text size so the paging route is exercised on a wide iPad too.
+    ///
+    /// Without this the route has zero coverage on the destination `CLAUDE.md` documents: at the
+    /// default text size an iPad Pro 13-inch shows all five tabs and never pages.
+    func testEveryTabIsReachableAtAccessibilityTextSize() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad,
+                          "iPad-only: iPhone's bottom bar carries all five tabs at 393pt")
+        relaunch(contentSizeCategory: "UICTContentSizeCategoryAccessibilityXL")
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        // Force the FLOATING representation before measuring. `tabBarIsPaginated` is false while
+        // the sidebar is expanded, and the representation is system-persisted per install — so a
+        // machine carrying a leaked expanded sidebar would skip this pin silently, forever.
+        if navigator.sidebarIsExpanded, let toggle = navigator.sidebarToggleButton(timeout: 3) {
+            toggle.tap()
+            Thread.sleep(forTimeInterval: 0.7)
+        }
+        try XCTSkipUnless(navigator.tabBarIsPaginated, """
+            This iPad shows all five tabs at accessibility-extra-large, so nothing is paged and \
+            this would pass without exercising the route. It needs a floating bar too narrow for \
+            five tabs: iPad Pro 13-inch at this text size, or iPad mini at any size. If an iPad Pro \
+            skips here, check whether -UIPreferredContentSizeCategoryName reaches the tab bar at \
+            all — set `xcrun simctl ui <udid> content_size accessibility-extra-large` by hand \
+            (and restore it to `medium`) — before concluding the canvas is simply wide enough.
+            """)
+
+        for destination in TabDestination.allCases {
+            XCTAssertTrue(navigator.select(destination).tapped,
+                          "Could not reach '\(destination.label)' while the bar is paginated")
+            assertArrived(at: destination)
+        }
+
+        // **Both directions are asserted, and each from a page that really requires it.** They fail
+        // separately, and each has a fallback that will cover for it: deleting the forward sweep
+        // left every pin green while this asserted only the rewind, because the sidebar route
+        // reached Settings instead. Asserting it inside the loop above does not work either — by
+        // the time the loop reaches Settings the bar has already paged forward for Collections, so
+        // no turn is needed and the honest answer is `.none`. Both of those were measured, on the
+        // mutations written to kill them.
+        let home = navigator.select(.browse)
+        guard case .paged(let back, _) = home.reveal else {
+            return XCTFail("Browse came back by \(home.reveal), not by paging. Another route "
+                           + "covered for the pager, which is what this pin exists to expose.")
+        }
+        XCTAssertGreaterThan(back, 0, "Browse was reached without rewinding, so the rewind — the "
+                             + "step the persisted tab seed makes load-bearing — is untested.")
+        assertArrived(at: .browse)
+
+        // Now the other direction, from the first page: Settings is on the last one.
+        let away = navigator.select(.settings)
+        guard case .paged(_, let forward) = away.reveal else {
+            return XCTFail("Settings was reached by \(away.reveal), not by paging forward. Another "
+                           + "route covered for the pager, which is what this pin exists to expose.")
+        }
+        XCTAssertGreaterThan(forward, 0, "Settings — the tab a narrow bar pages off screen — was "
+                             + "reached from page one without turning the bar forward.")
+        assertArrived(at: .settings)
+    }
+
+    // MARK: - Scenario 14b · the sidebar route, in isolation, and proved not to leak
+
+    func testSidebarRouteReachesAPagedTabWithoutLeakingTheRepresentation() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad-only")
+        relaunch(contentSizeCategory: "UICTContentSizeCategoryAccessibilityXL")
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+        try XCTSkipUnless(navigator.tabBarIsPaginated,
+                          "Needs a floating bar too narrow for five tabs, or Settings is reachable "
+                              + "without the fallback and this would prove nothing")
+
+        let before = navigator.sidebarIsExpanded
+        let outcome = navigator.select(.settings, using: [.directly, .sidebar])
+        XCTAssertEqual(outcome.reveal, .sidebar, "Settings was reached by \(outcome.reveal)")
+        assertArrived(at: .settings)
+        XCTAssertEqual(navigator.sidebarIsExpanded, before,
+                       "The sidebar route displaced the representation. It is persisted per "
+                           + "install, so that leaks into every later test AND later run, and it "
+                           + "reads as a two-pane layout regression in other suites rather than as "
+                           + "this.")
+    }
+
+    // MARK: - Scenario 14c · the anti-pin: an unpaginated bar is left alone
+
+    /// The one new pin that runs on the documented destination at the default text size.
+    ///
+    /// A helper that paged unconditionally would widen the pill and collapse two of Browse's
+    /// trailing toolbar buttons into a `…` overflow (measured) — breaking scenario 6's
+    /// "Analysis Tools" assertion for a reason that has nothing to do with what it checks.
+    func testTheBarIsNotPagedWhenEveryTabIsAlreadyVisible() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad-only")
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+        try XCTSkipIf(navigator.tabBarIsPaginated,
+                      "This iPad paginates at the default text size, so it cannot demonstrate that "
+                          + "an unpaginated bar is left alone. Run on iPad Pro 13-inch (M5).")
+
+        let outcome = navigator.select(.settings)
+        XCTAssertEqual(outcome.reveal, .none,
+                       "A reveal ran on a bar that already showed every tab — paging and sidebar "
+                           + "expansion are both observable side effects, and neither is free.")
+        XCTAssertFalse(outcome.tappedAnUnhittableControl,
+                       "The Settings tab was visible and should not have needed the unhittable "
+                           + "last-resort tap.")
+        assertArrived(at: .settings)
     }
 }

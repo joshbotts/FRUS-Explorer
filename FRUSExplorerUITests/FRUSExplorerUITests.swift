@@ -38,7 +38,7 @@ final class FRUSExplorerUITests: XCTestCase {
         // Bypass CloudKit (avoids the 30-second SIGTRAP in unsigned UI test builds).
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         // Bypass OnboardingView so tests start in the main tab UI.
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 

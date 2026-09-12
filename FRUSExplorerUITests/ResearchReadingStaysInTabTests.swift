@@ -38,6 +38,10 @@ import XCTest
 ///   1.2 — #1273: `ResearchReadingDepthTests`, in this file, turns a page and requires it to survive
 ///          the crossing — the test 1.1 said was missing.
 final class ResearchReadingStaysInTabTests: XCTestCase {
+    /// Resolves tab destinations across every representation, including the floating iPad bar when
+    /// it has paged a tab off screen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
 
     private var app: XCUIApplication!
 
@@ -48,7 +52,7 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         // The seeded note gives the Research list one row to open (UITestResearchSeeder).
         app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 
@@ -63,9 +67,10 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
         try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad,
                       "iPhone only — the iPad tests below cover both iPad layouts")
 
-        let researchTab = app.tabBars.firstMatch.buttons["Research"].firstMatch
-        XCTAssertTrue(researchTab.waitForExistence(timeout: 15), "no Research tab")
-        researchTab.tap()
+        // Through the navigator, not `app.tabBars…` — that query can never match on iPad, where
+        // the floating bar's container is a plain `Other` element, and this test's own skip is the
+        // only thing that kept it off one.
+        XCTAssertTrue(navigator.select(.research).tapped, "no Research tab")
 
         // Drill into the list BEFORE any swipe — a preceding swipe stops the tap driving the push
         // (UIObstructionTests' measured ordering quirk).
@@ -97,7 +102,8 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
             """)
         XCTAssertFalse(app.navigationBars["FRUS Corpus"].exists,
                        "Back landed in the Browse tab")
-        XCTAssertTrue(researchTab.isSelected, "the Research tab is no longer selected")
+        XCTAssertTrue(navigator.isSelected(.research),
+                      "the Research tab is no longer selected")
     }
 
     // MARK: - iPad
@@ -194,14 +200,7 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
     ///
     /// - Returns: The seeded note's row.
     private func openResearchList() throws -> XCUIElement {
-        let candidates = [app.tabBars.firstMatch.buttons["Research"].firstMatch,
-                          app.buttons["Research"].firstMatch,
-                          app.cells["Research"].firstMatch]
-        guard let tab = candidates.first(where: { $0.waitForExistence(timeout: 5) }) else {
-            XCTFail("no Research control in any tab-bar representation")
-            throw XCTestError(.failureWhileWaiting)
-        }
-        tab.tap()
+        guard navigator.select(.research).tapped else { throw XCTestError(.failureWhileWaiting) }
         // Before any swipe — a preceding swipe stops the tap driving the push.
         XCTAssertTrue(categoryRow.waitForExistence(timeout: 10), "no All Research Documents row")
         categoryRow.tap()
@@ -273,6 +272,10 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
 /// Version history:
 ///   1.0 — #1273: initial implementation
 final class ResearchReadingDepthTests: XCTestCase {
+    /// Resolves tab destinations across every representation, including the floating iPad bar when
+    /// it has paged a tab off screen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
 
     private var app: XCUIApplication!
 
@@ -288,7 +291,7 @@ final class ResearchReadingDepthTests: XCTestCase {
         app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
         app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d1"
-        app.launchArguments = ["-hasCompletedOnboarding", "1",
+        app.launchArguments = UITestLaunch.arguments() + [
                                "-frus.document.researchPanel.visible", "NO",
                                "-frus.reading.edgeTapNavigation", "YES",
                                "-frus.reading.defaultMode", "rememberLast"]
@@ -414,14 +417,7 @@ final class ResearchReadingDepthTests: XCTestCase {
     ///
     /// - Returns: The seeded note's row.
     private func openResearchList() throws -> XCUIElement {
-        let candidates = [app.tabBars.firstMatch.buttons["Research"].firstMatch,
-                          app.buttons["Research"].firstMatch,
-                          app.cells["Research"].firstMatch]
-        guard let tab = candidates.first(where: { $0.waitForExistence(timeout: 5) }) else {
-            XCTFail("no Research control in any tab-bar representation")
-            throw XCTestError(.failureWhileWaiting)
-        }
-        tab.tap()
+        guard navigator.select(.research).tapped else { throw XCTestError(.failureWhileWaiting) }
         // Before any swipe — a preceding swipe stops the tap driving the push.
         let category = app.cells.containing(
             NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch

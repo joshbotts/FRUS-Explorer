@@ -14208,3 +14208,101 @@ four analyser/helper fixtures and the delivery table — and `HandoffVisibilityT
 this change**: `UIObstructionTests.testSidebarCarriesResearcherObjectsOniPad` fails on iPad mini (A17 Pro)
 — it fails identically on `v2` on the same device and passes on the iPad Pro 13-inch that `CLAUDE.md`
 names for that suite — filed as its own task.
+
+## Session 2026-09-12 — A UI-test helper that could not reach a paginated iPad tab
+
+**The report was one red test on iPad mini; the defect is in a helper six suites copied.**
+`UIObstructionTests.testSidebarCarriesResearcherObjectsOniPad` failed in its own setup, at
+`selectSection("Settings")`. On iPadOS the `.sidebarAdaptable` floating top tab bar is capped at roughly
+54.5% of the screen's width and **paginates** when five tabs do not fit: measured on iPad mini
+(744 pt portrait) the pill renders `[ToggleSideBar] Browse | Search | Research ›`, and **no element
+labelled "Settings" exists anywhere in the accessibility tree**. Page 2 carries Research | Collections |
+Settings. Every one of the six ladders asked "does an element with this label exist", concluded no, and
+either failed or — worse — skipped.
+
+**It is not a narrow-device curiosity, and that decided the fix.** On iPad Pro 13-inch (M5), the
+destination `CLAUDE.md` names for this suite, `xcrun simctl ui <udid> content_size
+accessibility-extra-large` puts Settings on page 2 as well: the tab labels scale with Dynamic Type and
+the pill's width budget does not. So pinning the suite to a wide iPad would have made it correct on one
+machine at one text size. What shipped instead is a shared `TabBarNavigator` that resolves a tab the way
+a reader does — page the bar, or expand the sidebar.
+
+**Nothing in the app should change, and that was argued rather than assumed.** Five tabs need ~1030 pt of
+screen against the mini's ~744; dropping one still needs ~469 pt against a 408 pt pill. iPhone renders all
+five at 393 pt because its bar is full-width with stacked items, so this is floating-bar geometry, not too
+many destinations. `.defaultAdaptableTabBarPlacement(.sidebar)` is a recorded **anti-fix** (#238's plan,
+"Anti-fixes (do not)"), and removing `.sidebarAdaptable` would remove the app's only complete tab
+representation on a narrow iPad — the expanded sidebar lists all five rows unpaginated at any width.
+
+**Three routes, in this order, and the order is measured.** The candidate ladder against the current page;
+then **rewind to page 1 and sweep forward**; then expand the sidebar, tap, and restore. Paging is tried
+first because it is layout-neutral, while expanding the sidebar takes real layout width — enough on an
+iPad Pro in portrait to cross the 820 pt two-pane gate and rebuild everything pushed, which is #1273's
+defect reached by a test helper instead of a rotation.
+
+**THE REWIND IS LOAD-BEARING AND NOBODY WOULD HAVE GUESSED IT.** `MainTabView` persists the selected tab
+(`AppState.persistTabSeed` → `frus.activeTab`), so the first run that successfully reaches Settings makes
+later launches open on Settings — the bar's LAST page, where Browse is absent and there is no forward
+chevron to turn. A forward-only sweep reports the tab unreachable on its own second run. That is why the
+fix was verified by running the target test **twice in a row on the same simulator**, and why every suite
+now passes `-frus.activeTab browse`.
+
+**Two things the first implementation got wrong, both caught by measurement rather than review.**
+(a) `isHittable` is TRUE for the Collections tab item on page 1 of a narrow iPad, whose frame runs about
+85 pt past the pill's visible clip — the synthesized tap lands on the navigation bar's "Switch project
+context" button behind it. The new arrival oracle caught that on its first run, so the navigator now
+CONFIRMS the tab changed and falls through to the next route when it did not. (b) Scenario 11's landmark,
+`app.buttons["Collections"]`, is satisfied by the Collections TAB on every iPhone screen; the surface it
+was meant to prove had opened was never checked, and the assertion behind it passed vacuously. A dump
+taken with the surface open reads `Button, label: 'Mode, Collections'` inside the sheet's own navigation
+bar — SwiftUI labels a menu Picker `<title>, <selection>` — which is the query that ships.
+
+**What the bundle looked like on a narrow iPad before this: one failure and two false greens.**
+`CustomScopeSaveTests` ended its Settings walk with `XCTSkipUnless(opened, "Settings tab not reachable on
+this device")` and `AnalyticsRotationTests` with `XCTSkip("Settings tab not found")` — both green, both
+naming a device limit for a helper's gap, both asserting nothing. Both now route through the navigator.
+`AnalyticsRotationTests.testRotateWithProjectBannerActive` additionally gained the iPhone gate its
+`WorkingOnBanner` assertion always needed: the banner is suppressed on a regular-width iPad, and the
+accidental skip was the only thing keeping that test off an iPad screen.
+
+**Four new pins, and each names the device it needs rather than passing.** Every tab is reachable and the
+bar comes BACK (14); the same with pagination forced (14a, which asserts the rewind AND the forward sweep,
+from pages that actually require each); the sidebar route in isolation, proved not to leak the
+representation (14b); and the anti-pin that an unpaginated bar is left alone (14c) — the only one that
+runs on the documented iPad Pro at the default text size. `didToggleSidebar`, a Bool tracking net
+displacement, is retired for a baseline captured in `setUp`: a flag cannot express two displacements, was
+set on the line AFTER each toggle, and left stale-true made `tearDown` OPEN the sidebar.
+
+**Mutation sweep: nine mutations, seven killed by the pin that claims them, two survivors that are
+reported rather than papered over.** Removing the rewind, the forward sweep, the paging route, the sidebar
+route, or the arrival confirmation each reddens its own pin on iPad mini; forcing every selection to page
+reddens the anti-pin on iPad Pro; the control — a comment-only edit — is green on both. **Survivor 1:
+deleting the sidebar's restore loop changes nothing, because on both devices measured the overlay
+dismisses itself when a row is tapped.** The loop is kept as the guard for a representation that does not,
+and this records that it is unexercised rather than proven. **Survivor 2: widening the tab-item predicate
+from `identifier AND label` to `OR` is caught by no test.** `AND` is kept on the measured collision count —
+`magnifyingglass` occurs 34 times in the app, `note.text` 26, `books.vertical` 20 — and the narrower form
+costs nothing. Two earlier assertions were also found to be wrong ABOUT THEMSELVES before they were
+right: the forward-sweep assertion first read `.none`, because by the time the loop reaches Settings the
+bar has already paged forward for Collections.
+
+**A measurement error of my own, recorded because it cost two wrong conclusions.** Running the `v2` half
+of an A/B with `xcodebuild test` rebuilt derived data, and the next two `test-without-building` runs
+therefore executed `v2`'s bundle while reporting on HEAD. The tell was the test COUNT — 12 where HEAD has
+16. Read the count back from every run, not only the pass/fail.
+
+**Verification.** `UIObstructionTests` on **iPad mini (A17 Pro)**: 16 executed, 5 skipped, 0 failures,
+from a clean container — against `v2` on the same device and a clean container, 12 executed with
+`testSidebarCarriesResearcherObjectsOniPad` failing. On **iPad Pro 13-inch (M5)**: 16 executed, 5 skipped,
+0 failures, with the anti-pin running. The full UI target on **iPhone 17**: 45 executed, 14 skipped, 0
+failures (v2: 41/11). The iOS unit target passed **4,708 tests in 606 suites**, the macOS build succeeded,
+and `swift test` passed **1,371 tests in 162 suites**. The target test was also run **twice in a row on
+the same simulator**, which is what proves the rewind rather than a first-run accident.
+
+**Out of scope, found on the way.** `-UIPreferredContentSizeCategoryName` does not reach the floating tab
+bar (an iPad Pro launched with it still shows five tabs, while `simctl ui content_size` paginates it), so
+two of the four new pins can only run on a narrow iPad — `CLAUDE.md` now names one. Eight more bare
+`app.buttons["Browse"]` guards remain in four suites, each silently proceeding from whatever tab is
+showing on a miss; the launch-tab pin makes them correct by construction today rather than by their own
+logic. And `-hasCompletedOnboarding 1` does not skip onboarding on a clean container — the suites work
+because the flag is already set on a simulator that has run them before.

@@ -126,7 +126,7 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
         if forcingToolbarOverflow {
             app.launchEnvironment["FRUS_UI_TEST_TOOLBAR_OVERFLOW"] = "1"
         }
-        app.launchArguments = ["-hasCompletedOnboarding", "1"]
+        app.launchArguments = UITestLaunch.arguments()
         app.launch()
     }
 

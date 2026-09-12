@@ -61,13 +61,17 @@ final class TwoPaneDocumentTests: XCTestCase {
 
     var app: XCUIApplication!
 
+    /// Resolves tab destinations across every representation, including the floating iPad bar when
+    /// it has paged a tab off screen. Shared with every other suite — this was one of six
+    /// hand-copied ladders, none of which could page.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = Self.seededVolumeId
-        app.launchArguments = [
-            "-hasCompletedOnboarding", "1",
+        app.launchArguments = UITestLaunch.arguments() + [
             "-frus.filterDownloadedOnly", "YES",
         ]
         app.launch()
@@ -80,19 +84,13 @@ final class TwoPaneDocumentTests: XCTestCase {
     // MARK: - Navigation (borrowed from CompilationDocumentsTests)
 
     @discardableResult
-    private func selectSection(_ label: String) -> Bool {
-        let candidates = [
-            app.tabBars.firstMatch.buttons[label].firstMatch,
-            app.buttons[label].firstMatch,
-            app.cells[label].firstMatch,
-            app.cells.containing(NSPredicate(format: "label CONTAINS[c] %@", label)).firstMatch,
-        ]
-        for control in candidates where control.waitForExistence(timeout: 3) {
-            control.tap()
-            return true
+    private func selectSection(_ label: String,
+                               file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        guard let destination = TabDestination(rawValue: label) else {
+            XCTFail("'\(label)' is not one of MainTabView's five tabs", file: file, line: line)
+            return false
         }
-        XCTFail("Could not find a '\(label)' control in any tab-bar representation")
-        return false
+        return navigator.select(destination, file: file, line: line).tapped
     }
 
     private var subseriesRow: XCUIElement {
