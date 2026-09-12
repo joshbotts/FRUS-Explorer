@@ -97,6 +97,10 @@ struct ResearchNoteEditorView: View {
                            role: .destructive) {
                         vm.delete(context: modelContext)
                         try? modelContext.save()   // flush so cross-context @Query (Research window, Project Home seed) sees the removal promptly, mirroring Save
+                        // #1280: the index does not learn about a deletion by itself. Pushed AFTER
+                        // the save, so the re-read sees the note gone — and clears the column when
+                        // it was the document's last.
+                        pushNoteToFTS5()
                         dismiss()
                     }
                     .foregroundStyle(.red)
@@ -332,30 +336,26 @@ struct ResearchNoteEditorView: View {
         highlight.noteId = noteId
     }
 
+    /// Rebuilds the document's indexed note text after a save or a delete (#1280).
+    ///
+    /// Every caller must have saved first — `reindexNoteText` re-reads the document's notes, and the
+    /// read is what includes the note just written and excludes the one just deleted.
+    ///
+    /// **Text only, and the `userTagIds:` overload must never be reached from here.**
+    /// `user_tag_ids` is a per-DOCUMENT column whose authoritative writer is
+    /// `UserTagPickerSheet.saveAndDismiss`, which sends the document's whole assigned set. This
+    /// editor knows only ONE note's tags, so passing them wrote a narrower set over a wider one —
+    /// and a note with no tags of its own passed `nil`, which the column binder writes as SQL NULL
+    /// rather than skipping, erasing the document's tags outright. Search opts into that column, so
+    /// the damage showed up as search-by-tag missing documents until the next launch's replay put
+    /// them back. The sibling defect in `CollectionEntryRows` was fixed the same way.
     private func pushNoteToFTS5() {
         guard let pipeline = indexingPipeline else { return }
         let vid = vm.volumeId
         let did = vm.documentId
-        let text = vm.bodyText
-        // **Text only, and the `userTagIds:` overload must never be called from here.**
-        //
-        // NOTE, because the fix is narrower than it looks: `note_text` — the argument that REMAINS —
-        // is a per-document column too, and this still writes one note's body into it. A document
-        // can carry several notes, so all but one are invisible to search and the boot replay picks
-        // the winner in unsorted fetch order. That is the same shape as the tag defect below and it
-        // is NOT fixed here: collapsing many notes into one indexed text is a search-behaviour
-        // decision with its own questions (what separator, what happens on delete, whether the index
-        // version must move). Tracked separately; do not read the comment below as covering it.
-        // `user_tag_ids` is a per-DOCUMENT column whose authoritative writer is
-        // `UserTagPickerSheet.saveAndDismiss`, which sends the document's whole assigned set.
-        // This editor knows only ONE note's tags, so passing them wrote a narrower set over a
-        // wider one — and a note with no tags of its own passed `nil`, which the column binder
-        // writes as SQL NULL rather than skipping, erasing the document's tags outright. Search
-        // opts into this column, so the damage showed up as search-by-tag missing documents until
-        // the next launch's replay put them back. The sibling defect in `CollectionEntryRows` was
-        // fixed the same way, and the text-only overload exists precisely for callers like this.
         Task {
-            try? await pipeline.updateNoteText(volumeId: vid, documentId: did, bodyText: text)
+            await ResearchNote.reindexNoteText(volumeId: vid, documentId: did,
+                                               in: modelContext, pipeline: pipeline)
         }
     }
 
@@ -390,6 +390,7 @@ struct ResearchNoteEditorView: View {
                 ) {
                     vm.delete(context: modelContext)
                     try? modelContext.save()   // flush so cross-context @Query (Research window, Project Home seed) sees the removal promptly, mirroring Save
+                    pushNoteToFTS5()   // #1280 — see the macOS Delete above
                     dismiss()
                 }
             }

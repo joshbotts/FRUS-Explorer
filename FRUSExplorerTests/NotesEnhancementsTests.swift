@@ -270,9 +270,12 @@ struct NotesEnhancementsTests {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer")
-        let files = ["ResearchNoteEditor/ResearchNoteEditorView.swift",
-                     "App/FRUSExplorerApp.swift",
-                     "Collections/CollectionEntryRows.swift"]
+        // #1280 moved the note-to-index push behind ONE writer, and this guard followed it — which
+        // is what the `calls > 0` assertion below exists to force. The editor and the collection
+        // editor now call `ResearchNote.reindexNoteText` and reach no pipeline method of their own;
+        // `NoteTextWriterScanTests` is what keeps them that way.
+        let files = ["Models/ResearchNote.swift",
+                     "App/FRUSExplorerApp.swift"]
         for relative in files {
             let source = try String(contentsOf: root.appendingPathComponent(relative),
                                     encoding: .utf8)

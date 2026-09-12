@@ -393,7 +393,7 @@ struct IncrementalUpdateTests {
         }
     }
 
-    @Test("updateResearchNote makes note text searchable via user_content")
+    @Test("A document's note text is searchable via user_content")
     func noteTextSearchable() async throws {
         try await withTempDir { dir in
             let (pipeline, store) = try await makeTestPipeline(dir: dir)
@@ -411,7 +411,13 @@ struct IncrementalUpdateTests {
                 documentId: "d1", volumeId: "frus1969-76v01",
                 bodyText: "Fascinating xenolith discovery mentioned here."
             )
-            try await pipeline.updateResearchNote(note)
+            // #1280 retired the `updateResearchNote(_:)` overload this used to call: `note_text` is
+            // one column per DOCUMENT, and an entry point taking a single note invited every caller
+            // to let one note speak for a document that may carry several.
+            let indexed = try #require(ResearchNote.indexedTextPerDocument([note]).first)
+            try await pipeline.updateNoteText(volumeId: indexed.volumeId,
+                                              documentId: indexed.documentId,
+                                              bodyText: indexed.text)
 
             let results = try await service.search(parameters: SearchParameters(keywords: "xenolith"))
             #expect(!results.isEmpty)

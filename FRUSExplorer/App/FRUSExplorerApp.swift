@@ -2320,6 +2320,9 @@ struct FRUSExplorerApp: App {
             // skips rows whose values are already current (zero-row UPDATE, no FTS5
             // trigger fires), so only new or changed records cause index writes.
             let container = modelContainer
+            // #1280: read here, on the main actor, so the boot Task can decide whether it may sweep
+            // without touching `appState` from off-main.
+            let cloudKitOn = _containerSetup.cloudKitEnabled
             Task {
                 let context = ModelContext(container)
 
@@ -2339,15 +2342,21 @@ struct FRUSExplorerApp: App {
                     try? await pipeline.clearSummaryText(volumeId: doc.volumeId, documentId: doc.documentId)
                 }
 
-                let notes = (try? context.fetch(FetchDescriptor<ResearchNote>())) ?? []
-                for note in notes {
-                    let vid = note.volumeId
-                    let did = note.documentId
-                    let text = note.bodyText
-                    // Text only — see `ResearchNoteEditorView.pushNoteToFTS5`. Replaying a note's
-                    // own tags into the document's column made "whichever note sorts last wins".
-                    try? await pipeline.updateNoteText(volumeId: vid, documentId: did, bodyText: text)
-                }
+                // #1280: ONE text per document, like the summary pass above — `note_text` is a
+                // per-document column and a document can carry many notes, so a loop over rows wrote
+                // each note over the last and left whichever the unsorted fetch returned last.
+                //
+                // **The SWEEP is deliberately not run here when CloudKit is on.** It is the only
+                // bulk delete of the reader's writing in the app, and its floor cannot tell a
+                // half-synced store from a finished one — one note arrived is enough to disarm it.
+                // So it waits for the import-settle debounce below, beside `OrphanedTagRepair` and
+                // `AnnotationReviewStore.reconcile`, which are deferred there for the same reason.
+                // With CloudKit off there is no import to wait for, and deferring would mean a
+                // reader with no iCloud account never reconciled at all. The WRITE half always runs:
+                // it is idempotent, and a rebuilt index needs it.
+                await ResearchNote.reconcileNoteText(
+                    container: container, pipeline: pipeline,
+                    sweepingStaleRows: !cloudKitOn)
 
                 // #279 / W-4: replay the user's document-classification overrides into the
                 // index, the same way summaries and notes are replayed — a re-index restores
@@ -2369,7 +2378,7 @@ struct FRUSExplorerApp: App {
                 if reviewOutcome.changedAnything { appState.revisionReviewToken += 1 }
 
                 #if DEBUG
-                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(notes.count) notes, \(overrides.count) classification overrides pushed to FTS5; reviews stamped \(reviewOutcome.stamped), backfilled \(reviewOutcome.backfilled)")
+                print("[FRUSExplorer] Boot sync: \(summaries.count) summaries, \(overrides.count) classification overrides pushed to FTS5; note text reconciled (sweeping: \(!cloudKitOn)); reviews stamped \(reviewOutcome.stamped), backfilled \(reviewOutcome.backfilled)")
                 #endif
             }
         }
@@ -2434,13 +2443,20 @@ struct FRUSExplorerApp: App {
                     let noteDescriptor = FetchDescriptor<ResearchNote>(
                         predicate: #Predicate { $0.volumeId == vid }
                     )
+                    // #1280: one text per document, as the boot replay does.
+                    //
+                    // **Writes only — no sweep here, on purpose.** The sweep's floor is a statement
+                    // about the whole STORE, and a volume-scoped fetch cannot make it: "this reader
+                    // has no notes in this volume" is the ordinary state of almost every volume,
+                    // not evidence that anything is wrong. A stale row in a re-downloaded volume is
+                    // reached by the library-grained reconciliation instead — one launch or one
+                    // import-settle later, which is the same latency a deletion on another device
+                    // already has.
                     let notes = (try? context.fetch(noteDescriptor)) ?? []
-                    for note in notes {
-                        let did = note.documentId
-                        let text = note.bodyText
-                        // Text only — see `ResearchNoteEditorView.pushNoteToFTS5`.
-                        try? await pipeline.updateNoteText(volumeId: vid, documentId: did,
-                                                           bodyText: text)
+                    for entry in ResearchNote.indexedTextPerDocument(notes) {
+                        try? await pipeline.updateNoteText(volumeId: entry.volumeId,
+                                                           documentId: entry.documentId,
+                                                           bodyText: entry.text)
                     }
 
                     // Semantic-ready when search-ready: ~294 KB beside the ~6 MB volume the user
@@ -2615,6 +2631,19 @@ struct FRUSExplorerApp: App {
                                     let outcome = await AnnotationReviewStore.reconcile(
                                         container: modelContainer, pipeline: pipeline)
                                     if outcome.changedAnything { appState.revisionReviewToken += 1 }
+                                    // #1280: same debounce, same reason, and this is the one that
+                                    // NEEDS it. `note_text` is one column per document, so a note
+                                    // deleted on another device leaves words in the index that no
+                                    // live record accounts for — and the only way to find them is
+                                    // to subtract the live notes from the rows that carry text.
+                                    // Against a half-imported store that subtraction would clear
+                                    // notes that simply have not arrived yet, which is exactly what
+                                    // "a settled store, not a partial one mid-sync" buys. Running
+                                    // it here is also why a note ADDED on another device becomes
+                                    // searchable within seconds rather than at the next cold boot.
+                                    await ResearchNote.reconcileNoteText(
+                                        container: modelContainer, pipeline: pipeline,
+                                        sweepingStaleRows: true)
                                 }
                                 // Wave R-2a: same debounce, same reason. Running the trail
                                 // migration only after imports go quiet means a second device

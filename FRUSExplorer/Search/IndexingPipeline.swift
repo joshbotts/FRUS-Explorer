@@ -1975,15 +1975,65 @@ public actor IndexingPipeline {
         )
     }
 
-    /// Updates the research note text for a document that is already in the index.
+    /// Clears a document's note text (#1280) — the twin of ``clearSummaryText(volumeId:documentId:)``.
     ///
-    /// Writes `note.bodyText` to `document_cache`; the `user_content` FTS5 sync
-    /// trigger makes the new text immediately searchable.
-    func updateResearchNote(_ note: ResearchNote) async throws {
+    /// Needed because `note_text` holds ONE text per document while a document may have many notes:
+    /// a writer that only ever pushes the notes that exist can never empty the column for a document
+    /// whose last note was deleted, and nothing else clears it. Until this existed, deleting a note
+    /// left its words searchable indefinitely.
+    func clearNoteText(volumeId: String, documentId: String) async throws {
         try updateCacheColumns(
-            volumeId: note.volumeId, documentId: note.documentId, label: "updateResearchNote",
-            assignments: [("note_text", note.bodyText)]
+            volumeId: volumeId, documentId: documentId, label: "clearNoteText",
+            assignments: [("note_text", nil)]
         )
+    }
+
+    /// Every document whose `note_text` is not NULL.
+    ///
+    /// The reconciliation half of #1280. A replay can write the text of every note that EXISTS, but
+    /// it visits only documents that still have one — so a column left behind by a note deleted
+    /// before this shipped, or deleted on another device, is invisible to it. This is the set to
+    /// subtract the live notes from; `ResearchNote.noteTextPlan(for:carrying:inVolume:)` does the
+    /// subtracting, and refuses the readings of an empty note set that would clear the lot.
+    ///
+    /// **NOT NULL rather than "holds words", deliberately.** A pre-#1280 writer pushed a note's
+    /// `bodyText` straight through, so a reader who emptied a note's body left `''` in the column —
+    /// non-NULL, indexing nothing, and counted by `COUNT(note_text)` as an annotated document.
+    /// Reporting those rows is what lets one sweep normalise them to NULL; they then drop out of
+    /// this set and stay out, because `updateCacheColumns` skips a row already at the value asked
+    /// for. Filtering them out here instead would freeze them for the life of the install.
+    ///
+    /// Reads the cache table rather than the FTS5 index: `document_cache` is the authority the
+    /// triggers mirror, and it is where the column lives.
+    ///
+    /// - Returns: The keyed documents, sorted, so a caller's subsequent writes are deterministic.
+    ///
+    /// nonisolated: reads `auxDb` directly, as `isVolumeIndexed` does — a read-only query.
+    public nonisolated func documentsWithNoteText() throws -> [(volumeId: String, documentId: String)] {
+        // `idx_document_cache_note_text` is PARTIAL on exactly this predicate, so the planner walks
+        // an index holding one entry per ANNOTATED document rather than a table whose rows average
+        // 5.7 KB — the trap `allDocumentRowidKeys` records at `idx_document_cache_facet`. Pinned by
+        // `EXPLAIN QUERY PLAN` in `NoteTextPerDocumentTests`, against what SQLite actually says for
+        // a partial index: `SCAN … USING INDEX`, not `USING COVERING INDEX`.
+        let sql = """
+            SELECT volume_id, document_id FROM document_cache
+            WHERE note_text IS NOT NULL
+            ORDER BY volume_id, document_id
+            """
+        var stmt: OpaquePointer?
+        let rc = sqlite3_prepare_v2(auxDb, sql, -1, &stmt, nil)
+        guard rc == SQLITE_OK, let handle = stmt else {
+            let message = auxDb.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
+            throw IndexingError.sqliteError(code: rc, message: message)
+        }
+        defer { sqlite3_finalize(handle) }
+        var rows: [(volumeId: String, documentId: String)] = []
+        while sqlite3_step(handle) == SQLITE_ROW {
+            guard let volume = sqlite3_column_text(handle, 0),
+                  let document = sqlite3_column_text(handle, 1) else { continue }
+            rows.append((volumeId: String(cString: volume), documentId: String(cString: document)))
+        }
+        return rows
     }
 
     // MARK: - Spotlight
@@ -5822,6 +5872,20 @@ public actor IndexingPipeline {
         try exec("""
             CREATE INDEX IF NOT EXISTS idx_document_cache_facet
             ON document_cache(is_front_matter, is_editorial_note, volume_id, document_id)
+            """)
+        // #1280: `documentsWithNoteText()` runs on every reconciliation pass, and without this it
+        // is the 6.3 GB table scan the comment above warns about. PARTIAL, on that query's own
+        // predicate, so it holds one entry per ANNOTATED document — a few KB for a heavy annotator,
+        // nothing for everyone else — with the ORDER BY inside the index.
+        //
+        // It costs one scan of the existing table to BUILD, on the first launch after it ships, in
+        // `setupDatabase` off the main thread. Same one-time cost `idx_document_cache_facet` paid;
+        // worth naming, because the paragraph above argues the index purely by the scans it saves.
+        //
+        // No `currentDateIndexVersion` bump — an index is derived, not parse output.
+        try exec("""
+            CREATE INDEX IF NOT EXISTS idx_document_cache_note_text
+            ON document_cache(volume_id, document_id) WHERE note_text IS NOT NULL
             """)
         try exec("""
             CREATE TABLE IF NOT EXISTS persons (
