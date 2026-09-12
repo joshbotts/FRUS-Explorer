@@ -616,7 +616,7 @@ That was the ride-along's M2a, and it is now two mechanical halves around one ir
 
 ```
 cd tools/semantic-harvest
-SELFTEST=1 python3 stage_m2a.py            # 75 checks, no corpus needed — run this first
+SELFTEST=1 python3 stage_m2a.py            # 95 checks, no corpus needed — run this first
 python3 stage_m2a.py                       # stage ~72 documents, era-stratified
 #   ... the sitting: read M2a-INSTRUCTIONS.md in the output directory, annotate,
 #       and mark each finished file `y` in progress.csv ...
@@ -647,17 +647,27 @@ directory that already holds annotated work (`FORCE=1` if you mean it).
 could only report that the text had changed under the brackets — the right symptom and no cause. FRUS
 prints square brackets of its own (`[Translation.]`, `[Received 4:43 p.m.]`, a bracketed sign-off), so
 `[ ]` cannot simply be accepted as markup: only a bracket *inserted* relative to the R-0 text can be one.
-When the text check fails the collector now aligns the file against the exact text it was staged from, and
-if the only edits are inserted brackets, some of them ASCII, it names every marked document with that
-pattern and its pair count. `CONVERT_ASCII_BRACKETS=1` (with `COLLECT=1`) then rewrites exactly the
-inserted brackets as `⟦ ⟧`, leaving the printed ones alone and keeping the files as typed under
-`ascii-bracket-originals/<timestamp>/`. It converts **nothing** if any inserted bracket touches a printed
-one of the same glyph — which of the two is markup is then a guess — fails to alternate, is empty, or
-overlaps a `⟦ ⟧` span; retype those by hand. A real prose edit still gets the original message, and so does
-a document whose staged text cannot be recovered exactly (no text layer here, or one that has moved on).
-Replayed against that sitting, the diagnosis names all 23 documents and 126 pairs, and both the conversion
-and the ground truth are byte-identical to the ones made by hand on 2026-09-12. The instructions the stager
-writes now say the same, and suggest copying a pair from any seeded span.
+When the text check fails, the collector aligns the file against the exact text it was staged from. If the
+only edits are inserted brackets, some of them ASCII, it names every marked document with that pattern,
+each with its pair count and, for any it could not convert, the reasons. `CONVERT_ASCII_BRACKETS=1` (with
+`COLLECT=1`) then rewrites exactly the inserted brackets as `⟦ ⟧`, byte for byte (a CRLF file stays CRLF),
+and copies the files as typed to `ascii-bracket-originals/<timestamp>/`. **It is all or nothing, and a
+clean plan is one the collector will then accept unchanged**, so it converts nothing when any marked
+document has:
+- an inserted bracket right after a printed one of the same glyph (which of the two is markup is then a
+  guess);
+- `[ ]` that do not alternate, or an empty or blank pair;
+- a `[ ]` pair crossing or nesting a `⟦ ⟧` pair **in file order** (`⟦Fish[⟧ wrote]` crosses though no
+  offset overlaps);
+- a stray or blank `⟦ ⟧` beside them;
+- mixed line endings.
+
+Retype those by hand. A real prose edit keeps the original message, and so does a document whose staged text
+cannot be read exactly: no text layer, one that has moved on, or one truncated in transfer. The message then
+says the cause could not be checked, and collection never crashes on it. Replayed against that sitting, the
+diagnosis names all 23 documents and 126 pairs, and the conversion, the ground truth and every backup are
+byte-identical to what was made by hand on 2026-09-12. The instructions the stager writes now say the same,
+and suggest copying a pair from any seeded span.
 
 **A document that names no one is still in the ground truth.** The span file holds one row per gold
 span, so a document with no spans — read and found to name no individual — has no row in it. The collector
@@ -993,18 +1003,20 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`, `FORCE`, `CONVERT_AS
 - `filter_detections.py` — the five-arm filter (20 checks, including acceptance through the real scorer)
 - `provenance/` — the exact harness bytes the sweep's manifests hash, which match no commit
 - `stage_m2a.py` / `score_detections.py` / `ner_store.py` / `selftest_m2a.py` — the ground-truth
-  loop and the scorer (75 checks, one round trip: stage → annotate → collect → score, including a document
+  loop and the scorer (95 checks, one round trip: stage → annotate → collect → score, including a document
   that names no one)
 - `EarlyEraNERControlCore/` + `EarlyEraNERControl/` — the control detector; `swift test` covers the
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
-  1.7 — 2026-09-12: annotation typed with ASCII `[ ]` is diagnosed by name (§6): the collector aligns a failing
-        file against its staged R-0 text, and when the only edits are inserted brackets it lists every marked
-        document with that pattern and its pair count. `CONVERT_ASCII_BRACKETS=1` rewrites exactly the inserted
-        ones, keeps the typed files, and converts nothing if any is ambiguous, unbalanced, empty or overlapping.
-        The stager's instructions say to type `⟦ ⟧`. Self-test 54 → 75 checks; 21 of 22 mutants killed, the
-        survivor equivalent; the real typed sitting converts byte-identically to the hand conversion.
+  1.7 — 2026-09-12: annotation typed with ASCII `[ ]` is diagnosed by name (§6): a failing file is aligned against its
+        staged R-0 text, and when the only edits are inserted brackets every marked document with that pattern is
+        listed with its pair count and any reason it cannot be converted. `CONVERT_ASCII_BRACKETS=1` rewrites exactly
+        the inserted ones byte for byte, copies the typed files, and converts nothing if any document is ambiguous,
+        unbalanced, empty, crossing a ⟦ ⟧ pair in file order, beside a stray or blank ⟦ ⟧, or of mixed line endings.
+        An unreadable text layer means "could not be checked", never a crash. An independent review confirmed 22 of
+        27 findings, all addressed. Self-test 54 → 95 checks; 49 of 49 mutants killed; the real typed sitting
+        converts byte-identically to the hand conversion.
   1.6 — 2026-09-12: a document that names no one reaches the score (§6–7). The collector also writes
         `m2a-ground-truth-documents.jsonl`, one row per annotated document, counted by spans and never by
         mark; the scorer scores a listed document with no spans as empty gold, refuses a list that disagrees
