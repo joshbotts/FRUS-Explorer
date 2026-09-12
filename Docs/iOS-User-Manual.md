@@ -385,7 +385,7 @@ The topic's page also lists its **Covering volumes** — complete membership acr
 
 **All «area» topics** (for example *All Cold War topics*) goes back to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbors without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 5 topics* — with a ✕ to return to the full index.
 
-Reach it three ways: **Browse ▸ Topics** (beside People), the **Browse this topic in the index** button on any topic chip's pivot sheet, or **Browse all topics** in the Subjects section of a search's Facets panel.
+Reach it four ways: **Browse ▸ Topics** (beside People), the **Browse this topic in the index** button on any topic chip's pivot sheet, **Browse all topics** in the Subjects section of a search's Facets panel, or **Browse all topics…** in the scope menu of an analytics dashboard or an *About the Series* page. Each of the last two closes the panel or sheet it was on and brings the Browse tab forward, so the index arrives in front of you rather than behind what you were reading. **On iPad the analytics dashboards open as their own windows, which have no Browse tab to bring forward, so they do not offer the item there** — use the Facets panel, an *About the Series* page (which is a sheet on both), or Browse ▸ Topics instead. Wherever you arrive from, the Topic index replaces where you were in Browse rather than stacking on top of it.
 
 ### 6.3 The Project Picker
 

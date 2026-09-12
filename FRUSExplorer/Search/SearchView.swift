@@ -294,7 +294,7 @@ struct SearchView: View {
                 Task { await runSearch() }
             },
             onOpenArchivalProfile: { openArchivalProfile(volumeIds: $0, query: $1) },
-            onBrowseTopics: { appState.openSubjectExplorer(.all, from: sceneID) },
+            onBrowseTopics: { browseAllTopics() },
             onDiscloseSection: { section in
                 Task {
                     await facetController.load(
@@ -345,6 +345,38 @@ struct SearchView: View {
     ) {
         _vm = State(initialValue: SearchViewModel(searchService: searchService))
         self.initialParameters = initialParameters
+    }
+
+    /// Opens the Topic index on the Browse tab (#1023, #1274).
+    ///
+    /// A method rather than an inline closure, for the reason the sibling door above gives: the
+    /// facet panel's initializer is already a large expression.
+    ///
+    /// Three statements, in one turn, and each is load-bearing:
+    ///
+    /// - The panel closes UNCONDITIONALLY, not gated on `dismissesOnApply`, matching the sibling
+    ///   archival door below rather than the two commit actions above it. The commit actions gate
+    ///   because a narrowing may want the panel left open beside the results it just narrowed; a
+    ///   navigation out of Search has no such reading. Only one of the two containers can occlude
+    ///   the destination — the iPhone sheet, and the iPad inspector at compact width, which
+    ///   SwiftUI presents AS a sheet. On a regular-width iPad the inspector is a side column and
+    ///   closing it is a state change the reader did not ask for; it is closed anyway, so that
+    ///   coming back to Search does not resume in a panel describing a search left behind.
+    /// - The hand-off stays on BOTH platforms: `openSubjectExplorer` addresses the Mac's Topics
+    ///   window on macOS and this window's Browse tab on iOS.
+    /// - The tab switch is iOS-only because `openTab` and `AppTab` are, and this file compiles
+    ///   into the Mac target. WITHOUT it the index is written to a Browse tab the reader is not
+    ///   looking at: it opens out of sight and replaces Browse's history, which is #1274.
+    ///
+    /// One turn rather than the deferral the archival door above uses: that destination is another
+    /// sheet, and a dismissal cannot be followed by a presentation in the same state change. The
+    /// Topic index is a Browse navigation LEVEL, so there is nothing to race.
+    private func browseAllTopics() {
+        showFacetSheet = false
+        appState.openSubjectExplorer(.all, from: sceneID)
+        #if os(iOS)
+        appState.openTab(.browse, from: sceneID)
+        #endif
     }
 
     /// Opens Archival Analytics scoped to this result set's volumes (#833).

@@ -50,6 +50,14 @@ struct SeriesGeographyDashboard: View {
     /// normally resolves; the optionality is purely defensive.
     @Environment(AppState.self) private var appState: AppState?
 
+    /// Closes the Research Guide behind a navigation that lands on another surface — the scope
+    /// bar's Topic-index door (#1274), which sends the reader to the Browse tab.
+    ///
+    /// Read HERE rather than inside `SeriesScopeBar`: on iOS the guide is always a sheet and this
+    /// resolves to it, while the same bar on macOS renders inside the guide WINDOW, where a
+    /// `dismiss()` would close the window. Same reason `SourceProvenanceDashboard` holds one.
+    @Environment(\.dismiss) private var dismiss
+
     /// Compact-width detection for the year-range bar (drops its label on iPhone).
     /// Resolves to `.regular` on macOS, so `isCompactWidth` is `false` there.
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -126,7 +134,11 @@ struct SeriesGeographyDashboard: View {
                 SeriesScopeBar(entries: entries, scope: $scope, onReset: {
                     yearStart = SeriesChartKind.floorYear
                     yearEnd = Self.defaultEnd
-                })
+                },
+                // The bar's Topic-index door leaves the guide for the Browse tab, so the
+                // guide sheet has to close behind it (#1274) — read here rather than in
+                // the bar, where on macOS it would close the guide WINDOW.
+                onNavigateAway: { dismiss() })
                 yearRangeBar
                 regionTrendChart
                 regionTotalsChart

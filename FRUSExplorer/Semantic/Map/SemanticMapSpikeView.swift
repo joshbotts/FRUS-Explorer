@@ -1156,6 +1156,8 @@ final class SemanticMapModel {
 ///   1.0 — V-4a: initial spike
 ///   1.1 — V-4: reads the bundled artifact; renderer ownership moved to `SemanticMapModel` after
 ///         the map failed to appear at all
+///   1.2 — #1274: `onNavigateAway`, forwarded to the scope bar so its Topic-index door closes the
+///         sheet this map is presented in
 struct SemanticMapSpikeView: View {
 
     /// Hands the model the motion contract — one place, both effects.
@@ -1186,6 +1188,13 @@ struct SemanticMapSpikeView: View {
     /// Nil for a map the reader opened here. **Scope and lens only** — see
     /// `AppActivityTypes.semanticMap` for why the slice poles are not carried.
     var continued: SemanticMapRequest?
+
+    /// Invoked just before the scope bar's Topic-index door navigates away, so a host presented as
+    /// a SHEET closes first (#1274). `nil` in a window, where nothing must close.
+    ///
+    /// Threaded from `SemanticAnalyticsView`, which is the presentation; this view never reads
+    /// `\.dismiss` itself, because on macOS the same chain is a window.
+    var onNavigateAway: (() -> Void)? = nil
 
     @State private var model = SemanticMapModel()
     @State private var lens: SemanticMapLens = .cluster
@@ -2885,6 +2894,9 @@ struct SemanticMapSpikeView: View {
             scopeLabel: Binding(get: { scopeLabel },
                                 set: { applyScope(scopeVolumeIds, label: $0) }),
             onChange: {},
+            // The bar's Topic-index door leaves this surface for the Browse tab, so the sheet
+            // presenting it has to close behind it (#1274); a window passes nil and stays.
+            onNavigateAway: onNavigateAway,
             presentation: .chip)
     }
 

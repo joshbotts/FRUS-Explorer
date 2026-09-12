@@ -302,7 +302,7 @@ The topic's page also lists its **Covering volumes** — complete membership acr
 
 **All «area» topics** (for example *All Cold War topics*) returns to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbors without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 5 topics* — with a ✕ to restore the full index.
 
-It opens as its own window, so the index stays available beside whatever you are reading. Reach it from the Window menu, from **Browse this topic in the index** on any topic chip's pivot sheet, or from **Browse all topics** in a search's Subjects facet.
+It opens as its own window, so the index stays available beside whatever you are reading. Reach it from the Window menu, from **Browse this topic in the index** on any topic chip's pivot sheet, from **Browse all topics** in a search's Subjects facet, or from **Browse all topics…** in the scope menu of any analytics dashboard or *About the Series* page, which brings this window forward without closing the one you were in.
 
 ---
 

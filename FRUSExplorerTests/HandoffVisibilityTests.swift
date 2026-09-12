@@ -44,6 +44,8 @@ import SwiftUI   // NavigationPath, for the tenth host's overload
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #750
+///   1.1 — 2026-09-11: #1274 — the three iOS "Browse all topics…" doors, an iOS twin of the
+///          macOS reachability analyser, and a sweep over every Topic-index hand-off
 @Suite("iOS hand-off visibility")
 struct HandoffVisibilityTests {
 
@@ -88,7 +90,46 @@ struct HandoffVisibilityTests {
         return code[startLine...].joined(separator: "\n").prefix(limit).description
     }
 
+    /// One member's code, ending where the NEXT member's declaration begins.
+    ///
+    /// `functionBody`'s character window is a budget, not a boundary: it runs past the end of the
+    /// function into whatever follows. That is usually harmless and twice in this suite it was not
+    /// — a door's mount was satisfied by the declaration below it, and an `orAnyWindow` NEGATIVE
+    /// was satisfied by the sibling consumer two functions down, which legitimately has one. Use
+    /// this wherever an assertion says a member does NOT contain something.
+    private static func memberBody(_ name: String, in source: String) throws -> String {
+        let code = codeLines(source).map(\.text)
+        guard let start = code.firstIndex(where: { $0.contains(name) }) else {
+            Issue.record("\(name) not found among code lines — did it move or get renamed?")
+            return ""
+        }
+        let openers = ["private func ", "private var ", "func ", "var ", "static ", "@ViewBuilder",
+                       "init(", "private init("]
+        let rest = code[(start + 1)...]
+        let end = rest.firstIndex { line in openers.contains { line.hasPrefix($0) } } ?? code.endIndex
+        return code[start..<end].joined(separator: "\n")
+    }
+
     // MARK: - The helper earns its trust
+
+    @Test("memberBody stops at the next declaration")
+    func memberBodyStopsAtTheNextMember() throws {
+        let sample = """
+            private func first() {
+                appState.consumeHandoff(\\.slot, for: sceneID)
+            }
+
+            private func second() {
+                appState.consumeHandoff(\\.other, for: sceneID, orAnyWindow: true)
+            }
+            """
+        let body = try Self.memberBody("private func first(", in: sample)
+        #expect(body.contains(".slot"), "the member's own code is kept")
+        #expect(!body.contains("orAnyWindow"), """
+            the NEXT member's code must be excluded — this is the whole point, and a character \
+            window does not do it
+            """)
+    }
 
     @Test("codeLines ignores comments but keeps code")
     func codeLinesFilters() {
@@ -552,6 +593,494 @@ struct HandoffVisibilityTests {
                 previous project.
                 """)
         }
+    }
+
+    // MARK: - 4. A door onto the Browse tab must switch to it (#1274)
+
+    /// One `#if` frame: its condition, and whether we are currently inside its `#else`.
+    private struct PlatformFrame {
+        let condition: String
+        var inElse: Bool
+    }
+
+    /// Lines containing `needle` that are **compiled on iOS**.
+    ///
+    /// The twin of `MacDocumentOpenRoutingTests.macOSReachableLines(in:containing:)` with the two
+    /// platform branches inverted, and it is a twin rather than a flag on the original because the
+    /// original's doc records that a hand-rolled version of this analysis INVERTED the answer — so
+    /// this one carries the same three soundness fixtures below, run against iOS instead of macOS.
+    ///
+    /// Two deliberate differences. Comment lines are filtered with this suite's three prefixes
+    /// (`//`, `///`, `*`), because these files argue about the old behaviour in prose constantly.
+    /// And `#else` is matched by PREFIX rather than by equality, so a trailing `#else // iOS` does
+    /// not silently desynchronise the frame — `#elseif` is tested first, so the prefix is safe.
+    ///
+    /// Non-platform conditions (`DEBUG`, feature flags) are tracked for nesting but do not affect
+    /// platform reachability.
+    static func iOSReachableLines(in source: String,
+                                  containing needle: String) -> [(line: Int, text: String)] {
+        var stack: [PlatformFrame] = []
+        var hits: [(line: Int, text: String)] = []
+
+        for (index, raw) in source.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+            let text = raw.trimmingCharacters(in: .whitespaces)
+
+            if text.hasPrefix("#if ") {
+                stack.append(PlatformFrame(condition: String(text.dropFirst(4)), inElse: false))
+            } else if text.hasPrefix("#elseif ") {
+                if !stack.isEmpty {
+                    stack[stack.count - 1] = PlatformFrame(condition: String(text.dropFirst(8)),
+                                                           inElse: false)
+                }
+            } else if text.hasPrefix("#else") {
+                if !stack.isEmpty { stack[stack.count - 1].inElse = true }
+            } else if text.hasPrefix("#endif") {
+                if !stack.isEmpty { stack.removeLast() }
+            } else if text.contains(needle) && !text.hasPrefix("//") && !text.hasPrefix("///")
+                        && !text.hasPrefix("*") {
+                var reachable = true
+                for frame in stack {
+                    // `!os(…)` inverts the arm. The macOS original is negation-blind, which
+                    // mis-analyses nothing in the tree today (measured) — but this suite sweeps
+                    // EVERY file, so a `#if !os(macOS)` added tomorrow would silently drop its
+                    // hand-offs out of the sweep rather than fail it.
+                    let negated = frame.condition.contains("!os(")
+                    if frame.condition.contains("os(iOS)") {
+                        reachable = reachable && (frame.inElse == negated)
+                    } else if frame.condition.contains("os(macOS)") {
+                        reachable = reachable && (frame.inElse != negated)
+                    }
+                }
+                if reachable { hits.append((line: index + 1, text: text)) }
+            }
+        }
+        return hits
+    }
+
+    // MARK: - The iOS analyser earns its trust first
+
+    @Test("The iOS scope analyser sees an #else branch as the opposite platform")
+    func iOSAnalyserUnderstandsElse() {
+        let source = """
+            func open() {
+                #if os(macOS)
+                openWindow.fronting(id: "frus.subjects")
+                #else
+                appState.openTab(.browse, from: sceneID)
+                #endif
+            }
+            """
+        #expect(Self.iOSReachableLines(in: source, containing: "openTab(.browse").count == 1,
+                "a call in the #else of #if os(macOS) IS compiled on iOS")
+        #expect(Self.iOSReachableLines(in: source, containing: "openWindow.fronting").isEmpty,
+                "a call in the #if os(macOS) branch is not")
+    }
+
+    @Test("The iOS scope analyser catches an unguarded call")
+    func iOSAnalyserCatchesAnUnguardedCall() {
+        let source = """
+            func open() {
+                #if os(macOS)
+                openWindow.fronting(id: "frus.subjects")
+                #endif
+                appState.openSubjectExplorer(.all, from: sceneID)
+            }
+            """
+        let hits = Self.iOSReachableLines(in: source, containing: "openSubjectExplorer(")
+        #expect(hits.count == 1, "a call after an #if os(macOS) block IS compiled on iOS")
+    }
+
+    @Test("The iOS scope analyser nests through DEBUG blocks and a labelled #else")
+    func iOSAnalyserHandlesNestingAndLabelledElse() {
+        let source = """
+            #if os(macOS)
+            #if DEBUG
+            print("noise")
+            #endif
+            appState.openSubjectExplorer(.all, from: sceneID)
+            #else // iOS
+            appState.openSubjectExplorer(.all, from: sceneID)
+            #endif
+            """
+        let hits = Self.iOSReachableLines(in: source, containing: "openSubjectExplorer(")
+        #expect(hits.count == 1, """
+            the DEBUG block must not desynchronise the platform frame, and a labelled `#else // iOS` \
+            must still open the iOS arm — matched by prefix rather than by equality for exactly that.
+            """)
+        #expect(hits.first?.line == 7, "only the call inside the #else is iOS-reachable")
+    }
+
+    @Test("The iOS scope analyser inverts a negated platform condition")
+    func iOSAnalyserHandlesNegation() {
+        let source = """
+            #if !os(macOS)
+            appState.openSubjectExplorer(.all, from: sceneID)
+            #endif
+            #if !os(iOS)
+            appState.openSubjectExplorer(.other, from: sceneID)
+            #endif
+            """
+        let hits = Self.iOSReachableLines(in: source, containing: "openSubjectExplorer(")
+        #expect(hits.count == 1, "`#if !os(macOS)` IS compiled on iOS and `#if !os(iOS)` is not")
+        #expect(hits.first?.text.contains(".all") == true,
+                "the negation must invert the arm, not merely be tolerated")
+    }
+
+    // MARK: - The three iOS doors
+
+    /// The `#if os(macOS)` / `#else` / `#endif` arms of one declaration's body.
+    ///
+    /// Sliced from the FIRST directive triple in the window, so an assertion about "the iOS arm"
+    /// cannot be satisfied by code belonging to the next member — the reason the window's own
+    /// character limit is not enough on its own.
+    private static func platformArms(of declaration: String,
+                                     in source: String) throws -> (mac: String, iOS: String) {
+        let body = try functionBody(declaration, in: source, limit: 900)
+        let opens = try #require(body.range(of: "#if os(macOS)"),
+                                 "\(declaration) lost its platform split")
+        let elseAt = try #require(body.range(of: "#else", range: opens.upperBound..<body.endIndex),
+                                  "\(declaration) has a macOS arm and no iOS arm")
+        let endAt = try #require(body.range(of: "#endif", range: elseAt.upperBound..<body.endIndex),
+                                 "\(declaration)'s platform split does not close inside the window")
+        return (mac: String(body[opens.upperBound..<elseAt.lowerBound]),
+                iOS: String(body[elseAt.upperBound..<endAt.lowerBound]))
+    }
+
+    /// Pin 1 — Search ▸ Facets ▸ "Browse topics".
+    @Test("The facet panel's topic door closes the panel and switches to Browse")
+    func facetTopicDoorSwitchesToBrowse() throws {
+        let search = try Self.source("Search/SearchView.swift")
+        let body = try Self.functionBody("private func browseAllTopics(", in: search, limit: 600)
+
+        let closeAt = try #require(body.range(of: "showFacetSheet = false"), """
+            browseAllTopics() must close the facet panel. On iPhone the panel IS a sheet, and on a \
+            compact-width iPad SwiftUI presents the inspector as one — either way the Topic index \
+            lands underneath it.
+            """)
+        let handoffAt = try #require(body.range(of: "appState.openSubjectExplorer(.all, from: sceneID)"),
+                                     "browseAllTopics() must still hand the request to this scene")
+        #expect(closeAt.lowerBound < handoffAt.lowerBound,
+                "close the panel before handing off, matching the sibling archival door")
+        #expect(body.contains("appState.openTab(.browse, from: sceneID)"), """
+            browseAllTopics() hands the Topic index to the Browse tab and never switches to it, so \
+            the index opens where the reader cannot see it and replaces Browse's history (#1274).
+            """)
+
+        // The argument itself, and the panel's withhold — the door is offered only when the
+        // callback is non-nil, so deleting the argument removes the door with no build error.
+        #expect(search.contains("onBrowseTopics: { browseAllTopics() }"),
+                "the facet panel must be wired to the door, not to a bare hand-off")
+        let panel = try Self.source("Search/FacetPanelView.swift")
+        #expect(panel.contains("var onBrowseTopics: (() -> Void)?"),
+                "FacetPanelView must keep taking the door as an injected closure")
+        #expect(panel.contains("if let onBrowseTopics"), """
+            FacetPanelView must keep WITHHOLDING the button when no host supplied a door — that \
+            withhold is why deleting the argument above would silently remove the affordance.
+            """)
+    }
+
+    /// The two shared scope bars: same door, same rules, one test each so a failure names its own.
+    static let scopeBarDoors = [
+        ("Analytics/AnalyticsChartChrome.swift", "AnalyticsScopeBar"),
+        ("SeriesAnalytics/SeriesScopeBar.swift", "SeriesScopeBar"),
+    ]
+
+    /// Pin 3 — the analytics scope bar.
+    @Test("The analytics scope bar's topic door switches to Browse and closes its sheet host")
+    func analyticsScopeBarTopicDoor() throws {
+        try Self.assertTopicDoor(in: "Analytics/AnalyticsChartChrome.swift", named: "AnalyticsScopeBar")
+    }
+
+    /// Pin 4 — the series scope bar.
+    @Test("The series scope bar's topic door switches to Browse and closes the guide")
+    func seriesScopeBarTopicDoor() throws {
+        try Self.assertTopicDoor(in: "SeriesAnalytics/SeriesScopeBar.swift", named: "SeriesScopeBar")
+    }
+
+    /// The contract both scope bars hold, asserted over the door's own two arms.
+    ///
+    /// Keyed on the FILE and the declaration, never on the button's title: the two bars share the
+    /// localization key `analytics.scope.subject.browseIndex`, so a title match would let one bar's
+    /// door satisfy the other's test.
+    private static func assertTopicDoor(in file: String, named bar: String) throws {
+        let source = try Self.source(file)
+        let code = Self.codeLines(source).map(\.text).joined(separator: "\n")
+
+        // The door has to be MOUNTED, not merely declared: everything below reads the two
+        // declarations, and deleting the one line that renders them would leave every other
+        // assertion here green while removing the feature outright.
+        //
+        // Matched as a WHOLE LINE, not as a substring. `functionBody`'s character window runs past
+        // the end of the menu and into `private var topicIndexDoor:` below it, so a `contains`
+        // check is satisfied by the declaration the deletion leaves behind — measured, on the
+        // mutation written to kill this.
+        let menu = try Self.functionBody("private func subjectScopeMenu(", in: source, limit: 2_000)
+        #expect(menu.split(separator: "\n").contains("topicIndexDoor"), """
+            \(bar)'s scope menu no longer renders `topicIndexDoor`, so the Topic-index door is gone \
+            from the bar entirely even though its two declarations are still here (#1023, #1274).
+            """)
+
+        let arms = try Self.platformArms(of: "private var topicIndexButton", in: source)
+        #expect(arms.iOS.contains("appState.openSubjectExplorer(.all, from: sceneID)"),
+                "\(bar)'s door must still hand the request to this scene on iOS")
+        #expect(arms.iOS.contains("appState.openTab(.browse, from: sceneID)"), """
+            \(bar)'s door hands the Topic index to the Browse tab and never switches to it, so on \
+            iOS the index opens out of sight and replaces Browse's history (#1274).
+            """)
+        let notifyAt = try #require(arms.iOS.range(of: "onNavigateAway?()"), """
+            \(bar)'s door must tell its host to close. Every host that can REACH the door on iOS is \
+            a sheet standing over the Browse tab it navigates to — the window hosts publish no \
+            scene, so the withhold below has already removed the door there.
+            """)
+        let handoffAt = try #require(arms.iOS.range(of: "appState.openSubjectExplorer("))
+        #expect(notifyAt.lowerBound < handoffAt.lowerBound, """
+            \(bar) must notify BEFORE the hand-off, or the host's dismissal races the push — the \
+            ordering CrossReferenceAnalyticsView's doors already hold.
+            """)
+        #expect(!arms.iOS.contains("openWindow"),
+                "\(bar)'s iOS arm must not reach for a window; `openWindow.fronting` is macOS-only")
+        #expect(arms.mac.contains("openWindow.fronting(id: \"frus.subjects\")"), """
+            \(bar) lost the macOS half of the door — the hand-off alone leaves the Topics window \
+            wherever it was, which for a window never opened means nowhere.
+            """)
+
+        // The withhold. Without it, a nil scene splits the pair: the subject request goes to a
+        // sentinel no Browse view can consume while the tab switch goes to ANY window, leaving a
+        // window the reader is not in sitting on an empty Browse tab.
+        let gate = try Self.platformArms(of: "private var topicIndexDoor", in: source)
+        #expect(gate.iOS.contains("if let sceneID, sceneID != .anyWindow"), """
+            \(bar) offers its Topic-index door on iOS where the hand-off cannot be delivered. This \
+            is the one hand-off consumed STRICTLY, so a nil scene AND `.anyWindow` are both \
+            undeliverable to it — while `openTab` accepts `.anyWindow` and falls back to it when \
+            the scene is nil. Either way the pair leaves a background window switching to an empty \
+            Browse tab, which is worse than the no-op it replaced.
+            """)
+        #expect(gate.mac.contains("topicIndexButton"), """
+            \(bar) must keep offering the door unconditionally on macOS, where \
+            `openSubjectExplorer` self-addresses the Topics window and never reads the scene.
+            """)
+
+        // Two file-level negatives. The existing dismiss() ban in this suite reads only
+        // CrossReferenceAnalyticsView.swift, so it does not cover these files.
+        #expect(code.contains("var onNavigateAway: (() -> Void)?"), """
+            \(bar) must take its dismisser as an injected closure — it is rendered inside sheets \
+            AND as the content of window scenes on both platforms.
+            """)
+        #expect(!code.contains("@Environment(\\.dismiss)"), """
+            \(bar) reads \\.dismiss itself. This bar is the content of window scenes, where that \
+            closes the SCENE — the reader's window would shut on a scope change (CW-9e).
+            """)
+    }
+
+    /// Pin 2 — the word cloud, which has no iOS door to fix and must not grow an unpaired one.
+    @Test("The word cloud's topic door is macOS-only, and an iOS one would need the same arm")
+    func wordCloudTopicDoorIsMacOnly() throws {
+        let source = try Self.source("Analytics/WordCloud/WordCloudView.swift")
+        let sites = Self.iOSReachableLines(in: source, containing: "appState.openSubjectExplorer(")
+        #expect(sites.isEmpty, """
+            The word cloud grew an iOS-reachable Topic-index door at \
+            \(sites.map(\.line).map(String.init).joined(separator: ", ")). The whole scope bar is \
+            inside one `#if os(macOS)` today — the iOS cloud has no scope control at all — so a new \
+            iOS door needs what the other three carry: the `openTab(.browse,` beside the hand-off, \
+            a host dismisser, and a withhold where the scene did not reach (#1274).
+            """)
+    }
+
+    /// Pin 5 — the sweep, which is what catches a fifth door nobody thought to pin.
+    ///
+    /// Both exemptions are Browse-tab levels themselves: their only iOS presenters are the volume
+    /// screen, the person index and the Browse root, so the reader is already on the tab the index
+    /// opens in and there is nothing to switch to. The day either is presented from elsewhere, this
+    /// list is what a reader questions.
+    static let subjectDoorsAlreadyOnBrowse = [
+        "Browser/VolumeSubjectsView.swift",
+        "Browser/SubjectIndexView.swift",
+    ]
+
+    @Test("Every iOS Topic-index hand-off is paired with the tab switch that shows it")
+    func everySubjectHandoffPairsItsTab() throws {
+        var checked = 0
+        for (path, source) in try Self.appSources() {
+            let handoffs = Self.iOSReachableLines(in: source, containing: "appState.openSubjectExplorer(")
+            guard !handoffs.isEmpty else { continue }
+            checked += handoffs.count
+            if Self.subjectDoorsAlreadyOnBrowse.contains(path) { continue }
+            let switches = Self.iOSReachableLines(in: source, containing: "appState.openTab(.browse,")
+            // Each switch pairs at most ONE hand-off. Without that, a single correct
+            // `openTab(.browse, from: sceneID)` satisfies every hand-off in the ten lines above it,
+            // so two doors sharing a neighbourhood could ship with one switch between them.
+            var claimed = Set<Int>()
+            for site in handoffs {
+                let target = SceneAddressingTests.target(in: site.text)
+                let match = switches.first {
+                    !claimed.contains($0.line) && $0.line > site.line && $0.line <= site.line + 10
+                        && SceneAddressingTests.target(in: $0.text) == target
+                }
+                if let match { claimed.insert(match.line) }
+                let paired = match != nil
+                #expect(paired, """
+                    \(path):\(site.line) hands the Topic index to \(target ?? "a scene") and never \
+                    switches that scene to Browse, so on iOS the index opens behind whatever the \
+                    reader is looking at and replaces Browse's history (#1274). Pair it with \
+                    `appState.openTab(.browse, from: \(target ?? "…"))` within ten lines, or add \
+                    the file to `subjectDoorsAlreadyOnBrowse` with the reason it is already there.
+                    """)
+            }
+        }
+        #expect(checked >= 6, """
+            The sweep found \(checked) iOS-reachable Topic-index hand-offs; there were six when it \
+            was written. A collapse means the scan stopped matching, not that the doors went away.
+            """)
+    }
+
+    /// Every `.swift` under `FRUSExplorer/`, for the sweep above.
+    private static func appSources() throws -> [(path: String, source: String)] {
+        let root = appSourceRoot
+        guard let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            Issue.record("could not enumerate \(root.path)")
+            return []
+        }
+        var result: [(String, String)] = []
+        for case let url as URL in walker where url.pathExtension == "swift" {
+            result.append((url.path.replacingOccurrences(of: root.path + "/", with: ""),
+                           try String(contentsOf: url, encoding: .utf8)))
+        }
+        return result.sorted { $0.0 < $1.0 }
+    }
+
+    // MARK: - The behaviour the withhold is derived from
+
+    #if os(iOS)
+    /// Drives `AppState` rather than reading source, because the withhold rests on a claim about
+    /// DELIVERY that no amount of source scanning can check.
+    ///
+    /// The door writes two hand-offs, and they are not consumed the same way: the Topic index is
+    /// the one slot taken by the STRICT `consumeHandoff(_:for:)`, while the tab switch is taken
+    /// with `orAnyWindow: true`. So the scenes where the two disagree are exactly the scenes where
+    /// the door must not be offered, and this test is the table that says which those are — the
+    /// withhold's condition reads off it rather than off the prose beside it.
+    @Test("A Topic-index hand-off is delivered for a real scene and for nothing else")
+    @MainActor
+    func subjectHandoffDeliveryTable() {
+        let live = SceneID("scene-under-test")
+
+        // 1. A real scene: both halves land, so the door is worth offering.
+        var state = AppState()
+        state.openSubjectExplorer(.all, from: live)
+        state.openTab(.browse, from: live)
+        #expect(state.consumeHandoff(\.pendingSubjectExplorer, for: live) != nil,
+                "a scene-addressed subject request must reach the scene that asked for it")
+        #expect(state.consumePendingTab(for: live) == .browse,
+                "and so must the tab switch beside it")
+
+        // 2. No scene: the tab switch lands ANYWHERE and the index lands nowhere. This is the
+        //    split the withhold exists to prevent — a window the reader is not in quietly moving
+        //    to an empty Browse tab.
+        state = AppState()
+        state.openSubjectExplorer(.all, from: nil)
+        state.openTab(.browse, from: nil)
+        #expect(state.consumeHandoff(\.pendingSubjectExplorer, for: live) == nil, """
+            A scene-less subject request must NOT be deliverable to an arbitrary window; if this \
+            ever starts passing, the withhold in both scope bars is obsolete and should go.
+            """)
+        #expect(state.consumePendingTab(for: live) == .browse, """
+            …while the tab switch beside it IS accepted by any window (`orAnyWindow: true`). The \
+            two halves diverging is the whole reason the door is withheld rather than fixed up.
+            """)
+
+        // 3. `.anyWindow` explicitly: non-nil, and it fails exactly as nil does. Nothing hands the
+        //    bars this today; several `sceneID ?? .anyWindow` injections in the tree are one
+        //    presentation away from it, which is why the guard tests for it by name.
+        state = AppState()
+        state.openSubjectExplorer(.all, from: .anyWindow)
+        state.openTab(.browse, from: .anyWindow)
+        #expect(state.consumeHandoff(\.pendingSubjectExplorer, for: live) == nil,
+                "`.anyWindow` is a non-nil scene that this hand-off can still never be delivered to")
+        #expect(state.consumePendingTab(for: live) == .browse,
+                "…while the tab switch accepts it, which is the same divergence as case 2")
+    }
+
+    @Test("The Topic index is the one hand-off its consumer takes strictly")
+    func subjectConsumerIsStrict() throws {
+        // The table above drives `AppState`'s own delivery, which is the real emitter for both
+        // calls — but the CONSUMER is private to `BrowserView` and no test can reach it. This is
+        // the one line that binds the two: if this consumer ever gains `orAnyWindow:`, the table's
+        // second and third cases stop describing the app and the withhold stops being necessary.
+        let browser = try Self.source("Browser/BrowserView.swift")
+        // `memberBody`, not `functionBody`: the 500-character window this started with ran into
+        // `consumePendingBrowseVolume`, which legitimately DOES take `orAnyWindow: true` — so the
+        // negative below failed on the sibling rather than on its own subject.
+        let body = try Self.memberBody("private func consumePendingSubjectExplorer(", in: browser)
+        #expect(body.contains("consumeHandoff(\\.pendingSubjectExplorer,"),
+                "the Topic-index consumer must still drain the slot the doors write")
+        #expect(!body.contains("orAnyWindow"), """
+            `consumePendingSubjectExplorer` now accepts `.anyWindow`, which the five sibling \
+            channels do and this one deliberately does not. If that is intended, the `.anyWindow` \
+            half of both scope bars' withhold is obsolete and the doors should offer themselves \
+            wherever a scene — any scene — exists (#1274).
+            """)
+    }
+    #endif
+
+    // MARK: - The hosts close behind the door
+
+    /// Every sheet that renders one of the two scope bars, and the literal that closes it.
+    ///
+    /// A window is absent from this table on purpose: there `onNavigateAway` stays nil, because
+    /// closing the window a reader is working in is the defect the injection exists to avoid.
+    static let scopeBarSheetHosts: [(file: String, literal: String, what: String)] = [
+        ("Browser/BrowserView.swift", "onNavigate: { showAnalytics = false }",
+         "Corpus Analytics, presented by the Browse tab it navigates to"),
+        ("Browser/BrowserView.swift", "PersonAnalyticsView(onNavigate: { showPersonAnalytics = false })",
+         "Person Analytics, same presenter"),
+        ("Browser/BrowserView.swift", "onNavigate: { semanticMapSheet = nil }",
+         "the semantic map's sheet"),
+        ("Browser/BrowserView.swift", "CrossReferenceAnalyticsView(onNavigate:",
+         "Cross-Reference Analytics, which already had the callback"),
+        ("Analytics/ArchivalAnalyticsView.swift", "onNavigateAway: closeBehindTopicIndexDoor",
+         "Archival Analytics, which closes ITSELF and then tells its presenter"),
+        ("DocumentView/DocumentView.swift", "onNavigate: { activeSheet = nil }",
+         "the semantic map opened from a document"),
+        ("SeriesAnalytics/SourceProvenanceDashboard.swift", "onNavigateAway: { dismiss() }",
+         "the Research Guide, which is always a sheet on iOS"),
+        ("SeriesAnalytics/SeriesProductionDashboard.swift", "onNavigateAway: { dismiss() }", "the guide"),
+        ("SeriesAnalytics/SeriesGeographyDashboard.swift", "onNavigateAway: { dismiss() }", "the guide"),
+        ("SeriesAnalytics/AdministrationProfilesDashboard.swift", "onNavigateAway: { dismiss() }",
+         "the guide"),
+    ]
+
+    @Test("Every sheet hosting a scope bar closes behind its Topic-index door")
+    func scopeBarSheetsCloseBehindTheDoor() throws {
+        for host in Self.scopeBarSheetHosts {
+            let source = try Self.source(host.file)
+            #expect(source.contains(host.literal), """
+                \(host.file) stopped supplying a dismisser for \(host.what). The scope bar's \
+                Topic-index door switches to the Browse tab underneath it, so without this the \
+                reader is left looking at the sheet and nothing appears to have happened (#1274).
+                """)
+        }
+
+        // The one sheet of the four in BrowserView that never published this window's scene id.
+        // Measured, a sheet inherits `\.sceneID` from the tab shell, so this pins CONSISTENCY with
+        // its three siblings rather than a behaviour — the bar both addresses its hand-off with
+        // the scene and withholds the door when it is nil, and this sheet should not be the one
+        // resting on inheritance for both.
+        // Bounded by the NEXT `.sheet(`, not by a character count. A fixed window here reached
+        // into the sibling presentation below and found ITS scene id, so deleting this one's left
+        // the assertion green — measured, on the mutation written to kill it.
+        let browser = try Self.source("Browser/BrowserView.swift")
+        let personAt = try #require(browser.range(of: "PersonAnalyticsView(onNavigate:"),
+                                    "the Person Analytics sheet moved or lost its dismisser")
+        let nextSheet = try #require(browser.range(of: ".sheet(",
+                                                   range: personAt.upperBound..<browser.endIndex),
+                                     "the Person Analytics sheet must still have a sibling below it")
+        let personSheet = String(browser[personAt.upperBound..<nextSheet.lowerBound])
+        #expect(personSheet.contains(".environment(\\.sceneID, sceneID)"), """
+            The Person Analytics sheet must publish this window's scene id, as its three siblings \
+            here do. The shared scope bar both addresses its Topic-index hand-off with the scene \
+            and withholds the door when it is nil, so this sheet is the one that should least rest \
+            on a sheet inheriting the value (#1274).
+            """)
     }
 }
 

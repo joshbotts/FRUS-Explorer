@@ -966,7 +966,11 @@ struct DocumentView: View {
                     // action targets THIS window (a sheet doesn't reliably inherit `\.sceneID`).
                     .environment(\.sceneID, sceneID)
             case .semanticMap(let request):
-                SemanticAnalyticsView(appState: appState, continued: request)
+                // `onNavigate`: the map's scope bar carries a Topic-index door that leaves for the
+                // Browse tab, so this sheet has to close behind it or the index opens underneath
+                // it (#1274) — the shape `openRailTool`'s own topic door uses two screens down.
+                SemanticAnalyticsView(appState: appState, continued: request,
+                                      onNavigate: { activeSheet = nil })
                     .environment(\.sceneID, sceneID)
             case .wordCloud(let scope):
                 // #752: publish this window's scene id, exactly as the MainTabView presentation
