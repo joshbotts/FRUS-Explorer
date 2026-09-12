@@ -750,6 +750,91 @@ Read `score-detections.json` afterwards for the per-band breakdown and, more use
 positives and misses it samples — a detector with good aggregate numbers and place names in its
 false-positive list is telling you something the aggregate cannot.
 
+
+### 7.1 The first score: the 24-document subset (2026-09-12)
+
+One document per staged volume, keyed by the owner, collected and scored under the five arms above. **The
+stopping rule SUBSET.md froze before scoring is not met**, so this is not a verdict and the remaining 48 are to be
+keyed. What follows is what the 24 can and cannot say.
+
+**Collection.** 156 mentions over 24 documents: 30 from editor markup, 126 added, 0 editor spans rejected. The
+**measured markup share is 19.2%** (18.9 / 25.0 / 24.0 / 13.5% by band), against M1a's ~34% proxy. One document
+was marked `none` and is not scored (below), so the scorer reads 23.
+
+| detector | strict P / R / F1 | relaxed P / R / F1 |
+|---|---|---|
+| editor markup (baseline) | 1.000 / 0.192 / 0.323 | 1.000 / 0.192 / 0.323 |
+| qwen3-14b sweep | 0.292 / 0.731 / 0.418 | 0.364 / 0.910 / 0.520 |
+| sweep, boundary rule only | 0.298 / 0.731 / 0.424 | 0.372 / 0.910 / 0.528 |
+| sweep, all rules | 0.401 / 0.731 / 0.518 | 0.496 / 0.904 / 0.641 |
+| NLTagger control | 0.527 / 0.442 / 0.481 | 0.824 / 0.692 / 0.753 |
+| control, all rules | 0.543 / 0.442 / 0.488 | 0.850 / 0.692 / 0.763 |
+
+By band (sweep / filtered sweep / control), strict: 1861–1899 0.543 / 0.559 / 0.482 · 1900–1929 0.252 / 0.346 /
+0.323 · 1930–1945 0.313 / 0.452 / 0.471 · 1946– 0.500 / 0.653 / 0.562. Relaxed: 0.728 / 0.750 / **0.823** · 0.360 /
+0.494 / **0.710** · 0.343 / 0.495 / **0.627** · 0.562 / 0.714 / **0.719**.
+
+**The stopping rule, both conditions.** The raw detectors' strict F1 differ by 6.3 points, and 10 are required.
+The strict winner changes by band. Document-bootstrap intervals (10,000 resamples) say why the rule is right to
+refuse: NLTagger minus the sweep is +6.3 strict with a 95% interval of −8.1 to +18.5.
+
+**What is already robust: relaxed matching.** NLTagger minus the raw sweep is **+23.2 relaxed, interval +10.3
+to +34.4**. It wins every band, and the gap survives every audit variant below (+23.8 to +25.5). Against the
+*filtered* sweep the gap is +11.2 with an interval of −0.8 to +22.0, and NLTagger still wins all four bands. The
+two detectors fail differently. The sweep finds almost everything (relaxed recall 0.91) at about a third
+precision. NLTagger misses about a third, and it misses the editors' own mentions disproportionately: it
+reaches 11 of the 30 editor-seeded mentions but 97 of the 126 added ones. So in union with the free layer 19 of
+its 48 misses are covered. **Editor markup plus NLTagger scores 0.825 relaxed (P 0.836, R 0.814). Editor markup plus
+the filtered sweep scores 0.623 (P 0.475, R 0.904).** That union comparison was not planned before scoring; read
+it as a direction, not a result.
+
+**What strict F1 measures at this size is a boundary convention.** The instructions say to include an attached
+title, and the owner mostly did (`General Stoessel`, `Mr. Mariscal’s`). Thirteen editor seeds leave theirs out
+(`Bragg` where the text reads `Mr. Bragg`), and the instructions told the annotator to remove a wrong seed, not
+to extend one. NLTagger omits titles by construction. Normalising titles and possessives on both sides moves
+strict F1 to 0.520 / 0.641 / 0.662 (sweep / filtered / control). Extending only those 13 seeds (variant D below)
+turns the raw comparison round — NLTagger +6.8 becomes the sweep +2.0 — and widens the filtered sweep's strict
+lead over NLTagger from 3.5 to **13.9 points, interval +3.5 to +25.1**. A metric that a 13-span convention
+moves by 9–10 points is not yet measuring detection. **Settle the
+convention in the gold before keying more.** Extending the seeds applies the rule as written. It changes the
+gold, not the stopping rule, and it was fixed before any score existed.
+
+**An independent audit of the gold.** Every gold span and every detector span that disagreed with the gold
+(476 items) went to two blind adjudicators per band, with a third deciding the 7 splits. Findings:
+- **Missed mentions:** 6, and none that every detector also missed. Beauregard twice, Braden and Linder twice
+  are agreed; `Wolf, Rudolf`, inside a decimal-file caption, is a contested 1–1 split.
+- **Boundaries:** 3 of the annotator's spans miss an attached `Hon.`, alongside the 13 seeds.
+- **No gold span is judged not to be a person.**
+
+The proposals are in `frus-m2a/AUDIT-PROPOSED-CORRECTIONS.md`, and **none was applied**. Rescored on edited
+copies of the gold:
+
+| variant (24 documents, including the `none` one) | control − sweep, strict / relaxed | control − filtered sweep, strict / relaxed |
+|---|---|---|
+| as keyed | +6.8 / +23.8 | −3.5 / +11.5 |
+| + 5 agreed omissions | +8.0 / +24.6 | −2.6 / +12.1 |
+| + contested `Wolf, Rudolf` | +7.9 / +24.8 | −2.6 / +12.2 |
+| + 3 annotator boundary fixes | +6.1 / +25.5 | −4.6 / +12.9 |
+| + 13 seed boundary fixes (D) | −2.0 / +25.5 | −13.9 / +12.9 |
+
+The stopping rule is not met in any variant.
+
+**The filter on real gold.** It removed 106 of the sweep's spans in the 23 scored documents and touched 2 gold
+mentions, both partial: `Generalissimo` inside `Generalissimo Chiang`, and `King` inside `King’s`, one of §7's
+ambiguous words. It adds **+10.1 strict F1 to the sweep, interval +6.0 to +13.7**. From NLTagger it removed 4
+spans and touched none.
+
+**Three things the loop got wrong, found by this sitting.**
+- **ASCII brackets.** The owner typed every added mention as `[…]`. The collector could only say the text had
+  changed. The insertions were converted mechanically against the R-0 text, which is the authority on which
+  brackets FRUS prints itself, and the typed files are kept beside the sample.
+- **`none` documents never reach the score.** A document marked `none` yields no ground-truth rows, so the
+  scorer never sees it. `frus1946v01/d483` held 6 of the raw sweep's false positives, which moves its strict F1
+  0.418 → 0.413.
+- **Possessives are unsettled.** The rule does not settle them, and 11 gold spans end in `’s` or `’`.
+
+The first two are filed as separate fixes. The third is the owner's decision, alongside the seed titles.
+
 ---
 
 ## 8. The store contract
@@ -865,6 +950,12 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`. `score_detections.py
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
+  1.5 — 2026-09-12: the first score (§7.1). The 24-document subset is keyed, collected (156 mentions, markup
+        share 19.2%) and scored. The frozen stopping rule is not met (strict gap 6.3, band winners mixed),
+        so the remaining 48 are to be keyed. Relaxed matching already favours NLTagger over the raw sweep by 23
+        points (interval excludes zero). Strict is shown to hinge on 13 editor seeds that omit an attached
+        title. An independent two-adjudicator audit of the gold, with the rescoring it implies, is recorded
+        and none of it applied.
   1.4 — 2026-09-12: the sweep RAN (§4.8.3) — 267 volumes in 11.55 days, not ~18.4 or ~4.7 — over four
         invocations, two harness revisions and a server context change, confounded with era in the
         first 27 volumes, four of them gold. The store's `script_sha256` resolved to no commit, so
