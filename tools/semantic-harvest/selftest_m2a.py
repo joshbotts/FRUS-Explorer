@@ -11,15 +11,19 @@ synthetic detectors plus the editor baseline. What it pins:
   * staging seeds the editors' spans and writes text that is byte-identical once the
     brackets come off;
   * the collector derives offsets that slice their own surface back out of the R-0 text;
-  * a document typed with ASCII [ ] instead of ⟦ ⟧ is DIAGNOSED by name, with its pair count and
-    every marked document sharing the pattern; `CONVERT_ASCII_BRACKETS=1` rewrites exactly the inserted
-    brackets (printed ones untouched), keeps the files as typed, and collects the same ground truth as a
-    sitting typed correctly; it converts NOTHING when any inserted bracket touches a printed one, opens
-    inside another, closes nothing, is never closed, is empty, or overlaps a ⟦ ⟧ span (one fixture each,
-    each tripping only its own refusal), and a conversion never writes into an earlier one's backups; a
-    real prose edit beside ASCII brackets — a changed, deleted or inserted letter, or a trimmed final
-    character — is still rejected with the original message, in both modes; and so is a document
-    whose staged text cannot be recovered exactly (no text layer, or one that has moved on);
+  * a document typed with ASCII [ ] instead of ⟦ ⟧ is DIAGNOSED by name, with its own pair count and every
+    marked document sharing the pattern (each with its own count and reasons); conversion — asked for through
+    the ENVIRONMENT, as documented — rewrites exactly the inserted brackets byte for byte (a CRLF file stays
+    CRLF), keeps the files as typed byte for byte, never writes into an earlier conversion's backups, and
+    collects the same ground truth as a sitting typed correctly; it converts NOTHING, and the diagnosis stops
+    recommending it, when any inserted bracket touches a printed one of the same glyph (either side), opens
+    inside another, closes nothing, is never closed, is empty or blank, crosses a ⟦ ⟧ span in any of four
+    shapes, or sits beside a stray or blank ⟦ ⟧ — one fixture each, each tripping only its own refusal, and
+    all-or-nothing whichever document sorts first; unmarked documents are out of scope; a mixed-ending file is
+    refused; a real prose edit (letters, whitespace, a trimmed end) keeps the original message in both modes
+    with conversion saying truthfully why it did nothing; and with no, moved-on or truncated text layer the
+    collector keeps the symptom, says it could not check, and never crashes — while a PASSING document's
+    unreadable layer is never reported;
   * a document whose prose was edited under the brackets is REJECTED, not collected —
     the failure that would otherwise shift every later span silently, and so are a stray
     bracket, a duplicated progress row, and a file named in progress.csv but absent;
@@ -50,6 +54,7 @@ import io
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -105,8 +110,11 @@ def build_fixture(root):
             head = "%s wrote to %s about the matter. " % (names[0], names[1])
             # Printed square brackets, as FRUS has them: an editorial note and a bracketed sign-off.
             # The ASCII-bracket fixtures need the printed ones to tell an annotator's [ ] from the text.
-            body = (head + FILLER + " [Translation.] A closing word from %s. [%s.] "
-                    % (names[1], names[1]))
+            # Printed square brackets, as FRUS has them — a name directly after an editorial "]", a
+            # bracketed receipt line ending on a name, a bracketed sign-off — and line breaks, so the
+            # ASCII-bracket fixtures can tell an annotator's [ ] from the text and keep a file's endings.
+            body = (head + "\n" + FILLER + "\n[Translation.]%s wrote again. [Received from %s] A closing word. [%s.] "
+                    % (names[1], names[1], names[1]))
             doc_id = "d%d" % (index + 1)
             texts.append({"d": doc_id, "o": index, "t": body})
             # Only the first name of each pair is "marked up by the editors", which is
@@ -327,7 +335,8 @@ def run():
     print("\n== ASCII brackets ==")
     # 2026-09-12: the owner keyed 23 documents with every added mention typed as [ … ]. The collector said
     # only "the text changed under the brackets", which was true and named no cause. The fixture documents
-    # print "[Translation.]" and a bracketed sign-off, so a rule that treated any [ ] as markup would fail here.
+    # print "[Translation.]" (a name directly after its ]), "[Received from Name]" and "[Name.]", and carry
+    # line breaks, so a rule that treated any [ ] as markup — or rewrote a file's line endings — fails here.
     instructions = open(os.path.join(out_dir, "M2a-INSTRUCTIONS.md"), encoding="utf-8").read()
     check("the instructions say to type ⟦ ⟧, not [ ]",
           ("Type %s and %s, not [ and ]" % (stage.OPEN, stage.CLOSE)) in instructions)
@@ -337,18 +346,27 @@ def run():
     marked_names = sorted(row["file"] for row in saved_rows if row["annotated"])
     seeded_marked = [name for name in marked_names if name != sorted(staged)[0]]   # doc 0 rejected its seed
     doc_a, doc_b = seeded_marked[0], seeded_marked[1]
-    typed_bodies = {name: open(os.path.join(out_dir, name), encoding="utf-8").read() for name in (doc_a, doc_b)}
+    bodies = {name: open(os.path.join(out_dir, name), encoding="utf-8").read() for name in staged}
+    backup_root = os.path.join(out_dir, "ascii-bracket-originals")
+
+    def source_of(name):
+        return documents[staged[name]["volume"]][staged[name]["document"]]
+
+    def boxed(text):
+        return stage.OPEN + text + stage.CLOSE
+
+    def bracketed(text):
+        return "[" + text + "]"
 
     def touches_printed(source, start, end):
         return ((start > 0 and source[start - 1] == "[") or source[start:start + 1] == "["
                 or source[end - 1:end] == "]" or source[end:end + 1] == "]")
 
     def retype(name, render):
-        """The document as its correctly-typed body, each span re-rendered by `render(source, s, e, seed)`."""
-        entry = staged[name]
-        source = documents[entry["volume"]][entry["document"]]
-        _, spans = stage.unwrap(typed_bodies[name])
-        seeds = {tuple(pair) for pair in entry["seeded"]}
+        """The document with each of its annotated spans re-rendered by `render(source, s, e, seed)`."""
+        source = source_of(name)
+        _, spans = stage.unwrap(bodies[name])
+        seeds = {tuple(pair) for pair in staged[name]["seeded"]}
         pieces, cursor = [], 0
         for start, end, _ in spans:
             pieces.append(source[cursor:start])
@@ -358,19 +376,46 @@ def run():
         return "".join(pieces)
 
     def ascii_where_safe(source, start, end, seed):
-        if seed or touches_printed(source, start, end):
-            return stage.OPEN + source[start:end] + stage.CLOSE
-        return "[" + source[start:end] + "]"
+        return boxed(source[start:end]) if seed or touches_printed(source, start, end) else bracketed(source[start:end])
 
-    def ascii_everywhere(source, start, end, seed):
-        return stage.OPEN + source[start:end] + stage.CLOSE if seed else "[" + source[start:end] + "]"
+    def typing(*forms):
+        """The k-th safe (non-seed, not bracket-adjacent) addition typed as forms[k](name); the rest ⟦ ⟧."""
+        seen = [0]
+
+        def render(source, start, end, seed):
+            text = source[start:end]
+            if seed or touches_printed(source, start, end):
+                return boxed(text)
+            index, seen[0] = seen[0], seen[0] + 1
+            return forms[index](text) if index < len(forms) else boxed(text)
+        return render
+
+    def typing_where(predicate):
+        """Non-seed spans satisfying predicate(source, start, end) typed in [ ]; every other span ⟦ ⟧."""
+        def render(source, start, end, seed):
+            text = source[start:end]
+            return bracketed(text) if not seed and predicate(source, start, end) else boxed(text)
+        return render
 
     def put(name, text):
-        with open(os.path.join(out_dir, name), "w", encoding="utf-8") as handle:
+        with open(os.path.join(out_dir, name), "w", encoding="utf-8", newline="\n") as handle:
             handle.write(text)
+
+    def put_bytes(name, data):
+        with open(os.path.join(out_dir, name), "wb") as handle:
+            handle.write(data)
 
     def read(name):
         return open(os.path.join(out_dir, name), encoding="utf-8").read()
+
+    def read_bytes(name):
+        return open(os.path.join(out_dir, name), "rb").read()
+
+    def pairs_in(name, text):
+        return text.count("[") - source_of(name).count("[")
+
+    def listing_line(message, name):
+        return next((line for line in (message or "").splitlines() if line.startswith("  %s — " % name)), "")
 
     def collecting(convert):
         """collect() in the given mode: (SystemExit message or None, printed output)."""
@@ -386,29 +431,53 @@ def run():
             sys.stdout = real
             stage.CONVERT_ASCII_BRACKETS = False
 
-    typed_a, typed_b = retype(doc_a, ascii_where_safe), retype(doc_b, ascii_where_safe)
-    pairs_a = typed_a.count("[") - documents[staged[doc_a]["volume"]][staged[doc_a]["document"]].count("[")
-    pairs_b = typed_b.count("[") - documents[staged[doc_b]["volume"]][staged[doc_b]["document"]].count("[")
+    def restore_all():
+        for name in staged:
+            put(name, bodies[name])
+        shutil.rmtree(backup_root, ignore_errors=True)
+
+    typed_a = retype(doc_a, ascii_where_safe)          # every safe addition, one directly after a printed ]
+    typed_b = retype(doc_b, typing(bracketed))          # only the first safe addition
+    pairs_a, pairs_b = pairs_in(doc_a, typed_a), pairs_in(doc_b, typed_b)
+    check("the fixtures differ in pair count, type one pair right after a printed ], and carry line breaks",
+          pairs_a >= 2 and pairs_b == 1 and ".][" in typed_a and source_of(doc_a).count("\n") >= 2,
+          (pairs_a, pairs_b))
+
     put(doc_a, typed_a)
     put(doc_b, typed_b)
     message, _ = collecting(False)
     check("a document typed with ASCII brackets is diagnosed as such, with its own pair count",
-          message is not None and pairs_a > 0 and pairs_b > 0
-          and ("%s: the annotator typed ASCII brackets" % doc_a) in message
+          message is not None and ("%s: the annotator typed ASCII brackets" % doc_a) in message
           and ("%d pair(s) in this document" % pairs_a) in message
           and "must be wrapped in %s %s" % (stage.OPEN, stage.CLOSE) in message
           and "the text changed under the brackets" not in message,
           (message or "")[:400])
-    check("the diagnosis lists every marked document sharing the pattern, and rewrites none of them",
+    check("the diagnosis lists every marked document with its own count, offers conversion, and rewrites none",
           message is not None and "2 marked document(s) show the same pattern" in message
-          and ("%s — %d pair(s)" % (doc_b, pairs_b)) in message
+          and listing_line(message, doc_a) == "  %s — %d pair(s)" % (doc_a, pairs_a)
+          and listing_line(message, doc_b) == "  %s — %d pair(s)" % (doc_b, pairs_b)
+          and "or collect with CONVERT_ASCII_BRACKETS=1, which rewrites exactly the inserted brackets" in message
           and read(doc_a) == typed_a and read(doc_b) == typed_b,
-          (message or "")[-400:])
+          (message or "")[-500:])
 
-    # A conversion in the same second as an earlier one must not write into the earlier one's backups.
-    # The clock is pinned so the collision happens on every run instead of one run in a million.
+    # The documented way to ask for conversion is the environment variable, so drive that, in a process of its own.
+    run_env = dict(os.environ, COLLECT="1", CONVERT_ASCII_BRACKETS="1", OUT_DIR=out_dir, STORE=store_dir,
+                   TEXT_DIR=text_dir, SELFTEST="")
+    converted_run = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                                 "stage_m2a.py")],
+                                   env=run_env, capture_output=True, text=True, timeout=600)
+    check("CONVERT_ASCII_BRACKETS=1 in the environment converts, as the runbook documents",
+          converted_run.returncode == 0 and read(doc_a) == bodies[doc_a] and read(doc_b) == bodies[doc_b]
+          and ("converted %d inserted ASCII [ ] pair(s)" % (pairs_a + pairs_b)) in converted_run.stdout,
+          (converted_run.returncode, converted_run.stdout[-300:], converted_run.stderr[-300:]))
+    restore_all()
+
+    # In process, with a CRLF file and the clock pinned into a collision with an earlier conversion's backups.
+    crlf_a = typed_a.replace("\n", "\r\n").encode("utf-8")
+    put_bytes(doc_a, crlf_a)
+    put(doc_b, typed_b)
     fixed_stamp = "20990101T000000"
-    earlier = os.path.join(out_dir, "ascii-bracket-originals", fixed_stamp)
+    earlier = os.path.join(backup_root, fixed_stamp)
     os.makedirs(earlier)
     with open(os.path.join(earlier, "earlier.keep"), "w", encoding="utf-8") as handle:
         handle.write("an earlier conversion's backups")
@@ -418,129 +487,214 @@ def run():
         message, output = collecting(True)
     finally:
         stage.time.strftime = real_strftime
-    backups = sorted(glob.glob(os.path.join(out_dir, "ascii-bracket-originals", "*", "*.txt")))
-    check("CONVERT_ASCII_BRACKETS=1 rewrites exactly the inserted brackets and leaves the printed ones",
-          message is None and read(doc_a) == typed_bodies[doc_a] and read(doc_b) == typed_bodies[doc_b]
-          and "[Translation.]" in read(doc_a),
+    backup_dir = os.path.join(backup_root, fixed_stamp + "-2")
+    check("conversion rewrites exactly the inserted brackets, byte for byte, keeping a CRLF file CRLF",
+          message is None and read_bytes(doc_a) == bodies[doc_a].replace("\n", "\r\n").encode("utf-8")
+          and read_bytes(doc_b) == bodies[doc_b].encode("utf-8"),
           (message, output[:300]))
     check("...collects the same ground truth a sitting typed with ⟦ ⟧ does",
           open(truth_path, encoding="utf-8").read() == reference_truth)
-    check("...and keeps the files as typed, saying how many pairs it converted",
-          [os.path.basename(path) for path in backups] == sorted([doc_a, doc_b])
-          and [open(path, encoding="utf-8").read() for path in backups]
-          == [dict([(doc_a, typed_a), (doc_b, typed_b)])[os.path.basename(path)] for path in backups]
+    check("...and keeps the files as typed, byte for byte, beside an earlier conversion from the same second",
+          os.path.isdir(backup_dir) and sorted(os.listdir(backup_dir)) == sorted([doc_a, doc_b])
+          and open(os.path.join(backup_dir, doc_a), "rb").read() == crlf_a
+          and open(os.path.join(backup_dir, doc_b), "rb").read() == typed_b.encode("utf-8")
+          and os.listdir(earlier) == ["earlier.keep"]
           and ("converted %d inserted ASCII [ ] pair(s)" % (pairs_a + pairs_b)) in output
           and "in 2 document(s)" in output,
-          (backups, output[:300]))
-    check("...into a directory of its own when one from the same second already exists",
-          {os.path.basename(os.path.dirname(path)) for path in backups} == {fixed_stamp + "-2"}
-          and os.listdir(earlier) == ["earlier.keep"],
-          (backups, os.listdir(earlier)))
+          (sorted(os.listdir(backup_root)), output[:300]))
+    restore_all()
 
-    REFUSALS = ("touches a printed", "opens inside", "closes nothing", "is never closed", "is empty", "overlaps the")
-
-    def refused_in_both_modes(label, text_a, expected):
-        """doc_a gets the unsafe typing, doc_b a SAFE one: conversion must still touch neither. Each
-        fixture must trip ONLY its own refusal — one that trips two tests neither."""
-        put(doc_a, text_a)
-        put(doc_b, typed_b)
-        diagnosed, _ = collecting(False)
-        converted_message, _ = collecting(True)
-        others = [phrase for phrase in REFUSALS if phrase != expected
-                  and phrase in (diagnosed or "") + (converted_message or "")]
-        check(label,
-              diagnosed is not None and "cannot be converted" in diagnosed and expected in diagnosed
-              and converted_message is not None and "converted nothing" in converted_message
-              and expected in converted_message and doc_a in converted_message
-              and not others and read(doc_a) == text_a and read(doc_b) == typed_b,
-              (others, (diagnosed or "")[-300:] + " || " + (converted_message or "")[:300]))
-
-    def nth_addition(*typings):
-        """A render typing the k-th safe (non-seed, not bracket-adjacent) addition as typings[k](name);
-        every other span stays in ⟦ ⟧."""
-        seen = [0]
-
-        def render(source, start, end, seed):
-            name = source[start:end]
-            if seed or touches_printed(source, start, end):
-                return stage.OPEN + name + stage.CLOSE
-            index, seen[0] = seen[0], seen[0] + 1
-            return typings[index](name) if index < len(typings) else stage.OPEN + name + stage.CLOSE
-        return render
-
-    refused_in_both_modes("an inserted bracket touching a printed one is refused, and nothing is converted",
-                          retype(doc_a, ascii_everywhere), "touches a printed")
-
-    refused_in_both_modes("an inserted [ that is never closed is refused",
-                          retype(doc_a, nth_addition(lambda name: "[" + name)), "is never closed")
-    refused_in_both_modes("an inserted [ that opens inside another is refused",
-                          retype(doc_a, nth_addition(lambda name: "[" + name, lambda name: "[" + name + "]")),
-                          "opens inside")
-    refused_in_both_modes("an inserted ] that closes nothing is refused",
-                          retype(doc_a, nth_addition(lambda name: name + "]")), "closes nothing")
-    refused_in_both_modes("an empty inserted [ ] pair is refused",
-                          retype(doc_a, nth_addition(lambda name: "[]" + stage.OPEN + name + stage.CLOSE)),
-                          "is empty")
-
-    # A PARTIAL overlap — the pair opens inside the seeded span and closes three characters past it — so
-    # a rule that refused only a pair contained in a ⟦ ⟧ span would not pass.
-    wrapped_only = retype(doc_a, lambda source, start, end, seed: stage.OPEN + source[start:end] + stage.CLOSE)
-    seed_open, seed_close = wrapped_only.index(stage.OPEN), wrapped_only.index(stage.CLOSE)
-    straddling = (wrapped_only[:seed_open + 2] + "[" + wrapped_only[seed_open + 2:seed_close + 4] + "]"
-                  + wrapped_only[seed_close + 4:])
-    refused_in_both_modes("an inserted [ ] pair overlapping a ⟦ ⟧ span is refused",
-                          straddling, "overlaps the")
-
-    put(doc_b, typed_bodies[doc_b])
-    for label, edit in (("a changed letter", lambda text: text.replace("winter", "wintor", 1)),
-                        ("a deleted letter", lambda text: text.replace("winter", "wintr", 1)),
-                        ("an inserted letter", lambda text: text.replace("winter", "winterx", 1)),
-                        # The one deletion an alignment can mistake for nothing: at the END, where the file
-                        # simply runs out — and the one an editor trimming trailing whitespace makes.
-                        ("a deleted final character", lambda text: text[:-1])):
-        edited = edit(retype(doc_a, ascii_where_safe))
-        put(doc_a, edited)
-        message, _ = collecting(False)
-        check("a real prose edit (%s) beside ASCII brackets is still rejected with the original message" % label,
-              message is not None and "the text changed under the brackets" in message
-              and "ASCII" not in message, (message or "")[:300])
+    mixed = typed_a.replace("\n", "\r\n", 1).encode("utf-8")
+    put_bytes(doc_a, mixed)
+    put(doc_b, typed_b)
     message, _ = collecting(True)
-    check("...and CONVERT_ASCII_BRACKETS=1 neither converts nor masks it",
-          message is not None and "the text changed under the brackets" in message
-          and read(doc_a) == edited, (message or "")[:300])
+    check("a file with mixed line endings is refused rather than normalised, and nothing is converted",
+          message is not None and "converted nothing" in message and "line endings" in message
+          and read_bytes(doc_a) == mixed and read(doc_b) == typed_b and not os.path.exists(backup_root),
+          (message or "")[:300])
+    restore_all()
 
-    # Diagnosis needs the EXACT text the document was staged from. Without it — no text layer here, or a
-    # corpus that has moved on — the collector must fall back to the symptom rather than guess a cause.
+    REFUSALS = ("touches a printed", "opens inside", "closes nothing", "is never closed", "is empty or blank",
+                "overlaps the", "a stray", "a blank %s%s" % (stage.OPEN, stage.CLOSE))
+
+    def refused_in_both_modes(label, expected, unsafe_doc, unsafe_text, safe_doc, safe_text, detail=None, absent=None):
+        """The unsafe typing in one document, a SAFE one in the other: both are listed, only the unsafe one
+        with its own reason, and conversion touches neither. Each fixture trips ONLY its own refusal."""
+        put(unsafe_doc, unsafe_text)
+        put(safe_doc, safe_text)
+        diagnosed, _ = collecting(False)
+        refused, _ = collecting(True)
+        unsafe_line, safe_line = listing_line(diagnosed, unsafe_doc), listing_line(diagnosed, safe_doc)
+        tripped = [phrase for phrase in REFUSALS if phrase in (diagnosed or "") + (refused or "")]
+        check(label,
+              diagnosed is not None and "cannot be converted" in unsafe_line and expected in unsafe_line
+              and (detail is None or detail in unsafe_line) and (absent is None or absent not in unsafe_line)
+              and safe_line.startswith("  %s — " % safe_doc) and "cannot be converted" not in safe_line
+              and "CONVERT_ASCII_BRACKETS=1 converts nothing while any cannot be converted" in diagnosed
+              and refused is not None and "converted nothing: 1 marked document(s)" in refused
+              and expected in refused and unsafe_doc in refused and tripped == [expected]
+              and read(unsafe_doc) == unsafe_text and read(safe_doc) == safe_text
+              and not os.path.exists(backup_root),
+              (tripped, unsafe_line[:200], safe_line[:120], (refused or "")[:200]))
+        restore_all()
+
+    after_open = lambda source, start, end: start > 0 and source[start - 1] == "["
+    before_close = lambda source, start, end: source[end:end + 1] == "]"
+    refused_in_both_modes("an inserted [ right after a printed [ is refused, and nothing is converted",
+                          "touches a printed", doc_a, retype(doc_a, typing_where(after_open)), doc_b, typed_b,
+                          detail="touches a printed [", absent="touches a printed ]")
+    refused_in_both_modes("an inserted ] right after a printed ] is refused",
+                          "touches a printed", doc_a, retype(doc_a, typing_where(before_close)), doc_b, typed_b,
+                          detail="touches a printed ]", absent="touches a printed [")
+    refused_in_both_modes("...and conversion is all or nothing when the refused document sorts LAST",
+                          "touches a printed", doc_b, retype(doc_b, typing_where(after_open)), doc_a, typed_a)
+    refused_in_both_modes("an inserted [ that opens inside another is refused", "opens inside",
+                          doc_a, retype(doc_a, typing(lambda t: "[" + t, bracketed)), doc_b, typed_b)
+    refused_in_both_modes("an inserted ] that closes nothing is refused", "closes nothing",
+                          doc_a, retype(doc_a, typing(lambda t: t + "]")), doc_b, typed_b)
+    refused_in_both_modes("an inserted [ that is never closed is refused", "is never closed",
+                          doc_a, retype(doc_a, typing(lambda t: "[" + t)), doc_b, typed_b)
+    refused_in_both_modes("an empty inserted [] pair is refused", "is empty or blank",
+                          doc_a, retype(doc_a, typing(lambda t: "[]" + boxed(t))), doc_b, typed_b)
+    body_a = bodies[doc_a]
+    seed_open, seed_close = body_a.index(stage.OPEN), body_a.index(stage.CLOSE)
+    refused_in_both_modes("a blank inserted [ ] pair, around a space, is refused", "is empty or blank",
+                          doc_a, body_a[:seed_close + 1] + "[ ]" + body_a[seed_close + 2:], doc_b, typed_b)
+    # Four ways a [ ] pair can cross a ⟦ ⟧ span, one fixture each.
+    shapes = (
+        ("that opens inside a ⟦ ⟧ span", body_a[:seed_open + 2] + "[" + body_a[seed_open + 2:seed_close + 4] + "]"
+         + body_a[seed_close + 4:]),
+        ("that opens before a ⟦ ⟧ span and closes inside it", body_a[:seed_open] + "[" + body_a[seed_open:seed_open + 4]
+         + "]" + body_a[seed_open + 4:]),
+        ("that contains a ⟦ ⟧ span", body_a[:seed_open] + "[" + body_a[seed_open:seed_close + 3] + "]"
+         + body_a[seed_close + 3:]),
+        ("that opens at the offset where a ⟦ ⟧ span closes, before its ⟧", body_a[:seed_close] + "["
+         + body_a[seed_close:seed_close + 7] + "]" + body_a[seed_close + 7:]),
+    )
+    for shape, text in shapes:
+        refused_in_both_modes("an inserted [ ] pair %s is refused" % shape, "overlaps the", doc_a, text, doc_b, typed_b)
+
+    # Two defects the collector's own checks catch BEFORE the text check, so diagnosis never sees them — but
+    # conversion runs first, and must refuse rather than write a file the loop then rejects (or, worse, one
+    # whose stray bracket the non-greedy pairing silently adopts).
+    for label, text, expected, loop_message in (
+            ("a stray ⟧ beside ASCII pairs", typed_a.replace(stage.OPEN, "", 1), "a stray",
+             "a stray %s or %s survives" % (stage.OPEN, stage.CLOSE)),
+            ("a blank ⟦ ⟧ pair beside ASCII pairs",
+             typed_a[:typed_a.index(stage.CLOSE) + 1] + boxed(" ") + typed_a[typed_a.index(stage.CLOSE) + 2:],
+             "a blank %s%s" % (stage.OPEN, stage.CLOSE), "an empty or blank %s%s pair" % (stage.OPEN, stage.CLOSE))):
+        put(doc_a, text)
+        put(doc_b, typed_b)
+        refused, _ = collecting(True)
+        plain_refusal, _ = collecting(False)
+        tripped = [phrase for phrase in REFUSALS if phrase in (refused or "")]
+        check("conversion refuses %s, writing nothing, and the loop still names it" % label,
+              refused is not None and "converted nothing" in refused and tripped == [expected]
+              and read(doc_a) == text and read(doc_b) == typed_b and not os.path.exists(backup_root)
+              and plain_refusal is not None and loop_message in plain_refusal,
+              (tripped, (refused or "")[:300], (plain_refusal or "")[:200]))
+        restore_all()
+
+    # Scope: only MARKED documents are converted or can block conversion; and a document with a stray bracket
+    # but no ASCII bracket is not an ASCII case at all.
+    unfinished_unsafe = retype(unfinished, typing_where(after_open))
+    put(unfinished, unfinished_unsafe)
     put(doc_a, typed_a)
+    put(doc_b, typed_b)
+    message, output = collecting(True)
+    check("an unmarked document is neither converted nor able to block conversion",
+          message is None and read(unfinished) == unfinished_unsafe and read(doc_a) == bodies[doc_a]
+          and "in 2 document(s)" in output, (message, output[:300]))
+    restore_all()
+    stray_only = bodies[doc_a].replace(stage.OPEN, "", 1)
+    put(doc_a, stray_only)
+    put(doc_b, typed_b)
+    message, output = collecting(True)
+    check("a document with a stray bracket and no ASCII bracket is not converted as one",
+          message is not None and "a stray %s or %s survives" % (stage.OPEN, stage.CLOSE) in message
+          and ("converted %d inserted ASCII [ ] pair(s)" % pairs_b) in output and "in 1 document(s)" in output
+          and read(doc_a) == stray_only, (message, output[:300]))
+    restore_all()
+
+    # A real prose edit beside ASCII brackets keeps the original message in both modes, and conversion says
+    # truthfully why it did nothing.
+    edits = (("a changed letter", lambda text: text.replace("winter", "wintor", 1)),
+             ("a deleted letter", lambda text: text.replace("winter", "wintr", 1)),
+             ("an inserted letter", lambda text: text.replace("winter", "winterx", 1)),
+             ("a doubled space", lambda text: text.replace(" wrote to ", " wrote  to ", 1)),
+             ("a deleted space", lambda text: text.replace(" wrote to ", " wroteto ", 1)),
+             ("an inserted line break", lambda text: text.replace(" wrote to ", " wrote\nto ", 1)),
+             # The one deletion an alignment can mistake for nothing: at the END, where the file simply runs out.
+             ("a trimmed final character", lambda text: text[:-1]))
+    for label, edit in edits:
+        edited = edit(typed_a)
+        put(doc_a, edited)
+        diagnosed, _ = collecting(False)
+        refused, output = collecting(True)
+        check("a real prose edit (%s) beside ASCII brackets keeps the original message, in both modes" % label,
+              edited != typed_a and diagnosed is not None and "the text changed under the brackets" in diagnosed
+              and "typed ASCII brackets" not in diagnosed
+              and refused is not None and "the text changed under the brackets" in refused
+              and read(doc_a) == edited and "converted nothing" in output
+              and ("were not converted because they fail for a reason other than inserted brackets: %s" % doc_a) in output
+              and "no marked document holds" not in output,
+              ((diagnosed or "")[:160], (refused or "")[:160], output[:300]))
+    restore_all()
+
+    # Diagnosis needs the EXACT text the document was staged from. Without it — no text layer, one that has moved
+    # on, or one truncated in transfer — the collector keeps the symptom, says it could not check, and never crashes.
     saved_text_dir = stage.TEXT_DIR
+    moved, truncated = os.path.join(root, "moved-text"), os.path.join(root, "truncated-text")
+    entry_a = staged[doc_a]
+    for directory in (moved, truncated):
+        os.makedirs(directory, exist_ok=True)
+    for volume in {row["volume"] for row in staged.values()}:
+        original_gz = os.path.join(text_dir, volume + ".jsonl.gz")
+        rows_out = ner_store.read_jsonl_gz(original_gz)
+        if volume == entry_a["volume"]:
+            for row in rows_out:
+                if row["d"] == entry_a["document"]:
+                    row["t"] = row["t"].replace("[Translation.]", "Translation.]", 1)
+        write_jsonl_gz(os.path.join(moved, volume + ".jsonl.gz"), rows_out)
+        data = open(original_gz, "rb").read()
+        with open(os.path.join(truncated, volume + ".jsonl.gz"), "wb") as handle:
+            handle.write(data[:len(data) // 2] if volume == entry_a["volume"] else data)
     try:
-        stage.TEXT_DIR = os.path.join(root, "no-text-layer-here")
-        message, _ = collecting(False)
-        check("with no text layer to diagnose against, the original message stands",
-              message is not None and "the text changed under the brackets" in message
-              and "ASCII" not in message, (message or "")[:300])
-        moved = os.path.join(root, "moved-text")
-        os.makedirs(moved, exist_ok=True)
-        entry_a = staged[doc_a]
+        for label, directory in (("no text layer", os.path.join(root, "no-text-layer-here")),
+                                 ("a text layer that no longer matches the staged hash", moved),
+                                 ("a truncated text layer", truncated)):
+            stage.TEXT_DIR = directory
+            put(doc_a, typed_a)
+            diagnosed, _ = collecting(False)
+            refused, output = collecting(True)
+            check("with %s, the original message stands and says the cause could not be checked, in both modes" % label,
+                  diagnosed is not None and "the text changed under the brackets" in diagnosed
+                  and "could not be checked" in diagnosed and "typed ASCII brackets" not in diagnosed
+                  and refused is not None and "the text changed under the brackets" in refused
+                  and ("could not be checked for ASCII brackets" in output and doc_a in output)
+                  and read(doc_a) == typed_a,
+                  ((diagnosed or "")[-200:], output[:300]))
+        # A document that PASSES is never charged to its volume's text layer: truncate the OTHER volume's
+        # layer, and the ASCII diagnosis for doc_a must not claim anything "could not be checked".
+        other_volume_marked = next(name for name in marked_names if staged[name]["volume"] != entry_a["volume"])
+        other_truncated = os.path.join(root, "other-truncated-text")
+        os.makedirs(other_truncated, exist_ok=True)
         for volume in {row["volume"] for row in staged.values()}:
-            rows_out = ner_store.read_jsonl_gz(os.path.join(text_dir, volume + ".jsonl.gz"))
-            if volume == entry_a["volume"]:
-                for row in rows_out:
-                    if row["d"] == entry_a["document"]:
-                        # The printed bracket gone: aligned against THIS text the file's own printed [
-                        # would read as typed markup, which is exactly the guess that must not be made.
-                        row["t"] = row["t"].replace("[Translation.]", "Translation.]", 1)
-            write_jsonl_gz(os.path.join(moved, volume + ".jsonl.gz"), rows_out)
-        stage.TEXT_DIR = moved
-        message, _ = collecting(False)
-        check("against a text layer that no longer matches the staged hash, the original message stands",
-              message is not None and "the text changed under the brackets" in message
-              and "ASCII" not in message, (message or "")[:300])
+            data = open(os.path.join(text_dir, volume + ".jsonl.gz"), "rb").read()
+            with open(os.path.join(other_truncated, volume + ".jsonl.gz"), "wb") as handle:
+                handle.write(data[:len(data) // 2] if volume == staged[other_volume_marked]["volume"] else data)
+        stage.TEXT_DIR = other_truncated
+        put(doc_a, typed_a)
+        diagnosed, _ = collecting(False)
+        check("a passing document's unreadable text layer is not reported as a document that could not be checked",
+              diagnosed is not None and ("%s: the annotator typed ASCII brackets" % doc_a) in diagnosed
+              and "could not be checked" not in diagnosed,
+              (diagnosed or "")[-300:])
     finally:
         stage.TEXT_DIR = saved_text_dir
+    restore_all()
 
-    put(doc_a, typed_bodies[doc_a])
-    put(doc_b, typed_bodies[doc_b])
+    write_progress(saved_rows)
     stage.collect()
     check("the sample is restored for the checks that follow",
           open(truth_path, encoding="utf-8").read() == reference_truth)
