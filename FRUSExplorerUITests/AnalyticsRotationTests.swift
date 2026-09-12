@@ -75,6 +75,13 @@ final class AnalyticsRotationTests: XCTestCase {
         // Leave the device upright regardless of how the test ended, or the next test inherits
         // landscape and its own layout assertions become meaningless.
         XCUIDevice.shared.orientation = .portrait
+        // And leave nothing OPEN, for the same reason one level up (#1279). Every test in this
+        // suite ends on an analytics surface, which on iPad is a window scene iPadOS restores at
+        // the next launch — the state in which a tab guard finds no tab bar in the tree at all.
+        // This suite is the heaviest producer of it and had neither this nor the `terminate()`
+        // #1214 gave its sibling.
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
         app = nil
     }
 
@@ -260,7 +267,14 @@ final class AnalyticsRotationTests: XCTestCase {
         // Through the navigator: the bare `app.buttons["Settings"]` this replaces could not see a
         // tab the floating iPad bar had paged off screen, and reported it as
         // `XCTSkip("Settings tab not found")` — a green skip for a helper's gap.
-        guard navigator.select(.settings).tapped else { throw XCTSkip("Settings tab not reachable") }
+        //
+        // ASSERTED rather than skipped (#1279). `select` already fails for a tab it cannot find in
+        // any representation; the one path that returns `tapped: false` without failing is the
+        // last-resort tap on a control that exists but never became hittable. A skip there is the
+        // same green-for-a-helper's-gap this comment condemns, one level up.
+        XCTAssertTrue(navigator.select(.settings).tapped,
+                      "Could not open the Settings tab, so the project's research question "
+                      + "cannot be staged.")
 
         let projects = app.buttons["Projects"].firstMatch
         guard projects.waitForExistence(timeout: 10) else { throw XCTSkip("Projects pane not found") }
@@ -407,7 +421,9 @@ final class AnalyticsRotationTests: XCTestCase {
     /// sheet, and its stack is not nested inside another presented controller. If this hangs, the
     /// defect is app-wide and must be fixed globally.
     func testRotateWithFocusedSearchFieldIsSafe() throws {
-        guard navigator.select(.search).tapped else { throw XCTSkip("Search tab not reachable") }
+        // Asserted, not skipped — see `giveActiveProjectAResearchQuestion` (#1279).
+        XCTAssertTrue(navigator.select(.search).tapped,
+                      "Could not open the Search tab, so its keywords field cannot be focused.")
 
         // `.searchable` surfaces as a searchField, not a textField.
         var field = app.searchFields.firstMatch
@@ -500,48 +516,22 @@ final class AnalyticsRotationTests: XCTestCase {
     // MARK: - Helpers
 
     /// Opens Browse ▸ Analysis Tools ▸ the named item.
+    ///
+    /// The shared implementation since #1279. This was a FOURTH copy of the same route, eight lines
+    /// above the one #1279 named, carrying both defects the issue is about: it discarded
+    /// `navigator.select(.browse)`'s result, and it skipped with `"Analysis Tools menu not found"`
+    /// for a tab it may never have reached.
     private func openAnalysisItem(_ label: String) throws {
-        navigator.select(.browse)
-        let menu = app.buttons["Analysis Tools"]
-        guard menu.waitForExistence(timeout: 10) else { throw XCTSkip("Analysis Tools menu not found") }
-        menu.tap()
-        let item = app.buttons[label].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 5), "\(label) menu item should exist")
-        item.tap()
+        try AnalysisToolsMenu.open(label, in: app, through: navigator)
     }
 
     /// Opens Browse ▸ the analysis menu ▸ Corpus Analytics.
+    ///
+    /// The shared implementation since #1279. Two other suites carried a copy of this that claimed
+    /// to mirror it and never matched it — without the overflow expansion, and without a skip
+    /// message that says what IS on screen.
     private func openCorpusAnalytics() throws {
-        navigator.select(.browse)
-
-        // The grouped analysis menu — an explicit Menu rather than toolbar overflow (BrowserView).
-        // Its accessibility LABEL is the short name from `.controlHelp(_:detail:)`; the long
-        // "Chronology, Corpus Analytics, …" string is the accessibility HINT, not the label.
-        var menu = app.buttons["Analysis Tools"]
-        if !menu.waitForExistence(timeout: 10) {
-            // iPad: if the Browse toolbar ever collapses its trailing items into an overflow
-            // control, "Analysis Tools" is not a top-level button until that is expanded.
-            for label in ["More", "Show More", "More Actions"] {
-                let more = app.buttons[label].firstMatch
-                if more.exists { more.tap(); break }
-            }
-            // R-8 fixed the raw-SF-Symbol fallback this used to need: the overflowed row now
-            // announces "Analysis Tools" like the in-bar button, because the name lives in the
-            // item's `Label` rather than only in `.controlHelp`. `ToolbarOverflowAccessibilityTests`
-            // is the guard; do not reintroduce a `app.buttons["chart.bar.xaxis"]` fallback here —
-            // it would silently re-accept the defect.
-            menu = app.buttons["Analysis Tools"]
-            if !menu.waitForExistence(timeout: 5) {
-                let labels = app.buttons.allElementsBoundByIndex.prefix(30)
-                    .map { $0.label }.filter { !$0.isEmpty }.joined(separator: " | ")
-                throw XCTSkip("Analysis toolbar menu not found. Buttons on screen: \(labels)")
-            }
-        }
-        menu.tap()
-
-        let item = app.buttons["Corpus Analytics"].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 5), "Corpus Analytics menu item should exist")
-        item.tap()
+        try AnalysisToolsMenu.open("Corpus Analytics", in: app, through: navigator)
     }
 
     /// Portrait → landscape → portrait, pausing long enough for the 10s watchdog to fire if the

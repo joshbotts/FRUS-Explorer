@@ -31,6 +31,10 @@ final class AnalyticsKeyboardTests: XCTestCase {
 
     var app: XCUIApplication!
 
+    /// Read through a closure: `setUpWithError` mints a fresh `XCUIApplication` per test, and a
+    /// stored reference would leave the navigator driving a dead process (#1278).
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
@@ -44,6 +48,22 @@ final class AnalyticsKeyboardTests: XCTestCase {
 
     override func tearDownWithError() throws {
         XCUIDevice.shared.orientation = .portrait
+        // **Close what is open, then terminate (#1279).** Every test here ends with Corpus
+        // Analytics open, which on iPad is a second WINDOW scene rather than a sheet — see
+        // `UITestPresentation` — and iPadOS restores it on the next launch. Measured on iPad mini
+        // (A17 Pro) at `69dfac7d`: with the app freshly installed this suite ran three tests, the
+        // first passed, and the next two relaunched into that window and skipped claiming the
+        // analysis menu was "not reachable on this destination". It outlived the suite too, so
+        // `ToolbarOverflowAccessibilityTests` then measured it and failed on the wrong screen.
+        // **This suite's sibling has been here already.** #1214 — *"Make the keyboard-dismiss-bar
+        // reach test order-independent, and able to fail"* — added `app?.terminate()` to
+        // `KeyboardDismissBarReachTests`'s teardown on 2026-09-05 for this exact reason, and the
+        // lesson was not carried across to this file. It was also not enough: terminating does not
+        // fix it, because `launch()` already terminates and iPadOS restores the window scene anyway.
+        // The app's own scene table calls `corpusAnalyticsScene` "Value-based — restores correctly";
+        // that is the property being inherited. The window has to be CLOSED, not merely left behind.
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
         app = nil
     }
 
@@ -140,19 +160,13 @@ final class AnalyticsKeyboardTests: XCTestCase {
         return (app.keyboards.count > 0) == present
     }
 
-    /// Mirrors `AnalyticsRotationTests.openCorpusAnalytics` — the toolbar path to the sheet.
+    /// The toolbar path to the sheet.
+    ///
+    /// One shared implementation since #1279. This used to be a copy that *said* it mirrored
+    /// `AnalyticsRotationTests.openCorpusAnalytics` and no longer did — it lacked that one's
+    /// overflow expansion and its skip message, which is why its miss named the wrong cause and
+    /// printed nothing to contradict it.
     private func openCorpusAnalytics() throws {
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 10) { browse.tap() }
-
-        let menu = app.buttons["Analysis Tools"]
-        guard menu.waitForExistence(timeout: 10) else {
-            throw XCTSkip("Analysis Tools menu not reachable on this destination")
-        }
-        menu.tap()
-
-        let item = app.buttons["Corpus Analytics"].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 10), "Corpus Analytics item should exist")
-        item.tap()
+        try AnalysisToolsMenu.open("Corpus Analytics", in: app, through: navigator)
     }
 }

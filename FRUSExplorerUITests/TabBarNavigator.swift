@@ -185,16 +185,26 @@ final class TabBarNavigator {
     ///   - destination: The tab to open.
     ///   - routes: Which reveal routes to allow. Narrow this only in a test that exists to prove
     ///     one route.
+    ///   - resolveTimeout: How long route 1 polls for the control before the reveal routes run.
+    ///     Five seconds suits a caller whose app has been up for a while. Raise it for one that
+    ///     selects immediately after `launch()`: a cold start can take longer than that to draw a
+    ///     tab bar at all, and paging a bar that is not on screen yet finds nothing to page.
     ///   - file: Forwarded so a failure reports the caller's line.
     ///   - line: Forwarded so a failure reports the caller's line.
     /// - Returns: What was tapped and what had to happen first.
+    ///
+    /// **The result is not decoration.** `@discardableResult` is for the callers that follow this
+    /// with their own arrival assertion; every other caller must read `tapped`, because the
+    /// last-resort branch below returns `false` WITHOUT failing the test. Discarding it there is
+    /// precisely the "proceed from whatever tab is showing" defect #1279 exists to remove.
     @discardableResult
     func select(_ destination: TabDestination,
                 using routes: Routes = .all,
+                resolveTimeout: TimeInterval = 5,
                 file: StaticString = #filePath,
                 line: UInt = #line) -> Outcome {
         if routes.contains(.directly),
-           let control = resolve(destination, requireHittable: true, timeout: 5),
+           let control = resolve(destination, requireHittable: true, timeout: resolveTimeout),
            tapAndConfirm(control, destination) {
             return Outcome(tapped: true, reveal: .none, tappedAnUnhittableControl: false)
         }
@@ -523,15 +533,34 @@ final class TabBarNavigator {
 
 /// The launch arguments every UI-test suite passes.
 ///
-/// **`-frus.activeTab browse` is not cosmetic.** `NSArgumentDomain` outranks the persistent domain,
-/// so this pins what `AppState.seedActiveTab` reads and makes the launch tab deterministic
-/// regardless of what an earlier test wrote. Without it a suite's launch tab is whatever the last
-/// test on that simulator selected — already true today, and harmless only because Browse, Search
-/// and Research all sit on page 1 of even a narrow floating bar. It stops being harmless the moment
-/// a test can reach Settings, because the bar then opens on its LAST page and Browse is behind it.
+/// **`-frus.activeTab browse` is not cosmetic, and it is not a guarantee either.**
+/// `NSArgumentDomain` outranks the persistent domain, so it pins what `AppState.seedActiveTab`
+/// reads. Without it a suite's launch tab is whatever the last test on that simulator selected —
+/// harmless only because Browse, Search and Research all sit on page 1 of even a narrow floating
+/// bar, and not harmless the moment a test reaches Settings, because the bar then opens on its LAST
+/// page with Browse behind it.
+///
+/// **What it does NOT do is decide the tab of a state-restored scene**, and this doc claimed
+/// otherwise until #1279. `MainTabView` backs the selection with
+/// `@SceneStorage("frus.selectedTab") private var selectedTab: AppTab = AppState.seedActiveTab`, so
+/// the seed — and therefore this argument — is only the DEFAULT. The app's own comment beside it
+/// says the rest: *"A fresh window seeds from the persisted last-selected tab; a state-restored
+/// window keeps its own."*
+///
+/// **That is about the TAB and nothing else.** What a leftover presentation does is a separate
+/// mechanism with a separate owner — on iPad, Corpus Analytics is an auxiliary WINDOW scene that
+/// iPadOS restores, and no `@SceneStorage` key is involved; `UITestPresentation` carries that
+/// argument, and an earlier draft of this very paragraph ran the two together.
+///
+/// The practical upshot for a suite here: passing these arguments does not excuse leaving something
+/// open at `tearDown`, and a tab guard must fail loudly rather than trust the pin. Measured on iPad
+/// mini (A17 Pro) at `69dfac7d`, `AnalyticsKeyboardTests` ran three tests with the app freshly
+/// installed: the first passed and left Corpus Analytics open, and the next two relaunched into it
+/// and skipped naming a cause that was not the cause.
 ///
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
+///   1.1 — #1279: the launch-pin claim corrected; it sets a `@SceneStorage` DEFAULT, not the tab
 enum UITestLaunch {
 
     /// - Parameters:

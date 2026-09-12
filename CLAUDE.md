@@ -66,6 +66,33 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/ResearchReadingDepthTests
 ```
 
+**The three keyboard/toolbar suites need iPad mini too, and #1279 is why.** Measured on `v2` at
+`69dfac7d`, `AnalyticsKeyboardTests` + `KeyboardDismissBarReachTests` +
+`ToolbarOverflowAccessibilityTests` ran **8 tests with 4 skipped and 3 failures** on iPad mini while
+passing on iPhone 17 and iPad Pro 13-inch — a suite ending with an analytics window open, another
+launch restoring it, and four bare tab guards that reported the wrong cause. They are green on all
+three devices now; run them on the mini, because that is the one that catches this class.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad mini (A17 Pro)" \
+  -only-testing FRUSExplorerUITests/AnalyticsKeyboardTests \
+  -only-testing FRUSExplorerUITests/KeyboardDismissBarReachTests \
+  -only-testing FRUSExplorerUITests/ToolbarOverflowAccessibilityTests
+```
+
+**A UI-test suite that opens a presentation must CLOSE it in `tearDown`, not merely terminate.**
+`XCUIApplication.launch()` already terminates a running app; what the next launch restores is what
+the last one had *open*. On iPad that includes a whole window scene — `BrowserView.presentAnalytics`
+branches on `\.supportsMultipleWindows`, so Corpus Analytics is an auxiliary WINDOW there and only a
+`.sheet` on iPhone — and a test that inherits it finds no tab bar in the element tree at all.
+Nothing in the app restores it (`showAnalytics` is plain `@State`), so do not go looking there.
+`UITestPresentation.dismissAnyPresentation(in:)` is the helper, and it is scoped to
+`app.navigationBars.buttons` for two measured reasons: a bare `app.buttons["Done"]` closes the #861
+keyboard accessory bar instead, and `isHittable` on a dying popover button fails the test outright.
+
 **Command-line tools (run from repo root):**
 ```bash
 swift run ManifestGenerator   # Regenerate manifest.json from GitHub FRUS TEI headers. Env: OUTPUT_PATH override; GITHUB_TOKEN. VOLUMES_DIR=<local corpus> switches to OFFLINE local overlay mode (no GitHub): loads the existing manifest at OUTPUT_PATH as the base and re-derives ONLY publicationDate, dateRange (content-date @notBefore/@notAfter, else creation/date) and status from each VOLUMES_DIR/<filename> header, preserving all other fields. **`publicationDate` IS THE PRINT YEAR AND FALLS BACK TO THE DIGITAL ONE, and `status` COMES FROM `revisionDesc`, both since September 2026.** The print year is `publicationStmt/date[@type="publication-date"]` TEXT as before; when a volume prints none — OH leaves that element EMPTY while a volume is in progress — the runner takes `revisionDesc/change[@corresp="#<the volume's own idno>"][@status="published"]/@when` instead. FALLBACK, NEVER OVERRIDE: the two are different facts and over the 553 shipped volumes their years **agree in 525 and differ in 26** (`frus1950v01` prints 1977 and was published digitally in 1998). Measured, it fills exactly one volume, `frus1981-88v16` → `2026-09-18`, and retires itself when OH fills the printed year in. The `@corresp` match is load-bearing: a partially-published volume carries a `<change>` per chapter, and v16's four published chapters are dated beside seven `being-cleared` ones. 553 of 694 corpus files carry a self-corresp published change WITH a `@when`; **11 more carry one WITHOUT**, and those must yield nil rather than borrowing a sibling's date. `status` was hardcoded `.published` behind a comment claiming the TEI header carries no publication status; it does, and reading it moved **three shipped volumes** to `partiallyPublished` — `frus1969-76ve10`, `frus1977-80v27`, `frus1981-88v16` — lighting an orange "Partial" badge and a subseries stat pill that had never been shown. `planned` maps to `.planned`; the three `being-*` states and any unrecognised word stay `.published` AND PRINT, because a volume in the published listing has content and demoting it would contradict the file just parsed. Measured over all 694 files reading each header WHOLE (a 20 KB read reports 20 files with no revisionDesc and hides `frus1969-76ve10` — the element sits at the END of a header that runs past 20 KB in the longer volumes): published 551, being-cleared 51, planned 42, being-researched 37, being-digitized 10, partially-published 3, absent 0

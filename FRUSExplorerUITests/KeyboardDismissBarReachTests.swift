@@ -70,6 +70,10 @@ final class KeyboardDismissBarReachTests: XCTestCase {
 
     var app: XCUIApplication!
 
+    /// Read through a closure: `setUpWithError` mints a fresh `XCUIApplication` per test, and a
+    /// stored reference would leave the navigator driving a dead process (#1278).
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
     override func setUpWithError() throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
@@ -84,6 +88,11 @@ final class KeyboardDismissBarReachTests: XCTestCase {
         // Corpus Analytics sheet AND the year popover still presented; leaving that standing made
         // the next scenario's `launch()` a terminate-and-relaunch of an app frozen mid-presentation
         // instead of a cold start. Nothing in the class may depend on what came before it.
+        // #1279: close it BEFORE terminating. The `terminate()` below arrived with #1214 and is
+        // not enough on its own — what the next launch restores is what this one had OPEN, and on
+        // iPad that includes the Corpus Analytics window scene, leaving the next test with no tab
+        // bar in the tree at all.
+        UITestPresentation.dismissAnyPresentation(in: app)
         app?.terminate()
         app = nil
     }
@@ -161,8 +170,11 @@ final class KeyboardDismissBarReachTests: XCTestCase {
     /// suite's own way — a Done count taken before focus and again after, so the toolbar's
     /// unrelated buttons cannot satisfy the assertion.
     func testDismissBarRendersOnTheBrowseRootSearchField() throws {
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 10) { browse.tap() }
+        // Asserted, not attempted (#1279). The bare guard this replaces could not fail, so a tab it
+        // never reached was reported by the NEXT line as a missing search field — a green skip
+        // naming the wrong cause, which is the whole shape of that defect.
+        XCTAssertTrue(navigator.select(.browse).tapped,
+                      "Could not open the Browse tab, so its root search field cannot be measured.")
 
         let field = app.textFields["browse.root.searchField"].firstMatch
         guard field.waitForExistence(timeout: 10) else {
@@ -297,19 +309,8 @@ final class KeyboardDismissBarReachTests: XCTestCase {
         return app.keyboards.count > 0
     }
 
-    /// Mirrors `AnalyticsKeyboardTests.openCorpusAnalytics` — the toolbar path to the sheet.
+    /// The toolbar path to the sheet — one shared implementation since #1279.
     private func openCorpusAnalytics() throws {
-        let browse = app.buttons["Browse"].firstMatch
-        if browse.waitForExistence(timeout: 10) { browse.tap() }
-
-        let menu = app.buttons["Analysis Tools"]
-        guard menu.waitForExistence(timeout: 10) else {
-            throw XCTSkip("Analysis Tools menu not reachable on this destination")
-        }
-        menu.tap()
-
-        let item = app.buttons["Corpus Analytics"].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 10), "Corpus Analytics item should exist")
-        item.tap()
+        try AnalysisToolsMenu.open("Corpus Analytics", in: app, through: navigator)
     }
 }

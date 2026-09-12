@@ -14603,3 +14603,110 @@ next launch's replay. That is unchanged by this work — the importer has no pip
 in is a collection-format change — but it is now the only note-creating path that does not index
 immediately, which is worth knowing before the next person reads `reindexNoteText` and assumes
 otherwise.
+
+---
+
+## #1279 — four bare tab guards, and the two defects they were hiding
+
+#1279 recorded four guards left behind by #1278, all of one shape:
+
+```swift
+let browse = app.buttons["Browse"].firstMatch
+if browse.waitForExistence(timeout: 10) { browse.tap() }
+```
+
+On a miss that waits ten seconds and then proceeds from whatever tab is showing. It cannot fail; it
+can only mislead. The issue called them **"correct by construction rather than by their own logic"**
+and **"not urgent"**, because #1278 made every suite pass `-frus.activeTab browse` at launch.
+
+**Both halves of that were wrong, and measuring first is what showed it.** Baseline on `v2` at
+`69dfac7d`, the three suites, before any change:
+
+| device | result |
+|---|---|
+| iPhone 17 | 8 tests, 1 skipped, 0 failures |
+| iPad Pro 13-inch (M5) | 8 tests, 0 failures |
+| **iPad mini (A17 Pro)** | **8 tests, 4 skipped, 3 failures** |
+
+Every one of the four iPad-mini skips named a cause that was not the cause — three said *"Analysis
+Tools menu not reachable on this destination"* and one *"The Browse root search field is not on this
+destination"*. One of the three failures printed what it had found instead: `Hide fit line | Chart
+colors | Save query | … | Occurrences` — the Corpus Analytics sheet, being measured and reported on
+as the Browse toolbar.
+
+**The causal chain, each step measured rather than argued.** `AnalyticsKeyboardTests` alone on a
+freshly installed app ran three tests: the first **passed**, the next two **skipped**. The first
+leaves Corpus Analytics open and the suite's `tearDownWithError` did not terminate. **On iPad that
+surface is a second WINDOW scene, not a sheet** — `BrowserView.presentAnalytics` branches on
+`\.supportsMultipleWindows` and calls `appState.openAuxWindow`; the `.sheet` bound to
+`showAnalytics` is the iPhone path — and iPadOS restores a window scene across a relaunch. The
+element tree at the moment of failure is that window: analytics chrome filling 744×1133 with **no
+tab bar in it at all**. Nothing in the app restores it — `showAnalytics` is plain `@State`. (An
+earlier draft of this entry blamed `@SceneStorage`; that is the mechanism for the TAB, not for
+this, and the review caught the conflation.) The bare guard could not see Browse, waited, proceeded, and the line after it invented a
+reason. It crossed the suite boundary too: `ToolbarOverflowAccessibilityTests`, run alone on the same
+contaminated simulator, failed 3 of 3; **run alone on a freshly installed app it passed 3 of 3 in 30
+seconds**, which is what separated the leftover state from a real device difference.
+
+**`-frus.activeTab browse` never guaranteed what #1278's doc said it did.** `MainTabView` backs the
+selection with `@SceneStorage("frus.selectedTab") … = AppState.seedActiveTab`, so the launch argument
+is only the **default**; the app's own comment beside it says *"a state-restored window keeps its
+own"*. `UITestLaunch`'s doc claimed the argument "makes the launch tab deterministic regardless of
+what an earlier test wrote". That is corrected here.
+
+**What shipped.** The four guards go through `TabBarNavigator.select` with the result **asserted** —
+`select` is `@discardableResult` and its last-resort branch returns `tapped: false` *without*
+failing, so a conversion that ignored the result would have reproduced the defect it was written to
+remove. Three copies of "Browse ▸ Analysis Tools ▸ item" became one `AnalysisToolsMenu.open`. They
+pointed at each other in a **chain** — `KeyboardDismissBarReachTests` said it mirrored
+`AnalyticsKeyboardTests`, which said it mirrored `AnalyticsRotationTests` — and the head of the chain
+had moved when #1278 converted the original. The two bodies were byte-identical (`diff` reports one
+line, each naming the other); the original expands an overflowed toolbar and prints the buttons on
+screen in its skip, and the copies had neither, which is exactly why this bug was legible in one
+suite and invisible in the other two. `UITestPresentation.dismissAnyPresentation` runs in every one of these suites' teardowns **before**
+terminating, because terminating alone does not help: `XCUIApplication.launch()` already terminates.
+**This repo has been here once already, in one of these very files.** #1214 — *"Make the
+keyboard-dismiss-bar reach test order-independent, and able to fail"* — added `app?.terminate()` to
+`KeyboardDismissBarReachTests` on 2026-09-05, a week before this. It fixed the class for one
+suite, was never carried to the sibling that generates the contamination, and was not sufficient
+anyway. (An earlier draft of this entry said that suite had terminated "since it was written";
+`git show` on its first commit says otherwise, and the real history is the more useful fact.)
+
+**Three attempts at that cleanup, and the last two were corrections of my own claims.** Terminating
+first: still 2 failures. A bare `app.buttons["Done"]`: it closed the #861 keyboard accessory bar
+instead of the sheet. A loop over stacked presentations: *worse* — 3 failures, because `isHittable`
+on a dying popover button **fails the test itself** with *"Activation point invalid and no suggested
+hit points based on element frame"*. The shape that works is one tap, scoped to
+`app.navigationBars.buttons`, with no `isHittable` at all, and the doc now says so with the
+measurements attached.
+
+**Also folded in, from the audit rather than the issue.** A **fifth** site of the same defect that
+#1279's regex structurally could not see: `UIObstructionTests` hand-built a relaunch's argument array
+and dropped `-frus.activeTab`, so that relaunch came back on whatever tab the scene had. Two
+`guard navigator.select(…).tapped else { throw XCTSkip }` in `AnalyticsRotationTests` became
+assertions — one of them sat directly under a comment condemning a green skip for a helper's gap.
+And `select` gained a `resolveTimeout`, so `gotoBrowse` keeps the 15-second cold-launch tolerance its
+bare wait had.
+
+**Verification.** iPad mini went from **4 skipped / 3 failed** to **0 / 0**, twice in a row (115 s,
+against the baseline's 203 s). iPhone 17 and iPad Pro 13-inch are unchanged at 8 tests with 0
+failures. Full UI suite on iPhone 17: **45 tests, 14 skipped, 0 failures**. `UIObstructionTests` on
+iPad Pro 13-inch: **16, 5 skipped, 0 failures**. The reading suites on iPad mini: **4, 1 skipped, 0
+failures**. Unit suite **4,748 in 609 suites**; macOS **BUILD SUCCEEDED**.
+
+**The A/B the issue asked for, and it is not cosmetic.** Same suite, same device (iPad mini), same
+`-only-testing` scope, same fresh install, launched onto **Settings** so Browse sits behind the
+paged floating bar:
+
+| arm | result |
+|---|---|
+| pre-change bare guard | 3 tests, **2 skipped** — *"Analysis Tools menu not reachable on this destination"* |
+| converted | 3 tests, **0 skipped, 0 failures** |
+
+**Deliberately NOT in this change**, each found by the audit and worth its own issue: the
+`FRUSExplorerUITests` directory is outside `CodingStandardsAuditTests`' license-header scan, and
+three of its files carry a truncated header; `AnalyticsRotationTests.openCorpusAnalytics`'s own
+`navigator.select(.browse)` result is still discarded; and several tests in these suites can still
+pass or skip without measuring what their name claims — the year-popover scenario's focus proof, the
+#1070 assertion inside an un-counted `if`, and the hardware-keyboard skip that is the default state
+of the documented test command.
