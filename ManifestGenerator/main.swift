@@ -20,8 +20,10 @@ import ManifestGeneratorCore
 ///   GITHUB_TOKEN   — GitHub personal access token (recommended; raises rate limit to 5,000/hr)
 ///   OUTPUT_PATH    — Override the default output path (also the base manifest in overlay mode)
 ///   VOLUMES_DIR    — Local corpus directory. When set, runs OFFLINE local overlay mode: the
-///                    existing manifest at OUTPUT_PATH is the base, and only `publicationDate`
-///                    and `dateRange` are re-derived from each `VOLUMES_DIR/<filename>` header.
+///                    existing manifest at OUTPUT_PATH is the base, and `publicationDate`,
+///                    `dateRange`, `status`, `tags` and `sizeBytes` are re-derived from each
+///                    `VOLUMES_DIR/<filename>` — the fields the local file is authoritative for.
+///                    (This list said two fields until #1284 and was stale by two.)
 ///                    GitHub is not contacted. Example:
 ///                    ```
 ///                    VOLUMES_DIR=/path/to/frus/volumes swift run ManifestGenerator

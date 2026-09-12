@@ -28,18 +28,26 @@ import TEIHeaderKit
 /// ## Local Overlay Mode (`VOLUMES_DIR`)
 /// When the caller sets a local corpus directory (via `run(localVolumesDirectory:)`,
 /// wired to the `VOLUMES_DIR` env var), the runner does NOT hit GitHub. Instead it loads
-/// the existing manifest at `outputPath` as the base and, for each entry, re-parses only
-/// the local `<teiHeader>` at `VOLUMES_DIR/<entry.filename>`, overriding **only**
-/// `publicationDate`, `dateRange` and `status` while preserving every other field byte-for-byte.
-/// `status` joined that list in September 2026: re-deriving the date from a header while leaving
-/// the status that header also states is how two modes of one generator come to disagree.
-/// This yields an offline, deterministic, date-only semantic diff — the mode used to
-/// enrich the bundled manifest with true print years + coverage ranges (SA-1a). Entries
-/// whose local file is missing are logged and left unchanged.
+/// the existing manifest at `outputPath` as the base and, for each entry, re-parses the local
+/// `<teiHeader>` at `VOLUMES_DIR/<entry.filename>`, overriding the fields that header — or the file
+/// itself — is authoritative for: `publicationDate`, `dateRange`, `status`, `tags` and `sizeBytes`.
+/// Every other field is preserved byte-for-byte.
+///
+/// **The list has grown twice, each time after a field went stale unnoticed.** `status` joined in
+/// September 2026: re-deriving the date from a header while leaving the status that header also
+/// states is how two modes of one generator come to disagree. `tags` and `sizeBytes` joined at
+/// #1284, when the Office of the Historian added eighteen volume tags to `frus1981-88v16` in place
+/// (corpus commit c95d35451) and this mode could not see them — it read `entry.tags` back out of
+/// the manifest it was correcting. If a future field turns out to be one OH edits in place, it
+/// belongs here too; the rule is "what does the local file know that the manifest might not".
+///
+/// Entries whose local file is missing are logged and left unchanged.
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation
 ///   1.1 — SA-1a: local overlay mode (VOLUMES_DIR) that re-derives only date fields offline.
+///   1.2 — #1284: the overlay also re-derives `tags` and `sizeBytes`, the two fields OH's in-place
+///         edit to frus1981-88v16 moved and this mode could not see.
 public struct ManifestGeneratorRunner {
 
     /// The publication date to record: the printed year if the volume states one, else the date
@@ -52,10 +60,14 @@ public struct ManifestGeneratorRunner {
     /// field whenever the volume prints one, and the digital date is admitted only where there is
     /// nothing else to say.
     ///
-    /// Measured, it fills exactly **one** volume: `frus1981-88v16`, released mid-run with an empty
+    /// **It has now retired itself, exactly as predicted, and that is worth recording.** It was
+    /// measured filling exactly one volume — `frus1981-88v16`, released mid-run with an empty
     /// `publicationStmt/date` and `<change corresp="#frus1981-88v16" status="published"
-    /// when="2026-09-18"/>`. It retires itself — when OH fills the printed year in, that wins with
-    /// no edit here.
+    /// when="2026-09-18"/>`. OH filled the printed year in on 2026-09-10 (corpus commit cf8abf696),
+    /// so as of #1284 the fallback fills **zero** volumes and the manifest holds 552 bare `YYYY`
+    /// strings against a single full ISO date (`frus1969-76v32`, 2010-11-05), which reached the
+    /// manifest by a different route. The code is kept because the condition recurs at every
+    /// mid-cycle release; it is the measurement that has moved, not the rule.
     ///
     /// - Parameters:
     ///   - header: The parsed TEI header.
@@ -253,7 +265,22 @@ public struct ManifestGeneratorRunner {
                 continue
             }
 
-            // 3. Override ONLY publicationDate + dateRange; preserve every other field.
+            // 3. Re-derive every field the LOCAL FILE is authoritative for; preserve the rest.
+            //
+            // The set has grown twice, each time for the same reason: the Office of the Historian
+            // edits a published volume in place, and a field this overlay declines to re-derive is
+            // a field that silently goes stale against a corpus the repository has already pulled.
+            // `status` joined at the vol. XVI ingest; `tags` and `sizeBytes` join here (#1284),
+            // because OH added eighteen volume tags to `frus1981-88v16` in corpus commit c95d35451
+            // and the overlay had no way to see them — `tags: entry.tags` read them straight back
+            // out of the base manifest it was supposed to be correcting.
+            //
+            // What is STILL preserved is preserved for a reason, not by omission: `title`,
+            // `editors` and `generalEditor` are header-derivable but the GitHub arm's values are
+            // the shipped ones and re-deriving them here would let two modes disagree about
+            // strings nobody has asked to change; `documentCount` is 0 for all 553 entries by
+            // construction (no header carries it); `subseries` and `volumeId` are parsed from the
+            // filename, not the file.
             let newEntry = VolumeManifestEntry(
                 volumeId: entry.volumeId,
                 filename: entry.filename,
@@ -269,8 +296,12 @@ public struct ManifestGeneratorRunner {
                 editors: entry.editors,
                 generalEditor: entry.generalEditor,
                 documentCount: entry.documentCount,
-                sizeBytes: entry.sizeBytes,
-                tags: entry.tags
+                // The local file's own size, which is what the GitHub arm records for its copy.
+                // Cosmetic on screen, but a manifest whose byte count disagrees with the file
+                // beside it is a manifest a reader cannot use to check anything.
+                sizeBytes: (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size])
+                    .flatMap { ($0 as? NSNumber)?.intValue } ?? entry.sizeBytes,
+                tags: header.tags
             )
             if newEntry != entry { changed += 1 }
             updated.append(newEntry)

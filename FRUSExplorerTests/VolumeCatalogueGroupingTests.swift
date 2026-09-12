@@ -99,12 +99,14 @@ struct VolumeCatalogueGroupingTests {
     // MARK: Publication year parse
 
     @Test func bareYearAndFullISOParseIdentically() {
-        // The manifest holds 551 bare "YYYY" strings and exactly TWO full ISO dates —
-        // string sort would misfile them; `firstYear(in:)` must not.
+        // The manifest holds 552 bare "YYYY" strings and exactly ONE full ISO date
+        // (`frus1969-76v32`, "2010-11-05") — string sort would misfile it; `firstYear(in:)` must not.
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "a", publicationDate: "1987")) == 1987)
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "b", publicationDate: "2010-11-05")) == 2010)
-        // The second one: `frus1981-88v16` states its date in `revisionDesc` and the manifest
-        // stores that verbatim rather than truncating OH's own assertion to a year.
+        // It was TWO until #1284: `frus1981-88v16` shipped with the `revisionDesc` date
+        // "2026-09-18" because its `publicationStmt/date` was empty at ingest, and OH has since
+        // filled the printed year. The ISO case is kept under test because the parse must survive
+        // the next mid-cycle release that reintroduces one, not because two volumes still have one.
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "v16", publicationDate: "2026-09-18")) == 2026)
         #expect(VolumeCatalogueGrouping.publicationYear(of: entry(id: "c", publicationDate: nil)) == nil)
     }
