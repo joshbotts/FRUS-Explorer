@@ -40,6 +40,8 @@ Environment:
   SEED        default 234, m1a_survey.py's seed
   COLLECT     =1 to run the collector instead of the stager
   FORCE       =1 to re-stage over a directory that already holds annotated work
+  CONVERT_ASCII_BRACKETS  =1 with COLLECT=1: rewrite an annotator's INSERTED ASCII [ ] as ⟦ ⟧ before
+              collecting, keeping the files as typed; refuses, converting nothing, if any is ambiguous
 """
 
 import csv
@@ -48,6 +50,7 @@ import json
 import os
 import random
 import re
+import shutil
 import sys
 import time
 
@@ -65,6 +68,11 @@ SEED = os.environ.get("SEED", "234")
 
 OPEN, CLOSE = "⟦", "⟧"
 BRACKETED = re.compile(OPEN + r"(.*?)" + CLOSE, re.S)
+# What an annotator types when they miss the instruction above. FRUS prints these itself —
+# `[Translation.]`, `[Received 4:43 p.m.]`, a bracketed sign-off — so they are never markup on their own;
+# only one INSERTED relative to the R-0 text can be (see `ascii_bracket_plan`).
+ASCII_OPEN, ASCII_CLOSE = "[", "]"
+CONVERT_ASCII_BRACKETS = os.environ.get("CONVERT_ASCII_BRACKETS") == "1"
 
 INSTRUCTIONS = """# M2a — exhaustive person-mention annotation
 
@@ -103,6 +111,12 @@ is the only evidence anyone reviewed them rather than trusting them.
 stray character. The collector strips the brackets and compares the result to the
 original character for character; a document that fails that check is rejected with its
 name printed, because a single edited character moves every span after it.
+
+**Type %(open)s and %(close)s, not [ and ].** The documents print square brackets of their own —
+`[Translation.]`, `[Received 4:43 p.m.]`, a bracketed sign-off such as `[Braden.]` — so a mention
+typed in [ ] cannot be told apart from the text. The easy way to get the right ones is to copy a
+pair from any seeded span. (The first sitting was typed with [ ] throughout; the collector now names
+such documents, and `CONVERT_ASCII_BRACKETS=1` rewrites them where the text leaves no doubt.)
 
 ## When a document is done
 
@@ -318,6 +332,117 @@ def unwrap(annotated):
     return "".join(pieces), spans
 
 
+def inserted_brackets(source, annotated):
+    """Align `annotated` onto `source`, allowing only INSERTED bracket glyphs (⟦ ⟧ [ ]).
+
+    Returns [(source_offset, glyph, annotated_index)] in file order, or None when the file differs
+    from the source in any other way — a prose edit, which no bracket rule may paper over.
+
+    Greedy leftmost matching is complete for this: a character is taken as inserted only when it
+    cannot be the source's next character, so if ANY alignment exists whose extra characters are all
+    brackets, this one's are too. Where an inserted bracket sits beside a printed bracket of the same
+    glyph, the text cannot say which of the two was typed, and the alignment's choice there is
+    arbitrary — `ascii_bracket_plan` refuses those rather than inherit it.
+    """
+    inserted, cursor = [], 0
+    for index, char in enumerate(annotated):
+        if cursor < len(source) and char == source[cursor]:
+            cursor += 1
+        elif char in (OPEN, CLOSE, ASCII_OPEN, ASCII_CLOSE):
+            inserted.append((cursor, char, index))
+        else:
+            return None
+    return inserted if cursor == len(source) else None
+
+
+def ascii_bracket_plan(source, annotated):
+    """(pairs, problems) for a file whose only edits are inserted brackets, some of them ASCII.
+
+    pairs    — [(start, end)] in R-0 offsets, one per inserted [ … ] pair;
+    problems — why converting them would not give exactly what the annotator meant; empty when it would.
+
+    Returns None when the file is NOT this case: it has some other edit, or no ASCII bracket was
+    inserted at all. A clean plan is one whose conversion the collector will then accept UNCHANGED, which
+    is why the refusals cover the ⟦ ⟧ already in the file as well as the [ ] typed beside them:
+      * an inserted [ or ] right after a printed one of the same glyph (which of the two is markup is a guess);
+      * [ ] that do not alternate, or an inserted pair that is empty or blank;
+      * a stray or blank ⟦ ⟧ — converting next to one lets the collector's pairing swallow it silently;
+      * a [ ] pair and a ⟦ ⟧ pair that interleave or nest in FILE ORDER. File order and not R-0 offsets,
+        because two brackets can share an offset: `⟦Fish[⟧ wrote]` crosses where no offset overlaps.
+    """
+    inserted = inserted_brackets(source, annotated)
+    if inserted is None or not any(char in (ASCII_OPEN, ASCII_CLOSE) for _, char, _ in inserted):
+        return None
+
+    def where(pos):
+        return "offset %d (…%s…)" % (pos, source[max(0, pos - 18):pos + 18].replace("\n", " "))
+
+    problems = []
+    for pos, char, _ in inserted:
+        # Only the PREVIOUS source character can be the same glyph: the alignment records a bracket as
+        # inserted only when it is not the next source character, so a bracket typed just before a
+        # printed one is aligned onto the printed one and the printed one reads as inserted just after it.
+        if char in (ASCII_OPEN, ASCII_CLOSE) and pos > 0 and source[pos - 1] == char:
+            problems.append("an inserted %s at %s touches a printed %s, so which of them is markup is "
+                            "ambiguous" % (char, where(pos), char))
+
+    typed, open_at = [], None
+    for pos, char, index in inserted:
+        if char == ASCII_OPEN:
+            if open_at is not None:
+                problems.append("an inserted [ at %s opens inside the one at offset %d" % (where(pos), open_at[0]))
+            open_at = (pos, index)
+        elif char == ASCII_CLOSE:
+            if open_at is None:
+                problems.append("an inserted ] at %s closes nothing" % where(pos))
+            else:
+                if not source[open_at[0]:pos].strip():
+                    problems.append("an inserted [ ] pair at %s is empty or blank" % where(open_at[0]))
+                typed.append((open_at[0], pos, open_at[1], index))
+                open_at = None
+    if open_at is not None:
+        problems.append("an inserted [ at %s is never closed" % where(open_at[0]))
+
+    wrapped, wrap_open = [], None
+    for pos, char, index in inserted:
+        if char == OPEN:
+            if wrap_open is not None:
+                problems.append("a stray %s at %s, inside the one at offset %d" % (OPEN, where(pos), wrap_open[0]))
+            wrap_open = (pos, index)
+        elif char == CLOSE:
+            if wrap_open is None:
+                problems.append("a stray %s at %s, with no %s open" % (CLOSE, where(pos), OPEN))
+            else:
+                if not source[wrap_open[0]:pos].strip():
+                    problems.append("a blank %s%s pair at %s" % (OPEN, CLOSE, where(wrap_open[0])))
+                wrapped.append((wrap_open[0], pos, wrap_open[1], index))
+                wrap_open = None
+    if wrap_open is not None:
+        problems.append("a stray %s at %s that nothing closes" % (OPEN, where(wrap_open[0])))
+
+    if not problems:
+        for start, _, first, last in typed:
+            for wrap_start, _, wrap_first, wrap_last in wrapped:
+                if first < wrap_last and wrap_first < last:
+                    problems.append("the inserted [ ] pair at %s overlaps the %s%s pair at offset %d"
+                                    % (where(start), OPEN, CLOSE, wrap_start))
+    return [(start, end) for start, end, _, _ in typed], problems
+
+
+def convert_ascii_brackets(source, annotated):
+    """`annotated` with its INSERTED ASCII brackets rewritten as ⟦ ⟧; printed brackets untouched.
+
+    Only meaningful once `ascii_bracket_plan` has returned no problems for the same two texts.
+    """
+    chars = list(annotated)
+    for _, char, index in inserted_brackets(source, annotated):
+        if char == ASCII_OPEN:
+            chars[index] = OPEN
+        elif char == ASCII_CLOSE:
+            chars[index] = CLOSE
+    return "".join(chars)
+
+
 def collect():
     manifest_path = os.path.join(OUT, "m2a-manifest.json")
     if not os.path.exists(manifest_path):
@@ -343,6 +468,97 @@ def collect():
             seen.add(row["file"])
             marks[row["file"]] = mark
             done.append(row["file"])
+
+    texts = {}
+
+    def source_text(entry):
+        """The R-0 text a document was staged from, or None when it cannot be recovered EXACTLY."""
+        volume = entry["volume"]
+        if volume not in texts:
+            try:
+                texts[volume] = store.volume_text(TEXT_DIR, volume)
+            except (Exception, SystemExit):
+                # Missing (ner_store exits), truncated (EOFError), corrupt (zlib.error), malformed
+                # (ValueError): all mean one thing here — nothing to diagnose against — so say nothing about
+                # a cause rather than guess one. Diagnosis must never be the reason collection crashes.
+                texts[volume] = None
+        text = (texts[volume] or {}).get(entry["document"])
+        return text if text is not None and sha256_text(text) == entry["text_sha256"] else None
+
+    def ascii_case(name):
+        """(kind, plan) for a marked document, kind one of "passes", "unchecked", "other", "ascii".
+
+        "unchecked": it fails the text check and no staged text could be recovered to say why.
+        "other": it fails for some reason besides inserted brackets alone (or is missing; the loop names it).
+        """
+        entry, path = by_file.get(name), os.path.join(OUT, name)
+        if entry is None or not os.path.exists(path):
+            return "other", None
+        annotated = open(path, encoding="utf-8").read()
+        # A document that passes is never charged to its volume's text layer: it needs no alignment, and an
+        # unreadable layer for its volume must not list it among the documents that "could not be checked".
+        if sha256_text(unwrap(annotated)[0]) == entry["text_sha256"]:
+            return "passes", None
+        source = source_text(entry)
+        if source is None:
+            return "unchecked", None
+        plan = ascii_bracket_plan(source, annotated)
+        return ("other", None) if plan is None else ("ascii", plan)
+
+    if CONVERT_ASCII_BRACKETS:
+        # All or nothing, and every rewrite is computed before any file is touched: a sitting half-converted,
+        # half-typed is worse than one the annotator can fix by hand. No re-check follows the rewrite: a clean
+        # plan's conversion reproduces the R-0 text with well-formed pairs by construction — that is what the
+        # plan's refusals are for.
+        plans, refusals, other, unchecked = {}, [], [], []
+        for name in sorted(done):
+            kind, plan = ascii_case(name)
+            if kind == "other":
+                other.append(name)
+            elif kind == "unchecked":
+                unchecked.append(name)
+            if kind != "ascii":
+                continue
+            pairs, problems = plan
+            raw = open(os.path.join(OUT, name), "rb").read()
+            crlf = raw.count(b"\r\n")
+            # The text check reads through universal newlines, so a CRLF file passes it; a rewrite must then
+            # write CRLF back. A file mixing endings cannot be rewritten byte for byte, so it is refused.
+            if b"\r" in raw and not crlf == raw.count(b"\n") == raw.count(b"\r"):
+                problems = problems + ["mixed or bare-CR line endings, which a rewrite could not keep byte for byte"]
+            if problems:
+                refusals.append("%s: %s" % (name, "; ".join(problems)))
+                continue
+            typed = raw.decode("utf-8").replace("\r\n", "\n")
+            plans[name] = (convert_ascii_brackets(source_text(by_file[name]), typed), bool(crlf), len(pairs))
+        if refusals:
+            sys.exit("CONVERT_ASCII_BRACKETS=1 converted nothing: %d marked document(s) hold inserted ASCII "
+                     "brackets that cannot be converted safely.\n  %s\nRetype those as %s %s by hand, then "
+                     "collect again." % (len(refusals), "\n  ".join(refusals), OPEN, CLOSE))
+        if plans:
+            backup_root = os.path.join(OUT, "ascii-bracket-originals")
+            stamp = time.strftime("%Y%m%dT%H%M%S")
+            backup_dir, suffix = os.path.join(backup_root, stamp), 1
+            while os.path.exists(backup_dir):
+                suffix += 1
+                backup_dir = os.path.join(backup_root, "%s-%d" % (stamp, suffix))
+            os.makedirs(backup_dir)
+            for name, (converted, crlf, _) in sorted(plans.items()):
+                path = os.path.join(OUT, name)
+                shutil.copy2(path, os.path.join(backup_dir, name))          # the bytes as typed
+                with open(path, "w", encoding="utf-8", newline="\r\n" if crlf else "\n") as handle:
+                    handle.write(converted)
+            print("converted %d inserted ASCII [ ] pair(s) to %s %s in %d document(s); the files as typed "
+                  "are in %s" % (sum(n for _, _, n in plans.values()), OPEN, CLOSE, len(plans), backup_dir))
+        else:
+            print("CONVERT_ASCII_BRACKETS=1 converted nothing.")
+        if other:
+            print("  %d marked document(s) were not converted because they fail for a reason other than "
+                  "inserted brackets: %s" % (len(other), ", ".join(other)))
+        if unchecked:
+            print("  %d marked document(s) fail the text check but could not be checked for ASCII brackets: no R-0 "
+                  "text matching what was staged is readable under TEXT_DIR=%s: %s"
+                  % (len(unchecked), TEXT_DIR, ", ".join(unchecked)))
 
     rows, rejected_total, added_total = [], 0, 0
     per_band = {}
@@ -387,10 +603,40 @@ def collect():
                      "it (or wrap the name you meant) and collect again."
                      % (name, OPEN, CLOSE, empty[0]))
         if sha256_text(plain) != entry["text_sha256"]:
+            kind, plan = ascii_case(name)
+            if kind == "ascii":
+                # The symptom below is right and names no cause; for this cause the cause is the useful part,
+                # and it is usually the whole sitting, so name every document that shares it.
+                cases = [(other, ascii_case(other)) for other in sorted(done)]
+                affected = [(other, found) for other, (found_kind, found) in cases if found_kind == "ascii"]
+                unchecked = [other for other, (found_kind, _) in cases if found_kind == "unchecked"]
+                blocked = [other for other, found in affected if found[1]]
+                listing = "\n".join("  %s — %d pair(s)%s" % (other, len(found[0]),
+                                    "; cannot be converted: " + "; ".join(found[1]) if found[1] else "")
+                                    for other, found in affected)
+                if blocked:
+                    advice = ("Retype them as %s %s. CONVERT_ASCII_BRACKETS=1 converts nothing while any cannot be "
+                              "converted, so retype the %d marked 'cannot be converted' by hand first; it can then "
+                              "rewrite the rest." % (OPEN, CLOSE, len(blocked)))
+                else:
+                    advice = ("Retype them as %s %s, or collect with CONVERT_ASCII_BRACKETS=1, which rewrites exactly "
+                              "the inserted brackets and keeps a copy of each file as typed." % (OPEN, CLOSE))
+                note = ("" if not unchecked else "\n%d other marked document(s) fail the text check but could not "
+                        "be checked against the R-0 text under TEXT_DIR=%s: %s"
+                        % (len(unchecked), TEXT_DIR, ", ".join(unchecked)))
+                sys.exit("%s: the annotator typed ASCII brackets.\nStripping %s %s leaves only inserted "
+                         "[ and ] — %d pair(s) in this document, and no other change to the prose — but a "
+                         "mention must be wrapped in %s %s: the documents print square brackets of their "
+                         "own, so [ ] cannot be told apart from the text. %d marked document(s) show the "
+                         "same pattern:\n%s\n%s%s"
+                         % (name, OPEN, CLOSE, len(plan[0]), OPEN, CLOSE, len(affected), listing, advice, note))
+            unchecked_note = ("" if kind != "unchecked" else "\n(Whether ASCII brackets are the cause could not be "
+                              "checked: no R-0 text matching what was staged is readable under TEXT_DIR=%s.)"
+                              % TEXT_DIR)
             sys.exit("%s: the text changed under the brackets.\nStripping them must "
                      "reproduce the R-0 text exactly — a single edited character moves "
                      "every span after it. Restore the prose (the brackets are the only "
-                     "permitted edit) and collect again." % name)
+                     "permitted edit) and collect again." % name + unchecked_note)
         seeded = {(start, end) for start, end in entry.get("seeded", [])}
         kept = {(s, e) for s, e, _ in spans}
         rejected = len(seeded - kept)

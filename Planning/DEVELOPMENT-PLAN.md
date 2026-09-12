@@ -14877,3 +14877,66 @@ temporary copies of the scripts so the checkout was never touched:
 
 On the real subset the scorer reads 24 documents on every arm, raw qwen3 0.413 strict / 0.514 relaxed, exactly
 the with-d483 variant computed by hand for #1286.
+
+## #234 R-1 — the collector names annotation typed with ASCII brackets, and converts it when the text leaves no doubt
+
+The first M2a sitting typed every added mention as `[…]` instead of `⟦…⟧`, and the collector said only "the
+text changed under the brackets". That was true and named no cause, so it took a manual diff to find: 126
+inserted bracket pairs and no other edit. It could not be fixed by accepting `[ ]`, because FRUS prints square
+brackets of its own (`[Translation.]`, a bracketed sign-off), and only a bracket INSERTED relative to the R-0
+text can be markup.
+
+**What the collector does now.** When the text check fails, it aligns the file against the exact text the
+document was staged from, read from the text layer and matched against the manifest's hash. If the only edits
+are inserted brackets, some of them ASCII, it names every marked document with that pattern, with its pair
+count and the reasons for any it cannot convert. It also lists any other failing document it could not check.
+It recommends `CONVERT_ASCII_BRACKETS=1` only when conversion would succeed. That flag rewrites exactly the
+inserted brackets, byte for byte: a CRLF file stays CRLF, and the typed files are copied first. It is all or
+nothing.
+
+**Three facts about the alignment decided the design.**
+- **Greedy leftmost matching is complete here.** A character is taken as inserted only when it cannot be the
+  next source character, so if any bracket-only alignment exists, greedy finds one.
+- **The adjacency check is one-sided for the same reason.** An inserted bracket is never the same glyph as
+  the NEXT source character, so the ambiguity always shows as the PREVIOUS one.
+- **Structure is checked in FILE order, not R-0 offsets.** Two brackets can share an offset, so
+  `⟦Fish[⟧ wrote]` crosses where no offset overlaps. Checking in file order is what makes a clean plan one the
+  collector then accepts unchanged.
+
+**An independent review found real defects, not only test gaps.** A three-lens review (30 agents, each
+finding adversarially verified) confirmed 22 of 27 findings:
+- The first draft's plan compared R-0 offsets and paired only completed `⟦ ⟧`. A `[` typed just before a `⟧`
+  at the same offset produced a file the collector then rejected. A stray `⟦`/`⟧` beside ASCII pairs was
+  worse: the collector's non-greedy pairing adopted it silently and collected a wrong span. Its comment
+  claiming a clean plan was correct "by construction" was false until the structural checks existed.
+- Diagnosis made collection read the text layer for the first time, and a truncated gzip raised `EOFError`
+  through a handler that caught only `OSError`, `ValueError` and `SystemExit`. It crashed a collector that
+  had never crashed there.
+- Backups and rewrites went through text decoding and lost CRLF.
+- Convert mode printed "no marked document holds inserted ASCII brackets" when it had simply been unable to
+  check.
+- The diagnosis recommended conversion right after listing a document that would block it.
+- The earlier claim that the fast path was an "equivalent mutant" was false: an unreadable text layer tells
+  the two apart.
+
+All are fixed.
+
+**Verification.** The M2a self-test went from 54 to **95 checks, 0 failed**, through both
+`SELFTEST=1 python3 stage_m2a.py` and `score_detections.py`. The fixtures cover:
+- a name printed right after `]`, a receipt line ending on a name, and line breaks;
+- one fixture per refusal, each asserting it trips only its own, including both adjacency sides, four
+  crossing shapes, and nested, unclosed, stray and blank `⟦ ⟧`;
+- all-or-nothing whichever document sorts first, and per-document counts and reasons in the listing;
+- conversion requested through the environment variable in its own process, a CRLF round trip, a backup
+  collision and mixed endings;
+- scope, and seven prose edits in both modes;
+- missing, moved-on and truncated text layers, and a passing document's unreadable layer.
+
+Mutation ran in temporary copies of the scripts:
+- **round 1** left 4 survivors of 23: a trimmed-ending gap, an unreachable re-check (removed), an
+  unpinned collision and the fast path;
+- **round 3**, after the review, ran 49 mutants that include every survivor the reviewers found. It killed
+  45, and fixtures for the other four took it to **49 of 49**.
+
+Replayed against the real typed sitting from its backups, the diagnosis named all 23 documents and 126 pairs.
+The conversion, the ground truth and every backup were byte-identical to the 2026-09-12 hand conversion.
