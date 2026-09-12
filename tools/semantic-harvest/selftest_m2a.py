@@ -528,7 +528,8 @@ def run():
         tripped = [phrase for phrase in REFUSALS if phrase in (diagnosed or "") + (refused or "")]
         check(label,
               diagnosed is not None and "cannot be converted" in unsafe_line and expected in unsafe_line
-              and (detail is None or detail in unsafe_line) and (absent is None or absent not in unsafe_line)
+              and all(part in unsafe_line for part in ((detail,) if isinstance(detail, str) else (detail or ())))
+              and (absent is None or absent not in unsafe_line)
               and safe_line.startswith("  %s — " % safe_doc) and "cannot be converted" not in safe_line
               and "CONVERT_ASCII_BRACKETS=1 converts nothing while any cannot be converted" in diagnosed
               and refused is not None and "converted nothing: 1 marked document(s)" in refused
@@ -546,6 +547,11 @@ def run():
     refused_in_both_modes("an inserted ] right after a printed ] is refused",
                           "touches a printed", doc_a, retype(doc_a, typing_where(before_close)), doc_b, typed_b,
                           detail="touches a printed ]", absent="touches a printed [")
+    refused_in_both_modes("a document with both kinds of adjacency lists BOTH reasons, not only the first",
+                          "touches a printed", doc_a,
+                          retype(doc_a, typing_where(lambda source, start, end: after_open(source, start, end)
+                                                     or before_close(source, start, end))),
+                          doc_b, typed_b, detail=("touches a printed [", "touches a printed ]"))
     refused_in_both_modes("...and conversion is all or nothing when the refused document sorts LAST",
                           "touches a printed", doc_b, retype(doc_b, typing_where(after_open)), doc_a, typed_a)
     refused_in_both_modes("an inserted [ that opens inside another is refused", "opens inside",
@@ -579,6 +585,11 @@ def run():
     # whose stray bracket the non-greedy pairing silently adopts).
     for label, text, expected, loop_message in (
             ("a stray ⟧ beside ASCII pairs", typed_a.replace(stage.OPEN, "", 1), "a stray",
+             "a stray %s or %s survives" % (stage.OPEN, stage.CLOSE)),
+            ("a ⟦ opened inside another beside ASCII pairs",
+             typed_a[:typed_a.index(stage.OPEN) + 3] + stage.OPEN + typed_a[typed_a.index(stage.OPEN) + 3:], "a stray",
+             "a stray %s or %s survives" % (stage.OPEN, stage.CLOSE)),
+            ("an unclosed ⟦ beside ASCII pairs", typed_a[:-2] + stage.OPEN + typed_a[-2:], "a stray",
              "a stray %s or %s survives" % (stage.OPEN, stage.CLOSE)),
             ("a blank ⟦ ⟧ pair beside ASCII pairs",
              typed_a[:typed_a.index(stage.CLOSE) + 1] + boxed(" ") + typed_a[typed_a.index(stage.CLOSE) + 2:],
@@ -690,6 +701,28 @@ def run():
               diagnosed is not None and ("%s: the annotator typed ASCII brackets" % doc_a) in diagnosed
               and "could not be checked" not in diagnosed,
               (diagnosed or "")[-300:])
+        restore_all()
+        # ...but a FAILING document in that volume is, beside the ASCII diagnosis of one that could be checked.
+        # Picked by volume so the checkable document sorts first and owns the diagnosis.
+        volumes_sorted = sorted({staged[name]["volume"] for name in marked_names})
+        checkable = next(name for name in marked_names if staged[name]["volume"] == volumes_sorted[0])
+        unreadable = next(name for name in marked_names if staged[name]["volume"] == volumes_sorted[1])
+        second_truncated = os.path.join(root, "second-volume-truncated-text")
+        os.makedirs(second_truncated, exist_ok=True)
+        for volume in volumes_sorted:
+            data = open(os.path.join(text_dir, volume + ".jsonl.gz"), "rb").read()
+            with open(os.path.join(second_truncated, volume + ".jsonl.gz"), "wb") as handle:
+                handle.write(data[:len(data) // 2] if volume == volumes_sorted[1] else data)
+        stage.TEXT_DIR = second_truncated
+        put(checkable, retype(checkable, ascii_where_safe))
+        put(unreadable, retype(unreadable, ascii_where_safe))
+        diagnosed, _ = collecting(False)
+        check("the ASCII diagnosis also names a failing document it could not check",
+              diagnosed is not None and ("%s: the annotator typed ASCII brackets" % checkable) in diagnosed
+              and "1 marked document(s) show the same pattern" in diagnosed
+              and ("1 other marked document(s) fail the text check but could not be checked" in diagnosed)
+              and diagnosed.rstrip().endswith(unreadable),
+              (diagnosed or "")[-400:])
     finally:
         stage.TEXT_DIR = saved_text_dir
     restore_all()
