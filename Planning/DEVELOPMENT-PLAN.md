@@ -14306,3 +14306,151 @@ two of the four new pins can only run on a narrow iPad — `CLAUDE.md` now names
 showing on a miss; the launch-tab pin makes them correct by construction today rather than by their own
 logic. And `-hasCompletedOnboarding 1` does not skip onboarding on a clean container — the suites work
 because the flag is already set on a simulator that has run them before.
+
+## Session 2026-09-12 (later) — Notes: rich text, pickers, and the pane that held no settings (#1275)
+
+**Five strands, and the owner took all five — including the one that costs a CloudKit deploy.** The
+mapping priced them first, because they are not the same size: two are a day's work and one is gated
+on an action no test can perform. The owner's calls were rich text **now** rather than in a later PR,
+the Settings pane **retired** rather than kept as a shell, and the reader's list order **synced**
+rather than device-local. This entry records what each of those cost.
+
+**A live data defect found on the way, and it is the part to ship regardless of the feature.** The
+note editor pushed a NOTE's tags into `user_tag_ids`, which is a per-DOCUMENT FTS5 column whose
+authoritative writer is the document tag picker. A note tagged {A} rewrote a document tagged {A,B,C}
+down to "A"; a note with no tags passed `nil`, which the column binder writes as SQL NULL rather than
+skipping, erasing the document's tags outright. Search opts into that column, so search-by-tag
+returned wrong results until the next launch's replay — and both replay loops carried the same
+overload over an unsorted fetch, making it "whichever note sorts last wins". The text-only overload
+exists for exactly this caller and says so in its own doc; `CollectionEntryRows` had already been
+fixed this way one file over. Three call sites now use it. **The instinct to fix this by sending the
+document's whole tag set from the editor is wrong** and the test says so: that column has one writer
+already, and a second one re-creates the same bug from the other side.
+
+**Rich text is RTF beside the plain text, not Markdown inside it — and that is counter-intuitive.**
+Markdown looks free because `ResearchNote.bodyText` is already documented as "plain text / Markdown".
+Nothing honours that claim: every in-app display is `Text(String)`, which does not parse Markdown,
+and the only construct any consumer renders is `_italic_` — inherited by accident from the citation
+formatter's regex, implemented three times across the exporters. A Bold button would therefore have
+shipped literal asterisks to five previews, three export formats and the reader's live Zotero
+library, with its Italic neighbour working. RTF instead, in a new `richText: Data?`, exactly as
+`CollectionEntry.richText` sits beside `CollectionEntry.text` — and `bodyText` stays the authoritative
+plain projection, so search, Zotero, the Obsidian export, the JSON envelope and all five previews are
+untouched by rich text existing.
+
+**The editor's Insert-summary button would have become a dead control, and nothing would have said
+so.** `RichTextEditor` loads its content ONCE by design — its representables rebind only the change
+callback, so a collection row reused after a reorder does not lose what the reader typed. The note
+editor writes its body from code: `promoteSummary` appends a summary to `bodyText`. Under a rich-text
+editor that changes the model and leaves the screen alone, while the three existing promotion tests
+stay green because they exercise the view model rather than the view. So programmatic writes go
+through `replaceBody`, which bumps a revision the editor is keyed on. Typing never bumps it — a
+remount mid-word would take the reader's cursor with it.
+
+**The Settings pane retired on an exact precedent.** It held a list of the reader's notes and not one
+setting — no `Toggle`, no `@AppStorage`, no `SettingsKeys` reference in 464 lines; its one real
+setting had already left for `.researchSessions`. `SettingsPaneModel`'s own version history records
+`.researchGuide` retiring because "it is content, not a setting", which is verbatim the case here.
+The list moved to Research as `AllNotesScreen`, which already handled both platforms and gained a
+`Presentation` so it can drop the sheet chrome the Settings door needed.
+
+**Research gained the axis it was missing, and the enum stopped lying about it.** `.allNotes` was a
+six-source union — notes, direct tags, collections, highlights, and two more — rendering as "All
+Research Documents", so there was no way to ask the one question a notes feature implies: which
+documents have I written on? That is `case hasNotes`, one line in `documents(for:)`. The union case is
+now `allAnnotated`; the user-visible string and its localization key are unchanged, because two UI
+suites use "All Research Documents" as their drill-in oracle. New rows go BELOW that one: a UI test
+asserts the first content row stays hittable under the floating tab bar, and that is order-sensitive.
+
+**The pickers avoid a trap this repo had already measured.** Tags and Projects each rendered one
+`Toggle` per item, unbounded — and in NO order, since the editor was the single surface in the app
+fetching either list without a `sortBy:`. They are now a summary row and a searchable child sheet.
+The search is in a CHILD sheet rather than `.searchable` on the editor because `CustomScopesView`
+records what an active `.searchable` does on iPhone: Save is "present before the filter is touched and
+absent after it is used". On the note editor, losing Save loses the note. Done sits in the bottom bar
+for the same reason, beside the reorder control.
+
+**The reader's own order is a permutation of alphabetical, never a replacement for it**, stored as
+ids rather than positions so a tag renamed, merged or deleted elsewhere does not renumber the rest.
+Unknown ids are dropped on read and newcomers keep their alphabetical place behind the ordered ones —
+otherwise a tag created after the last reorder would be invisible in the one list meant to show every
+tag. Both lists share one JSON property on `SyncedPreferences`, which costs one CloudKit identifier
+rather than two, and it is read and written directly rather than through `SettingsSyncCoordinator`:
+that coordinator mirrors `UserDefaults` into the record only while "Sync Settings Across Devices" is
+ON, which is off by default, and an order that silently did not travel would be worse than one that
+never claimed to.
+
+**THE GATE'S OWN TEST COULD NOT SURVIVE THE GATE'S OWN CHECKLIST, and this is the finding with the
+longest reach.** `CloudKitSchemaInventoryTests.reservedIdentifiersDoNotRaiseTheDeployAlarm` opened by
+asserting `identifiersAwaitingDeploy.isEmpty` "as its premise" and then asserted
+`isProductionSchemaCurrent`, which is *defined* as that same emptiness. So step 2 of #488's documented
+procedure — add the new identifiers to `identifiersAwaitingDeploy` — failed two expectations in one
+test. It has been latent since R-1g simply because nothing added a deployable identifier until now.
+The test is rewritten as the implication it always meant: the WRITER list must not feed the deploy
+alarm. That holds in both states and is strictly stronger than what it asserted, which could only
+catch a miswiring while the deploy list happened to be empty.
+
+**OWNER STEP, and the build carries the #488 warning until it is done.** Two identifiers await
+promotion — `CD_ResearchNote.CD_richText` and `CD_SyncedPreferences.CD_listOrderJSON`, taking the
+baseline 269 → 271. Both have real writers from the day they land, so unlike the reserved identifier
+beside them they are deployable immediately. On a Development build with iCloud signed in: format a
+note, and reorder a tag list. Then CloudKit Dashboard → Schema → **Deploy Schema Changes to
+Production**, clear `identifiersAwaitingDeploy`, re-run the suite and paste back the count and digest
+it prints, and update `deployedThroughBuild` / `deployedOn`. This is the TENTH promotion.
+
+**Mutation sweep: nine mutations, seven killed by the pin that claims them, one compiler-enforced, one
+control green.** Dropping unnamed items from the order, breaking the permutation, letting one list's
+write clear the other's, removing the Insert remount, keeping stale formatting across a replacement,
+and re-adding the tag argument to the editor's FTS5 push each redden their own pin. Re-adding the
+retired Settings pane does not fail a test — it fails to COMPILE, because the enum's four attribute
+switches are exhaustive, which is a stronger guard than a test and is recorded as such. **One
+mutation survived the first pass**: deleting `note.richText = richText` from `save`'s EDIT branch
+changed nothing, because the only test covering rich text created a new note and exercised the other
+branch. Both branches are covered now.
+
+**Review — five lenses, a skeptic on each, a completeness critic — and it found two ways to lose the
+reader's words.** (1) The plain-text branch wrote only `bodyText` while `save` stored both fields, so
+a note edited with formatting OFF kept its old RTF; the rich editor prefers a decodable `richText`
+over its plain fallback, so reopening showed the reader their PREVIOUS prose — and the first keystroke
+there serialised the stale storage back over `bodyText`. Plain typing now goes through `setPlainBody`,
+which drops the copy it has just invalidated, and my doc comment claiming that already happened was
+false. (2) `ListOrderPreferences.apply` built its rank table with `Dictionary(uniqueKeysWithValues:)`,
+which TRAPS on a duplicate key — and duplicate ids are a condition this app expects rather than rules
+out, which is why `DuplicateRecordCleanup` exists. One drag in that state would have crashed the note
+editor on open, on every synced device. (3) A third: minting the preferences record on a reorder
+turned the reader's next "turn settings sync on" from a push into an ADOPT, because
+`SettingsSyncCoordinator` decides between them on whether a record exists — so a reorder would have
+armed a pull of blanks over their own thresholds, stop lists and logging switch. The record is now
+seeded from the device.
+
+**The critic then found what five lenses argued around**: the iPad two-pane arm of the new Research
+destination had never been run — `AllNotesScreen` had only ever been a Settings sheet or an iOS push,
+and its `.principal` toolbar item would have written into the navigation bar the sidebar's own title
+uses. That chrome is now sheet-only, and the iPad suites were run. It also caught that the notes
+snapshot refreshed on the note COUNT but not on an edit, that the iOS manual described a formatting
+affordance iOS does not use (the shared editor ships a keyboard accessory bar with colour and links,
+which neither manual mentioned), that two view-model toggles lost their last callers, and that
+`.fruscollection` now round-trips a note lossily — disclosed in both manuals rather than fixed, since
+widening the payload is a file-format change.
+
+**Scoped OUT and filed:** `note_text` is the same per-document column as `user_tag_ids`, and every
+caller still writes ONE note's body into it, so all but one of a document's notes are invisible to
+search and the replay picks the winner in unsorted fetch order. That is the tag defect's twin on the
+argument beside it, and #1275's comment now says so explicitly rather than implying the column
+problem is solved. Fixing it needs answers this change had no basis to give — what separator joins
+several notes, what clears the column on delete, whether the index version must move.
+
+**Verification.** The iOS unit target passed **4,723 tests in 607 suites** (+15 on `v2` for the new
+suite) and the UI target ran **45 with 14 skipped and 0 failures** (iPhone 17, clean container). On
+**iPad mini (A17 Pro)** `UIObstructionTests` + `ResearchReadingStaysInTabTests` ran **19 with 6 skipped
+and 0 failures** — the iPad arm the critic identified as unexercised. The macOS build succeeded with
+no errors, and `swift test` passed **1,371 tests in 162 suites** (no package target changed). **The
+suite is green WITH two identifiers awaiting deploy**, which is the point of the
+`CloudKitSchemaInventoryTests` rewrite above — before it, following the gate's own checklist turned
+the suite red.
+
+**Deliberately NOT in this change.** `GlobalContextView` is a complete cross-project notes list that
+nothing instantiates and that carries a documented fresh-`UUID()`-per-render filter defect; it is a
+third notes browser and wants deciding on its own. `InlineNoteCreateSheet` still creates notes with a
+plain `TextEditor` and its own save path, so there are two note editors with different capabilities —
+its own doc already states the division, and unifying them is a larger change than this one.

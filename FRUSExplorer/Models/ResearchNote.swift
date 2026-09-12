@@ -32,6 +32,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 04: initial implementation
+///   1.1 — #1275: `richText`, the formatted body, with `bodyText` kept as its plain projection
 @Model final class ResearchNote {
 
     // MARK: - Identity
@@ -52,8 +53,37 @@ import SwiftData
 
     // MARK: - Content
 
-    /// The user's note text in plain text / Markdown.
+    /// The user's note text as PLAIN text — and the authoritative copy for everything that reads a
+    /// note without rendering it.
+    ///
+    /// Since #1275 it is the plain projection of ``richText`` when that is present, exactly as
+    /// `CollectionEntry.text` projects `CollectionEntry.richText`. Search indexing, the Zotero and
+    /// Obsidian exports, the JSON envelope and all five in-app previews read THIS and are unchanged
+    /// by rich text existing — which is the whole reason the formatted copy is stored beside the
+    /// plain one rather than replacing it.
     var bodyText: String = "" {
+        didSet { lastModified = .now }
+    }
+
+    /// The note body as RTF, when the reader has formatted it (#1275).
+    ///
+    /// `nil` for a note written before rich text, or one whose body carries no formatting — and a
+    /// reader of a note must treat `nil` as "use ``bodyText``", never as "empty". The exact shape
+    /// `CollectionEntry.richText` established, down to the `Data?`: RTF rather than an encoded
+    /// `AttributedString`, because the three collection exporters already render RTF spans, and
+    /// rather than Markdown-in-`bodyText`, which would have shipped literal asterisks to five
+    /// in-app previews, three export formats and the reader's Zotero library.
+    ///
+    /// **This property is why #1275 needed a CloudKit Production deploy** — see
+    /// `CloudKitSchemaInventory`.
+    ///
+    /// ## What does NOT carry it
+    /// A `.fruscollection` file writes a document's notes as bare strings and rebuilds them from
+    /// `bodyText` alone, so formatting survives this device and iCloud but not a collection shared
+    /// with a colleague and reimported — while a formatted prose block a few bytes away in the same
+    /// file does survive, because that format carries `CollectionEntry.richText`. Widening the note
+    /// payload is a file-format change and is deliberately not part of #1275; both manuals say so.
+    var richText: Data? {
         didSet { lastModified = .now }
     }
 

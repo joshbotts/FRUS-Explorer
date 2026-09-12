@@ -137,7 +137,6 @@ struct FRUSSettingsView: View {
                 case .tags:           SettingsTagsPane()
                 case .scopes:         SettingsScopesPane()
                 case .workingCorpora: WorkingCorporaView()
-                case .notes:          NotesSettingsView()
                 case .researchSessions: ResearchSessionsView()
                 case .wordCloud:      WordCloudSettingsView()
                 case .volumesStorage: MacVolumesStorageHub()

@@ -293,6 +293,7 @@ enum CloudKitSchemaInventory {
         "CD_ResearchNote.CD_id",
         "CD_ResearchNote.CD_lastModified",
         "CD_ResearchNote.CD_projectIds",
+        "CD_ResearchNote.CD_richText",
         "CD_ResearchNote.CD_selectedSummaryIds",
         "CD_ResearchNote.CD_userTagIds",
         "CD_ResearchNote.CD_volumeId",
@@ -341,6 +342,7 @@ enum CloudKitSchemaInventory {
         "CD_SyncedPreferences.CD_citationStyleRaw",
         "CD_SyncedPreferences.CD_createdAt",
         "CD_SyncedPreferences.CD_defaultDocumentModeRaw",
+        "CD_SyncedPreferences.CD_listOrderJSON",
         "CD_SyncedPreferences.CD_researchLoggingEnabled",
         "CD_SyncedPreferences.CD_updatedAt",
         "CD_SyncedPreferences.CD_wcExcludeBoilerplate",
@@ -445,9 +447,18 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty since R-1g. The NINTH promotion ran 2026-09-03 (build 44) and carried nine of R-5
-        // P3b-2's ten identifiers; the tenth moved to ``identifiersAwaitingWriter`` below, because
-        // it is not awaiting a deploy — no deploy is possible for it. See that list.
+        // Empty since R-1g, until #1275. The NINTH promotion ran 2026-09-03 (build 44) and carried
+        // nine of R-5 P3b-2's ten identifiers; the tenth moved to ``identifiersAwaitingWriter``
+        // below, because it is not awaiting a deploy — no deploy is possible for it.
+        //
+        // **#1275 adds two, and they are the TENTH promotion.** Both have real writers from the day
+        // they land, so unlike the reserved identifier below they are deployable immediately: the
+        // note editor's formatting bar writes `richText` the first time a reader presses Bold, and
+        // the tag/project reorder control writes `listOrderJSON` the first time a reader drags a
+        // row. Owner step, once, on a Development build with iCloud signed in: format a note and
+        // reorder a list, then CloudKit Dashboard → Schema → Deploy Schema Changes to Production.
+        "CD_ResearchNote.CD_richText",
+        "CD_SyncedPreferences.CD_listOrderJSON",
     ]
 
     /// Identifiers this build mirrors that **cannot be deployed yet, because nothing writes them**.

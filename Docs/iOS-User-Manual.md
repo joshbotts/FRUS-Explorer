@@ -673,6 +673,21 @@ The same sheet opens from **Review Changes…** on a Research row, which is the 
 
 Attach a free-form note from the floating selection bar's **Note** (with a passage selected) or from the **Notes** accordion in the Research rail. Notes are filed under your active project (Section 10), appear in the rail for that document, are gathered across your whole library in the Research tab, and are indexed for search — so a later search can match text that appears only in your own notes. In collection exports, notes render as clearly separated **"Research Note"** blocks after the document body: your voice, kept typographically distinct from the document's own footnotes.
 
+### 9.2a Writing a Note
+
+The note editor opens from the Research rail on any document, and from any note row in **Research → All Notes**.
+
+**Formatting.** The body accepts formatted text — **bold, italic, underline, text colour, and links**. On iPhone and iPad a formatting bar rides the top of the keyboard while you are typing, carrying those controls and a **Done** that puts the keyboard away; the system's own selection menu offers bold, italic and underline as well. On a Mac the same controls sit in a bar above the field. The **Formatting** switch in the section header turns the rich editor off if you would rather type plain text; it is a per-device preference, and it does not change what is already stored. Whatever you write is also kept as plain text, which is what search, the exports and your Zotero library read — so formatting never makes a note harder to find or to send somewhere else.
+
+**Tags and projects** are pickers rather than lists. The row shows what is applied; tapping it opens the full list with a search field. Two things live in that sheet worth knowing about:
+
+- **Search** — type to narrow a long list instead of scrolling it.
+- **Edit → drag to reorder** — put the tags and projects you are working with *now* at the top. That order follows you between devices, and it is a rearrangement of the alphabetical list rather than a replacement for it: anything you have not placed stays in alphabetical order behind the ones you have, and a tag created later still appears.
+
+**Insert a summary** adds a generated summary's text to the body, where you can edit it as your own prose.
+
+**One limit worth knowing.** A note's formatting is kept on your devices and in iCloud, but a collection you export as a `.fruscollection` file carries its notes as plain text — so a colleague who imports it, or you reimporting it later, gets the words without the formatting. The plain text is never lost, and everything else that reads a note (search, the PDF/HTML/DOCX exports, Zotero) reads that plain text anyway.
+
 ### 9.3 Tags
 
 Open the **Tags** accordion in the Research rail to apply custom labels you define yourself — "Berlin Crisis," "needs follow-up," "key source," "week 6 reading." Tags are global (not per-project) and cut across volumes, which makes them the natural way to gather material for a theme or a syllabus week regardless of where it sits in the series. In the tag picker, the **New Tag** field sits at the top of the sheet, and a tag you create pins to the top with a **New** badge until the sheet closes; the sheet's title names exactly which document you're tagging. Manage the full list — names, colors, renames, merges, deletions — in **Settings → Research → Tags**, where each row shows what is attached so the cost of a delete is visible before you choose it.
@@ -682,6 +697,8 @@ Open the **Tags** accordion in the Research rail to apply custom labels you defi
 The **Research** tab is the single workspace for everything you've marked. Its root screen is a category list:
 
 - **All Research Documents** — every document you've annotated in any way: a note, a tag, a highlight, a collection entry (including a quotation you froze from it), an AI summary, or a place in an archive-visit plan
+- **Contains Notes** — only the documents you have actually written a note on. The row above is deliberately wider than this one: a document you tagged or highlighted but never wrote on appears there and not here.
+- **All Notes** — your notes themselves, as a list rather than as documents, with filters for project, tag, and free text. This used to live in **Settings → Notes**; it is here now, beside the rest of your research.
 - **History** — everything you've *read*, as opposed to marked up (9.5)
 - **By Collection** — documents grouped by the collections containing them
 - **By Tag** — grouped by your tags

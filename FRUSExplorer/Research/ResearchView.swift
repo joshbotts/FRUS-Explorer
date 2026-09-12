@@ -14,13 +14,34 @@ import SwiftData
 /// Identifies a selection in the Research sidebar.
 enum ResearchSidebarItem: Hashable {
     /// Synthetic "all research documents" entry — union of notes, direct tags, collections, and highlights.
-    case allNotes
+    ///
+    /// **Named `allAnnotated`, not `allNotes`, since #1275.** It is a six-source union and the row
+    /// reads "All Research Documents"; with ``hasNotes`` beside it, a case called `allNotes` that
+    /// does not mean "has notes" is a trap. The user-visible string and its localization key are
+    /// unchanged — two UI suites use "All Research Documents" as their drill-in oracle.
+    case allAnnotated
+    /// Documents that carry a `ResearchNote` — and nothing else (#1275).
+    ///
+    /// The narrow filter ``allAnnotated`` is not: a document tagged, highlighted or collected but
+    /// never written on appears there and not here. This is the axis the Research tab lacked, which
+    /// is why the Settings pane grew its own notes list.
+    case hasNotes
     /// A specific user tag — shows only documents whose notes or direct assignments carry this tag ID.
     case tag(UUID)
     /// A specific named collection — shows only documents in that `Collection`.
     case collection(UUID)
     /// A specific highlight color — shows documents that have at least one highlight of this color.
     case highlightColor(DocumentHighlight.Color)
+    /// Every note the reader has written, as a browsable list (#1275).
+    ///
+    /// **Not a document filter**, like ``history`` and unlike everything else here: it pushes
+    /// ``AllNotesScreen``, whose rows are NOTES rather than documents, so `documents(for:)` returns
+    /// nothing for it. It lived behind Settings ▸ Notes until #1275 — a list of content behind a
+    /// gear icon — and the pane retired when it left.
+    ///
+    /// Offered on **both** platforms, unlike `history`: there is no separate macOS notes window for
+    /// a sidebar row here to duplicate.
+    case notes
     /// The research trail — every document opened and search run (Wave R-3).
     ///
     /// **Unlike every other case this is not a document filter**: it pushes ``HistoryView``
@@ -127,7 +148,7 @@ struct ResearchDocumentEntry: Identifiable {
 ///          `sidebarRow`, and `researchNavigationPath`.
 ///   1.6 — #272 follow-up: `selectedItem` defaults to `nil` on iOS, since 1.5 projects it into
 ///          the stack path and a non-nil default asks the stack to launch auto-pushed. Defensive
-///          only — measured on iPad, the `.allNotes` default did NOT auto-push (SwiftUI drops the
+///          only — measured on iPad, the `.allAnnotated` default did NOT auto-push (SwiftUI drops the
 ///          initial path element); the claim that it did, recorded in a8b20ca, does not reproduce.
 ///   1.7 — Wave R-3: `ResearchSidebarItem.history` pushes the shared `HistoryView` on iOS, the
 ///          research trail's first surface on iPhone/iPad. macOS keeps its `frus.history` window.
@@ -189,7 +210,7 @@ struct ResearchView: View {
 
     /// The selected category. **The default is platform-specific — do not unify it.**
     ///
-    /// macOS defaults to `.allNotes` so the `NavigationSplitView` detail column opens populated
+    /// macOS defaults to `.allAnnotated` so the `NavigationSplitView` detail column opens populated
     /// rather than on the "Select a category" placeholder.
     ///
     /// iOS defaults to `nil` because `researchNavigationPath` projects this value straight into
@@ -198,7 +219,7 @@ struct ResearchView: View {
     ///
     /// This is a **latent hazard, not an observed bug** — stated precisely because the repo has
     /// twice recorded the stronger claim without checking it. Measured on iPad Pro 13-inch (M5)
-    /// at dd16bd7: with `.allNotes` on iOS the tab still launches at its category root (no Back
+    /// at dd16bd7: with `.allAnnotated` on iOS the tab still launches at its category root (no Back
     /// button, category rows present) — behaviour identical to `nil`. SwiftUI evidently discards
     /// the initial path element rather than honouring it, so the default is inert today. That
     /// inertness is an implementation detail of the stack's first render, not a guarantee: it is
@@ -207,7 +228,8 @@ struct ResearchView: View {
     /// on it. `UIObstructionTests.assertResearchLaunchedAtCategoryRoot` is the gate if it ever
     /// does activate.
     #if os(macOS)
-    @State private var selectedItem: ResearchSidebarItem? = .allNotes
+    @State private var selectedItem: ResearchSidebarItem? = .allAnnotated
+
     #else
     // Deliberately `nil` on iOS — see the comment above, and
     // `UIObstructionTests.assertResearchLaunchedAtCategoryRoot`, which is its gate. The F-2
@@ -226,6 +248,15 @@ struct ResearchView: View {
     /// it; kept in those views, the reading position was lost with them. See `InPlaceDocumentReader`.
     @State private var readingChain: [DocumentBrowserEntry] = []
     #endif
+
+    /// The notes list's backing snapshot (#1275).
+    ///
+    /// A snapshot rather than a tenth `@Query`, for the reason `NotesPaneSnapshot` itself records:
+    /// a live query re-renders on every CloudKit drip-import, and this view already carries NINE
+    /// unbounded ones — eight in one block and `allProjects` on its own below the `@State`s, which
+    /// is how an earlier draft of this comment miscounted them. Refreshed on appear and after the
+    /// list deletes something.
+    @State private var notesSnapshot = NotesPaneSnapshot.empty
     /// Document header text keyed by `"volumeId/documentId"`, loaded from `document_cache`.
     @State private var documentHeaders: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
 
@@ -252,6 +283,17 @@ struct ResearchView: View {
             .task(id: selectedItemDocumentIds) { await loadHeaders() }
             // Reload note-sourced headers when any note changes.
             .onChange(of: allNotes.count)              { _, _ in Task { await loadHeaders() } }
+            // #1275: keep the notes list's snapshot in step with the live note query without
+            // making the list a tenth unbounded @Query of its own. BOTH signals, for the reason the
+            // header loader beside it uses both: a note EDITED elsewhere does not change the count,
+            // and `allNotes` is sorted by `lastModified` descending, so its first element moving is
+            // how this view learns that one changed. With only the count, the list showed the old
+            // preview text and the old date after any edit made outside its own sheet.
+            .onChange(of: allNotes.count) { _, _ in notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext) }
+            .onChange(of: allNotes.first?.lastModified) { _, _ in
+                notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext)
+            }
+            .task { notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext) }
             .onChange(of: allNotes.first?.lastModified){ _, _ in Task { await loadHeaders() } }
             // directlyTaggedDocs is now derived from @Query allTagAssignments which is
             // reactive natively — no explicit reload needed.
@@ -439,14 +481,19 @@ struct ResearchView: View {
 
     /// What a sidebar selection pushes (iOS) or fills the detail column with (macOS).
     ///
-    /// Every case but ``ResearchSidebarItem/history`` is a filter over annotated documents;
-    /// history is the research trail, a different list entirely (Wave R-3).
+    /// **Three kinds of case, not two.** Most are filters over annotated documents;
+    /// ``ResearchSidebarItem/history`` is the research trail (Wave R-3); and
+    /// ``ResearchSidebarItem/notes`` is the note list itself (#1275). The last two render lists of
+    /// their own, so `documents(for:)` returns nothing for either.
     @ViewBuilder
     private func destination(for item: ResearchSidebarItem) -> some View {
         #if os(iOS)
         Group {
             if item == .history {
                 HistoryView(onOpenDocument: { readingChain = [$0] })
+            } else if item == .notes {
+                AllNotesScreen(presentation: .embedded, snapshot: notesSnapshot,
+                               onChanged: { notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext) })
             } else {
                 documentList(for: item)
             }
@@ -463,6 +510,9 @@ struct ResearchView: View {
         #else
         if item == .history {
             HistoryView()
+        } else if item == .notes {
+            AllNotesScreen(presentation: .embedded, snapshot: notesSnapshot,
+                           onChanged: { notesSnapshot = NotesPaneSnapshot.fetch(from: modelContext) })
         } else {
             documentList(for: item)
         }
@@ -589,13 +639,49 @@ struct ResearchView: View {
 
             // Synthetic "all notes" entry
             Section {
-                sidebarRow(.allNotes) {
+                sidebarRow(.allAnnotated) {
                     Label {
                         HStack {
                             Text(String(localized: "research.sidebar.allNotes",
                                         defaultValue: "All Research Documents"))
                             Spacer()
                             Text("\(allAnnotatedDocumentCount)")
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "note.text")
+                    }
+                }
+
+                // #1275: the notes-only axis. Placed BELOW All Research Documents deliberately —
+                // `UIObstructionTests` asserts the first content row is still hittable after a
+                // swipe-to-top, and that assertion is order-sensitive; a row added above pushes the
+                // guarded one toward the tab bar. Unconditional, unlike `.updated` below: a reader
+                // with no notes yet is exactly who the empty state is written for.
+                sidebarRow(.hasNotes) {
+                    Label {
+                        HStack {
+                            Text(String(localized: "research.sidebar.hasNotes",
+                                        defaultValue: "Contains Notes"))
+                            Spacer()
+                            Text("\(documentsWithNotesCount)")
+                                .font(FRUSTheme.captionFont)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "square.and.pencil")
+                    }
+                }
+
+                // #1275: the notes list itself, re-homed from the retired Settings ▸ Notes pane.
+                sidebarRow(.notes) {
+                    Label {
+                        HStack {
+                            Text(String(localized: "research.sidebar.notes",
+                                        defaultValue: "All Notes"))
+                            Spacer()
+                            Text("\(notesSnapshot.total)")
                                 .font(FRUSTheme.captionFont)
                                 .foregroundStyle(.secondary)
                         }
@@ -736,9 +822,12 @@ struct ResearchView: View {
         let docs = documents(for: item)
         let emptyDescription: String = {
             switch item {
-            case .allNotes:
+            case .allAnnotated:
                 return String(localized: "research.empty.noDocs.allNotes",
                               defaultValue: "Research notes, tags, highlights, and collections you add from the document view will appear here.")
+            case .hasNotes:
+                return String(localized: "research.empty.noDocs.hasNotes",
+                              defaultValue: "Notes you write on a document will appear here. A document you have only tagged, highlighted, or collected appears under All Research Documents instead.")
             case .tag:
                 return String(localized: "research.empty.noDocs.tag",
                               defaultValue: "No documents have notes or tags matching this tag.")
@@ -751,9 +840,9 @@ struct ResearchView: View {
             case .updated:
                 return String(localized: "research.empty.noDocs.updated",
                               defaultValue: "No document you have annotated has changed since it was indexed on this device.")
-            case .history:
-                // Unreachable: `destination(for:)` routes `.history` to `HistoryView` and never
-                // reaches this list. Present so the switch stays exhaustive.
+            case .history, .notes:
+                // Unreachable: `destination(for:)` routes both to a list of their own and never
+                // reaches this one. Present so the switch stays exhaustive.
                 return ""
             }
         }()
@@ -1154,6 +1243,14 @@ struct ResearchView: View {
         }
     }
 
+    /// How many distinct documents carry at least one note — the ``hasNotes`` badge.
+    ///
+    /// ONE source, unlike its neighbour below: this is what makes "Contains Notes" a narrower
+    /// question than "All Research Documents".
+    private var documentsWithNotesCount: Int {
+        Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" }).count
+    }
+
     /// Total distinct documents across every annotation source — six since R-5 P2.
     private var allAnnotatedDocumentCount: Int { allAnnotatedKeys.count }
 
@@ -1231,7 +1328,7 @@ struct ResearchView: View {
 
     /// Aggregates all four annotation sources by document for the given sidebar item.
     ///
-    /// - `.allNotes`: union of notes, direct tags, collection entries, and highlights
+    /// - `.allAnnotated`: union of notes, direct tags, collection entries, and highlights
     /// - `.tag(id)`: documents whose notes or direct assignments carry this tag
     /// - `.collection(id)`: documents in this specific collection
     /// - `.highlightColor(color)`: documents with at least one highlight of this color
@@ -1250,8 +1347,10 @@ struct ResearchView: View {
     private func documents(for item: ResearchSidebarItem) -> [ResearchDocumentEntry] {
         let matchingKeys: Set<String>
         switch item {
-        case .allNotes:
+        case .allAnnotated:
             matchingKeys = allAnnotatedKeys
+        case .hasNotes:
+            matchingKeys = Set(allNotes.map { "\($0.volumeId)/\($0.documentId)" })
         case .tag(let id):
             let fromNotes  = Set(allNotes.filter { $0.userTagIds.contains(id) }
                                          .map { "\($0.volumeId)/\($0.documentId)" })
@@ -1271,6 +1370,10 @@ struct ResearchView: View {
             matchingKeys = allAnnotatedKeys.intersection(unreviewedRevisions.keys)
         case .history:
             // The trail is not an annotation source — `HistoryView` reads it directly.
+            matchingKeys = []
+        case .notes:
+            // Not a document filter either — `destination(for:)` routes this to `AllNotesScreen`,
+            // whose rows are notes. Present so the switch stays exhaustive.
             matchingKeys = []
         }
 
@@ -1357,9 +1460,15 @@ struct ResearchView: View {
     /// Navigation title for the document list column.
     private func listTitle(for item: ResearchSidebarItem) -> String {
         switch item {
-        case .allNotes:
+        case .allAnnotated:
             return String(localized: "research.sidebar.allNotes",
                           defaultValue: "All Research Documents")
+        case .hasNotes:
+            return String(localized: "research.sidebar.hasNotes", defaultValue: "Contains Notes")
+        case .notes:
+            // Unreachable in practice, like `.history` below: `destination(for:)` routes this to
+            // `AllNotesScreen`, which titles itself. Present so the switch stays exhaustive.
+            return String(localized: "research.sidebar.notes", defaultValue: "All Notes")
         case .tag(let id):
             return allTags.first(where: { $0.id == id })?.name
                 ?? String(localized: "research.list.unknownTag", defaultValue: "Tag")
