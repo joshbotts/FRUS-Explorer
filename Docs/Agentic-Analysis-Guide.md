@@ -267,7 +267,7 @@ table with those two classes named.
 | `is_editorial_note` | 1 for editorial notes — the editors' own connective prose, not a historical document. |
 | `is_front_matter` | 1 for front matter (preface, sources section, abbreviations, persons list). |
 | `despatch_serial` | The pre-1906 despatch/instruction serial number, where one exists. |
-| `summary_text`, `note_text` | **Yours**, not the corpus. See [§7.6](#76-summaries-are-not-sources). |
+| `summary_text`, `note_text` | **Yours**, not the corpus. One row per document, not one per note: `note_text` holds **every** note on the document, oldest first, joined by a blank line. See [§7.6](#76-summaries-are-not-sources). |
 | `user_tag_ids` | Your tags, as space-joined opaque UUIDs. Resolve them to names through `user_tags` — see [§4.6](#46-your-own-data). |
 | `subject_tag_ids` | **Always `NULL`.** Retired feature; the column survives for schema compatibility. |
 
@@ -921,10 +921,17 @@ in N documents in my indexed volumes."
 ### 7.6 Summaries are not sources
 
 `summary_text` holds on-device Apple Intelligence summaries; `note_text` holds your own notes. Both
-are indexed in `user_content`. An agent that does `SELECT header, body_text, summary_text` and
-writes a paragraph from what it saw can produce a quotation that exists nowhere in the historical
-record. **Exclude both columns from any query whose output will become evidence**, and state that
-exclusion in your prompt. If you want to search your own notes, do it deliberately and separately.
+are indexed in `user_content`. Both are **one row per document**, and they get there differently:
+`summary_text` is the newest non-draft summary, the others superseded, while `note_text` is every
+note on the document joined oldest-first with a blank line between them — a note is the researcher's
+own kept writing, so none is superseded by another. Two consequences for anything counting: a
+`note_text` value is not a note, so `COUNT(note_text)` counts annotated documents and never notes;
+and an FTS5 phrase query can match across the boundary between two of them.
+
+An agent that does `SELECT header, body_text, summary_text` and writes a paragraph from what it saw
+can produce a quotation that exists nowhere in the historical record. **Exclude both columns from
+any query whose output will become evidence**, and state that exclusion in your prompt. If you
+want to search your own notes, do it deliberately and separately.
 
 ### 7.7 Subject tags are recall-oriented candidates
 
@@ -2749,6 +2756,16 @@ SEMANTIC VECTORS
   work. Deliberately in §14 and **not** in §12's block: these are obligations on a round's synthesis,
   which a thread-level agent cannot discharge, and the block is already carrying a length caveat.
 
+
+- 1.21 — 2026-09-12: **#1280 closed, so §4.2's column table and §7.6 now state the grain of
+  `note_text`.** It is one row per DOCUMENT holding EVERY note on it, oldest first, joined by a
+  blank line — not one row per note, which is what the guide's silence invited a reader to assume.
+  Two consequences an agent counting anything needs: `COUNT(note_text)` counts annotated documents
+  and never notes, and an FTS5 phrase query can match across the boundary between two of them. The
+  contrast with `summary_text` beside it is now explicit as well: that column is the newest
+  non-draft summary with the rest superseded, where a note is the researcher's own kept writing and
+  none is superseded by another. (Before #1280 the column really did hold one note — whichever the
+  unsorted boot replay wrote last — so this entry documents a behaviour change, not only a gap.)
 
 - 1.19 — 2026-09-06: **#1207 closed.** §14.12 item 7 now points at
   `Planning/Agentic-Harness-Runbook.md`, which carries the operational facts the guide

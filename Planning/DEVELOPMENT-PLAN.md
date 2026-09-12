@@ -14454,3 +14454,152 @@ nothing instantiates and that carries a documented fresh-`UUID()`-per-render fil
 third notes browser and wants deciding on its own. `InlineNoteCreateSheet` still creates notes with a
 plain `TextEditor` and its own save path, so there are two note editors with different capabilities —
 its own doc already states the division, and unifying them is a larger change than this one.
+
+---
+
+## #1280 — one indexed text per document, and something that empties it
+
+`document_cache.note_text` is one column per `(volumeId, documentId)` and a document carries as many
+notes as the reader writes — `DocumentView` opens a fresh editor for every new note and again per
+highlighted passage. Four writers each pushed ONE note's `bodyText` into it, so **all but one of a
+document's notes were invisible to `includeNotes` search**, and the two replay loops picked the
+survivor in unsorted fetch order: which note search could find changed between launches. This is the
+tag defect #1275 fixed, one argument over, and #1275's own comment said so.
+
+**The three decisions the issue asked for.** A **join**, where summaries take the newest — a summary
+has one current version and the rest are superseded, while every note is the reader's own kept
+writing and the Research tab lists them all, so picking one would be the defect rather than the fix.
+A **total order on `createdAt` then `id`**, never `lastModified`: that is a save stamp
+`ModelModificationStamper` bumps for unrelated reasons, so a bulk rewrite would silently reshuffle
+the indexed text, and the id tie-break is what lets two devices' replays write byte-identical text
+instead of churning each other's FTS5 row every launch. And a **blank-line separator with its
+residue disclosed rather than engineered away**: no separator can be forbidden inside a note's prose,
+so a phrase query can match across a note boundary — a sentinel string would be unquotable and would
+leak into the researcher's own exports through this same column. Both manuals and the agentic guide
+(v1.21 — 1.20 was already taken, which nothing in the suite would have caught) now say so.
+
+**The half found while arguing the first.** Nothing emptied the column. A writer that pushes the
+notes that EXIST can never clear the row of a document whose last note is gone, and both replays
+visit only documents that still have one — so a note deleted before this shipped, or deleted on
+another device, left words in the index that no live record accounted for and that no writer would
+ever visit again. `clearNoteText` (the twin of `clearSummaryText`) and `documentsWithNoteText` answer
+it. It also normalises a legacy `''`: a pre-#1280 writer pushed a note's `bodyText` straight through,
+so a reader who emptied a note's body left a row that indexes nothing and that `COUNT(note_text)`
+counts as an annotated document. The set is therefore `NOT NULL` rather than "holds words" — one
+sweep turns those into NULL and they stay out, where filtering them would have frozen them for the
+life of the install.
+
+**Consolidation, and what the four writers actually were.** The three per-document callers are one
+call to `ResearchNote.reindexNoteText` now, and the library-grained replay is
+`reconcileNoteText(container:pipeline:sweepingStaleRows:)`. Worth recording precisely, because the first draft of this
+entry got it wrong and the review caught it: the four did **not** each fetch, join and choose — each
+pushed the body of the one note it was holding, with no fetch of the document's other notes, no join
+and no clear anywhere. That is the whole of #1280; the consolidation is what makes "every note, and a
+clear when none remain" one decision instead of four.
+
+**The sweep is the only bulk delete of a reader's writing in the app, and one refusal guards it.**
+`nil` is the thrown fetch — `?? []` at the call site would read a failure as "no notes". The more
+dangerous reading is a SUCCESSFUL fetch returning nothing, which no `try?` can catch: the local store
+is a file that survives launches, so a reader holding indexed note text and zero note records has
+almost certainly just had that store rebuilt or swapped. **Two mechanisms in this app do exactly
+that, and `frus.db` is a different file that neither touches** — `PendingStoreReset` (Settings ▸
+Data & Recovery ▸ Fix iCloud Sync) deletes `default.store` at the next launch and lets CloudKit
+refill it, and `makeFRUSContainer` falls back to `makeLocalContainer`, a DIFFERENT store file
+(`FRUSExplorerLocal.store`), whenever the CloudKit container fails to initialise. The second is what
+settles the design: nothing throws, so a `nil` check alone would never have caught it. Sweeping in
+either case would empty every note row the reader owns at the exact moment their notes are safe
+elsewhere and have simply not arrived. The floor counts **records, not
+indexable text**, so a reader whose notes all have empty bodies still clears — and it costs one stale
+row for a reader whose LAST note was deleted on another device, until they write another note
+anywhere. Set against emptying a library after a sync repair, that is the cheaper mistake.
+
+Two ordering rules carry the same weight. Both sides of the subtraction are read in **one
+expression**, before any suspension — a live index read taken after the write loop's awaits sees a
+note written *during* the replay that the note snapshot does not, and clears it. And the clears are
+applied **before** the writes, so that window is the length of the clear loop rather than the length
+of the write loop.
+
+**And the floor is not enough on its own, which is why the sweep moved.** It reads the record count,
+so ONE note arriving from CloudKit disarms it while the rest are still in flight — every document
+whose note is in a later batch would be cleared. So the sweep runs where this app already puts
+reconciliation that must not see a half-synced store: the import-settle debounce, beside
+`OrphanedTagRepair`, `DuplicateRecordCleanup` and `AnnotationReviewStore.reconcile`, whose comments
+argue exactly this. At boot it runs only when CloudKit is OFF — no import can arrive to make the
+store fuller, and deferring there would mean a reader with no iCloud account never swept at all. The
+write half always runs at boot: idempotent, and a rebuilt index needs it. The by-product is the
+better behaviour the manuals now describe — a note added or deleted on another device reaches this
+device's search a few seconds after the import settles, rather than at the next cold launch.
+
+**The post-download replay writes and does not sweep**, which is a correction to the first draft.
+Its fetch is scoped to one volume, so `notes.isEmpty` there means "no notes IN THIS VOLUME" — the
+ordinary state of almost every volume, and no evidence at all about the store. A floor cannot be
+built on it, and a sweep without the floor is the thing this section exists to prevent.
+
+**A partial index, because the read runs on every reconciliation pass.**
+`documentsWithNoteText` was a full pass over `document_cache`, whose rows carry `body_text` and
+average 5.7 KB — the 6.3 GB scan `allDocumentRowidKeys` already records at `idx_document_cache_facet`.
+`idx_document_cache_note_text` is PARTIAL on the query's own predicate, so it holds one entry per
+ANNOTATED document. Pinned with `EXPLAIN QUERY PLAN` rather than asserted, and the measured plan is
+what the test expects: SQLite says `SCAN … USING INDEX`, **not** `USING COVERING INDEX`, for this
+partial index. It costs one scan of the existing table to BUILD, once, on the first launch after
+this ships — named in the comment, because the paragraph above it argues the index entirely by the
+scans it saves. No
+`currentDateIndexVersion` bump — an index is derived, not parse output, exactly as the facet index
+beside it records.
+
+**No index-version bump for the column either, argued rather than assumed.**
+`currentDateIndexVersion` gates a REINDEX, and a reindex cannot fix this column: `note_text` is a
+user column the reindex deliberately preserves, and the TEI parse produces nil for it. What repairs
+an existing install is the replay plus the sweep, which run every launch regardless. Bumping would
+make every reader re-parse their whole library to change nothing. No CloudKit implication either — no
+`@Model` stored property moved.
+
+**#1275's source-scan test did its job.** `noteWritersDoNotSpeakForTheDocumentTagColumn` asserts
+`calls > 0` per file precisely so that a moved push takes the guard with it; consolidating the
+writers made it fail, and it now watches `ResearchNote` and the app replay. The new
+`NoteTextWriterScanTests` watches the other half — that no view reaches the column directly again —
+and strips comments before searching, which is not decoration: the A/B is in the sweep below.
+
+**Verification.** iOS unit **4,748 tests in 609 suites** (`v2` is 4,723 in 607), iOS UI **45 with 14
+skipped and 0 failures** (iPhone 17), macOS **BUILD SUCCEEDED**, `swift test` **1,371 in 162 suites**.
+Three mutation sweeps — **13/13**, **8/8**, **8/8** — each mutation killed by a targeted set rather
+than a blanket failure, plus a two-part A/B proving the scan's comment-stripping (the same prose
+passes with it and trips the test without it).
+
+**One UI result had to be thrown away**, and it is worth recording why: a run that overlapped two
+other `xcodebuild` invocations reported 5 failures in 786 s against the same suite's 670 s clean.
+Re-run alone on the same commit it was 45 with 14 skipped and 0 failures. Wall-clock budgets flake
+under load, and the load was mine.
+
+**The review earned its keep twice.** Six adversarial lenses over the committed diff, each finding
+verified by a skeptic prompted to refute: the sweep's `?? []`, the stale-snapshot skew, the full
+table scan, a reconciliation tested only by a copy of itself, the `!= ''` conjunct justified by a
+false claim, the scan's untrue comment-proof claim, and the false account of the four prior writers.
+Then the remediation's OWN first mutation survived — `guard let notes` proved unreachable behind the
+empty-store floor, two guards that read as independent and were one condition. They are one guard
+now, floored on the record count, with the fixture that distinguishes the two readings.
+
+**And then the critic found the one that mattered.** The boot replay's conversion had been written
+and never reached disk: an edit script asserted and exited before its `write`, so the old open-coded
+subtraction was still there, still compiling, with none of the refusals the tests and the doc
+comments described. **Every test stayed green, because they all drive the extracted function and
+nothing asserted that the APP calls it.** That is the lesson of this entry, and it now has a test —
+`theReplaysDoNotOpenCodeTheSubtraction` reads `FRUSExplorerApp.swift` and fails if a replay reaches
+`clearNoteText` or `documentsWithNoteText` itself, or if either `sweepingStaleRows:` argument
+changes. The third sweep's P3 re-open-codes the boot sweep exactly as it was, and that test is what
+kills it.
+
+**Two observations for whoever is next.** The four-argument
+`updateNoteText(volumeId:documentId:bodyText:userTagIds:)` — the overload whose `userTagIds:` argument
+was #1275's whole defect — now has **zero app callers**; only `UserTagCountTests` and
+`ResearchDataExporterTests` reach it. Deleting it would retire the trap outright, and is a small
+change with a justification of its own to write. And `NoteTextWriterScanTests` asserts the three
+views call no pipeline note method at all, which is a strictly stronger property than the one
+#1275's guard was watching them for.
+
+**Deliberately NOT in this change.** Importing a `.fruscollection` creates `ResearchNote` records
+(`NativeCollectionFormat`, ~line 697) and pushes nothing to the index; they become searchable at the
+next launch's replay. That is unchanged by this work — the importer has no pipeline and threading one
+in is a collection-format change — but it is now the only note-creating path that does not index
+immediately, which is worth knowing before the next person reads `reindexNoteText` and assumes
+otherwise.

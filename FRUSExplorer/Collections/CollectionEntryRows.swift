@@ -974,17 +974,20 @@ struct InlineNoteCreateSheet: View {
                     modelContext.insert(note)
                     try? modelContext.save()   // ensure Research window @Query updates promptly
                     // Push immediately so note text is searchable in this session.
+                    //
+                    // Text only. Passing `userTagIds: nil` here used to set the document's
+                    // `user_tag_ids` to NULL — and that column is per document, not per note, so
+                    // creating an untagged note erased tags another note on the same document had
+                    // contributed. They came back at the next launch's push, which is why it was
+                    // invisible. `note_text` is per document for the same reason, which is why the
+                    // rebuild reads every note on it rather than writing this one's body (#1280).
                     if let pipeline = appState.indexingPipeline {
                         let vid = volumeId
                         let did = documentId
-                        // Text only. Passing `userTagIds: nil` here used to set the
-                        // document's `user_tag_ids` to NULL — and that column is per
-                        // document, not per note, so creating an untagged note erased tags
-                        // another note on the same document had contributed. They came back
-                        // at the next launch's push, which is why it was invisible.
-                        Task { try? await pipeline.updateNoteText(
-                            volumeId: vid, documentId: did, bodyText: trimmed
-                        ) }
+                        Task {
+                            await ResearchNote.reindexNoteText(volumeId: vid, documentId: did,
+                                                               in: modelContext, pipeline: pipeline)
+                        }
                     }
                     onCreated(note)
                     dismiss()

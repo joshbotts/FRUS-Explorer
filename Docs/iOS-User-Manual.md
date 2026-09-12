@@ -671,7 +671,7 @@ The same sheet opens from **Review Changes…** on a Research row, which is the 
 
 ### 9.2 Research Notes
 
-Attach a free-form note from the floating selection bar's **Note** (with a passage selected) or from the **Notes** accordion in the Research rail. Notes are filed under your active project (Section 10), appear in the rail for that document, are gathered across your whole library in the Research tab, and are indexed for search — so a later search can match text that appears only in your own notes. In collection exports, notes render as clearly separated **"Research Note"** blocks after the document body: your voice, kept typographically distinct from the document's own footnotes.
+Attach a free-form note from the floating selection bar's **Note** (with a passage selected) or from the **Notes** accordion in the Research rail. Notes are filed under your active project (Section 10), appear in the rail for that document, are gathered across your whole library in the Research tab, and are indexed for search — so a later search can match text that appears only in your own notes. **Every** note on a document is searchable, not only the newest. Deleting a note takes it out of search straight away on the device you deleted it on, and on your other devices a few seconds after each next syncs — or when it next opens, if it was closed. All of a document's notes are indexed together as one block, so an exact-phrase search can occasionally match a phrase that runs from the end of one note into the start of the next. In collection exports, notes render as clearly separated **"Research Note"** blocks after the document body: your voice, kept typographically distinct from the document's own footnotes.
 
 ### 9.2a Writing a Note
 

@@ -313,11 +313,26 @@ struct AllNotesScreen: View {
             refresh()
             return
         }
+        let volumeId = note.volumeId
+        let documentId = note.documentId
         modelContext.delete(note)
         // Flush, so the cross-context @Query consumers (the Research window, Project Home)
         // see the removal promptly — the same reason ResearchNoteEditorView saves after delete.
         try? modelContext.save()
+        // #1280: and tell the index. `note_text` is one column per DOCUMENT, so a deletion has to
+        // rewrite it from the notes that REMAIN — or clear it when none do. Nothing else does this,
+        // so before #1280 a deleted note stayed searchable indefinitely.
+        pushRemainingNotesToFTS5(volumeId: volumeId, documentId: documentId)
         refresh()
+    }
+
+    /// Rewrites a document's indexed note text from the notes still on it, or clears it (#1280).
+    private func pushRemainingNotesToFTS5(volumeId: String, documentId: String) {
+        guard let pipeline = appState.indexingPipeline else { return }
+        Task {
+            await ResearchNote.reindexNoteText(volumeId: volumeId, documentId: documentId,
+                                               in: modelContext, pipeline: pipeline)
+        }
     }
 
     private func refresh() {
