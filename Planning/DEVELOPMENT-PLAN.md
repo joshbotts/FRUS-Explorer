@@ -14940,3 +14940,47 @@ Mutation ran in temporary copies of the scripts:
 
 Replayed against the real typed sitting from its backups, the diagnosis named all 23 documents and 126 pairs.
 The conversion, the ground truth and every backup were byte-identical to the 2026-09-12 hand conversion.
+
+## #234 R-1 — M2a scored over 64 of 72 documents, conventions decided, both audits applied
+
+The owner keyed 40 more documents and ruled on both independent audits of the gold. The full reading is in
+NER-RUNBOOK §7.2. **No code changed**: the collector (#1287, #1288) did everything it was built to do on the
+second sitting.
+
+**Conventions decided.** The owner settled every question §7.1 left open:
+- an attached title or honorific goes inside the span, **seeds included**;
+- a possessive goes inside the span;
+- a shared plural honorific goes on the first name of its list;
+- one span per person;
+- a name in a source-citation caption is not a mention (`Wolf, Rudolf` in `711.00111 Lic. Wolf, Rudolf/51`).
+
+**What was applied**, span by span, with the R-0 text verified unchanged before and after every file:
+- **First audit:** 5 missed mentions, 3 annotator titles, 13 seed titles, and a shared plural.
+- **Conventions, mechanically across all 64 documents:** 20 more spans took an attached unambiguous honorific.
+  Rank and office titles went to the audit instead, because where such a title begins is a judgement.
+- **Second audit** (40 documents, two adjudicators per band, unanimous on every decisive verdict, **no missed
+  mention**): 6 accepted — two spans naming no one, three rank titles, and one span split per person.
+- **ASCII brackets:** the sitting was typed with `[ ]` again, and `CONVERT_ASCII_BRACKETS=1` converted 188 pairs in
+  38 documents with nothing refused.
+
+Backups of every state are beside the data.
+
+**Result.** 406 mentions.
+- **Strict F1:** filtered sweep **0.608**, raw sweep 0.492, NLTagger 0.398.
+- **Relaxed F1:** NLTagger 0.689, filtered NLTagger **0.709**, filtered sweep 0.662.
+- **Boundaries:** go to the filtered sweep, by 21 points (band-stratified interval −28.1 to −14.2), and it still
+  leads 0.653 to 0.563 with titles and possessives stripped on both sides.
+- **Finding a mention:** a tie, NLTagger +2.7 (−4.9 to +10.2).
+- **The stopping rule is not met** (strict gap −9.5, bands split before and after 1930). A simulation of the 8
+  unkeyed documents drawn from their own bands meets it in 0 of 10,000 draws, so keying them would narrow the
+  intervals without changing the reading.
+- **Strict reversed since the 24-document score** (NLTagger +6.3 then). The two causes are named in the runbook:
+  the title convention, which the sweep's spans follow and NLTagger's do not, and the added documents.
+
+**A figure that now misleads, recorded so nobody quotes it.** The collector's measured markup share reads 13.1%,
+because its 35 "rejected" editor spans are 34 seeds extended to their title and one split per person. By overlap the editors mark **21.7%** of mentions.
+
+**Next.** N-2 draws the consequence. A surface that slices by offset needs the sweep's boundaries. A presence
+surface gets at best a tie from an 11.55-day sweep against an 8-minute NLTagger pass, and NLTagger in union with
+the free layer scores higher still (0.794 relaxed).
+
