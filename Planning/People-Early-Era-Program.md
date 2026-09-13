@@ -127,8 +127,11 @@ POCOM career data + authority schema v2 + the #260 crosswalk expansion — [#736
    precision, since the match is surname-only.
 
 The survey also found two defects: `frus1873p1v1`/`p1v2` carry 57-entry editor lists the parser
-never reads (`xml:id="correspondents"`, no `subtype`), and `frus1941-43` contributes 77
-back-of-book subject-index headings to the People browser as if they were people.
+never reads (no `subtype`, and an `xml:id` none of the accepted spellings match), and `frus1941-43`
+contributes 77 back-of-book subject-index headings to the People browser as if they were people.
+*(Corrected 2026-09-13: the two parts spell the id differently — `correspondents` in v1, which #740
+added, and `correspondence` in v2, which it missed. The live index held 57 persons rows for v1 and
+none for v2 until index v51.)*
 
 ### M1b — reconcile the marked-up names
 Cluster the marked layer's **245,747** `persName` mentions into identities (§3's 253,919 is the 268-volume

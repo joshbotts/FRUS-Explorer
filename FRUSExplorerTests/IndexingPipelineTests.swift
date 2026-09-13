@@ -4138,6 +4138,244 @@ struct PersonRollupConsolidationTests {
 
 // MARK: - HeadNestedSourceNoteTests (Source Explorer Phase 1)
 
+// MARK: - Borrowed person lists
+
+/// A split-set part with no persons list of its own, whose person refs all point into its
+/// sibling's list.
+///
+/// Real shape: `frus1932v04` defines no `persName xml:id` and carries 5,743
+/// `corresp="frus1932v03#…"` refs, and all 435 distinct fragments resolve in `frus1932v03`'s
+/// 597-entry list. `frus1918Supp01v02` and `frus1917Supp02v02` have the same shape. Before
+/// `person_list_sources`, a v50 index held 5,530 of their mention rows against 0 `persons` rows,
+/// so none of their people appeared on any person surface.
+///
+/// Every test drives `indexVolume` / `removeVolume` / `consolidatePersonRollup` — the real store
+/// path — and reads back through a fresh `PersonMentionStore`, so a fix that satisfied a
+/// re-implementation would not pass.
+@Suite("IndexingPipeline — borrowed person lists")
+struct BorrowedPersonListTests {
+
+    /// The set's first part holds the list; its second part borrows from it.
+    private let source = "setv01"
+    private let borrower = "setv02"
+
+    /// Writes a volume. `refs` are written verbatim into each document's `persName/@corresp`.
+    private func writeVolume(in dir: URL, id: String, date: String,
+                             documents: [(id: String, refs: [String])],
+                             list: [(ref: String, name: String)] = []) throws {
+        let docs = documents.enumerated().map { index, doc in
+            let names = doc.refs.map { "<persName corresp=\"\($0)\">Someone</persName>" }
+                .joined(separator: " and ")
+            return """
+              <div type="document" xml:id="\(doc.id)" n="\(index + 1)"
+                   frus:doc-dateTime-min="\(date)" frus:doc-dateTime-max="\(date)">
+                <head>Telegram \(doc.id)</head>
+                <p>From \(names).</p>
+              </div>
+            """
+        }.joined(separator: "\n")
+        let items = list.map {
+            "<item><persName xml:id=\"\($0.ref)\">\($0.name)</persName>, Department of State.</item>"
+        }.joined(separator: "\n")
+        let front = list.isEmpty ? "" : """
+            <div type="section" subtype="index" xml:id="persons"><list>
+            \(items)
+            </list></div>
+            """
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0" xml:id="\(id)">
+          <teiHeader><fileDesc><titleStmt><title>\(id)</title></titleStmt></fileDesc></teiHeader>
+          <text><front>\(front)</front><body>
+        \(docs)
+          </body></text>
+        </TEI>
+        """
+        try Data(xml.utf8).write(to: dir.appendingPathComponent("volumes/\(id).xml"))
+    }
+
+    /// The set list: three entries, only two of which the borrower names.
+    private let setList: [(ref: String, name: String)] = [
+        ("p_HS1", "Henry L. Stimson"), ("p_WC1", "William R. Castle"), ("p_JG1", "Joseph C. Grew")
+    ]
+
+    private func writeSource(in dir: URL, date: String = "1932-03-01",
+                             list: [(ref: String, name: String)]? = nil) throws {
+        try writeVolume(in: dir, id: source, date: date,
+                        documents: [("d1", ["#p_HS1"])], list: list ?? setList)
+    }
+
+    private func writeBorrower(in dir: URL, date: String = "1932-04-01") throws {
+        try writeVolume(in: dir, id: borrower, date: date,
+                        documents: [("d1", ["setv01#p_HS1", "setv01#p_WC1"]),
+                                    ("d2", ["setv01#p_HS1"])])
+    }
+
+    /// A fresh store per read, so no assertion reads a connection opened before the last write.
+    private func persons(_ dir: URL, _ volumeId: String) async throws -> [PersonEntry] {
+        let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+        return try await store.allPersons(forVolumeId: volumeId)
+    }
+
+    private func rollup(_ dir: URL, _ volumeId: String, _ ref: String) async throws -> PersonIndexEntry? {
+        let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+        return try await store.rollupEntry(forVolumeId: volumeId, ref: ref)
+    }
+
+    @Test("personRefListVolume — the prefix normalizePersonRef discards")
+    func listVolumeShapes() {
+        #expect(IndexingPipeline.personRefListVolume("frus1932v03#p_JNT1") == "frus1932v03")
+        #expect(IndexingPipeline.personRefListVolume("#p_JNT1") == nil)
+        #expect(IndexingPipeline.personRefListVolume("p_JNT1") == nil)
+        #expect(IndexingPipeline.personRefListVolume("") == nil)
+    }
+
+    @Test("A part with no list gets the sibling's entries it mentions, and only those")
+    func borrowerGetsMentionedEntries() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+
+            let borrowed = try await persons(dir, borrower)
+            #expect(borrowed.map(\.ref).sorted() == ["p_HS1", "p_WC1"],
+                    "p_JG1 is in the list but never named by the borrower, so it is not copied")
+            let original = try await persons(dir, source)
+            #expect(original.count == 3, "the source keeps its whole list")
+            let copied = try #require(borrowed.first { $0.ref == "p_HS1" })
+            let from = try #require(original.first { $0.ref == "p_HS1" })
+            #expect(copied.name == from.name)
+            #expect(copied.description == from.description)
+        }
+    }
+
+    @Test("Storing the list's volume after the borrower fills the borrower")
+    func orderDoesNotMatter() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(borrower)
+            #expect(try await persons(dir, borrower).isEmpty, "nothing to borrow yet")
+
+            try await pipeline.indexVolume(source)
+            #expect(try await persons(dir, borrower).map(\.ref).sorted() == ["p_HS1", "p_WC1"])
+        }
+    }
+
+    @Test("Re-indexing either part keeps the borrowed rows current with the list")
+    func reindexKeepsBorrowedRowsCurrent() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+
+            try await pipeline.indexVolume(borrower)
+            #expect(try await persons(dir, borrower).map(\.ref).sorted() == ["p_HS1", "p_WC1"],
+                    "re-indexing the borrower must not strand it empty")
+
+            // A corrected list: one entry renamed, one withdrawn.
+            try writeSource(in: dir, list: [("p_HS1", "Henry Lewis Stimson"), ("p_JG1", "Joseph C. Grew")])
+            try await pipeline.indexVolume(source)
+            let after = try await persons(dir, borrower)
+            #expect(after.map(\.ref) == ["p_HS1"], "an entry withdrawn from the list leaves the borrower too")
+            #expect(after.first?.name == "Henry Lewis Stimson")
+        }
+    }
+
+    @Test("Removing the list's volume removes what was borrowed; re-adding it restores it")
+    func removingTheSourceEmptiesTheBorrower() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+
+            try await pipeline.removeVolume(source)
+            #expect(try await persons(dir, borrower).isEmpty)
+
+            try await pipeline.indexVolume(source)
+            #expect(try await persons(dir, borrower).map(\.ref).sorted() == ["p_HS1", "p_WC1"])
+        }
+    }
+
+    @Test("A volume with a list of its own never borrows, even when a ref names another volume")
+    func ownListNeverBorrows() async throws {
+        try await withTempDir { dir in
+            // frus1951v04p2's shape: 365 entries of its own and ONE ref spelled `frus1951v04p1#…`.
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeVolume(in: dir, id: "ownlist", date: "1932-05-01",
+                            documents: [("d1", ["setv01#p_HS1", "setv01#p_WC1"])],
+                            list: [("p_HS1", "Henry Stimson")])
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume("ownlist")
+
+            let own = try await persons(dir, "ownlist")
+            #expect(own.map(\.ref) == ["p_HS1"], "p_WC1 must not be copied into a volume with a list")
+            #expect(own.first?.name == "Henry Stimson", "the volume's own entry must survive")
+
+            try await pipeline.indexVolume(source)
+            #expect(try await persons(dir, "ownlist").first?.name == "Henry Stimson",
+                    "re-storing the named volume must not treat this one as its borrower")
+        }
+    }
+
+    @Test("The rollup joins a borrowed entry to the entry it was copied from")
+    func rollupJoinsBorrowedEntry() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+            try await pipeline.consolidatePersonRollup()
+
+            let fromBorrower = try #require(try await rollup(dir, borrower, "p_HS1"))
+            let fromSource = try #require(try await rollup(dir, source, "p_HS1"))
+            #expect(fromBorrower.rollupId == fromSource.rollupId)
+            #expect(fromBorrower.mentionCount == 3, "one source document plus two borrower documents")
+        }
+    }
+
+    @Test("A borrowed row takes the source row's authority id when it has none of its own")
+    func borrowedRowTakesSourceAuthorityId() async throws {
+        try await withTempDir { dir in
+            // Mention eras 42 years apart, beyond the clusterer's 30-year gap. That is not a real
+            // split set; it is the fixture that makes the join depend on the authority id alone.
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir, date: "1890-03-01")
+            try writeBorrower(in: dir, date: "1932-04-01")
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+
+            // Positive control: with no authority index, name and era alone keep them apart.
+            await pipeline.setAuthorityIndexForTesting(nil)
+            try await pipeline.consolidatePersonRollup()
+            let apartB = try #require(try await rollup(dir, borrower, "p_HS1"))
+            let apartS = try #require(try await rollup(dir, source, "p_HS1"))
+            #expect(apartB.rollupId != apartS.rollupId, "the fixture must reach the state the id resolves")
+
+            // The crosswalk covers only the SOURCE's (volume, ref), as the real index does.
+            let index = PersonAuthorityIndex(
+                version: 1, generated: "test", source: "test",
+                crosswalk: [source: ["p_HS1": 4242]],
+                authority: ["4242": .init(n: "Stimson, Henry L.", b: 1867, d: 1950, v: nil)])
+            await pipeline.setAuthorityIndexForTesting(index)
+            try await pipeline.consolidatePersonRollup()
+            let joinedB = try #require(try await rollup(dir, borrower, "p_HS1"))
+            let joinedS = try #require(try await rollup(dir, source, "p_HS1"))
+            #expect(joinedB.rollupId == joinedS.rollupId)
+            #expect(joinedB.authorityId == 4242)
+        }
+    }
+}
+
 /// End-to-end tests for the head-nested source-note extraction fix, using the **real**
 /// corpus encodings (verified against the published TEI on 2026-07-03):
 ///
