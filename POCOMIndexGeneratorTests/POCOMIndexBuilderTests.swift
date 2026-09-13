@@ -10,11 +10,13 @@ import Testing
 import Foundation
 @testable import POCOMIndexGeneratorCore
 
-/// POCOM career-index parsing (#736).
+/// POCOM career-index parsing (#736), plus the version-2 chiefs-of-mission tables.
 ///
 /// Fixtures are trimmed copies of real records from the checkout, not invented shapes — the two
 /// parsing traps this suite pins (nested event dates, the role stated only in a
-/// principal-position header) both come from the actual files.
+/// principal-position header) both come from the actual files. The version-2 tests build small
+/// synthetic checkouts in the register's real element shape. In each, a row differs from its twin
+/// in the one condition under test.
 @Suite("POCOM index builder")
 struct POCOMIndexBuilderTests {
 
@@ -347,5 +349,497 @@ struct POCOMIndexBuilderTests {
         let post = try #require(index.careers["hornibrook-william-harrison"]?.a.first)
         #expect(post.r == "Envoy Extraordinary Minister Plenipotentiary",
                 "falls back to a humanised slug rather than an empty label")
+    }
+
+    // MARK: - Version 2: careers golden
+
+    /// A checkout of real records, trimmed. France's served Dayton and Bigelow rows are included, as
+    /// is its `<other-nominees>` Pinckney row, plus Seward as Secretary of State.
+    /// ``careersGolden`` is what the builder made of it BEFORE the version-2 tables existed.
+    static let goldenCheckoutFiles: [String: String] = [
+        "people/d/dayton-william-lewis.xml": """
+            <person><id>dayton-william-lewis</id>
+            <persName><surname>Dayton</surname><forename>William Lewis</forename>
+            <altname>William L. Dayton</altname></persName>
+            <birth>1807</birth><death>1864</death><career-type>pre-1915</career-type></person>
+            """,
+        "people/b/bigelow-john.xml": """
+            <person><id>bigelow-john</id>
+            <persName><surname>Bigelow</surname><forename>John</forename></persName>
+            <birth>1817</birth><death>1911</death></person>
+            """,
+        "people/p/pinckney-charles-cotesworth.xml": """
+            <person><id>pinckney-charles-cotesworth</id>
+            <persName><surname>Pinckney</surname><forename>Charles Cotesworth</forename></persName>
+            <birth>1746</birth><death>1825</death></person>
+            """,
+        "people/s/seward-william-henry.xml": """
+            <person><id>seward-william-henry</id>
+            <persName><surname>Seward</surname><forename>William Henry</forename></persName>
+            <birth>1801</birth><death>1872</death></person>
+            """,
+        "roles-country-chiefs/envoy-extraordinary-minister-plenipotentiary.xml": """
+            <role mode="active"><id>envoy-extraordinary-minister-plenipotentiary</id>
+            <class>chief</class><category>country</category>
+            <names><singular>Envoy Extraordinary and Minister Plenipotentiary</singular>
+            <plural>Envoys Extraordinary and Ministers Plenipotentiary</plural></names></role>
+            """,
+        "positions-principals/secretary.xml": """
+            <principal-position><id>secretary</id><class>principal</class>
+            <names><singular>Secretary of State</singular><plural>Secretaries of State</plural></names>
+            <principals><principal><id>secr-1861-sewa</id><person-id>seward-william-henry</person-id>
+            <role-title-id>secretary</role-title-id>
+            <appointed><date>1861-03-05</date><note/></appointed>
+            <started><date>1861-03-06</date><note/></started>
+            <ended><date>1869-03-04</date><note/></ended></principal></principals>
+            </principal-position>
+            """,
+        "missions-countries/france.xml": """
+            <country-mission>
+              <territory-id>france</territory-id>
+              <chiefs>
+                <chief>
+                  <id>fr-1861-dayt-01</id>
+                  <person-id>dayton-william-lewis</person-id>
+                  <role-title-id>envoy-extraordinary-minister-plenipotentiary</role-title-id>
+                  <contemporary-territory-id>france</contemporary-territory-id>
+                  <appointed><date>1861-03-18</date><note/></appointed>
+                  <arrived><date/><note/></arrived>
+                  <started><date>1861-05-19</date><note/></started>
+                  <ended><date>1864-12-01</date><note>Died at post on</note></ended>
+                </chief>
+                <chief>
+                  <id>fr-1865-bige-01</id>
+                  <person-id>bigelow-john</person-id>
+                  <role-title-id>envoy-extraordinary-minister-plenipotentiary</role-title-id>
+                  <contemporary-territory-id>france</contemporary-territory-id>
+                  <appointed><date>1865-03-15</date><note/></appointed>
+                  <arrived><date/><note/></arrived>
+                  <started><date>1865-04-23</date><note/></started>
+                  <ended><date>1866-12-23</date><note>Presented recall on</note></ended>
+                </chief>
+              </chiefs>
+              <other-nominees>
+                <chief>
+                  <id>fr-1796-pinc-01</id>
+                  <person-id>pinckney-charles-cotesworth</person-id>
+                  <role-title-id>minister-plenipotentiary</role-title-id>
+                  <contemporary-territory-id>france</contemporary-territory-id>
+                  <appointed><date>1796-09-09</date><note/></appointed>
+                  <arrived><date/><note/></arrived>
+                  <started><date/><note/></started>
+                  <ended><date/><note/></ended>
+                </chief>
+              </other-nominees>
+            </country-mission>
+            """,
+    ]
+
+    /// `careers` as the builder at `ab37a469` encoded it over ``goldenCheckoutFiles``, with the
+    /// runner's encoder options. That builder predates the version-2 tables. Captured by running
+    /// it, not written by hand, and it keeps the nominee Pinckney: excluding nominees from careers
+    /// is a separate decision.
+    static let careersGolden = #"{"bigelow-john":{"a":[{"ap":"1865-03-15","en":"1866-12-23","nt":"Presented recall on","p":"France","r":"Envoy Extraordinary and Minister Plenipotentiary","st":"1865-04-23"}],"b":1817,"d":1911,"n":"Bigelow, John"},"dayton-william-lewis":{"a":[{"ap":"1861-03-18","en":"1864-12-01","nt":"Died at post on","p":"France","r":"Envoy Extraordinary and Minister Plenipotentiary","st":"1861-05-19"}],"b":1807,"d":1864,"n":"Dayton, William Lewis"},"pinckney-charles-cotesworth":{"a":[{"ap":"1796-09-09","p":"France","r":"Minister Plenipotentiary"}],"b":1746,"d":1825,"n":"Pinckney, Charles Cotesworth"},"seward-william-henry":{"a":[{"ap":"1861-03-05","en":"1869-03-04","r":"Secretary of State","st":"1861-03-06"}],"b":1801,"d":1872,"n":"Seward, William Henry"}}"#
+
+    // MARK: - Version 2: fixture builders
+
+    /// A `<chief>` in the register's element order. An absent date is written as `<date/>`, the
+    /// way the register writes it. The contemporary territory id deliberately differs from every
+    /// file's `<territory-id>`, so each test that reads `chiefs` by key also checks the key.
+    static func chiefXML(_ id: String, _ person: String, role: String = "minister-resident",
+                         ap: String? = nil, st: String? = nil, en: String? = nil) -> String {
+        func event(_ name: String, _ date: String?) -> String {
+            "<\(name)>" + (date.map { "<date>\($0)</date>" } ?? "<date/>") + "<note/></\(name)>"
+        }
+        return "<chief><id>\(id)</id><person-id>\(person)</person-id>"
+            + "<role-title-id>\(role)</role-title-id>"
+            + "<contemporary-territory-id>contemporary-name</contemporary-territory-id>"
+            + event("appointed", ap) + event("arrived", nil) + event("started", st) + event("ended", en)
+            + "<note/></chief>"
+    }
+
+    /// A country-mission file: served chiefs inside `<chiefs>`, nominees inside `<other-nominees>`.
+    static func missionXML(_ territory: String, chiefs: [String], nominees: [String] = []) -> String {
+        "<country-mission><territory-id>\(territory)</territory-id><chiefs>" + chiefs.joined()
+            + "</chiefs>"
+            + (nominees.isEmpty ? "" : "<other-nominees>" + nominees.joined() + "</other-nominees>")
+            + "</country-mission>"
+    }
+
+    /// A person record with the register's name parts.
+    static func personXML(_ slug: String, surname: String, forename: String,
+                          genName: String? = nil, altnames: [String] = []) -> String {
+        "<person><id>\(slug)</id><persName><surname>\(surname)</surname>"
+            + "<forename>\(forename)</forename>"
+            + (genName.map { "<genName>\($0)</genName>" } ?? "")
+            + altnames.map { "<altname>\($0)</altname>" }.joined()
+            + "</persName><birth/><death/></person>"
+    }
+
+    /// Person files for `slugs`, so every row in a fixture has a name and fails only on what it tests.
+    static func people(_ slugs: [String]) -> [String: String] {
+        Dictionary(uniqueKeysWithValues: slugs.map { slug in
+            ("people/\(slug.prefix(1))/\(slug).xml",
+             personXML(slug, surname: slug.capitalized, forename: "Test"))
+        })
+    }
+
+    /// Writes `files` (path → contents) under a new temporary directory, creating them in `order`.
+    private func writeCheckout(_ files: [String: String], order: [String]? = nil) throws -> URL {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("POCOMTest-\(UUID().uuidString)", isDirectory: true)
+        for path in order ?? files.keys.sorted() {
+            let url = root.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(),
+                                                    withIntermediateDirectories: true)
+            try Data(files[path, default: ""].utf8).write(to: url)
+        }
+        return root
+    }
+
+    /// Writes, builds and removes a checkout.
+    private func buildCheckout(_ files: [String: String], keepSlug: Set<String>? = nil)
+    throws -> (index: POCOMIndex, stats: POCOMBuildStats) {
+        let root = try writeCheckout(files)
+        defer { try? FileManager.default.removeItem(at: root) }
+        return try POCOMIndexBuilder.build(checkout: root, version: 2, generated: "2026-09-13",
+                                           source: "test", keepSlug: keepSlug)
+    }
+
+    // MARK: - Version 2: chiefs
+
+    @Test("The chiefs table reads served rows inside <chiefs> and never <other-nominees>")
+    func chiefsSkipOtherNominees() throws {
+        // The nominee row is otherwise valid: it is in the window, dated and named. Only where it
+        // sits in the file keeps it out.
+        var files = Self.people(["dayton-william-lewis", "nominee-person"])
+        files["missions-countries/france.xml"] = Self.missionXML(
+            "france",
+            chiefs: [Self.chiefXML("fr-1861-dayt-01", "dayton-william-lewis",
+                                   ap: "1861-03-18", en: "1864-12-01")],
+            nominees: [Self.chiefXML("fr-1862-nomi-01", "nominee-person",
+                                     ap: "1862-01-01", en: "1863-01-01")])
+        let (index, stats) = try buildCheckout(files)
+        #expect(index.chiefs.keys.sorted() == ["france"], "keyed by <territory-id>")
+        #expect(index.chiefs["france"]?.map(\.s) == ["dayton-william-lewis"])
+        #expect(index.names.keys.sorted() == ["dayton-william-lewis"])
+        #expect(stats.servedChiefRows == 1)
+        #expect(stats.otherNomineeChiefRows == 1)
+        // Careers still harvest the nomination; nominee exclusion there is out of scope.
+        #expect(index.careers["nominee-person"]?.a.count == 1)
+    }
+
+    @Test("keepSlug restricts careers but not the chiefs table")
+    func chiefsIgnoreKeepSlug() throws {
+        let files = [
+            "people/d/dayton-william-lewis.xml": Self.personXML(
+                "dayton-william-lewis", surname: "Dayton", forename: "William Lewis"),
+            "missions-countries/france.xml": Self.missionXML("france", chiefs: [
+                Self.chiefXML("fr-1861-dayt-01", "dayton-william-lewis", ap: "1861-03-18", en: "1864-12-01"),
+            ]),
+        ]
+        let (index, _) = try buildCheckout(files, keepSlug: ["someone-else"])
+        #expect(index.careers.isEmpty, "fixture guard: keepSlug did exclude Dayton from careers")
+        #expect(index.chiefs["france"]?.map(\.s) == ["dayton-william-lewis"])
+        #expect(index.names["dayton-william-lewis"]?.sn == "Dayton")
+    }
+
+    @Test("A row is kept when its widened tenure overlaps 1861-01-01…1906-12-31, both edges inclusive")
+    func chiefsWindowBoundaries() throws {
+        #expect(POCOMIndexBuilder.chiefsWindowFirstDay == "1861-01-01")
+        #expect(POCOMIndexBuilder.chiefsWindowLastDay == "1906-12-31")
+        // Each pair differs in one date, across one edge. A partial date widens: an end of `1861`
+        // runs to 1861-12-31, and a start of `1906-12` opens on 1906-12-01. Every row states its
+        // end, or the edge would be moved by a derived end instead.
+        let cases: [(slug: String, ap: String, en: String, kept: Bool)] = [
+            ("end-1860", "1850-01-01", "1860", false),
+            ("end-1861", "1850-01-01", "1861", true),
+            ("end-1860-12", "1850-01-01", "1860-12", false),
+            ("end-1861-01", "1850-01-01", "1861-01", true),
+            ("end-1860-12-31", "1850-01-01", "1860-12-31", false),
+            ("end-1861-01-01", "1850-01-01", "1861-01-01", true),
+            ("start-1906", "1906", "1910-01-01", true),
+            ("start-1907", "1907", "1910-01-01", false),
+            ("start-1906-12", "1906-12", "1910-01-01", true),
+            ("start-1907-01", "1907-01", "1910-01-01", false),
+            ("start-1906-12-31", "1906-12-31", "1910-01-01", true),
+            ("start-1907-01-01", "1907-01-01", "1910-01-01", false),
+        ]
+        var files = Self.people(cases.map(\.slug))
+        files["missions-countries/peru.xml"] = Self.missionXML("peru", chiefs: cases.enumerated().map {
+            Self.chiefXML("pe-\($0.offset)", $0.element.slug, ap: $0.element.ap, en: $0.element.en)
+        })
+        let (index, stats) = try buildCheckout(files)
+        let kept = Set(index.chiefs["peru"]?.map(\.s) ?? [])
+        var checked = 0
+        for row in cases {
+            #expect(kept.contains(row.slug) == row.kept, "\(row.slug)")
+            checked += 1
+        }
+        #expect(checked == 12)
+        #expect(stats.chiefRowsOutsideWindow == 6)
+    }
+
+    @Test("A row with neither an appointment nor a start date is skipped")
+    func chiefsSkipRowWithoutStart() throws {
+        var files = Self.people(["undated-start", "dated-start"])
+        files["missions-countries/chile.xml"] = Self.missionXML("chile", chiefs: [
+            Self.chiefXML("ch-1", "undated-start", en: "1870-01-01"),
+            Self.chiefXML("ch-2", "dated-start", st: "1869-01-01", en: "1870-01-01"),
+        ])
+        let (index, stats) = try buildCheckout(files)
+        #expect(index.chiefs["chile"]?.map(\.s) == ["dated-start"])
+        #expect(stats.chiefRowsWithoutStart == 1)
+        #expect(index.names["undated-start"] == nil)
+    }
+
+    @Test("A row's start is the earlier of its appointment and start dates")
+    func chiefsStartIsEarliestOfAppointedStarted() throws {
+        var files = Self.people(["open-before-late", "appointed-late",
+                                 "open-before-early", "appointed-early"])
+        // The appointment FOLLOWS the start here, as in do-1885-thom-01. Taking the appointment
+        // first opens this tenure in 1907, outside the window, and moves the open row's derived end.
+        files["missions-countries/dominican-republic.xml"] = Self.missionXML("dominican-republic", chiefs: [
+            Self.chiefXML("do-1", "open-before-late", ap: "1900-01-01"),
+            Self.chiefXML("do-2", "appointed-late", ap: "1907-03-01", st: "1906-12-15", en: "1908-01-01"),
+        ])
+        // The ordinary order: appointment, then start. Taking the start first moves the open
+        // row's derived end.
+        files["missions-countries/haiti.xml"] = Self.missionXML("haiti", chiefs: [
+            Self.chiefXML("ht-1", "open-before-early", ap: "1880-01-01"),
+            Self.chiefXML("ht-2", "appointed-early", ap: "1890-01-01", st: "1890-06-01", en: "1895-01-01"),
+        ])
+        let (index, _) = try buildCheckout(files)
+        let dominican = try #require(index.chiefs["dominican-republic"])
+        #expect(dominican.map(\.s) == ["open-before-late", "appointed-late"])
+        #expect(dominican.first { $0.s == "open-before-late" }?.ex == "1906-12-14")
+        let haiti = try #require(index.chiefs["haiti"])
+        #expect(haiti.first { $0.s == "open-before-early" }?.ex == "1889-12-31")
+    }
+
+    @Test("An open row ends the day before the next strictly later start at its territory, register-wide")
+    func chiefsOpenEndCappedByNextRow() throws {
+        var files = Self.people(["pacheco-romualdo", "same-day-colleague", "later-minister",
+                                 "open-late", "beyond-window", "open-early", "next-early",
+                                 "open-leap", "next-leap", "open-year", "next-year"])
+        // Modelled on Pacheco's commissions: gt-1890-pach-01 is open, noting only "Recommissioned".
+        // A row starting the SAME day is not later. Of the two later rows the earliest caps, and
+        // its partial start (`1891-07`) floors before the day is taken off.
+        files["missions-countries/guatemala.xml"] = Self.missionXML("guatemala", chiefs: [
+            Self.chiefXML("gt-1890-pach-01", "pacheco-romualdo", ap: "1890-12-11", st: "1891-02-28"),
+            Self.chiefXML("gt-1890-same-01", "same-day-colleague", ap: "1890-12-11", en: "1891-01-01"),
+            Self.chiefXML("gt-1892-late-01", "later-minister", ap: "1892-01-01", en: "1893-01-01"),
+            Self.chiefXML("gt-1891-pach-01", "pacheco-romualdo", ap: "1891-07", en: "1893-06-12"),
+        ])
+        // The capping row starts in 1910, is outside the window and is not emitted. The cap is
+        // computed over the register, not over the table.
+        files["missions-countries/spain.xml"] = Self.missionXML("spain", chiefs: [
+            Self.chiefXML("sp-1905-open-01", "open-late", ap: "1905-03-01"),
+            Self.chiefXML("sp-1910-beyo-01", "beyond-window", ap: "1910-03-01", en: "1912-01-01"),
+        ])
+        // Left open, this pre-war row would overlap the window; capped in 1855, it does not.
+        files["missions-countries/peru.xml"] = Self.missionXML("peru", chiefs: [
+            Self.chiefXML("pe-1850-open-01", "open-early", ap: "1850-01-01"),
+            Self.chiefXML("pe-1855-next-01", "next-early", ap: "1855-03-01", en: "1856-01-01"),
+        ])
+        // The day before 1 March of a leap year, and the day before 1 January.
+        files["missions-countries/chile.xml"] = Self.missionXML("chile", chiefs: [
+            Self.chiefXML("ch-1880-open-01", "open-leap", ap: "1880-05-01"),
+            Self.chiefXML("ch-1892-next-01", "next-leap", ap: "1892-03-01", en: "1893-01-01"),
+        ])
+        files["missions-countries/denmark.xml"] = Self.missionXML("denmark", chiefs: [
+            Self.chiefXML("dk-1875-open-01", "open-year", ap: "1875-01-01"),
+            Self.chiefXML("dk-1881-next-01", "next-year", ap: "1881-01-01", en: "1882-01-01"),
+        ])
+        let (index, stats) = try buildCheckout(files)
+        let guatemala = try #require(index.chiefs["guatemala"])
+        let open = try #require(guatemala.first { $0.s == "pacheco-romualdo" && $0.en == nil })
+        #expect(open.ex == "1891-06-30")
+        #expect(index.chiefs["spain"]?.map(\.s) == ["open-late"])
+        #expect(index.chiefs["spain"]?.first?.ex == "1910-02-28")
+        #expect(index.chiefs["peru"] == nil, "both Peru rows end before 1861 once the open one is capped")
+        #expect(index.chiefs["chile"]?.first { $0.s == "open-leap" }?.ex == "1892-02-29")
+        #expect(index.chiefs["denmark"]?.first { $0.s == "open-year" }?.ex == "1880-12-31")
+        #expect(stats.derivedEndsWritten == 4, "Guatemala, Spain, Chile and Denmark each write one")
+    }
+
+    @Test("No derived end without a later row at the same territory, nor on a row with its own end")
+    func chiefsNoExWithoutLaterRow() throws {
+        var files = Self.people(["earlier-minister", "last-open", "elsewhere-later",
+                                 "ended-minister", "successor"])
+        // Japan: the open row is its territory's latest. An EARLIER row does not cap it.
+        files["missions-countries/japan.xml"] = Self.missionXML("japan", chiefs: [
+            Self.chiefXML("ja-1890-earl-01", "earlier-minister", ap: "1890-01-01", en: "1895-01-01"),
+            Self.chiefXML("ja-1900-last-01", "last-open", ap: "1900-01-01"),
+        ])
+        // Korea: a later start at ANOTHER territory does not cap Japan's open row.
+        files["missions-countries/korea.xml"] = Self.missionXML("korea", chiefs: [
+            Self.chiefXML("ko-1902-else-01", "elsewhere-later", ap: "1902-01-01", en: "1904-01-01"),
+        ])
+        // Thailand: a row that states its end gets no derived one, successor or not.
+        files["missions-countries/thailand.xml"] = Self.missionXML("thailand", chiefs: [
+            Self.chiefXML("th-1880-ende-01", "ended-minister", ap: "1880-01-01", en: "1885-01-01"),
+            Self.chiefXML("th-1886-succ-01", "successor", ap: "1886-01-01", en: "1890-01-01"),
+        ])
+        let (index, stats) = try buildCheckout(files)
+        let lastOpen = try #require(index.chiefs["japan"]?.first { $0.s == "last-open" })
+        #expect(lastOpen.en == nil)
+        #expect(lastOpen.ex == nil)
+        let ended = try #require(index.chiefs["thailand"]?.first { $0.s == "ended-minister" })
+        #expect(ended.ex == nil)
+        #expect(stats.derivedEndsWritten == 0)
+    }
+
+    @Test("Rows order by (first day, slug, chief id), whatever order the file lists them in")
+    func chiefsTotalOrderOnSharedStart() throws {
+        // Named against the expectation. Each of these alone gives a different sequence: slug
+        // order, chief-id order, end-date order, first day then chief id, first day then slug then
+        // file order, and file order.
+        var files = Self.people(["zeta-person", "alpha-person", "beta-person"])
+        files["missions-countries/france.xml"] = Self.missionXML("france", chiefs: [
+            Self.chiefXML("fr-2", "beta-person", ap: "1880-01-01", en: "1881-01-01"),
+            Self.chiefXML("fr-0", "beta-person", ap: "1880-01-01", en: "1882-01-01"),
+            Self.chiefXML("fr-1", "alpha-person", st: "1880-01-01", en: "1883-01-01"),
+            Self.chiefXML("fr-3", "zeta-person", ap: "1870-01-01", en: "1871-01-01"),
+        ])
+        let (index, _) = try buildCheckout(files)
+        let order = try #require(index.chiefs["france"]).map { "\($0.s) \($0.en ?? "-")" }
+        #expect(order == ["zeta-person 1871-01-01", "alpha-person 1883-01-01",
+                          "beta-person 1882-01-01", "beta-person 1881-01-01"])
+    }
+
+    // MARK: - Version 2: names and roles
+
+    @Test("names captures surname, forename and genName, and an empty genName reads as absent")
+    func namesCaptureGenName() throws {
+        var files: [String: String] = [
+            "people/a/ackerson-garret-g.xml": Self.personXML(
+                "ackerson-garret-g", surname: "Ackerson", forename: "Garret G.", genName: "Jr."),
+            "people/b/blank-gen.xml": Self.personXML(
+                "blank-gen", surname: "Blank", forename: "Gen", genName: " "),
+        ]
+        files["missions-countries/liberia.xml"] = Self.missionXML("liberia", chiefs: [
+            Self.chiefXML("lr-1", "ackerson-garret-g", ap: "1870-01-01", en: "1871-01-01"),
+            Self.chiefXML("lr-2", "blank-gen", ap: "1872-01-01", en: "1873-01-01"),
+        ])
+        let (index, _) = try buildCheckout(files)
+        #expect(index.names["ackerson-garret-g"]
+                == POCOMPersonName(sn: "Ackerson", fn: "Garret G.", g: "Jr.", a: nil))
+        #expect(index.names["blank-gen"] == POCOMPersonName(sn: "Blank", fn: "Gen", g: nil, a: nil))
+    }
+
+    @Test("names keeps the first non-empty altname, whitespace-collapsed")
+    func namesCaptureFirstAltname() throws {
+        let files: [String: String] = [
+            "people/d/dayton-william-lewis.xml": Self.personXML(
+                "dayton-william-lewis", surname: "Dayton", forename: "William Lewis",
+                altnames: ["William L. Dayton", "W. L. Dayton"]),
+            // Real: the register's altname carries a trailing space.
+            "people/v/vass-laurence-coolidge.xml": Self.personXML(
+                "vass-laurence-coolidge", surname: "Vass", forename: "Laurence Coolidge",
+                altnames: ["Laurence C. Vass "]),
+            "people/n/no-altname.xml": Self.personXML("no-altname", surname: "Plain", forename: "Name"),
+            "missions-countries/france.xml": Self.missionXML("france", chiefs: [
+                Self.chiefXML("fr-1", "dayton-william-lewis", ap: "1861-03-18", en: "1864-12-01"),
+                Self.chiefXML("fr-2", "vass-laurence-coolidge", ap: "1865-01-01", en: "1866-01-01"),
+                Self.chiefXML("fr-3", "no-altname", ap: "1867-01-01", en: "1868-01-01"),
+            ]),
+        ]
+        let (index, _) = try buildCheckout(files)
+        #expect(index.names["dayton-william-lewis"]?.a == "William L. Dayton")
+        #expect(index.names["vass-laurence-coolidge"]?.a == "Laurence C. Vass")
+        let plain = try #require(index.names["no-altname"])
+        #expect(plain.a == nil)
+    }
+
+    @Test("roles maps each role id the chiefs use to its singular label, and holds no other")
+    func rolesUseSingularLabel() throws {
+        var files = Self.people(["envoy-person", "resident-person"])
+        files["roles-country-chiefs/envoy.xml"] = """
+            <role mode="active"><id>envoy-extraordinary-minister-plenipotentiary</id><class>chief</class>
+            <names><singular>Envoy Extraordinary and Minister Plenipotentiary</singular>
+            <plural>Envoys Extraordinary and Ministers Plenipotentiary</plural></names></role>
+            """
+        files["roles-country-chiefs/minister-resident.xml"] = """
+            <role mode="active"><id>minister-resident</id><class>chief</class>
+            <names><singular>Minister Resident</singular><plural>Ministers Resident</plural></names></role>
+            """
+        files["roles-country-chiefs/charge-daffaires.xml"] = """
+            <role mode="active"><id>charge-daffaires</id><class>chief</class>
+            <names><singular>Chargé d'Affaires</singular><plural>Chargés d'Affaires</plural></names></role>
+            """
+        files["missions-countries/brazil.xml"] = Self.missionXML("brazil", chiefs: [
+            Self.chiefXML("br-1", "envoy-person", role: "envoy-extraordinary-minister-plenipotentiary",
+                          ap: "1870-01-01", en: "1871-01-01"),
+            Self.chiefXML("br-2", "resident-person", role: "minister-resident",
+                          ap: "1872-01-01", en: "1873-01-01"),
+        ])
+        let (index, stats) = try buildCheckout(files)
+        #expect(index.roles == [
+            "envoy-extraordinary-minister-plenipotentiary": "Envoy Extraordinary and Minister Plenipotentiary",
+            "minister-resident": "Minister Resident",
+        ])
+        #expect(stats.unknownRoleIds.isEmpty)
+    }
+
+    // MARK: - Version 2: careers and determinism
+
+    @Test("careers encode byte-for-byte as the version-1 builder wrote them")
+    func careersUnchangedByChiefs() throws {
+        let (index, _) = try buildCheckout(Self.goldenCheckoutFiles)
+        // Positive control: this build made the chiefs table, without the nominee.
+        #expect(index.chiefs["france"]?.map(\.s) == ["dayton-william-lewis", "bigelow-john"])
+        let careers = String(decoding: try POCOMIndexRunner.makeEncoder().encode(index.careers),
+                             as: UTF8.self)
+        #expect(careers == Self.careersGolden)
+    }
+
+    @Test("Two builds of one checkout, written in opposite file orders, encode to identical bytes")
+    func rebuildIsByteIdentical() throws {
+        var files = Self.goldenCheckoutFiles
+        files.merge(Self.people(["pacheco-romualdo", "same-day-colleague"])) { current, _ in current }
+        // A second territory, a shared first day and a derived end, listed out of order.
+        files["missions-countries/guatemala.xml"] = Self.missionXML("guatemala", chiefs: [
+            Self.chiefXML("gt-1891-pach-01", "pacheco-romualdo", ap: "1891-07", en: "1893-06-12"),
+            Self.chiefXML("gt-1890-same-01", "same-day-colleague", ap: "1890-12-11", en: "1891-01-01"),
+            Self.chiefXML("gt-1890-pach-01", "pacheco-romualdo", ap: "1890-12-11", st: "1891-02-28"),
+        ])
+        let forward = try writeCheckout(files, order: files.keys.sorted())
+        let backward = try writeCheckout(files, order: Array(files.keys.sorted().reversed()))
+        defer {
+            try? FileManager.default.removeItem(at: forward)
+            try? FileManager.default.removeItem(at: backward)
+        }
+        let first = try POCOMIndexBuilder.build(checkout: forward, version: 2,
+                                                generated: "2026-09-13", source: "s").index
+        let second = try POCOMIndexBuilder.build(checkout: backward, version: 2,
+                                                 generated: "2026-09-13", source: "s").index
+        #expect(first.chiefs.keys.sorted() == ["france", "guatemala"], "fixture guard")
+        #expect(first.chiefs["guatemala"]?.contains { $0.ex == "1891-06-30" } == true, "fixture guard")
+        let firstBytes = try POCOMIndexRunner.encode(first)
+        let secondBytes = try POCOMIndexRunner.encode(second)
+        #expect(firstBytes == secondBytes)
+    }
+
+    // MARK: - Version 2: the runner's refusal
+
+    @Test("The runner refuses a chiefs table under 600 rows, or one without Dayton under France")
+    func runnerRefusesThinOrSentinelLessChiefs() {
+        func index(filler: Int, daytonUnder territory: String?) -> POCOMIndex {
+            var chiefs: [String: [POCOMChiefRow]] = [
+                "filler": (0..<filler).map {
+                    POCOMChiefRow(s: "filler-\($0)", r: "r", ap: "1870", st: nil, en: nil, ex: nil)
+                },
+            ]
+            if let territory {
+                chiefs[territory, default: []].append(POCOMChiefRow(
+                    s: "dayton-william-lewis", r: "r", ap: "1861-03-18", st: nil, en: "1864-12-01", ex: nil))
+            }
+            return POCOMIndex(version: 2, generated: "g", source: "s", careers: [:], chiefs: chiefs)
+        }
+        #expect(POCOMIndexRunner.chiefsMinimumRows == 600)
+        #expect(POCOMIndexRunner.chiefsRefusal(index(filler: 599, daytonUnder: "france")) == nil)
+        #expect(POCOMIndexRunner.chiefsRefusal(index(filler: 598, daytonUnder: "france")) == .tooFewRows(599))
+        #expect(POCOMIndexRunner.chiefsRefusal(index(filler: 599, daytonUnder: "spain")) == .missingSentinel)
     }
 }

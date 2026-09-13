@@ -24,6 +24,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #736
+///   1.1 — 2026-09-13: POCOM index version 2 — the `chiefs`, `names` and `roles` tables, and the
+///         bundled Dayton row the Source Explorer addressee rule depends on
 @Suite("POCOM index and authority schema v2")
 struct POCOMIndexTests {
 
@@ -256,5 +258,101 @@ struct POCOMIndexTests {
             """)
         #expect(noVersion.version == 1, "defaults rather than throwing")
         #expect(noVersion.canonicalId(volumeId: "frus1952-54v01", ref: "p_A1") == 1)
+    }
+
+    // MARK: - Chiefs of mission (version 2)
+
+    /// A version-2 file in the generator's own shape: sorted keys, and absent dates omitted.
+    private func chiefsIndex(_ rows: String, names: String) throws -> POCOMIndex {
+        try decode(POCOMIndex.self, """
+            {"careers":{},"chiefs":{"mexico":[\(rows)]},"generated":"2026-09-13",
+             "names":{\(names)},
+             "roles":{"envoy-extraordinary-minister-plenipotentiary":"Envoy Extraordinary and Minister Plenipotentiary"},
+             "source":"HistoryAtState/pocom (CC0 / public domain), checkout test","version":2}
+            """)
+    }
+
+    @Test("A version-2 file decodes its chiefs, names and roles into a resolved chief of mission")
+    func decodesV2Chiefs() throws {
+        // Dayton's real row from the register, as the generator writes it.
+        let index = try decode(POCOMIndex.self, """
+            {"careers":{},"chiefs":{"france":[{"ap":"1861-03-18","en":"1864-12-01",
+               "r":"envoy-extraordinary-minister-plenipotentiary","s":"dayton-william-lewis","st":"1861-05-19"}]},
+             "generated":"2026-09-13",
+             "names":{"dayton-william-lewis":{"a":"William L. Dayton","fn":"William Lewis","sn":"Dayton"}},
+             "roles":{"envoy-extraordinary-minister-plenipotentiary":"Envoy Extraordinary and Minister Plenipotentiary"},
+             "source":"HistoryAtState/pocom (CC0 / public domain), checkout test","version":2}
+            """)
+        #expect(index.version == 2)
+        #expect(index.chiefTerritoryIds == ["france"])
+        #expect(index.chiefs(territoryId: "france") == [POCOMChiefOfMission(
+            slug: "dayton-william-lewis", surname: "Dayton", forename: "William Lewis",
+            displayName: "William L. Dayton",
+            roleLabel: "Envoy Extraordinary and Minister Plenipotentiary", territoryId: "france",
+            firstDayISO: "1861-03-18", lastDayISO: "1864-12-01")])
+        #expect(index.chiefs(territoryId: "spain").isEmpty)
+    }
+
+    @Test("A partial end date ceils to the last day of its month or year")
+    func partialEndCeilsToMonthEnd() throws {
+        // April has 30 days, so a ceiling that always answers the 31st fails here. Both rows state
+        // a full appointment date, so only the end differs in shape.
+        let index = try chiefsIndex("""
+            {"ap":"1864-04-01","en":"1866-04","r":"envoy-extraordinary-minister-plenipotentiary","s":"corwin-thomas"},
+            {"ap":"1861-02-01","en":"1864","r":"envoy-extraordinary-minister-plenipotentiary","s":"year-end"}
+            """, names: """
+            "corwin-thomas":{"fn":"Thomas","sn":"Corwin"},"year-end":{"fn":"Year","sn":"End"}
+            """)
+        let chiefs = index.chiefs(territoryId: "mexico")
+        #expect(chiefs.map(\.slug) == ["corwin-thomas", "year-end"])
+        #expect(chiefs.first { $0.slug == "corwin-thomas" }?.lastDayISO == "1866-04-30")
+        #expect(chiefs.first { $0.slug == "year-end" }?.lastDayISO == "1864-12-31")
+    }
+
+    @Test("A row with no end and no derived end has no last day; a derived end supplies one")
+    func nilLastDayWhenNoEnd() throws {
+        // The two rows differ only in `ex`.
+        let index = try chiefsIndex("""
+            {"ap":"1890-12-11","r":"envoy-extraordinary-minister-plenipotentiary","s":"open-ended"},
+            {"ap":"1890-12-11","ex":"1891-06-30","r":"envoy-extraordinary-minister-plenipotentiary","s":"derived-end"}
+            """, names: """
+            "open-ended":{"fn":"Open","sn":"Ended"},"derived-end":{"fn":"Derived","sn":"End"}
+            """)
+        let chiefs = index.chiefs(territoryId: "mexico")
+        let open = try #require(chiefs.first { $0.slug == "open-ended" })
+        #expect(open.lastDayISO == nil)
+        #expect(open.firstDayISO == "1890-12-11")
+        let derived = try #require(chiefs.first { $0.slug == "derived-end" })
+        #expect(derived.lastDayISO == "1891-06-30")
+    }
+
+    @Test("A version-1 file still decodes, with empty chiefs, names and roles")
+    func v1FileStillDecodesWithEmptyChiefs() throws {
+        let index = try decode(POCOMIndex.self, achesonJSON)
+        #expect(index.version == 1)
+        #expect(index.career(forSlug: "acheson-dean-gooderham") != nil, "fixture guard: careers decoded")
+        #expect(index.chiefs.isEmpty)
+        #expect(index.names.isEmpty)
+        #expect(index.roles.isEmpty)
+        #expect(index.chiefTerritoryIds.isEmpty)
+        #expect(index.chiefs(territoryId: "france").isEmpty)
+    }
+
+    @Test("The bundled index names Dayton as the chief of mission to France on 1863-11-10")
+    func bundledStoreCarriesDayton() throws {
+        // Through the store, not a #filePath read, so a resource missing from the bundle fails.
+        // frus1863p2/d573 ("Mr. Seward to Mr. Dayton", 10 November 1863) is the type case.
+        let index = try #require(POCOMIndexStore.shared, "pocom-index.json should be bundled and decodable")
+        let date = "1863-11-10"
+        let daytons = index.chiefs(territoryId: "france").filter { chief in
+            guard chief.surname == "Dayton", let last = chief.lastDayISO else { return false }
+            return chief.firstDayISO <= date && date <= last
+        }
+        #expect(daytons.count == 1)
+        let dayton = try #require(daytons.first)
+        #expect(dayton.slug == "dayton-william-lewis")
+        #expect(dayton.firstDayISO == "1861-03-18")
+        #expect(dayton.lastDayISO == "1864-12-01")
+        #expect(dayton.displayName == "William L. Dayton")
     }
 }
