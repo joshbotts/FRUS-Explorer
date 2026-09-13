@@ -65,4 +65,4 @@ One file over the cut is copied because the assessment cites it: `reframe/measur
 - **Everything was read-only** against the live index (`frus.db`, opened `mode=ro`, index version 50), `~/frus-ner-raw*`, the Mac Studio M2a gold folder, `~/frus-semantic-raw/text`, the TEI corpus, and the POCOM and people registers.
 - **Scripts hard-code the session scratchpad paths they ran from.** Re-running one means pointing those paths at this folder and at the stores.
 - **No scripted LLM or token-count API call was made.** Corpus snippets were read inside Claude Code sessions, which send them to Anthropic (assessment §0, gate N1).
-- **The held-out M2a documents stay held out.** No file here names any of the 8 unkeyed M2a documents by volume and document id (checked before commit).
+- **The held-out M2a documents are not named here.** No file in this folder names any of the 8 unkeyed M2a documents by volume and document id (checked before commit). #1290's `feasibility-2026-09-12/verify-method/stores.json` already names all 8 by staged filename, with size, seed count and hash, and no text or spans.
