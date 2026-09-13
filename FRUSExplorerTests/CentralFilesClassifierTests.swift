@@ -549,6 +549,55 @@ struct ChapterTitleFormTests {
             chapterCountry: "British legation.").isEmpty)
     }
 
+    @Test("In a foreign-legation chapter a letter the Secretary signs is a note TO the legation, whatever its dateline")
+    func legationChapterSecretarySender() {
+        // frus1863p1/d402: Seward's reply under a bare "Washington" had read as a note FROM Lord Lyons.
+        let bare = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Lord Lyons .",
+            dateline: "Washington , February 24, 1863.",
+            chapterCountry: "British legation.")
+        #expect(bare.map(\.category) == [.notesTo])
+        #expect(bare.first?.geoKeys == ["great britain"])
+        // frus1891/d549: Blaine writing from his house.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Blaine to Sir Julian Pauncefote .",
+            dateline: "17 Madison Place , Washington , February 12, 1892 .",
+            chapterCountry: "Correspondence with the British Legation at Washington.").map(\.category) == [.notesTo])
+        // frus1885/d310: the Department's own dateline, OCR-damaged.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Bayard to Mr. von Alvensleben .",
+            dateline: "Dapartment of State , Washington , April 6, 1885 .",
+            chapterCountry: "Correspondence with the Legation of Germany at Washington.").map(\.category) == [.notesTo])
+        // frus1892/d280: the President's letter to a sovereign is neither note.
+        #expect(CentralFilesClassifier.classify(
+            header: "The President to King Humbert .",
+            dateline: "Washington , July 21, 1892 .",
+            chapterCountry: "Correspondence with the legation of Italy at Washington.").isEmpty)
+        // frus1897/d290: outside a legation chapter the same surnames sign despatches home. Hay was
+        // ambassador in London, and the sender rule must not turn his despatch into an instruction.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Hay to Mr. Sherman .",
+            dateline: "London , September 24, 1897 .",
+            chapterCountry: "Great Britain").map(\.category) == [.despatches])
+    }
+
+    @Test("The sender is the part before \" to \", and a foreign Secretary of State for Foreign Affairs is not the Secretary")
+    func senderHelpersReadTheSender() {
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "no. 189. mr. bayard to sir l. west ."))   // frus1886/d193
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "the secretary of state to minister dawson ."))  // frus1905/d321
+        // The Assistant Secretary signing for the Secretary, and a header that drops the period.
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "mr. f. w. seward to lord lyons ."))         // frus1863p1/d415
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "no. 62. mr bayard to count de foresta ."))  // frus1888p2/d624
+        #expect(!CentralFilesClassifier.secretaryOfStateSender(inHeader: "lord lyons to mr. seward ."))
+        // frus1925v02/d569
+        #expect(!CentralFilesClassifier.secretaryOfStateSender(
+            inHeader: "the secretary of state for foreign affairs of san marino ( gozi ) to the secretary of state"))
+        // frus1881/d499
+        #expect(CentralFilesClassifier.presidentialSender(
+            inHeader: "no. 495. the president of the united states to the president of mexico ."))
+        #expect(!CentralFilesClassifier.presidentialSender(inHeader: "lord lyons to mr. seward ."))
+    }
+
     @Test("A numbered country chapter classifies exactly as its bare title does")
     func numberedChapterClassifies() throws {
         // frus1873p1v2: a despatch from Madrid filed under "XXIX.—Spain."

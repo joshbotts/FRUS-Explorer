@@ -195,7 +195,11 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///         mission's despatch, because the chapter names the legation's country, not a mission's.
 ///         Measured before the change: the documents in these chapters are Lord Lyons's notes and
 ///         the Department's replies, and a title-only fix would have offered every reply as an
-///         instruction to Great Britain.
+///         instruction to Great Britain. A letter the Secretary of State signs is the Department's
+///         whatever its dateline says. Measured, 15 of these chapters' letters had read as notes FROM
+///         the legation: 6 under a bare `Washington` or the Secretary's own address, and 9 under a
+///         damaged or variant Department dateline (`Dapartment of State`, `State Department`). A
+///         letter from the President is refused, being neither note.
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -266,6 +270,13 @@ enum CentralFilesClassifier {
         let legationChapter = chapterCountry.map {
             GeoKeyNormalizer.foreignLegationName(inChapterTitle: $0) != nil
         } ?? false
+        // In those chapters the header's sender also settles direction (1.3): a letter the Secretary of
+        // State signs is the Department's, whatever its dateline says — a bare "Washington", Blaine's
+        // "17 Madison Place", an OCR-damaged "Dapartment of State". Scoped to foreign-legation chapters,
+        // because elsewhere the same surnames sign despatches home: Foster from Mexico, Adee from
+        // Madrid, Root from Santiago.
+        let departmentOutbound = dl.contains("department of state")
+            || (legationChapter && secretaryOfStateSender(inHeader: headerL))
 
         // A U.S. diplomatic mission abroad → a despatch home.
         if containsAny(dl, ["legation of the united states", "embassy of the united states",
@@ -283,7 +294,7 @@ enum CentralFilesClassifier {
         // (W-8): to the U.S. consul abroad it is a Consular Instruction; to the foreign
         // consul in the U.S. it is a note. Both consular series are chronological runs, so
         // their candidates carry no geography and resolve by date.
-        if dl.contains("department of state") {
+        if departmentOutbound {
             var candidates: [CentralFilesClassification] = []
             if !geoKeys.isEmpty, legationChapter {
                 // The chapter settles what the dateline cannot: the addressee is the legation.
@@ -339,7 +350,10 @@ enum CentralFilesClassifier {
         // "Washington, <date>" and nothing more. Anything else refuses: the despatch fallback below
         // would name a U.S. mission in the legation's country, which the chapter does not say.
         if legationChapter {
-            guard dl.contains("washington") || containsAny(dl, ["legation", "embassy"]) else { return [] }
+            // A letter from the President to a sovereign passes through the legation but is neither
+            // note; it is filed with the ceremonial letters, which the index does not carry.
+            guard !presidentialSender(inHeader: headerL),
+                  dl.contains("washington") || containsAny(dl, ["legation", "embassy"]) else { return [] }
             return [CentralFilesClassification(
                 category: .notesFrom, geoKeys: geoKeys, confidence: .medium,
                 rationale: String(localized: "centralFiles.rationale.legationNoteFrom",
@@ -443,6 +457,26 @@ enum CentralFilesClassifier {
                                        "secretary of agriculture", "secretary of commerce",
                                        "attorney general", "attorney-general",
                                        "postmaster general", "postmaster-general"])
+    }
+
+    /// Whether a lower-cased header's SENDER — the part before ` to ` — is the Secretary of State, by
+    /// office or by the surname of a Secretary or acting Secretary of 1861–1905 (1.3). Read only in a
+    /// foreign-legation chapter: elsewhere the same surnames sign despatches home (`Mr. Foster to
+    /// Mr. Fish`, from Mexico). `Secretary of State for …` is a foreign minister's style and is refused.
+    static func secretaryOfStateSender(inHeader headerL: String) -> Bool {
+        guard let toRange = headerL.range(of: " to ") else { return false }
+        let sender = String(headerL[..<toRange.lowerBound])
+        return sender.range(
+            of: #"\b(?:secretary of state(?! for)|mr\.? (?:[a-z]\. ?)*(?:seward|fish|evarts|blaine|frelinghuysen|bayard|foster|gresham|olney|sherman|day|hay|root|hunter|adee|wharton|uhl))\b"#,
+            options: .regularExpression) != nil
+    }
+
+    /// Whether a lower-cased header's SENDER is the President (`The President to King Humbert .`,
+    /// `No. 495. The President of the United States to the President of Mexico .`) (1.3).
+    static func presidentialSender(inHeader headerL: String) -> Bool {
+        guard let toRange = headerL.range(of: " to ") else { return false }
+        return headerL[..<toRange.lowerBound].range(
+            of: #"^\s*(?:no\. ?\d+\. )?the president\b"#, options: .regularExpression) != nil
     }
 
     private static func containsAny(_ haystack: String, _ needles: [String]) -> Bool {
