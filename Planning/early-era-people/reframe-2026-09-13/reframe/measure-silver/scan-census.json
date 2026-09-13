@@ -1,0 +1,23 @@
+{
+ "attr_census": {
+  "scope": {
+   "type": 235753,
+   "corresp": 10616
+  },
+  "list": {
+   "corresp": 1844810,
+   "type": 63912,
+   "xml:id": 62898
+  }
+ },
+ "counts": {
+  "scope|persName": 247316,
+  "scope|fromto_in_doc": 235751,
+  "list|persName": 2055721,
+  "list|linked": 1844810,
+  "list|fromto_in_doc": 63624,
+  "scope|linked": 10616
+ },
+ "manifest_volumes": 553,
+ "scope_volumes": 267
+}

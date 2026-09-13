@@ -1,0 +1,148 @@
+====================================================================================================
+frus1871/d377  year=1871 gate=ok
+  header  : Mr. Moran to Mr. Fish
+  dateline: Legation of the United States , London , January 19, 1871 . (Received February 3.)
+  path    : ['Spain.']
+  chosen  : [0] Spain.
+  SHOWN   : diplomaticDespatches geo=['spain'] conf=high rolls=33 ['188601607', '188625296']
+====================================================================================================
+frus1867p1/d346  year=1867 gate=ok
+  header  : Mr. F. W. Seward to Mr. de Stoeckl
+  dateline: Department of State , Washington , June 4, 1867 .
+  path    : ['Correspondence.', 'Russia', 'Correspondence with the Russian legation.']
+  chosen  : [1] Russia
+  SHOWN   : diplomaticInstructions geo=['russia'] conf=medium rolls=1 ['149330351']
+  SHOWN   : notesToForeignMissions geo=['russia'] conf=medium rolls=1 ['216922583']
+====================================================================================================
+frus1895p2/d404  year=1895 gate=ok
+  header  : Mr. Taylor to Mr. Gresham .
+  dateline: United States Legation , Madrid , April 20, 1895 . (Received May 2.)
+  path    : ['Spain', 'Firing upon the United States mail steamship Alliança']
+  chosen  : [0] Spain
+  SHOWN   : diplomaticDespatches geo=['spain'] conf=high rolls=2 ['188601607', '188658306']
+====================================================================================================
+frus1863p2/d251  year=1863 gate=ok
+  header  : Mr. Seward to Mr. Burlingame
+  dateline: Department of State , Washington , February 4, 1863.
+  path    : ['Papers relating to foreign affairs', 'China.']
+  chosen  : [1] China.
+  SHOWN   : diplomaticInstructions geo=['china'] conf=medium rolls=1 ['149299561']
+====================================================================================================
+frus1895p2/d179  year=1895 gate=ok
+  header  : Mr. Butler to Mr. Gresham .
+  dateline: Legation of the United States , Mexico , February 14, 1895 .
+  path    : ['Mexico', 'Death of Minister Gray']
+  chosen  : [0] Mexico
+  SHOWN   : diplomaticDespatches geo=['mexico'] conf=high rolls=7 ['189098328', '189101765']
+====================================================================================================
+frus1884/d343  year=1884 gate=ok
+  header  : No. 343. Mr. Foster to Mr. Frelinghuysen .
+  dateline: Legation of the United States , Madrid , January 23, 1884 . (Received February 11.)
+  path    : ['Spain.']
+  chosen  : [0] Spain.
+  SHOWN   : diplomaticDespatches geo=['spain'] conf=high rolls=3 ['188601607', '188647741']
+====================================================================================================
+frus1897/d66  year=1897 gate=ok
+  header  : Mr. Sherman to Mr. Denby .
+  dateline: Department of State , Washington , April 30, 1897 .
+  path    : ['China', 'Prevention of antiforeign riots']
+  chosen  : [0] China
+  SHOWN   : diplomaticInstructions geo=['china'] conf=medium rolls=1 ['149300854']
+  SHOWN   : notesToForeignMissions geo=['china'] conf=medium rolls=1 ['216903250']
+====================================================================================================
+frus1874/d513  year=1873 gate=ok
+  header  : No. 511. Mr. Thomas to Mr. Fish .
+  dateline: United States Legation , Lima, Peru , December 13, 1873 . (Received December 30.)
+  path    : ['Peru.']
+  chosen  : [0] Peru.
+  SHOWN   : diplomaticDespatches geo=['peru'] conf=high rolls=10 ['189346553', '189349946']
+====================================================================================================
+frus1880/d305  year=1880 gate=ok
+  header  : No. 305. Mr. Hoppin to Mr. Evarts .
+  dateline: Legation of the United States , London , March 27, 1880 . (Received April 9.)
+  path    : ['Great Britain']
+  chosen  : [0] Great Britain
+  SHOWN   : diplomaticDespatches geo=['great britain'] conf=high rolls=6 ['188511325', '188546946']
+====================================================================================================
+frus1890/d7  year=1890 gate=ok
+  header  : Mr. Grant to Mr. Blaine .
+  dateline: Legation of the United States , Vienna , March 11, 1890 . (Received March 31.)
+  path    : ['Austria-Hungary.']
+  chosen  : [0] Austria-Hungary.
+  SHOWN   : diplomaticDespatches geo=['austria'] conf=high rolls=3 ['189212366', '189221283']
+====================================================================================================
+frus1878/d541  year=1877 gate=ok
+  header  : No. 536. Mr. Caldwell to Mr. Evarts .
+  dateline: Legation of the United States , Montevideo , November 15, 1877 . (Received December 31.)
+  path    : ['Uruguay.']
+  chosen  : [0] Uruguay.
+  SHOWN   : diplomaticDespatches geo=['uruguay'] conf=high rolls=1 ['188352146']
+====================================================================================================
+frus1895p2/d542  year=1895 gate=ok
+  header  : Mr. Olney to Mavroyeni Bey .
+  dateline: Department of State , September 17, 1895 .
+  path    : ['Turkey', 'Attack on the premises of Dr. Christie at Tarsus']
+  chosen  : [0] Turkey
+  SHOWN   : diplomaticInstructions geo=['turkey'] conf=medium rolls=1 ['149338200']
+  SHOWN   : notesToForeignMissions geo=['turkey'] conf=medium rolls=1 ['216926723']
+====================================================================================================
+frus1902/d140  year=1902 gate=ok
+  header  : Mr. Conger to Mr. Hay .
+  dateline: Legation of the United States , Peking , May 8, 1902 .
+  path    : ['China', 'Riots, uprisings, massacres, etc.']
+  chosen  : [0] China
+  SHOWN   : diplomaticDespatches geo=['china'] conf=high rolls=8 ['189021644', '189028700']
+====================================================================================================
+frus1902/d381  year=1902 gate=ok
+  header  : Mr. Vignaud to Mr. Hay .
+  dateline: Embassy of the United States , Paris , June 3, 1902 .
+  path    : ['France', 'Protection of Cuban interests by United States consular officials.']
+  chosen  : [0] France
+  SHOWN   : diplomaticDespatches geo=['france'] conf=high rolls=3 ['188667460', '188699885']
+====================================================================================================
+frus1902app2/d113  year=1902 gate=ok
+  header  : protocole viii.
+  dateline: Séance du lundi 29 septembre 1902 .
+  path    : ['PART VI. Record of proceedings before the Permanent Court of Arbitration under The Hague Convention of 1899 in the matter of the Pious Fund of the Californias, from September 15, 1902, to October 14, 1902, including copy of the official minutes, or procès-verbaux, with index.', 'Protocoles des séances du tribunal d’arbitrage constitué en vertu du traité du 22 Mai 1902 signé à Washington entre les gouvernements des Etats-Unis d’Amérique et des Etats-Unis Mexicains.']
+  chosen  : [None] None
+  SHOWN   : (nothing)
+    title 'PART VI. Record of proceedings before the Permanent Court of Arbitration under The Hague Convention of 1899 in the matter of the Pious Fund of the Californias, from September 15, 1902, to October 14, 1902, including copy of the official minutes, or procès-verbaux, with index.': diplomaticDespatches ['part vi. record of proceedings before the permanent court of arbitration under the hague convention of 1899 in the matter of the pious fund of the californias', 'from september 15', '1902', 'to october 14', '1902', 'including copy of the official minutes', 'or procès-verbaux', 'with index'] rolls=0
+    title 'Protocoles des séances du tribunal d’arbitrage constitué en vertu du traité du 22 Mai 1902 signé à Washington entre les gouvernements des Etats-Unis d’Amérique et des Etats-Unis Mexicains.': diplomaticDespatches ['protocoles des séances du tribunal d’arbitrage constitué en vertu du traité du 22 mai 1902 signé à washington entre les gouvernements des etats-unis d’amérique et des etats-unis mexicains'] rolls=0
+====================================================================================================
+frus1903/d17  year=1903 gate=ok
+  header  : President Roosevelt to Prince Ferdinand .
+  dateline: White House , Washington , September 21, 1903 .
+  path    : ['Bulgaria', 'Establishment of diplomatic relations with Bulgaria']
+  chosen  : [None] None
+  SHOWN   : (nothing)
+    title 'Bulgaria': lettersReceived [] rolls=0
+    title 'Establishment of diplomatic relations with Bulgaria': lettersReceived [] rolls=0
+====================================================================================================
+frus1904/d424  year=1904 gate=ok
+  header  : Mr. Loomis to Mr. Takahira .
+  dateline: Department of State , Washington , April 15, 1904 .
+  path    : ['Japan', 'Protection of Japanese interests in Russia']
+  chosen  : [0] Japan
+  SHOWN   : diplomaticInstructions geo=['japan'] conf=medium rolls=1 ['149322126']
+  SHOWN   : notesToForeignMissions geo=['japan'] conf=medium rolls=1 ['216918894']
+====================================================================================================
+frus1905/d336  year=1905 gate=ok
+  header  : Minister Dawson to the Secretary of State .
+  dateline: Santo Domingo , April 26, 1905 .
+  path    : ['Dominican Republic', 'Correspondence relating to the protocol of agreement between the United States and the Dominican Republic providing for the collection and disbursement of customs revenues in that Republic']
+  chosen  : [0] Dominican Republic
+  SHOWN   : diplomaticDespatches geo=['dominican republic'] conf=medium rolls=4 ['189091112', '189091869']
+====================================================================================================
+frus1900/d623  year=1900 gate=ok
+  header  : Mr. White to Mr. Hay .
+  dateline: Embassy of the United States , Berlin , January 23, 1900 .
+  path    : ['Germany', 'Extradition between Alsace-Lorraine and the United States is not regulated by treaty']
+  chosen  : [0] Germany
+  SHOWN   : diplomaticDespatches geo=['germany'] conf=high rolls=16 ['188808909', '188829555']
+====================================================================================================
+frus1902/d410  year=1902 gate=ok
+  header  : Mr. Jackson to Mr. Hay .
+  dateline: Embassy of the United States , Berlin , August 12, 1902 .
+  path    : ['Germany', 'Defilement of United States coat of arms.']
+  chosen  : [0] Germany
+  SHOWN   : diplomaticDespatches geo=['germany'] conf=high rolls=12 ['188808909', '188829555']

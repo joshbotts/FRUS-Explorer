@@ -1,0 +1,306 @@
+{
+ "counts": {
+  "1861-1899|S_after|no classification": 221,
+  "1861-1899|T_after|used topical": 74,
+  "1861-1899|S_after|used foreign-legation": 1969,
+  "1861-1899|T_after|used foreign-legation": 1963,
+  "1861-1899|T_after|no classification": 31,
+  "1861-1899|S_after|used topical": 7,
+  "1861-1899|S_after|used parent country; DIFFERENT country from the legation": 305,
+  "1861-1899|T_after|used parent country; DIFFERENT country from the legation": 337,
+  "1861-1899|S_after|used parent country; SAME country as the legation": 1964,
+  "1861-1899|T_after|used parent country; SAME country as the legation": 2062,
+  "1861-1899|S_after|used parent country; legation name unmapped (untestable)": 7,
+  "1861-1899|T_after|used parent country; legation name unmapped (untestable)": 6
+ },
+ "examples": {
+  "1861-1899|S_after": [
+   [
+    "frus1865p3/d425",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. de Geofroy to Mr. Seward",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d426",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d427",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d428",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d429",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d430",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. L. de Geofroy to Mr. Hunter",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d431",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Hunter to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d432",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Memorandum from French Legation to Department of S",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d433",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Hunter to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d434",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Hunter to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ]
+  ],
+  "1861-1899|T_after": [
+   [
+    "frus1865p3/d425",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. de Geofroy to Mr. Seward",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d426",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d427",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d428",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d429",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Seward to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d430",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. L. de Geofroy to Mr. Hunter",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d431",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Hunter to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d432",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Memorandum from French Legation to Department of S",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d433",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Hunter to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ],
+   [
+    "frus1865p3/d434",
+    [
+     "Mexico.",
+     "Correspondence with French legation."
+    ],
+    "Mr. Hunter to Mr. de Geofroy",
+    "mexico",
+    "french"
+   ]
+  ],
+  "1861-1899|S_after|u": [
+   [
+    "frus1868p2/d243",
+    [
+     "Hayti.",
+     "Haytien legation."
+    ],
+    "haytien"
+   ],
+   [
+    "frus1868p2/d244",
+    [
+     "Hayti.",
+     "Haytien legation."
+    ],
+    "haytien"
+   ],
+   [
+    "frus1887/d11",
+    [
+     "Argentine Republic",
+     "Correspondence with the legation of the Aegentine Republic at Washington."
+    ],
+    "aegentine republic"
+   ],
+   [
+    "frus1891/d463",
+    [
+     "Germany",
+     "Correspondence with the Legation of Gebmany at Washington."
+    ],
+    "gebmany"
+   ],
+   [
+    "frus1891/d464",
+    [
+     "Germany",
+     "Correspondence with the Legation of Gebmany at Washington."
+    ],
+    "gebmany"
+   ]
+  ],
+  "1861-1899|T_after|u": [
+   [
+    "frus1868p2/d243",
+    [
+     "Hayti.",
+     "Haytien legation."
+    ],
+    "haytien"
+   ],
+   [
+    "frus1868p2/d244",
+    [
+     "Hayti.",
+     "Haytien legation."
+    ],
+    "haytien"
+   ],
+   [
+    "frus1887/d11",
+    [
+     "Argentine Republic",
+     "Correspondence with the legation of the Aegentine Republic at Washington."
+    ],
+    "aegentine republic"
+   ],
+   [
+    "frus1891/d463",
+    [
+     "Germany",
+     "Correspondence with the Legation of Gebmany at Washington."
+    ],
+    "gebmany"
+   ],
+   [
+    "frus1891/d464",
+    [
+     "Germany",
+     "Correspondence with the Legation of Gebmany at Washington."
+    ],
+    "gebmany"
+   ]
+  ]
+ }
+}

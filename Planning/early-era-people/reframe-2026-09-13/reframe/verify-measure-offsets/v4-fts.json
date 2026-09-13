@@ -1,0 +1,189 @@
+{
+ "sqlite": "3.51.0",
+ "volumes_in_cache": 552,
+ "contiguous_volumes": 552,
+ "overlapping_rowid_ranges": 0,
+ "scope_in_cache": 267,
+ "scope_docs_in_cache": 199068,
+ "surnames": {
+  "Seward": {
+   "corpus_count": 9824,
+   "corpus_ms_3runs": [
+    2.54,
+    0.25,
+    0.24
+   ],
+   "scope_matches": 9786,
+   "scope_fetch_ms": 452.2,
+   "scope_case_sensitive_word_letters": 9758,
+   "scope_case_sensitive_word_b": 9758,
+   "scope_case_insensitive_word": 9786
+  },
+  "Hull": {
+   "corpus_count": 13171,
+   "corpus_ms_3runs": [
+    1.54,
+    0.22,
+    0.22
+   ],
+   "scope_matches": 12468,
+   "scope_fetch_ms": 717.7,
+   "scope_case_sensitive_word_letters": 12320,
+   "scope_case_sensitive_word_b": 12320,
+   "scope_case_insensitive_word": 12432
+  },
+  "Wells": {
+   "corpus_count": 82757,
+   "corpus_ms_3runs": [
+    10.57,
+    1.62,
+    1.61
+   ],
+   "scope_matches": 41794,
+   "scope_fetch_ms": 5128.2,
+   "scope_case_sensitive_word_letters": 311,
+   "scope_case_sensitive_word_b": 311,
+   "scope_case_insensitive_word": 631
+  },
+  "Bliss": {
+   "corpus_count": 1056,
+   "corpus_ms_3runs": [
+    6.67,
+    0.04,
+    0.03
+   ],
+   "scope_matches": 816,
+   "scope_fetch_ms": 100.1,
+   "scope_case_sensitive_word_letters": 808,
+   "scope_case_sensitive_word_b": 808,
+   "scope_case_insensitive_word": 814
+  },
+  "Blaine": {
+   "corpus_count": 2201,
+   "corpus_ms_3runs": [
+    6.28,
+    0.05,
+    0.05
+   ],
+   "scope_matches": 2196,
+   "scope_fetch_ms": 106.3,
+   "scope_case_sensitive_word_letters": 2194,
+   "scope_case_sensitive_word_b": 2194,
+   "scope_case_insensitive_word": 2194
+  },
+  "Smith": {
+   "corpus_count": 8356,
+   "corpus_ms_3runs": [
+    4.41,
+    0.2,
+    0.19
+   ],
+   "scope_matches": 2616,
+   "scope_fetch_ms": 327.5,
+   "scope_case_sensitive_word_letters": 2583,
+   "scope_case_sensitive_word_b": 2583,
+   "scope_case_insensitive_word": 2611
+  },
+  "Hay": {
+   "corpus_count": 6437,
+   "corpus_ms_3runs": [
+    6.9,
+    0.14,
+    0.13
+   ],
+   "scope_matches": 5949,
+   "scope_fetch_ms": 228.8,
+   "scope_case_sensitive_word_letters": 5339,
+   "scope_case_sensitive_word_b": 5339,
+   "scope_case_insensitive_word": 5434
+  },
+  "Adams": {
+   "corpus_count": 4749,
+   "corpus_ms_3runs": [
+    7.15,
+    0.11,
+    0.1
+   ],
+   "scope_matches": 3266,
+   "scope_fetch_ms": 167.8,
+   "scope_case_sensitive_word_letters": 2724,
+   "scope_case_sensitive_word_b": 2724,
+   "scope_case_insensitive_word": 2728
+  },
+  "Hughes": {
+   "corpus_count": 4311,
+   "corpus_ms_3runs": [
+    3.87,
+    0.09,
+    0.09
+   ],
+   "scope_matches": 3272,
+   "scope_fetch_ms": 191.1,
+   "scope_case_sensitive_word_letters": 2494,
+   "scope_case_sensitive_word_b": 2494,
+   "scope_case_insensitive_word": 2495
+  },
+  "Root": {
+   "corpus_count": 3377,
+   "corpus_ms_3runs": [
+    1.36,
+    0.07,
+    0.07
+   ],
+   "scope_matches": 1784,
+   "scope_fetch_ms": 172.2,
+   "scope_case_sensitive_word_letters": 936,
+   "scope_case_sensitive_word_b": 936,
+   "scope_case_insensitive_word": 1336
+  }
+ },
+ "vocab_well": [
+  [
+   "hay",
+   752,
+   1679
+  ],
+  [
+   "hull",
+   13171,
+   15621
+  ],
+  [
+   "root",
+   3377,
+   4666
+  ],
+  [
+   "seward",
+   9824,
+   31063
+  ],
+  [
+   "well",
+   82757,
+   156963
+  ]
+ ],
+ "phrase_confirm_origA": {
+  "sweep": {
+   "pairs": 3229,
+   "confirmed": 3226,
+   "misses": [
+    "&amp;c.",
+    "&amp;c., &amp;c., &amp;c.",
+    "AT&amp;T American Telephone and Telegraph Company"
+   ],
+   "errors": 0,
+   "median_ms": 0.1,
+   "p99_ms": 12.857
+  },
+  "control": {
+   "pairs": 1616,
+   "confirmed": 1616,
+   "misses": [],
+   "errors": 0,
+   "median_ms": 0.015,
+   "p99_ms": 0.301
+  }
+ }
+}

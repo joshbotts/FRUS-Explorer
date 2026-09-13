@@ -1,0 +1,558 @@
+{
+ "1873|A|1861-1899": {
+  "linked_head_rows": 459,
+  "S_class:one": 459,
+  "S_picks": 459,
+  "S_agree": 459,
+  "COMB_picks": 408,
+  "COMB_agree": 408,
+  "BOTH_same_picks": 408,
+  "BOTH_agree": 408,
+  "volumes": 2,
+  "distinct_gold_persons": 1,
+  "S_prec_excl_undecided": [
+   1.0,
+   0.9917,
+   1.0
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9907,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9907,
+   1.0
+  ]
+ },
+ "1873|all|1861-1899": {
+  "linked_head_rows": 810,
+  "S_class:nobody": 50,
+  "S_class:one": 733,
+  "S_picks": 733,
+  "S_agree": 733,
+  "COMB_picks": 654,
+  "COMB_agree": 654,
+  "BOTH_same_picks": 628,
+  "BOTH_agree": 628,
+  "S_class:unknown": 27,
+  "volumes": 2,
+  "distinct_gold_persons": 24,
+  "S_prec_excl_undecided": [
+   1.0,
+   0.9948,
+   1.0
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9942,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9939,
+   1.0
+  ]
+ },
+ "1873|all|pre-1861": {
+  "linked_head_rows": 1,
+  "S_class:nobody": 1,
+  "volumes": 1,
+  "distinct_gold_persons": 0,
+  "S_prec_excl_undecided": null,
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "post1905_all|A|1900-1929": {
+  "linked_head_rows": 6177,
+  "S_class:one": 3661,
+  "S_picks": 3661,
+  "S_agree": 3658,
+  "S_class:several": 1799,
+  "S_class:nobody": 591,
+  "S_class:unknown": 126,
+  "S_disagree": 3,
+  "COMB_picks": 31,
+  "COMB_agree": 31,
+  "BOTH_same_picks": 13,
+  "BOTH_agree": 13,
+  "volumes": 12,
+  "distinct_gold_persons": 62,
+  "S_prec_excl_undecided": [
+   0.9992,
+   0.9976,
+   0.9997
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.8897,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.7719,
+   1.0
+  ]
+ },
+ "post1905_all|A|1930-1945": {
+  "linked_head_rows": 1461,
+  "S_class:nobody": 333,
+  "S_class:one": 1074,
+  "S_picks": 1074,
+  "S_agree": 1072,
+  "COMB_picks": 68,
+  "COMB_agree": 68,
+  "BOTH_same_picks": 57,
+  "BOTH_agree": 57,
+  "S_disagree": 2,
+  "S_class:several": 54,
+  "volumes": 11,
+  "distinct_gold_persons": 90,
+  "S_prec_excl_undecided": [
+   0.9981,
+   0.9932,
+   0.9995
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9465,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9369,
+   1.0
+  ]
+ },
+ "post1905_all|A|1946-": {
+  "linked_head_rows": 2355,
+  "S_class:one": 1690,
+  "S_picks": 1690,
+  "S_agree": 1625,
+  "S_class:nobody": 489,
+  "S_class:several": 173,
+  "COMB_picks": 158,
+  "COMB_agree": 158,
+  "BOTH_same_picks": 158,
+  "BOTH_agree": 158,
+  "S_disagree": 65,
+  "S_class:unknown": 3,
+  "volumes": 13,
+  "distinct_gold_persons": 153,
+  "S_prec_excl_undecided": [
+   0.9615,
+   0.9513,
+   0.9697
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ]
+ },
+ "post1905_all|all|1900-1929": {
+  "linked_head_rows": 10215,
+  "S_class:unknown": 1837,
+  "S_class:one": 4274,
+  "S_picks": 4274,
+  "S_agree": 3880,
+  "S_class:several": 2167,
+  "S_class:nobody": 1937,
+  "S_disagree": 162,
+  "S_undecided": 232,
+  "COMB_picks": 49,
+  "COMB_agree": 49,
+  "BOTH_same_picks": 23,
+  "BOTH_agree": 23,
+  "volumes": 13,
+  "distinct_gold_persons": 81,
+  "S_prec_excl_undecided": [
+   0.9599,
+   0.9534,
+   0.9655
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9273,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.8569,
+   1.0
+  ]
+ },
+ "post1905_all|all|1930-1945": {
+  "linked_head_rows": 5083,
+  "S_class:one": 2244,
+  "S_picks": 2244,
+  "S_agree": 2140,
+  "S_class:several": 279,
+  "S_class:unknown": 1164,
+  "S_disagree": 91,
+  "S_class:nobody": 1396,
+  "COMB_picks": 323,
+  "COMB_agree": 305,
+  "BOTH_same_picks": 301,
+  "BOTH_agree": 294,
+  "COMB_disagree": 18,
+  "BOTH_disagree": 7,
+  "S_undecided": 13,
+  "volumes": 11,
+  "distinct_gold_persons": 112,
+  "S_prec_excl_undecided": [
+   0.9592,
+   0.9502,
+   0.9667
+  ],
+  "COMB_prec_excl_undecided": [
+   0.9443,
+   0.9136,
+   0.9645
+  ],
+  "BOTH_prec_excl_undecided": [
+   0.9767,
+   0.9528,
+   0.9887
+  ]
+ },
+ "post1905_all|all|1946-": {
+  "linked_head_rows": 3899,
+  "S_class:one": 1806,
+  "S_picks": 1806,
+  "S_agree": 1625,
+  "S_class:nobody": 1020,
+  "S_class:unknown": 855,
+  "S_disagree": 175,
+  "S_undecided": 6,
+  "S_class:several": 218,
+  "COMB_picks": 158,
+  "COMB_agree": 158,
+  "BOTH_same_picks": 158,
+  "BOTH_agree": 158,
+  "volumes": 13,
+  "distinct_gold_persons": 153,
+  "S_prec_excl_undecided": [
+   0.9028,
+   0.8882,
+   0.9156
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ]
+ },
+ "post1905_other|A|1900-1929": {
+  "linked_head_rows": 4805,
+  "S_class:one": 2790,
+  "S_picks": 2790,
+  "S_agree": 2787,
+  "S_class:several": 1401,
+  "S_class:nobody": 490,
+  "S_class:unknown": 124,
+  "S_disagree": 3,
+  "volumes": 8,
+  "distinct_gold_persons": 61,
+  "S_prec_excl_undecided": [
+   0.9989,
+   0.9968,
+   0.9996
+  ],
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "post1905_other|A|1930-1945": {
+  "linked_head_rows": 605,
+  "S_class:one": 437,
+  "S_picks": 437,
+  "S_disagree": 2,
+  "S_agree": 435,
+  "S_class:nobody": 168,
+  "volumes": 5,
+  "distinct_gold_persons": 38,
+  "S_prec_excl_undecided": [
+   0.9954,
+   0.9835,
+   0.9987
+  ],
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "post1905_other|A|1946-": {
+  "linked_head_rows": 1235,
+  "S_class:one": 954,
+  "S_picks": 954,
+  "S_agree": 896,
+  "S_class:nobody": 161,
+  "S_class:several": 120,
+  "S_disagree": 58,
+  "volumes": 8,
+  "distinct_gold_persons": 97,
+  "S_prec_excl_undecided": [
+   0.9392,
+   0.9222,
+   0.9527
+  ],
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "post1905_other|all|1900-1929": {
+  "linked_head_rows": 7323,
+  "S_class:unknown": 1220,
+  "S_class:one": 3142,
+  "S_picks": 3142,
+  "S_agree": 2951,
+  "S_class:several": 1642,
+  "S_class:nobody": 1319,
+  "S_disagree": 69,
+  "S_undecided": 122,
+  "volumes": 8,
+  "distinct_gold_persons": 77,
+  "S_prec_excl_undecided": [
+   0.9772,
+   0.9712,
+   0.9819
+  ],
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "post1905_other|all|1930-1945": {
+  "linked_head_rows": 2061,
+  "S_class:one": 911,
+  "S_picks": 911,
+  "S_agree": 870,
+  "S_class:unknown": 302,
+  "S_class:nobody": 764,
+  "S_class:several": 84,
+  "S_disagree": 28,
+  "S_undecided": 13,
+  "volumes": 5,
+  "distinct_gold_persons": 47,
+  "S_prec_excl_undecided": [
+   0.9688,
+   0.9553,
+   0.9783
+  ],
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "post1905_other|all|1946-": {
+  "linked_head_rows": 2152,
+  "S_class:one": 1018,
+  "S_picks": 1018,
+  "S_agree": 896,
+  "S_class:nobody": 476,
+  "S_class:unknown": 534,
+  "S_disagree": 120,
+  "S_undecided": 2,
+  "S_class:several": 124,
+  "volumes": 8,
+  "distinct_gold_persons": 97,
+  "S_prec_excl_undecided": [
+   0.8819,
+   0.8606,
+   0.9003
+  ],
+  "COMB_prec_excl_undecided": null,
+  "BOTH_prec_excl_undecided": null
+ },
+ "proxy15|A|1900-1929": {
+  "linked_head_rows": 1372,
+  "S_class:several": 398,
+  "S_class:one": 871,
+  "S_picks": 871,
+  "S_agree": 871,
+  "S_class:nobody": 101,
+  "COMB_picks": 31,
+  "COMB_agree": 31,
+  "BOTH_same_picks": 13,
+  "BOTH_agree": 13,
+  "S_class:unknown": 2,
+  "volumes": 4,
+  "distinct_gold_persons": 35,
+  "S_prec_excl_undecided": [
+   1.0,
+   0.9956,
+   1.0
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.8897,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.7719,
+   1.0
+  ]
+ },
+ "proxy15|A|1930-1945": {
+  "linked_head_rows": 856,
+  "S_class:nobody": 165,
+  "S_class:one": 637,
+  "S_picks": 637,
+  "S_agree": 637,
+  "COMB_picks": 68,
+  "COMB_agree": 68,
+  "BOTH_same_picks": 57,
+  "BOTH_agree": 57,
+  "S_class:several": 54,
+  "volumes": 6,
+  "distinct_gold_persons": 71,
+  "S_prec_excl_undecided": [
+   1.0,
+   0.994,
+   1.0
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9465,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9369,
+   1.0
+  ]
+ },
+ "proxy15|A|1946-": {
+  "linked_head_rows": 1120,
+  "S_class:nobody": 328,
+  "S_class:one": 736,
+  "S_picks": 736,
+  "S_agree": 729,
+  "S_class:several": 53,
+  "COMB_picks": 158,
+  "COMB_agree": 158,
+  "BOTH_same_picks": 158,
+  "BOTH_agree": 158,
+  "S_disagree": 7,
+  "S_class:unknown": 3,
+  "volumes": 5,
+  "distinct_gold_persons": 106,
+  "S_prec_excl_undecided": [
+   0.9905,
+   0.9805,
+   0.9954
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ]
+ },
+ "proxy15|all|1900-1929": {
+  "linked_head_rows": 2892,
+  "S_class:several": 525,
+  "S_class:unknown": 617,
+  "S_class:one": 1132,
+  "S_picks": 1132,
+  "S_agree": 929,
+  "S_class:nobody": 618,
+  "COMB_picks": 49,
+  "COMB_agree": 49,
+  "S_undecided": 110,
+  "S_disagree": 93,
+  "BOTH_same_picks": 23,
+  "BOTH_agree": 23,
+  "volumes": 5,
+  "distinct_gold_persons": 51,
+  "S_prec_excl_undecided": [
+   0.909,
+   0.8898,
+   0.9251
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9273,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.8569,
+   1.0
+  ]
+ },
+ "proxy15|all|1930-1945": {
+  "linked_head_rows": 3022,
+  "S_class:one": 1333,
+  "S_picks": 1333,
+  "S_agree": 1270,
+  "S_class:several": 195,
+  "S_class:unknown": 862,
+  "S_disagree": 63,
+  "S_class:nobody": 632,
+  "COMB_picks": 323,
+  "COMB_agree": 305,
+  "BOTH_same_picks": 301,
+  "BOTH_agree": 294,
+  "COMB_disagree": 18,
+  "BOTH_disagree": 7,
+  "volumes": 6,
+  "distinct_gold_persons": 88,
+  "S_prec_excl_undecided": [
+   0.9527,
+   0.94,
+   0.9629
+  ],
+  "COMB_prec_excl_undecided": [
+   0.9443,
+   0.9136,
+   0.9645
+  ],
+  "BOTH_prec_excl_undecided": [
+   0.9767,
+   0.9528,
+   0.9887
+  ]
+ },
+ "proxy15|all|1946-": {
+  "linked_head_rows": 1747,
+  "S_class:unknown": 321,
+  "S_class:nobody": 544,
+  "S_class:one": 788,
+  "S_picks": 788,
+  "S_agree": 729,
+  "S_class:several": 94,
+  "S_undecided": 4,
+  "COMB_picks": 158,
+  "COMB_agree": 158,
+  "BOTH_same_picks": 158,
+  "BOTH_agree": 158,
+  "S_disagree": 55,
+  "volumes": 5,
+  "distinct_gold_persons": 106,
+  "S_prec_excl_undecided": [
+   0.9298,
+   0.9098,
+   0.9457
+  ],
+  "COMB_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ],
+  "BOTH_prec_excl_undecided": [
+   1.0,
+   0.9763,
+   1.0
+  ]
+ }
+}

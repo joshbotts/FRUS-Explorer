@@ -1,0 +1,117 @@
+{
+ "nonbmp_r0_docs_in_scope": 0,
+ "seed_regenerates_original_sample": true,
+ "original_span_classes": {
+  "control_filtered/aligned/body_verbatim": 2040,
+  "control_filtered/aligned/body_whitespace_differs": 11,
+  "control_filtered/aligned/in_footnote": 118,
+  "control_filtered/aligned/straddles_footnote": 13,
+  "control_filtered/unaligned/no_alignment": 512,
+  "sweep_filtered/aligned/body_verbatim": 3884,
+  "sweep_filtered/aligned/body_whitespace_differs": 30,
+  "sweep_filtered/aligned/in_footnote": 273,
+  "sweep_filtered/aligned/straddles_footnote": 16,
+  "sweep_filtered/unaligned/no_alignment": 985
+ },
+ "nonbmp_flat_docs": 0,
+ "weighted_exact_orig": 0.9228,
+ "weighted_exact_fresh": 0.9069,
+ "app_view_rows_in_scope_volumes": 199068,
+ "app_rows_not_in_r0": 1534,
+ "r0_docs_not_in_app": 0,
+ "app_rows_front_matter": 247,
+ "app_rows_not_in_r0_examples": [
+  [
+   "frus1861",
+   "message-of-the-president"
+  ],
+  [
+   "frus1862",
+   "message"
+  ],
+  [
+   "frus1864p1",
+   "comp2"
+  ],
+  [
+   "frus1865p1",
+   "errata"
+  ],
+  [
+   "frus1865p1",
+   "message"
+  ],
+  [
+   "frus1865p4",
+   "errata"
+  ],
+  [
+   "frus1870",
+   "message"
+  ],
+  [
+   "frus1872p1",
+   "message-of-the-president"
+  ]
+ ],
+ "scoped_count_join": {
+  "Seward": {
+   "count": 9786,
+   "ms": [
+    12.4,
+    4.9,
+    4.8
+   ]
+  },
+  "Hull": {
+   "count": 12468,
+   "ms": [
+    50.2,
+    10.7,
+    10.5
+   ]
+  },
+  "Wells": {
+   "count": 41794,
+   "ms": [
+    2075.5,
+    73.4,
+    75.6
+   ]
+  }
+ },
+ "wrap_all_occurrences": {
+  "A/sweep": {
+   "surfaces": 3229,
+   "occurrences_wordbounded": 6364,
+   "occ_detected": 5188,
+   "repeated_surfaces": 951,
+   "repeated_occ": 4086,
+   "repeated_occ_detected": 2910
+  },
+  "A/control": {
+   "surfaces": 1616,
+   "occurrences_wordbounded": 3716,
+   "occ_detected": 2694,
+   "repeated_surfaces": 661,
+   "repeated_occ": 2761,
+   "repeated_occ_detected": 1739
+  },
+  "B/sweep": {
+   "surfaces": 3686,
+   "occurrences_wordbounded": 7773,
+   "occ_detected": 6447,
+   "repeated_surfaces": 1222,
+   "repeated_occ": 5309,
+   "repeated_occ_detected": 3983
+  },
+  "B/control": {
+   "surfaces": 1747,
+   "occurrences_wordbounded": 4528,
+   "occ_detected": 3249,
+   "repeated_surfaces": 779,
+   "repeated_occ": 3560,
+   "repeated_occ_detected": 2281
+  }
+ }
+}

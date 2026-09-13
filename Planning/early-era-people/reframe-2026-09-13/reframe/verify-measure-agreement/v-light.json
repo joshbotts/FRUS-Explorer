@@ -1,0 +1,225 @@
+{
+ "script": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/verify-measure-agreement/v_light.py",
+ "collapse": {
+  "arm_pairs": {
+   "1861-1899": 205163,
+   "1900-1929": 162651,
+   "1930-1945": 241201,
+   "1946-": 159913,
+   "all": 768928
+  },
+  "arm_pairs_lasttoken_collapsed": {
+   "1861-1899": 161788,
+   "1900-1929": 141043,
+   "1930-1945": 219077,
+   "1946-": 141201,
+   "all": 663109
+  },
+  "editor_pairs": {
+   "1861-1899": 72162,
+   "1900-1929": 47330,
+   "1930-1945": 75006,
+   "1946-": 29007,
+   "all": 223505
+  },
+  "editor_pairs_lasttoken_collapsed": {
+   "1861-1899": 71750,
+   "1900-1929": 47039,
+   "1930-1945": 74794,
+   "1946-": 28998,
+   "all": 222581
+  },
+  "added_pairs": {
+   "1861-1899": 133001,
+   "1900-1929": 115321,
+   "1930-1945": 166195,
+   "1946-": 130906,
+   "all": 545423
+  },
+  "added_new_last_tokens": {
+   "1861-1899": 90038,
+   "1900-1929": 94004,
+   "1930-1945": 144283,
+   "1946-": 112203,
+   "all": 440528
+  },
+  "docs_gaining": {
+   "1861-1899": 27848,
+   "1900-1929": 35401,
+   "1930-1945": 56094,
+   "1946-": 31331,
+   "all": 150674
+  },
+  "docs_gaining_new_last_token": {
+   "1861-1899": 21804,
+   "1900-1929": 32187,
+   "1930-1945": 54234,
+   "1946-": 30657,
+   "all": 138882
+  }
+ },
+ "new_last_tokens_per_doc_gaining_one": {
+  "mean": 3.172,
+  "median": 2.0
+ },
+ "concentration_distinct_rows": {
+  "rows": 1310341,
+  "keys": 157028,
+  "share_rows_on_singleton_keys": 0.0752,
+  "keys_ge5": 23059,
+  "share_rows_on_keys_ge5": 0.8557
+ },
+ "added_pairs": 545423,
+ "share_added_pairs_on_corpus_singleton_keys": 0.2021,
+ "added_single_token_pairs": 245807,
+ "share_added_single_token": 0.4507,
+ "top_added": [
+  [
+   "william h. seward",
+   2600
+  ],
+  [
+   "roosevelt",
+   2484
+  ],
+  [
+   "byrnes",
+   1912
+  ],
+  [
+   "molotov",
+   1895
+  ],
+  [
+   "wilson",
+   1894
+  ],
+  [
+   "bevin",
+   1833
+  ],
+  [
+   "marshall",
+   1695
+  ],
+  [
+   "truman",
+   1610
+  ],
+  [
+   "charles francis adams",
+   1589
+  ],
+  [
+   "lovett",
+   1528
+  ],
+  [
+   "welles",
+   1526
+  ],
+  [
+   "acheson",
+   1517
+  ],
+  [
+   "stimson",
+   1480
+  ],
+  [
+   "chiang kai-shek",
+   1428
+  ],
+  [
+   "eden",
+   1412
+  ]
+ ],
+ "top_net": {
+  "fs_only": [
+   [
+    "hull",
+    9116
+   ],
+   [
+    "william h. seward",
+    4961
+   ],
+   [
+    "acheson",
+    3261
+   ],
+   [
+    "british government",
+    1867
+   ],
+   [
+    "foreign relations",
+    1814
+   ],
+   [
+    "american legation",
+    1695
+   ],
+   [
+    "marshall",
+    1681
+   ],
+   [
+    "chinese government",
+    1658
+   ],
+   [
+    "british ambassador",
+    1653
+   ],
+   [
+    "japanese government",
+    1484
+   ]
+  ],
+  "fc_only": [
+   [
+    "hitler",
+    457
+   ],
+   [
+    "roosevelt",
+    421
+   ],
+   [
+    "john",
+    406
+   ],
+   [
+    "august",
+    391
+   ],
+   [
+    "delga",
+    380
+   ],
+   [
+    "bill",
+    334
+   ],
+   [
+    "lincoln",
+    329
+   ],
+   [
+    "chiang",
+    325
+   ],
+   [
+    "truman",
+    319
+   ],
+   [
+    "ayres",
+    317
+   ]
+  ]
+ },
+ "elapsed": 9.6
+}

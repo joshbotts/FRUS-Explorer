@@ -1,0 +1,231 @@
+{
+ "doc_chars": {
+  "n": 197534,
+  "sum": 679401514,
+  "mean": 3439.42,
+  "p50": 1830,
+  "p90": 6708,
+  "p99": 27660,
+  "max": 1283407,
+  "zero": 0
+ },
+ "doc_chars_thresholds": {
+  "8000": {
+   "docs_over": 14970,
+   "chars_in_docs_over": 278323556
+  },
+  "20000": {
+   "docs_over": 3414,
+   "chars_in_docs_over": 143120446
+  },
+  "40000": {
+   "docs_over": 1021,
+   "chars_in_docs_over": 78209470
+  },
+  "100000": {
+   "docs_over": 167,
+   "chars_in_docs_over": 28787062
+  },
+  "200000": {
+   "docs_over": 39,
+   "chars_in_docs_over": 12403863
+  },
+  "400000": {
+   "docs_over": 4,
+   "chars_in_docs_over": 3237652
+  },
+  "600000": {
+   "docs_over": 2,
+   "chars_in_docs_over": 2226709
+  },
+  "3000000": {
+   "docs_over": 0,
+   "chars_in_docs_over": 0
+  }
+ },
+ "per_doc_marked": {
+  "n": 197534,
+  "sum": 245747,
+  "mean": 1.24,
+  "p50": 1,
+  "p90": 2,
+  "p99": 6,
+  "max": 158,
+  "zero": 38352
+ },
+ "per_doc_fctrl": {
+  "n": 197534,
+  "sum": 1261852,
+  "mean": 6.39,
+  "p50": 3,
+  "p90": 13,
+  "p99": 57,
+  "max": 2191,
+  "zero": 23538
+ },
+ "per_doc_fsweep": {
+  "n": 197534,
+  "sum": 2597043,
+  "mean": 13.15,
+  "p50": 8,
+  "p90": 26,
+  "p99": 90,
+  "max": 3233,
+  "zero": 1421
+ },
+ "per_doc_union_exact": {
+  "n": 197534,
+  "sum": 3196831,
+  "mean": 16.18,
+  "p50": 9,
+  "p90": 32,
+  "p99": 115,
+  "max": 4128,
+  "zero": 1100
+ },
+ "per_doc_union_merged": {
+  "n": 197534,
+  "sum": 2672086,
+  "mean": 13.53,
+  "p50": 8,
+  "p90": 27,
+  "p99": 93,
+  "max": 3486,
+  "zero": 1100
+ },
+ "per_doc_union_surfaces": {
+  "n": 197534,
+  "sum": 2015980,
+  "mean": 10.21,
+  "p50": 7,
+  "p90": 19,
+  "p99": 57,
+  "max": 1967,
+  "zero": 1100
+ },
+ "per_doc_union_surface_chars": {
+  "n": 197534,
+  "sum": 29417517,
+  "mean": 148.92,
+  "p50": 93,
+  "p90": 302,
+  "p99": 918,
+  "max": 30924,
+  "zero": 1100
+ },
+ "per_doc_union_span_chars": {
+  "n": 197534,
+  "sum": 42215597,
+  "mean": 213.71,
+  "p50": 118,
+  "p90": 436,
+  "p99": 1576,
+  "max": 52882,
+  "zero": 1100
+ },
+ "chunks_recon_total": 330979,
+ "chunk_chars_recon_total": 742891518,
+ "anchor_totals": {
+  "chunks_recon": 330979,
+  "chunk_chars_recon": 742891518,
+  "head_chunks": 330979,
+  "head_chars": 679401514,
+  "prompt_tokens": 220645005,
+  "completion_tokens": 21131474,
+  "mentions": 3656238,
+  "returned": 2601312,
+  "truncated": 155,
+  "secs": 997807.5999999994,
+  "docs_scanned": 197534
+ },
+ "anchor_chunk_mismatch_volumes": [],
+ "anchor_regression": {
+  "volumes": 267,
+  "overhead_tokens_per_chunk": 183.03,
+  "tokens_per_char": 0.21532,
+  "chars_per_token": 4.6442,
+  "max_abs_resid_share": 0.1079
+ },
+ "per_volume_chars_per_token_after_overhead": {
+  "min": 4.01,
+  "p10": 4.482,
+  "p50": 4.658,
+  "p90": 4.817,
+  "max": 5.021
+ },
+ "naive_chars_per_token_including_overhead": 3.3669,
+ "completion_tokens_per_returned_string": 8.123,
+ "completion_tokens_per_chunk": 63.85,
+ "by_band": {
+  "1861-1899": {
+   "docs": 32760,
+   "chars": 164046154,
+   "union_exact": 784320,
+   "union_surfaces": 500351,
+   "marked": 85578
+  },
+  "1900-1929": {
+   "docs": 48852,
+   "chars": 152199441,
+   "union_exact": 659726,
+   "union_surfaces": 432362,
+   "marked": 53083
+  },
+  "1930-1945": {
+   "docs": 77899,
+   "chars": 210343051,
+   "union_exact": 992304,
+   "union_surfaces": 641376,
+   "marked": 77899
+  },
+  "1946-": {
+   "docs": 38023,
+   "chars": 152812868,
+   "union_exact": 760481,
+   "union_surfaces": 441891,
+   "marked": 29187
+  }
+ },
+ "packing": {
+  "target0_cap3200_ov480": {
+   "requests": 339946,
+   "chunked_pieces": 198744,
+   "billed_chars": 747759274
+  },
+  "target0_cap40000_ov2000": {
+   "requests": 199163,
+   "chunked_pieces": 2650,
+   "billed_chars": 682659514
+  },
+  "target8000_cap40000_ov2000": {
+   "requests": 83215,
+   "chunked_pieces": 2650,
+   "billed_chars": 682659514
+  },
+  "target20000_cap40000_ov2000": {
+   "requests": 37277,
+   "chunked_pieces": 2650,
+   "billed_chars": 682659514
+  },
+  "target40000_cap40000_ov2000": {
+   "requests": 19668,
+   "chunked_pieces": 2650,
+   "billed_chars": 682659514
+  },
+  "target80000_cap80000_ov2000": {
+   "requests": 9368,
+   "chunked_pieces": 655,
+   "billed_chars": 680167514
+  },
+  "target0_cap400000_ov4000": {
+   "requests": 197541,
+   "chunked_pieces": 11,
+   "billed_chars": 679429514
+  },
+  "target200000_cap400000_ov4000": {
+   "requests": 3536,
+   "chunked_pieces": 11,
+   "billed_chars": 679429514
+  }
+ }
+}

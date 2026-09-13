@@ -1,0 +1,42 @@
+{
+ "nonscope_volumes": 286,
+ "cross": [
+  [
+   "frus1951v04p2",
+   "frus1951v04p1",
+   "p_DG1",
+   false,
+   1,
+   true
+  ],
+  [
+   "frus1977-80v01",
+   ".",
+   "p_SA_3",
+   true,
+   1,
+   false
+  ]
+ ],
+ "dangling": [
+  [
+   "frus1964-68v21",
+   "frus1964-68v21",
+   "p_ZA1",
+   true,
+   1
+  ],
+  [
+   "frus1977-80v01",
+   ".",
+   "p_SA_3",
+   true,
+   1
+  ]
+ ],
+ "total": 1844928,
+ "nonscope_not_in_crosswalk": [
+  "frus1981-88v16"
+ ],
+ "crosswalk_not_nonscope": []
+}

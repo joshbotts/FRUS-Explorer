@@ -1,0 +1,54 @@
+
+## R2a verify DISAGREEMENT set only (unmarked FS-only U FC-only), +/-200-char merged windows
+   requests [6742, 13694, 179387] input chars [269659492, 273872928, 342951017]
+   haiku-4.5  lo/low     52.8 | cen/low     79.6 | cen/high    122.5 | hi/high    649.8 | std-uncached cen/low    159.2 | tok M [107.54, 10.33, 0.0]
+   sonnet-5   lo/low    122.1 | cen/low    154.6 | cen/high    231.9 | hi/high   1327.7 | std-uncached cen/low    375.6 | tok M [127.59, 10.33, 1.72]
+   opus-5     lo/low    261.6 | cen/low    364.3 | cen/high    557.5 | hi/high   3330.3 | std-uncached cen/low    894.8 | tok M [118.74, 10.33, 1.72]
+
+## R2b verify AGREEMENT arm only (unmarked FS spans overlapping FC) - the precision role
+   requests [4279, 8672, 157357] input chars [171142873, 173423389, 253954709]
+   haiku-4.5  lo/low     36.7 | cen/low     54.0 | cen/high     84.8 | hi/high    556.9 | std-uncached cen/low    108.0 | tok M [68.1, 7.99, 0.0]
+   sonnet-5   lo/low     84.6 | cen/low    105.9 | cen/high    161.3 | hi/high   1134.6 | std-uncached cen/low    253.8 | tok M [80.8, 7.99, 1.23]
+   opus-5     lo/low    183.8 | cen/low    250.6 | cen/high    389.3 | hi/high   2844.7 | std-uncached cen/low    606.5 | tok M [75.19, 7.99, 1.23]
+
+## R2c recall-first review queue = whole unmarked pool (FC U FS), windows
+   requests [8800, 17930, 195033] input chars [351963579, 358580535, 476403920]
+   haiku-4.5  lo/low     75.9 | cen/low    113.5 | cen/high    179.1 | hi/high    775.5 | std-uncached cen/low    227.1 | tok M [140.8, 17.25, 0.0]
+   sonnet-5   lo/low    174.6 | cen/low    222.9 | cen/high    340.9 | hi/high   1589.9 | std-uncached cen/low    532.8 | tok M [167.06, 17.25, 2.62]
+   opus-5     lo/low    379.6 | cen/low    528.3 | cen/high    823.3 | hi/high   3990.1 | std-uncached cen/low   1274.2 | tok M [155.47, 17.25, 2.62]
+
+## R3 adjudicate SE x POCOM: contradicted + location-narrowed + Seward-convention rows
+   requests [580, 1450, 2899] input chars [10146500, 17394000, 36237500]
+   haiku-4.5  lo/low      2.3 | cen/low      5.8 | cen/high     14.2 | hi/high     29.5 | std-uncached cen/low     11.6 | tok M [8.59, 0.59, 0.0]
+   sonnet-5   lo/low      5.6 | cen/low     10.9 | cen/high     26.1 | hi/high     62.0 | std-uncached cen/low     28.9 | tok M [9.86, 0.59, 0.32]
+   opus-5     lo/low     12.4 | cen/low     25.9 | cen/high     63.9 | hi/high    156.1 | std-uncached cen/low     69.4 | tok M [9.3, 0.59, 0.32]
+
+## R4 propose identities for unresolved marked correspondents (volume x surface rows with 0 or >1 live POCOM candidate)
+   requests [454, 908, 2269] input chars [13977341, 16624539, 21036537]
+   haiku-4.5  lo/low      2.6 | cen/low      4.8 | cen/high     11.1 | hi/high     23.0 | std-uncached cen/low      9.6 | tok M [6.76, 0.58, 0.0]
+   sonnet-5   lo/low      6.4 | cen/low     10.0 | cen/high     21.2 | hi/high     47.6 | std-uncached cen/low     24.4 | tok M [7.98, 0.58, 0.26]
+   opus-5     lo/low     13.9 | cen/low     23.6 | cen/high     51.7 | hi/high    119.8 | std-uncached cen/low     58.2 | tok M [7.44, 0.58, 0.26]
+
+## R5 synthesis: per-chapter correspondents guide (12,087 sections)
+   requests [12087, 12087, 12087] input chars [25220496, 25220496, 25220496]
+   haiku-4.5  lo/low     18.3 | cen/low     37.2 | cen/high    114.2 | hi/high    191.5 | std-uncached cen/low     74.4 | tok M [42.71, 6.34, 0.0]
+   sonnet-5   lo/low     37.6 | cen/low     62.5 | cen/high    200.9 | hi/high    385.1 | std-uncached cen/low    183.6 | tok M [44.55, 6.34, 3.11]
+   opus-5     lo/low     90.0 | cen/low    154.1 | cen/high    500.3 | hi/high    963.6 | std-uncached cen/low    454.9 | tok M [43.74, 6.34, 3.11]
+
+## R5' synthesis: per-volume guide (267 requests, same facts)
+   requests [267, 267, 267] input chars [25220496, 25220496, 25220496]
+   haiku-4.5  lo/low     11.6 | cen/low     19.3 | cen/high     52.0 | hi/high    127.5 | std-uncached cen/low     38.6 | tok M [6.89, 6.34, 0.0]
+   sonnet-5   lo/low     30.0 | cen/low     49.4 | cen/high    105.2 | hi/high    257.0 | std-uncached cen/low    100.1 | tok M [8.74, 6.34, 1.93]
+   opus-5     lo/low     71.0 | cen/low    121.5 | cen/high    260.9 | hi/high    643.4 | std-uncached cen/low    246.3 | tok M [7.92, 6.34, 1.93]
+
+## R7a draft filter rules from M2a errors.json (in-sample; x3 reps)
+   requests [12, 12, 12] input chars [2214030, 2214030, 2214030]
+   haiku-4.5  lo/low      0.4 | cen/low      0.4 | cen/high      0.8 | hi/high      0.8 | std-uncached cen/low      0.9 | tok M [0.57, 0.06, 0.0]
+   sonnet-5   lo/low      1.0 | cen/low      1.1 | cen/high      1.7 | hi/high      1.8 | std-uncached cen/low      2.3 | tok M [0.73, 0.06, 0.02]
+   opus-5     lo/low      2.2 | cen/low      2.6 | cen/high      4.1 | hi/high      4.6 | std-uncached cen/low      5.3 | tok M [0.66, 0.06, 0.02]
+
+## R7b classify top-20,000 sweep surfaces by frequency, no gold, no context (x3 reps)
+   requests [60, 60, 60] input chars [1500000, 1500000, 1500000]
+   haiku-4.5  lo/low      1.1 | cen/low      1.2 | cen/high      2.1 | hi/high      2.2 | std-uncached cen/low      2.3 | tok M [0.54, 0.36, 0.0]
+   sonnet-5   lo/low      2.4 | cen/low      2.5 | cen/high      4.3 | hi/high      4.5 | std-uncached cen/low      5.3 | tok M [0.65, 0.36, 0.04]
+   opus-5     lo/low      5.8 | cen/low      6.1 | cen/high     10.5 | hi/high     11.3 | std-uncached cen/low     13.0 | tok M [0.6, 0.36, 0.04]

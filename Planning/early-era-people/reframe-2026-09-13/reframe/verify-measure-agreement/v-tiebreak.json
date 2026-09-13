@@ -1,0 +1,190 @@
+{
+ "maximum_check": {
+  "agreement_sweep_side": {
+   "documents_where_cardinality_differs": 0
+  },
+  "editor_union_fc": {
+   "documents_where_cardinality_differs": 0
+  },
+  "filtered_control": {
+   "documents_where_cardinality_differs": 0
+  },
+  "filtered_sweep": {
+   "documents_where_cardinality_differs": 0
+  }
+ },
+ "flips": [
+  {
+   "doc": "frus1905/d447",
+   "flipped_keys": {
+    "chargé wilson": {
+     "forward_true": true,
+     "reversed_true": false
+    },
+    "wilson": {
+     "forward_true": false,
+     "reversed_true": true
+    }
+   },
+   "gold_spans_overlapping": [
+    [
+     0,
+     13,
+     "Chargé Wilson"
+    ]
+   ],
+   "predicted_spans_of_flipped_and_competing": [
+    [
+     0,
+     13,
+     "Chargé Wilson"
+    ],
+    [
+     7,
+     13,
+     "Wilson"
+    ]
+   ]
+  },
+  {
+   "doc": "frus1944v06/d706",
+   "flipped_keys": {
+    "r. e. mccann": {
+     "forward_true": true,
+     "reversed_true": false
+    }
+   },
+   "gold_spans_overlapping": [
+    [
+     863,
+     875,
+     "R. E. McCann"
+    ]
+   ],
+   "predicted_spans_of_flipped_and_competing": [
+    [
+     863,
+     875,
+     "R. E. McCann"
+    ],
+    [
+     869,
+     875,
+     "McCann"
+    ]
+   ]
+  },
+  {
+   "doc": "frus1946v06/d88",
+   "flipped_keys": {
+    "primin georgiev": {
+     "forward_true": true,
+     "reversed_true": false
+    }
+   },
+   "gold_spans_overlapping": [
+    [
+     627,
+     642,
+     "PriMin Georgiev"
+    ]
+   ],
+   "predicted_spans_of_flipped_and_competing": [
+    [
+     627,
+     642,
+     "PriMin Georgiev"
+    ],
+    [
+     634,
+     642,
+     "Georgiev"
+    ]
+   ]
+  },
+  {
+   "doc": "frus1947v05/d365",
+   "flipped_keys": {
+    "john b. howard": {
+     "forward_true": true,
+     "reversed_true": false
+    },
+    "howard": {
+     "forward_true": false,
+     "reversed_true": true
+    }
+   },
+   "gold_spans_overlapping": [
+    [
+     25,
+     43,
+     "Mr. John B. Howard"
+    ]
+   ],
+   "predicted_spans_of_flipped_and_competing": [
+    [
+     25,
+     43,
+     "Mr. John B. Howard"
+    ],
+    [
+     29,
+     43,
+     "John B. Howard"
+    ],
+    [
+     37,
+     43,
+     "Howard"
+    ]
+   ]
+  },
+  {
+   "doc": "frus1951v01/d410",
+   "flipped_keys": {
+    "eric a. berthoud": {
+     "forward_true": true,
+     "reversed_true": false
+    },
+    "richard m. bissell, jr.": {
+     "forward_true": true,
+     "reversed_true": false
+    }
+   },
+   "gold_spans_overlapping": [
+    [
+     377,
+     393,
+     "Eric A. Berthoud"
+    ],
+    [
+     1788,
+     1811,
+     "Richard M. Bissell, Jr."
+    ]
+   ],
+   "predicted_spans_of_flipped_and_competing": [
+    [
+     377,
+     393,
+     "Eric A. Berthoud"
+    ],
+    [
+     385,
+     393,
+     "Berthoud"
+    ],
+    [
+     1788,
+     1811,
+     "Richard M. Bissell, Jr."
+    ],
+    [
+     1799,
+     1806,
+     "Bissell"
+    ]
+   ]
+  }
+ ]
+}

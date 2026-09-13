@@ -1,0 +1,1247 @@
+{
+ "script": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/verify-measure-agreement/v_census.py",
+ "elapsed_secs": 65.4,
+ "controls": {
+  "store_rows": {
+   "E": 245747,
+   "FC": 1261852,
+   "FS": 2597043
+  },
+  "head_problems": {
+   "FC": 0,
+   "FS": 0
+  },
+  "row_slice_mismatch": {
+   "E": 0,
+   "FC": 0,
+   "FS": 0
+  },
+  "text_docs": 197534,
+  "length_mismatch": 0,
+  "region_boundaries_checked": 1604342,
+  "region_boundary_token_mismatch": 0,
+  "region_docs_not_in_text": 0,
+  "pocom_loader_quirk": {
+   "people_files": 4261,
+   "people_with_surname": 4261,
+   "people_with_dated_appointment": 4167,
+   "distinct_surnames_with_dated_appointment": 2867,
+   "distinct_surnames_casefolded": 2866
+  },
+  "pocom_loader_et": {
+   "people_files": 4261,
+   "people_with_surname": 4261,
+   "people_with_dated_appointment": 4167,
+   "distinct_surnames_with_dated_appointment": 2867,
+   "distinct_surnames_casefolded": 2866
+  },
+  "editor_fromto_region": {
+   "1861-1899": {
+    "head": 61108,
+    "other_head": 23101,
+    "note": 2,
+    "apparatus": 9,
+    "prose": 14
+   },
+   "1900-1929": {
+    "head": 42034,
+    "other_head": 7566,
+    "note": 0,
+    "apparatus": 2,
+    "prose": 0
+   },
+   "1930-1945": {
+    "head": 71445,
+    "other_head": 1539,
+    "note": 0,
+    "apparatus": 0,
+    "prose": 4
+   },
+   "1946-": {
+    "head": 28469,
+    "other_head": 454,
+    "note": 0,
+    "apparatus": 0,
+    "prose": 4
+   }
+  }
+ },
+ "docs": {
+  "1861-1899": 32760,
+  "1900-1929": 48852,
+  "1930-1945": 77899,
+  "1946-": 38023,
+  "all": 197534
+ },
+ "task1": {
+  "rows_distinct": {
+   "1861-1899": 346404,
+   "1900-1929": 266266,
+   "1930-1945": 396099,
+   "1946-": 301572,
+   "all": 1310341
+  },
+  "rows_editor": {
+   "1861-1899": 85578,
+   "1900-1929": 53083,
+   "1930-1945": 77899,
+   "1946-": 29187,
+   "all": 245747
+  },
+  "rows_int_not_editor": {
+   "1861-1899": 260826,
+   "1900-1929": 213183,
+   "1930-1945": 318200,
+   "1946-": 272385,
+   "all": 1064594
+  },
+  "int_fs_distinct": {
+   "1861-1899": 267160,
+   "1900-1929": 221386,
+   "1930-1945": 344046,
+   "1946-": 278770,
+   "all": 1111362
+  },
+  "int_fc_distinct": {
+   "1861-1899": 257795,
+   "1900-1929": 211652,
+   "1930-1945": 319582,
+   "1946-": 257890,
+   "all": 1046919
+  },
+  "fc_only_distinct": {
+   "1861-1899": 80793,
+   "1900-1929": 46240,
+   "1930-1945": 46699,
+   "1946-": 41201,
+   "all": 214933
+  },
+  "fs_only_distinct": {
+   "1861-1899": 297651,
+   "1900-1929": 300385,
+   "1930-1945": 521731,
+   "1946-": 365914,
+   "all": 1485681
+  },
+  "raw_rows_FC": {
+   "1861-1899": 338588,
+   "1900-1929": 257892,
+   "1930-1945": 366281,
+   "1946-": 299091
+  },
+  "raw_rows_FS": {
+   "1861-1899": 564811,
+   "1900-1929": 521771,
+   "1930-1945": 865777,
+   "1946-": 644684
+  },
+  "pairs": {
+   "1861-1899": 205163,
+   "1900-1929": 162651,
+   "1930-1945": 241201,
+   "1946-": 159913,
+   "all": 768928
+  },
+  "docs_reached": {
+   "1861-1899": 32543,
+   "1900-1929": 46953,
+   "1930-1945": 75549,
+   "1946-": 35613,
+   "all": 190658
+  },
+  "distinct_K2": {
+   "1861-1899": 62055,
+   "1900-1929": 39778,
+   "1930-1945": 39439,
+   "1946-": 32664,
+   "all": 157028
+  },
+  "per_volume_distinct_K2": {
+   "median": 940,
+   "max": 2593,
+   "max_volume": "frus1864p2"
+  },
+  "artifact": {
+   "bytes": 9346130,
+   "gzip_bytes": 2926099,
+   "vocab": 157028
+  },
+  "editor": {
+   "pairs": {
+    "1861-1899": 72162,
+    "1900-1929": 47330,
+    "1930-1945": 75006,
+    "1946-": 29007,
+    "all": 223505
+   },
+   "docs": {
+    "1861-1899": 30872,
+    "1900-1929": 36871,
+    "1930-1945": 66591,
+    "1946-": 24848,
+    "all": 159182
+   },
+   "distinct_K2": 11377
+  },
+  "editor_union_fc": {
+   "pairs": {
+    "1861-1899": 236790,
+    "1900-1929": 185355,
+    "1930-1945": 263113,
+    "1946-": 179211,
+    "all": 864469
+   },
+   "docs": {
+    "1861-1899": 32652,
+    "1900-1929": 47319,
+    "1930-1945": 75928,
+    "1946-": 36229,
+    "all": 192128
+   },
+   "distinct_K2": 143940
+  },
+  "persons_rows_lowercase_key": {
+   "marked": {
+    "rows": 30327,
+    "pre1910": 12654,
+    "name_bytes": 282320,
+    "corpus_distinct": 12171
+   },
+   "agreement": {
+    "rows": 320050,
+    "pre1910": 132576,
+    "name_bytes": 4848571,
+    "corpus_distinct": 187483
+   },
+   "union_marked_fc": {
+    "rows": 340614,
+    "pre1910": 146301,
+    "name_bytes": 3862020,
+    "corpus_distinct": 166453
+   }
+  }
+ },
+ "task2": {
+  "gain_docs": {
+   "1861-1899": 27848,
+   "1900-1929": 35401,
+   "1930-1945": 56094,
+   "1946-": 31331,
+   "all": 150674
+  },
+  "gain_docs_no_editor": {
+   "1861-1899": 1671,
+   "1900-1929": 10082,
+   "1930-1945": 8958,
+   "1946-": 10765,
+   "all": 31476
+  },
+  "added_pairs": {
+   "1861-1899": 133001,
+   "1900-1929": 115321,
+   "1930-1945": 166195,
+   "1946-": 130906,
+   "all": 545423
+  },
+  "added_lasttok_dup": {
+   "1861-1899": 25989,
+   "1900-1929": 11491,
+   "1930-1945": 7121,
+   "1946-": 3744,
+   "all": 48345
+  },
+  "added_single_token": {
+   "1861-1899": 42482,
+   "1900-1929": 46052,
+   "1930-1945": 89791,
+   "1946-": 67482,
+   "all": 245807
+  },
+  "added_distinct_K2": 152238,
+  "added_never_in_editor_vocab": 145651,
+  "per_gaining_doc": {
+   "mean": 3.62,
+   "median": 2.0,
+   "p90": 7,
+   "p99": 22,
+   "max": 836
+  },
+  "pair_signature_coarse": {
+   "1861-1899": {
+    "prose": 98045,
+    "apparatus": 29475,
+    "other_head+prose": 668,
+    "other_head": 627,
+    "apparatus+prose": 2329,
+    "apparatus+other_head": 56,
+    "note": 550,
+    "head": 590,
+    "apparatus+other_head+prose": 141,
+    "note+prose": 383,
+    "apparatus+note": 1,
+    "head+prose": 37,
+    "apparatus+head+prose": 21,
+    "head+note": 5,
+    "apparatus+note+prose": 2,
+    "apparatus+head": 58,
+    "note+other_head+prose": 2,
+    "head+other_head": 9,
+    "head+note+prose": 1,
+    "note+other_head": 1
+   },
+   "1900-1929": {
+    "apparatus": 23058,
+    "prose": 83465,
+    "apparatus+prose": 1512,
+    "other_head+prose": 207,
+    "other_head": 506,
+    "note": 2081,
+    "head": 3198,
+    "apparatus+other_head+prose": 49,
+    "head+prose": 418,
+    "note+prose": 552,
+    "apparatus+head": 57,
+    "apparatus+head+prose": 15,
+    "apparatus+other_head": 28,
+    "head+other_head": 118,
+    "head+other_head+prose": 4,
+    "apparatus+note": 28,
+    "head+note": 11,
+    "note+other_head": 1,
+    "head+note+prose": 8,
+    "apparatus+note+prose": 4,
+    "apparatus+head+note+prose": 1
+   },
+   "1930-1945": {
+    "prose": 122842,
+    "note": 18621,
+    "apparatus": 14400,
+    "apparatus+prose": 390,
+    "note+prose": 4642,
+    "head": 4268,
+    "other_head": 169,
+    "head+prose": 272,
+    "other_head+prose": 76,
+    "apparatus+head": 268,
+    "apparatus+head+note": 7,
+    "apparatus+note": 66,
+    "apparatus+head+prose": 10,
+    "head+other_head+prose": 1,
+    "head+note+prose": 18,
+    "head+note": 99,
+    "apparatus+note+prose": 18,
+    "apparatus+other_head": 5,
+    "apparatus+head+other_head": 1,
+    "head+other_head": 10,
+    "apparatus+note+other_head": 2,
+    "note+other_head+prose": 4,
+    "note+other_head": 4,
+    "apparatus+head+note+other_head": 1,
+    "apparatus+other_head+prose": 1
+   },
+   "1946-": {
+    "prose": 91868,
+    "note": 24314,
+    "note+prose": 6154,
+    "head": 1830,
+    "apparatus+prose": 272,
+    "apparatus": 5630,
+    "head+note": 98,
+    "head+prose": 338,
+    "head+note+prose": 44,
+    "apparatus+note": 99,
+    "apparatus+head": 64,
+    "apparatus+note+prose": 23,
+    "note+other_head+prose": 17,
+    "other_head": 64,
+    "apparatus+head+prose": 13,
+    "other_head+prose": 31,
+    "apparatus+head+note": 13,
+    "head+other_head+prose": 1,
+    "note+other_head": 7,
+    "apparatus+other_head": 7,
+    "apparatus+head+note+prose": 4,
+    "head+other_head": 13,
+    "apparatus+other_head+prose": 1,
+    "head+note+other_head+prose": 1
+   },
+   "all": {
+    "prose": 396220,
+    "apparatus": 72563,
+    "other_head+prose": 982,
+    "other_head": 1366,
+    "apparatus+prose": 4503,
+    "apparatus+other_head": 96,
+    "note": 45566,
+    "head": 9886,
+    "apparatus+other_head+prose": 192,
+    "note+prose": 11731,
+    "apparatus+note": 194,
+    "head+prose": 1065,
+    "apparatus+head+prose": 59,
+    "head+note": 213,
+    "apparatus+note+prose": 47,
+    "apparatus+head": 447,
+    "note+other_head+prose": 23,
+    "head+other_head": 150,
+    "head+note+prose": 71,
+    "note+other_head": 13,
+    "head+other_head+prose": 6,
+    "apparatus+head+note+prose": 5,
+    "apparatus+head+note": 20,
+    "apparatus+head+other_head": 1,
+    "apparatus+note+other_head": 2,
+    "apparatus+head+note+other_head": 1,
+    "head+note+other_head+prose": 1
+   }
+  },
+  "pair_signature_fine_all": {
+   "prose:p": 338282,
+   "apparatus": 72563,
+   "note": 45566,
+   "prose:list": 29110,
+   "prose:table": 19857,
+   "note+prose:p": 10258,
+   "head": 9886,
+   "prose:list+prose:p": 5698,
+   "apparatus+prose:p": 3776,
+   "prose:p+prose:table": 3070,
+   "other_head": 1366,
+   "other_head+prose:p": 917,
+   "note+prose:list": 730,
+   "head+prose:p": 631,
+   "apparatus+head": 447,
+   "apparatus+prose:list": 426,
+   "note+prose:list+prose:p": 387,
+   "head+note": 213,
+   "apparatus+note": 194,
+   "note+prose:p+prose:table": 177,
+   "head+prose:table": 170,
+   "apparatus+other_head+prose:p": 168,
+   "note+prose:table": 166,
+   "head+prose:list+prose:p": 156,
+   "apparatus+prose:table": 153,
+   "head+other_head": 150,
+   "prose:list+prose:table": 104,
+   "apparatus+other_head": 96,
+   "prose:list+prose:p+prose:table": 92,
+   "apparatus+prose:list+prose:p": 90,
+   "head+prose:p+prose:table": 54,
+   "head+note+prose:p": 52,
+   "head+prose:list": 51,
+   "apparatus+prose:p+prose:table": 50,
+   "apparatus+note+prose:p": 44,
+   "apparatus+head+prose:p": 43,
+   "other_head+prose:list+prose:p": 38,
+   "note+other_head+prose:p": 21,
+   "apparatus+head+note": 20,
+   "apparatus+other_head+prose:list+prose:p": 15,
+   "note+other_head": 13,
+   "apparatus+head+prose:table": 13,
+   "other_head+prose:p+prose:table": 11,
+   "note+prose:list+prose:p+prose:table": 11,
+   "other_head+prose:list": 9,
+   "apparatus+other_head+prose:p+prose:table": 7,
+   "prose:quote": 7,
+   "head+note+prose:table": 7,
+   "apparatus+prose:list+prose:table": 6,
+   "head+other_head+prose:p": 6,
+   "head+note+prose:list+prose:p": 5,
+   "other_head+prose:table": 4,
+   "head+note+prose:p+prose:table": 4,
+   "other_head+prose:list+prose:p+prose:table": 3,
+   "apparatus+head+note+prose:table": 3,
+   "apparatus+prose:list+prose:p+prose:table": 2,
+   "head+prose:list+prose:p+prose:table": 2,
+   "apparatus+note+prose:list+prose:p": 2,
+   "apparatus+head+prose:list+prose:p": 2,
+   "apparatus+head+note+prose:p": 2,
+   "apparatus+note+other_head": 2,
+   "note+prose:list+prose:table": 2,
+   "head+note+prose:list": 2,
+   "note+other_head+prose:list+prose:p": 2,
+   "apparatus+other_head+prose:table": 1,
+   "apparatus+other_head+prose:list": 1,
+   "head+prose:list+prose:table": 1,
+   "head+note+prose:list+prose:p+prose:table": 1,
+   "apparatus+head+other_head": 1,
+   "apparatus+head+note+other_head": 1,
+   "apparatus+head+prose:list": 1,
+   "apparatus+note+prose:table": 1,
+   "head+note+other_head+prose:list+prose:p": 1
+  },
+  "rows_region": {
+   "1861-1899": {
+    "prose": 186392,
+    "apparatus": 37389,
+    "other_head": 1794,
+    "note": 1594,
+    "head": 728
+   },
+   "1900-1929": {
+    "apparatus": 26971,
+    "prose": 159332,
+    "other_head": 1124,
+    "note": 2937,
+    "head": 3851
+   },
+   "1930-1945": {
+    "prose": 247356,
+    "note": 26376,
+    "apparatus": 15667,
+    "head": 5025,
+    "other_head": 305
+   },
+   "1946-": {
+    "prose": 214061,
+    "note": 36414,
+    "head": 2537,
+    "apparatus": 6355,
+    "other_head": 146
+   }
+  },
+  "rows_region_fine": {
+   "1861-1899": {
+    "prose:table": 6671,
+    "prose:p": 174231,
+    "apparatus": 37389,
+    "other_head": 1794,
+    "prose:list": 5483,
+    "note": 1594,
+    "head": 728,
+    "prose:quote": 7
+   },
+   "1900-1929": {
+    "apparatus": 26971,
+    "prose:p": 138212,
+    "prose:list": 15707,
+    "other_head": 1124,
+    "prose:table": 5413,
+    "note": 2937,
+    "head": 3851
+   },
+   "1930-1945": {
+    "prose:p": 225443,
+    "note": 26376,
+    "prose:list": 17466,
+    "apparatus": 15667,
+    "head": 5025,
+    "other_head": 305,
+    "prose:table": 4447
+   },
+   "1946-": {
+    "prose:list": 17360,
+    "prose:p": 186661,
+    "note": 36414,
+    "prose:table": 10040,
+    "head": 2537,
+    "apparatus": 6355,
+    "other_head": 146
+   }
+  }
+ },
+ "task3": {
+  "fc_only": {
+   "rows": {
+    "1861-1899": 80793,
+    "1900-1929": 46240,
+    "1930-1945": 46699,
+    "1946-": 41201,
+    "all": 214933
+   },
+   "pairs_gross": {
+    "1861-1899": 51559,
+    "1900-1929": 32617,
+    "1930-1945": 35538,
+    "1946-": 30972,
+    "all": 150686
+   },
+   "pairs_net": {
+    "1861-1899": 42982,
+    "1900-1929": 28374,
+    "1930-1945": 30017,
+    "1946-": 26500,
+    "all": 127873
+   },
+   "docs_net": {
+    "1861-1899": 14721,
+    "1900-1929": 12852,
+    "1930-1945": 19649,
+    "1946-": 15505,
+    "all": 62727
+   },
+   "keys_gross": {
+    "1861-1899": 20485,
+    "1900-1929": 12734,
+    "1930-1945": 10767,
+    "1946-": 9333,
+    "all": 44131
+   },
+   "keys_net": {
+    "1861-1899": 18234,
+    "1900-1929": 11827,
+    "1930-1945": 10093,
+    "1946-": 8789,
+    "all": 40602
+   },
+   "keys_gross_absent_from_arm_vocab": 26325
+  },
+  "fs_only": {
+   "rows": {
+    "1861-1899": 297651,
+    "1900-1929": 300385,
+    "1930-1945": 521731,
+    "1946-": 365914,
+    "all": 1485681
+   },
+   "pairs_gross": {
+    "1861-1899": 210975,
+    "1900-1929": 214066,
+    "1930-1945": 376258,
+    "1946-": 238736,
+    "all": 1040035
+   },
+   "pairs_net": {
+    "1861-1899": 148674,
+    "1900-1929": 174785,
+    "1930-1945": 304850,
+    "1946-": 199454,
+    "all": 827763
+   },
+   "docs_net": {
+    "1861-1899": 24759,
+    "1900-1929": 37618,
+    "1930-1945": 67777,
+    "1946-": 33507,
+    "all": 163661
+   },
+   "keys_gross": {
+    "1861-1899": 79638,
+    "1900-1929": 71127,
+    "1930-1945": 102434,
+    "1946-": 77395,
+    "all": 291017
+   },
+   "keys_net": {
+    "1861-1899": 74563,
+    "1900-1929": 67963,
+    "1930-1945": 99880,
+    "1946-": 75233,
+    "all": 280681
+   },
+   "keys_gross_absent_from_arm_vocab": 257157
+  },
+  "three_way_minus_agreement": {
+   "rows": {
+    "1861-1899": 437916,
+    "1900-1929": 393460,
+    "1930-1945": 596205,
+    "1946-": 458909,
+    "all": 1886490
+   },
+   "pairs_gross": {
+    "1861-1899": 290767,
+    "1900-1929": 276613,
+    "1930-1945": 434139,
+    "1946-": 302395,
+    "all": 1303914
+   },
+   "pairs_net": {
+    "1861-1899": 220006,
+    "1900-1929": 231615,
+    "1930-1945": 365336,
+    "1946-": 255812,
+    "all": 1072769
+   },
+   "docs_net": {
+    "1861-1899": 28826,
+    "1900-1929": 42368,
+    "1930-1945": 71741,
+    "1946-": 35717,
+    "all": 178652
+   },
+   "keys_gross": {
+    "1861-1899": 106709,
+    "1900-1929": 90734,
+    "1930-1945": 118655,
+    "1946-": 92920,
+    "all": 356905
+   },
+   "keys_net": {
+    "1861-1899": 99024,
+    "1900-1929": 86078,
+    "1930-1945": 115198,
+    "1946-": 90147,
+    "all": 341576
+   },
+   "keys_gross_absent_from_arm_vocab": 306158
+  }
+ },
+ "task3_extra": {
+  "three_net_pair_sources": {
+   "fc_only": {
+    "1861-1899": 39846,
+    "all": 119347,
+    "1900-1929": 26759,
+    "1930-1945": 28181,
+    "1946-": 24561
+   },
+   "fc_only+fs_only": {
+    "1861-1899": 640,
+    "all": 1864,
+    "1900-1929": 307,
+    "1930-1945": 433,
+    "1946-": 484
+   },
+   "fc_only+fs_only+int_fc": {
+    "1861-1899": 48,
+    "all": 97,
+    "1900-1929": 13,
+    "1930-1945": 13,
+    "1946-": 23
+   },
+   "fc_only+int_fc": {
+    "1861-1899": 2448,
+    "all": 6565,
+    "1900-1929": 1295,
+    "1930-1945": 1390,
+    "1946-": 1432
+   },
+   "fs_only": {
+    "1861-1899": 147630,
+    "all": 824762,
+    "1900-1929": 174315,
+    "1930-1945": 304152,
+    "1946-": 198665
+   },
+   "fs_only+int_fc": {
+    "1861-1899": 356,
+    "all": 1040,
+    "1900-1929": 150,
+    "1930-1945": 252,
+    "1946-": 282
+   },
+   "int_fc": {
+    "1861-1899": 29038,
+    "all": 119094,
+    "1900-1929": 28776,
+    "1930-1945": 30915,
+    "1946-": 30365
+   }
+  },
+  "three_net_pairs_last_token_equals_an_arm_key_last_token": {
+   "1861-1899": 47174,
+   "1900-1929": 30174,
+   "1930-1945": 33543,
+   "1946-": 30354,
+   "all": 141245
+  },
+  "fs_only_net_pairs_all_rows_overlap_an_editor_span": {
+   "1861-1899": 1378,
+   "1900-1929": 3208,
+   "1930-1945": 4632,
+   "1946-": 1251,
+   "all": 10469
+  }
+ },
+ "task4": {
+  "quirk_loader": {
+   "pairs": {
+    "all": {
+     "1861-1899": {
+      "pairs": 205163,
+      "no_surname": 879,
+      "unknown": 92951,
+      "undated": 0,
+      "nobody": 37489,
+      "several": 15717,
+      "exactly_one": 58127,
+      "known": 111333,
+      "in_office": 73844,
+      "share_in_office": 0.3599,
+      "share_exactly_one": 0.2833
+     },
+     "1900-1929": {
+      "pairs": 162651,
+      "no_surname": 871,
+      "unknown": 81592,
+      "undated": 0,
+      "nobody": 31700,
+      "several": 4675,
+      "exactly_one": 43813,
+      "known": 80188,
+      "in_office": 48488,
+      "share_in_office": 0.2981,
+      "share_exactly_one": 0.2694
+     },
+     "1930-1945": {
+      "pairs": 241201,
+      "no_surname": 837,
+      "unknown": 118968,
+      "undated": 0,
+      "nobody": 49690,
+      "several": 4872,
+      "exactly_one": 66834,
+      "known": 121396,
+      "in_office": 71706,
+      "share_in_office": 0.2973,
+      "share_exactly_one": 0.2771
+     },
+     "1946-": {
+      "pairs": 159913,
+      "no_surname": 1136,
+      "unknown": 87852,
+      "undated": 0,
+      "nobody": 30139,
+      "several": 3191,
+      "exactly_one": 37595,
+      "known": 70925,
+      "in_office": 40786,
+      "share_in_office": 0.2551,
+      "share_exactly_one": 0.2351
+     },
+     "all": {
+      "pairs": 768928,
+      "no_surname": 3723,
+      "unknown": 381363,
+      "undated": 0,
+      "nobody": 149018,
+      "several": 28455,
+      "exactly_one": 206369,
+      "known": 383842,
+      "in_office": 234824,
+      "share_in_office": 0.3054,
+      "share_exactly_one": 0.2684
+     }
+    },
+    "editor": {
+     "1861-1899": {
+      "pairs": 72162,
+      "no_surname": 235,
+      "unknown": 14629,
+      "undated": 0,
+      "nobody": 6853,
+      "several": 11230,
+      "exactly_one": 39215,
+      "known": 57298,
+      "in_office": 50445,
+      "share_in_office": 0.6991,
+      "share_exactly_one": 0.5434
+     },
+     "1900-1929": {
+      "pairs": 47330,
+      "no_surname": 174,
+      "unknown": 10396,
+      "undated": 0,
+      "nobody": 9466,
+      "several": 2087,
+      "exactly_one": 25207,
+      "known": 36760,
+      "in_office": 27294,
+      "share_in_office": 0.5767,
+      "share_exactly_one": 0.5326
+     },
+     "1930-1945": {
+      "pairs": 75006,
+      "no_surname": 107,
+      "unknown": 12468,
+      "undated": 0,
+      "nobody": 15731,
+      "several": 3282,
+      "exactly_one": 43418,
+      "known": 62431,
+      "in_office": 46700,
+      "share_in_office": 0.6226,
+      "share_exactly_one": 0.5789
+     },
+     "1946-": {
+      "pairs": 29007,
+      "no_surname": 16,
+      "unknown": 5979,
+      "undated": 0,
+      "nobody": 7291,
+      "several": 1269,
+      "exactly_one": 14452,
+      "known": 23012,
+      "in_office": 15721,
+      "share_in_office": 0.542,
+      "share_exactly_one": 0.4982
+     },
+     "all": {
+      "pairs": 223505,
+      "no_surname": 532,
+      "unknown": 43472,
+      "undated": 0,
+      "nobody": 39341,
+      "several": 17868,
+      "exactly_one": 122292,
+      "known": 179501,
+      "in_office": 140160,
+      "share_in_office": 0.6271,
+      "share_exactly_one": 0.5472
+     }
+    },
+    "added": {
+     "1861-1899": {
+      "pairs": 133001,
+      "no_surname": 644,
+      "unknown": 78322,
+      "undated": 0,
+      "nobody": 30636,
+      "several": 4487,
+      "exactly_one": 18912,
+      "known": 54035,
+      "in_office": 23399,
+      "share_in_office": 0.1759,
+      "share_exactly_one": 0.1422
+     },
+     "1900-1929": {
+      "pairs": 115321,
+      "no_surname": 697,
+      "unknown": 71196,
+      "undated": 0,
+      "nobody": 22234,
+      "several": 2588,
+      "exactly_one": 18606,
+      "known": 43428,
+      "in_office": 21194,
+      "share_in_office": 0.1838,
+      "share_exactly_one": 0.1613
+     },
+     "1930-1945": {
+      "pairs": 166195,
+      "no_surname": 730,
+      "unknown": 106500,
+      "undated": 0,
+      "nobody": 33959,
+      "several": 1590,
+      "exactly_one": 23416,
+      "known": 58965,
+      "in_office": 25006,
+      "share_in_office": 0.1505,
+      "share_exactly_one": 0.1409
+     },
+     "1946-": {
+      "pairs": 130906,
+      "no_surname": 1120,
+      "unknown": 81873,
+      "undated": 0,
+      "nobody": 22848,
+      "several": 1922,
+      "exactly_one": 23143,
+      "known": 47913,
+      "in_office": 25065,
+      "share_in_office": 0.1915,
+      "share_exactly_one": 0.1768
+     },
+     "all": {
+      "pairs": 545423,
+      "no_surname": 3191,
+      "unknown": 337891,
+      "undated": 0,
+      "nobody": 109677,
+      "several": 10587,
+      "exactly_one": 84077,
+      "known": 204341,
+      "in_office": 94664,
+      "share_in_office": 0.1736,
+      "share_exactly_one": 0.1542
+     }
+    }
+   },
+   "keys": {
+    "added/all": {
+     "keys": 152238,
+     "known": 32214,
+     "in_office": 7503,
+     "exactly_one": 6837
+    },
+    "all/all": {
+     "keys": 157028,
+     "known": 33218,
+     "in_office": 7953,
+     "exactly_one": 7194
+    },
+    "all/1861-1899": {
+     "keys": 62055,
+     "known": 14763,
+     "in_office": 2867,
+     "exactly_one": 2592
+    },
+    "editor/all": {
+     "keys": 11377,
+     "known": 2968,
+     "in_office": 1292,
+     "exactly_one": 1160
+    },
+    "all/1900-1929": {
+     "keys": 39778,
+     "known": 8019,
+     "in_office": 1713,
+     "exactly_one": 1563
+    },
+    "all/1930-1945": {
+     "keys": 39439,
+     "known": 8120,
+     "in_office": 1911,
+     "exactly_one": 1752
+    },
+    "all/1946-": {
+     "keys": 32664,
+     "known": 7474,
+     "in_office": 2334,
+     "exactly_one": 2074
+    }
+   }
+  },
+  "elementtree_loader": {
+   "pairs": {
+    "all": {
+     "1861-1899": {
+      "pairs": 205163,
+      "no_surname": 879,
+      "unknown": 92951,
+      "undated": 0,
+      "nobody": 37478,
+      "several": 15717,
+      "exactly_one": 58138,
+      "known": 111333,
+      "in_office": 73855,
+      "share_in_office": 0.36,
+      "share_exactly_one": 0.2834
+     },
+     "1900-1929": {
+      "pairs": 162651,
+      "no_surname": 871,
+      "unknown": 81592,
+      "undated": 0,
+      "nobody": 31700,
+      "several": 4675,
+      "exactly_one": 43813,
+      "known": 80188,
+      "in_office": 48488,
+      "share_in_office": 0.2981,
+      "share_exactly_one": 0.2694
+     },
+     "1930-1945": {
+      "pairs": 241201,
+      "no_surname": 837,
+      "unknown": 118968,
+      "undated": 0,
+      "nobody": 49690,
+      "several": 4872,
+      "exactly_one": 66834,
+      "known": 121396,
+      "in_office": 71706,
+      "share_in_office": 0.2973,
+      "share_exactly_one": 0.2771
+     },
+     "1946-": {
+      "pairs": 159913,
+      "no_surname": 1136,
+      "unknown": 87852,
+      "undated": 0,
+      "nobody": 30139,
+      "several": 3191,
+      "exactly_one": 37595,
+      "known": 70925,
+      "in_office": 40786,
+      "share_in_office": 0.2551,
+      "share_exactly_one": 0.2351
+     },
+     "all": {
+      "pairs": 768928,
+      "no_surname": 3723,
+      "unknown": 381363,
+      "undated": 0,
+      "nobody": 149007,
+      "several": 28455,
+      "exactly_one": 206380,
+      "known": 383842,
+      "in_office": 234835,
+      "share_in_office": 0.3054,
+      "share_exactly_one": 0.2684
+     }
+    },
+    "editor": {
+     "1861-1899": {
+      "pairs": 72162,
+      "no_surname": 235,
+      "unknown": 14629,
+      "undated": 0,
+      "nobody": 6848,
+      "several": 11230,
+      "exactly_one": 39220,
+      "known": 57298,
+      "in_office": 50450,
+      "share_in_office": 0.6991,
+      "share_exactly_one": 0.5435
+     },
+     "1900-1929": {
+      "pairs": 47330,
+      "no_surname": 174,
+      "unknown": 10396,
+      "undated": 0,
+      "nobody": 9466,
+      "several": 2087,
+      "exactly_one": 25207,
+      "known": 36760,
+      "in_office": 27294,
+      "share_in_office": 0.5767,
+      "share_exactly_one": 0.5326
+     },
+     "1930-1945": {
+      "pairs": 75006,
+      "no_surname": 107,
+      "unknown": 12468,
+      "undated": 0,
+      "nobody": 15731,
+      "several": 3282,
+      "exactly_one": 43418,
+      "known": 62431,
+      "in_office": 46700,
+      "share_in_office": 0.6226,
+      "share_exactly_one": 0.5789
+     },
+     "1946-": {
+      "pairs": 29007,
+      "no_surname": 16,
+      "unknown": 5979,
+      "undated": 0,
+      "nobody": 7291,
+      "several": 1269,
+      "exactly_one": 14452,
+      "known": 23012,
+      "in_office": 15721,
+      "share_in_office": 0.542,
+      "share_exactly_one": 0.4982
+     },
+     "all": {
+      "pairs": 223505,
+      "no_surname": 532,
+      "unknown": 43472,
+      "undated": 0,
+      "nobody": 39336,
+      "several": 17868,
+      "exactly_one": 122297,
+      "known": 179501,
+      "in_office": 140165,
+      "share_in_office": 0.6271,
+      "share_exactly_one": 0.5472
+     }
+    },
+    "added": {
+     "1861-1899": {
+      "pairs": 133001,
+      "no_surname": 644,
+      "unknown": 78322,
+      "undated": 0,
+      "nobody": 30630,
+      "several": 4487,
+      "exactly_one": 18918,
+      "known": 54035,
+      "in_office": 23405,
+      "share_in_office": 0.176,
+      "share_exactly_one": 0.1422
+     },
+     "1900-1929": {
+      "pairs": 115321,
+      "no_surname": 697,
+      "unknown": 71196,
+      "undated": 0,
+      "nobody": 22234,
+      "several": 2588,
+      "exactly_one": 18606,
+      "known": 43428,
+      "in_office": 21194,
+      "share_in_office": 0.1838,
+      "share_exactly_one": 0.1613
+     },
+     "1930-1945": {
+      "pairs": 166195,
+      "no_surname": 730,
+      "unknown": 106500,
+      "undated": 0,
+      "nobody": 33959,
+      "several": 1590,
+      "exactly_one": 23416,
+      "known": 58965,
+      "in_office": 25006,
+      "share_in_office": 0.1505,
+      "share_exactly_one": 0.1409
+     },
+     "1946-": {
+      "pairs": 130906,
+      "no_surname": 1120,
+      "unknown": 81873,
+      "undated": 0,
+      "nobody": 22848,
+      "several": 1922,
+      "exactly_one": 23143,
+      "known": 47913,
+      "in_office": 25065,
+      "share_in_office": 0.1915,
+      "share_exactly_one": 0.1768
+     },
+     "all": {
+      "pairs": 545423,
+      "no_surname": 3191,
+      "unknown": 337891,
+      "undated": 0,
+      "nobody": 109671,
+      "several": 10587,
+      "exactly_one": 84083,
+      "known": 204341,
+      "in_office": 94670,
+      "share_in_office": 0.1736,
+      "share_exactly_one": 0.1542
+     }
+    }
+   },
+   "keys": {
+    "added/all": {
+     "keys": 152238,
+     "known": 32214,
+     "in_office": 7504,
+     "exactly_one": 6838
+    },
+    "all/all": {
+     "keys": 157028,
+     "known": 33218,
+     "in_office": 7954,
+     "exactly_one": 7195
+    },
+    "all/1861-1899": {
+     "keys": 62055,
+     "known": 14763,
+     "in_office": 2868,
+     "exactly_one": 2593
+    },
+    "editor/all": {
+     "keys": 11377,
+     "known": 2968,
+     "in_office": 1292,
+     "exactly_one": 1160
+    },
+    "all/1900-1929": {
+     "keys": 39778,
+     "known": 8019,
+     "in_office": 1713,
+     "exactly_one": 1563
+    },
+    "all/1930-1945": {
+     "keys": 39439,
+     "known": 8120,
+     "in_office": 1911,
+     "exactly_one": 1752
+    },
+    "all/1946-": {
+     "keys": 32664,
+     "known": 7474,
+     "in_office": 2334,
+     "exactly_one": 2074
+    }
+   }
+  }
+ }
+}

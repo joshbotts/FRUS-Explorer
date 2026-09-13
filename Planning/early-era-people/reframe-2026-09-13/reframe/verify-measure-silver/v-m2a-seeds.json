@@ -1,0 +1,69 @@
+{
+ "by_band": {
+  "1861-1899": {
+   "docs": 18,
+   "seeded": 44,
+   "marked_spans": 44,
+   "marked_equals_seeded_doc": 18,
+   "marked_not_seeded": 0,
+   "seeded_not_marked": 0,
+   "kept_exact": 26,
+   "gold_flag_seeded_true": 26,
+   "gold_flag_seeded_but_not_in_manifest_seeds": 0,
+   "marked_overlapping_gold": 44,
+   "overlapped": 18
+  },
+  "1900-1929": {
+   "docs": 15,
+   "seeded": 17,
+   "marked_spans": 17,
+   "marked_equals_seeded_doc": 15,
+   "marked_not_seeded": 0,
+   "seeded_not_marked": 0,
+   "overlapped": 15,
+   "gold_flag_seeded_true": 2,
+   "gold_flag_seeded_but_not_in_manifest_seeds": 0,
+   "marked_overlapping_gold": 17,
+   "kept_exact": 2
+  },
+  "1930-1945": {
+   "docs": 15,
+   "seeded": 15,
+   "marked_spans": 15,
+   "marked_equals_seeded_doc": 15,
+   "marked_not_seeded": 0,
+   "seeded_not_marked": 0,
+   "kept_exact": 14,
+   "gold_flag_seeded_true": 14,
+   "gold_flag_seeded_but_not_in_manifest_seeds": 0,
+   "marked_overlapping_gold": 15,
+   "overlapped": 1
+  },
+  "1946-": {
+   "docs": 16,
+   "seeded": 12,
+   "marked_spans": 12,
+   "marked_equals_seeded_doc": 16,
+   "marked_not_seeded": 0,
+   "seeded_not_marked": 0,
+   "gold_flag_seeded_true": 11,
+   "gold_flag_seeded_but_not_in_manifest_seeds": 0,
+   "marked_overlapping_gold": 12,
+   "kept_exact": 11,
+   "overlapped": 1
+  }
+ },
+ "total": {
+  "docs": 64,
+  "seeded": 88,
+  "marked_spans": 88,
+  "marked_equals_seeded_doc": 64,
+  "marked_not_seeded": 0,
+  "seeded_not_marked": 0,
+  "kept_exact": 53,
+  "gold_flag_seeded_true": 53,
+  "gold_flag_seeded_but_not_in_manifest_seeds": 0,
+  "marked_overlapping_gold": 88,
+  "overlapped": 35
+ }
+}

@@ -1,0 +1,127 @@
+{
+ "added_pairs": 545423,
+ "added_pairs_by_prose_subtype": {
+  "has_prose_p": [
+   364080,
+   0.6675
+  ],
+  "no_prose": [
+   130518,
+   0.2393
+  ],
+  "prose_list_only": [
+   30443,
+   0.0558
+  ],
+  "prose_table_only": [
+   20375,
+   0.0374
+  ],
+  "prose_quote_no_p": [
+   7,
+   0.0
+  ]
+ },
+ "added_rows_fine": {
+  "prose:p": [
+   724547,
+   0.7421
+  ],
+  "apparatus": [
+   86382,
+   0.0885
+  ],
+  "note": [
+   67321,
+   0.069
+  ],
+  "prose:list": [
+   56016,
+   0.0574
+  ],
+  "prose:table": [
+   26571,
+   0.0272
+  ],
+  "head": [
+   12141,
+   0.0124
+  ],
+  "other_head": [
+   3369,
+   0.0035
+  ],
+  "prose:quote": [
+   7,
+   0.0
+  ]
+ },
+ "three_way_net_pairs": 1072769,
+ "three_way_net_pairs_supported_only_by_control_side_spans_of_agreed_mentions": [
+  119094,
+  0.111
+ ],
+ "three_way_net_pairs_last_token_of_an_arm_key": [
+  141245,
+  0.1317
+ ],
+ "illustration_pooled_false_pairs": 78431,
+ "illustration_band_weighted_false_pairs": 95227,
+ "band_weighted_P": 0.8762,
+ "by_band": {
+  "1861-1899": 4103,
+  "1900-1929": 4392,
+  "1930-1945": 61482,
+  "1946-": 25250
+ },
+ "gold_predicted_key_share_by_band": {
+  "1861-1899": 0.408,
+  "1900-1929": 0.151,
+  "1930-1945": 0.208,
+  "1946-": 0.233
+ },
+ "corpus_pair_share_by_band": {
+  "1861-1899": 0.267,
+  "1900-1929": 0.212,
+  "1930-1945": 0.314,
+  "1946-": 0.208
+ },
+ "pocom_added": {
+  "quirk_loader": {
+   "pairs": 545423,
+   "no_surname": 3191,
+   "unknown": 337891,
+   "undated": 0,
+   "nobody": 109677,
+   "several": 10587,
+   "exactly_one": 84077,
+   "known": 204341,
+   "in_office": 94664,
+   "share_in_office": 0.1736,
+   "share_exactly_one": 0.1542
+  },
+  "elementtree_loader": {
+   "pairs": 545423,
+   "no_surname": 3191,
+   "unknown": 337891,
+   "undated": 0,
+   "nobody": 109671,
+   "several": 10587,
+   "exactly_one": 84083,
+   "known": 204341,
+   "in_office": 94670,
+   "share_in_office": 0.1736,
+   "share_exactly_one": 0.1542
+  }
+ },
+ "pocom_all": {
+  "quirk_loader": {
+   "in_office": 234824,
+   "exactly_one": 206369
+  },
+  "elementtree_loader": {
+   "in_office": 234835,
+   "exactly_one": 206380
+  }
+ }
+}

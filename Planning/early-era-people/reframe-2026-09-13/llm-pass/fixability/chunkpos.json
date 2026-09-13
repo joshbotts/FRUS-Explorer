@@ -1,0 +1,21 @@
+{
+ "stat": {
+  "docs": 64,
+  "docs_multi_chunk": 8,
+  "chars": 144741
+ },
+ "positions": {
+  "filtered_sweep": {
+   "first_chunk_only|tp": 351,
+   "first_chunk_only|fp": 354,
+   "beyond_first_chunk|tp": 27,
+   "beyond_first_chunk|fp": 4
+  },
+  "filtered_control": {
+   "first_chunk_only|tp": 231,
+   "first_chunk_only|fp": 57,
+   "beyond_first_chunk|tp": 25,
+   "beyond_first_chunk|fp": 3
+  }
+ }
+}

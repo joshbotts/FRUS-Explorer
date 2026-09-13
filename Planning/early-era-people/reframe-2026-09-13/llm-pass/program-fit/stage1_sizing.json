@@ -1,0 +1,55 @@
+{
+ "documents": 64,
+ "gold_mentions": 406,
+ "r0_chars_total": 144741,
+ "r0_chars_min_median_max": [
+  811,
+  2028,
+  7160
+ ],
+ "by_band": {
+  "1861-1899": {
+   "docs": 18,
+   "chars": 52199,
+   "gold": 186,
+   "pre1910": 18
+  },
+  "1900-1929": {
+   "docs": 15,
+   "chars": 23495,
+   "gold": 55,
+   "pre1910": 9
+  },
+  "1930-1945": {
+   "docs": 15,
+   "chars": 26711,
+   "gold": 61,
+   "pre1910": 0
+  },
+  "1946-": {
+   "docs": 16,
+   "chars": 42336,
+   "gold": 104,
+   "pre1910": 0
+  }
+ },
+ "pre1910_docs": 27,
+ "candidate_spans_total_by_arm": {
+  "editor": 88,
+  "control_raw": 343,
+  "control_filtered": 316,
+  "sweep_filtered": 736,
+  "sweep_raw": 1003
+ },
+ "three_way_union_distinct_offsets_total": 906,
+ "three_way_union_max_per_doc": 46,
+ "qwen_fit": {
+  "heads": 267,
+  "tokens_per_chunk_overhead": 183.5,
+  "tokens_per_char": 0.21495,
+  "chars_per_token": 4.652,
+  "sum_prompt_tokens": 220645005,
+  "sum_chunks": 330979,
+  "sum_chars_scanned": 679401514
+ }
+}

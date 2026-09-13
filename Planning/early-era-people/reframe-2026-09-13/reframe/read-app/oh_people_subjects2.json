@@ -1,0 +1,118 @@
+{
+ "taxonomy_len": 508,
+ "taxonomy_first_item_keys": [
+  "category",
+  "displayName",
+  "parentSlug",
+  "slug",
+  "subcategory"
+ ],
+ "taxonomy_categories": [
+  [
+   "places",
+   274
+  ],
+  [
+   "people",
+   121
+  ],
+  [
+   "topics",
+   113
+  ]
+ ],
+ "taxonomy_people_tags_count": 121,
+ "taxonomy_people_tags_sample": [
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "presidents"
+  },
+  {
+   "subcategory": "presidents"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "presidents"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "presidents"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  },
+  {
+   "subcategory": "secretaries-of-state"
+  }
+ ],
+ "dsi_vocab_categories": [
+  [
+   "Foreign Economic Policy",
+   122
+  ],
+  [
+   "Global Issues",
+   52
+  ],
+  [
+   "Arms Control and Disarmament",
+   49
+  ],
+  [
+   "Warfare",
+   49
+  ],
+  [
+   "Bilateral Relations",
+   47
+  ],
+  [
+   "Politico-Military Issues",
+   43
+  ],
+  [
+   "International Law",
+   35
+  ],
+  [
+   "Human Rights",
+   31
+  ],
+  [
+   "Science and Technology",
+   18
+  ],
+  [
+   "International Organizations",
+   17
+  ],
+  [
+   "Information Programs",
+   14
+  ],
+  [
+   "Department of State",
+   11
+  ],
+  [
+   "Uncategorized",
+   3
+  ]
+ ],
+ "dsi_person_like": []
+}

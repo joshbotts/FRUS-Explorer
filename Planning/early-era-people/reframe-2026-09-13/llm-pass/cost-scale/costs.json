@@ -1,0 +1,5075 @@
+{
+ "inputs": {
+  "qwen_chars_per_token_text": 4.6442,
+  "qwen_overhead_tokens_per_chunk": 183.03,
+  "mentions_scenarios": [
+   1432587,
+   1905721,
+   3656238
+  ],
+  "sweep_gold_ratio": 0.751729637280902,
+  "multipliers": {
+   "haiku-4.5": [
+    1.0,
+    1.12,
+    1.25
+   ],
+   "sonnet-5": [
+    1.3,
+    1.46,
+    1.63
+   ],
+   "opus-5": [
+    1.0,
+    1.31,
+    1.69
+   ]
+  },
+  "prefix_tokens": [
+   1100,
+   3000,
+   6000
+  ],
+  "cache_hit": [
+   1.0,
+   0.9,
+   0.5
+  ],
+  "think": {
+   "A": {
+    "low": [
+     0.1,
+     50
+    ],
+    "high": [
+     1.0,
+     500
+    ]
+   },
+   "B": {
+    "low": [
+     0.1,
+     50
+    ],
+    "high": [
+     1.0,
+     500
+    ]
+   },
+   "C": {
+    "low": [
+     0.3,
+     100
+    ],
+    "high": [
+     2.0,
+     1500
+    ]
+   }
+  },
+  "haiku_min_cache": 4096
+ },
+ "rows": [
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    250,
+    425,
+    1888
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    250,
+    425,
+    1352
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    125,
+    213,
+    944
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    125,
+    213,
+    676
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    378,
+    663,
+    2887
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    25.5,
+    47.6,
+    199.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    378,
+    663,
+    2351
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    25.5,
+    47.6,
+    199.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    189,
+    332,
+    1444
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    25.5,
+    47.6,
+    199.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "A",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    189,
+    332,
+    1175
+   ],
+   "input_tok_M": [
+    172.2,
+    280.6,
+    1387.7
+   ],
+   "output_tok_M": [
+    15.6,
+    28.9,
+    100.2
+   ],
+   "thinking_tok_M": [
+    25.5,
+    47.6,
+    199.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    265,
+    471,
+    1722
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    265,
+    471,
+    1185
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    132,
+    235,
+    861
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    132,
+    235,
+    593
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    396,
+    735,
+    2525
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    396,
+    735,
+    1989
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    198,
+    368,
+    1262
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "B",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    198,
+    368,
+    994
+   ],
+   "input_tok_M": [
+    182.0,
+    300.0,
+    1416.3
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    7,
+    13,
+    33
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    7,
+    13,
+    25
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    4,
+    6,
+    16
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    4,
+    6,
+    12
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    16,
+    30,
+    70
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    16,
+    30,
+    61
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    8,
+    15,
+    35
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    8,
+    15,
+    31
+   ],
+   "input_tok_M": [
+    4.7,
+    9.0,
+    25.9
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    71,
+    135,
+    355
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    71,
+    135,
+    264
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    36,
+    67,
+    178
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    36,
+    67,
+    132
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    174,
+    324,
+    767
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    174,
+    324,
+    676
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    87,
+    162,
+    384
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    87,
+    162,
+    338
+   ],
+   "input_tok_M": [
+    45.2,
+    91.6,
+    277.0
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    2,
+    4,
+    10
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    2,
+    4,
+    7
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    1,
+    2,
+    5
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    1,
+    2,
+    4
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    5,
+    9,
+    20
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    5,
+    9,
+    18
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    2,
+    4,
+    10
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    2,
+    4,
+    9
+   ],
+   "input_tok_M": [
+    1.7,
+    3.0,
+    7.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    6,
+    11,
+    26
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    6,
+    11,
+    20
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    3,
+    5,
+    13
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    3,
+    5,
+    10
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    13,
+    23,
+    54
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    13,
+    23,
+    47
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    7,
+    12,
+    27
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "haiku-4.5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    7,
+    12,
+    24
+   ],
+   "input_tok_M": [
+    4.4,
+    7.8,
+    20.7
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    653,
+    1056,
+    4410
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    2.9,
+    5.3,
+    22.9
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    614,
+    875,
+    3337
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    2.9,
+    5.3,
+    22.9
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    326,
+    528,
+    2205
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    2.9,
+    5.3,
+    22.9
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    307,
+    438,
+    1669
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    2.9,
+    5.3,
+    22.9
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    913,
+    1532,
+    6471
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    28.9,
+    52.8,
+    229.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    874,
+    1351,
+    5398
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    28.9,
+    52.8,
+    229.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    457,
+    766,
+    3235
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    28.9,
+    52.8,
+    229.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    437,
+    675,
+    2699
+   ],
+   "input_tok_M": [
+    216.3,
+    330.5,
+    1443.5
+   ],
+   "output_tok_M": [
+    19.1,
+    34.2,
+    129.4
+   ],
+   "thinking_tok_M": [
+    28.9,
+    52.8,
+    229.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    649,
+    1107,
+    3733
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    2.6,
+    5.3,
+    16.1
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    610,
+    926,
+    2661
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    2.6,
+    5.3,
+    16.1
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    325,
+    553,
+    1867
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    2.6,
+    5.3,
+    16.1
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    305,
+    463,
+    1330
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    2.6,
+    5.3,
+    16.1
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    886,
+    1582,
+    5179
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    847,
+    1401,
+    4107
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    443,
+    791,
+    2590
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    424,
+    701,
+    2053
+   ],
+   "input_tok_M": [
+    229.1,
+    355.9,
+    1480.8
+   ],
+   "output_tok_M": [
+    16.5,
+    34.2,
+    61.1
+   ],
+   "thinking_tok_M": [
+    26.3,
+    52.8,
+    160.7
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    18,
+    33,
+    77
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    17,
+    27,
+    61
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    9,
+    16,
+    39
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    9,
+    13,
+    31
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    35,
+    63,
+    144
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    34,
+    57,
+    127
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    17,
+    31,
+    72
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    17,
+    28,
+    64
+   ],
+   "input_tok_M": [
+    5.9,
+    10.7,
+    28.2
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    187,
+    340,
+    835
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    174,
+    274,
+    652
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    94,
+    170,
+    418
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    87,
+    137,
+    326
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    370,
+    678,
+    1579
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    357,
+    612,
+    1395
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    185,
+    339,
+    789
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    178,
+    306,
+    698
+   ],
+   "input_tok_M": [
+    56.5,
+    106.9,
+    298.8
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    6,
+    10,
+    23
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    6,
+    9,
+    19
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    3,
+    5,
+    12
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    3,
+    4,
+    9
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    11,
+    19,
+    41
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    10,
+    17,
+    37
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    5,
+    9,
+    21
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    5,
+    8,
+    18
+   ],
+   "input_tok_M": [
+    2.2,
+    3.6,
+    8.6
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    16,
+    27,
+    62
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    15,
+    23,
+    49
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    8,
+    14,
+    31
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    8,
+    11,
+    25
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    28,
+    50,
+    112
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    28,
+    45,
+    99
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    14,
+    25,
+    56
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "sonnet-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    14,
+    23,
+    50
+   ],
+   "input_tok_M": [
+    5.6,
+    9.4,
+    22.8
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    1315,
+    2466,
+    11196
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.1,
+    23.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    1218,
+    2014,
+    8515
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.1,
+    23.4
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    658,
+    1233,
+    5598
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.1,
+    23.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    609,
+    1007,
+    4257
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.1,
+    23.4
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    1888,
+    3603,
+    16452
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    25.5,
+    50.5,
+    233.6
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    1791,
+    3150,
+    13770
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    25.5,
+    50.5,
+    233.6
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    944,
+    1801,
+    8226
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    25.5,
+    50.5,
+    233.6
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "A",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    895,
+    1575,
+    6885
+   ],
+   "input_tok_M": [
+    172.2,
+    308.5,
+    1452.4
+   ],
+   "output_tok_M": [
+    15.6,
+    31.9,
+    134.0
+   ],
+   "thinking_tok_M": [
+    25.5,
+    50.5,
+    233.6
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    1339,
+    2643,
+    9628
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.3,
+    17.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    1242,
+    2191,
+    6947
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.3,
+    17.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    669,
+    1322,
+    4814
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.3,
+    17.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    621,
+    1095,
+    3473
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    2.5,
+    5.3,
+    17.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    1891,
+    3832,
+    13443
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    24.5,
+    52.8,
+    169.6
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    1793,
+    3380,
+    10762
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    24.5,
+    52.8,
+    169.6
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    945,
+    1916,
+    6721
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    24.5,
+    52.8,
+    169.6
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "B",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    897,
+    1690,
+    5381
+   ],
+   "input_tok_M": [
+    182.0,
+    331.2,
+    1491.0
+   ],
+   "output_tok_M": [
+    14.7,
+    34.2,
+    70.0
+   ],
+   "thinking_tok_M": [
+    24.5,
+    52.8,
+    169.6
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    40,
+    78,
+    196
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    37,
+    63,
+    155
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    20,
+    39,
+    98
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    19,
+    32,
+    77
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.4,
+    0.7
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    81,
+    153,
+    361
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    78,
+    138,
+    320
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    40,
+    77,
+    180
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_all",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    39,
+    69,
+    160
+   ],
+   "input_tok_M": [
+    4.7,
+    9.9,
+    28.5
+   ],
+   "output_tok_M": [
+    0.5,
+    0.8,
+    1.4
+   ],
+   "thinking_tok_M": [
+    1.8,
+    3.4,
+    7.3
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    411,
+    816,
+    2105
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    378,
+    651,
+    1647
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    206,
+    408,
+    1053
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    189,
+    325,
+    823
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    2.2,
+    4.0,
+    8.1
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    870,
+    1660,
+    3963
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    836,
+    1495,
+    3505
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    435,
+    830,
+    1982
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_all",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    418,
+    748,
+    1752
+   ],
+   "input_tok_M": [
+    45.2,
+    100.1,
+    302.2
+   ],
+   "output_tok_M": [
+    5.2,
+    8.7,
+    15.7
+   ],
+   "thinking_tok_M": [
+    20.6,
+    37.7,
+    82.4
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    13,
+    25,
+    58
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    12,
+    20,
+    47
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    7,
+    12,
+    29
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    6,
+    10,
+    24
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.1,
+    0.1,
+    0.2
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    24,
+    45,
+    104
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    24,
+    41,
+    92
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    12,
+    23,
+    52
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_marked_live",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    12,
+    21,
+    46
+   ],
+   "input_tok_M": [
+    1.7,
+    3.4,
+    8.8
+   ],
+   "output_tok_M": [
+    0.1,
+    0.2,
+    0.4
+   ],
+   "thinking_tok_M": [
+    0.5,
+    0.9,
+    2.0
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    34,
+    65,
+    156
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    32,
+    53,
+    125
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    17,
+    32,
+    78
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "low",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    16,
+    27,
+    62
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    0.2,
+    0.3,
+    0.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": false,
+   "cached": false,
+   "dollars": [
+    65,
+    121,
+    280
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": false,
+   "cached": true,
+   "dollars": [
+    63,
+    110,
+    250
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": true,
+   "cached": false,
+   "dollars": [
+    33,
+    61,
+    140
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "model": "opus-5",
+   "shape": "C_union_live",
+   "effort": "high",
+   "batch": true,
+   "cached": true,
+   "dollars": [
+    31,
+    55,
+    125
+   ],
+   "input_tok_M": [
+    4.4,
+    8.7,
+    23.2
+   ],
+   "output_tok_M": [
+    0.3,
+    0.6,
+    1.1
+   ],
+   "thinking_tok_M": [
+    1.4,
+    2.5,
+    5.5
+   ],
+   "cache_eligible": [
+    true,
+    true,
+    true
+   ]
+  }
+ ],
+ "volumes": {
+  "haiku-4.5": {
+   "A": [
+    {
+     "requests": 19668,
+     "batches": 3,
+     "body_MB": 804,
+     "notes": "packing 40k/40k; mentions 1432587; 8.1 tok/mention; cpt 4.644"
+    },
+    {
+     "requests": 37277,
+     "batches": 5,
+     "body_MB": 1181,
+     "notes": "packing 20k/40k; mentions 1905721; 13.1 tok/mention; cpt 4.147"
+    },
+    {
+     "requests": 199163,
+     "batches": 20,
+     "body_MB": 5294,
+     "notes": "packing per-doc; mentions 3656238; 26.3 tok/mention; cpt 3.715"
+    }
+   ],
+   "B": [
+    {
+     "requests": 19668,
+     "batches": 4,
+     "body_MB": 852,
+     "notes": "candidates 2015980 (doc x surface); candidate chars 45545357"
+    },
+    {
+     "requests": 37277,
+     "batches": 5,
+     "body_MB": 1266,
+     "notes": "candidates 3196831 (exact span); candidate chars 80577569"
+    },
+    {
+     "requests": 199163,
+     "batches": 21,
+     "body_MB": 5406,
+     "notes": "candidates 3196831 (exact span + arm flags); candidate chars 106152217"
+    }
+   ],
+   "C_marked_all": [
+    {
+     "requests": 607,
+     "batches": 1,
+     "body_MB": 23,
+     "notes": "rows 30327; 616 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 1214,
+     "batches": 1,
+     "body_MB": 39,
+     "notes": "rows 30327; 733 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 3033,
+     "batches": 1,
+     "body_MB": 99,
+     "notes": "rows 30327; 927 chars/row; 10 rows/request"
+    }
+   ],
+   "C_union_all": [
+    {
+     "requests": 6813,
+     "batches": 1,
+     "body_MB": 217,
+     "notes": "rows 340614; 511 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 13625,
+     "batches": 2,
+     "body_MB": 392,
+     "notes": "rows 340614; 613 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 34062,
+     "batches": 4,
+     "body_MB": 1059,
+     "notes": "rows 340614; 781 chars/row; 10 rows/request"
+    }
+   ],
+   "C_marked_live": [
+    {
+     "requests": 166,
+     "batches": 1,
+     "body_MB": 8,
+     "notes": "rows 8296; 865 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 332,
+     "batches": 1,
+     "body_MB": 13,
+     "notes": "rows 8296; 1009 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 830,
+     "batches": 1,
+     "body_MB": 30,
+     "notes": "rows 8296; 1248 chars/row; 10 rows/request"
+    }
+   ],
+   "C_union_live": [
+    {
+     "requests": 458,
+     "batches": 1,
+     "body_MB": 21,
+     "notes": "rows 22854; 789 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 915,
+     "batches": 1,
+     "body_MB": 33,
+     "notes": "rows 22854; 917 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 2286,
+     "batches": 1,
+     "body_MB": 79,
+     "notes": "rows 22854; 1129 chars/row; 10 rows/request"
+    }
+   ]
+  },
+  "sonnet-5": {
+   "A": [
+    {
+     "requests": 19668,
+     "batches": 3,
+     "body_MB": 780,
+     "notes": "packing 40k/40k; mentions 1432587; 10.6 tok/mention; cpt 3.572"
+    },
+    {
+     "requests": 37277,
+     "batches": 4,
+     "body_MB": 1072,
+     "notes": "packing 20k/40k; mentions 1905721; 15.9 tok/mention; cpt 3.181"
+    },
+    {
+     "requests": 199163,
+     "batches": 16,
+     "body_MB": 4249,
+     "notes": "packing per-doc; mentions 3656238; 34.3 tok/mention; cpt 2.849"
+    }
+   ],
+   "B": [
+    {
+     "requests": 19668,
+     "batches": 4,
+     "body_MB": 828,
+     "notes": "candidates 2015980 (doc x surface); candidate chars 45545357"
+    },
+    {
+     "requests": 37277,
+     "batches": 5,
+     "body_MB": 1157,
+     "notes": "candidates 3196831 (exact span); candidate chars 80577569"
+    },
+    {
+     "requests": 199163,
+     "batches": 17,
+     "body_MB": 4360,
+     "notes": "candidates 3196831 (exact span + arm flags); candidate chars 106152217"
+    }
+   ],
+   "C_marked_all": [
+    {
+     "requests": 607,
+     "batches": 1,
+     "body_MB": 22,
+     "notes": "rows 30327; 616 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 1214,
+     "batches": 1,
+     "body_MB": 35,
+     "notes": "rows 30327; 733 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 3033,
+     "batches": 1,
+     "body_MB": 83,
+     "notes": "rows 30327; 927 chars/row; 10 rows/request"
+    }
+   ],
+   "C_union_all": [
+    {
+     "requests": 6813,
+     "batches": 1,
+     "body_MB": 209,
+     "notes": "rows 340614; 511 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 13625,
+     "batches": 2,
+     "body_MB": 352,
+     "notes": "rows 340614; 613 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 34062,
+     "batches": 4,
+     "body_MB": 880,
+     "notes": "rows 340614; 781 chars/row; 10 rows/request"
+    }
+   ],
+   "C_marked_live": [
+    {
+     "requests": 166,
+     "batches": 1,
+     "body_MB": 8,
+     "notes": "rows 8296; 865 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 332,
+     "batches": 1,
+     "body_MB": 12,
+     "notes": "rows 8296; 1009 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 830,
+     "batches": 1,
+     "body_MB": 25,
+     "notes": "rows 8296; 1248 chars/row; 10 rows/request"
+    }
+   ],
+   "C_union_live": [
+    {
+     "requests": 458,
+     "batches": 1,
+     "body_MB": 20,
+     "notes": "rows 22854; 789 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 915,
+     "batches": 1,
+     "body_MB": 31,
+     "notes": "rows 22854; 917 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 2286,
+     "batches": 1,
+     "body_MB": 67,
+     "notes": "rows 22854; 1129 chars/row; 10 rows/request"
+    }
+   ]
+  },
+  "opus-5": {
+   "A": [
+    {
+     "requests": 19668,
+     "batches": 3,
+     "body_MB": 804,
+     "notes": "packing 40k/40k; mentions 1432587; 8.1 tok/mention; cpt 4.644"
+    },
+    {
+     "requests": 37277,
+     "batches": 5,
+     "body_MB": 1113,
+     "notes": "packing 20k/40k; mentions 1905721; 14.6 tok/mention; cpt 3.545"
+    },
+    {
+     "requests": 199163,
+     "batches": 16,
+     "body_MB": 4127,
+     "notes": "packing per-doc; mentions 3656238; 35.6 tok/mention; cpt 2.748"
+    }
+   ],
+   "B": [
+    {
+     "requests": 19668,
+     "batches": 4,
+     "body_MB": 852,
+     "notes": "candidates 2015980 (doc x surface); candidate chars 45545357"
+    },
+    {
+     "requests": 37277,
+     "batches": 5,
+     "body_MB": 1198,
+     "notes": "candidates 3196831 (exact span); candidate chars 80577569"
+    },
+    {
+     "requests": 199163,
+     "batches": 16,
+     "body_MB": 4238,
+     "notes": "candidates 3196831 (exact span + arm flags); candidate chars 106152217"
+    }
+   ],
+   "C_marked_all": [
+    {
+     "requests": 607,
+     "batches": 1,
+     "body_MB": 23,
+     "notes": "rows 30327; 616 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 1214,
+     "batches": 1,
+     "body_MB": 36,
+     "notes": "rows 30327; 733 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 3033,
+     "batches": 1,
+     "body_MB": 81,
+     "notes": "rows 30327; 927 chars/row; 10 rows/request"
+    }
+   ],
+   "C_union_all": [
+    {
+     "requests": 6813,
+     "batches": 1,
+     "body_MB": 217,
+     "notes": "rows 340614; 511 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 13625,
+     "batches": 2,
+     "body_MB": 367,
+     "notes": "rows 340614; 613 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 34062,
+     "batches": 4,
+     "body_MB": 859,
+     "notes": "rows 340614; 781 chars/row; 10 rows/request"
+    }
+   ],
+   "C_marked_live": [
+    {
+     "requests": 166,
+     "batches": 1,
+     "body_MB": 8,
+     "notes": "rows 8296; 865 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 332,
+     "batches": 1,
+     "body_MB": 12,
+     "notes": "rows 8296; 1009 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 830,
+     "batches": 1,
+     "body_MB": 25,
+     "notes": "rows 8296; 1248 chars/row; 10 rows/request"
+    }
+   ],
+   "C_union_live": [
+    {
+     "requests": 458,
+     "batches": 1,
+     "body_MB": 21,
+     "notes": "rows 22854; 789 chars/row; 50 rows/request"
+    },
+    {
+     "requests": 915,
+     "batches": 1,
+     "body_MB": 32,
+     "notes": "rows 22854; 917 chars/row; 25 rows/request"
+    },
+    {
+     "requests": 2286,
+     "batches": 1,
+     "body_MB": 66,
+     "notes": "rows 22854; 1129 chars/row; 10 rows/request"
+    }
+   ]
+  }
+ },
+ "per_volume_shareA_sonnet5_batch_cached_low_central": {
+  "min": [
+   0.03,
+   "frus1919Parisv13"
+  ],
+  "p50": 1.57,
+  "max": [
+   3.1,
+   "frus1950v05"
+  ],
+  "top3": [
+   [
+    "frus1950v03",
+    3.01
+   ],
+   [
+    "frus1949v06",
+    3.03
+   ],
+   [
+    "frus1950v05",
+    3.1
+   ]
+  ]
+ }
+}

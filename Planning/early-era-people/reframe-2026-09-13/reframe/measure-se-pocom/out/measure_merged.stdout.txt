@@ -1,0 +1,6 @@
+{
+ "A0 vs earlier A 1861-1899": "PASS (all 24 fields equal)",
+ "A0 vs earlier A 1900-1905": "PASS (all 24 fields equal)",
+ "B0 vs earlier B 1861-1899": "PASS (all 24 fields equal)",
+ "B0 vs earlier B 1900-1905": "PASS (all 24 fields equal)"
+}

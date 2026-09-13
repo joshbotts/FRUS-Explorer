@@ -1,0 +1,459 @@
+{
+ "method": "Role 2 sizing (read-only, stdlib): the corpus-scale DISAGREEMENT set between the filtered NLTagger store (FC)\nand the filtered qwen3-14b sweep store (FS) over the 267-volume TEI-rule scope, and the post-hoc gold-sample\nceiling of verifying ONLY that set on top of the assessment's agreement arm (editor U (FS spans overlapping FC)).\n\nDefinitions (same overlap rule as measure-grains/grains.py: >0 chars shared, same document):\n  agree_S   FS spans overlapping >=1 FC span (the assessment's intersection, sweep side)\n  S_only    FS spans overlapping no FC span\n  C_only    FC spans overlapping no FS span\n  unmarked  a span overlapping no editor <persName> span (editor-covered spans need no verification)\n  disagreement set = (S_only U C_only) restricted to unmarked\nUnit counts: spans, distinct (document, surface_key) pairs (grains.surface_key), documents touched, and the\ncharacters of +/-WIN windows merged per document (clipped to the document length from llm-pass docs.tsv).\nWrites disagreement.json beside this file.",
+ "window_half_width_chars": 200,
+ "volumes": 267,
+ "documents_in_docs_tsv": 197534,
+ "corpus": {
+  "all": {
+   "agree_S": {
+    "spans": 1029227,
+    "doc_surface_keys": 570129,
+    "documents": 157357,
+    "surface_chars": 12692012,
+    "window_chars_all_spans": 220418697,
+    "window_chars_first_per_key": 144448409
+   },
+   "S_only": {
+    "spans": 1318318,
+    "doc_surface_keys": 912120,
+    "documents": 171716,
+    "surface_chars": 21920052,
+    "window_chars_all_spans": 245748951,
+    "window_chars_first_per_key": 194500723
+   },
+   "C_only": {
+    "spans": 211569,
+    "doc_surface_keys": 147673,
+    "documents": 67438,
+    "surface_chars": 1707829,
+    "window_chars_all_spans": 63825199,
+    "window_chars_first_per_key": 48076118
+   },
+   "disagreement": {
+    "spans": 1529887,
+    "doc_surface_keys": 1053359,
+    "documents": 179387,
+    "surface_chars": 23627881,
+    "window_chars_all_spans": 287492736,
+    "window_chars_first_per_key": 226841519
+   },
+   "pool": {
+    "spans": 2839444,
+    "doc_surface_keys": 1654239,
+    "documents": 195033,
+    "surface_chars": 38779282,
+    "window_chars_all_spans": 392837878,
+    "window_chars_first_per_key": 288248405
+   }
+  },
+  "1861-1899": {
+   "agree_S": {
+    "spans": 243718,
+    "doc_surface_keys": 136135,
+    "documents": 28622,
+    "surface_chars": 3350673,
+    "window_chars_all_spans": 55194609,
+    "window_chars_first_per_key": 35917161
+   },
+   "S_only": {
+    "spans": 234239,
+    "doc_surface_keys": 157866,
+    "documents": 25453,
+    "surface_chars": 4008870,
+    "window_chars_all_spans": 47974099,
+    "window_chars_first_per_key": 36079108
+   },
+   "C_only": {
+    "spans": 80074,
+    "doc_surface_keys": 50997,
+    "documents": 15833,
+    "surface_chars": 664353,
+    "window_chars_all_spans": 23044917,
+    "window_chars_first_per_key": 15817422
+   },
+   "disagreement": {
+    "spans": 314313,
+    "doc_surface_keys": 206453,
+    "documents": 28375,
+    "surface_chars": 4673223,
+    "window_chars_all_spans": 64102747,
+    "window_chars_first_per_key": 47569845
+   },
+   "pool": {
+    "spans": 633840,
+    "doc_surface_keys": 354930,
+    "documents": 32286,
+    "surface_chars": 8662614,
+    "window_chars_all_spans": 89744098,
+    "window_chars_first_per_key": 63376122
+   }
+  },
+  "1900-1929": {
+   "agree_S": {
+    "spans": 202761,
+    "doc_surface_keys": 120084,
+    "documents": 37557,
+    "surface_chars": 2683588,
+    "window_chars_all_spans": 43236628,
+    "window_chars_first_per_key": 29587166
+   },
+   "S_only": {
+    "spans": 266019,
+    "doc_surface_keys": 186791,
+    "documents": 39271,
+    "surface_chars": 4745873,
+    "window_chars_all_spans": 50044375,
+    "window_chars_first_per_key": 39611237
+   },
+   "C_only": {
+    "spans": 44918,
+    "doc_surface_keys": 31393,
+    "documents": 13467,
+    "surface_chars": 371890,
+    "window_chars_all_spans": 13623854,
+    "window_chars_first_per_key": 10215605
+   },
+   "disagreement": {
+    "spans": 310937,
+    "doc_surface_keys": 217138,
+    "documents": 41691,
+    "surface_chars": 5117763,
+    "window_chars_all_spans": 59660290,
+    "window_chars_first_per_key": 46966023
+   },
+   "pool": {
+    "spans": 579120,
+    "doc_surface_keys": 351107,
+    "documents": 48191,
+    "surface_chars": 8364862,
+    "window_chars_all_spans": 81707210,
+    "window_chars_first_per_key": 60945567
+   }
+  },
+  "1930-1945": {
+   "agree_S": {
+    "spans": 312771,
+    "doc_surface_keys": 178382,
+    "documents": 58969,
+    "surface_chars": 3620042,
+    "window_chars_all_spans": 67672647,
+    "window_chars_first_per_key": 45717505
+   },
+   "S_only": {
+    "spans": 473014,
+    "doc_surface_keys": 342130,
+    "documents": 71873,
+    "surface_chars": 8172060,
+    "window_chars_all_spans": 87448918,
+    "window_chars_first_per_key": 72214728
+   },
+   "C_only": {
+    "spans": 45627,
+    "doc_surface_keys": 34546,
+    "documents": 21413,
+    "surface_chars": 367247,
+    "window_chars_all_spans": 14393965,
+    "window_chars_first_per_key": 11680969
+   },
+   "disagreement": {
+    "spans": 518641,
+    "doc_surface_keys": 375295,
+    "documents": 73409,
+    "surface_chars": 8539307,
+    "window_chars_all_spans": 96199959,
+    "window_chars_first_per_key": 79543488
+   },
+   "pool": {
+    "spans": 901261,
+    "doc_surface_keys": 556079,
+    "documents": 77242,
+    "surface_chars": 12810870,
+    "window_chars_all_spans": 128734227,
+    "window_chars_first_per_key": 98781086
+   }
+  },
+  "1946-": {
+   "agree_S": {
+    "spans": 269977,
+    "doc_surface_keys": 135528,
+    "documents": 32209,
+    "surface_chars": 3037709,
+    "window_chars_all_spans": 54314813,
+    "window_chars_first_per_key": 33226577
+   },
+   "S_only": {
+    "spans": 345046,
+    "doc_surface_keys": 225333,
+    "documents": 35119,
+    "surface_chars": 4993249,
+    "window_chars_all_spans": 60281559,
+    "window_chars_first_per_key": 46595650
+   },
+   "C_only": {
+    "spans": 40950,
+    "doc_surface_keys": 30737,
+    "documents": 16725,
+    "surface_chars": 304339,
+    "window_chars_all_spans": 12762463,
+    "window_chars_first_per_key": 10362122
+   },
+   "disagreement": {
+    "spans": 385996,
+    "doc_surface_keys": 254473,
+    "documents": 35912,
+    "surface_chars": 5297588,
+    "window_chars_all_spans": 67529740,
+    "window_chars_first_per_key": 52762163
+   },
+   "pool": {
+    "spans": 725223,
+    "doc_surface_keys": 392123,
+    "documents": 37314,
+    "surface_chars": 8940936,
+    "window_chars_all_spans": 92652343,
+    "window_chars_first_per_key": 65145630
+   }
+  }
+ },
+ "seconds": 23.7,
+ "gold": {
+  "label": "POST-HOC ceilings on the M2a gold (64 docs / 406 mentions / presence grain as grains.py). A ceiling is not a precision.",
+  "editor_U_agreement_arm (baseline, assessment b2)": {
+   "all": {
+    "pred_keys": 245,
+    "false_keys": 25,
+    "gold_keys": 288,
+    "found": 221,
+    "P": 0.898,
+    "R": 0.7674,
+    "F1": 0.8275
+   },
+   "1861-1899": {
+    "pred_keys": 100,
+    "false_keys": 2,
+    "gold_keys": 137,
+    "found": 98,
+    "P": 0.98,
+    "R": 0.7153,
+    "F1": 0.827
+   },
+   "1900-1929": {
+    "pred_keys": 37,
+    "false_keys": 1,
+    "gold_keys": 43,
+    "found": 36,
+    "P": 0.973,
+    "R": 0.8372,
+    "F1": 0.9
+   },
+   "1930-1945": {
+    "pred_keys": 51,
+    "false_keys": 13,
+    "gold_keys": 44,
+    "found": 38,
+    "P": 0.7451,
+    "R": 0.8636,
+    "F1": 0.8
+   },
+   "1946-": {
+    "pred_keys": 57,
+    "false_keys": 9,
+    "gold_keys": 64,
+    "found": 49,
+    "P": 0.8421,
+    "R": 0.7656,
+    "F1": 0.802
+   }
+  },
+  "disagreement_spans_on_gold_docs": 445,
+  "disagreement_spans_a_perfect_verifier_keeps": 96,
+  "baseline_plus_perfectly_verified_disagreement": {
+   "all": {
+    "pred_keys": 303,
+    "false_keys": 24,
+    "gold_keys": 288,
+    "found": 279,
+    "P": 0.9208,
+    "R": 0.9688,
+    "F1": 0.9442
+   },
+   "1861-1899": {
+    "pred_keys": 133,
+    "false_keys": 2,
+    "gold_keys": 137,
+    "found": 131,
+    "P": 0.985,
+    "R": 0.9562,
+    "F1": 0.9704
+   },
+   "1900-1929": {
+    "pred_keys": 44,
+    "false_keys": 1,
+    "gold_keys": 43,
+    "found": 43,
+    "P": 0.9773,
+    "R": 1.0,
+    "F1": 0.9885
+   },
+   "1930-1945": {
+    "pred_keys": 57,
+    "false_keys": 13,
+    "gold_keys": 44,
+    "found": 44,
+    "P": 0.7719,
+    "R": 1.0,
+    "F1": 0.8713
+   },
+   "1946-": {
+    "pred_keys": 69,
+    "false_keys": 8,
+    "gold_keys": 64,
+    "found": 61,
+    "P": 0.8841,
+    "R": 0.9531,
+    "F1": 0.9173
+   }
+  },
+  "editor_U_perfectly_filtered_agreement": {
+   "all": {
+    "pred_keys": 221,
+    "false_keys": 1,
+    "gold_keys": 288,
+    "found": 221,
+    "P": 0.9955,
+    "R": 0.7674,
+    "F1": 0.8667
+   },
+   "1861-1899": {
+    "pred_keys": 98,
+    "false_keys": 0,
+    "gold_keys": 137,
+    "found": 98,
+    "P": 1.0,
+    "R": 0.7153,
+    "F1": 0.834
+   },
+   "1900-1929": {
+    "pred_keys": 37,
+    "false_keys": 1,
+    "gold_keys": 43,
+    "found": 36,
+    "P": 0.973,
+    "R": 0.8372,
+    "F1": 0.9
+   },
+   "1930-1945": {
+    "pred_keys": 38,
+    "false_keys": 0,
+    "gold_keys": 44,
+    "found": 38,
+    "P": 1.0,
+    "R": 0.8636,
+    "F1": 0.9268
+   },
+   "1946-": {
+    "pred_keys": 48,
+    "false_keys": 0,
+    "gold_keys": 64,
+    "found": 49,
+    "P": 1.0,
+    "R": 0.7656,
+    "F1": 0.8673
+   }
+  },
+  "editor_U_perfectly_filtered_agreement_plus_perfectly_verified_disagreement": {
+   "all": {
+    "pred_keys": 280,
+    "false_keys": 1,
+    "gold_keys": 288,
+    "found": 279,
+    "P": 0.9964,
+    "R": 0.9688,
+    "F1": 0.9824
+   },
+   "1861-1899": {
+    "pred_keys": 131,
+    "false_keys": 0,
+    "gold_keys": 137,
+    "found": 131,
+    "P": 1.0,
+    "R": 0.9562,
+    "F1": 0.9776
+   },
+   "1900-1929": {
+    "pred_keys": 44,
+    "false_keys": 1,
+    "gold_keys": 43,
+    "found": 43,
+    "P": 0.9773,
+    "R": 1.0,
+    "F1": 0.9885
+   },
+   "1930-1945": {
+    "pred_keys": 44,
+    "false_keys": 0,
+    "gold_keys": 44,
+    "found": 44,
+    "P": 1.0,
+    "R": 1.0,
+    "F1": 1.0
+   },
+   "1946-": {
+    "pred_keys": 61,
+    "false_keys": 0,
+    "gold_keys": 64,
+    "found": 61,
+    "P": 1.0,
+    "R": 0.9531,
+    "F1": 0.976
+   }
+  },
+  "editor_U_filtered_control_U_filtered_sweep_unverified": {
+   "all": {
+    "pred_keys": 574,
+    "false_keys": 292,
+    "gold_keys": 288,
+    "found": 281,
+    "P": 0.4913,
+    "R": 0.9757,
+    "F1": 0.6535
+   },
+   "1861-1899": {
+    "pred_keys": 210,
+    "false_keys": 79,
+    "gold_keys": 137,
+    "found": 132,
+    "P": 0.6238,
+    "R": 0.9635,
+    "F1": 0.7573
+   },
+   "1900-1929": {
+    "pred_keys": 98,
+    "false_keys": 55,
+    "gold_keys": 43,
+    "found": 43,
+    "P": 0.4388,
+    "R": 1.0,
+    "F1": 0.6099
+   },
+   "1930-1945": {
+    "pred_keys": 118,
+    "false_keys": 72,
+    "gold_keys": 44,
+    "found": 44,
+    "P": 0.3898,
+    "R": 1.0,
+    "F1": 0.561
+   },
+   "1946-": {
+    "pred_keys": 148,
+    "false_keys": 86,
+    "gold_keys": 64,
+    "found": 62,
+    "P": 0.4189,
+    "R": 0.9688,
+    "F1": 0.5849
+   }
+  }
+ }
+}

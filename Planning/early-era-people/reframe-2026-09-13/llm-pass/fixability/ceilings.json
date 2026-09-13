@@ -1,0 +1,3449 @@
+{
+ "label": "INFERRED ceilings (perfect adjudicator: keeps exactly the pool predictions in a maximum matching -> P=1). POST-HOC, in-sample, 64 docs / 406 mentions.",
+ "pools": {
+  "filtered_control": {
+   "overall": {
+    "gold": 406,
+    "pool_predictions": 316,
+    "unadjudicated_relaxed_P": 0.8101,
+    "ceiling_relaxed": {
+     "P": 1.0,
+     "R": 0.6305,
+     "F1": 0.7734,
+     "hits": 256
+    },
+    "ceiling_strict_select_only": {
+     "P": 1.0,
+     "R": 0.367,
+     "F1": 0.5369,
+     "hits": 149
+    },
+    "ceiling_strict_select_and_trim": {
+     "P": 1.0,
+     "R": 0.6305,
+     "F1": 0.7734
+    },
+    "ceiling_presence": {
+     "P": 1.0,
+     "R": 0.6181,
+     "F1": 0.7639,
+     "gold_keys": 288,
+     "found": 178
+    }
+   },
+   "by_band": {
+    "1861-1899": {
+     "gold": 186,
+     "pool_predictions": 147,
+     "unadjudicated_relaxed_P": 0.8027,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.6344,
+      "F1": 0.7763,
+      "hits": 118
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.328,
+      "F1": 0.4939,
+      "hits": 61
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.6344,
+      "F1": 0.7763
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.5839,
+      "F1": 0.7373,
+      "gold_keys": 137,
+      "found": 80
+     }
+    },
+    "1900-1929": {
+     "gold": 55,
+     "pool_predictions": 33,
+     "unadjudicated_relaxed_P": 0.9697,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.5818,
+      "F1": 0.7356,
+      "hits": 32
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.3273,
+      "F1": 0.4932,
+      "hits": 18
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.5818,
+      "F1": 0.7356
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.6047,
+      "F1": 0.7536,
+      "gold_keys": 43,
+      "found": 26
+     }
+    },
+    "1930-1945": {
+     "gold": 61,
+     "pool_predictions": 55,
+     "unadjudicated_relaxed_P": 0.7273,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.6557,
+      "F1": 0.7921,
+      "hits": 40
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.3934,
+      "F1": 0.5647,
+      "hits": 24
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.6557,
+      "F1": 0.7921
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.7273,
+      "F1": 0.8421,
+      "gold_keys": 44,
+      "found": 32
+     }
+    },
+    "1946-": {
+     "gold": 104,
+     "pool_predictions": 81,
+     "unadjudicated_relaxed_P": 0.8148,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.6346,
+      "F1": 0.7765,
+      "hits": 66
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.4423,
+      "F1": 0.6133,
+      "hits": 46
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.6346,
+      "F1": 0.7765
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.625,
+      "F1": 0.7692,
+      "gold_keys": 64,
+      "found": 40
+     }
+    }
+   },
+   "presence_any_overlap_upper_bound": {
+    "found": 180,
+    "of": 288,
+    "R": 0.625
+   },
+   "unrecoverable_gold_mentions": [
+    {
+     "doc": "frus1864p2/d354",
+     "band": "1861-1899",
+     "n": "Lord Lyons",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d354",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 14,
+     "e": 24,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d354",
+     "band": "1861-1899",
+     "n": "LYONS",
+     "s": 1274,
+     "e": 1279,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Lord Lyons",
+     "s": 14,
+     "e": 24,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 415,
+     "e": 432,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Right Hon. Lord Lyons",
+     "s": 434,
+     "e": 455,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 498,
+     "e": 508,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Lord Lyons",
+     "s": 694,
+     "e": 704,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "William H. Hall",
+     "s": 1110,
+     "e": 1125,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "J. D. Coleman",
+     "s": 2549,
+     "e": 2562,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "GIDEON WELLES",
+     "s": 3015,
+     "e": 3028,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d47",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d47",
+     "band": "1861-1899",
+     "n": "Mr. Adams",
+     "s": 14,
+     "e": 23,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Mr. Adams",
+     "s": 26,
+     "e": 35,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Mary E. Surratt",
+     "s": 298,
+     "e": 313,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Lewis Payne",
+     "s": 314,
+     "e": 325,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "David E. Herold",
+     "s": 327,
+     "e": 342,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "George Atzerodt",
+     "s": 348,
+     "e": 363,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Samuel A, Mudd",
+     "s": 386,
+     "e": 400,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Michael O’Laughlin",
+     "s": 402,
+     "e": 420,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Samuel Arnold",
+     "s": 426,
+     "e": 439,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Edward Spangler",
+     "s": 484,
+     "e": 499,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 676,
+     "e": 693,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d366",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d366",
+     "band": "1861-1899",
+     "n": "Mr. Adams",
+     "s": 14,
+     "e": 23,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d366",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 2756,
+     "e": 2773,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Mr. Adams",
+     "s": 14,
+     "e": 23,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 1966,
+     "e": 1983,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 14,
+     "e": 24,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "Hon. William H. Seward",
+     "s": 952,
+     "e": 974,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "Señor Mendoza",
+     "s": 1031,
+     "e": 1044,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 1289,
+     "e": 1306,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "Señor Mendoza",
+     "s": 1765,
+     "e": 1778,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 2059,
+     "e": 2076,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d206",
+     "band": "1861-1899",
+     "n": "Mr. Seward",
+     "s": 14,
+     "e": 24,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d206",
+     "band": "1861-1899",
+     "n": "Hon. William H. Seward",
+     "s": 2826,
+     "e": 2848,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d69",
+     "band": "1861-1899",
+     "n": "LERDO DE TEJADA",
+     "s": 1767,
+     "e": 1782,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d115",
+     "band": "1861-1899",
+     "n": "Mr. Campbell",
+     "s": 39,
+     "e": 51,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Messrs. Campbell",
+     "s": 31,
+     "e": 47,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "ARCHIBALD CAMPBELL",
+     "s": 1926,
+     "e": 1944,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d396",
+     "band": "1861-1899",
+     "n": "Mr. Bayard",
+     "s": 10,
+     "e": 20,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d396",
+     "band": "1861-1899",
+     "n": "Mr. Cardwell",
+     "s": 24,
+     "e": 36,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d589",
+     "band": "1861-1899",
+     "n": "Mr. Bayard",
+     "s": 8,
+     "e": 18,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Mr. Bayard",
+     "s": 22,
+     "e": 32,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Aspíroz",
+     "s": 3671,
+     "e": 3678,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Mr. McLane",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Mr. Bayard",
+     "s": 14,
+     "e": 24,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Messrs. Gladstone",
+     "s": 2241,
+     "e": 2258,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Bright",
+     "s": 2260,
+     "e": 2266,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Spurgeon",
+     "s": 2268,
+     "e": 2276,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Reverend Newman Hall",
+     "s": 2296,
+     "e": 2316,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Messrs. Provand",
+     "s": 6485,
+     "e": 6500,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Mr. Bayard",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Mr. Coleman",
+     "s": 14,
+     "e": 25,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 181,
+     "e": 191,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Bismarck",
+     "s": 463,
+     "e": 477,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 717,
+     "e": 727,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Tamasese",
+     "s": 1780,
+     "e": 1788,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Mataafa",
+     "s": 1792,
+     "e": 1799,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 3165,
+     "e": 3175,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 3369,
+     "e": 3379,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 4351,
+     "e": 4361,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Mr. Blaine",
+     "s": 14,
+     "e": 24,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Messrs. Jessup",
+     "s": 2979,
+     "e": 2993,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Ford",
+     "s": 2998,
+     "e": 3002,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Henry H. Jessup",
+     "s": 5129,
+     "e": 5144,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d364",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 14,
+     "e": 21,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d364",
+     "band": "1900-1929",
+     "n": "Hon. John Hay",
+     "s": 481,
+     "e": 494,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d364",
+     "band": "1900-1929",
+     "n": "Francis Kimbel",
+     "s": 2604,
+     "e": 2618,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d739",
+     "band": "1900-1929",
+     "n": "Mr. Day",
+     "s": 0,
+     "e": 7,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d739",
+     "band": "1900-1929",
+     "n": "Mr. Clayton",
+     "s": 11,
+     "e": 22,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d739",
+     "band": "1900-1929",
+     "n": "Hon. Stephen M. White",
+     "s": 138,
+     "e": 159,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d739",
+     "band": "1900-1929",
+     "n": "William R. Day",
+     "s": 858,
+     "e": 872,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "Mr. Riddle",
+     "s": 0,
+     "e": 10,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 14,
+     "e": 21,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "J. W. Riddle",
+     "s": 473,
+     "e": 485,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "Mr. Riddle",
+     "s": 564,
+     "e": 574,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "Obolensky",
+     "s": 980,
+     "e": 989,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d367",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 0,
+     "e": 7,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d367",
+     "band": "1900-1929",
+     "n": "Mr. von Holleben",
+     "s": 11,
+     "e": 27,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d392",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 0,
+     "e": 7,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d392",
+     "band": "1900-1929",
+     "n": "Mr. Tower",
+     "s": 11,
+     "e": 20,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d392",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 103,
+     "e": 110,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d822",
+     "band": "1900-1929",
+     "n": "Mr. Bowen",
+     "s": 0,
+     "e": 9,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d822",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 13,
+     "e": 20,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1912/d422",
+     "band": "1900-1929",
+     "n": "Secretary Knox",
+     "s": 767,
+     "e": 781,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1919v02/d432",
+     "band": "1900-1929",
+     "n": "Bundy",
+     "s": 45,
+     "e": 50,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1919v02/d570",
+     "band": "1900-1929",
+     "n": "Summerlin",
+     "s": 79,
+     "e": 88,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1919v02/d570",
+     "band": "1900-1929",
+     "n": "Phillips",
+     "s": 2617,
+     "e": 2625,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1933v05/d287",
+     "band": "1930-1945",
+     "n": "Welles",
+     "s": 47,
+     "e": 53,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1933v05/d520",
+     "band": "1930-1945",
+     "n": "Welles",
+     "s": 47,
+     "e": 53,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Bay",
+     "s": 45,
+     "e": 48,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Ambassador Bowers",
+     "s": 944,
+     "e": 961,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Bay",
+     "s": 963,
+     "e": 966,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d566",
+     "band": "1930-1945",
+     "n": "Bullitt",
+     "s": 72,
+     "e": 79,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d566",
+     "band": "1930-1945",
+     "n": "Ernest Powell",
+     "s": 576,
+     "e": 589,
+     "overlapped_by": [
+      "Ernest Powell Ernest Powell"
+     ]
+    },
+    {
+     "doc": "frus1937v01/d566",
+     "band": "1930-1945",
+     "n": "Bullitt",
+     "s": 1305,
+     "e": 1312,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d748",
+     "band": "1930-1945",
+     "n": "Kiosseivanoff",
+     "s": 121,
+     "e": 134,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v04/d689",
+     "band": "1930-1945",
+     "n": "Hull",
+     "s": 852,
+     "e": 856,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d776",
+     "band": "1930-1945",
+     "n": "Flexer",
+     "s": 46,
+     "e": 52,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d776",
+     "band": "1930-1945",
+     "n": "Elliott",
+     "s": 316,
+     "e": 323,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d776",
+     "band": "1930-1945",
+     "n": "Flexer",
+     "s": 1375,
+     "e": 1381,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d91",
+     "band": "1930-1945",
+     "n": "Weddell",
+     "s": 55,
+     "e": 62,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d91",
+     "band": "1930-1945",
+     "n": "Braden",
+     "s": 158,
+     "e": 164,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d91",
+     "band": "1930-1945",
+     "n": "Mr. Welles’",
+     "s": 2351,
+     "e": 2362,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1941v05/d454",
+     "band": "1930-1945",
+     "n": "Patton",
+     "s": 92,
+     "e": 98,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d421",
+     "band": "1930-1945",
+     "n": "Langdon",
+     "s": 46,
+     "e": 53,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d706",
+     "band": "1930-1945",
+     "n": "Moffat",
+     "s": 150,
+     "e": 156,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d706",
+     "band": "1930-1945",
+     "n": "Mr. Moffat",
+     "s": 194,
+     "e": 204,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d93",
+     "band": "1930-1945",
+     "n": "Augustus S. Chase",
+     "s": 1100,
+     "e": 1117,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d159",
+     "band": "1946-",
+     "n": "Hanc",
+     "s": 529,
+     "e": 533,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d159",
+     "band": "1946-",
+     "n": "Clayton",
+     "s": 2020,
+     "e": 2027,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Lane",
+     "s": 52,
+     "e": 56,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Premier Osóbka",
+     "s": 425,
+     "e": 439,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Ambassador Lane’s",
+     "s": 471,
+     "e": 488,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Ambassador Lane",
+     "s": 602,
+     "e": 617,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Lane",
+     "s": 5064,
+     "e": 5068,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d88",
+     "band": "1946-",
+     "n": "Matthews",
+     "s": 183,
+     "e": 191,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d88",
+     "band": "1946-",
+     "n": "Houston-Boswell",
+     "s": 1606,
+     "e": 1621,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d88",
+     "band": "1946-",
+     "n": "Acheson",
+     "s": 2879,
+     "e": 2886,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 51,
+     "e": 57,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou En-lai’s",
+     "s": 234,
+     "e": 247,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Lu Ting-yi",
+     "s": 701,
+     "e": 711,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou En-lai’s",
+     "s": 1379,
+     "e": 1392,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou",
+     "s": 1686,
+     "e": 1690,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Generals Yang",
+     "s": 2096,
+     "e": 2109,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 2594,
+     "e": 2600,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d720",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 76,
+     "e": 82,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d720",
+     "band": "1946-",
+     "n": "General Marshall",
+     "s": 128,
+     "e": 144,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d965",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 51,
+     "e": 57,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d965",
+     "band": "1946-",
+     "n": "Liu Chieh",
+     "s": 218,
+     "e": 227,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d965",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 2210,
+     "e": 2216,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d112",
+     "band": "1946-",
+     "n": "Barnes",
+     "s": 2198,
+     "e": 2204,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d322",
+     "band": "1946-",
+     "n": "Berry",
+     "s": 55,
+     "e": 60,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d322",
+     "band": "1946-",
+     "n": "Berry",
+     "s": 2035,
+     "e": 2040,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d341",
+     "band": "1946-",
+     "n": "Pauker",
+     "s": 47,
+     "e": 53,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d341",
+     "band": "1946-",
+     "n": "Schoenfeld",
+     "s": 85,
+     "e": 95,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v05/d365",
+     "band": "1946-",
+     "n": "Howard",
+     "s": 1728,
+     "e": 1734,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v05/d369",
+     "band": "1946-",
+     "n": "Wilson",
+     "s": 1151,
+     "e": 1157,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v05/d44",
+     "band": "1946-",
+     "n": "Marshall",
+     "s": 4345,
+     "e": 4353,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d183",
+     "band": "1946-",
+     "n": "Jessup",
+     "s": 155,
+     "e": 161,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d183",
+     "band": "1946-",
+     "n": "Webb",
+     "s": 2601,
+     "e": 2605,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Gifford",
+     "s": 63,
+     "e": 70,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Eric A. Berthoud",
+     "s": 377,
+     "e": 393,
+     "overlapped_by": [
+      "Berthoud Eric A. Berthoud"
+     ]
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "King’s",
+     "s": 490,
+     "e": 496,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Linder",
+     "s": 1664,
+     "e": 1670,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Richard M. Bissell, Jr.",
+     "s": 1788,
+     "e": 1811,
+     "overlapped_by": [
+      "Bissell Richard M. Bissell"
+     ]
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Gifford",
+     "s": 2104,
+     "e": 2111,
+     "overlapped_by": []
+    }
+   ]
+  },
+  "filtered_sweep": {
+   "overall": {
+    "gold": 406,
+    "pool_predictions": 736,
+    "unadjudicated_relaxed_P": 0.5136,
+    "ceiling_relaxed": {
+     "P": 1.0,
+     "R": 0.931,
+     "F1": 0.9643,
+     "hits": 378
+    },
+    "ceiling_strict_select_only": {
+     "P": 1.0,
+     "R": 0.8547,
+     "F1": 0.9216,
+     "hits": 347
+    },
+    "ceiling_strict_select_and_trim": {
+     "P": 1.0,
+     "R": 0.931,
+     "F1": 0.9643
+    },
+    "ceiling_presence": {
+     "P": 1.0,
+     "R": 0.934,
+     "F1": 0.9659,
+     "gold_keys": 288,
+     "found": 269
+    }
+   },
+   "by_band": {
+    "1861-1899": {
+     "gold": 186,
+     "pool_predictions": 243,
+     "unadjudicated_relaxed_P": 0.6914,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9032,
+      "F1": 0.9492,
+      "hits": 168
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8333,
+      "F1": 0.9091,
+      "hits": 155
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9032,
+      "F1": 0.9492
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9051,
+      "F1": 0.9502,
+      "gold_keys": 137,
+      "found": 124
+     }
+    },
+    "1900-1929": {
+     "gold": 55,
+     "pool_predictions": 125,
+     "unadjudicated_relaxed_P": 0.432,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9818,
+      "F1": 0.9908,
+      "hits": 54
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.9273,
+      "F1": 0.9623,
+      "hits": 51
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9818,
+      "F1": 0.9908
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9767,
+      "F1": 0.9882,
+      "gold_keys": 43,
+      "found": 42
+     }
+    },
+    "1930-1945": {
+     "gold": 61,
+     "pool_predictions": 151,
+     "unadjudicated_relaxed_P": 0.3841,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9508,
+      "F1": 0.9748,
+      "hits": 58
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8852,
+      "F1": 0.9391,
+      "hits": 54
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9508,
+      "F1": 0.9748
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9773,
+      "F1": 0.9885,
+      "gold_keys": 44,
+      "found": 43
+     }
+    },
+    "1946-": {
+     "gold": 104,
+     "pool_predictions": 217,
+     "unadjudicated_relaxed_P": 0.4516,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9423,
+      "F1": 0.9703,
+      "hits": 98
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8365,
+      "F1": 0.911,
+      "hits": 87
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9423,
+      "F1": 0.9703
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9375,
+      "F1": 0.9677,
+      "gold_keys": 64,
+      "found": 60
+     }
+    }
+   },
+   "presence_any_overlap_upper_bound": {
+    "found": 271,
+    "of": 288,
+    "R": 0.941
+   },
+   "unrecoverable_gold_mentions": [
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Sherman",
+     "s": 1040,
+     "e": 1047,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 1966,
+     "e": 1983,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Mayor Macbeth",
+     "s": 2553,
+     "e": 2566,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "General Schimmelpfennig",
+     "s": 2605,
+     "e": 2628,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Q. A. GILLMORE",
+     "s": 3031,
+     "e": 3045,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 1289,
+     "e": 1306,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 2059,
+     "e": 2076,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d69",
+     "band": "1861-1899",
+     "n": "Señor Romero",
+     "s": 15,
+     "e": 27,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Messrs. Campbell",
+     "s": 31,
+     "e": 47,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Parke",
+     "s": 52,
+     "e": 57,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "ARCHIBALD CAMPBELL",
+     "s": 1926,
+     "e": 1944,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Mr. Allen",
+     "s": 1153,
+     "e": 1162,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Glasier",
+     "s": 1896,
+     "e": 1903,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Lola Willis",
+     "s": 3288,
+     "e": 3299,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Judge Herara",
+     "s": 3363,
+     "e": 3375,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Aspíroz",
+     "s": 3671,
+     "e": 3678,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Judge Herara",
+     "s": 3742,
+     "e": 3754,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Ford",
+     "s": 2998,
+     "e": 3002,
+     "overlapped_by": [
+      "Messrs. Jessup and Ford"
+     ]
+    },
+    {
+     "doc": "frus1905/d447",
+     "band": "1900-1929",
+     "n": "Prince George",
+     "s": 846,
+     "e": 859,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Chapman",
+     "s": 679,
+     "e": 686,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1941v05/d756",
+     "band": "1930-1945",
+     "n": "Mr. Luce",
+     "s": 111,
+     "e": 119,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d93",
+     "band": "1930-1945",
+     "n": "Gauss",
+     "s": 5525,
+     "e": 5530,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d159",
+     "band": "1946-",
+     "n": "Connolly",
+     "s": 739,
+     "e": 747,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chiang",
+     "s": 1276,
+     "e": 1282,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou",
+     "s": 1686,
+     "e": 1690,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chang Hsuehliang",
+     "s": 2114,
+     "e": 2130,
+     "overlapped_by": [
+      "Generals Yang and Chang Hsuehliang"
+     ]
+    },
+    {
+     "doc": "frus1951v01/d183",
+     "band": "1946-",
+     "n": "Pres Truman’s",
+     "s": 2397,
+     "e": 2410,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "King’s",
+     "s": 490,
+     "e": 496,
+     "overlapped_by": []
+    }
+   ]
+  },
+  "editor+filtered_control": {
+   "overall": {
+    "gold": 406,
+    "pool_predictions": 385,
+    "unadjudicated_relaxed_P": 0.8156,
+    "ceiling_relaxed": {
+     "P": 1.0,
+     "R": 0.7734,
+     "F1": 0.8722,
+     "hits": 314
+    },
+    "ceiling_strict_select_only": {
+     "P": 1.0,
+     "R": 0.4729,
+     "F1": 0.6421,
+     "hits": 192
+    },
+    "ceiling_strict_select_and_trim": {
+     "P": 1.0,
+     "R": 0.7734,
+     "F1": 0.8722
+    },
+    "ceiling_presence": {
+     "P": 1.0,
+     "R": 0.7951,
+     "F1": 0.8859,
+     "gold_keys": 288,
+     "found": 229
+    }
+   },
+   "by_band": {
+    "1861-1899": {
+     "gold": 186,
+     "pool_predictions": 181,
+     "unadjudicated_relaxed_P": 0.8011,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.7796,
+      "F1": 0.8761,
+      "hits": 145
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.457,
+      "F1": 0.6273,
+      "hits": 85
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.7796,
+      "F1": 0.8761
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.7664,
+      "F1": 0.8678,
+      "gold_keys": 137,
+      "found": 105
+     }
+    },
+    "1900-1929": {
+     "gold": 55,
+     "pool_predictions": 49,
+     "unadjudicated_relaxed_P": 0.9388,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.8364,
+      "F1": 0.9109,
+      "hits": 46
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.3636,
+      "F1": 0.5333,
+      "hits": 20
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.8364,
+      "F1": 0.9109
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.8605,
+      "F1": 0.925,
+      "gold_keys": 43,
+      "found": 37
+     }
+    },
+    "1930-1945": {
+     "gold": 61,
+     "pool_predictions": 65,
+     "unadjudicated_relaxed_P": 0.7538,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.8033,
+      "F1": 0.8909,
+      "hits": 49
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.541,
+      "F1": 0.7021,
+      "hits": 33
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.8033,
+      "F1": 0.8909
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.8864,
+      "F1": 0.9398,
+      "gold_keys": 44,
+      "found": 39
+     }
+    },
+    "1946-": {
+     "gold": 104,
+     "pool_predictions": 90,
+     "unadjudicated_relaxed_P": 0.8222,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.7115,
+      "F1": 0.8315,
+      "hits": 74
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.5192,
+      "F1": 0.6835,
+      "hits": 54
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.7115,
+      "F1": 0.8315
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.75,
+      "F1": 0.8571,
+      "gold_keys": 64,
+      "found": 48
+     }
+    }
+   },
+   "presence_any_overlap_upper_bound": {
+    "found": 232,
+    "of": 288,
+    "R": 0.8056
+   },
+   "unrecoverable_gold_mentions": [
+    {
+     "doc": "frus1864p2/d354",
+     "band": "1861-1899",
+     "n": "LYONS",
+     "s": 1274,
+     "e": 1279,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 415,
+     "e": 432,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Right Hon. Lord Lyons",
+     "s": 434,
+     "e": 455,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "Lord Lyons",
+     "s": 694,
+     "e": 704,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "William H. Hall",
+     "s": 1110,
+     "e": 1125,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "J. D. Coleman",
+     "s": 2549,
+     "e": 2562,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1864p2/d358",
+     "band": "1861-1899",
+     "n": "GIDEON WELLES",
+     "s": 3015,
+     "e": 3028,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Mary E. Surratt",
+     "s": 298,
+     "e": 313,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Lewis Payne",
+     "s": 314,
+     "e": 325,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "David E. Herold",
+     "s": 327,
+     "e": 342,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "George Atzerodt",
+     "s": 348,
+     "e": 363,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Samuel A, Mudd",
+     "s": 386,
+     "e": 400,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Michael O’Laughlin",
+     "s": 402,
+     "e": 420,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Samuel Arnold",
+     "s": 426,
+     "e": 439,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "Edward Spangler",
+     "s": 484,
+     "e": 499,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d280",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 676,
+     "e": 693,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d366",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 2756,
+     "e": 2773,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 1966,
+     "e": 1983,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "Hon. William H. Seward",
+     "s": 952,
+     "e": 974,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 1289,
+     "e": 1306,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 2059,
+     "e": 2076,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d206",
+     "band": "1861-1899",
+     "n": "Hon. William H. Seward",
+     "s": 2826,
+     "e": 2848,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d69",
+     "band": "1861-1899",
+     "n": "LERDO DE TEJADA",
+     "s": 1767,
+     "e": 1782,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Messrs. Campbell",
+     "s": 31,
+     "e": 47,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "ARCHIBALD CAMPBELL",
+     "s": 1926,
+     "e": 1944,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Aspíroz",
+     "s": 3671,
+     "e": 3678,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Messrs. Gladstone",
+     "s": 2241,
+     "e": 2258,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Bright",
+     "s": 2260,
+     "e": 2266,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Spurgeon",
+     "s": 2268,
+     "e": 2276,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Reverend Newman Hall",
+     "s": 2296,
+     "e": 2316,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d119",
+     "band": "1861-1899",
+     "n": "Messrs. Provand",
+     "s": 6485,
+     "e": 6500,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 181,
+     "e": 191,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Bismarck",
+     "s": 463,
+     "e": 477,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 717,
+     "e": 727,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Tamasese",
+     "s": 1780,
+     "e": 1788,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Mataafa",
+     "s": 1792,
+     "e": 1799,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 3165,
+     "e": 3175,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 3369,
+     "e": 3379,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d129",
+     "band": "1861-1899",
+     "n": "Count Arco",
+     "s": 4351,
+     "e": 4361,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Ford",
+     "s": 2998,
+     "e": 3002,
+     "overlapped_by": [
+      "Jessup and Ford"
+     ]
+    },
+    {
+     "doc": "frus1889/d339",
+     "band": "1861-1899",
+     "n": "Henry H. Jessup",
+     "s": 5129,
+     "e": 5144,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d364",
+     "band": "1900-1929",
+     "n": "Hon. John Hay",
+     "s": 481,
+     "e": 494,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d364",
+     "band": "1900-1929",
+     "n": "Francis Kimbel",
+     "s": 2604,
+     "e": 2618,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d739",
+     "band": "1900-1929",
+     "n": "Hon. Stephen M. White",
+     "s": 138,
+     "e": 159,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d739",
+     "band": "1900-1929",
+     "n": "William R. Day",
+     "s": 858,
+     "e": 872,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "J. W. Riddle",
+     "s": 473,
+     "e": 485,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1902/d862",
+     "band": "1900-1929",
+     "n": "Obolensky",
+     "s": 980,
+     "e": 989,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1903/d392",
+     "band": "1900-1929",
+     "n": "Mr. Hay",
+     "s": 103,
+     "e": 110,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1912/d422",
+     "band": "1900-1929",
+     "n": "Secretary Knox",
+     "s": 767,
+     "e": 781,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1919v02/d570",
+     "band": "1900-1929",
+     "n": "Phillips",
+     "s": 2617,
+     "e": 2625,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Ambassador Bowers",
+     "s": 944,
+     "e": 961,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Bay",
+     "s": 963,
+     "e": 966,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d566",
+     "band": "1930-1945",
+     "n": "Ernest Powell",
+     "s": 576,
+     "e": 589,
+     "overlapped_by": [
+      "Ernest Powell Ernest Powell"
+     ]
+    },
+    {
+     "doc": "frus1937v01/d566",
+     "band": "1930-1945",
+     "n": "Bullitt",
+     "s": 1305,
+     "e": 1312,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d748",
+     "band": "1930-1945",
+     "n": "Kiosseivanoff",
+     "s": 121,
+     "e": 134,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v04/d689",
+     "band": "1930-1945",
+     "n": "Hull",
+     "s": 852,
+     "e": 856,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d776",
+     "band": "1930-1945",
+     "n": "Elliott",
+     "s": 316,
+     "e": 323,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d776",
+     "band": "1930-1945",
+     "n": "Flexer",
+     "s": 1375,
+     "e": 1381,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d91",
+     "band": "1930-1945",
+     "n": "Braden",
+     "s": 158,
+     "e": 164,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1938v05/d91",
+     "band": "1930-1945",
+     "n": "Mr. Welles’",
+     "s": 2351,
+     "e": 2362,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d706",
+     "band": "1930-1945",
+     "n": "Mr. Moffat",
+     "s": 194,
+     "e": 204,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d93",
+     "band": "1930-1945",
+     "n": "Augustus S. Chase",
+     "s": 1100,
+     "e": 1117,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d159",
+     "band": "1946-",
+     "n": "Hanc",
+     "s": 529,
+     "e": 533,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d159",
+     "band": "1946-",
+     "n": "Clayton",
+     "s": 2020,
+     "e": 2027,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Premier Osóbka",
+     "s": 425,
+     "e": 439,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Ambassador Lane’s",
+     "s": 471,
+     "e": 488,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Ambassador Lane",
+     "s": 602,
+     "e": 617,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d329",
+     "band": "1946-",
+     "n": "Lane",
+     "s": 5064,
+     "e": 5068,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d88",
+     "band": "1946-",
+     "n": "Matthews",
+     "s": 183,
+     "e": 191,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d88",
+     "band": "1946-",
+     "n": "Houston-Boswell",
+     "s": 1606,
+     "e": 1621,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d88",
+     "band": "1946-",
+     "n": "Acheson",
+     "s": 2879,
+     "e": 2886,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou En-lai’s",
+     "s": 234,
+     "e": 247,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Lu Ting-yi",
+     "s": 701,
+     "e": 711,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou En-lai’s",
+     "s": 1379,
+     "e": 1392,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou",
+     "s": 1686,
+     "e": 1690,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Generals Yang",
+     "s": 2096,
+     "e": 2109,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 2594,
+     "e": 2600,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d720",
+     "band": "1946-",
+     "n": "General Marshall",
+     "s": 128,
+     "e": 144,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d965",
+     "band": "1946-",
+     "n": "Liu Chieh",
+     "s": 218,
+     "e": 227,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d965",
+     "band": "1946-",
+     "n": "Stuart",
+     "s": 2210,
+     "e": 2216,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d112",
+     "band": "1946-",
+     "n": "Barnes",
+     "s": 2198,
+     "e": 2204,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v04/d322",
+     "band": "1946-",
+     "n": "Berry",
+     "s": 2035,
+     "e": 2040,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v05/d365",
+     "band": "1946-",
+     "n": "Howard",
+     "s": 1728,
+     "e": 1734,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v05/d369",
+     "band": "1946-",
+     "n": "Wilson",
+     "s": 1151,
+     "e": 1157,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1947v05/d44",
+     "band": "1946-",
+     "n": "Marshall",
+     "s": 4345,
+     "e": 4353,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d183",
+     "band": "1946-",
+     "n": "Jessup",
+     "s": 155,
+     "e": 161,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d183",
+     "band": "1946-",
+     "n": "Webb",
+     "s": 2601,
+     "e": 2605,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Eric A. Berthoud",
+     "s": 377,
+     "e": 393,
+     "overlapped_by": [
+      "Berthoud Eric A. Berthoud"
+     ]
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "King’s",
+     "s": 490,
+     "e": 496,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Linder",
+     "s": 1664,
+     "e": 1670,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Richard M. Bissell, Jr.",
+     "s": 1788,
+     "e": 1811,
+     "overlapped_by": [
+      "Bissell Richard M. Bissell"
+     ]
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "Gifford",
+     "s": 2104,
+     "e": 2111,
+     "overlapped_by": []
+    }
+   ]
+  },
+  "editor+filtered_sweep": {
+   "overall": {
+    "gold": 406,
+    "pool_predictions": 771,
+    "unadjudicated_relaxed_P": 0.4929,
+    "ceiling_relaxed": {
+     "P": 1.0,
+     "R": 0.936,
+     "F1": 0.9669,
+     "hits": 380
+    },
+    "ceiling_strict_select_only": {
+     "P": 1.0,
+     "R": 0.8571,
+     "F1": 0.9231,
+     "hits": 348
+    },
+    "ceiling_strict_select_and_trim": {
+     "P": 1.0,
+     "R": 0.936,
+     "F1": 0.9669
+    },
+    "ceiling_presence": {
+     "P": 1.0,
+     "R": 0.9375,
+     "F1": 0.9677,
+     "gold_keys": 288,
+     "found": 270
+    }
+   },
+   "by_band": {
+    "1861-1899": {
+     "gold": 186,
+     "pool_predictions": 262,
+     "unadjudicated_relaxed_P": 0.6489,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.914,
+      "F1": 0.9551,
+      "hits": 170
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8387,
+      "F1": 0.9123,
+      "hits": 156
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.914,
+      "F1": 0.9551
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9124,
+      "F1": 0.9542,
+      "gold_keys": 137,
+      "found": 125
+     }
+    },
+    "1900-1929": {
+     "gold": 55,
+     "pool_predictions": 139,
+     "unadjudicated_relaxed_P": 0.3885,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9818,
+      "F1": 0.9908,
+      "hits": 54
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.9273,
+      "F1": 0.9623,
+      "hits": 51
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9818,
+      "F1": 0.9908
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9767,
+      "F1": 0.9882,
+      "gold_keys": 43,
+      "found": 42
+     }
+    },
+    "1930-1945": {
+     "gold": 61,
+     "pool_predictions": 152,
+     "unadjudicated_relaxed_P": 0.3816,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9508,
+      "F1": 0.9748,
+      "hits": 58
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8852,
+      "F1": 0.9391,
+      "hits": 54
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9508,
+      "F1": 0.9748
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9773,
+      "F1": 0.9885,
+      "gold_keys": 44,
+      "found": 43
+     }
+    },
+    "1946-": {
+     "gold": 104,
+     "pool_predictions": 218,
+     "unadjudicated_relaxed_P": 0.4495,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9423,
+      "F1": 0.9703,
+      "hits": 98
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8365,
+      "F1": 0.911,
+      "hits": 87
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9423,
+      "F1": 0.9703
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9375,
+      "F1": 0.9677,
+      "gold_keys": 64,
+      "found": 60
+     }
+    }
+   },
+   "presence_any_overlap_upper_bound": {
+    "found": 271,
+    "of": 288,
+    "R": 0.941
+   },
+   "unrecoverable_gold_mentions": [
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Sherman",
+     "s": 1040,
+     "e": 1047,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 1966,
+     "e": 1983,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Mayor Macbeth",
+     "s": 2553,
+     "e": 2566,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "General Schimmelpfennig",
+     "s": 2605,
+     "e": 2628,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "Q. A. GILLMORE",
+     "s": 3031,
+     "e": 3045,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 1289,
+     "e": 1306,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 2059,
+     "e": 2076,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Messrs. Campbell",
+     "s": 31,
+     "e": 47,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Parke",
+     "s": 52,
+     "e": 57,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "ARCHIBALD CAMPBELL",
+     "s": 1926,
+     "e": 1944,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Mr. Allen",
+     "s": 1153,
+     "e": 1162,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Glasier",
+     "s": 1896,
+     "e": 1903,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Lola Willis",
+     "s": 3288,
+     "e": 3299,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Judge Herara",
+     "s": 3363,
+     "e": 3375,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Aspíroz",
+     "s": 3671,
+     "e": 3678,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Judge Herara",
+     "s": 3742,
+     "e": 3754,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1905/d447",
+     "band": "1900-1929",
+     "n": "Prince George",
+     "s": 846,
+     "e": 859,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1937v01/d382",
+     "band": "1930-1945",
+     "n": "Chapman",
+     "s": 679,
+     "e": 686,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1941v05/d756",
+     "band": "1930-1945",
+     "n": "Mr. Luce",
+     "s": 111,
+     "e": 119,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1944v06/d93",
+     "band": "1930-1945",
+     "n": "Gauss",
+     "s": 5525,
+     "e": 5530,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v06/d159",
+     "band": "1946-",
+     "n": "Connolly",
+     "s": 739,
+     "e": 747,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chiang",
+     "s": 1276,
+     "e": 1282,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou",
+     "s": 1686,
+     "e": 1690,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chang Hsuehliang",
+     "s": 2114,
+     "e": 2130,
+     "overlapped_by": [
+      "Generals Yang and Chang Hsuehliang"
+     ]
+    },
+    {
+     "doc": "frus1951v01/d183",
+     "band": "1946-",
+     "n": "Pres Truman’s",
+     "s": 2397,
+     "e": 2410,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "King’s",
+     "s": 490,
+     "e": 496,
+     "overlapped_by": []
+    }
+   ]
+  },
+  "editor+filtered_control+filtered_sweep": {
+   "overall": {
+    "gold": 406,
+    "pool_predictions": 906,
+    "unadjudicated_relaxed_P": 0.4393,
+    "ceiling_relaxed": {
+     "P": 1.0,
+     "R": 0.9803,
+     "F1": 0.99,
+     "hits": 398
+    },
+    "ceiling_strict_select_only": {
+     "P": 1.0,
+     "R": 0.8941,
+     "F1": 0.9441,
+     "hits": 363
+    },
+    "ceiling_strict_select_and_trim": {
+     "P": 1.0,
+     "R": 0.9803,
+     "F1": 0.99
+    },
+    "ceiling_presence": {
+     "P": 1.0,
+     "R": 0.9757,
+     "F1": 0.9877,
+     "gold_keys": 288,
+     "found": 281
+    }
+   },
+   "by_band": {
+    "1861-1899": {
+     "gold": 186,
+     "pool_predictions": 340,
+     "unadjudicated_relaxed_P": 0.5294,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9677,
+      "F1": 0.9836,
+      "hits": 180
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8871,
+      "F1": 0.9402,
+      "hits": 165
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9677,
+      "F1": 0.9836
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9635,
+      "F1": 0.9814,
+      "gold_keys": 137,
+      "found": 132
+     }
+    },
+    "1900-1929": {
+     "gold": 55,
+     "pool_predictions": 152,
+     "unadjudicated_relaxed_P": 0.3618,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "hits": 55
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.9273,
+      "F1": 0.9623,
+      "hits": 51
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "gold_keys": 43,
+      "found": 43
+     }
+    },
+    "1930-1945": {
+     "gold": 61,
+     "pool_predictions": 176,
+     "unadjudicated_relaxed_P": 0.3466,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "hits": 61
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.9344,
+      "F1": 0.9661,
+      "hits": 57
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "gold_keys": 44,
+      "found": 44
+     }
+    },
+    "1946-": {
+     "gold": 104,
+     "pool_predictions": 238,
+     "unadjudicated_relaxed_P": 0.4286,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9808,
+      "F1": 0.9903,
+      "hits": 102
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8654,
+      "F1": 0.9278,
+      "hits": 90
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9808,
+      "F1": 0.9903
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9688,
+      "F1": 0.9841,
+      "gold_keys": 64,
+      "found": 62
+     }
+    }
+   },
+   "presence_any_overlap_upper_bound": {
+    "found": 281,
+    "of": 288,
+    "R": 0.9757
+   },
+   "unrecoverable_gold_mentions": [
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 1966,
+     "e": 1983,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 1289,
+     "e": 1306,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 2059,
+     "e": 2076,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Messrs. Campbell",
+     "s": 31,
+     "e": 47,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "ARCHIBALD CAMPBELL",
+     "s": 1926,
+     "e": 1944,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Aspíroz",
+     "s": 3671,
+     "e": 3678,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou",
+     "s": 1686,
+     "e": 1690,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1951v01/d410",
+     "band": "1946-",
+     "n": "King’s",
+     "s": 490,
+     "e": 496,
+     "overlapped_by": []
+    }
+   ]
+  },
+  "editor+raw_control+raw_sweep (unfiltered pool, reference)": {
+   "overall": {
+    "gold": 406,
+    "pool_predictions": 1195,
+    "unadjudicated_relaxed_P": 0.3339,
+    "ceiling_relaxed": {
+     "P": 1.0,
+     "R": 0.9828,
+     "F1": 0.9913,
+     "hits": 399
+    },
+    "ceiling_strict_select_only": {
+     "P": 1.0,
+     "R": 0.8941,
+     "F1": 0.9441,
+     "hits": 363
+    },
+    "ceiling_strict_select_and_trim": {
+     "P": 1.0,
+     "R": 0.9828,
+     "F1": 0.9913
+    },
+    "ceiling_presence": {
+     "P": 1.0,
+     "R": 0.9792,
+     "F1": 0.9895,
+     "gold_keys": 288,
+     "found": 282
+    }
+   },
+   "by_band": {
+    "1861-1899": {
+     "gold": 186,
+     "pool_predictions": 400,
+     "unadjudicated_relaxed_P": 0.45,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9677,
+      "F1": 0.9836,
+      "hits": 180
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8871,
+      "F1": 0.9402,
+      "hits": 165
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9677,
+      "F1": 0.9836
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9635,
+      "F1": 0.9814,
+      "gold_keys": 137,
+      "found": 132
+     }
+    },
+    "1900-1929": {
+     "gold": 55,
+     "pool_predictions": 209,
+     "unadjudicated_relaxed_P": 0.2632,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "hits": 55
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.9273,
+      "F1": 0.9623,
+      "hits": 51
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "gold_keys": 43,
+      "found": 43
+     }
+    },
+    "1930-1945": {
+     "gold": 61,
+     "pool_predictions": 263,
+     "unadjudicated_relaxed_P": 0.2319,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "hits": 61
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.9344,
+      "F1": 0.9661,
+      "hits": 57
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 1.0,
+      "F1": 1.0,
+      "gold_keys": 44,
+      "found": 44
+     }
+    },
+    "1946-": {
+     "gold": 104,
+     "pool_predictions": 323,
+     "unadjudicated_relaxed_P": 0.3189,
+     "ceiling_relaxed": {
+      "P": 1.0,
+      "R": 0.9904,
+      "F1": 0.9952,
+      "hits": 103
+     },
+     "ceiling_strict_select_only": {
+      "P": 1.0,
+      "R": 0.8654,
+      "F1": 0.9278,
+      "hits": 90
+     },
+     "ceiling_strict_select_and_trim": {
+      "P": 1.0,
+      "R": 0.9904,
+      "F1": 0.9952
+     },
+     "ceiling_presence": {
+      "P": 1.0,
+      "R": 0.9844,
+      "F1": 0.9921,
+      "gold_keys": 64,
+      "found": 63
+     }
+    }
+   },
+   "presence_any_overlap_upper_bound": {
+    "found": 282,
+    "of": 288,
+    "R": 0.9792
+   },
+   "unrecoverable_gold_mentions": [
+    {
+     "doc": "frus1865p1/d93",
+     "band": "1861-1899",
+     "n": "WILLIAM H. SEWARD",
+     "s": 1966,
+     "e": 1983,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 1289,
+     "e": 1306,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1866p3/d175",
+     "band": "1861-1899",
+     "n": "George Washington",
+     "s": 2059,
+     "e": 2076,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "Messrs. Campbell",
+     "s": 31,
+     "e": 47,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1872p2v5/d82",
+     "band": "1861-1899",
+     "n": "ARCHIBALD CAMPBELL",
+     "s": 1926,
+     "e": 1944,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1888p2/d84",
+     "band": "1861-1899",
+     "n": "Aspíroz",
+     "s": 3671,
+     "e": 3678,
+     "overlapped_by": []
+    },
+    {
+     "doc": "frus1946v10/d337",
+     "band": "1946-",
+     "n": "Chou",
+     "s": 1686,
+     "e": 1690,
+     "overlapped_by": []
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,23 @@
+10 | CH/SHOWN | DEPT | None | to | William Hunter — Second Assistant Secretary of State. | fish-hamilton | disagree | v2/d168,v2/d169,v2/d170,v2/d171,v2/d172,v2/d173,v2/d174,v2/d175,v2/d177,v2/d242
+4 | CH/SHOWN | DEPT | None | to | J. C. Bancroft Davis — Assistant Secretary of State. (Appointed January 24, 1873.) | fish-hamilton | disagree | v2/d125,v2/d126,v2/d127,v2/d237
+27 | CH/STRIP | DEPT | japan | to | C. E. De Long — envoy extraordinary and minister plenipotentiary of the Unit | fish-hamilton | disagree | v1/d246,v1/d246,v1/d246,v1/d246,v1/d247,v1/d248,v1/d248,v1/d248,v1/d248,v1/d248,v1/d248,v1/d248,v1/d248,v1/d251,v1/d252,v1/d257,v1/d257,v1/d257,v1/d257,v1/d257,v1/d257,v1/d264,v1/d268,v1/d268,v1/d268,v1/d268,v1/d268
+12 | CH/STRIP | DEPT | china | to | Frederick F. Low — envoy extraordinary and minister plenipotentiary of the Unit | fish-hamilton | disagree | v1/d48,v1/d48,v1/d48,v1/d49,v1/d57,v1/d59,v1/d59,v1/d61,v1/d63,v1/d63,v1/d72,v1/d74
+11 | CH/STRIP | DEPT | spain | to | Daniel E. Sickles — envoy extraordinary and minister plenipotentiary of the Unit | fish-hamilton | disagree | v2/d89,v2/d91,v2/d96,v2/d100,v2/d100,v2/d101,v2/d101,v2/d105,v2/d108,v2/d113,v2/d115
+8 | CH/STRIP | DEPT | mexico | to | William Hunter — Second Assistant Secretary of State. | fish-hamilton | disagree | v1/d302,v1/d303,v1/d304,v1/d305,v1/d306,v1/d307,v1/d308,v1/d309
+3 | CH/STRIP | MISSION | great britain | to | Sir Edward Thornton — envoy extraordinary and minister plenipotentiary of Her Brit | schenck-robert-cumming | disagree | v1/d185,v1/d187,v1/d194
+3 | CH/STRIP | DEPT | el salvador | to | Thomas Biddle — minister resident of the United States at San Salvador. | fish-hamilton | disagree | v2/d36,v2/d41,v2/d49
+3 | CH/STRIP | DEPT | spain | to | J. C. Bancroft Davis — Assistant Secretary of State. (Appointed January 24, 1873.) | fish-hamilton | disagree | v2/d125,v2/d126,v2/d127
+2 | CH/STRIP | MISSION | argentina | from | Dexter E. Clapp — consul at Buenos Ayres, and chargé d’affaires ad interim. | white-julius | disagree | v1/d9,v1/d10
+2 | CH/STRIP | DEPT | argentina | to | William Hunter — Second Assistant Secretary of State. | fish-hamilton | disagree | v1/d9,v1/d10
+2 | CH/STRIP | MISSION | belgium | to | Maurice Delfosse — envoy extraordinary and minister plenipotentiary of the King | jones-joseph-russell | disagree | v1/d26,v1/d29
+2 | CH/STRIP | MISSION | brazil | from | R. C. Shannon — secretary of the legation of the United States at Rio de Jan | partridge-james-rudolph | disagree | v1/d30,v1/d31
+2 | CH/STRIP | MISSION | great britain | to | Hamilton Fish — Secretary of State. | schenck-robert-cumming | disagree | v1/d169,v1/d169
+2 | CH/STRIP | DEPT | japan | to | Frederick F. Low — envoy extraordinary and minister plenipotentiary of the Unit | fish-hamilton | disagree | v1/d264,v1/d264
+2 | CH/STRIP | MISSION | mexico | to | Hamilton Fish — Secretary of State. | nelson-thomas-henry | disagree | v1/d280,v1/d282
+2 | CH/STRIP | DEPT | venezuela | to | William A. Pile — minister resident of the United States at Caracas. | fish-hamilton | disagree | v2/d189,v2/d189
+1 | CH/STRIP | DEPT | belgium | from | J. C. Bancroft Davis — Assistant Secretary of State. (Appointed January 24, 1873.) | fish-hamilton | disagree | v1/d26
+1 | CH/STRIP | DEPT | germany | to | George Bancroft — envoy extraordinary and minister plenipotentiary of the Unit | fish-hamilton | disagree | v1/d148
+1 | CH/STRIP | MISSION | great britain | from | Sir Edward Thornton — envoy extraordinary and minister plenipotentiary of Her Brit | schenck-robert-cumming | disagree | v1/d196
+1 | CH/STRIP | DEPT | italy | to | George P. Marsh — envoy extraordinary and minister plenipotentiary of the Unit | fish-hamilton | disagree | v1/d240
+1 | CH/STRIP | MISSION | switzerland | from | Charles H. Upton — consul of the United States at Geneva, and chargé d’affaires | rublee-horace | disagree | v2/d138
+TOTAL mention-level disagreements by rule/variant: {'CH/SHOWN': 14, 'CH/STRIP': 88}

@@ -164,6 +164,13 @@ grain is presence. The editor-marked names alone are feasible as a correspondent
 `PersonClusterer` code gate. A detected layer is acceptable only at the detector-agreement arm, behind an
 owner precision floor. Identity waits on the 300-row eval set.
 
+**The reframe delta is `Planning/234-Early-Era-People-Reframe-Assessment-2026-09-13.md`** (an assessment; decisions
+pending). It re-reads #234 as "use every local signal to build features for untagged people". Features kept out of the
+person tables never reach `PersonClusterer`, so per-feature precision floors, blind-keyed samples and held-out verifier
+scores decide instead. Editor markup still yields a correspondent index, and identity is still not shippable. Claude
+narrows to checking candidates the free detectors already found. Source Explorer's best product is a filing-role label,
+which needs a keyed sample because it reads as a post claim.
+
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
 discipline, same hardware window, and the embedding model doubles as a mention-context
 reconciliation signal for identity clustering. The seam (what rides, what must not — gates and

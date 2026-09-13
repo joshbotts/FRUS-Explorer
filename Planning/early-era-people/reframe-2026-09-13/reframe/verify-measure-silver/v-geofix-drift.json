@@ -1,0 +1,15 @@
+{
+ "docs": 32478,
+ "before_any": 24981,
+ "after_any": 27884,
+ "changed": 2904,
+ "geo_changed_among_both_any": 1,
+ "shares": {
+  "before_any": 0.7692,
+  "after_any": 0.8586,
+  "changed": 0.0894,
+  "geo_changed_among_both_any": 0.0
+ },
+ "docs_total_before": 46837,
+ "docs_total_after": 46837
+}

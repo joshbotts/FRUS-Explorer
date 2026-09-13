@@ -1,0 +1,134 @@
+{
+ "before|A|1861-1899": {
+  "mine": {
+   "rows": 84234,
+   "rows_with_hypothesis": 67025,
+   "contradicted": 1921,
+   "narrowed_by_location": 1982,
+   "seward_assumption": 6805
+  },
+  "summary_json": {
+   "contradicted": 1921,
+   "narrowed_by_location": 1982,
+   "seward_assumption": 6805,
+   "rows_with_hypothesis": 67025
+  },
+  "match": true
+ },
+ "before|A|1900-1905": {
+  "mine": {
+   "rows": 13160,
+   "rows_with_hypothesis": 11389,
+   "contradicted": 460,
+   "narrowed_by_location": 7,
+   "seward_assumption": 0
+  },
+  "summary_json": {
+   "contradicted": 460,
+   "narrowed_by_location": 7,
+   "seward_assumption": 0,
+   "rows_with_hypothesis": 11389
+  },
+  "match": true
+ },
+ "before|B|1861-1899": {
+  "mine": {
+   "rows": 84234,
+   "rows_with_hypothesis": 80515,
+   "contradicted": 2415,
+   "narrowed_by_location": 2240,
+   "seward_assumption": 8733
+  },
+  "summary_json": {
+   "contradicted": 2415,
+   "narrowed_by_location": 2240,
+   "seward_assumption": 8733,
+   "rows_with_hypothesis": 80515
+  },
+  "match": true
+ },
+ "before|B|1900-1905": {
+  "mine": {
+   "rows": 13160,
+   "rows_with_hypothesis": 12937,
+   "contradicted": 509,
+   "narrowed_by_location": 10,
+   "seward_assumption": 0
+  },
+  "summary_json": {
+   "contradicted": 509,
+   "narrowed_by_location": 10,
+   "seward_assumption": 0,
+   "rows_with_hypothesis": 12937
+  },
+  "match": true
+ },
+ "after|A|1861-1899": {
+  "mine": {
+   "rows": 84234,
+   "rows_with_hypothesis": 73492,
+   "contradicted": 2062,
+   "narrowed_by_location": 2081,
+   "seward_assumption": 8642
+  },
+  "measured_run_post1292": {
+   "contradicted": 2062,
+   "narrowed_by_location": 2081,
+   "seward_assumption": 8642,
+   "rows_with_hypothesis": 73492
+  },
+  "match": true
+ },
+ "after|A|1900-1905": {
+  "mine": {
+   "rows": 13160,
+   "rows_with_hypothesis": 11389,
+   "contradicted": 460,
+   "narrowed_by_location": 7,
+   "seward_assumption": 0
+  },
+  "measured_run_post1292": {
+   "contradicted": 460,
+   "narrowed_by_location": 7,
+   "seward_assumption": 0,
+   "rows_with_hypothesis": 11389
+  },
+  "match": true
+ },
+ "after|B|1861-1899": {
+  "mine": {
+   "rows": 84234,
+   "rows_with_hypothesis": 82688,
+   "contradicted": 2460,
+   "narrowed_by_location": 2253,
+   "seward_assumption": 9263
+  },
+  "measured_run_post1292": {
+   "contradicted": 2460,
+   "narrowed_by_location": 2253,
+   "seward_assumption": 9263,
+   "rows_with_hypothesis": 82688
+  },
+  "match": true
+ },
+ "after|B|1900-1905": {
+  "mine": {
+   "rows": 13160,
+   "rows_with_hypothesis": 12937,
+   "contradicted": 509,
+   "narrowed_by_location": 10,
+   "seward_assumption": 0
+  },
+  "measured_run_post1292": {
+   "contradicted": 509,
+   "narrowed_by_location": 10,
+   "seward_assumption": 0,
+   "rows_with_hypothesis": 12937
+  },
+  "match": true
+ },
+ "before|A|core_total": 11175,
+ "before|B|core_total": 13907,
+ "after|A|core_total": 13252,
+ "after|B|core_total": 14495
+}

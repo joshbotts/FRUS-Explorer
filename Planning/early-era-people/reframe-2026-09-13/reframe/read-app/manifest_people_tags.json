@@ -1,0 +1,84 @@
+{
+ "manifest_entry_keys": [
+  "dateRange",
+  "documentCount",
+  "editors",
+  "filename",
+  "publicationDate",
+  "sizeBytes",
+  "status",
+  "subseries",
+  "tags",
+  "title",
+  "volumeId"
+ ],
+ "tag_key": "tags",
+ "population": "app-view: live index volumes (index v50)",
+ "volumes_in_index": 552,
+ "untagged_volumes": 267,
+ "tagged_volumes": 285,
+ "people_taxonomy_tags": 121,
+ "people_subcategories": [
+  [
+   "secretaries-of-state",
+   73
+  ],
+  [
+   "presidents",
+   48
+  ]
+ ],
+ "untagged_volumes_with_any_people_tag": 267,
+ "tagged_volumes_with_any_people_tag": 284,
+ "untagged_people_tag_assignments_by_subcategory": [
+  [
+   "secretaries-of-state",
+   342
+  ],
+  [
+   "presidents",
+   305
+  ]
+ ],
+ "untagged_people_tags_per_volume_max": 7,
+ "untagged_people_tags_total": 647,
+ "example": [
+  [
+   "frus1861",
+   [
+    "black-jeremiah-sullivan",
+    "lincoln-abraham",
+    "seward-william-henry",
+    "buchanan-james-p"
+   ]
+  ],
+  [
+   "frus1862",
+   [
+    "lincoln-abraham",
+    "seward-william-henry"
+   ]
+  ],
+  [
+   "frus1863p1",
+   [
+    "lincoln-abraham",
+    "seward-william-henry"
+   ]
+  ],
+  [
+   "frus1863p2",
+   [
+    "lincoln-abraham",
+    "seward-william-henry"
+   ]
+  ],
+  [
+   "frus1864p1",
+   [
+    "lincoln-abraham",
+    "seward-william-henry"
+   ]
+  ]
+ ]
+}

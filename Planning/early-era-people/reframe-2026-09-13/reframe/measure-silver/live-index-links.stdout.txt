@@ -1,0 +1,34 @@
+{
+ "index_version_hist": {
+  "50": 316839
+ },
+ "persons_rows": 62931,
+ "person_mentions_rows": 611307,
+ "scope_totals": {
+  "volumes": 267,
+  "volumes_in_index": 267,
+  "docs_in_index": 199068,
+  "persons_rows": 81,
+  "mentions": 5530,
+  "orphan_rows": 5530,
+  "docs_with_mentions": 2089
+ },
+ "corpus_orphan_rows": 6288
+}
+frus1932v04 {'docs_in_index': 794, 'persons_rows': 0, 'mentions': 2552, 'distinct_refs': 434, 'docs_with_mentions': 783, 'orphan_rows': 2552, 'orphan_refs': 434, 'orphan_docs': 783, 'orphan_rows_ref_exists_in_another_volume': 2552}
+frus1918Supp01v02 {'docs_in_index': 912, 'persons_rows': 0, 'mentions': 2114, 'distinct_refs': 108, 'docs_with_mentions': 884, 'orphan_rows': 2114, 'orphan_refs': 108, 'orphan_docs': 884, 'orphan_rows_ref_exists_in_another_volume': 2114}
+frus1917Supp02v02 {'docs_in_index': 459, 'persons_rows': 0, 'mentions': 864, 'distinct_refs': 92, 'docs_with_mentions': 422, 'orphan_rows': 864, 'orphan_refs': 92, 'orphan_docs': 422, 'orphan_rows_ref_exists_in_another_volume': 864}
+frus1932v03 {'docs_in_index': 799, 'persons_rows': 597, 'mentions': 2257, 'distinct_refs': 308, 'docs_with_mentions': 781, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1918Supp01v01 {'docs_in_index': 927, 'persons_rows': 267, 'mentions': 2477, 'distinct_refs': 227, 'docs_with_mentions': 907, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1917Supp02v01 {'docs_in_index': 725, 'persons_rows': 212, 'mentions': 1771, 'distinct_refs': 172, 'docs_with_mentions': 705, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1873p1v1 {'docs_in_index': 310, 'persons_rows': 57, 'mentions': 494, 'distinct_refs': 26, 'docs_with_mentions': 305, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1873p1v2 {'docs_in_index': 324, 'persons_rows': 0, 'mentions': 454, 'distinct_refs': 37, 'docs_with_mentions': 235, 'orphan_rows': 454, 'orphan_refs': 37, 'orphan_docs': 235, 'orphan_rows_ref_exists_in_another_volume': 440}
+frus1941-43 {'docs_in_index': 456, 'persons_rows': 81, 'mentions': 0, 'distinct_refs': 0, 'docs_with_mentions': 0, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1914 {'docs_in_index': 1890, 'persons_rows': 0, 'mentions': 0, 'distinct_refs': 0, 'docs_with_mentions': 0, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1915 {'docs_in_index': 1945, 'persons_rows': 0, 'mentions': 0, 'distinct_refs': 0, 'docs_with_mentions': 0, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+frus1916 {'docs_in_index': 1345, 'persons_rows': 0, 'mentions': 0, 'distinct_refs': 0, 'docs_with_mentions': 0, 'orphan_rows': 0, 'orphan_refs': 0, 'orphan_docs': 0, 'orphan_rows_ref_exists_in_another_volume': 0}
+scope volumes with mentions: 3
+  frus1917Supp02v02 {'docs_in_index': 459, 'persons_rows': 0, 'mentions': 864, 'distinct_refs': 92, 'docs_with_mentions': 422, 'orphan_rows': 864, 'orphan_refs': 92, 'orphan_docs': 422, 'orphan_rows_ref_exists_in_another_volume': 864}
+  frus1918Supp01v02 {'docs_in_index': 912, 'persons_rows': 0, 'mentions': 2114, 'distinct_refs': 108, 'docs_with_mentions': 884, 'orphan_rows': 2114, 'orphan_refs': 108, 'orphan_docs': 884, 'orphan_rows_ref_exists_in_another_volume': 2114}
+  frus1932v04 {'docs_in_index': 794, 'persons_rows': 0, 'mentions': 2552, 'distinct_refs': 434, 'docs_with_mentions': 783, 'orphan_rows': 2552, 'orphan_refs': 434, 'orphan_docs': 783, 'orphan_rows_ref_exists_in_another_volume': 2552}
+orphans top: [('frus1932v04', 2552, 434), ('frus1918Supp01v02', 2114, 108), ('frus1917Supp02v02', 864, 92), ('frus1873p1v2', 454, 37), ('frus1969-76v14', 129, 2), ('frus1964-68v23', 53, 1), ('frus1958-60v07p2', 25, 2), ('frus1961-63v04', 17, 2), ('frus1951-54IranEd2', 16, 1), ('frus1951-54Iran', 15, 1), ('frus1958-60v09', 13, 1), ('frus1958-60v07p1', 11, 2), ('frus1952-54v03', 9, 2), ('frus1955-57v24', 5, 1), ('frus1977-80v01', 4, 1)]

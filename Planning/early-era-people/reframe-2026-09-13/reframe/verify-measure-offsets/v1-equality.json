@@ -1,0 +1,137 @@
+{
+ "scope_volumes": 267,
+ "r0_docs_by_band": {
+  "1861-1899": 32760,
+  "1900-1929": 48852,
+  "1930-1945": 77899,
+  "1946-": 38023
+ },
+ "r0_docs_total": 197534,
+ "dup_doc_ids_within_volume": 0,
+ "marked_rows": 245747,
+ "docs_with_marks_by_band": {
+  "1861-1899": 30872,
+  "1900-1929": 36871,
+  "1930-1945": 66591,
+  "1946-": 24848
+ },
+ "docs_with_marks_total": 159182,
+ "orig_sample_band_counts": {
+  "1861-1899": 100,
+  "1900-1929": 100,
+  "1930-1945": 100,
+  "1946-": 100
+ },
+ "orig_sample_band_label_matches_mine": 400,
+ "overlap_A_B": 1,
+ "A_original_sample": {
+  "n": 400,
+  "in_index": 400,
+  "exact": {
+   "1861-1899": 65,
+   "1900-1929": 97,
+   "1930-1945": 98,
+   "1946-": 98
+  },
+  "wsnorm": {
+   "1861-1899": 65,
+   "1900-1929": 97,
+   "1930-1945": 98,
+   "1946-": 98
+  },
+  "unescaped_exact": {
+   "1861-1899": 100,
+   "1900-1929": 100,
+   "1930-1945": 100,
+   "1946-": 100
+  },
+  "docs_with_entity": 42,
+  "band_n": {
+   "1861-1899": 100,
+   "1900-1929": 100,
+   "1930-1945": 100,
+   "1946-": 100
+  },
+  "exact_total": 358,
+  "wsnorm_total": 358,
+  "unescaped_exact_total": 400,
+  "spans": {
+   "sweep": {
+    "spans": 5188,
+    "offset_by_prefix_unescape_ok": 5188,
+    "unique_in_doc": 2274,
+    "unique_nonoverlap": 2274,
+    "single_token": 1735
+   },
+   "control": {
+    "spans": 2694,
+    "offset_by_prefix_unescape_ok": 2694,
+    "unique_in_doc": 945,
+    "unique_nonoverlap": 945,
+    "single_token": 1553
+   }
+  },
+  "raw_rows_before_dedupe": {
+   "sweep": 5188,
+   "control": 2694
+  },
+  "volumes": 189,
+  "heads_full_scan": 378,
+  "heads_total": 378
+ },
+ "B_fresh_sample": {
+  "n": 400,
+  "in_index": 400,
+  "exact": {
+   "1861-1899": 51,
+   "1900-1929": 96,
+   "1930-1945": 100,
+   "1946-": 99
+  },
+  "wsnorm": {
+   "1861-1899": 51,
+   "1900-1929": 96,
+   "1930-1945": 100,
+   "1946-": 99
+  },
+  "unescaped_exact": {
+   "1861-1899": 100,
+   "1900-1929": 100,
+   "1930-1945": 100,
+   "1946-": 100
+  },
+  "docs_with_entity": 54,
+  "band_n": {
+   "1861-1899": 100,
+   "1900-1929": 100,
+   "1930-1945": 100,
+   "1946-": 100
+  },
+  "exact_total": 346,
+  "wsnorm_total": 346,
+  "unescaped_exact_total": 400,
+  "spans": {
+   "sweep": {
+    "spans": 6447,
+    "offset_by_prefix_unescape_ok": 6447,
+    "unique_in_doc": 2459,
+    "unique_nonoverlap": 2459,
+    "single_token": 2052
+   },
+   "control": {
+    "spans": 3249,
+    "offset_by_prefix_unescape_ok": 3249,
+    "single_token": 1584,
+    "unique_in_doc": 961,
+    "unique_nonoverlap": 961
+   }
+  },
+  "raw_rows_before_dedupe": {
+   "sweep": 6447,
+   "control": 3249
+  },
+  "volumes": 195,
+  "heads_full_scan": 390,
+  "heads_total": 390
+ }
+}

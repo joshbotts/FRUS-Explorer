@@ -1,0 +1,24 @@
+{
+ "taxonomy_top_keys": "list",
+ "dsi_top_keys": [
+  "coOccurrence",
+  "documentCount",
+  "documents",
+  "generated",
+  "provenance",
+  "schemaVersion",
+  "vocab"
+ ],
+ "dsi_lists": {
+  "vocab": {
+   "len": 491,
+   "first_keys": [
+    "c",
+    "df",
+    "n",
+    "r",
+    "s"
+   ]
+  }
+ }
+}

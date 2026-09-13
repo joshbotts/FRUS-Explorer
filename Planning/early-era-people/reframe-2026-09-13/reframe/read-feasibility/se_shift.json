@@ -1,0 +1,98 @@
+{
+ "docs_before": 46837,
+ "docs_after": 46837,
+ "bands": {
+  "1861-1899": {
+   "documents": 32478,
+   "before": {
+    "with_suggestion": 24981,
+    "share": 0.7692,
+    "docs_by_category": {
+     "diplomaticDespatches": 14400,
+     "notesToForeignMissions": 8219,
+     "diplomaticInstructions": 8154,
+     "notesFromForeignMissions": 1471,
+     "consularDespatches": 567,
+     "domesticLetters": 29,
+     "notesToForeignConsuls": 28,
+     "specialAgentsDespatches": 24,
+     "notesFromForeignConsuls": 18
+    },
+    "docs_by_confidence": {
+     "medium": 11285,
+     "high": 13696
+    }
+   },
+   "after": {
+    "with_suggestion": 27884,
+    "share": 0.8586,
+    "docs_by_category": {
+     "diplomaticDespatches": 15032,
+     "notesToForeignMissions": 9356,
+     "diplomaticInstructions": 8426,
+     "notesFromForeignMissions": 2574,
+     "consularDespatches": 567,
+     "domesticLetters": 29,
+     "notesToForeignConsuls": 28,
+     "specialAgentsDespatches": 24,
+     "notesFromForeignConsuls": 18
+    },
+    "docs_by_confidence": {
+     "medium": 13345,
+     "high": 14539
+    }
+   },
+   "transitions": {
+    "none->none": 4594,
+    "same categories": 24980,
+    "none->some": 2903,
+    "some->different categories": 1
+   },
+   "after_docs_only_foreign_mission_notes": 3763,
+   "after_docs_any_foreign_mission_notes": 11930
+  },
+  "1900-1905": {
+   "documents": 5932,
+   "before": {
+    "with_suggestion": 5061,
+    "share": 0.8532,
+    "docs_by_category": {
+     "diplomaticDespatches": 2863,
+     "notesToForeignMissions": 1778,
+     "diplomaticInstructions": 1707,
+     "notesFromForeignMissions": 335,
+     "consularDespatches": 43,
+     "specialAgentsDespatches": 15,
+     "notesToForeignConsuls": 10
+    },
+    "docs_by_confidence": {
+     "medium": 2293,
+     "high": 2768
+    }
+   },
+   "after": {
+    "with_suggestion": 5061,
+    "share": 0.8532,
+    "docs_by_category": {
+     "diplomaticDespatches": 2863,
+     "notesToForeignMissions": 1778,
+     "diplomaticInstructions": 1707,
+     "notesFromForeignMissions": 335,
+     "consularDespatches": 43,
+     "specialAgentsDespatches": 15,
+     "notesToForeignConsuls": 10
+    },
+    "docs_by_confidence": {
+     "medium": 2293,
+     "high": 2768
+    }
+   },
+   "transitions": {
+    "same categories": 5061,
+    "none->none": 871
+   },
+   "after_docs_only_foreign_mission_notes": 431,
+   "after_docs_any_foreign_mission_notes": 2113
+  }
+ }
+}

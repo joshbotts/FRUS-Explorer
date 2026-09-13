@@ -1,0 +1,35 @@
+{
+ "1861-1899": {
+  "docs_holding_rows": 30864,
+  "grain:head": 61104,
+  "grain:non-head": 23121,
+  "grain:unaligned": 9,
+  "head:pocom:nobody": 4213,
+  "head:pocom:one": 37781,
+  "head:pocom:several": 11033,
+  "head:pocom:unknown": 8077,
+  "pocom:nobody": 8590,
+  "pocom:one": 45263,
+  "pocom:several": 11995,
+  "pocom:unknown": 18386,
+  "rows": 84234,
+  "volumes": 61
+ },
+ "1900-1905": {
+  "docs_holding_rows": 5314,
+  "grain:head": 9652,
+  "grain:non-head": 3508,
+  "head:pocom:nobody": 675,
+  "head:pocom:one": 7706,
+  "head:pocom:several": 11,
+  "head:pocom:unknown": 1260,
+  "pocom:nobody": 1138,
+  "pocom:one": 9234,
+  "pocom:several": 12,
+  "pocom:unknown": 2776,
+  "rows": 13160,
+  "volumes": 9
+ },
+ "pocom_people_with_spans": 4167,
+ "pocom_people_with_surname": 4261
+}

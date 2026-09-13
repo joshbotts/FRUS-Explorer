@@ -1,0 +1,226 @@
+{
+ "by-label": {
+  "department:right-kind": 1005,
+  "department:wrong-kind": 45,
+  "foreign-consul|foreign-legation|us-consulate|us-mission:right-kind": 5,
+  "foreign-consul|us-consulate:right-kind": 2,
+  "foreign-legation:right-kind": 92,
+  "foreign-legation|us-mission:right-kind": 109,
+  "foreign-legation|us-mission:wrong-kind": 9,
+  "us-consulate:right-kind": 1,
+  "us-mission:wrong-kind": 49
+ },
+ "docs": {
+  "n": 6222,
+  "with strict-or-weak evidence on a side": 1288
+ },
+ "sides": {
+  "evidence, unlabelled": 386,
+  "judged": 1317,
+  "right-kind": 1214
+ },
+ "weak": {
+  "foreign-legation|us-mission:kind-consistent": 220,
+  "us-mission:kind-consistent": 500
+ },
+ "wrong_examples": {
+  "department": [
+   [
+    "frus1900/d153",
+    "from",
+    "The President to Mr. Conger , via Consul Fowler .",
+    "Department of State , Washington , August 19, 1900",
+    "China",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d335",
+    "to",
+    "The Emperor of China to the President, and the President to the Emperor of China.",
+    "[Handed to the President by Minister Wu, October 1",
+    "China",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d389",
+    "to",
+    "The German Emperor to the President .",
+    "Rhainsburg , July 6, 1900 .",
+    "China",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d400",
+    "to",
+    "The German Emperor to President McKinley .",
+    "Hamburg Schloss , August 11, 1900 .",
+    "China",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d587",
+    "to",
+    "President Loubet to the President .",
+    "Rambouillet Presidence , September 12, 1900 .",
+    "France",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d638",
+    "to",
+    "The German Emperor to the President .",
+    "Stettin , September 13, 1900 .",
+    "Germany",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d640",
+    "from",
+    "The President to the German Emperor .",
+    "Department of State , Washington , December 18, 19",
+    "Germany",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d77",
+    "to",
+    "The President of Chile to the President of the United States .",
+    "Santiago, Chile , September 16, 1900 .",
+    "Chile",
+    "us-domestic-office"
+   ]
+  ],
+  "foreign-legation|us-mission": [
+   [
+    "frus1901/d294",
+    "to",
+    "Mr. Hay to the minister of foreign affairs of Italy .",
+    "Department of State , Washington , September 16, 1",
+    "Italy",
+    "foreign-office"
+   ],
+   [
+    "frus1901/d387",
+    "to",
+    "Mr. Hay to the minister for foreign affairs of Portugal .",
+    "Department of State , Washington , September 17, 1",
+    "Portugal",
+    "foreign-office"
+   ],
+   [
+    "frus1901/d486",
+    "to",
+    "Mr. Hay to the Minister for Foreign Affairs of Uruguay .",
+    "Department of State , Washington , September 16, 1",
+    "Uruguay and Paraguay",
+    "foreign-office"
+   ],
+   [
+    "frus1901/d488",
+    "to",
+    "Mr. Hay to the President of Paraguay .",
+    "Department of State , Washington , September 16, 1",
+    "Uruguay and Paraguay",
+    "us-domestic-office"
+   ],
+   [
+    "frus1902/d375",
+    "to",
+    "President Roosevelt to President Loubet .",
+    "Department of State , Washington , May 23, 1902 .",
+    "France",
+    "us-domestic-office"
+   ],
+   [
+    "frus1905/d952",
+    "to",
+    "The Secretary of State to the Minister of Foreign Affairs of Norway .",
+    "Department of State , Washington , October 30, 190",
+    "Sweden and Norway",
+    "foreign-office"
+   ],
+   [
+    "frus1905/d954",
+    "to",
+    "The Secretary of State to the Minister of Foreign Affairs of Norway .",
+    "Department of State , Washington , November 4, 190",
+    "Sweden and Norway",
+    "foreign-office"
+   ],
+   [
+    "frus1905/d964",
+    "to",
+    "The Secretary of State to the Minister of Foreign Affairs of Norway .",
+    "Department of State , Washington , November 13, 19",
+    "Sweden and Norway",
+    "foreign-office"
+   ]
+  ],
+  "us-mission": [
+   [
+    "frus1900/d148",
+    "from",
+    "Consul-general at Shanghai to Secretary of State .",
+    "Shanghai , August 15, 1900 .",
+    "China",
+    "us-consulate"
+   ],
+   [
+    "frus1900/d422",
+    "from",
+    "The Imperial German charg\u00e9 d\u2019affaires to the Secretary of State .",
+    "[Handed to the Secretary by the German charg\u00e9 d\u2019af",
+    "China",
+    "foreign-legation"
+   ],
+   [
+    "frus1900/d487",
+    "from",
+    "The Japanese minister to the Secretary of State .",
+    "Japanese Legation , October 20, 1900 .",
+    "China",
+    "foreign-legation"
+   ],
+   [
+    "frus1900/d587",
+    "from",
+    "President Loubet to the President .",
+    "Rambouillet Presidence , September 12, 1900 .",
+    "France",
+    "us-domestic-office"
+   ],
+   [
+    "frus1900/d77",
+    "from",
+    "The President of Chile to the President of the United States .",
+    "Santiago, Chile , September 16, 1900 .",
+    "Chile",
+    "us-domestic-office"
+   ],
+   [
+    "frus1901/d102",
+    "from",
+    "President Marroquin to President Roosevelt .",
+    "Bogot\u00e1 , September 23, 1901 .",
+    "Colombia",
+    "us-domestic-office"
+   ],
+   [
+    "frus1901/d119",
+    "from",
+    "President Plaza to the Vice-President of the United States .",
+    "Quito, Ecuador , September 15, 1901 .",
+    "Ecuador",
+    "us-domestic-office"
+   ],
+   [
+    "frus1901/d128",
+    "from",
+    "Mr. Delcass\u00e9 , minister for foreign affairs, to Mr. Hay .",
+    "Paris , September 14, 1901 .",
+    "France",
+    "foreign-office"
+   ]
+  ]
+ }
+}

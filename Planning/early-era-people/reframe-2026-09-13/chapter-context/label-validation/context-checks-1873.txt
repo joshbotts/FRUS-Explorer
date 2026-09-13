@@ -1,0 +1,30 @@
+## headers of 1873 chapter-rule disagreement types
+frus1873p1v1 d246 | No. 243. Mr. De Long to Mr. Fish . | United States Legation, Japan , September 27, 1872 . (Received Nov 1.)
+frus1873p1v1 d48 | No. 46. Mr. Low to Mr. Fish . | Legation of the United States , Peking , October 23, 1872 . (Received December 26.)
+frus1873p1v2 d89 | No. 395. General Sickles to Mr. Fish . | United States Legation in Spain , Madrid , March 11, 1873 . (Received April 4.)
+frus1873p1v1 d302 | No. 299. Mr. Schuchardt to Mr. Hunter . | United States Commercial Agency , Piedras Negras, Mexico , January 3, 1872 . (Ree’d Feb. 26.)
+frus1873p1v1 d169 | No. 167. Mr. Fish to General Schenck . | Department of State , Washington , June 13, 1873 .
+frus1873p1v1 d280 | No. 277. Mr. Fish to Mr. Nelson . | Department of State , Washington , January 16, 1873 .
+frus1873p1v1 d185 | No. 183. Mr. Fish to Sir Edward Thornton . | Department of State , Washington , March 14, 1873 .
+frus1873p1v1 d26 | No. 24. Mr. Davis to Mr. Delfosse . | Department of State , Washington , July 28, 1873 .
+frus1873p1v2 d189 | No. 495. Mr. Pile to Mr. Fish . | Legation of the United States of America , Caracas , July 1, 1873 . (Received July 22.)
+frus1873p1v1 d9 | No. 7. Mr. Clapp to Mr. Hunter . | United States Legation , Buenos Ayres , February 12, 1873 . (Received March 22.)
+## 1873 linked mentions with S class unknown
+[(('Vidal', 'Michel Vidal'), 10), (('Heap', 'G. H. Heap'), 7), (('Delfosse', 'Maurice Delfosse'), 5), (('Schlözer', 'Kurd von Schlözer'), 4), (('Baron Lederer', 'Baron Lederer'), 2), (('Delaplaine', 'John F. Delaplaine'), 1), (('Upton', 'Charles H. Upton'), 1)]
+## 1873 linked mentions with S class nobody
+[(('De Long', 'C. E. De Long', 'B'), 73), (('Sir Edward Thornton', 'Sir Edward Thornton', 'foreign'), 17), (('Clapp', 'Dexter E. Clapp', 'no-slug'), 2), (('Shannon', 'R. C. Shannon', 'no-slug'), 2), (('Mathews', 'F. A. Mathews', 'no-slug'), 2), (('Sir Edward Thornton.', 'Sir Edward Thornton', 'foreign'), 1), (('C. E. De Long', 'C. E. De Long', 'B'), 1), (('Lord J. Russell', 'J. Russell Jones', 'no-slug'), 1)]
+## unlinked 1873 Russell/Butler/Davis in context
+frus1873p1v1 d83 to Davis | No. 81. Mr. Bailey to Mr. Davis . | United States Consulate , Hong-Kong , September 12, 1873 . (
+frus1873p1v1 d84 from Davis | No. 82. Mr. Davis to Mr. Low . | Department of State , Washington , September 18, 1873 .
+frus1873p1v1 d126 from Davis | No. 124. Mr. Davis to Marquis de Noailles . | Department of State , Washington , July 22, 1873 .
+frus1873p1v1 d151 from Davis | No. 149. Mr. Davis to Mr. Stumm . | Department of State , Washington , July 25, 1873 .
+frus1873p1v1 d165 from Davis | No. 163. Mr. Davis to General Schenck . | Department of State , Washington , May 20, 1873 .
+frus1873p1v1 d169 from Russell | No. 167. Mr. Fish to General Schenck . | Department of State , Washington , June 13, 1873 .
+frus1873p1v1 d169 to Butler | No. 167. Mr. Fish to General Schenck . | Department of State , Washington , June 13, 1873 .
+frus1873p1v1 d169 to Russell | No. 167. Mr. Fish to General Schenck . | Department of State , Washington , June 13, 1873 .
+frus1873p1v1 d169 from Butler | No. 167. Mr. Fish to General Schenck . | Department of State , Washington , June 13, 1873 .
+frus1873p1v1 d169 to Butler | No. 167. Mr. Fish to General Schenck . | Department of State , Washington , June 13, 1873 .
+frus1873p1v1 d171 to Davis | No. 169. Mr. Fish to General Schenck . | Department of State , Washington , June 24, 1873 .
+frus1873p1v1 d171 to Davis | No. 169. Mr. Fish to General Schenck . | Department of State , Washington , June 24, 1873 .
+frus1873p1v1 d195 to Davis | No. 193. Sir Edward Thornton to Mr. Davis . | Washington , July 9, 1873 . (Received July 9.)
+frus1873p1v1 d196 to Davis | No. 194. Sir Edward Thornton to Mr. Davis . | Catskill Station , July 18, 1873 . (Received July 19.)

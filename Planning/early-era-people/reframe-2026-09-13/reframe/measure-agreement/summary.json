@@ -1,0 +1,289 @@
+{
+ "script": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/measure-agreement/summarize.py",
+ "added_pairs_region": {
+  "1861-1899": {
+   "pairs": 133001,
+   "any_prose": 101629,
+   "heading_only": 1226,
+   "apparatus_only": 29475,
+   "note_only": 550,
+   "no_prose": 31372,
+   "any_heading": 2216,
+   "share_any_prose": 0.7641,
+   "share_heading_only": 0.0092,
+   "share_apparatus_only": 0.2216,
+   "share_note_only": 0.0041,
+   "share_any_heading": 0.0167
+  },
+  "1900-1929": {
+   "pairs": 115321,
+   "any_prose": 86235,
+   "heading_only": 3822,
+   "apparatus_only": 23058,
+   "note_only": 2081,
+   "no_prose": 29086,
+   "any_heading": 4621,
+   "share_any_prose": 0.7478,
+   "share_heading_only": 0.0331,
+   "share_apparatus_only": 0.1999,
+   "share_note_only": 0.018,
+   "share_any_heading": 0.0401
+  },
+  "1930-1945": {
+   "pairs": 166195,
+   "any_prose": 128274,
+   "heading_only": 4447,
+   "apparatus_only": 14400,
+   "note_only": 18621,
+   "no_prose": 37921,
+   "any_heading": 5216,
+   "share_any_prose": 0.7718,
+   "share_heading_only": 0.0268,
+   "share_apparatus_only": 0.0866,
+   "share_note_only": 0.112,
+   "share_any_heading": 0.0314
+  },
+  "1946-": {
+   "pairs": 130906,
+   "any_prose": 98767,
+   "heading_only": 1907,
+   "apparatus_only": 5630,
+   "note_only": 24314,
+   "no_prose": 32139,
+   "any_heading": 2546,
+   "share_any_prose": 0.7545,
+   "share_heading_only": 0.0146,
+   "share_apparatus_only": 0.043,
+   "share_note_only": 0.1857,
+   "share_any_heading": 0.0194
+  },
+  "all": {
+   "pairs": 545423,
+   "any_prose": 414905,
+   "heading_only": 11402,
+   "apparatus_only": 72563,
+   "note_only": 45566,
+   "no_prose": 130518,
+   "any_heading": 14599,
+   "share_any_prose": 0.7607,
+   "share_heading_only": 0.0209,
+   "share_apparatus_only": 0.133,
+   "share_note_only": 0.0835,
+   "share_any_heading": 0.0268
+  }
+ },
+ "added_rows_region": {
+  "1861-1899": {
+   "head": 728,
+   "other_head": 1794,
+   "note": 1594,
+   "apparatus": 37389,
+   "prose": 186392,
+   "no_region": 0,
+   "rows": 227897,
+   "share_prose": 0.8179,
+   "share_heading": 0.0111
+  },
+  "1900-1929": {
+   "head": 3851,
+   "other_head": 1124,
+   "note": 2937,
+   "apparatus": 26971,
+   "prose": 159332,
+   "no_region": 0,
+   "rows": 194215,
+   "share_prose": 0.8204,
+   "share_heading": 0.0256
+  },
+  "1930-1945": {
+   "head": 5025,
+   "other_head": 305,
+   "note": 26376,
+   "apparatus": 15667,
+   "prose": 247356,
+   "no_region": 0,
+   "rows": 294729,
+   "share_prose": 0.8393,
+   "share_heading": 0.0181
+  },
+  "1946-": {
+   "head": 2537,
+   "other_head": 146,
+   "note": 36414,
+   "apparatus": 6355,
+   "prose": 214061,
+   "no_region": 0,
+   "rows": 259513,
+   "share_prose": 0.8249,
+   "share_heading": 0.0103
+  },
+  "all": {
+   "head": 12141,
+   "other_head": 3369,
+   "note": 67321,
+   "apparatus": 86382,
+   "prose": 807141,
+   "no_region": 0,
+   "rows": 976354,
+   "share_prose": 0.8267,
+   "share_heading": 0.0159,
+   "share_apparatus": 0.0885,
+   "share_note": 0.069
+  }
+ },
+ "arm_vs_comparators": {
+  "pairs_arm_over_editor_union_fc": 0.8895,
+  "pairs_arm_minus_editor_union_fc": -95541,
+  "docs_arm_minus_editor_union_fc": -1470,
+  "pairs_arm_over_editor": 3.4403,
+  "gzip_arm_minus_editor_union_fc_bytes": 48393,
+  "pairs_by_band_arm_over_editor_union_fc": {
+   "1861-1899": 0.8664,
+   "1900-1929": 0.8775,
+   "1930-1945": 0.9167,
+   "1946-": 0.8923
+  },
+  "docs_share_by_band_editor_union_fc": {
+   "1861-1899": 0.9967,
+   "1900-1929": 0.9686,
+   "1930-1945": 0.9747,
+   "1946-": 0.9528
+  },
+  "docs_share_by_band_editor": {
+   "1861-1899": 0.9424,
+   "1900-1929": 0.7547,
+   "1930-1945": 0.8548,
+   "1946-": 0.6535
+  }
+ },
+ "pocom_shares": {
+  "all_agreement": {
+   "1861-1899": {
+    "share_surname_known": 0.5427,
+    "share_in_office": 0.3599,
+    "share_exactly_one": 0.2833
+   },
+   "1900-1929": {
+    "share_surname_known": 0.493,
+    "share_in_office": 0.2981,
+    "share_exactly_one": 0.2694
+   },
+   "1930-1945": {
+    "share_surname_known": 0.5033,
+    "share_in_office": 0.2973,
+    "share_exactly_one": 0.2771
+   },
+   "1946-": {
+    "share_surname_known": 0.4435,
+    "share_in_office": 0.2551,
+    "share_exactly_one": 0.2351
+   },
+   "all": {
+    "share_surname_known": 0.4992,
+    "share_in_office": 0.3054,
+    "share_exactly_one": 0.2684
+   }
+  },
+  "editor": {
+   "1861-1899": {
+    "share_surname_known": 0.794,
+    "share_in_office": 0.6991,
+    "share_exactly_one": 0.5434
+   },
+   "1900-1929": {
+    "share_surname_known": 0.7767,
+    "share_in_office": 0.5767,
+    "share_exactly_one": 0.5326
+   },
+   "1930-1945": {
+    "share_surname_known": 0.8323,
+    "share_in_office": 0.6226,
+    "share_exactly_one": 0.5789
+   },
+   "1946-": {
+    "share_surname_known": 0.7933,
+    "share_in_office": 0.542,
+    "share_exactly_one": 0.4982
+   },
+   "all": {
+    "share_surname_known": 0.8031,
+    "share_in_office": 0.6271,
+    "share_exactly_one": 0.5472
+   }
+  },
+  "added": {
+   "1861-1899": {
+    "share_surname_known": 0.4063,
+    "share_in_office": 0.1759,
+    "share_exactly_one": 0.1422
+   },
+   "1900-1929": {
+    "share_surname_known": 0.3766,
+    "share_in_office": 0.1838,
+    "share_exactly_one": 0.1613
+   },
+   "1930-1945": {
+    "share_surname_known": 0.3548,
+    "share_in_office": 0.1505,
+    "share_exactly_one": 0.1409
+   },
+   "1946-": {
+    "share_surname_known": 0.366,
+    "share_in_office": 0.1915,
+    "share_exactly_one": 0.1768
+   },
+   "all": {
+    "share_surname_known": 0.3746,
+    "share_in_office": 0.1736,
+    "share_exactly_one": 0.1542
+   }
+  }
+ },
+ "pools_net_pairs_per_scope_doc": {
+  "fc_only": {
+   "1861-1899": 1.312,
+   "1900-1929": 0.5808,
+   "1930-1945": 0.3853,
+   "1946-": 0.6969,
+   "all": 0.6473
+  },
+  "fs_only": {
+   "1861-1899": 4.5383,
+   "1900-1929": 3.5778,
+   "1930-1945": 3.9134,
+   "1946-": 5.2456,
+   "all": 4.1905
+  },
+  "three_way_minus_agreement": {
+   "1861-1899": 6.7157,
+   "1900-1929": 4.7412,
+   "1930-1945": 4.6899,
+   "1946-": 6.7278,
+   "all": 5.4308
+  }
+ },
+ "pools_net_vs_arm_added_pairs": {
+  "fc_only": 0.2344,
+  "fs_only": 1.5177,
+  "three_way_minus_agreement": 1.9669
+ },
+ "added_last_token_duplicate_share": {
+  "1861-1899": 0.1954,
+  "1900-1929": 0.0996,
+  "1930-1945": 0.0428,
+  "1946-": 0.0286,
+  "all": 0.0886
+ },
+ "followup_single_token_shares": {
+  "added": 0.4507,
+  "fc_only_net": 0.7195,
+  "fs_only_net": 0.2486,
+  "three_way_net": 0.34
+ },
+ "followup_pairs_on_corpus_singleton_keys_share": {
+  "added": 0.2021,
+  "fc_only_net": 0.222,
+  "fs_only_net": 0.2611,
+  "three_way_net": 0.241
+ }
+}

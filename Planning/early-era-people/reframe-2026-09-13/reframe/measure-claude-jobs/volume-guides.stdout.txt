@@ -1,0 +1,160 @@
+{
+ "generated_by": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/measure-claude-jobs/volume_guides.py",
+ "volumes": 267,
+ "docs_live_index_nonfront": 198821,
+ "marked_rows": 245747,
+ "volume_keys_sum": 30011,
+ "per_volume_input_chars": {
+  "sample40": {
+   "n": 267,
+   "sum": 3627507,
+   "mean": 13586.2,
+   "p50": 13926,
+   "p90": 19123,
+   "max": 42956
+  },
+  "sample100": {
+   "n": 267,
+   "sum": 4570942,
+   "mean": 17119.6,
+   "p50": 17638,
+   "p90": 22755,
+   "max": 46028
+  }
+ },
+ "per_volume_input_chars_top150_sample40": {
+  "n": 267,
+  "sum": 3438805,
+  "mean": 12879.4,
+  "p50": 13535,
+  "p90": 17965,
+  "max": 25332
+ },
+ "per_volume_components": {
+  "keys": {
+   "n": 267,
+   "sum": 30011,
+   "mean": 112.4,
+   "p50": 103,
+   "p90": 191,
+   "max": 680
+  },
+  "corr_chars": {
+   "n": 267,
+   "sum": 1518288,
+   "mean": 5686.5,
+   "p50": 5084,
+   "p90": 9966,
+   "max": 36784
+  },
+  "pocom_candidates": {
+   "n": 267,
+   "sum": 8688,
+   "mean": 32.5,
+   "p50": 34,
+   "p90": 51,
+   "max": 80
+  },
+  "pocom_chars": {
+   "n": 267,
+   "sum": 1392674,
+   "mean": 5216.0,
+   "p50": 5323,
+   "p90": 8667,
+   "max": 16024
+  },
+  "headers_sample40_chars": {
+   "n": 267,
+   "sum": 664710,
+   "mean": 2489.6,
+   "p50": 2665,
+   "p90": 3254,
+   "max": 6694
+  },
+  "headers_sample100_chars": {
+   "n": 267,
+   "sum": 1608145,
+   "mean": 6023.0,
+   "p50": 6658,
+   "p90": 8023,
+   "max": 11727
+  },
+  "headers_all_chars": {
+   "n": 267,
+   "sum": 12195984,
+   "mean": 45677.8,
+   "p50": 49512,
+   "p90": 79117,
+   "max": 114953
+  },
+  "meta_chars": {
+   "n": 267,
+   "sum": 51835,
+   "mean": 194.1,
+   "p50": 176,
+   "p90": 243,
+   "max": 675
+  },
+  "docs": {
+   "n": 267,
+   "sum": 198821,
+   "mean": 744.6,
+   "p50": 767,
+   "p90": 1113,
+   "max": 1944
+  }
+ },
+ "chapters": {
+  "all": 12224,
+  "with_marked_rows": 9954,
+  "ge5_docs": 6983,
+  "ge5_docs_with_marked": 6649,
+  "input_chars_all": 17663966,
+  "input_chars_with_marked": 16449915,
+  "input_chars_ge5_with_marked": 13857376,
+  "docs_per_chapter": {
+   "n": 12224,
+   "sum": 198821,
+   "mean": 16.3,
+   "p50": 6,
+   "p90": 40,
+   "max": 861
+  },
+  "keys_per_chapter": {
+   "n": 12224,
+   "sum": 54562,
+   "mean": 4.5,
+   "p50": 3,
+   "p90": 10,
+   "max": 173
+  },
+  "per_chapter_input_chars_with_marked": {
+   "n": 9954,
+   "sum": 14452115,
+   "mean": 1451.9,
+   "p50": 1070,
+   "p90": 2976,
+   "max": 13577
+  }
+ },
+ "pilot_gold_volumes": {
+  "n": 24,
+  "input_chars_sample40": 317743,
+  "input_chars_sample100": 395349,
+  "chapters_with_marked": 1008,
+  "chapter_input_chars_with_marked": 1500747
+ },
+ "pilot_identity_volumes": {
+  "n": 4,
+  "volumes": [
+   "frus1867p2",
+   "frus1872p1",
+   "frus1895p1",
+   "frus1904"
+  ],
+  "input_chars_sample40": 61877,
+  "input_chars_sample100": 68821,
+  "chapters_with_marked": 326,
+  "chapter_input_chars_with_marked": 341255
+ }
+}

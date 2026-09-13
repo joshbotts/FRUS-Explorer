@@ -1,0 +1,104 @@
+{
+ "set": [
+  "A:union_minus_agree_net",
+  "B:agree",
+  "C:armB:summary.json pre-#1292 approximation",
+  "D:volume-guide"
+ ],
+ "totals": {
+  "haiku-4.5 low|batch|cached": [
+   122.0,
+   232.0,
+   1001.0
+  ],
+  "haiku-4.5 low|batch|cached +chapter1500": [
+   178.0,
+   303.0,
+   1080.0
+  ],
+  "haiku-4.5 high|batch|cached": [
+   185.0,
+   367.0,
+   1632.0
+  ],
+  "haiku-4.5 high|batch|cached +chapter1500": [
+   375.0,
+   584.0,
+   1869.0
+  ],
+  "haiku-4.5 high|standard|uncached": [
+   369.0,
+   734.0,
+   4264.0
+  ],
+  "haiku-4.5 high|standard|uncached +chapter1500": [
+   748.0,
+   1167.0,
+   4765.0
+  ],
+  "sonnet-5 low|batch|cached": [
+   284.0,
+   444.0,
+   2265.0
+  ],
+  "sonnet-5 low|batch|cached +chapter1500": [
+   458.0,
+   644.0,
+   2514.0
+  ],
+  "sonnet-5 high|batch|cached": [
+   397.0,
+   688.0,
+   3402.0
+  ],
+  "sonnet-5 high|batch|cached +chapter1500": [
+   854.0,
+   1197.0,
+   3988.0
+  ],
+  "sonnet-5 high|standard|uncached": [
+   835.0,
+   1582.0,
+   8805.0
+  ],
+  "sonnet-5 high|standard|uncached +chapter1500": [
+   1770.0,
+   2648.0,
+   10031.0
+  ],
+  "opus-5 low|batch|cached": [
+   568.0,
+   1048.0,
+   5833.0
+  ],
+  "opus-5 low|batch|cached +chapter1500": [
+   907.0,
+   1498.0,
+   6474.0
+  ],
+  "opus-5 high|batch|cached": [
+   828.0,
+   1658.0,
+   8773.0
+  ],
+  "opus-5 high|batch|cached +chapter1500": [
+   1752.0,
+   2821.0,
+   10282.0
+  ],
+  "opus-5 high|standard|uncached": [
+   1757.0,
+   3829.0,
+   22548.0
+  ],
+  "opus-5 high|standard|uncached +chapter1500": [
+   3654.0,
+   6275.0,
+   25701.0
+  ],
+  "local no-think central hours (two time models)": [
+   360.6,
+   376.4
+  ]
+ }
+}

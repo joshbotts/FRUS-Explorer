@@ -1,0 +1,189 @@
+{
+ "document_reach": {
+  "1861-1899": {
+   "V1:after:any-label": 27387,
+   "V1:before:any-label": 24876,
+   "V2:after:any-label": 27387,
+   "V2:before:any-label": 24876,
+   "after:chosen-title-candidate-categories-not-shown": 604,
+   "after:shown": 27387,
+   "before:shown": 24876,
+   "docs": 32809,
+   "legation-kind docs": 4497,
+   "legation-kind: after chosen = legation title": 1967,
+   "legation-kind: after chosen = other title (roll-served False)": 7,
+   "legation-kind: after chosen = other title (roll-served True)": 2297,
+   "legation-kind: after no shown": 226
+  },
+  "1900-1905": {
+   "V1:after:any-label": 4957,
+   "V1:before:any-label": 4957,
+   "V2:after:any-label": 4957,
+   "V2:before:any-label": 4957,
+   "after:chosen-title-candidate-categories-not-shown": 124,
+   "after:shown": 4957,
+   "before:shown": 4957,
+   "docs": 6222,
+   "legation-kind docs": 18,
+   "legation-kind: after chosen = other title (roll-served True)": 18
+  }
+ },
+ "hunter": {
+  "dateline has department of state (head-from)": 194,
+  "grain:head-from": 197,
+  "grain:head-to": 204,
+  "grain:non-head": 10,
+  "label V1 after head-from own=department": 193,
+  "label V1 after head-from own=none": 3,
+  "label V1 after head-from own=us-mission": 1,
+  "label V1 after head-to own=department": 173,
+  "label V1 after head-to own=none": 31,
+  "pocom:one:hunter-william": 411,
+  "rows": 411,
+  "shown after": 377,
+  "shown after, pocom one": 377,
+  "shown before": 269
+ },
+ "pocom_hunter_william_appointments": [
+  [
+   "second-assistant-secretary.xml",
+   {
+    "appointed": "1866-07-27",
+    "arrived": null,
+    "ended": "1886-07-22",
+    "started": "1886-07-27"
+   }
+  ],
+  [
+   "chief-clerk.xml",
+   {
+    "appointed": "1852-05-17",
+    "arrived": null,
+    "ended": "1855-05-07",
+    "started": ""
+   }
+  ],
+  [
+   "secretary-ad-interim.xml",
+   {
+    "appointed": "1853-03-04",
+    "arrived": null,
+    "ended": "1853-03-07",
+    "started": ""
+   }
+  ],
+  [
+   "secretary-ad-interim.xml",
+   {
+    "appointed": "1860-12-15",
+    "arrived": null,
+    "ended": "1860-12-16",
+    "started": ""
+   }
+  ],
+  [
+   "assistant-secretary.xml",
+   {
+    "appointed": "1855-05-08",
+    "arrived": null,
+    "ended": "1855-10-31",
+    "started": "1855-05-09"
+   }
+  ]
+ ],
+ "row_label_reach": {
+  "1861-1899": {
+   "V1:after:docs labelled": 26512,
+   "V1:after:labelled": 52643,
+   "V1:after:labelled-single": 44085,
+   "V1:before:docs labelled": 24044,
+   "V1:before:labelled": 47759,
+   "V1:before:labelled-single": 39417,
+   "V2:after:docs labelled": 26512,
+   "V2:after:labelled": 52643,
+   "V2:after:labelled-single": 44626,
+   "V2:before:docs labelled": 24044,
+   "V2:before:labelled": 47759,
+   "V2:before:labelled-single": 39932,
+   "docs holding rows": 30864,
+   "head rows": 61104,
+   "rows": 84234
+  },
+  "1900-1905": {
+   "V1:after:docs labelled": 4602,
+   "V1:after:labelled": 8370,
+   "V1:after:labelled-single": 6792,
+   "V1:before:docs labelled": 4602,
+   "V1:before:labelled": 8370,
+   "V1:before:labelled-single": 6792,
+   "V2:after:docs labelled": 4602,
+   "V2:after:labelled": 8370,
+   "V2:after:labelled-single": 6904,
+   "V2:before:docs labelled": 4602,
+   "V2:before:labelled": 8370,
+   "V2:before:labelled-single": 6904,
+   "docs holding rows": 5314,
+   "head rows": 9652,
+   "rows": 13160
+  }
+ },
+ "seward": {
+  "F.W.-first-signed": 117,
+  "F.W.: chosen title is legation title (after)": 36,
+  "F.W.: dateline contains 'department of state'": 117,
+  "F.W.: header sender matches Swift secretaryOfStateSender regex": 106,
+  "F.W.: in a legation-titled section path": 45,
+  "F.W.: name carries F. W. initials": 108,
+  "F.W.: own label (V1 after) = ": 4,
+  "F.W.: own label (V1 after) = department": 113,
+  "F.W.: sender rule decided (after)": 0,
+  "F.W.: shown after": 113,
+  "F.W.: shown before": 68,
+  "head-from": 3671,
+  "rows": 9132
+ },
+ "seward_examples": [
+  [
+   "frus1861/d73",
+   "F. W. Seward",
+   "Mr. F. W. Seward to Mr. Adams .",
+   "Department of State , Washington , August 27, 1861 .",
+   "Great Britain"
+  ],
+  [
+   "frus1862/d88",
+   "Mr. Seward",
+   "Mr. Seward to Mr. Adams .",
+   "Department of State, Washington, June 27, 1862.",
+   "Great Britain."
+  ],
+  [
+   "frus1862/d89",
+   "Mr. F. W. Seward",
+   "Mr. F. W. Seward to Mr. Adams .",
+   "Department of State, Washington, June 30, 1862.",
+   "Great Britain."
+  ],
+  [
+   "frus1862/d207",
+   "Mr. Seward",
+   "Mr. Seward to Lord Lyons .",
+   "Department of State, Washington, February 6, 1862.",
+   "Great Britain."
+  ],
+  [
+   "frus1862/d216",
+   "Mr. F. W. Seward",
+   "Mr. F. W. Seward to Lord Lyons .",
+   "Department of State, Washington, June 14, 1862.",
+   "Great Britain."
+  ],
+  [
+   "frus1862/d221",
+   "Mr. Seward",
+   "Mr. Seward to Mr. Stuart .",
+   "Department of State, Washington, July 1, 1862.",
+   "Great Britain."
+  ]
+ ]
+}

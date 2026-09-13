@@ -1,0 +1,219 @@
+{
+ "counts": {
+  "after": {
+   "distinct entries judged (dept-only)": 3,
+   "distinct entries judged (other)": 25,
+   "judged": 647,
+   "labelled": 843,
+   "labelled, unlinked": 196,
+   "right-kind": 645
+  },
+  "after:by-label": {
+   "department:right": 405,
+   "foreign-consul:wrong": 1,
+   "foreign-legation:right": 3,
+   "foreign-legation|us-mission:right": 29,
+   "us-consulate:right": 16,
+   "us-mission:right": 192,
+   "us-mission:wrong": 1
+  },
+  "after:dept-only-evidence": {
+   "judged": 405,
+   "right-kind": 405
+  },
+  "after:other-evidence": {
+   "judged": 242,
+   "right-kind": 240
+  },
+  "after:place (non-dept labels)": {
+   "no-shared-stem": 32,
+   "shares-stem": 209,
+   "untestable": 1
+  },
+  "before": {
+   "distinct entries judged (dept-only)": 2,
+   "distinct entries judged (other)": 4,
+   "judged": 36,
+   "labelled": 52,
+   "labelled, unlinked": 16,
+   "right-kind": 35
+  },
+  "before:by-label": {
+   "department:right": 19,
+   "foreign-consul:wrong": 1,
+   "us-consulate:right": 16
+  },
+  "before:dept-only-evidence": {
+   "judged": 19,
+   "right-kind": 19
+  },
+  "before:other-evidence": {
+   "judged": 17,
+   "right-kind": 16
+  },
+  "before:place (non-dept labels)": {
+   "no-shared-stem": 16,
+   "untestable": 1
+  },
+  "entries": {
+   "frus1873p1v1": 57,
+   "frus1873p1v2": 0
+  },
+  "head from/to": {
+   "link resolved in other volume": 373,
+   "link unresolved": 11,
+   "linked": 800,
+   "rows": 1023
+  }
+ },
+ "examples": {
+  "after": [
+   [
+    "frus1873p1v1/d196",
+    "from",
+    "Sir Edward Thornton",
+    "envoy extraordinary and minister plenipotentiary of Her Britannic Majesty at Was",
+    "great britain",
+    [
+     "us-mission"
+    ],
+    "No. 194. Sir Edward Thornton to Mr. Davis .",
+    "Catskill Station , July 18, 1873 . (Received July 19.)"
+   ],
+   [
+    "frus1873p1v2/d176",
+    "from",
+    "Vidal",
+    "consul of the United States at Tripoli.",
+    "turkish empire",
+    [
+     "foreign-consul"
+    ],
+    "No. 482. Mr. Vidal to Mr. Hunter .",
+    "United Stated Consulate , Tripoli, (Barbary,) May 26, 1871 . (Received July 19.)"
+   ]
+  ],
+  "before": [
+   [
+    "frus1873p1v2/d176",
+    "from",
+    "Vidal",
+    "consul of the United States at Tripoli.",
+    "turkish empire",
+    [
+     "foreign-consul"
+    ],
+    "No. 482. Mr. Vidal to Mr. Hunter .",
+    "United Stated Consulate , Tripoli, (Barbary,) May 26, 1871 . (Received July 19.)"
+   ]
+  ],
+  "place": [
+   [
+    "frus1873p1v1/d44",
+    "Root",
+    [
+     "chile"
+    ],
+    "chili"
+   ],
+   [
+    "frus1873p1v1/d45",
+    "Root",
+    [
+     "chile"
+    ],
+    "chili"
+   ],
+   [
+    "frus1873p1v1/d46",
+    "Root",
+    [
+     "chile"
+    ],
+    "chili"
+   ],
+   [
+    "frus1873p1v2/d2",
+    "Mathews",
+    [
+     "tangier"
+    ],
+    "morocco"
+   ],
+   [
+    "frus1873p1v2/d2",
+    "Mathews",
+    [
+     "tangier"
+    ],
+    "morocco"
+   ],
+   [
+    "frus1873p1v2/d145",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ],
+   [
+    "frus1873p1v2/d146",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ],
+   [
+    "frus1873p1v2/d147",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ],
+   [
+    "frus1873p1v2/d148",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ],
+   [
+    "frus1873p1v2/d149",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ],
+   [
+    "frus1873p1v2/d150",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ],
+   [
+    "frus1873p1v2/d151",
+    "Boker",
+    [
+     "turkey"
+    ],
+    "turkish empire"
+   ]
+  ]
+ },
+ "file_identity": {
+  "after-docs 1873 docs": 634,
+  "after-docs shown nonempty": 448,
+  "after==head-listvols on shown+chosenTitle+classifierByTitle": 634,
+  "before-docs 1873 docs": 634,
+  "before-docs shown nonempty": 50,
+  "head-listvols 1873 docs": 634,
+  "label-validation list classify 1873 docs": 634,
+  "label-validation shown nonempty": 50
+ }
+}

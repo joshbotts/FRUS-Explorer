@@ -1,0 +1,14 @@
+{
+ "volumes": 267,
+ "documents": 197534,
+ "characters": 679401514,
+ "chunks": 330979,
+ "documents_multi_chunk": 47372,
+ "share_documents_multi_chunk": 0.2398,
+ "characters_beyond_first_chunk": 296561742,
+ "share_characters_beyond_first_chunk": 0.4365,
+ "median_doc_chars": 1830,
+ "p90_doc_chars": 6708,
+ "p99_doc_chars": 27660,
+ "max_doc_chars": 1283407
+}

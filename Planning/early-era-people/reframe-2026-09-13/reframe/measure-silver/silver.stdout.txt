@@ -1,0 +1,241 @@
+== linked_all
+   1861-1899 {"rows": 933, "no_crosswalk": 463, "head_rows": 810, "crosswalk": 470, "slug": 470, "head_slug": 459}
+   1900-1929 {"rows": 12097, "crosswalk": 9270, "head_rows": 11482, "slug": 7307, "head_slug": 7097, "no_crosswalk": 2827}
+   1930-1945 {"rows": 5980, "no_crosswalk": 2598, "head_rows": 5778, "crosswalk": 3382, "slug": 1553, "head_slug": 1526}
+   1946- {"rows": 40022, "crosswalk": 40022, "slug": 23808, "head_rows": 39721, "head_slug": 23655}
+   pre-1861 {"rows": 1, "no_crosswalk": 1, "head_rows": 1}
+== linked_list_volume
+   1861-1899 {"rows": 933, "no_crosswalk": 463, "head_rows": 810, "crosswalk": 470, "slug": 470, "head_slug": 459}
+   1900-1929 {"rows": 10794, "crosswalk": 8239, "head_rows": 10215, "slug": 6382, "head_slug": 6177, "no_crosswalk": 2555}
+   1930-1945 {"rows": 5280, "no_crosswalk": 2036, "head_rows": 5083, "crosswalk": 3244, "slug": 1487, "head_slug": 1461}
+   1946- {"rows": 40022, "crosswalk": 40022, "slug": 23808, "head_rows": 39721, "head_slug": 23655}
+   pre-1861 {"rows": 1, "no_crosswalk": 1, "head_rows": 1}
+== linked_split_part_in_scope
+   1900-1929 {"rows": 1303, "crosswalk": 1031, "slug": 925, "head_rows": 1267, "head_slug": 920, "no_crosswalk": 272}
+   1930-1945 {"rows": 700, "no_crosswalk": 562, "head_rows": 695, "crosswalk": 138, "slug": 66, "head_slug": 65}
+== silver_all|all
+   1861-1899 {"rows": 470, "S_class:one": 470, "prov:overlay": 470, "fmt:bare_honorific": 458, "slug_in_pocom_office_y1:True": 470, "S_picks": 470, "S_agree": 470, "pre1906_doc": 470, "fmt:not_head": 11, "fmt:other": 1, "distinct_documents": 459, "distinct_volumes": 2, "distinct_persons": 1, "distinct_doc_type_person": 463, "S_agreement_wilson_mention_grain": [1.0, 0.9919, 1.0]}
+   1900-1929 {"rows": 7307, "S_class:one": 4168, "prov:registry": 3108, "fmt:post": 7057, "slug_in_pocom_office_y1:True": 6525, "S_picks": 4168, "S_agree": 4163, "S_class:several": 2212, "slug_in_pocom_office_y1:False": 782, "S_class:nobody": 740, "S_class:unknown": 187, "fmt:other": 40, "fmt:not_head": 210, "S_disagree": 5, "S_one_wrong_person": 5, "prov:overlay": 4199, "distinct_documents": 7107, "distinct_volumes": 14, "distinct_persons": 63, "distinct_doc_type_person": 7253, "S_agreement_wilson_mention_grain": [0.9988, 0.9972, 0.9995]}
+   1930-1945 {"rows": 1553, "S_class:nobody": 341, "prov:overlay": 687, "fmt:post": 1461, "slug_in_pocom_office_y1:False": 342, "S_class:one": 1157, "slug_in_pocom_office_y1:True": 1211, "S_picks": 1157, "S_agree": 1155, "fmt:bare_honorific": 5, "S_disagree": 2, "S_one_wrong_person": 2, "fmt:not_head": 27, "fmt:other": 60, "prov:registry": 866, "S_class:several": 55, "distinct_documents": 1468, "distinct_volumes": 12, "distinct_persons": 91, "distinct_doc_type_person": 1546, "S_agreement_wilson_mention_grain": [0.9983, 0.9937, 0.9995]}
+   1946- {"rows": 23808, "S_class:one": 15949, "prov:registry": 23808, "fmt:post": 20425, "slug_in_pocom_office_y1:True": 17209, "S_picks": 15949, "S_agree": 15351, "S_class:nobody": 5973, "slug_in_pocom_office_y1:False": 6599, "S_class:several": 1785, "fmt:other": 3227, "fmt:not_head": 153, "fmt:bare_honorific": 2, "S_disagree": 598, "S_one_wrong_person": 598, "S_class:unknown": 101, "fmt:name_not_in_head_text": 1, "distinct_documents": 19572, "distinct_volumes": 181, "distinct_persons": 588, "distinct_doc_type_person": 23720, "S_agreement_wilson_mention_grain": [0.9625, 0.9594, 0.9653]}
+== silver_all|head
+   1861-1899 {"rows": 459, "S_class:one": 459, "prov:overlay": 459, "fmt:bare_honorific": 458, "slug_in_pocom_office_y1:True": 459, "S_picks": 459, "S_agree": 459, "pre1906_doc": 459, "fmt:other": 1, "distinct_documents": 459, "distinct_volumes": 2, "distinct_persons": 1, "distinct_doc_type_person": 459, "S_agreement_wilson_mention_grain": [1.0, 0.9917, 1.0]}
+   1900-1929 {"rows": 7097, "S_class:one": 4078, "prov:registry": 2942, "fmt:post": 7057, "slug_in_pocom_office_y1:True": 6352, "S_picks": 4078, "S_agree": 4075, "S_class:several": 2133, "slug_in_pocom_office_y1:False": 745, "S_class:nobody": 706, "S_class:unknown": 180, "fmt:other": 40, "S_disagree": 3, "S_one_wrong_person": 3, "prov:overlay": 4155, "distinct_documents": 7091, "distinct_volumes": 14, "distinct_persons": 62, "distinct_doc_type_person": 7097, "S_agreement_wilson_mention_grain": [0.9993, 0.9978, 0.9997]}
+   1930-1945 {"rows": 1526, "S_class:nobody": 334, "prov:overlay": 677, "fmt:post": 1461, "slug_in_pocom_office_y1:False": 335, "S_class:one": 1138, "slug_in_pocom_office_y1:True": 1191, "S_picks": 1138, "S_agree": 1136, "fmt:bare_honorific": 5, "S_disagree": 2, "S_one_wrong_person": 2, "fmt:other": 60, "prov:registry": 849, "S_class:several": 54, "distinct_documents": 1458, "distinct_volumes": 12, "distinct_persons": 90, "distinct_doc_type_person": 1526, "S_agreement_wilson_mention_grain": [0.9982, 0.9936, 0.9995]}
+   1946- {"rows": 23655, "S_class:one": 15904, "prov:registry": 23655, "fmt:post": 20425, "slug_in_pocom_office_y1:True": 17086, "S_picks": 15904, "S_agree": 15306, "S_class:nobody": 5943, "slug_in_pocom_office_y1:False": 6569, "S_class:several": 1778, "fmt:other": 3227, "fmt:bare_honorific": 2, "S_disagree": 598, "S_one_wrong_person": 598, "S_class:unknown": 30, "fmt:name_not_in_head_text": 1, "distinct_documents": 19550, "distinct_volumes": 181, "distinct_persons": 587, "distinct_doc_type_person": 23655, "S_agreement_wilson_mention_grain": [0.9624, 0.9593, 0.9652]}
+== silver_split_part_in_scope|head
+   1900-1929 {"rows": 920, "S_class:several": 334, "prov:overlay": 920, "fmt:post": 920, "slug_in_pocom_office_y1:True": 805, "S_class:nobody": 115, "slug_in_pocom_office_y1:False": 115, "S_class:one": 417, "S_picks": 417, "S_agree": 417, "S_class:unknown": 54, "distinct_documents": 920, "distinct_volumes": 2, "distinct_persons": 24, "distinct_doc_type_person": 920, "S_agreement_wilson_mention_grain": [1.0, 0.9909, 1.0]}
+   1930-1945 {"rows": 65, "S_class:one": 64, "prov:overlay": 65, "fmt:post": 65, "slug_in_pocom_office_y1:True": 64, "S_picks": 64, "S_agree": 64, "S_class:nobody": 1, "slug_in_pocom_office_y1:False": 1, "distinct_documents": 65, "distinct_volumes": 1, "distinct_persons": 2, "distinct_doc_type_person": 65, "S_agreement_wilson_mention_grain": [1.0, 0.9434, 1.0]}
+== untagged_scope
+   1861-1899 {"rows": 83894, "head_rows": 60645, "S_class:one": 37715, "fmt:post": 782, "S_class:several": 11015, "fmt:bare_honorific": 39415, "S_class:unknown": 7874, "fmt:other": 20444, "S_class:nobody": 4041, "fmt:name_not_in_head_text": 4}
+   1900-1929 {"rows": 48115, "head_rows": 40707, "S_class:one": 23750, "fmt:bare_honorific": 8865, "S_class:unknown": 7194, "fmt:other": 997, "S_class:nobody": 8054, "fmt:post": 30845, "S_class:several": 1709}
+   1930-1945 {"rows": 72153, "head_rows": 70623, "S_class:one": 42408, "fmt:post": 67211, "S_class:unknown": 10389, "S_class:nobody": 14623, "S_class:several": 3203, "fmt:bare_honorific": 584, "fmt:other": 2828}
+   1946- {"rows": 28921, "head_rows": 28466, "S_class:unknown": 5784, "fmt:other": 2066, "S_class:one": 14331, "fmt:post": 25495, "S_class:nobody": 7092, "S_class:several": 1259, "fmt:bare_honorific": 905}
+   pre-1861 {"rows": 665, "head_rows": 653, "S_class:one": 218, "fmt:bare_honorific": 258, "fmt:other": 203, "S_class:several": 18, "S_class:unknown": 225, "fmt:post": 192, "S_class:nobody": 192}
+{
+ "1861-1899": {
+  "top_volumes": [
+   [
+    "frus1873p1v1",
+    558
+   ],
+   [
+    "frus1873p1v2",
+    360
+   ]
+  ],
+  "top_persons": [
+   [
+    "fish-hamilton",
+    918
+   ]
+  ],
+  "volumes": 2,
+  "persons": 1,
+  "top_person_share": 1.0
+ },
+ "1900-1929": {
+  "top_volumes": [
+   [
+    "frus1915Supp",
+    2162
+   ],
+   [
+    "frus1916Supp",
+    2016
+   ],
+   [
+    "frus1914Supp",
+    1706
+   ],
+   [
+    "frus1918Supp01v02",
+    1304
+   ],
+   [
+    "frus1918Supp01v01",
+    1072
+   ]
+  ],
+  "top_persons": [
+   [
+    "page-walter-hines",
+    3356
+   ],
+   [
+    "francis-david-rowland",
+    1522
+   ],
+   [
+    "gerard-james-watson",
+    1128
+   ],
+   [
+    "sharp-william-graves",
+    936
+   ],
+   [
+    "stovall-pleasant-alexander",
+    536
+   ],
+   [
+    "reinsch-paul-samuel",
+    466
+   ],
+   [
+    "page-thomas-nelson",
+    452
+   ],
+   [
+    "morris-ira-nelson",
+    436
+   ]
+  ],
+  "volumes": 14,
+  "persons": 62,
+  "top_person_share": 0.2364
+ },
+ "1930-1945": {
+  "top_volumes": [
+   [
+    "frus1933-39",
+    738
+   ],
+   [
+    "frus1945Berlinv02",
+    512
+   ],
+   [
+    "frus1945Berlinv01",
+    488
+   ],
+   [
+    "frus1932v05",
+    388
+   ],
+   [
+    "frus1943CairoTehran",
+    268
+   ]
+  ],
+  "top_persons": [
+   [
+    "kirk-alexander-comstock",
+    244
+   ],
+   [
+    "steinhardt-laurence-adolph",
+    228
+   ],
+   [
+    "harriman-william-averell",
+    224
+   ],
+   [
+    "winant-john-gilbert",
+    208
+   ],
+   [
+    "grew-joseph-clark",
+    186
+   ],
+   [
+    "henderson-loy-wesley",
+    176
+   ],
+   [
+    "stettinius-edward-reilly",
+    132
+   ],
+   [
+    "davies-joseph-edward",
+    122
+   ]
+  ],
+  "volumes": 12,
+  "persons": 90,
+  "top_person_share": 0.0799
+ },
+ "1946-": {
+  "top_volumes": [
+   [
+    "frus1948v02",
+    886
+   ],
+   [
+    "frus1952-54v13p1",
+    878
+   ],
+   [
+    "frus1952-54v09p1",
+    766
+   ],
+   [
+    "frus1952-54v04",
+    758
+   ],
+   [
+    "frus1952-54v03",
+    732
+   ]
+  ],
+  "top_persons": [
+   [
+    "kissinger-henry-a",
+    6042
+   ],
+   [
+    "rusk-david-dean",
+    2708
+   ],
+   [
+    "rostow-walt-whitman",
+    1506
+   ],
+   [
+    "dillon-clarence-douglas",
+    1144
+   ],
+   [
+    "murphy-robert-daniel",
+    970
+   ],
+   [
+    "rogers-william-pierce",
+    938
+   ],
+   [
+    "komer-robert-william",
+    912
+   ],
+   [
+    "robertson-walter-spencer",
+    834
+   ]
+  ],
+  "volumes": 181,
+  "persons": 587,
+  "top_person_share": 0.1277
+ }
+}
+python3 silver.py  1.79s user 0.13s system 94% cpu 2.036 total

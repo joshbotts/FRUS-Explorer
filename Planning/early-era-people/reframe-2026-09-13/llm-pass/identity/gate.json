@@ -1,0 +1,263 @@
+{
+ "eval_rows": 300,
+ "eval_rows_pocom_class": {
+  "1910+": {
+   "nobody": 34,
+   "one": 125,
+   "several": 4,
+   "unknown": 37
+  },
+  "all": {
+   "nobody": 42,
+   "one": 188,
+   "several": 16,
+   "unknown": 54
+  },
+  "pre1910": {
+   "nobody": 8,
+   "one": 63,
+   "several": 12,
+   "unknown": 17
+  },
+  "vol:frus1867p2": {
+   "nobody": 1,
+   "one": 7,
+   "several": 12,
+   "unknown": 5
+  },
+  "vol:frus1872p1": {
+   "nobody": 2,
+   "one": 21,
+   "unknown": 2
+  },
+  "vol:frus1895p1": {
+   "nobody": 4,
+   "one": 13,
+   "unknown": 8
+  },
+  "vol:frus1904": {
+   "nobody": 1,
+   "one": 22,
+   "unknown": 2
+  },
+  "vol:frus1924v02": {
+   "nobody": 9,
+   "one": 13,
+   "unknown": 3
+  },
+  "vol:frus1929v02": {
+   "nobody": 4,
+   "one": 16,
+   "unknown": 5
+  },
+  "vol:frus1937v02": {
+   "nobody": 5,
+   "one": 18,
+   "several": 2
+  },
+  "vol:frus1938v01": {
+   "nobody": 3,
+   "one": 17,
+   "several": 2,
+   "unknown": 3
+  },
+  "vol:frus1942v05": {
+   "nobody": 1,
+   "one": 20,
+   "unknown": 4
+  },
+  "vol:frus1948v05p2": {
+   "nobody": 1,
+   "one": 18,
+   "unknown": 6
+  },
+  "vol:frus1948v06": {
+   "nobody": 4,
+   "one": 8,
+   "unknown": 13
+  },
+  "vol:frus1949v06": {
+   "nobody": 7,
+   "one": 15,
+   "unknown": 3
+  }
+ },
+ "eval_rows_surname_column_matches_surname_of": 300,
+ "wilson_95": {
+  "n=100 k=100 (100%)": {
+   "half_width_pts": 1.9,
+   "hi": 1.0,
+   "lo": 0.963
+  },
+  "n=100 k=50 (50%)": {
+   "half_width_pts": 9.6,
+   "hi": 0.5962,
+   "lo": 0.4038
+  },
+  "n=100 k=60 (60%)": {
+   "half_width_pts": 9.4,
+   "hi": 0.6906,
+   "lo": 0.502
+  },
+  "n=100 k=70 (70%)": {
+   "half_width_pts": 8.8,
+   "hi": 0.7811,
+   "lo": 0.6042
+  },
+  "n=100 k=80 (80%)": {
+   "half_width_pts": 7.8,
+   "hi": 0.8666,
+   "lo": 0.7112
+  },
+  "n=100 k=90 (90%)": {
+   "half_width_pts": 6.0,
+   "hi": 0.9448,
+   "lo": 0.8256
+  },
+  "n=100 k=95 (95%)": {
+   "half_width_pts": 4.5,
+   "hi": 0.9785,
+   "lo": 0.8882
+  },
+  "n=25 k=12 (48%)": {
+   "half_width_pts": 18.2,
+   "hi": 0.665,
+   "lo": 0.3003
+  },
+  "n=25 k=15 (60%)": {
+   "half_width_pts": 17.9,
+   "hi": 0.766,
+   "lo": 0.4074
+  },
+  "n=25 k=18 (72%)": {
+   "half_width_pts": 16.6,
+   "hi": 0.8572,
+   "lo": 0.5242
+  },
+  "n=25 k=20 (80%)": {
+   "half_width_pts": 15.1,
+   "hi": 0.9114,
+   "lo": 0.6087
+  },
+  "n=25 k=22 (88%)": {
+   "half_width_pts": 12.9,
+   "hi": 0.9583,
+   "lo": 0.7004
+  },
+  "n=25 k=24 (96%)": {
+   "half_width_pts": 9.4,
+   "hi": 0.9929,
+   "lo": 0.8046
+  },
+  "n=25 k=25 (100%)": {
+   "half_width_pts": 6.7,
+   "hi": 1.0,
+   "lo": 0.8668
+  },
+  "n=300 k=150 (50%)": {
+   "half_width_pts": 5.6,
+   "hi": 0.5562,
+   "lo": 0.4438
+  },
+  "n=300 k=180 (60%)": {
+   "half_width_pts": 5.5,
+   "hi": 0.6538,
+   "lo": 0.5436
+  },
+  "n=300 k=210 (70%)": {
+   "half_width_pts": 5.2,
+   "hi": 0.7491,
+   "lo": 0.6459
+  },
+  "n=300 k=240 (80%)": {
+   "half_width_pts": 4.5,
+   "hi": 0.8413,
+   "lo": 0.7511
+  },
+  "n=300 k=270 (90%)": {
+   "half_width_pts": 3.4,
+   "hi": 0.9291,
+   "lo": 0.8608
+  },
+  "n=300 k=285 (95%)": {
+   "half_width_pts": 2.5,
+   "hi": 0.9695,
+   "lo": 0.9192
+  },
+  "n=300 k=300 (100%)": {
+   "half_width_pts": 0.6,
+   "hi": 1.0,
+   "lo": 0.9874
+  },
+  "n=33 k=16 (48%)": {
+   "half_width_pts": 16.1,
+   "hi": 0.6478,
+   "lo": 0.325
+  },
+  "n=33 k=20 (61%)": {
+   "half_width_pts": 15.8,
+   "hi": 0.7532,
+   "lo": 0.4368
+  },
+  "n=33 k=23 (70%)": {
+   "half_width_pts": 15.0,
+   "hi": 0.8262,
+   "lo": 0.5266
+  },
+  "n=33 k=26 (79%)": {
+   "half_width_pts": 13.5,
+   "hi": 0.8932,
+   "lo": 0.6225
+  },
+  "n=33 k=30 (91%)": {
+   "half_width_pts": 10.2,
+   "hi": 0.9686,
+   "lo": 0.7643
+  },
+  "n=33 k=31 (94%)": {
+   "half_width_pts": 9.0,
+   "hi": 0.9832,
+   "lo": 0.8039
+  },
+  "n=33 k=33 (100%)": {
+   "half_width_pts": 5.2,
+   "hi": 1.0,
+   "lo": 0.8957
+  },
+  "n=50 k=25 (50%)": {
+   "half_width_pts": 13.4,
+   "hi": 0.6336,
+   "lo": 0.3664
+  },
+  "n=50 k=30 (60%)": {
+   "half_width_pts": 13.1,
+   "hi": 0.7239,
+   "lo": 0.4618
+  },
+  "n=50 k=35 (70%)": {
+   "half_width_pts": 12.3,
+   "hi": 0.809,
+   "lo": 0.5625
+  },
+  "n=50 k=40 (80%)": {
+   "half_width_pts": 10.9,
+   "hi": 0.8876,
+   "lo": 0.6696
+  },
+  "n=50 k=45 (90%)": {
+   "half_width_pts": 8.5,
+   "hi": 0.9565,
+   "lo": 0.7864
+  },
+  "n=50 k=48 (96%)": {
+   "half_width_pts": 6.2,
+   "hi": 0.989,
+   "lo": 0.8654
+  },
+  "n=50 k=50 (100%)": {
+   "half_width_pts": 3.6,
+   "hi": 1.0,
+   "lo": 0.9287
+  }
+ }
+}

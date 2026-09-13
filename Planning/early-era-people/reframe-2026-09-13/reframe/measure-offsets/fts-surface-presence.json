@@ -1,0 +1,41 @@
+{
+ "sweep_filtered": {
+  "distinct_doc_surface_pairs": 3229,
+  "queried": 3229,
+  "no_word_tokens": 0,
+  "confirmed": 3226,
+  "rate": 0.9991,
+  "latency_ms_median": 0.1018,
+  "latency_ms_p99": 12.3086,
+  "latency_ms_total": 2123.3
+ },
+ "control_filtered": {
+  "distinct_doc_surface_pairs": 1616,
+  "queried": 1616,
+  "no_word_tokens": 0,
+  "confirmed": 1616,
+  "rate": 1.0,
+  "latency_ms_median": 0.0149,
+  "latency_ms_p99": 0.2935,
+  "latency_ms_total": 61.4
+ },
+ "name_list_against_one_document": {
+  "names": 1000,
+  "document": "frus1866p1/d113",
+  "present": 95,
+  "total_ms": 9.4
+ },
+ "rowid_contiguous_volumes": {
+  "contiguous": 552,
+  "volumes": 552
+ },
+ "volume_rowid_range_wells": {
+  "volume": "frus1885",
+  "count": 174,
+  "ms": [
+   0.03,
+   0.01,
+   0.01
+  ]
+ }
+}

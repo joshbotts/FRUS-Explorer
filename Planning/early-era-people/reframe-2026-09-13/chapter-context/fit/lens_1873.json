@@ -1,0 +1,21 @@
+{
+ "frus1873p1v1": {
+  "docs": 309,
+  "docs_shown_by_classifier": 0,
+  "fromto": 908,
+  "fromto_with_ref": 508,
+  "fromto_ref_in_crosswalk": 286,
+  "fromto_with_pocom_slug": 286,
+  "fromto_slug_has_pocom_appointment": 286
+ },
+ "frus1873p1v2": {
+  "docs": 324,
+  "docs_shown_by_classifier": 50,
+  "fromto": 546,
+  "fromto_with_ref": 426,
+  "fromto_ref_in_crosswalk": 184,
+  "fromto_with_pocom_slug": 184,
+  "fromto_slug_has_pocom_appointment": 184,
+  "fromto_slug_in_doc_shown_by_classifier": 8
+ }
+}

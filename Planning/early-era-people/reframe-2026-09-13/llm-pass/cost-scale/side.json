@@ -1,0 +1,37 @@
+{
+ "sweep_hours": 277.2,
+ "sweep_kWh_range_at_90_120W": [
+  24.9,
+  33.3
+ ],
+ "sweep_electricity_usd_at_0.15_0.25": [
+  3.74,
+  8.32
+ ],
+ "nltagger_electricity_usd_upper": 0.004,
+ "subagent_seat_tokens_range": [
+  44661,
+  70602
+ ],
+ "subagent_docs_per_agent_at_1000": 198,
+ "subagent_text_tokens_per_agent": [
+  146297,
+  238470
+ ],
+ "subagent_turns_per_agent": [
+  25,
+  40
+ ],
+ "subagent_billed_input_tokens_all_agents_B": [
+  2.9,
+  7.5
+ ],
+ "subagent_sonnet5_standard_input_usd_if_90pct_cache_read": [
+  1108,
+  2852
+ ],
+ "subagent_opus5_standard_input_usd_if_90pct_cache_read": [
+  2771,
+  7129
+ ]
+}

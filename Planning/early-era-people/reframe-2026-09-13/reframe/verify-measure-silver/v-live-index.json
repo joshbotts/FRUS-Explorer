@@ -1,0 +1,183 @@
+{
+ "persons_total": 62931,
+ "mentions_total": 611307,
+ "index_version_hist": [
+  [
+   50,
+   316839
+  ]
+ ],
+ "focus": {
+  "frus1932v04": {
+   "persons_rows": 0,
+   "mentions,distinct_refs,docs,orphan_rows,orphan_refs,orphan_docs": [
+    2552,
+    434,
+    783,
+    2552,
+    434,
+    783
+   ]
+  },
+  "frus1918Supp01v02": {
+   "persons_rows": 0,
+   "mentions,distinct_refs,docs,orphan_rows,orphan_refs,orphan_docs": [
+    2114,
+    108,
+    884,
+    2114,
+    108,
+    884
+   ]
+  },
+  "frus1917Supp02v02": {
+   "persons_rows": 0,
+   "mentions,distinct_refs,docs,orphan_rows,orphan_refs,orphan_docs": [
+    864,
+    92,
+    422,
+    864,
+    92,
+    422
+   ]
+  },
+  "frus1873p1v1": {
+   "persons_rows": 57,
+   "mentions,distinct_refs,docs,orphan_rows,orphan_refs,orphan_docs": [
+    494,
+    26,
+    305,
+    0,
+    0,
+    0
+   ]
+  },
+  "frus1873p1v2": {
+   "persons_rows": 0,
+   "mentions,distinct_refs,docs,orphan_rows,orphan_refs,orphan_docs": [
+    454,
+    37,
+    235,
+    454,
+    37,
+    235
+   ]
+  },
+  "frus1941-43": {
+   "persons_rows": 81,
+   "mentions,distinct_refs,docs,orphan_rows,orphan_refs,orphan_docs": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  }
+ },
+ "scope_volumes_with_mentions": [
+  [
+   "frus1917Supp02v02",
+   864
+  ],
+  [
+   "frus1918Supp01v02",
+   2114
+  ],
+  [
+   "frus1932v04",
+   2552
+  ]
+ ],
+ "scope_volumes_with_persons": [
+  [
+   "frus1941-43",
+   81
+  ]
+ ],
+ "corpus_orphan_rows": 6288,
+ "corpus_orphan_by_volume": [
+  [
+   "frus1932v04",
+   2552
+  ],
+  [
+   "frus1918Supp01v02",
+   2114
+  ],
+  [
+   "frus1917Supp02v02",
+   864
+  ],
+  [
+   "frus1873p1v2",
+   454
+  ],
+  [
+   "frus1969-76v14",
+   129
+  ],
+  [
+   "frus1964-68v23",
+   53
+  ],
+  [
+   "frus1958-60v07p2",
+   25
+  ],
+  [
+   "frus1961-63v04",
+   17
+  ],
+  [
+   "frus1951-54IranEd2",
+   16
+  ],
+  [
+   "frus1951-54Iran",
+   15
+  ],
+  [
+   "frus1958-60v09",
+   13
+  ],
+  [
+   "frus1958-60v07p1",
+   11
+  ],
+  [
+   "frus1952-54v03",
+   9
+  ],
+  [
+   "frus1955-57v24",
+   5
+  ],
+  [
+   "frus1977-80v01",
+   4
+  ],
+  [
+   "frus1958-60v05mSupp",
+   3
+  ],
+  [
+   "frus1949v03",
+   1
+  ],
+  [
+   "frus1955-57v12",
+   1
+  ],
+  [
+   "frus1964-68v21",
+   1
+  ],
+  [
+   "frus1969-76ve11p1",
+   1
+  ]
+ ],
+ "split_orphan_refs_total": 634,
+ "split_orphan_docs_total": 2089
+}

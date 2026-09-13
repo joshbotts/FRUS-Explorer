@@ -1,0 +1,28 @@
+[25/267] frus1872p2v3 5s
+[50/267] frus1892 9s
+[75/267] frus1908 14s
+[100/267] frus1919Parisv12 19s
+[125/267] frus1929v01 23s
+[150/267] frus1935v04 27s
+[175/267] frus1940v05 33s
+[200/267] frus1944v01 38s
+[225/267] frus1947v01 46s
+[250/267] frus1949v09 52s
+       55.55 real        54.61 user         0.64 sys
+           100958208  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               20403  page reclaims
+                  18  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                1323  voluntary context switches
+               12298  involuntary context switches
+       1134732965610  instructions retired
+        220527413768  cycles elapsed
+            96878976  peak memory footprint

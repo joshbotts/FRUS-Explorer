@@ -1,0 +1,25 @@
+{
+ "gold_docs": 64,
+ "gold_mentions": 406,
+ "gold_chars_manifest": 144741,
+ "gold_chars_textlayer": 144741,
+ "gold_mentions_per_1k_chars": 2.805,
+ "gold_mentions_per_doc": 6.344,
+ "on_gold_docs_per_1k_chars": {
+  "marked": 0.608,
+  "fctrl": 2.183,
+  "fsweep": 5.085,
+  "union_exact": 6.259,
+  "union_merged": 5.244,
+  "union_surfaces": 4.498
+ },
+ "on_gold_docs_totals": {
+  "marked": 88,
+  "fctrl": 316,
+  "fsweep": 736,
+  "union_exact": 906,
+  "union_merged": 759,
+  "union_surfaces": 651,
+  "union_surface_chars": 9045
+ }
+}

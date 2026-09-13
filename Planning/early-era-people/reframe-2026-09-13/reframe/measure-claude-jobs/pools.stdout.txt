@@ -1,0 +1,76 @@
+{
+ "agree": {
+  "docs": 190658,
+  "spans": 1310341,
+  "surface_chars": 15098185,
+  "mention_clusters": 1210739,
+  "window_chars_per_span": 696706803,
+  "window_chars_merged_per_doc": 310674650,
+  "doc_keys": 758194,
+  "window_chars_per_doc_key": 380941826,
+  "listing_chars": 30822277,
+  "docs_over_40000_payload": 230,
+  "req_pack8000": 51606,
+  "req_pack20000": 19387,
+  "req_pack40000": 9290
+ },
+ "control_only": {
+  "docs": 69021,
+  "spans": 214933,
+  "surface_chars": 1735309,
+  "mention_clusters": 214933,
+  "window_chars_per_span": 123607951,
+  "window_chars_merged_per_doc": 87888628,
+  "doc_keys": 150575,
+  "window_chars_per_doc_key": 85351730,
+  "listing_chars": 4314505,
+  "docs_over_40000_payload": 52,
+  "req_pack8000": 13480,
+  "req_pack20000": 5096,
+  "req_pack40000": 2470
+ },
+ "sweep_only": {
+  "docs": 185392,
+  "spans": 1485681,
+  "surface_chars": 23592008,
+  "mention_clusters": 1420396,
+  "window_chars_per_span": 806603804,
+  "window_chars_merged_per_doc": 316224648,
+  "doc_keys": 1028966,
+  "window_chars_per_doc_key": 544192314,
+  "listing_chars": 41420180,
+  "docs_over_40000_payload": 162,
+  "req_pack8000": 54756,
+  "req_pack20000": 20039,
+  "req_pack40000": 9618
+ },
+ "union_minus_agree_net": {
+  "docs": 179212,
+  "spans": 1526825,
+  "surface_chars": 23599887,
+  "mention_clusters": 1469128,
+  "window_chars_per_span": 862998460,
+  "window_chars_merged_per_doc": 346287109,
+  "doc_keys": 1051899,
+  "window_chars_per_doc_key": 580543715,
+  "listing_chars": 41921787,
+  "docs_over_40000_payload": 272,
+  "req_pack8000": 59759,
+  "req_pack20000": 22043,
+  "req_pack40000": 10549
+ }
+}
+{
+ "rows:editor": 245747,
+ "spans:editor": 245747,
+ "span_text_mismatch:editor": 0,
+ "rows:filtered_control": 1261852,
+ "spans:filtered_control": 1261852,
+ "span_text_mismatch:filtered_control": 0,
+ "rows:filtered_sweep": 2597043,
+ "spans:filtered_sweep": 2597043,
+ "span_text_mismatch:filtered_sweep": 0,
+ "text_docs": 197534,
+ "text_chars": 679401514,
+ "text_words_whitespace": 113031709
+} secs 55.5

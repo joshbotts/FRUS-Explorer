@@ -1,0 +1,74 @@
+{
+ "method": "Role 5 sizing (read-only, stdlib): how many chapters a per-chapter / per-volume correspondents guide would cover.\nTwo populations, reported SEPARATELY and never combined in one figure:\n  APP VIEW  - live index (index version 50) volume_structures + document_cache, restricted to the 267 scope volume ids:\n              sections that directly list >=1 document id; header + dateline characters per section.\n  TEI RULE  - ~/frus-ner-raw marked layer: distinct from/to surface keys (grains.surface_key) per volume and per\n              document; section membership is NOT joined to it (the two populations differ).\nWrites synthesis-size.json beside this file.",
+ "app_view": {
+  "volumes": 267,
+  "volumes_without_structure": [],
+  "documents_in_document_cache_for_scope_ids": 199068,
+  "sections_listing_documents": 12087,
+  "documents_under_sections": 197531,
+  "docs_per_section": {
+   "p50": 6,
+   "p90": 40,
+   "max": 861
+  },
+  "header_plus_dateline_chars_total": 20920280,
+  "header_plus_dateline_chars_per_section": {
+   "p50": 603,
+   "p90": 4232,
+   "max": 86755
+  },
+  "sections_per_volume": {
+   "p50": 34,
+   "max": 289
+  },
+  "by_band": {
+   "1861-1899": {
+    "sections": 2272,
+    "documents": 32760,
+    "header_dateline_chars": 2962818
+   },
+   "1900-1929": {
+    "sections": 5045,
+    "documents": 48849,
+    "header_dateline_chars": 4939154
+   },
+   "1930-1945": {
+    "sections": 3713,
+    "documents": 77899,
+    "header_dateline_chars": 8834835
+   },
+   "1946-": {
+    "sections": 1057,
+    "documents": 38023,
+    "header_dateline_chars": 4183473
+   }
+  }
+ },
+ "tei_rule": {
+  "volumes": 267,
+  "fromto_rows": 235751,
+  "distinct_fromto_keys_per_volume_sum": 28280,
+  "by_band": {
+   "1861-1899": {
+    "volumes": 61,
+    "fromto_rows": 84234,
+    "distinct_fromto_keys_per_volume_sum": 9377
+   },
+   "1900-1929": {
+    "volumes": 66,
+    "fromto_rows": 49602,
+    "distinct_fromto_keys_per_volume_sum": 6424
+   },
+   "1930-1945": {
+    "volumes": 87,
+    "fromto_rows": 72988,
+    "distinct_fromto_keys_per_volume_sum": 7659
+   },
+   "1946-": {
+    "volumes": 53,
+    "fromto_rows": 28927,
+    "distinct_fromto_keys_per_volume_sum": 4820
+   }
+  }
+ }
+}
