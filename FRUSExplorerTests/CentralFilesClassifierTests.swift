@@ -376,3 +376,266 @@ struct DomesticAndSpecialAgentClassifierTests {
         #expect(despatch.first?.geoKeys.isEmpty == true)
     }
 }
+
+// MARK: - Chapter-title forms (2026-09-13)
+
+/// FRUS chapter titles the pre-1906 classifier used to read as non-countries, taken verbatim from
+/// the corpus, and what each now classifies to.
+///
+/// Measured before the change by compiling the real classifier over every pre-1906 document in the
+/// live index: 7,497 of 32,478 documents from 1861–1899 got no suggestion, and these title forms
+/// are the share of that a normaliser can recover. Every case drives `GeoKeyNormalizer.keys(from:)`
+/// or `CentralFilesClassifier.classify` — the functions Source Explorer calls — never a copy.
+struct ChapterTitleFormTests {
+
+    @Test("A chapter number, a (Continued.) suffix and an en dash no longer hide the country")
+    func decoratedCountryTitles() {
+        let cases: [(String, [String])] = [
+            ("III.—Argentine Republic.", ["argentina"]),        // frus1873p1v1
+            ("XXIX.—Spain.", ["spain"]),                        // frus1873p1v2
+            ("XXVIII.— Salvador.", ["el salvador"]),            // frus1873p1v2
+            ("1.—Ottoman Porte.", ["turkey"]),                  // frus1873p1v2
+            ("[199] *I.—France.", ["france"]),                  // frus1872p2v2
+            ("[347] *III. — Portugal.", ["portugal"]),          // frus1872p2v2
+            ("Great Britain. (Continued.)", ["great britain"]), // frus1864p2
+            ("IV.—Austria–Hungary.", ["austria"]),              // frus1873p1v1, an en dash
+            ("Chili.", ["chile"]),
+            ("Chili", ["chile"]),
+            ("VII.—Chili.", ["chile"]),
+        ]
+        for (title, expected) in cases {
+            #expect(GeoKeyNormalizer.keys(from: title) == expected, "\(title)")
+        }
+    }
+
+    @Test("A chapter of correspondence with a foreign legation in Washington names that country")
+    func foreignLegationTitles() {
+        let cases: [(String, [String])] = [
+            ("British legation.", ["great britain"]),                                          // frus1863p1
+            ("Correspondence with British legation.", ["great britain"]),                      // frus1865p2
+            ("Correspondence with the Mexican legation.", ["mexico"]),                         // frus1866p3
+            ("French legation.", ["france"]),                                                  // frus1864p3
+            ("Correspondence with the legation of Chili at Washington.", ["chile"]),           // frus1881
+            ("Correspondence with the legation of Sweden and Norway at Washington.", ["sweden", "norway"]),
+            ("Correspondence with the legation of the United States of Colombia at Washington.", ["colombia"]),
+            ("Correspondence Between the Department of State and the German Embassy.", ["germany"]), // frus1894app1
+            ("Correspondence with the Netherlands legation in the United States", ["netherlands"]),  // frus1864p3
+            ("German Legation in Washington.", ["germany"]),                                   // frus1872p1
+        ]
+        for (title, expected) in cases {
+            #expect(GeoKeyNormalizer.keys(from: title) == expected, "\(title)")
+            #expect(GeoKeyNormalizer.foreignLegationName(inChapterTitle: title) != nil, "\(title)")
+        }
+    }
+
+    @Test("A U.S. mission, or a legation that is only the subject of a chapter, is not a foreign-legation chapter")
+    func notForeignLegationTitles() {
+        for title in [
+            "I.—Correspondence with the embassy of the United States at Paris.",   // frus1895p1
+            "I. Correspondence with the Legation of the United States at Madrid.",
+            "Correspondence with the American legation.",
+            "Correspondence with the United States legation.",
+            "Marine guard at the legation at Peking",                               // frus1898
+            "Raising of United States legation to Austria-Hungary and Austro-Hungarian legation to embassies",
+            "Protection of legation by United States troops",                       // frus1895p1
+            "Great Britain.",
+        ] {
+            #expect(GeoKeyNormalizer.foreignLegationName(inChapterTitle: title) == nil, "\(title)")
+        }
+    }
+
+    @Test("Titles that already resolved keep exactly the key they had, and a consular post key does not move")
+    func resolvingTitlesUnchanged() {
+        #expect(GeoKeyNormalizer.keys(from: "Great Britain.") == ["great britain"])
+        #expect(GeoKeyNormalizer.keys(from: "Sweden and Norway") == ["sweden", "norway"])
+        #expect(GeoKeyNormalizer.keys(from: "Volume 5: Great Britain: Aug. 17, 1861 - Sept. 2, 1863") == ["great britain"])
+        #expect(GeoKeyNormalizer.keys(from: "Argentine Republic") == ["argentina"])
+        #expect(GeoKeyNormalizer.keys(from: "Austria-Hungary.") == ["austria"])
+        #expect(GeoKeyNormalizer.keys(from: "Central America.") == ["central america"])
+        // "Rome" is the Papal States only as a whole chapter title; `canonicalize` is what the
+        // consular post keys go through, and the Rome consulate's key must stay `rome`.
+        #expect(GeoKeyNormalizer.canonicalize("Rome") == "rome")
+        #expect(GeoKeyNormalizer.canonicalize("Naples") == "two sicilies")
+        // "Turkish Empire" stays unread on purpose. In frus1876 it is the PARENT chapter of
+        // "Egypt.", and Source Explorer stops at the first title from the root that resolves, so
+        // reading it as Turkey moved frus1876/d334 from the Egypt instruction roll to Turkey's.
+        #expect(GeoKeyNormalizer.keys(from: "XXXII.—Turkish Empire.") == ["turkish empire"])
+    }
+
+    @Test("A chapter titled Rome files under the Papal States and resolves to its instruction roll")
+    func romeIsThePapalStates() throws {
+        #expect(GeoKeyNormalizer.keys(from: "Rome.") == ["papal states"])
+        let index = try #require(CentralFilesIndexStore.shared)
+        // frus1862/d680: Mr. Seward to Mr. Blatchford, the minister resident at Rome.
+        let outbound = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Mr. Blatchford .",
+            dateline: "Department of State, Washington, September 25, 1862.",
+            chapterCountry: "Rome.")
+        let instruction = try #require(outbound.first { $0.category == .instructions })
+        let rolls = index.series(category: .instructions)?
+            .rolls(geoKey: instruction.geoKeys[0], dateISO: "1862-09-25") ?? []
+        // "Volume 1: Papal States: Apr. 1, 1848 - May 22, 1868"
+        #expect(rolls.contains { $0.naId == "149327614" })
+        // A despatch from Rome resolves to nothing: the index keys the Papal States despatch roll
+        // under `italian states`, beside the Kingdom of Italy's, and a guess there would name both.
+        let despatch = try #require(CentralFilesClassifier.classify(
+            header: "Mr. Blatchford to Mr. Seward",
+            dateline: "Legation of the United States , Rome , November 29, 1862.",
+            chapterCountry: "Rome.").first)
+        #expect(despatch.category == .despatches)
+        let despatchRolls = index.series(category: .despatches)?
+            .rolls(geoKey: despatch.geoKeys[0], dateISO: "1862-11-29") ?? []
+        #expect(despatchRolls.isEmpty)
+    }
+
+    @Test("In a foreign-legation chapter the Department's letter is a note TO the legation, never an instruction")
+    func legationChapterDepartmentOutbound() throws {
+        // frus1863p1/d606
+        let inLegationChapter = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Lord Lyons .",
+            dateline: "Department of State, Washington, August 10, 1863.",
+            chapterCountry: "British legation.")
+        #expect(inLegationChapter.map(\.category) == [.notesTo])
+        #expect(inLegationChapter.first?.geoKeys == ["great britain"])
+        #expect(inLegationChapter.first?.confidence == .medium)
+        // The same letter under the country chapter keeps both readings.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Seward to Lord Lyons .",
+            dateline: "Department of State, Washington, August 10, 1863.",
+            chapterCountry: "Great Britain.").map(\.category) == [.instructions, .notesTo])
+        let index = try #require(CentralFilesIndexStore.shared)
+        let rolls = index.series(category: .notesTo)?
+            .rolls(geoKey: "great britain", dateISO: "1863-08-10") ?? []
+        // "Great Britain: May 8, 1863 - February 17, 1864"
+        #expect(rolls.contains { $0.naId == "216910345" })
+    }
+
+    @Test("In a foreign-legation chapter a Washington letter is a note FROM the legation, and nothing else places")
+    func legationChapterInbound() {
+        // frus1864p2/d466: a bare "Washington" dateline, the form most of Lord Lyons's notes take.
+        let bare = CentralFilesClassifier.classify(
+            header: "Lord Lyons to Mr. Seward .",
+            dateline: "Washington, August 17, 1864.",
+            chapterCountry: "British legation.")
+        #expect(bare.map(\.category) == [.notesFrom])
+        #expect(bare.first?.geoKeys == ["great britain"])
+        #expect(bare.first?.confidence == .medium)
+        // frus1864p2/d183: the dateline names the legation — the existing high-confidence note.
+        let named = CentralFilesClassifier.classify(
+            header: "Lord Lyons to Mr. Seward .",
+            dateline: "British Legation, Washington, July 3, 1863.",
+            chapterCountry: "British legation.")
+        #expect(named.map(\.category) == [.notesFrom])
+        #expect(named.first?.confidence == .high)
+        // frus1864p3/d304: the French legation writing from New York is still the legation.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Geofroy to Mr. Seward",
+            dateline: "Legation of France to the United States, New York, November 10, 1864.",
+            chapterCountry: "French legation.").map(\.category) == [.notesFrom])
+        // frus1865p2/d41: a Foreign Office letter. Under a country chapter it would fall back to a
+        // despatch from the U.S. mission; in the legation's chapter it must not.
+        #expect(CentralFilesClassifier.classify(
+            header: "Lord Russell to Mr. Burnley",
+            dateline: "Foreign Office, December 24, 1864.",
+            chapterCountry: "Correspondence with British legation.").isEmpty)
+        #expect(CentralFilesClassifier.classify(
+            header: "Lord Russell to Mr. Burnley",
+            dateline: "Foreign Office, December 24, 1864.",
+            chapterCountry: "Great Britain.").map(\.category) == [.despatches])
+        // A U.S. legation's dateline under a foreign legation's chapter names no mission country.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Adams to Mr. Seward",
+            dateline: "Legation of the United States, London, May 1, 1863.",
+            chapterCountry: "British legation.").isEmpty)
+    }
+
+    @Test("In a foreign-legation chapter a letter the Secretary signs is a note TO the legation, whatever its dateline")
+    func legationChapterSecretarySender() {
+        // frus1863p1/d402: Seward's reply under a bare "Washington" had read as a note FROM Lord Lyons.
+        let bare = CentralFilesClassifier.classify(
+            header: "Mr. Seward to Lord Lyons .",
+            dateline: "Washington , February 24, 1863.",
+            chapterCountry: "British legation.")
+        #expect(bare.map(\.category) == [.notesTo])
+        #expect(bare.first?.geoKeys == ["great britain"])
+        // frus1891/d549: Blaine writing from his house.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Blaine to Sir Julian Pauncefote .",
+            dateline: "17 Madison Place , Washington , February 12, 1892 .",
+            chapterCountry: "Correspondence with the British Legation at Washington.").map(\.category) == [.notesTo])
+        // frus1885/d310: the Department's own dateline, OCR-damaged.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Bayard to Mr. von Alvensleben .",
+            dateline: "Dapartment of State , Washington , April 6, 1885 .",
+            chapterCountry: "Correspondence with the Legation of Germany at Washington.").map(\.category) == [.notesTo])
+        // frus1892/d280: the President's letter to a sovereign is neither note.
+        #expect(CentralFilesClassifier.classify(
+            header: "The President to King Humbert .",
+            dateline: "Washington , July 21, 1892 .",
+            chapterCountry: "Correspondence with the legation of Italy at Washington.").isEmpty)
+        // frus1897/d290: outside a legation chapter the same surnames sign despatches home. Hay was
+        // ambassador in London, and the sender rule must not turn his despatch into an instruction.
+        #expect(CentralFilesClassifier.classify(
+            header: "Mr. Hay to Mr. Sherman .",
+            dateline: "London , September 24, 1897 .",
+            chapterCountry: "Great Britain").map(\.category) == [.despatches])
+    }
+
+    @Test("The sender is the part before \" to \", and a foreign Secretary of State for Foreign Affairs is not the Secretary")
+    func senderHelpersReadTheSender() {
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "no. 189. mr. bayard to sir l. west ."))   // frus1886/d193
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "the secretary of state to minister dawson ."))  // frus1905/d321
+        // The Assistant Secretary signing for the Secretary, and a header that drops the period.
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "mr. f. w. seward to lord lyons ."))         // frus1863p1/d415
+        #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "no. 62. mr bayard to count de foresta ."))  // frus1888p2/d624
+        #expect(!CentralFilesClassifier.secretaryOfStateSender(inHeader: "lord lyons to mr. seward ."))
+        // frus1925v02/d569
+        #expect(!CentralFilesClassifier.secretaryOfStateSender(
+            inHeader: "the secretary of state for foreign affairs of san marino ( gozi ) to the secretary of state"))
+        // frus1881/d499
+        #expect(CentralFilesClassifier.presidentialSender(
+            inHeader: "no. 495. the president of the united states to the president of mexico ."))
+        #expect(!CentralFilesClassifier.presidentialSender(inHeader: "lord lyons to mr. seward ."))
+    }
+
+    @Test("A numbered country chapter classifies exactly as its bare title does")
+    func numberedChapterClassifies() throws {
+        // frus1873p1v2: a despatch from Madrid filed under "XXIX.—Spain."
+        let numbered = CentralFilesClassifier.classify(
+            header: "Mr. Sickles to Mr. Fish.",
+            dateline: "Legation of the United States, Madrid, March 1, 1873.",
+            chapterCountry: "XXIX.—Spain.")
+        #expect(numbered == CentralFilesClassifier.classify(
+            header: "Mr. Sickles to Mr. Fish.",
+            dateline: "Legation of the United States, Madrid, March 1, 1873.",
+            chapterCountry: "Spain."))
+        #expect(numbered.map(\.category) == [.despatches])
+        let index = try #require(CentralFilesIndexStore.shared)
+        let rolls = index.series(category: .despatches)?.rolls(geoKey: "spain", dateISO: "1873-03-01") ?? []
+        #expect(!rolls.isEmpty)
+    }
+
+    @Test("The generator's GeoKeyNormalizer is the app's, line for line")
+    func mirrorCopiesAreIdentical() throws {
+        // Two copies exist because the app cannot import the SPM generator target, and they are kept
+        // in sync by hand. The roll keys the generator writes and the chapter keys the app looks up
+        // come out of these two files, so a drift between them silently empties a lookup.
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let app = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/SourceExplorer/GeoKeyNormalizer.swift"),
+                             encoding: .utf8)
+        let generator = try String(contentsOf: root.appendingPathComponent("CentralFilesIndexGeneratorCore/GeoKeyNormalizer.swift"),
+                                   encoding: .utf8)
+        func comparable(_ source: String) -> [String] {
+            var lines: [String] = []
+            for raw in source.components(separatedBy: "\n") {
+                guard !raw.hasPrefix("/// > ") else { continue }          // the app copy's mirror note
+                let line = raw.replacingOccurrences(of: #"^(\s*)public "#, with: "$1",
+                                                    options: .regularExpression)
+                if line == "///", lines.last == "///" { continue }          // the note's blank doc line
+                lines.append(line)
+            }
+            return lines
+        }
+        #expect(comparable(app) == comparable(generator))
+    }
+}

@@ -59,6 +59,26 @@ struct GeoKeyNormalizerTests {
         #expect(GeoKeyNormalizer.canonicalize("Switzerland.") == "switzerland")
     }
 
+    @Test("FRUS chapter-title forms read as the country they file under (1.1)")
+    func chapterTitleForms() {
+        #expect(GeoKeyNormalizer.keys(from: "XXIX.—Spain.") == ["spain"])
+        #expect(GeoKeyNormalizer.keys(from: "[199] *I.—France.") == ["france"])
+        #expect(GeoKeyNormalizer.keys(from: "Great Britain. (Continued.)") == ["great britain"])
+        #expect(GeoKeyNormalizer.keys(from: "IV.—Austria–Hungary.") == ["austria"])
+        #expect(GeoKeyNormalizer.keys(from: "Chili.") == ["chile"])
+        #expect(GeoKeyNormalizer.keys(from: "British legation.") == ["great britain"])
+        #expect(GeoKeyNormalizer.keys(from: "Rome.") == ["papal states"])
+        #expect(GeoKeyNormalizer.foreignLegationName(
+            inChapterTitle: "I.—Correspondence with the embassy of the United States at Paris.") == nil)
+    }
+
+    @Test("canonicalize, which the roll parser calls, keeps every consular post's key")
+    func canonicalizeKeepsPostKeys() {
+        #expect(GeoKeyNormalizer.canonicalize("Rome") == "rome")
+        #expect(GeoKeyNormalizer.canonicalize("Naples") == "two sicilies")
+        #expect(GeoKeyNormalizer.canonicalize("Chili") == "chile")
+    }
+
     @Test("Returns empty for unusable input")
     func emptyForUnusable() {
         #expect(GeoKeyNormalizer.keys(from: "") == [])
