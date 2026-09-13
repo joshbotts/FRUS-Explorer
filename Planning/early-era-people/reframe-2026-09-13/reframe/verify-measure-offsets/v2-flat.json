@@ -1,0 +1,278 @@
+{
+ "A": {
+  "docs": 400,
+  "reconstruct_equals_r0": 400,
+  "element_counts_docs_with": {
+   "list": 57,
+   "note": 292,
+   "label": 45,
+   "table": 19,
+   "figure": 1
+  },
+  "flat_cmp": {
+   "minus_fn": 355,
+   "minus_fn_list": 400,
+   "minus_all": 400,
+   "disagree_with_original_minus_fn": 1
+  },
+  "flat_cmp_by_band": {
+   "1861-1899": {
+    "minus_fn": 98,
+    "minus_fn_list": 100,
+    "minus_all": 100
+   },
+   "1900-1929": {
+    "minus_fn": 89,
+    "minus_fn_list": 100,
+    "minus_all": 100
+   },
+   "1930-1945": {
+    "minus_fn": 86,
+    "minus_fn_list": 100,
+    "minus_all": 100
+   },
+   "1946-": {
+    "minus_fn_list": 100,
+    "minus_all": 100,
+    "minus_fn": 82
+   }
+  },
+  "spankind": {
+   "sweep": {
+    "body": 4833,
+    "all": 5188,
+    "footnote": 338,
+    "partly_footnote": 17
+   },
+   "control": {
+    "body": 2508,
+    "all": 2694,
+    "footnote": 167,
+    "partly_footnote": 15,
+    "dropped_other": 4
+   }
+  },
+  "spankind_by_band": {
+   "sweep": {
+    "1861-1899": {
+     "body": 1702,
+     "all": 1719,
+     "footnote": 17
+    },
+    "1900-1929": {
+     "body": 940,
+     "all": 964,
+     "footnote": 23,
+     "partly_footnote": 1
+    },
+    "1930-1945": {
+     "body": 862,
+     "all": 967,
+     "footnote": 92,
+     "partly_footnote": 13
+    },
+    "1946-": {
+     "body": 1329,
+     "all": 1538,
+     "footnote": 206,
+     "partly_footnote": 3
+    }
+   },
+   "control": {
+    "1861-1899": {
+     "body": 994,
+     "all": 1009,
+     "footnote": 14,
+     "partly_footnote": 1
+    },
+    "1900-1929": {
+     "body": 454,
+     "all": 466,
+     "footnote": 11,
+     "partly_footnote": 1
+    },
+    "1930-1945": {
+     "body": 374,
+     "all": 435,
+     "footnote": 50,
+     "partly_footnote": 7,
+     "dropped_other": 4
+    },
+    "1946-": {
+     "body": 686,
+     "all": 784,
+     "footnote": 92,
+     "partly_footnote": 6
+    }
+   }
+  },
+  "anchor": {
+   "sweep": {
+    "c20_10/body/n": 4833,
+    "c20_10/body/correct": 4581,
+    "c20_10_0/body/n": 4833,
+    "c20_10_0/body/correct": 4692,
+    "c20_10/body/refused": 252,
+    "c20_10_0/body/refused": 141,
+    "c20_10/footnote/n": 338,
+    "c20_10/footnote/refused": 338,
+    "c20_10_0/footnote/n": 338,
+    "c20_10_0/footnote/refused": 296,
+    "c20_10_0/footnote/placed_wrong_or_nonbody": 42,
+    "c20_10/partly_footnote/n": 17,
+    "c20_10/partly_footnote/refused": 17,
+    "c20_10_0/partly_footnote/n": 17,
+    "c20_10_0/partly_footnote/refused": 17
+   },
+   "control": {
+    "c20_10/body/n": 2508,
+    "c20_10/body/correct": 2393,
+    "c20_10_0/body/n": 2508,
+    "c20_10_0/body/correct": 2425,
+    "c20_10/body/refused": 115,
+    "c20_10_0/body/refused": 83,
+    "c20_10/footnote/n": 167,
+    "c20_10/footnote/refused": 167,
+    "c20_10_0/footnote/n": 167,
+    "c20_10_0/footnote/refused": 141,
+    "c20_10/partly_footnote/n": 15,
+    "c20_10/partly_footnote/refused": 15,
+    "c20_10_0/partly_footnote/n": 15,
+    "c20_10_0/partly_footnote/refused": 15,
+    "c20_10_0/footnote/placed_wrong_or_nonbody": 26,
+    "c20_10/dropped_other/n": 4,
+    "c20_10/dropped_other/refused": 4,
+    "c20_10_0/dropped_other/n": 4,
+    "c20_10_0/dropped_other/placed_wrong_or_nonbody": 1,
+    "c20_10_0/dropped_other/refused": 3
+   }
+  },
+  "anchor_their354": {
+   "sweep": {
+    "c20_10/body/n": 3914,
+    "c20_10/body/correct": 3769,
+    "c20_10_0/body/n": 3914,
+    "c20_10_0/body/correct": 3849,
+    "c20_10/body/refused": 145,
+    "c20_10_0/body/refused": 65,
+    "c20_10/footnote/n": 273,
+    "c20_10/footnote/refused": 273,
+    "c20_10_0/footnote/n": 273,
+    "c20_10_0/footnote/refused": 244,
+    "c20_10_0/footnote/placed_wrong_or_nonbody": 29,
+    "c20_10/partly_footnote/n": 16,
+    "c20_10/partly_footnote/refused": 16,
+    "c20_10_0/partly_footnote/n": 16,
+    "c20_10_0/partly_footnote/refused": 16
+   },
+   "control": {
+    "c20_10/body/n": 2051,
+    "c20_10/body/correct": 1992,
+    "c20_10_0/body/n": 2051,
+    "c20_10_0/body/correct": 2013,
+    "c20_10/body/refused": 59,
+    "c20_10_0/body/refused": 38,
+    "c20_10/footnote/n": 118,
+    "c20_10/footnote/refused": 118,
+    "c20_10_0/footnote/n": 118,
+    "c20_10_0/footnote/refused": 103,
+    "c20_10/partly_footnote/n": 13,
+    "c20_10/partly_footnote/refused": 13,
+    "c20_10_0/partly_footnote/n": 13,
+    "c20_10_0/partly_footnote/refused": 13,
+    "c20_10_0/footnote/placed_wrong_or_nonbody": 15
+   }
+  },
+  "residual_docs": []
+ },
+ "B": {
+  "docs": 400,
+  "reconstruct_equals_r0": 400,
+  "element_counts_docs_with": {
+   "table": 15,
+   "note": 291,
+   "list": 68,
+   "label": 54
+  },
+  "flat_cmp": {},
+  "flat_cmp_by_band": {},
+  "spankind": {
+   "sweep": {
+    "body": 6042,
+    "all": 6447,
+    "footnote": 382,
+    "partly_footnote": 23
+   },
+   "control": {
+    "body": 3078,
+    "all": 3249,
+    "footnote": 155,
+    "partly_footnote": 16
+   }
+  },
+  "spankind_by_band": {
+   "sweep": {
+    "1861-1899": {
+     "body": 2040,
+     "all": 2065,
+     "footnote": 23,
+     "partly_footnote": 2
+    },
+    "1900-1929": {
+     "body": 1244,
+     "all": 1263,
+     "footnote": 19
+    },
+    "1930-1945": {
+     "body": 1202,
+     "all": 1320,
+     "footnote": 108,
+     "partly_footnote": 10
+    },
+    "1946-": {
+     "body": 1556,
+     "all": 1799,
+     "footnote": 232,
+     "partly_footnote": 11
+    }
+   },
+   "control": {
+    "1861-1899": {
+     "body": 1177,
+     "all": 1193,
+     "footnote": 16
+    },
+    "1900-1929": {
+     "body": 722,
+     "all": 727,
+     "footnote": 4,
+     "partly_footnote": 1
+    },
+    "1930-1945": {
+     "body": 457,
+     "all": 511,
+     "footnote": 48,
+     "partly_footnote": 6
+    },
+    "1946-": {
+     "body": 722,
+     "all": 818,
+     "footnote": 87,
+     "partly_footnote": 9
+    }
+   }
+  },
+  "anchor": {
+   "sweep": {},
+   "control": {}
+  },
+  "anchor_their354": {
+   "sweep": {},
+   "control": {}
+  },
+  "residual_docs": []
+ },
+ "volumes_identical_r0_copy_vs_current": 238,
+ "volumes_checked": 238,
+ "volumes_differing": []
+}

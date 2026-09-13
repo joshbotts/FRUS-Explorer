@@ -1,0 +1,140 @@
+{
+ "after-docs (46,837 pre-1906 export documents)|legation-mirror": {
+  "agree": 70694
+ },
+ "after-docs (46,837 pre-1906 export documents)|sender-mirror": {
+  "agree:not-fired": 2272,
+  "agree:sender-rule-fired": 26
+ },
+ "HEAD harness over the list-volume export (25,529 documents)|legation-mirror": {
+  "agree": 38298
+ }
+}
+S_after|1861-1899|strict|circular judged 67 right 61 untestable 3 wrong-place 0 wrong-kind 3 unlabeled 0 strict [0.9104, 0.8181, 0.9583] loose [0.9552, 0.8764, 0.9847]
+S_after|1861-1899|strict|circular|label=department judged 30 right 28 untestable 0 wrong-place 0 wrong-kind 2 unlabeled 0 strict [0.9333, 0.7868, 0.9815] loose [0.9333, 0.7868, 0.9815]
+S_after|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+S_after|1861-1899|strict|circular|label=foreign-consul|us-consulate judged 2 right 0 untestable 2 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [1.0, 0.3424, 1.0]
+S_after|1861-1899|strict|circular|label=foreign-legation judged 3 right 3 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.4385, 1.0] loose [1.0, 0.4385, 1.0]
+S_after|1861-1899|strict|circular|label=special-agent judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [0.0, 0.0, 0.7935]
+S_after|1861-1899|strict|circular|label=us-domestic-office judged 30 right 30 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.8865, 1.0] loose [1.0, 0.8865, 1.0]
+S_after|1861-1899|strict|independent judged 250 right 66 untestable 27 wrong-place 3 wrong-kind 154 unlabeled 556 strict [0.264, 0.2132, 0.3219] loose [0.372, 0.3144, 0.4334]
+S_after|1861-1899|strict|independent|label=department judged 163 right 61 untestable 0 wrong-place 0 wrong-kind 102 unlabeled 0 strict [0.3742, 0.3036, 0.4506] loose [0.3742, 0.3036, 0.4506]
+S_after|1861-1899|strict|independent|label=foreign-consul judged 4 right 4 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.5101, 1.0] loose [1.0, 0.5101, 1.0]
+S_after|1861-1899|strict|independent|label=foreign-legation judged 2 right 0 untestable 0 wrong-place 2 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [0.0, 0.0, 0.6576]
+S_after|1861-1899|strict|independent|label=foreign-legation|us-mission judged 16 right 1 untestable 10 wrong-place 1 wrong-kind 4 unlabeled 0 strict [0.0625, 0.0111, 0.2833] loose [0.6875, 0.444, 0.8584]
+S_after|1861-1899|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 556 strict None loose None
+S_after|1861-1899|strict|independent|label=us-mission judged 65 right 0 untestable 17 wrong-place 0 wrong-kind 48 unlabeled 0 strict [0.0, 0.0, 0.0558] loose [0.2615, 0.1702, 0.3795]
+S_after|1900-1905|strict|circular judged 4 right 2 untestable 1 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.5, 0.15, 0.85] loose [0.75, 0.3006, 0.9544]
+S_after|1900-1905|strict|circular|label=department judged 3 right 2 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.6667, 0.2077, 0.9385] loose [0.6667, 0.2077, 0.9385]
+S_after|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+S_after|1900-1905|strict|independent judged 1288 right 1182 untestable 0 wrong-place 21 wrong-kind 85 unlabeled 270 strict [0.9177, 0.9014, 0.9315] loose [0.9177, 0.9014, 0.9315]
+S_after|1900-1905|strict|independent|label=department judged 1047 right 1002 untestable 0 wrong-place 0 wrong-kind 45 unlabeled 0 strict [0.957, 0.943, 0.9677] loose [0.957, 0.943, 0.9677]
+S_after|1900-1905|strict|independent|label=foreign-legation judged 92 right 80 untestable 0 wrong-place 12 wrong-kind 0 unlabeled 0 strict [0.8696, 0.7857, 0.9238] loose [0.8696, 0.7857, 0.9238]
+S_after|1900-1905|strict|independent|label=foreign-legation|us-mission judged 116 right 100 untestable 0 wrong-place 9 wrong-kind 7 unlabeled 0 strict [0.8621, 0.7876, 0.9133] loose [0.8621, 0.7876, 0.9133]
+S_after|1900-1905|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 270 strict None loose None
+S_after|1900-1905|strict|independent|label=us-mission judged 33 right 0 untestable 0 wrong-place 0 wrong-kind 33 unlabeled 0 strict [0.0, 0.0, 0.1043] loose [0.0, 0.0, 0.1043]
+S_after|1900-1905|weak|independent judged 720 right 0 untestable 720 wrong-place 0 wrong-kind 0 unlabeled 94 strict [0.0, 0.0, 0.0053] loose [1.0, 0.9947, 1.0]
+S_after|1900-1905|weak|independent|label=foreign-legation|us-mission judged 220 right 0 untestable 220 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0172] loose [1.0, 0.9828, 1.0]
+S_after|1900-1905|weak|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 94 strict None loose None
+S_after|1900-1905|weak|independent|label=us-mission judged 500 right 0 untestable 500 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0076] loose [1.0, 0.9924, 1.0]
+S_before|1861-1899|strict|circular judged 62 right 58 untestable 3 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.9355, 0.8455, 0.9746] loose [0.9839, 0.9141, 0.9971]
+S_before|1861-1899|strict|circular|label=department judged 28 right 28 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.8794, 1.0] loose [1.0, 0.8794, 1.0]
+S_before|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+S_before|1861-1899|strict|circular|label=foreign-consul|us-consulate judged 2 right 0 untestable 2 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [1.0, 0.3424, 1.0]
+S_before|1861-1899|strict|circular|label=special-agent judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [0.0, 0.0, 0.7935]
+S_before|1861-1899|strict|circular|label=us-domestic-office judged 30 right 30 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.8865, 1.0] loose [1.0, 0.8865, 1.0]
+S_before|1861-1899|strict|independent judged 188 right 51 untestable 4 wrong-place 3 wrong-kind 130 unlabeled 623 strict [0.2713, 0.2128, 0.3389] loose [0.2926, 0.2322, 0.3612]
+S_before|1861-1899|strict|independent|label=department judged 130 right 46 untestable 0 wrong-place 0 wrong-kind 84 unlabeled 0 strict [0.3538, 0.2769, 0.4392] loose [0.3538, 0.2769, 0.4392]
+S_before|1861-1899|strict|independent|label=foreign-consul judged 4 right 4 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.5101, 1.0] loose [1.0, 0.5101, 1.0]
+S_before|1861-1899|strict|independent|label=foreign-legation judged 2 right 0 untestable 0 wrong-place 2 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [0.0, 0.0, 0.6576]
+S_before|1861-1899|strict|independent|label=foreign-legation|us-mission judged 9 right 1 untestable 3 wrong-place 1 wrong-kind 4 unlabeled 0 strict [0.1111, 0.0199, 0.435] loose [0.4444, 0.1888, 0.7334]
+S_before|1861-1899|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 623 strict None loose None
+S_before|1861-1899|strict|independent|label=us-mission judged 43 right 0 untestable 1 wrong-place 0 wrong-kind 42 unlabeled 0 strict [0.0, 0.0, 0.082] loose [0.0233, 0.0041, 0.1206]
+S_before|1900-1905|strict|circular judged 4 right 2 untestable 1 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.5, 0.15, 0.85] loose [0.75, 0.3006, 0.9544]
+S_before|1900-1905|strict|circular|label=department judged 3 right 2 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.6667, 0.2077, 0.9385] loose [0.6667, 0.2077, 0.9385]
+S_before|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+S_before|1900-1905|strict|independent judged 1288 right 1182 untestable 0 wrong-place 21 wrong-kind 85 unlabeled 270 strict [0.9177, 0.9014, 0.9315] loose [0.9177, 0.9014, 0.9315]
+S_before|1900-1905|strict|independent|label=department judged 1047 right 1002 untestable 0 wrong-place 0 wrong-kind 45 unlabeled 0 strict [0.957, 0.943, 0.9677] loose [0.957, 0.943, 0.9677]
+S_before|1900-1905|strict|independent|label=foreign-legation judged 92 right 80 untestable 0 wrong-place 12 wrong-kind 0 unlabeled 0 strict [0.8696, 0.7857, 0.9238] loose [0.8696, 0.7857, 0.9238]
+S_before|1900-1905|strict|independent|label=foreign-legation|us-mission judged 116 right 100 untestable 0 wrong-place 9 wrong-kind 7 unlabeled 0 strict [0.8621, 0.7876, 0.9133] loose [0.8621, 0.7876, 0.9133]
+S_before|1900-1905|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 270 strict None loose None
+S_before|1900-1905|strict|independent|label=us-mission judged 33 right 0 untestable 0 wrong-place 0 wrong-kind 33 unlabeled 0 strict [0.0, 0.0, 0.1043] loose [0.0, 0.0, 0.1043]
+S_before|1900-1905|weak|independent judged 720 right 0 untestable 720 wrong-place 0 wrong-kind 0 unlabeled 94 strict [0.0, 0.0, 0.0053] loose [1.0, 0.9947, 1.0]
+S_before|1900-1905|weak|independent|label=foreign-legation|us-mission judged 220 right 0 untestable 220 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0172] loose [1.0, 0.9828, 1.0]
+S_before|1900-1905|weak|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 94 strict None loose None
+S_before|1900-1905|weak|independent|label=us-mission judged 500 right 0 untestable 500 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0076] loose [1.0, 0.9924, 1.0]
+T_after|1861-1899|strict|circular judged 67 right 61 untestable 3 wrong-place 0 wrong-kind 3 unlabeled 0 strict [0.9104, 0.8181, 0.9583] loose [0.9552, 0.8764, 0.9847]
+T_after|1861-1899|strict|circular|label=department judged 30 right 28 untestable 0 wrong-place 0 wrong-kind 2 unlabeled 0 strict [0.9333, 0.7868, 0.9815] loose [0.9333, 0.7868, 0.9815]
+T_after|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+T_after|1861-1899|strict|circular|label=foreign-consul|us-consulate judged 2 right 0 untestable 2 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [1.0, 0.3424, 1.0]
+T_after|1861-1899|strict|circular|label=foreign-legation judged 3 right 3 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.4385, 1.0] loose [1.0, 0.4385, 1.0]
+T_after|1861-1899|strict|circular|label=foreign-legation|us-domestic-office|us-mission judged 2 right 2 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.3424, 1.0] loose [1.0, 0.3424, 1.0]
+T_after|1861-1899|strict|circular|label=special-agent judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [0.0, 0.0, 0.7935]
+T_after|1861-1899|strict|circular|label=us-domestic-office judged 28 right 28 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.8794, 1.0] loose [1.0, 0.8794, 1.0]
+T_after|1861-1899|strict|independent judged 382 right 165 untestable 27 wrong-place 3 wrong-kind 187 unlabeled 424 strict [0.4319, 0.3832, 0.482] loose [0.5026, 0.4527, 0.5525]
+T_after|1861-1899|strict|independent|label=department judged 215 right 89 untestable 0 wrong-place 0 wrong-kind 126 unlabeled 0 strict [0.414, 0.3502, 0.4807] loose [0.414, 0.3502, 0.4807]
+T_after|1861-1899|strict|independent|label=foreign-consul judged 4 right 4 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.5101, 1.0] loose [1.0, 0.5101, 1.0]
+T_after|1861-1899|strict|independent|label=foreign-legation judged 2 right 0 untestable 0 wrong-place 2 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [0.0, 0.0, 0.6576]
+T_after|1861-1899|strict|independent|label=foreign-legation|us-mission judged 18 right 1 untestable 10 wrong-place 1 wrong-kind 6 unlabeled 0 strict [0.0556, 0.0099, 0.2576] loose [0.6111, 0.3862, 0.797]
+T_after|1861-1899|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 424 strict None loose None
+T_after|1861-1899|strict|independent|label=us-domestic-office judged 70 right 70 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.948, 1.0] loose [1.0, 0.948, 1.0]
+T_after|1861-1899|strict|independent|label=us-mission judged 73 right 1 untestable 17 wrong-place 0 wrong-kind 55 unlabeled 0 strict [0.0137, 0.0024, 0.0736] loose [0.2466, 0.162, 0.3564]
+T_after|1900-1905|strict|circular judged 4 right 2 untestable 1 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.5, 0.15, 0.85] loose [0.75, 0.3006, 0.9544]
+T_after|1900-1905|strict|circular|label=department judged 3 right 2 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.6667, 0.2077, 0.9385] loose [0.6667, 0.2077, 0.9385]
+T_after|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+T_after|1900-1905|strict|independent judged 1422 right 1294 untestable 0 wrong-place 26 wrong-kind 102 unlabeled 136 strict [0.91, 0.894, 0.9238] loose [0.91, 0.894, 0.9238]
+T_after|1900-1905|strict|independent|label=department judged 1130 right 1076 untestable 0 wrong-place 0 wrong-kind 54 unlabeled 0 strict [0.9522, 0.9382, 0.9632] loose [0.9522, 0.9382, 0.9632]
+T_after|1900-1905|strict|independent|label=foreign-legation judged 95 right 80 untestable 0 wrong-place 15 wrong-kind 0 unlabeled 0 strict [0.8421, 0.7557, 0.9019] loose [0.8421, 0.7557, 0.9019]
+T_after|1900-1905|strict|independent|label=foreign-legation|us-mission judged 123 right 102 untestable 0 wrong-place 11 wrong-kind 10 unlabeled 0 strict [0.8293, 0.7531, 0.8855] loose [0.8293, 0.7531, 0.8855]
+T_after|1900-1905|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 136 strict None loose None
+T_after|1900-1905|strict|independent|label=us-domestic-office judged 36 right 36 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.9036, 1.0] loose [1.0, 0.9036, 1.0]
+T_after|1900-1905|strict|independent|label=us-mission judged 38 right 0 untestable 0 wrong-place 0 wrong-kind 38 unlabeled 0 strict [0.0, 0.0, 0.0918] loose [0.0, 0.0, 0.0918]
+T_after|1900-1905|weak|independent judged 782 right 0 untestable 781 wrong-place 0 wrong-kind 1 unlabeled 32 strict [0.0, 0.0, 0.0049] loose [0.9987, 0.9928, 0.9998]
+T_after|1900-1905|weak|independent|label=department judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [0.0, 0.0, 0.7935]
+T_after|1900-1905|weak|independent|label=foreign-legation|us-mission judged 241 right 0 untestable 241 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0157] loose [1.0, 0.9843, 1.0]
+T_after|1900-1905|weak|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 32 strict None loose None
+T_after|1900-1905|weak|independent|label=us-mission judged 540 right 0 untestable 540 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0071] loose [1.0, 0.9929, 1.0]
+T_after|post-1905 list volumes|strict|circular judged 203 right 122 untestable 20 wrong-place 0 wrong-kind 61 unlabeled 0 strict [0.601, 0.5323, 0.6659] loose [0.6995, 0.6332, 0.7584]
+T_after|post-1905 list volumes|strict|circular|label=department judged 125 right 107 untestable 0 wrong-place 0 wrong-kind 18 unlabeled 0 strict [0.856, 0.7838, 0.9069] loose [0.856, 0.7838, 0.9069]
+T_after|post-1905 list volumes|strict|circular|label=foreign-consul|us-consulate judged 21 right 0 untestable 20 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.1546] loose [0.9524, 0.7733, 0.9915]
+T_after|post-1905 list volumes|strict|circular|label=special-agent judged 42 right 0 untestable 0 wrong-place 0 wrong-kind 42 unlabeled 0 strict [0.0, 0.0, 0.0838] loose [0.0, 0.0, 0.0838]
+T_after|post-1905 list volumes|strict|circular|label=us-domestic-office judged 15 right 15 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.7961, 1.0] loose [1.0, 0.7961, 1.0]
+T_after|post-1905 list volumes|strict|independent judged 2896 right 2355 untestable 20 wrong-place 223 wrong-kind 298 unlabeled 32386 strict [0.8132, 0.7986, 0.827] loose [0.8201, 0.8057, 0.8337]
+T_after|post-1905 list volumes|strict|independent|label=department judged 1586 right 1478 untestable 0 wrong-place 0 wrong-kind 108 unlabeled 0 strict [0.9319, 0.9184, 0.9433] loose [0.9319, 0.9184, 0.9433]
+T_after|post-1905 list volumes|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 32386 strict None loose None
+T_after|post-1905 list volumes|strict|independent|label=us-consulate judged 69 right 69 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.9473, 1.0] loose [1.0, 0.9473, 1.0]
+T_after|post-1905 list volumes|strict|independent|label=us-domestic-office judged 21 right 19 untestable 0 wrong-place 0 wrong-kind 2 unlabeled 0 strict [0.9048, 0.7109, 0.9735] loose [0.9048, 0.7109, 0.9735]
+T_after|post-1905 list volumes|strict|independent|label=us-mission judged 1220 right 789 untestable 20 wrong-place 223 wrong-kind 188 unlabeled 0 strict [0.6467, 0.6195, 0.673] loose [0.6631, 0.6361, 0.6891]
+T_before|1861-1899|strict|circular judged 62 right 58 untestable 3 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.9355, 0.8455, 0.9746] loose [0.9839, 0.9141, 0.9971]
+T_before|1861-1899|strict|circular|label=department judged 28 right 28 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.8794, 1.0] loose [1.0, 0.8794, 1.0]
+T_before|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+T_before|1861-1899|strict|circular|label=foreign-consul|us-consulate judged 2 right 0 untestable 2 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [1.0, 0.3424, 1.0]
+T_before|1861-1899|strict|circular|label=foreign-legation|us-domestic-office|us-mission judged 2 right 2 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.3424, 1.0] loose [1.0, 0.3424, 1.0]
+T_before|1861-1899|strict|circular|label=special-agent judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [0.0, 0.0, 0.7935]
+T_before|1861-1899|strict|circular|label=us-domestic-office judged 28 right 28 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.8794, 1.0] loose [1.0, 0.8794, 1.0]
+T_before|1861-1899|strict|independent judged 320 right 150 untestable 4 wrong-place 3 wrong-kind 163 unlabeled 491 strict [0.4688, 0.4148, 0.5235] loose [0.4813, 0.4271, 0.5359]
+T_before|1861-1899|strict|independent|label=department judged 182 right 74 untestable 0 wrong-place 0 wrong-kind 108 unlabeled 0 strict [0.4066, 0.3379, 0.4792] loose [0.4066, 0.3379, 0.4792]
+T_before|1861-1899|strict|independent|label=foreign-consul judged 4 right 4 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.5101, 1.0] loose [1.0, 0.5101, 1.0]
+T_before|1861-1899|strict|independent|label=foreign-legation judged 2 right 0 untestable 0 wrong-place 2 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.6576] loose [0.0, 0.0, 0.6576]
+T_before|1861-1899|strict|independent|label=foreign-legation|us-mission judged 11 right 1 untestable 3 wrong-place 1 wrong-kind 6 unlabeled 0 strict [0.0909, 0.0162, 0.3774] loose [0.3636, 0.1517, 0.6462]
+T_before|1861-1899|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 491 strict None loose None
+T_before|1861-1899|strict|independent|label=us-domestic-office judged 70 right 70 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.948, 1.0] loose [1.0, 0.948, 1.0]
+T_before|1861-1899|strict|independent|label=us-mission judged 51 right 1 untestable 1 wrong-place 0 wrong-kind 49 unlabeled 0 strict [0.0196, 0.0035, 0.103] loose [0.0392, 0.0108, 0.1322]
+T_before|1900-1905|strict|circular judged 4 right 2 untestable 1 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.5, 0.15, 0.85] loose [0.75, 0.3006, 0.9544]
+T_before|1900-1905|strict|circular|label=department judged 3 right 2 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.6667, 0.2077, 0.9385] loose [0.6667, 0.2077, 0.9385]
+T_before|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission judged 1 right 0 untestable 1 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [1.0, 0.2065, 1.0]
+T_before|1900-1905|strict|independent judged 1422 right 1294 untestable 0 wrong-place 26 wrong-kind 102 unlabeled 136 strict [0.91, 0.894, 0.9238] loose [0.91, 0.894, 0.9238]
+T_before|1900-1905|strict|independent|label=department judged 1130 right 1076 untestable 0 wrong-place 0 wrong-kind 54 unlabeled 0 strict [0.9522, 0.9382, 0.9632] loose [0.9522, 0.9382, 0.9632]
+T_before|1900-1905|strict|independent|label=foreign-legation judged 95 right 80 untestable 0 wrong-place 15 wrong-kind 0 unlabeled 0 strict [0.8421, 0.7557, 0.9019] loose [0.8421, 0.7557, 0.9019]
+T_before|1900-1905|strict|independent|label=foreign-legation|us-mission judged 123 right 102 untestable 0 wrong-place 11 wrong-kind 10 unlabeled 0 strict [0.8293, 0.7531, 0.8855] loose [0.8293, 0.7531, 0.8855]
+T_before|1900-1905|strict|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 136 strict None loose None
+T_before|1900-1905|strict|independent|label=us-domestic-office judged 36 right 36 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 0 strict [1.0, 0.9036, 1.0] loose [1.0, 0.9036, 1.0]
+T_before|1900-1905|strict|independent|label=us-mission judged 38 right 0 untestable 0 wrong-place 0 wrong-kind 38 unlabeled 0 strict [0.0, 0.0, 0.0918] loose [0.0, 0.0, 0.0918]
+T_before|1900-1905|weak|independent judged 782 right 0 untestable 781 wrong-place 0 wrong-kind 1 unlabeled 32 strict [0.0, 0.0, 0.0049] loose [0.9987, 0.9928, 0.9998]
+T_before|1900-1905|weak|independent|label=department judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 unlabeled 0 strict [0.0, 0.0, 0.7935] loose [0.0, 0.0, 0.7935]
+T_before|1900-1905|weak|independent|label=foreign-legation|us-mission judged 241 right 0 untestable 241 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0157] loose [1.0, 0.9843, 1.0]
+T_before|1900-1905|weak|independent|label=none judged 0 right 0 untestable 0 wrong-place 0 wrong-kind 0 unlabeled 32 strict None loose None
+T_before|1900-1905|weak|independent|label=us-mission judged 540 right 0 untestable 540 wrong-place 0 wrong-kind 0 unlabeled 0 strict [0.0, 0.0, 0.0071] loose [1.0, 0.9929, 1.0]
+any|1861-1899 {'docs': 32809, "docs-without-sender/addressee (no ' to ', or a memorandum)": 1751, 'docs-with-office-printed-on-a-side': 703, 'sides-with-office-printed': 873}
+any|1900-1905 {'docs': 6222, 'docs-with-office-printed-on-a-side': 1285, 'sides-with-office-printed': 2376, "docs-without-sender/addressee (no ' to ', or a memorandum)": 593}
+any|post-1905 list volumes {'docs': 24895, 'docs-with-office-printed-on-a-side': 19578, 'sides-with-office-printed': 35485, "docs-without-sender/addressee (no ' to ', or a memorandum)": 4344}

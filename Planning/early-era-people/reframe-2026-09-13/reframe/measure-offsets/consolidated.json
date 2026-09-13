@@ -1,0 +1,152 @@
+{
+ "population": {
+  "1861-1899": 32760,
+  "1900-1929": 48852,
+  "1930-1945": 77899,
+  "1946-": 38023
+ },
+ "population_total": 197534,
+ "body_text_weighted": {
+  "exact": 0.9228,
+  "ws_norm": 0.9228,
+  "dec_exact": 1.0
+ },
+ "flat_weighted": {
+  "exact": 0.0,
+  "ws_norm": 0.0,
+  "ws_strip": 0.1881,
+  "ws_strip_minus_footnotes": 0.8757
+ },
+ "anchor": {
+  "sweep_filtered/ALL": {
+   "spans": 5188,
+   "body_with_ground_truth": 3914,
+   "c20_10_correct": 3769,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 145,
+   "footnote_or_straddling": 289,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 985,
+   "c20_10_no_alignment_unique_unverified": 812,
+   "c20_10_0_correct": 3849,
+   "c20_10_0_footnote_misplaced": 29
+  },
+  "sweep_filtered/1861-1899": {
+   "spans": 1719,
+   "body_with_ground_truth": 1434,
+   "c20_10_correct": 1405,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 29,
+   "footnote_or_straddling": 17,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 268,
+   "c20_10_no_alignment_unique_unverified": 247,
+   "c20_10_0_correct": 1412,
+   "c20_10_0_footnote_misplaced": 3
+  },
+  "sweep_filtered/1900-1929": {
+   "spans": 964,
+   "body_with_ground_truth": 701,
+   "c20_10_correct": 679,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 22,
+   "footnote_or_straddling": 20,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 243,
+   "c20_10_no_alignment_unique_unverified": 224,
+   "c20_10_0_correct": 695,
+   "c20_10_0_footnote_misplaced": 0
+  },
+  "sweep_filtered/1930-1945": {
+   "spans": 967,
+   "body_with_ground_truth": 662,
+   "c20_10_correct": 629,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 33,
+   "footnote_or_straddling": 83,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 222,
+   "c20_10_no_alignment_unique_unverified": 176,
+   "c20_10_0_correct": 651,
+   "c20_10_0_footnote_misplaced": 5
+  },
+  "sweep_filtered/1946-": {
+   "spans": 1538,
+   "body_with_ground_truth": 1117,
+   "c20_10_correct": 1056,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 61,
+   "footnote_or_straddling": 169,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 252,
+   "c20_10_no_alignment_unique_unverified": 165,
+   "c20_10_0_correct": 1091,
+   "c20_10_0_footnote_misplaced": 21
+  },
+  "control_filtered/ALL": {
+   "spans": 2694,
+   "body_with_ground_truth": 2051,
+   "c20_10_correct": 1992,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 59,
+   "footnote_or_straddling": 131,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 512,
+   "c20_10_no_alignment_unique_unverified": 401,
+   "c20_10_0_correct": 2013,
+   "c20_10_0_footnote_misplaced": 15
+  },
+  "control_filtered/1861-1899": {
+   "spans": 1009,
+   "body_with_ground_truth": 879,
+   "c20_10_correct": 857,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 22,
+   "footnote_or_straddling": 15,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 115,
+   "c20_10_no_alignment_unique_unverified": 105,
+   "c20_10_0_correct": 862,
+   "c20_10_0_footnote_misplaced": 1
+  },
+  "control_filtered/1900-1929": {
+   "spans": 466,
+   "body_with_ground_truth": 316,
+   "c20_10_correct": 307,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 9,
+   "footnote_or_straddling": 8,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 142,
+   "c20_10_no_alignment_unique_unverified": 129,
+   "c20_10_0_correct": 312,
+   "c20_10_0_footnote_misplaced": 2
+  },
+  "control_filtered/1930-1945": {
+   "spans": 435,
+   "body_with_ground_truth": 287,
+   "c20_10_correct": 279,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 8,
+   "footnote_or_straddling": 37,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 111,
+   "c20_10_no_alignment_unique_unverified": 77,
+   "c20_10_0_correct": 282,
+   "c20_10_0_footnote_misplaced": 1
+  },
+  "control_filtered/1946-": {
+   "spans": 784,
+   "body_with_ground_truth": 569,
+   "c20_10_correct": 549,
+   "c20_10_wrong": 0,
+   "c20_10_refused_or_not_found": 20,
+   "footnote_or_straddling": 71,
+   "c20_10_footnote_misplaced": 0,
+   "no_alignment_docs_spans": 144,
+   "c20_10_no_alignment_unique_unverified": 90,
+   "c20_10_0_correct": 557,
+   "c20_10_0_footnote_misplaced": 11
+  }
+ }
+}

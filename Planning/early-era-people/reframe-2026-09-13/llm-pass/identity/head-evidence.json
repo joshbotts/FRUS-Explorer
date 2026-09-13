@@ -1,0 +1,270 @@
+{
+ "by_band": {
+  "1861-1899": {
+   "doc_dateline_place_in_first_400": 1453,
+   "doc_has_fromto_mark_anywhere": 1419,
+   "doc_has_fromto_mark_in_first_300": 1419,
+   "doc_head_has_despatch_number": 1099,
+   "doc_head_names_a_fromto_with_post": 33,
+   "doc_head_office_only_correspondent": 31,
+   "docs": 1500,
+   "fromto_mentions_in_head": 2807,
+   "fromto_mentions_in_head_bare_honorific_only": 1806,
+   "fromto_mentions_in_head_other": 69,
+   "fromto_mentions_in_head_prefix_title": 12,
+   "fromto_mentions_in_head_span_starts_with_honorific": 889,
+   "fromto_mentions_in_head_with_post": 31,
+   "fromto_mentions_in_head_with_post_and_place_word": 29,
+   "office_only_phrases_in_head": 31
+  },
+  "1900-1929": {
+   "doc_dateline_place_in_first_400": 1414,
+   "doc_has_fromto_mark_anywhere": 1131,
+   "doc_has_fromto_mark_in_first_300": 1128,
+   "doc_head_has_despatch_number": 799,
+   "doc_head_names_a_fromto_with_post": 985,
+   "doc_head_office_only_correspondent": 734,
+   "docs": 1500,
+   "fromto_mentions_in_head": 1291,
+   "fromto_mentions_in_head_bare_honorific_only": 260,
+   "fromto_mentions_in_head_other": 18,
+   "fromto_mentions_in_head_prefix_title": 305,
+   "fromto_mentions_in_head_span_starts_with_honorific": 2,
+   "fromto_mentions_in_head_with_post": 706,
+   "fromto_mentions_in_head_with_post_and_place_word": 703,
+   "office_only_phrases_in_head": 747
+  },
+  "1930-1945": {
+   "doc_dateline_place_in_first_400": 1391,
+   "doc_has_fromto_mark_anywhere": 1253,
+   "doc_has_fromto_mark_in_first_300": 1250,
+   "doc_head_has_despatch_number": 308,
+   "doc_head_names_a_fromto_with_post": 1217,
+   "doc_head_office_only_correspondent": 836,
+   "docs": 1500,
+   "fromto_mentions_in_head": 1346,
+   "fromto_mentions_in_head_bare_honorific_only": 6,
+   "fromto_mentions_in_head_other": 57,
+   "fromto_mentions_in_head_prefix_title": 55,
+   "fromto_mentions_in_head_with_post": 1228,
+   "fromto_mentions_in_head_with_post_and_place_word": 1227,
+   "office_only_phrases_in_head": 841
+  },
+  "1946-": {
+   "doc_dateline_place_in_first_400": 1245,
+   "doc_has_fromto_mark_anywhere": 1002,
+   "doc_has_fromto_mark_in_first_300": 994,
+   "doc_head_has_despatch_number": 119,
+   "doc_head_names_a_fromto_with_post": 934,
+   "doc_head_office_only_correspondent": 710,
+   "docs": 1500,
+   "fromto_mentions_in_head": 1139,
+   "fromto_mentions_in_head_bare_honorific_only": 24,
+   "fromto_mentions_in_head_other": 82,
+   "fromto_mentions_in_head_prefix_title": 62,
+   "fromto_mentions_in_head_span_starts_with_honorific": 1,
+   "fromto_mentions_in_head_with_post": 970,
+   "fromto_mentions_in_head_with_post_and_place_word": 961,
+   "office_only_phrases_in_head": 717,
+   "office_only_phrases_in_head_overlapping_any_mark": 1
+  }
+ },
+ "definitions": {
+  "bare_honorific_only": "no post by (a)-(c) and the span is preceded by Mr./Señor/Sir/Baron/Count/M./Messrs",
+  "dateline_place": "regex '<Capitalised place> , <Month> <d>, <yyyy>' in the first 400 chars",
+  "fromto_mentions_in_head": "marked from/to spans starting in the first 300 chars of the R-0 text",
+  "office_only_correspondent": "head contains 'to|from the Secretary of State|Acting Secretary of State|President|Department of State' (the correspondent is an OFFICE, often unmarked)",
+  "with_post": "(a) span inside '( )' preceded (within 90 chars, after the last ' to ') by a post word; (b) a '( ... )' right after the span holding a post word; (c) a ', ...' appositive within 50 chars holding a post word. Post words: regex POST in the script."
+ },
+ "examples": {
+  "1861-1899": [
+   [
+    "frus1861",
+    "d162",
+    "Mr. Seward to Mr. Dayton . No. 84.] Department of State , Washington , November 23, 1861 . Sir : Your despatch of November 7 (No 75) has been received. I have r"
+   ],
+   [
+    "frus1861",
+    "d92",
+    "Mr. Seward to Mr. Adams . No. 109.] Department of State , Washington , October 23, 1861 . Sir : I recur once more to your despatch of September 14, No. 44. On t"
+   ],
+   [
+    "frus1861",
+    "d56",
+    "Mr. Adams to Mr. Seward . [Extracts.] No. 9.] Legation of the United States , London , June 21, 1861 . Sir : * * * * * * * * * * * * * * * * * * I have not deem"
+   ],
+   [
+    "frus1861",
+    "d88",
+    "Mr. Adams to Mr. Seward . No. 52.] Legation of the United States , London , September 28, 1861 . Sir : I am much gratified to perceive, by the terms of your des"
+   ],
+   [
+    "frus1861",
+    "d78",
+    "Mr. Adams to Mr. Seward . No. 41.] Legation of the United States , London , September 9, 1861 . Sir : I have the honor to acknowledge the reception at the hands"
+   ],
+   [
+    "frus1861",
+    "d190",
+    "Mr. Stockton to Mr. Seward . Washington , September 14, 1861 . Sir : I have the honor to inform you that I left my post of duty on my return home on the 6th day"
+   ]
+  ],
+  "1900-1929": [
+   [
+    "frus1900",
+    "d754",
+    "Mr. Choate to Mr. Hay . American Embassy , London , June 27, 1900 . No. 350.] Sir : Referring to my dispatch No. 344, of the 20th instant, and to your telegram "
+   ],
+   [
+    "frus1900",
+    "d480",
+    "Mr. Hay to Mr. Nabeshima . Department of State , Washington , June 27, 1900 . Dear Mr. Nabeshima : In regard to the suggestion of the dispatch of Japanese reenf"
+   ],
+   [
+    "frus1900",
+    "d2",
+    "Mr. Hay to Mr. Lord . Department of State , Washington , May 8, 1900 . No. 14.] Sir : I have to acknowledge the receipt of a dispatch from Mr. Jones, No. 769, o"
+   ],
+   [
+    "frus1900",
+    "d150",
+    "Mr. Conger to Mr. Hay . Legation of the United States , Pekin, China , August 16, 1900 . No. 394.] Sir : I have the honor to confirm on the overleaf my telegram"
+   ],
+   [
+    "frus1900",
+    "d803",
+    "Mr. Hunter to Mr. Hay . [Telegram.—Paraphrase.] Legation of the United States , Guatemala , April 26, 1899 . (Mr. Hunter reports having discussed the Pears matt"
+   ],
+   [
+    "frus1900",
+    "d491",
+    "Mr. Peirce to Mr. Hay . [Telegram—Paraphrase.] Embassy of the United States , St. Petersburg , August 27, 1900 . (Mr. Peirce reports that the Russian Government"
+   ]
+  ],
+  "1930-1945": [
+   [
+    "frus1930v01",
+    "d91",
+    "500.A15a3/810: Telegram The Acting Secretary of State to the Chairman of the American Delegation ( Stimson ) Washington , March 31, 1930—5 p.m. 280. [Paraphrase"
+   ],
+   [
+    "frus1930v01",
+    "d396",
+    "863.51 Relief Credits/236: Telegram The Chargé in Italy ( Kirk ) to the Secretary of State Rome , May 26, 1930—noon [Received 12: 50 p.m.] 37. Department’s 93, "
+   ],
+   [
+    "frus1930v01",
+    "d513",
+    "811.51632 National City Bank/14: Telegram The Ambassador in Brazil ( Morgan ) to the Acting Secretary of State Rio de Janeiro , March 13, 1930—5 p.m. [Received "
+   ],
+   [
+    "frus1930v01",
+    "d286",
+    "724.3415/1016b: Telegram The Acting Secretary of State to the Chargé in Uruguay ( Gade ) Washington , March 6, 1930—4 p.m. 11. The Bolivian Government’s answer "
+   ],
+   [
+    "frus1930v01",
+    "d282",
+    "724.3415/982: Telegram The Chargé in Uruguay ( Gade ) to the Acting Secretary of State Montevideo , February 13, 1930—2 p.m. [Received 3:30 p.m.] 7. My telegram"
+   ],
+   [
+    "frus1930v01",
+    "d124",
+    "500.A15a3/1156d: Telegram The Secretary of State to the Ambassador in France ( Edge ) A similar telegram was sent to the Ambassador in Italy instructing him to "
+   ]
+  ],
+  "1946-": [
+   [
+    "frus1946v01",
+    "d601",
+    "811.2423/1–546 Memorandum by the Secretary of State to President Truman [ Washington ,] January 5, 1946 . The British have requested that a British scientific t"
+   ],
+   [
+    "frus1946v01",
+    "d502",
+    "501.BB/10–3046: Telegram Mr. John C. Ross , Adviser, United States Delegation to the United Nations General Assembly, to the Secretary of State top secret urgen"
+   ],
+   [
+    "frus1946v01",
+    "d238",
+    "740.00119 Council/8–2646: Telegram The Acting Secretary of State to the Ambassador in France ( Caffery ) secret u.s. urgent Washington , August 26, 1946—6 p.m. "
+   ],
+   [
+    "frus1946v01",
+    "d364",
+    "501.BB/10–2346: Telegram Senator Austin to the Secretary of State secret us urgent New York , October 23, 1946—11:30 p.m. [Received October 24—12:05 a.m.] 702. "
+   ],
+   [
+    "frus1946v01",
+    "d284",
+    "IO Files: US/A/C.2 and 3/8 Memorandum by Adlai E. Stevenson , Alternate Representative on the United States Delegation, to All Political Officers on the Delegat"
+   ],
+   [
+    "frus1946v01",
+    "d151",
+    "501. BC /5–346: Telegram The Acting Secretary of State to the United States Representative at the United Nations ( Stettinius ) secret urgent Washington , May 3"
+   ]
+  ]
+ },
+ "generated_by": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/llm-pass/identity/candidates.py",
+ "note_prefix_title": "prefix_title = a post word among the 3 tokens before the span, not right after 'to' or a full stop (e.g. Minister Blanchard, President Wilson); counted in doc_head_names_a_fromto_with_post",
+ "other_examples": {
+  "1861-1899": [
+   "Mr. Harris to Secretary of State . No. 26.] Legation of the Un  <<Secretary of State>>",
+   "[Translation.] Viscount Treilhard to Mr. Seward . Legation of F  <<Viscount Treilhard>>",
+   "[Immediate.] Her Majesty’s Treasury to Laird Brothers . 15,31027/  <<Her Majesty’s Treasury>>",
+   "[Immediate.] Her Majesty’s Treasury to Laird Brothers . 15,31027/10. Treasury Chamb  <<Laird Brothers>>",
+   "Her Majesty’s Treasury to Laird Brothers . Treasury  <<Her Majesty’s Treasury>>",
+   "Her Majesty’s Treasury to Laird Brothers . Treasury Chambers, October  <<Laird Brothers>>",
+   "S. Price Edwards, esq., collector of her Majesty’s customs, Liverpool, to Laird Brothers . Custom-Ho  <<S. Price Edwards, esq., collector of her Majesty’s customs, Liverpool,>>",
+   "collector of her Majesty’s customs, Liverpool, to Laird Brothers . Custom-House, Liverpool, Se  <<Laird Brothers>>",
+   "S. Price Edwards, esq., collector of H. M. customs, Liverpool, to Laird Brothers . Custom-Ho  <<S. Price Edwards, esq., collector of H. M. customs, Liverpool,>>",
+   ", esq., collector of H. M. customs, Liverpool, to Laird Brothers . Custom-House, Liverpool, Se  <<Laird Brothers>>",
+   "Captain Inglefield, H. M. S. Majestic, to Laird Brothers . Her Majes  <<Captain Inglefield, H. M. S. Majestic,>>",
+   "Captain Inglefield, H. M. S. Majestic, to Laird Brothers . Her Majesty’s Steamer Majes  <<Laird Brothers>>"
+  ],
+  "1900-1929": [
+   "Mr. Adee to Lord Pauncefote . Department of State , Washi  <<Pauncefote>>",
+   "Lord Lansdowne to Mr. Hay . [Telegram.] Fore  <<Lansdowne>>",
+   "File No. 812.00/3670. Pascual Orozco to the Acting Secretary of St  <<Pascual Orozco>>",
+   "812.00/12552. The Secretary of State to Collector Cobb . [Telegram.] Department of S  <<Cobb>>",
+   ". 312.11/7911 The Secretary of State to Collector Cobb [Telegram] Department of Stat  <<Cobb>>",
+   "Edward M. House Papers Colonel E. M. House to President Wilson London ,  <<E. M. House>>",
+   "Paris Peace Conf. 184.015/42a: Telegram Colonel O. N. Solbert to the Minister in Denmark (  <<O. N. Solbert>>",
+   "Paris Peace Conf. 184.01102/254 Captain Nicholas Roosevelt to Professor A. C. Coolidge T  <<Nicholas Roosevelt>>",
+   "01102/254 Captain Nicholas Roosevelt to Professor A. C. Coolidge Transmitted to the Commission  <<A. C. Coolidge>>",
+   "he Chief of the Mission to the Baltic Provinces ( Greene ) to the Secretary General of  <<Greene>>",
+   "ry General of the Commission to Negotiate Peace ( Grew ) Libau , May 3, 1919 . Subje  <<Grew>>",
+   "ry General of the Commission to Negotiate Peace ( Grew ) to Major Arnold Whitridge P  <<Grew>>"
+  ],
+  "1930-1945": [
+   "e Chief of the Division of Near Eastern Affairs ( Murray ) to the Acting Secretary of  <<Murray>>",
+   "erican Delegation to the Disarmament Conference ( Wilson ) to the Secretary of State G  <<Wilson>>",
+   "rican Delegation to the London Naval Conference ( Davis ) [ Washington ,] November 26  <<Davis>>",
+   "e Chief of the Division of Near Eastern Affairs ( Murray ) to the Ambassador in Turkey  <<Murray>>",
+   "e Chief of the Division of Near Eastern Affairs ( Murray ) to the Under Secretary of S  <<Murray>>",
+   "e Chief of the Division of Near Eastern Affairs ( Murray ) to the Minister in Liberia  <<Murray>>",
+   "der in Chief of the United States Asiatic Fleet ( Yarnell ) to the Chief of Naval Opera  <<Yarnell>>",
+   "et ( Yarnell ) to the Chief of Naval Operations ( Leahy ) Copy transmitted to the Dep  <<Leahy>>",
+   "der in Chief of the United States Asiatic Fleet ( Yarnell ) to the Chief of Naval Opera  <<Yarnell>>",
+   "et ( Yarnell ) to the Chief of Naval Operations ( Leahy ) Copy transmitted to the Dep  <<Leahy>>",
+   "e Chief of the Division of Near Eastern Affairs ( Murray ) Monrovia , March 31, 1939 .  <<Murray>>",
+   "Chief of the Division of the American Republics ( Duggan ) Washington , May 18, 1939 .  <<Duggan>>"
+  ],
+  "1946-": [
+   "the Division of International Security Affairs ( Bancroft ) to the Director of the Offi  <<Bancroft>>",
+   "the Division of International Security Affairs ( Bancroft ) to the Director of the Offi  <<Bancroft>>",
+   "811.34590/4–2046 Captain Robert L. Dennison , Assistant Chief of Naval Op  <<Robert L. Dennison>>",
+   "der-in-Chief of the Soviet Central Group Troops ( Kurasov ) Copy transmitted to the Dep  <<Kurasov>>",
+   "46: Telegram The Ambassador to the Soviet Union ( Harriman ) to the Secretary of State s  <<Harriman>>",
+   "on on the Allied Control Commission for Hungary ( Weems ) to the War Department top s  <<Weems>>",
+   "Supreme Allied Commander, Mediterranean Theater ( Morgan ) to the Combined Chiefs of S  <<Morgan>>",
+   ": Telegram The Ambassador to the United Kingdom ( Harriman ) to the Acting Secretary of  <<Harriman>>",
+   "ted States Member of the Far Eastern Commission ( McCoy ) top secret [ Washington ,]  <<McCoy>>",
+   "–D270 Memorandum by Mr. Liao Cheng-chi to Colonel J. Hart Caughey Nanking , May 23, 1946 . My D  <<J. Hart Caughey>>",
+   ", Held at the Office of the Aide to Generalissimo Chiang , February 16, 1946, 3 p.m. F  <<Chiang>>",
+   "randum by the Committee of Three to Generalissimo Chiang Kai-shek Copy transmitted to the Secre  <<Chiang Kai-shek>>"
+  ]
+ },
+ "sample": "1,500 documents per band, random.Random(234), from the TEI-dated documents of the scope"
+}

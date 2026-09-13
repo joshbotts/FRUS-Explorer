@@ -1,0 +1,51 @@
+{
+ "counts": {
+  "rows": 9207,
+  "surname_only_or_title": 9036,
+  "role_from": 3819,
+  "role_to": 5388,
+  "surface_FW": 171
+ },
+ "distinguishing_surfaces": [
+  [
+   "Mr. F. W. Seward",
+   149
+  ],
+  [
+   "Mr. Frederick W. Seward",
+   8
+  ],
+  [
+   "F. W. Seward",
+   4
+  ],
+  [
+   "Mr. F. W. Seward.",
+   3
+  ],
+  [
+   "Mr. F.W. Seward",
+   2
+  ],
+  [
+   "Mr. F. W. Seward to Mr. Adams",
+   1
+  ],
+  [
+   "Mr. F. W. Seward to Lord Lyons",
+   1
+  ],
+  [
+   "Se\u00f1or Mazuera to Mr. F. W. Seward,",
+   1
+  ],
+  [
+   "M . F. W. Seward",
+   1
+  ],
+  [
+   "Mr. F.W.Seward",
+   1
+  ]
+ ]
+}

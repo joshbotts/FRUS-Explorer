@@ -1,0 +1,118 @@
+{
+ "store_rows": {
+  "E": {
+   "expected": 245747,
+   "measured": 245747
+  },
+  "FC": {
+   "expected": 1261852,
+   "measured": 1261852
+  },
+  "FS": {
+   "expected": 2597043,
+   "measured": 2597043
+  }
+ },
+ "scope_documents": {
+  "expected": 197534,
+  "measured": 197534
+ },
+ "census_arms": {
+  "marked": {
+   "expected_pairs_docs_bytes_gz_vocab": [
+    223505,
+    159182,
+    2632099,
+    588607,
+    11377
+   ],
+   "measured": [
+    223505,
+    159182,
+    2632099,
+    588607,
+    11377
+   ],
+   "ok": true
+  },
+  "union_marked_filtered_control": {
+   "expected_pairs_docs_bytes_gz_vocab": [
+    864469,
+    192128,
+    8986340,
+    2877706,
+    143940
+   ],
+   "measured": [
+    864469,
+    192128,
+    8986340,
+    2877706,
+    143940
+   ],
+   "ok": true
+  }
+ },
+ "editor_typed_fromto_rows_by_region": {
+  "1861-1899": {
+   "head": 61108,
+   "other_head": 23101,
+   "note": 2,
+   "apparatus": 9,
+   "prose": 14
+  },
+  "1900-1929": {
+   "head": 42034,
+   "other_head": 7566,
+   "note": 0,
+   "apparatus": 2,
+   "prose": 0
+  },
+  "1930-1945": {
+   "head": 71445,
+   "other_head": 1539,
+   "note": 0,
+   "apparatus": 0,
+   "prose": 4
+  },
+  "1946-": {
+   "head": 28469,
+   "other_head": 454,
+   "note": 0,
+   "apparatus": 0,
+   "prose": 4
+  }
+ },
+ "r0_parity": {
+  "docs_text_layer": 197534,
+  "length_mismatches": 0,
+  "first": [],
+  "rows_not_slicing_back": 0,
+  "rows_whose_document_has_no_region_entry": 0,
+  "regions_not_in_text_layer": 0
+ },
+ "head_problems": [],
+ "zero_length_rows": {},
+ "gold_64_documents_agreement_spans": {
+  "expected": 350,
+  "measured": 350
+ },
+ "pocom_loader": {
+  "expected": {
+   "distinct_surnames_casefolded": 2866,
+   "distinct_surnames_with_dated_appointment": 2867,
+   "people_files": 4261,
+   "people_with_dated_appointment": 4167,
+   "people_with_surname": 4261
+  },
+  "measured": {
+   "people_files": 4261,
+   "people_with_surname": 4261,
+   "people_with_dated_appointment": 4167,
+   "distinct_surnames_with_dated_appointment": 2867,
+   "distinct_surnames_casefolded": 2866
+  }
+ },
+ "all_ok": true
+}
+elapsed 54.8

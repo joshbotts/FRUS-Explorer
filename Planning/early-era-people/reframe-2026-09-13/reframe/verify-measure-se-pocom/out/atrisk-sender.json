@@ -1,0 +1,121 @@
+{
+ "1861-1899": {
+  "high despatch": 11842,
+  "medium despatch fallback": 2796,
+  "medium: addressee Secretary/Department": 1498,
+  "medium: addressee other": 593,
+  "medium: no ' to ' in header": 705,
+  "sender rule decided (verifier)": 19,
+  "shown docs": 27387
+ },
+ "1900-1905": {
+  "high despatch": 2348,
+  "medium despatch fallback": 466,
+  "medium: addressee Secretary/Department": 338,
+  "medium: addressee other": 79,
+  "medium: no ' to ' in header": 49,
+  "shown docs": 4957
+ },
+ "examples_medium_addressee_other": {
+  "1861-1899": [
+   [
+    "frus1862/d203",
+    "Earl Russell to Lord Lyons .",
+    "Foreign Office, January 10, 1862.",
+    "Great Britain."
+   ],
+   [
+    "frus1862/d206",
+    "Earl Russell to Lord Lyons .",
+    "Foreign Office, January 23, 1862.",
+    "Great Britain."
+   ],
+   [
+    "frus1862/d214",
+    "Mr. Edwards to Lord Lyons .",
+    "New York, May 30, 1862.",
+    "Great Britain."
+   ],
+   [
+    "frus1862/d354",
+    "Mr. Thouvenel to Mr. Mercier .",
+    "Department of Foreign Affairs, Paris, January 19, 1862.",
+    "France."
+   ],
+   [
+    "frus1862/d355",
+    "Mr. Thouvenel to Mr. Mercier .",
+    "Department of Foreign Affairs, Paris, January 23, 1862.",
+    "France."
+   ],
+   [
+    "frus1862/d359",
+    "Mr. Pelissier to Mr. Thouvenel .",
+    "French Mission to Morocco, Tangier, March 3, 1862.",
+    "France."
+   ],
+   [
+    "frus1862/d360",
+    "Answer of Mr. Pelissier to the circular of Mr. De Long.",
+    "Tangier, March 3, 1862.",
+    "France."
+   ],
+   [
+    "frus1862/d361",
+    "Mr. Thouvenel to Mr. Mercier .",
+    "Paris, March 13, 1862.",
+    "France."
+   ]
+  ],
+  "1900-1905": [
+   [
+    "frus1900/d141",
+    "Mr. Conger to General Chaffee .",
+    "Pekin , August 4, 1900 .",
+    "China"
+   ],
+   [
+    "frus1900/d199",
+    "Mr. Holmes to Dr. Hill .",
+    "Westfield, Union County, N. J. , October 18, 1900 .",
+    "China"
+   ],
+   [
+    "frus1900/d294",
+    "Memorandum handed to the Secretary by Minister Wu.",
+    "Chinese Legation , July 3, 1900 .",
+    "China"
+   ],
+   [
+    "frus1900/d297",
+    "Memorandum handed to the Secretary by the Chinese Minister.",
+    "Chinese Legation , July 11, 1900 .",
+    "China"
+   ],
+   [
+    "frus1900/d335",
+    "The Emperor of China to the President, and the President to the Emperor of China.",
+    "[Handed to the President by Minister Wu, October 17, 1900 .]",
+    "China"
+   ],
+   [
+    "frus1900/d337",
+    "Memorandum handed to the Secretary by the Chinese Minister.",
+    "Chinese Legation , October 2, 1900 .",
+    "China"
+   ],
+   [
+    "frus1900/d341",
+    "Memorandum handed to the Secretary by Mr. Wu.",
+    "Chinese Legation , November 7, 1900 .",
+    "China"
+   ],
+   [
+    "frus1900/d389",
+    "The German Emperor to the President .",
+    "Rhainsburg , July 6, 1900 .",
+    "China"
+   ]
+  ]
+ }
+}

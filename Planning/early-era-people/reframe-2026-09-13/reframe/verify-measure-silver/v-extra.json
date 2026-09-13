@@ -1,0 +1,128 @@
+{
+ "silver_1900_1929_by_decade": {
+  "1910s": 7097
+ },
+ "silver_1900_1929_vols_pre1910": {},
+ "untagged_1900_1909_S": {
+  "one": 9611,
+  "rows": 12405,
+  "unknown": 1596,
+  "several": 187,
+  "nobody": 1011
+ },
+ "neg_birth": {
+  "1946-": {
+   "false_picks": 1840,
+   "birth_unknown_either_side": 1191,
+   "birth_equal": 649
+  },
+  "1930-1945": {
+   "false_picks": 72,
+   "birth_unknown_either_side": 71,
+   "birth_differs": 1
+  },
+  "1900-1929": {
+   "false_picks": 115,
+   "birth_unknown_either_side": 27,
+   "birth_differs": 88
+  }
+ },
+ "neg_birth_examples": {
+  "1946-": [
+   [
+    "frus1964-68v31",
+    "d44",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d47",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d49",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d53",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d55",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d57",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d59",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ],
+   [
+    "frus1964-68v31",
+    "d61",
+    "Johnson",
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    1908,
+    "(D-Texas), Member of the Armed Services Committee"
+   ]
+  ]
+ },
+ "m1a_year_classes": {
+  "<1900": 75,
+  "1900-1909": 25,
+  ">=1910": 200
+ },
+ "m1a_pre1910_S_mine": {
+  "one": 63,
+  "several": 12,
+  "unknown": 17,
+  "nobody": 8
+ },
+ "m1a_1904_volume_rows_years": {
+  "1904": 25
+ }
+}

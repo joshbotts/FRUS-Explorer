@@ -1,0 +1,74 @@
+{
+ "dept_side": {
+  "cross:contradicted|contradicted": 514,
+  "cross:corroborated|corroborated": 15178,
+  "cross:corroborated|no-hypothesis:grain-head-unlocated": 4,
+  "mine:contradicted": 514,
+  "mine:corroborated": 15182,
+  "population": 15696,
+  "theirs:contradicted": 514,
+  "theirs:corroborated": 15178,
+  "theirs:no-hypothesis:grain-head-unlocated": 4
+ },
+ "disagreements": {
+  "corroborated|no-hypothesis:grain-head-unlocated": [
+   [
+    "frus1870/d98",
+    "to",
+    "Mr. Davis",
+    "davis-john-chandler-bancroft",
+    "1870-08-03",
+    [
+     "notesFromForeignMissions"
+    ],
+    "Mr. Berthemy to Mr. Davis .",
+    "no-hypothesis:grain-head-unlocated"
+   ],
+   [
+    "frus1871/d73",
+    "to",
+    "Mr. Fish",
+    "fish-hamilton",
+    "1871-02-07",
+    [
+     "diplomaticDespatches"
+    ],
+    "Mr. Perez to Mr. Fish",
+    "no-hypothesis:grain-head-unlocated"
+   ],
+   [
+    "frus1871/d198",
+    "from",
+    "Mr. Fish",
+    "fish-hamilton",
+    "1870-11-21",
+    [
+     "diplomaticInstructions"
+    ],
+    "Mr. Fish to Baron Gerolt",
+    "no-hypothesis:grain-head-unlocated"
+   ],
+   [
+    "frus1895p1/d531",
+    "from",
+    "Olney",
+    "olney-richard",
+    "1896-01-18",
+    [
+     "diplomaticInstructions",
+     "notesToForeignMissions"
+    ],
+    "Mr. Olney to Mr. Bayard . .",
+    "no-hypothesis:grain-head-unlocated"
+   ]
+  ]
+ },
+ "legation_chosen_title_rows": {
+  "head rows": 3857,
+  "pocom:nobody": 882,
+  "pocom:one": 540,
+  "pocom:several": 1523,
+  "pocom:unknown": 2066,
+  "rows": 5011
+ }
+}

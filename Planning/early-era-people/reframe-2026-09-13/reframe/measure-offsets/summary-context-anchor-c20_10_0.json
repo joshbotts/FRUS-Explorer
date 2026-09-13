@@ -1,0 +1,250 @@
+{
+ "sweep_filtered/ALL": {
+  "body": {
+   "correct": 3849,
+   "L=20": 3708,
+   "ambiguous": 65,
+   "L=0": 80,
+   "L=10": 61
+  },
+  "in_footnote": {
+   "not_found": 195,
+   "placed_footnote_span_in_body": 29,
+   "L=0": 29,
+   "ambiguous": 49
+  },
+  "no_alignment": {
+   "unique_unverifiable": 856,
+   "L=20": 785,
+   "ambiguous": 79,
+   "L=10": 27,
+   "L=0": 44,
+   "not_found": 50
+  },
+  "straddles_footnote": {
+   "not_found": 16
+  }
+ },
+ "sweep_filtered/1861-1899": {
+  "body": {
+   "correct": 1412,
+   "L=20": 1401,
+   "ambiguous": 22,
+   "L=0": 7,
+   "L=10": 4
+  },
+  "in_footnote": {
+   "not_found": 7,
+   "placed_footnote_span_in_body": 3,
+   "L=0": 3,
+   "ambiguous": 7
+  },
+  "no_alignment": {
+   "unique_unverifiable": 247,
+   "L=20": 247,
+   "ambiguous": 21
+  }
+ },
+ "sweep_filtered/1900-1929": {
+  "body": {
+   "correct": 695,
+   "L=10": 9,
+   "L=20": 670,
+   "ambiguous": 6,
+   "L=0": 16
+  },
+  "in_footnote": {
+   "not_found": 17,
+   "ambiguous": 2
+  },
+  "straddles_footnote": {
+   "not_found": 1
+  },
+  "no_alignment": {
+   "unique_unverifiable": 229,
+   "L=20": 219,
+   "L=10": 5,
+   "L=0": 5,
+   "ambiguous": 12,
+   "not_found": 2
+  }
+ },
+ "sweep_filtered/1930-1945": {
+  "body": {
+   "correct": 651,
+   "L=20": 610,
+   "L=0": 22,
+   "ambiguous": 11,
+   "L=10": 19
+  },
+  "straddles_footnote": {
+   "not_found": 12
+  },
+  "in_footnote": {
+   "not_found": 59,
+   "ambiguous": 7,
+   "placed_footnote_span_in_body": 5,
+   "L=0": 5
+  },
+  "no_alignment": {
+   "unique_unverifiable": 193,
+   "L=20": 163,
+   "ambiguous": 16,
+   "not_found": 13,
+   "L=10": 13,
+   "L=0": 17
+  }
+ },
+ "sweep_filtered/1946-": {
+  "no_alignment": {
+   "unique_unverifiable": 187,
+   "L=20": 156,
+   "ambiguous": 30,
+   "L=10": 9,
+   "L=0": 22,
+   "not_found": 35
+  },
+  "body": {
+   "correct": 1091,
+   "L=20": 1027,
+   "L=0": 35,
+   "ambiguous": 26,
+   "L=10": 29
+  },
+  "in_footnote": {
+   "not_found": 112,
+   "placed_footnote_span_in_body": 21,
+   "L=0": 21,
+   "ambiguous": 33
+  },
+  "straddles_footnote": {
+   "not_found": 3
+  }
+ },
+ "control_filtered/ALL": {
+  "body": {
+   "correct": 2013,
+   "L=20": 1965,
+   "ambiguous": 38,
+   "L=0": 21,
+   "L=10": 27
+  },
+  "in_footnote": {
+   "ambiguous": 30,
+   "placed_footnote_span_in_body": 15,
+   "L=0": 15,
+   "not_found": 73
+  },
+  "straddles_footnote": {
+   "not_found": 13
+  },
+  "no_alignment": {
+   "unique_unverifiable": 424,
+   "L=20": 389,
+   "ambiguous": 50,
+   "L=10": 12,
+   "L=0": 23,
+   "not_found": 38
+  }
+ },
+ "control_filtered/1861-1899": {
+  "body": {
+   "correct": 862,
+   "L=20": 856,
+   "ambiguous": 17,
+   "L=0": 5,
+   "L=10": 1
+  },
+  "in_footnote": {
+   "ambiguous": 4,
+   "placed_footnote_span_in_body": 1,
+   "L=0": 1,
+   "not_found": 9
+  },
+  "straddles_footnote": {
+   "not_found": 1
+  },
+  "no_alignment": {
+   "unique_unverifiable": 105,
+   "L=20": 105,
+   "ambiguous": 10
+  }
+ },
+ "control_filtered/1900-1929": {
+  "body": {
+   "correct": 312,
+   "L=20": 304,
+   "L=0": 5,
+   "L=10": 3,
+   "ambiguous": 4
+  },
+  "in_footnote": {
+   "not_found": 5,
+   "placed_footnote_span_in_body": 2,
+   "L=0": 2
+  },
+  "no_alignment": {
+   "unique_unverifiable": 131,
+   "L=20": 126,
+   "ambiguous": 9,
+   "L=10": 3,
+   "L=0": 2,
+   "not_found": 2
+  },
+  "straddles_footnote": {
+   "not_found": 1
+  }
+ },
+ "control_filtered/1930-1945": {
+  "body": {
+   "correct": 282,
+   "L=20": 269,
+   "L=0": 3,
+   "L=10": 10,
+   "ambiguous": 5
+  },
+  "in_footnote": {
+   "not_found": 25,
+   "placed_footnote_span_in_body": 1,
+   "L=0": 1,
+   "ambiguous": 4
+  },
+  "no_alignment": {
+   "unique_unverifiable": 90,
+   "L=20": 76,
+   "L=0": 13,
+   "not_found": 16,
+   "ambiguous": 5,
+   "L=10": 1
+  },
+  "straddles_footnote": {
+   "not_found": 7
+  }
+ },
+ "control_filtered/1946-": {
+  "no_alignment": {
+   "unique_unverifiable": 98,
+   "L=20": 82,
+   "ambiguous": 26,
+   "L=10": 8,
+   "not_found": 20,
+   "L=0": 8
+  },
+  "body": {
+   "correct": 557,
+   "L=20": 536,
+   "L=0": 8,
+   "ambiguous": 12,
+   "L=10": 13
+  },
+  "in_footnote": {
+   "placed_footnote_span_in_body": 11,
+   "L=0": 11,
+   "not_found": 34,
+   "ambiguous": 22
+  },
+  "straddles_footnote": {
+   "not_found": 4
+  }
+ }
+}

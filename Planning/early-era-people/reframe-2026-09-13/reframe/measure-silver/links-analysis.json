@@ -1,0 +1,147 @@
+{
+ "scope_per_volume": {
+  "frus1917Supp02v02": {
+   "links": 1478,
+   "cross": 1478,
+   "resolves": 1478,
+   "target:frus1917Supp02v01": 1478,
+   "in_document": 1297,
+   "in_document_resolving": 1297,
+   "untyped_resolving": 869,
+   "in_document_resolving_crosswalk": 885,
+   "fromto_resolving": 428,
+   "in_head_resolving": 414,
+   "fromto_head_resolving": 401,
+   "in_document_resolving_slug": 614,
+   "fromto_resolving_slug": 272,
+   "fromto_head_resolving_slug": 268
+  },
+  "frus1918Supp01v02": {
+   "links": 3395,
+   "cross": 3395,
+   "resolves": 3395,
+   "target:frus1918Supp01v01": 3395,
+   "in_document": 2890,
+   "in_document_resolving": 2890,
+   "fromto_resolving": 875,
+   "in_head_resolving": 881,
+   "fromto_head_resolving": 866,
+   "untyped_resolving": 2015,
+   "in_document_resolving_crosswalk": 1598,
+   "in_document_resolving_slug": 1446,
+   "fromto_resolving_slug": 653,
+   "fromto_head_resolving_slug": 652
+  },
+  "frus1932v04": {
+   "links": 5743,
+   "cross": 5743,
+   "resolves": 5743,
+   "target:frus1932v03": 5743,
+   "in_document": 5028,
+   "in_document_resolving": 5028,
+   "fromto_resolving": 700,
+   "in_head_resolving": 786,
+   "fromto_head_resolving": 695,
+   "untyped_resolving": 4328,
+   "in_document_resolving_crosswalk": 664,
+   "in_document_resolving_slug": 201,
+   "fromto_resolving_slug": 66,
+   "fromto_head_resolving_slug": 65
+  }
+ },
+ "scope_distinct_targets": {
+  "frus1917Supp02v02": 92,
+  "frus1918Supp01v02": 108,
+  "frus1932v04": 434
+ },
+ "scope_distinct_targets_with_crosswalk": {
+  "frus1917Supp02v02": 46,
+  "frus1918Supp01v02": 42,
+  "frus1932v04": 34
+ },
+ "scope_distinct_targets_with_slug": {
+  "frus1917Supp02v02": 21,
+  "frus1918Supp01v02": 22,
+  "frus1932v04": 9
+ },
+ "scope_documents_with_link": {
+  "frus1917Supp02v02": 422,
+  "frus1918Supp01v02": 884,
+  "frus1932v04": 783
+ },
+ "list_volume_links_total": 1844810,
+ "list_volume_cross_volume_links": [
+  [
+   "frus1951v04p2",
+   "frus1951v04p1",
+   true,
+   false,
+   1
+  ],
+  [
+   "frus1977-80v01",
+   ".",
+   false,
+   true,
+   1
+  ]
+ ],
+ "list_volume_dangling_links": [
+  [
+   "frus1964-68v21",
+   true,
+   1
+  ],
+  [
+   "frus1977-80v01",
+   true,
+   1
+  ]
+ ],
+ "list_volume_dangling_examples": {
+  "frus1964-68v21": [
+   "p_ZA1"
+  ],
+  "frus1977-80v01": [
+   ".#p_SA_3"
+  ]
+ },
+ "p1873": {
+  "frus1873p1v1": {
+   "links": 1505,
+   "in_document": 889,
+   "untyped_resolving": 381,
+   "outside_document": 616,
+   "fromto_in_document": 508,
+   "fromto_resolving": 508,
+   "fromto_head_resolving": 427,
+   "fromto_resolving_slug": 286
+  },
+  "frus1873p1v2": {
+   "links": 1457,
+   "outside_document": 645,
+   "in_document": 812,
+   "fromto_in_document": 426,
+   "fromto_resolving": 426,
+   "fromto_head_resolving": 384,
+   "fromto_resolving_slug": 184,
+   "untyped_resolving": 386
+  }
+ },
+ "p1873_list_entries": {
+  "frus1873p1v1": 57,
+  "frus1873p1v2": 57
+ },
+ "p1873_distinct_linked_fromto_targets": {
+  "frus1873p1v1": 18,
+  "frus1873p1v2": 23
+ },
+ "p1873_crosswalk_entries": {
+  "frus1873p1v1": {
+   "p_HF1": 104298
+  },
+  "frus1873p1v2": {
+   "p_HF1": 104298
+  }
+ }
+}

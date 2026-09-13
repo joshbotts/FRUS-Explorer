@@ -1,0 +1,801 @@
+
+################ harness
+HEADLINE: The app's pre-1906 classifier now runs offline, compiled from the repo's own Swift, and passes 55 of 55 checks copied from the unit tests. In 1861–1899, Source Explorer places 70.3% of documents (22,846 of 32,478) in a diplomatic series with a country. It places 4.5% as notes from a foreign legation and only 1.7% (567) as consular despatches with a post; 23.1% get nothing. The country comes from the first section title, reading from the volume root down, whose first normalised key has a NARA roll covering the date. It is the chapter's country, not the post the document was written from. It fails on Roman-numeral titles, so frus1873p1v1 is country-arranged yet resolves 0 of 310 documents.
+
+[R1-country-selection] (documented) Source Explorer does not pick 'the country chapter'. It walks the section path from the volume root down to the leaf, classifies the document once per title, and stops at the first title that produces any classification with at least one roll. That makes the NARA roll vocabulary (67 geo keys) the only test of whether a title is a country. Only the first normalised key is looked up, so 'Sweden and Norway' checks 'sweden' alone, and a long title ending '...United States and Great Britain.' checks its opening words and never resolves.
+
+[R2-series-rules] (documented) classify(header:dateline:chapterCountry:) applies nine checks in a fixed order, and the first that matches returns. Matching is on the lowercased dateline (and header where noted). (1) The header or dateline contains 'special agent', 'special commissioner' or 'special mission': if the dateline has 'department of state' the result is specialAgentsInstructions, otherwise specialAgentsDespatches; medium, no geography. (2) The dateline names another executive office (war, navy, treasury, post office, justice, interior, agriculture or commerce department, 'executive mansion', 'white house'): lettersReceived, high, no geography. (3) A foreign consulate: the dateline contains 'consul' and no US marker ('united states', 'american', 'u.s.', 'u. s.'), and matches either `consulate(-general)? of \w` or a word other than 'the' before 'consulate'; notesFromForeignConsuls, high, no geography. (4) The dateline contains 'consulate' or 'consular': consularDespatches, high, with the post city from consularPostKey as the geography. If no city can be isolated it returns [] outright, and the chapter is never consulted. (5) geoKeys is set to GeoKeyNormalizer.keys(chapterCountry). A dateline naming a US mission ('legation of the united states', 'embassy of the united states', 'american legation', 'american embassy', 'united states legation', 'u. s. legation', 'u.s. legation') gives despatches, high, if geoKeys is non-empty, otherwise []. (6) 'department of state' in the dateline: with a chapter, instructions and notesTo, both medium. If the header also contains 'consul', add consularInstructions and notesToForeignConsuls (medium, no geography). If a cabinet office follows the header's first ' to ' (secretary of war, navy, treasury, interior, agriculture or commerce; attorney general; postmaster general), add domesticLetters (medium). Return the list, which may be empty. (7) With no geoKeys, return []. (8) 'washington' plus 'legation' or 'embassy' in the dateline: notesFrom, high. (9) Fallback: a non-blank dateline with neither 'washington' nor 'department of state' gives despatches, medium ('Datelined abroad'). Anything else returns []. A 'Washington, <date>' dateline with no office named therefore gets nothing.
+
+[R3-consular-post] (measured) consularPostKey drops everything from the first 'Month D, YYYY' onward and splits the rest on commas. It returns the first segment containing none of consul, united states, american, legation or embassy, canonicalised. Failing that, it takes the text after '\bat\s+' inside a consul segment. Otherwise nil. The post key is a bare lowercased city ('havana'); the consular series carries 495 distinct roll geo keys.
+
+[R4-normalizer] (measured) GeoKeyNormalizer.keys trims, strips a leading 'Vol(ume|.) N:', cuts at the first ':', and splits on ' & ', ', ' and ' and '. Each part is canonicalised: trim whitespace and '.,;', lowercase, collapse spaces, apply the alias table. It has no rule for Roman-numeral prefixes ('III.—Argentine Republic.', 'XXIX.—Spain.'), '(Continued.)', legation-chapter titles ('British legation.', 'Correspondence with the Mexican legation.'), 'Chili' (the aliases cover 'chilian' and 'chilean' only) or 'Rome.'. Those chapters fall through to nothing.
+
+[R5-era-gate] (measured) The 1906 gate is applied per document, on the year of its own dateline, not the volume's. documentYear = DocumentView.extractYear(entry.dateline): the year from datelineDateISO (the first 'Month D, YYYY'), otherwise the first \b(1[89]dd|20[0-2]d)\b. A document with no dateline, or no year in it, is never classified. Header and dateline are the raw document_cache columns.
+
+[R6-confidence-and-enclosures] (documented) There are only two confidence levels: high ('Likely') and medium ('Possible'). Enclosures are classified from their own opener with chapterCountry nil. An enclosure therefore places only through a consular post or a series matched by date (foreign-consul notes, letters received, special agents, the consul pair, domestic letters); a US-legation or bare-city enclosure gets nothing. The doc comment at SourceExplorerView.swift 1128-1129 says an enclosure 'inherits the chapter country', but the code passes nil (CentralFilesClassifier.swift 117-125, 137-139) and never uses the `path` parameter. The harness does NOT run the enclosure pass, which needs a TEI AST parse.
+
+[H1-harness] (measured) The harness compiles five real repository files unchanged: CentralFilesClassifier.swift, CentralFilesIndex.swift, GeoKeyNormalizer.swift, Browser/VolumeStructure.swift, and Models/Manifest/ManifestModels.swift (needed only because VolumeStructure.swift's SubseriesGroup names VolumeManifestEntry). It builds in -swift-version 6, matching project.yml. One stub declares IndexingPipeline.EnclosureOpener (label/header/dateline), which enclosureHomes names; the real type sits inside the IndexingPipeline actor. The other generated input is DocumentView.extractYear, cut out of DocumentView.swift by awk and checked identical to MacDocumentView's. CentralFilesIndexStore.shared loads through Bundle.main from a symlink to the repo's central-files-index.json. The live index is read only by export_index.py, via sqlite3 file:...?mode=ro with uri=True. The selftest passes 55 of 55: every classifier unit-test expectation, 13 extractYear cases, the four golden rolls 189376306, 149311973, 188287901 and 188687259, and one run of the full Source Explorer loop.
+
+[H2-sample20] (measured) I traced 20 random documents (seed 234; 12 from 1861-1899, 8 from 1900-1905) through the documented rules by hand. All 20 harness outputs match what Source Explorer would show. Examples: frus1867p1/d346 falls through 'Correspondence.' to 'Russia' and shows the instructions and notesTo pair, although its subchapter 'Correspondence with the Russian legation.' identifies a note. frus1903/d17 ('White House') gives lettersReceived with no roll for 1903 (those rolls stop at 1817), so nothing is shown. frus1902app2/d113 has a French dateline, takes the bare-city fallback with a non-country key, and shows nothing. frus1871/d377 is datelined 'Legation of the United States, London' inside the 'Spain.' chapter and shows Spain despatches, high confidence.
+
+[C1-coverage-1861-1899] (measured) Band 1861-1899 (by the app's document year), 32,478 documents:
+- (a) diplomatic series with a country: 22,846 (70.3%). Of these, 11,640 are high-confidence despatches (US mission dateline), 2,760 medium bare-city despatches, 7,925 the instruction/note-to pair, 292 notesTo alone, 227 instructions alone.
+- (c) notes from a foreign legation: 1,471 (4.5%).
+- (b) consular despatches with a post: 567 (1.7%).
+- Date-only series with no geography: 97 (0.3%).
+- (d) nothing: 7,497 (23.1%).
+Why (d): 4,501 have no country title and the geo row carries a non-country key; 1,149 have a country title but no roll covers the date (worst: Italy despatches 292, Prussia 158, Argentina 129); 832 have no country title and the classifier emits nothing; 644 have a country title but the classifier emits nothing (4,177 of the nothing rows are Washington datelines); 184 are consular rows with no roll; 180 letters-received rows with no roll; 5 have no section path.
+
+[C2-coverage-1900-1905] (measured) Band 1900-1905, 5,932 documents:
+- (a) diplomatic with a country: 4,666 (78.7%). Of these, 2,390 are high-confidence despatches, 473 medium, 1,674 the instruction/note-to pair, 96 notesTo alone, 25 instructions alone, and 8 the pair plus notesToForeignConsuls.
+- (c) notes from a foreign legation: 335 (5.6%).
+- (b) consular with a post: 43 (0.7%).
+- Date-only series: 17.
+- (d) nothing: 871 (14.7%); 291 of these are in frus1901China.
+Per-volume a/b/c/d/e and gate counts are in coverage-by-volume.tsv.
+
+[C3-arrangement] (measured) By the app's own rule (a title's first normalised key is a diplomatic roll geo key), 52 of 63 volumes from 1861-1899 have at least one country title, 49 have at least half their documents under one, and 39 have at least 90%. Reading the 11 with none shows two different groups. Country-arranged but defeated by the normaliser: frus1864p2 ('Great Britain. (Continued.)', 'British legation.') and frus1873p1v1 ('III.—Argentine Republic.' … 'XXII.—Mexico.', 0 of 310 documents resolve). frus1873p1v2 (share 0.21) is the same: its matches come only from the expatriation appendix, while its 'XXIII.—Morocco.' … 'XXXIII.—Venezuela.' chapters fail. frus1872p2v2's country subchapters ('[199] *I.—France.') fail the same way. So frus1873p1v1 and v2 DO have country chapters; the brief's premise is wrong. Genuinely not country-arranged: frus1872p2v1, v3, v4, v5 (Geneva arbitration / Treaty of Washington), frus1873p2v3 (claims commission report), frus1894Nicaragua ('Affairs at Bluefields'), frus1894app1 (subject reprints; its Samoa chapters are titled 'Correspondence Between the Department of State and the German Embassy' and so on), and frus1894app2 (Hawaii congressional documents). Partly defeated: frus1865p2 (0.46; 'Correspondence with British legation.' holds 327 documents) and frus1866p3 (0.43; 'Correspondence with the Mexican legation.' 117). frus1888p2 resolves 558 of 644 documents under a country title; its 'Correspondence with the legation of X at Washington.' chapters sit beneath country compilations, so the parent title resolves.
+
+[C4-shadowing-defect] (measured) A series matched by date alone does not depend on the title, so it resolves at path[0] and ends the loop before the country title is reached. Circulars addressed 'To the diplomatic and consular officers…' (header contains 'consul') show only notesToForeignConsuls and lose their Great Britain or France instruction row. Measured at 5 documents in 1861-1899: frus1862 d123, d124, d274, and two more.
+
+[C5-chapter-not-post] (inferred) Proxy only, not accuracy: the chapter country the app shows sometimes differs from the post the dateline names. Among high-confidence despatch rows with a city after the mission phrase, the city's most common country across the corpus (cities seen at least 5 times) disagrees with the shown country in 296 of 11,511 (2.6%) for 1861-1899 and 99 of 2,379 (4.2%) for 1900-1905. Top pairs: Paris despatches shown as Mexico (69; Bigelow's 1865 despatches in frus1865p3), London as Spain (36), Port-au-Prince as Dominican Republic (29), Berlin as China (18). The proxy has its own artefacts ('washington' and 'legation of the united states' parsed as cities). What IS documented: for the despatch branches the dateline city is never read, so the geography is always the chapter.
+
+TABLE:
+Coverage of what Source Explorer shows, by the app's document year. Categories are exclusive, taken in the order a > c > b > e > d.
+band | docs | (a) diplomatic+country | (c) foreign legation | (b) consular+post | (e) date-only, no geo | (d) nothing
+1861-1899 | 32,478 | 22,846 (70.3%) | 1,471 (4.5%) | 567 (1.7%) | 97 (0.3%) | 7,497 (23.1%)
+1900-1905 | 5,932 | 4,666 (78.7%) | 335 (5.6%) | 43 (0.7%) | 17 (0.3%) | 871 (14.7%)
+pre-1861 | 424 | 13 | 0 | 1 | 5 | 405
+year>=1906 (gated) | 6,632 | - | - | - | - | 6,632
+no dateline / no year | 882 / 489 | - | - | - | - | 1,371
+Source: harness/coverage.json by_band. Per volume: harness/coverage-by-volume.tsv.
+
+TABLE:
+Shown-row mix, 1861-1899: despatches/high 11,640; instructions+notesTo/medium 7,925; nothing 7,497; despatches/medium 2,760; notesFrom/high 1,471; consularDespatches/high 567; notesTo/medium 292; instructions/medium 227; domesticLetters 29; notesToForeignConsuls 26; specialAgentsDespatches 24; notesFromForeignConsuls 18; instructions+notesToForeignConsuls+notesTo 2. (harness/breakdown.json)
+
+TABLE:
+Why nothing is shown, 1861-1899, in-gate (7,492): no country title, geo row with a non-country key 4,501; country title but no roll covers the date 1,149; no country title, classifier emits nothing 832; country title, classifier emits nothing (Washington datelines) 644; consular row, no roll 184; letters received, no roll 180; other 2. Plus 5 with no section path. (harness/analysis2.json)
+
+TABLE:
+Volumes from 1861-1899 with no title whose first normalised key is a roll geo key: frus1864p2*, frus1872p2v1, frus1872p2v2*, frus1872p2v3, frus1872p2v4, frus1872p2v5, frus1873p1v1*, frus1873p2v3, frus1894Nicaragua, frus1894app1, frus1894app2 (* = country-arranged when read, defeated by title normalisation). Share under a country title below 0.5: frus1865p2 0.46, frus1866p3 0.43, frus1873p1v2 0.21*. 49 of 63 volumes are at or above 0.5 and 39 of 63 at or above 0.9.
+
+UNKNOWNS:
+ - Accuracy is unmeasured. No keyed archival or identity gold exists, so every figure here describes what the app DOES, not whether the series or country is right. The chapter-versus-post mismatch (C5) is a proxy.
+ - The enclosure pass (SourceExplorerView 1118-1182) is not reproduced; it needs FRUSDocumentParser plus IndexingPipeline.extractEnclosureOpeners over TEI. The code passes chapterCountry nil, so enclosures add no chapter country.
+ - The live index (version 50) predates PR #1291. Structures and document_cache rows for frus1873p1v2 and the split-set parts could change after a re-index; not checked.
+ - The Department-outbound pair (7,925 + 1,674 documents) is by design ambiguous between the US minister in the chapter country and that country's minister in Washington. Subchapter titles such as 'Correspondence with the Russian legation.' would settle it, but the classifier never reads them.
+ - The despatch_serial column and despatchSerial fetch were not examined.
+
+################ coverage
+HEADLINE: Yes, but mostly as a check, not as new answers. I turned each document's classifier output (the app's real Swift classifier, via the harness) into role hypotheses for its marked from/to names and matched them against the people POCOM lists as holding those posts on the document's date. POCOM's surname-by-year rule already names exactly one person for 53.7% of the 84,234 from/to rows in the 61 no-list volumes of 1861–1899. The chapter rule names one person for 51.6% using only what Source Explorer shows (arm A), or 61.6% using the classifier's role and direction without the NARA-roll test plus a repaired title crosswalk (arm B). Most of that rise is not evidence. 8,733 of arm B's 10,973 rows that move from several people to one are 'Mr. Seward' in the 1860s, assigned to the Secretary over the Assistant Secretary by rank alone. In 117 Seward-headed documents F. W. Seward signed. Setting those rows aside, arm B's combined answer names one person for 53.5% of rows, the same as POCOM's rule. The real value is a post for POCOM's single names: 90.4% of them in arm B, and 47.5% name the US chief in the chapter's country. The rule also flags 2,415 rows (2.9%) where POCOM's person does not hold any hypothesised post, and picks the right namesake in 2,240 other rows ('Osborn' Chile vs Argentina). In 1900–1905 (13,160 rows) it adds almost nothing new: 10 rows move from several to one. It adds a post for 91.7% of POCOM's single names and flags 509 contradictions. Everything here is what the rule decides, not whether it is right.
+
+[M0-method] (measured) Scope: the 70 no-list volumes up to 1905 (61 in 1861–1899, 9 in 1900–1905), taken from ~/frus-ner-raw/scope.json. The population is every marked row with t=from/to: 84,234 and 13,160 rows. Band is taken from the volume name, as in measure_pocom.py.
+
+The three answers:
+- (i) POCOM surname-by-year. measure_pocom.py is imported, not copied: surname_of, text_of, load_pocom, and tei_doc_years for the TEI year with ±1. The 1861–1899 classes reproduce pocom.json's by_band marked_fromto exactly: 84,234 rows; 45,258 one; 11,995 several; 8,595 nobody; 18,386 unknown.
+- (ii) Chapter rule. Take POCOM officeholders holding a hypothesised post on the document's exact date: the dateline date from the harness, otherwise the index date. Keep those whose POCOM surname equals surname_of(name). Department posts have two tiers:
+  - tier 1: secretary and secretary-ad-interim;
+  - tier 2: assistant-secretary, second-assistant-secretary, third-assistant-secretary and chief-clerk, used only if tier 1 and the chief posts match nobody.
+  A chief post runs from the appointed, arrived or started date to the ended date. An appointment with no start and no end is excluded (221, e.g. declined nominations). A served appointment with no end closes at the next chief's start (84); 155 stay open.
+- (iii) Combined: (ii) when it names exactly one person, otherwise (i)'s one. The strict variant also drops (i)'s one when it is contradicted.
+
+Roles are assigned only for the document's own head: the header string, located in the R-0 text. Of the 1861–1899 rows, 61,068 are head rows, 23,128 are enclosure rows and 38 heads could not be located. Enclosure rows get an undirected hypothesis: the Department, or the chapter country's chief.
+
+Arm A uses only what Source Explorer shows (a classification that has a roll). Arm B uses the Swift classifier's categories for the first section title (root to leaf) that the crosswalk maps to a POCOM territory, without the roll test, and also reads legation subchapter titles. No classifier rule was ported. Categories, confidences, geo keys and title keys all come from the Swift harness. The role table, crosswalk and head locator are new Python.
+
+[M1-role-table] (documented) Role hypotheses by classifier category, for head rows. 'dept' means the Secretary, acting or assistant secretary on the date. 'chief(T)' means the US chief of mission to the chapter territory. Anything in brackets has no local source.
+
+| Category | from | to |
+|---|---|---|
+| diplomaticDespatches, high (US mission dateline) | chief(T) or [legation secretary / chargé] | dept or [foreign official] |
+| diplomaticDespatches, medium (datelined abroad) | chief(T) or [foreign official] | dept or chief(T) |
+| diplomaticInstructions | dept | chief(T); dropped when a subchapter is a foreign-legation title |
+| notesToForeignMissions | dept | [foreign envoy in Washington] |
+| notesFromForeignMissions | [foreign envoy in Washington] | dept |
+| consularDespatches | [US consul at post] | dept |
+| lettersReceived | [other US executive office] | dept |
+| domesticLetters | dept | [cabinet officer] |
+| specialAgents* | [special agent] | dept (or the reverse) |
+| notes to/from foreign consuls | the matching dept or [consul] side | |
+
+Consular despatches get chief(T) as an extra 'from' alternative when the post's US officer was also a POCOM chief: cairo and alexandria (egypt), tangier (morocco), bangkok (thailand), monrovia (liberia), seoul (korea), teheran (iran), honolulu (hawaii).
+
+When the classifier shows the instruction/note-to pair, the 'to' side is 'chief(T) or foreign envoy'. POCOM cannot choose between them.
+
+[M2-crosswalk] (measured) Crosswalk coverage:
+- Arm A: every geography key Source Explorer shows maps to a POCOM missions-countries territory, in 24,230 of 24,230 documents (1861–1899) and 4,900 of 4,900 (1900–1905).
+- Arm B: 27,536 documents mapped in 1861–1899 (26,045 by the app's normalised key in the alias table, 1,491 only after title repair). 2,482 documents needing a country stay unmapped. In 1900–1905: 5,237 mapped (9 by repair), 548 unmapped. Arm B also finds legation subchapters over 3,407 documents (foreign legation) and 184 (US mission) in 1861–1899, and 27 in 1900–1905.
+
+Historical states as POCOM files them:
+- Prussia, North German Union and German Empire are germany.xml. Its chief notes read 'Commissioned to Prussia' 11 times and 'the German Empire' twice.
+- New Granada and the United States of Colombia are colombia (note 'New Granada', twice).
+- The Papal States are holy-see (note 'the Pontifical States'). FRUS chapters titled 'Rome' map there: 77 documents.
+- The Two Sicilies are two-sicilies, contemporary id kingdom-of-two-sicilies-1861. No in-scope chapter uses it.
+- The Hawaiian Kingdom and Hawaiian Islands are hawaii (notes '(or at) the Hawaiian Islands', 'the Kingdom of Hawaii').
+- Persia is iran; Siam is thailand; Korea is korea (contemporary id joseon-dynasty-1910).
+- Austria-Hungary is austria; the Argentine Confederation or Republic is argentina.
+- Sweden and Norway is sweden; norway has only 2 chiefs before 1906.
+- The Central American States are five files: guatemala, honduras, el-salvador, costa-rica and nicaragua. The FRUS 'Central America' key maps to all five, 584 documents.
+- England, London and the UK are united-kingdom.
+- 'Chili', missing from GeoKeyNormalizer's alias table, maps to chile.
+
+POCOM has no mission file for the German minor states, Tunis, Tripoli, the Congo, Samoa, the South African Republic or Zanzibar before 1906.
+
+[M3-unmapped-titles] (measured) All unmapped arm-B documents are listed with document counts in unmapped-chapter-titles.tsv: 193 (volume, last-two-path-titles) pairs for 2,482 documents in 1861–1899, and 64 pairs for 548 documents in 1900–1905. Most belong to volumes not arranged by country.
+
+Not country-arranged:
+- frus1872p2v1 Geneva counter case: 'Correspondence.' 189, 'Cuban correspondence' 93, and others.
+- frus1894app2 Hawaii message lists: 151, 59, 45, 39, 36, …
+- frus1894app1: Samoa 146+136+24+10+5, fur seals 118, Chinese-Japanese war 106, Mosquito Territory 81, Mora 65, import duties 34.
+- frus1894Nicaragua 'Affairs at Bluefields' 103.
+- frus1901China 'Telegraphic Correspondence.' 79 and 'Negotiations of the powers with China.' 20.
+- frus1905 'Death of Secretary of State John Hay' 53.
+- frus1865p4 'United States of America' 59.
+- Circulars, about 41 across volumes.
+
+Country-like titles POCOM cannot place:
+- frus1896 'South African Republic' 50; Samoa (frus1899 35, frus1889 22); frus1885 'Congo' 4.
+- Tunis 5 (frus1865p3 3, frus1865p4 1, frus1875v01 1); frus1865p3 'Tangiers' 1.
+- German states: 'Hanseatic Republics' 7, 'Duchy of Baden' 2, 'Würtemberg' 2, 'Brunswick' 1, 'Duchy of Hesse Darmstadt' 1, 'Saxe-Meiningen' 1 (frus1865p4); 'Hanseatic and free cities' 5 and 'Bavaria' 1 (frus1863p2).
+- 'Greater Republic of Central America' 11 (frus1896–97); 'Hawaiian Republic' 4 (frus1894).
+
+One is a crosswalk miss that should be fixed: 'Hayti [Haiti]' 1 (frus1865p4).
+
+[R1-1861-1899-armB] (measured) 1861–1899, arm B, 84,234 rows:
+- Hypothesis: 80,515 rows have one (95.6%); 74,133 have at least one POCOM-covered post.
+- Chapter rule names exactly one person: 51,880 (61.6%). It never names several; zero for 28,635.
+
+POCOM class 'one' (45,258):
+- corroborated: 40,907 (90.4%), of which chief of the chapter country 21,490, Secretary 17,255, tier-2 officer 2,162;
+- contradicted: 2,415, of which the holder is in another POCOM post on the date 1,183, the holder is within 180 days of a hypothesised post 373, the holder is in no post that day 859. On 2,054 of those 2,415 the side also carries an uncovered alternative;
+- untestable (only uncovered roles, e.g. unmapped country): 1,056;
+- no hypothesis: 880.
+
+POCOM class 'several' (11,995):
+- to one: 10,973. Of these, 8,733 pick the Secretary over a same-surname tier-2 officer (convention, not evidence); 1,488 by chapter chief; 600 by Secretary with no same-surname tier-2; 152 by tier 2;
+- zero with an uncovered alternative: 331; zero: 10 (misread dates such as 1811, 1846).
+
+POCOM classes 'nobody' (8,595) and 'unknown' (18,386):
+- nobody explained as an uncovered role 7,634, unexplained 146;
+- unknown explained 16,651, unexplained 392.
+
+'Explained' is weak. In 18,990 of the 24,285 explained rows the side also had a POCOM-covered alternative, so the explanation is by elimination. Only 5,295 are on a side whose roles are all uncovered, e.g. notes from a foreign legation.
+
+Combined (iii): lenient 56,231 (66.8%); strict 53,816 (63.9%); strict without the Seward-type convention 45,083 (53.5%). Versus (i): 45,258 (53.7%). Strictly undetermined: 30,418.
+
+[R2-1861-1899-armA] (measured) 1861–1899, arm A (only what Source Explorer shows):
+- Hypothesis: 67,025 rows (79.6%); POCOM-covered: 64,886.
+- Chapter rule names exactly one person: 45,056 (53.5%).
+
+POCOM class 'one' (45,258):
+- corroborated: 36,269 (80.1%), of which chief 19,742, Secretary 14,691, tier 2 1,836;
+- contradicted: 1,921 (other post 892, within 180 days 330, no post 699);
+- untestable: 201; no hypothesis: 6,867.
+
+POCOM class 'several':
+- to one: 8,787, of which 6,805 are the tier-1-over-tier-2 convention, 1,269 by chief, 573 by Secretary, 140 by tier 2.
+
+POCOM classes 'nobody' and 'unknown':
+- nobody explained 6,017, unexplained 110;
+- unknown explained 13,105, unexplained 317.
+
+Combined: lenient 54,045 (64.2%); strict 52,124 (61.9%); strict without convention 45,319 (53.8%).
+
+17,183 rows are in documents where Source Explorer shows nothing.
+
+[R3-1900-1905] (measured) 1900–1905, 13,160 rows. POCOM (i) names one person for 9,234 (70.2%); only 12 rows are 'several'.
+
+Arm B:
+- Hypothesis: 12,937; POCOM-covered: 12,377.
+- Chapter rule names one: 8,476 (64.4%).
+- POCOM 'one': corroborated 8,466 (91.7%): chief 4,051, Secretary 3,758, tier 2 657. Contradicted 509: other post 292, within 180 days 13, no post 204. Untestable 115; no hypothesis 144.
+- Several to one: 10, all by chief (the two O'Briens, Denmark vs Uruguay).
+- Nobody explained 1,060, unexplained 42 (mostly 'President Roosevelt': heads of state are not a role). Unknown explained 2,701, unexplained 32.
+- Combined: lenient 9,244 (70.2%); strict 8,735 (66.4%).
+
+Arm A:
+- Chapter rule names one: 7,656 (58.2%).
+- Corroborated 7,649 (82.8%); contradicted 460; several to one 7.
+- Combined strict 8,781 (66.7%).
+
+The rule adds corroboration and vetoes in this band, not new decisions.
+
+[R4-uncovered-roles] (measured) POCOM does not cover consuls, foreign envoys in Washington, legation secretaries acting as chargé, foreign officials, other executive departments or special agents. Counts are 1861–1899 arm B; a row can carry several alternatives, and 'explained' counts nobody plus unknown rows.
+
+| Uncovered role | rows carrying it | explained | 1900–1905 rows |
+|---|---|---|---|
+| US consul at post | 1,254 (arm A 870) | 980 (387+593) | 57 |
+| Foreign envoy in Washington | 17,138 | 9,178 (3,049+6,129) | 2,486 |
+| Foreign official | 32,531 | 11,759 | 5,450 |
+| Legation secretary / chargé | 28,822 | 11,071 | 5,292 |
+| US chief, country unmapped | 3,130 | 1,576 | 667 |
+| Other US executive office | 305 | 293 | 28 |
+| Special agent | 55 | 49 | 31 |
+
+Assistant secretaries ARE in POCOM. Chapter-one via tier 2 is 2,314 rows (1861–1899) and 657 (1900–1905).
+
+There is a POCOM gap: William Hunter's chief-clerk entry ends 1855-05-07 and his second-assistant entry starts 1866-07-27. So 'Mr. Hunter' signing as Acting Secretary in 1865–66 lands in 'CONTRADICTED, holder in no post on date' (e.g. frus1865p1/d233, frus1865p2/d624).
+
+[R5-contradiction-mix] (inferred) The two contradiction subclasses point opposite ways. This is inferred from reading 40 sampled examples, not scored.
+
+'Holder in another post' is mostly a document filed under a topic chapter. POCOM's person is plausibly right:
+- Bigelow (France) in the Mexico chapter, frus1865p3/d420;
+- Porter (France) addressed in the China chapter, frus1902/d152;
+- A. D. White (Germany) in the China chapter, frus1900/d392.
+Top head pairs, 1861–1899: chief:mexico→chief:france 134, chief:spain→chief:united-kingdom 53, dept→chief:united-kingdom 34, chief:united-kingdom→chief:russia 29.
+
+'Holder in no post on the date' often catches a legation secretary whom POCOM's ±1-year rule confused with a later chief. POCOM's person is plausibly wrong:
+- 'Mr. White to Mr. Hay' from London in December 1902 goes to Andrew D. White (frus1903/d427);
+- 'Mr. Jackson' at Berlin, August 1902 (frus1902/d415);
+- 'Mr. Squiers' at Peking, 1901 (frus1901/d65).
+The same subclass also holds real POCOM gaps, such as Hunter.
+
+A strict veto therefore discards some right answers and some wrong ones.
+
+[S1-seward] (measured) Seward, 1861–1869. Arm B has 8,566 dated rows with a hypothesis naming Seward: head 3,641 from and 4,510 to; enclosure 74 from and 341 to.
+
+The rule assigns 8,472 to W. H. Seward as Secretary (tier 1). On every one of those 8,472, F. W. Seward was in office as Assistant Secretary (1861-03-06 to 1869-03-04) in a hypothesised Department post. So F. W. is possible by date and role for 100% of them, and the choice is the rank convention. 94 rows get no assignment.
+
+The rule ignores initials. 164 of those rows carry 'F. W.' or 'Frederick' in the marked name and still go to W. H.; so does 'Mr. G. F. Seward' (frus1866p1/d401).
+
+What the documents say (seward_crosstab.py: all 9,132 rows in volumes frus1861–frus1869 with a harness record and a date in 1861–69; first 'F. W. SEWARD' or 'WILLIAM H. SEWARD' in the text):
+- 3,669 head-from rows. First signature W. H. for 3,372; F. W. for 117; none for 180.
+- Heads naming 'F. W.' (113 rows): 108 signed F. W., 4 signed W. H., 1 none.
+- Bare 'Mr. Seward' heads (3,555): 3,368 signed W. H. (94.7%), 9 signed F. W. (all 'F. W. SEWARD, Acting Secretary', e.g. frus1862/d88, d207, d221, frus1864p3/d327), 178 none.
+- 92 head-from rows sit in documents carrying 'F. W. SEWARD, Acting Secretary'.
+- Head-to rows ('… to Mr. Seward'): 5,024, of which 38 name F. W.
+
+So the Secretary convention is wrong on at least 117 head-from rows, 3.2%. 108 of them are catchable from the initials in the head; the other 9 only from the signature.
+
+[O1-office-only-heads] (measured) Office phrases in the header column, all in-scope documents (phrase occurrences). 'Unmarked' means no marked span overlaps the phrase, so it is an upper bound on office-only slots: 'Mr. Fish, Secretary of State, to …' counts too.
+
+1861–1899:
+- 'Secretary of State': 289 (281 unmarked). One POCOM tier-1 holder on the date for 273; 0 for 15 (misread or pre-1789 dates); 2 for 1.
+- 'Acting Secretary': 43, all unmarked. Tier-2 holders on the date: 1 for 12, 2 for 27, 3 or more for 4.
+- 'Assistant Secretary': 5.
+- 'Minister of/for foreign affairs': 54 (42 unmarked; no local source).
+- 'Foreign Office': 12 (3 unmarked).
+- 'The President': 141 (134 unmarked; not POCOM).
+
+1900–1905:
+- 'Secretary of State': 834, all unmarked. One holder on the date for 808; 2 for 26 (the July 1905 Hay / Loomis ad interim / Root overlap).
+- 'Acting Secretary': 316, all unmarked; 3 or more tier-2 holders on every date, so date alone never resolves it.
+- 'Assistant Secretary' 2; 'Minister of/for foreign affairs' 25; 'The President' 95 (94 unmarked).
+
+These rows are absent from the marked layer. The Secretary of State resolves by date almost always; the Acting Secretary almost never.
+
+[C0-caveats] (documented) Caveats:
+- Arm B is not what the app does. It drops the NARA-roll test and adds a crosswalk and title repairs. Arm A is the app as shown.
+- The inputs inherit the harness's limits: the live index predates PR #1291, and the harness does not reproduce the enclosure pass.
+- Surname matching is exact-case, as in measure_pocom.py. Surfaces the marked layer mis-segments ('Mr. Seward to Lord Lyons,' as one name) land in unknown or unexplained.
+- Every figure describes a decision. Corroboration is agreement between two rules sharing POCOM, not accuracy.
+
+TABLE:
+Decisions per band, marked from/to rows in no-list volumes. 'several→one conv' means the Secretary was picked over a same-surname assistant. (iii) strict drops contradicted names.
+
+| Arm, band | rows | with hypothesis | (i) POCOM one | (ii) chapter one | one corroborated | one contradicted | several→one (conv / other) | (iii) lenient | (iii) strict | (iii) strict, no conv |
+|---|---|---|---|---|---|---|---|---|---|---|
+| B, 1861–1899 | 84,234 | 80,515 | 45,258 (53.7%) | 51,880 (61.6%) | 40,907 (90.4% of one) | 2,415 | 8,733 / 2,240 | 56,231 (66.8%) | 53,816 (63.9%) | 45,083 (53.5%) |
+| A, 1861–1899 | 84,234 | 67,025 | 45,258 (53.7%) | 45,056 (53.5%) | 36,269 (80.1%) | 1,921 | 6,805 / 1,982 | 54,045 (64.2%) | 52,124 (61.9%) | 45,319 (53.8%) |
+| B, 1900–1905 | 13,160 | 12,937 | 9,234 (70.2%) | 8,476 (64.4%) | 8,466 (91.7%) | 509 | 0 / 10 | 9,244 (70.2%) | 8,735 (66.4%) | 8,735 |
+| A, 1900–1905 | 13,160 | 11,389 | 9,234 (70.2%) | 7,656 (58.2%) | 7,649 (82.8%) | 460 | 0 / 7 | 9,241 (70.2%) | 8,781 (66.7%) | 8,781 |
+
+Source: coverage/summary.json.
+
+TABLE:
+How POCOM's classes move under the chapter rule, arm B, 1861–1899.
+
+| POCOM class | outcome | rows |
+|---|---|---|
+| one (45,258) | corroborated: chief | 21,490 |
+| | corroborated: Secretary | 17,255 |
+| | corroborated: tier 2 | 2,162 |
+| | contradicted: other post | 1,183 |
+| | contradicted: within 180 days | 373 |
+| | contradicted: no post | 859 |
+| | untestable | 1,056 |
+| | no hypothesis | 880 |
+| several (11,995) | →one: convention | 8,733 |
+| | →one: chief | 1,488 |
+| | →one: Secretary | 600 |
+| | →one: tier 2 | 152 |
+| | zero with uncovered alternative | 331 |
+| | zero | 10 |
+| nobody (8,595) | explained as uncovered role | 7,634 |
+| | unexplained | 146 |
+| unknown (18,386) | explained as uncovered role | 16,651 |
+| | unexplained | 392 |
+
+For 1900–1905, arm B: one 9,234 → corroborated 8,466 (chief 4,051, Secretary 3,758, tier 2 657), contradicted 509 (292 / 13 / 204), untestable 115, no hypothesis 144. Several 12 → one 10, zero 2. Nobody 1,138 → explained 1,060, unexplained 42. Unknown 2,776 → explained 2,701, unexplained 32. The remaining rows have no classification (221) or an unlocated head (2).
+
+Source: chapter-rule.json tallies.
+
+TABLE:
+Ten examples per transition, arm B, 1861–1899. Each shows document, header text (under 15 words) and the rule's result. All 23 transitions for both bands, 10 each, are in coverage/examples-armB.txt.
+
+several → one, by chapter chief:
+- frus1880/d177 'Mr. Seward to Mr. Evarts' → George F. Seward (China)
+- frus1879/d99 'Mr. Osborn to Mr. Evarts' → Thomas A. Osborn (Chile)
+- frus1879/d27 'Mr. Osborn to Mr. Evarts' → Thomas O. Osborn (Argentina)
+- frus1865p2/d498 'Mr. Seward to Mr. Clay' → Cassius M. Clay (Russia)
+- frus1893/d125 'Mr. Thompson to Mr. Gresham' → Thomas L. Thompson (Brazil)
+- frus1885/d439 'Mr. S. L. Phelps to Mr. Bayard' → Seth L. Phelps (Peru)
+- frus1891/d24 'Mr. Wharton to Mr. Grant' → Frederick D. Grant (Austria)
+- frus1894/d757 'Mr. Terrell to Mr. Gresham' → A. W. Terrell (Turkey)
+- frus1890/d211 'Mr. Blaine to Mr. Phelps' → W. W. Phelps (Germany)
+- frus1878/d79 'Mr. Osborn to Mr. Evarts' → T. A. Osborn (Chile)
+
+several → one, by convention:
+- frus1865p2/d420 'Mr. Bigelow to Mr. Seward'
+- frus1862/d685 'Mr. Seward to Mr. Thayer'
+- frus1867p1/d344 'Mr. de Stoeckl to Mr. Seward'
+- frus1868p2/d516 'Mr. Seward to Mr. Hovey'
+- frus1868p2/d27 'Mr. Seward to Mr. Tassara'
+- frus1865p2/d349 'Mr. Bigelow to Mr. Seward'
+- frus1866p1/d482 'Mr. Motley to Mr. Seward'
+- frus1866p2/d183 'Mr. Portman to Mr. Seward'
+- frus1864p4/d418 'Mr. F. W. Seward to Mr. Fogg' → W. H. (initials ignored)
+- frus1866p1/d401 enclosure 'Mr. G. F. Seward' → W. H. (wrong namesake)
+
+one corroborated, by chief:
+- frus1875v01/d248 'Mr. Davis to Mr. Fish' → J. C. B. Davis (Germany)
+- frus1863p2/d577 'Mr. Seward to Mr. Dayton' → Dayton (France)
+- frus1885/d400 'Mr. Frelinghuysen to Mr. Bingham' → Bingham (Japan)
+- frus1891/d234 'Mr. Egan to Mr. Blaine' → Egan (Chile)
+- frus1889/d326 'Mr. Straus to Mr. Bayard' → Straus (Turkey)
+- frus1872p1/d292 'Mr. Nelson to Mr. Fish' → T. H. Nelson (Mexico)
+- frus1881/d158, frus1895p2/d519, frus1875v01/d155, frus1881/d315: same pattern (Angell China, Terrell Turkey, Avery China, Lowell UK)
+
+one contradicted, holder in another post:
+- frus1865p3/d420 'Mr. Seward to Mr. Bigelow', Mexico chapter; Bigelow in France
+- frus1874/d815 'Mr. Fish to Mr. Russell', Spain chapter; Russell in Venezuela
+- frus1874/d807 'Mr. Russell to Mr. Fish', Spain chapter
+- frus1898/d739 'Mr. Rockhill to Mr. Day', Spain chapter; Rockhill in Greece/Romania/Serbia
+- frus1898/d897 enclosure 'Hay', Spain chapter; Hay in the UK
+- frus1892/d413 enclosure 'Smith', Turkey chapter; Smith in Russia
+- frus1894app2/d257 'Blount', no chapter; Hawaii
+- frus1872p2v2/d209 'Schenck'; UK
+- frus1894/d357 'Willis'; Hawaii
+- frus1894Nicaragua/d66 'Baker'; Central America
+
+one contradicted, holder in no post on the date:
+- frus1865p3/d534 'Mr. Hunter to Mr. Romero'
+- frus1865p1/d233 'Mr. Hunter to Mr. Adams'
+- frus1865p2/d624 'Mr. Hunter to Mr. Perry'
+- frus1865p3/d142 'Mr. Marsh to Mr. Hunter'
+- frus1882/d331 'Mr. Hoffman to Mr. Frelinghuysen' (Russia)
+- frus1898/d805 'Mr. Day to Mr. Hay' (Spain chapter, 1898-10)
+- frus1866p1/d381 enclosure 'Mr. Williams' (China)
+- frus1893/d610 enclosure 'Smith'
+- frus1868p1/d339 enclosure 'William G, Jones'
+- frus1872p2v1/d231 'Commodore Parker'
+
+nobody explained as an uncovered role:
+- frus1867p2/d425 'Mr. Seward to Mr. Romero' (foreign envoy)
+- frus1863p2/d301 'Mr. Seward to Mr. Perry' (chargé)
+- frus1896/d754 'Mr. Olney to Mr. Williams'
+- frus1896/d703 'Mr. Uhl to Mr. Williams'
+- frus1886/d102 'Mr. Beach to Mr. Hunter' (consul)
+- frus1872p2v1/d236 'Mr. Preston, Secretary of the Navy, to…'
+- enclosures: frus1899/d592 'Holloway', frus1875v01/d266 'Loring', frus1881/d660 'Miller & Houghton', frus1892/d142 'Black'
+
+unknown explained as an uncovered role:
+- frus1884/d54 'Mr. Cheng Tsao Ju to Mr. Frelinghuysen'
+- frus1891/d339 'Señor Pedro Montt to Mr. Blaine'
+- frus1897/d603 'Mr. Olney to Moustapha Bey'
+- frus1894app1/d227 'Mr. Gresham to Sir Julian Pauncefote'
+- enclosures: frus1889/d276 'Ernst', frus1865p2/d488 'The Minister of Sweden and Norway', frus1899/d590 'Lamsdorff', frus1880/d544 'Braamcamp', frus1883/d533 'Aarifi Pasha', frus1890/d232 'Van Duzer'
+
+UNKNOWNS:
+ - Accuracy is unmeasured. No identity gold is keyed (m1a-eval-candidates.csv, 0 of 300), so corroboration, contradiction and several→one are decisions, not correct answers. The validation lens must score them. The best scoring targets are probably the two contradiction subclasses (R5) and the 2,240 non-convention several→one rows.
+ - The rule matches surnames only. Checking initials against POCOM forenames would reclassify at least 164 Seward-type rows and probably many enclosure names; not built.
+ - Temporary acting secretaryships are not in POCOM, and the chief-clerk file ends in 1855. 'Mr. Hunter' in 1865–66 and similar acting officers show as contradictions for a data reason. How many of the 859 'no post' contradictions are POCOM gaps rather than legation secretaries is unmeasured.
+ - Chief intervals use appointed, arrived or started through ended. Despatches signed before arrival or after recall fall in the 'within 180 days' bucket (373 rows). No slack is applied to the decisions themselves.
+ - Arm B's hypotheses come from the classifier run on the first mapped title, without the roll test. Source Explorer does not do this, so arm B shows what the strategy could do, not what the app does. The role table and crosswalk are new Python, not ports of app code.
+ - Enclosure rows get undirected hypotheses (the Department or the chapter chief). Their 32.9% chapter-one rate (7,308 of 22,204) is not comparable to head rows (44,572 of 58,311).
+ - Office-only heads are sized from phrases, not parsed slots. The 'unmarked' counts include heads where the name beside the office is marked. 'The President' and 'minister of foreign affairs' have no local source.
+ - Inherited from the harness: the live index predates PR #1291, and the harness does not reproduce the enclosure pass.
+
+################ validation
+HEADLINE: Only two pre-1900 volumes carry identities the editors asserted: frus1873p1v1 and frus1873p1v2, with 934 linked from/to mentions. On them the app as shipped gives the identity rule no chapter country for any linked mention, because the chapter titles begin with Roman numerals. With the numeral removed, the chapter and dateline alone name the editors' person in 668 of 756 picks (88.4%; 96.2% in document heads). Surname-by-year alone is right in 805 of 805 picks and covers 86.2%. The two combined are right in 701 of 701 and cover 75.1%. The combination picks 47 rows that surname-by-year does not, and every one is 'De Long': a two-word surname the tokeniser splits, not an effect of location. In 1873 the location context cannot be shown to raise precision: the baseline makes no errors, and the gold has no 'several' rows at all. In the post-1905 proxy, where surname-by-year does err (93.3%), the combination works as a corroboration filter. Where both rules name the same person it is right in 98.6% of cases, but it keeps only about 15% of surname-by-year's picks.
+
+[G1-ground-truth-census] (measured) Of 139 manifest volumes whose coverage starts in or before 1925, 15 carry an editor persons list, and 14 have from/to persNames linked into it. The only pre-1900 pair is frus1873p1v1 (508 of 908 from/to linked) and frus1873p1v2 (426 of 546). The others are topical World War, Russia and Paris supplements: frus1914Supp, 1915Supp, 1916Supp, 1917Supp01v01, 1917Supp02v01, 1918Russiav01–v03, 1918Supp01v01, 1918Supp02, 1919Parisv01 and 1919Russia. The annual frus1914, frus1915 and frus1916 have no list; each has 5 corresp attributes and no persName xml:id. 21 more list volumes cover 1926–1950 (frus1932v01/v02/v03/v05, frus1933-39, 1943CairoTehran, 1945Berlinv01/v02, 1945Malta, 1945v01, 1946v03, 1947v02, 1948v02, 1949v03, 1951v03p1, 1951v04p1/p2, 1951v05, 1952-54v03, and the two Intel volumes). All 35 volumes were exported read-only: 25,529 documents. Every one of the 20,941 linked mentions joins to a document_cache row.
+
+[G2-1873-structure] (measured) frus1873p1v1 and frus1873p1v2 are country-arranged, but in every title the country follows a chapter number ('III.—Argentine Republic.' … 'XXXIII.—Venezuela.'; v2 nests '1.—Ottoman Porte.', '2.—Egypt.', '3.—Tunis.', '4.—Tripoli.'). Run through the REAL Swift classifier and normaliser, no title in frus1873p1v1 has a first key in the 67-key diplomatic roll vocabulary (0 of 310 documents). In frus1873p1v2, 67 of 324 documents get one, all from the expatriation appendix, and no linked mention falls in them. Source Explorer's shown rows exist for 50 v2 documents and none in v1. With a numeral strip applied to the title string before the real GeoKeyNormalizer.keys and classify, 288 of 310 and 241 of 324 documents get a chapter country. Chapters the strip still cannot resolve: 'Chili.' (the aliases cover only 'chilian' and 'chilean'), 'Austria–Hungary.' (en dash; the alias uses a hyphen), 'Turkish Empire.', 'Guatemala' (no roll key reached), and Proclamations/Circulars.
+
+[D1-rule-as-implemented] (documented) No coverage-lens code exists in the scratchpad, so I implemented the rule as written in the brief and state it exactly here.
+- S (surname-by-year): measure_pocom.load_pocom, surname_of and text_of, imported verbatim. The year is the TEI doc-dateTime-min year. It picks when exactly one POCOM officeholder with that exact-case surname has any appointment span covering year ±1. Classes: unknown, nobody, one, several.
+- CH (chapter rule alone): K is the first section-path title whose first normalised key is a diplomatic roll geo key, per the real Swift. The direction comes from the real classify output at that title: diplomaticDespatches gives from = chief of mission in K, to = Department; diplomaticInstructions (with notesTo) gives from = Department, to = mission K; notesFromForeignMissions and consularDespatches give to = Department. The mission set is the POCOM missions-countries chiefs whose territory or contemporary-territory id normalises, via the real Swift, to K (51 territories reach vocabulary keys). A chief is in office from appointed/started to ended; if ended is missing, to the next start in the same file; primary tolerance is 0 days before and 60 after. Non-ad-interim holders are preferred, and a single person is picked. The Department side picks the unique POCOM `secretary` in office. CH does not read the name.
+- COMB: every in-office chief for K (all roles), or every positions-principals holder on the Department side, whose POCOM surname equals the mention's last 1–3 tokens (letters only, casefolded); a single person is picked.
+- Chapter variants: APP (raw titles), STRIP (numeral removed), SHOWN (Source Explorer's own shown classifications with rolls, year < 1906). The date is datelineDateISO, else the index date_iso, else the TEI date.
+No app rule was ported to Python: classification, section path, title normalisation and territory normalisation all run in Swift. The direction mapping, office windows and gold matching are new code, not ports.
+
+[G3-sameness-routes] (measured) A mention counts as the same person as the rule's pick in one of two ways. Route A: crosswalk → authority 's' slug, compared with the pick. Route B: the list entry's name (surname equal, edit distance ≤1 when the surname has ≥5 letters; first initial compatible) plus role text naming a US chief-of-mission or Department post, not a foreign one. That gives a unique POCOM person who held that kind of post within the volume window ±1. With no slug, a pick is a disagreement if the entry is a foreign official or the surname or initial is incompatible, and 'undecided' otherwise.
+
+Route counts:
+- 1873 entries: A 2 (p_HF1 Fish in both volumes; the crosswalk reaches nothing else in 1873), B 27, no POCOM slug 8 (Clapp, Delaplaine, Shannon, Upton, Mathews, Heap, Vidal, and v2 p_JRJ1, whose B lookup was ambiguous), foreign 4 (Lederer, Delfosse, Thornton, von Schlözer).
+- 1873 mentions: A 470, B 409, no-slug 26, foreign 29 (934 in all).
+- Post-1905 entries: A 731, B 71, foreign 425, no-slug 954. Mentions: A 10,236, B 1,870, foreign 2,286, no-slug 5,615.
+
+Validating route B against the independent crosswalk: of 733 entries with a crosswalk slug, route B resolved 423 and matched the crosswalk slug in all 423. It abstained on 310: 231 had no recognised US role, 50 mission and 23 principal roles found no candidate, 5 had several candidates, 1 was read as foreign. I read all 41 linked 1873 entries and their mappings in gold-slug-table.tsv; every B slug is the listed person, e.g. jay-john-ii for John Jay at Vienna, de-long-charles-e, hunter-william.
+
+One gold defect: in frus1873p1v2 a mention reading 'Lord J. Russell' is linked to p_JRJ1, J. Russell Jones.
+
+[P1-1873-pooled] (measured) frus1873p1v1 and frus1873p1v2 pooled, 934 linked from/to mentions (Wilson 95% intervals):
+- S: 805 picks, 805 agree, 0 disagree; precision 1.000 [0.995, 1]; coverage 86.2% [83.8, 88.3].
+- CH, APP (as shipped): 0 picks.
+- COMB, APP: 0 picks.
+- CH, SHOWN (what Source Explorer itself shows): 22 picks, 8 agree, 14 disagree; precision 0.364 [0.197, 0.571]; coverage 2.4%.
+- COMB, SHOWN: 22 of 22 [0.851, 1].
+- CH, STRIP: 756 picks, 668 agree, 88 disagree; precision 0.884 [0.859, 0.905]; coverage 80.9% [78.3, 83.3].
+- COMB, STRIP: 701 of 701; precision 1.000 [0.9945, 1]; coverage 75.1% [72.2, 77.7].
+
+Per volume:
+- frus1873p1v1 (508): S 404 of 404, coverage 79.5% [75.8, 82.8]; CH STRIP 367 agree / 68 disagree, 0.844 [0.807, 0.875], coverage 85.6%; COMB STRIP 392 of 392, coverage 77.2%.
+- frus1873p1v2 (426): S 401 of 401, coverage 94.1%; CH STRIP 301 / 20, 0.938 [0.906, 0.959], coverage 75.4%; COMB STRIP 309 of 309, coverage 72.5%; SHOWN as above.
+
+Tolerance: COMB is identical at exact (0,0) and wide (±365 days), 701 of 701. CH wide falls to 616 picks, 532 / 84.
+
+Document heads only (811): S 733 of 733, coverage 90.4%; CH STRIP 629 / 25, 0.962 [0.944, 0.974], coverage 80.6%; COMB STRIP 654 of 654, coverage 80.6%.
+Enclosure heads (123): S 72 of 72, coverage 58.5%; CH STRIP 39 / 63, 0.382; COMB 47 of 47.
+
+[P2-1873-by-class-and-side] (measured) 1873, broken down by POCOM class (S's own classes).
+
+All positions:
+- one, 805: S 805 of 805; CH STRIP 635 / 50, 0.927 [0.905, 0.944]; COMB STRIP 654 of 654, coverage 81.2%.
+- nobody, 99: S 0 picks; CH 33 / 35, 0.485; COMB 47 of 47.
+- unknown, 30: S 0; CH 0 / 3; COMB 0.
+- several: 0 rows, so this class has no ground truth.
+
+Document heads (811):
+- one, 733: CH 611 / 14, 0.978 [0.963, 0.987]; COMB 628 of 628.
+- nobody, 51: CH 18 / 8; COMB 26 of 26.
+- unknown, 27: CH 0 / 3.
+
+By the hypothesised side, heads, STRIP:
+- Department, 422: S 422 of 422; CH 408 / 14, 0.967; COMB 422 of 422.
+- Mission, 244: S 206 of 206, coverage 84.4%; CH 221 / 11, 0.953; COMB 232 of 232, coverage 95.1%.
+- No hypothesis, 145: S 105 of 105.
+
+S against COMB, heads: same pick 628 (all correct), S only 105 (all correct), COMB only 26 (all correct, all 'De Long'), neither 52. The two never name different people. Over all positions: 654 / 151 / 47 / 82.
+
+Why S calls De Long 'nobody': measure_pocom.surname_of('C. E. De Long') returns 'Long', and no Long is in office in 1873. The combination's multi-token surname match finds de-long-charles-e.
+
+[P3-1873-every-disagreement] (measured) Every 1873 disagreement belongs to CH: 88 under STRIP and 14 under SHOWN. S and COMB have none.
+
+(a) 63 are in enclosure heads. The rule applies the covering document's direction to them.
+- In-country notes addressed to the US minister and enclosed in his own despatch; the rule reads them as addressed to the Department and picks fish-hamilton:
+  - De Long: v1 d246 ×4, d247, d248 ×8, d251, d252, d257 ×6, d264, d268 ×5 (27).
+  - Low: v1 d48 ×3, d49, d57, d59 ×2, d61, d63 ×2, d72, d74 (12); also v1 d264 ×2, filed under Japan (2).
+  - Sickles: v2 d89, d91, d96, d100 ×2, d101 ×2, d105, d108, d113, d115 (11).
+  - Biddle: v2 d36, d41, d49 (3).
+  - Pile: v2 d189 ×2 (2).
+  - Bancroft: v1 d148. Marsh: v1 d240.
+- Fish as 'to' inside enclosures of Department instructions: v1 d169 ×2 picks schenck-robert-cumming; v1 d280 and d282 pick nelson-thomas-henry.
+
+(b) 25 are in document heads:
+- An acting officer as addressee; the rule picks Fish.
+  - Hunter, Second Assistant Secretary: 'No. 299. Mr. Schuchardt to Mr. Hunter', United States Commercial Agency, Piedras Negras, v1 d302–d309 (8); Clapp's despatches v1 d9 and d10 (2).
+  - Davis, Assistant Secretary: Cadiz and Malaga consular despatches v2 d125–d127 (3); as sender, v1 d26 (1).
+- Notes to or from a foreign minister at Washington read as instructions to the US minister (the notesTo reading is never tried):
+  - Thornton: to in v1 d185, d187, d194; from in d196. Pick schenck-robert-cumming (4).
+  - Delfosse: v1 d26, d29. Pick jones-joseph-russell (2).
+- A chargé ad interim or consul signing as head of mission; POCOM holds only the minister:
+  - Clapp → white-julius, v1 d9, d10.
+  - Shannon → partridge-james-rudolph, v1 d30, d31.
+  - Upton → rublee-horace, v2 d138.
+
+(c) All 14 SHOWN disagreements are consular despatches addressed to an acting officer. The pick is Fish.
+- Hunter: Tunis, Tripoli and Smyrna, v2 d168–d175, d177, d242 (10).
+- Davis: Cadiz, Malaga and Matanzas, v2 d125–d127, d237 (4).
+SHOWN's 8 correct picks are Egypt and Tangier consular despatches to Fish.
+
+[B1-1873-selection-bias] (inferred) The 1873 gold favours surname-by-year, and 100% there should not be carried over to 1861–1899.
+- Composition: only 934 of 1,454 from/to mentions (64%) are linked. Linked rows fall in S's classes as one 86.2%, nobody 10.6%, unknown 3.2%, several 0%. The 1861–1899 marked from/to population is one 55.4%, several 8.0%, nobody 17.2%, unknown 19.4% (measure-pocom/pocom.json).
+- What S picks on the 520 unlinked 1873 mentions (classes: unknown 287, nobody 70, one 163): mostly listed ministers — Schenck 31, Nelson 28, Washburne 21, Bassett 20, Low 15, Peirce 11, Davis 9, Francis 8. It also picks russell-thomas for 'Russell' ×2 and butler-george-h for 'Butler' ×3, all inside v1 d169, 'Mr. Fish to General Schenck', which encloses British correspondence.
+- Those five picks are unscoreable. That they are foreign officials who share a surname with a US officeholder is inferred from where they sit, not read from the text. That is exactly the error class the linked gold barely contains: its 29 foreign-official mentions all have surnames POCOM does not know.
+- The 1873 volumes are one Secretary (Fish) writing to long-serving ministers, with no Seward father/son years and no 'several' surnames.
+
+[X1-post1905-proxy-pooled] (measured) PROXY, not the pre-1900 case. Scope: the same rules over the 15 post-1905 list volumes where the STRIP chapter rule finds a country — frus1917Supp02v01, 1918Russiav02, 1918Supp02, 1919Parisv01, 1932v01, 1932v02, 1932v05, 1945Berlinv01, 1945Berlinv02, 1945Malta, 1947v02 (STRIP only), 1949v03, 1951v04p1, 1951v04p2, 1951v05. The 1914–1916 supplements yield no chapter country. The classifier's NARA series logic is gated at 1906, so SHOWN is always empty here; only classify at the chapter title was run.
+
+All 7,968 linked mentions:
+- S: 3,300 picks — 2,971 agree, 214 disagree, 115 undecided; precision 0.933 [0.924, 0.941] with undecided excluded; coverage 41.4%.
+- CH, APP: 979 picks, 481 / 498, 0.491 [0.460, 0.523].
+- CH, STRIP: 1,005 picks, 491 / 514, 0.489.
+- COMB, APP: 528 picks, 509 / 19, 0.964 [0.945, 0.977], coverage 6.6%.
+- COMB, STRIP: 538 picks, 519 / 19, 0.965 [0.946, 0.977], coverage 6.8%.
+
+Document heads only (7,661): S 2,928 / 211 / 114, 0.933; CH STRIP 485 / 432, 0.529; COMB STRIP 512 / 18, 0.966 [0.947, 0.978], coverage 6.9%.
+
+Per volume, STRIP, agree/disagree for S; CH; COMB:
+- 1917Supp02v01: 274/0; 5/1; 5/0
+- 1918Russiav02: 267/1 (+103 undecided); 2/11; 2/0
+- 1918Supp02: 339/39 (+8); 17/14; 17/0
+- 1919Parisv01: 60/54; 26/37; 26/0
+- 1932v01: 303/6; 23/13; 23/0
+- 1932v02: 116/12; 56/115; 57/8
+- 1932v05: 432/0; 184/123; 194/0
+- 1945Berlinv01: 160/36; 16/40; 19/9
+- 1945Berlinv02: 184/11; 11/32; 17/2
+- 1945Malta: 104/0; 1/1; 1/0
+- 1947v02: 104/0 (+4); 10/16; 10/0
+- 1949v03: 96/8; 9/35; 10/0
+- 1951v04p1: 149/15; 51/26; 52/0
+- 1951v04p2: 142/20; 44/25; 44/0
+- 1951v05: 241/12; 36/25; 42/0
+
+[X2-post1905-proxy-by-class-filter] (measured) PROXY, document heads.
+
+By S class:
+- one, 3,253: S 0.933; CH 448 / 104, 0.812; COMB 475 / 7, 0.986 [0.970, 0.993], covering 14.8% of the class.
+- several, 814: S 0 picks; CH 37 / 23, 0.617; COMB 37 / 11, 0.771 [0.635, 0.867], coverage 5.9%.
+- nobody, 1,794: CH 0 / 229; COMB 0.
+- unknown, 1,800: CH 0 / 76; COMB 0.
+
+S against COMB: same pick 482 (475 correct, 7 wrong); S only 2,771 (2,453 correct, 204 wrong, 114 undecided); COMB only 48 (37 / 11); never different. As a filter, the chapter context withholds 204 of S's 211 errors and 2,453 of its 2,928 correct picks.
+
+By side:
+- Department, 145: CH 0 / 56; COMB 16 of 16.
+- Mission, 1,245: S 623 / 29; CH 485 / 376, 0.563; COMB 496 / 18.
+- No hypothesis: 6,271.
+
+The post-1905 case differs from pre-1900 in four ways:
+- Heads name the post: 'The Minister in Ecuador (Dawson) to the Secretary of State'.
+- The Secretary is not a from/to persName in those heads, so the Department side scores other people (inferred from 0 / 56 and the head form).
+- Washington datelines no longer say 'Department of State', so the outbound branch never fires (6,271 rows with no hypothesis).
+- Embassies have many officers (counselors, secretaries, consuls such as Caldwell at Vladivostok) whom CH replaces with the chief.
+Consuls are no more reachable than before 1900: POCOM has no consular posts either way.
+
+[X3-post1905-sample20] (measured) 20 disagreements sampled with seed 234 from 1,185 post-1905 mentions that have any disagreement or undecided verdict, written as list entry → rule pick:
+- 1932v05 d714, to Munro (Minister to Haiti) → CH picks Stimson. A Port-au-Prince document addressed to the minister.
+- 1919Russia d632, 1918Russiav03 d118, 1918Russiav02 d231: Caldwell, John K. (Consul at Vladivostok) → S picks caldwell-john-lawrence (undecided; a different man).
+- 1932v02 d46, Henderson (British Foreign Secretary) → CH picks Dawes.
+- 1951v04p1 d184, Labouisse (Department officer, crosswalk slug) → CH picks Bruce.
+- 1932v05 d917, Higgins (Third Secretary, Guatemala) → CH picks Hanna.
+- 1951v03p1 d176 and d29, Cabot, Thomas D. → S picks cabot-john-moors.
+- 1932v05 d927, Burdett (First Secretary, Peru) → CH picks Dearing.
+- 1919Parisv01 d345, Henry White (plenipotentiary at Paris) → CH picks Lansing.
+- 1918Supp02 d446, Curtis, Charles B. (chargé, Honduras) → S picks curtis-james-l.
+- 1932v02 d256, Gordon (Counselor, Berlin); d245, von Bülow; d269, Dieckhoff → CH picks Sackett.
+- 1919Russia d71, Woodrow Wilson → S picks wilson-charles-stetson.
+- 1932v05 d813, Beaulac (Second Secretary, Nicaragua) → CH picks Hanna.
+- 1932v02 d277, Michalakopoulos (Greek Foreign Minister) → CH picks Stimson.
+- 1917Supp02v01 d503, Francis (Ambassador to Russia) → CH picks Page (the chapter says Great Britain; the dateline is Petrograd).
+- 1951v05 d177, Gifford (Ambassador in London) → CH picks Caffery (chapter Egypt).
+
+[A1-answer-to-owner] (inferred) Can Source Explorer's chapter + dateline context add location, and so identity, for pre-1900 candidates?
+(1) As shipped, no, for the only volumes with editor identities: the country-titled chapters begin with Roman numerals, and the app's normaliser reads them as non-countries (0 picks in 1873).
+(2) After a one-line title strip, the context alone is worse than surname-by-year on the same rows: 88.4% against 100% overall, 96.2% against 100% in document heads.
+(3) As a conjunction with surname-by-year it made no errors in 1873 (701 of 701), but it cannot be shown to add precision there, because surname-by-year made none either. It lowers coverage from 86.2% to 75.1%. The only rows it adds are the De Long tokenisation case.
+(4) In the one class where location could matter most — 'several' — the 1873 gold has zero rows. In the proxy the combination resolves 5.9% of that class at 77.1% [63.5, 86.7].
+(5) Its measured value is as a corroboration filter on 'one' picks: in the proxy, 98.6% where both rules agree against 93.3% for surname-by-year alone, while keeping 14.8% of the picks.
+The known failure modes are structural and all appear in 1873:
+- Enclosed in-country notes take the covering document's direction.
+- Acting officers (Second and Assistant Secretaries) are the addressee.
+- The Department-outbound pair is read as an instruction when it is a note to a foreign minister.
+- Chargés and consuls sign as heads of mission.
+
+[S1-keyed-sample-needed] (inferred) The 1873 gold bounds S and COMB only on 1873-type 'one' and 'nobody' rows in document heads. What a pre-1900 keyed identity sample would need, using Wilson figures from sample_size.py:
+
+Sizing:
+- With zero errors in n decided picks, the lower bound is 0.839 at n=20, 0.929 at 50, 0.963 at 100, 0.981 at 200.
+- Half-width at p=0.95 is ±6.2 points at n=50 and ±4.5 at n=100. At p=0.9 it is ±8.5 and ±6.0.
+- To show a lower bound ≥0.9 when the true precision is 0.95 takes n=126; at true 0.9 it is unreachable. A lower bound ≥0.8 at true 0.9 takes n=54.
+
+Proposed strata, keyed only on picks: the annotator marks the named POCOM person right or wrong, so coverage comes from counts.
+1. ~100 S=one AND COMB same pick, spread across 1861–69, 1870s, 1880s and 1890s (25 each).
+2. ~100 S=one where COMB abstains or has no chapter.
+3. ~100 COMB picks in the 'several' class. At the proxy's 5.9% coverage that means screening ~1,700 several-class rows for COMB picks. The 1861–1899 population has 8.0% several.
+4. ~50 COMB picks in the 'nobody' class.
+5. ~50 rows in documents classified notesFrom/notesTo, or foreign-legation chapters (frus1864p2, 1865p2, 1866p3). That is where foreign officials share surnames with US officeholders.
+6. ~50 enclosure-head mentions.
+7. At least 25 'Mr. Seward' rows from 1861–1869, where F. W. Seward was Assistant Secretary.
+Total: roughly 450–500 decided rows. Strata 3, 5 and 7 have no counterpart in the 1873 gold.
+
+TABLE:
+1873 editor gold (frus1873p1v1 + frus1873p1v2), primary office tolerance (0, +60 days). P = precision with undecided excluded (there are no undecided rows in 1873); intervals are Wilson 95%.
+rule / variant | linked | picks | agree | disagree | P [95% CI] | coverage
+S surname-by-year | 934 | 805 | 805 | 0 | 1.000 [0.995, 1] | 86.2%
+CH, APP (as shipped) | 934 | 0 | 0 | 0 | — | 0.0%
+COMB, APP | 934 | 0 | 0 | 0 | — | 0.0%
+CH, SHOWN (Source Explorer's rows) | 934 | 22 | 8 | 14 | 0.364 [0.197, 0.571] | 2.4%
+COMB, SHOWN | 934 | 22 | 22 | 0 | 1.000 [0.851, 1] | 2.4%
+CH, STRIP | 934 | 756 | 668 | 88 | 0.884 [0.859, 0.905] | 80.9%
+COMB, STRIP | 934 | 701 | 701 | 0 | 1.000 [0.9945, 1] | 75.1%
+
+Document heads only (811):
+S | 733 of 733 | 1.000 [0.995, 1] | 90.4%
+CH, STRIP | 629 / 25 | 0.962 [0.944, 0.974] | 80.6%
+COMB, STRIP | 654 of 654 | 1.000 [0.994, 1] | 80.6%
+
+Enclosure heads (123):
+S | 72 of 72 | 58.5%
+CH, STRIP | 39 / 63 | 0.382
+COMB, STRIP | 47 of 47 | 38.2%
+
+Source: score.json, headonly-tables.txt
+
+TABLE:
+1873 per volume. Each cell gives agree/disagree, precision and coverage.
+volume | linked | S | CH STRIP | COMB STRIP | CH SHOWN
+frus1873p1v1 | 508 | 404/0, 1.000, 79.5% | 367/68, 0.844 [0.807, 0.875], 85.6% | 392/0, 1.000, 77.2% | 0 picks
+frus1873p1v2 | 426 | 401/0, 1.000, 94.1% | 301/20, 0.938 [0.906, 0.959], 75.4% | 309/0, 1.000, 72.5% | 8/14, 0.364
+
+TABLE:
+1873 by S (POCOM) class, all positions / document heads. Each cell gives agree/disagree.
+class | rows | S | CH STRIP | COMB STRIP
+one | 805 / 733 | 805/0 ; 733/0 | 635/50 (0.927) ; 611/14 (0.978) | 654/0 ; 628/0
+several | 0 / 0 | — | — | —
+nobody | 99 / 51 | no picks | 33/35 ; 18/8 | 47/0 ; 26/0 (all De Long)
+unknown | 30 / 27 | no picks | 0/3 ; 0/3 | no picks
+
+TABLE:
+1873 document heads, S against COMB (STRIP): same person 628 (all correct) | S only 105 (all correct) | COMB only 26 (all correct, De Long) | neither 52 | different people 0.
+Post-1905 proxy heads: same 482 (475 correct / 7 wrong) | S only 2,771 (2,453 / 204 / 114 undecided) | COMB only 48 (37 / 11) | neither 4,360 | different 0.
+
+TABLE:
+Post-1905 PROXY (15 chapter-bearing list volumes), all 7,968 linked / document heads 7,661. Each cell gives agree/disagree/undecided, then P [95% CI] and coverage.
+S | 2,971/214/115, 0.933 [0.924, 0.941], 41.4% | heads 2,928/211/114, 0.933
+CH, APP | 481/498, 0.491 [0.460, 0.523], 12.3% | heads 475/416, 0.533
+CH, STRIP | 491/514, 0.489, 12.6% | heads 485/432, 0.529
+COMB, APP | 509/19, 0.964 [0.945, 0.977], 6.6% | heads 502/18
+COMB, STRIP | 519/19, 0.965 [0.946, 0.977], 6.8% | heads 512/18, 0.966 [0.947, 0.978]
+
+By class, heads:
+one 3,253 | S 0.933 | CH 448/104 | COMB 475/7, 0.986 [0.970, 0.993]
+several 814 | S — | CH 37/23 | COMB 37/11, 0.771 [0.635, 0.867], coverage 5.9%
+nobody 1,794 | S — | CH 0/229 | COMB —
+unknown 1,800 | S — | CH 0/76 | COMB —
+
+TABLE:
+Sameness routes, entries (mentions).
+1873: crosswalk slug (A) 2 (470) | role text + name (B) 27 (409) | US officer not in POCOM 8 (26) | foreign official 4 (29).
+Post-1905: A 731 (10,236) | B 71 (1,870) | no slug 954 (5,615) | foreign 425 (2,286).
+Route B against the crosswalk, all 35 volumes: 423 of 423 overlapping entries equal; B abstained on 310 of 733.
+
+TABLE:
+Keyed-sample sizing (Wilson 95%).
+Lower bound with zero errors: n=20 0.839 | 30 0.887 | 50 0.929 | 75 0.951 | 100 0.963 | 150 0.975 | 200 0.981 | 300 0.987.
+n needed: p=0.95, lower ≥0.9 → 126 | p=0.9, lower ≥0.8 → 54 | p=0.98, lower ≥0.9 → 53 | p=0.9, lower ≥0.9 → unreachable. (sample-size.json)
+
+UNKNOWNS:
+ - No coverage-lens implementation was found in the scratchpad, so the rule scored here (D1) is my reading of the brief: direction → post by classifier category, the POCOM in-office windows, the preference for non-ad-interim holders, and Secretary-only for CH's Department side. A different lens definition could score differently. COMB was insensitive to the office tolerance in 1873; CH was not.
+ - Only frus1873p1v1 and frus1873p1v2 carry pre-1900 editor identities. They contain no 'several'-class rows, no 1860s Seward rows and no legation-chapter volumes, and their 29 foreign-official mentions all have surnames POCOM does not know. Pre-1900 precision for those classes is unmeasured.
+ - The 520 unlinked 1873 mentions cannot be scored. Five S picks inside v1 d169 (Russell → russell-thomas, Butler → butler-george-h) are probably foreign officials, but I inferred that from where they sit and did not read the text.
+ - Route B gold rests on POCOM surnames, forename initials and a role-text regex. It matched the independent crosswalk in 423 of 423 overlapping entries, but it shares POCOM as an input with S and COMB. One gold link is visibly wrong ('Lord J. Russell' → J. Russell Jones, v2).
+ - The numeral strip (STRIP) is a deviation from the app. The app as shipped scores 0 picks in 1873. How Source Explorer would behave after a real normaliser change, including 'Chili.' and the en-dash 'Austria–Hungary.' that still fail, is not measured.
+ - The live index (version 50) predates PR #1291. frus1873p1v2's document_cache and volume_structures rows could change after a re-index; not re-checked.
+ - Post-1905 results are a proxy: heads name posts; the Secretary is not a from/to persName (inferred from 0 of 56 Department-side agreements); Washington datelines lack 'Department of State'; missions have many officers. The proxy shares no volumes, eras or structure with 1861–1899.
+ - The Department-outbound pair's notesTo reading (a note to the foreign minister in Washington) is never hypothesised. Its errors appear as CH disagreements (Thornton, Delfosse), but no rule tried to name those people, and POCOM could not name them anyway.
+
+################ fit
+HEADLINE: Yes, but only as a corroborating signal for US chiefs of mission. It resolves few people who are ambiguous today, and it cannot reach the app as things stand. I ran the app's real classifier output against the marked layer, POCOM's chiefs of mission and the year. The 1861–1899 set is the first from row and first to row of each document: 60,654 heads in 68 volumes. The rule finds the US chief in office for the chapter's country and keeps him only when his surname matches the printed one. That gives a two-signal candidate on 15,249 heads, and resolves only 476 of the heads where several officeholders share the surname. Where it applies, it agrees with the surname-by-year rule's single pick on 95.4% of heads (15,249 of 15,980) and conflicts on 730. That is agreement, not accuracy. Three things block the route today. The classifier and GeoKeyNormalizer live only in the app target (GeoKeyNormalizer has a hand-kept generator copy). No SPM code extracts a document's header, dateline or section path. The bundled POCOM index holds 6 of the 481 people who held a chief-of-mission or principal post in 1861–1905. The candidate must never travel as authorityId, a must-link or a person_cluster_candidate row, because each of those merges people, lights the seal, or pairs rollups rather than slugs. It needs its own table and wording. It moves the §6.3 rollup-rule and wording decisions and makes the 300-row keying cheaper. It does not make the §6.1(c) identity shape feasible. An editor-linked check of the shipped classifier before 1906 has 8 rows: frus1873p1v1 resolves none of its documents and v2 only 50.
+
+[L1-classifier-is-app-only] (measured) CentralFilesClassifier.swift, CentralFilesIndex.swift and GeoKeyNormalizer.swift live only in FRUSExplorer/SourceExplorer/. Both app targets compile them through the `path: FRUSExplorer` source glob. No SPM target compiles them. Only app files and FRUSExplorerTests (CentralFilesClassifierTests 21 tests, EnclosureDualHomeTests 11) reference the classifier. GeoKeyNormalizer exists twice: CentralFilesIndexGeneratorCore/GeoKeyNormalizer.swift (156 lines, public) and the app copy (159 lines). The app copy says it is a 'Mirror of CentralFilesIndexGeneratorCore/GeoKeyNormalizer (the app cannot import the SPM tool target). Keep the alias table in sync'. With `public ` removed, diffing the two files differs only in that 3-line note, so they are identical today, kept in sync by hand. CountrySeriesParser in the generator calls GeoKeyNormalizer.canonicalize, never keys(from:). A fix to keys(from:) for Roman-numeral titles therefore cannot move central-files-index.json.
+
+[L2-reuse-without-second-implementation] (documented) The repo's rule is that generators write through the declarations the app reads through. The precedent is a kit compiled into both app targets by project.yml and also declared as an SPM library: SourceNoteKit, WordCloudKit, SemanticVectorsKit, TEIHeaderKit. Reusing the classifier therefore means lifting its pure core into such a kit, not porting it. Four things tie it to the app today, all found by the harness, which needed each of them. (1) enclosureHomes names IndexingPipeline.EnclosureOpener, a type nested in the app's actor; the harness stubbed it. (2) documentSectionPath takes Browser/VolumeStructure.swift, whose SubseriesGroup names VolumeManifestEntry; the harness had to compile Models/Manifest/ManifestModels.swift. (3) CentralFilesIndexStore.shared loads through Bundle.main. WordCloudKit's rule is that payloads are injected, never read from Bundle.main. (4) The year gate is DocumentView.extractYear, a static on a View that is duplicated in MacDocumentView; the harness cut it out with awk. The kit would hold classify, consularPostKey, datelineDateISO, documentSectionPath over a minimal section protocol, one GeoKeyNormalizer (retiring the mirror), the roll lookup with an injected index, and extractYear. SourceExplorerView and its Mac twin (whose render blocks are known to drift) would call the kit.
+
+[L3-inputs-exist-on-device-not-in-generators] (measured) On a device, all three classifier inputs exist at index time. document_cache.header (NOT NULL) and document_cache.dateline are written by IndexingPipeline's upsert from the TEI parse. volume_structures.structure_json is written per volume from the parser's structureSections. A generator has none of them: no SPM code extracts a document's header, dateline string or section path. The only generator-side 'dateline' hit is AdministrationProfilesIndexGeneratorCore/DocumentDateExtractor.swift, which reads frus:doc-dateTime-min/-max, not the dateline text. The app also does not store the name surfaces a candidate needs. person_mentions is (id, volume_id, document_id, person_ref) with no from/to type, and a row exists only when a persName carries corresp or ref. The candidate therefore needs the marked from/to layer: the Python store ~/frus-ner-raw, outside the repo, or a TEI scan. That is exactly shape (a)'s input, so it rides on (a)'s generator. That generator needs a parity-pinned TEI extractor for header, dateline and section path (the DocumentNoteExtractor precedent, compiled into FRUSExplorerTests at project.yml:441-445) plus the kit. Reading the live index, as the harness did, is not reproducible from a clone. The index I read is at version 50 and predates #1291.
+
+[L4-pocom-and-authority-reach-pre-1900] (measured) Today no pre-1900 person reaches the app's POCOM career join. PersonIndexView shows a career only through authorityEntry.s, the POCOM slug on a bundled authority entry for an authority id the rollup already carries. The crosswalk covers 285 volumes, of which only frus1873p1v1 and frus1873p1v2 start before 1906 by manifest dateRange. Among pre-1906 volumes the live index has persons rows only for frus1873p1v1 (57). The bundled pocom-index.json (420,184 bytes, 1,240 careers) was built with AUTHORITY_INDEX, so only 6 careers include an assignment starting before 1900. The full POCOM checkout has 481 people with a country-chief or principal appointment overlapping 1861–1905, and 6 of them are in the bundle. POCOMIndexRunner already emits the whole register when AUTHORITY_INDEX is unset, so the data route exists. The slug set would have to grow to the candidate slugs.
+
+[M1-chapter-candidate-yield] (measured) The rule: take the geo key Source Explorer shows (from the Swift harness), hand-map it to a POCOM contemporary-territory-id, and list the US chiefs in office that year. Office spans use the load_pocom rule, min to max of every <date> in the appointment block. Emit a candidate only when exactly one of those chiefs has the printed surname (surname_of, copied from measure_pocom.py). The rule applies to the despatch 'from' role and the Department-outbound 'to' role. Measured on head grain (the lowest-offset from row and to row per document) with exact document year, over 1861–1899 documents in 68 marked volumes: 60,654 heads, 21,946 in an applicable role. Of the 15,980 applicable heads where the surname rule finds exactly one officeholder, the chapter chief agrees on 15,249 (95.4%), conflicts on 730 (4.6%) and has no candidate on 1. Of 550 heads where several officeholders share the surname, the chapter picks one in 476. Applicable heads with a surname unknown to POCOM: 3,185, including 1,709 instruction/note 'to' heads, which are largely foreign envoys such as Lord Lyons. Surname known but nobody of it in office that year: 2,172. Two-signal candidates in total: 15,725 of 60,654 heads (25.9%). By construction, when both rules are unique and the surnames match they name the same slug, so the new evidence is the post itself. 'Several' resolved to one is small in absolute terms. With a ±1-year window, corroborated heads are 14,824 and several→one grows to 962, but more year cells hold two chiefs. At all-row grain (83,628 rows) the counts are inflated by enclosure correspondents; for example 'John Russell' as a from row inside 'Mr. Adams to Mr. Seward'.
+
+[M2-secretary-seward-not-resolved] (measured) The dateline series does not settle who wrote from the Department. On head grain, exact year, 8,412 Department-outbound 'from' heads (instructions+notesTo pair, instructions alone, notesTo alone): the Secretary of State in office has the printed surname in 6,916. In 2,884 of those (41.7%), an Assistant, Second or Third Assistant Secretary with the same surname was also in office, which is the W. H. / F. W. Seward case. The series says 'Department of State', not which officer. A chapter rule does not touch this population. The assessment's Seward disclosure (§2.5: 13 of 9,551 unique) stands.
+
+[M3-editor-linked-lens-pre-1906-is-8-rows] (measured) The pre-1906 golden set from editor-linked volumes is two volumes from one year, and the shipped classifier barely reaches it. frus1873p1v1 has 908 from/to persNames, 508 with a ref, 286 in the crosswalk. All 286 carry a POCOM slug with an appointment, and the classifier shows rows for 0 of its 309 documents. frus1873p1v2 has 546 / 426 / 184 / 184, the classifier shows rows for 50 of 324 documents, and 8 linked from/to rows fall in a shown document. The next editor-linked from/to volumes are 1911–1919: frus1914Supp through frus1919Russia, per the label-validation census that covered volumes whose coverage starts by 1925. Those sit behind Source Explorer's year<1906 gate. The gate is in the view, not in classify(). A pre-1900 identity tier becomes measurable without owner keying only on one of two conditions. (i) Fix GeoKeyNormalizer.keys for Roman-numeral titles ('III.—Argentine Republic.'), making up to 470 linked 1873 rows scoreable against crosswalk slugs. (ii) Call classify() without the view gate on the 1911–1919 editor-linked volumes, accepting an era transfer and a chapter arrangement that has not been checked. Either gives agreement with editor identity on those volumes, not precision on the 267. Candidates are emitted only on surname agreement, so any lens scores that combined rule.
+
+[P1-carriers-that-must-not-be-used] (documented) None of the three existing identity carriers can hold a POCOM-slug candidate. (1) PersonClusterInput.authorityId. Records sharing an id are unioned across blocks before the pairwise pass. decide() merges when both carry the same id. The seal 'Reconciled identity' lights on effectiveAuthorityId != nil, and the POCOM career shows through authorityEntry.s. Setting it from a candidate would force-merge, seal and show a career on a machine guess: the §5(5) defect. (2) mustLink. It exists only for user PersonClusterOverride merges, and it overrides blocking, the era and role guardrails and the v8 cannot-link ('A user must-link may merge across authority ids'). A machine must-link would bypass every guardrail. (3) person_cluster_candidate (rollup_id_a, rollup_id_b, reason). It pairs two ROLLUPS, is deleted and rebuilt on every consolidation, uses rollup ids that renumber, and drives a 'Merge?' button that records a synced must-link override. A POCOM slug is not a rollup. Pre-1900 rollups carrying an authority id come only from the two 1873 volumes. So the candidate can only be a suggestion in a separate carrier that PersonClusterer never reads: for example a side table (volume_id, synthetic ref, pocom_slug, rule, evidence) applied on the applyDocumentSubjectsIfNeeded pattern, or a column beside shape (a)'s derived persons rows.
+
+[P2-disclosure-vocabulary] (documented) The existing words do not quite fit. ConfidenceChip is typed on CentralFilesConfidence. 'high' reads 'Likely' and is defined as 'The dateline unambiguously identifies the series'; 'medium' reads 'Possible'. That is a statement about the archival SERIES. Reusing 'Likely' for a PERSON would claim a precision that has not been measured, so only 'Possible' is defensible until one exists. ProvenanceSource is pinned at eight cases by owner decision (ProvenanceChipTests expects 8 at :51 and :122). The career text is honestly '.ohPeopleRegister' ('FRUS + OH people register'). The join from filing context to identity, though, is a rule the app applied: the assessment §4.c says a joined-tier disclosure of its own is needed and the seal must not light. Two options, both owner calls. Use a ninth case, which breaks the pin and the eight-label decision. Or disclose under ohPeopleRegister with a method sentence naming the rule, as Q-3 did with curatedDisclosure. An evidence sentence can be built entirely from the rule's inputs, for example: 'Datelined at a U.S. legation and filed under Great Britain (1862); POCOM lists Charles Francis Adams, Envoy Extraordinary and Minister Plenipotentiary, in office; the printed surname matches.' It must not say 'Reconciled identity', and it must say it is the app's inference from filing context.
+
+[A1-what-moves-in-the-assessment] (inferred) Moves: §6.3 #3 (the rollup rule as code) gains a concrete clause and a test, because a filing-context candidate must never become authorityId or mustLink. §6.3 #6 (wording) gains a third string beside 'Correspondent from markup' and 'Detected name', a 'Possible identity (from filing context)' shape. It also gains a new owner decision: a ninth ProvenanceSource versus a method sentence under ohPeopleRegister. §6.3 #8 (key the 300 rows) is still required but likely cheaper (inferred): the 100 pre-1910 rows can be pre-filled with the candidate, turning lookup into confirm or reject. This carries the anchoring trade stage_m2a.py documents for seeded markup. §2.5's ceilings get a companion measurement: for 1861–1899 heads, two independent signals (post and surname) agree on 15,249 heads, 40.0% of the 38,116 heads the surname rule calls unique. The brief's '12% corroborated by a post or place near the name' was a different signal. No file in the evidence root states it, so comparability is unverified. Does not move: §6.1(c) stays 'No, on current evidence', because agreement is not precision and no keyed identity exists. §6.1(a), (b1), (b2) and (b3) are untouched. §6.3 #1, #2, #4, #5, #7 and #9 are untouched. §4.0 is untouched. The §6.4 identity thresholds are untouched, but the Seward measure they ask for is partly supplied: 2,884 of 6,916 Secretary-matching Department heads have a same-surname assistant in office. Order: the candidate rides on shape (a)'s from/to artifact, so it cannot come before (a).
+
+[A2-out-of-reach] (measured) Out of reach for this rule. Consuls: Source Explorer places only 567 of the 1861–1899 documents as consular with a post, and POCOM missions-countries lists chiefs of mission, not consuls. Its 1861–1899 roles are 285 envoy, 169 minister-resident, 84 minister-resident-consul-general, 26 chargé d'affaires, 2 chargé ad interim. Foreign envoys: every notesFrom 'from' head (1,641 rows at all-row grain) is unknown or disagrees, and foreign ministers are not in POCOM. Secretaries of legation and chargés ad interim acting in a chief's absence disagree and get no candidate, which is correct but unresolved. The Secretary of State and his assistants (M2). Private citizens, enclosure writers and every untyped prose name: the rule reads only head from/to roles. The 12,697 heads in documents where Source Explorer shows nothing: the chapter normaliser failures (Roman numerals, 'British legation.', 'Chili'), Washington datelines and no-roll dates. 1900–1905 was not measured here.
+
+[C1-cost-tests-and-bumps] (inferred) Cost is INFERRED in session units, calibrated on PR #737 (generator, artifact, model, UI and tests in one session). About 3–4 sessions on top of shape (a)'s 2–3. (1) Extract the kit, retire the GeoKeyNormalizer mirror, switch the SourceExplorerView, Mac twin and DocumentView call sites, and run one xcodegen plus scheme restore: about 1. (2) A TEI-side header/dateline/section-path extractor parity-pinned to the parser: about 1. (3) Generator: build the POCOM chief/principal span table (reusing POCOMIndexGeneratorCore's nested-date parsing), pin the geo-key-to-territory map (44 POCOM territories hold a chief in 1861–1899; 138 distinct shown geo keys, most of them consular cities), emit candidates and evidence, and grow the POCOM careers to cover candidate slugs: about 1. (4) App: side table with apply-if-needed and removeVolume delete, a detail row and wording, on both PersonIndexView mounts: about 1. Tests needed: every kit test driving the real classifier, meaning CentralFilesClassifierTests (21) and EnclosureDualHomeTests (11) plus the harness's 55 selftest checks under swift test; parity of TEI header, dateline and section path against IndexingPipeline output on fixture volumes; a pin on the POCOM crosswalk (every shown geo key above a document floor maps to a territory or is printed as refused; the nested <appointed><date> parse; transition years with two chiefs yield no candidate unless the surname picks one); golden candidates (frus1862 d1 'Mr. Adams' → adams-charles-francis; the Seward refusal; Jones and Clay, where 'several' resolves to one in 1861 Austria and Russia); the editor-linked golden set (the up to 470 linked 1873 rows, scoreable only after the Roman-numeral normaliser fix); and clusterer tests that a candidate never sets authorityId, never enters mustLink and never lights the seal (extending PersonClustererTests, 30 today). Bumps: artifact route (a2) needs no currentDateIndexVersion bump, which is 51 at worktree HEAD 78394f89 while the live index is at 50. A side table PersonClusterer never reads forces no currentPersonRollupVersion bump by mechanism; shape (a)'s own 9→10 stands. An index-time route on device would bump 51→52 and cost every device a reindex. The Roman-numeral fix lives in keys(from:), which CountrySeriesParser does not call, so no central-files-index regeneration is needed. No @Model change, so no CloudKit deploy. Machine time is seconds to a minute (harness run about 9 s; chapter_candidates.py was not timed). $0.
+
+[X1-drift-since-assessment] (measured) The worktree HEAD is 78394f89 (#1291 merged), not the bd394443 the assessment pins its file:line citations to. currentDateIndexVersion is now 51 (v50→51 records the §4.0 person-list joins), and line numbers have moved: currentPersonRollupVersion is at IndexingPipeline.swift:874, not :863. The live index now holds 62,931 persons rows, against the assessment's 62,818 (dated 2026-08-19).
+
+TABLE:
+Chapter-anchored candidate against the surname-by-year rule. Heads (the lowest-offset from row and to row per document), exact document year, 1861–1899 documents in 68 marked volumes. Source: fit/summarize.stdout.txt.
+role (series shown by the app) | heads | surname rule one | chapter agrees | chapter conflicts | several | several→one by chapter | surname unknown | surname nobody
+despatch high (US mission dateline) | from | 11,626 | 9,624 | 9,308 | 316 | 344 | 294 | 726 | 906
+despatch medium (datelined abroad) | from | 1,955 | 969 | 828 | 140 | 25 | 14 | 668 | 287
+instructions+notesTo pair | to | 7,852 | 4,992 | 4,728 | 264 | 175 | 166 | 1,709 | 958
+instructions alone | to | 223 | 202 | 192 | 10 | 4 | 0 | 12 | 5
+notesTo alone | to | 290 | 193 | 193 | 0 | 2 | 2 | 70 | 16
+ALL applicable | 21,946 | 15,980 | 15,249 (95.4%) | 730 (4.6%) | 550 | 476 | 3,185 | 2,172
+All heads 60,654; heads in documents where Source Explorer shows nothing 12,697; two-signal candidates 15,725 (25.9% of heads). With ±1 year: corroborated 14,824, several→one 962.
+
+TABLE:
+Department-outbound 'from' heads, exact year. Source: fit/summarize.stdout.txt.
+series | heads | Secretary in office has the printed surname | of which a same-surname Assistant/2nd/3rd Assistant is also in office | Secretary disagrees but an assistant matches
+instructions+notesTo | 7,896 | 6,472 | 2,614 | 1,210
+instructions alone | 225 | 206 | 163 | 7
+notesTo alone | 291 | 238 | 107 | 47
+total | 8,412 | 6,916 | 2,884 (41.7%) | 1,264
+
+TABLE:
+Editor-linked lens before 1906. Source: fit/lens_1873.json.
+volume | docs | docs the classifier shows | from/to persName | with ref | ref in crosswalk | with POCOM slug and appointment | linked rows in a shown doc
+frus1873p1v1 | 309 | 0 | 908 | 508 | 286 | 286 | 0
+frus1873p1v2 | 324 | 50 | 546 | 426 | 184 | 184 | 8
+
+TABLE:
+Identity carriers. Source: documented, files named in P1.
+carrier | what it does today | can it hold a POCOM-slug candidate?
+PersonClusterInput.authorityId | force-merge across volumes; decisive in decide(); lights 'Reconciled identity'; shows POCOM career | NO: seal plus merge on a machine guess
+mustLink (PersonClusterOverride merge) | user correction that beats blocking, era, role and the v8 cannot-link | NO: bypasses every guardrail
+person_cluster_candidate | rollup↔rollup suggestion, rebuilt each consolidation, drives 'Merge?' | NO: a slug is not a rollup; the merge button would write a synced must-link
+new side table (volume, synthetic ref, pocom_slug, rule, evidence), not read by PersonClusterer | none | YES, as a suggestion with 'Possible' wording and its own disclosure
+
+TABLE:
+Reach of the POCOM data. Source: measured, L4.
+POCOM people with a chief-of-mission or principal appointment overlapping 1861–1905: 481; of them in the bundled pocom-index.json: 6. Bundled careers with any assignment starting before 1900: 6 of 1,240. Crosswalk volumes starting before 1906: 2 of 285. Pre-1906 volumes with persons rows in the live index: 1 (frus1873p1v1, 57).
+
+UNKNOWNS:
+ - No measured precision: the 95.4% is agreement between two rules on unkeyed rows. A same-surname non-chief writing from a legation, such as a relative or a secretary of legation, would still count as corroborated.
+ - 'Head' means the lowest-offset from row and to row per document in the marked layer. That stands in for the document heading and was not checked against the TEI head element.
+ - The geo-key-to-POCOM-territory map is a hand map (printed in chapter_candidates-*.json). It maps 'central america' to five territories and 'prussia' to germany. Unmapped keys (cuba, tunis, tangier, morocco, panama, montenegro, city keys) yield no candidate.
+ - POCOM office spans use the load_pocom min-to-max of every date, so years between appointment and arrival count and transition years hold two chiefs. A started/ended rule was not tried.
+ - 1900–1905 was not measured (the script filters appYear 1861–1899). frus1873p1v1 is outside the marked scope, so its documents are excluded from M1.
+ - No source for the brief's '12% of one rows corroborated by a post or place near the name' was found in Planning/early-era-people. Its denominator and grain may differ from M1's.
+ - Not measured whether a TEI-side extractor reproduces document_cache.header, document_cache.dateline and the volume_structures section path exactly. The live index is at version 50 and predates #1291.
+ - Not checked whether the 1911–1919 editor-linked volumes are country-arranged well enough for classify() to act as a lens once the view gate is lifted.
+ - Whether pre-filling the 100 pre-1910 eval rows with the candidate biases the owner toward accepting it: an anchoring trade like M2a's seeding, not measured.
+ - Owner decisions not taken: a ninth ProvenanceSource versus a method sentence under ohPeopleRegister, and the candidate wording.
+ - fit/chapter_candidates.stdout.txt is from the first all-row run, before the slug and grain patches, and is superseded by the -all/-head outputs.
+
+################ CHALLENGE Counter({'confirmed': 15, 'corrected': 8, 'unverifiable': 4})
+
+[harness:R2-series-rules / R3 / R4 / C4 / C5 / H2] unverifiable: I did not re-read the nine-branch order, consularPostKey, the normaliser alias table, the 5 shadowed circulars or the 20-document trace line by line. Those outputs come from the Swift harness, and the harness passes its selftest, so the categories are the app's own. C5 is correctly labelled a proxy.
+
+[coverage:headline (arm A share)] corrected: The headline says the chapter rule names one person for 51.6% in arm A. summary.json has arm A chapter_one 45,056 of 84,234, which is 53.49%, and R2 of the same report says 53.5%. The right value is 53.5%. The arm B figure of 61.6% (51,880) is correct.
+
+[coverage:R1-1861-1899-armB (transition table)] corrected: Every figure shown matches chapter-rule.json tallies['B|1861-1899']. The table is incomplete, though. For 'several' the rows shown sum to 11,314 of 11,995, leaving 681 out; 'nobody' sums to 7,780 of 8,595 (815 out); 'unknown' to 17,043 of 18,386 (1,343 out). The missing 2,839 rows are the rows with no hypothesis (84,234 − 80,515 = 3,719, minus the 880 already shown under 'one'). Treat the table as covering the rows with a hypothesis, not all rows. The 8,733 convention rows are confirmed. So are F. W. Seward's POCOM dates, 1861-03-06 to 1869-03-04 (pocom positions-principals/assistant-secretary.xml:144-155).
+
+[coverage:S1-seward] unverifiable: I did not re-run seward_crosstab.py. The 3.2% is 117 of 3,669 and the arithmetic is right. The POCOM date overlap that makes all 8,472 rows ambiguous is confirmed (see above).
+
+[validation:G3-sameness-routes / P1-1873-pooled (S precision 805/805, 1.000 [0.995,1])] corrected: The ground truth for pre-1900 identity is NOT independent of POCOM, except for one person. person-authority-index.json has exactly ONE crosswalk ref in each 1873 volume, and both are authority id 104298, fish-hamilton. So route A, the only non-POCOM sameness route, identifies only Hamilton Fish. I recounted scored-mentions.jsonl (skeptic/val_check.py): S's 805 agreements are 470 route-A rows (all Fish) and 335 route-B rows. Route B gets its gold slug from POCOM surname (edit distance ≤1), POCOM forename initial, POCOM post kind and a volume-year window. That is the same register and nearly the same rule as S, so agreement there is close to guaranteed. The check that route B equals the crosswalk (423 of 423) is real, but 421 of those 423 entries are post-1905 and the other 2 are Fish (gold-slug-table.tsv). The honest pre-1900 statement: the editors assert the link from a persName to its list entry. Tying that entry to a POCOM person was checked independently for Fish alone, and for the other 22 people it was done by POCOM. Clustering also shrinks the effective sample. S's agreements cover 23 distinct people, 494 documents and 2 volumes, and Fish is 58% of them. A Wilson interval over 934 mentions overstates certainty by a wide margin; the effective n is nearer the 23 people than the 934 mentions. The same holds for COMB STRIP's 701 of 701: 413 route-A rows (Fish) and 288 route-B rows, 47 of them De Long.
+
+[validation:B1-1873-selection-bias (population shares)] corrected: B1 gives the 1861-1899 marked from/to population as one 55.4%, several 8.0%, nobody 17.2%, unknown 19.4%, citing pocom.json. In that file 0.554 is whole_scope.marked_fromto.mention.share_unique_by_document_year_over_with_surname: the whole scope, over rows that have a surname. For the 1861-1899 band, by mention (pocom.json by_band), the shares are one 53.7% (45,258), several 14.2% (11,995), nobody 10.2% (8,595) and unknown 21.8% (18,386). The correction strengthens B1: the 'several' class, where the 1873 gold has 0 rows, is 14.2% of the band, not 8%.
+
+[validation:X1-post1905-proxy-pooled (intervals)] corrected: The Wilson intervals treat mentions as independent, and precision swings a lot by volume. S ranges from 0.526 on frus1919Parisv01 to 1.0. I bootstrapped over the 15 proxy volumes (2,000 resamples, seed 234, skeptic/val_check.py). S 0.933 goes to [0.881, 0.970], against the reported [0.924, 0.941]. S with undecided counted as wrong is 0.900 [0.836, 0.954]. COMB STRIP 0.965 goes to [0.901, 1.0]. COMB in document heads of the 'one' class, 0.986, goes to [0.949, 1.0]. Of S's 214 disagreements, 205 are no-slug rows judged only by surname or initial incompatibility. The proxy is also post-1905 evidence: heads name posts there, and it shares no era or structure with 1861-1899.
+
+[validation:A1-answer-to-owner (98.6% corroboration filter)] corrected: The arithmetic is right: 475 of 482, heads, 'one' class. But it is post-1905 proxy evidence, the volume-cluster interval is [0.949, 1.0], and 258 of COMB's 519 proxy agreements rest on route B, which is POCOM-derived. Before 1900 no measurement shows the combined rule adding precision: the baseline's 805 of 805 is itself circular (see G3/P1).
+
+[fit:M1-chapter-candidate-yield] corrected: The exact-year head figures are confirmed from summarize.stdout.txt, summing the applicable roles: one 15,980, corroborated 15,249, conflict 730, several 550, several resolved to one 476, unknown 3,185, nobody 2,172, total two-signal candidates 15,725, and 40.0% of 38,116. Correction for ±1 year: corroborated is 9,037 + 808 + 4,603 + 192 + 186 = 14,826, not 14,824. Several→one at 962 is confirmed. The scope also differs from the coverage report: fit's inputs.volumes = 70 (the no-list volumes up to 1905, filtered by document year 1861-1899, 68 of them marked), while coverage uses 61 volumes selected by volume name.
+
+[fit:M3-editor-linked-lens-pre-1906-is-8-rows] corrected: The 8 counts only linked rows that have a CROSSWALK slug inside documents Source Explorer shows, and all 8 are Hamilton Fish. The shown documents actually hold 43 linked from/to rows, and the shown chapter rule makes 22 picks on them (validation; recounted). The report also says a Roman-numeral normaliser fix would make 'up to 470 linked 1873 rows scoreable against crosswalk slugs'. All 470 are one person, Fish: the crosswalk has one ref per volume, both id 104298. So that lens would score the Secretary of State and no chief of mission. Any chief-of-mission identity in 1873 comes from POCOM-derived matching, which is circular.
+
+[fit:L1/L2/L3/P1/P2/C1/X1] unverifiable: These are documented code-location, carrier and cost claims. I did not re-read them, except the enclosure/nil fact, which I confirmed under harness R6. C1's cost estimate is inferred.
+
+[fit:A1-what-moves (brief's '12% corroborated' figure)] unverifiable: I grepped Planning/ for 'post or place', 'near the name' and '12%' and found no source, the same result fit reports. The figure in the brief cannot be compared with anything measured.
+
+CONFLICTS:
+ - The coverage headline gives arm A's chapter-one share as 51.6%, while its R2 and summary.json give 53.5% (45,056 of 84,234).
+ - The class shares for the 1861–1899 population disagree. The brief and validation B1 give 55.4 / 8.0 / 17.2 / 19.4, but those are whole-scope shares over rows with a surname. The band's own figures, which coverage reproduces, are 53.7 / 14.2 / 10.2 / 21.8 (pocom.json by_band['1861-1899'].marked_fromto.mention).
+ - The size of the editor-linked check before 1900 differs by report. Fit M3 says 8 rows. Validation shows 22 SHOWN picks among 43 linked rows in shown documents. Fit's 8 are only the crosswalk-slug rows, and all 8 are Fish.
+ - Fit implies 470 linked 1873 rows are 'scoreable against crosswalk slugs'. Validation G3 shows that route covers two list entries, both Hamilton Fish. The crosswalk holds exactly one ref per 1873 volume.
+ - The three reports measure three different populations. Harness: 63 volumes, 32,478 documents, by the app's document year. Coverage: 61 no-list volumes by volume name, 84,234 rows. Fit: 70 no-list volumes filtered by document year (68 marked), 83,628 rows and 60,654 heads. Their percentages are not directly comparable.
+ - Coverage and fit report different agreement levels. Coverage has POCOM 'one' corroborated 90.4% and contradicted 2,415 (5.3%); fit has 95.4% agree and 4.6% conflict. They use different grains (all rows vs heads), office intervals (exact appointed/arrived-to-ended dates vs min-to-max years) and role sets (tier-2 officers vs Secretary-only checks).
+ - Validation says no coverage-lens code existed and scored its own rule: window 0/+60 days, Secretary-only, no tier 2. Coverage's arm A/B rule and fit's rule were therefore never scored against any ground truth. Validation's precision figures do not transfer to them.
+ - Seward is counted two ways: coverage has 8,733 convention rows (all rows, arm B) and fit has 2,884 Department-from heads with a same-surname assistant. Both are consistent in direction but measured at different grains. Neither measures the correct choice except coverage's 117 signed-by-F. W. head rows.
+ - Validation's headline 'surname-by-year alone is right in 805 of 805' sits beside its own admission that route B shares POCOM (open_unknowns). 470 of the 805 are Fish and the other 335 are route B, whose truth is POCOM-derived. The headline figure is not editor-asserted precision.
+ - Harness counts frus1873p1v1 as 310 documents (C3); fit's lens_1873.json counts 309.
+
+MISSING:
+ - No identity check before 1900 is independent of POCOM for anyone except Hamilton Fish. How precise is either rule on chiefs of mission and assistant secretaries in 1861–1899, measured without POCOM-derived gold?
+ - Precision on the 267 target volumes. The only gold volumes before 1900 carry editor lists, so they are outside #234's population by definition. How representative are they?
+ - Precision on the 'several' class, 14.2% of the 1861–1899 rows. The 1873 gold holds zero such rows.
+ - How many DISTINCT people, not rows, the chapter context would newly identify in the no-list volumes (arm B's 2,240 non-convention several→one rows; fit's 476 heads). The owner will ask 'how many new people'.
+ - Of coverage's 2,415 contradictions and validation's CH disagreements, how many are POCOM gaps (Hunter as acting officer, secretary-ad-interim not recorded) and how many are errors by surname-by-year?
+ - What a GeoKeyNormalizer fix would change in the shipped app (Roman-numeral prefixes, legation-chapter titles, 'Chili', the en-dash in Austria–Hungary, '(Continued.)'), including any regression outside 1861–1899. Not measured; only validation's numeral strip was.
+ - Consuls: Source Explorer places a consular post for 567 documents, but no person register for consuls was examined. POCOM has none. Is there a consular register that would make location usable for identity?
+ - The effect of an initials check against POCOM forenames (at least 164 Seward-type rows; the 'G. F. Seward' namesake case). Not built.
+ - The enclosure pass (SourceExplorerView enclosureResolutions) was not reproduced. The re-index after PR #1291 (frus1873p1v2 and the split-set parts) was not checked.
+ - 1900–1905 was not measured by fit.
+ - The source and denominator of the brief's '12% of one rows corroborated by a post or place near the name' were not found, so the chapter-context gain cannot be compared with it.
+ - Whether pre-filling the 100 pre-1910 rows to be keyed with a chapter candidate biases the keyer (the anchoring trade). Not measured.
+ - Whether the 'Rome' → holy-see and 'Prussia' → germany mappings name the right post-holder in transition years (the US mission to the Papal States closed in 1867; the German states before 1871). Only spot-listed, never checked.

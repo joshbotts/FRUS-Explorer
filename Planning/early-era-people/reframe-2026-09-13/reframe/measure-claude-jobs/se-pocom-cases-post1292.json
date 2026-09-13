@@ -1,0 +1,3611 @@
+{
+ "classes": {
+  "A|1861-1899|contradicted": {
+   "cands": {
+    "max": 7,
+    "mean": 3.2,
+    "n": 2062,
+    "p50": 3,
+    "p90": 6,
+    "p99": 6,
+    "sum": 6682
+   },
+   "chars": {
+    "max": 1850,
+    "mean": 707.4,
+    "n": 2062,
+    "p50": 626,
+    "p90": 1042,
+    "p99": 1477,
+    "sum": 1458594
+   },
+   "chars_all": {
+    "max": 2332,
+    "mean": 846.1,
+    "n": 2062,
+    "p50": 780,
+    "p90": 1321,
+    "p99": 1942,
+    "sum": 1744748
+   },
+   "context_chars": {
+    "max": 595,
+    "mean": 286.2,
+    "n": 2062,
+    "p50": 276,
+    "p90": 331,
+    "p99": 426,
+    "sum": 590238
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 5493.9,
+    "n": 2062,
+    "p50": 2580,
+    "p90": 19867,
+    "p99": 20000,
+    "sum": 11328436
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3677.2,
+    "n": 2062,
+    "p50": 2580,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 7582312
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.7,
+    "n": 2062,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 1394
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.2,
+    "n": 2062,
+    "p50": 2,
+    "p90": 5,
+    "p99": 5,
+    "sum": 4620
+   },
+   "n": 2062,
+   "surname_cands": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 2062,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 2062
+   }
+  },
+  "A|1861-1899|several_narrowed_by_location": {
+   "cands": {
+    "max": 7,
+    "mean": 3.5,
+    "n": 2081,
+    "p50": 4,
+    "p90": 6,
+    "p99": 7,
+    "sum": 7316
+   },
+   "chars": {
+    "max": 1469,
+    "mean": 711.9,
+    "n": 2081,
+    "p50": 660,
+    "p90": 1036,
+    "p99": 1235,
+    "sum": 1481392
+   },
+   "chars_all": {
+    "max": 2017,
+    "mean": 844.3,
+    "n": 2081,
+    "p50": 835,
+    "p90": 1300,
+    "p99": 1941,
+    "sum": 1757028
+   },
+   "context_chars": {
+    "max": 555,
+    "mean": 280.7,
+    "n": 2081,
+    "p50": 270,
+    "p90": 319,
+    "p99": 407,
+    "sum": 584143
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 5489.1,
+    "n": 2081,
+    "p50": 3112,
+    "p90": 15913,
+    "p99": 20000,
+    "sum": 11422754
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3915.3,
+    "n": 2081,
+    "p50": 3112,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 8147651
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.8,
+    "n": 2081,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 1728
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.5,
+    "n": 2081,
+    "p50": 3,
+    "p90": 5,
+    "p99": 6,
+    "sum": 5270
+   },
+   "n": 2081,
+   "surname_cands": {
+    "max": 3,
+    "mean": 2.0,
+    "n": 2081,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 4171
+   }
+  },
+  "A|1861-1899|several_no_hypothesis": {
+   "cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 944,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 1888
+   },
+   "chars": {
+    "max": 897,
+    "mean": 474.6,
+    "n": 944,
+    "p50": 446,
+    "p90": 565,
+    "p99": 857,
+    "sum": 448030
+   },
+   "chars_all": {
+    "max": 938,
+    "mean": 515.1,
+    "n": 944,
+    "p50": 487,
+    "p90": 623,
+    "p99": 898,
+    "sum": 486284
+   },
+   "context_chars": {
+    "max": 685,
+    "mean": 247.2,
+    "n": 944,
+    "p50": 234,
+    "p90": 279,
+    "p99": 645,
+    "sum": 233350
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 4659.5,
+    "n": 944,
+    "p50": 2557,
+    "p90": 13463,
+    "p99": 20000,
+    "sum": 4398588
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3434.7,
+    "n": 944,
+    "p50": 2557,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 3242386
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.9,
+    "n": 944,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 861
+   },
+   "hyp_holders": {
+    "max": 0,
+    "mean": 0.0,
+    "n": 944,
+    "p50": 0,
+    "p90": 0,
+    "p99": 0,
+    "sum": 0
+   },
+   "n": 944,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 944,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 1888
+   }
+  },
+  "A|1861-1899|several_unresolved": {
+   "cands": {
+    "max": 7,
+    "mean": 4.2,
+    "n": 328,
+    "p50": 3,
+    "p90": 7,
+    "p99": 7,
+    "sum": 1380
+   },
+   "chars": {
+    "max": 1678,
+    "mean": 810.8,
+    "n": 328,
+    "p50": 700,
+    "p90": 1150,
+    "p99": 1289,
+    "sum": 265928
+   },
+   "chars_all": {
+    "max": 2102,
+    "mean": 944.9,
+    "n": 328,
+    "p50": 752,
+    "p90": 1521,
+    "p99": 1668,
+    "sum": 309935
+   },
+   "context_chars": {
+    "max": 364,
+    "mean": 274.8,
+    "n": 328,
+    "p50": 275,
+    "p90": 305,
+    "p99": 350,
+    "sum": 90120
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 6926.3,
+    "n": 328,
+    "p50": 4120,
+    "p90": 20000,
+    "p99": 20000,
+    "sum": 2271828
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 4409.8,
+    "n": 328,
+    "p50": 4120,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 1446422
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.7,
+    "n": 328,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 214
+   },
+   "hyp_holders": {
+    "max": 5,
+    "mean": 2.2,
+    "n": 328,
+    "p50": 1,
+    "p90": 5,
+    "p99": 5,
+    "sum": 724
+   },
+   "n": 328,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 328,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 656
+   }
+  },
+  "A|1861-1899|seward_assumption": {
+   "cands": {
+    "max": 6,
+    "mean": 2.4,
+    "n": 8642,
+    "p50": 2,
+    "p90": 3,
+    "p99": 4,
+    "sum": 20756
+   },
+   "chars": {
+    "max": 1152,
+    "mean": 541.9,
+    "n": 8642,
+    "p50": 516,
+    "p90": 647,
+    "p99": 783,
+    "sum": 4683079
+   },
+   "chars_all": {
+    "max": 1332,
+    "mean": 621.0,
+    "n": 8642,
+    "p50": 557,
+    "p90": 806,
+    "p99": 954,
+    "sum": 5366863
+   },
+   "context_chars": {
+    "max": 643,
+    "mean": 281.8,
+    "n": 8642,
+    "p50": 277,
+    "p90": 320,
+    "p99": 348,
+    "sum": 2434929
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 4001.9,
+    "n": 8642,
+    "p50": 1979,
+    "p90": 10916,
+    "p99": 20000,
+    "sum": 34584259
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3041.6,
+    "n": 8642,
+    "p50": 1979,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 26285885
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 8642,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 8223
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.4,
+    "n": 8642,
+    "p50": 2,
+    "p90": 3,
+    "p99": 4,
+    "sum": 20756
+   },
+   "n": 8642,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 8642,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 17284
+   }
+  },
+  "A|1900-1905|contradicted": {
+   "cands": {
+    "max": 7,
+    "mean": 3.0,
+    "n": 460,
+    "p50": 2,
+    "p90": 6,
+    "p99": 6,
+    "sum": 1382
+   },
+   "chars": {
+    "max": 2078,
+    "mean": 936.0,
+    "n": 460,
+    "p50": 802,
+    "p90": 1394,
+    "p99": 1709,
+    "sum": 430552
+   },
+   "chars_all": {
+    "max": 2673,
+    "mean": 1223.2,
+    "n": 460,
+    "p50": 1025,
+    "p90": 1879,
+    "p99": 2227,
+    "sum": 562676
+   },
+   "context_chars": {
+    "max": 905,
+    "mean": 353.2,
+    "n": 460,
+    "p50": 326,
+    "p90": 504,
+    "p99": 559,
+    "sum": 162474
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 3223.6,
+    "n": 460,
+    "p50": 1672,
+    "p90": 8203,
+    "p99": 20000,
+    "sum": 1482835
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 2590.6,
+    "n": 460,
+    "p50": 1672,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 1191683
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.7,
+    "n": 460,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 330
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.0,
+    "n": 460,
+    "p50": 1,
+    "p90": 5,
+    "p99": 5,
+    "sum": 922
+   },
+   "n": 460,
+   "surname_cands": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 460,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 460
+   }
+  },
+  "A|1900-1905|several_narrowed_by_location": {
+   "cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 7,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 14
+   },
+   "chars": {
+    "max": 840,
+    "mean": 783.7,
+    "n": 7,
+    "p50": 826,
+    "p90": 840,
+    "p99": 840,
+    "sum": 5486
+   },
+   "chars_all": {
+    "max": 904,
+    "mean": 847.7,
+    "n": 7,
+    "p50": 890,
+    "p90": 904,
+    "p99": 904,
+    "sum": 5934
+   },
+   "context_chars": {
+    "max": 431,
+    "mean": 374.7,
+    "n": 7,
+    "p50": 417,
+    "p90": 431,
+    "p99": 431,
+    "sum": 2623
+   },
+   "doc20k": {
+    "max": 3830,
+    "mean": 1819.6,
+    "n": 7,
+    "p50": 1185,
+    "p90": 3830,
+    "p99": 3830,
+    "sum": 12737
+   },
+   "doc8k": {
+    "max": 3830,
+    "mean": 1819.6,
+    "n": 7,
+    "p50": 1185,
+    "p90": 3830,
+    "p99": 3830,
+    "sum": 12737
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 7,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 7
+   },
+   "hyp_holders": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 7,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 7
+   },
+   "n": 7,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 7,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 14
+   }
+  },
+  "A|1900-1905|several_no_hypothesis": {
+   "cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 2,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 4
+   },
+   "chars": {
+    "max": 681,
+    "mean": 680.0,
+    "n": 2,
+    "p50": 681,
+    "p90": 681,
+    "p99": 681,
+    "sum": 1360
+   },
+   "chars_all": {
+    "max": 745,
+    "mean": 744.0,
+    "n": 2,
+    "p50": 745,
+    "p90": 745,
+    "p99": 745,
+    "sum": 1488
+   },
+   "context_chars": {
+    "max": 272,
+    "mean": 271.0,
+    "n": 2,
+    "p50": 272,
+    "p90": 272,
+    "p99": 272,
+    "sum": 542
+   },
+   "doc20k": {
+    "max": 789,
+    "mean": 789.0,
+    "n": 2,
+    "p50": 789,
+    "p90": 789,
+    "p99": 789,
+    "sum": 1578
+   },
+   "doc8k": {
+    "max": 789,
+    "mean": 789.0,
+    "n": 2,
+    "p50": 789,
+    "p90": 789,
+    "p99": 789,
+    "sum": 1578
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.5,
+    "n": 2,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 1
+   },
+   "hyp_holders": {
+    "max": 0,
+    "mean": 0.0,
+    "n": 2,
+    "p50": 0,
+    "p90": 0,
+    "p99": 0,
+    "sum": 0
+   },
+   "n": 2,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 2,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 4
+   }
+  },
+  "A|1900-1905|several_unresolved": {
+   "cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 3,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 6
+   },
+   "chars": {
+    "max": 839,
+    "mean": 838.3,
+    "n": 3,
+    "p50": 839,
+    "p90": 839,
+    "p99": 839,
+    "sum": 2515
+   },
+   "chars_all": {
+    "max": 903,
+    "mean": 902.3,
+    "n": 3,
+    "p50": 903,
+    "p90": 903,
+    "p99": 903,
+    "sum": 2707
+   },
+   "context_chars": {
+    "max": 430,
+    "mean": 429.3,
+    "n": 3,
+    "p50": 430,
+    "p90": 430,
+    "p99": 430,
+    "sum": 1288
+   },
+   "doc20k": {
+    "max": 639,
+    "mean": 588.3,
+    "n": 3,
+    "p50": 563,
+    "p90": 639,
+    "p99": 639,
+    "sum": 1765
+   },
+   "doc8k": {
+    "max": 639,
+    "mean": 588.3,
+    "n": 3,
+    "p50": 563,
+    "p90": 639,
+    "p99": 639,
+    "sum": 1765
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 3,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 3
+   },
+   "hyp_holders": {
+    "max": 0,
+    "mean": 0.0,
+    "n": 3,
+    "p50": 0,
+    "p90": 0,
+    "p99": 0,
+    "sum": 0
+   },
+   "n": 3,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 3,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 6
+   }
+  },
+  "B|1861-1899|contradicted": {
+   "cands": {
+    "max": 7,
+    "mean": 3.4,
+    "n": 2460,
+    "p50": 3,
+    "p90": 6,
+    "p99": 6,
+    "sum": 8465
+   },
+   "chars": {
+    "max": 1850,
+    "mean": 780.4,
+    "n": 2460,
+    "p50": 687,
+    "p90": 1202,
+    "p99": 1574,
+    "sum": 1919802
+   },
+   "chars_all": {
+    "max": 2332,
+    "mean": 936.8,
+    "n": 2460,
+    "p50": 820,
+    "p90": 1504,
+    "p99": 2097,
+    "sum": 2304574
+   },
+   "context_chars": {
+    "max": 1101,
+    "mean": 313.3,
+    "n": 2460,
+    "p50": 284,
+    "p90": 430,
+    "p99": 816,
+    "sum": 770666
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 5952.1,
+    "n": 2460,
+    "p50": 2972,
+    "p90": 20000,
+    "p99": 20000,
+    "sum": 14642213
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3902.0,
+    "n": 2460,
+    "p50": 2972,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 9598886
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.6,
+    "n": 2460,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 1489
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.4,
+    "n": 2460,
+    "p50": 2,
+    "p90": 5,
+    "p99": 5,
+    "sum": 6005
+   },
+   "n": 2460,
+   "surname_cands": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 2460,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 2460
+   }
+  },
+  "B|1861-1899|several_narrowed_by_location": {
+   "cands": {
+    "max": 7,
+    "mean": 3.5,
+    "n": 2253,
+    "p50": 4,
+    "p90": 6,
+    "p99": 7,
+    "sum": 7880
+   },
+   "chars": {
+    "max": 1490,
+    "mean": 715.1,
+    "n": 2253,
+    "p50": 659,
+    "p90": 1044,
+    "p99": 1281,
+    "sum": 1611078
+   },
+   "chars_all": {
+    "max": 2017,
+    "mean": 844.4,
+    "n": 2253,
+    "p50": 831,
+    "p90": 1316,
+    "p99": 1636,
+    "sum": 1902442
+   },
+   "context_chars": {
+    "max": 915,
+    "mean": 283.2,
+    "n": 2253,
+    "p50": 272,
+    "p90": 322,
+    "p99": 410,
+    "sum": 638113
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 5492.8,
+    "n": 2253,
+    "p50": 3066,
+    "p90": 16383,
+    "p99": 20000,
+    "sum": 12375281
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3906.4,
+    "n": 2253,
+    "p50": 3066,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 8801166
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.8,
+    "n": 2253,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 1861
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.5,
+    "n": 2253,
+    "p50": 3,
+    "p90": 5,
+    "p99": 6,
+    "sum": 5662
+   },
+   "n": 2253,
+   "surname_cands": {
+    "max": 3,
+    "mean": 2.0,
+    "n": 2253,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 4515
+   }
+  },
+  "B|1861-1899|several_no_hypothesis": {
+   "cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 123,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 246
+   },
+   "chars": {
+    "max": 836,
+    "mean": 436.7,
+    "n": 123,
+    "p50": 415,
+    "p90": 510,
+    "p99": 694,
+    "sum": 53709
+   },
+   "chars_all": {
+    "max": 877,
+    "mean": 475.0,
+    "n": 123,
+    "p50": 456,
+    "p90": 551,
+    "p99": 694,
+    "sum": 58429
+   },
+   "context_chars": {
+    "max": 624,
+    "mean": 228.0,
+    "n": 123,
+    "p50": 212,
+    "p90": 293,
+    "p99": 419,
+    "sum": 28039
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 2499.1,
+    "n": 123,
+    "p50": 1241,
+    "p90": 5743,
+    "p99": 20000,
+    "sum": 307386
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 2249.8,
+    "n": 123,
+    "p50": 1241,
+    "p90": 5743,
+    "p99": 8000,
+    "sum": 276723
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.8,
+    "n": 123,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 99
+   },
+   "hyp_holders": {
+    "max": 0,
+    "mean": 0.0,
+    "n": 123,
+    "p50": 0,
+    "p90": 0,
+    "p99": 0,
+    "sum": 0
+   },
+   "n": 123,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 123,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 246
+   }
+  },
+  "B|1861-1899|several_unresolved": {
+   "cands": {
+    "max": 7,
+    "mean": 4.2,
+    "n": 356,
+    "p50": 3,
+    "p90": 7,
+    "p99": 7,
+    "sum": 1501
+   },
+   "chars": {
+    "max": 1678,
+    "mean": 825.1,
+    "n": 356,
+    "p50": 744,
+    "p90": 1155,
+    "p99": 1334,
+    "sum": 293744
+   },
+   "chars_all": {
+    "max": 2201,
+    "mean": 961.3,
+    "n": 356,
+    "p50": 756,
+    "p90": 1521,
+    "p99": 1883,
+    "sum": 342224
+   },
+   "context_chars": {
+    "max": 726,
+    "mean": 284.7,
+    "n": 356,
+    "p50": 276,
+    "p90": 318,
+    "p99": 721,
+    "sum": 101369
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 7169.1,
+    "n": 356,
+    "p50": 4561,
+    "p90": 20000,
+    "p99": 20000,
+    "sum": 2552197
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 4519.5,
+    "n": 356,
+    "p50": 4561,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 1608950
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.7,
+    "n": 356,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 233
+   },
+   "hyp_holders": {
+    "max": 5,
+    "mean": 2.2,
+    "n": 356,
+    "p50": 1,
+    "p90": 5,
+    "p99": 5,
+    "sum": 789
+   },
+   "n": 356,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 356,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 712
+   }
+  },
+  "B|1861-1899|seward_assumption": {
+   "cands": {
+    "max": 6,
+    "mean": 2.4,
+    "n": 9263,
+    "p50": 2,
+    "p90": 3,
+    "p99": 4,
+    "sum": 22300
+   },
+   "chars": {
+    "max": 1636,
+    "mean": 545.8,
+    "n": 9263,
+    "p50": 521,
+    "p90": 650,
+    "p99": 815,
+    "sum": 5055882
+   },
+   "chars_all": {
+    "max": 1677,
+    "mean": 626.0,
+    "n": 9263,
+    "p50": 562,
+    "p90": 809,
+    "p99": 972,
+    "sum": 5798725
+   },
+   "context_chars": {
+    "max": 1173,
+    "mean": 284.7,
+    "n": 9263,
+    "p50": 278,
+    "p90": 320,
+    "p99": 376,
+    "sum": 2636774
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 4042.2,
+    "n": 9263,
+    "p50": 2017,
+    "p90": 10998,
+    "p99": 20000,
+    "sum": 37442565
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 3069.8,
+    "n": 9263,
+    "p50": 2017,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 28435505
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 9263,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 8833
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.4,
+    "n": 9263,
+    "p50": 2,
+    "p90": 3,
+    "p99": 4,
+    "sum": 22300
+   },
+   "n": 9263,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 9263,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 18526
+   }
+  },
+  "B|1900-1905|contradicted": {
+   "cands": {
+    "max": 7,
+    "mean": 3.1,
+    "n": 509,
+    "p50": 2,
+    "p90": 6,
+    "p99": 6,
+    "sum": 1590
+   },
+   "chars": {
+    "max": 2078,
+    "mean": 952.1,
+    "n": 509,
+    "p50": 830,
+    "p90": 1415,
+    "p99": 1711,
+    "sum": 484594
+   },
+   "chars_all": {
+    "max": 2673,
+    "mean": 1248.5,
+    "n": 509,
+    "p50": 1099,
+    "p90": 1885,
+    "p99": 2229,
+    "sum": 635500
+   },
+   "context_chars": {
+    "max": 959,
+    "mean": 357.9,
+    "n": 509,
+    "p50": 328,
+    "p90": 504,
+    "p99": 589,
+    "sum": 182155
+   },
+   "doc20k": {
+    "max": 20000,
+    "mean": 3277.7,
+    "n": 509,
+    "p50": 1701,
+    "p90": 8160,
+    "p99": 20000,
+    "sum": 1668372
+   },
+   "doc8k": {
+    "max": 8000,
+    "mean": 2638.6,
+    "n": 509,
+    "p50": 1701,
+    "p90": 8000,
+    "p99": 8000,
+    "sum": 1343044
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.7,
+    "n": 509,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 346
+   },
+   "hyp_holders": {
+    "max": 6,
+    "mean": 2.1,
+    "n": 509,
+    "p50": 1,
+    "p90": 5,
+    "p99": 5,
+    "sum": 1081
+   },
+   "n": 509,
+   "surname_cands": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 509,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 509
+   }
+  },
+  "B|1900-1905|several_narrowed_by_location": {
+   "cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 10,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 20
+   },
+   "chars": {
+    "max": 888,
+    "mean": 814.8,
+    "n": 10,
+    "p50": 837,
+    "p90": 888,
+    "p99": 888,
+    "sum": 8148
+   },
+   "chars_all": {
+    "max": 952,
+    "mean": 878.8,
+    "n": 10,
+    "p50": 901,
+    "p90": 952,
+    "p99": 952,
+    "sum": 8788
+   },
+   "context_chars": {
+    "max": 479,
+    "mean": 405.8,
+    "n": 10,
+    "p50": 428,
+    "p90": 479,
+    "p99": 479,
+    "sum": 4058
+   },
+   "doc20k": {
+    "max": 3830,
+    "mean": 1450.2,
+    "n": 10,
+    "p50": 986,
+    "p90": 3830,
+    "p99": 3830,
+    "sum": 14502
+   },
+   "doc8k": {
+    "max": 3830,
+    "mean": 1450.2,
+    "n": 10,
+    "p50": 986,
+    "p90": 3830,
+    "p99": 3830,
+    "sum": 14502
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 10,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 10
+   },
+   "hyp_holders": {
+    "max": 1,
+    "mean": 1.0,
+    "n": 10,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 10
+   },
+   "n": 10,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 10,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 20
+   }
+  },
+  "B|1900-1905|several_unresolved": {
+   "cands": {
+    "max": 5,
+    "mean": 3.5,
+    "n": 2,
+    "p50": 5,
+    "p90": 5,
+    "p99": 5,
+    "sum": 7
+   },
+   "chars": {
+    "max": 1253,
+    "mean": 990.0,
+    "n": 2,
+    "p50": 1253,
+    "p90": 1253,
+    "p99": 1253,
+    "sum": 1980
+   },
+   "chars_all": {
+    "max": 1519,
+    "mean": 1155.0,
+    "n": 2,
+    "p50": 1519,
+    "p90": 1519,
+    "p99": 1519,
+    "sum": 2310
+   },
+   "context_chars": {
+    "max": 318,
+    "mean": 317.0,
+    "n": 2,
+    "p50": 318,
+    "p90": 318,
+    "p99": 318,
+    "sum": 634
+   },
+   "doc20k": {
+    "max": 789,
+    "mean": 789.0,
+    "n": 2,
+    "p50": 789,
+    "p90": 789,
+    "p99": 789,
+    "sum": 1578
+   },
+   "doc8k": {
+    "max": 789,
+    "mean": 789.0,
+    "n": 2,
+    "p50": 789,
+    "p90": 789,
+    "p99": 789,
+    "sum": 1578
+   },
+   "grain_head": {
+    "max": 1,
+    "mean": 0.5,
+    "n": 2,
+    "p50": 1,
+    "p90": 1,
+    "p99": 1,
+    "sum": 1
+   },
+   "hyp_holders": {
+    "max": 3,
+    "mean": 1.5,
+    "n": 2,
+    "p50": 3,
+    "p90": 3,
+    "p99": 3,
+    "sum": 3
+   },
+   "n": 2,
+   "surname_cands": {
+    "max": 2,
+    "mean": 2.0,
+    "n": 2,
+    "p50": 2,
+    "p90": 2,
+    "p99": 2,
+    "sum": 4
+   }
+  }
+ },
+ "generated_by": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/measure-claude-jobs/se_pocom_cases.py",
+ "harness": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/geo-fix/after-docs.jsonl",
+ "identity_pilot": {
+  "A": {
+   "candidates": {
+    "max": 5,
+    "mean": 2.3,
+    "n": 100,
+    "p50": 2,
+    "p90": 4,
+    "p99": 5,
+    "sum": 234
+   },
+   "doc_chars": {
+    "max": 34538,
+    "mean": 4525.5,
+    "n": 100,
+    "p50": 2209,
+    "p90": 12035,
+    "p99": 34538,
+    "sum": 452548
+   },
+   "doc_chars_capped_20000": 422441,
+   "doc_chars_capped_8000": 316877,
+   "matched_rows": 100,
+   "payload_chars": {
+    "max": 1419,
+    "mean": 662.6,
+    "n": 100,
+    "p50": 588,
+    "p90": 1118,
+    "p99": 1419,
+    "sum": 66256
+   },
+   "payload_chars_all_appts": {
+    "max": 1955,
+    "mean": 818.0,
+    "n": 100,
+    "p50": 727,
+    "p90": 1645,
+    "p99": 1955,
+    "sum": 81801
+   },
+   "rows": [
+    {
+     "candidates": 4,
+     "doc_chars": 3179,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 676,
+     "payload_chars_all_appts": 910,
+     "row": "frus1867p2/d2/to/Morris"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 4467,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 366,
+     "payload_chars_all_appts": 410,
+     "row": "frus1867p2/d4/from/Morris"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1153,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 419,
+     "payload_chars_all_appts": 419,
+     "row": "frus1867p2/d40/to/Valkenburgh"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 720,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 493,
+     "payload_chars_all_appts": 534,
+     "row": "frus1867p2/d66/from/Hale"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 2309,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 588,
+     "payload_chars_all_appts": 778,
+     "row": "frus1867p2/d69/to/Seward"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 2499,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 241,
+     "payload_chars_all_appts": 241,
+     "row": "frus1867p2/d87/from/Perry"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 34538,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 383,
+     "payload_chars_all_appts": 383,
+     "row": "frus1867p2/d126/from/Asboth"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1505,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 671,
+     "payload_chars_all_appts": 861,
+     "row": "frus1867p2/d131/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1001,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 572,
+     "payload_chars_all_appts": 762,
+     "row": "frus1867p2/d145/to/Seward"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2767,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 686,
+     "payload_chars_all_appts": 876,
+     "row": "frus1867p2/d180/from/Bustamente"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 8479,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 665,
+     "payload_chars_all_appts": 855,
+     "row": "frus1867p2/d207/to/Seys"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 2306,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 562,
+     "payload_chars_all_appts": 752,
+     "row": "frus1867p2/d208/to/Seward"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1821,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 410,
+     "payload_chars_all_appts": 410,
+     "row": "frus1867p2/d219/from/Schieffelin"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 6769,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 453,
+     "payload_chars_all_appts": 494,
+     "row": "frus1867p2/d252/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 7809,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 693,
+     "payload_chars_all_appts": 693,
+     "row": "frus1867p2/d267/from/Campbell"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 7809,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 731,
+     "payload_chars_all_appts": 921,
+     "row": "frus1867p2/d267/to/Tejada"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2097,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 415,
+     "payload_chars_all_appts": 415,
+     "row": "frus1867p2/d270/from/Otterbourg"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 6855,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 450,
+     "payload_chars_all_appts": 491,
+     "row": "frus1867p2/d271/to/Seward"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 553,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 474,
+     "payload_chars_all_appts": 474,
+     "row": "frus1867p2/d314/to/Otterbourg"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 3386,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 607,
+     "payload_chars_all_appts": 797,
+     "row": "frus1867p2/d326/from/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 22079,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 639,
+     "payload_chars_all_appts": 829,
+     "row": "frus1867p2/d359/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 19463,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 639,
+     "payload_chars_all_appts": 829,
+     "row": "frus1867p2/d363/to/Seward"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 22444,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 276,
+     "payload_chars_all_appts": 276,
+     "row": "frus1867p2/d488/from/Barreda"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3850,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 355,
+     "payload_chars_all_appts": 355,
+     "row": "frus1867p2/d500/from/Wilson"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 19907,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 575,
+     "payload_chars_all_appts": 765,
+     "row": "frus1867p2/d501/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 8255,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 578,
+     "payload_chars_all_appts": 727,
+     "row": "frus1872p1/d30/to/Fish"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 4635,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 578,
+     "payload_chars_all_appts": 727,
+     "row": "frus1872p1/d38/to/Hale"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3107,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 468,
+     "payload_chars_all_appts": 618,
+     "row": "frus1872p1/d70/from/Shannon"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1266,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 656,
+     "payload_chars_all_appts": 916,
+     "row": "frus1872p1/d89/from/Hunter"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2700,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 386,
+     "payload_chars_all_appts": 386,
+     "row": "frus1872p1/d115/from/Wing"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 917,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 468,
+     "payload_chars_all_appts": 617,
+     "row": "frus1872p1/d117/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 8795,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 425,
+     "payload_chars_all_appts": 425,
+     "row": "frus1872p1/d220/from/Bassett"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 5913,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 373,
+     "payload_chars_all_appts": 411,
+     "row": "frus1872p1/d245/to/Marsh"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1499,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 327,
+     "payload_chars_all_appts": 327,
+     "row": "frus1872p1/d248/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 26894,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 408,
+     "payload_chars_all_appts": 408,
+     "row": "frus1872p1/d258/from/Turner"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 12519,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 782,
+     "payload_chars_all_appts": 1110,
+     "row": "frus1872p1/d261/from/Macmanus"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 24152,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 412,
+     "payload_chars_all_appts": 480,
+     "row": "frus1872p1/d272/from/Nelson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1579,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 727,
+     "payload_chars_all_appts": 944,
+     "row": "frus1872p1/d304/to/Nelson"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 10007,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 591,
+     "payload_chars_all_appts": 740,
+     "row": "frus1872p1/d308/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 412,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 425,
+     "payload_chars_all_appts": 493,
+     "row": "frus1872p1/d318/to/Nelson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 4699,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 727,
+     "payload_chars_all_appts": 944,
+     "row": "frus1872p1/d331/to/Nelson"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1729,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 592,
+     "payload_chars_all_appts": 741,
+     "row": "frus1872p1/d336/to/Fish"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 4646,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 614,
+     "payload_chars_all_appts": 763,
+     "row": "frus1872p1/d337/from/Hunter"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 4646,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 751,
+     "payload_chars_all_appts": 968,
+     "row": "frus1872p1/d337/from/Schuchardt"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1144,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 418,
+     "payload_chars_all_appts": 486,
+     "row": "frus1872p1/d350/from/Nelson"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 670,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 465,
+     "payload_chars_all_appts": 614,
+     "row": "frus1872p1/d361/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1270,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 356,
+     "payload_chars_all_appts": 395,
+     "row": "frus1872p1/d412/from/Biddle"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 2276,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 590,
+     "payload_chars_all_appts": 739,
+     "row": "frus1872p1/d421/to/Fish"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 3407,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 614,
+     "payload_chars_all_appts": 763,
+     "row": "frus1872p1/d437/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1230,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 410,
+     "payload_chars_all_appts": 410,
+     "row": "frus1872p1/d502/to/File"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 311,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 415,
+     "payload_chars_all_appts": 415,
+     "row": "frus1895p1/d3/to/Gresham"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1912,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 446,
+     "payload_chars_all_appts": 446,
+     "row": "frus1895p1/d18/to/Townsend"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 5812,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1288,
+     "payload_chars_all_appts": 1824,
+     "row": "frus1895p1/d46/from/Grant"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 2545,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1267,
+     "payload_chars_all_appts": 1803,
+     "row": "frus1895p1/d49/from/Carvalho"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 534,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1125,
+     "payload_chars_all_appts": 1661,
+     "row": "frus1895p1/d50/to/Olney"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3569,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 412,
+     "payload_chars_all_appts": 412,
+     "row": "frus1895p1/d61/from/Thompson"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 988,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 454,
+     "payload_chars_all_appts": 454,
+     "row": "frus1895p1/d64/from/Mendon\u00e7a"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1156,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1012,
+     "payload_chars_all_appts": 1548,
+     "row": "frus1895p1/d70/to/Uhl"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 12669,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1087,
+     "payload_chars_all_appts": 1623,
+     "row": "frus1895p1/d107/to/Olney"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 361,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1109,
+     "payload_chars_all_appts": 1645,
+     "row": "frus1895p1/d152/from/Olney"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 4421,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 388,
+     "payload_chars_all_appts": 388,
+     "row": "frus1895p1/d164/from/Denby"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 317,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 601,
+     "payload_chars_all_appts": 601,
+     "row": "frus1895p1/d252/from/Eustis"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 2796,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1389,
+     "payload_chars_all_appts": 1925,
+     "row": "frus1895p1/d332/to/Olney"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 2182,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1419,
+     "payload_chars_all_appts": 1955,
+     "row": "frus1895p1/d341/to/Eustis"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 9342,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 419,
+     "payload_chars_all_appts": 419,
+     "row": "frus1895p1/d357/from/Wetter"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 12035,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1244,
+     "payload_chars_all_appts": 1780,
+     "row": "frus1895p1/d359/to/Bray"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 518,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 585,
+     "payload_chars_all_appts": 585,
+     "row": "frus1895p1/d427/to/Runyon"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 711,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 502,
+     "payload_chars_all_appts": 502,
+     "row": "frus1895p1/d448/to/Jackson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2616,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1118,
+     "payload_chars_all_appts": 1654,
+     "row": "frus1895p1/d490/to/Gresham"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1030,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 555,
+     "payload_chars_all_appts": 586,
+     "row": "frus1895p1/d555/to/Pauncefote"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 6060,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 526,
+     "payload_chars_all_appts": 557,
+     "row": "frus1895p1/d584/to/Gough"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2171,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 528,
+     "payload_chars_all_appts": 559,
+     "row": "frus1895p1/d588/to/Gough"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 898,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1225,
+     "payload_chars_all_appts": 1761,
+     "row": "frus1895p1/d619/from/Olney"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 771,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 332,
+     "payload_chars_all_appts": 332,
+     "row": "frus1895p1/d666/from/Pauncefote"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1427,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 493,
+     "payload_chars_all_appts": 524,
+     "row": "frus1895p1/d669/to/Pauncefote"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1303,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 385,
+     "payload_chars_all_appts": 499,
+     "row": "frus1904/d15/to/Hay"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 1303,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": false,
+     "payload_chars": 313,
+     "payload_chars_all_appts": 313,
+     "row": "frus1904/d15/from/Branco"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 409,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 966,
+     "payload_chars_all_appts": 1210,
+     "row": "frus1904/d67/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 203,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 938,
+     "payload_chars_all_appts": 1182,
+     "row": "frus1904/d130/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 489,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1041,
+     "payload_chars_all_appts": 1285,
+     "row": "frus1904/d181/from/Loomis"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 162,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 960,
+     "payload_chars_all_appts": 1204,
+     "row": "frus1904/d189/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2267,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 926,
+     "payload_chars_all_appts": 1170,
+     "row": "frus1904/d210/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 8588,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1017,
+     "payload_chars_all_appts": 1261,
+     "row": "frus1904/d234/to/Hay"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 11505,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1356,
+     "payload_chars_all_appts": 1808,
+     "row": "frus1904/d239/to/Dawson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2209,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 980,
+     "payload_chars_all_appts": 1224,
+     "row": "frus1904/d256/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 474,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1014,
+     "payload_chars_all_appts": 1258,
+     "row": "frus1904/d277/from/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3849,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 440,
+     "payload_chars_all_appts": 440,
+     "row": "frus1904/d367/from/Powell"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 787,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 524,
+     "payload_chars_all_appts": 524,
+     "row": "frus1904/d378/to/Meyer"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1664,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1009,
+     "payload_chars_all_appts": 1253,
+     "row": "frus1904/d401/from/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3326,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 636,
+     "payload_chars_all_appts": 636,
+     "row": "frus1904/d441/from/Griscom"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 670,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 325,
+     "payload_chars_all_appts": 325,
+     "row": "frus1904/d567/from/Obald\u00eda"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 164,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1180,
+     "payload_chars_all_appts": 1479,
+     "row": "frus1904/d579/to/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1537,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 476,
+     "payload_chars_all_appts": 476,
+     "row": "frus1904/d645/from/Neill"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 294,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 618,
+     "payload_chars_all_appts": 618,
+     "row": "frus1904/d691/from/McCormick"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1353,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 617,
+     "payload_chars_all_appts": 617,
+     "row": "frus1904/d721/from/McCormick"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 566,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1067,
+     "payload_chars_all_appts": 1311,
+     "row": "frus1904/d748/from/Adee"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 185,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1040,
+     "payload_chars_all_appts": 1384,
+     "row": "frus1904/d824/from/Jackson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 758,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1083,
+     "payload_chars_all_appts": 1327,
+     "row": "frus1904/d860/to/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 443,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 681,
+     "payload_chars_all_appts": 811,
+     "row": "frus1904/d871/to/Leishman"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2756,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 545,
+     "payload_chars_all_appts": 545,
+     "row": "frus1904/d920/from/Finch"
+    }
+   ],
+   "with_harness": 100,
+   "with_hypothesis": 90
+  },
+  "B": {
+   "candidates": {
+    "max": 5,
+    "mean": 2.5,
+    "n": 100,
+    "p50": 3,
+    "p90": 4,
+    "p99": 5,
+    "sum": 253
+   },
+   "doc_chars": {
+    "max": 34538,
+    "mean": 4525.5,
+    "n": 100,
+    "p50": 2209,
+    "p90": 12035,
+    "p99": 34538,
+    "sum": 452548
+   },
+   "doc_chars_capped_20000": 422441,
+   "doc_chars_capped_8000": 316877,
+   "matched_rows": 100,
+   "payload_chars": {
+    "max": 1419,
+    "mean": 697.3,
+    "n": 100,
+    "p50": 607,
+    "p90": 1125,
+    "p99": 1419,
+    "sum": 69734
+   },
+   "payload_chars_all_appts": {
+    "max": 1955,
+    "mean": 868.2,
+    "n": 100,
+    "p50": 763,
+    "p90": 1654,
+    "p99": 1955,
+    "sum": 86823
+   },
+   "rows": [
+    {
+     "candidates": 4,
+     "doc_chars": 3179,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 676,
+     "payload_chars_all_appts": 910,
+     "row": "frus1867p2/d2/to/Morris"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 4467,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 366,
+     "payload_chars_all_appts": 410,
+     "row": "frus1867p2/d4/from/Morris"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1153,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 419,
+     "payload_chars_all_appts": 419,
+     "row": "frus1867p2/d40/to/Valkenburgh"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 720,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 494,
+     "payload_chars_all_appts": 535,
+     "row": "frus1867p2/d66/from/Hale"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 2309,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 589,
+     "payload_chars_all_appts": 779,
+     "row": "frus1867p2/d69/to/Seward"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 2499,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 241,
+     "payload_chars_all_appts": 241,
+     "row": "frus1867p2/d87/from/Perry"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 34538,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 420,
+     "payload_chars_all_appts": 420,
+     "row": "frus1867p2/d126/from/Asboth"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1505,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 805,
+     "payload_chars_all_appts": 995,
+     "row": "frus1867p2/d131/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1001,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 572,
+     "payload_chars_all_appts": 762,
+     "row": "frus1867p2/d145/to/Seward"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2767,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 686,
+     "payload_chars_all_appts": 876,
+     "row": "frus1867p2/d180/from/Bustamente"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 8479,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 665,
+     "payload_chars_all_appts": 855,
+     "row": "frus1867p2/d207/to/Seys"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 2306,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 562,
+     "payload_chars_all_appts": 752,
+     "row": "frus1867p2/d208/to/Seward"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1821,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 410,
+     "payload_chars_all_appts": 410,
+     "row": "frus1867p2/d219/from/Schieffelin"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 6769,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 592,
+     "payload_chars_all_appts": 782,
+     "row": "frus1867p2/d252/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 7809,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 693,
+     "payload_chars_all_appts": 693,
+     "row": "frus1867p2/d267/from/Campbell"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 7809,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 731,
+     "payload_chars_all_appts": 921,
+     "row": "frus1867p2/d267/to/Tejada"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2097,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 444,
+     "payload_chars_all_appts": 444,
+     "row": "frus1867p2/d270/from/Otterbourg"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 6855,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 581,
+     "payload_chars_all_appts": 771,
+     "row": "frus1867p2/d271/to/Seward"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 553,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 474,
+     "payload_chars_all_appts": 474,
+     "row": "frus1867p2/d314/to/Otterbourg"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 3386,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 607,
+     "payload_chars_all_appts": 797,
+     "row": "frus1867p2/d326/from/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 22079,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 639,
+     "payload_chars_all_appts": 829,
+     "row": "frus1867p2/d359/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 19463,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 639,
+     "payload_chars_all_appts": 829,
+     "row": "frus1867p2/d363/to/Seward"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 22444,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 276,
+     "payload_chars_all_appts": 276,
+     "row": "frus1867p2/d488/from/Barreda"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3850,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 355,
+     "payload_chars_all_appts": 355,
+     "row": "frus1867p2/d500/from/Wilson"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 19907,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 575,
+     "payload_chars_all_appts": 765,
+     "row": "frus1867p2/d501/to/Seward"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 8255,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 578,
+     "payload_chars_all_appts": 727,
+     "row": "frus1872p1/d30/to/Fish"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 4635,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 578,
+     "payload_chars_all_appts": 727,
+     "row": "frus1872p1/d38/to/Hale"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3107,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 468,
+     "payload_chars_all_appts": 618,
+     "row": "frus1872p1/d70/from/Shannon"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1266,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 656,
+     "payload_chars_all_appts": 916,
+     "row": "frus1872p1/d89/from/Hunter"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2700,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 386,
+     "payload_chars_all_appts": 386,
+     "row": "frus1872p1/d115/from/Wing"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 917,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 468,
+     "payload_chars_all_appts": 617,
+     "row": "frus1872p1/d117/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 8795,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 425,
+     "payload_chars_all_appts": 425,
+     "row": "frus1872p1/d220/from/Bassett"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 5913,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 718,
+     "payload_chars_all_appts": 905,
+     "row": "frus1872p1/d245/to/Marsh"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1499,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 725,
+     "payload_chars_all_appts": 912,
+     "row": "frus1872p1/d248/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 26894,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 408,
+     "payload_chars_all_appts": 408,
+     "row": "frus1872p1/d258/from/Turner"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 12519,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 782,
+     "payload_chars_all_appts": 1110,
+     "row": "frus1872p1/d261/from/Macmanus"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 24152,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 412,
+     "payload_chars_all_appts": 480,
+     "row": "frus1872p1/d272/from/Nelson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1579,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 727,
+     "payload_chars_all_appts": 944,
+     "row": "frus1872p1/d304/to/Nelson"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 10007,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 591,
+     "payload_chars_all_appts": 740,
+     "row": "frus1872p1/d308/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 412,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 425,
+     "payload_chars_all_appts": 493,
+     "row": "frus1872p1/d318/to/Nelson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 4699,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 727,
+     "payload_chars_all_appts": 944,
+     "row": "frus1872p1/d331/to/Nelson"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1729,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 592,
+     "payload_chars_all_appts": 741,
+     "row": "frus1872p1/d336/to/Fish"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 4646,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 614,
+     "payload_chars_all_appts": 763,
+     "row": "frus1872p1/d337/from/Hunter"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 4646,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 751,
+     "payload_chars_all_appts": 968,
+     "row": "frus1872p1/d337/from/Schuchardt"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1144,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 418,
+     "payload_chars_all_appts": 486,
+     "row": "frus1872p1/d350/from/Nelson"
+    },
+    {
+     "candidates": 2,
+     "doc_chars": 670,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 465,
+     "payload_chars_all_appts": 614,
+     "row": "frus1872p1/d361/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1270,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 397,
+     "payload_chars_all_appts": 436,
+     "row": "frus1872p1/d412/from/Biddle"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 2276,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 590,
+     "payload_chars_all_appts": 739,
+     "row": "frus1872p1/d421/to/Fish"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 3407,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 614,
+     "payload_chars_all_appts": 763,
+     "row": "frus1872p1/d437/to/Fish"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1230,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 410,
+     "payload_chars_all_appts": 410,
+     "row": "frus1872p1/d502/to/File"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 311,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1213,
+     "payload_chars_all_appts": 1749,
+     "row": "frus1895p1/d3/to/Gresham"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1912,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 446,
+     "payload_chars_all_appts": 446,
+     "row": "frus1895p1/d18/to/Townsend"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 5812,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1288,
+     "payload_chars_all_appts": 1824,
+     "row": "frus1895p1/d46/from/Grant"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 2545,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1267,
+     "payload_chars_all_appts": 1803,
+     "row": "frus1895p1/d49/from/Carvalho"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 534,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1125,
+     "payload_chars_all_appts": 1661,
+     "row": "frus1895p1/d50/to/Olney"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3569,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 412,
+     "payload_chars_all_appts": 412,
+     "row": "frus1895p1/d61/from/Thompson"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 988,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 454,
+     "payload_chars_all_appts": 454,
+     "row": "frus1895p1/d64/from/Mendon\u00e7a"
+    },
+    {
+     "candidates": 3,
+     "doc_chars": 1156,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1012,
+     "payload_chars_all_appts": 1548,
+     "row": "frus1895p1/d70/to/Uhl"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 12669,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1087,
+     "payload_chars_all_appts": 1623,
+     "row": "frus1895p1/d107/to/Olney"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 361,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1109,
+     "payload_chars_all_appts": 1645,
+     "row": "frus1895p1/d152/from/Olney"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 4421,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 388,
+     "payload_chars_all_appts": 388,
+     "row": "frus1895p1/d164/from/Denby"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 317,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 601,
+     "payload_chars_all_appts": 601,
+     "row": "frus1895p1/d252/from/Eustis"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 2796,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1389,
+     "payload_chars_all_appts": 1925,
+     "row": "frus1895p1/d332/to/Olney"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 2182,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1419,
+     "payload_chars_all_appts": 1955,
+     "row": "frus1895p1/d341/to/Eustis"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 9342,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 421,
+     "payload_chars_all_appts": 421,
+     "row": "frus1895p1/d357/from/Wetter"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 12035,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1246,
+     "payload_chars_all_appts": 1782,
+     "row": "frus1895p1/d359/to/Bray"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 518,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 585,
+     "payload_chars_all_appts": 585,
+     "row": "frus1895p1/d427/to/Runyon"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 711,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 502,
+     "payload_chars_all_appts": 502,
+     "row": "frus1895p1/d448/to/Jackson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2616,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1118,
+     "payload_chars_all_appts": 1654,
+     "row": "frus1895p1/d490/to/Gresham"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1030,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 555,
+     "payload_chars_all_appts": 586,
+     "row": "frus1895p1/d555/to/Pauncefote"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 6060,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 526,
+     "payload_chars_all_appts": 557,
+     "row": "frus1895p1/d584/to/Gough"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2171,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 528,
+     "payload_chars_all_appts": 559,
+     "row": "frus1895p1/d588/to/Gough"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 898,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1225,
+     "payload_chars_all_appts": 1761,
+     "row": "frus1895p1/d619/from/Olney"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 771,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 332,
+     "payload_chars_all_appts": 332,
+     "row": "frus1895p1/d666/from/Pauncefote"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1427,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 493,
+     "payload_chars_all_appts": 524,
+     "row": "frus1895p1/d669/to/Pauncefote"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1303,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1032,
+     "payload_chars_all_appts": 1276,
+     "row": "frus1904/d15/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1303,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1047,
+     "payload_chars_all_appts": 1291,
+     "row": "frus1904/d15/from/Branco"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 409,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 966,
+     "payload_chars_all_appts": 1210,
+     "row": "frus1904/d67/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 203,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 938,
+     "payload_chars_all_appts": 1182,
+     "row": "frus1904/d130/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 489,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1041,
+     "payload_chars_all_appts": 1285,
+     "row": "frus1904/d181/from/Loomis"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 162,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 960,
+     "payload_chars_all_appts": 1204,
+     "row": "frus1904/d189/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2267,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 926,
+     "payload_chars_all_appts": 1170,
+     "row": "frus1904/d210/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 8588,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1017,
+     "payload_chars_all_appts": 1261,
+     "row": "frus1904/d234/to/Hay"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 11505,
+     "grain": "enclosure",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1356,
+     "payload_chars_all_appts": 1808,
+     "row": "frus1904/d239/to/Dawson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 2209,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 980,
+     "payload_chars_all_appts": 1224,
+     "row": "frus1904/d256/to/Hay"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 474,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1014,
+     "payload_chars_all_appts": 1258,
+     "row": "frus1904/d277/from/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3849,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 440,
+     "payload_chars_all_appts": 440,
+     "row": "frus1904/d367/from/Powell"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 787,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 524,
+     "payload_chars_all_appts": 524,
+     "row": "frus1904/d378/to/Meyer"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 1664,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1009,
+     "payload_chars_all_appts": 1253,
+     "row": "frus1904/d401/from/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 3326,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 636,
+     "payload_chars_all_appts": 636,
+     "row": "frus1904/d441/from/Griscom"
+    },
+    {
+     "candidates": 0,
+     "doc_chars": 670,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 325,
+     "payload_chars_all_appts": 325,
+     "row": "frus1904/d567/from/Obald\u00eda"
+    },
+    {
+     "candidates": 5,
+     "doc_chars": 164,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1180,
+     "payload_chars_all_appts": 1479,
+     "row": "frus1904/d579/to/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1537,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 476,
+     "payload_chars_all_appts": 476,
+     "row": "frus1904/d645/from/Neill"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 294,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 618,
+     "payload_chars_all_appts": 618,
+     "row": "frus1904/d691/from/McCormick"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 1353,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 617,
+     "payload_chars_all_appts": 617,
+     "row": "frus1904/d721/from/McCormick"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 566,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1067,
+     "payload_chars_all_appts": 1311,
+     "row": "frus1904/d748/from/Adee"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 185,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1040,
+     "payload_chars_all_appts": 1384,
+     "row": "frus1904/d824/from/Jackson"
+    },
+    {
+     "candidates": 4,
+     "doc_chars": 758,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 1083,
+     "payload_chars_all_appts": 1327,
+     "row": "frus1904/d860/to/Hay"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 443,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 720,
+     "payload_chars_all_appts": 850,
+     "row": "frus1904/d871/to/Leishman"
+    },
+    {
+     "candidates": 1,
+     "doc_chars": 2756,
+     "grain": "head",
+     "harness": true,
+     "has_hypothesis": true,
+     "payload_chars": 545,
+     "payload_chars_all_appts": 545,
+     "row": "frus1904/d920/from/Finch"
+    }
+   ],
+   "with_harness": 100,
+   "with_hypothesis": 100
+  }
+ },
+ "identity_pilot_rows_requested": 100,
+ "label": "post1292",
+ "positive_control_vs_summary_json": {
+  "A|1861-1899": {
+   "match": false,
+   "measured": {
+    "one_contradicted": 2062,
+    "pocom_several": 11995,
+    "rows": 84234,
+    "rows_with_hypothesis": 73492,
+    "several_to_one": 10723,
+    "several_to_one_by_secretary_over_same_surname_assistant": 8642
+   },
+   "summary_json": {
+    "one_contradicted": 1921,
+    "rows": 84234,
+    "rows_with_hypothesis": 67025,
+    "several_to_one": 8787,
+    "several_to_one_by_secretary_over_same_surname_assistant": 6805
+   }
+  },
+  "A|1900-1905": {
+   "match": true,
+   "measured": {
+    "one_contradicted": 460,
+    "pocom_several": 12,
+    "rows": 13160,
+    "rows_with_hypothesis": 11389,
+    "several_to_one": 7,
+    "several_to_one_by_secretary_over_same_surname_assistant": 0
+   },
+   "summary_json": {
+    "one_contradicted": 460,
+    "rows": 13160,
+    "rows_with_hypothesis": 11389,
+    "several_to_one": 7,
+    "several_to_one_by_secretary_over_same_surname_assistant": 0
+   }
+  },
+  "B|1861-1899": {
+   "match": false,
+   "measured": {
+    "one_contradicted": 2460,
+    "pocom_several": 11995,
+    "rows": 84234,
+    "rows_with_hypothesis": 82688,
+    "several_to_one": 11516,
+    "several_to_one_by_secretary_over_same_surname_assistant": 9263
+   },
+   "summary_json": {
+    "one_contradicted": 2415,
+    "rows": 84234,
+    "rows_with_hypothesis": 80515,
+    "several_to_one": 10973,
+    "several_to_one_by_secretary_over_same_surname_assistant": 8733
+   }
+  },
+  "B|1900-1905": {
+   "match": true,
+   "measured": {
+    "one_contradicted": 509,
+    "pocom_several": 12,
+    "rows": 13160,
+    "rows_with_hypothesis": 12937,
+    "several_to_one": 10,
+    "several_to_one_by_secretary_over_same_surname_assistant": 0
+   },
+   "summary_json": {
+    "one_contradicted": 509,
+    "rows": 13160,
+    "rows_with_hypothesis": 12937,
+    "several_to_one": 10,
+    "several_to_one_by_secretary_over_same_surname_assistant": 0
+   }
+  }
+ },
+ "seward_assumption_surnames": {
+  "A|1861-1899|other:Blaine": 243,
+  "A|1861-1899|surname=Seward": 8399,
+  "A|1861-1899|surname=other": 243,
+  "B|1861-1899|other:Blaine": 260,
+  "B|1861-1899|other:Webster": 5,
+  "B|1861-1899|surname=Seward": 8998,
+  "B|1861-1899|surname=other": 265
+ }
+}

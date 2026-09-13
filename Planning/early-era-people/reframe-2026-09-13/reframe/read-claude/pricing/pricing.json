@@ -1,0 +1,485 @@
+{
+ "method": "INFERRED prices for the reframed Claude roles, at the UNIT PRICES AND MECHANICS OF llm-pass/cost-scale/cost_model.py\n(copied, not imported: importing it would rewrite that directory's costs.json). cost_model.py labels its $/MTok\n\"DOCUMENTED\" but records NO pricing date and NO source URL; the file is dated 2026-09-13 07:31 on disk.\nCopied constants: PRICE $/MTok in/out haiku-4.5 1/5, sonnet-5 2/10, opus-5 5/25; batch x0.5; cache read x0.1 input,\ncache write x1.25 input, one refresh write per 1,000 requests; minimum cacheable prefix haiku 4096 / sonnet 1024 /\nopus 512; cached instruction prefix 1,100 / 3,000 / 6,000 tokens; cache-hit share 1.0 / 0.9 / 0.5; tokenizer\nmultiplier vs Qwen3's 4.6442 chars/token (MEASURED fit) haiku 1.00/1.12/1.25, sonnet 1.30/1.46/1.63, opus 1.00/1.31/1.69;\nthinking tokens = a*visible_output + b*requests, B (decision) low (0.1,50) high (1.0,500), C (identity/synthesis)\nlow (0.3,100) high (2.0,1500); +30 tokens per request. Scenario index 0 low / 1 central / 2 high.\nEvery row volume below is MEASURED (file named in `basis`) unless marked INFERRED.",
+ "r3_rows": 14495,
+ "r4_rows": 22688,
+ "synthesis_input_chars": 25220496,
+ "jobs": [
+  {
+   "role": "R2a verify DISAGREEMENT set only (unmarked FS-only U FC-only), +/-200-char merged windows",
+   "basis": "disagreement/disagreement.json corpus.all.disagreement; accept share 0.22 = 96 of 445 gold-doc disagreement spans a perfect verifier keeps (POST-HOC)",
+   "shape": "B",
+   "requests": [
+    6742,
+    13694,
+    179387
+   ],
+   "input_chars": [
+    269659492,
+    273872928,
+    342951017
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 52.8,
+     "batch_cached_central_low_effort": 79.6,
+     "batch_cached_central_high_effort": 122.5,
+     "batch_cached_high_scen_high_effort": 649.8,
+     "standard_uncached_central_low_effort": 159.2,
+     "central_tokens_M_in_out_think_low": [
+      107.54,
+      10.33,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 122.1,
+     "batch_cached_central_low_effort": 154.6,
+     "batch_cached_central_high_effort": 231.9,
+     "batch_cached_high_scen_high_effort": 1327.7,
+     "standard_uncached_central_low_effort": 375.6,
+     "central_tokens_M_in_out_think_low": [
+      127.59,
+      10.33,
+      1.72
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 261.6,
+     "batch_cached_central_low_effort": 364.3,
+     "batch_cached_central_high_effort": 557.5,
+     "batch_cached_high_scen_high_effort": 3330.3,
+     "standard_uncached_central_low_effort": 894.8,
+     "central_tokens_M_in_out_think_low": [
+      118.74,
+      10.33,
+      1.72
+     ]
+    }
+   }
+  },
+  {
+   "role": "R2b verify AGREEMENT arm only (unmarked FS spans overlapping FC) - the precision role",
+   "basis": "disagreement/disagreement.json corpus.all.agree_S; accept share INFERRED from b2 presence P 0.898",
+   "shape": "B",
+   "requests": [
+    4279,
+    8672,
+    157357
+   ],
+   "input_chars": [
+    171142873,
+    173423389,
+    253954709
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 36.7,
+     "batch_cached_central_low_effort": 54.0,
+     "batch_cached_central_high_effort": 84.8,
+     "batch_cached_high_scen_high_effort": 556.9,
+     "standard_uncached_central_low_effort": 108.0,
+     "central_tokens_M_in_out_think_low": [
+      68.1,
+      7.99,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 84.6,
+     "batch_cached_central_low_effort": 105.9,
+     "batch_cached_central_high_effort": 161.3,
+     "batch_cached_high_scen_high_effort": 1134.6,
+     "standard_uncached_central_low_effort": 253.8,
+     "central_tokens_M_in_out_think_low": [
+      80.8,
+      7.99,
+      1.23
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 183.8,
+     "batch_cached_central_low_effort": 250.6,
+     "batch_cached_central_high_effort": 389.3,
+     "batch_cached_high_scen_high_effort": 2844.7,
+     "standard_uncached_central_low_effort": 606.5,
+     "central_tokens_M_in_out_think_low": [
+      75.19,
+      7.99,
+      1.23
+     ]
+    }
+   }
+  },
+  {
+   "role": "R2c recall-first review queue = whole unmarked pool (FC U FS), windows",
+   "basis": "disagreement/disagreement.json corpus.all.pool; accept INFERRED from union presence P 0.491",
+   "shape": "B",
+   "requests": [
+    8800,
+    17930,
+    195033
+   ],
+   "input_chars": [
+    351963579,
+    358580535,
+    476403920
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 75.9,
+     "batch_cached_central_low_effort": 113.5,
+     "batch_cached_central_high_effort": 179.1,
+     "batch_cached_high_scen_high_effort": 775.5,
+     "standard_uncached_central_low_effort": 227.1,
+     "central_tokens_M_in_out_think_low": [
+      140.8,
+      17.25,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 174.6,
+     "batch_cached_central_low_effort": 222.9,
+     "batch_cached_central_high_effort": 340.9,
+     "batch_cached_high_scen_high_effort": 1589.9,
+     "standard_uncached_central_low_effort": 532.8,
+     "central_tokens_M_in_out_think_low": [
+      167.06,
+      17.25,
+      2.62
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 379.6,
+     "batch_cached_central_low_effort": 528.3,
+     "batch_cached_central_high_effort": 823.3,
+     "batch_cached_high_scen_high_effort": 3990.1,
+     "standard_uncached_central_low_effort": 1274.2,
+     "central_tokens_M_in_out_think_low": [
+      155.47,
+      17.25,
+      2.62
+     ]
+    }
+   }
+  },
+  {
+   "role": "R3 adjudicate SE x POCOM: contradicted + location-narrowed + Seward-convention rows",
+   "basis": "chapter-rule-after/summary.json arm B (post-#1292): 14495 rows; per-row chars INFERRED = head+dateline (106 mean, app view) + chapter path + 1-5 POCOM careers (p90 188 / p99 424 chars) + opening/closing text for signatures",
+   "shape": "C",
+   "requests": [
+    580,
+    1450,
+    2899
+   ],
+   "input_chars": [
+    10146500,
+    17394000,
+    36237500
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 2.3,
+     "batch_cached_central_low_effort": 5.8,
+     "batch_cached_central_high_effort": 14.2,
+     "batch_cached_high_scen_high_effort": 29.5,
+     "standard_uncached_central_low_effort": 11.6,
+     "central_tokens_M_in_out_think_low": [
+      8.59,
+      0.59,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 5.6,
+     "batch_cached_central_low_effort": 10.9,
+     "batch_cached_central_high_effort": 26.1,
+     "batch_cached_high_scen_high_effort": 62.0,
+     "standard_uncached_central_low_effort": 28.9,
+     "central_tokens_M_in_out_think_low": [
+      9.86,
+      0.59,
+      0.32
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 12.4,
+     "batch_cached_central_low_effort": 25.9,
+     "batch_cached_central_high_effort": 63.9,
+     "batch_cached_high_scen_high_effort": 156.1,
+     "standard_uncached_central_low_effort": 69.4,
+     "central_tokens_M_in_out_think_low": [
+      9.3,
+      0.59,
+      0.32
+     ]
+    }
+   }
+  },
+  {
+   "role": "R4 propose identities for unresolved marked correspondents (volume x surface rows with 0 or >1 live POCOM candidate)",
+   "basis": "llm-pass/cost-scale/pocom-payload-v2.json marked rows_0_live 21,653 + rows_several_live 1,035; per-row chars = cost_model C formula",
+   "shape": "C",
+   "requests": [
+    454,
+    908,
+    2269
+   ],
+   "input_chars": [
+    13977341.290326891,
+    16624539.76773849,
+    21036537.23009116
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 2.6,
+     "batch_cached_central_low_effort": 4.8,
+     "batch_cached_central_high_effort": 11.1,
+     "batch_cached_high_scen_high_effort": 23.0,
+     "standard_uncached_central_low_effort": 9.6,
+     "central_tokens_M_in_out_think_low": [
+      6.76,
+      0.58,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 6.4,
+     "batch_cached_central_low_effort": 10.0,
+     "batch_cached_central_high_effort": 21.2,
+     "batch_cached_high_scen_high_effort": 47.6,
+     "standard_uncached_central_low_effort": 24.4,
+     "central_tokens_M_in_out_think_low": [
+      7.98,
+      0.58,
+      0.26
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 13.9,
+     "batch_cached_central_low_effort": 23.6,
+     "batch_cached_central_high_effort": 51.7,
+     "batch_cached_high_scen_high_effort": 119.8,
+     "standard_uncached_central_low_effort": 58.2,
+     "central_tokens_M_in_out_think_low": [
+      7.44,
+      0.58,
+      0.26
+     ]
+    }
+   }
+  },
+  {
+   "role": "R5 synthesis: per-chapter correspondents guide (12,087 sections)",
+   "basis": "synthesis-size/synthesis-size.json: app-view sections 12087, header+dateline chars 20920280 (+8 chars/doc id, +100 chars/section roll pointer, + marked POCOM careers 1,511,268 chars); OUTPUT INFERRED: per-chapter 150-300 tok + 60-150 tok per correspondent x (1-3)x the TEI-rule per-volume distinct from/to key sum 28280 (per-chapter distinct count NOT measured)",
+   "shape": "C",
+   "requests": [
+    12087,
+    12087,
+    12087
+   ],
+   "input_chars": [
+    25220496,
+    25220496,
+    25220496
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 18.3,
+     "batch_cached_central_low_effort": 37.2,
+     "batch_cached_central_high_effort": 114.2,
+     "batch_cached_high_scen_high_effort": 191.5,
+     "standard_uncached_central_low_effort": 74.4,
+     "central_tokens_M_in_out_think_low": [
+      42.71,
+      6.34,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 37.6,
+     "batch_cached_central_low_effort": 62.5,
+     "batch_cached_central_high_effort": 200.9,
+     "batch_cached_high_scen_high_effort": 385.1,
+     "standard_uncached_central_low_effort": 183.6,
+     "central_tokens_M_in_out_think_low": [
+      44.55,
+      6.34,
+      3.11
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 90.0,
+     "batch_cached_central_low_effort": 154.1,
+     "batch_cached_central_high_effort": 500.3,
+     "batch_cached_high_scen_high_effort": 963.6,
+     "standard_uncached_central_low_effort": 454.9,
+     "central_tokens_M_in_out_think_low": [
+      43.74,
+      6.34,
+      3.11
+     ]
+    }
+   }
+  },
+  {
+   "role": "R5' synthesis: per-volume guide (267 requests, same facts)",
+   "basis": "as R5, one request per volume",
+   "shape": "C",
+   "requests": [
+    267,
+    267,
+    267
+   ],
+   "input_chars": [
+    25220496,
+    25220496,
+    25220496
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 11.6,
+     "batch_cached_central_low_effort": 19.3,
+     "batch_cached_central_high_effort": 52.0,
+     "batch_cached_high_scen_high_effort": 127.5,
+     "standard_uncached_central_low_effort": 38.6,
+     "central_tokens_M_in_out_think_low": [
+      6.89,
+      6.34,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 30.0,
+     "batch_cached_central_low_effort": 49.4,
+     "batch_cached_central_high_effort": 105.2,
+     "batch_cached_high_scen_high_effort": 257.0,
+     "standard_uncached_central_low_effort": 100.1,
+     "central_tokens_M_in_out_think_low": [
+      8.74,
+      6.34,
+      1.93
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 71.0,
+     "batch_cached_central_low_effort": 121.5,
+     "batch_cached_central_high_effort": 260.9,
+     "batch_cached_high_scen_high_effort": 643.4,
+     "standard_uncached_central_low_effort": 246.3,
+     "central_tokens_M_in_out_think_low": [
+      7.92,
+      6.34,
+      1.93
+     ]
+    }
+   }
+  },
+  {
+   "role": "R7a draft filter rules from M2a errors.json (in-sample; x3 reps)",
+   "basis": "errors.json 738,010 bytes (MEASURED); output 20k tok/rep INFERRED",
+   "shape": "C",
+   "requests": [
+    12,
+    12,
+    12
+   ],
+   "input_chars": [
+    2214030,
+    2214030,
+    2214030
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 0.4,
+     "batch_cached_central_low_effort": 0.4,
+     "batch_cached_central_high_effort": 0.8,
+     "batch_cached_high_scen_high_effort": 0.8,
+     "standard_uncached_central_low_effort": 0.9,
+     "central_tokens_M_in_out_think_low": [
+      0.57,
+      0.06,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 1.0,
+     "batch_cached_central_low_effort": 1.1,
+     "batch_cached_central_high_effort": 1.7,
+     "batch_cached_high_scen_high_effort": 1.8,
+     "standard_uncached_central_low_effort": 2.3,
+     "central_tokens_M_in_out_think_low": [
+      0.73,
+      0.06,
+      0.02
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 2.2,
+     "batch_cached_central_low_effort": 2.6,
+     "batch_cached_central_high_effort": 4.1,
+     "batch_cached_high_scen_high_effort": 4.6,
+     "standard_uncached_central_low_effort": 5.3,
+     "central_tokens_M_in_out_think_low": [
+      0.66,
+      0.06,
+      0.02
+     ]
+    }
+   }
+  },
+  {
+   "role": "R7b classify top-20,000 sweep surfaces by frequency, no gold, no context (x3 reps)",
+   "basis": "INFERRED 25 chars/surface, 1,000 surfaces/request, 6 tok/decision",
+   "shape": "B",
+   "requests": [
+    60,
+    60,
+    60
+   ],
+   "input_chars": [
+    1500000,
+    1500000,
+    1500000
+   ],
+   "prices": {
+    "haiku-4.5": {
+     "batch_cached_low_scen_low_effort": 1.1,
+     "batch_cached_central_low_effort": 1.2,
+     "batch_cached_central_high_effort": 2.1,
+     "batch_cached_high_scen_high_effort": 2.2,
+     "standard_uncached_central_low_effort": 2.3,
+     "central_tokens_M_in_out_think_low": [
+      0.54,
+      0.36,
+      0.0
+     ]
+    },
+    "sonnet-5": {
+     "batch_cached_low_scen_low_effort": 2.4,
+     "batch_cached_central_low_effort": 2.5,
+     "batch_cached_central_high_effort": 4.3,
+     "batch_cached_high_scen_high_effort": 4.5,
+     "standard_uncached_central_low_effort": 5.3,
+     "central_tokens_M_in_out_think_low": [
+      0.65,
+      0.36,
+      0.04
+     ]
+    },
+    "opus-5": {
+     "batch_cached_low_scen_low_effort": 5.8,
+     "batch_cached_central_low_effort": 6.1,
+     "batch_cached_central_high_effort": 10.5,
+     "batch_cached_high_scen_high_effort": 11.3,
+     "standard_uncached_central_low_effort": 13.0,
+     "central_tokens_M_in_out_think_low": [
+      0.6,
+      0.36,
+      0.04
+     ]
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "S_before|head|from|the Department of State": 144,
+ "S_after|head|from|the Department of State": 193,
+ "T_after|head|from|the Department of State": 194,
+ "S_before|head|to|the Department of State": 118,
+ "S_after|head|to|the Department of State": 173,
+ "T_after|head|to|the Department of State": 200,
+ "S_before|enclosure|from|None": 2,
+ "S_after|enclosure|from|None": 2,
+ "T_after|enclosure|from|None": 2,
+ "S_before|head|from|None": 52,
+ "S_before|head|to|None": 86,
+ "S_before|enclosure|to|None": 8,
+ "S_after|enclosure|to|None": 8,
+ "T_after|enclosure|to|None": 8,
+ "S_after|head|from|None": 3,
+ "T_after|head|from|None": 2,
+ "S_after|head|to|None": 31,
+ "T_after|head|to|None": 4,
+ "S_before|head|from|the U.S. mission in Spain": 1,
+ "S_after|head|from|the U.S. mission in Spain": 1,
+ "T_after|head|from|the U.S. mission in Spain": 1
+}

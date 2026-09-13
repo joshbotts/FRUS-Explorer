@@ -1,0 +1,11 @@
+pass1 3.1 s
+pass2 23.5 s
+{
+ "scope|persName": 247316,
+ "scope|fromto_in_doc": 235751,
+ "list|persName": 2055721,
+ "list|linked": 1844810,
+ "list|fromto_in_doc": 63624,
+ "scope|linked": 10616
+}
+python3 scan_links.py  21.87s user 1.02s system 97% cpu 23.564 total

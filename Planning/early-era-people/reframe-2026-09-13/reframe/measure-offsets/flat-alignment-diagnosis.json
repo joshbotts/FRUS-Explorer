@@ -1,0 +1,1506 @@
+{
+ "failing_docs": 46,
+ "by_band": {
+  "1861-1899": 2,
+  "1900-1929": 11,
+  "1930-1945": 15,
+  "1946-": 18
+ },
+ "docs": [
+  {
+   "volume": "frus1894app2",
+   "d": "d192",
+   "band": "1861-1899",
+   "footnotes": 0,
+   "footnotes_located": 0,
+   "ops": 5,
+   "r0_extra_chars": 15,
+   "flat_extra_chars": 0,
+   "rem_len": 40099,
+   "flat_len": 40084,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "byproclaimasfollows:(1)TheHa",
+     "byproclaimasfollows:TheHa"
+    ],
+    [
+     "delete",
+     "ntisherebyabrogated.(2)AProv",
+     "ntisherebyabrogated.AProv"
+    ],
+    [
+     "delete",
+     "tiatedandagreedupon.(3)SuchP",
+     "tiatedandagreedupon.SuchP"
+    ],
+    [
+     "delete",
+     "choranyothervacancy.(4)Allof",
+     "choranyothervacancy.Allof"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1885",
+   "d": "d661",
+   "band": "1861-1899",
+   "footnotes": 0,
+   "footnotes_located": 0,
+   "ops": 3,
+   "r0_extra_chars": 9,
+   "flat_extra_chars": 0,
+   "rem_len": 12445,
+   "flat_len": 12436,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "tousasinformeryears.(1)Thefi",
+     "tousasinformeryears.Thefi"
+    ],
+    [
+     "delete",
+     "borsinthisdirection.(2)Anoth",
+     "borsinthisdirection.Anoth"
+    ],
+    [
+     "delete",
+     "notgiventoAmericans.(3)Thegr",
+     "notgiventoAmericans.Thegr"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1914-20v02",
+   "d": "d195",
+   "band": "1900-1929",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 2,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 2896,
+   "flat_len": 2890,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ollowingsuggestions:(1)Thecr",
+     "ollowingsuggestions:Thecr"
+    ],
+    [
+     "delete",
+     "tforanappropriation.(2)Anann",
+     "tforanappropriation.Anann"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1926v02",
+   "d": "d242",
+   "band": "1900-1929",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 9,
+   "r0_extra_chars": 18,
+   "flat_extra_chars": 0,
+   "rem_len": 3175,
+   "flat_len": 3157,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "aimsAgreementof1925:1.Artic",
+     "aimsAgreementof1925:Artic"
+    ],
+    [
+     "delete",
+     "tocolofOctober3,1919.2.Arti",
+     "tocolofOctober3,1919.Arti"
+    ],
+    [
+     "delete",
+     "apreferentialstatus.3.Artic",
+     "apreferentialstatus.Artic"
+    ],
+    [
+     "delete",
+     "fnotesbelowmentioned.4.Arti",
+     "fnotesbelowmentioned.Arti"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1901",
+   "d": "d115",
+   "band": "1900-1929",
+   "footnotes": 0,
+   "footnotes_located": 0,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 1068,
+   "flat_len": 1064,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "efollowingquestions:1.Didth",
+     "efollowingquestions:Didth"
+    ],
+    [
+     "delete",
+     "cutive;andifso,when?2.Didth",
+     "cutive;andifso,when?Didth"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1928v03",
+   "d": "d600",
+   "band": "1900-1929",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 2,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 1191,
+   "flat_len": 1185,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "tatesandPersia,that:(1)Persi",
+     "tatesandPersia,that:Persi"
+    ],
+    [
+     "delete",
+     "lbecomeoperative;and(2)Persi",
+     "lbecomeoperative;andPersi"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1907p1",
+   "d": "d257",
+   "band": "1900-1929",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 27,
+   "r0_extra_chars": 94,
+   "flat_extra_chars": 0,
+   "rem_len": 8625,
+   "flat_len": 8531,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     ",1906.DecreeNo.158.]I.Tofac",
+     ",1906.DecreeNo.158.]Tofac"
+    ],
+    [
+     "delete",
+     "provisionalgovernor.II.Allcl",
+     "provisionalgovernor.Allcl"
+    ],
+    [
+     "delete",
+     "retobythatdepartment.III.Thef",
+     "retobythatdepartment.Thef"
+    ],
+    [
+     "delete",
+     "tmentofjusticeishad.IV.Theco",
+     "tmentofjusticeishad.Theco"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1920v03",
+   "d": "d438",
+   "band": "1900-1929",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 9,
+   "r0_extra_chars": 28,
+   "flat_extra_chars": 0,
+   "rem_len": 3375,
+   "flat_len": 3347,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "atektoldmelastnight:(1st)Thath",
+     "atektoldmelastnight:Thath"
+    ],
+    [
+     "delete",
+     "peacewithBolsheviki.(2d)Thath",
+     "peacewithBolsheviki.Thath"
+    ],
+    [
+     "delete",
+     "ietGovernmentagents.(3d)Thath",
+     "ietGovernmentagents.Thath"
+    ],
+    [
+     "delete",
+     "oingpointsasfollows:1.Mostl",
+     "oingpointsasfollows:Mostl"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1925v02",
+   "d": "d270",
+   "band": "1900-1929",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 3,
+   "r0_extra_chars": 9,
+   "flat_extra_chars": 0,
+   "rem_len": 1850,
+   "flat_len": 1841,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "sentativesasfollows:(a)Machi",
+     "sentativesasfollows:Machi"
+    ],
+    [
+     "delete",
+     ",Metuchen,NewJersey.(b)Ammun",
+     ",Metuchen,NewJersey.Ammun"
+    ],
+    [
+     "delete",
+     "Schenectady,NewYork.(c)Russi",
+     "Schenectady,NewYork.Russi"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1919Parisv11",
+   "d": "d240",
+   "band": "1900-1929",
+   "footnotes": 4,
+   "footnotes_located": 4,
+   "ops": 8,
+   "r0_extra_chars": 16,
+   "flat_extra_chars": 0,
+   "rem_len": 18014,
+   "flat_len": 17998,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ubjectsIthensetdown:1.Resto",
+     "ubjectsIthensetdown:Resto"
+    ],
+    [
+     "delete",
+     "andofficialrelations.2.Rest",
+     "andofficialrelations.Rest"
+    ],
+    [
+     "delete",
+     "ssubjecttoconditions.3.Renu",
+     "ssubjecttoconditions.Renu"
+    ],
+    [
+     "delete",
+     "ightsoutsideofEurope.4.Mini",
+     "ightsoutsideofEurope.Mini"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1919Parisv11",
+   "d": "d354",
+   "band": "1900-1929",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 1078,
+   "flat_len": 1074,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "tment,pleaseforward:1.Acomp",
+     "tment,pleaseforward:Acomp"
+    ],
+    [
+     "delete",
+     "uedbyAmericanMission.2.Comp",
+     "uedbyAmericanMission.Comp"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1907p1",
+   "d": "d439",
+   "band": "1900-1929",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 2171,
+   "flat_len": 2167,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "dpeopleofthisisland.2.Ialso",
+     "dpeopleofthisisland.Ialso"
+    ],
+    [
+     "delete",
+     "sogenerouslyrendered.3.Itru",
+     "sogenerouslyrendered.Itru"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1919Parisv12",
+   "d": "d182",
+   "band": "1900-1929",
+   "footnotes": 9,
+   "footnotes_located": 9,
+   "ops": 43,
+   "r0_extra_chars": 105,
+   "flat_extra_chars": 0,
+   "rem_len": 24979,
+   "flat_len": 24874,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "igation,anddecision.1.Inacc",
+     "igation,anddecision.Inacc"
+    ],
+    [
+     "delete",
+     "alineofdemarcation:—a.Thecl",
+     "alineofdemarcation:—Thecl"
+    ],
+    [
+     "delete",
+     "featuresoftheterrain.b.Then",
+     "featuresoftheterrain.Then"
+    ],
+    [
+     "delete",
+     "aboveconsiderations.2.Thege",
+     "aboveconsiderations.Thege"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1944v05",
+   "d": "d1013",
+   "band": "1930-1945",
+   "footnotes": 4,
+   "footnotes_located": 4,
+   "ops": 38,
+   "r0_extra_chars": 79,
+   "flat_extra_chars": 0,
+   "rem_len": 10064,
+   "flat_len": 9985,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "rnmentaregivenbelow:A.Treat",
+     "rnmentaregivenbelow:Treat"
+    ],
+    [
+     "delete",
+     "tPOWsatShanghaicamps.1.POWp",
+     "tPOWsatShanghaicamps.POWp"
+    ],
+    [
+     "delete",
+     "ngexistingregulation.2.POWc",
+     "ngexistingregulation.POWc"
+    ],
+    [
+     "delete",
+     "esishandedovertothem.3.Perm",
+     "esishandedovertothem.Perm"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1940v02",
+   "d": "d70",
+   "band": "1930-1945",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 3,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 969,
+   "flat_len": 963,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "Your105,April18,5p.m.1.Bona",
+     "Your105,April18,5p.m.Bona"
+    ],
+    [
+     "delete",
+     "sofAmericancitizens.2.Perso",
+     "sofAmericancitizens.Perso"
+    ],
+    [
+     "delete",
+     "dtoprotectionorloans.3.Inth",
+     "dtoprotectionorloans.Inth"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1944v03",
+   "d": "d396",
+   "band": "1930-1945",
+   "footnotes": 4,
+   "footnotes_located": 4,
+   "ops": 3,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 5061,
+   "flat_len": 5055,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "heaboveareasfollows:1.Idono",
+     "heaboveareasfollows:Idono"
+    ],
+    [
+     "delete",
+     "tiveontheCommission.2.Withr",
+     "tiveontheCommission.Withr"
+    ],
+    [
+     "delete",
+     "siveissueofthispoint.3.With",
+     "siveissueofthispoint.With"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1941v03",
+   "d": "d876",
+   "band": "1930-1945",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 4,
+   "r0_extra_chars": 8,
+   "flat_extra_chars": 0,
+   "rem_len": 1960,
+   "flat_len": 1952,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "reignAffairs(Dejean)1.Furth",
+     "reignAffairs(Dejean)Furth"
+    ],
+    [
+     "delete",
+     "tionofApril4th,1924.2.Thede",
+     "tionofApril4th,1924.Thede"
+    ],
+    [
+     "delete",
+     "examiningmagistrates.3.TheF",
+     "examiningmagistrates.TheF"
+    ],
+    [
+     "delete",
+     "ngAmericannationals.4.TheFr",
+     "ngAmericannationals.TheFr"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1941v05",
+   "d": "d464",
+   "band": "1930-1945",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 5,
+   "r0_extra_chars": 10,
+   "flat_extra_chars": 0,
+   "rem_len": 1480,
+   "flat_len": 1470,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "and474,August6,8p.m.1.Anest",
+     "and474,August6,8p.m.Anest"
+    ],
+    [
+     "delete",
+     "dwillbecabledshortly.2.Inth",
+     "dwillbecabledshortly.Inth"
+    ],
+    [
+     "delete",
+     "GovernmenttoJapanese.3.Atpr",
+     "GovernmenttoJapanese.Atpr"
+    ],
+    [
+     "delete",
+     "endeffectsoutofJapan.4.Unle",
+     "endeffectsoutofJapan.Unle"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1942v03",
+   "d": "d419",
+   "band": "1930-1945",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 1654,
+   "flat_len": 1650,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "1[6]p.m.,toKuibyshev.1.Ical",
+     "1[6]p.m.,toKuibyshev.Ical"
+    ],
+    [
+     "delete",
+     "otheirpoliticalaims.2.Molot",
+     "otheirpoliticalaims.Molot"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1945v07",
+   "d": "d1080",
+   "band": "1930-1945",
+   "footnotes": 6,
+   "footnotes_located": 6,
+   "ops": 2,
+   "r0_extra_chars": 28,
+   "flat_extra_chars": 28,
+   "rem_len": 1168,
+   "flat_len": 1168,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "insert",
+     "roupinUnitedStatesofSoong",
+     "roupinUnitedStatesofNationalResourcesCommission.Soong"
+    ],
+    [
+     "delete",
+     "tatestheyappeartoNRCNationalResourcesCommission.andto",
+     "tatestheyappeartoNRCandto"
+    ]
+   ],
+   "cause": "both_differ"
+  },
+  {
+   "volume": "frus1939v04",
+   "d": "d87",
+   "band": "1930-1945",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 4,
+   "r0_extra_chars": 8,
+   "flat_extra_chars": 0,
+   "rem_len": 2299,
+   "flat_len": 2291,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ershouldbeaccepted.”2.Icomm",
+     "ershouldbeaccepted.”Icomm"
+    ],
+    [
+     "delete",
+     "ithinmyjurisdiction.3.Rever",
+     "ithinmyjurisdiction.Rever"
+    ],
+    [
+     "delete",
+     "spectforourinterests.4.Havi",
+     "spectforourinterests.Havi"
+    ],
+    [
+     "delete",
+     "shouldberepresented.5.Briti",
+     "shouldberepresented.Briti"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1936v04",
+   "d": "d264",
+   "band": "1930-1945",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 710,
+   "flat_len": 706,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ronnumbers12vessels.2.Chauc",
+     "ronnumbers12vessels.Chauc"
+    ],
+    [
+     "delete",
+     "gtutoNankingtoreport.3.InCh",
+     "gtutoNankingtoreport.InCh"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1943v03",
+   "d": "d511",
+   "band": "1930-1945",
+   "footnotes": 7,
+   "footnotes_located": 7,
+   "ops": 24,
+   "r0_extra_chars": 51,
+   "flat_extra_chars": 0,
+   "rem_len": 5764,
+   "flat_len": 5713,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ftheDiplomaticCorps.1.Hitle",
+     "ftheDiplomaticCorps.Hitle"
+    ],
+    [
+     "delete",
+     "instRussiathissummer.2.TheT",
+     "instRussiathissummer.TheT"
+    ],
+    [
+     "delete",
+     "htheyaresureiscoming.3.Hitl",
+     "htheyaresureiscoming.Hitl"
+    ],
+    [
+     "delete",
+     "ots”fortheoilfields.4.Theob",
+     "ots”fortheoilfields.Theob"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1934v04",
+   "d": "d691",
+   "band": "1930-1945",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 8,
+   "r0_extra_chars": 24,
+   "flat_extra_chars": 0,
+   "rem_len": 9524,
+   "flat_len": 9500,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "st,astotheschedules:(a)Grade",
+     "st,astotheschedules:Grade"
+    ],
+    [
+     "delete",
+     "ph5–(c)and(h)hereof;(b)Grade",
+     "ph5–(c)and(h)hereof;Grade"
+    ],
+    [
+     "delete",
+     "inmyNo.4,paragraph6;(c)Grade",
+     "inmyNo.4,paragraph6;Grade"
+    ],
+    [
+     "delete",
+     "sionwasforhimtomake.(d)Grade",
+     "sionwasforhimtomake.Grade"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1941v05",
+   "d": "d748",
+   "band": "1930-1945",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 6,
+   "r0_extra_chars": 12,
+   "flat_extra_chars": 0,
+   "rem_len": 2084,
+   "flat_len": 2072,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     ".regardingBurmaRoad.1.Arnst",
+     ".regardingBurmaRoad.Arnst"
+    ],
+    [
+     "delete",
+     "receiptofyourmessage.2.ByEm",
+     "receiptofyourmessage.ByEm"
+    ],
+    [
+     "delete",
+     "heguageofitssuccess.3.While",
+     "heguageofitssuccess.While"
+    ],
+    [
+     "delete",
+     "dintheArnsteinreport.4.Then",
+     "dintheArnsteinreport.Then"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1940v04",
+   "d": "d458",
+   "band": "1930-1945",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 3,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 2825,
+   "flat_len": 2819,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "My543,October24,noon.1.Duri",
+     "My543,October24,noon.Duri"
+    ],
+    [
+     "delete",
+     "tiesasoutlinedabove.2.Withr",
+     "tiesasoutlinedabove.Withr"
+    ],
+    [
+     "delete",
+     "wbeenbroughttoahalt.3.Thein",
+     "wbeenbroughttoahalt.Thein"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1933v04",
+   "d": "d84",
+   "band": "1930-1945",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 2,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 898,
+   "flat_len": 892,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "nnowaroseastowhether(1)ThePa",
+     "nnowaroseastowhetherThePa"
+    ],
+    [
+     "delete",
+     "esasmightbeuseful;or(2)Suchc",
+     "esasmightbeuseful;orSuchc"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1944v06",
+   "d": "d476",
+   "band": "1930-1945",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 5,
+   "r0_extra_chars": 10,
+   "flat_extra_chars": 0,
+   "rem_len": 1074,
+   "flat_len": 1064,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "44.BasisforAgreement1.TheGo",
+     "44.BasisforAgreementTheGo"
+    ],
+    [
+     "delete",
+     "heliberationofChina.2.Botht",
+     "heliberationofChina.Botht"
+    ],
+    [
+     "delete",
+     "ilitaryforcesofChina.3.TheC",
+     "ilitaryforcesofChina.TheC"
+    ],
+    [
+     "delete",
+     "ocessesingovernment.4.TheGo",
+     "ocessesingovernment.TheGo"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v07",
+   "d": "d306",
+   "band": "1946-",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 11,
+   "r0_extra_chars": 22,
+   "flat_extra_chars": 0,
+   "rem_len": 3161,
+   "flat_len": 3139,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "epublishedhereApril8.a.From",
+     "epublishedhereApril8.From"
+    ],
+    [
+     "delete",
+     "asfromMarch24,1946.”b.FromQ",
+     "asfromMarch24,1946.”FromQ"
+    ],
+    [
+     "delete",
+     "havebeencarriedout.”c.FromQ",
+     "havebeencarriedout.”FromQ"
+    ],
+    [
+     "delete",
+     "ndamentalconditions:1.Durin",
+     "ndamentalconditions:Durin"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1950v07",
+   "d": "d743",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 4,
+   "r0_extra_chars": 12,
+   "flat_extra_chars": 0,
+   "rem_len": 1885,
+   "flat_len": 1873,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "llowingviewsthereon:(a)Thene",
+     "llowingviewsthereon:Thene"
+    ],
+    [
+     "delete",
+     "mitingairoperations.(b)Furth",
+     "mitingairoperations.Furth"
+    ],
+    [
+     "delete",
+     "chdenialbejustified.(c)Moreo",
+     "chdenialbejustified.Moreo"
+    ],
+    [
+     "delete",
+     "ranindefiniteperiod.(d)Inthe",
+     "ranindefiniteperiod.Inthe"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v08",
+   "d": "d634",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 3,
+   "r0_extra_chars": 6,
+   "flat_extra_chars": 0,
+   "rem_len": 1121,
+   "flat_len": 1115,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "nesianproblemisthis:a.Nethe",
+     "nesianproblemisthis:Nethe"
+    ],
+    [
+     "delete",
+     "therlandsEastIndies;b.Insub",
+     "therlandsEastIndies;Insub"
+    ],
+    [
+     "delete",
+     "eNetherlandsintends;c.Briti",
+     "eNetherlandsintends;Briti"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1947v03",
+   "d": "d12",
+   "band": "1946-",
+   "footnotes": 5,
+   "footnotes_located": 5,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 1036,
+   "flat_len": 1032,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ollowinginformation:1.Thewa",
+     "ollowinginformation:Thewa"
+    ],
+    [
+     "delete",
+     "havebeenexpended;and2.Thepu",
+     "havebeenexpended;andThepu"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1947v07",
+   "d": "d602",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 1146,
+   "flat_len": 1142,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "urehasbeensuggested:a.Short",
+     "urehasbeensuggested:Short"
+    ],
+    [
+     "delete",
+     "rdacopytomeinNewYork.b.Weca",
+     "rdacopytomeinNewYork.Weca"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v01",
+   "d": "d447",
+   "band": "1946-",
+   "footnotes": 9,
+   "footnotes_located": 9,
+   "ops": 32,
+   "r0_extra_chars": 76,
+   "flat_extra_chars": 0,
+   "rem_len": 5185,
+   "flat_len": 5109,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ceofMr.BernardBaruch.1.At10",
+     "ceofMr.BernardBaruch.At10"
+    ],
+    [
+     "delete",
+     "EmpireStateBuilding.2.Theme",
+     "EmpireStateBuilding.Theme"
+    ],
+    [
+     "delete",
+     "s,Executive[Officer]3.Norep",
+     "s,Executive[Officer]Norep"
+    ],
+    [
+     "delete",
+     "epartmentwerepresent.4.Itwa",
+     "epartmentwerepresent.Itwa"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v01",
+   "d": "d310",
+   "band": "1946-",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 2266,
+   "flat_len": 2262,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "tedbyU.S.Delegation)1.Addth",
+     "tedbyU.S.Delegation)Addth"
+    ],
+    [
+     "delete",
+     "ftheworldcommunity.”2.Subst",
+     "ftheworldcommunity.”Subst"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1948v06",
+   "d": "d193",
+   "band": "1946-",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 5,
+   "r0_extra_chars": 10,
+   "flat_extra_chars": 0,
+   "rem_len": 1897,
+   "flat_len": 1887,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "chleyplan.Plscomment.1.Firs",
+     "chleyplan.Plscomment.Firs"
+    ],
+    [
+     "delete",
+     "cterthoseprinciples.2.First",
+     "cterthoseprinciples.First"
+    ],
+    [
+     "delete",
+     "midationonpartofRep.3.Fourt",
+     "midationonpartofRep.Fourt"
+    ],
+    [
+     "delete",
+     "this3monthsinterval.4.Pland",
+     "this3monthsinterval.Pland"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v11",
+   "d": "d584",
+   "band": "1946-",
+   "footnotes": 1,
+   "footnotes_located": 1,
+   "ops": 8,
+   "r0_extra_chars": 24,
+   "flat_extra_chars": 0,
+   "rem_len": 5020,
+   "flat_len": 4996,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "summarizedasfollows:(1)Reser",
+     "summarizedasfollows:Reser"
+    ],
+    [
+     "delete",
+     "lforeignobligations;(2)Stron",
+     "lforeignobligations;Stron"
+    ],
+    [
+     "delete",
+     "etroleumexploration;(3)Theim",
+     "etroleumexploration;Theim"
+    ],
+    [
+     "delete",
+     "rsofOFDwasasfollows:(1)Petro",
+     "rsofOFDwasasfollows:Petro"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v01",
+   "d": "d667",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 6,
+   "r0_extra_chars": 12,
+   "flat_extra_chars": 0,
+   "rem_len": 2793,
+   "flat_len": 2781,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "schingabsentonleave.2.Helmo",
+     "schingabsentonleave.Helmo"
+    ],
+    [
+     "delete",
+     "emplatedforSeptember.3.Desp",
+     "emplatedforSeptember.Desp"
+    ],
+    [
+     "delete",
+     "ingforseveralmonths.4.Helmo",
+     "ingforseveralmonths.Helmo"
+    ],
+    [
+     "delete",
+     "tingheldinSeptember.5.Insug",
+     "tingheldinSeptember.Insug"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1952-54v01p2",
+   "d": "d63",
+   "band": "1946-",
+   "footnotes": 4,
+   "footnotes_located": 4,
+   "ops": 4,
+   "r0_extra_chars": 10,
+   "flat_extra_chars": 0,
+   "rem_len": 4633,
+   "flat_len": 4623,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "onalSecurityCouncil:a.Noted",
+     "onalSecurityCouncil:Noted"
+    ],
+    [
+     "delete",
+     "ization,onthesubject.b.Adop",
+     "ization,onthesubject.Adop"
+    ],
+    [
+     "delete",
+     "thefollowingchanges:(1)Parag",
+     "thefollowingchanges:Parag"
+    ],
+    [
+     "delete",
+     "weentwotofouryears”.(2)Subpa",
+     "weentwotofouryears”.Subpa"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1951v07p1",
+   "d": "d204",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 12,
+   "r0_extra_chars": 24,
+   "flat_extra_chars": 0,
+   "rem_len": 2662,
+   "flat_len": 2638,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ilitaryActioninKorea1.Invie",
+     "ilitaryActioninKoreaInvie"
+    ],
+    [
+     "delete",
+     "ditionsnowobtaining:a.Ifthe",
+     "ditionsnowobtaining:Ifthe"
+    ],
+    [
+     "delete",
+     "serviceelsewhere;andb.Ifthe",
+     "serviceelsewhere;andIfthe"
+    ],
+    [
+     "delete",
+     "dinessforgeneralwar.2.Ifgen",
+     "dinessforgeneralwar.Ifgen"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v08",
+   "d": "d199",
+   "band": "1946-",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 4,
+   "r0_extra_chars": 12,
+   "flat_extra_chars": 0,
+   "rem_len": 1440,
+   "flat_len": 1428,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "beansweredasfollows:(1)TheDe",
+     "beansweredasfollows:TheDe"
+    ],
+    [
+     "delete",
+     "an-controlledzones”.(2)TheDe",
+     "an-controlledzones”.TheDe"
+    ],
+    [
+     "delete",
+     "cificareainquestion.(3)There",
+     "cificareainquestion.There"
+    ],
+    [
+     "delete",
+     "es-occupiedHokkaido.(4)Asyou",
+     "es-occupiedHokkaido.Asyou"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1949v07p1",
+   "d": "d398",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 4,
+   "r0_extra_chars": 8,
+   "flat_extra_chars": 0,
+   "rem_len": 2102,
+   "flat_len": 2094,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ichprovideasfollows:a.Tasks",
+     "ichprovideasfollows:Tasks"
+    ],
+    [
+     "delete",
+     "ringresolutionofRTC.b.NPCwi",
+     "ringresolutionofRTC.NPCwi"
+    ],
+    [
+     "delete",
+     "ntraladministration.c.NPCwi",
+     "ntraladministration.NPCwi"
+    ],
+    [
+     "delete",
+     "rtmentalorganization.d.NPCw",
+     "rtmentalorganization.NPCw"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1946v07",
+   "d": "d609",
+   "band": "1946-",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 3,
+   "r0_extra_chars": 9,
+   "flat_extra_chars": 0,
+   "rem_len": 2979,
+   "flat_len": 2970,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "ionnotablyasfollows:(1)ThatL",
+     "ionnotablyasfollows:ThatL"
+    ],
+    [
+     "delete",
+     "mbarkmentofmaterial.(2)ThatL",
+     "mbarkmentofmaterial.ThatL"
+    ],
+    [
+     "delete",
+     "rdsforinstallations.(3)Thata",
+     "rdsforinstallations.Thata"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1948v04",
+   "d": "d288",
+   "band": "1946-",
+   "footnotes": 2,
+   "footnotes_located": 2,
+   "ops": 5,
+   "r0_extra_chars": 10,
+   "flat_extra_chars": 0,
+   "rem_len": 2761,
+   "flat_len": 2751,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "imtherightinteralia:a.todef",
+     "imtherightinteralia:todef"
+    ],
+    [
+     "delete",
+     "erestinallcountries,b.forth",
+     "erestinallcountries,forth"
+    ],
+    [
+     "delete",
+     "oallLatvianmissions,c.tocon",
+     "oallLatvianmissions,tocon"
+    ],
+    [
+     "delete",
+     "alofcertainmissions,d.tempo",
+     "alofcertainmissions,tempo"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1947v05",
+   "d": "d396",
+   "band": "1946-",
+   "footnotes": 7,
+   "footnotes_located": 7,
+   "ops": 13,
+   "r0_extra_chars": 30,
+   "flat_extra_chars": 0,
+   "rem_len": 4026,
+   "flat_len": 3996,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "nsusoftheiropinions:1.Itisv",
+     "nsusoftheiropinions:Itisv"
+    ],
+    [
+     "delete",
+     "illinfactberetained.2.Theus",
+     "illinfactberetained.Theus"
+    ],
+    [
+     "delete",
+     "insuperableobstacles.3.Thed",
+     "insuperableobstacles.Thed"
+    ],
+    [
+     "delete",
+     "utnotacceptedpolicy.4.TheBr",
+     "utnotacceptedpolicy.TheBr"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  },
+  {
+   "volume": "frus1948v08",
+   "d": "d173",
+   "band": "1946-",
+   "footnotes": 3,
+   "footnotes_located": 3,
+   "ops": 2,
+   "r0_extra_chars": 4,
+   "flat_extra_chars": 0,
+   "rem_len": 1297,
+   "flat_len": 1293,
+   "nested_divs_in_tei": 0,
+   "examples": [
+    [
+     "delete",
+     "quipmentisasfollows:a.17ori",
+     "quipmentisasfollows:17ori"
+    ],
+    [
+     "delete",
+     "divisionstotallylostb.Units",
+     "divisionstotallylostUnits"
+    ]
+   ],
+   "cause": "r0_has_text_flat_lacks"
+  }
+ ],
+ "causes": {
+  "r0_has_text_flat_lacks": 45,
+  "both_differ": 1
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "marked": {
+  "persons_rows_sum_per_volume_distinct": 30327,
+  "name_bytes_sum": 282320,
+  "pre1910": 12654,
+  "corpus_distinct_strings": 12171
+ },
+ "union_marked_filtered_control": {
+  "persons_rows_sum_per_volume_distinct": 340614,
+  "name_bytes_sum": 3862020,
+  "pre1910": 146301,
+  "corpus_distinct_strings": 166453
+ },
+ "agreement": {
+  "persons_rows_sum_per_volume_distinct": 320050,
+  "name_bytes_sum": 4848571,
+  "pre1910": 132576,
+  "corpus_distinct_strings": 187483
+ },
+ "intersection_sweep_side": {
+  "persons_rows_sum_per_volume_distinct": 304133,
+  "name_bytes_sum": 4691449,
+  "pre1910": 123506,
+  "corpus_distinct_strings": 182385
+ },
+ "controls": {
+  "marked": [
+   30327,
+   12654,
+   12171
+  ],
+  "union": [
+   340614,
+   146301,
+   166453
+  ]
+ },
+ "controls_ok": true
+}

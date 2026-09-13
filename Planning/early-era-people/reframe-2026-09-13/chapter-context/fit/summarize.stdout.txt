@@ -1,0 +1,48 @@
+== grain=all window=pm0 rows=83628
+   TOTAL {'rows': 83628, 'base:unknown': 17788, 'base:nobody': 9101, 'base:one': 45618, 'one:no-chapter-candidate': 7129, 'base:several': 10795, 'base:no-surname': 326, 'one:chapter-conflict': 17764, 'one:corroborated-by-chapter': 20725, 'several:resolved-by-chapter': 630}
+   despatch-high|from US-chief-expected {'rows': 18850, 'base:one': 12133, 'one:corroborated-by-chapter': 11668, 'base:unknown': 4032, 'base:nobody': 2176, 'one:chapter-conflict': 465, 'base:several': 419, 'several:resolved-by-chapter': 347, 'base:no-surname': 90}
+   despatch-medium|from US-chief-expected {'rows': 2298, 'base:one': 1041, 'one:corroborated-by-chapter': 892, 'base:unknown': 872, 'base:nobody': 345, 'one:chapter-conflict': 148, 'base:several': 32, 'several:resolved-by-chapter': 21, 'base:no-surname': 8, 'one:no-chapter-candidate': 1}
+   instr+notesTo|to US-chief-or-foreign-envoy {'rows': 9592, 'base:one': 5807, 'one:corroborated-by-chapter': 4747, 'base:unknown': 2079, 'base:nobody': 1325, 'one:chapter-conflict': 1059, 'base:several': 360, 'several:resolved-by-chapter': 166, 'base:no-surname': 21, 'one:no-chapter-candidate': 1}
+   instructions|to US-chief-or-foreign-envoy {'rows': 244, 'base:one': 210, 'one:corroborated-by-chapter': 198, 'base:unknown': 18, 'one:chapter-conflict': 12, 'base:several': 10, 'base:nobody': 6}
+   notesTo|to US-chief-or-foreign-envoy {'rows': 324, 'base:one': 210, 'one:corroborated-by-chapter': 194, 'base:unknown': 75, 'base:nobody': 24, 'one:chapter-conflict': 16, 'base:no-surname': 9, 'base:several': 6, 'several:resolved-by-chapter': 2}
+   nothing|from None {'rows': 8334, 'base:one': 2977, 'one:no-chapter-candidate': 2977, 'base:unknown': 2537, 'base:nobody': 1545, 'base:several': 1202, 'base:no-surname': 73}
+   nothing|to None {'rows': 8069, 'base:one': 3556, 'one:no-chapter-candidate': 3556, 'base:unknown': 2011, 'base:several': 1610, 'base:nobody': 855, 'base:no-surname': 37}
+   instr+notesTo|from|secstate {'sec-agree+asst-same-surname': 2652, 'sec-disagree': 1839, 'sec-disagree+asst-same-surname': 1273, 'sec-agree': 3941}
+   instructions|from|secstate {'sec-agree+asst-same-surname': 164, 'sec-disagree': 36, 'sec-disagree+asst-same-surname': 7, 'sec-agree': 43}
+   notesTo|from|secstate {'sec-agree+asst-same-surname': 107, 'sec-disagree': 39, 'sec-agree': 132, 'sec-disagree+asst-same-surname': 48}
+== grain=all window=pm1 rows=83628
+   TOTAL {'rows': 83628, 'base:unknown': 17788, 'base:nobody': 8384, 'base:one': 45180, 'one:no-chapter-candidate': 7243, 'base:several': 11950, 'base:no-surname': 326, 'one:chapter-conflict': 17739, 'one:corroborated-by-chapter': 20198, 'several:resolved-by-chapter': 1306}
+   despatch-high|from US-chief-expected {'rows': 18850, 'base:one': 11839, 'one:corroborated-by-chapter': 11330, 'base:unknown': 4032, 'base:nobody': 2096, 'base:several': 793, 'several:resolved-by-chapter': 702, 'one:chapter-conflict': 509, 'base:no-surname': 90}
+   despatch-medium|from US-chief-expected {'rows': 2298, 'base:one': 996, 'one:corroborated-by-chapter': 870, 'base:unknown': 872, 'base:nobody': 335, 'one:chapter-conflict': 125, 'base:several': 87, 'several:resolved-by-chapter': 76, 'base:no-surname': 8, 'one:no-chapter-candidate': 1}
+   instr+notesTo|to US-chief-or-foreign-envoy {'rows': 9592, 'base:one': 5690, 'one:corroborated-by-chapter': 4627, 'base:unknown': 2079, 'base:nobody': 1258, 'one:chapter-conflict': 1062, 'base:several': 544, 'several:resolved-by-chapter': 314, 'base:no-surname': 21, 'one:no-chapter-candidate': 1}
+   instructions|to US-chief-or-foreign-envoy {'rows': 244, 'base:one': 213, 'one:corroborated-by-chapter': 198, 'one:chapter-conflict': 15, 'base:unknown': 18, 'base:several': 11, 'base:nobody': 2}
+   notesTo|to US-chief-or-foreign-envoy {'rows': 324, 'base:one': 203, 'one:corroborated-by-chapter': 187, 'base:unknown': 75, 'one:chapter-conflict': 16, 'base:nobody': 22, 'base:several': 15, 'several:resolved-by-chapter': 9, 'base:no-surname': 9}
+   nothing|from None {'rows': 8334, 'base:one': 3032, 'one:no-chapter-candidate': 3032, 'base:unknown': 2537, 'base:nobody': 1461, 'base:several': 1231, 'base:no-surname': 73}
+   nothing|to None {'rows': 8069, 'base:one': 3625, 'one:no-chapter-candidate': 3625, 'base:unknown': 2011, 'base:several': 1636, 'base:nobody': 760, 'base:no-surname': 37}
+   instr+notesTo|from|secstate {'sec-agree+asst-same-surname': 2678, 'sec-disagree': 1701, 'sec-disagree+asst-same-surname': 1379, 'sec-agree': 3947}
+   instructions|from|secstate {'sec-agree+asst-same-surname': 164, 'sec-disagree': 30, 'sec-disagree+asst-same-surname': 13, 'sec-agree': 43}
+   notesTo|from|secstate {'sec-agree+asst-same-surname': 107, 'sec-disagree+asst-same-surname': 54, 'sec-disagree': 33, 'sec-agree': 132}
+== grain=head window=pm0 rows=60654
+   TOTAL {'rows': 60654, 'base:unknown': 7744, 'base:nobody': 4536, 'base:one': 38116, 'one:no-chapter-candidate': 6350, 'base:several': 10103, 'one:chapter-conflict': 16370, 'one:corroborated-by-chapter': 15396, 'several:resolved-by-chapter': 481, 'base:no-surname': 155}
+   despatch-high|from US-chief-expected {'rows': 11626, 'base:one': 9624, 'one:corroborated-by-chapter': 9308, 'base:nobody': 906, 'base:unknown': 726, 'one:chapter-conflict': 316, 'base:several': 344, 'several:resolved-by-chapter': 294, 'base:no-surname': 26}
+   despatch-medium|from US-chief-expected {'rows': 1955, 'base:one': 969, 'one:corroborated-by-chapter': 828, 'base:unknown': 668, 'base:nobody': 287, 'one:chapter-conflict': 140, 'base:several': 25, 'several:resolved-by-chapter': 14, 'base:no-surname': 6, 'one:no-chapter-candidate': 1}
+   instr+notesTo|to US-chief-or-foreign-envoy {'rows': 7852, 'base:one': 4992, 'one:corroborated-by-chapter': 4728, 'base:unknown': 1709, 'base:nobody': 958, 'one:chapter-conflict': 264, 'base:several': 175, 'several:resolved-by-chapter': 166, 'base:no-surname': 18}
+   instructions|to US-chief-or-foreign-envoy {'rows': 223, 'base:one': 202, 'one:corroborated-by-chapter': 192, 'base:unknown': 12, 'one:chapter-conflict': 10, 'base:several': 4, 'base:nobody': 5}
+   notesTo|to US-chief-or-foreign-envoy {'rows': 290, 'base:one': 193, 'one:corroborated-by-chapter': 193, 'base:unknown': 70, 'base:nobody': 16, 'base:no-surname': 9, 'base:several': 2, 'several:resolved-by-chapter': 2}
+   nothing|from None {'rows': 6399, 'base:one': 2662, 'one:no-chapter-candidate': 2662, 'base:unknown': 1511, 'base:several': 1149, 'base:nobody': 1020, 'base:no-surname': 57}
+   nothing|to None {'rows': 6298, 'base:one': 3135, 'one:no-chapter-candidate': 3135, 'base:several': 1428, 'base:unknown': 1238, 'base:nobody': 479, 'base:no-surname': 18}
+   instr+notesTo|from|secstate {'sec-agree+asst-same-surname': 2614, 'sec-disagree': 214, 'sec-disagree+asst-same-surname': 1210, 'sec-agree': 3858}
+   instructions|from|secstate {'sec-agree+asst-same-surname': 163, 'sec-disagree': 12, 'sec-disagree+asst-same-surname': 7, 'sec-agree': 43}
+   notesTo|from|secstate {'sec-agree+asst-same-surname': 107, 'sec-disagree': 6, 'sec-agree': 131, 'sec-disagree+asst-same-surname': 47}
+== grain=head window=pm1 rows=60654
+   TOTAL {'rows': 60654, 'base:unknown': 7744, 'base:nobody': 4055, 'base:one': 37692, 'one:no-chapter-candidate': 6431, 'base:several': 11008, 'one:chapter-conflict': 16241, 'one:corroborated-by-chapter': 15020, 'several:resolved-by-chapter': 976, 'base:no-surname': 155}
+   despatch-high|from US-chief-expected {'rows': 11626, 'base:one': 9372, 'one:corroborated-by-chapter': 9037, 'base:nobody': 863, 'base:unknown': 726, 'base:several': 639, 'several:resolved-by-chapter': 575, 'one:chapter-conflict': 335, 'base:no-surname': 26}
+   despatch-medium|from US-chief-expected {'rows': 1955, 'base:one': 922, 'one:corroborated-by-chapter': 808, 'base:unknown': 668, 'base:nobody': 284, 'one:chapter-conflict': 113, 'base:several': 75, 'several:resolved-by-chapter': 64, 'base:no-surname': 6, 'one:no-chapter-candidate': 1}
+   instr+notesTo|to US-chief-or-foreign-envoy {'rows': 7852, 'base:one': 4857, 'one:corroborated-by-chapter': 4603, 'base:unknown': 1709, 'base:nobody': 936, 'one:chapter-conflict': 254, 'base:several': 332, 'several:resolved-by-chapter': 314, 'base:no-surname': 18}
+   instructions|to US-chief-or-foreign-envoy {'rows': 223, 'base:one': 205, 'one:corroborated-by-chapter': 192, 'one:chapter-conflict': 13, 'base:unknown': 12, 'base:several': 5, 'base:nobody': 1}
+   notesTo|to US-chief-or-foreign-envoy {'rows': 290, 'base:one': 186, 'one:corroborated-by-chapter': 186, 'base:unknown': 70, 'base:several': 9, 'several:resolved-by-chapter': 9, 'base:no-surname': 9, 'base:nobody': 16}
+   nothing|from None {'rows': 6399, 'base:one': 2703, 'one:no-chapter-candidate': 2703, 'base:unknown': 1511, 'base:several': 1174, 'base:nobody': 954, 'base:no-surname': 57}
+   nothing|to None {'rows': 6298, 'base:one': 3192, 'one:no-chapter-candidate': 3192, 'base:several': 1453, 'base:unknown': 1238, 'base:nobody': 397, 'base:no-surname': 18}
+   instr+notesTo|from|secstate {'sec-agree+asst-same-surname': 2634, 'sec-disagree': 89, 'sec-disagree+asst-same-surname': 1314, 'sec-agree': 3859}
+   instructions|from|secstate {'sec-agree+asst-same-surname': 163, 'sec-disagree': 6, 'sec-disagree+asst-same-surname': 13, 'sec-agree': 43}
+   notesTo|from|secstate {'sec-agree+asst-same-surname': 107, 'sec-disagree+asst-same-surname': 53, 'sec-agree': 131}

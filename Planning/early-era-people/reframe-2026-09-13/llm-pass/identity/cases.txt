@@ -1,0 +1,1068 @@
+#01 band=1861-1899 [NOBODY] frus1863p1/d669 year=1863 role=to surface='Earl Russell'
+  HEAD: Mr. Adams to Mr. Seward . No. 540.] Legation of the United States, London, November 19, 1863. Sir: I transmitted a copy of the pamphlet mentioned in my despatch of last week, No. 533, of 12th November, to Lord Russell, with a note, calling his attention to the || ctx: ...FRANCIS ADAMS. Hon. William H. Seward, Secretary of State, Washington, D. C. Mr. Adams to Earl Russell . Legation of the United States, London, November 14, 1863....
+  POCOM(same surname; * = in office y±1):
+     russell-catherine-m: Ambassador at Large  2013-2017
+     russell-charles-wells: envoy extraordinary minister plenipotentiary iran 1909-1914
+     russell-donald-stuart: Assistant Secretary of State for Administration  1945-1947
+     russell-francis-henry: ambassador e p ghana 1960-1962; ambassador e p new zealand 1957-1960; ambassador e p tunisia 1962-1969
+     russell-fred-jesse: ambassador e p denmark 1971-1972
+     russell-jonathan: charge daffaires france 1810-1811; minister plenipotentiary sweden 1814-1818; charge daffaires united kingdom 1811-1812
+     russell-theodore-e: ambassador e p slovakia 1993-1996
+     russell-thomas: minister resident venezuela 1874-1877
+    ... 1 more
+  UNION candidates in window (1):
+    A111754 <- PC FRUS-23885: Russell, Thomas, Jr.  | REG 111754: Russell, Thomas, Jr. (b1825 d1887) Non-career appointee. Minister Resident (Venezuela).
+
+#02 band=1861-1899 [NOBODY] frus1864p1/d64 year=1864 role=from surface='Mr. Jackson'
+  HEAD: Mr. Seward to Mr. Adams . No. 830.] Department of State, Washington, February 5, 1864. Sir: I transmit the copy of a despatch of the 21st ultimo from the consul of the United States, at Halifax, Nova Scotia, and of the address of the workingmen and other inhab || ctx: ...r obedient servant, WILLIAM H. SEWARD. Charles F. Adams , Esq., &amp;c., &amp;c., &amp;c. Mr. Jackson to Mr. Seward . No. 15.] Consulate of the United States of...
+  POCOM(same surname; * = in office y±1):
+     jackson-andrew: envoy extraordinary minister plenipotentiary mexico 1823-1823
+     jackson-henry-rootes: charge daffaires austria 1853-1854; minister resident austria 1854-1858; envoy extraordinary minister plenipotentiary mexico 1885-1886
+     jackson-isaac-rand: charge daffaires denmark 1841-1842
+     jackson-jeanine-elizabeth: ambassador e p burkina faso 2006-2009; ambassador e p malawi 2011-2014
+     jackson-john-brinkerhoff: diplomatic agent bulgaria 1903-1905; diplomatic agent bulgaria 1905-1907; envoy extraordinary minister plenipotentiary bulgaria 1911-1913; envoy extraordinary minister plenipotentiary chile 1902-1902;
+     jackson-robert-porter: ambassador e p cameroon 2010-2013; ambassador e p ghana 2015-2018
+  UNION candidates in window (1):
+    A106473 <- PC FRUS-13160: Jackson, Henry Rootes  | REG 106473: Jackson, Henry Rootes (b1820 d1898) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Mexico); Chargé d'
+
+#03 band=1861-1899 [NOBODY] frus1864p1/d99 year=1863 role=from surface='Commander Baldwin, U. S. N.,'
+  HEAD: No. 2. Mr. Elliot to Mr. Hammond .—(Received December 24.) Downing Street, December 24, 1863. Sir: I am directed by the Duke of Newcastle to transmit to you, for the consideration of Earl Russell, copies of two despatches from the governor of the Cape of Good || ctx: ...ce will approve of the decision. I have, &amp;c. P. E. WODEHOUSE. [Enclosure 2 in No. 2.] Commander Baldwin, U. S. N., to Sir P. Wodehouse . Vanderbilt, Cape Town, October 22, 18...
+  POCOM(same surname; * = in office y±1):
+     baldwin-charles-franklin: ambassador e p malaysia 1961-1964
+     baldwin-william-woodward: Third Assistant Secretary of State  1896-1897
+  UNION candidates in window (0):
+    
+
+#04 band=1861-1899 [NOBODY] frus1865p3/d456 year=1865 role=from surface='Mr. Romero'
+  HEAD: [Translation.] Mr. Romero to Mr. Seward Mexican Legation to the United States of America, New York, November 20, 1865. Mr. Secretary: In my note of the 25th October last I sent you a copy of a decree dated 3d October, issued by the usurper who pretends to be t
+  POCOM(same surname; * = in office y±1):
+     romero-edward-l: ambassador e p andorra 1998-2001; ambassador e p spain 1998-2001
+     romero-peter-f: ambassador e p ecuador 1993-1996; Assistant Secretary of State for Western Hemisphere Affairs  2000-2001
+  UNION candidates in window (0):
+    
+
+#05 band=1861-1899 [NOBODY] frus1868p2/d577 year=1868 role=to surface='Mr. Pruyn'
+  HEAD: Mr. Pruyn to Mr. Seward . No. 19.] Legation of the United States, Caracas, August 6, 1868. Sir: I herewith forward to you inclosure No. 1, a translation of a communication from the government of Venezuela. Inclosure No. 2 contains a paper accompanying the said || ctx: ...William H. Seward, Secretary of State, Washington, D. C. [Translation.] Señor Villegas to Mr. Pruyn . UNITED STATES OF VENEZUELA, DEPARTMENT OF FOREIGN AFFAIRS...
+  POCOM(same surname; * = in office y±1):
+     pruyn-robert-hewson: minister resident japan 1861-1865
+  UNION candidates in window (1):
+    A110994 <- PC FRUS-22331: Pruyn, Robert Hewson  | REG 110994: Pruyn, Robert Hewson (b1815 d1882) Non-career appointee. Minister Resident (Japan).
+
+#06 band=1861-1899 [NOBODY] frus1871/d78 year=1871 role=to surface='Mr. Perez'
+  HEAD: No. 65. Mr. Fish to Mr. Perez Department of State , Washington , May 27, 1871. Sir: Your note of the 15th ultimo, relative to the treaty between the United States and New Granada of the 12th of December, 1846, was duly received. Almost ever since, however, my
+  POCOM(same surname; * = in office y±1):
+     perez-carol-z: ambassador e p chile 2016-2019; Director General of the Foreign Service  2019-2019
+  UNION candidates in window (0):
+    
+
+#07 band=1861-1899 [NOBODY] frus1874/d176 year=1874 role=to surface='Seward'
+  HEAD: No. 174. Mr. Cadwalader to Mr. Seward . Department of State , Washington , October 23, 1874 . No. 424.] Sir : Referring to the case of Walter Jackson, and to your dispatch 800, of August 27, with your correspondence with Mr. Williams and with the colonial secr
+  POCOM(same surname; * = in office y±1):
+     seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+     seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (2):
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+
+#08 band=1861-1899 [NOBODY] frus1876/d120 year=1876 role=to surface='Hoffman'
+  HEAD: No. 110. Mr. Fish to Mr. Hoffman . Department of State , Washington , March 31, 1876 . No. 864.] Sir : Referring to previous correspondence in reference to the extradition of Winslow, in custody in London, I have now to acknowledge the receipt of your No. 39,
+  POCOM(same surname; * = in office y±1):
+     hoffman-alfred: ambassador e p portugal 2005-2007
+     hoffman-paul-gray: Administrator of the Economic Cooperation Administration  1948-1950
+     hoffman-wickham: minister resident consul general denmark 1883-1885
+  UNION candidates in window (1):
+    A106011 <- PC FRUS-12249: Hoffman, Wickham  | REG 106011: Hoffman, Wickham (b1821 d1900) Non-career appointee. Minister Resident/Consul General (Denmark).
+
+#09 band=1861-1899 [NOBODY] frus1882/d38 year=1882 role=to surface='Trescot'
+  HEAD: No. 38. Mr. Trescot to Mr. Frelinghuysen . Special Mission, United States , January 13, 1882 . (Received February 14.) No. 2.] Sir : I have the honor to inform you that I reached this capital on Saturday, 7th January. On Monday I informed Señor Balmaceda, the || ctx: ...oth Americas. [Inclosure 2 in No. 2.—Translation.] Reply of the President of Chili to Mr. Trescot . Mr. Minister : I receive the credentials which you place...
+  POCOM(same surname; * = in office y±1):
+     trescot-william-henry: Assistant Secretary of State  1860-1860
+  UNION candidates in window (1):
+    A113725 <- PC FRUS-27954: Trescot, William Henry  | REG 113725: Trescot, William Henry (b1822 d1898) Non-career appointee. Assistant Secretary of State.
+
+#10 band=1861-1899 [NOBODY] frus1896/d591 year=1896 role=from surface='Armstrong'
+  HEAD: Mr. Armstrong to Mr. Olney . [Telegram.] Madrid , May 25, 1896 . Minister for foreign affairs informs me that all contracts for Cuban leaf tobacco entered into before publication of order prohibiting its exportation are to be respected and that suggestion in y
+  POCOM(same surname; * = in office y±1):
+     armstrong-anne-legendre: ambassador e p united kingdom 1976-1977
+     armstrong-john: minister plenipotentiary france 1804-1810
+     armstrong-willis-coburn: Assistant Secretary of State for Economic, Energy, and Business Affairs  1972-1974
+  UNION candidates in window (1):
+    A100579 <- PC FRUS-01220: Armstrong, David  | REG 100579: Armstrong, David (b1836 d1918) Non-career appointee. Chargé d'Affaires (Holy See).
+
+#11 band=1900-1929 [NOBODY] frus1902/d623 year=1902 role=from surface='Rodgers'
+  HEAD: Mr. Adee to Mr. Powell . Department of State , Washington , August 2, 1902 . No. 526.] Sir : I inclose for your information copies of two letters from the Secretary of the Navy forwarding” copies of letters from the commanding officer of the U. S. S. Marietta || ctx: ...de Paix, Haiti. I have, etc., H. C. Taylor , Acting Secretary. [Subinclosure.] Commander Rodgers to the Secretary of the Navy . U. S. S. Marietta , Cape Hai...
+  POCOM(same surname; * = in office y±1):
+     rodgers-joe-m: ambassador e p france 1985-1989
+  UNION candidates in window (0):
+    
+
+#12 band=1900-1929 [NOBODY] frus1914-20v01/d274 year=1916 role=to surface='Wilson'
+  HEAD: 600.001/18 The Secretary of State to President Wilson Washington , June 23, 1916 . My Dear Mr. President : If you have not had time to read carefully the enclosed telegram of the 20th from Paris Not printed. reciting the resolutions adopted by the Economic Con
+  POCOM(same surname; * = in office y±1):
+     wilson-charles-stetson: charge daffaires ad interim bulgaria 1919-1921; envoy extraordinary minister plenipotentiary bulgaria 1921-1928; envoy extraordinary minister plenipotentiary romania 1928-1933; envoy extraordinary min
+     wilson-edwin-carleton: ambassador e p panama 1941-1943; ambassador e p turkey 1945-1948; envoy extraordinary minister plenipotentiary uruguay 1939-1941
+     wilson-francis-mairs-huntington: envoy extraordinary minister plenipotentiary argentina 1909-1909; diplomatic agent bulgaria 1908-1908; envoy extraordinary minister plenipotentiary romania 1908-1908; envoy extraordinary minister plen
+     wilson-henry-lane: envoy extraordinary minister plenipotentiary belgium 1905-1909; envoy extraordinary minister plenipotentiary chile 1897-1904; envoy extraordinary minister plenipotentiary greece 1902-1902; ambassador 
+     wilson-hugh-robert: ambassador e p germany 1938-1938; envoy extraordinary minister plenipotentiary switzerland 1927-1937; Assistant Secretary of State  1937-1938
+     wilson-james: minister resident venezuela 1866-1867
+     wilson-james-morrison: Assistant Secretary of State for Democracy, Human Rights, and Labor  1976-1977
+     wilson-joseph-charles: ambassador e p gabon 1992-1995; charge daffaires ad interim iraq 1990-1991; ambassador e p sao tome and principe 1992-1995
+    ... 4 more
+  UNION candidates in window (13):
+    A114661 <- AUTH 114661: Wilson, Charles Stetson (b1873 d1947) United States Secretary of Embassy and Chargé d’Affaires in Russia | LIVE r5143: Wilson, Charles Stetson Chargé d’Affaires in Bulgaria | PC FRUS-29862: Wilson, Charles Stetson United States Secretary of Embassy and Chargé d’Affaires in
+                    Russia
+    A114664 <- AUTH 114664: Wilson, Edwin Carleton (b1893 d1972) Ambassador in Turkey, 1945–48 | PC FRUS-29871: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48 | REG 114664: Wilson, Edwin Carleton (b1893 d1972) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Uruguay); Ambas
+    A114690 <- AUTH 114690: Wilson, William B. (bNone dNone) Secretary of Labor of the United States | LIVE r5309: Wilson, William B. Secretary of Labor of the United States | PC FRUS-29919: Wilson, William B. Secretary of Labor of the United States
+    A114691 <- AUTH 114691: Wilson, Woodrow (b1856 d1924) President of the United States. | LIVE r355: Wilson, Woodrow President of the United States | PC FRUS-29920: Wilson, Woodrow President of the United States.
+    A114683 <- PC FRUS-29902: Wilson, Orme, Jr.  | REG 114683: Wilson, Orme, Jr. (b1885 d1966) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Haiti).
+    A114687 <- PC FRUS-29915: Wilson, Thomas Murray Consular Officer, U.S. Embassy in Port-au-Prince, from April
+                    1973 | REG 114687: Wilson, Thomas Murray (b1881 d1967) Foreign Service Officer. Minister Resident/Consul General (Iraq).
+    A114672 <- PC FRUS-29886: Wilson, Hugh Robert Alternate Delegate, General Disarmament Conference; Minister to
+                    Switze | REG 114672: Wilson, Hugh Robert (b1885 d1946) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A114673 <- PC FRUS-29888: Wilson, Huntington (Francis Mairs
+                    Huntington-Wilson)  | REG 114673: Wilson, Huntington (Francis Mairs Huntington-Wilson) (b1875 d1946) Non-career appointee. Third Assistant Secretary of State; Ass
+    ... 5 more
+
+#13 band=1900-1929 [NOBODY] frus1914-20v01/d383 year=1915 role=to surface='Wilson'
+  HEAD: 763.72/1849a The Secretary of State to President Wilson Washington , June 3, 1915, evening . My Dear Mr. President : I am sending you the memorandum prepared by Mr. Lansing. See supra , footnote 89. I have not, of course, had an opportunity to examine the auth
+  POCOM(same surname; * = in office y±1):
+     wilson-charles-stetson: charge daffaires ad interim bulgaria 1919-1921; envoy extraordinary minister plenipotentiary bulgaria 1921-1928; envoy extraordinary minister plenipotentiary romania 1928-1933; envoy extraordinary min
+     wilson-edwin-carleton: ambassador e p panama 1941-1943; ambassador e p turkey 1945-1948; envoy extraordinary minister plenipotentiary uruguay 1939-1941
+     wilson-francis-mairs-huntington: envoy extraordinary minister plenipotentiary argentina 1909-1909; diplomatic agent bulgaria 1908-1908; envoy extraordinary minister plenipotentiary romania 1908-1908; envoy extraordinary minister plen
+     wilson-henry-lane: envoy extraordinary minister plenipotentiary belgium 1905-1909; envoy extraordinary minister plenipotentiary chile 1897-1904; envoy extraordinary minister plenipotentiary greece 1902-1902; ambassador 
+     wilson-hugh-robert: ambassador e p germany 1938-1938; envoy extraordinary minister plenipotentiary switzerland 1927-1937; Assistant Secretary of State  1937-1938
+     wilson-james: minister resident venezuela 1866-1867
+     wilson-james-morrison: Assistant Secretary of State for Democracy, Human Rights, and Labor  1976-1977
+     wilson-joseph-charles: ambassador e p gabon 1992-1995; charge daffaires ad interim iraq 1990-1991; ambassador e p sao tome and principe 1992-1995
+    ... 4 more
+  UNION candidates in window (9):
+    A114661 <- AUTH 114661: Wilson, Charles Stetson (b1873 d1947) United States Secretary of Embassy and Chargé d’Affaires in Russia | LIVE r5143: Wilson, Charles Stetson Chargé d’Affaires in Bulgaria | PC FRUS-29862: Wilson, Charles Stetson United States Secretary of Embassy and Chargé d’Affaires in
+                    Russia
+    A114664 <- AUTH 114664: Wilson, Edwin Carleton (b1893 d1972) Ambassador in Turkey, 1945–48 | PC FRUS-29871: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48 | REG 114664: Wilson, Edwin Carleton (b1893 d1972) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Uruguay); Ambas
+    A114690 <- AUTH 114690: Wilson, William B. (bNone dNone) Secretary of Labor of the United States | LIVE r5309: Wilson, William B. Secretary of Labor of the United States | PC FRUS-29919: Wilson, William B. Secretary of Labor of the United States
+    A114691 <- AUTH 114691: Wilson, Woodrow (b1856 d1924) President of the United States. | LIVE r355: Wilson, Woodrow President of the United States | PC FRUS-29920: Wilson, Woodrow President of the United States.
+    A114683 <- PC FRUS-29902: Wilson, Orme, Jr.  | REG 114683: Wilson, Orme, Jr. (b1885 d1966) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Haiti).
+    A114687 <- PC FRUS-29915: Wilson, Thomas Murray Consular Officer, U.S. Embassy in Port-au-Prince, from April
+                    1973 | REG 114687: Wilson, Thomas Murray (b1881 d1967) Foreign Service Officer. Minister Resident/Consul General (Iraq).
+    A114672 <- PC FRUS-29886: Wilson, Hugh Robert Alternate Delegate, General Disarmament Conference; Minister to
+                    Switze | REG 114672: Wilson, Hugh Robert (b1885 d1946) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A114673 <- PC FRUS-29888: Wilson, Huntington (Francis Mairs
+                    Huntington-Wilson)  | REG 114673: Wilson, Huntington (Francis Mairs Huntington-Wilson) (b1875 d1946) Non-career appointee. Third Assistant Secretary of State; Ass
+    ... 1 more
+
+#14 band=1900-1929 [NOBODY] frus1916/d367 year=1916 role=to surface='Blanchard'
+  HEAD: File No. 838.51/461 The Secretary of State to Minister Blanchard [Telegram] Department of State , Washington , January 8, 1916, 6 p.m. Your January 6, 5 p.m. Department understands that abolishment of so-called palace guard has been accepted. In the negotiatio
+  POCOM(same surname; * = in office y±1):
+     blanchard-james-j: ambassador e p canada 1993-1996
+     blanchard-lynda: ambassador e p slovenia 2019-2019
+  UNION candidates in window (0):
+    
+
+#15 band=1900-1929 [NOBODY] frus1918/d472 year=1918 role=to surface='Thurston'
+  HEAD: File No. 814.48/32 The Acting Secretary of State to the Chargé in Guatemala ( Thurston ) [Telegram] Washington , January 19, 1918 . Your January 13. You are authorized to arrange for the transportation of the destitute Americans therein mentioned, at a cost no
+  POCOM(same surname; * = in office y±1):
+     thurston-raymond-leroy: ambassador e p haiti 1961-1963; ambassador e p somalia 1965-1968
+     thurston-walter-clarence: ambassador e p bolivia 1944-1946; charge daffaires ad interim costa rica 1921-1922; envoy extraordinary minister plenipotentiary el salvador 1942-1943; ambassador e p el salvador 1943-1944; ambassador
+  UNION candidates in window (1):
+    A113572 <- AUTH 113572: Thurston, Walter Clarence (b1894 d1974) United States Ambassador in Mexico | PC FRUS-27639: Thurston, Walter Clarence United States Ambassador in Mexico | REG 113572: Thurston, Walter Clarence (b1894 d1974) United States Ambassador in Mexico
+
+#16 band=1900-1929 [NOBODY] frus1922v01/d215 year=1922 role=from surface='Sterling'
+  HEAD: 723.2515/933: Telegram The Chargé in Peru ( Sterling ) to the Secretary of State [Paraphrase] Lima , May 21, 1922—9 p.m. [Received May 22—11 a.m.] 44. Your no. 43, of May 20, 1 p.m. The President stated to me that it is Peru’s contention that the Treaty of Anc
+  POCOM(same surname; * = in office y±1):
+     sterling-adam-h: ambassador e p slovakia 2016-2019
+     sterling-frederick-augustine: envoy extraordinary minister plenipotentiary bulgaria 1933-1936; envoy extraordinary minister plenipotentiary estonia 1937-1937; envoy extraordinary minister plenipotentiary ireland 1927-1934; envoy e
+  UNION candidates in window (1):
+    A112980 <- PC FRUS-26434: Sterling, Frederick Augustine  | REG 112980: Sterling, Frederick Augustine (b1876 d1957) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Sweden); 
+
+#17 band=1900-1929 [NOBODY] frus1923v02/d27 year=1923 role=from surface='Hyde'
+  HEAD: 711.622/41 The Solicitor for the Department of State ( Hyde ) to the Secretary of State [ Washington ,] December 5, 1923 . Dear Mr. Secretary : On Friday afternoon, November 30, 1923, the German Ambassador and his Counsellor, Dr. von Lewinski, called at this o
+  POCOM(same surname; * = in office y±1):
+     hyde-jeanette-w: ambassador e p antigua and barbuda 1995-1998; ambassador e p barbados 1994-1998; ambassador e p dominica 1994-1998; ambassador e p grenada 1995-1998; ambassador e p saint kitts and nevis 1995-1998; am
+  UNION candidates in window (0):
+    
+
+#18 band=1900-1929 [NOBODY] frus1925v01/d477 year=1925 role=from surface='Mayer'
+  HEAD: 123 M 221/143: Telegram The Chargé in China ( Mayer ) to the Secretary of State Peking , July 7, 1925—3 p.m. [Received July 7—8:37 a.m.] 266. From MacMurray: Arrived today. Mayer will remain in charge pending consultations with colleagues as to proposed presen
+  POCOM(same surname; * = in office y±1):
+     mayer-ernest-de-wael: charge daffaires ad interim belgium 1944-1944
+     mayer-ferdinand-lathrop: envoy extraordinary minister plenipotentiary haiti 1937-1940
+  UNION candidates in window (2):
+    A108702 <- PC FRUS-17763: Mayer, Ferdinand Lathrop State Department Adviser, U. S. Delegation, General Disarmament
+                    Confer | REG 108702: Mayer, Ferdinand Lathrop (b1887 d1986) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Haiti).
+    A108701 <- PC FRUS-17762: Mayer, Ernest de Wael  | REG 108701: Mayer, Ernest de Wael (b1903 d1968) Foreign Service Officer. Chargé d'Affaires ad interim (Belgium).
+
+#19 band=1900-1929 [NOBODY] frus1928v02/d849 year=1928 role=from surface='Armour'
+  HEAD: 462.00 R 296/2550: Telegram The Chargé in France ( Armour ) to the Secretary of State Paris , December 20, 1928—noon . [Received December 20—9:55 a.m. Telegram in two sections. ] 424. Reparation No. 147. Reference my Reparation 146. Following is rough translat
+  POCOM(same surname; * = in office y±1):
+     armour-norman: ambassador e p argentina 1939-1944; envoy extraordinary minister plenipotentiary canada 1935-1938; ambassador e p chile 1938-1939; ambassador e p guatemala 1954-1955; envoy extraordinary minister plen
+  UNION candidates in window (1):
+    A100577 <- AUTH 100577: Armour, Norman, Sr. (b1887 d1982) Second Secretary of the Embassy in Russia | PC FRUS-01218: Armour, Norman, Sr. Second Secretary of the Embassy in Russia | REG 100577: Armour, Norman, Sr. (b1887 d1982) Foreign Service Officer. Assistant Secretary of State for Political Affairs; Ambassador Ex
+
+#20 band=1900-1929 [NOBODY] frus1929v03/d13 year=1928 role=from surface='Atherton'
+  HEAD: 641.11241/58 The Chargé in Great Britain ( Atherton ) to the Secretary of State London , October 19, 1928 . [Received October 31.] No. 3123 Sir : I have the honor to bring to the attention of the Department some correspondence which has been exchanged between
+  POCOM(same surname; * = in office y±1):
+     atherton-alfred-leroy: ambassador e p egypt 1979-1983; Ambassador at Large  1978-1979; Assistant Secretary of State for Near Eastern Affairs  1974-1978; Career Ambassador  1981-1981; Director General of the Foreign Service 
+     atherton-ray: envoy extraordinary minister plenipotentiary bulgaria 1937-1939; envoy extraordinary minister plenipotentiary canada 1943-1943; ambassador e p canada 1943-1948; envoy extraordinary minister plenipoten
+  UNION candidates in window (2):
+    A100657 <- PC FRUS-01371: Atherton, Ray Counselor of Embassy in Great Britain | REG 100657: Atherton, Ray (b1883 d1960) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Luxembourg); Ch
+    R5930 <- LIVE r5930: Atherton, Ray Counselor of Embassy in Great Britain
+
+#21 band=1930-1945 [NOBODY] frus1930v01/d138 year=1930 role=to surface='Armour'
+  HEAD: 500.A15a3/1192: Telegram The Secretary of State to the Chargé in France ( Armour ) [Paraphrase] Washington , October 27, 1930—5 p.m. 278. For Gibson. On Saturday morning the French Ambassador brought me a memorandum from his Government on the French naval prog
+  POCOM(same surname; * = in office y±1):
+     armour-norman: ambassador e p argentina 1939-1944; envoy extraordinary minister plenipotentiary canada 1935-1938; ambassador e p chile 1938-1939; ambassador e p guatemala 1954-1955; envoy extraordinary minister plen
+  UNION candidates in window (1):
+    A100577 <- AUTH 100577: Armour, Norman, Sr. (b1887 d1982) Second Secretary of the Embassy in Russia | LIVE r5549: Armour, Norman, Sr. Ambassador in Guatemala from October 18, 1954 until May 9, 1955 | PC FRUS-01218: Armour, Norman, Sr. Second Secretary of the Embassy in Russia
+
+#22 band=1930-1945 [NOBODY] frus1937v02/d729 year=1937 role=from surface='Murray'
+  HEAD: 390D.11/69 Memorandum by the Chief of the Division of Near Eastern Affairs ( Murray ) to the Assistant to the Legal Adviser ( Flournoy ) [ Washington ,] November 3, 1937 . Mr. Flournoy : The attached letter Not printed. from the Reverend Benjamin Hoffiz raises
+  POCOM(same surname; * = in office y±1):
+     murray-christopher-w: ambassador e p congo brazzaville 2010-2013
+     murray-wallace-smith: ambassador e p iran 1945-1946
+     murray-william-vans: minister resident netherlands 1797-1801
+  UNION candidates in window (1):
+    A109574 <- AUTH 109574: Murray, Wallace Smith (b1887 d1965) Adviser on Political Relations, Department of State | PC FRUS-19612: Murray, Wallace Smith Adviser on Political Relations, Department of State | REG 109574: Murray, Wallace Smith (b1887 d1965) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Iran).
+
+#23 band=1930-1945 [NOBODY] frus1938v04/d251 year=1938 role=to surface='Leahy'
+  HEAD: 893.811/1055: Telegram The Commander in Chief, United States Asiatic Fleet ( Yarnell ), to the Chief of Naval Operations ( Leahy ) Copy transmitted to the Department by the Navy Department. [ Shanghai ,] November 29, 1938—2:50 p.m. [Received November 30—7 a.m.
+  POCOM(same surname; * = in office y±1):
+     leahy-william-daniel: ambassador e p france 1940-1942
+  UNION candidates in window (1):
+    A107744 <- AUTH 107744: Leahy, William Daniel (b1875 d1959) Admiral, Chief of Naval Operations, Department of the Navy; sometimes Acting Secretary of  | LIVE r7516: Leahy, William Daniel Admiral, Chief of Naval Operations, Department of the Navy; sometimes Acting Secretary of  | PC FRUS-15784: Leahy, William Daniel Admiral, Chief of Naval Operations, Department of the Navy; sometimes
+                    
+
+#24 band=1930-1945 [NOBODY] frus1939v05/d489 year=1939 role=from surface='Frost'
+  HEAD: 825.014/64 The Chargé in Chile ( Frost ) to the Secretary of State No. 780 Santiago , July 19, 1939 . [Received July 25.] Sir : I have the honor to report that on the 14th instant I called upon the Chilean Minister for Foreign Affairs, Señor Abraham Ortega, to
+  POCOM(same surname; * = in office y±1):
+     frost-wesley: envoy extraordinary minister plenipotentiary paraguay 1941-1942; ambassador e p paraguay 1942-1944
+  UNION candidates in window (1):
+    A104600 <- AUTH 104600: Frost, Wesley (b1884 d1968) United States Consul at Cork | PC FRUS-09375: Frost, Wesley United States Consul at Cork | REG 104600: Frost, Wesley (b1884 d1968) United States Consul at Cork.
+
+#25 band=1930-1945 [NOBODY] frus1942v01/d578 year=1942 role=from surface='Merrell'
+  HEAD: 845.01/220: Telegram The Officer in Charge at New Delhi ( Merrell ) to the Secretary of State New Delhi , July 16, 1942—11 a.m. [Received July 17—5:19 a.m.] 492. In the Harijan of July 12 Gandhi answers a question which he says has been put to him by numerous
+  POCOM(same surname; * = in office y±1):
+     merrell-george-robert: ambassador e p afghanistan 1951-1952; envoy extraordinary minister plenipotentiary ethiopia 1947-1949; ambassador e p ethiopia 1949-1951; charge daffaires ad interim haiti 1924-1926; charge daffaires 
+  UNION candidates in window (1):
+    A109056 <- AUTH 109056: Merrell, George Robert (b1898 d1962) Ambassador to Ethiopia until March 17, 1951 | PC FRUS-18505: Merrell, George Robert Ambassador to Ethiopia until March 17, 1951 | REG 109056: Merrell, George Robert (b1898 d1962) Foreign Service Officer. Chargé d'Affaires ad interim (Haiti); Envoy Extraordinary and Min
+
+#26 band=1930-1945 [NOBODY] frus1943/d114 year=1943 role=to surface='Roosevelt'
+  HEAD: J. C. S. Files The Combined Chiefs of Staff to President Roosevelt and Prime Minister Churchill Circulated in the Combined Chiefs of Staff under cover of the following note by the Secretaries: “The enclosure is a memorandum for the President and the Prime Mini
+  POCOM(same surname; * = in office y±1):
+     roosevelt-nicholas: envoy extraordinary minister plenipotentiary hungary 1930-1933
+     roosevelt-robert-barnwell: minister resident netherlands 1888-1888; envoy extraordinary minister plenipotentiary netherlands 1888-1889
+     roosevelt-selwa: Chief of Protocol  1982-1989
+  UNION candidates in window (6):
+    A111575 <- AUTH 111575: Roosevelt, Anna Eleanor (bNone dNone) (Anna Eleanor Roosevelt), daughter of President Roosevelt | LIVE r8981: Roosevelt, Anna Eleanor Anna Eleanor Roosevelt), daughter of President Roosevelt | PC FRUS-23533: Roosevelt, Anna Eleanor (Anna Eleanor Roosevelt), daughter of President Roosevelt
+    A111578 <- AUTH 111578: Roosevelt, Elliott (bNone dNone) Colonel, U. S. A., Commanding Officer, 90th Photo Reconnaissance Wing, Mediterranean Allie | LIVE r7937: Roosevelt, Elliott Colonel, U. S. A., Commanding Officer, 90th Photo Reconnaissance Wing, Mediterranean Allie | PC FRUS-23538: Roosevelt, Elliott Colonel, U. S. A., Commanding Officer, 90th Photo Reconnaissance Wing,
+                   
+    A111579 <- AUTH 111579: Roosevelt, Franklin D. (b1882 d1945) Assistant Secretary of the Navy of the United States. | LIVE r924: Roosevelt, Franklin D. Assistant Secretary of the Navy of the United States | PC FRUS-23539: Roosevelt, Franklin D. Assistant Secretary of the Navy of the United States.
+    A111580 <- AUTH 111580: Roosevelt, Franklin D., Jr. (bNone dNone) Lieutenant, U. S. N. R.; Executive Officer of the U. S. S. Mayrent; son of President  | LIVE r7938: Roosevelt, Franklin D., Jr. Lieutenant, U. S. N. R.; Executive Officer of the U. S. S. Mayrent; son of President Roose | PC FRUS-23540: Roosevelt, Franklin D., Jr. Lieutenant, U. S. N. R.; Executive Officer of the U. S. S. Mayrent; son
+                  
+    A111582 <- PC FRUS-23543: Roosevelt, Nicholas  | REG 111582: Roosevelt, Nicholas (b1893 d1982) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Hungary).
+    R981 <- LIVE r981: Roosevelt Declaration of friendship with, 728, 842; tribute to, 61
+
+#27 band=1930-1945 [NOBODY] frus1944v01/d195 year=1944 role=from surface='Gallman'
+  HEAD: 740.00119 EAC/11–944: Telegram The Chargé in the United Kingdom ( Gallman ) to the Secretary of State London , November 9, 1944—8 p.m. [Received November 9—6:31 p.m.] 9776. For the Under Secretary and Mr. Dunn. In accordance with Department’s 9320 (November 7,
+  POCOM(same surname; * = in office y±1):
+     gallman-waldemar-john: ambassador e p iraq 1954-1958; ambassador e p poland 1948-1950; ambassador e p south africa 1951-1954; Director General of the Foreign Service  1958-1961
+  UNION candidates in window (1):
+    A104670 <- AUTH 104670: Gallman, Waldemar John (b1899 d1980) Counselor, American Embassy, London | LIVE r9017: Gallman, Waldemar John Ambassador in the Union of South Africa, from October 18, 1951 | PC FRUS-09536: Gallman, Waldemar John Counselor, American Embassy, London
+
+#28 band=1930-1945 [NOBODY] frus1944v05/d278 year=1944 role=from surface='Crowley'
+  HEAD: 845.515/6–1344 The Administrator of the Foreign Economic Administration ( Crowley ) to the Under Secretary of State ( Stettinius ) Washington , June 13, 1944 . Dear Mr. Stettinius : In accordance with your letter of June 6, 1944, concerning the lend-leasing of
+  POCOM(same surname; * = in office y±1):
+     crowley-john-joseph-jr: ambassador e p suriname 1980-1981
+     crowley-philip-j: Assistant Secretary of State for Public Affairs  2009-2011
+     crowley-shawn-p: charge daffaires ad interim netherlands 2016-2018
+  UNION candidates in window (1):
+    A103025 <- AUTH 103025: Crowley, Leo T. (bNone dNone) Administrator, Foreign Economic Administration | LIVE r8184: Crowley, Leo T. Administrator, Foreign Economic Administration | PC FRUS-06181: Crowley, Leo T. Administrator, Foreign Economic Administration
+
+#29 band=1930-1945 [NOBODY] frus1945v03/d1187 year=1945 role=to surface='Murphy'
+  HEAD: 862.50/10–1245 The Secretary of State to the United States Political Adviser for Germany ( Murphy ) Washington , October 22, 1945—6 p.m. 702. Urtel 763 Oct 12. Not printed; it transmitted the text of a directive, dated October 8, issued by USFET, permitting th
+  POCOM(same surname; * = in office y±1):
+     murphy-henry-cruse: minister resident netherlands 1857-1861
+     murphy-philip-d: ambassador e p germany 2009-2013
+     murphy-richard-william: ambassador e p mauritania 1971-1974; ambassador e p philippines 1978-1981; ambassador e p saudi arabia 1981-1983; ambassador e p syria 1974-1978; Assistant Secretary of State for Near Eastern Affairs 
+     murphy-robert-daniel: ambassador e p belgium 1949-1952; ambassador e p japan 1952-1953; Assistant Secretary of State for International Organization Affairs  1953-1953; Career Ambassador  1956-1956; Deputy Under Secretary o
+     murphy-w-patrick: ambassador e p cambodia 2019-2019
+     murphy-william-sumter: charge daffaires texas 1843-1844
+  UNION candidates in window (3):
+    A109561 <- AUTH 109561: Murphy, Raymond E. (bNone dNone) Special Assistant to the Director, Office of European Affairs, Department of State | LIVE r8408: Murphy, Raymond E. Special Assistant to the Director, Office of European Affairs, Department of State | PC FRUS-19586: Murphy, Raymond E. Special Assistant to the Director, Office of European Affairs,
+                    Departm
+    A109563 <- AUTH 109563: Murphy, Robert Daniel (b1894 d1978) American Foreign Service Officer, Political Adviser to the Supreme Allied Commander, Medit | LIVE r1025: Murphy, Robert Daniel Adviser to President-elect Nixon and Head of the Transition Team | PC FRUS-19590: Murphy, Robert Daniel American Foreign Service Officer, Political Adviser to the Supreme
+                    All
+    R8597 <- LIVE r8597: Ambassador Robert D. Murphy Political Adviser to the Commander in Chief, United States Forces of Occupation in Germany
+
+#30 band=1930-1945 [NOBODY] frus1945v07/d1054 year=1945 role=from surface='Meyer'
+  HEAD: 393.115/11–1945: Airgram The Consul at Tientsin ( Meyer ) to the Secretary of State Tientsin , November 19, 1945 . [Received December 17—4:11 p.m.] A–21. [To Embassy:] Under present directives, Marines in Tientsin unable to require Japanese to return movable g
+  POCOM(same surname; * = in office y±1):
+     meyer-armin-henry: ambassador e p iran 1965-1969; ambassador e p japan 1969-1972; ambassador e p lebanon 1961-1965
+     meyer-charles-appleton: Assistant Secretary of State for Western Hemisphere Affairs  1969-1973
+     meyer-francis-gerald: Assistant Secretary of State for Administration  1969-1971
+     meyer-george-von-lengerke: ambassador e p italy 1900-1905; ambassador e p russia 1905-1907
+  UNION candidates in window (4):
+    A109087 <- AUTH 109087: Meyer, Armin Henry (b1914 d2006) Second Secretary and Consul of the Embassy in Lebanon, February 16, 1952–June 28, 1954; th | PC FRUS-18560: Meyer, Armin Henry Second Secretary and Consul of the Embassy in Lebanon, February 16,
+                    19 | REG 109087: Meyer, Armin Henry (b1914 d2006) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Lebanon); Ambassado
+    A109088 <- AUTH 109088: Meyer, Charles Appleton (b1918 d1996) Assistant Secretary of State for Inter-American Affairs and U.S. Coordinator, Alliance fo | PC FRUS-18561: Meyer, Charles Appleton Assistant Secretary of State for Inter-American Affairs and U.S.
+                    Coord | REG 109088: Meyer, Charles Appleton (b1918 d1996) Non-career appointee. Assistant Secretary of State for Western Hemisphere Affairs.
+    A109091 <- AUTH 109091: Meyer, Francis Gerald (b1913 d1995) Assistant Secretary of State for Administration, September 1969–May 1971 | PC FRUS-18568: Meyer, Francis Gerald Assistant Secretary of State for Administration, September 1969–May
+                    19 | REG 109091: Meyer, Francis Gerald (b1913 d1995) Assistant Secretary of State for Administration, September 1969–May 1971
+    A109095 <- AUTH 109095: Meyer, Vincent (bNone dNone) U. S. A., Military Adviser, United States Delegation, European Advisory Commission | LIVE r8389: Meyer, Vincent U. S. A., Military Adviser, United States Delegation, European Advisory Commission | PC FRUS-18580: Meyer, Vincent U. S. A., Military Adviser, United States Delegation, European Advisory
+                  
+
+#31 band=1946- [NOBODY] frus1946v01/d453 year=1946 role=to surface='Hickerson'
+  HEAD: 501. BC Atomic/6–2746 Memorandum by the Chief of the Division of Eastern European Affairs ( Thompson ) to the Deputy Director of the Office of European Affairs ( Hickerson ) [ Washington ,] June 27, 1946 . Ambassador Smith’s view as reported in his telegram 20
+  POCOM(same surname; * = in office y±1):
+     hickerson-john-dewey: ambassador e p finland 1955-1959; ambassador e p philippines 1959-1961; Assistant Secretary of State for International Organization Affairs  1949-1953
+  UNION candidates in window (1):
+    A105894 <- AUTH 105894: Hickerson, John Dewey (b1898 d1989) Assistant Chief of the Division of European Affairs, Department of State, 1937–40 | LIVE r7481: Hickerson, John Dewey Ambassador to Finland from November 1955 | PC FRUS-12032: Hickerson, John Dewey Assistant Chief of the Division of European Affairs, Department of
+                    Sta
+
+#32 band=1946- [NOBODY] frus1946v06/d647 year=1946 role=from surface='Shantz'
+  HEAD: 860H.00/8–1246 The Chargé in Yugoslavia ( Shantz ) to the Secretary of State secret No. 471 Belgrade , August 12, 1946 . [Received September 4.] Sir : I have the honor to present below some information about the Yugoslav Communist Party, derived from our obser
+  POCOM(same surname; * = in office y±1):
+     shantz-harold: envoy extraordinary minister plenipotentiary romania 1952-1955
+  UNION candidates in window (1):
+    A112295 <- AUTH 112295: Shantz, Harold (b1894 d1967) Second Secretary of Legation in Liberia | LIVE r6376: Shantz, Harold Chargé d’Affaires ad interim in Yugoslavia | PC FRUS-25019: Shantz, Harold Second Secretary of Legation in Liberia
+
+#33 band=1946- [NOBODY] frus1946v08/d483 year=1946 role=to surface='Douglas MacArthur'
+  HEAD: Records of the State–War–Navy Coordinating Committee, Lot 52–M45, SWNCC 176 Series: Telegram The Joint Chiefs of Staff to General of the Army Douglas MacArthur , at Tokyo Copy transmitted by the Joint Chiefs of Staff on March 1 to the State–War–Navy Coordinati
+  POCOM(same surname; * = in office y±1):
+     macarthur-douglas: ambassador e p austria 1967-1969; ambassador e p belgium 1961-1965; ambassador e p iran 1969-1972; ambassador e p japan 1956-1961; Assistant Secretary of State for Legislative Affairs  1965-1967; Care
+  UNION candidates in window (2):
+    A108250 <- AUTH 108250: MacArthur, Douglas (bNone dNone) U. S. A., Commander, United States Army Forces in the Far East, and Supreme Commander, Sou | LIVE r8356: MacArthur, Douglas Commander in Chief, Far East; Commander in Chief, United Nations Command; and Supreme Comm | PC FRUS-16841: MacArthur, Douglas U. S. A., Commander, United States Army Forces in the Far East, and
+                    Su
+    A108251 <- AUTH 108251: MacArthur, Douglas, II (b1909 d1997) Foreign Service Officer. Counselor | PC FRUS-16842: MacArthur, Douglas, II Foreign Service Officer. Counselor | REG 108251: MacArthur, Douglas, II (b1909 d1997) Foreign Service Officer. Counselor; Career Ambassador; Assistant Secretary of State for Le
+
+#34 band=1946- [NOBODY] frus1946v11/d759 year=1946 role=to surface='Simpson'
+  HEAD: 814.5045/11–3046 The Assistant Secretary of State for American Republic Affairs ( Braden ) to the Chairman of the Board, International Railways of Central America ( Simpson ) Washington , December 6, 1946 . My Dear Mr. Simpson : I have received your courteous
+  POCOM(same surname; * = in office y±1):
+     simpson-daniel-howard: ambassador e p central african republic 1989-1992; ambassador e p congo kinshasa 1995-1998
+  UNION candidates in window (0):
+    
+
+#35 band=1946- [NOBODY] frus1948v08/d243 year=1948 role=to surface='Marshall S. Carter'
+  HEAD: 893.796/11–2948 Memorandum by the Director of the Office of Far Eastern Affairs ( Butterworth ) to Brioadier General Marshall S. Carter Special Assistant to the Secretary of State. [ Washington ,] December 4, 1948 . With reference to your query as to what the
+  POCOM(same surname; * = in office y±1):
+     carter-george-w: minister resident venezuela 1881-1882
+     carter-james-garneth: minister resident consul general liberia 1927-1927
+     carter-john-ridgely: envoy extraordinary minister plenipotentiary argentina 1911-1911; diplomatic agent bulgaria 1909-1909; envoy extraordinary minister plenipotentiary bulgaria 1910-1910; envoy extraordinary minister ple
+     carter-philip: ambassador e p cote divoire 2010-2013; ambassador e p guinea 2007-2008
+     carter-thomas-l: representative to icao  2017-2020
+     carter-william-beverly: ambassador e p liberia 1976-1979; ambassador e p tanzania 1972-1975; Ambassador at Large  1979-1981
+     carter-william-hodding: Assistant Secretary of State for Public Affairs  1977-1980
+  UNION candidates in window (4):
+    A102251 <- AUTH 102251: Carter, James Earl (“Jimmy”), Jr. (b1924 dNone) President of the United States (1977-01-20-1981-01-20; Reagan) | PC FRUS-04613: Carter, James Earl ("Jimmy"), Jr. President of the United States (1977-01-20-1981-01-20;
+                    Reagan) | REG 102251: Carter, James Earl (“Jimmy”), Jr. (b1924 dNone) Governor of Georgia until 1975; candidate for the 1976 Democratic nomination for
+    A102256 <- AUTH 102256: Carter, Marshall S. (bNone dNone) Special Assistant to the Secretary of State | LIVE r1247: Carter, Marshall S. Deputy Director of Central Intelligence from April 1962 | PC FRUS-04624: Carter, Marshall S. Special Assistant to the Secretary of State
+    A102259 <- AUTH 102259: Carter, William Beverly, Jr. (b1921 d1982) public affairs officer, U.S. Embassy in Lagos, until 1969; Deputy Assistant Secretar | PC FRUS-04632: Carter, William Beverly, Jr. public affairs officer, U.S. Embassy in Lagos, until 1969; Deputy
+                    Assi | REG 102259: Carter, William Beverly, Jr. (b1921 d1982) Deputy Assistant Secretary of State for African Affairs
+    A102252 <- PC FRUS-04617: Carter, James Garneth  | REG 102252: Carter, James Garneth (b1877 d1949) Foreign Service Officer. Minister Resident/Consul General (Liberia).
+
+#36 band=1946- [NOBODY] frus1949v01/d59 year=1949 role=to surface='Hamilton'
+  HEAD: USUN Files The Deputy United States Representative to the Commission for Conventional Armaments ( Nash ) to the Representative of the Department of the Air Force on the Executive Committee on Regulation of Armaments ( Hamilton ) secret Lake Placid, New York ,
+  POCOM(same surname; * = in office y±1):
+     hamilton-fowler: Administrator of the Agency for International Development  1961-1962
+     hamilton-james-alexander: Secretary of State ad interim  1829-1829
+     hamilton-john-randle: ambassador e p guatemala 2002-2005; ambassador e p peru 1999-2002
+     hamilton-maxwell-mcgaughey: envoy extraordinary minister plenipotentiary finland 1945-1947
+     hamilton-william-cowles: charge daffaires ad interim sweden 1980-1981
+  UNION candidates in window (6):
+    A105453 <- AUTH 105453: Hamilton, Charles W. (bNone dNone) Vice-President (Foreign Production Division), Gulf Oil Corporation | LIVE r2494: Hamilton, Charles W. Vice President of the Foreign Production Division, Gulf Oil Corporation; Director, Kuwait  | PC FRUS-11149: Hamilton, Charles W. Vice-President (Foreign Production Division), Gulf Oil
+                    Corporation
+    A105455 <- AUTH 105455: Hamilton, Fowler (b1911 d1984) Administrator of the Agency for International Development from September 30, 1961, until D | PC FRUS-11157: Hamilton, Fowler Administrator of the Agency for International Development from September
+                  | REG 105455: Hamilton, Fowler (b1911 d1984) Administrator of the Agency for International Development from October 3, 1961
+    A105461 <- AUTH 105461: Hamilton, Maxwell McGaughey (b1896 d1957) Assistant Chief, Division of Far Eastern Affairs, Department of State | LIVE r6574: Hamilton, Maxwell McGaughey Assistant Chief, Division of Far Eastern Affairs, Department of State | PC FRUS-11169: Hamilton, Maxwell McGaughey Assistant Chief, Division of Far Eastern Affairs, Department of
+                    State
+    A105464 <- AUTH 105464: Hamilton, William Cowles (b1922 dNone) Vice Consul and Secretary in the Division of Research for the Far East, Office of Intell | PC FRUS-11174: Hamilton, William Cowles Vice Consul and Secretary in the Division of Research for the Far East,
+                   | REG 105464: Hamilton, William Cowles (b1922 dNone) Vice Consul and Secretary in the Division of Research for the Far East, Office of Intelli
+    A105465 <- AUTH 105465: Hamilton, William L., Jr. (bNone dNone) Office of British Commonwealth and Northern European Affairs, Department of State | LIVE r10471: Hamilton, William L., Jr. Office of British Commonwealth and Northern European Affairs, Department of State | PC FRUS-11176: Hamilton, William L., Jr. Office of British Commonwealth and Northern European Affairs, Department
+                 
+    A115576 <- AUTH 115576: Hamilton, Pierpont M. (bNone dNone) USAF, Chief of Policy Division, Directorate of Plans and Operations, U.S. Air Force | LIVE r10470: Hamilton, Pierpont M. USAF, Chief of Policy Division, Directorate of Plans and Operations, U.S. Air Force | PC FRUS-11172: Hamilton, Pierpont M. USAF, Chief of Policy Division, Directorate of Plans and Operations,
+                    U
+
+#37 band=1946- [NOBODY] frus1949v09/d1019 year=1949 role=from surface='Clark'
+  HEAD: 661.9331/8–2349: Telegram The Minister-Counselor of Embassy in China ( Clark ) to the Secretary of State Canton , August 23, 1949—5 p. m. [Received August 23—10:39 p. m.] Cantel 1007. George Yeh, Acting Foreign Minister, confirms press reports that Chinese are
+  POCOM(same surname; * = in office y±1):
+     clark-alexander: minister resident consul general liberia 1890-1891
+     clark-edward-aubrey: ambassador e p australia 1965-1967
+     clark-gilbert-edward: ambassador e p gambia 1970-1973; ambassador e p mali 1968-1970; ambassador e p senegal 1970-1973
+     clark-harlan-bendell: charge daffaires ad interim yemen 1964-1966
+     clark-joan-margaret: ambassador e p malta 1979-1981; Assistant Secretary of State for Consular Affairs  1983-1989; Director General of the Foreign Service  1981-1983; Director of the Office of Management Policy  1977-1979
+     clark-john-e: charge daffaires ad interim barbados 1988-1990; charge daffaires ad interim dominica 1988-1990; charge daffaires ad interim saint lucia 1988-1990; charge daffaires ad interim saint vincent and grenadi
+     clark-joshua-reuben: ambassador e p mexico 1930-1933; Under Secretary of State  1928-1929
+     clark-richard-clarence: Ambassador at Large  1979-1979
+    ... 4 more
+  UNION candidates in window (12):
+    A102592 <- AUTH 102592: Clark, Bennett Champ (bNone dNone) United States Senator from Missouri | LIVE r7725: Clark, Bennett Champ United States Senator from Missouri | PC FRUS-05353: Clark, Bennett Champ United States Senator from Missouri
+    A102598 <- AUTH 102598: Clark, Gilbert Edward (b1917 d1984) Director, Office of West African Affairs, Bureau of African Affairs, Department of State,  | PC FRUS-05364: Clark, Gilbert Edward Director, Office of West African Affairs, Bureau of African Affairs,
+                    D | REG 102598: Clark, Gilbert Edward (b1917 d1984) Director, Office of West African Affairs, Bureau of African Affairs, Department of State, 
+    A102599 <- AUTH 102599: Clark, Harlan Bendell (b1913 d2000) Officer in Charge of Lebanon-Syria-Iraq Affairs, Department of State, from October 1949; F | LIVE r10378: Clark, Harlan Bendell First Secretary and Consul of the Legation in Syria until October 19, 1953; Counselor, Oct | PC FRUS-05365: Clark, Harlan Bendell Officer in Charge of Lebanon-Syria-Iraq Affairs, Department of State,
+                    
+    A102601 <- AUTH 102601: Clark, Joan Margaret (b1922 dNone) Foreign Service Officer. Director of the Office of Management Policy | PC FRUS-05370: Clark, Joan Margaret Foreign Service Officer. Director of the Office of Management
+                    Policy | REG 102601: Clark, Joan Margaret (b1922 dNone) Foreign Service Officer. Director of the Office of Management Policy; Director General of 
+    A102607 <- AUTH 102607: Clark, Lewis (bNone dNone) Counselor of the United States Embassy in London | LIVE r9348: Clark, Lewis Consul General at Algiers | PC FRUS-05376: Clark, Lewis Counselor of the United States Embassy in London
+    A102608 <- AUTH 102608: Clark, Mark Wayne (b1896 d1984) U. S. A., Commanding General, Fifteenth Army Group (to July 4); Commanding General, United | LIVE r8167: Clark, Mark Wayne Commanding General of United States Forces in Austria and High Commissioner for Austria, S | PC FRUS-05378: Clark, Mark Wayne U. S. A., Commanding General, Fifteenth Army Group (to July 4);
+                    Comman
+    A102613 <- AUTH 102613: Clark, Tom C. (bNone dNone) Attorney General, June 30, 1945–July 28, 1949 | LIVE r8038: Clark, Tom C. Attorney General, June 30, 1945–July 28, 1949 | PC FRUS-05385: Clark, Tom C. Attorney General, June 30, 1945–July 28, 1949
+    A102605 <- PC FRUS-05374: Clark, Joshua Reuben, Jr.  | REG 102605: Clark, Joshua Reuben, Jr. (b1871 d1961) Non-career appointee. Under Secretary of State; Ambassador Extraordinary and Plenipotent
+    ... 4 more
+
+#38 band=1946- [NOBODY] frus1951v06p1/d281 year=1951 role=from surface='Gullion'
+  HEAD: 751G.00/10–451: Telegram The Chargé at Saigon ( Gullion ) to the Secretary of State This telegram was transmitted in two parts. secret Saigon , October 4, 1951—9 a. m. 763. In course of courtesy call on Adm De Bourgoing naval commissioner in IC , actually No.
+  POCOM(same surname; * = in office y±1):
+     gullion-edmund-asbury: ambassador e p congo kinshasa 1961-1964; charge daffaires ad interim finland 1944-1944
+  UNION candidates in window (1):
+    A105299 <- AUTH 105299: Gullion, Edmund Asbury (b1913 d1998) Dean, Fletcher School of Law and Diplomacy, Tufts University | LIVE r505: Gullion, Edmund Asbury Acting Deputy Director of the U.S. Disarmament Administration until 1961; Ambassador to th | PC FRUS-10837: Gullion, Edmund A. (Ed) Dean, Fletcher School of Law and Diplomacy, Tufts
+                    University
+
+#39 band=1946- [NOBODY] frus1951v07p1/d262 year=1951 role=from surface='Ridgway'
+  HEAD: Department of Defense Files: Telegram The Commander in Chief, Far East ( Ridgway ) to the Joint Chiefs of Staff Copies of this and the immediately succeeding message have been provided by the Department of Defense; the texts are complete, but certain message i
+  POCOM(same surname; * = in office y±1):
+     ridgway-rozanne-lejeanne: ambassador e p finland 1977-1980; ambassador e p german democratic republic 1982-1985; Assistant Secretary of State for European and Eurasian Affairs  1985-1989; Counselor  1980-1981
+  UNION candidates in window (1):
+    A111375 <- AUTH 111375: Ridgway, Matthew B. (bNone dNone) USA, Commander in Chief, United Nations Command (Korea); Commander in Chief, Far East | LIVE r9888: Ridgway, Matthew B. Chief of Staff, U.S. Army, August 15, 1953–June 30, 1955 | PC FRUS-23128: Ridgway, Matthew B. USA, Commander in Chief, United Nations Command (Korea); Commander in
+                    
+
+#40 band=1946- [NOBODY] frus1952-54v12p2/d359 year=1954 role=from surface='Lay'
+  HEAD: S/P – NSC files, lot 61 D 167, NSC 5413/1 No. 359 Memorandum by the Executive Secretary ( Lay ) to the National Security Council secret NSC 5413/1 [ Washington ,] April 5, 1954 . U.S. Policy Toward The Philippines References: A. NSC 5413 Dated Mar. 16, NSC 541
+  POCOM(same surname; * = in office y±1):
+     lay-george-washington: charge daffaires sweden 1842-1845
+     lay-julius-gareche: envoy extraordinary minister plenipotentiary honduras 1929-1935; envoy extraordinary minister plenipotentiary uruguay 1935-1937; envoy extraordinary minister plenipotentiary uruguay 1934-1934
+  UNION candidates in window (1):
+    A107732 <- AUTH 107732: Lay, James S., Jr. (bNone dNone) Executive Secretary, National Security Council, from 1950 until 1961 | LIVE r191: Lay, James S., Jr. Executive Secretary of the National Security Council | PC FRUS-15722: Lay, James S., Jr. Executive Secretary, National Security Council, from 1950 until
+                    1961
+
+#41 band=1861-1899 [SEVERAL] frus1863p1/d87 year=1863 role=to surface='Mr. Seward'
+  HEAD: Mr. Adams to Mr. Seward . No. 328.] Legation of the United States , London, February 19, 1863. Sir: In obedience to the instructions contained in your despatch (No. 462) of the 30th January, I have addressed a note to Lord Russell on the alleged proceeding of
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#42 band=1861-1899 [SEVERAL] frus1863p2/d312 year=1863 role=from surface='Mr. Seward'
+  HEAD: Mr. Seward to Señor Tassara Department of State , Washington , July 2, 1863. Sir: On the third day of November last the Secretary of War called my attention to a complaint which has been preferred by Major General Butler, who was then commanding the United Sta
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#43 band=1861-1899 [SEVERAL] frus1864p1/d96 year=1864 role=to surface='Mr. Seward'
+  HEAD: Mr. Adams to Mr. Seward . No. 608.] Legation of the United States, London, March 3, 1864. Sir: Under the directions contained in your No. 834, of the 6th of February, I addressed a note to Lord Russell on the subject of the steamer Will-o’-the-Wisp. Copies of
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#44 band=1861-1899 [SEVERAL] frus1864p3/d254 year=1864 role=to surface='Mr. Seward'
+  HEAD: [Translation.] Mr. Geofroy to Mr. Seward Legation of France to the United States, Washington, March 29, 1864. Sir : An American company, which proposes to take the deposits of guano discovered on Swan islands, has addressed the government of the Emperor for th
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#45 band=1861-1899 [SEVERAL] frus1864p3/d86 year=1864 role=from surface='Mr. Seward'
+  HEAD: Mr. Seward to Mr. Dayton No. 520.] Department of State, Washington, April 5, 1864. Sir : Your despatch of the 19th ultimo, No. 437, respecting the case of Mr. Mansfield, has been received with pleasure. I am, sir, your obedient servant, WILLIAM H. SEWARD. Will
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#46 band=1861-1899 [SEVERAL] frus1864p4/d447 year=1863 role=from surface='Mr. Seward'
+  HEAD: Mr. Seward to Mr. Josephs . Department of State , Washington , December 3, 1863 . Sir: I have received your letter of the 25th ultimo, on the subject of persecutions of Israelites in Morocco. In reply, I have to express my regret and surprise that, in this com
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#47 band=1861-1899 [SEVERAL] frus1865p4/d807 year=1865 role=to surface='Seward'
+  HEAD: Mr. Judd to Mr. Seward . United States Legation , Berlin , May 1, 1865 . No. 96.] Sir : This forenoon Captain von Lucadou, personal aide-de-camp of his Royal Highness the Crown Prince of Prussia, presented himself at the legation and informed me that he was ch
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#48 band=1861-1899 [SEVERAL] frus1865p4/d885 year=1865 role=to surface='Seward'
+  HEAD: Mr. Hitz to Mr. Seward . Consulate General of Switzerland , Washington , April 15, 1865 . Sir : The national calamity which has just befallen the United States is, in all its bearings, one of such stupendous magnitude that Switzerland, in the person of her rep
+  POCOM(same surname; * = in office y±1):
+    *seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879
+     seward-george-frederick: envoy extraordinary minister plenipotentiary china 1876-1880
+    *seward-william-henry: Secretary of State  1861-1869
+  UNION candidates in window (3):
+    A112258 <- PC FRUS-24936: Seward, Frederick William  | POCOM seward-frederick-william: Assistant Secretary of State  1861-1869; Assistant Secretary of State  1877-1879 | REG 112258: Seward, Frederick William (b1830 d1915) Non-career appointee. Assistant Secretary of State.
+    A112260 <- AUTH 112260: Seward, William Henry (b1801 d1872) Secretary of State, 1861–1869 | PC FRUS-24938: Seward, William Henry Secretary of State, 1861–1869 | POCOM seward-william-henry: Secretary of State  1861-1869
+    A112259 <- PC FRUS-24937: Seward, George Frederick  | REG 112259: Seward, George Frederick (b1840 d1910) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (China).
+
+#49 band=1861-1899 [SEVERAL] frus1883/d15 year=1883 role=from surface='Davis'
+  HEAD: No. 15. Mr. Davis to Baron Schaeffer . Department of State , Washington , May 19, 1883 . Baron : Acknowledging the receipt of your note of to-day’s date in regard to the arrest of Captain Sylvio Ferlan, of the Austrian vessel Ararat, at Philadelphia, on a char
+  POCOM(same surname; * = in office y±1):
+     davis-allen-clayton: ambassador e p guinea 1980-1983; ambassador e p uganda 1983-1985
+     davis-arthur-h-jr: ambassador e p panama 1986-1990; ambassador e p paraguay 1982-1985
+    *davis-john: Assistant Secretary of State  1882-1885
+    *davis-john-chandler-bancroft: envoy extraordinary minister plenipotentiary germany 1874-1877; Assistant Secretary of State  1869-1871; Assistant Secretary of State  1873-1874; Assistant Secretary of State  1881-1882
+     davis-john-roger: charge daffaires ad interim poland 1983-1987; charge daffaires poland 1987-1988; ambassador e p poland 1988-1990; ambassador e p romania 1991-1994
+     davis-john-wesley: commissioner china 1848-1850
+     davis-john-william: ambassador e p united kingdom 1918-1921
+     davis-lynn-etheridge: Under Secretary of State for Arms Control and International Security Affairs  1993-1997
+    ... 9 more
+  UNION candidates in window (2):
+    A103193 <- PC FRUS-06559: Davis, John Chandler Bancroft  | POCOM davis-john-chandler-bancroft: Assistant Secretary of State  1869-1871; Assistant Secretary of State  1873-1874; Assistant Secretary of | REG 103193: Davis, John Chandler Bancroft (b1822 d1907) Non-career appointee. Assistant Secretary of State; Envoy Extraordinary and Minister
+    A103192 <- PC FRUS-06558: Davis, John Non-career appointee. Assistant Secretary of State. | POCOM davis-john: Assistant Secretary of State  1882-1885 | REG 103192: Davis, John (b1851 d1902) Non-career appointee. Assistant Secretary of State.
+
+#50 band=1861-1899 [SEVERAL] frus1893/d2 year=1893 role=to surface='Grant'
+  HEAD: Mr. Grant to Mr. Gresham . Legation of the United States , Vienna , April 19, 1893 . (Received May 5, 1893.) No. 353.] Sir : I have the honor to transmit herewith the inclosed correspondence relative to the arrest, confinement in jail, and final release of Cha || ctx: ...e his release. I am, etc., Frederick D. Grant. [Inclosure 6 in No. 353]. Mr. Mercy to Mr. Grant . Krakau , March 7, 1893 . Sir : In reply to yours of March...
+  POCOM(same surname; * = in office y±1):
+    *grant-frederic-james: envoy extraordinary minister plenipotentiary bolivia 1892-1893
+    *grant-frederick-dent: envoy extraordinary minister plenipotentiary austria 1889-1893
+     grant-hugh-gladney: envoy extraordinary minister plenipotentiary albania 1946 1935-1939; envoy extraordinary minister plenipotentiary thailand 1940-1941
+     grant-william: charge daffaires ad interim qatar 2018-2020
+  UNION candidates in window (2):
+    A105107 <- PC FRUS-10467: Grant, Frederic James  | POCOM grant-frederic-james: envoy extraordinary minister plenipotentiary (bolivia) 1892-1893 | REG 105107: Grant, Frederic James (b1862 d1894) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Bolivia).
+    A105108 <- PC FRUS-10468: Grant, Frederick Dent  | POCOM grant-frederick-dent: envoy extraordinary minister plenipotentiary (austria) 1889-1893 | REG 105108: Grant, Frederick Dent (b1850 d1912) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Austria).
+
+#51 band=1900-1929 [SEVERAL] frus1910/d764 year=1910 role=to surface='Wilson'
+  HEAD: File No. 124.126/5. The Acting Secretary of State to Ambassador Wilson . Department of State , Washington , November 2, 1910 . No. 133.] Sir : The department acknowledges the receipt of your dispatch No. 220, of the 19th ultimo, Not printed. with which you inc
+  POCOM(same surname; * = in office y±1):
+     wilson-charles-stetson: charge daffaires ad interim bulgaria 1919-1921; envoy extraordinary minister plenipotentiary bulgaria 1921-1928; envoy extraordinary minister plenipotentiary romania 1928-1933; envoy extraordinary min
+     wilson-edwin-carleton: ambassador e p panama 1941-1943; ambassador e p turkey 1945-1948; envoy extraordinary minister plenipotentiary uruguay 1939-1941
+    *wilson-francis-mairs-huntington: envoy extraordinary minister plenipotentiary argentina 1909-1909; diplomatic agent bulgaria 1908-1908; envoy extraordinary minister plenipotentiary romania 1908-1908; envoy extraordinary minister plen
+    *wilson-henry-lane: envoy extraordinary minister plenipotentiary belgium 1905-1909; envoy extraordinary minister plenipotentiary chile 1897-1904; envoy extraordinary minister plenipotentiary greece 1902-1902; ambassador 
+     wilson-hugh-robert: ambassador e p germany 1938-1938; envoy extraordinary minister plenipotentiary switzerland 1927-1937; Assistant Secretary of State  1937-1938
+     wilson-james: minister resident venezuela 1866-1867
+     wilson-james-morrison: Assistant Secretary of State for Democracy, Human Rights, and Labor  1976-1977
+     wilson-joseph-charles: ambassador e p gabon 1992-1995; charge daffaires ad interim iraq 1990-1991; ambassador e p sao tome and principe 1992-1995
+    ... 4 more
+  UNION candidates in window (9):
+    Pwilson-francis-mairs-huntington <- POCOM wilson-francis-mairs-huntington: Assistant Secretary of State  1909-1913; diplomatic agent (bulgaria) 1908-1908; envoy extraordinary m
+    A114670 <- PC FRUS-29882: Wilson, Henry Lane  | POCOM wilson-henry-lane: ambassador e p (mexico) 1909-1913; envoy extraordinary minister plenipotentiary (belgium) 1905-1909; envoy extraord | REG 114670: Wilson, Henry Lane (b1856 d1932) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Yugoslavia); Envoy
+    A114661 <- AUTH 114661: Wilson, Charles Stetson (b1873 d1947) United States Secretary of Embassy and Chargé d’Affaires in Russia | LIVE r5143: Wilson, Charles Stetson Chargé d’Affaires in Bulgaria | PC FRUS-29862: Wilson, Charles Stetson United States Secretary of Embassy and Chargé d’Affaires in
+                    Russia
+    A114664 <- AUTH 114664: Wilson, Edwin Carleton (b1893 d1972) Ambassador in Turkey, 1945–48 | PC FRUS-29871: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48 | REG 114664: Wilson, Edwin Carleton (b1893 d1972) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Uruguay); Ambas
+    A114691 <- AUTH 114691: Wilson, Woodrow (b1856 d1924) President of the United States. | LIVE r355: Wilson, Woodrow President of the United States | PC FRUS-29920: Wilson, Woodrow President of the United States.
+    A114683 <- PC FRUS-29902: Wilson, Orme, Jr.  | REG 114683: Wilson, Orme, Jr. (b1885 d1966) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Haiti).
+    A114687 <- PC FRUS-29915: Wilson, Thomas Murray Consular Officer, U.S. Embassy in Port-au-Prince, from April
+                    1973 | REG 114687: Wilson, Thomas Murray (b1881 d1967) Foreign Service Officer. Minister Resident/Consul General (Iraq).
+    A114672 <- PC FRUS-29886: Wilson, Hugh Robert Alternate Delegate, General Disarmament Conference; Minister to
+                    Switze | REG 114672: Wilson, Hugh Robert (b1885 d1946) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    ... 1 more
+
+#52 band=1900-1929 [SEVERAL] frus1910/d201 year=1909 role=from surface='O’Brien'
+  HEAD: Ambassador O’Brien to the Secretary of State . American Embassy , Tokyo , December 19, 1909 . No. 927.] Sir : I. had the honor to inform you this morning by telegram Not printed. that I yesterday sent to the foreign office a note drawn up in accordance with th
+  POCOM(same surname; * = in office y±1):
+    *obrien-edward-charles: envoy extraordinary minister plenipotentiary paraguay 1905-1909; envoy extraordinary minister plenipotentiary uruguay 1905-1909
+    *obrien-thomas-james: envoy extraordinary minister plenipotentiary denmark 1905-1907; ambassador e p italy 1911-1913; ambassador e p japan 1907-1911
+  UNION candidates in window (2):
+    A110221 <- POCOM obrien-edward-charles: envoy extraordinary minister plenipotentiary (paraguay) 1905-1909; envoy extraordinary minister plenipotentiary | REG 110221: O’Brien, Edward Charles (b1860 d1927) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Uruguay); Envoy Ex
+    A110223 <- POCOM obrien-thomas-james: ambassador e p (italy) 1911-1913; ambassador e p (japan) 1907-1911; envoy extraordinary minister plenipotentiary  | REG 110223: O’Brien, Thomas James (b1842 d1933) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Japan); Ambassador Ext
+
+#53 band=1900-1929 [SEVERAL] frus1914-20v01/d166 year=1914 role=from surface='Wilson'
+  HEAD: 763.72111/1074½ President Wilson to the Acting Secretary of State Washington , December 1, 1914 . My Dear Mr. Lansing : I would be very much obliged if you would read the enclosed letter from Professor Münsterberg and send me a memorandum, if you would be so k
+  POCOM(same surname; * = in office y±1):
+     wilson-charles-stetson: charge daffaires ad interim bulgaria 1919-1921; envoy extraordinary minister plenipotentiary bulgaria 1921-1928; envoy extraordinary minister plenipotentiary romania 1928-1933; envoy extraordinary min
+     wilson-edwin-carleton: ambassador e p panama 1941-1943; ambassador e p turkey 1945-1948; envoy extraordinary minister plenipotentiary uruguay 1939-1941
+    *wilson-francis-mairs-huntington: envoy extraordinary minister plenipotentiary argentina 1909-1909; diplomatic agent bulgaria 1908-1908; envoy extraordinary minister plenipotentiary romania 1908-1908; envoy extraordinary minister plen
+    *wilson-henry-lane: envoy extraordinary minister plenipotentiary belgium 1905-1909; envoy extraordinary minister plenipotentiary chile 1897-1904; envoy extraordinary minister plenipotentiary greece 1902-1902; ambassador 
+     wilson-hugh-robert: ambassador e p germany 1938-1938; envoy extraordinary minister plenipotentiary switzerland 1927-1937; Assistant Secretary of State  1937-1938
+     wilson-james: minister resident venezuela 1866-1867
+     wilson-james-morrison: Assistant Secretary of State for Democracy, Human Rights, and Labor  1976-1977
+     wilson-joseph-charles: ambassador e p gabon 1992-1995; charge daffaires ad interim iraq 1990-1991; ambassador e p sao tome and principe 1992-1995
+    ... 4 more
+  UNION candidates in window (10):
+    Pwilson-francis-mairs-huntington <- POCOM wilson-francis-mairs-huntington: Assistant Secretary of State  1909-1913; diplomatic agent (bulgaria) 1908-1908; envoy extraordinary m
+    A114670 <- PC FRUS-29882: Wilson, Henry Lane  | POCOM wilson-henry-lane: ambassador e p (mexico) 1909-1913; envoy extraordinary minister plenipotentiary (belgium) 1905-1909; envoy extraord | REG 114670: Wilson, Henry Lane (b1856 d1932) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Yugoslavia); Envoy
+    A114661 <- AUTH 114661: Wilson, Charles Stetson (b1873 d1947) United States Secretary of Embassy and Chargé d’Affaires in Russia | LIVE r5143: Wilson, Charles Stetson Chargé d’Affaires in Bulgaria | PC FRUS-29862: Wilson, Charles Stetson United States Secretary of Embassy and Chargé d’Affaires in
+                    Russia
+    A114664 <- AUTH 114664: Wilson, Edwin Carleton (b1893 d1972) Ambassador in Turkey, 1945–48 | PC FRUS-29871: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48 | REG 114664: Wilson, Edwin Carleton (b1893 d1972) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Uruguay); Ambas
+    A114690 <- AUTH 114690: Wilson, William B. (bNone dNone) Secretary of Labor of the United States | LIVE r5309: Wilson, William B. Secretary of Labor of the United States | PC FRUS-29919: Wilson, William B. Secretary of Labor of the United States
+    A114691 <- AUTH 114691: Wilson, Woodrow (b1856 d1924) President of the United States. | LIVE r355: Wilson, Woodrow President of the United States | PC FRUS-29920: Wilson, Woodrow President of the United States.
+    A114683 <- PC FRUS-29902: Wilson, Orme, Jr.  | REG 114683: Wilson, Orme, Jr. (b1885 d1966) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Haiti).
+    A114687 <- PC FRUS-29915: Wilson, Thomas Murray Consular Officer, U.S. Embassy in Port-au-Prince, from April
+                    1973 | REG 114687: Wilson, Thomas Murray (b1881 d1967) Foreign Service Officer. Minister Resident/Consul General (Iraq).
+    ... 2 more
+
+#54 band=1900-1929 [SEVERAL] frus1914-20v02/d87 year=1918 role=from surface='Page'
+  HEAD: 763.72/10293½ The Ambassador in Italy ( Page ) to President Wilson Rome , May 7, 1918 . My Dear Mr. President : I have written a letter to Mr. Lansing by the pouch which leaves this evening, Not printed. enclosing two interesting papers; one a secret report by
+  POCOM(same surname; * = in office y±1):
+     page-edward: envoy extraordinary minister plenipotentiary bulgaria 1959-1962
+     page-susan: ambassador e p south sudan 2011-2014
+    *page-thomas-nelson: ambassador e p italy 1913-1919
+    *page-walter-hines: ambassador e p united kingdom 1913-1918
+  UNION candidates in window (2):
+    A110284 <- AUTH 110284: Page, Thomas Nelson (b1853 d1922) United States Ambassador in Italy | LIVE r5088: Page, Thomas Nelson Ambassador in Italy | PC FRUS-20937: Page, Thomas Nelson United States Ambassador in Italy
+    A110285 <- AUTH 110285: Page, Walter Hines (b1855 d1918) United States Ambassador in Great Britain | LIVE r5089: Page, Walter Hines Ambassador in Great Britain | PC FRUS-20938: Page, Walter Hines United States Ambassador in Great Britain
+
+#55 band=1900-1929 [SEVERAL] frus1914-20v02/d249 year=1915 role=from surface='Page'
+  HEAD: 793.94/392½ The Secretary of State to President Wilson Washington , May 8, 1915 . My Dear Mr. President : I am enclosing a communication from Ambassador Page (London) … I have no doubt that the despatch had its influence in Japan in helping to reduce the sever || ctx: ...t group five had been withdrawn. [Enclosure 1—Telegram] The Ambassador in Great Britain ( Page ) to the Secretary of State Filed separately under file No....
+  POCOM(same surname; * = in office y±1):
+     page-edward: envoy extraordinary minister plenipotentiary bulgaria 1959-1962
+     page-susan: ambassador e p south sudan 2011-2014
+    *page-thomas-nelson: ambassador e p italy 1913-1919
+    *page-walter-hines: ambassador e p united kingdom 1913-1918
+  UNION candidates in window (2):
+    A110284 <- AUTH 110284: Page, Thomas Nelson (b1853 d1922) United States Ambassador in Italy | LIVE r5088: Page, Thomas Nelson Ambassador in Italy | PC FRUS-20937: Page, Thomas Nelson United States Ambassador in Italy
+    A110285 <- AUTH 110285: Page, Walter Hines (b1855 d1918) United States Ambassador in Great Britain | LIVE r5089: Page, Walter Hines Ambassador in Great Britain | PC FRUS-20938: Page, Walter Hines United States Ambassador in Great Britain
+
+#56 band=1900-1929 [SEVERAL] frus1915/d4 year=1915 role=to surface='Page'
+  HEAD: File No. 711.0021/44c. The Secretary of State to Ambassador Page . Department of State , Washington , May 29, 1915 . Sir : Referring to the Department’s instruction of this day’s date, directing you to give notice to the Secretary of State for Foreign Affairs,
+  POCOM(same surname; * = in office y±1):
+     page-edward: envoy extraordinary minister plenipotentiary bulgaria 1959-1962
+     page-susan: ambassador e p south sudan 2011-2014
+    *page-thomas-nelson: ambassador e p italy 1913-1919
+    *page-walter-hines: ambassador e p united kingdom 1913-1918
+  UNION candidates in window (2):
+    A110284 <- AUTH 110284: Page, Thomas Nelson (b1853 d1922) United States Ambassador in Italy | LIVE r5088: Page, Thomas Nelson Ambassador in Italy | PC FRUS-20937: Page, Thomas Nelson United States Ambassador in Italy
+    A110285 <- AUTH 110285: Page, Walter Hines (b1855 d1918) United States Ambassador in Great Britain | LIVE r5089: Page, Walter Hines Ambassador in Great Britain | PC FRUS-20938: Page, Walter Hines United States Ambassador in Great Britain
+
+#57 band=1900-1929 [SEVERAL] frus1918Supp01v02/d442 year=1918 role=to surface='Page'
+  HEAD: File No. 656.119/124a The Secretary of State to the Ambassador in Great Britain ( Page ) [Telegram] Washington , January 5, 1918, 4 p.m. 6171. Following for Sheldon from War Trade Board: [1.] Dutch negotiations. Answering your cable January 2, regret cannot ac
+  POCOM(same surname; * = in office y±1):
+     page-edward: envoy extraordinary minister plenipotentiary bulgaria 1959-1962
+     page-susan: ambassador e p south sudan 2011-2014
+    *page-thomas-nelson: ambassador e p italy 1913-1919
+    *page-walter-hines: ambassador e p united kingdom 1913-1918
+  UNION candidates in window (2):
+    A110284 <- AUTH 110284: Page, Thomas Nelson (b1853 d1922) United States Ambassador in Italy | LIVE r5088: Page, Thomas Nelson Ambassador in Italy | PC FRUS-20937: Page, Thomas Nelson United States Ambassador in Italy
+    A110285 <- AUTH 110285: Page, Walter Hines (b1855 d1918) United States Ambassador in Great Britain | LIVE r5089: Page, Walter Hines Ambassador in Great Britain | PC FRUS-20938: Page, Walter Hines United States Ambassador in Great Britain
+
+#58 band=1900-1929 [SEVERAL] frus1919Parisv02/d693 year=1919 role=to surface='Davis'
+  HEAD: 658.119/770: Telegram The Acting Secretary of State to the Ambassador in Great Britain ( Davis ) Washington , January 3, 1919—5 p.m. 3772. For Sheldon [from War Trade Board]: No. 1975. The following is for your information and to be repeated to the American Le
+  POCOM(same surname; * = in office y±1):
+     davis-allen-clayton: ambassador e p guinea 1980-1983; ambassador e p uganda 1983-1985
+     davis-arthur-h-jr: ambassador e p panama 1986-1990; ambassador e p paraguay 1982-1985
+     davis-john: Assistant Secretary of State  1882-1885
+     davis-john-chandler-bancroft: envoy extraordinary minister plenipotentiary germany 1874-1877; Assistant Secretary of State  1869-1871; Assistant Secretary of State  1873-1874; Assistant Secretary of State  1881-1882
+     davis-john-roger: charge daffaires ad interim poland 1983-1987; charge daffaires poland 1987-1988; ambassador e p poland 1988-1990; ambassador e p romania 1991-1994
+     davis-john-wesley: commissioner china 1848-1850
+    *davis-john-william: ambassador e p united kingdom 1918-1921
+     davis-lynn-etheridge: Under Secretary of State for Arms Control and International Security Affairs  1993-1997
+    ... 9 more
+  UNION candidates in window (9):
+    A103198 <- PC FRUS-06567: Davis, John William  | POCOM davis-john-william: ambassador e p (united kingdom) 1918-1921 | REG 103198: Davis, John William (b1873 d1955) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (United Kingdom).
+    A103205 <- PC FRUS-06580: Davis, Norman Hezekiah  | POCOM davis-norman-hezekiah: Under Secretary of State  1920-1921 | REG 103205: Davis, Norman Hezekiah (b1878 d1944) Non-career appointee. Under Secretary of State.
+    A103202 <- AUTH 103202: Davis, Monnett Bain (b1893 d1953) Ambassador to Israel, from February 26, 1951 | PC FRUS-06575: Davis, Monnett Bain Ambassador to Israel, from February 26, 1951 | REG 103202: Davis, Monnett Bain (b1893 d1953) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Panama); Ambassador
+    A103204 <- AUTH 103204: Davis, Nathaniel Penistone (b1895 d1973) Minister to Hungry, until May 18, 1951 | PC FRUS-06577: Davis, Nathaniel Penistone Minister to Hungry, until May 18, 1951 | REG 103204: Davis, Nathaniel Penistone (b1895 d1973) Minister to Hungry, until May 18, 1951
+    A103207 <- AUTH 103207: Davis, Roy Tasco (b1889 d1975) Minister to Panama | PC FRUS-06589: Davis, Roy Tasco Minister to Panama | REG 103207: Davis, Roy Tasco (b1889 d1975) Ambassador in Haiti from September 23, 1953 until May 9, 1957.
+    FRUS-06565 <- PC FRUS-06565: Davis, John W. Solicitor General of the United States to November 21
+    FRUS-06579 <- PC FRUS-06579: Davis, Norman H. United States Special Financial Delegate in Spain
+    R5708 <- LIVE r5708: Davis, Norman H. Chairman of the American delegation to the General Disarmament Conference
+    ... 1 more
+
+#59 band=1900-1929 [SEVERAL] frus1920v03/d52 year=1920 role=from surface='Johnson'
+  HEAD: 882.51/1132: Telegram The Minister in Liberia ( Johnson ) to the Secretary of State Monrovia , June 8, 1920—4 p.m. [Received June 9—2:20 p.m.] 39. Chattanooga left Monrovia this morning. Legation believes that visit was quite beneficial to American prestige. L
+  POCOM(same surname; * = in office y±1):
+     johnson-brenda-lagrange: ambassador e p jamaica 2005-2009
+     johnson-daniel-a: ambassador e p suriname 2000-2003
+     johnson-darryl-norman: charge daffaires ad interim lithuania 1991-1991; ambassador e p lithuania 1992-1994; ambassador e p thailand 2001-2004
+     johnson-david-timothy: Assistant Secretary of State for International Narcotics and Law Enforcement Affairs  2007-2011
+     johnson-donald-c: ambassador e p cape verde 2002-2005; ambassador e p equatorial guinea 2006-2008; ambassador e p mongolia 1993-1996
+     johnson-gove-griffith-jr: Assistant Secretary of State for Economic, Energy, and Business Affairs  1962-1965
+     johnson-gregory-l: ambassador e p swaziland 1999-2001
+     johnson-hallett: ambassador e p costa rica 1944-1947
+    ... 13 more
+  UNION candidates in window (7):
+    A106662 <- PC FRUS-13518: Johnson, Joseph Lowery  | POCOM johnson-joseph-lowery: minister resident consul general (liberia) 1918-1922 | REG 106662: Johnson, Joseph Lowery (b1874 d1945) Non-career appointee. Minister Resident/Consul General (Liberia).
+    A106676 <- PC FRUS-13548: Johnson, Robert Underwood  | POCOM johnson-robert-underwood: ambassador e p (italy) 1920-1921 | REG 106676: Johnson, Robert Underwood (b1853 d1937) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Italy).
+    A106654 <- AUTH 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Chief, Division of Mexican Affairs, Department of State | PC FRUS-13504: Johnson, Herschel Vespasian, II Chief, Division of Mexican Affairs, Department of State | REG 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Sweden)
+    A106668 <- PC FRUS-13535: Johnson, Nelson Trusler Minister to China | REG 106668: Johnson, Nelson Trusler (b1887 d1954) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A106652 <- PC FRUS-13499: Johnson, Hallett  | REG 106652: Johnson, Hallett (b1888 d1968) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Costa Rica).
+    A106679 <- PC FRUS-13556: Johnson, Stewart United States Third Secretary of Legation in Costa Rica; Chargé
+                    d’Affa | REG 106679: Johnson, Stewart (b1880 d1926) Foreign Service Officer. Chargé d'Affaires ad interim (Costa Rica).
+    R5744 <- LIVE r5744: Johnson, Stewart United States Secretary of Legation in Costa Rica; Chargé d’Affaires
+
+#60 band=1900-1929 [SEVERAL] frus1920v03/d101 year=1920 role=from surface='Johnson'
+  HEAD: 882.00/636: Telegram The Minister in Liberia ( Johnson ) to the Acting Secretary of State Monrovia , February 27, 1920—9 a.m. [Received February 28—5:55 a.m.] 23. Act fixing salaries and allowances of Commissioner General and Commissioners of Interior was pass
+  POCOM(same surname; * = in office y±1):
+     johnson-brenda-lagrange: ambassador e p jamaica 2005-2009
+     johnson-daniel-a: ambassador e p suriname 2000-2003
+     johnson-darryl-norman: charge daffaires ad interim lithuania 1991-1991; ambassador e p lithuania 1992-1994; ambassador e p thailand 2001-2004
+     johnson-david-timothy: Assistant Secretary of State for International Narcotics and Law Enforcement Affairs  2007-2011
+     johnson-donald-c: ambassador e p cape verde 2002-2005; ambassador e p equatorial guinea 2006-2008; ambassador e p mongolia 1993-1996
+     johnson-gove-griffith-jr: Assistant Secretary of State for Economic, Energy, and Business Affairs  1962-1965
+     johnson-gregory-l: ambassador e p swaziland 1999-2001
+     johnson-hallett: ambassador e p costa rica 1944-1947
+    ... 13 more
+  UNION candidates in window (7):
+    A106662 <- PC FRUS-13518: Johnson, Joseph Lowery  | POCOM johnson-joseph-lowery: minister resident consul general (liberia) 1918-1922 | REG 106662: Johnson, Joseph Lowery (b1874 d1945) Non-career appointee. Minister Resident/Consul General (Liberia).
+    A106676 <- PC FRUS-13548: Johnson, Robert Underwood  | POCOM johnson-robert-underwood: ambassador e p (italy) 1920-1921 | REG 106676: Johnson, Robert Underwood (b1853 d1937) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Italy).
+    A106654 <- AUTH 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Chief, Division of Mexican Affairs, Department of State | PC FRUS-13504: Johnson, Herschel Vespasian, II Chief, Division of Mexican Affairs, Department of State | REG 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Foreign Service Officer. Envoy Extraordinary and Minister Plenipotentiary (Sweden)
+    A106668 <- PC FRUS-13535: Johnson, Nelson Trusler Minister to China | REG 106668: Johnson, Nelson Trusler (b1887 d1954) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A106652 <- PC FRUS-13499: Johnson, Hallett  | REG 106652: Johnson, Hallett (b1888 d1968) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Costa Rica).
+    A106679 <- PC FRUS-13556: Johnson, Stewart United States Third Secretary of Legation in Costa Rica; Chargé
+                    d’Affa | REG 106679: Johnson, Stewart (b1880 d1926) Foreign Service Officer. Chargé d'Affaires ad interim (Costa Rica).
+    R5744 <- LIVE r5744: Johnson, Stewart United States Secretary of Legation in Costa Rica; Chargé d’Affaires
+
+#61 band=1930-1945 [SEVERAL] frus1931-41v01/d87 year=1933 role=to surface='Wilson'
+  HEAD: 793.94Commission/837: Telegram The Secretary of State to the Minister in Switzerland ( Wilson ) Washington , February 25, 1933—6 p.m. 78. Your 125, February 24, 7 p.m. Communicate to Drummond as a letter from me under today’s date the following: “There has bee
+  POCOM(same surname; * = in office y±1):
+    *wilson-charles-stetson: charge daffaires ad interim bulgaria 1919-1921; envoy extraordinary minister plenipotentiary bulgaria 1921-1928; envoy extraordinary minister plenipotentiary romania 1928-1933; envoy extraordinary min
+     wilson-edwin-carleton: ambassador e p panama 1941-1943; ambassador e p turkey 1945-1948; envoy extraordinary minister plenipotentiary uruguay 1939-1941
+     wilson-francis-mairs-huntington: envoy extraordinary minister plenipotentiary argentina 1909-1909; diplomatic agent bulgaria 1908-1908; envoy extraordinary minister plenipotentiary romania 1908-1908; envoy extraordinary minister plen
+     wilson-henry-lane: envoy extraordinary minister plenipotentiary belgium 1905-1909; envoy extraordinary minister plenipotentiary chile 1897-1904; envoy extraordinary minister plenipotentiary greece 1902-1902; ambassador 
+    *wilson-hugh-robert: ambassador e p germany 1938-1938; envoy extraordinary minister plenipotentiary switzerland 1927-1937; Assistant Secretary of State  1937-1938
+     wilson-james: minister resident venezuela 1866-1867
+     wilson-james-morrison: Assistant Secretary of State for Democracy, Human Rights, and Labor  1976-1977
+     wilson-joseph-charles: ambassador e p gabon 1992-1995; charge daffaires ad interim iraq 1990-1991; ambassador e p sao tome and principe 1992-1995
+    ... 4 more
+  UNION candidates in window (13):
+    A114661 <- AUTH 114661: Wilson, Charles Stetson (b1873 d1947) United States Secretary of Embassy and Chargé d’Affaires in Russia | PC FRUS-29862: Wilson, Charles Stetson United States Secretary of Embassy and Chargé d’Affaires in
+                    Russia | POCOM wilson-charles-stetson: charge daffaires ad interim (bulgaria) 1919-1921; envoy extraordinary minister plenipotentiary (bulgaria) 1921
+    A114672 <- PC FRUS-29886: Wilson, Hugh Robert Alternate Delegate, General Disarmament Conference; Minister to
+                    Switze | POCOM wilson-hugh-robert: Assistant Secretary of State  1937-1938; ambassador e p (germany) 1938-1938; envoy extraordinary minister plenipot | REG 114672: Wilson, Hugh Robert (b1885 d1946) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A114664 <- AUTH 114664: Wilson, Edwin Carleton (b1893 d1972) Ambassador in Turkey, 1945–48 | LIVE r7368: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48 | PC FRUS-29871: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48
+    A114691 <- AUTH 114691: Wilson, Woodrow (b1856 d1924) President of the United States. | LIVE r355: Wilson, Woodrow President of the United States | PC FRUS-29920: Wilson, Woodrow President of the United States.
+    A114683 <- PC FRUS-29902: Wilson, Orme, Jr.  | REG 114683: Wilson, Orme, Jr. (b1885 d1966) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Haiti).
+    A114687 <- PC FRUS-29915: Wilson, Thomas Murray Consular Officer, U.S. Embassy in Port-au-Prince, from April
+                    1973 | REG 114687: Wilson, Thomas Murray (b1881 d1967) Foreign Service Officer. Minister Resident/Consul General (Iraq).
+    A114689 <- PC FRUS-29918: Wilson, William A.  | REG 114689: Wilson, William A. (b1914 d2009) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Holy See).
+    A114673 <- PC FRUS-29888: Wilson, Huntington (Francis Mairs
+                    Huntington-Wilson)  | REG 114673: Wilson, Huntington (Francis Mairs Huntington-Wilson) (b1875 d1946) Non-career appointee. Third Assistant Secretary of State; Ass
+    ... 5 more
+
+#62 band=1930-1945 [SEVERAL] frus1933v04/d272 year=1933 role=to surface='Wilson'
+  HEAD: 724.3415/3122: Telegram The Secretary of State to the Minister in Switzerland ( Wilson ), at Geneva Washington , May 20, 1933—4 p.m. 105. Your 182, May 18, 9 p.m. Argentina and Chile were much annoyed at a note from Bolivia and stated that they would not take
+  POCOM(same surname; * = in office y±1):
+    *wilson-charles-stetson: charge daffaires ad interim bulgaria 1919-1921; envoy extraordinary minister plenipotentiary bulgaria 1921-1928; envoy extraordinary minister plenipotentiary romania 1928-1933; envoy extraordinary min
+     wilson-edwin-carleton: ambassador e p panama 1941-1943; ambassador e p turkey 1945-1948; envoy extraordinary minister plenipotentiary uruguay 1939-1941
+     wilson-francis-mairs-huntington: envoy extraordinary minister plenipotentiary argentina 1909-1909; diplomatic agent bulgaria 1908-1908; envoy extraordinary minister plenipotentiary romania 1908-1908; envoy extraordinary minister plen
+     wilson-henry-lane: envoy extraordinary minister plenipotentiary belgium 1905-1909; envoy extraordinary minister plenipotentiary chile 1897-1904; envoy extraordinary minister plenipotentiary greece 1902-1902; ambassador 
+    *wilson-hugh-robert: ambassador e p germany 1938-1938; envoy extraordinary minister plenipotentiary switzerland 1927-1937; Assistant Secretary of State  1937-1938
+     wilson-james: minister resident venezuela 1866-1867
+     wilson-james-morrison: Assistant Secretary of State for Democracy, Human Rights, and Labor  1976-1977
+     wilson-joseph-charles: ambassador e p gabon 1992-1995; charge daffaires ad interim iraq 1990-1991; ambassador e p sao tome and principe 1992-1995
+    ... 4 more
+  UNION candidates in window (13):
+    A114661 <- AUTH 114661: Wilson, Charles Stetson (b1873 d1947) United States Secretary of Embassy and Chargé d’Affaires in Russia | PC FRUS-29862: Wilson, Charles Stetson United States Secretary of Embassy and Chargé d’Affaires in
+                    Russia | POCOM wilson-charles-stetson: charge daffaires ad interim (bulgaria) 1919-1921; envoy extraordinary minister plenipotentiary (bulgaria) 1921
+    A114672 <- PC FRUS-29886: Wilson, Hugh Robert Alternate Delegate, General Disarmament Conference; Minister to
+                    Switze | POCOM wilson-hugh-robert: Assistant Secretary of State  1937-1938; ambassador e p (germany) 1938-1938; envoy extraordinary minister plenipot | REG 114672: Wilson, Hugh Robert (b1885 d1946) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A114664 <- AUTH 114664: Wilson, Edwin Carleton (b1893 d1972) Ambassador in Turkey, 1945–48 | LIVE r7368: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48 | PC FRUS-29871: Wilson, Edwin Carleton Ambassador in Turkey, 1945–48
+    A114691 <- AUTH 114691: Wilson, Woodrow (b1856 d1924) President of the United States. | LIVE r355: Wilson, Woodrow President of the United States | PC FRUS-29920: Wilson, Woodrow President of the United States.
+    A114683 <- PC FRUS-29902: Wilson, Orme, Jr.  | REG 114683: Wilson, Orme, Jr. (b1885 d1966) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Haiti).
+    A114687 <- PC FRUS-29915: Wilson, Thomas Murray Consular Officer, U.S. Embassy in Port-au-Prince, from April
+                    1973 | REG 114687: Wilson, Thomas Murray (b1881 d1967) Foreign Service Officer. Minister Resident/Consul General (Iraq).
+    A114689 <- PC FRUS-29918: Wilson, William A.  | REG 114689: Wilson, William A. (b1914 d2009) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Holy See).
+    A114673 <- PC FRUS-29888: Wilson, Huntington (Francis Mairs
+                    Huntington-Wilson)  | REG 114673: Wilson, Huntington (Francis Mairs Huntington-Wilson) (b1875 d1946) Non-career appointee. Third Assistant Secretary of State; Ass
+    ... 5 more
+
+#63 band=1930-1945 [SEVERAL] frus1936v03/d188 year=1936 role=from surface='Long'
+  HEAD: 765.84/3847: Telegram The Ambassador in Italy ( Long ) to the Secretary of State Rome , March 3, 1936—6 p.m. [Received March 3—3:10 p.m.] 68. During the Council of Ministers meeting this morning Mussolini, before proceeding with the discussion of the regular a
+  POCOM(same surname; * = in office y±1):
+    *long-boaz-walton: envoy extraordinary minister plenipotentiary cuba 1919-1921; envoy extraordinary minister plenipotentiary ecuador 1938-1942; ambassador e p ecuador 1942-1943; envoy extraordinary minister plenipotenti
+     long-john-g: agent consul general egypt 1899-1903
+    *long-samuel-miller-breckinridge: ambassador e p italy 1933-1936; Assistant Secretary of State  1940-1944; Third Assistant Secretary of State  1917-1920
+  UNION candidates in window (4):
+    A108081 <- PC FRUS-16507: Long, Boaz Walton  | POCOM long-boaz-walton: ambassador e p (ecuador) 1942-1943; ambassador e p (guatemala) 1943-1945; envoy extraordinary minister plenipotentia | REG 108081: Long, Boaz Walton (b1876 d1962) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Nicaragua); Ambass
+    A108092 <- PC FRUS-16526: Long, Samuel Miller Breckinridge  | POCOM long-samuel-miller-breckinridge: Assistant Secretary of State  1940-1944; Third Assistant Secretary of State  1917-1920; ambassador e  | REG 108092: Long, Samuel Miller Breckinridge (b1881 d1958) Non-career appointee. Third Assistant Secretary of State; Assistant Secretary of 
+    FRUS-16509 <- PC FRUS-16509: Long, Breckinridge Third Assistant Secretary of State of the United States
+    R5394 <- LIVE r5394: Long, Breckinridge American Ambassador to Italy, 1933–36
+
+#64 band=1930-1945 [SEVERAL] frus1940v04/d479 year=1940 role=from surface='Johnson'
+  HEAD: 893.01/848: Telegram The Ambassador in China ( Johnson ) to the Secretary of State Chungking , December 2, 1940—noon . [Received December 2—6:05 a.m.] 597. With reference to the third paragraph of the Chinese Foreign Minister’s statement quoted in my 595, Dece
+  POCOM(same surname; * = in office y±1):
+     johnson-brenda-lagrange: ambassador e p jamaica 2005-2009
+     johnson-daniel-a: ambassador e p suriname 2000-2003
+     johnson-darryl-norman: charge daffaires ad interim lithuania 1991-1991; ambassador e p lithuania 1992-1994; ambassador e p thailand 2001-2004
+     johnson-david-timothy: Assistant Secretary of State for International Narcotics and Law Enforcement Affairs  2007-2011
+     johnson-donald-c: ambassador e p cape verde 2002-2005; ambassador e p equatorial guinea 2006-2008; ambassador e p mongolia 1993-1996
+     johnson-gove-griffith-jr: Assistant Secretary of State for Economic, Energy, and Business Affairs  1962-1965
+     johnson-gregory-l: ambassador e p swaziland 1999-2001
+     johnson-hallett: ambassador e p costa rica 1944-1947
+    ... 13 more
+  UNION candidates in window (11):
+    A106654 <- AUTH 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Chief, Division of Mexican Affairs, Department of State | PC FRUS-13504: Johnson, Herschel Vespasian, II Chief, Division of Mexican Affairs, Department of State | POCOM johnson-herschel-vespasian: ambassador e p (brazil) 1948-1953; envoy extraordinary minister plenipotentiary (sweden) 1941-1946
+    A106668 <- PC FRUS-13535: Johnson, Nelson Trusler Minister to China | POCOM johnson-nelson-trusler: Assistant Secretary of State  1927-1929; ambassador e p (china) 1935-1941; envoy extraordinary minister plenip | REG 106668: Johnson, Nelson Trusler (b1887 d1954) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A106655 <- AUTH 106655: Johnson, Hiram W. (bNone dNone) United States Senator from California | LIVE r7148: Johnson, Hiram W. U. S. Senator (Republican), California | PC FRUS-13505: Johnson, Hiram W. United States Senator from California
+    A106664 <- AUTH 106664: Johnson, Lyndon Baines (b1908 d1973) (D-Texas), Member of the Armed Services Committee | PC FRUS-13527: Johnson, Lyndon Baines (D-Texas), Member of the Armed Services Committee | REG 106664: Johnson, Lyndon Baines (b1908 d1973) (D–Texas), Member of the Armed Services Committee; Minority Floor Leader, 1953–1954.
+    A106681 <- AUTH 106681: Johnson, Ural Alexis (b1908 d1997) U.S. Ambassador to Thailand until April 10, 1961; Deputy Under Secretary of State for Poli | PC FRUS-13562: Johnson, Ural Alexis U.S. Ambassador to Thailand until April 10, 1961; Deputy Under Secretary
+                  | REG 106681: Johnson, Ural Alexis (b1908 d1997) Foreign Service Officer. Under Secretary of State for Political Affairs; Deputy Under Secr
+    A106652 <- PC FRUS-13499: Johnson, Hallett  | REG 106652: Johnson, Hallett (b1888 d1968) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Costa Rica).
+    A106650 <- PC FRUS-13497: Johnson, Gove Griffith, Jr.  | REG 106650: Johnson, Gove Griffith, Jr. (b1912 d2006) Non-career appointee. Assistant Secretary of State for Economic, Energy, and Business 
+    A106662 <- PC FRUS-13518: Johnson, Joseph Lowery  | REG 106662: Johnson, Joseph Lowery (b1874 d1945) Non-career appointee. Minister Resident/Consul General (Liberia).
+    ... 3 more
+
+#65 band=1930-1945 [SEVERAL] frus1941v01/d64 year=1941 role=from surface='Schoenfeld'
+  HEAD: 741.60D/14: Telegram The Minister in Finland ( Schoenfeld ) to the Secretary of State Helsinki , July 17, 1941—1 p.m. [Received 3:50 p.m.] 298. Having in mind Finnish Foreign Minister’s statement to me yesterday as reported in my 292 that no conclusions were b
+  POCOM(same surname; * = in office y±1):
+    *schoenfeld-hans-frederick-arthur: envoy extraordinary minister plenipotentiary bulgaria 1928-1928; envoy extraordinary minister plenipotentiary costa rica 1929-1929; envoy extraordinary minister plenipotentiary dominican republic 1931
+    *schoenfeld-rudolf-emil: charge daffaires ad interim belgium 1940-1940; charge daffaires ad interim belgium 1944-1944; ambassador e p colombia 1953-1955; ambassador e p guatemala 1951-1953; charge daffaires luxembourg 1944-19
+  UNION candidates in window (2):
+    A112088 <- AUTH 112088: Schoenfeld, Hans Frederick Arthur (b1889 d1952) Minister to the Dominican Republic | PC FRUS-24592: Schoenfeld, Hans Frederick Arthur Minister to the Dominican Republic | POCOM schoenfeld-hans-frederick-arthur: envoy extraordinary minister plenipotentiary (bulgaria) 1928-1928; envoy extraordinary minister plen
+    A112089 <- AUTH 112089: Schoenfeld, Rudolf Emil (b1895 d1981) Counselor, American Embassy near the Governments of Czechoslovakia and Poland in London,  | PC FRUS-24593: Schoenfeld, Rudolf Emil Counselor, American Embassy near the Governments of Czechoslovakia and
+                    | POCOM schoenfeld-rudolf-emil: ambassador e p (colombia) 1953-1955; ambassador e p (guatemala) 1951-1953; charge daffaires (luxembourg) 1944-
+
+#66 band=1930-1945 [SEVERAL] frus1941v01/d21 year=1941 role=from surface='Schoenfeld'
+  HEAD: 860D.51/483: Telegram The Minister in Finland ( Schoenfeld ) to the Secretary of State Helsinki , March 19, 1941—11 a.m. [Received 3:40 p.m.] 77. Through courtesy of Grey of American Red Cross I have been enabled to see copy of note dated February 1 last, from
+  POCOM(same surname; * = in office y±1):
+    *schoenfeld-hans-frederick-arthur: envoy extraordinary minister plenipotentiary bulgaria 1928-1928; envoy extraordinary minister plenipotentiary costa rica 1929-1929; envoy extraordinary minister plenipotentiary dominican republic 1931
+    *schoenfeld-rudolf-emil: charge daffaires ad interim belgium 1940-1940; charge daffaires ad interim belgium 1944-1944; ambassador e p colombia 1953-1955; ambassador e p guatemala 1951-1953; charge daffaires luxembourg 1944-19
+  UNION candidates in window (2):
+    A112088 <- AUTH 112088: Schoenfeld, Hans Frederick Arthur (b1889 d1952) Minister to the Dominican Republic | PC FRUS-24592: Schoenfeld, Hans Frederick Arthur Minister to the Dominican Republic | POCOM schoenfeld-hans-frederick-arthur: envoy extraordinary minister plenipotentiary (bulgaria) 1928-1928; envoy extraordinary minister plen
+    A112089 <- AUTH 112089: Schoenfeld, Rudolf Emil (b1895 d1981) Counselor, American Embassy near the Governments of Czechoslovakia and Poland in London,  | PC FRUS-24593: Schoenfeld, Rudolf Emil Counselor, American Embassy near the Governments of Czechoslovakia and
+                    | POCOM schoenfeld-rudolf-emil: ambassador e p (colombia) 1953-1955; ambassador e p (guatemala) 1951-1953; charge daffaires (luxembourg) 1944-
+
+#67 band=1930-1945 [SEVERAL] frus1941v07/d204 year=1941 role=from surface='Long'
+  HEAD: 822.248/182 Memorandum by the Minister in Ecuador ( Long ), Temporarily in Washington, to the Adviser on Political Relations ( Duggan ) [ Washington ,] July 2, 1941 . American Aviation Mission in Ecuador Mr. Duggan : There is urgent need that several construct
+  POCOM(same surname; * = in office y±1):
+    *long-boaz-walton: envoy extraordinary minister plenipotentiary cuba 1919-1921; envoy extraordinary minister plenipotentiary ecuador 1938-1942; ambassador e p ecuador 1942-1943; envoy extraordinary minister plenipotenti
+     long-john-g: agent consul general egypt 1899-1903
+    *long-samuel-miller-breckinridge: ambassador e p italy 1933-1936; Assistant Secretary of State  1940-1944; Third Assistant Secretary of State  1917-1920
+  UNION candidates in window (2):
+    A108081 <- PC FRUS-16507: Long, Boaz Walton  | POCOM long-boaz-walton: ambassador e p (ecuador) 1942-1943; ambassador e p (guatemala) 1943-1945; envoy extraordinary minister plenipotentia | REG 108081: Long, Boaz Walton (b1876 d1962) Non-career appointee. Envoy Extraordinary and Minister Plenipotentiary (Nicaragua); Ambass
+    A108092 <- PC FRUS-16526: Long, Samuel Miller Breckinridge  | POCOM long-samuel-miller-breckinridge: Assistant Secretary of State  1940-1944; Third Assistant Secretary of State  1917-1920; ambassador e  | REG 108092: Long, Samuel Miller Breckinridge (b1881 d1958) Non-career appointee. Third Assistant Secretary of State; Assistant Secretary of 
+
+#68 band=1930-1945 [SEVERAL] frus1945v04/d957 year=1945 role=from surface='Alexander C. Kirk'
+  HEAD: 740.00119 E.W. 1939/8–745: Telegram Mr. Alexander C. Kirk , Political Adviser to the Supreme Allied Commander, Mediterranean Theater, to the Secretary of State Caserta , August 7, 1945—5 p.m. [Received 7:41 p.m.] 3230. For the Acting Secretary. Re Deptel 691,
+  POCOM(same surname; * = in office y±1):
+    *kirk-alan-goodrich: ambassador e p belgium 1946-1949; ambassador e p china 1962-1963; envoy extraordinary minister plenipotentiary luxembourg 1946-1949; ambassador e p russia 1949-1951
+    *kirk-alexander-comstock: envoy extraordinary minister plenipotentiary egypt 1941-1944; charge daffaires ad interim germany 1939-1940; ambassador e p greece 1943-1943; ambassador e p italy 1944-1946; envoy extraordinary minist
+     kirk-robert-crothers: minister resident argentina 1862-1866; minister resident argentina 1869-1871; minister resident uruguay 1869-1870
+     kirk-roger: ambassador e p romania 1985-1989; ambassador e p somalia 1973-1975; representative to unido  1980-1983
+  UNION candidates in window (3):
+    A107228 <- AUTH 107228: Kirk, Alan Goodrich (b1888 d1963) United States Ambassador in Belgium | LIVE r9410: Kirk, Alan Goodrich Ambassador in the Soviet Union | PC FRUS-14655: Kirk, Alan Goodrich United States Ambassador in Belgium
+    A107229 <- AUTH 107229: Kirk, Alexander Comstock (b1888 d1979) Counselor of Embassy in Italy | LIVE r6028: Kirk, Alexander Comstock Ambassador to Italy | PC FRUS-14656: Kirk, Alexander Comstock Counselor of Embassy in Italy
+    A107231 <- AUTH 107231: Kirk, Norman J. (bNone dNone) U. S. A., Surgeon General, United States Army | LIVE r8314: Kirk, Norman J. U. S. A., Surgeon General, United States Army | PC FRUS-14659: Kirk, Norman J. U. S. A., Surgeon General, United States Army
+
+#69 band=1930-1945 [SEVERAL] frus1945v09/d958 year=1945 role=to surface='Warren'
+  HEAD: 800.24/10–2645: Airgram The Secretary of State to the Ambassador in Nicaragua ( Warren ) Washington , October 26, 1945 . A–302. ReDeptCirInstruction Sept 11, 1945, and enclosure. Ante , p. 249 . War Dept has submitted program designed to equip suitable initial
+  POCOM(same surname; * = in office y±1):
+    *warren-avra-milvin: envoy extraordinary minister plenipotentiary dominican republic 1942-1943; ambassador e p dominican republic 1943-1944; envoy extraordinary minister plenipotentiary finland 1947-1950; envoy extraordin
+     warren-charles-beecher: ambassador e p japan 1921-1922; ambassador e p mexico 1924-1924
+     warren-fitz-henry: minister resident guatemala 1865-1869
+    *warren-william-fletcher: ambassador e p nicaragua 1945-1947; ambassador e p paraguay 1947-1950; ambassador e p turkey 1956-1960; ambassador e p venezuela 1951-1956
+  UNION candidates in window (4):
+    A114297 <- AUTH 114297: Warren, Avra Milvin (b1893 d1957) Consul General at Buenos Aires | LIVE r7361: Warren, Avra Milvin Ambassador to Pakistan | PC FRUS-29157: Warren, Avra Milvin Consul General at Buenos Aires
+    A114306 <- POCOM warren-william-fletcher: ambassador e p (nicaragua) 1945-1947; ambassador e p (paraguay) 1947-1950; ambassador e p (turkey) 1956-1960; | REG 114306: Warren, William Fletcher (b1896 d1992) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Venezuela); Ambass
+    A114302 <- AUTH 114302: Warren, George L. (bNone dNone) Adviser on Refugees and Displaced Persons, Office of the Assistant Secretary of State for  | LIVE r8571: Warren, George L. Adviser on Refugees and Displaced Persons, Office of the Assistant Secretary of State for  | PC FRUS-29163: Warren, George L. Adviser on Refugees and Displaced Persons, Office of the Assistant
+                    Sec
+    A114305 <- PC FRUS-29171: Warren, William Fletcher Office of Soviet Union Affairs (Reagan)
+
+#70 band=1930-1945 [SEVERAL] frus1945v09/d735 year=1945 role=from surface='Johnson'
+  HEAD: 818.51/6–945: Airgram The Ambassador in Costa Rica ( Johnson ) to the Secretary of State [Extract] San José , June 9, 1945 . [Received June 15—6 p.m.] A–313. Assuming that Costa Rica may be approaching our government sooner or later for further financial aid i
+  POCOM(same surname; * = in office y±1):
+     johnson-brenda-lagrange: ambassador e p jamaica 2005-2009
+     johnson-daniel-a: ambassador e p suriname 2000-2003
+     johnson-darryl-norman: charge daffaires ad interim lithuania 1991-1991; ambassador e p lithuania 1992-1994; ambassador e p thailand 2001-2004
+     johnson-david-timothy: Assistant Secretary of State for International Narcotics and Law Enforcement Affairs  2007-2011
+     johnson-donald-c: ambassador e p cape verde 2002-2005; ambassador e p equatorial guinea 2006-2008; ambassador e p mongolia 1993-1996
+     johnson-gove-griffith-jr: Assistant Secretary of State for Economic, Energy, and Business Affairs  1962-1965
+     johnson-gregory-l: ambassador e p swaziland 1999-2001
+    *johnson-hallett: ambassador e p costa rica 1944-1947
+    ... 13 more
+  UNION candidates in window (13):
+    A106652 <- PC FRUS-13499: Johnson, Hallett  | POCOM johnson-hallett: ambassador e p (costa rica) 1944-1947 | REG 106652: Johnson, Hallett (b1888 d1968) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Costa Rica).
+    A106654 <- AUTH 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Chief, Division of Mexican Affairs, Department of State | LIVE r7147: Johnson, Herschel Vespasian, II Ambassador in Brazil from July 22, 1948 until May 27, 1953 | PC FRUS-13504: Johnson, Herschel Vespasian, II Chief, Division of Mexican Affairs, Department of State
+    A106668 <- PC FRUS-13535: Johnson, Nelson Trusler Minister to China | POCOM johnson-nelson-trusler: Assistant Secretary of State  1927-1929; ambassador e p (china) 1935-1941; envoy extraordinary minister plenip | REG 106668: Johnson, Nelson Trusler (b1887 d1954) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A106633 <- AUTH 106633: Johnson, Carl Hugo (bNone dNone) representative of the combined newsreel companies in the press, radio, and photographers’  | LIVE r8298: Johnson, Carl Hugo representative of the combined newsreel companies in the press, radio, and photographers’  | PC FRUS-13471: Johnson, Carl Hugo representative of the combined newsreel companies in the press, radio,
+                   
+    A106648 <- AUTH 106648: Johnson, George H. (bNone dNone) Labor Attache and Political Counselor, U.S. Embassy in Valletta, (1989-1989), [Bush (H.W.) | LIVE r8299: Johnson, George H. United States Delegation, Allied Commission on Reparations | PC FRUS-13493: Johnson, George H. Labor Attache and Political Counselor, U.S. Embassy in Valletta,
+                    (1989
+    A106655 <- AUTH 106655: Johnson, Hiram W. (bNone dNone) United States Senator from California | LIVE r7148: Johnson, Hiram W. U. S. Senator (Republican), California | PC FRUS-13505: Johnson, Hiram W. United States Senator from California
+    A106661 <- AUTH 106661: Johnson, Joseph E. (bNone dNone) Acting Chief, Division of International Security Affairs; one of the three Chief Technical | LIVE r9147: Johnson, Joseph E. Acting Chief, Division of International Security Affairs; one of the three Chief Technical | PC FRUS-13517: Johnson, Joseph E. Acting Chief, Division of International Security Affairs; one of the
+                    t
+    A106663 <- AUTH 106663: Johnson, Louis (bNone dNone) Secretary of Defense, March 28, 1949–September 19, 1950 | LIVE r8058: Johnson, Louis Secretary of Defense from March 28, 1949 to September 19, 1950 | PC FRUS-13525: Johnson, Louis Secretary of Defense, March 28, 1949–September 19, 1950
+    ... 5 more
+
+#71 band=1946- [SEVERAL] frus1946v01/d378 year=1946 role=from surface='Butler'
+  HEAD: 890.0146/11–1346: Telegram The Ambassador in Australia ( Butler ) to the Secretary of State secret Canberra , November 13, 1946—9 a.m. [Received 11:38 a.m.] 269. I was asked by Dr. Evatt to see him at his office yesterday. Counselor Russell accompanied me. Eva
+  POCOM(same surname; * = in office y±1):
+     butler-anthony: charge daffaires mexico 1829-1835
+     butler-charles-frederick: representative to icao  1969-1971
+     butler-george-h: agent consul general egypt 1870-1872
+    *butler-george-howland: ambassador e p dominican republic 1946-1948
+     butler-lawrence-e: ambassador e p macedonia 2002-2005
+    *butler-robert: ambassador e p australia 1946-1948; ambassador e p cuba 1948-1951
+  UNION candidates in window (5):
+    A102015 <- AUTH 102015: Butler, George Howland (b1894 d1967) member, Policy Planning Staff, from February 24, 1948 | LIVE r8034: Butler, George Howland member of the Policy Planning Staff, Department of State | POCOM butler-george-howland: ambassador e p (dominican republic) 1946-1948
+    A102023 <- PC FRUS-04140: Butler, Robert  | POCOM butler-robert: ambassador e p (australia) 1946-1948; ambassador e p (cuba) 1948-1951 | REG 102023: Butler, Robert (b1897 d1955) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Cuba); Ambassador Extr
+    A102016 <- AUTH 102016: Butler, Hugh Alfred (bNone dNone) United States Senator from Nebraska | LIVE r7703: Butler, Hugh Alfred United States Senator from Nebraska | PC FRUS-04131: Butler, Hugh Alfred United States Senator from Nebraska
+    A102020 <- AUTH 102020: Butler, Nevile Montagu (bNone dNone) Assistant Under-Secretary of State, British Foreign Office | LIVE r8150: Butler, Nevile Montagu Assistant Under-Secretary of State, British Foreign Office | PC FRUS-04137: Butler, Nevile Montagu Assistant Under-Secretary of State, British Foreign Office
+    A102014 <- PC FRUS-04129: Butler, George Howland member, Policy Planning Staff, from February 24, 1948
+
+#72 band=1946- [SEVERAL] frus1946v01/d154 year=1946 role=from surface='Johnson'
+  HEAD: 501. BC /6–1246: Telegram The Acting United States Representative at the United Nations ( Johnson ) to the Secretary of State [Extract] secret urgent New York , June 12, 1946—8:35 p.m. [via Courier] 308 … . . . . . . . . . . . . . . Lawford (UK) indicated on J
+  POCOM(same surname; * = in office y±1):
+     johnson-brenda-lagrange: ambassador e p jamaica 2005-2009
+     johnson-daniel-a: ambassador e p suriname 2000-2003
+     johnson-darryl-norman: charge daffaires ad interim lithuania 1991-1991; ambassador e p lithuania 1992-1994; ambassador e p thailand 2001-2004
+     johnson-david-timothy: Assistant Secretary of State for International Narcotics and Law Enforcement Affairs  2007-2011
+     johnson-donald-c: ambassador e p cape verde 2002-2005; ambassador e p equatorial guinea 2006-2008; ambassador e p mongolia 1993-1996
+     johnson-gove-griffith-jr: Assistant Secretary of State for Economic, Energy, and Business Affairs  1962-1965
+     johnson-gregory-l: ambassador e p swaziland 1999-2001
+    *johnson-hallett: ambassador e p costa rica 1944-1947
+    ... 13 more
+  UNION candidates in window (13):
+    A106652 <- PC FRUS-13499: Johnson, Hallett  | POCOM johnson-hallett: ambassador e p (costa rica) 1944-1947 | REG 106652: Johnson, Hallett (b1888 d1968) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Costa Rica).
+    A106654 <- AUTH 106654: Johnson, Herschel Vespasian, II (b1894 d1966) Chief, Division of Mexican Affairs, Department of State | LIVE r7147: Johnson, Herschel Vespasian, II Ambassador in Brazil from July 22, 1948 until May 27, 1953 | PC FRUS-13504: Johnson, Herschel Vespasian, II Chief, Division of Mexican Affairs, Department of State
+    A106668 <- PC FRUS-13535: Johnson, Nelson Trusler Minister to China | POCOM johnson-nelson-trusler: Assistant Secretary of State  1927-1929; ambassador e p (china) 1935-1941; envoy extraordinary minister plenip | REG 106668: Johnson, Nelson Trusler (b1887 d1954) Foreign Service Officer. Assistant Secretary of State; Envoy Extraordinary and Minister Pl
+    A106633 <- AUTH 106633: Johnson, Carl Hugo (bNone dNone) representative of the combined newsreel companies in the press, radio, and photographers’  | LIVE r8298: Johnson, Carl Hugo representative of the combined newsreel companies in the press, radio, and photographers’  | PC FRUS-13471: Johnson, Carl Hugo representative of the combined newsreel companies in the press, radio,
+                   
+    A106648 <- AUTH 106648: Johnson, George H. (bNone dNone) Labor Attache and Political Counselor, U.S. Embassy in Valletta, (1989-1989), [Bush (H.W.) | LIVE r8299: Johnson, George H. United States Delegation, Allied Commission on Reparations | PC FRUS-13493: Johnson, George H. Labor Attache and Political Counselor, U.S. Embassy in Valletta,
+                    (1989
+    A106655 <- AUTH 106655: Johnson, Hiram W. (bNone dNone) United States Senator from California | LIVE r7148: Johnson, Hiram W. U. S. Senator (Republican), California | PC FRUS-13505: Johnson, Hiram W. United States Senator from California
+    A106661 <- AUTH 106661: Johnson, Joseph E. (bNone dNone) Acting Chief, Division of International Security Affairs; one of the three Chief Technical | LIVE r9147: Johnson, Joseph E. Acting Chief, Division of International Security Affairs; one of the three Chief Technical | PC FRUS-13517: Johnson, Joseph E. Acting Chief, Division of International Security Affairs; one of the
+                    t
+    A106663 <- AUTH 106663: Johnson, Louis (bNone dNone) Secretary of Defense, March 28, 1949–September 19, 1950 | LIVE r8058: Johnson, Louis Secretary of Defense from March 28, 1949 to September 19, 1950 | PC FRUS-13525: Johnson, Louis Secretary of Defense, March 28, 1949–September 19, 1950
+    ... 5 more
+
+#73 band=1946- [SEVERAL] frus1947v07/d1077 year=1947 role=from surface='Davis'
+  HEAD: 800.48 FRP/10–1447: Telegram The Consul General at Shanghai ( Davis ) to the Secretary of State Shanghai , October 14, 1947—4 p.m. [Received October 14—5:57 a.m.] 2420. Par 32. 1. Revised relief agreement being submitted to Foreign Office for final approval, t
+  POCOM(same surname; * = in office y±1):
+     davis-allen-clayton: ambassador e p guinea 1980-1983; ambassador e p uganda 1983-1985
+     davis-arthur-h-jr: ambassador e p panama 1986-1990; ambassador e p paraguay 1982-1985
+     davis-john: Assistant Secretary of State  1882-1885
+     davis-john-chandler-bancroft: envoy extraordinary minister plenipotentiary germany 1874-1877; Assistant Secretary of State  1869-1871; Assistant Secretary of State  1873-1874; Assistant Secretary of State  1881-1882
+     davis-john-roger: charge daffaires ad interim poland 1983-1987; charge daffaires poland 1987-1988; ambassador e p poland 1988-1990; ambassador e p romania 1991-1994
+     davis-john-wesley: commissioner china 1848-1850
+     davis-john-william: ambassador e p united kingdom 1918-1921
+     davis-lynn-etheridge: Under Secretary of State for Arms Control and International Security Affairs  1993-1997
+    ... 9 more
+  UNION candidates in window (12):
+    A103202 <- AUTH 103202: Davis, Monnett Bain (b1893 d1953) Ambassador to Israel, from February 26, 1951 | PC FRUS-06575: Davis, Monnett Bain Ambassador to Israel, from February 26, 1951 | POCOM davis-monnett-bain: ambassador e p (israel) 1951-1953; ambassador e p (panama) 1948-1951; envoy extraordinary minister plenipotentiary
+    A103204 <- AUTH 103204: Davis, Nathaniel Penistone (b1895 d1973) Minister to Hungry, until May 18, 1951 | PC FRUS-06577: Davis, Nathaniel Penistone Minister to Hungry, until May 18, 1951 | POCOM davis-nathaniel-penistone: ambassador e p (costa rica) 1947-1949; envoy extraordinary minister plenipotentiary (hungary) 1949-1951
+    A103187 <- AUTH 103187: Davis, Elmer (bNone dNone) Director of the Office of War Information. | LIVE r7742: Davis, Elmer Director of the Office of War Information | PC FRUS-06551: Davis, Elmer Director of the Office of War Information.
+    A103203 <- AUTH 103203: Davis, Nathaniel (b1925 d2011) Member, National Security Council Staff | PC FRUS-06576: Davis, Nathaniel Member, National Security Council Staff | REG 103203: Davis, Nathaniel (b1925 d2011) Foreign Service Officer. Director General of the Foreign Service; Assistant Secretary of S
+    A103206 <- AUTH 103206: Davis, Richard Hallock (b1913 d1972) Deputy Assistant Secretary of State for European Affairs until April 1965; Acting Assistan | PC FRUS-06587: Davis, Richard Hallock Deputy Assistant Secretary of State for European Affairs until April
+                    1 | REG 103206: Davis, Richard Hallock (b1913 d1972) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Romania).
+    A103207 <- AUTH 103207: Davis, Roy Tasco (b1889 d1975) Minister to Panama | PC FRUS-06589: Davis, Roy Tasco Minister to Panama | REG 103207: Davis, Roy Tasco (b1889 d1975) Ambassador in Haiti from September 23, 1953 until May 9, 1957.
+    A103198 <- PC FRUS-06567: Davis, John William  | REG 103198: Davis, John William (b1873 d1955) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (United Kingdom).
+    A103196 <- PC FRUS-06564: Davis, John Roger, Jr.  | REG 103196: Davis, John Roger, Jr. (b1927 dNone) Foreign Service Officer. Ambassador Extraordinary and Plenipotentiary (Romania); Ambassado
+    ... 4 more
+
+#74 band=1946- [SEVERAL] frus1948v04/d564 year=1948 role=from surface='Smith'
+  HEAD: 811.42700(R)/4–3048: Telegram The Ambassador in the Soviet Union ( Smith ) to the Secretary of State secret Moscow , April 30, 1948—noon. 807. Flat rejection Soviet denial jamming ( Deptel 442, April 22 Not printed. Because of continued deliberate jamming of V
+  POCOM(same surname; * = in office y±1):
+     smith-charles-emory: envoy extraordinary minister plenipotentiary russia 1890-1892
+     smith-dana-shell: ambassador e p qatar 2014-2017
+     smith-dane-farnsworth: ambassador e p guinea 1990-1993; ambassador e p senegal 1996-1999
+     smith-daniel-bennett: ambassador e p greece 2010-2013; Assistant Secretary of State for Intelligence and Research  2014-2018; Career Ambassador  2018-2018; Director of the Foreign Service Institute  2018-2018; Executive Se
+     smith-david-shiverick: ambassador e p sweden 1976-1977
+     smith-earl-edward-tailer: ambassador e p cuba 1957-1959
+     smith-ezekiel-ezra: minister resident consul general liberia 1888-1890
+     smith-gentry-o: Director of the Office of Foreign Missions  2015-2017
+    ... 20 more
+  UNION candidates in window (19):
+    A112654 <- PC FRUS-25798: Smith, Paul Albert  | POCOM smith-paul-albert: representative to icao  1948-1953 | REG 112654: Smith, Paul Albert (b1901 d1978) Non-career appointee. Representative of the U.S.A. on the Council of the International Civ
+    A112671 <- AUTH 112671: Smith, Walter Bedell (b1895 d1961) Lieutenant General, U. S. A., Chief of Staff, Allied Forces, Mediterranean | LIVE r1121: Smith, Walter Bedell Director of Central Intelligance until February 8, 1953; Under Secretary of State, Februar | PC FRUS-25835: Smith, Walter Bedell Lieutenant General, U. S. A., Chief of Staff, Allied Forces,
+                    Mediterra
+    A105087 <- AUTH 105087: Grafftey Smith, A. P. (bNone dNone) British Representative on the Trieste Commission of Inquiry, Council of Foreign Ministers | LIVE r9376: Grafftey Smith, A. P. British Representative on the Trieste Commission of Inquiry, Council of Foreign Ministers | PC FRUS-10427: Grafftey Smith, A. P. British Representative on the Trieste Commission of Inquiry, Council of
+                  
+    A112606 <- AUTH 112606: Smith, David Shiverick (b1918 d2012) U.S. Ambassador to Sweden from May 1976 until April 1977 | PC FRUS-25704: Smith, David Shiverick U.S. Ambassador to Sweden from May 1976 until April 1977 | REG 112606: Smith, David Shiverick (b1918 d2012) U.S. Ambassador to Sweden from May 1976 until April 1977
+    A112608 <- AUTH 112608: Smith, Earl Edward Tailer (b1903 d1991) Ambassador to Cuba from July 23, 1957 | PC FRUS-25710: Smith, Earl Edward Tailer Ambassador to Cuba from July 23, 1957 | REG 112608: Smith, Earl Edward Tailer (b1903 d1991) Ambassador to Cuba from July 23, 1957
+    A112616 <- AUTH 112616: Smith, Gerard Coad (b1914 d1994) Director of the Arms Control and Disarmament Agency from February 7, 1969; Representative  | PC FRUS-25730: Smith, Gerard Coad Director of the Arms Control and Disarmament Agency from February 7,
+                    1 | REG 112616: Smith, Gerard Coad (b1914 d1994) Non-career appointee. Director of the U.S. Arms Control and Disarmament Agency; Director o
+    A112618 <- AUTH 112618: Smith, H. Alexander (bNone dNone) United States Senator from New Jersey | LIVE r305: Smith, H. Alexander Republican Senator from New Jersey and member of the Senate Foreign Relations Committee | PC FRUS-25734: Smith, H. Alexander United States Senator from New Jersey
+    A112621 <- AUTH 112621: Smith, Harold D. (bNone dNone) Director of the Bureau of the Budget, 1945–1946 | LIVE r8079: Smith, Harold D. Director of the Bureau of the Budget, 1945–1946 | PC FRUS-25738: Smith, Harold D. Director of the Bureau of the Budget, 1945–1946
+    ... 11 more
+
+#75 band=1946- [SEVERAL] frus1948v08/d566 year=1948 role=from surface='Bruce'
+  HEAD: 893.50 Recovery/12–1748: Telegram The Deputy ECA Administrator ( Bruce ) to the Chief of the ECA China Mission ( Lapham ) Washington , December 17, 1948—10 p.m. Ecato 768. Reur Toeca 621, following based on discussion with Acting Sec of State. 1. Re para c . P
+  POCOM(same surname; * = in office y±1):
+    *bruce-david-kirkpatrick-este: chief china 1973-1974; ambassador e p france 1949-1952; ambassador e p germany 1957-1959; ambassador e p united kingdom 1961-1969; representative to nato  1974-1976; Under Secretary of State  1952-195
+    *bruce-james: ambassador e p argentina 1947-1949
+  UNION candidates in window (3):
+    A101842 <- AUTH 101842: Bruce, David Kirkpatrick Este (b1898 d1977) U.S. Ambassador to the United Kingdom from March 17, 1961, until March 20, 1969 | LIVE r780: Bruce, David Kirkpatrick Este Ambassador in France to March 10, 1952; Under Secretary of State, April 1, 1952–January 20 | PC FRUS-03778: Bruce, David Kirkpatrick Este U.S. Ambassador to the United Kingdom from March 17, 1961, until March
+                   
+    A101844 <- PC FRUS-03780: Bruce, James  | POCOM bruce-james: ambassador e p (argentina) 1947-1949 | REG 101844: Bruce, James (b1892 d1980) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Argentina).
+    A101843 <- AUTH 101843: Bruce, Howard (bNone dNone) Deputy Administrator, Economic Cooperation Administration | LIVE r9531: Bruce, Howard Deputy Administrator, Economic Cooperation Administration | PC FRUS-03779: Bruce, Howard Deputy Administrator, Economic Cooperation Administration
+
+#76 band=1946- [SEVERAL] frus1949v07p1/d31 year=1949 role=from surface='Bruce'
+  HEAD: 851 G .01/5–3049: Telegram The Ambassador in Frame ( Bruce ) to the Secretary of State confidential Paris , May 30, 1949—1 p. m. 2189. Embassy has carefully studied Deptel s 77, May 10 and 83, May 20 to Saigon and 14, May 20 to Hanoi. French Government is of c
+  POCOM(same surname; * = in office y±1):
+    *bruce-david-kirkpatrick-este: chief china 1973-1974; ambassador e p france 1949-1952; ambassador e p germany 1957-1959; ambassador e p united kingdom 1961-1969; representative to nato  1974-1976; Under Secretary of State  1952-195
+    *bruce-james: ambassador e p argentina 1947-1949
+  UNION candidates in window (3):
+    A101842 <- AUTH 101842: Bruce, David Kirkpatrick Este (b1898 d1977) U.S. Ambassador to the United Kingdom from March 17, 1961, until March 20, 1969 | LIVE r780: Bruce, David Kirkpatrick Este Ambassador in France to March 10, 1952; Under Secretary of State, April 1, 1952–January 20 | PC FRUS-03778: Bruce, David Kirkpatrick Este U.S. Ambassador to the United Kingdom from March 17, 1961, until March
+                   
+    A101844 <- PC FRUS-03780: Bruce, James  | POCOM bruce-james: ambassador e p (argentina) 1947-1949 | REG 101844: Bruce, James (b1892 d1980) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Argentina).
+    A101843 <- AUTH 101843: Bruce, Howard (bNone dNone) Deputy Administrator, Economic Cooperation Administration | LIVE r9531: Bruce, Howard Deputy Administrator, Economic Cooperation Administration | PC FRUS-03779: Bruce, Howard Deputy Administrator, Economic Cooperation Administration
+
+#77 band=1946- [SEVERAL] frus1949v09/d201 year=1949 role=from surface='Bruce'
+  HEAD: 740.00119 Council/11–1149: Telegram [Extracts] The Ambassador in France ( Bruce ) to the Secretary of State For changes later made in this telegram, see telegram No. 3922, November 12, 5 p. m., from the High Commissioner in Germany, infra . Paris , November 11
+  POCOM(same surname; * = in office y±1):
+    *bruce-david-kirkpatrick-este: chief china 1973-1974; ambassador e p france 1949-1952; ambassador e p germany 1957-1959; ambassador e p united kingdom 1961-1969; representative to nato  1974-1976; Under Secretary of State  1952-195
+    *bruce-james: ambassador e p argentina 1947-1949
+  UNION candidates in window (3):
+    A101842 <- AUTH 101842: Bruce, David Kirkpatrick Este (b1898 d1977) U.S. Ambassador to the United Kingdom from March 17, 1961, until March 20, 1969 | LIVE r780: Bruce, David Kirkpatrick Este Ambassador in France to March 10, 1952; Under Secretary of State, April 1, 1952–January 20 | PC FRUS-03778: Bruce, David Kirkpatrick Este U.S. Ambassador to the United Kingdom from March 17, 1961, until March
+                   
+    A101844 <- PC FRUS-03780: Bruce, James  | POCOM bruce-james: ambassador e p (argentina) 1947-1949 | REG 101844: Bruce, James (b1892 d1980) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Argentina).
+    A101843 <- AUTH 101843: Bruce, Howard (bNone dNone) Deputy Administrator, Economic Cooperation Administration | LIVE r9531: Bruce, Howard Deputy Administrator, Economic Cooperation Administration | PC FRUS-03779: Bruce, Howard Deputy Administrator, Economic Cooperation Administration
+
+#78 band=1946- [SEVERAL] frus1950v03/d618 year=1950 role=from surface='Bruce'
+  HEAD: 751.00/3–3150: Telegram The Ambassador in France ( Bruce ) to the Secretary of State priority Paris , March 31, 1950—8 p. m. 1513. The death of Blum Léon Blum, who had served as President of the Council of Ministers in 1936–1937, 1938, and 1946–1947, died on M
+  POCOM(same surname; * = in office y±1):
+    *bruce-david-kirkpatrick-este: chief china 1973-1974; ambassador e p france 1949-1952; ambassador e p germany 1957-1959; ambassador e p united kingdom 1961-1969; representative to nato  1974-1976; Under Secretary of State  1952-195
+    *bruce-james: ambassador e p argentina 1947-1949
+  UNION candidates in window (4):
+    A101842 <- AUTH 101842: Bruce, David Kirkpatrick Este (b1898 d1977) U.S. Ambassador to the United Kingdom from March 17, 1961, until March 20, 1969 | LIVE r780: Bruce, David Kirkpatrick Este Ambassador in France to March 10, 1952; Under Secretary of State, April 1, 1952–January 20 | PC FRUS-03778: Bruce, David Kirkpatrick Este U.S. Ambassador to the United Kingdom from March 17, 1961, until March
+                   
+    A101844 <- PC FRUS-03780: Bruce, James  | POCOM bruce-james: ambassador e p (argentina) 1947-1949 | REG 101844: Bruce, James (b1892 d1980) Non-career appointee. Ambassador Extraordinary and Plenipotentiary (Argentina).
+    FRUS-03781 <- PC FRUS-03781: Bruce, John R. Press Attaché at the Embassy in Iran, October 1951–May 1954
+    R9797 <- LIVE r9797: Bruce, John R. Press Attaché at the Embassy in Iran, October 1951–May 1954
+
+#79 band=1946- [SEVERAL] frus1950v07/d709 year=1950 role=to surface='Matthews'
+  HEAD: 795.00/10–2650 Memorandum by the Deputy Assistant Secretary of State for Far Eastern Affairs ( Merchant ) to the Deputy Under Secretary of State ( Matthews ) confidential [ Washington ,] October 26, 1950 . This morning Captain Murdaugh and General Duff Maj. Ge
+  POCOM(same surname; * = in office y±1):
+    *matthews-francis-patrick: ambassador e p ireland 1951-1952
+     matthews-gary-l: ambassador e p malta 1985-1987
+    *matthews-harrison-freeman: ambassador e p austria 1957-1962; ambassador e p netherlands 1953-1957; charge daffaires ad interim spain 1939-1939; ambassador e p sweden 1947-1950; envoy extraordinary minister plenipotentiary swede
+     matthews-matthew-j: ambassador e p brunei 2019-2020
+  UNION candidates in window (2):
+    A108664 <- AUTH 108664: Matthews, Francis Patrick (b1887 d1952) Secretary of the Navy from May 25, 1949 | LIVE r8064: Matthews, Francis Patrick Ambassador in Ireland, October 22, 1951–September 7, 1952 | PC FRUS-17681: Matthews, Francis Patrick Secretary of the Navy from May 25, 1949
+    A108668 <- AUTH 108668: Matthews, Harrison Freeman (“Doc”) (b1899 d1986) Assistant Chief, Division of Latin American Affairs, Department of State | LIVE r7195: Matthews, Harrison Freeman (“Doc”) Ambassador in the Netherlands | PC FRUS-17688: Matthews, Harrison Freeman ("Doc") Assistant Chief, Division of Latin American Affairs, Department of
+                    Sta
+
+#80 band=1946- [SEVERAL] frus1952-54v12p2/d434 year=1954 role=from surface='Davis'
+  HEAD: 711.56392/8–1754 No. 434 The Deputy Assistant Secretary of Defense for International Security Affairs ( Davis ) to the Secretary of State top secret Washington , August 17, 1954 . Dear Mr. Secretary : I refer to the letter from my office dated 4 June 1954, Not
+  POCOM(same surname; * = in office y±1):
+     davis-allen-clayton: ambassador e p guinea 1980-1983; ambassador e p uganda 1983-1985
+     davis-arthur-h-jr: ambassador e p panama 1986-1990; ambassador e p paraguay 1982-1985
+     davis-john: Assistant Secretary of State  1882-1885
+     davis-john-chandler-bancroft: envoy extraordinary minister plenipotentiary germany 1874-1877; Assistant Secretary of State  1869-1871; Assistant Secretary of State  1873-1874; Assistant Secretary of State  1881-1882
+     davis-john-roger: charge daffaires ad interim poland 1983-1987; charge daffaires poland 1987-1988; ambassador e p poland 1988-1990; ambassador e p romania 1991-1994
+     davis-john-wesley: commissioner china 1848-1850
+     davis-john-william: ambassador e p united kingdom 1918-1921
+     davis-lynn-etheridge: Under Secretary of State for Arms Control and International Security Affairs  1993-1997
+    ... 9 more
+  UNION candidates in window (19):
+    A103202 <- AUTH 103202: Davis, Monnett Bain (b1893 d1953) Ambassador to Israel, from February 26, 1951 | LIVE r10392: Davis, Monnett Bain Ambassador to Israel until December 26, 1953 | PC FRUS-06575: Davis, Monnett Bain Ambassador to Israel, from February 26, 1951
+    A103207 <- AUTH 103207: Davis, Roy Tasco (b1889 d1975) Minister to Panama | LIVE r7054: Davis, Roy Tasco Ambassador in Haiti from September 23, 1953 until May 9, 1957 | PC FRUS-06589: Davis, Roy Tasco Minister to Panama
+    A103183 <- AUTH 103183: Davis, Arthur C. (bNone dNone) USN, Director, Joint Staff, Joint Chiefs of Staff | LIVE r9807: Davis, Arthur C. Deputy Assistant Secretary of Defense for International Security Affairs and Director of t | PC FRUS-06539: Davis, Arthur C. USN, Director, Joint Staff, Joint Chiefs of Staff
+    A103185 <- AUTH 103185: Davis, Bainbridge C. (bNone dNone) Office of South American Affairs, Bureau of Inter-American Affairs, Department of State, u | LIVE r12152: Davis, Bainbridge C. Office of South American Affairs, Bureau of Inter-American Affairs, Department of State, u | PC FRUS-06541: Davis, Bainbridge C. Office of South American Affairs, Bureau of Inter-American Affairs,
+                    De
+    A103187 <- AUTH 103187: Davis, Elmer (bNone dNone) Director of the Office of War Information. | LIVE r7742: Davis, Elmer Director of the Office of War Information | PC FRUS-06551: Davis, Elmer Director of the Office of War Information.
+    A103195 <- AUTH 103195: Davis, John J. (bNone dNone) USA, Army Attaché at the Embassy in the Union of South Africa | LIVE r10391: Davis, John J. USA, Army Attaché at the Embassy in the Union of South Africa | PC FRUS-06561: Davis, John J. USA, Army Attaché at the Embassy in the Union of South
+                    Africa
+    A103203 <- AUTH 103203: Davis, Nathaniel (b1925 d2011) Member, National Security Council Staff | PC FRUS-06576: Davis, Nathaniel Member, National Security Council Staff | REG 103203: Davis, Nathaniel (b1925 d2011) Foreign Service Officer. Director General of the Foreign Service; Assistant Secretary of S
+    A103204 <- AUTH 103204: Davis, Nathaniel Penistone (b1895 d1973) Minister to Hungry, until May 18, 1951 | PC FRUS-06577: Davis, Nathaniel Penistone Minister to Hungry, until May 18, 1951 | REG 103204: Davis, Nathaniel Penistone (b1895 d1973) Minister to Hungry, until May 18, 1951
+    ... 11 more
+

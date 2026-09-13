@@ -1,0 +1,302 @@
+{
+ "inputs": {
+  "cpt_qwen": 4.6442,
+  "qwen_overhead_tok": 183.03,
+  "C_rows": 13907,
+  "C_chars_per_row": 636.5677644351765,
+  "A_req": [
+   10549,
+   22043,
+   179212
+  ],
+  "B_req": [
+   9290,
+   19387,
+   190658
+  ]
+ },
+ "local_time_model": {
+  "uniform_ms_per_tok": 4.126983750143867,
+  "prefill_ms": 2.095056317545904,
+  "decode_ms": 25.3434231961198,
+  "sweep_hours": 277.1687777777778
+ },
+ "jobs": {
+  "A:queue": {
+   "haiku-4.5 low|batch|cached": {
+    "usd": [
+     63.2,
+     117.4,
+     498.0
+    ],
+    "in_MTok_central": 160.41,
+    "vis_MTok_central": 14.87
+   },
+   "haiku-4.5 high|standard|uncached": {
+    "usd": [
+     186.6,
+     364.2,
+     2080.7
+    ],
+    "in_MTok_central": 160.41,
+    "vis_MTok_central": 14.87
+   },
+   "sonnet-5 low|batch|cached": {
+    "usd": [
+     146.2,
+     222.6,
+     1130.3
+    ],
+    "in_MTok_central": 188.83,
+    "vis_MTok_central": 14.87
+   },
+   "sonnet-5 high|standard|uncached": {
+    "usd": [
+     421.2,
+     785.3,
+     4309.7
+    ],
+    "in_MTok_central": 188.83,
+    "vis_MTok_central": 14.87
+   },
+   "opus-5 low|batch|cached": {
+    "usd": [
+     292.0,
+     525.3,
+     2913.2
+    ],
+    "in_MTok_central": 176.29,
+    "vis_MTok_central": 14.87
+   },
+   "opus-5 high|standard|uncached": {
+    "usd": [
+     885.4,
+     1900.5,
+     11044.9
+    ],
+    "in_MTok_central": 176.29,
+    "vis_MTok_central": 14.87
+   },
+   "local_central_hours_uniform_vs_split": [
+    191.5,
+    182.9
+   ]
+  },
+  "B:agree": {
+   "haiku-4.5 low|batch|cached": {
+    "usd": [
+     55.6,
+     109.2,
+     495.0
+    ],
+    "in_MTok_central": 141.1,
+    "vis_MTok_central": 15.44
+   },
+   "haiku-4.5 high|standard|uncached": {
+    "usd": [
+     164.5,
+     344.0,
+     2137.8
+    ],
+    "in_MTok_central": 141.1,
+    "vis_MTok_central": 15.44
+   },
+   "sonnet-5 low|batch|cached": {
+    "usd": [
+     128.5,
+     208.9,
+     1113.0
+    ],
+    "in_MTok_central": 166.1,
+    "vis_MTok_central": 15.44
+   },
+   "sonnet-5 high|standard|uncached": {
+    "usd": [
+     371.1,
+     738.0,
+     4394.9
+    ],
+    "in_MTok_central": 166.1,
+    "vis_MTok_central": 15.44
+   },
+   "opus-5 low|batch|cached": {
+    "usd": [
+     256.9,
+     494.6,
+     2865.4
+    ],
+    "in_MTok_central": 155.07,
+    "vis_MTok_central": 15.44
+   },
+   "opus-5 high|standard|uncached": {
+    "usd": [
+     780.2,
+     1789.9,
+     11250.2
+    ],
+    "in_MTok_central": 155.07,
+    "vis_MTok_central": 15.44
+   },
+   "local_central_hours_uniform_vs_split": [
+    170.8,
+    175.8
+   ]
+  },
+  "C:armB": {
+   "haiku-4.5 low|batch|cached": {
+    "usd": [
+     1.6,
+     2.8,
+     5.3
+    ],
+    "in_MTok_central": 3.82,
+    "vis_MTok_central": 0.35
+   },
+   "haiku-4.5 high|standard|uncached": {
+    "usd": [
+     7.5,
+     13.3,
+     31.2
+    ],
+    "in_MTok_central": 3.82,
+    "vis_MTok_central": 0.35
+   },
+   "sonnet-5 low|batch|cached": {
+    "usd": [
+     4.0,
+     5.7,
+     13.1
+    ],
+    "in_MTok_central": 4.47,
+    "vis_MTok_central": 0.35
+   },
+   "sonnet-5 high|standard|uncached": {
+    "usd": [
+     16.1,
+     27.9,
+     64.1
+    ],
+    "in_MTok_central": 4.47,
+    "vis_MTok_central": 0.35
+   },
+   "opus-5 low|batch|cached": {
+    "usd": [
+     8.7,
+     13.5,
+     33.2
+    ],
+    "in_MTok_central": 4.18,
+    "vis_MTok_central": 0.35
+   },
+   "opus-5 high|standard|uncached": {
+    "usd": [
+     37.4,
+     68.3,
+     161.0
+    ],
+    "in_MTok_central": 4.18,
+    "vis_MTok_central": 0.35
+   },
+   "local_central_hours_uniform_vs_split": [
+    4.6,
+    4.4
+   ]
+  },
+  "D:volume": {
+   "haiku-4.5 low|batch|cached": {
+    "usd": [
+     1.8,
+     2.3,
+     2.7
+    ],
+    "in_MTok_central": 1.68,
+    "vis_MTok_central": 0.58
+   },
+   "haiku-4.5 high|standard|uncached": {
+    "usd": [
+     10.8,
+     12.4,
+     14.6
+    ],
+    "in_MTok_central": 1.68,
+    "vis_MTok_central": 0.58
+   },
+   "sonnet-5 low|batch|cached": {
+    "usd": [
+     5.5,
+     6.4,
+     8.1
+    ],
+    "in_MTok_central": 1.95,
+    "vis_MTok_central": 0.76
+   },
+   "sonnet-5 high|standard|uncached": {
+    "usd": [
+     26.7,
+     30.6,
+     35.8
+    ],
+    "in_MTok_central": 1.95,
+    "vis_MTok_central": 0.76
+   },
+   "opus-5 low|batch|cached": {
+    "usd": [
+     10.7,
+     14.3,
+     21.0
+    ],
+    "in_MTok_central": 1.83,
+    "vis_MTok_central": 0.68
+   },
+   "opus-5 high|standard|uncached": {
+    "usd": [
+     54.1,
+     70.1,
+     92.1
+    ],
+    "in_MTok_central": 1.83,
+    "vis_MTok_central": 0.68
+   },
+   "local_central_hours_uniform_vs_split": [
+    2.5,
+    4.6
+   ]
+  }
+ },
+ "headline_totals": {
+  "haiku-4.5 low|batch|cached": [
+   122,
+   232,
+   1001
+  ],
+  "haiku-4.5 high|standard|uncached": [
+   369,
+   734,
+   4264
+  ],
+  "sonnet-5 low|batch|cached": [
+   284,
+   444,
+   2265
+  ],
+  "sonnet-5 high|standard|uncached": [
+   835,
+   1582,
+   8805
+  ],
+  "opus-5 low|batch|cached": [
+   568,
+   1048,
+   5833
+  ],
+  "opus-5 high|standard|uncached": [
+   1757,
+   3829,
+   22548
+  ]
+ },
+ "local_headline_hours": [
+  369.4,
+  367.7
+ ]
+}

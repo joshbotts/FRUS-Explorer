@@ -1,0 +1,209 @@
+{
+ "sweep_filtered/ALL": {
+  "body": {
+   "correct": 3769,
+   "L=20": 3708,
+   "ambiguous": 22,
+   "not_found": 123,
+   "L=10": 61
+  },
+  "in_footnote": {
+   "not_found": 273
+  },
+  "no_alignment": {
+   "unique_unverifiable": 812,
+   "L=20": 785,
+   "ambiguous": 23,
+   "L=10": 27,
+   "not_found": 150
+  },
+  "straddles_footnote": {
+   "not_found": 16
+  }
+ },
+ "sweep_filtered/1861-1899": {
+  "body": {
+   "correct": 1405,
+   "L=20": 1401,
+   "ambiguous": 20,
+   "not_found": 9,
+   "L=10": 4
+  },
+  "in_footnote": {
+   "not_found": 17
+  },
+  "no_alignment": {
+   "unique_unverifiable": 247,
+   "L=20": 247,
+   "ambiguous": 21
+  }
+ },
+ "sweep_filtered/1900-1929": {
+  "body": {
+   "correct": 679,
+   "L=10": 9,
+   "L=20": 670,
+   "not_found": 22
+  },
+  "in_footnote": {
+   "not_found": 19
+  },
+  "straddles_footnote": {
+   "not_found": 1
+  },
+  "no_alignment": {
+   "unique_unverifiable": 224,
+   "L=20": 219,
+   "L=10": 5,
+   "not_found": 17,
+   "ambiguous": 2
+  }
+ },
+ "sweep_filtered/1930-1945": {
+  "body": {
+   "correct": 629,
+   "L=20": 610,
+   "not_found": 32,
+   "L=10": 19,
+   "ambiguous": 1
+  },
+  "straddles_footnote": {
+   "not_found": 12
+  },
+  "in_footnote": {
+   "not_found": 71
+  },
+  "no_alignment": {
+   "unique_unverifiable": 176,
+   "L=20": 163,
+   "not_found": 46,
+   "L=10": 13
+  }
+ },
+ "sweep_filtered/1946-": {
+  "no_alignment": {
+   "unique_unverifiable": 165,
+   "L=20": 156,
+   "not_found": 87,
+   "L=10": 9
+  },
+  "body": {
+   "correct": 1056,
+   "L=20": 1027,
+   "not_found": 60,
+   "L=10": 29,
+   "ambiguous": 1
+  },
+  "in_footnote": {
+   "not_found": 166
+  },
+  "straddles_footnote": {
+   "not_found": 3
+  }
+ },
+ "control_filtered/ALL": {
+  "body": {
+   "correct": 1992,
+   "L=20": 1965,
+   "ambiguous": 20,
+   "not_found": 39,
+   "L=10": 27
+  },
+  "in_footnote": {
+   "not_found": 118
+  },
+  "straddles_footnote": {
+   "not_found": 13
+  },
+  "no_alignment": {
+   "unique_unverifiable": 401,
+   "L=20": 389,
+   "ambiguous": 12,
+   "not_found": 99,
+   "L=10": 12
+  }
+ },
+ "control_filtered/1861-1899": {
+  "body": {
+   "correct": 857,
+   "L=20": 856,
+   "ambiguous": 16,
+   "not_found": 6,
+   "L=10": 1
+  },
+  "in_footnote": {
+   "not_found": 14
+  },
+  "straddles_footnote": {
+   "not_found": 1
+  },
+  "no_alignment": {
+   "unique_unverifiable": 105,
+   "L=20": 105,
+   "ambiguous": 10
+  }
+ },
+ "control_filtered/1900-1929": {
+  "body": {
+   "correct": 307,
+   "L=20": 304,
+   "not_found": 7,
+   "L=10": 3,
+   "ambiguous": 2
+  },
+  "in_footnote": {
+   "not_found": 7
+  },
+  "no_alignment": {
+   "unique_unverifiable": 129,
+   "L=20": 126,
+   "not_found": 11,
+   "L=10": 3,
+   "ambiguous": 2
+  },
+  "straddles_footnote": {
+   "not_found": 1
+  }
+ },
+ "control_filtered/1930-1945": {
+  "body": {
+   "correct": 279,
+   "L=20": 269,
+   "not_found": 6,
+   "L=10": 10,
+   "ambiguous": 2
+  },
+  "in_footnote": {
+   "not_found": 30
+  },
+  "no_alignment": {
+   "unique_unverifiable": 77,
+   "L=20": 76,
+   "not_found": 34,
+   "L=10": 1
+  },
+  "straddles_footnote": {
+   "not_found": 7
+  }
+ },
+ "control_filtered/1946-": {
+  "no_alignment": {
+   "unique_unverifiable": 90,
+   "L=20": 82,
+   "not_found": 54,
+   "L=10": 8
+  },
+  "body": {
+   "correct": 549,
+   "L=20": 536,
+   "not_found": 20,
+   "L=10": 13
+  },
+  "in_footnote": {
+   "not_found": 67
+  },
+  "straddles_footnote": {
+   "not_found": 4
+  }
+ }
+}

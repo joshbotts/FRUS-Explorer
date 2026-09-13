@@ -1,0 +1,147 @@
+{
+ "note": "rows = (volume, measure_pocom.k2_surface) ; live = POCOM officeholder with any appointment overlapping the volume manifest window ±1 (measure_pocom rule); candidate description = 'Forename Surname [slug] (birth–death)' + each appointment 'Role, Territory, YYYY–YYYY'",
+ "pocom_people_with_appointments": 4166,
+ "marked": {
+  "rows": 29949,
+  "surname_unknown_rows": 14472,
+  "rows_0_live": 21653,
+  "rows_1_live": 7261,
+  "rows_several_live": 1035,
+  "live_candidates": {
+   "sum": 9540,
+   "mean": 0.319,
+   "p50": 0,
+   "p90": 1,
+   "p99": 2,
+   "max": 5
+  },
+  "desc_chars_in_window_appts": {
+   "sum": 1511268,
+   "mean": 50.461,
+   "p50": 0,
+   "p90": 188,
+   "p99": 424,
+   "max": 1208
+  },
+  "desc_chars_all_appts": {
+   "sum": 2294211,
+   "mean": 76.604,
+   "p50": 0,
+   "p90": 272,
+   "p99": 676,
+   "max": 1388
+  },
+  "mentions_per_row": {
+   "sum": 245414,
+   "mean": 8.194,
+   "p50": 2,
+   "p90": 16,
+   "p99": 102,
+   "max": 853
+  },
+  "snippets_cap3": 58240,
+  "snippets_cap5": 75633,
+  "live_rows": {
+   "rows": 8296,
+   "snippets_cap3": 19875,
+   "mentions": 157742,
+   "desc_chars_in_window": 1511268
+  },
+  "surface_chars_sum": 262596
+ },
+ "marked_union_filtered_control": {
+  "rows": 301979,
+  "surname_unknown_rows": 227419,
+  "rows_0_live": 279125,
+  "rows_1_live": 19644,
+  "rows_several_live": 3210,
+  "live_candidates": {
+   "sum": 26958,
+   "mean": 0.089,
+   "p50": 0,
+   "p90": 0,
+   "p99": 2,
+   "max": 5
+  },
+  "desc_chars_in_window_appts": {
+   "sum": 4057823,
+   "mean": 13.437,
+   "p50": 0,
+   "p90": 0,
+   "p99": 275,
+   "max": 1208
+  },
+  "desc_chars_all_appts": {
+   "sum": 6010779,
+   "mean": 19.905,
+   "p50": 0,
+   "p90": 0,
+   "p99": 489,
+   "max": 1515
+  },
+  "mentions_per_row": {
+   "sum": 1506589,
+   "mean": 4.989,
+   "p50": 1,
+   "p90": 8,
+   "p99": 65,
+   "max": 2949
+  },
+  "snippets_cap3": 508754,
+  "snippets_cap5": 619691,
+  "live_rows": {
+   "rows": 22854,
+   "snippets_cap3": 48499,
+   "mentions": 390703,
+   "desc_chars_in_window": 4057823
+  },
+  "surface_chars_sum": 3195280
+ },
+ "most_shared_surnames": [
+  [
+   28,
+   "smith"
+  ],
+  [
+   23,
+   "jones"
+  ],
+  [
+   22,
+   "brown"
+  ],
+  [
+   21,
+   "johnson"
+  ],
+  [
+   18,
+   "taylor"
+  ],
+  [
+   17,
+   "davis"
+  ],
+  [
+   16,
+   "moore"
+  ],
+  [
+   15,
+   "anderson"
+  ],
+  [
+   13,
+   "williams"
+  ],
+  [
+   13,
+   "hughes"
+  ]
+ ],
+ "example_descriptions": [
+  "Frederick William Seward [seward-frederick-william] (1830–1915) Assistant Secretary of State, 1861–1869; Assistant Secretary of State, 1877–1879",
+  "George Frederick Seward [seward-george-frederick] (1840–1910) Envoy Extraordinary and Minister Plenipotentiary, China, 1876–1880",
+  "William Henry Seward [seward-william-henry] (1801–1872) Secretary of State, 1861–1869"
+ ]
+}

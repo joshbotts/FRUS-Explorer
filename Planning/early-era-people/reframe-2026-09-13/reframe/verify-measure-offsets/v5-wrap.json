@@ -1,0 +1,278 @@
+{
+ "A/sweep": {
+  "wrapped": 6364,
+  "is_detected_span": 5188,
+  "inside_longer_detection": 264,
+  "new_undetected_position": 856,
+  "overlaps_detection": 56
+ },
+ "A/sweep/top_new_surfaces": [
+  [
+   "Britain",
+   127
+  ],
+  [
+   "Counsel",
+   34
+  ],
+  [
+   "Shenandoah",
+   26
+  ],
+  [
+   "the British Government",
+   24
+  ],
+  [
+   "British Government",
+   24
+  ],
+  [
+   "Honolulu",
+   19
+  ],
+  [
+   "learned Counsel",
+   18
+  ],
+  [
+   "the learned Counsel",
+   18
+  ],
+  [
+   "POWs",
+   18
+  ],
+  [
+   "Republic",
+   17
+  ],
+  [
+   "Mikado",
+   15
+  ],
+  [
+   "eminent Counsel",
+   15
+  ],
+  [
+   "Koreans",
+   15
+  ],
+  [
+   "the Tribunal",
+   14
+  ],
+  [
+   "the Executive",
+   14
+  ]
+ ],
+ "A/control": {
+  "wrapped": 3716,
+  "is_detected_span": 2694,
+  "inside_longer_detection": 288,
+  "new_undetected_position": 620,
+  "overlaps_detection": 114
+ },
+ "A/control/top_new_surfaces": [
+  [
+   "Shenandoah",
+   55
+  ],
+  [
+   "Evarts",
+   38
+  ],
+  [
+   "Mr. Evarts",
+   38
+  ],
+  [
+   "Jugo-Slav",
+   17
+  ],
+  [
+   "Mikado",
+   16
+  ],
+  [
+   "Temple",
+   16
+  ],
+  [
+   "Seward",
+   11
+  ],
+  [
+   "Hungarian Govt",
+   11
+  ],
+  [
+   "Karawankens",
+   10
+  ],
+  [
+   "Limited",
+   9
+  ],
+  [
+   "Rosenthal",
+   8
+  ],
+  [
+   "Tsinanfu",
+   7
+  ],
+  [
+   "Marshall",
+   7
+  ],
+  [
+   "Tyrol",
+   7
+  ],
+  [
+   "Gibson",
+   6
+  ]
+ ],
+ "B/sweep": {
+  "wrapped": 7773,
+  "is_detected_span": 6447,
+  "inside_longer_detection": 375,
+  "new_undetected_position": 922,
+  "overlaps_detection": 29
+ },
+ "B/sweep/top_new_surfaces": [
+  [
+   "Knight Commander",
+   35
+  ],
+  [
+   "the collector",
+   33
+  ],
+  [
+   "the German Government",
+   26
+  ],
+  [
+   "the Alabama",
+   24
+  ],
+  [
+   "Finnish",
+   22
+  ],
+  [
+   "British Government",
+   18
+  ],
+  [
+   "the British Government",
+   17
+  ],
+  [
+   "Chili",
+   17
+  ],
+  [
+   "the Law-Officers",
+   17
+  ],
+  [
+   "Republic of Korea",
+   16
+  ],
+  [
+   "Kenig",
+   15
+  ],
+  [
+   "the commissioners of customs",
+   14
+  ],
+  [
+   "Hayti",
+   13
+  ],
+  [
+   "Zloczow",
+   12
+  ],
+  [
+   "USIS",
+   12
+  ]
+ ],
+ "B/control": {
+  "wrapped": 4528,
+  "is_detected_span": 3249,
+  "inside_longer_detection": 575,
+  "new_undetected_position": 652,
+  "overlaps_detection": 52
+ },
+ "B/control/top_new_surfaces": [
+  [
+   "Comay",
+   18
+  ],
+  [
+   "Kickapoos",
+   16
+  ],
+  [
+   "Vienna",
+   16
+  ],
+  [
+   "Chi",
+   16
+  ],
+  [
+   "Domingo",
+   15
+  ],
+  [
+   "Crown",
+   14
+  ],
+  [
+   "Dr. Lord",
+   12
+  ],
+  [
+   "Mr. Cochran",
+   12
+  ],
+  [
+   "Ger",
+   12
+  ],
+  [
+   "Bering Sea",
+   10
+  ],
+  [
+   "San José",
+   9
+  ],
+  [
+   "Nassau",
+   8
+  ],
+  [
+   "Indo Govt",
+   8
+  ],
+  [
+   "Angra",
+   7
+  ],
+  [
+   "Oaxaca",
+   7
+  ]
+ ]
+}

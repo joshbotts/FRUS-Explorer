@@ -1,0 +1,116 @@
+{
+ "docs_total": 46837,
+ "by_band": {
+  "1861-1899": {
+   "docs": 32478,
+   "d_nothing": 7497,
+   "classifier_country_served_title": 25471,
+   "a_diplomatic_country": 22846,
+   "nonexclusive_a_diplomatic_country": 22846,
+   "c_foreign_legation": 1471,
+   "nonexclusive_c_foreign_legation": 1471,
+   "b_consular_post": 567,
+   "nonexclusive_b_consular_post": 567,
+   "classifier_consular_post": 751,
+   "e_date_only_series_no_geo": 97,
+   "nonexclusive_e_date_only_series": 99,
+   "gate_noSectionPath": 5
+  },
+  "1900-1905": {
+   "docs": 5932,
+   "a_diplomatic_country": 4666,
+   "nonexclusive_a_diplomatic_country": 4666,
+   "classifier_country_served_title": 5210,
+   "d_nothing": 871,
+   "c_foreign_legation": 335,
+   "nonexclusive_c_foreign_legation": 335,
+   "nonexclusive_e_date_only_series": 25,
+   "b_consular_post": 43,
+   "nonexclusive_b_consular_post": 43,
+   "classifier_consular_post": 46,
+   "e_date_only_series_no_geo": 17
+  },
+  "1906+": {
+   "docs": 6632,
+   "d_nothing": 6632,
+   "gate_year>=1906": 6632,
+   "classifier_country_served_title": 4739,
+   "classifier_consular_post": 89
+  },
+  "noYear": {
+   "docs": 1371,
+   "d_nothing": 1371,
+   "gate_noDateline": 882,
+   "front_matter_rows": 54,
+   "gate_noYear": 489,
+   "classifier_country_served_title": 264
+  },
+  "pre-1861": {
+   "docs": 424,
+   "a_diplomatic_country": 13,
+   "nonexclusive_a_diplomatic_country": 13,
+   "classifier_country_served_title": 17,
+   "b_consular_post": 1,
+   "nonexclusive_b_consular_post": 1,
+   "classifier_consular_post": 1,
+   "d_nothing": 405,
+   "e_date_only_series_no_geo": 5,
+   "nonexclusive_e_date_only_series": 5
+  }
+ },
+ "d_nothing_by_gate": {
+  "1861-1899": {
+   "ok": 7492,
+   "noSectionPath": 5
+  },
+  "noYear": {
+   "noDateline": 882,
+   "noYear": 489
+  },
+  "pre-1861": {
+   "ok": 405
+  },
+  "1900-1905": {
+   "ok": 871
+  },
+  "1906+": {
+   "year>=1906": 6632
+  }
+ },
+ "date_only_rows_shadowing_a_country_row": {
+  "1861-1899": 5
+ },
+ "volumes_1861_1899": {
+  "count": 63,
+  "with_any_country_title": 52,
+  "share_ge_0.5": 49,
+  "share_ge_0.9": 39,
+  "no_country_title": [
+   "frus1864p2",
+   "frus1872p2v1",
+   "frus1872p2v2",
+   "frus1872p2v3",
+   "frus1872p2v4",
+   "frus1872p2v5",
+   "frus1873p1v1",
+   "frus1873p2v3",
+   "frus1894Nicaragua",
+   "frus1894app1",
+   "frus1894app2"
+  ],
+  "share_lt_0.5": [
+   [
+    "frus1865p2",
+    0.4607
+   ],
+   [
+    "frus1866p3",
+    0.4305
+   ],
+   [
+    "frus1873p1v2",
+    0.2068
+   ]
+  ]
+ }
+}

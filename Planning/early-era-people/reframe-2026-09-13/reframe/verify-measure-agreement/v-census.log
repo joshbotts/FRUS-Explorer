@@ -1,0 +1,66 @@
+{
+ "store_rows": {
+  "E": 245747,
+  "FC": 1261852,
+  "FS": 2597043
+ },
+ "head_problems": {
+  "FC": 0,
+  "FS": 0
+ },
+ "row_slice_mismatch": {
+  "E": 0,
+  "FC": 0,
+  "FS": 0
+ },
+ "text_docs": 197534,
+ "length_mismatch": 0,
+ "region_boundaries_checked": 1604342,
+ "region_boundary_token_mismatch": 0,
+ "region_docs_not_in_text": 0,
+ "pocom_loader_quirk": {
+  "people_files": 4261,
+  "people_with_surname": 4261,
+  "people_with_dated_appointment": 4167,
+  "distinct_surnames_with_dated_appointment": 2867,
+  "distinct_surnames_casefolded": 2866
+ },
+ "pocom_loader_et": {
+  "people_files": 4261,
+  "people_with_surname": 4261,
+  "people_with_dated_appointment": 4167,
+  "distinct_surnames_with_dated_appointment": 2867,
+  "distinct_surnames_casefolded": 2866
+ },
+ "editor_fromto_region": {
+  "1861-1899": {
+   "head": 61108,
+   "other_head": 23101,
+   "note": 2,
+   "apparatus": 9,
+   "prose": 14
+  },
+  "1900-1929": {
+   "head": 42034,
+   "other_head": 7566,
+   "note": 0,
+   "apparatus": 2,
+   "prose": 0
+  },
+  "1930-1945": {
+   "head": 71445,
+   "other_head": 1539,
+   "note": 0,
+   "apparatus": 0,
+   "prose": 4
+  },
+  "1946-": {
+   "head": 28469,
+   "other_head": 454,
+   "note": 0,
+   "apparatus": 0,
+   "prose": 4
+  }
+ }
+}
+elapsed 65.4

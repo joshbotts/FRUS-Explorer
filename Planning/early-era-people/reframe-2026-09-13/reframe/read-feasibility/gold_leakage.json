@@ -1,0 +1,29 @@
+{
+ "gold_documents": 64,
+ "committed_files_scanned": 143,
+ "files_naming_a_gold_document": 15,
+ "gold_documents_named_in_committed_files": 63,
+ "bracketed_context_snippets_in_listings": {
+  "listing-filtered_control.txt": 210,
+  "listing-filtered_sweep.txt": 386,
+  "listing-raw_control.txt": 233,
+  "listing-raw_sweep.txt": 651
+ },
+ "files": {
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/errors-raw.json": 62,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/errors.json": 62,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/listing-filtered_control.txt": 54,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/listing-filtered_sweep.txt": 54,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/listing-raw_control.txt": 55,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/listing-raw_sweep.txt": 59,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-errors/summary-stdout.json": 39,
+  "Planning/early-era-people/feasibility-2026-09-12/measure-grains/grains.json": 63,
+  "Planning/early-era-people/feasibility-2026-09-12/read-scores/score-json-dump.txt": 28,
+  "Planning/early-era-people/feasibility-2026-09-12/verify-measure-errors-reproduce/recount-stdout.txt": 10,
+  "Planning/early-era-people/feasibility-2026-09-12/verify-measure-grains/analyze.log": 7,
+  "Planning/early-era-people/feasibility-2026-09-12/verify-measure-grains/grains.json": 63,
+  "Planning/early-era-people/feasibility-2026-09-12/verify-measure-grains/placename.log": 13,
+  "Planning/early-era-people/feasibility-2026-09-12/verify-read-scores-reproduce/filter_in_sample.out": 1,
+  "Planning/early-era-people/feasibility-2026-09-12/verify-read-scores-reproduce/score_json_check.out": 22
+ }
+}

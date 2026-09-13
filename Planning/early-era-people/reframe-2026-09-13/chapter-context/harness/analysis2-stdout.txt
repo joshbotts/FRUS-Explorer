@@ -1,0 +1,740 @@
+{
+ "nothing_reasons": {
+  "1861-1899": {
+   "no country title in path; geo-keyed row carries a non-country title key (no roll)": 4501,
+   "_dateline_has_washington": 4177,
+   "_dateline_has_department_of_state": 2087,
+   "country title in path, geo-keyed row emitted, but NO roll covers the date": 1149,
+   "no country title in path; classifier emits nothing": 832,
+   "country title in path, classifier emits nothing (e.g. Washington dateline w/o legation/department cue)": 644,
+   "country title in path, only date-only/consular rows emitted and none had rolls: consularDespatches": 155,
+   "no country title in path; rows emitted: lettersReceived": 92,
+   "country title in path, only date-only/consular rows emitted and none had rolls: lettersReceived": 88,
+   "no country title in path; rows emitted: consularDespatches": 29,
+   "no country title in path; rows emitted: consularInstructions,diplomaticInstructions,notesToForeignConsuls,notesToForeignMissions": 2
+  },
+  "1900-1905": {
+   "no country title in path; geo-keyed row carries a non-country title key (no roll)": 505,
+   "_dateline_has_washington": 335,
+   "country title in path, geo-keyed row emitted, but NO roll covers the date": 209,
+   "_dateline_has_department_of_state": 149,
+   "no country title in path; classifier emits nothing": 56,
+   "country title in path, classifier emits nothing (e.g. Washington dateline w/o legation/department cue)": 46,
+   "country title in path, only date-only/consular rows emitted and none had rolls: lettersReceived": 45,
+   "no country title in path; rows emitted: lettersReceived": 7,
+   "country title in path, only date-only/consular rows emitted and none had rolls: consularDespatches": 3
+  }
+ },
+ "nothing_top_volumes": {
+  "1861-1899": [
+   [
+    "frus1894app1",
+    795
+   ],
+   [
+    "frus1864p2",
+    592
+   ],
+   [
+    "frus1894app2",
+    401
+   ],
+   [
+    "frus1865p2",
+    363
+   ],
+   [
+    "frus1863p1",
+    347
+   ],
+   [
+    "frus1873p1v1",
+    305
+   ],
+   [
+    "frus1872p2v1",
+    222
+   ],
+   [
+    "frus1873p1v2",
+    213
+   ],
+   [
+    "frus1866p2",
+    210
+   ],
+   [
+    "frus1872p2v2",
+    206
+   ],
+   [
+    "frus1896",
+    200
+   ],
+   [
+    "frus1865p4",
+    189
+   ],
+   [
+    "frus1899",
+    166
+   ],
+   [
+    "frus1866p1",
+    138
+   ],
+   [
+    "frus1866p3",
+    131
+   ]
+  ],
+  "1900-1905": [
+   [
+    "frus1901China",
+    291
+   ],
+   [
+    "frus1905",
+    151
+   ],
+   [
+    "frus1904",
+    77
+   ],
+   [
+    "frus1900",
+    74
+   ],
+   [
+    "frus1902",
+    71
+   ],
+   [
+    "frus1903",
+    68
+   ],
+   [
+    "frus1901",
+    45
+   ],
+   [
+    "frus1902app2",
+    45
+   ],
+   [
+    "frus1902app1",
+    21
+   ],
+   [
+    "frus1906p2",
+    13
+   ],
+   [
+    "frus1917",
+    8
+   ],
+   [
+    "frus1906p1",
+    4
+   ],
+   [
+    "frus1899",
+    1
+   ],
+   [
+    "frus1908",
+    1
+   ],
+   [
+    "frus1911",
+    1
+   ]
+  ]
+ },
+ "nothing_top_unserved_titles": [
+  [
+   "Correspondence.",
+   1905
+  ],
+  [
+   "British legation.",
+   775
+  ],
+  [
+   "Correspondence with British legation.",
+   392
+  ],
+  [
+   "VI. Affairs in the Samoan IslandsReprinted from Senate Ex. Doe. No. 93, 53d Cong., 2d sess.; Senate Ex. Doc. No. 132, 53d Cong., 2d sess., and Senate Ex. Doc. No. 97, 53d Cong., 3d sess.",
+   348
+  ],
+  [
+   "The counter case of the United States presented to the tribunal of arbitration, at Geneva, under the provisions of the Treaty of Washington, with an appendix containing additional documents, correspondence, and evidence. April 15, 1871.",
+   222
+  ],
+  [
+   "Additional documents, correspondence, and evidence accompanying counter case of the United States",
+   222
+  ],
+  [
+   "Great Britain. (Continued.)",
+   180
+  ],
+  [
+   "Chili.",
+   159
+  ],
+  [
+   "Correspondence Communicated to Mr. Blaine by Sir J. Pauncefote, December 24, 1891.",
+   158
+  ],
+  [
+   "List of papers.",
+   157
+  ],
+  [
+   "House Ex. Doc. No. 48, Fifty-third Congress, second session",
+   151
+  ],
+  [
+   "Message from the President of the United States, transmitting A report of the Secretary of State, with copies of the instructions given to Mr. Albert S. Willis, the representative of the United States now in the Hawaiian Islands, and also the correspondence since March 4, 1889, concerning the relations of this Government to those islands.",
+   151
+  ],
+  [
+   "Correspondence Between the Department of State and the German Embassy.",
+   149
+  ],
+  [
+   "Guatemala and Honduras",
+   146
+  ],
+  [
+   "Agreement between Germany and Great Britain in regard to their mutual policy in China, October 16, 1900.",
+   144
+  ],
+  [
+   "II. Enforcement of regulations respecting fur sealsPrinted also in Senate Ex. Doc. No. 67, Fifty-third Congress, third session.",
+   142
+  ],
+  [
+   "Chili",
+   136
+  ],
+  [
+   "Telegraphic Correspondence.",
+   129
+  ],
+  [
+   "[807] *Cuban correspondence, 1866\u20131871.",
+   128
+  ],
+  [
+   "Correspondence respecting the Geneva arbitration and the proposed supplemental Article to the Treaty.",
+   125
+  ],
+  [
+   "Correspondence respecting the Geneva arbitration.",
+   125
+  ],
+  [
+   "Affairs at Bluefields",
+   125
+  ],
+  [
+   "Correspondence with the Mexican legation.",
+   115
+  ],
+  [
+   "French legation.",
+   110
+  ],
+  [
+   "I. Chinese-Japanese war",
+   107
+  ],
+  [
+   "House Ex. Doc. No. 47, Fifty-third Congress, second session",
+   96
+  ],
+  [
+   "President\u2019s message relating to the Hawaiian Islands.",
+   96
+  ],
+  [
+   "III. Mosquito Territory, affairs at BluefieldsSee Senate Ex. Doc. No. 20, Fifty-third Congress, third session.",
+   95
+  ],
+  [
+   "XXIX.\u2014Spain.",
+   75
+  ],
+  [
+   "Rome.",
+   73
+  ],
+  [
+   "IV. Claim of Antonio Maximo MoraReprinted from Sen. Ex. Doc. No. 175 Fifty-second Congress, first session; Sen. Ex. Doc. No. 115, Fifty-third Congress:, second session, and Sen. Ex. Doc. No. 10, Fifty-third Congress, third session.",
+   69
+  ],
+  [
+   "CircularsCorrespondence",
+   67
+  ],
+  [
+   "Supplement C: Papers relating to the seizure of British sealing-vessels in Behring Sea",
+   66
+  ],
+  [
+   "Papers relating to the seizure of British sealing-vessels in Bering Sea.",
+   66
+  ],
+  [
+   "Remainder of papers accompanying the Counter Case of the United States",
+   64
+  ],
+  [
+   "United States of America",
+   59
+  ],
+  [
+   "Senate Ex. Doc. No. 13, Fifty-third Congress, second session",
+   59
+  ],
+  [
+   "Message from the President of the United States on the Hawaiian question.",
+   59
+  ],
+  [
+   "Index of instructions.",
+   59
+  ],
+  [
+   "Back Matter",
+   58
+  ]
+ ],
+ "no_roll_gaps_1861_1899": [
+  [
+   "diplomaticDespatches",
+   [
+    "italy"
+   ],
+   292
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "prussia"
+   ],
+   158
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "argentina"
+   ],
+   129
+  ],
+  [
+   "lettersReceived",
+   [],
+   88
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "nicaragua"
+   ],
+   79
+  ],
+  [
+   "consularDespatches",
+   [
+    "habana"
+   ],
+   73
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "el salvador"
+   ],
+   63
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "nicaragua",
+    "el salvador",
+    "and costa rica"
+   ],
+   41
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "honduras"
+   ],
+   39
+  ],
+  [
+   "diplomaticInstructions",
+   [
+    "samoa"
+   ],
+   38
+  ],
+  [
+   "notesToForeignMissions",
+   [
+    "samoa"
+   ],
+   38
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "costa rica"
+   ],
+   33
+  ],
+  [
+   "diplomaticInstructions",
+   [
+    "nicaragua"
+   ],
+   31
+  ],
+  [
+   "notesToForeignMissions",
+   [
+    "nicaragua"
+   ],
+   31
+  ],
+  [
+   "diplomaticInstructions",
+   [
+    "egypt"
+   ],
+   28
+  ],
+  [
+   "notesToForeignMissions",
+   [
+    "egypt"
+   ],
+   28
+  ],
+  [
+   "diplomaticInstructions",
+   [
+    "nicaragua",
+    "el salvador",
+    "and costa rica"
+   ],
+   25
+  ],
+  [
+   "notesToForeignMissions",
+   [
+    "nicaragua",
+    "el salvador",
+    "and costa rica"
+   ],
+   25
+  ],
+  [
+   "notesFromForeignMissions",
+   [
+    "haiti"
+   ],
+   21
+  ],
+  [
+   "notesFromForeignMissions",
+   [
+    "samoa"
+   ],
+   20
+  ],
+  [
+   "diplomaticDespatches",
+   [
+    "samoa"
+   ],
+   19
+  ],
+  [
+   "diplomaticInstructions",
+   [
+    "costa rica"
+   ],
+   18
+  ],
+  [
+   "notesToForeignMissions",
+   [
+    "costa rica"
+   ],
+   18
+  ],
+  [
+   "diplomaticInstructions",
+   [
+    "el salvador"
+   ],
+   18
+  ],
+  [
+   "notesToForeignMissions",
+   [
+    "el salvador"
+   ],
+   18
+  ]
+ ],
+ "proxy_mission_city_vs_chapter": {
+  "high_conf_despatch_rows_with_city": {
+   "1861-1899": 11511,
+   "1900-1905": 2379
+  },
+  "disagreeing": {
+   "1861-1899": 296,
+   "1900-1905": 99
+  },
+  "top_pairs(city, city_modal_country, chosen_country)": [
+   [
+    "paris",
+    "france",
+    "mexico",
+    69
+   ],
+   [
+    "london",
+    "great britain",
+    "spain",
+    36
+   ],
+   [
+    "port au prince",
+    "haiti",
+    "dominican republic",
+    29
+   ],
+   [
+    "berlin",
+    "germany",
+    "china",
+    18
+   ],
+   [
+    "constantinople",
+    "turkey",
+    "spain",
+    17
+   ],
+   [
+    "washington",
+    "venezuela",
+    "brazil",
+    13
+   ],
+   [
+    "washington",
+    "venezuela",
+    "colombia",
+    12
+   ],
+   [
+    "london",
+    "great britain",
+    "china",
+    12
+   ],
+   [
+    "legation of the united states",
+    "turkey",
+    "switzerland",
+    12
+   ],
+   [
+    "athens",
+    "greece",
+    "serbia",
+    12
+   ],
+   [
+    "athens",
+    "greece",
+    "rumania",
+    11
+   ],
+   [
+    "vienna",
+    "austria",
+    "mexico",
+    10
+   ],
+   [
+    "mexico",
+    "mexico",
+    "spain",
+    7
+   ],
+   [
+    "tokyo",
+    "japan",
+    "china",
+    7
+   ],
+   [
+    "brussels",
+    "belgium",
+    "mexico",
+    6
+   ],
+   [
+    "st. petersburg",
+    "russia",
+    "china",
+    6
+   ],
+   [
+    "the hague",
+    "netherlands",
+    "spain",
+    5
+   ],
+   [
+    "vienna",
+    "austria",
+    "china",
+    5
+   ],
+   [
+    "paris",
+    "france",
+    "china",
+    5
+   ],
+   [
+    "tokyo",
+    "japan",
+    "russia",
+    5
+   ]
+  ],
+  "examples": [
+   "frus1865p3/d192 | Mr. Campbell to Mr. Seward | Legation of the United States, Washington, September 20, 1864. | chosen=sweden city=washington modal=venezuela",
+   "frus1865p3/d340 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, January 20, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d343 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, February 9, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d344 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, February 14, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d345 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, February 17, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d346 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, February 17,1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d349 | Mr. Bigelow to Mr. Seward | Legation of the United States , Paris, March 6, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d351 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, March 10, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d353 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, March 10, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d358 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, March 14, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d359 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, March 17, 1865. | chosen=mexico city=paris modal=france",
+   "frus1865p3/d365 | Mr. Bigelow to Mr. Seward | Legation of the United States, Paris, March 28, 1865. | chosen=mexico city=paris modal=france"
+  ]
+ },
+ "shadow_examples": [
+  {
+   "volume": "frus1862",
+   "d": "d123",
+   "header": "To the diplomatic and consular officers of the United States in foreign countries.",
+   "dateline": "Department of State, Washington, August 8, 1862.",
+   "path": [
+    "Correspondence.",
+    "Great Britain."
+   ],
+   "shown": [
+    "notesToForeignConsuls"
+   ],
+   "lostCountryTitle": "Great Britain."
+  },
+  {
+   "volume": "frus1862",
+   "d": "d124",
+   "header": "To the diplomatic and consular officers of the United States in foreign countries.",
+   "dateline": "Department of State, Washington, August 8, 1862.",
+   "path": [
+    "Correspondence.",
+    "Great Britain."
+   ],
+   "shown": [
+    "notesToForeignConsuls"
+   ],
+   "lostCountryTitle": "Great Britain."
+  },
+  {
+   "volume": "frus1862",
+   "d": "d274",
+   "header": "Mr. Seward to the diplomatic and consular agents of the United States .",
+   "dateline": "Department of State, Washington, May 2, 1862.",
+   "path": [
+    "Correspondence.",
+    "France."
+   ],
+   "shown": [
+    "notesToForeignConsuls"
+   ],
+   "lostCountryTitle": "France."
+  },
+  {
+   "volume": "frus1870",
+   "d": "d219",
+   "header": "Mr. Fish to the Secretary of the Navy .",
+   "dateline": "Department of State, Washington , April 4, 1870.",
+   "path": [
+    "IV.\u2014Miscellaneous correspondence relating to foreign affairs.",
+    "China."
+   ],
+   "shown": [
+    "domesticLetters"
+   ],
+   "lostCountryTitle": "China."
+  },
+  {
+   "volume": "frus1870",
+   "d": "d246",
+   "header": "Mr. Davis to the Secretary of War .",
+   "dateline": "Department of State, November 7, 1870.",
+   "path": [
+    "IV.\u2014Miscellaneous correspondence relating to foreign affairs.",
+    "Great Britain."
+   ],
+   "shown": [
+    "domesticLetters"
+   ],
+   "lostCountryTitle": "Great Britain."
+  }
+ ],
+ "chosen_title_index_over_path_len": {
+  "1861-1899": {
+   "0/1": 9489,
+   "0/2": 7377,
+   "1/2": 6773,
+   "1/3": 817,
+   "0/3": 381,
+   "3/4": 56,
+   "2/3": 42,
+   "3/5": 37,
+   "1/4": 5,
+   "0/6": 2,
+   "4/5": 2
+  },
+  "pre-1861": {
+   "1/2": 8,
+   "0/3": 6,
+   "4/5": 4,
+   "0/2": 1
+  },
+  "1900-1905": {
+   "0/2": 4593,
+   "0/3": 468
+  }
+ }
+}

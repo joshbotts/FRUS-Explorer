@@ -1,0 +1,6308 @@
+{
+ "hunter|B0|no-hypothesis:no-classification": 46,
+ "hunter|B0|one:CONTRADICTED-holder-in-no-post-on-date": 363,
+ "hunter|B0|one:CONTRADICTED-within-180d-of-hypothesised-post": 2,
+ "hunter|S_after sender-rule decided|False": 411,
+ "hunter|S_after|no-hypothesis:no-classification": 34,
+ "hunter|S_after|one:CONTRADICTED-holder-in-no-post-on-date": 375,
+ "hunter|S_after|one:CONTRADICTED-within-180d-of-hypothesised-post": 2,
+ "hunter|S_before|no-hypothesis:no-classification": 142,
+ "hunter|S_before|one:CONTRADICTED-holder-in-no-post-on-date": 269,
+ "hunter|T_after sender-rule decided|False": 411,
+ "hunter|T_after|no-hypothesis:no-classification": 3,
+ "hunter|T_after|one:CONTRADICTED-holder-in-no-post-on-date": 405,
+ "hunter|T_after|one:CONTRADICTED-within-180d-of-hypothesised-post": 3,
+ "hunter|grain-side|enclosure|from": 2,
+ "hunter|grain-side|enclosure|to": 8,
+ "hunter|grain-side|head|from": 197,
+ "hunter|grain-side|head|to": 204,
+ "hunter|head-from dateline has 'department of state'|False": 3,
+ "hunter|head-from dateline has 'department of state'|True": 194,
+ "hunter|kind|country": 270,
+ "hunter|kind|foreign-legation": 133,
+ "hunter|kind|topical": 8,
+ "hunter|rows": 411,
+ "hunter|shown before->after|False|False": 34,
+ "hunter|shown before->after|False|True": 108,
+ "hunter|shown before->after|True|True": 269,
+ "legation-docs-used-title|1861-1899|S_after|country": 2276,
+ "legation-docs-used-title|1861-1899|S_after|foreign-legation": 1969,
+ "legation-docs-used-title|1861-1899|S_after|no-classification": 221,
+ "legation-docs-used-title|1861-1899|S_after|topical": 7,
+ "legation-docs-used-title|1861-1899|T_after|country": 2405,
+ "legation-docs-used-title|1861-1899|T_after|foreign-legation": 1963,
+ "legation-docs-used-title|1861-1899|T_after|no-classification": 31,
+ "legation-docs-used-title|1861-1899|T_after|topical": 74,
+ "parity": {
+  "HEAD harness over the list-volume export (25,529 documents)|legation-mirror": {
+   "agree": 38298
+  },
+  "after-docs (46,837 pre-1906 export documents)|legation-mirror": {
+   "agree": 70694
+  },
+  "after-docs (46,837 pre-1906 export documents)|sender-mirror": {
+   "agree:not-fired": 2272,
+   "agree:sender-rule-fired": 26
+  }
+ },
+ "proxy1873|S_after|head|all": {
+  "judged": 651,
+  "loose_precision_wilson95": [
+   0.9969,
+   0.9889,
+   0.9992
+  ],
+  "right": 649,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9969,
+   0.9889,
+   0.9992
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|evidence=department-only": {
+  "judged": 409,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9907,
+   1.0
+  ],
+  "right": 409,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9907,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|evidence=department-only|label-single": {
+  "judged": 409,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9907,
+   1.0
+  ],
+  "right": 409,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9907,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|evidence=not-department-only": {
+  "judged": 242,
+  "loose_precision_wilson95": [
+   0.9917,
+   0.9704,
+   0.9977
+  ],
+  "right": 240,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9917,
+   0.9704,
+   0.9977
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|evidence=not-department-only|label-multi": {
+  "judged": 29,
+  "loose_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "right": 29,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|evidence=not-department-only|label-single": {
+  "judged": 213,
+  "loose_precision_wilson95": [
+   0.9906,
+   0.9664,
+   0.9974
+  ],
+  "right": 211,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9906,
+   0.9664,
+   0.9974
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|label-multi": {
+  "judged": 29,
+  "loose_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "right": 29,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|label-single": {
+  "judged": 622,
+  "loose_precision_wilson95": [
+   0.9968,
+   0.9884,
+   0.9991
+  ],
+  "right": 620,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9968,
+   0.9884,
+   0.9991
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|side=from": {
+  "judged": 264,
+  "loose_precision_wilson95": [
+   0.9924,
+   0.9728,
+   0.9979
+  ],
+  "right": 262,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9924,
+   0.9728,
+   0.9979
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxy1873|S_after|head|side=to": {
+  "judged": 387,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9902,
+   1.0
+  ],
+  "right": 387,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9902,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|all": {
+  "judged": 40,
+  "loose_precision_wilson95": [
+   0.975,
+   0.8712,
+   0.9956
+  ],
+  "right": 39,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.975,
+   0.8712,
+   0.9956
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|evidence=department-only": {
+  "judged": 23,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8569,
+   1.0
+  ],
+  "right": 23,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8569,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|evidence=department-only|label-single": {
+  "judged": 23,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8569,
+   1.0
+  ],
+  "right": 23,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8569,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|evidence=not-department-only": {
+  "judged": 17,
+  "loose_precision_wilson95": [
+   0.9412,
+   0.7302,
+   0.9895
+  ],
+  "right": 16,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9412,
+   0.7302,
+   0.9895
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|evidence=not-department-only|label-single": {
+  "judged": 17,
+  "loose_precision_wilson95": [
+   0.9412,
+   0.7302,
+   0.9895
+  ],
+  "right": 16,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9412,
+   0.7302,
+   0.9895
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|label-single": {
+  "judged": 40,
+  "loose_precision_wilson95": [
+   0.975,
+   0.8712,
+   0.9956
+  ],
+  "right": 39,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.975,
+   0.8712,
+   0.9956
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|side=from": {
+  "judged": 17,
+  "loose_precision_wilson95": [
+   0.9412,
+   0.7302,
+   0.9895
+  ],
+  "right": 16,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9412,
+   0.7302,
+   0.9895
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxy1873|S_before|head|side=to": {
+  "judged": 23,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8569,
+   1.0
+  ],
+  "right": 23,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8569,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_after|head|all": {
+  "judged": 736,
+  "loose_precision_wilson95": [
+   0.9918,
+   0.9823,
+   0.9963
+  ],
+  "right": 730,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9918,
+   0.9823,
+   0.9963
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 4
+ },
+ "proxy1873|T_after|head|evidence=department-only": {
+  "judged": 453,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9916,
+   1.0
+  ],
+  "right": 453,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9916,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_after|head|evidence=department-only|label-single": {
+  "judged": 453,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9916,
+   1.0
+  ],
+  "right": 453,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9916,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_after|head|evidence=not-department-only": {
+  "judged": 283,
+  "loose_precision_wilson95": [
+   0.9788,
+   0.9545,
+   0.9902
+  ],
+  "right": 277,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9788,
+   0.9545,
+   0.9902
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 4
+ },
+ "proxy1873|T_after|head|evidence=not-department-only|label-multi": {
+  "judged": 29,
+  "loose_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "right": 29,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_after|head|evidence=not-department-only|label-single": {
+  "judged": 254,
+  "loose_precision_wilson95": [
+   0.9764,
+   0.9494,
+   0.9891
+  ],
+  "right": 248,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9764,
+   0.9494,
+   0.9891
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 4
+ },
+ "proxy1873|T_after|head|label-multi": {
+  "judged": 29,
+  "loose_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "right": 29,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.883,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_after|head|label-single": {
+  "judged": 707,
+  "loose_precision_wilson95": [
+   0.9915,
+   0.9816,
+   0.9961
+  ],
+  "right": 701,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9915,
+   0.9816,
+   0.9961
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 4
+ },
+ "proxy1873|T_after|head|side=from": {
+  "judged": 305,
+  "loose_precision_wilson95": [
+   0.9803,
+   0.9578,
+   0.991
+  ],
+  "right": 299,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9803,
+   0.9578,
+   0.991
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 4
+ },
+ "proxy1873|T_after|head|side=to": {
+  "judged": 431,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9912,
+   1.0
+  ],
+  "right": 431,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9912,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_before|head|all": {
+  "judged": 58,
+  "loose_precision_wilson95": [
+   0.9138,
+   0.8136,
+   0.9626
+  ],
+  "right": 53,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9138,
+   0.8136,
+   0.9626
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 4
+ },
+ "proxy1873|T_before|head|evidence=department-only": {
+  "judged": 32,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8928,
+   1.0
+  ],
+  "right": 32,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8928,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_before|head|evidence=department-only|label-single": {
+  "judged": 32,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8928,
+   1.0
+  ],
+  "right": 32,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8928,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxy1873|T_before|head|evidence=not-department-only": {
+  "judged": 26,
+  "loose_precision_wilson95": [
+   0.8077,
+   0.6212,
+   0.9149
+  ],
+  "right": 21,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8077,
+   0.6212,
+   0.9149
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 4
+ },
+ "proxy1873|T_before|head|evidence=not-department-only|label-single": {
+  "judged": 26,
+  "loose_precision_wilson95": [
+   0.8077,
+   0.6212,
+   0.9149
+  ],
+  "right": 21,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8077,
+   0.6212,
+   0.9149
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 4
+ },
+ "proxy1873|T_before|head|label-single": {
+  "judged": 58,
+  "loose_precision_wilson95": [
+   0.9138,
+   0.8136,
+   0.9626
+  ],
+  "right": 53,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9138,
+   0.8136,
+   0.9626
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 4
+ },
+ "proxy1873|T_before|head|side=from": {
+  "judged": 26,
+  "loose_precision_wilson95": [
+   0.8077,
+   0.6212,
+   0.9149
+  ],
+  "right": 21,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8077,
+   0.6212,
+   0.9149
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 4
+ },
+ "proxy1873|T_before|head|side=to": {
+  "judged": 32,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8928,
+   1.0
+  ],
+  "right": 32,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8928,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular": {
+  "judged": 67,
+  "loose_precision_wilson95": [
+   0.9552,
+   0.8764,
+   0.9847
+  ],
+  "right": 61,
+  "right_kind_place_untestable": 3,
+  "strict_precision_wilson95": [
+   0.9104,
+   0.8181,
+   0.9583
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 3,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular|label=department": {
+  "judged": 30,
+  "loose_precision_wilson95": [
+   0.9333,
+   0.7868,
+   0.9815
+  ],
+  "right": 28,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9333,
+   0.7868,
+   0.9815
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular|label=foreign-consul|us-consulate": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular|label=foreign-legation": {
+  "judged": 3,
+  "loose_precision_wilson95": [
+   1.0,
+   0.4385,
+   1.0
+  ],
+  "right": 3,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.4385,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular|label=special-agent": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|circular|label=us-domestic-office": {
+  "judged": 30,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8865,
+   1.0
+  ],
+  "right": 30,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8865,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent": {
+  "judged": 250,
+  "loose_precision_wilson95": [
+   0.372,
+   0.3144,
+   0.4334
+  ],
+  "right": 66,
+  "right_kind_place_untestable": 27,
+  "strict_precision_wilson95": [
+   0.264,
+   0.2132,
+   0.3219
+  ],
+  "unlabeled": 556,
+  "wrong_kind": 154,
+  "wrong_place": 3
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent|label=department": {
+  "judged": 163,
+  "loose_precision_wilson95": [
+   0.3742,
+   0.3036,
+   0.4506
+  ],
+  "right": 61,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.3742,
+   0.3036,
+   0.4506
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 102,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent|label=foreign-consul": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "right": 4,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent|label=foreign-legation": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 2
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 16,
+  "loose_precision_wilson95": [
+   0.6875,
+   0.444,
+   0.8584
+  ],
+  "right": 1,
+  "right_kind_place_untestable": 10,
+  "strict_precision_wilson95": [
+   0.0625,
+   0.0111,
+   0.2833
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 4,
+  "wrong_place": 1
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 556,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1861-1899|strict|independent|label=us-mission": {
+  "judged": 65,
+  "loose_precision_wilson95": [
+   0.2615,
+   0.1702,
+   0.3795
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 17,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0558
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 48,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|strict|circular": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   0.75,
+   0.3006,
+   0.9544
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.5,
+   0.15,
+   0.85
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|strict|circular|label=department": {
+  "judged": 3,
+  "loose_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|strict|independent": {
+  "judged": 1288,
+  "loose_precision_wilson95": [
+   0.9177,
+   0.9014,
+   0.9315
+  ],
+  "right": 1182,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9177,
+   0.9014,
+   0.9315
+  ],
+  "unlabeled": 270,
+  "wrong_kind": 85,
+  "wrong_place": 21
+ },
+ "proxyhdr|S_after|1900-1905|strict|independent|label=department": {
+  "judged": 1047,
+  "loose_precision_wilson95": [
+   0.957,
+   0.943,
+   0.9677
+  ],
+  "right": 1002,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.957,
+   0.943,
+   0.9677
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 45,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|strict|independent|label=foreign-legation": {
+  "judged": 92,
+  "loose_precision_wilson95": [
+   0.8696,
+   0.7857,
+   0.9238
+  ],
+  "right": 80,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8696,
+   0.7857,
+   0.9238
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 12
+ },
+ "proxyhdr|S_after|1900-1905|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 116,
+  "loose_precision_wilson95": [
+   0.8621,
+   0.7876,
+   0.9133
+  ],
+  "right": 100,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8621,
+   0.7876,
+   0.9133
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 7,
+  "wrong_place": 9
+ },
+ "proxyhdr|S_after|1900-1905|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 270,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|strict|independent|label=us-mission": {
+  "judged": 33,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.1043
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.1043
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 33,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|weak|independent": {
+  "judged": 720,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9947,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 720,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0053
+  ],
+  "unlabeled": 94,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|weak|independent|label=foreign-legation|us-mission": {
+  "judged": 220,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9828,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 220,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0172
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|weak|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 94,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_after|1900-1905|weak|independent|label=us-mission": {
+  "judged": 500,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9924,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 500,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0076
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|circular": {
+  "judged": 62,
+  "loose_precision_wilson95": [
+   0.9839,
+   0.9141,
+   0.9971
+  ],
+  "right": 58,
+  "right_kind_place_untestable": 3,
+  "strict_precision_wilson95": [
+   0.9355,
+   0.8455,
+   0.9746
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|circular|label=department": {
+  "judged": 28,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "right": 28,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|circular|label=foreign-consul|us-consulate": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|circular|label=special-agent": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|circular|label=us-domestic-office": {
+  "judged": 30,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8865,
+   1.0
+  ],
+  "right": 30,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8865,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent": {
+  "judged": 188,
+  "loose_precision_wilson95": [
+   0.2926,
+   0.2322,
+   0.3612
+  ],
+  "right": 51,
+  "right_kind_place_untestable": 4,
+  "strict_precision_wilson95": [
+   0.2713,
+   0.2128,
+   0.3389
+  ],
+  "unlabeled": 623,
+  "wrong_kind": 130,
+  "wrong_place": 3
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent|label=department": {
+  "judged": 130,
+  "loose_precision_wilson95": [
+   0.3538,
+   0.2769,
+   0.4392
+  ],
+  "right": 46,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.3538,
+   0.2769,
+   0.4392
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 84,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent|label=foreign-consul": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "right": 4,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent|label=foreign-legation": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 2
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 9,
+  "loose_precision_wilson95": [
+   0.4444,
+   0.1888,
+   0.7334
+  ],
+  "right": 1,
+  "right_kind_place_untestable": 3,
+  "strict_precision_wilson95": [
+   0.1111,
+   0.0199,
+   0.435
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 4,
+  "wrong_place": 1
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 623,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1861-1899|strict|independent|label=us-mission": {
+  "judged": 43,
+  "loose_precision_wilson95": [
+   0.0233,
+   0.0041,
+   0.1206
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.082
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 42,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|strict|circular": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   0.75,
+   0.3006,
+   0.9544
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.5,
+   0.15,
+   0.85
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|strict|circular|label=department": {
+  "judged": 3,
+  "loose_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|strict|independent": {
+  "judged": 1288,
+  "loose_precision_wilson95": [
+   0.9177,
+   0.9014,
+   0.9315
+  ],
+  "right": 1182,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9177,
+   0.9014,
+   0.9315
+  ],
+  "unlabeled": 270,
+  "wrong_kind": 85,
+  "wrong_place": 21
+ },
+ "proxyhdr|S_before|1900-1905|strict|independent|label=department": {
+  "judged": 1047,
+  "loose_precision_wilson95": [
+   0.957,
+   0.943,
+   0.9677
+  ],
+  "right": 1002,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.957,
+   0.943,
+   0.9677
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 45,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|strict|independent|label=foreign-legation": {
+  "judged": 92,
+  "loose_precision_wilson95": [
+   0.8696,
+   0.7857,
+   0.9238
+  ],
+  "right": 80,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8696,
+   0.7857,
+   0.9238
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 12
+ },
+ "proxyhdr|S_before|1900-1905|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 116,
+  "loose_precision_wilson95": [
+   0.8621,
+   0.7876,
+   0.9133
+  ],
+  "right": 100,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8621,
+   0.7876,
+   0.9133
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 7,
+  "wrong_place": 9
+ },
+ "proxyhdr|S_before|1900-1905|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 270,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|strict|independent|label=us-mission": {
+  "judged": 33,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.1043
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.1043
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 33,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|weak|independent": {
+  "judged": 720,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9947,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 720,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0053
+  ],
+  "unlabeled": 94,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|weak|independent|label=foreign-legation|us-mission": {
+  "judged": 220,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9828,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 220,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0172
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|weak|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 94,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|S_before|1900-1905|weak|independent|label=us-mission": {
+  "judged": 500,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9924,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 500,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0076
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular": {
+  "judged": 67,
+  "loose_precision_wilson95": [
+   0.9552,
+   0.8764,
+   0.9847
+  ],
+  "right": 61,
+  "right_kind_place_untestable": 3,
+  "strict_precision_wilson95": [
+   0.9104,
+   0.8181,
+   0.9583
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 3,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=department": {
+  "judged": 30,
+  "loose_precision_wilson95": [
+   0.9333,
+   0.7868,
+   0.9815
+  ],
+  "right": 28,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9333,
+   0.7868,
+   0.9815
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=foreign-consul|us-consulate": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=foreign-legation": {
+  "judged": 3,
+  "loose_precision_wilson95": [
+   1.0,
+   0.4385,
+   1.0
+  ],
+  "right": 3,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.4385,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=foreign-legation|us-domestic-office|us-mission": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=special-agent": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|circular|label=us-domestic-office": {
+  "judged": 28,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "right": 28,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent": {
+  "judged": 382,
+  "loose_precision_wilson95": [
+   0.5026,
+   0.4527,
+   0.5525
+  ],
+  "right": 165,
+  "right_kind_place_untestable": 27,
+  "strict_precision_wilson95": [
+   0.4319,
+   0.3832,
+   0.482
+  ],
+  "unlabeled": 424,
+  "wrong_kind": 187,
+  "wrong_place": 3
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=department": {
+  "judged": 215,
+  "loose_precision_wilson95": [
+   0.414,
+   0.3502,
+   0.4807
+  ],
+  "right": 89,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.414,
+   0.3502,
+   0.4807
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 126,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=foreign-consul": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "right": 4,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=foreign-legation": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 2
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 18,
+  "loose_precision_wilson95": [
+   0.6111,
+   0.3862,
+   0.797
+  ],
+  "right": 1,
+  "right_kind_place_untestable": 10,
+  "strict_precision_wilson95": [
+   0.0556,
+   0.0099,
+   0.2576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 6,
+  "wrong_place": 1
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 424,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=us-domestic-office": {
+  "judged": 70,
+  "loose_precision_wilson95": [
+   1.0,
+   0.948,
+   1.0
+  ],
+  "right": 70,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.948,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1861-1899|strict|independent|label=us-mission": {
+  "judged": 73,
+  "loose_precision_wilson95": [
+   0.2466,
+   0.162,
+   0.3564
+  ],
+  "right": 1,
+  "right_kind_place_untestable": 17,
+  "strict_precision_wilson95": [
+   0.0137,
+   0.0024,
+   0.0736
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 55,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|circular": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   0.75,
+   0.3006,
+   0.9544
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.5,
+   0.15,
+   0.85
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|circular|label=department": {
+  "judged": 3,
+  "loose_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent": {
+  "judged": 1422,
+  "loose_precision_wilson95": [
+   0.91,
+   0.894,
+   0.9238
+  ],
+  "right": 1294,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.91,
+   0.894,
+   0.9238
+  ],
+  "unlabeled": 136,
+  "wrong_kind": 102,
+  "wrong_place": 26
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent|label=department": {
+  "judged": 1130,
+  "loose_precision_wilson95": [
+   0.9522,
+   0.9382,
+   0.9632
+  ],
+  "right": 1076,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9522,
+   0.9382,
+   0.9632
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 54,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent|label=foreign-legation": {
+  "judged": 95,
+  "loose_precision_wilson95": [
+   0.8421,
+   0.7557,
+   0.9019
+  ],
+  "right": 80,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8421,
+   0.7557,
+   0.9019
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 15
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 123,
+  "loose_precision_wilson95": [
+   0.8293,
+   0.7531,
+   0.8855
+  ],
+  "right": 102,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8293,
+   0.7531,
+   0.8855
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 10,
+  "wrong_place": 11
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 136,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent|label=us-domestic-office": {
+  "judged": 36,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9036,
+   1.0
+  ],
+  "right": 36,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9036,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|strict|independent|label=us-mission": {
+  "judged": 38,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0918
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0918
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 38,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|weak|independent": {
+  "judged": 782,
+  "loose_precision_wilson95": [
+   0.9987,
+   0.9928,
+   0.9998
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 781,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0049
+  ],
+  "unlabeled": 32,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|weak|independent|label=department": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|weak|independent|label=foreign-legation|us-mission": {
+  "judged": 241,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9843,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 241,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0157
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|weak|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 32,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|1900-1905|weak|independent|label=us-mission": {
+  "judged": 540,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9929,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 540,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0071
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|circular": {
+  "judged": 203,
+  "loose_precision_wilson95": [
+   0.6995,
+   0.6332,
+   0.7584
+  ],
+  "right": 122,
+  "right_kind_place_untestable": 20,
+  "strict_precision_wilson95": [
+   0.601,
+   0.5323,
+   0.6659
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 61,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|circular|label=department": {
+  "judged": 125,
+  "loose_precision_wilson95": [
+   0.856,
+   0.7838,
+   0.9069
+  ],
+  "right": 107,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.856,
+   0.7838,
+   0.9069
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 18,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|circular|label=foreign-consul|us-consulate": {
+  "judged": 21,
+  "loose_precision_wilson95": [
+   0.9524,
+   0.7733,
+   0.9915
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 20,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.1546
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|circular|label=special-agent": {
+  "judged": 42,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0838
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0838
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 42,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|circular|label=us-domestic-office": {
+  "judged": 15,
+  "loose_precision_wilson95": [
+   1.0,
+   0.7961,
+   1.0
+  ],
+  "right": 15,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.7961,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|independent": {
+  "judged": 2896,
+  "loose_precision_wilson95": [
+   0.8201,
+   0.8057,
+   0.8337
+  ],
+  "right": 2355,
+  "right_kind_place_untestable": 20,
+  "strict_precision_wilson95": [
+   0.8132,
+   0.7986,
+   0.827
+  ],
+  "unlabeled": 32386,
+  "wrong_kind": 298,
+  "wrong_place": 223
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|independent|label=department": {
+  "judged": 1586,
+  "loose_precision_wilson95": [
+   0.9319,
+   0.9184,
+   0.9433
+  ],
+  "right": 1478,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9319,
+   0.9184,
+   0.9433
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 108,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 32386,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|independent|label=us-consulate": {
+  "judged": 69,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9473,
+   1.0
+  ],
+  "right": 69,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9473,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|independent|label=us-domestic-office": {
+  "judged": 21,
+  "loose_precision_wilson95": [
+   0.9048,
+   0.7109,
+   0.9735
+  ],
+  "right": 19,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9048,
+   0.7109,
+   0.9735
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 2,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_after|post-1905 list volumes|strict|independent|label=us-mission": {
+  "judged": 1220,
+  "loose_precision_wilson95": [
+   0.6631,
+   0.6361,
+   0.6891
+  ],
+  "right": 789,
+  "right_kind_place_untestable": 20,
+  "strict_precision_wilson95": [
+   0.6467,
+   0.6195,
+   0.673
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 188,
+  "wrong_place": 223
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular": {
+  "judged": 62,
+  "loose_precision_wilson95": [
+   0.9839,
+   0.9141,
+   0.9971
+  ],
+  "right": 58,
+  "right_kind_place_untestable": 3,
+  "strict_precision_wilson95": [
+   0.9355,
+   0.8455,
+   0.9746
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular|label=department": {
+  "judged": 28,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "right": 28,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular|label=foreign-consul|us-consulate": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular|label=foreign-legation|us-domestic-office|us-mission": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.3424,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular|label=special-agent": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|circular|label=us-domestic-office": {
+  "judged": 28,
+  "loose_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "right": 28,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.8794,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent": {
+  "judged": 320,
+  "loose_precision_wilson95": [
+   0.4813,
+   0.4271,
+   0.5359
+  ],
+  "right": 150,
+  "right_kind_place_untestable": 4,
+  "strict_precision_wilson95": [
+   0.4688,
+   0.4148,
+   0.5235
+  ],
+  "unlabeled": 491,
+  "wrong_kind": 163,
+  "wrong_place": 3
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=department": {
+  "judged": 182,
+  "loose_precision_wilson95": [
+   0.4066,
+   0.3379,
+   0.4792
+  ],
+  "right": 74,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.4066,
+   0.3379,
+   0.4792
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 108,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=foreign-consul": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "right": 4,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.5101,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=foreign-legation": {
+  "judged": 2,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.6576
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 2
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 11,
+  "loose_precision_wilson95": [
+   0.3636,
+   0.1517,
+   0.6462
+  ],
+  "right": 1,
+  "right_kind_place_untestable": 3,
+  "strict_precision_wilson95": [
+   0.0909,
+   0.0162,
+   0.3774
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 6,
+  "wrong_place": 1
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 491,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=us-domestic-office": {
+  "judged": 70,
+  "loose_precision_wilson95": [
+   1.0,
+   0.948,
+   1.0
+  ],
+  "right": 70,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.948,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1861-1899|strict|independent|label=us-mission": {
+  "judged": 51,
+  "loose_precision_wilson95": [
+   0.0392,
+   0.0108,
+   0.1322
+  ],
+  "right": 1,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0196,
+   0.0035,
+   0.103
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 49,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|circular": {
+  "judged": 4,
+  "loose_precision_wilson95": [
+   0.75,
+   0.3006,
+   0.9544
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.5,
+   0.15,
+   0.85
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|circular|label=department": {
+  "judged": 3,
+  "loose_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "right": 2,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6667,
+   0.2077,
+   0.9385
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|circular|label=foreign-consul|foreign-legation|us-consulate|us-mission": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   1.0,
+   0.2065,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent": {
+  "judged": 1422,
+  "loose_precision_wilson95": [
+   0.91,
+   0.894,
+   0.9238
+  ],
+  "right": 1294,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.91,
+   0.894,
+   0.9238
+  ],
+  "unlabeled": 136,
+  "wrong_kind": 102,
+  "wrong_place": 26
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent|label=department": {
+  "judged": 1130,
+  "loose_precision_wilson95": [
+   0.9522,
+   0.9382,
+   0.9632
+  ],
+  "right": 1076,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.9522,
+   0.9382,
+   0.9632
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 54,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent|label=foreign-legation": {
+  "judged": 95,
+  "loose_precision_wilson95": [
+   0.8421,
+   0.7557,
+   0.9019
+  ],
+  "right": 80,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8421,
+   0.7557,
+   0.9019
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 15
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent|label=foreign-legation|us-mission": {
+  "judged": 123,
+  "loose_precision_wilson95": [
+   0.8293,
+   0.7531,
+   0.8855
+  ],
+  "right": 102,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.8293,
+   0.7531,
+   0.8855
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 10,
+  "wrong_place": 11
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 136,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent|label=us-domestic-office": {
+  "judged": 36,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9036,
+   1.0
+  ],
+  "right": 36,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   1.0,
+   0.9036,
+   1.0
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|strict|independent|label=us-mission": {
+  "judged": 38,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0918
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0918
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 38,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|weak|independent": {
+  "judged": 782,
+  "loose_precision_wilson95": [
+   0.9987,
+   0.9928,
+   0.9998
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 781,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0049
+  ],
+  "unlabeled": 32,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|weak|independent|label=department": {
+  "judged": 1,
+  "loose_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|weak|independent|label=foreign-legation|us-mission": {
+  "judged": 241,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9843,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 241,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0157
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|weak|independent|label=none": {
+  "judged": 0,
+  "loose_precision_wilson95": null,
+  "right": 0,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": null,
+  "unlabeled": 32,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|T_before|1900-1905|weak|independent|label=us-mission": {
+  "judged": 540,
+  "loose_precision_wilson95": [
+   1.0,
+   0.9929,
+   1.0
+  ],
+  "right": 0,
+  "right_kind_place_untestable": 540,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0071
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyhdr|any|1861-1899": {
+  "docs": 32809,
+  "docs-with-office-printed-on-a-side": 703,
+  "docs-without-sender/addressee (no ' to ', or a memorandum)": 1751,
+  "sides-with-office-printed": 873
+ },
+ "proxyhdr|any|1900-1905": {
+  "docs": 6222,
+  "docs-with-office-printed-on-a-side": 1285,
+  "docs-without-sender/addressee (no ' to ', or a memorandum)": 593,
+  "sides-with-office-printed": 2376
+ },
+ "proxyhdr|any|post-1905 list volumes": {
+  "docs": 24895,
+  "docs-with-office-printed-on-a-side": 19578,
+  "docs-without-sender/addressee (no ' to ', or a memorandum)": 4344,
+  "sides-with-office-printed": 35485
+ },
+ "proxyrow|S_after|1861-1899|strict|circular": {
+  "judged": 63,
+  "right": 60,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.9524,
+   0.8691,
+   0.9837
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyrow|S_after|1861-1899|strict|independent": {
+  "judged": 106,
+  "right": 25,
+  "right_kind_place_untestable": 25,
+  "strict_precision_wilson95": [
+   0.2358,
+   0.1652,
+   0.325
+  ],
+  "unlabeled": 461,
+  "wrong_kind": 56,
+  "wrong_place": 0
+ },
+ "proxyrow|S_after|1900-1905|strict|circular": {
+  "judged": 1,
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|S_after|1900-1905|strict|independent": {
+  "judged": 87,
+  "right": 53,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6092,
+   0.5041,
+   0.705
+  ],
+  "unlabeled": 52,
+  "wrong_kind": 34,
+  "wrong_place": 0
+ },
+ "proxyrow|S_after|1900-1905|weak|independent": {
+  "judged": 720,
+  "right": 0,
+  "right_kind_place_untestable": 720,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0053
+  ],
+  "unlabeled": 91,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|S_before|1861-1899|strict|circular": {
+  "judged": 60,
+  "right": 58,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.9667,
+   0.8864,
+   0.9908
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|S_before|1861-1899|strict|independent": {
+  "judged": 44,
+  "right": 10,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.2273,
+   0.1284,
+   0.3699
+  ],
+  "unlabeled": 526,
+  "wrong_kind": 32,
+  "wrong_place": 0
+ },
+ "proxyrow|S_before|1900-1905|strict|circular": {
+  "judged": 1,
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|S_before|1900-1905|strict|independent": {
+  "judged": 87,
+  "right": 53,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6092,
+   0.5041,
+   0.705
+  ],
+  "unlabeled": 52,
+  "wrong_kind": 34,
+  "wrong_place": 0
+ },
+ "proxyrow|S_before|1900-1905|weak|independent": {
+  "judged": 720,
+  "right": 0,
+  "right_kind_place_untestable": 720,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0053
+  ],
+  "unlabeled": 91,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|T_after|1861-1899|strict|circular": {
+  "judged": 63,
+  "right": 60,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.9524,
+   0.8691,
+   0.9837
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyrow|T_after|1861-1899|strict|independent": {
+  "judged": 199,
+  "right": 111,
+  "right_kind_place_untestable": 25,
+  "strict_precision_wilson95": [
+   0.5578,
+   0.4883,
+   0.6251
+  ],
+  "unlabeled": 368,
+  "wrong_kind": 63,
+  "wrong_place": 0
+ },
+ "proxyrow|T_after|1900-1905|strict|circular": {
+  "judged": 1,
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|T_after|1900-1905|strict|independent": {
+  "judged": 122,
+  "right": 83,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6803,
+   0.5932,
+   0.7565
+  ],
+  "unlabeled": 17,
+  "wrong_kind": 39,
+  "wrong_place": 0
+ },
+ "proxyrow|T_after|1900-1905|weak|independent": {
+  "judged": 780,
+  "right": 0,
+  "right_kind_place_untestable": 779,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0049
+  ],
+  "unlabeled": 31,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "proxyrow|T_before|1861-1899|strict|circular": {
+  "judged": 60,
+  "right": 58,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.9667,
+   0.8864,
+   0.9908
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|T_before|1861-1899|strict|independent": {
+  "judged": 137,
+  "right": 96,
+  "right_kind_place_untestable": 2,
+  "strict_precision_wilson95": [
+   0.7007,
+   0.6194,
+   0.7711
+  ],
+  "unlabeled": 433,
+  "wrong_kind": 39,
+  "wrong_place": 0
+ },
+ "proxyrow|T_before|1900-1905|strict|circular": {
+  "judged": 1,
+  "right": 0,
+  "right_kind_place_untestable": 1,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.7935
+  ],
+  "unlabeled": 0,
+  "wrong_kind": 0,
+  "wrong_place": 0
+ },
+ "proxyrow|T_before|1900-1905|strict|independent": {
+  "judged": 122,
+  "right": 83,
+  "right_kind_place_untestable": 0,
+  "strict_precision_wilson95": [
+   0.6803,
+   0.5932,
+   0.7565
+  ],
+  "unlabeled": 17,
+  "wrong_kind": 39,
+  "wrong_place": 0
+ },
+ "proxyrow|T_before|1900-1905|weak|independent": {
+  "judged": 780,
+  "right": 0,
+  "right_kind_place_untestable": 779,
+  "strict_precision_wilson95": [
+   0.0,
+   0.0,
+   0.0049
+  ],
+  "unlabeled": 31,
+  "wrong_kind": 1,
+  "wrong_place": 0
+ },
+ "recon|B0 x B_after": [
+  [
+   [
+    "no-hypothesis",
+    "unknown:explained-as-uncovered-role"
+   ],
+   925
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(convention)"
+   ],
+   529
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:explained-as-uncovered-role"
+   ],
+   457
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:corroborated"
+   ],
+   179
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:contradicted"
+   ],
+   48
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:zero-uncovered-alternative"
+   ],
+   17
+  ],
+  [
+   [
+    "unknown:unexplained",
+    "unknown:explained-as-uncovered-role"
+   ],
+   16
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(location)"
+   ],
+   13
+  ],
+  [
+   [
+    "nobody:unexplained",
+    "nobody:explained-as-uncovered-role"
+   ],
+   5
+  ],
+  [
+   [
+    "no-hypothesis",
+    "unknown:unexplained"
+   ],
+   4
+  ],
+  [
+   [
+    "one:contradicted",
+    "one:untestable-uncovered-only"
+   ],
+   3
+  ],
+  [
+   [
+    "several:zero-uncovered-alternative",
+    "several:->one(convention)"
+   ],
+   2
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:untestable-uncovered-only"
+   ],
+   2
+  ],
+  [
+   [
+    "unknown:explained-as-uncovered-role",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "several:->one(convention)",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:unexplained"
+   ],
+   1
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:corroborated"
+   ],
+   1
+  ]
+ ],
+ "recon|B0 x T_after": [
+  [
+   [
+    "no-hypothesis",
+    "unknown:explained-as-uncovered-role"
+   ],
+   925
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(convention)"
+   ],
+   529
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:explained-as-uncovered-role"
+   ],
+   457
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:corroborated"
+   ],
+   179
+  ],
+  [
+   [
+    "several:->one(location)",
+    "several:zero-uncovered-alternative"
+   ],
+   86
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:contradicted"
+   ],
+   68
+  ],
+  [
+   [
+    "one:corroborated",
+    "one:untestable-uncovered-only"
+   ],
+   58
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:contradicted"
+   ],
+   48
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:zero-uncovered-alternative"
+   ],
+   17
+  ],
+  [
+   [
+    "unknown:unexplained",
+    "unknown:explained-as-uncovered-role"
+   ],
+   16
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(location)"
+   ],
+   13
+  ],
+  [
+   [
+    "one:corroborated",
+    "one:contradicted"
+   ],
+   9
+  ],
+  [
+   [
+    "nobody:unexplained",
+    "nobody:explained-as-uncovered-role"
+   ],
+   5
+  ],
+  [
+   [
+    "no-hypothesis",
+    "unknown:unexplained"
+   ],
+   4
+  ],
+  [
+   [
+    "one:contradicted",
+    "one:untestable-uncovered-only"
+   ],
+   4
+  ],
+  [
+   [
+    "several:zero-uncovered-alternative",
+    "several:->one(convention)"
+   ],
+   2
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:untestable-uncovered-only"
+   ],
+   2
+  ],
+  [
+   [
+    "unknown:explained-as-uncovered-role",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "several:->one(convention)",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:unexplained"
+   ],
+   1
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:corroborated"
+   ],
+   1
+  ]
+ ],
+ "recon|B0!=T_after facts": [
+  [
+   [
+    "B0.via=None",
+    "B0.legkind=None",
+    "T.used=foreign-legation",
+    "terr-same=False",
+    "cats-same=False"
+   ],
+   2176
+  ],
+  [
+   [
+    "B0.via=repaired",
+    "B0.legkind=None",
+    "T.used=topical",
+    "terr-same=False",
+    "cats-same=True"
+   ],
+   154
+  ],
+  [
+   [
+    "B0.via=app-key",
+    "B0.legkind=foreign-legation",
+    "T.used=country",
+    "terr-same=True",
+    "cats-same=True"
+   ],
+   68
+  ],
+  [
+   [
+    "B0.via=repaired",
+    "B0.legkind=foreign-legation",
+    "T.used=topical",
+    "terr-same=False",
+    "cats-same=True"
+   ],
+   22
+  ],
+  [
+   [
+    "B0.via=repaired",
+    "B0.legkind=foreign-legation",
+    "T.used=foreign-legation",
+    "terr-same=True",
+    "cats-same=False"
+   ],
+   4
+  ],
+  [
+   [
+    "B0.via=repaired",
+    "B0.legkind=foreign-legation",
+    "T.used=None",
+    "terr-same=False",
+    "cats-same=False"
+   ],
+   2
+  ]
+ ],
+ "recon|B0!=T_after transition pairs": [
+  [
+   [
+    "no-hypothesis",
+    "unknown:explained-as-uncovered-role"
+   ],
+   925
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(convention)"
+   ],
+   529
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:explained-as-uncovered-role"
+   ],
+   457
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:corroborated"
+   ],
+   179
+  ],
+  [
+   [
+    "several:->one(location)",
+    "several:zero-uncovered-alternative"
+   ],
+   86
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:contradicted"
+   ],
+   68
+  ],
+  [
+   [
+    "one:corroborated",
+    "one:untestable-uncovered-only"
+   ],
+   58
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:contradicted"
+   ],
+   48
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:zero-uncovered-alternative"
+   ],
+   17
+  ],
+  [
+   [
+    "unknown:unexplained",
+    "unknown:explained-as-uncovered-role"
+   ],
+   16
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(location)"
+   ],
+   13
+  ],
+  [
+   [
+    "one:corroborated",
+    "one:contradicted"
+   ],
+   9
+  ],
+  [
+   [
+    "nobody:unexplained",
+    "nobody:explained-as-uncovered-role"
+   ],
+   5
+  ],
+  [
+   [
+    "no-hypothesis",
+    "unknown:unexplained"
+   ],
+   4
+  ],
+  [
+   [
+    "one:contradicted",
+    "one:untestable-uncovered-only"
+   ],
+   4
+  ],
+  [
+   [
+    "several:zero-uncovered-alternative",
+    "several:->one(convention)"
+   ],
+   2
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:untestable-uncovered-only"
+   ],
+   2
+  ],
+  [
+   [
+    "unknown:explained-as-uncovered-role",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "several:->one(convention)",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:unexplained"
+   ],
+   1
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:corroborated"
+   ],
+   1
+  ]
+ ],
+ "recon|B_after x T_after": [
+  [
+   [
+    "several:->one(location)",
+    "several:zero-uncovered-alternative"
+   ],
+   86
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:contradicted"
+   ],
+   68
+  ],
+  [
+   [
+    "one:corroborated",
+    "one:untestable-uncovered-only"
+   ],
+   58
+  ],
+  [
+   [
+    "one:corroborated",
+    "one:contradicted"
+   ],
+   9
+  ],
+  [
+   [
+    "one:contradicted",
+    "one:untestable-uncovered-only"
+   ],
+   1
+  ]
+ ],
+ "recon|S_before x S_after": [
+  [
+   [
+    "no-hypothesis",
+    "unknown:explained-as-uncovered-role"
+   ],
+   2241
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(convention)"
+   ],
+   1837
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:corroborated"
+   ],
+   1032
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:explained-as-uncovered-role"
+   ],
+   1010
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:contradicted"
+   ],
+   141
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(location)"
+   ],
+   99
+  ],
+  [
+   [
+    "no-hypothesis",
+    "unknown:unexplained"
+   ],
+   60
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:zero-uncovered-alternative"
+   ],
+   30
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:unexplained"
+   ],
+   11
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:untestable-uncovered-only"
+   ],
+   6
+  ]
+ ],
+ "recon|T_before x T_after": [
+  [
+   [
+    "no-hypothesis",
+    "unknown:explained-as-uncovered-role"
+   ],
+   925
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(convention)"
+   ],
+   529
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:explained-as-uncovered-role"
+   ],
+   457
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:corroborated"
+   ],
+   189
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:corroborated"
+   ],
+   179
+  ],
+  [
+   [
+    "one:contradicted",
+    "one:corroborated"
+   ],
+   60
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:contradicted"
+   ],
+   48
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:zero-uncovered-alternative"
+   ],
+   17
+  ],
+  [
+   [
+    "no-hypothesis",
+    "several:->one(location)"
+   ],
+   13
+  ],
+  [
+   [
+    "unknown:explained-as-uncovered-role",
+    "unknown:unexplained"
+   ],
+   9
+  ],
+  [
+   [
+    "no-hypothesis",
+    "unknown:unexplained"
+   ],
+   4
+  ],
+  [
+   [
+    "several:zero-uncovered-alternative",
+    "several:->one(convention)"
+   ],
+   2
+  ],
+  [
+   [
+    "no-hypothesis",
+    "one:untestable-uncovered-only"
+   ],
+   2
+  ],
+  [
+   [
+    "nobody:explained-as-uncovered-role",
+    "nobody:unexplained"
+   ],
+   2
+  ],
+  [
+   [
+    "one:untestable-uncovered-only",
+    "one:contradicted"
+   ],
+   1
+  ],
+  [
+   [
+    "unknown:explained-as-uncovered-role",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "several:->one(convention)",
+    "no-hypothesis"
+   ],
+   1
+  ],
+  [
+   [
+    "no-hypothesis",
+    "nobody:unexplained"
+   ],
+   1
+  ]
+ ],
+ "seward|all Seward rows 1861-69": {
+  "B0:chapter-rule=W.H.": 8421,
+  "B0:chapter-rule=none": 711,
+  "S_after:cats=consularDespatches": 172,
+  "S_after:cats=diplomaticDespatches": 3618,
+  "S_after:cats=diplomaticInstructions": 192,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 2728,
+  "S_after:cats=none": 644,
+  "S_after:cats=notesFromForeignConsuls": 4,
+  "S_after:cats=notesFromForeignMissions": 865,
+  "S_after:cats=notesToForeignConsuls": 1,
+  "S_after:cats=notesToForeignMissions": 908,
+  "S_after:chapter-rule=W.H.": 8380,
+  "S_after:chapter-rule=none": 752,
+  "S_after:sender-rule-decided": 11,
+  "S_after:shown": 8488,
+  "S_before:cats=consularDespatches": 172,
+  "S_before:cats=diplomaticDespatches": 3487,
+  "S_before:cats=diplomaticInstructions": 171,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 2565,
+  "S_before:cats=none": 2472,
+  "S_before:cats=notesFromForeignConsuls": 4,
+  "S_before:cats=notesFromForeignMissions": 164,
+  "S_before:cats=notesToForeignConsuls": 1,
+  "S_before:cats=notesToForeignMissions": 96,
+  "S_before:chapter-rule=W.H.": 6578,
+  "S_before:chapter-rule=none": 2554,
+  "S_before:shown": 6660,
+  "T_after:chapter-rule=W.H.": 8947,
+  "T_after:chapter-rule=none": 185,
+  "T_after:sender-rule-decided": 11,
+  "T_before:chapter-rule=W.H.": 8421,
+  "T_before:chapter-rule=none": 711,
+  "header sender matches the merged secretaryOfStateSender pattern": 3942,
+  "kind:country": 6975,
+  "kind:foreign-legation": 2070,
+  "kind:no-dateline(kind unread)": 4,
+  "kind:topical": 83,
+  "rows": 9132
+ },
+ "seward|head naming F.W., either side": {
+  "B0:chapter-rule=W.H.": 147,
+  "B0:chapter-rule=none": 4,
+  "S_after:cats=consularDespatches": 5,
+  "S_after:cats=diplomaticDespatches": 6,
+  "S_after:cats=diplomaticInstructions": 7,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 62,
+  "S_after:cats=none": 21,
+  "S_after:cats=notesFromForeignMissions": 10,
+  "S_after:cats=notesToForeignMissions": 40,
+  "S_after:chapter-rule=W.H.": 129,
+  "S_after:chapter-rule=none": 22,
+  "S_after:shown": 130,
+  "S_before:cats=consularDespatches": 5,
+  "S_before:cats=diplomaticDespatches": 6,
+  "S_before:cats=diplomaticInstructions": 5,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 55,
+  "S_before:cats=none": 75,
+  "S_before:cats=notesFromForeignMissions": 3,
+  "S_before:cats=notesToForeignMissions": 2,
+  "S_before:chapter-rule=W.H.": 76,
+  "S_before:chapter-rule=none": 75,
+  "S_before:shown": 76,
+  "T_after:chapter-rule=W.H.": 150,
+  "T_after:chapter-rule=none": 1,
+  "T_before:chapter-rule=W.H.": 147,
+  "T_before:chapter-rule=none": 4,
+  "header sender matches the merged secretaryOfStateSender pattern": 103,
+  "kind:country": 90,
+  "kind:foreign-legation": 59,
+  "kind:topical": 2,
+  "rows": 151
+ },
+ "seward|head-from (earlier 3,669)": {
+  "B0:chapter-rule=W.H.": 3537,
+  "B0:chapter-rule=none": 132,
+  "S_after:cats=consularDespatches": 5,
+  "S_after:cats=diplomaticDespatches": 64,
+  "S_after:cats=diplomaticInstructions": 180,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 2500,
+  "S_after:cats=none": 110,
+  "S_after:cats=notesFromForeignMissions": 25,
+  "S_after:cats=notesToForeignConsuls": 1,
+  "S_after:cats=notesToForeignMissions": 784,
+  "S_after:chapter-rule=W.H.": 3465,
+  "S_after:chapter-rule=none": 204,
+  "S_after:sender-rule-decided": 10,
+  "S_after:shown": 3559,
+  "S_before:cats=consularDespatches": 5,
+  "S_before:cats=diplomaticDespatches": 60,
+  "S_before:cats=diplomaticInstructions": 160,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 2370,
+  "S_before:cats=none": 977,
+  "S_before:cats=notesFromForeignMissions": 4,
+  "S_before:cats=notesToForeignConsuls": 1,
+  "S_before:cats=notesToForeignMissions": 92,
+  "S_before:chapter-rule=W.H.": 2623,
+  "S_before:chapter-rule=none": 1046,
+  "S_before:shown": 2692,
+  "T_after:chapter-rule=W.H.": 3547,
+  "T_after:chapter-rule=none": 122,
+  "T_after:sender-rule-decided": 10,
+  "T_before:chapter-rule=W.H.": 3537,
+  "T_before:chapter-rule=none": 132,
+  "header sender matches the merged secretaryOfStateSender pattern": 3564,
+  "kind:country": 2697,
+  "kind:foreign-legation": 954,
+  "kind:no-dateline(kind unread)": 3,
+  "kind:topical": 15,
+  "rows": 3669
+ },
+ "seward|head-from bare name, first signature F.W. (earlier 9)": {
+  "B0:chapter-rule=W.H.": 9,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 7,
+  "S_after:cats=none": 1,
+  "S_after:cats=notesToForeignMissions": 1,
+  "S_after:chapter-rule=W.H.": 8,
+  "S_after:chapter-rule=none": 1,
+  "S_after:shown": 8,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 7,
+  "S_before:cats=none": 2,
+  "S_before:chapter-rule=W.H.": 7,
+  "S_before:chapter-rule=none": 2,
+  "S_before:shown": 7,
+  "T_after:chapter-rule=W.H.": 9,
+  "T_before:chapter-rule=W.H.": 9,
+  "header sender matches the merged secretaryOfStateSender pattern": 7,
+  "kind:country": 7,
+  "kind:foreign-legation": 2,
+  "rows": 9
+ },
+ "seward|head-from naming F.W. (earlier 113)": {
+  "B0:chapter-rule=W.H.": 112,
+  "B0:chapter-rule=none": 1,
+  "S_after:cats=diplomaticInstructions": 7,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 62,
+  "S_after:cats=none": 3,
+  "S_after:cats=notesFromForeignMissions": 1,
+  "S_after:cats=notesToForeignMissions": 40,
+  "S_after:chapter-rule=W.H.": 109,
+  "S_after:chapter-rule=none": 4,
+  "S_after:shown": 110,
+  "S_before:cats=diplomaticInstructions": 5,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 55,
+  "S_before:cats=none": 51,
+  "S_before:cats=notesToForeignMissions": 2,
+  "S_before:chapter-rule=W.H.": 62,
+  "S_before:chapter-rule=none": 51,
+  "S_before:shown": 62,
+  "T_after:chapter-rule=W.H.": 112,
+  "T_after:chapter-rule=none": 1,
+  "T_before:chapter-rule=W.H.": 112,
+  "T_before:chapter-rule=none": 1,
+  "header sender matches the merged secretaryOfStateSender pattern": 103,
+  "kind:country": 64,
+  "kind:foreign-legation": 47,
+  "kind:topical": 2,
+  "rows": 113
+ },
+ "seward|head-from naming F.W., first signature F.W. (earlier 108)": {
+  "B0:chapter-rule=W.H.": 108,
+  "S_after:cats=diplomaticInstructions": 7,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 61,
+  "S_after:cats=none": 3,
+  "S_after:cats=notesToForeignMissions": 37,
+  "S_after:chapter-rule=W.H.": 105,
+  "S_after:chapter-rule=none": 3,
+  "S_after:shown": 105,
+  "S_before:cats=diplomaticInstructions": 5,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 54,
+  "S_before:cats=none": 47,
+  "S_before:cats=notesToForeignMissions": 2,
+  "S_before:chapter-rule=W.H.": 61,
+  "S_before:chapter-rule=none": 47,
+  "S_before:shown": 61,
+  "T_after:chapter-rule=W.H.": 108,
+  "T_before:chapter-rule=W.H.": 108,
+  "header sender matches the merged secretaryOfStateSender pattern": 99,
+  "kind:country": 63,
+  "kind:foreign-legation": 43,
+  "kind:topical": 2,
+  "rows": 108
+ },
+ "seward|head-from, first signature F.W. (earlier 117)": {
+  "B0:chapter-rule=W.H.": 117,
+  "S_after:cats=diplomaticInstructions": 7,
+  "S_after:cats=diplomaticInstructions+notesToForeignMissions": 68,
+  "S_after:cats=none": 4,
+  "S_after:cats=notesToForeignMissions": 38,
+  "S_after:chapter-rule=W.H.": 113,
+  "S_after:chapter-rule=none": 4,
+  "S_after:shown": 113,
+  "S_before:cats=diplomaticInstructions": 5,
+  "S_before:cats=diplomaticInstructions+notesToForeignMissions": 61,
+  "S_before:cats=none": 49,
+  "S_before:cats=notesToForeignMissions": 2,
+  "S_before:chapter-rule=W.H.": 68,
+  "S_before:chapter-rule=none": 49,
+  "S_before:shown": 68,
+  "T_after:chapter-rule=W.H.": 117,
+  "T_before:chapter-rule=W.H.": 117,
+  "header sender matches the merged secretaryOfStateSender pattern": 106,
+  "kind:country": 70,
+  "kind:foreign-legation": 45,
+  "kind:topical": 2,
+  "rows": 117
+ },
+ "task1|A0|1861-1899": {
+  "chap1": 45056,
+  "contra": 1921,
+  "contra:<=180d": 330,
+  "contra:no-post": 699,
+  "contra:other-post": 892,
+  "corrob": 36269,
+  "expl-uncov": 19122,
+  "hyp": 67025,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 6805,
+  "sev>1 loc": 1982,
+  "strict(iii)": 52124,
+  "untestable": 201
+ },
+ "task1|A0|1900-1905": {
+  "chap1": 7656,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7649,
+  "expl-uncov": 3127,
+  "hyp": 11389,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 8781,
+  "untestable": 81
+ },
+ "task1|B0|1861-1899": {
+  "chap1": 51880,
+  "contra": 2415,
+  "contra:<=180d": 373,
+  "contra:no-post": 859,
+  "contra:other-post": 1183,
+  "corrob": 40907,
+  "expl-uncov": 24285,
+  "hyp": 80515,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 8733,
+  "sev>1 loc": 2240,
+  "strict(iii)": 53816,
+  "untestable": 1056
+ },
+ "task1|B0|1900-1905": {
+  "chap1": 8476,
+  "contra": 509,
+  "contra:<=180d": 13,
+  "contra:no-post": 204,
+  "contra:other-post": 292,
+  "corrob": 8466,
+  "expl-uncov": 3761,
+  "hyp": 12937,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8735,
+  "untestable": 115
+ },
+ "task1|B_after|1861-1899": {
+  "chap1": 52603,
+  "contra": 2460,
+  "contra:<=180d": 372,
+  "contra:no-post": 904,
+  "contra:other-post": 1184,
+  "corrob": 41087,
+  "expl-uncov": 25687,
+  "hyp": 82688,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 9263,
+  "sev>1 loc": 2253,
+  "strict(iii)": 54314,
+  "untestable": 1060
+ },
+ "task1|B_after|1900-1905": {
+  "chap1": 8476,
+  "contra": 509,
+  "contra:<=180d": 13,
+  "contra:no-post": 204,
+  "contra:other-post": 292,
+  "corrob": 8466,
+  "expl-uncov": 3761,
+  "hyp": 12937,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8735,
+  "untestable": 115
+ },
+ "task1|S_after|1861-1899": {
+  "chap1": 48024,
+  "contra": 2062,
+  "contra:<=180d": 335,
+  "contra:no-post": 815,
+  "contra:other-post": 912,
+  "corrob": 37301,
+  "expl-uncov": 22373,
+  "hyp": 73492,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 8642,
+  "sev>1 loc": 2081,
+  "strict(iii)": 53919,
+  "untestable": 207
+ },
+ "task1|S_after|1900-1905": {
+  "chap1": 7656,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7649,
+  "expl-uncov": 3127,
+  "hyp": 11389,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 8781,
+  "untestable": 81
+ },
+ "task1|S_before|1861-1899": {
+  "chap1": 45056,
+  "contra": 1921,
+  "contra:<=180d": 330,
+  "contra:no-post": 699,
+  "contra:other-post": 892,
+  "corrob": 36269,
+  "expl-uncov": 19122,
+  "hyp": 67025,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 6805,
+  "sev>1 loc": 1982,
+  "strict(iii)": 52124,
+  "untestable": 201
+ },
+ "task1|S_before|1900-1905": {
+  "chap1": 7656,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7649,
+  "expl-uncov": 3127,
+  "hyp": 11389,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 8781,
+  "untestable": 81
+ },
+ "task1|T_after|1861-1899": {
+  "chap1": 52450,
+  "contra": 2536,
+  "contra:<=180d": 372,
+  "contra:no-post": 906,
+  "contra:other-post": 1258,
+  "corrob": 41020,
+  "expl-uncov": 25687,
+  "hyp": 82688,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 9263,
+  "sev>1 loc": 2167,
+  "strict(iii)": 54152,
+  "untestable": 1051
+ },
+ "task1|T_after|1900-1905": {
+  "chap1": 8476,
+  "contra": 509,
+  "contra:<=180d": 13,
+  "contra:no-post": 204,
+  "contra:other-post": 292,
+  "corrob": 8466,
+  "expl-uncov": 3762,
+  "hyp": 12937,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8735,
+  "untestable": 115
+ },
+ "task1|T_before|1861-1899": {
+  "chap1": 51479,
+  "contra": 2547,
+  "contra:<=180d": 370,
+  "contra:no-post": 862,
+  "contra:other-post": 1315,
+  "corrob": 40592,
+  "expl-uncov": 24317,
+  "hyp": 80515,
+  "pocom1": 45258,
+  "rows": 84234,
+  "sev>1 conv": 8733,
+  "sev>1 loc": 2154,
+  "strict(iii)": 53598,
+  "untestable": 1239
+ },
+ "task1|T_before|1900-1905": {
+  "chap1": 8476,
+  "contra": 509,
+  "contra:<=180d": 13,
+  "contra:no-post": 204,
+  "contra:other-post": 292,
+  "corrob": 8466,
+  "expl-uncov": 3762,
+  "hyp": 12937,
+  "pocom1": 9234,
+  "rows": 13160,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8735,
+  "untestable": 115
+ },
+ "task2|B0|1861-1899|country": {
+  "chap1": 45933,
+  "contra": 1893,
+  "contra:<=180d": 342,
+  "contra:no-post": 705,
+  "contra:other-post": 846,
+  "corrob": 36792,
+  "expl-uncov": 17793,
+  "hyp": 66337,
+  "pocom1": 39138,
+  "rows": 67260,
+  "sev>1 conv": 7062,
+  "sev>1 loc": 2079,
+  "strict(iii)": 46386,
+  "untestable": 55
+ },
+ "task2|B0|1861-1899|foreign-legation": {
+  "chap1": 3570,
+  "contra": 195,
+  "contra:<=180d": 6,
+  "contra:no-post": 101,
+  "contra:other-post": 88,
+  "corrob": 1961,
+  "expl-uncov": 4362,
+  "hyp": 8354,
+  "pocom1": 2464,
+  "rows": 10569,
+  "sev>1 conv": 1542,
+  "sev>1 loc": 67,
+  "strict(iii)": 3878,
+  "untestable": 76
+ },
+ "task2|B0|1861-1899|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|B0|1861-1899|topical": {
+  "chap1": 1935,
+  "contra": 323,
+  "contra:<=180d": 25,
+  "contra:no-post": 53,
+  "contra:other-post": 245,
+  "corrob": 1712,
+  "expl-uncov": 2083,
+  "hyp": 5300,
+  "pocom1": 3122,
+  "rows": 5773,
+  "sev>1 conv": 129,
+  "sev>1 loc": 94,
+  "strict(iii)": 3022,
+  "untestable": 894
+ },
+ "task2|B0|1861-1899|us-mission": {
+  "chap1": 442,
+  "contra": 4,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 4,
+  "corrob": 442,
+  "expl-uncov": 47,
+  "hyp": 524,
+  "pocom1": 527,
+  "rows": 574,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 523,
+  "untestable": 31
+ },
+ "task2|B0|1900-1905|country": {
+  "chap1": 8221,
+  "contra": 476,
+  "contra:<=180d": 12,
+  "contra:no-post": 203,
+  "contra:other-post": 261,
+  "corrob": 8211,
+  "expl-uncov": 3388,
+  "hyp": 12167,
+  "pocom1": 8736,
+  "rows": 12240,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8270,
+  "untestable": 9
+ },
+ "task2|B0|1900-1905|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|B0|1900-1905|topical": {
+  "chap1": 248,
+  "contra": 33,
+  "contra:<=180d": 1,
+  "contra:no-post": 1,
+  "contra:other-post": 31,
+  "corrob": 248,
+  "expl-uncov": 366,
+  "hyp": 756,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 438,
+  "untestable": 106
+ },
+ "task2|B0|1900-1905|us-mission": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|country": {
+  "chap1": 43317,
+  "contra": 1753,
+  "contra:<=180d": 330,
+  "contra:no-post": 667,
+  "contra:other-post": 756,
+  "corrob": 34742,
+  "expl-uncov": 16552,
+  "hyp": 62496,
+  "pocom1": 39138,
+  "rows": 67260,
+  "sev>1 conv": 6569,
+  "sev>1 loc": 2006,
+  "strict(iii)": 45960,
+  "untestable": 200
+ },
+ "task2|S_after|1861-1899|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 2436,
+  "rows": 4747,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 2436,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|country|used:country": {
+  "chap1": 43081,
+  "contra": 1746,
+  "contra:<=180d": 330,
+  "contra:no-post": 666,
+  "contra:other-post": 750,
+  "corrob": 34683,
+  "expl-uncov": 16405,
+  "hyp": 62095,
+  "pocom1": 36633,
+  "rows": 62112,
+  "sev>1 conv": 6459,
+  "sev>1 loc": 1939,
+  "strict(iii)": 43285,
+  "untestable": 197
+ },
+ "task2|S_after|1861-1899|country|used:topical": {
+  "chap1": 236,
+  "contra": 7,
+  "contra:<=180d": 0,
+  "contra:no-post": 1,
+  "contra:other-post": 6,
+  "corrob": 59,
+  "expl-uncov": 147,
+  "hyp": 401,
+  "pocom1": 69,
+  "rows": 401,
+  "sev>1 conv": 110,
+  "sev>1 loc": 67,
+  "strict(iii)": 239,
+  "untestable": 3
+ },
+ "task2|S_after|1861-1899|foreign-legation": {
+  "chap1": 4153,
+  "contra": 302,
+  "contra:<=180d": 5,
+  "contra:no-post": 144,
+  "contra:other-post": 153,
+  "corrob": 2067,
+  "expl-uncov": 5560,
+  "hyp": 10167,
+  "pocom1": 2464,
+  "rows": 10569,
+  "sev>1 conv": 2011,
+  "sev>1 loc": 75,
+  "strict(iii)": 4248,
+  "untestable": 6
+ },
+ "task2|S_after|1861-1899|foreign-legation|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 89,
+  "rows": 391,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 89,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|foreign-legation|used:country": {
+  "chap1": 2233,
+  "contra": 181,
+  "contra:<=180d": 2,
+  "contra:no-post": 32,
+  "contra:other-post": 147,
+  "corrob": 1653,
+  "expl-uncov": 2641,
+  "hyp": 5144,
+  "pocom1": 1834,
+  "rows": 5151,
+  "sev>1 conv": 520,
+  "sev>1 loc": 60,
+  "strict(iii)": 2233,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|foreign-legation|used:foreign-legation": {
+  "chap1": 1916,
+  "contra": 121,
+  "contra:<=180d": 3,
+  "contra:no-post": 112,
+  "contra:other-post": 6,
+  "corrob": 413,
+  "expl-uncov": 2914,
+  "hyp": 5013,
+  "pocom1": 540,
+  "rows": 5015,
+  "sev>1 conv": 1488,
+  "sev>1 loc": 15,
+  "strict(iii)": 1922,
+  "untestable": 6
+ },
+ "task2|S_after|1861-1899|foreign-legation|used:topical": {
+  "chap1": 4,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 1,
+  "expl-uncov": 5,
+  "hyp": 10,
+  "pocom1": 1,
+  "rows": 12,
+  "sev>1 conv": 3,
+  "sev>1 loc": 0,
+  "strict(iii)": 4,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|topical": {
+  "chap1": 147,
+  "contra": 7,
+  "contra:<=180d": 0,
+  "contra:no-post": 4,
+  "contra:other-post": 3,
+  "corrob": 85,
+  "expl-uncov": 218,
+  "hyp": 379,
+  "pocom1": 3122,
+  "rows": 5773,
+  "sev>1 conv": 62,
+  "sev>1 loc": 0,
+  "strict(iii)": 3177,
+  "untestable": 1
+ },
+ "task2|S_after|1861-1899|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 3029,
+  "rows": 5394,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 3029,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|topical|used:topical": {
+  "chap1": 147,
+  "contra": 7,
+  "contra:<=180d": 0,
+  "contra:no-post": 4,
+  "contra:other-post": 3,
+  "corrob": 85,
+  "expl-uncov": 218,
+  "hyp": 379,
+  "pocom1": 93,
+  "rows": 379,
+  "sev>1 conv": 62,
+  "sev>1 loc": 0,
+  "strict(iii)": 148,
+  "untestable": 1
+ },
+ "task2|S_after|1861-1899|us-mission": {
+  "chap1": 407,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 407,
+  "expl-uncov": 43,
+  "hyp": 450,
+  "pocom1": 527,
+  "rows": 574,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 527,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|us-mission|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 120,
+  "rows": 124,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 120,
+  "untestable": 0
+ },
+ "task2|S_after|1861-1899|us-mission|used:country": {
+  "chap1": 407,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 407,
+  "expl-uncov": 43,
+  "hyp": 450,
+  "pocom1": 407,
+  "rows": 450,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 407,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|country": {
+  "chap1": 7649,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7642,
+  "expl-uncov": 3120,
+  "hyp": 11375,
+  "pocom1": 8736,
+  "rows": 12240,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 8283,
+  "untestable": 81
+ },
+ "task2|S_after|1900-1905|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 553,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 553,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|country|used:country": {
+  "chap1": 7649,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7642,
+  "expl-uncov": 3120,
+  "hyp": 11375,
+  "pocom1": 8183,
+  "rows": 11375,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 7730,
+  "untestable": 81
+ },
+ "task2|S_after|1900-1905|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|topical": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 471,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 471,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|us-mission": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_after|1900-1905|us-mission|used:country": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|country": {
+  "chap1": 42301,
+  "contra": 1737,
+  "contra:<=180d": 328,
+  "contra:no-post": 664,
+  "contra:other-post": 745,
+  "corrob": 34136,
+  "expl-uncov": 16257,
+  "hyp": 61127,
+  "pocom1": 39138,
+  "rows": 67260,
+  "sev>1 conv": 6241,
+  "sev>1 loc": 1924,
+  "strict(iii)": 45566,
+  "untestable": 200
+ },
+ "task2|S_before|1861-1899|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 3058,
+  "rows": 6116,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 3058,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|country|used:country": {
+  "chap1": 42065,
+  "contra": 1730,
+  "contra:<=180d": 328,
+  "contra:no-post": 663,
+  "contra:other-post": 739,
+  "corrob": 34077,
+  "expl-uncov": 16110,
+  "hyp": 60726,
+  "pocom1": 36011,
+  "rows": 60743,
+  "sev>1 conv": 6131,
+  "sev>1 loc": 1857,
+  "strict(iii)": 42269,
+  "untestable": 197
+ },
+ "task2|S_before|1861-1899|country|used:topical": {
+  "chap1": 236,
+  "contra": 7,
+  "contra:<=180d": 0,
+  "contra:no-post": 1,
+  "contra:other-post": 6,
+  "corrob": 59,
+  "expl-uncov": 147,
+  "hyp": 401,
+  "pocom1": 69,
+  "rows": 401,
+  "sev>1 conv": 110,
+  "sev>1 loc": 67,
+  "strict(iii)": 239,
+  "untestable": 3
+ },
+ "task2|S_before|1861-1899|foreign-legation": {
+  "chap1": 2201,
+  "contra": 177,
+  "contra:<=180d": 2,
+  "contra:no-post": 31,
+  "contra:other-post": 144,
+  "corrob": 1641,
+  "expl-uncov": 2604,
+  "hyp": 5069,
+  "pocom1": 2464,
+  "rows": 10569,
+  "sev>1 conv": 502,
+  "sev>1 loc": 58,
+  "strict(iii)": 2847,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|foreign-legation|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 646,
+  "rows": 5491,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 646,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|foreign-legation|used:country": {
+  "chap1": 2197,
+  "contra": 177,
+  "contra:<=180d": 2,
+  "contra:no-post": 31,
+  "contra:other-post": 144,
+  "corrob": 1640,
+  "expl-uncov": 2599,
+  "hyp": 5059,
+  "pocom1": 1817,
+  "rows": 5066,
+  "sev>1 conv": 499,
+  "sev>1 loc": 58,
+  "strict(iii)": 2197,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|foreign-legation|used:topical": {
+  "chap1": 4,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 1,
+  "expl-uncov": 5,
+  "hyp": 10,
+  "pocom1": 1,
+  "rows": 12,
+  "sev>1 conv": 3,
+  "sev>1 loc": 0,
+  "strict(iii)": 4,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|topical": {
+  "chap1": 147,
+  "contra": 7,
+  "contra:<=180d": 0,
+  "contra:no-post": 4,
+  "contra:other-post": 3,
+  "corrob": 85,
+  "expl-uncov": 218,
+  "hyp": 379,
+  "pocom1": 3122,
+  "rows": 5773,
+  "sev>1 conv": 62,
+  "sev>1 loc": 0,
+  "strict(iii)": 3177,
+  "untestable": 1
+ },
+ "task2|S_before|1861-1899|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 3029,
+  "rows": 5394,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 3029,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|topical|used:topical": {
+  "chap1": 147,
+  "contra": 7,
+  "contra:<=180d": 0,
+  "contra:no-post": 4,
+  "contra:other-post": 3,
+  "corrob": 85,
+  "expl-uncov": 218,
+  "hyp": 379,
+  "pocom1": 93,
+  "rows": 379,
+  "sev>1 conv": 62,
+  "sev>1 loc": 0,
+  "strict(iii)": 148,
+  "untestable": 1
+ },
+ "task2|S_before|1861-1899|us-mission": {
+  "chap1": 407,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 407,
+  "expl-uncov": 43,
+  "hyp": 450,
+  "pocom1": 527,
+  "rows": 574,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 527,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|us-mission|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 120,
+  "rows": 124,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 120,
+  "untestable": 0
+ },
+ "task2|S_before|1861-1899|us-mission|used:country": {
+  "chap1": 407,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 407,
+  "expl-uncov": 43,
+  "hyp": 450,
+  "pocom1": 407,
+  "rows": 450,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 407,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|country": {
+  "chap1": 7649,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7642,
+  "expl-uncov": 3120,
+  "hyp": 11375,
+  "pocom1": 8736,
+  "rows": 12240,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 8283,
+  "untestable": 81
+ },
+ "task2|S_before|1900-1905|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 553,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 553,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|country|used:country": {
+  "chap1": 7649,
+  "contra": 460,
+  "contra:<=180d": 12,
+  "contra:no-post": 199,
+  "contra:other-post": 249,
+  "corrob": 7642,
+  "expl-uncov": 3120,
+  "hyp": 11375,
+  "pocom1": 8183,
+  "rows": 11375,
+  "sev>1 conv": 0,
+  "sev>1 loc": 7,
+  "strict(iii)": 7730,
+  "untestable": 81
+ },
+ "task2|S_before|1900-1905|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|topical": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 471,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 471,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|us-mission": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|S_before|1900-1905|us-mission|used:country": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|country": {
+  "chap1": 45933,
+  "contra": 1893,
+  "contra:<=180d": 342,
+  "contra:no-post": 705,
+  "contra:other-post": 846,
+  "corrob": 36792,
+  "expl-uncov": 17793,
+  "hyp": 66337,
+  "pocom1": 39138,
+  "rows": 67260,
+  "sev>1 conv": 7062,
+  "sev>1 loc": 2079,
+  "strict(iii)": 46386,
+  "untestable": 55
+ },
+ "task2|T_after|1861-1899|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 391,
+  "rows": 903,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 391,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|country|used:country": {
+  "chap1": 45933,
+  "contra": 1893,
+  "contra:<=180d": 342,
+  "contra:no-post": 705,
+  "contra:other-post": 846,
+  "corrob": 36792,
+  "expl-uncov": 17793,
+  "hyp": 66337,
+  "pocom1": 38747,
+  "rows": 66357,
+  "sev>1 conv": 7062,
+  "sev>1 loc": 2079,
+  "strict(iii)": 45995,
+  "untestable": 55
+ },
+ "task2|T_after|1861-1899|foreign-legation": {
+  "chap1": 4293,
+  "contra": 308,
+  "contra:<=180d": 5,
+  "contra:no-post": 148,
+  "contra:other-post": 155,
+  "corrob": 2141,
+  "expl-uncov": 5764,
+  "hyp": 10527,
+  "pocom1": 2464,
+  "rows": 10569,
+  "sev>1 conv": 2072,
+  "sev>1 loc": 80,
+  "strict(iii)": 4308,
+  "untestable": 12
+ },
+ "task2|T_after|1861-1899|foreign-legation|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 2,
+  "rows": 30,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 2,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|foreign-legation|used:country": {
+  "chap1": 2348,
+  "contra": 182,
+  "contra:<=180d": 2,
+  "contra:no-post": 32,
+  "contra:other-post": 148,
+  "corrob": 1754,
+  "expl-uncov": 2770,
+  "hyp": 5395,
+  "pocom1": 1940,
+  "rows": 5403,
+  "sev>1 conv": 531,
+  "sev>1 loc": 63,
+  "strict(iii)": 2352,
+  "untestable": 3
+ },
+ "task2|T_after|1861-1899|foreign-legation|used:foreign-legation": {
+  "chap1": 1906,
+  "contra": 121,
+  "contra:<=180d": 3,
+  "contra:no-post": 112,
+  "contra:other-post": 6,
+  "corrob": 384,
+  "expl-uncov": 2903,
+  "hyp": 4993,
+  "pocom1": 511,
+  "rows": 4997,
+  "sev>1 conv": 1505,
+  "sev>1 loc": 17,
+  "strict(iii)": 1912,
+  "untestable": 6
+ },
+ "task2|T_after|1861-1899|foreign-legation|used:topical": {
+  "chap1": 39,
+  "contra": 5,
+  "contra:<=180d": 0,
+  "contra:no-post": 4,
+  "contra:other-post": 1,
+  "corrob": 3,
+  "expl-uncov": 91,
+  "hyp": 139,
+  "pocom1": 11,
+  "rows": 139,
+  "sev>1 conv": 36,
+  "sev>1 loc": 0,
+  "strict(iii)": 42,
+  "untestable": 3
+ },
+ "task2|T_after|1861-1899|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|topical": {
+  "chap1": 1782,
+  "contra": 331,
+  "contra:<=180d": 25,
+  "contra:no-post": 53,
+  "contra:other-post": 253,
+  "corrob": 1645,
+  "expl-uncov": 2083,
+  "hyp": 5300,
+  "pocom1": 3122,
+  "rows": 5773,
+  "sev>1 conv": 129,
+  "sev>1 loc": 8,
+  "strict(iii)": 2928,
+  "untestable": 953
+ },
+ "task2|T_after|1861-1899|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 193,
+  "rows": 473,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 193,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|topical|used:topical": {
+  "chap1": 1782,
+  "contra": 331,
+  "contra:<=180d": 25,
+  "contra:no-post": 53,
+  "contra:other-post": 253,
+  "corrob": 1645,
+  "expl-uncov": 2083,
+  "hyp": 5300,
+  "pocom1": 2929,
+  "rows": 5300,
+  "sev>1 conv": 129,
+  "sev>1 loc": 8,
+  "strict(iii)": 2735,
+  "untestable": 953
+ },
+ "task2|T_after|1861-1899|us-mission": {
+  "chap1": 442,
+  "contra": 4,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 4,
+  "corrob": 442,
+  "expl-uncov": 47,
+  "hyp": 524,
+  "pocom1": 527,
+  "rows": 574,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 523,
+  "untestable": 31
+ },
+ "task2|T_after|1861-1899|us-mission|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 50,
+  "rows": 50,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 50,
+  "untestable": 0
+ },
+ "task2|T_after|1861-1899|us-mission|used:country": {
+  "chap1": 407,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 407,
+  "expl-uncov": 43,
+  "hyp": 450,
+  "pocom1": 407,
+  "rows": 450,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 407,
+  "untestable": 0
+ },
+ "task2|T_after|1900-1905|country": {
+  "chap1": 8221,
+  "contra": 476,
+  "contra:<=180d": 12,
+  "contra:no-post": 203,
+  "contra:other-post": 261,
+  "corrob": 8211,
+  "expl-uncov": 3388,
+  "hyp": 12167,
+  "pocom1": 8736,
+  "rows": 12240,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8270,
+  "untestable": 9
+ },
+ "task2|T_after|1900-1905|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 40,
+  "rows": 73,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 40,
+  "untestable": 0
+ },
+ "task2|T_after|1900-1905|country|used:country": {
+  "chap1": 8221,
+  "contra": 476,
+  "contra:<=180d": 12,
+  "contra:no-post": 203,
+  "contra:other-post": 261,
+  "corrob": 8211,
+  "expl-uncov": 3388,
+  "hyp": 12167,
+  "pocom1": 8696,
+  "rows": 12167,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8230,
+  "untestable": 9
+ },
+ "task2|T_after|1900-1905|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|T_after|1900-1905|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|T_after|1900-1905|topical": {
+  "chap1": 248,
+  "contra": 33,
+  "contra:<=180d": 1,
+  "contra:no-post": 1,
+  "contra:other-post": 31,
+  "corrob": 248,
+  "expl-uncov": 367,
+  "hyp": 756,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 438,
+  "untestable": 106
+ },
+ "task2|T_after|1900-1905|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 83,
+  "rows": 107,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 83,
+  "untestable": 0
+ },
+ "task2|T_after|1900-1905|us-mission": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_after|1900-1905|us-mission|used:country": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|country": {
+  "chap1": 45685,
+  "contra": 1952,
+  "contra:<=180d": 341,
+  "contra:no-post": 705,
+  "contra:other-post": 906,
+  "corrob": 36544,
+  "expl-uncov": 17802,
+  "hyp": 66337,
+  "pocom1": 39138,
+  "rows": 67260,
+  "sev>1 conv": 7062,
+  "sev>1 loc": 2079,
+  "strict(iii)": 46327,
+  "untestable": 244
+ },
+ "task2|T_before|1861-1899|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 391,
+  "rows": 903,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 391,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|country|used:country": {
+  "chap1": 45467,
+  "contra": 1886,
+  "contra:<=180d": 341,
+  "contra:no-post": 703,
+  "contra:other-post": 842,
+  "corrob": 36544,
+  "expl-uncov": 17616,
+  "hyp": 65668,
+  "pocom1": 38492,
+  "rows": 65688,
+  "sev>1 conv": 6844,
+  "sev>1 loc": 2079,
+  "strict(iii)": 45529,
+  "untestable": 55
+ },
+ "task2|T_before|1861-1899|country|used:topical": {
+  "chap1": 218,
+  "contra": 66,
+  "contra:<=180d": 0,
+  "contra:no-post": 2,
+  "contra:other-post": 64,
+  "corrob": 0,
+  "expl-uncov": 186,
+  "hyp": 669,
+  "pocom1": 255,
+  "rows": 669,
+  "sev>1 conv": 218,
+  "sev>1 loc": 0,
+  "strict(iii)": 407,
+  "untestable": 189
+ },
+ "task2|T_before|1861-1899|foreign-legation": {
+  "chap1": 3570,
+  "contra": 260,
+  "contra:<=180d": 4,
+  "contra:no-post": 104,
+  "contra:other-post": 152,
+  "corrob": 1961,
+  "expl-uncov": 4385,
+  "hyp": 8354,
+  "pocom1": 2464,
+  "rows": 10569,
+  "sev>1 conv": 1542,
+  "sev>1 loc": 67,
+  "strict(iii)": 3813,
+  "untestable": 11
+ },
+ "task2|T_before|1861-1899|foreign-legation|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 231,
+  "rows": 2203,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 231,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|foreign-legation|used:country": {
+  "chap1": 2348,
+  "contra": 182,
+  "contra:<=180d": 2,
+  "contra:no-post": 32,
+  "contra:other-post": 148,
+  "corrob": 1754,
+  "expl-uncov": 2770,
+  "hyp": 5395,
+  "pocom1": 1940,
+  "rows": 5403,
+  "sev>1 conv": 531,
+  "sev>1 loc": 63,
+  "strict(iii)": 2352,
+  "untestable": 3
+ },
+ "task2|T_before|1861-1899|foreign-legation|used:foreign-legation": {
+  "chap1": 27,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 19,
+  "expl-uncov": 42,
+  "hyp": 69,
+  "pocom1": 19,
+  "rows": 69,
+  "sev>1 conv": 4,
+  "sev>1 loc": 4,
+  "strict(iii)": 27,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|foreign-legation|used:topical": {
+  "chap1": 1195,
+  "contra": 78,
+  "contra:<=180d": 2,
+  "contra:no-post": 72,
+  "contra:other-post": 4,
+  "corrob": 188,
+  "expl-uncov": 1573,
+  "hyp": 2890,
+  "pocom1": 274,
+  "rows": 2894,
+  "sev>1 conv": 1007,
+  "sev>1 loc": 0,
+  "strict(iii)": 1203,
+  "untestable": 8
+ },
+ "task2|T_before|1861-1899|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 7,
+  "rows": 58,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|topical": {
+  "chap1": 1782,
+  "contra": 331,
+  "contra:<=180d": 25,
+  "contra:no-post": 53,
+  "contra:other-post": 253,
+  "corrob": 1645,
+  "expl-uncov": 2083,
+  "hyp": 5300,
+  "pocom1": 3122,
+  "rows": 5773,
+  "sev>1 conv": 129,
+  "sev>1 loc": 8,
+  "strict(iii)": 2928,
+  "untestable": 953
+ },
+ "task2|T_before|1861-1899|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 193,
+  "rows": 473,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 193,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|topical|used:topical": {
+  "chap1": 1782,
+  "contra": 331,
+  "contra:<=180d": 25,
+  "contra:no-post": 53,
+  "contra:other-post": 253,
+  "corrob": 1645,
+  "expl-uncov": 2083,
+  "hyp": 5300,
+  "pocom1": 2929,
+  "rows": 5300,
+  "sev>1 conv": 129,
+  "sev>1 loc": 8,
+  "strict(iii)": 2735,
+  "untestable": 953
+ },
+ "task2|T_before|1861-1899|us-mission": {
+  "chap1": 442,
+  "contra": 4,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 4,
+  "corrob": 442,
+  "expl-uncov": 47,
+  "hyp": 524,
+  "pocom1": 527,
+  "rows": 574,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 523,
+  "untestable": 31
+ },
+ "task2|T_before|1861-1899|us-mission|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 50,
+  "rows": 50,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 50,
+  "untestable": 0
+ },
+ "task2|T_before|1861-1899|us-mission|used:country": {
+  "chap1": 407,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 407,
+  "expl-uncov": 43,
+  "hyp": 450,
+  "pocom1": 407,
+  "rows": 450,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 407,
+  "untestable": 0
+ },
+ "task2|T_before|1900-1905|country": {
+  "chap1": 8221,
+  "contra": 476,
+  "contra:<=180d": 12,
+  "contra:no-post": 203,
+  "contra:other-post": 261,
+  "corrob": 8211,
+  "expl-uncov": 3388,
+  "hyp": 12167,
+  "pocom1": 8736,
+  "rows": 12240,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8270,
+  "untestable": 9
+ },
+ "task2|T_before|1900-1905|country|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 40,
+  "rows": 73,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 40,
+  "untestable": 0
+ },
+ "task2|T_before|1900-1905|country|used:country": {
+  "chap1": 8221,
+  "contra": 476,
+  "contra:<=180d": 12,
+  "contra:no-post": 203,
+  "contra:other-post": 261,
+  "corrob": 8211,
+  "expl-uncov": 3388,
+  "hyp": 12167,
+  "pocom1": 8696,
+  "rows": 12167,
+  "sev>1 conv": 0,
+  "sev>1 loc": 10,
+  "strict(iii)": 8230,
+  "untestable": 9
+ },
+ "task2|T_before|1900-1905|no-dateline(kind unread)": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|T_before|1900-1905|no-dateline(kind unread)|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 20,
+  "rows": 41,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 20,
+  "untestable": 0
+ },
+ "task2|T_before|1900-1905|topical": {
+  "chap1": 248,
+  "contra": 33,
+  "contra:<=180d": 1,
+  "contra:no-post": 1,
+  "contra:other-post": 31,
+  "corrob": 248,
+  "expl-uncov": 367,
+  "hyp": 756,
+  "pocom1": 471,
+  "rows": 865,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 438,
+  "untestable": 106
+ },
+ "task2|T_before|1900-1905|topical|used:None": {
+  "chap1": 0,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 0,
+  "expl-uncov": 0,
+  "hyp": 0,
+  "pocom1": 83,
+  "rows": 107,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 83,
+  "untestable": 0
+ },
+ "task2|T_before|1900-1905|us-mission": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task2|T_before|1900-1905|us-mission|used:country": {
+  "chap1": 7,
+  "contra": 0,
+  "contra:<=180d": 0,
+  "contra:no-post": 0,
+  "contra:other-post": 0,
+  "corrob": 7,
+  "expl-uncov": 7,
+  "hyp": 14,
+  "pocom1": 7,
+  "rows": 14,
+  "sev>1 conv": 0,
+  "sev>1 loc": 0,
+  "strict(iii)": 7,
+  "untestable": 0
+ },
+ "task3-docs|1861-1899|all": {
+  "S_after:any-label": 27387,
+  "S_after:both-sides-single": 18715,
+  "S_after:sender-rule-decided": 19,
+  "S_after:shown": 27387,
+  "S_after:shown-subset-of-candidates": 604,
+  "S_before:any-label": 24876,
+  "S_before:both-sides-single": 16422,
+  "S_before:shown": 24876,
+  "S_before:shown-subset-of-candidates": 577,
+  "T_after:any-label": 29332,
+  "T_after:both-sides-single": 20373,
+  "T_after:sender-rule-decided": 18,
+  "T_before:any-label": 27144,
+  "T_before:both-sides-single": 18292,
+  "docs": 32809
+ },
+ "task3-docs|1861-1899|kind:country": {
+  "S_after:any-label": 22772,
+  "S_after:both-sides-single": 15325,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 22772,
+  "S_after:shown-subset-of-candidates": 510,
+  "S_before:any-label": 22268,
+  "S_before:both-sides-single": 15025,
+  "S_before:shown": 22268,
+  "S_before:shown-subset-of-candidates": 483,
+  "T_after:any-label": 24478,
+  "T_after:both-sides-single": 16776,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 24242,
+  "T_before:both-sides-single": 16647,
+  "docs": 24853
+ },
+ "task3-docs|1861-1899|kind:foreign-legation": {
+  "S_after:any-label": 4252,
+  "S_after:both-sides-single": 3102,
+  "S_after:sender-rule-decided": 19,
+  "S_after:shown": 4252,
+  "S_after:shown-subset-of-candidates": 44,
+  "S_before:any-label": 2245,
+  "S_before:both-sides-single": 1109,
+  "S_before:shown": 2245,
+  "S_before:shown-subset-of-candidates": 44,
+  "T_after:any-label": 4368,
+  "T_after:both-sides-single": 3188,
+  "T_after:sender-rule-decided": 18,
+  "T_before:any-label": 2416,
+  "T_before:both-sides-single": 1236,
+  "docs": 4473
+ },
+ "task3-docs|1861-1899|kind:no-dateline(kind unread)": {
+  "S_after:any-label": 0,
+  "S_after:both-sides-single": 0,
+  "S_after:shown": 0,
+  "S_after:shown-subset-of-candidates": 0,
+  "S_before:any-label": 0,
+  "S_before:both-sides-single": 0,
+  "S_before:shown": 0,
+  "S_before:shown-subset-of-candidates": 0,
+  "T_after:any-label": 0,
+  "T_after:both-sides-single": 0,
+  "T_before:any-label": 0,
+  "T_before:both-sides-single": 0,
+  "docs": 337
+ },
+ "task3-docs|1861-1899|kind:topical": {
+  "S_after:any-label": 179,
+  "S_after:both-sides-single": 157,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 179,
+  "S_after:shown-subset-of-candidates": 50,
+  "S_before:any-label": 179,
+  "S_before:both-sides-single": 157,
+  "S_before:shown": 179,
+  "S_before:shown-subset-of-candidates": 50,
+  "T_after:any-label": 302,
+  "T_after:both-sides-single": 278,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 302,
+  "T_before:both-sides-single": 278,
+  "docs": 2903
+ },
+ "task3-docs|1861-1899|kind:us-mission": {
+  "S_after:any-label": 184,
+  "S_after:both-sides-single": 131,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 184,
+  "S_after:shown-subset-of-candidates": 0,
+  "S_before:any-label": 184,
+  "S_before:both-sides-single": 131,
+  "S_before:shown": 184,
+  "S_before:shown-subset-of-candidates": 0,
+  "T_after:any-label": 184,
+  "T_after:both-sides-single": 131,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 184,
+  "T_before:both-sides-single": 131,
+  "docs": 243
+ },
+ "task3-docs|1900-1905|all": {
+  "S_after:any-label": 4957,
+  "S_after:both-sides-single": 3201,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 4957,
+  "S_after:shown-subset-of-candidates": 124,
+  "S_before:any-label": 4957,
+  "S_before:both-sides-single": 3201,
+  "S_before:shown": 4957,
+  "S_before:shown-subset-of-candidates": 124,
+  "T_after:any-label": 5339,
+  "T_after:both-sides-single": 3480,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 5339,
+  "T_before:both-sides-single": 3480,
+  "docs": 6222
+ },
+ "task3-docs|1900-1905|kind:country": {
+  "S_after:any-label": 4948,
+  "S_after:both-sides-single": 3196,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 4948,
+  "S_after:shown-subset-of-candidates": 122,
+  "S_before:any-label": 4948,
+  "S_before:both-sides-single": 3196,
+  "S_before:shown": 4948,
+  "S_before:shown-subset-of-candidates": 122,
+  "T_after:any-label": 5325,
+  "T_after:both-sides-single": 3470,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 5325,
+  "T_before:both-sides-single": 3470,
+  "docs": 5374
+ },
+ "task3-docs|1900-1905|kind:no-dateline(kind unread)": {
+  "S_after:any-label": 0,
+  "S_after:both-sides-single": 0,
+  "S_after:shown": 0,
+  "S_after:shown-subset-of-candidates": 0,
+  "S_before:any-label": 0,
+  "S_before:both-sides-single": 0,
+  "S_before:shown": 0,
+  "S_before:shown-subset-of-candidates": 0,
+  "T_after:any-label": 0,
+  "T_after:both-sides-single": 0,
+  "T_before:any-label": 0,
+  "T_before:both-sides-single": 0,
+  "docs": 218
+ },
+ "task3-docs|1900-1905|kind:topical": {
+  "S_after:any-label": 2,
+  "S_after:both-sides-single": 0,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 2,
+  "S_after:shown-subset-of-candidates": 2,
+  "S_before:any-label": 2,
+  "S_before:both-sides-single": 0,
+  "S_before:shown": 2,
+  "S_before:shown-subset-of-candidates": 2,
+  "T_after:any-label": 7,
+  "T_after:both-sides-single": 5,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 7,
+  "T_before:both-sides-single": 5,
+  "docs": 623
+ },
+ "task3-docs|1900-1905|kind:us-mission": {
+  "S_after:any-label": 7,
+  "S_after:both-sides-single": 5,
+  "S_after:sender-rule-decided": 0,
+  "S_after:shown": 7,
+  "S_after:shown-subset-of-candidates": 0,
+  "S_before:any-label": 7,
+  "S_before:both-sides-single": 5,
+  "S_before:shown": 7,
+  "S_before:shown-subset-of-candidates": 0,
+  "T_after:any-label": 7,
+  "T_after:both-sides-single": 5,
+  "T_after:sender-rule-decided": 0,
+  "T_before:any-label": 7,
+  "T_before:both-sides-single": 5,
+  "docs": 7
+ },
+ "task3-rows|S_after|1861-1899": {
+  "docs": 30864,
+  "docs_head": 30812,
+  "docs_labeled": 26498,
+  "head_rows": 61068,
+  "labeled_multi": 8555,
+  "labeled_rows": 52616,
+  "labeled_single": 44061,
+  "rows": 84234
+ },
+ "task3-rows|S_after|1900-1905": {
+  "docs": 5314,
+  "docs_head": 5309,
+  "docs_labeled": 4602,
+  "head_rows": 9652,
+  "labeled_multi": 1578,
+  "labeled_rows": 8370,
+  "labeled_single": 6792,
+  "rows": 13160
+ },
+ "task3-rows|S_before|1861-1899": {
+  "docs": 30864,
+  "docs_head": 30812,
+  "docs_labeled": 24031,
+  "head_rows": 61068,
+  "labeled_multi": 8339,
+  "labeled_rows": 47734,
+  "labeled_single": 39395,
+  "rows": 84234
+ },
+ "task3-rows|S_before|1900-1905": {
+  "docs": 5314,
+  "docs_head": 5309,
+  "docs_labeled": 4602,
+  "head_rows": 9652,
+  "labeled_multi": 1578,
+  "labeled_rows": 8370,
+  "labeled_single": 6792,
+  "rows": 13160
+ },
+ "task3-rows|T_after|1861-1899": {
+  "docs": 30864,
+  "docs_head": 30812,
+  "docs_labeled": 28154,
+  "head_rows": 61068,
+  "labeled_multi": 8832,
+  "labeled_rows": 55883,
+  "labeled_single": 47051,
+  "rows": 84234
+ },
+ "task3-rows|T_after|1900-1905": {
+  "docs": 5314,
+  "docs_head": 5309,
+  "docs_labeled": 4924,
+  "head_rows": 9652,
+  "labeled_multi": 1670,
+  "labeled_rows": 8933,
+  "labeled_single": 7263,
+  "rows": 13160
+ },
+ "task3-rows|T_before|1861-1899": {
+  "docs": 30864,
+  "docs_head": 30812,
+  "docs_labeled": 26002,
+  "head_rows": 61068,
+  "labeled_multi": 8726,
+  "labeled_rows": 51630,
+  "labeled_single": 42904,
+  "rows": 84234
+ },
+ "task3-rows|T_before|1900-1905": {
+  "docs": 5314,
+  "docs_head": 5309,
+  "docs_labeled": 4924,
+  "head_rows": 9652,
+  "labeled_multi": 1670,
+  "labeled_rows": 8933,
+  "labeled_single": 7263,
+  "rows": 13160
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "census_json_per_volume_distinct_K2": {
+  "n": 267,
+  "median": 0,
+  "max": 0,
+  "sum": 0,
+  "argmax": "frus1861"
+ },
+ "census_K2_rederived": {
+  "n": 267,
+  "median": 103,
+  "max": 696,
+  "sum": 30107,
+  "argmax": "frus1932v04"
+ },
+ "measure_pocom_k2_surface": {
+  "n": 267,
+  "median": 103,
+  "max": 680,
+  "sum": 30011,
+  "argmax": "frus1932v04"
+ },
+ "rederived_equals_census_json": false
+}

@@ -1,0 +1,322 @@
+== silver_heads
+   1861-1899 {'rows': 459, 'fmt:bare_honorific': 458, 'S_class:one': 459, 'S_picks': 459, 'S_agree': 459, 'fmt:other': 1, 'S_agreement_wilson_mention_grain': [1.0, 0.9917, 1.0], 'shares': {'fmt:bare_honorific': 0.9978, 'S_class:one': 1.0, 'fmt:other': 0.0022}}
+   1900-1929 {'rows': 7097, 'fmt:post': 7057, 'S_class:one': 4078, 'S_picks': 4078, 'S_agree': 4075, 'S_class:several': 2133, 'S_class:nobody': 706, 'S_class:unknown': 180, 'fmt:other': 40, 'S_disagree': 3, 'S_agreement_wilson_mention_grain': [0.9993, 0.9978, 0.9997], 'shares': {'fmt:post': 0.9944, 'S_class:one': 0.5746, 'S_class:several': 0.3005, 'S_class:nobody': 0.0995, 'S_class:unknown': 0.0254, 'fmt:other': 0.0056}}
+   1930-1945 {'rows': 1526, 'fmt:post': 1461, 'S_class:nobody': 334, 'S_class:one': 1138, 'S_picks': 1138, 'S_agree': 1136, 'fmt:bare_honorific': 5, 'S_disagree': 2, 'fmt:other': 60, 'S_class:several': 54, 'S_agreement_wilson_mention_grain': [0.9982, 0.9936, 0.9995], 'shares': {'fmt:post': 0.9574, 'S_class:nobody': 0.2189, 'S_class:one': 0.7457, 'fmt:bare_honorific': 0.0033, 'fmt:other': 0.0393, 'S_class:several': 0.0354}}
+   1946- {'rows': 23655, 'fmt:post': 20425, 'S_class:one': 15904, 'S_picks': 15904, 'S_agree': 15306, 'S_class:nobody': 5943, 'fmt:other': 3227, 'S_class:several': 1778, 'fmt:bare_honorific': 2, 'S_disagree': 598, 'S_class:unknown': 30, 'fmt:name_not_in_head_text': 1, 'S_agreement_wilson_mention_grain': [0.9624, 0.9593, 0.9652], 'shares': {'fmt:post': 0.8635, 'S_class:one': 0.6723, 'S_class:nobody': 0.2512, 'fmt:other': 0.1364, 'S_class:several': 0.0752, 'fmt:bare_honorific': 0.0001, 'S_class:unknown': 0.0013, 'fmt:name_not_in_head_text': 0.0}}
+== silver_heads|registry
+   1900-1929 {'rows': 2942, 'fmt:post': 2939, 'S_class:one': 1452, 'S_picks': 1452, 'S_agree': 1449, 'S_class:several': 1041, 'S_class:nobody': 336, 'S_class:unknown': 113, 'fmt:other': 3, 'S_disagree': 3, 'S_agreement_wilson_mention_grain': [0.9979, 0.9939, 0.9993], 'shares': {'fmt:post': 0.999, 'S_class:one': 0.4935, 'S_class:several': 0.3538, 'S_class:nobody': 0.1142, 'S_class:unknown': 0.0384, 'fmt:other': 0.001}}
+   1930-1945 {'rows': 849, 'fmt:post': 789, 'S_class:nobody': 169, 'S_class:one': 626, 'S_picks': 626, 'S_agree': 626, 'fmt:other': 57, 'S_class:several': 54, 'fmt:bare_honorific': 3, 'S_agreement_wilson_mention_grain': [1.0, 0.9939, 1.0], 'shares': {'fmt:post': 0.9293, 'S_class:nobody': 0.1991, 'S_class:one': 0.7373, 'fmt:other': 0.0671, 'S_class:several': 0.0636, 'fmt:bare_honorific': 0.0035}}
+   1946- {'rows': 23655, 'fmt:post': 20425, 'S_class:one': 15904, 'S_picks': 15904, 'S_agree': 15306, 'S_class:nobody': 5943, 'fmt:other': 3227, 'S_class:several': 1778, 'fmt:bare_honorific': 2, 'S_disagree': 598, 'S_class:unknown': 30, 'fmt:name_not_in_head_text': 1, 'S_agreement_wilson_mention_grain': [0.9624, 0.9593, 0.9652], 'shares': {'fmt:post': 0.8635, 'S_class:one': 0.6723, 'S_class:nobody': 0.2512, 'fmt:other': 0.1364, 'S_class:several': 0.0752, 'fmt:bare_honorific': 0.0001, 'S_class:unknown': 0.0013, 'fmt:name_not_in_head_text': 0.0}}
+== silver_heads|overlay
+   1861-1899 {'rows': 459, 'fmt:bare_honorific': 458, 'S_class:one': 459, 'S_picks': 459, 'S_agree': 459, 'fmt:other': 1, 'S_agreement_wilson_mention_grain': [1.0, 0.9917, 1.0], 'shares': {'fmt:bare_honorific': 0.9978, 'S_class:one': 1.0, 'fmt:other': 0.0022}}
+   1900-1929 {'rows': 4155, 'fmt:post': 4118, 'S_class:one': 2626, 'S_picks': 2626, 'S_agree': 2626, 'S_class:unknown': 67, 'S_class:several': 1092, 'S_class:nobody': 370, 'fmt:other': 37, 'S_agreement_wilson_mention_grain': [1.0, 0.9985, 1.0], 'shares': {'fmt:post': 0.9911, 'S_class:one': 0.632, 'S_class:unknown': 0.0161, 'S_class:several': 0.2628, 'S_class:nobody': 0.089, 'fmt:other': 0.0089}}
+   1930-1945 {'rows': 677, 'fmt:post': 672, 'S_class:nobody': 165, 'S_class:one': 512, 'S_picks': 512, 'S_agree': 510, 'fmt:bare_honorific': 2, 'S_disagree': 2, 'fmt:other': 3, 'S_agreement_wilson_mention_grain': [0.9961, 0.9859, 0.9989], 'shares': {'fmt:post': 0.9926, 'S_class:nobody': 0.2437, 'S_class:one': 0.7563, 'fmt:bare_honorific': 0.003, 'fmt:other': 0.0044}}
+== silver_heads|split_part_in_scope
+   1900-1929 {'rows': 920, 'fmt:post': 920, 'S_class:several': 334, 'S_class:nobody': 115, 'S_class:one': 417, 'S_picks': 417, 'S_agree': 417, 'S_class:unknown': 54, 'S_agreement_wilson_mention_grain': [1.0, 0.9909, 1.0], 'shares': {'fmt:post': 1.0, 'S_class:several': 0.363, 'S_class:nobody': 0.125, 'S_class:one': 0.4533, 'S_class:unknown': 0.0587}}
+   1930-1945 {'rows': 65, 'fmt:post': 65, 'S_class:one': 64, 'S_picks': 64, 'S_agree': 64, 'S_class:nobody': 1, 'S_agreement_wilson_mention_grain': [1.0, 0.9434, 1.0], 'shares': {'fmt:post': 1.0, 'S_class:one': 0.9846, 'S_class:nobody': 0.0154}}
+== negative_heads_crosswalk_no_slug
+   1900-1929 {'rows': 1713, 'S_class:unknown': 900, 'fmt:post': 1627, 'S_class:nobody': 696, 'S_class:one': 115, 'S_false_picks': 115, 'S_false_picks_initial_differs_or_unknown': 113, 'fmt:other': 68, 'S_class:several': 2, 'fmt:bare_honorific': 18, 'S_false_picks_possible_registry_miss': 2, 'S_false_pick_share_of_rows': [0.0671, 0.0562, 0.08], 'shares': {'S_class:unknown': 0.5254, 'fmt:post': 0.9498, 'S_class:nobody': 0.4063, 'S_class:one': 0.0671, 'fmt:other': 0.0397, 'S_class:several': 0.0012, 'fmt:bare_honorific': 0.0105}}
+   1930-1945 {'rows': 1749, 'S_class:one': 72, 'fmt:post': 1452, 'S_false_picks': 72, 'S_false_picks_initial_differs_or_unknown': 64, 'S_class:nobody': 756, 'fmt:other': 283, 'S_class:unknown': 900, 'S_false_picks_possible_registry_miss': 8, 'S_class:several': 21, 'fmt:bare_honorific': 14, 'S_false_pick_share_of_rows': [0.0412, 0.0328, 0.0515], 'shares': {'S_class:one': 0.0412, 'fmt:post': 0.8302, 'S_class:nobody': 0.4322, 'fmt:other': 0.1618, 'S_class:unknown': 0.5146, 'S_class:several': 0.012, 'fmt:bare_honorific': 0.008}}
+   1946- {'rows': 16066, 'S_class:nobody': 5490, 'fmt:post': 13216, 'S_class:unknown': 7768, 'S_class:one': 1840, 'S_false_picks': 1840, 'S_false_picks_initial_differs_or_unknown': 1800, 'S_false_picks_possible_registry_miss': 40, 'fmt:other': 2840, 'S_class:several': 968, 'fmt:bare_honorific': 7, 'fmt:name_not_in_head_text': 3, 'S_false_pick_share_of_rows': [0.1145, 0.1097, 0.1195], 'shares': {'S_class:nobody': 0.3417, 'fmt:post': 0.8226, 'S_class:unknown': 0.4835, 'S_class:one': 0.1145, 'fmt:other': 0.1768, 'S_class:several': 0.0603, 'fmt:bare_honorific': 0.0004, 'fmt:name_not_in_head_text': 0.0002}}
+== linked_heads_no_crosswalk
+   1861-1899 {'rows': 351, 'S_class:nobody': 50, 'S_class:one': 274, 'S_picks_unscoreable': 274, 'S_class:unknown': 27, 'shares': {'S_class:nobody': 0.1425, 'S_class:one': 0.7806, 'S_class:unknown': 0.0769}}
+   1900-1929 {'rows': 2672, 'S_class:unknown': 978, 'S_class:nobody': 787, 'S_class:one': 539, 'S_picks_unscoreable': 539, 'S_class:several': 368, 'shares': {'S_class:unknown': 0.366, 'S_class:nobody': 0.2945, 'S_class:one': 0.2017, 'S_class:several': 0.1377}}
+   1930-1945 {'rows': 2503, 'S_class:one': 1490, 'S_picks_unscoreable': 1490, 'S_class:several': 243, 'S_class:unknown': 292, 'S_class:nobody': 478, 'shares': {'S_class:one': 0.5953, 'S_class:several': 0.0971, 'S_class:unknown': 0.1167, 'S_class:nobody': 0.191}}
+   pre-1861 {'rows': 1, 'S_class:nobody': 1, 'shares': {'S_class:nobody': 1.0}}
+== untagged_scope_heads
+   1861-1899 {'rows': 60645, 'fmt:post': 782, 'S_class:one': 37715, 'S_class:several': 11015, 'fmt:bare_honorific': 58035, 'S_class:unknown': 7874, 'fmt:other': 1824, 'S_class:nobody': 4041, 'fmt:name_not_in_head_text': 4, 'shares': {'fmt:post': 0.0129, 'S_class:one': 0.6219, 'S_class:several': 0.1816, 'fmt:bare_honorific': 0.957, 'S_class:unknown': 0.1298, 'fmt:other': 0.0301, 'S_class:nobody': 0.0666, 'fmt:name_not_in_head_text': 0.0001}}
+   1900-1929 {'rows': 40707, 'fmt:bare_honorific': 8884, 'S_class:one': 23750, 'S_class:unknown': 7194, 'fmt:other': 978, 'S_class:nobody': 8054, 'fmt:post': 30845, 'S_class:several': 1709, 'shares': {'fmt:bare_honorific': 0.2182, 'S_class:one': 0.5834, 'S_class:unknown': 0.1767, 'fmt:other': 0.024, 'S_class:nobody': 0.1979, 'fmt:post': 0.7577, 'S_class:several': 0.042}}
+   1930-1945 {'rows': 70623, 'fmt:post': 67211, 'S_class:one': 42408, 'S_class:unknown': 10389, 'S_class:nobody': 14623, 'S_class:several': 3203, 'fmt:bare_honorific': 593, 'fmt:other': 2819, 'shares': {'fmt:post': 0.9517, 'S_class:one': 0.6005, 'S_class:unknown': 0.1471, 'S_class:nobody': 0.2071, 'S_class:several': 0.0454, 'fmt:bare_honorific': 0.0084, 'fmt:other': 0.0399}}
+   1946- {'rows': 28466, 'fmt:other': 2028, 'S_class:unknown': 5784, 'fmt:post': 25495, 'S_class:one': 14331, 'S_class:nobody': 7092, 'S_class:several': 1259, 'fmt:bare_honorific': 943, 'shares': {'fmt:other': 0.0712, 'S_class:unknown': 0.2032, 'fmt:post': 0.8956, 'S_class:one': 0.5034, 'S_class:nobody': 0.2491, 'S_class:several': 0.0442, 'fmt:bare_honorific': 0.0331}}
+   pre-1861 {'rows': 653, 'fmt:bare_honorific': 368, 'S_class:one': 218, 'S_class:several': 18, 'S_class:unknown': 225, 'fmt:post': 192, 'S_class:nobody': 192, 'fmt:other': 93, 'shares': {'fmt:bare_honorific': 0.5636, 'S_class:one': 0.3338, 'S_class:several': 0.0276, 'S_class:unknown': 0.3446, 'fmt:post': 0.294, 'S_class:nobody': 0.294, 'fmt:other': 0.1424}}
+{
+ "boot": {
+  "1861-1899": {
+   "volumes": 2,
+   "note": "too few volumes to bootstrap"
+  },
+  "1900-1929": {
+   "volumes": 14,
+   "point": 0.9993,
+   "p2.5": 0.9978,
+   "p97.5": 1.0,
+   "worst_volume": [
+    0.9930232558139535,
+    "frus1914Supp",
+    430
+   ]
+  },
+  "1930-1945": {
+   "volumes": 12,
+   "point": 0.9982,
+   "p2.5": 0.9952,
+   "p97.5": 1.0,
+   "worst_volume": [
+    0.9959349593495935,
+    "frus1933-39",
+    246
+   ]
+  },
+  "1946-": {
+   "volumes": 181,
+   "point": 0.9624,
+   "p2.5": 0.9483,
+   "p97.5": 0.9739,
+   "worst_volume": [
+    0.22916666666666666,
+    "frus1964-68v07",
+    48
+   ]
+  }
+ },
+ "dis": {
+  "1900-1929": [
+   [
+    "gerard-james-watson",
+    "garrett-john-work",
+    2
+   ],
+   [
+    "morris-leland-burnette",
+    "morris-ira-nelson",
+    1
+   ]
+  ],
+  "1930-1945": [
+   [
+    "grew-joseph-clark",
+    "clark-joshua-reuben",
+    1
+   ],
+   [
+    "henderson-loy-wesley",
+    "corrigan-francis-patrick",
+    1
+   ]
+  ],
+  "1946-": [
+   [
+    "rostow-walt-whitman",
+    "rostow-eugene-victor-debs",
+    243
+   ],
+   [
+    "taylor-maxwell-davenport",
+    "taylor-henry-junior",
+    115
+   ],
+   [
+    "wadsworth-james-jeremiah",
+    "wadsworth-george",
+    44
+   ],
+   [
+    "kennedy-richard-thomas",
+    "kennedy-david-matthew",
+    41
+   ],
+   [
+    "young-kenneth-todd",
+    "young-philip",
+    20
+   ],
+   [
+    "mansfield-michael-joseph",
+    "mansfield-john-kenneth",
+    19
+   ],
+   [
+    "smith-walter-bedell",
+    "smith-paul-albert",
+    16
+   ],
+   [
+    "jones-howard-palfrey",
+    "jones-harold-armstrong",
+    12
+   ],
+   [
+    "vance-cyrus-roberts",
+    "vance-sheldon-baird",
+    12
+   ],
+   [
+    "hill-john-calvin",
+    "hill-robert-charles",
+    10
+   ],
+   [
+    "hughes-morris-nelson",
+    "hughes-john-chambers",
+    8
+   ],
+   [
+    "taylor-maxwell-davenport",
+    "taylor-myron-charles",
+    6
+   ]
+  ]
+ },
+ "negex": {
+  "1900-1929": [
+   [
+    "frus1914Supp",
+    "d44",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ],
+   [
+    "frus1914Supp",
+    "d453",
+    "Fletcher",
+    "Fletcher, Duncan U.",
+    "United States Senator",
+    "fletcher-henry-prather"
+   ],
+   [
+    "frus1914Supp",
+    "d490",
+    "Williams",
+    "Williams, John Sharp",
+    "United States Senator",
+    "williams-george-fred"
+   ],
+   [
+    "frus1914Supp",
+    "d493",
+    "Howard",
+    "Howard, Esme William",
+    "British Minister at Stockholm",
+    "howard-henry-clay"
+   ],
+   [
+    "frus1914Supp",
+    "d524",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ],
+   [
+    "frus1914Supp",
+    "d534",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ],
+   [
+    "frus1915Supp",
+    "d498",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ],
+   [
+    "frus1915Supp",
+    "d499",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ],
+   [
+    "frus1915Supp",
+    "d753",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ],
+   [
+    "frus1915Supp",
+    "d779",
+    "Morgan",
+    "Morgan, Henry H.",
+    "United States Consul General at Hamburg",
+    "morgan-edwin-vernon"
+   ]
+  ],
+  "1930-1945": [
+   [
+    "frus1932v01",
+    "d431",
+    "Roosevelt",
+    "Roosevelt, Franklin D.",
+    "Assistant Secretary of the Navy of the United States.",
+    "roosevelt-nicholas"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d319",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d516",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d523",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d524",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d530",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d533",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d535",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d540",
+    "Harriman",
+    "Harriman, Kathleen",
+    "daughter of Ambassador Harriman",
+    "harriman-william-averell"
+   ],
+   [
+    "frus1943CairoTehran",
+    "d564",
+    "White",
+    "White, Harry Dexter",
+    "Assistant to
+python3 silver2.py  1.77s user 0.21s system 99% cpu 1.985 total

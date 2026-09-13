@@ -1,0 +1,43 @@
+{
+ "rows": 300,
+ "keyed": 0,
+ "by_band": {
+  "1861-1899": 75,
+  "1900-1929": 75,
+  "1930-1945": 75,
+  "1946-": 75
+ },
+ "roles": {
+  "from": 173,
+  "to": 127
+ },
+ "pre1910_rows": 100,
+ "volumes": 12,
+ "missing_doc_text": 0,
+ "doc_chars": {
+  "total": 1162960,
+  "median": 2182,
+  "p90": 8479,
+  "max": 74332,
+  "total_capped_8000": 892674,
+  "total_capped_20000": 1075020
+ },
+ "pocom_candidates_per_row": {
+  "total": 743,
+  "median": 1,
+  "max": 21,
+  "zero": 54
+ },
+ "pocom_appointments_per_row": {
+  "total": 1718,
+  "median": 3,
+  "p90": 13,
+  "max": 37
+ },
+ "surname_year_rule_on_these_rows": {
+  "unique": 188,
+  "several": 16,
+  "none_known": 54,
+  "nobody_in_office": 42
+ }
+}

@@ -1,0 +1,439 @@
+{
+ "method": "INFERRED detectability. A simulated adjudicator over the pool editor+filtered_control+filtered_sweep removes each\npool FP with prob r_fp and wrongly removes each pool TP with prob r_tp (independently; a removed TP is not re-matched,\nwhich is conservative). Compared, paired over the same band-stratified document bootstrap (grains.py design, seed 234),\nagainst the best existing unadjudicated arm at each grain (mention relaxed: editor+intersection_sweep_side 0.794 \u2014\ntied with editor+filtered_control; presence: editor+intersection_sweep_side 0.828). Reports share of trials where the\n95% CI of the difference excludes 0 above ('better') or below ('worse').",
+ "resamples": 1000,
+ "trials": 40,
+ "results": {
+  "mention_relaxed": {
+   "best_existing_arm": "editor+intersection_sweep_side",
+   "best_f1": 0.7937,
+   "rows": [
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": -0.0396,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.15
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": -0.051,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.55
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": -0.0662,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.95
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": -0.0904,
+     "share_called_better": 0.0,
+     "share_called_worse": 1.0
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": -0.1447,
+     "share_called_better": 0.0,
+     "share_called_worse": 1.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.0405,
+     "share_called_better": 0.425,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.029,
+     "share_called_better": 0.1,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.0139,
+     "share_called_better": 0.025,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": -0.0107,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": -0.0686,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.975
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.083,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.0753,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.0578,
+     "share_called_better": 0.975,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.0351,
+     "share_called_better": 0.375,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": -0.0232,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.025
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.1363,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.1277,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.1139,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.086,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": 0.0268,
+     "share_called_better": 0.15,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.1661,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.1553,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.1407,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.1107,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": 0.0594,
+     "share_called_better": 0.925,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.1964,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.1867,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.1706,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.1428,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": 0.0856,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    }
+   ]
+  },
+  "presence": {
+   "best_existing_arm": "editor+intersection_sweep_side",
+   "best_f1": 0.8275,
+   "rows": [
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": -0.0397,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": -0.0487,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.225
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": -0.0636,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.75
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": -0.09,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.975
+    },
+    {
+     "r_fp": 0.5,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": -0.1409,
+     "share_called_better": 0.0,
+     "share_called_worse": 1.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.0273,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.0193,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.0033,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": -0.0212,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.025
+    },
+    {
+     "r_fp": 0.7,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": -0.0825,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.95
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.0671,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.0618,
+     "share_called_better": 0.95,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.0422,
+     "share_called_better": 0.375,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.0153,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.8,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": -0.0388,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.125
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.1108,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.1029,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.0903,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.0575,
+     "share_called_better": 0.9,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.9,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": 0.0046,
+     "share_called_better": 0.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.1377,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.1248,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.1098,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.0821,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 0.95,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": 0.0216,
+     "share_called_better": 0.1,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.0,
+     "mean_point_diff_vs_best": 0.1602,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.02,
+     "mean_point_diff_vs_best": 0.1501,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.05,
+     "mean_point_diff_vs_best": 0.1331,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.1,
+     "mean_point_diff_vs_best": 0.1064,
+     "share_called_better": 1.0,
+     "share_called_worse": 0.0
+    },
+    {
+     "r_fp": 1.0,
+     "r_tp": 0.2,
+     "mean_point_diff_vs_best": 0.0462,
+     "share_called_better": 0.5,
+     "share_called_worse": 0.0
+    }
+   ]
+  }
+ }
+}

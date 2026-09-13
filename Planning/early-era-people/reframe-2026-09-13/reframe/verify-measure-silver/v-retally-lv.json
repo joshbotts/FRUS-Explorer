@@ -1,0 +1,60 @@
+{
+ "proxy_volumes": 15,
+ "by_band": {
+  "1900-1929": {
+   "both_same": 23,
+   "agree": 23,
+   "disagree": 0,
+   "S_class_one": 23
+  },
+  "1900-1929|S": {
+   "picks": 1132,
+   "agree": 929,
+   "undecided": 110,
+   "disagree": 93
+  },
+  "1930-1945": {
+   "both_same": 301,
+   "agree": 294,
+   "disagree": 7,
+   "S_class_one": 301
+  },
+  "1930-1945|S": {
+   "picks": 1333,
+   "agree": 1270,
+   "disagree": 63
+  },
+  "1946-": {
+   "both_same": 158,
+   "agree": 158,
+   "disagree": 0,
+   "S_class_one": 158
+  },
+  "1946-|S": {
+   "picks": 788,
+   "agree": 729,
+   "undecided": 4,
+   "disagree": 55
+  }
+ },
+ "both_same_total": {
+  "both_same": 482,
+  "agree": 475,
+  "disagree": 7,
+  "S_class_one": 482
+ },
+ "S_total": {
+  "picks": 3253,
+  "agree": 2928,
+  "undecided": 114,
+  "disagree": 211
+ },
+ "both_same_by_band_route": {
+  "1900-1929|A": 13,
+  "1900-1929|B": 10,
+  "1930-1945|A": 57,
+  "1930-1945|B": 237,
+  "1930-1945|None": 7,
+  "1946-|A": 158
+ }
+}

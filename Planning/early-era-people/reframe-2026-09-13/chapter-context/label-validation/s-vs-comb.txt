@@ -1,0 +1,16 @@
+## 1873
+   47 ('COMB_only', None, 'agree')
+   151 ('S_only', 'agree', None)
+   654 ('both_same', 'agree', 'agree')
+   82 ('neither', None, None)
+## post1905 proxy
+   38 ('COMB_only', None, 'agree')
+   11 ('COMB_only', None, 'disagree')
+   2490 ('S_only', 'agree', None)
+   206 ('S_only', 'disagree', None)
+   115 ('S_only', 'undecided', None)
+   481 ('both_same', 'agree', 'agree')
+   8 ('both_same', 'disagree', 'disagree')
+   4619 ('neither', None, None)
+entries with crosswalk slug (A): 733 ; B also resolved: 423 ; B==A: 423 ; B abstained: 310 ; of which A slug among B candidates: 5
+B abstention reasons among A entries: [(('None', 'False', 'nocand'), 231), (('mission', 'False', 'nocand'), 50), (('principal', 'False', 'nocand'), 23), (('mission', 'False', 'multi'), 5), (('None', 'True', 'nocand'), 1)]

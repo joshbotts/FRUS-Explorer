@@ -1,0 +1,62 @@
+{
+ "250 fresh NER documents (S1-c shape)": {
+  "sonnet-5": {
+   "low": {
+    "usd_per_run_standard": 14.61,
+    "usd_per_run_batch": 7.31,
+    "input_tok": 843947,
+    "output_tok_ceiling": 1292480
+   },
+   "high": {
+    "usd_per_run_standard": 15.83,
+    "usd_per_run_batch": 7.92,
+    "input_tok": 945730,
+    "output_tok_ceiling": 1394263
+   }
+  },
+  "opus-5": {
+   "low": {
+    "usd_per_run_standard": 36.53,
+    "usd_per_run_batch": 18.27,
+    "input_tok": 843947,
+    "output_tok_ceiling": 1292480
+   },
+   "high": {
+    "usd_per_run_standard": 39.59,
+    "usd_per_run_batch": 19.79,
+    "input_tok": 945730,
+    "output_tok_ceiling": 1394263
+   }
+  }
+ },
+ "500 pre-1900 location/identity rows (S2 shape)": {
+  "sonnet-5": {
+   "low": {
+    "usd_per_run_standard": 33.55,
+    "usd_per_run_batch": 16.78,
+    "input_tok": 1275813,
+    "output_tok_ceiling": 3100000
+   },
+   "high": {
+    "usd_per_run_standard": 33.98,
+    "usd_per_run_batch": 16.99,
+    "input_tok": 1487900,
+    "output_tok_ceiling": 3100000
+   }
+  },
+  "opus-5": {
+   "low": {
+    "usd_per_run_standard": 83.88,
+    "usd_per_run_batch": 41.94,
+    "input_tok": 1275813,
+    "output_tok_ceiling": 3100000
+   },
+   "high": {
+    "usd_per_run_standard": 84.94,
+    "usd_per_run_batch": 42.47,
+    "input_tok": 1487900,
+    "output_tok_ceiling": 3100000
+   }
+  }
+ }
+}

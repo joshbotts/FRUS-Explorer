@@ -1,0 +1,408 @@
+{
+ "fts_table": "frus_documents",
+ "content_table": "document_cache",
+ "sqlite_version": "3.51.0",
+ "queries": [
+  {
+   "name": "Seward",
+   "corpus_count": 9824,
+   "corpus_count_ms": [
+    1.92,
+    0.2,
+    0.19
+   ],
+   "scope_count": 9786,
+   "scope_count_ms": [
+    175.13,
+    4.6,
+    4.36
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.05,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 4,
+   "volume_docs_ms": [
+    3.96,
+    4.07,
+    4.25
+   ],
+   "scope_matches_with_case_sensitive_word": 9758,
+   "scope_matches_total": 9786
+  },
+  {
+   "name": "Adams",
+   "corpus_count": 4749,
+   "corpus_count_ms": [
+    1.38,
+    0.11,
+    0.11
+   ],
+   "scope_count": 3266,
+   "scope_count_ms": [
+    183.6,
+    4.14,
+    3.73
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.02,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 2,
+   "volume_docs_ms": [
+    3.53,
+    3.57,
+    3.59
+   ],
+   "scope_matches_with_case_sensitive_word": 2724,
+   "scope_matches_total": 3266
+  },
+  {
+   "name": "Hay",
+   "corpus_count": 6437,
+   "corpus_count_ms": [
+    1.42,
+    0.14,
+    0.13
+   ],
+   "scope_count": 5949,
+   "scope_count_ms": [
+    142.44,
+    3.96,
+    3.68
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.02,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 4,
+   "volume_docs_ms": [
+    3.41,
+    3.37,
+    3.43
+   ],
+   "scope_matches_with_case_sensitive_word": 5339,
+   "scope_matches_total": 5949
+  },
+  {
+   "name": "Hull",
+   "corpus_count": 13171,
+   "corpus_count_ms": [
+    6.91,
+    0.29,
+    0.28
+   ],
+   "scope_count": 12468,
+   "scope_count_ms": [
+    502.45,
+    12.07,
+    11.47
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.02,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 3,
+   "volume_docs_ms": [
+    11.0,
+    10.97,
+    10.96
+   ],
+   "scope_matches_with_case_sensitive_word": 12320,
+   "scope_matches_total": 12468
+  },
+  {
+   "name": "Smith",
+   "corpus_count": 8356,
+   "corpus_count_ms": [
+    1.02,
+    0.21,
+    0.2
+   ],
+   "scope_count": 2616,
+   "scope_count_ms": [
+    387.39,
+    8.4,
+    7.66
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.02,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 13,
+   "volume_docs_ms": [
+    7.56,
+    7.39,
+    8.94
+   ],
+   "scope_matches_with_case_sensitive_word": 2583,
+   "scope_matches_total": 2616
+  },
+  {
+   "name": "Bliss",
+   "corpus_count": 1056,
+   "corpus_count_ms": [
+    0.46,
+    0.03,
+    0.07
+   ],
+   "scope_count": 816,
+   "scope_count_ms": [
+    40.2,
+    0.52,
+    0.31
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.01,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 2,
+   "volume_docs_ms": [
+    0.39,
+    0.26,
+    0.24
+   ],
+   "scope_matches_with_case_sensitive_word": 808,
+   "scope_matches_total": 816
+  },
+  {
+   "name": "Wells",
+   "corpus_count": 82757,
+   "corpus_count_ms": [
+    6.02,
+    1.74,
+    1.75
+   ],
+   "scope_count": 41794,
+   "scope_count_ms": [
+    2910.18,
+    474.41,
+    83.57
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.04,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 174,
+   "volume_docs_ms": [
+    71.71,
+    71.8,
+    71.93
+   ],
+   "scope_matches_with_case_sensitive_word": 311,
+   "scope_matches_total": 41794
+  },
+  {
+   "name": "Blaine",
+   "corpus_count": 2201,
+   "corpus_count_ms": [
+    6.44,
+    0.06,
+    0.05
+   ],
+   "scope_count": 2196,
+   "scope_count_ms": [
+    6.72,
+    0.44,
+    0.37
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.01,
+    0.01,
+    0.0
+   ],
+   "volume_docs": 2,
+   "volume_docs_ms": [
+    0.27,
+    0.26,
+    0.25
+   ],
+   "scope_matches_with_case_sensitive_word": 2194,
+   "scope_matches_total": 2196
+  },
+  {
+   "name": "Root",
+   "corpus_count": 3377,
+   "corpus_count_ms": [
+    0.85,
+    0.08,
+    0.07
+   ],
+   "scope_count": 1784,
+   "scope_count_ms": [
+    29.77,
+    3.54,
+    3.32
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.02,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 13,
+   "volume_docs_ms": [
+    3.23,
+    3.18,
+    3.16
+   ],
+   "scope_matches_with_case_sensitive_word": 936,
+   "scope_matches_total": 1784
+  },
+  {
+   "name": "Hughes",
+   "corpus_count": 4311,
+   "corpus_count_ms": [
+    0.7,
+    0.09,
+    0.09
+   ],
+   "scope_count": 3272,
+   "scope_count_ms": [
+    46.6,
+    4.04,
+    3.79
+   ],
+   "doc_presence": false,
+   "doc_presence_ms": [
+    0.02,
+    0.01,
+    0.01
+   ],
+   "volume_docs": 0,
+   "volume_docs_ms": [
+    3.59,
+    3.6,
+    3.64
+   ],
+   "scope_matches_with_case_sensitive_word": 2494,
+   "scope_matches_total": 3272
+  },
+  {
+   "phrase": "\"John Hay\"",
+   "corpus_count": 1320,
+   "ms": [
+    9.02,
+    0.29,
+    0.26
+   ]
+  },
+  {
+   "phrase": "\"William H. Seward\"",
+   "corpus_count": 8507,
+   "ms": [
+    4.46,
+    0.85,
+    0.83
+   ]
+  },
+  {
+   "phrase": "\"Charles Francis Adams\"",
+   "corpus_count": 1711,
+   "ms": [
+    2.21,
+    0.29,
+    0.28
+   ]
+  },
+  {
+   "phrase": "\"Cordell Hull\"",
+   "corpus_count": 1015,
+   "ms": [
+    0.61,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "vocab_term": "seward",
+   "row": [
+    [
+     "seward",
+     9824,
+     31063
+    ]
+   ],
+   "ms": [
+    0.19,
+    0.16,
+    0.15
+   ]
+  },
+  {
+   "vocab_term": "hai",
+   "row": [
+    [
+     "hai",
+     6437,
+     14764
+    ]
+   ],
+   "ms": [
+    0.11,
+    0.1,
+    0.1
+   ]
+  },
+  {
+   "vocab_term": "hull",
+   "row": [
+    [
+     "hull",
+     13171,
+     15621
+    ]
+   ],
+   "ms": [
+    0.17,
+    0.17,
+    0.17
+   ]
+  },
+  {
+   "vocab_term": "bliss",
+   "row": [
+    [
+     "bliss",
+     1056,
+     2591
+    ]
+   ],
+   "ms": [
+    0.03,
+    0.02,
+    0.02
+   ]
+  },
+  {
+   "vocab_term": "well",
+   "row": [
+    [
+     "well",
+     82757,
+     156963
+    ]
+   ],
+   "ms": [
+    1.45,
+    1.28,
+    1.27
+   ]
+  }
+ ]
+}

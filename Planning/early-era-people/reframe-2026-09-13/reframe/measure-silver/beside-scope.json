@@ -1,0 +1,52 @@
+{
+ "frus1941-43": {
+  "persName_xml_id": 0,
+  "any_xml_id_p_": 0,
+  "elements_with_xml_id_p_": {},
+  "corresp_or_ref_hash_p_": 0,
+  "persName_total": 312,
+  "sample_list_item": "<item/>\n                        </list>\n                    </p>\n                    <p>The following issues are known and can\u2019t be fixed: <list>\n                            <item/>\n                        </list>\n                    </p>\n                </correction>\n            </editorialDecl>\n  "
+ },
+ "frus1914": {
+  "corresp_by_element": {
+   "relatedItem": 3,
+   "term": 1,
+   "change": 1
+  },
+  "examples": [
+   "<relatedItem corresp=\"#frus1914\" type=\"jpg\">",
+   "<relatedItem corresp=\"#frus1914\" type=\"epub\">",
+   "<relatedItem corresp=\"#frus1914\" type=\"mobi\">",
+   "<term corresp=\"#admin1\">",
+   "<change corresp=\"#frus1914\" status=\"published\" when=\"1922\"/>"
+  ]
+ },
+ "frus1915": {
+  "corresp_by_element": {
+   "relatedItem": 3,
+   "term": 1,
+   "change": 1
+  },
+  "examples": [
+   "<relatedItem corresp=\"#frus1915\" type=\"jpg\">",
+   "<relatedItem corresp=\"#frus1915\" type=\"epub\">",
+   "<relatedItem corresp=\"#frus1915\" type=\"mobi\">",
+   "<term corresp=\"#admin1\">",
+   "<change corresp=\"#frus1915\" status=\"published\" when=\"1924\"/>"
+  ]
+ },
+ "frus1916": {
+  "corresp_by_element": {
+   "relatedItem": 3,
+   "term": 1,
+   "change": 1
+  },
+  "examples": [
+   "<relatedItem corresp=\"#frus1916\" type=\"jpg\">",
+   "<relatedItem corresp=\"#frus1916\" type=\"epub\">",
+   "<relatedItem corresp=\"#frus1916\" type=\"mobi\">",
+   "<term corresp=\"#admin1\">",
+   "<change corresp=\"#frus1916\" status=\"published\" when=\"1925\"/>"
+  ]
+ }
+}

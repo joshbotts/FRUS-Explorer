@@ -1,0 +1,282 @@
+{
+ "agree_S": {
+  "spans": 1029227,
+  "doc_surface_keys": 570129,
+  "documents": 157357,
+  "surface_chars": 12692012,
+  "window_chars_all_spans": 220418697,
+  "window_chars_first_per_key": 144448409
+ },
+ "S_only": {
+  "spans": 1318318,
+  "doc_surface_keys": 912120,
+  "documents": 171716,
+  "surface_chars": 21920052,
+  "window_chars_all_spans": 245748951,
+  "window_chars_first_per_key": 194500723
+ },
+ "C_only": {
+  "spans": 211569,
+  "doc_surface_keys": 147673,
+  "documents": 67438,
+  "surface_chars": 1707829,
+  "window_chars_all_spans": 63825199,
+  "window_chars_first_per_key": 48076118
+ },
+ "disagreement": {
+  "spans": 1529887,
+  "doc_surface_keys": 1053359,
+  "documents": 179387,
+  "surface_chars": 23627881,
+  "window_chars_all_spans": 287492736,
+  "window_chars_first_per_key": 226841519
+ },
+ "pool": {
+  "spans": 2839444,
+  "doc_surface_keys": 1654239,
+  "documents": 195033,
+  "surface_chars": 38779282,
+  "window_chars_all_spans": 392837878,
+  "window_chars_first_per_key": 288248405
+ }
+}
+{
+ "label": "POST-HOC ceilings on the M2a gold (64 docs / 406 mentions / presence grain as grains.py). A ceiling is not a precision.",
+ "editor_U_agreement_arm (baseline, assessment b2)": {
+  "all": {
+   "pred_keys": 245,
+   "false_keys": 25,
+   "gold_keys": 288,
+   "found": 221,
+   "P": 0.898,
+   "R": 0.7674,
+   "F1": 0.8275
+  },
+  "1861-1899": {
+   "pred_keys": 100,
+   "false_keys": 2,
+   "gold_keys": 137,
+   "found": 98,
+   "P": 0.98,
+   "R": 0.7153,
+   "F1": 0.827
+  },
+  "1900-1929": {
+   "pred_keys": 37,
+   "false_keys": 1,
+   "gold_keys": 43,
+   "found": 36,
+   "P": 0.973,
+   "R": 0.8372,
+   "F1": 0.9
+  },
+  "1930-1945": {
+   "pred_keys": 51,
+   "false_keys": 13,
+   "gold_keys": 44,
+   "found": 38,
+   "P": 0.7451,
+   "R": 0.8636,
+   "F1": 0.8
+  },
+  "1946-": {
+   "pred_keys": 57,
+   "false_keys": 9,
+   "gold_keys": 64,
+   "found": 49,
+   "P": 0.8421,
+   "R": 0.7656,
+   "F1": 0.802
+  }
+ },
+ "disagreement_spans_on_gold_docs": 445,
+ "disagreement_spans_a_perfect_verifier_keeps": 96,
+ "baseline_plus_perfectly_verified_disagreement": {
+  "all": {
+   "pred_keys": 303,
+   "false_keys": 24,
+   "gold_keys": 288,
+   "found": 279,
+   "P": 0.9208,
+   "R": 0.9688,
+   "F1": 0.9442
+  },
+  "1861-1899": {
+   "pred_keys": 133,
+   "false_keys": 2,
+   "gold_keys": 137,
+   "found": 131,
+   "P": 0.985,
+   "R": 0.9562,
+   "F1": 0.9704
+  },
+  "1900-1929": {
+   "pred_keys": 44,
+   "false_keys": 1,
+   "gold_keys": 43,
+   "found": 43,
+   "P": 0.9773,
+   "R": 1.0,
+   "F1": 0.9885
+  },
+  "1930-1945": {
+   "pred_keys": 57,
+   "false_keys": 13,
+   "gold_keys": 44,
+   "found": 44,
+   "P": 0.7719,
+   "R": 1.0,
+   "F1": 0.8713
+  },
+  "1946-": {
+   "pred_keys": 69,
+   "false_keys": 8,
+   "gold_keys": 64,
+   "found": 61,
+   "P": 0.8841,
+   "R": 0.9531,
+   "F1": 0.9173
+  }
+ },
+ "editor_U_perfectly_filtered_agreement": {
+  "all": {
+   "pred_keys": 221,
+   "false_keys": 1,
+   "gold_keys": 288,
+   "found": 221,
+   "P": 0.9955,
+   "R": 0.7674,
+   "F1": 0.8667
+  },
+  "1861-1899": {
+   "pred_keys": 98,
+   "false_keys": 0,
+   "gold_keys": 137,
+   "found": 98,
+   "P": 1.0,
+   "R": 0.7153,
+   "F1": 0.834
+  },
+  "1900-1929": {
+   "pred_keys": 37,
+   "false_keys": 1,
+   "gold_keys": 43,
+   "found": 36,
+   "P": 0.973,
+   "R": 0.8372,
+   "F1": 0.9
+  },
+  "1930-1945": {
+   "pred_keys": 38,
+   "false_keys": 0,
+   "gold_keys": 44,
+   "found": 38,
+   "P": 1.0,
+   "R": 0.8636,
+   "F1": 0.9268
+  },
+  "1946-": {
+   "pred_keys": 48,
+   "false_keys": 0,
+   "gold_keys": 64,
+   "found": 49,
+   "P": 1.0,
+   "R": 0.7656,
+   "F1": 0.8673
+  }
+ },
+ "editor_U_perfectly_filtered_agreement_plus_perfectly_verified_disagreement": {
+  "all": {
+   "pred_keys": 280,
+   "false_keys": 1,
+   "gold_keys": 288,
+   "found": 279,
+   "P": 0.9964,
+   "R": 0.9688,
+   "F1": 0.9824
+  },
+  "1861-1899": {
+   "pred_keys": 131,
+   "false_keys": 0,
+   "gold_keys": 137,
+   "found": 131,
+   "P": 1.0,
+   "R": 0.9562,
+   "F1": 0.9776
+  },
+  "1900-1929": {
+   "pred_keys": 44,
+   "false_keys": 1,
+   "gold_keys": 43,
+   "found": 43,
+   "P": 0.9773,
+   "R": 1.0,
+   "F1": 0.9885
+  },
+  "1930-1945": {
+   "pred_keys": 44,
+   "false_keys": 0,
+   "gold_keys": 44,
+   "found": 44,
+   "P": 1.0,
+   "R": 1.0,
+   "F1": 1.0
+  },
+  "1946-": {
+   "pred_keys": 61,
+   "false_keys": 0,
+   "gold_keys": 64,
+   "found": 61,
+   "P": 1.0,
+   "R": 0.9531,
+   "F1": 0.976
+  }
+ },
+ "editor_U_filtered_control_U_filtered_sweep_unverified": {
+  "all": {
+   "pred_keys": 574,
+   "false_keys": 292,
+   "gold_keys": 288,
+   "found": 281,
+   "P": 0.4913,
+   "R": 0.9757,
+   "F1": 0.6535
+  },
+  "1861-1899": {
+   "pred_keys": 210,
+   "false_keys": 79,
+   "gold_keys": 137,
+   "found": 132,
+   "P": 0.6238,
+   "R": 0.9635,
+   "F1": 0.7573
+  },
+  "1900-1929": {
+   "pred_keys": 98,
+   "false_keys": 55,
+   "gold_keys": 43,
+   "found": 43,
+   "P": 0.4388,
+   "R": 1.0,
+   "F1": 0.6099
+  },
+  "1930-1945": {
+   "pred_keys": 118,
+   "false_keys": 72,
+   "gold_keys": 44,
+   "found": 44,
+   "P": 0.3898,
+   "R": 1.0,
+   "F1": 0.561
+  },
+  "1946-": {
+   "pred_keys": 148,
+   "false_keys": 86,
+   "gold_keys": 64,
+   "found": 62,
+   "P": 0.4189,
+   "R": 0.9688,
+   "F1": 0.5849
+  }
+ }
+}

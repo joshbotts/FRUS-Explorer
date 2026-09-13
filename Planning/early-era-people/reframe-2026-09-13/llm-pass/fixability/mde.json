@@ -1,0 +1,1520 @@
+{
+ "method": "What the 64-doc sample can detect. Simulated 'improved arm' = an existing arm with k of its errors fixed\n(FPs removed and/or misses recovered, chosen uniformly at random), paired with the base arm under the SAME\nband-stratified document bootstrap design as grains.py (seed 234). Called real = 95% percentile CI lower bound > 0.\nThis is the HIGH-correlation (best case) scenario: a real Claude arm would differ from the base on more than the\nfixed errors, so its paired interval is wider. INFERRED.",
+ "resamples": 2000,
+ "trials": 200,
+ "results": {
+  "mention_relaxed|filtered_sweep": {
+   "base_point_f1": 0.662,
+   "fp_instances": 358,
+   "miss_instances": 28,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0006
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0012
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.845,
+       "mean_point_f1_gain": 0.0023
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.975,
+       "mean_point_f1_gain": 0.0029
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.845,
+      "mean_point_f1_gain": 0.0023
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.845,
+      "mean_point_f1_gain": 0.0023
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0012
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0023
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0035
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.585,
+       "mean_point_f1_gain": 0.0047
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.855,
+       "mean_point_f1_gain": 0.0058
+      },
+      {
+       "k": 6,
+       "share_called_real": 0.94,
+       "mean_point_f1_gain": 0.007
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.585,
+      "mean_point_f1_gain": 0.0047
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0058
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0006
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0012
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0019
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.885,
+       "mean_point_f1_gain": 0.0025
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.975,
+       "mean_point_f1_gain": 0.0031
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.885,
+      "mean_point_f1_gain": 0.0025
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.885,
+      "mean_point_f1_gain": 0.0025
+     }
+    }
+   }
+  },
+  "mention_relaxed|filtered_control": {
+   "base_point_f1": 0.7091,
+   "fp_instances": 60,
+   "miss_instances": 150,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.001
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.002
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.003
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.63,
+       "mean_point_f1_gain": 0.004
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.85,
+       "mean_point_f1_gain": 0.0049
+      },
+      {
+       "k": 6,
+       "share_called_real": 0.95,
+       "mean_point_f1_gain": 0.0059
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.63,
+      "mean_point_f1_gain": 0.004
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.85,
+      "mean_point_f1_gain": 0.0049
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0018
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0036
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0053
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.865,
+       "mean_point_f1_gain": 0.0071
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.975,
+       "mean_point_f1_gain": 0.0089
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.865,
+      "mean_point_f1_gain": 0.0071
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.865,
+      "mean_point_f1_gain": 0.0071
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0015
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0031
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0047
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.845,
+       "mean_point_f1_gain": 0.0062
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.985,
+       "mean_point_f1_gain": 0.0078
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.845,
+      "mean_point_f1_gain": 0.0062
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.845,
+      "mean_point_f1_gain": 0.0062
+     }
+    }
+   }
+  },
+  "mention_relaxed|editor+filtered_control": {
+   "base_point_f1": 0.7939,
+   "fp_instances": 71,
+   "miss_instances": 92,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.001
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.002
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.003
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.71,
+       "mean_point_f1_gain": 0.004
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.92,
+       "mean_point_f1_gain": 0.0051
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.71,
+      "mean_point_f1_gain": 0.004
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.92,
+      "mean_point_f1_gain": 0.0051
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0015
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.003
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0046
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.805,
+       "mean_point_f1_gain": 0.0061
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.97,
+       "mean_point_f1_gain": 0.0076
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.805,
+      "mean_point_f1_gain": 0.0061
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.805,
+      "mean_point_f1_gain": 0.0061
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0013
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0026
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0039
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.83,
+       "mean_point_f1_gain": 0.0052
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.955,
+       "mean_point_f1_gain": 0.0065
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.83,
+      "mean_point_f1_gain": 0.0052
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.83,
+      "mean_point_f1_gain": 0.0052
+     }
+    }
+   }
+  },
+  "mention_relaxed|editor+filtered_sweep": {
+   "base_point_f1": 0.6457,
+   "fp_instances": 391,
+   "miss_instances": 26,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0005
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0011
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.87,
+       "mean_point_f1_gain": 0.0022
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.98,
+       "mean_point_f1_gain": 0.0028
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.87,
+      "mean_point_f1_gain": 0.0022
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.87,
+      "mean_point_f1_gain": 0.0022
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0011
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0023
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0034
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.505,
+       "mean_point_f1_gain": 0.0046
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.765,
+       "mean_point_f1_gain": 0.0057
+      },
+      {
+       "k": 6,
+       "share_called_real": 0.9,
+       "mean_point_f1_gain": 0.0069
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.505,
+      "mean_point_f1_gain": 0.0046
+     },
+     "k80": {
+      "k": 6,
+      "share_called_real": 0.9,
+      "mean_point_f1_gain": 0.0069
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0006
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0012
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.855,
+       "mean_point_f1_gain": 0.0023
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.975,
+       "mean_point_f1_gain": 0.0029
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0023
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0023
+     }
+    }
+   }
+  },
+  "mention_relaxed|editor+intersection_sweep_side": {
+   "base_point_f1": 0.7937,
+   "fp_instances": 50,
+   "miss_instances": 106,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0011
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0021
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0032
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.8,
+       "mean_point_f1_gain": 0.0042
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.985,
+       "mean_point_f1_gain": 0.0053
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.8,
+      "mean_point_f1_gain": 0.0042
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.8,
+      "mean_point_f1_gain": 0.0042
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0016
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0032
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0048
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.83,
+       "mean_point_f1_gain": 0.0063
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.97,
+       "mean_point_f1_gain": 0.0079
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.83,
+      "mean_point_f1_gain": 0.0063
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.83,
+      "mean_point_f1_gain": 0.0063
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0014
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0028
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.005,
+       "mean_point_f1_gain": 0.0043
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.81,
+       "mean_point_f1_gain": 0.0057
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.99,
+       "mean_point_f1_gain": 0.0071
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.81,
+      "mean_point_f1_gain": 0.0057
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.81,
+      "mean_point_f1_gain": 0.0057
+     }
+    }
+   }
+  },
+  "mention_relaxed|editor+filtered_control+filtered_sweep": {
+   "base_point_f1": 0.6067,
+   "fp_instances": 508,
+   "miss_instances": 8,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0005
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0009
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0014
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.855,
+       "mean_point_f1_gain": 0.0019
+      },
+      {
+       "k": 5,
+       "share_called_real": 1.0,
+       "mean_point_f1_gain": 0.0023
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0019
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0019
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0011
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0021
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0032
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.605,
+       "mean_point_f1_gain": 0.0042
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.94,
+       "mean_point_f1_gain": 0.0053
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.605,
+      "mean_point_f1_gain": 0.0042
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.94,
+      "mean_point_f1_gain": 0.0053
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0005
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0009
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0014
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.88,
+       "mean_point_f1_gain": 0.0019
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.99,
+       "mean_point_f1_gain": 0.0024
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.88,
+      "mean_point_f1_gain": 0.0019
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.88,
+      "mean_point_f1_gain": 0.0019
+     }
+    }
+   }
+  },
+  "presence|filtered_sweep": {
+   "base_point_f1": 0.6749,
+   "fp_instances": 241,
+   "miss_instances": 19,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0008
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0025
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.86,
+       "mean_point_f1_gain": 0.0034
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.97,
+       "mean_point_f1_gain": 0.0042
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.86,
+      "mean_point_f1_gain": 0.0034
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.86,
+      "mean_point_f1_gain": 0.0034
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0033
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.005
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.57,
+       "mean_point_f1_gain": 0.0066
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.82,
+       "mean_point_f1_gain": 0.0082
+      },
+      {
+       "k": 6,
+       "share_called_real": 0.965,
+       "mean_point_f1_gain": 0.0099
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.57,
+      "mean_point_f1_gain": 0.0066
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.82,
+      "mean_point_f1_gain": 0.0082
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0009
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0018
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0027
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.835,
+       "mean_point_f1_gain": 0.0037
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.99,
+       "mean_point_f1_gain": 0.0045
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.835,
+      "mean_point_f1_gain": 0.0037
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.835,
+      "mean_point_f1_gain": 0.0037
+     }
+    }
+   }
+  },
+  "presence|filtered_control": {
+   "base_point_f1": 0.697,
+   "fp_instances": 43,
+   "miss_instances": 110,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0014
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0029
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0043
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.745,
+       "mean_point_f1_gain": 0.0057
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.95,
+       "mean_point_f1_gain": 0.0072
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.745,
+      "mean_point_f1_gain": 0.0057
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.95,
+      "mean_point_f1_gain": 0.0072
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0026
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0051
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0077
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.855,
+       "mean_point_f1_gain": 0.0102
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.985,
+       "mean_point_f1_gain": 0.0127
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0102
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0102
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0022
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0044
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0067
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.885,
+       "mean_point_f1_gain": 0.009
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.98,
+       "mean_point_f1_gain": 0.0112
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.885,
+      "mean_point_f1_gain": 0.009
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.885,
+      "mean_point_f1_gain": 0.009
+     }
+    }
+   }
+  },
+  "presence|editor+filtered_control": {
+   "base_point_f1": 0.8108,
+   "fp_instances": 46,
+   "miss_instances": 59,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0015
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.003
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0045
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.735,
+       "mean_point_f1_gain": 0.006
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.95,
+       "mean_point_f1_gain": 0.0075
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.735,
+      "mean_point_f1_gain": 0.006
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.95,
+      "mean_point_f1_gain": 0.0075
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0021
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0042
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0063
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.78,
+       "mean_point_f1_gain": 0.0084
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.955,
+       "mean_point_f1_gain": 0.0105
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.78,
+      "mean_point_f1_gain": 0.0084
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.955,
+      "mean_point_f1_gain": 0.0105
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0018
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0037
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0055
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.87,
+       "mean_point_f1_gain": 0.0074
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.97,
+       "mean_point_f1_gain": 0.0093
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.87,
+      "mean_point_f1_gain": 0.0074
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.87,
+      "mean_point_f1_gain": 0.0074
+     }
+    }
+   }
+  },
+  "presence|editor+filtered_sweep": {
+   "base_point_f1": 0.675,
+   "fp_instances": 242,
+   "miss_instances": 18,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0008
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0025
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.845,
+       "mean_point_f1_gain": 0.0034
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.98,
+       "mean_point_f1_gain": 0.0042
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.845,
+      "mean_point_f1_gain": 0.0034
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.845,
+      "mean_point_f1_gain": 0.0034
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0017
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0033
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.005
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.485,
+       "mean_point_f1_gain": 0.0066
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.8,
+       "mean_point_f1_gain": 0.0082
+      },
+      {
+       "k": 6,
+       "share_called_real": 0.93,
+       "mean_point_f1_gain": 0.0099
+      }
+     ],
+     "k50": {
+      "k": 5,
+      "share_called_real": 0.8,
+      "mean_point_f1_gain": 0.0082
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.8,
+      "mean_point_f1_gain": 0.0082
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0009
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0018
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0027
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.855,
+       "mean_point_f1_gain": 0.0036
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.985,
+       "mean_point_f1_gain": 0.0045
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0036
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.855,
+      "mean_point_f1_gain": 0.0036
+     }
+    }
+   }
+  },
+  "presence|editor+intersection_sweep_side": {
+   "base_point_f1": 0.8275,
+   "fp_instances": 25,
+   "miss_instances": 67,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0016
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0031
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0047
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.67,
+       "mean_point_f1_gain": 0.0063
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.94,
+       "mean_point_f1_gain": 0.0079
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.67,
+      "mean_point_f1_gain": 0.0063
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 0.94,
+      "mean_point_f1_gain": 0.0079
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0022
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0044
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0066
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.805,
+       "mean_point_f1_gain": 0.0087
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.945,
+       "mean_point_f1_gain": 0.0109
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.805,
+      "mean_point_f1_gain": 0.0087
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.805,
+      "mean_point_f1_gain": 0.0087
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.002
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.004
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.006
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.815,
+       "mean_point_f1_gain": 0.0081
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.98,
+       "mean_point_f1_gain": 0.0101
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.815,
+      "mean_point_f1_gain": 0.0081
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.815,
+      "mean_point_f1_gain": 0.0081
+     }
+    }
+   }
+  },
+  "presence|editor+filtered_control+filtered_sweep": {
+   "base_point_f1": 0.6535,
+   "fp_instances": 292,
+   "miss_instances": 7,
+   "scenarios": {
+    "fix_false_positives": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0008
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0015
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0023
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.885,
+       "mean_point_f1_gain": 0.003
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.99,
+       "mean_point_f1_gain": 0.0038
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.885,
+      "mean_point_f1_gain": 0.003
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.885,
+      "mean_point_f1_gain": 0.003
+     }
+    },
+    "fix_misses": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0016
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0031
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0047
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.735,
+       "mean_point_f1_gain": 0.0062
+      },
+      {
+       "k": 5,
+       "share_called_real": 1.0,
+       "mean_point_f1_gain": 0.0078
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.735,
+      "mean_point_f1_gain": 0.0062
+     },
+     "k80": {
+      "k": 5,
+      "share_called_real": 1.0,
+      "mean_point_f1_gain": 0.0078
+     }
+    },
+    "fix_mixed": {
+     "grid": [
+      {
+       "k": 1,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0008
+      },
+      {
+       "k": 2,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0016
+      },
+      {
+       "k": 3,
+       "share_called_real": 0.0,
+       "mean_point_f1_gain": 0.0023
+      },
+      {
+       "k": 4,
+       "share_called_real": 0.825,
+       "mean_point_f1_gain": 0.0031
+      },
+      {
+       "k": 5,
+       "share_called_real": 0.98,
+       "mean_point_f1_gain": 0.0039
+      }
+     ],
+     "k50": {
+      "k": 4,
+      "share_called_real": 0.825,
+      "mean_point_f1_gain": 0.0031
+     },
+     "k80": {
+      "k": 4,
+      "share_called_real": 0.825,
+      "mean_point_f1_gain": 0.0031
+     }
+    }
+   }
+  }
+ }
+}

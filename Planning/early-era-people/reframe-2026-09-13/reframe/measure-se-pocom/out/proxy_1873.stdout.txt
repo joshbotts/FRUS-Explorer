@@ -1,0 +1,67 @@
+S_after|head|all judged 651 right 649 untestable 0 wrong-place 0 wrong-kind 2 strict [0.9969, 0.9889, 0.9992]
+S_after|head|evidence=department-only judged 409 right 409 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9907, 1.0]
+S_after|head|evidence=department-only|label-single judged 409 right 409 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9907, 1.0]
+S_after|head|evidence=not-department-only judged 242 right 240 untestable 0 wrong-place 0 wrong-kind 2 strict [0.9917, 0.9704, 0.9977]
+S_after|head|evidence=not-department-only|label-multi judged 29 right 29 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.883, 1.0]
+S_after|head|evidence=not-department-only|label-single judged 213 right 211 untestable 0 wrong-place 0 wrong-kind 2 strict [0.9906, 0.9664, 0.9974]
+S_after|head|label-kinds=department judged 409 right 409 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9907, 1.0]
+S_after|head|label-kinds=foreign-consul judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 strict [0.0, 0.0, 0.7935]
+S_after|head|label-kinds=foreign-legation judged 3 right 3 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.4385, 1.0]
+S_after|head|label-kinds=foreign-legation|us-mission judged 29 right 29 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.883, 1.0]
+S_after|head|label-kinds=us-consulate judged 16 right 16 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8064, 1.0]
+S_after|head|label-kinds=us-mission judged 193 right 192 untestable 0 wrong-place 0 wrong-kind 1 strict [0.9948, 0.9712, 0.9991]
+S_after|head|label-multi judged 29 right 29 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.883, 1.0]
+S_after|head|label-single judged 622 right 620 untestable 0 wrong-place 0 wrong-kind 2 strict [0.9968, 0.9884, 0.9991]
+S_after|head|side=from judged 264 right 262 untestable 0 wrong-place 0 wrong-kind 2 strict [0.9924, 0.9728, 0.9979]
+S_after|head|side=to judged 387 right 387 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9902, 1.0]
+S_before|head|all judged 40 right 39 untestable 0 wrong-place 0 wrong-kind 1 strict [0.975, 0.8712, 0.9956]
+S_before|head|evidence=department-only judged 23 right 23 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8569, 1.0]
+S_before|head|evidence=department-only|label-single judged 23 right 23 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8569, 1.0]
+S_before|head|evidence=not-department-only judged 17 right 16 untestable 0 wrong-place 0 wrong-kind 1 strict [0.9412, 0.7302, 0.9895]
+S_before|head|evidence=not-department-only|label-single judged 17 right 16 untestable 0 wrong-place 0 wrong-kind 1 strict [0.9412, 0.7302, 0.9895]
+S_before|head|label-kinds=department judged 23 right 23 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8569, 1.0]
+S_before|head|label-kinds=foreign-consul judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 strict [0.0, 0.0, 0.7935]
+S_before|head|label-kinds=us-consulate judged 16 right 16 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8064, 1.0]
+S_before|head|label-single judged 40 right 39 untestable 0 wrong-place 0 wrong-kind 1 strict [0.975, 0.8712, 0.9956]
+S_before|head|side=from judged 17 right 16 untestable 0 wrong-place 0 wrong-kind 1 strict [0.9412, 0.7302, 0.9895]
+S_before|head|side=to judged 23 right 23 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8569, 1.0]
+T_after|head|all judged 736 right 730 untestable 0 wrong-place 4 wrong-kind 2 strict [0.9918, 0.9823, 0.9963]
+T_after|head|evidence=department-only judged 453 right 453 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9916, 1.0]
+T_after|head|evidence=department-only|label-single judged 453 right 453 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9916, 1.0]
+T_after|head|evidence=not-department-only judged 283 right 277 untestable 0 wrong-place 4 wrong-kind 2 strict [0.9788, 0.9545, 0.9902]
+T_after|head|evidence=not-department-only|label-multi judged 29 right 29 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.883, 1.0]
+T_after|head|evidence=not-department-only|label-single judged 254 right 248 untestable 0 wrong-place 4 wrong-kind 2 strict [0.9764, 0.9494, 0.9891]
+T_after|head|label-kinds=department judged 453 right 453 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9916, 1.0]
+T_after|head|label-kinds=foreign-consul judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 strict [0.0, 0.0, 0.7935]
+T_after|head|label-kinds=foreign-legation judged 3 right 3 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.4385, 1.0]
+T_after|head|label-kinds=foreign-legation|us-mission judged 29 right 29 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.883, 1.0]
+T_after|head|label-kinds=us-consulate judged 24 right 21 untestable 0 wrong-place 3 wrong-kind 0 strict [0.875, 0.69, 0.9566]
+T_after|head|label-kinds=us-mission judged 226 right 224 untestable 0 wrong-place 1 wrong-kind 1 strict [0.9912, 0.9683, 0.9976]
+T_after|head|label-multi judged 29 right 29 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.883, 1.0]
+T_after|head|label-single judged 707 right 701 untestable 0 wrong-place 4 wrong-kind 2 strict [0.9915, 0.9816, 0.9961]
+T_after|head|side=from judged 305 right 299 untestable 0 wrong-place 4 wrong-kind 2 strict [0.9803, 0.9578, 0.991]
+T_after|head|side=to judged 431 right 431 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.9912, 1.0]
+T_before|head|all judged 58 right 53 untestable 0 wrong-place 4 wrong-kind 1 strict [0.9138, 0.8136, 0.9626]
+T_before|head|evidence=department-only judged 32 right 32 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8928, 1.0]
+T_before|head|evidence=department-only|label-single judged 32 right 32 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8928, 1.0]
+T_before|head|evidence=not-department-only judged 26 right 21 untestable 0 wrong-place 4 wrong-kind 1 strict [0.8077, 0.6212, 0.9149]
+T_before|head|evidence=not-department-only|label-single judged 26 right 21 untestable 0 wrong-place 4 wrong-kind 1 strict [0.8077, 0.6212, 0.9149]
+T_before|head|label-kinds=department judged 32 right 32 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8928, 1.0]
+T_before|head|label-kinds=foreign-consul judged 1 right 0 untestable 0 wrong-place 0 wrong-kind 1 strict [0.0, 0.0, 0.7935]
+T_before|head|label-kinds=us-consulate judged 24 right 21 untestable 0 wrong-place 3 wrong-kind 0 strict [0.875, 0.69, 0.9566]
+T_before|head|label-kinds=us-mission judged 1 right 0 untestable 0 wrong-place 1 wrong-kind 0 strict [0.0, 0.0, 0.7935]
+T_before|head|label-single judged 58 right 53 untestable 0 wrong-place 4 wrong-kind 1 strict [0.9138, 0.8136, 0.9626]
+T_before|head|side=from judged 26 right 21 untestable 0 wrong-place 4 wrong-kind 1 strict [0.8077, 0.6212, 0.9149]
+T_before|head|side=to judged 32 right 32 untestable 0 wrong-place 0 wrong-kind 0 strict [1.0, 0.8928, 1.0]
+('S_after', 'enclosure/body', 'reach') {'rows': 431, 'linked': 123, 'labeled': 0, 'labeled_single': 0, 'labeled_and_evidenced': 0}
+('S_after', 'head', 'reach') {'rows': 1023, 'linked': 811, 'labeled': 843, 'labeled_single': 788, 'labeled_and_evidenced': 651}
+('S_before', 'enclosure/body', 'reach') {'rows': 431, 'linked': 123, 'labeled': 0, 'labeled_single': 0, 'labeled_and_evidenced': 0}
+('S_before', 'head', 'reach') {'rows': 1023, 'linked': 811, 'labeled': 52, 'labeled_single': 52, 'labeled_and_evidenced': 40}
+('T_after', 'enclosure/body', 'reach') {'rows': 431, 'linked': 123, 'labeled': 0, 'labeled_single': 0, 'labeled_and_evidenced': 0}
+('T_after', 'head', 'reach') {'rows': 1023, 'linked': 811, 'labeled': 937, 'labeled_single': 882, 'labeled_and_evidenced': 736}
+('T_before', 'enclosure/body', 'reach') {'rows': 431, 'linked': 123, 'labeled': 0, 'labeled_single': 0, 'labeled_and_evidenced': 0}
+('T_before', 'head', 'reach') {'rows': 1023, 'linked': 811, 'labeled': 76, 'labeled_single': 76, 'labeled_and_evidenced': 58}
+('documents', 'frus1873p1v1') {'docs': 310, 'kind:topical': 4, 'S_after:shown': 269, 'S_before:shown': 0, 'kind:country': 301, 'kind:no-dateline(kind unread)': 5}
+('documents', 'frus1873p1v2') {'docs': 324, 'kind:country': 255, 'S_after:shown': 179, 'S_before:shown': 50, 'kind:topical': 61, 'kind:no-dateline(kind unread)': 8}
+('evidence classes', 'enclosure/body') {'no-link': 308, 'us-mission': 107, 'department': 11, 'us-consulate': 3, 'us-consulate|us-mission': 2}
+('evidence classes', 'head') {'us-consulate|us-mission': 16, 'department': 494, 'us-mission': 256, 'foreign-legation': 29, 'no-link': 212, 'us-consulate': 16}

@@ -1,0 +1,695 @@
+{
+ "script": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/verify-measure-agreement/v_gold.py",
+ "sample": {
+  "documents": 64,
+  "mentions": 406,
+  "docs_by_band": {
+   "1861-1899": 18,
+   "1900-1929": 15,
+   "1930-1945": 15,
+   "1946-": 16
+  }
+ },
+ "checks": {
+  "span_slice_mismatch": 0,
+  "heads_not_full_pass": []
+ },
+ "arms": {
+  "editor": {
+   "spans_predicted": 88,
+   "strict_hits": 53,
+   "relaxed_hits": 88,
+   "strict_P": 0.6023,
+   "strict_R": 0.1305,
+   "strict_F1": 0.2146,
+   "relaxed_P": 1.0,
+   "relaxed_R": 0.2167,
+   "presence_gkey": {
+    "P": 1.0,
+    "R": 0.2743,
+    "F1": 0.4305,
+    "pred_keys": 79,
+    "true_pred_keys": 79,
+    "false_pred_keys": 0,
+    "gold_keys": 288,
+    "gold_found": 79,
+    "docs": 64
+   },
+   "presence_gkey_reversed_tiebreak": {
+    "P": 1.0,
+    "R": 0.2743,
+    "F1": 0.4305,
+    "pred_keys": 79,
+    "true_pred_keys": 79,
+    "false_pred_keys": 0,
+    "gold_keys": 288,
+    "gold_found": 79,
+    "docs": 64
+   },
+   "presence_census_K2": {
+    "P": 1.0,
+    "R": 0.2696,
+    "F1": 0.4247,
+    "pred_keys": 79,
+    "true_pred_keys": 79,
+    "false_pred_keys": 0,
+    "gold_keys": 293,
+    "gold_found": 79,
+    "docs": 64
+   },
+   "presence_gkey_by_band": {
+    "1861-1899": {
+     "P": 1.0,
+     "R": 0.2628,
+     "F1": 0.4162,
+     "pred_keys": 36,
+     "true_pred_keys": 36,
+     "false_pred_keys": 0,
+     "gold_keys": 137,
+     "gold_found": 36,
+     "docs": 18
+    },
+    "1900-1929": {
+     "P": 1.0,
+     "R": 0.3721,
+     "F1": 0.5424,
+     "pred_keys": 16,
+     "true_pred_keys": 16,
+     "false_pred_keys": 0,
+     "gold_keys": 43,
+     "gold_found": 16,
+     "docs": 15
+    },
+    "1930-1945": {
+     "P": 1.0,
+     "R": 0.3409,
+     "F1": 0.5085,
+     "pred_keys": 15,
+     "true_pred_keys": 15,
+     "false_pred_keys": 0,
+     "gold_keys": 44,
+     "gold_found": 15,
+     "docs": 15
+    },
+    "1946-": {
+     "P": 1.0,
+     "R": 0.1875,
+     "F1": 0.3158,
+     "pred_keys": 12,
+     "true_pred_keys": 12,
+     "false_pred_keys": 0,
+     "gold_keys": 64,
+     "gold_found": 12,
+     "docs": 16
+    }
+   },
+   "false_keys_differ_under_reversed_tiebreak": []
+  },
+  "filtered_control": {
+   "spans_predicted": 316,
+   "strict_hits": 149,
+   "relaxed_hits": 256,
+   "strict_P": 0.4715,
+   "strict_R": 0.367,
+   "strict_F1": 0.4127,
+   "relaxed_P": 0.8101,
+   "relaxed_R": 0.6305,
+   "presence_gkey": {
+    "P": 0.7991,
+    "R": 0.6181,
+    "F1": 0.697,
+    "pred_keys": 214,
+    "true_pred_keys": 171,
+    "false_pred_keys": 43,
+    "gold_keys": 288,
+    "gold_found": 178,
+    "docs": 64
+   },
+   "presence_gkey_reversed_tiebreak": {
+    "P": 0.8037,
+    "R": 0.6215,
+    "F1": 0.701,
+    "pred_keys": 214,
+    "true_pred_keys": 172,
+    "false_pred_keys": 42,
+    "gold_keys": 288,
+    "gold_found": 179,
+    "docs": 64
+   },
+   "presence_census_K2": {
+    "P": 0.8018,
+    "R": 0.6212,
+    "F1": 0.7,
+    "pred_keys": 217,
+    "true_pred_keys": 174,
+    "false_pred_keys": 43,
+    "gold_keys": 293,
+    "gold_found": 182,
+    "docs": 64
+   },
+   "presence_gkey_by_band": {
+    "1861-1899": {
+     "P": 0.8172,
+     "R": 0.5839,
+     "F1": 0.6812,
+     "pred_keys": 93,
+     "true_pred_keys": 76,
+     "false_pred_keys": 17,
+     "gold_keys": 137,
+     "gold_found": 80,
+     "docs": 18
+    },
+    "1900-1929": {
+     "P": 0.963,
+     "R": 0.6047,
+     "F1": 0.7429,
+     "pred_keys": 27,
+     "true_pred_keys": 26,
+     "false_pred_keys": 1,
+     "gold_keys": 43,
+     "gold_found": 26,
+     "docs": 15
+    },
+    "1930-1945": {
+     "P": 0.6977,
+     "R": 0.7273,
+     "F1": 0.7122,
+     "pred_keys": 43,
+     "true_pred_keys": 30,
+     "false_pred_keys": 13,
+     "gold_keys": 44,
+     "gold_found": 32,
+     "docs": 15
+    },
+    "1946-": {
+     "P": 0.7647,
+     "R": 0.625,
+     "F1": 0.6878,
+     "pred_keys": 51,
+     "true_pred_keys": 39,
+     "false_pred_keys": 12,
+     "gold_keys": 64,
+     "gold_found": 40,
+     "docs": 16
+    }
+   },
+   "false_keys_differ_under_reversed_tiebreak": [
+    "frus1872p2v5/d82:jno"
+   ]
+  },
+  "filtered_sweep": {
+   "spans_predicted": 736,
+   "strict_hits": 347,
+   "relaxed_hits": 378,
+   "strict_P": 0.4715,
+   "strict_R": 0.8547,
+   "strict_F1": 0.6077,
+   "relaxed_P": 0.5136,
+   "relaxed_R": 0.931,
+   "presence_gkey": {
+    "P": 0.5284,
+    "R": 0.934,
+    "F1": 0.6749,
+    "pred_keys": 511,
+    "true_pred_keys": 270,
+    "false_pred_keys": 241,
+    "gold_keys": 288,
+    "gold_found": 269,
+    "docs": 64
+   },
+   "presence_gkey_reversed_tiebreak": {
+    "P": 0.5108,
+    "R": 0.934,
+    "F1": 0.6604,
+    "pred_keys": 511,
+    "true_pred_keys": 261,
+    "false_pred_keys": 250,
+    "gold_keys": 288,
+    "gold_found": 269,
+    "docs": 64
+   },
+   "presence_census_K2": {
+    "P": 0.5292,
+    "R": 0.9249,
+    "F1": 0.6732,
+    "pred_keys": 514,
+    "true_pred_keys": 272,
+    "false_pred_keys": 242,
+    "gold_keys": 293,
+    "gold_found": 271,
+    "docs": 64
+   },
+   "presence_gkey_by_band": {
+    "1861-1899": {
+     "P": 0.7045,
+     "R": 0.9051,
+     "F1": 0.7923,
+     "pred_keys": 176,
+     "true_pred_keys": 124,
+     "false_pred_keys": 52,
+     "gold_keys": 137,
+     "gold_found": 124,
+     "docs": 18
+    },
+    "1900-1929": {
+     "P": 0.4516,
+     "R": 0.9767,
+     "F1": 0.6176,
+     "pred_keys": 93,
+     "true_pred_keys": 42,
+     "false_pred_keys": 51,
+     "gold_keys": 43,
+     "gold_found": 42,
+     "docs": 15
+    },
+    "1930-1945": {
+     "P": 0.4074,
+     "R": 0.9773,
+     "F1": 0.5751,
+     "pred_keys": 108,
+     "true_pred_keys": 44,
+     "false_pred_keys": 64,
+     "gold_keys": 44,
+     "gold_found": 43,
+     "docs": 15
+    },
+    "1946-": {
+     "P": 0.4478,
+     "R": 0.9375,
+     "F1": 0.6061,
+     "pred_keys": 134,
+     "true_pred_keys": 60,
+     "false_pred_keys": 74,
+     "gold_keys": 64,
+     "gold_found": 60,
+     "docs": 16
+    }
+   },
+   "false_keys_differ_under_reversed_tiebreak": [
+    "frus1864p2/d358:right hon. lord lyons",
+    "frus1933v05/d520:in cuba ( welles )",
+    "frus1938v05/d91:in argentina ( weddell )",
+    "frus1938v05/d91:weddell",
+    "frus1944v06/d421:wm . r. langdon",
+    "frus1944v06/d706:r. e. mccann",
+    "frus1946v06/d88:primin georgiev",
+    "frus1946v10/d965:for foreign affairs liu chieh.",
+    "frus1947v05/d365:john b. howard",
+    "frus1951v01/d410:eric a. berthoud",
+    "frus1951v01/d410:richard m. bissell, jr."
+   ]
+  },
+  "editor_union_filtered_control": {
+   "spans_predicted": 385,
+   "strict_hits": 192,
+   "relaxed_hits": 314,
+   "strict_P": 0.4987,
+   "strict_R": 0.4729,
+   "strict_F1": 0.4855,
+   "relaxed_P": 0.8156,
+   "relaxed_R": 0.7734,
+   "presence_gkey": {
+    "P": 0.8271,
+    "R": 0.7951,
+    "F1": 0.8108,
+    "pred_keys": 266,
+    "true_pred_keys": 220,
+    "false_pred_keys": 46,
+    "gold_keys": 288,
+    "gold_found": 229,
+    "docs": 64
+   },
+   "presence_gkey_reversed_tiebreak": {
+    "P": 0.8308,
+    "R": 0.7986,
+    "F1": 0.8144,
+    "pred_keys": 266,
+    "true_pred_keys": 221,
+    "false_pred_keys": 45,
+    "gold_keys": 288,
+    "gold_found": 230,
+    "docs": 64
+   },
+   "presence_census_K2": {
+    "P": 0.829,
+    "R": 0.7952,
+    "F1": 0.8118,
+    "pred_keys": 269,
+    "true_pred_keys": 223,
+    "false_pred_keys": 46,
+    "gold_keys": 293,
+    "gold_found": 233,
+    "docs": 64
+   },
+   "presence_gkey_by_band": {
+    "1861-1899": {
+     "P": 0.8448,
+     "R": 0.7664,
+     "F1": 0.8037,
+     "pred_keys": 116,
+     "true_pred_keys": 98,
+     "false_pred_keys": 18,
+     "gold_keys": 137,
+     "gold_found": 105,
+     "docs": 18
+    },
+    "1900-1929": {
+     "P": 0.9487,
+     "R": 0.8605,
+     "F1": 0.9024,
+     "pred_keys": 39,
+     "true_pred_keys": 37,
+     "false_pred_keys": 2,
+     "gold_keys": 43,
+     "gold_found": 37,
+     "docs": 15
+    },
+    "1930-1945": {
+     "P": 0.7451,
+     "R": 0.8864,
+     "F1": 0.8096,
+     "pred_keys": 51,
+     "true_pred_keys": 38,
+     "false_pred_keys": 13,
+     "gold_keys": 44,
+     "gold_found": 39,
+     "docs": 15
+    },
+    "1946-": {
+     "P": 0.7833,
+     "R": 0.75,
+     "F1": 0.7663,
+     "pred_keys": 60,
+     "true_pred_keys": 47,
+     "false_pred_keys": 13,
+     "gold_keys": 64,
+     "gold_found": 48,
+     "docs": 16
+    }
+   },
+   "false_keys_differ_under_reversed_tiebreak": [
+    "frus1866p3/d69:seward mexican",
+    "frus1872p2v5/d82:jno",
+    "frus1905/d447:chargé wilson",
+    "frus1905/d447:wilson",
+    "frus1941v05/d756:henry r. luce",
+    "frus1947v05/d365:john b. howard",
+    "frus1947v05/d365:telegram mr. john b. howard"
+   ],
+   "bootstrap_95": {
+    "P": [
+     0.7609,
+     0.8876
+    ],
+    "R": [
+     0.7354,
+     0.8494
+    ]
+   },
+   "false_keys": [
+    "frus1864p2/d358:anna",
+    "frus1864p2/d358:dee",
+    "frus1865p1/d93:bull",
+    "frus1865p1/d93:fort anderson",
+    "frus1865p1/d93:wilmington",
+    "frus1866p3/d69:seward mexican",
+    "frus1872p2v5/d115:arro",
+    "frus1872p2v5/d115:haro",
+    "frus1872p2v5/d115:rosario strait",
+    "frus1872p2v5/d82:fort langley",
+    "frus1872p2v5/d82:fraser river",
+    "frus1872p2v5/d82:haro",
+    "frus1872p2v5/d82:jno",
+    "frus1872p2v5/d82:rosario",
+    "frus1872p2v5/d82:rosario strait",
+    "frus1872p2v5/d82:rosario straits",
+    "frus1889/d129:samoan",
+    "frus1889/d339:ramazan",
+    "frus1903/d367:rickmers reismühlen rhederei",
+    "frus1905/d447:wilson",
+    "frus1937v01/d382:seville",
+    "frus1937v01/d566:harding",
+    "frus1937v01/d566:hunzedal",
+    "frus1937v01/d566:rudolf",
+    "frus1937v01/d566:wolf",
+    "frus1938v05/d91:puerto caballo",
+    "frus1941v05/d422:dutch timor",
+    "frus1941v05/d422:pacific",
+    "frus1941v05/d454:british malaya",
+    "frus1941v05/d454:medan",
+    "frus1944v06/d93:kunming",
+    "frus1944v06/d93:shensi",
+    "frus1944v06/d93:tungkuan",
+    "frus1946v06/d159:zecho",
+    "frus1946v06/d88:leg cairo",
+    "frus1946v06/d88:mother",
+    "frus1946v10/d337:north kiangsu",
+    "frus1946v10/d337:yellow river",
+    "frus1946v10/d720:fuhsin",
+    "frus1946v10/d720:peipiao",
+    "frus1946v10/d720:takao",
+    "frus1947v05/d365:john b. howard",
+    "frus1947v05/d44:greek govt",
+    "frus1951v01/d183:del",
+    "frus1951v01/d183:delga",
+    "frus1951v01/d183:telegram delga"
+   ]
+  },
+  "agreement_sweep_side": {
+   "spans_predicted": 350,
+   "strict_hits": 254,
+   "relaxed_hits": 300,
+   "strict_P": 0.7257,
+   "strict_R": 0.6256,
+   "strict_F1": 0.672,
+   "relaxed_P": 0.8571,
+   "relaxed_R": 0.7389,
+   "presence_gkey": {
+    "P": 0.898,
+    "R": 0.7674,
+    "F1": 0.8275,
+    "pred_keys": 245,
+    "true_pred_keys": 220,
+    "false_pred_keys": 25,
+    "gold_keys": 288,
+    "gold_found": 221,
+    "docs": 64
+   },
+   "presence_gkey_reversed_tiebreak": {
+    "P": 0.8816,
+    "R": 0.7674,
+    "F1": 0.8205,
+    "pred_keys": 245,
+    "true_pred_keys": 216,
+    "false_pred_keys": 29,
+    "gold_keys": 288,
+    "gold_found": 221,
+    "docs": 64
+   },
+   "presence_census_K2": {
+    "P": 0.8984,
+    "R": 0.7577,
+    "F1": 0.8221,
+    "pred_keys": 246,
+    "true_pred_keys": 221,
+    "false_pred_keys": 25,
+    "gold_keys": 293,
+    "gold_found": 222,
+    "docs": 64
+   },
+   "presence_gkey_by_band": {
+    "1861-1899": {
+     "P": 0.98,
+     "R": 0.7153,
+     "F1": 0.827,
+     "pred_keys": 100,
+     "true_pred_keys": 98,
+     "false_pred_keys": 2,
+     "gold_keys": 137,
+     "gold_found": 98,
+     "docs": 18
+    },
+    "1900-1929": {
+     "P": 0.973,
+     "R": 0.8372,
+     "F1": 0.9,
+     "pred_keys": 37,
+     "true_pred_keys": 36,
+     "false_pred_keys": 1,
+     "gold_keys": 43,
+     "gold_found": 36,
+     "docs": 15
+    },
+    "1930-1945": {
+     "P": 0.7451,
+     "R": 0.8636,
+     "F1": 0.8,
+     "pred_keys": 51,
+     "true_pred_keys": 38,
+     "false_pred_keys": 13,
+     "gold_keys": 44,
+     "gold_found": 38,
+     "docs": 15
+    },
+    "1946-": {
+     "P": 0.8421,
+     "R": 0.7656,
+     "F1": 0.802,
+     "pred_keys": 57,
+     "true_pred_keys": 48,
+     "false_pred_keys": 9,
+     "gold_keys": 64,
+     "gold_found": 49,
+     "docs": 16
+    }
+   },
+   "false_keys_differ_under_reversed_tiebreak": [
+    "frus1905/d447:chargé wilson",
+    "frus1905/d447:wilson",
+    "frus1944v06/d706:r. e. mccann",
+    "frus1946v06/d88:primin georgiev",
+    "frus1947v05/d365:howard",
+    "frus1947v05/d365:john b. howard",
+    "frus1951v01/d410:eric a. berthoud",
+    "frus1951v01/d410:richard m. bissell, jr."
+   ],
+   "bootstrap_95": {
+    "P": [
+     0.8517,
+     0.9421
+    ],
+    "R": [
+     0.7117,
+     0.8197
+    ]
+   },
+   "false_keys": [
+    "frus1865p1/d93:fort anderson",
+    "frus1865p1/d93:wilmington",
+    "frus1905/d447:wilson",
+    "frus1937v01/d382:commanding general seville",
+    "frus1937v01/d382:seville",
+    "frus1937v01/d566:harding",
+    "frus1937v01/d566:hunzedal",
+    "frus1937v01/d566:lic. wolf",
+    "frus1937v01/d566:rudolf/51",
+    "frus1938v05/d91:puerto caballo",
+    "frus1941v05/d422:governors of portuguese and dutch timor",
+    "frus1941v05/d454:british malaya",
+    "frus1941v05/d454:medan",
+    "frus1944v06/d93:kunming",
+    "frus1944v06/d93:shensi",
+    "frus1944v06/d93:tungkuan",
+    "frus1946v06/d159:zecho",
+    "frus1946v06/d88:mother",
+    "frus1946v10/d337:north kiangsu",
+    "frus1946v10/d337:yellow river",
+    "frus1946v10/d720:fuhsin",
+    "frus1946v10/d720:peipiao",
+    "frus1946v10/d720:takao refinery",
+    "frus1947v05/d365:howard",
+    "frus1951v01/d183:delga"
+   ]
+  },
+  "agreement_control_side": {
+   "spans_predicted": 336,
+   "strict_hits": 179,
+   "relaxed_hits": 297,
+   "strict_P": 0.5327,
+   "strict_R": 0.4409,
+   "strict_F1": 0.4825,
+   "relaxed_P": 0.8839,
+   "relaxed_R": 0.7315,
+   "presence_gkey": {
+    "P": 0.8828,
+    "R": 0.7604,
+    "F1": 0.8171,
+    "pred_keys": 239,
+    "true_pred_keys": 211,
+    "false_pred_keys": 28,
+    "gold_keys": 288,
+    "gold_found": 219,
+    "docs": 64
+   },
+   "presence_gkey_reversed_tiebreak": {
+    "P": 0.887,
+    "R": 0.7639,
+    "F1": 0.8209,
+    "pred_keys": 239,
+    "true_pred_keys": 212,
+    "false_pred_keys": 27,
+    "gold_keys": 288,
+    "gold_found": 220,
+    "docs": 64
+   },
+   "presence_census_K2": {
+    "P": 0.8833,
+    "R": 0.7509,
+    "F1": 0.8117,
+    "pred_keys": 240,
+    "true_pred_keys": 212,
+    "false_pred_keys": 28,
+    "gold_keys": 293,
+    "gold_found": 220,
+    "docs": 64
+   },
+   "presence_gkey_by_band": {
+    "1861-1899": {
+     "P": 0.9583,
+     "R": 0.7153,
+     "F1": 0.8192,
+     "pred_keys": 96,
+     "true_pred_keys": 92,
+     "false_pred_keys": 4,
+     "gold_keys": 137,
+     "gold_found": 98,
+     "docs": 18
+    },
+    "1900-1929": {
+     "P": 0.973,
+     "R": 0.8372,
+     "F1": 0.9,
+     "pred_keys": 37,
+     "true_pred_keys": 36,
+     "false_pred_keys": 1,
+     "gold_keys": 43,
+     "gold_found": 36,
+     "docs": 15
+    },
+    "1930-1945": {
+     "P": 0.74,
+     "R": 0.8636,
+     "F1": 0.7971,
+     "pred_keys": 50,
+     "true_pred_keys": 37,
+     "false_pred_keys": 13,
+     "gold_keys": 44,
+     "gold_found": 38,
+     "docs": 15
+    },
+    "1946-": {
+     "P": 0.8214,
+     "R": 0.7344,
+     "F1": 0.7755,
+     "pred_keys": 56,
+     "true_pred_keys": 46,
+     "false_pred_keys": 10,
+     "gold_keys": 64,
+     "gold_found": 47,
+     "docs": 16
+    }
+   },
+   "false_keys_differ_under_reversed_tiebreak": [
+    "frus1866p3/d69:seward mexican",
+    "frus1872p2v5/d82:jno",
+    "frus1872p2v5/d82:parke",
+    "frus1905/d447:chargé wilson",
+    "frus1905/d447:wilson",
+    "frus1941v05/d756:henry r. luce",
+    "frus1941v05/d756:luce",
+    "frus1947v05/d365:john b. howard",
+    "frus1947v05/d365:telegram mr. john b. howard"
+   ]
+  }
+ }
+}

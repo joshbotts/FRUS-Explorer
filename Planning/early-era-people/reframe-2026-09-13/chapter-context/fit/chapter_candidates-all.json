@@ -1,0 +1,2106 @@
+{
+ "inputs": {
+  "harness": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/chapter-context/fit/../harness/frus-pre1906-classified.jsonl",
+  "docs_1861_1899_in_gate": 32473,
+  "volumes": 70,
+  "geo_to_territory_hand_map": {
+   "great britain": [
+    "united-kingdom"
+   ],
+   "spain": [
+    "spain"
+   ],
+   "china": [
+    "china"
+   ],
+   "mexico": [
+    "mexico"
+   ],
+   "france": [
+    "france"
+   ],
+   "turkey": [
+    "turkey"
+   ],
+   "russia": [
+    "russia"
+   ],
+   "germany": [
+    "germany"
+   ],
+   "prussia": [
+    "germany"
+   ],
+   "japan": [
+    "japan"
+   ],
+   "haiti": [
+    "haiti"
+   ],
+   "austria": [
+    "austria"
+   ],
+   "colombia": [
+    "colombia"
+   ],
+   "venezuela": [
+    "venezuela"
+   ],
+   "brazil": [
+    "brazil"
+   ],
+   "central america": [
+    "guatemala",
+    "costa-rica",
+    "el-salvador",
+    "honduras",
+    "nicaragua"
+   ],
+   "peru": [
+    "peru"
+   ],
+   "belgium": [
+    "belgium"
+   ],
+   "italy": [
+    "italy"
+   ],
+   "switzerland": [
+    "switzerland"
+   ],
+   "netherlands": [
+    "netherlands"
+   ],
+   "denmark": [
+    "denmark"
+   ],
+   "portugal": [
+    "portugal"
+   ],
+   "chile": [
+    "chile"
+   ],
+   "sweden": [
+    "sweden"
+   ],
+   "hawaii": [
+    "hawaii"
+   ],
+   "persia": [
+    "iran"
+   ],
+   "ecuador": [
+    "ecuador"
+   ],
+   "dominican republic": [
+    "dominican-republic"
+   ],
+   "paraguay": [
+    "paraguay"
+   ],
+   "korea": [
+    "joseon-dynasty-1910"
+   ],
+   "greece": [
+    "greece"
+   ],
+   "bolivia": [
+    "bolivia"
+   ],
+   "argentina": [
+    "argentina"
+   ],
+   "liberia": [
+    "liberia"
+   ],
+   "siam": [
+    "thailand"
+   ],
+   "uruguay": [
+    "uruguay"
+   ],
+   "rumania": [
+    "romania"
+   ],
+   "serbia": [
+    "serbia"
+   ],
+   "costa rica": [
+    "costa-rica"
+   ],
+   "nicaragua": [
+    "nicaragua"
+   ],
+   "el salvador": [
+    "el-salvador"
+   ],
+   "honduras": [
+    "honduras"
+   ],
+   "egypt": [
+    "egypt"
+   ]
+  },
+  "grain": "all"
+ },
+ "by_window": {
+  "pm0": {
+   "marked_volumes": 68,
+   "fromto_rows_in_1861_1899_docs": 83628,
+   "tally": {
+    "consular|from": {
+     "rows": 708,
+     "chapter:no-territory": 707,
+     "surname:one": 115,
+     "surname:nobody": 211,
+     "surname:unknown": 332,
+     "surname:several": 50,
+     "chapter:chiefs1-disagree": 1
+    },
+    "consular|to": {
+     "rows": 700,
+     "chapter:no-territory": 699,
+     "surname:several": 191,
+     "surname:unknown": 102,
+     "surname:one": 363,
+     "surname:nobody": 43,
+     "surname:no-surname": 1,
+     "chapter:chiefs1-disagree": 1
+    },
+    "despatch-high|from": {
+     "slug:same-as-surname-rule": 11668,
+     "rows": 18850,
+     "chapter:chiefs2+-agree-unique": 2794,
+     "surname:one": 12133,
+     "chapter:chiefs2+-disagree": 1546,
+     "surname:nobody": 2176,
+     "slug:several-resolved-to-one": 347,
+     "surname:several": 419,
+     "surname:unknown": 4032,
+     "chapter:chiefs2-no-surname": 25,
+     "surname:no-surname": 90,
+     "chapter:chiefs1-agree-unique": 9221,
+     "chapter:chiefs1-disagree": 5174,
+     "chapter:chiefs1-no-surname": 65,
+     "chapter:no-chief-in-office": 25
+    },
+    "despatch-high|to": {
+     "rows": 18557,
+     "chapter:chiefs2+-disagree": 3674,
+     "surname:several": 3312,
+     "surname:nobody": 1076,
+     "slug:same-as-surname-rule": 2802,
+     "chapter:chiefs2+-agree-unique": 660,
+     "surname:one": 11098,
+     "surname:unknown": 3015,
+     "chapter:chiefs2-no-surname": 8,
+     "surname:no-surname": 56,
+     "chapter:chiefs1-disagree": 11916,
+     "chapter:chiefs1-agree-unique": 2226,
+     "chapter:chiefs1-no-surname": 48,
+     "slug:several-resolved-to-one": 84,
+     "chapter:no-chief-in-office": 25
+    },
+    "despatch-medium|from": {
+     "slug:same-as-surname-rule": 892,
+     "rows": 2298,
+     "chapter:chiefs2+-agree-unique": 147,
+     "surname:one": 1041,
+     "chapter:chiefs2+-disagree": 275,
+     "surname:unknown": 872,
+     "chapter:chiefs1-disagree": 1088,
+     "surname:nobody": 345,
+     "chapter:chiefs1-agree-unique": 766,
+     "slug:several-resolved-to-one": 21,
+     "surname:several": 32,
+     "chapter:chiefs1-no-surname": 8,
+     "surname:no-surname": 8,
+     "chapter:no-chief-in-office": 14
+    },
+    "despatch-medium|to": {
+     "rows": 2216,
+     "chapter:chiefs2+-disagree": 384,
+     "surname:several": 537,
+     "surname:unknown": 395,
+     "slug:same-as-surname-rule": 166,
+     "chapter:chiefs2+-agree-unique": 41,
+     "surname:one": 1141,
+     "chapter:chiefs1-disagree": 1639,
+     "chapter:chiefs1-agree-unique": 133,
+     "surname:nobody": 138,
+     "chapter:chiefs1-no-surname": 5,
+     "surname:no-surname": 5,
+     "slug:several-resolved-to-one": 8,
+     "chapter:no-chief-in-office": 14
+    },
+    "instr+notesTo|from": {
+     "rows": 9714,
+     "chapter:chiefs2+-disagree": 2487,
+     "surname:several": 2600,
+     "surname:unknown": 836,
+     "surname:nobody": 879,
+     "slug:same-as-surname-rule": 40,
+     "chapter:chiefs2+-agree-unique": 13,
+     "surname:one": 5390,
+     "chapter:chiefs1-disagree": 7148,
+     "chapter:chiefs1-agree-unique": 29,
+     "chapter:chiefs1-no-surname": 7,
+     "surname:no-surname": 9,
+     "slug:several-resolved-to-one": 2,
+     "chapter:chiefs2-no-surname": 2,
+     "chapter:no-chief-in-office": 28
+    },
+    "instr+notesTo|from|secstate": {
+     "sec-agree+asst-same-surname": 2652,
+     "sec-disagree": 1839,
+     "sec-disagree+asst-same-surname": 1273,
+     "sec-agree": 3941
+    },
+    "instr+notesTo|to": {
+     "slug:same-as-surname-rule": 4747,
+     "rows": 9592,
+     "chapter:chiefs2+-agree-unique": 1126,
+     "surname:one": 5807,
+     "chapter:chiefs2+-disagree": 1346,
+     "surname:unknown": 2079,
+     "surname:several": 360,
+     "surname:nobody": 1325,
+     "slug:several-resolved-to-one": 166,
+     "chapter:chiefs2-no-surname": 6,
+     "surname:no-surname": 21,
+     "chapter:chiefs1-agree-unique": 3787,
+     "chapter:chiefs1-disagree": 3284,
+     "chapter:chiefs1-no-surname": 15,
+     "chapter:no-chief-in-office": 28
+    },
+    "instructions|from": {
+     "rows": 250,
+     "chapter:chiefs2+-disagree": 30,
+     "surname:several": 164,
+     "chapter:chiefs1-disagree": 213,
+     "slug:same-as-surname-rule": 7,
+     "chapter:chiefs1-agree-unique": 7,
+     "surname:one": 58,
+     "surname:unknown": 15,
+     "surname:nobody": 13
+    },
+    "instructions|from|secstate": {
+     "sec-agree+asst-same-surname": 164,
+     "sec-disagree": 36,
+     "sec-disagree+asst-same-surname": 7,
+     "sec-agree": 43
+    },
+    "instructions|to": {
+     "slug:same-as-surname-rule": 198,
+     "rows": 244,
+     "chapter:chiefs2+-agree-unique": 23,
+     "surname:one": 210,
+     "chapter:chiefs1-agree-unique": 175,
+     "chapter:chiefs1-disagree": 42,
+     "surname:unknown": 18,
+     "surname:several": 10,
+     "surname:nobody": 6,
+     "chapter:chiefs2+-disagree": 4
+    },
+    "notesFrom|from": {
+     "rows": 1641,
+     "chapter:chiefs2+-disagree": 430,
+     "surname:unknown": 1284,
+     "surname:nobody": 331,
+     "surname:several": 4,
+     "chapter:chiefs1-disagree": 1192,
+     "surname:one": 8,
+     "chapter:no-chief-in-office": 5,
+     "chapter:chiefs1-no-surname": 11,
+     "surname:no-surname": 14,
+     "chapter:chiefs2-no-surname": 3
+    },
+    "notesFrom|to": {
+     "rows": 1622,
+     "chapter:chiefs2+-disagree": 423,
+     "surname:several": 182,
+     "surname:nobody": 63,
+     "surname:unknown": 112,
+     "chapter:chiefs1-disagree": 1182,
+     "surname:one": 1264,
+     "slug:same-as-surname-rule": 11,
+     "chapter:chiefs1-agree-unique": 11,
+     "chapter:no-chief-in-office": 5,
+     "chapter:chiefs2-no-surname": 1,
+     "surname:no-surname": 1
+    },
+    "notesTo|from": {
+     "rows": 326,
+     "chapter:chiefs2+-disagree": 78,
+     "surname:several": 104,
+     "chapter:chiefs1-disagree": 248,
+     "surname:nobody": 17,
+     "surname:unknown": 22,
+     "surname:one": 183
+    },
+    "notesTo|from|secstate": {
+     "sec-agree+asst-same-surname": 107,
+     "sec-disagree": 39,
+     "sec-agree": 132,
+     "sec-disagree+asst-same-surname": 48
+    },
+    "notesTo|to": {
+     "slug:same-as-surname-rule": 194,
+     "rows": 324,
+     "chapter:chiefs2+-agree-unique": 45,
+     "surname:one": 210,
+     "chapter:chiefs2+-disagree": 32,
+     "surname:unknown": 75,
+     "chapter:chiefs1-agree-unique": 151,
+     "chapter:chiefs1-disagree": 87,
+     "surname:several": 6,
+     "surname:nobody": 24,
+     "slug:several-resolved-to-one": 2,
+     "chapter:chiefs1-no-surname": 9,
+     "surname:no-surname": 9
+    },
+    "nothing|from": {
+     "rows": 8334,
+     "chapter:nothing-shown": 8334,
+     "surname:one": 2977,
+     "surname:several": 1202,
+     "surname:unknown": 2537,
+     "surname:nobody": 1545,
+     "surname:no-surname": 73
+    },
+    "nothing|to": {
+     "rows": 8069,
+     "chapter:nothing-shown": 8069,
+     "surname:several": 1610,
+     "surname:unknown": 2011,
+     "surname:no-surname": 37,
+     "surname:one": 3556,
+     "surname:nobody": 855
+    },
+    "other|from": {
+     "rows": 91,
+     "chapter:no-territory": 91,
+     "surname:several": 6,
+     "surname:unknown": 16,
+     "surname:nobody": 35,
+     "surname:one": 33,
+     "surname:no-surname": 1
+    },
+    "other|to": {
+     "rows": 92,
+     "chapter:no-territory": 92,
+     "surname:unknown": 35,
+     "surname:several": 6,
+     "surname:nobody": 19,
+     "surname:one": 31,
+     "surname:no-surname": 1
+    }
+   },
+   "cross": {
+    "consular|from": {
+     "no-territory x unknown": 331,
+     "no-territory x nobody": 211,
+     "no-territory x one": 115,
+     "no-territory x several": 50,
+     "chiefs1-disagree x unknown": 1
+    },
+    "consular|to": {
+     "no-territory x one": 362,
+     "no-territory x several": 191,
+     "no-territory x unknown": 102,
+     "no-territory x nobody": 43,
+     "no-territory x no-surname": 1,
+     "chiefs1-disagree x one": 1
+    },
+    "despatch-high|from": {
+     "chiefs1-agree-unique x one": 9053,
+     "chiefs1-disagree x unknown": 3102,
+     "chiefs2+-agree-unique x one": 2615,
+     "chiefs1-disagree x nobody": 1674,
+     "chiefs2+-disagree x unknown": 919,
+     "chiefs2+-disagree x nobody": 488,
+     "chiefs1-disagree x one": 337,
+     "chiefs2+-agree-unique x several": 179,
+     "chiefs1-agree-unique x several": 168,
+     "chiefs2+-disagree x one": 128,
+     "chiefs1-no-surname x no-surname": 65,
+     "chiefs1-disagree x several": 61,
+     "chiefs2-no-surname x no-surname": 25,
+     "no-chief-in-office x nobody": 14,
+     "chiefs2+-disagree x several": 11,
+     "no-chief-in-office x unknown": 11
+    },
+    "despatch-high|to": {
+     "chiefs1-disagree x one": 6293,
+     "chiefs1-disagree x several": 2490,
+     "chiefs1-disagree x unknown": 2267,
+     "chiefs1-agree-unique x one": 2172,
+     "chiefs2+-disagree x one": 1991,
+     "chiefs1-disagree x nobody": 866,
+     "chiefs2+-disagree x several": 738,
+     "chiefs2+-disagree x unknown": 736,
+     "chiefs2+-agree-unique x one": 630,
+     "chiefs2+-disagree x nobody": 209,
+     "chiefs1-agree-unique x several": 54,
+     "chiefs1-no-surname x no-surname": 48,
+     "chiefs2+-agree-unique x several": 30,
+     "no-chief-in-office x one": 12,
+     "no-chief-in-office x unknown": 12,
+     "chiefs2-no-surname x no-surname": 8,
+     "no-chief-in-office x nobody": 1
+    },
+    "despatch-medium|from": {
+     "chiefs1-agree-unique x one": 765,
+     "chiefs1-disagree x unknown": 690,
+     "chiefs1-disagree x nobody": 273,
+     "chiefs2+-disagree x unknown": 176,
+     "chiefs2+-agree-unique x one": 127,
+     "chiefs1-disagree x one": 115,
+     "chiefs2+-disagree x nobody": 65,
+     "chiefs2+-disagree x one": 33,
+     "chiefs2+-agree-unique x several": 20,
+     "chiefs1-disagree x several": 10,
+     "chiefs1-no-surname x no-surname": 8,
+     "no-chief-in-office x nobody": 7,
+     "no-chief-in-office x unknown": 6,
+     "chiefs2+-disagree x several": 1,
+     "chiefs1-agree-unique x several": 1,
+     "no-chief-in-office x one": 1
+    },
+    "despatch-medium|to": {
+     "chiefs1-disagree x one": 787,
+     "chiefs1-disagree x several": 413,
+     "chiefs1-disagree x unknown": 320,
+     "chiefs2+-disagree x one": 179,
+     "chiefs1-agree-unique x one": 128,
+     "chiefs1-disagree x nobody": 119,
+     "chiefs2+-disagree x several": 116,
+     "chiefs2+-disagree x unknown": 72,
+     "chiefs2+-agree-unique x one": 38,
+     "chiefs2+-disagree x nobody": 17,
+     "no-chief-in-office x one": 9,
+     "chiefs1-no-surname x no-surname": 5,
+     "chiefs1-agree-unique x several": 5,
+     "chiefs2+-agree-unique x several": 3,
+     "no-chief-in-office x unknown": 3,
+     "no-chief-in-office x nobody": 2
+    },
+    "instr+notesTo|from": {
+     "chiefs1-disagree x one": 3903,
+     "chiefs1-disagree x several": 2001,
+     "chiefs2+-disagree x one": 1420,
+     "chiefs1-disagree x nobody": 664,
+     "chiefs2+-disagree x several": 597,
+     "chiefs1-disagree x unknown": 580,
+     "chiefs2+-disagree x unknown": 256,
+     "chiefs2+-disagree x nobody": 214,
+     "chiefs1-agree-unique x one": 27,
+     "no-chief-in-office x one": 27,
+     "chiefs2+-agree-unique x one": 13,
+     "chiefs1-no-surname x no-surname": 7,
+     "chiefs1-agree-unique x several": 2,
+     "chiefs2-no-surname x no-surname": 2,
+     "no-chief-in-office x nobody": 1
+    },
+    "instr+notesTo|to": {
+     "chiefs1-agree-unique x one": 3692,
+     "chiefs1-disagree x unknown": 1511,
+     "chiefs2+-agree-unique x one": 1055,
+     "chiefs1-disagree x nobody": 985,
+     "chiefs1-disagree x one": 647,
+     "chiefs2+-disagree x unknown": 558,
+     "chiefs2+-disagree x one": 412,
+     "chiefs2+-disagree x nobody": 323,
+     "chiefs1-disagree x several": 141,
+     "chiefs1-agree-unique x several": 95,
+     "chiefs2+-agree-unique x several": 71,
+     "chiefs2+-disagree x several": 53,
+     "no-chief-in-office x nobody": 17,
+     "chiefs1-no-surname x no-surname": 15,
+     "no-chief-in-office x unknown": 10,
+     "chiefs2-no-surname x no-surname": 6,
+     "no-chief-in-office x one": 1
+    },
+    "instructions|from": {
+     "chiefs1-disagree x several": 147,
+     "chiefs1-disagree x one": 44,
+     "chiefs2+-disagree x several": 17,
+     "chiefs1-disagree x unknown": 12,
+     "chiefs1-disagree x nobody": 10,
+     "chiefs1-agree-unique x one": 7,
+     "chiefs2+-disagree x one": 7,
+     "chiefs2+-disagree x unknown": 3,
+     "chiefs2+-disagree x nobody": 3
+    },
+    "instructions|to": {
+     "chiefs1-agree-unique x one": 175,
+     "chiefs2+-agree-unique x one": 23,
+     "chiefs1-disagree x unknown": 16,
+     "chiefs1-disagree x one": 12,
+     "chiefs1-disagree x several": 9,
+     "chiefs1-disagree x nobody": 5,
+     "chiefs2+-disagree x unknown": 2,
+     "chiefs2+-disagree x several": 1,
+     "chiefs2+-disagree x nobody": 1
+    },
+    "notesFrom|from": {
+     "chiefs1-disagree x unknown": 966,
+     "chiefs2+-disagree x unknown": 313,
+     "chiefs1-disagree x nobody": 216,
+     "chiefs2+-disagree x nobody": 115,
+     "chiefs1-no-surname x no-surname": 11,
+     "chiefs1-disagree x one": 7,
+     "no-chief-in-office x unknown": 5,
+     "chiefs1-disagree x several": 3,
+     "chiefs2-no-surname x no-surname": 3,
+     "chiefs2+-disagree x several": 1,
+     "chiefs2+-disagree x one": 1
+    },
+    "notesFrom|to": {
+     "chiefs1-disagree x one": 937,
+     "chiefs2+-disagree x one": 311,
+     "chiefs1-disagree x several": 109,
+     "chiefs1-disagree x unknown": 90,
+     "chiefs2+-disagree x several": 73,
+     "chiefs1-disagree x nobody": 46,
+     "chiefs2+-disagree x unknown": 22,
+     "chiefs2+-disagree x nobody": 17,
+     "chiefs1-agree-unique x one": 11,
+     "no-chief-in-office x one": 5,
+     "chiefs2-no-surname x no-surname": 1
+    },
+    "notesTo|from": {
+     "chiefs1-disagree x one": 149,
+     "chiefs1-disagree x several": 68,
+     "chiefs2+-disagree x several": 36,
+     "chiefs2+-disagree x one": 34,
+     "chiefs1-disagree x unknown": 17,
+     "chiefs1-disagree x nobody": 14,
+     "chiefs2+-disagree x unknown": 5,
+     "chiefs2+-disagree x nobody": 3
+    },
+    "notesTo|to": {
+     "chiefs1-agree-unique x one": 150,
+     "chiefs1-disagree x unknown": 55,
+     "chiefs2+-agree-unique x one": 44,
+     "chiefs2+-disagree x unknown": 20,
+     "chiefs1-disagree x nobody": 15,
+     "chiefs1-disagree x one": 13,
+     "chiefs2+-disagree x nobody": 9,
+     "chiefs1-no-surname x no-surname": 9,
+     "chiefs1-disagree x several": 4,
+     "chiefs2+-disagree x one": 3,
+     "chiefs2+-agree-unique x several": 1,
+     "chiefs1-agree-unique x several": 1
+    },
+    "nothing|from": {
+     "nothing-shown x one": 2977,
+     "nothing-shown x unknown": 2537,
+     "nothing-shown x nobody": 1545,
+     "nothing-shown x several": 1202,
+     "nothing-shown x no-surname": 73
+    },
+    "nothing|to": {
+     "nothing-shown x one": 3556,
+     "nothing-shown x unknown": 2011,
+     "nothing-shown x several": 1610,
+     "nothing-shown x nobody": 855,
+     "nothing-shown x no-surname": 37
+    },
+    "other|from": {
+     "no-territory x nobody": 35,
+     "no-territory x one": 33,
+     "no-territory x unknown": 16,
+     "no-territory x several": 6,
+     "no-territory x no-surname": 1
+    },
+    "other|to": {
+     "no-territory x unknown": 35,
+     "no-territory x one": 31,
+     "no-territory x nobody": 19,
+     "no-territory x several": 6,
+     "no-territory x no-surname": 1
+    }
+   }
+  },
+  "pm1": {
+   "marked_volumes": 68,
+   "fromto_rows_in_1861_1899_docs": 83628,
+   "tally": {
+    "consular|from": {
+     "rows": 708,
+     "chapter:no-territory": 707,
+     "surname:one": 120,
+     "surname:nobody": 201,
+     "surname:unknown": 332,
+     "surname:several": 55,
+     "chapter:chiefs2+-disagree": 1
+    },
+    "consular|to": {
+     "rows": 700,
+     "chapter:no-territory": 699,
+     "surname:several": 199,
+     "surname:unknown": 102,
+     "surname:one": 367,
+     "surname:nobody": 31,
+     "surname:no-surname": 1,
+     "chapter:chiefs2+-disagree": 1
+    },
+    "despatch-high|from": {
+     "slug:same-as-surname-rule": 11330,
+     "rows": 18850,
+     "chapter:chiefs2+-agree-unique": 7552,
+     "surname:one": 11839,
+     "chapter:chiefs2+-disagree": 4702,
+     "surname:nobody": 2096,
+     "slug:several-resolved-to-one": 702,
+     "surname:several": 793,
+     "surname:unknown": 4032,
+     "chapter:chiefs2-no-surname": 78,
+     "surname:no-surname": 90,
+     "chapter:chiefs1-agree-unique": 4480,
+     "chapter:chiefs1-disagree": 2017,
+     "chapter:chiefs2+-agree-multi": 9,
+     "chapter:chiefs1-no-surname": 12
+    },
+    "despatch-high|to": {
+     "rows": 18557,
+     "chapter:chiefs2+-disagree": 10326,
+     "surname:several": 3620,
+     "surname:nobody": 952,
+     "slug:same-as-surname-rule": 2717,
+     "chapter:chiefs2+-agree-unique": 1817,
+     "surname:one": 10914,
+     "surname:unknown": 3015,
+     "chapter:chiefs2-no-surname": 46,
+     "surname:no-surname": 56,
+     "chapter:chiefs1-disagree": 5275,
+     "chapter:chiefs1-agree-unique": 1082,
+     "chapter:chiefs2+-agree-multi": 1,
+     "chapter:chiefs1-no-surname": 10,
+     "slug:several-resolved-to-one": 182
+    },
+    "despatch-medium|from": {
+     "slug:same-as-surname-rule": 870,
+     "rows": 2298,
+     "chapter:chiefs2+-agree-unique": 595,
+     "surname:one": 996,
+     "chapter:chiefs2+-disagree": 810,
+     "surname:unknown": 872,
+     "slug:several-resolved-to-one": 76,
+     "surname:several": 87,
+     "surname:nobody": 335,
+     "chapter:chiefs1-disagree": 520,
+     "chapter:chiefs1-agree-unique": 351,
+     "chapter:chiefs1-no-surname": 4,
+     "surname:no-surname": 8,
+     "chapter:no-chief-in-office": 14,
+     "chapter:chiefs2-no-surname": 4
+    },
+    "despatch-medium|to": {
+     "rows": 2216,
+     "chapter:chiefs2+-disagree": 1271,
+     "surname:several": 577,
+     "surname:unknown": 395,
+     "slug:same-as-surname-rule": 169,
+     "chapter:chiefs2+-agree-unique": 111,
+     "surname:one": 1116,
+     "chapter:chiefs1-disagree": 739,
+     "chapter:chiefs1-agree-unique": 76,
+     "surname:nobody": 123,
+     "chapter:chiefs1-no-surname": 3,
+     "surname:no-surname": 5,
+     "slug:several-resolved-to-one": 18,
+     "chapter:no-chief-in-office": 14,
+     "chapter:chiefs2-no-surname": 2
+    },
+    "instr+notesTo|from": {
+     "rows": 9714,
+     "chapter:chiefs2+-disagree": 6825,
+     "surname:several": 2701,
+     "surname:unknown": 836,
+     "surname:nobody": 694,
+     "slug:same-as-surname-rule": 70,
+     "chapter:chiefs2+-agree-unique": 64,
+     "surname:one": 5474,
+     "chapter:chiefs1-disagree": 2781,
+     "chapter:chiefs1-agree-unique": 11,
+     "chapter:chiefs1-no-surname": 7,
+     "surname:no-surname": 9,
+     "slug:several-resolved-to-one": 5,
+     "chapter:chiefs2-no-surname": 2,
+     "chapter:no-chief-in-office": 24
+    },
+    "instr+notesTo|from|secstate": {
+     "sec-agree+asst-same-surname": 2678,
+     "sec-disagree": 1701,
+     "sec-disagree+asst-same-surname": 1379,
+     "sec-agree": 3947
+    },
+    "instr+notesTo|to": {
+     "slug:same-as-surname-rule": 4627,
+     "rows": 9592,
+     "chapter:chiefs2+-agree-unique": 3236,
+     "surname:one": 5690,
+     "chapter:chiefs2+-disagree": 3572,
+     "surname:unknown": 2079,
+     "surname:several": 544,
+     "surname:nobody": 1258,
+     "slug:several-resolved-to-one": 314,
+     "chapter:chiefs2-no-surname": 21,
+     "surname:no-surname": 21,
+     "chapter:chiefs1-agree-unique": 1705,
+     "chapter:chiefs1-disagree": 1027,
+     "chapter:chiefs2+-agree-multi": 7,
+     "chapter:no-chief-in-office": 24
+    },
+    "instructions|from": {
+     "rows": 250,
+     "chapter:chiefs2+-disagree": 99,
+     "surname:several": 165,
+     "chapter:chiefs1-disagree": 143,
+     "slug:same-as-surname-rule": 8,
+     "chapter:chiefs1-agree-unique": 5,
+     "surname:one": 63,
+     "surname:unknown": 15,
+     "surname:nobody": 7,
+     "chapter:chiefs2+-agree-unique": 3
+    },
+    "instructions|from|secstate": {
+     "sec-agree+asst-same-surname": 164,
+     "sec-disagree": 30,
+     "sec-disagree+asst-same-surname": 13,
+     "sec-agree": 43
+    },
+    "instructions|to": {
+     "slug:same-as-surname-rule": 198,
+     "rows": 244,
+     "chapter:chiefs2+-agree-unique": 80,
+     "surname:one": 213,
+     "chapter:chiefs2+-disagree": 17,
+     "surname:unknown": 18,
+     "chapter:chiefs1-agree-unique": 118,
+     "chapter:chiefs1-disagree": 29,
+     "surname:several": 11,
+     "surname:nobody": 2
+    },
+    "notesFrom|from": {
+     "rows": 1641,
+     "chapter:chiefs2+-disagree": 1272,
+     "surname:unknown": 1284,
+     "surname:nobody": 329,
+     "surname:several": 4,
+     "chapter:chiefs1-disagree": 350,
+     "surname:one": 10,
+     "chapter:no-chief-in-office": 5,
+     "chapter:chiefs2-no-surname": 14,
+     "surname:no-surname": 14
+    },
+    "notesFrom|to": {
+     "rows": 1622,
+     "chapter:chiefs2+-disagree": 1248,
+     "surname:several": 189,
+     "surname:nobody": 49,
+     "surname:unknown": 112,
+     "chapter:chiefs1-disagree": 346,
+     "surname:one": 1271,
+     "slug:same-as-surname-rule": 22,
+     "chapter:chiefs2+-agree-unique": 20,
+     "chapter:no-chief-in-office": 5,
+     "chapter:chiefs1-agree-unique": 2,
+     "chapter:chiefs2-no-surname": 1,
+     "surname:no-surname": 1
+    },
+    "notesTo|from": {
+     "rows": 326,
+     "chapter:chiefs2+-disagree": 273,
+     "surname:several": 107,
+     "chapter:chiefs1-disagree": 53,
+     "surname:one": 186,
+     "surname:unknown": 22,
+     "surname:nobody": 11
+    },
+    "notesTo|from|secstate": {
+     "sec-agree+asst-same-surname": 107,
+     "sec-disagree+asst-same-surname": 54,
+     "sec-disagree": 33,
+     "sec-agree": 132
+    },
+    "notesTo|to": {
+     "slug:same-as-surname-rule": 187,
+     "rows": 324,
+     "chapter:chiefs2+-agree-unique": 166,
+     "surname:one": 203,
+     "chapter:chiefs2+-disagree": 96,
+     "surname:unknown": 75,
+     "chapter:chiefs1-agree-unique": 30,
+     "chapter:chiefs1-disagree": 23,
+     "slug:several-resolved-to-one": 9,
+     "surname:several": 15,
+     "surname:nobody": 22,
+     "chapter:chiefs2-no-surname": 9,
+     "surname:no-surname": 9
+    },
+    "nothing|from": {
+     "rows": 8334,
+     "chapter:nothing-shown": 8334,
+     "surname:one": 3032,
+     "surname:several": 1231,
+     "surname:unknown": 2537,
+     "surname:nobody": 1461,
+     "surname:no-surname": 73
+    },
+    "nothing|to": {
+     "rows": 8069,
+     "chapter:nothing-shown": 8069,
+     "surname:several": 1636,
+     "surname:unknown": 2011,
+     "surname:no-surname": 37,
+     "surname:one": 3625,
+     "surname:nobody": 760
+    },
+    "other|from": {
+     "rows": 91,
+     "chapter:no-territory": 91,
+     "surname:several": 8,
+     "surname:unknown": 16,
+     "surname:nobody": 35,
+     "surname:one": 31,
+     "surname:no-surname": 1
+    },
+    "other|to": {
+     "rows": 92,
+     "chapter:no-territory": 92,
+     "surname:unknown": 35,
+     "surname:several": 8,
+     "surname:nobody": 18,
+     "surname:one": 30,
+     "surname:no-surname": 1
+    }
+   },
+   "cross": {
+    "consular|from": {
+     "no-territory x unknown": 331,
+     "no-territory x nobody": 201,
+     "no-territory x one": 120,
+     "no-territory x several": 55,
+     "chiefs2+-disagree x unknown": 1
+    },
+    "consular|to": {
+     "no-territory x one": 366,
+     "no-territory x several": 199,
+     "no-territory x unknown": 102,
+     "no-territory x nobody": 31,
+     "no-territory x no-surname": 1,
+     "chiefs2+-disagree x one": 1
+    },
+    "despatch-high|from": {
+     "chiefs2+-agree-unique x one": 6990,
+     "chiefs1-agree-unique x one": 4340,
+     "chiefs2+-disagree x unknown": 2851,
+     "chiefs2+-disagree x nobody": 1424,
+     "chiefs1-disagree x unknown": 1181,
+     "chiefs1-disagree x nobody": 672,
+     "chiefs2+-agree-unique x several": 562,
+     "chiefs2+-disagree x one": 388,
+     "chiefs1-agree-unique x several": 140,
+     "chiefs1-disagree x one": 121,
+     "chiefs2-no-surname x no-surname": 78,
+     "chiefs1-disagree x several": 43,
+     "chiefs2+-disagree x several": 39,
+     "chiefs1-no-surname x no-surname": 12,
+     "chiefs2+-agree-multi x several": 9
+    },
+    "despatch-high|to": {
+     "chiefs2+-disagree x one": 5564,
+     "chiefs1-disagree x one": 2633,
+     "chiefs2+-disagree x several": 2112,
+     "chiefs2+-disagree x unknown": 2058,
+     "chiefs2+-agree-unique x one": 1685,
+     "chiefs1-disagree x several": 1325,
+     "chiefs1-agree-unique x one": 1032,
+     "chiefs1-disagree x unknown": 957,
+     "chiefs2+-disagree x nobody": 592,
+     "chiefs1-disagree x nobody": 360,
+     "chiefs2+-agree-unique x several": 132,
+     "chiefs1-agree-unique x several": 50,
+     "chiefs2-no-surname x no-surname": 46,
+     "chiefs1-no-surname x no-surname": 10,
+     "chiefs2+-agree-multi x several": 1
+    },
+    "despatch-medium|from": {
+     "chiefs2+-agree-unique x one": 520,
+     "chiefs2+-disagree x unknown": 485,
+     "chiefs1-disagree x unknown": 381,
+     "chiefs1-agree-unique x one": 350,
+     "chiefs2+-disagree x nobody": 208,
+     "chiefs1-disagree x nobody": 120,
+     "chiefs2+-disagree x one": 107,
+     "chiefs2+-agree-unique x several": 75,
+     "chiefs1-disagree x one": 18,
+     "chiefs2+-disagree x several": 10,
+     "no-chief-in-office x nobody": 7,
+     "no-chief-in-office x unknown": 6,
+     "chiefs1-no-surname x no-surname": 4,
+     "chiefs2-no-surname x no-surname": 4,
+     "chiefs1-disagree x several": 1,
+     "chiefs1-agree-unique x several": 1,
+     "no-chief-in-office x one": 1
+    },
+    "despatch-medium|to": {
+     "chiefs2+-disagree x one": 658,
+     "chiefs2+-disagree x several": 390,
+     "chiefs1-disagree x one": 280,
+     "chiefs1-disagree x unknown": 218,
+     "chiefs2+-disagree x unknown": 174,
+     "chiefs1-disagree x several": 169,
+     "chiefs2+-agree-unique x one": 98,
+     "chiefs1-disagree x nobody": 72,
+     "chiefs1-agree-unique x one": 71,
+     "chiefs2+-disagree x nobody": 49,
+     "chiefs2+-agree-unique x several": 13,
+     "no-chief-in-office x one": 9,
+     "chiefs1-agree-unique x several": 5,
+     "chiefs1-no-surname x no-surname": 3,
+     "no-chief-in-office x unknown": 3,
+     "no-chief-in-office x nobody": 2,
+     "chiefs2-no-surname x no-surname": 2
+    },
+    "instr+notesTo|from": {
+     "chiefs2+-disagree x one": 3977,
+     "chiefs2+-disagree x several": 1740,
+     "chiefs1-disagree x one": 1404,
+     "chiefs1-disagree x several": 956,
+     "chiefs2+-disagree x unknown": 599,
+     "chiefs2+-disagree x nobody": 509,
+     "chiefs1-disagree x unknown": 237,
+     "chiefs1-disagree x nobody": 184,
+     "chiefs2+-agree-unique x one": 59,
+     "no-chief-in-office x one": 23,
+     "chiefs1-agree-unique x one": 11,
+     "chiefs1-no-surname x no-surname": 7,
+     "chiefs2+-agree-unique x several": 5,
+     "chiefs2-no-surname x no-surname": 2,
+     "no-chief-in-office x nobody": 1
+    },
+    "instr+notesTo|to": {
+     "chiefs2+-agree-unique x one": 2992,
+     "chiefs1-agree-unique x one": 1635,
+     "chiefs2+-disagree x unknown": 1580,
+     "chiefs2+-disagree x nobody": 948,
+     "chiefs2+-disagree x one": 887,
+     "chiefs1-disagree x unknown": 489,
+     "chiefs1-disagree x nobody": 297,
+     "chiefs2+-agree-unique x several": 244,
+     "chiefs1-disagree x one": 175,
+     "chiefs2+-disagree x several": 157,
+     "chiefs1-agree-unique x several": 70,
+     "chiefs1-disagree x several": 66,
+     "chiefs2-no-surname x no-surname": 21,
+     "no-chief-in-office x nobody": 13,
+     "no-chief-in-office x unknown": 10,
+     "chiefs2+-agree-multi x several": 7,
+     "no-chief-in-office x one": 1
+    },
+    "instructions|from": {
+     "chiefs1-disagree x several": 103,
+     "chiefs2+-disagree x several": 62,
+     "chiefs1-disagree x one": 31,
+     "chiefs2+-disagree x one": 24,
+     "chiefs2+-disagree x unknown": 8,
+     "chiefs1-disagree x unknown": 7,
+     "chiefs1-agree-unique x one": 5,
+     "chiefs2+-disagree x nobody": 5,
+     "chiefs2+-agree-unique x one": 3,
+     "chiefs1-disagree x nobody": 2
+    },
+    "instructions|to": {
+     "chiefs1-agree-unique x one": 118,
+     "chiefs2+-agree-unique x one": 80,
+     "chiefs1-disagree x one": 13,
+     "chiefs2+-disagree x unknown": 9,
+     "chiefs1-disagree x unknown": 9,
+     "chiefs1-disagree x several": 6,
+     "chiefs2+-disagree x several": 5,
+     "chiefs2+-disagree x one": 2,
+     "chiefs1-disagree x nobody": 1,
+     "chiefs2+-disagree x nobody": 1
+    },
+    "notesFrom|from": {
+     "chiefs2+-disagree x unknown": 982,
+     "chiefs1-disagree x unknown": 297,
+     "chiefs2+-disagree x nobody": 277,
+     "chiefs1-disagree x nobody": 52,
+     "chiefs2-no-surname x no-surname": 14,
+     "chiefs2+-disagree x one": 9,
+     "no-chief-in-office x unknown": 5,
+     "chiefs2+-disagree x several": 4,
+     "chiefs1-disagree x one": 1
+    },
+    "notesFrom|to": {
+     "chiefs2+-disagree x one": 948,
+     "chiefs1-disagree x one": 296,
+     "chiefs2+-disagree x several": 168,
+     "chiefs2+-disagree x unknown": 92,
+     "chiefs2+-disagree x nobody": 40,
+     "chiefs1-disagree x several": 21,
+     "chiefs1-disagree x unknown": 20,
+     "chiefs2+-agree-unique x one": 20,
+     "chiefs1-disagree x nobody": 9,
+     "no-chief-in-office x one": 5,
+     "chiefs1-agree-unique x one": 2,
+     "chiefs2-no-surname x no-surname": 1
+    },
+    "notesTo|from": {
+     "chiefs2+-disagree x one": 151,
+     "chiefs2+-disagree x several": 92,
+     "chiefs1-disagree x one": 35,
+     "chiefs2+-disagree x unknown": 20,
+     "chiefs1-disagree x several": 15,
+     "chiefs2+-disagree x nobody": 10,
+     "chiefs1-disagree x unknown": 2,
+     "chiefs1-disagree x nobody": 1
+    },
+    "notesTo|to": {
+     "chiefs2+-agree-unique x one": 157,
+     "chiefs2+-disagree x unknown": 63,
+     "chiefs1-agree-unique x one": 30,
+     "chiefs2+-disagree x one": 14,
+     "chiefs2+-disagree x nobody": 13,
+     "chiefs1-disagree x unknown": 12,
+     "chiefs2+-agree-unique x several": 9,
+     "chiefs2-no-surname x no-surname": 9,
+     "chiefs1-disagree x nobody": 9,
+     "chiefs2+-disagree x several": 6,
+     "chiefs1-disagree x one": 2
+    },
+    "nothing|from": {
+     "nothing-shown x one": 3032,
+     "nothing-shown x unknown": 2537,
+     "nothing-shown x nobody": 1461,
+     "nothing-shown x several": 1231,
+     "nothing-shown x no-surname": 73
+    },
+    "nothing|to": {
+     "nothing-shown x one": 3625,
+     "nothing-shown x unknown": 2011,
+     "nothing-shown x several": 1636,
+     "nothing-shown x nobody": 760,
+     "nothing-shown x no-surname": 37
+    },
+    "other|from": {
+     "no-territory x nobody": 35,
+     "no-territory x one": 31,
+     "no-territory x unknown": 16,
+     "no-territory x several": 8,
+     "no-territory x no-surname": 1
+    },
+    "other|to": {
+     "no-territory x unknown": 35,
+     "no-territory x one": 30,
+     "no-territory x nobody": 18,
+     "no-territory x several": 8,
+     "no-territory x no-surname": 1
+    }
+   }
+  }
+ },
+ "examples_pm1": {
+  "notesTo|from|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d5",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Mr. Judd ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d11",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Baron Gerolt ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d15",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Mr. Judd ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d16",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Mr. Judd ."
+   }
+  ],
+  "notesTo|to|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d11",
+    "year": 1861,
+    "name": "Baron Gerolt",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Baron Gerolt ."
+   },
+   {
+    "vol": "frus1862",
+    "d": "d444",
+    "year": 1862,
+    "name": "Mr. Kreismann",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Mr. Kreismann ."
+   },
+   {
+    "vol": "frus1862",
+    "d": "d448",
+    "year": 1861,
+    "name": "Baron Gerolt",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Baron Gerolt ."
+   },
+   {
+    "vol": "frus1862",
+    "d": "d449",
+    "year": 1861,
+    "name": "Baron Gerolt",
+    "geo": "prussia",
+    "chiefs": [
+     "judd-norman-buel",
+     "wright-joseph-albert"
+    ],
+    "header": "Mr. Seward to Baron Gerolt ."
+   }
+  ],
+  "instr+notesTo|from|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d20",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Seward to Mr. Sanford ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d25",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Seward to Mr. Sanford ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d26",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Seward to Mr. Sanford ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d27",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Seward to Mr. Sanford ."
+   }
+  ],
+  "despatch-high|to|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d21",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Sanford to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d22",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Sanford to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d23",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Sanford to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d24",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "belgium",
+    "chiefs": [
+     "fair-elisha-young",
+     "sanford-henry-shelton"
+    ],
+    "header": "Mr. Sanford to Mr. Seward ."
+   }
+  ],
+  "instr+notesTo|to|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d51",
+    "year": 1861,
+    "name": "Lyons",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Seward to Mr. Adams ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d79",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Seward to Mr. Adams ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d80",
+    "year": 1861,
+    "name": "Adderley",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Seward to Mr. Adams ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d94",
+    "year": 1861,
+    "name": "Lyons",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Seward to Lord Lyons ."
+   }
+  ],
+  "despatch-medium|to|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d53",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Adams to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d123",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "france",
+    "chiefs": [
+     "dayton-william-lewis",
+     "faulkner-charles-james"
+    ],
+    "header": "Mr. Dayton to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d124",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "france",
+    "chiefs": [
+     "dayton-william-lewis",
+     "faulkner-charles-james"
+    ],
+    "header": "Mr. Dayton to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d126",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "france",
+    "chiefs": [
+     "dayton-william-lewis",
+     "faulkner-charles-james"
+    ],
+    "header": "Mr. Dayton to Mr. Seward ."
+   }
+  ],
+  "despatch-high|from|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d60",
+    "year": 1861,
+    "name": "John Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Adams to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d60",
+    "year": 1861,
+    "name": "John Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Adams to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d74",
+    "year": 1861,
+    "name": "Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Adams to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d90",
+    "year": 1861,
+    "name": "Earl Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Mr. Adams to Mr. Seward ."
+   }
+  ],
+  "notesFrom|from|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d95",
+    "year": 1861,
+    "name": "Lyons",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Lord Lyons to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d106",
+    "year": 1861,
+    "name": "Lyons",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Lord Lyons to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d106",
+    "year": 1861,
+    "name": "Gray",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Lord Lyons to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d114",
+    "year": 1861,
+    "name": "Hülsemann",
+    "geo": "austria",
+    "chiefs": [
+     "burlingame-anson",
+     "jones-jehu-glancy",
+     "motley-john-lothrop"
+    ],
+    "header": "Mr. Hülsemann to Mr. Seward ."
+   }
+  ],
+  "notesFrom|to|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d95",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Lord Lyons to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d106",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Lord Lyons to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d106",
+    "year": 1861,
+    "name": "Earl Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Lord Lyons to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d114",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "austria",
+    "chiefs": [
+     "burlingame-anson",
+     "jones-jehu-glancy",
+     "motley-john-lothrop"
+    ],
+    "header": "Mr. Hülsemann to Mr. Seward ."
+   }
+  ],
+  "despatch-high|from": [
+   {
+    "vol": "frus1861",
+    "d": "d112",
+    "year": 1861,
+    "name": "Jones",
+    "geo": "austria",
+    "chiefs": [
+     "burlingame-anson",
+     "jones-jehu-glancy",
+     "motley-john-lothrop"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1861",
+    "d": "d113",
+    "year": 1861,
+    "name": "Jones",
+    "geo": "austria",
+    "chiefs": [
+     "burlingame-anson",
+     "jones-jehu-glancy",
+     "motley-john-lothrop"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1861",
+    "d": "d197",
+    "year": 1861,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus",
+     "pickens-francis-wilkinson"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1862",
+    "d": "d381",
+    "year": 1862,
+    "name": "Mr. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "instr+notesTo|to": [
+   {
+    "vol": "frus1861",
+    "d": "d116",
+    "year": 1861,
+    "name": "Jones",
+    "geo": "austria",
+    "chiefs": [
+     "burlingame-anson",
+     "jones-jehu-glancy",
+     "motley-john-lothrop"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1861",
+    "d": "d191",
+    "year": 1861,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus",
+     "pickens-francis-wilkinson"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1861",
+    "d": "d195",
+    "year": 1861,
+    "name": "C. M. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus",
+     "pickens-francis-wilkinson"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1861",
+    "d": "d198",
+    "year": 1861,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus",
+     "pickens-francis-wilkinson"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "despatch-medium|from|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d153",
+    "year": 1861,
+    "name": "Thouvenel",
+    "geo": "france",
+    "chiefs": [
+     "dayton-william-lewis",
+     "faulkner-charles-james"
+    ],
+    "header": "Mr. Dayton to Mr. Seward ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d234",
+    "year": 1861,
+    "name": "M. Zuylen de Nijevelt",
+    "geo": "netherlands",
+    "chiefs": [
+     "murphy-henry-cruse",
+     "pike-james-shepard"
+    ],
+    "header": "Mr. Murphy to Mr. Seward ."
+   },
+   {
+    "vol": "frus1862",
+    "d": "d203",
+    "year": 1862,
+    "name": "Earl Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Earl Russell to Lord Lyons ."
+   },
+   {
+    "vol": "frus1862",
+    "d": "d206",
+    "year": 1862,
+    "name": "Earl Russell",
+    "geo": "great britain",
+    "chiefs": [
+     "adams-charles-francis",
+     "dallas-george-mifflin"
+    ],
+    "header": "Earl Russell to Lord Lyons ."
+   }
+  ],
+  "despatch-medium|from": [
+   {
+    "vol": "frus1861",
+    "d": "d199",
+    "year": 1861,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus",
+     "pickens-francis-wilkinson"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1861",
+    "d": "d201",
+    "year": 1861,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus",
+     "pickens-francis-wilkinson"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1862",
+    "d": "d380",
+    "year": 1862,
+    "name": "Mr. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "appleton-john",
+     "cameron-simon",
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1866p3",
+    "d": "d7",
+    "year": 1866,
+    "name": "Mr. Campbell",
+    "geo": "mexico",
+    "chiefs": [
+     "campbell-lewis-davis",
+     "corwin-william-henry",
+     "logan-john-alexander",
+     "otterbourg-marcus"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "instructions|from|disagree": [
+   {
+    "vol": "frus1861",
+    "d": "d212",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "italy",
+    "chiefs": [
+     "daniel-john-moncure",
+     "marsh-george-perkins"
+    ],
+    "header": "Mr. Seward to Mr. Marsh ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d213",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "italy",
+    "chiefs": [
+     "daniel-john-moncure",
+     "marsh-george-perkins"
+    ],
+    "header": "Mr. Seward to Mr. Marsh ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d217",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "italy",
+    "chiefs": [
+     "daniel-john-moncure",
+     "marsh-george-perkins"
+    ],
+    "header": "Mr. Seward to Mr. Marsh ."
+   },
+   {
+    "vol": "frus1861",
+    "d": "d218",
+    "year": 1861,
+    "name": "Seward",
+    "geo": "italy",
+    "chiefs": [
+     "daniel-john-moncure",
+     "marsh-george-perkins"
+    ],
+    "header": "Mr. Seward to Mr. Marsh ."
+   }
+  ],
+  "instructions|to|disagree": [
+   {
+    "vol": "frus1862",
+    "d": "d470",
+    "year": 1862,
+    "name": "the Chevalier Bertinatti",
+    "geo": "italy",
+    "chiefs": [
+     "daniel-john-moncure",
+     "marsh-george-perkins"
+    ],
+    "header": "Mr. Seward to the Chevalier Bertinatti ."
+   },
+   {
+    "vol": "frus1863p2",
+    "d": "d240",
+    "year": 1862,
+    "name": "Mr. Seward",
+    "geo": "china",
+    "chiefs": [
+     "burlingame-anson"
+    ],
+    "header": "Mr. Burlingame to Mr. Seward"
+   },
+   {
+    "vol": "frus1863p2",
+    "d": "d241",
+    "year": 1862,
+    "name": "Mr. Seward",
+    "geo": "china",
+    "chiefs": [
+     "burlingame-anson"
+    ],
+    "header": "Mr. Burlingame to Mr. Seward"
+   },
+   {
+    "vol": "frus1863p2",
+    "d": "d241",
+    "year": 1862,
+    "name": "Prince Kung",
+    "geo": "china",
+    "chiefs": [
+     "burlingame-anson"
+    ],
+    "header": "Mr. Burlingame to Mr. Seward"
+   }
+  ],
+  "despatch-high|to": [
+   {
+    "vol": "frus1865p2",
+    "d": "d482",
+    "year": 1865,
+    "name": "Mr. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p2",
+    "d": "d482",
+    "year": 1865,
+    "name": "Mr. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p2",
+    "d": "d488",
+    "year": 1865,
+    "name": "Mr. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p2",
+    "d": "d488",
+    "year": 1865,
+    "name": "Mr. Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "notesTo|to": [
+   {
+    "vol": "frus1865p3",
+    "d": "d202",
+    "year": 1865,
+    "name": "Mr. Campbell",
+    "geo": "sweden",
+    "chiefs": [
+     "campbell-james-hepburn",
+     "haldeman-jacob-samils",
+     "mcginnis-john"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p3",
+    "d": "d204",
+    "year": 1865,
+    "name": "Mr. Campbell",
+    "geo": "sweden",
+    "chiefs": [
+     "campbell-james-hepburn",
+     "haldeman-jacob-samils",
+     "mcginnis-john"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p3",
+    "d": "d205",
+    "year": 1865,
+    "name": "Mr. Campbell",
+    "geo": "sweden",
+    "chiefs": [
+     "campbell-james-hepburn",
+     "haldeman-jacob-samils",
+     "mcginnis-john"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p3",
+    "d": "d217",
+    "year": 1865,
+    "name": "Mr. Campbell",
+    "geo": "sweden",
+    "chiefs": [
+     "campbell-james-hepburn",
+     "haldeman-jacob-samils",
+     "mcginnis-john"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "despatch-medium|to": [
+   {
+    "vol": "frus1865p4",
+    "d": "d843",
+    "year": 1865,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p4",
+    "d": "d844",
+    "year": 1865,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p4",
+    "d": "d846",
+    "year": 1865,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1865p4",
+    "d": "d848",
+    "year": 1865,
+    "name": "Clay",
+    "geo": "russia",
+    "chiefs": [
+     "clay-cassius-marcellus"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "instr+notesTo|from": [
+   {
+    "vol": "frus1867p2",
+    "d": "d242",
+    "year": 1867,
+    "name": "Mr. Seward to Mr. Campbell",
+    "geo": "mexico",
+    "chiefs": [
+     "campbell-lewis-davis",
+     "corwin-william-henry",
+     "otterbourg-marcus",
+     "rosecrans-william-starke"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1867p2",
+    "d": "d258",
+    "year": 1867,
+    "name": "Mr. Seward to Mr. Campbell,",
+    "geo": "mexico",
+    "chiefs": [
+     "campbell-lewis-davis",
+     "corwin-william-henry",
+     "otterbourg-marcus",
+     "rosecrans-william-starke"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1868p2",
+    "d": "d23",
+    "year": 1868,
+    "name": "Mr. Hale",
+    "geo": "spain",
+    "chiefs": [
+     "hale-john-parker",
+     "sickles-daniel-edgar"
+    ],
+    "surname_rule": "several"
+   },
+   {
+    "vol": "frus1868p2",
+    "d": "d23",
+    "year": 1868,
+    "name": "Mr. Seward to Mr. Hale,",
+    "geo": "spain",
+    "chiefs": [
+     "hale-john-parker",
+     "sickles-daniel-edgar"
+    ],
+    "surname_rule": "several"
+   }
+  ],
+  "consular|from|disagree": [
+   {
+    "vol": "frus1898",
+    "d": "d728",
+    "year": 1898,
+    "name": "Grimke",
+    "geo": "dominican republic",
+    "chiefs": [
+     "powell-william-frank",
+     "smythe-henry-maxwell"
+    ],
+    "header": "Mr. Grimke to Mr. Day ."
+   }
+  ],
+  "consular|to|disagree": [
+   {
+    "vol": "frus1898",
+    "d": "d728",
+    "year": 1898,
+    "name": "Day",
+    "geo": "dominican republic",
+    "chiefs": [
+     "powell-william-frank",
+     "smythe-henry-maxwell"
+    ],
+    "header": "Mr. Grimke to Mr. Day ."
+   }
+  ]
+ }
+}

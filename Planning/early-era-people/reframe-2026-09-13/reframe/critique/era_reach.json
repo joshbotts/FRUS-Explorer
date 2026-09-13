@@ -1,0 +1,32 @@
+{
+ "population": "TEI-rule scope, 267 volumes (~/frus-ner-raw/scope.json); documents = lines in R-0 text layer; era by volume-id year",
+ "total_documents": 197534,
+ "by_era": {
+  "<=1899": {
+   "volumes": 61,
+   "documents": 32760
+  },
+  "1900-1905": {
+   "volumes": 9,
+   "documents": 6193
+  },
+  "1906-1909": {
+   "volumes": 6,
+   "documents": 3719
+  },
+  "1910-1929": {
+   "volumes": 51,
+   "documents": 38940
+  },
+  "1930-1945": {
+   "volumes": 87,
+   "documents": 77899
+  },
+  "1946-": {
+   "volumes": 53,
+   "documents": 38023
+  }
+ },
+ "le_1905_documents": 38953,
+ "le_1905_share": 0.1972
+}

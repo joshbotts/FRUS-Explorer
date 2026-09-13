@@ -1,0 +1,44 @@
+{
+ "before": {
+  "all": {
+   "docs": 32478,
+   "with": 24981,
+   "share": 0.7692
+  },
+  "gate_ok": {
+   "docs": 32473,
+   "with": 24981,
+   "share": 0.7693
+  },
+  "gate_ok_not_front_not_editorial": {
+   "docs": 32473,
+   "with": 24981,
+   "share": 0.7693
+  },
+  "gates": {
+   "ok": 32473,
+   "noSectionPath": 5
+  }
+ },
+ "after": {
+  "all": {
+   "docs": 32478,
+   "with": 27884,
+   "share": 0.8586
+  },
+  "gate_ok": {
+   "docs": 32473,
+   "with": 27884,
+   "share": 0.8587
+  },
+  "gate_ok_not_front_not_editorial": {
+   "docs": 32473,
+   "with": 27884,
+   "share": 0.8587
+  },
+  "gates": {
+   "ok": 32473,
+   "noSectionPath": 5
+  }
+ }
+}

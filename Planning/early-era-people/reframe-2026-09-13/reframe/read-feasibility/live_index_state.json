@@ -1,0 +1,27 @@
+{
+ "document_revisions_columns": [
+  "volume_id",
+  "document_id",
+  "content_hash",
+  "body_hash",
+  "changed_at",
+  "change_kind",
+  "reviewed_at",
+  "index_version"
+ ],
+ "index_versions": [
+  [
+   50,
+   316839
+  ]
+ ],
+ "persons_rows": 62931,
+ "person_mentions_rows": 611307,
+ "persons_rows_in_1291_volumes": {
+  "frus1873p1v2": 0,
+  "frus1932v04": 0,
+  "frus1918Supp01v02": 0,
+  "frus1917Supp02v02": 0
+ },
+ "has_person_list_sources": false
+}

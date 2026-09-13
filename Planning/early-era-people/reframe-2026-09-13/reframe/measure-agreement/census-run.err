@@ -1,0 +1,28 @@
+  25/267 volumes, 4s
+  50/267 volumes, 9s
+  75/267 volumes, 13s
+  100/267 volumes, 18s
+  125/267 volumes, 22s
+  150/267 volumes, 26s
+  175/267 volumes, 31s
+  200/267 volumes, 35s
+  225/267 volumes, 42s
+  250/267 volumes, 47s
+       54.88 real        52.82 user         1.35 sys
+           943702016  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               85106  page reclaims
+                  18  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                2686  voluntary context switches
+                8517  involuntary context switches
+       1012793815020  instructions retired
+        231299810551  cycles elapsed
+           939934944  peak memory footprint

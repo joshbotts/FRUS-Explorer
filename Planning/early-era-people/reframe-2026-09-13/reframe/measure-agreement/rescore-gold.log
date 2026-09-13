@@ -1,0 +1,33 @@
+{
+ "got": {
+  "precision": 0.898,
+  "recall": 0.767,
+  "ci95_precision": [
+   0.852,
+   0.942
+  ],
+  "predicted_keys": 245,
+  "predicted_keys_false": 25,
+  "strict_f1_mention": 0.672
+ },
+ "expected": {
+  "precision": 0.898,
+  "recall": 0.767,
+  "ci95_precision": [
+   0.852,
+   0.942
+  ],
+  "predicted_keys": 245,
+  "predicted_keys_false": 25,
+  "strict_f1_mention": 0.672
+ },
+ "reproduced": true,
+ "census_K2_presence": {
+  "precision": 0.8984,
+  "recall": 0.7577,
+  "f1": 0.8221,
+  "predicted_keys": 246,
+  "predicted_keys_false": 25,
+  "gold_keys": 293
+ }
+}

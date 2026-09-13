@@ -1,0 +1,735 @@
+{
+ "definitions": "VERIFY the silver identity set and the S rule on it, from MY scan (v-fromto.jsonl, ElementTree) and MY POCOM loader\n(v_pocom.load). S rule re-typed from the assessment's definition (m1a surname_of: strip .,;:() ; drop TITLES; keep\ncapitalised tokens >=3 chars; last token). Two band keys: DOC = TEI frus:doc-dateTime-min year (what measure-silver\nused), VOL = ner_store.band_of(volume id) (the assessment's band). Head = persName inside the document's own first\n<head> child (subtree). Silver = from/to head persName whose link resolves to a persName xml:id in the target volume, whose\n(target volume, id) has a person-authority-index crosswalk id whose authority entry carries a POCOM slug 's'.\nNegative silver = crosswalk id present, authority entry has no 's'. Head format: MY classifier (not theirs):\n  paren  = the persName directly follows '(' in the notes-stripped head (e.g. 'The Ambassador in X (Page)')\n  thetitle = the head segment holding the name (split at ' to ') begins 'The '/'the ' and the name is not honorific-led\n  honorific = name begins with, or the head text immediately before it ends with, Mr./Mrs./Sir/Señor/Baron/Count/M./Messrs.\n  other otherwise; plus a CEILING: any office word anywhere in the head.",
+ "DOC": {
+  "negative|1900-1929": {
+   "rows": 1713,
+   "S:unknown": 900,
+   "S:nobody": 696,
+   "S:one": 115,
+   "false_picks": 115,
+   "false_picks_same_initial": 2,
+   "S:several": 2,
+   "shares": {
+    "S:unknown": 0.5254,
+    "S:nobody": 0.4063,
+    "S:one": 0.0671,
+    "S:several": 0.0012
+   }
+  },
+  "negative|1930-1945": {
+   "rows": 1749,
+   "S:unknown": 900,
+   "S:nobody": 756,
+   "S:one": 72,
+   "false_picks": 72,
+   "S:several": 21,
+   "false_picks_same_initial": 8,
+   "shares": {
+    "S:unknown": 0.5146,
+    "S:nobody": 0.4322,
+    "S:one": 0.0412,
+    "S:several": 0.012
+   }
+  },
+  "negative|1946-": {
+   "rows": 16066,
+   "S:nobody": 5490,
+   "S:unknown": 7768,
+   "S:one": 1840,
+   "false_picks": 1840,
+   "S:several": 968,
+   "false_picks_same_initial": 40,
+   "shares": {
+    "S:nobody": 0.3417,
+    "S:unknown": 0.4835,
+    "S:one": 0.1145,
+    "S:several": 0.0603
+   }
+  },
+  "silver_all_positions": {
+   "1946-": 153,
+   "1930-1945": 27,
+   "1900-1929": 210,
+   "1861-1899": 11
+  },
+  "silver|1861-1899": {
+   "rows": 459,
+   "S:one": 459,
+   "fmt:honorific": 458,
+   "slug_in_office_y1": 459,
+   "picks": 459,
+   "agree": 459,
+   "fmt:other": 1,
+   "docs": 459,
+   "vols": 2,
+   "persons": 1,
+   "dtp": 459,
+   "agree_wilson": [
+    1.0,
+    0.9917,
+    1.0
+   ],
+   "shares": {
+    "S:one": 1.0,
+    "fmt:honorific": 0.9978,
+    "fmt:other": 0.0022
+   }
+  },
+  "silver|1900-1929": {
+   "rows": 7097,
+   "S:one": 4078,
+   "fmt:paren": 7096,
+   "slug_in_office_y1": 6352,
+   "picks": 4078,
+   "agree": 4075,
+   "S:several": 2133,
+   "S:unknown": 180,
+   "S:nobody": 706,
+   "fmt:thetitle": 1,
+   "split_part_rows": 920,
+   "docs": 7091,
+   "vols": 14,
+   "persons": 62,
+   "dtp": 7097,
+   "split_vols": 2,
+   "split_persons": 24,
+   "agree_wilson": [
+    0.9993,
+    0.9978,
+    0.9997
+   ],
+   "shares": {
+    "S:one": 0.5746,
+    "fmt:paren": 0.9999,
+    "S:several": 0.3005,
+    "S:unknown": 0.0254,
+    "S:nobody": 0.0995,
+    "fmt:thetitle": 0.0001
+   }
+  },
+  "silver|1930-1945": {
+   "rows": 1526,
+   "S:nobody": 334,
+   "fmt:paren": 1505,
+   "S:one": 1138,
+   "slug_in_office_y1": 1191,
+   "picks": 1138,
+   "agree": 1136,
+   "S:several": 54,
+   "fmt:honorific": 5,
+   "fmt:thetitle": 1,
+   "fmt:other": 15,
+   "split_part_rows": 65,
+   "docs": 1458,
+   "vols": 12,
+   "persons": 90,
+   "dtp": 1526,
+   "split_vols": 1,
+   "split_persons": 2,
+   "agree_wilson": [
+    0.9982,
+    0.9936,
+    0.9995
+   ],
+   "shares": {
+    "S:nobody": 0.2189,
+    "fmt:paren": 0.9862,
+    "S:one": 0.7457,
+    "S:several": 0.0354,
+    "fmt:honorific": 0.0033,
+    "fmt:thetitle": 0.0007,
+    "fmt:other": 0.0098
+   }
+  },
+  "silver|1946-": {
+   "rows": 23655,
+   "S:several": 1778,
+   "fmt:paren": 19184,
+   "slug_in_office_y1": 17086,
+   "S:one": 15904,
+   "picks": 15904,
+   "agree": 15306,
+   "S:nobody": 5943,
+   "fmt:other": 4452,
+   "S:unknown": 30,
+   "fmt:honorific": 3,
+   "fmt:thetitle": 14,
+   "fmt:head_in_note_or_no_text": 2,
+   "docs": 19550,
+   "vols": 181,
+   "persons": 587,
+   "dtp": 23655,
+   "agree_wilson": [
+    0.9624,
+    0.9593,
+    0.9652
+   ],
+   "shares": {
+    "S:several": 0.0752,
+    "fmt:paren": 0.811,
+    "S:one": 0.6723,
+    "S:nobody": 0.2512,
+    "fmt:other": 0.1882,
+    "S:unknown": 0.0013,
+    "fmt:honorific": 0.0001,
+    "fmt:thetitle": 0.0006,
+    "fmt:head_in_note_or_no_text": 0.0001
+   }
+  },
+  "untagged_heads|1861-1899": {
+   "rows": 60645,
+   "S:one": 37715,
+   "fmt:honorific": 58439,
+   "S:several": 11015,
+   "S:unknown": 7874,
+   "S:nobody": 4041,
+   "fmt:other": 2183,
+   "ceiling_office_word_anywhere_in_head": 801,
+   "fmt:thetitle": 23,
+   "shares": {
+    "S:one": 0.6219,
+    "fmt:honorific": 0.9636,
+    "S:several": 0.1816,
+    "S:unknown": 0.1298,
+    "S:nobody": 0.0666,
+    "fmt:other": 0.036,
+    "ceiling_office_word_anywhere_in_head": 0.0132,
+    "fmt:thetitle": 0.0004
+   }
+  },
+  "untagged_heads|1900-1929": {
+   "rows": 40707,
+   "S:unknown": 7194,
+   "fmt:other": 10198,
+   "ceiling_office_word_anywhere_in_head": 31688,
+   "S:nobody": 8054,
+   "fmt:thetitle": 54,
+   "S:several": 1709,
+   "fmt:honorific": 8958,
+   "S:one": 23750,
+   "fmt:paren": 21497,
+   "shares": {
+    "S:unknown": 0.1767,
+    "fmt:other": 0.2505,
+    "ceiling_office_word_anywhere_in_head": 0.7784,
+    "S:nobody": 0.1979,
+    "fmt:thetitle": 0.0013,
+    "S:several": 0.042,
+    "fmt:honorific": 0.2201,
+    "S:one": 0.5834,
+    "fmt:paren": 0.5281
+   }
+  },
+  "untagged_heads|1930-1945": {
+   "rows": 70623,
+   "S:one": 42408,
+   "fmt:paren": 66921,
+   "ceiling_office_word_anywhere_in_head": 69228,
+   "S:unknown": 10389,
+   "S:nobody": 14623,
+   "fmt:other": 2721,
+   "S:several": 3203,
+   "fmt:honorific": 965,
+   "fmt:thetitle": 16,
+   "shares": {
+    "S:one": 0.6005,
+    "fmt:paren": 0.9476,
+    "ceiling_office_word_anywhere_in_head": 0.9802,
+    "S:unknown": 0.1471,
+    "S:nobody": 0.2071,
+    "fmt:other": 0.0385,
+    "S:several": 0.0454,
+    "fmt:honorific": 0.0137,
+    "fmt:thetitle": 0.0002
+   }
+  },
+  "untagged_heads|1946-": {
+   "rows": 28466,
+   "S:one": 14331,
+   "fmt:paren": 25317,
+   "ceiling_office_word_anywhere_in_head": 24899,
+   "S:nobody": 7092,
+   "fmt:honorific": 1135,
+   "S:unknown": 5784,
+   "S:several": 1259,
+   "fmt:other": 1995,
+   "fmt:thetitle": 19,
+   "shares": {
+    "S:one": 0.5034,
+    "fmt:paren": 0.8894,
+    "ceiling_office_word_anywhere_in_head": 0.8747,
+    "S:nobody": 0.2491,
+    "fmt:honorific": 0.0399,
+    "S:unknown": 0.2032,
+    "S:several": 0.0442,
+    "fmt:other": 0.0701,
+    "fmt:thetitle": 0.0007
+   }
+  },
+  "untagged_heads|pre-1861": {
+   "rows": 653,
+   "S:unknown": 225,
+   "fmt:honorific": 538,
+   "ceiling_office_word_anywhere_in_head": 221,
+   "S:one": 223,
+   "S:nobody": 187,
+   "fmt:other": 115,
+   "S:several": 18,
+   "shares": {
+    "S:unknown": 0.3446,
+    "fmt:honorific": 0.8239,
+    "ceiling_office_word_anywhere_in_head": 0.3384,
+    "S:one": 0.3415,
+    "S:nobody": 0.2864,
+    "fmt:other": 0.1761,
+    "S:several": 0.0276
+   }
+  },
+  "combined|1861-1899": {
+   "agree": 459,
+   "picks": 459,
+   "wilson": [
+    1.0,
+    0.9917,
+    1.0
+   ]
+  },
+  "combined|1900-1929": {
+   "agree": 4075,
+   "picks": 4193,
+   "wilson": [
+    0.9719,
+    0.9664,
+    0.9764
+   ]
+  },
+  "combined|1930-1945": {
+   "agree": 1136,
+   "picks": 1210,
+   "wilson": [
+    0.9388,
+    0.9239,
+    0.951
+   ]
+  },
+  "combined|1946-": {
+   "agree": 15306,
+   "picks": 17744,
+   "wilson": [
+    0.8626,
+    0.8575,
+    0.8676
+   ]
+  }
+ },
+ "VOL": {
+  "negative|1900-1929": {
+   "rows": 1713,
+   "S:unknown": 900,
+   "S:nobody": 696,
+   "S:one": 115,
+   "false_picks": 115,
+   "false_picks_same_initial": 2,
+   "S:several": 2,
+   "shares": {
+    "S:unknown": 0.5254,
+    "S:nobody": 0.4063,
+    "S:one": 0.0671,
+    "S:several": 0.0012
+   }
+  },
+  "negative|1930-1945": {
+   "rows": 2028,
+   "S:unknown": 1076,
+   "S:nobody": 841,
+   "S:one": 90,
+   "false_picks": 90,
+   "S:several": 21,
+   "false_picks_same_initial": 10,
+   "shares": {
+    "S:unknown": 0.5306,
+    "S:nobody": 0.4147,
+    "S:one": 0.0444,
+    "S:several": 0.0104
+   }
+  },
+  "negative|1946-": {
+   "rows": 15787,
+   "S:nobody": 5405,
+   "S:unknown": 7592,
+   "S:one": 1822,
+   "false_picks": 1822,
+   "S:several": 968,
+   "false_picks_same_initial": 38,
+   "shares": {
+    "S:nobody": 0.3424,
+    "S:unknown": 0.4809,
+    "S:one": 0.1154,
+    "S:several": 0.0613
+   }
+  },
+  "silver_all_positions": {
+   "1946-": 153,
+   "1930-1945": 27,
+   "1900-1929": 210,
+   "1861-1899": 11
+  },
+  "silver|1861-1899": {
+   "rows": 459,
+   "S:one": 459,
+   "fmt:honorific": 458,
+   "slug_in_office_y1": 459,
+   "picks": 459,
+   "agree": 459,
+   "fmt:other": 1,
+   "docs": 459,
+   "vols": 2,
+   "persons": 1,
+   "dtp": 459,
+   "agree_wilson": [
+    1.0,
+    0.9917,
+    1.0
+   ],
+   "shares": {
+    "S:one": 1.0,
+    "fmt:honorific": 0.9978,
+    "fmt:other": 0.0022
+   }
+  },
+  "silver|1900-1929": {
+   "rows": 7097,
+   "S:one": 4078,
+   "fmt:paren": 7096,
+   "slug_in_office_y1": 6352,
+   "picks": 4078,
+   "agree": 4075,
+   "S:several": 2133,
+   "S:unknown": 180,
+   "S:nobody": 706,
+   "fmt:thetitle": 1,
+   "split_part_rows": 920,
+   "docs": 7091,
+   "vols": 14,
+   "persons": 62,
+   "dtp": 7097,
+   "split_vols": 2,
+   "split_persons": 24,
+   "agree_wilson": [
+    0.9993,
+    0.9978,
+    0.9997
+   ],
+   "shares": {
+    "S:one": 0.5746,
+    "fmt:paren": 0.9999,
+    "S:several": 0.3005,
+    "S:unknown": 0.0254,
+    "S:nobody": 0.0995,
+    "fmt:thetitle": 0.0001
+   }
+  },
+  "silver|1930-1945": {
+   "rows": 1627,
+   "S:nobody": 340,
+   "fmt:paren": 1571,
+   "S:one": 1231,
+   "slug_in_office_y1": 1286,
+   "picks": 1231,
+   "agree": 1229,
+   "S:several": 56,
+   "fmt:honorific": 5,
+   "fmt:thetitle": 1,
+   "fmt:other": 50,
+   "split_part_rows": 65,
+   "docs": 1534,
+   "vols": 12,
+   "persons": 98,
+   "dtp": 1627,
+   "split_vols": 1,
+   "split_persons": 2,
+   "agree_wilson": [
+    0.9984,
+    0.9941,
+    0.9996
+   ],
+   "shares": {
+    "S:nobody": 0.209,
+    "fmt:paren": 0.9656,
+    "S:one": 0.7566,
+    "S:several": 0.0344,
+    "fmt:honorific": 0.0031,
+    "fmt:thetitle": 0.0006,
+    "fmt:other": 0.0307
+   }
+  },
+  "silver|1946-": {
+   "rows": 23554,
+   "S:several": 1776,
+   "fmt:paren": 19118,
+   "slug_in_office_y1": 16991,
+   "S:one": 15811,
+   "picks": 15811,
+   "agree": 15213,
+   "S:nobody": 5937,
+   "fmt:other": 4417,
+   "S:unknown": 30,
+   "fmt:honorific": 3,
+   "fmt:thetitle": 14,
+   "fmt:head_in_note_or_no_text": 2,
+   "docs": 19474,
+   "vols": 178,
+   "persons": 578,
+   "dtp": 23554,
+   "agree_wilson": [
+    0.9622,
+    0.9591,
+    0.965
+   ],
+   "shares": {
+    "S:several": 0.0754,
+    "fmt:paren": 0.8117,
+    "S:one": 0.6713,
+    "S:nobody": 0.2521,
+    "fmt:other": 0.1875,
+    "S:unknown": 0.0013,
+    "fmt:honorific": 0.0001,
+    "fmt:thetitle": 0.0006,
+    "fmt:head_in_note_or_no_text": 0.0001
+   }
+  },
+  "untagged_heads|1861-1899": {
+   "rows": 61108,
+   "S:unknown": 8080,
+   "fmt:honorific": 58782,
+   "ceiling_office_word_anywhere_in_head": 1022,
+   "S:one": 37781,
+   "S:nobody": 4214,
+   "fmt:other": 2303,
+   "S:several": 11033,
+   "fmt:thetitle": 23,
+   "shares": {
+    "S:unknown": 0.1322,
+    "fmt:honorific": 0.9619,
+    "ceiling_office_word_anywhere_in_head": 0.0167,
+    "S:one": 0.6183,
+    "S:nobody": 0.069,
+    "fmt:other": 0.0377,
+    "S:several": 0.1805,
+    "fmt:thetitle": 0.0004
+   }
+  },
+  "untagged_heads|1900-1929": {
+   "rows": 40767,
+   "S:unknown": 7183,
+   "fmt:other": 10193,
+   "ceiling_office_word_anywhere_in_head": 31558,
+   "S:nobody": 8044,
+   "fmt:thetitle": 54,
+   "S:several": 1709,
+   "fmt:honorific": 9153,
+   "S:one": 23831,
+   "fmt:paren": 21367,
+   "shares": {
+    "S:unknown": 0.1762,
+    "fmt:other": 0.25,
+    "ceiling_office_word_anywhere_in_head": 0.7741,
+    "S:nobody": 0.1973,
+    "fmt:thetitle": 0.0013,
+    "S:several": 0.0419,
+    "fmt:honorific": 0.2245,
+    "S:one": 0.5846,
+    "fmt:paren": 0.5241
+   }
+  },
+  "untagged_heads|1930-1945": {
+   "rows": 70750,
+   "S:one": 42484,
+   "fmt:paren": 67056,
+   "ceiling_office_word_anywhere_in_head": 69361,
+   "S:unknown": 10419,
+   "S:nobody": 14643,
+   "fmt:other": 2716,
+   "S:several": 3204,
+   "fmt:honorific": 964,
+   "fmt:thetitle": 14,
+   "shares": {
+    "S:one": 0.6005,
+    "fmt:paren": 0.9478,
+    "ceiling_office_word_anywhere_in_head": 0.9804,
+    "S:unknown": 0.1473,
+    "S:nobody": 0.207,
+    "fmt:other": 0.0384,
+    "S:several": 0.0453,
+    "fmt:honorific": 0.0136,
+    "fmt:thetitle": 0.0002
+   }
+  },
+  "untagged_heads|1946-": {
+   "rows": 28469,
+   "S:one": 14331,
+   "fmt:paren": 25312,
+   "ceiling_office_word_anywhere_in_head": 24896,
+   "S:nobody": 7096,
+   "fmt:honorific": 1136,
+   "S:unknown": 5784,
+   "S:several": 1258,
+   "fmt:other": 2000,
+   "fmt:thetitle": 21,
+   "shares": {
+    "S:one": 0.5034,
+    "fmt:paren": 0.8891,
+    "ceiling_office_word_anywhere_in_head": 0.8745,
+    "S:nobody": 0.2493,
+    "fmt:honorific": 0.0399,
+    "S:unknown": 0.2032,
+    "S:several": 0.0442,
+    "fmt:other": 0.0703,
+    "fmt:thetitle": 0.0007
+   }
+  },
+  "combined|1861-1899": {
+   "agree": 459,
+   "picks": 459,
+   "wilson": [
+    1.0,
+    0.9917,
+    1.0
+   ]
+  },
+  "combined|1900-1929": {
+   "agree": 4075,
+   "picks": 4193,
+   "wilson": [
+    0.9719,
+    0.9664,
+    0.9764
+   ]
+  },
+  "combined|1930-1945": {
+   "agree": 1229,
+   "picks": 1321,
+   "wilson": [
+    0.9304,
+    0.9153,
+    0.9429
+   ]
+  },
+  "combined|1946-": {
+   "agree": 15213,
+   "picks": 17633,
+   "wilson": [
+    0.8628,
+    0.8576,
+    0.8678
+   ]
+  }
+ },
+ "top_person_DOC": {
+  "1946-": [
+   [
+    [
+     "kissinger-henry-a",
+     3021
+    ],
+    [
+     "rusk-david-dean",
+     1354
+    ],
+    [
+     "rostow-walt-whitman",
+     753
+    ]
+   ],
+   23655,
+   0.1277
+  ],
+  "1930-1945": [
+   [
+    [
+     "kirk-alexander-comstock",
+     122
+    ],
+    [
+     "steinhardt-laurence-adolph",
+     114
+    ],
+    [
+     "harriman-william-averell",
+     112
+    ]
+   ],
+   1526,
+   0.0799
+  ],
+  "1900-1929": [
+   [
+    [
+     "page-walter-hines",
+     1678
+    ],
+    [
+     "francis-david-rowland",
+     761
+    ],
+    [
+     "gerard-james-watson",
+     564
+    ]
+   ],
+   7097,
+   0.2364
+  ],
+  "1861-1899": [
+   [
+    [
+     "fish-hamilton",
+     459
+    ]
+   ],
+   459,
+   1.0
+  ]
+ },
+ "volume_bootstrap_DOC": {
+  "1946-": [
+   181,
+   0.9489,
+   0.9734,
+   0.229
+  ],
+  "1930-1945": [
+   12,
+   0.9949,
+   1.0,
+   0.996
+  ],
+  "1900-1929": [
+   14,
+   0.9977,
+   1.0,
+   0.993
+  ]
+ },
+ "p1873": {
+  "frus1873p1v2": {
+   "fromto_in_doc": 546,
+   "fromto_resolving": 426,
+   "fromto_head_resolving": 384,
+   "fromto_slug": 184
+  },
+  "frus1873p1v1": {
+   "fromto_in_doc": 908,
+   "fromto_resolving": 508,
+   "fromto_head_resolving": 427,
+   "fromto_slug": 286
+  }
+ },
+ "p1873_distinct_linked_fromto_targets": {
+  "frus1873p1v2": 23,
+  "frus1873p1v1": 18
+ },
+ "silver_heads_band_DOC_vs_VOL_mismatch": {
+  "1946- (doc) / 1930-1945 (vol)": 101
+ }
+}

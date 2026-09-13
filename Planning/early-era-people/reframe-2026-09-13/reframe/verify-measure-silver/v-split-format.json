@@ -1,0 +1,278 @@
+{
+ "frus1917Supp02v02": {
+  "links": 1478,
+  "target:frus1917Supp02v01": 1478,
+  "resolves": 1478,
+  "in_doc": 1297,
+  "any_type_slug_in_doc": 614,
+  "fromto_slug": 272,
+  "fromto_head_slug": 268,
+  "distinct_targets": 92,
+  "with_crosswalk": 46,
+  "with_slug": 21,
+  "docs_with_link": 422
+ },
+ "frus1918Supp01v02": {
+  "links": 3395,
+  "target:frus1918Supp01v01": 3395,
+  "resolves": 3395,
+  "in_doc": 2890,
+  "any_type_slug_in_doc": 1446,
+  "fromto_slug": 653,
+  "fromto_head_slug": 652,
+  "distinct_targets": 108,
+  "with_crosswalk": 42,
+  "with_slug": 22,
+  "docs_with_link": 884
+ },
+ "frus1932v04": {
+  "links": 5743,
+  "target:frus1932v03": 5743,
+  "resolves": 5743,
+  "in_doc": 5028,
+  "any_type_slug_in_doc": 201,
+  "fromto_slug": 66,
+  "fromto_head_slug": 65,
+  "distinct_targets": 434,
+  "with_crosswalk": 34,
+  "with_slug": 9,
+  "docs_with_link": 783
+ },
+ "other_scope_volumes_with_links": {},
+ "p1873_list_entries": {
+  "frus1873p1v1": 57,
+  "frus1873p1v2": 57
+ },
+ "p1873_crosswalk": {
+  "frus1873p1v1": {
+   "p_HF1": 104298
+  },
+  "frus1873p1v2": {
+   "p_HF1": 104298
+  }
+ },
+ "fish_authority": {
+  "b": 1808,
+  "d": 1893,
+  "n": "Fish, Hamilton",
+  "q": "Q685992",
+  "r": "Non-career appointee. Secretary of State.",
+  "s": "fish-hamilton"
+ },
+ "untagged_1900_1929_split": {
+  "1910-1929": {
+   "other": 6232,
+   "rows": 28302,
+   "thetitle": 51,
+   "honorific": 523,
+   "paren": 21496,
+   "shares": {
+    "other": 0.2202,
+    "thetitle": 0.0018,
+    "honorific": 0.0185,
+    "paren": 0.7595
+   },
+   "volumes": 51
+  },
+  "1900-1909": {
+   "other": 3966,
+   "rows": 12405,
+   "honorific": 8435,
+   "thetitle": 3,
+   "paren": 1,
+   "shares": {
+    "other": 0.3197,
+    "honorific": 0.68,
+    "thetitle": 0.0002,
+    "paren": 0.0001
+   },
+   "volumes": 20
+  }
+ },
+ "other_samples": {
+  "1910-1929": [
+   [
+    "frus1915",
+    "d58",
+    "Reinsch",
+    "Minister Reinsch to the Secretary of State."
+   ],
+   [
+    "frus1915",
+    "d1332",
+    "Hanna",
+    "The Secretary of State to Consul General Hanna."
+   ],
+   [
+    "frus1915",
+    "d1695",
+    "Taylor",
+    "The Secretary of State to Consular Agent Taylor."
+   ],
+   [
+    "frus1917",
+    "d266",
+    "Reinsch",
+    "The Secretary of State to Minister Reinsch"
+   ],
+   [
+    "frus1917",
+    "d561",
+    "Gonzales",
+    "Minister Gonzales to the Secretary of State"
+   ],
+   [
+    "frus1917",
+    "d1027",
+    "Sharp",
+    "Ambassador Sharp to the Secretary of State"
+   ],
+   [
+    "frus1917",
+    "d1030",
+    "Stovall",
+    "Minister Stovall to the Secretary of State"
+   ],
+   [
+    "frus1917",
+    "d1128",
+    "Cobb",
+    "Collector Cobb to the Secretary of State"
+   ],
+   [
+    "frus1914",
+    "d36",
+    "Mooney",
+    "The Acting Secretary of State to Minister Mooney."
+   ],
+   [
+    "frus1914",
+    "d273",
+    "Sullivan",
+    "The Secretary of State to Minister Sullivan."
+   ],
+   [
+    "frus1914",
+    "d1176",
+    "Carothers",
+    "The Secretary of State to Special Agent Carothers."
+   ],
+   [
+    "frus1914",
+    "d1254",
+    "Bevan",
+    "Vice Consul Bevan to the Secretary of State."
+   ],
+   [
+    "frus1914",
+    "d1256",
+    "Silliman",
+    "Vice Consul Silliman to the Secretary of State."
+   ],
+   [
+    "frus1914",
+    "d1257",
+    "Silliman",
+    "The Secretary of State to Vice Consul Silliman."
+   ],
+   [
+    "frus1914",
+    "d1657",
+    "Clare",
+    "Consul Clare to the Secretary of State."
+   ]
+  ],
+  "1900-1909": [
+   [
+    "frus1902",
+    "d879",
+    "Roosevelt",
+    "President Roosevelt to the King of Siam."
+   ],
+   [
+    "frus1905",
+    "d126",
+    "Thompson",
+    "Ambassador Thompson to the Secretary of State."
+   ],
+   [
+    "frus1905",
+    "d176",
+    "Coolidge",
+    "Chargé Coolidge to the Secretary of State."
+   ],
+   [
+    "frus1905",
+    "d269",
+    "Barrett",
+    "Minister Barrett to the Secretary of State."
+   ],
+   [
+    "frus1905",
+    "d306",
+    "Lorillard",
+    "Chargé Lorillard to the Secretary of State."
+   ],
+   [
+    "frus1905",
+    "d377",
+    "Porter",
+    "The Acting Secretary of State to General Porter."
+   ],
+   [
+    "frus1905",
+    "d421",
+    "Reid",
+    "The Secretary of State to Ambassador Reid."
+   ],
+   [
+    "frus1905",
+    "d732",
+    "Pearson",
+    "Minister Pearson to the Secretary of State."
+   ],
+   [
+    "frus1905",
+    "d911",
+    "Roosevelt",
+    "The Emperor of Japan to President Roosevelt."
+   ],
+   [
+    "frus1905",
+    "d1131",
+    "Russell",
+    "Minister Russell to the Acting Secretary of State."
+   ],
+   [
+    "frus1910",
+    "d848",
+    "Squiers",
+    "The Secretary of State to Minister Squiers."
+   ],
+   [
+    "frus1906p1",
+    "d166",
+    "Wilson",
+    "The Acting Secretary of State to Chargé Wilson."
+   ],
+   [
+    "frus1906p1",
+    "d443",
+    "Morgan",
+    "Minister Morgan to the Secretary of State."
+   ],
+   [
+    "frus1906p1",
+    "d577",
+    "Cornelius",
+    "Consul Cornelius to the Third Assistant Secretary of State."
+   ],
+   [
+    "frus1908",
+    "d35",
+    "Dudley",
+    "Ambassador Dudley to the Secretary of State."
+   ]
+  ]
+ }
+}

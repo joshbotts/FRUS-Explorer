@@ -1,0 +1,6 @@
+b19a5be529e5fc7815b16b084242f67f9b135902a0a756e821e1eb37c1930747  /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift
+a340324a6b6f7675c13d59382e17a7f79e5a11aaeb5187306e75235f6850dc47  /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/FRUSExplorer/SourceExplorer/CentralFilesIndex.swift
+926518627106180802c6fd145338fb553b37b02c6f271a42bd91c817e023a3f8  /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/FRUSExplorer/SourceExplorer/GeoKeyNormalizer.swift
+bad78176196344dfda7bba5ff0c26e74463bf1d721e2046550f0fca389500432  /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/FRUSExplorer/Browser/VolumeStructure.swift
+9fa2dd79c896a17a6cd9b2d09347cb740bf76f4164e7bc986fd978e0d3f200fe  /Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/FRUSExplorer/Models/Manifest/ManifestModels.swift
+e96d09add0157594c0ac864f44f6278c3494b9330afa2e08e094decaea7942f6  gen_ios_extractYear.txt

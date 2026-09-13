@@ -1,0 +1,1526 @@
+{
+ "counts": {
+  "S_after|enclosure/body|reach": {
+   "labeled": 0,
+   "labeled_and_evidenced": 0,
+   "labeled_single": 0,
+   "linked": 123,
+   "rows": 431
+  },
+  "S_after|head|all": {
+   "right": 649,
+   "wrong-kind": 2
+  },
+  "S_after|head|evidence=department-only": {
+   "right": 409
+  },
+  "S_after|head|evidence=department-only|label-single": {
+   "right": 409
+  },
+  "S_after|head|evidence=not-department-only": {
+   "right": 240,
+   "wrong-kind": 2
+  },
+  "S_after|head|evidence=not-department-only|label-multi": {
+   "right": 29
+  },
+  "S_after|head|evidence=not-department-only|label-single": {
+   "right": 211,
+   "wrong-kind": 2
+  },
+  "S_after|head|label-kinds=department": {
+   "right": 409
+  },
+  "S_after|head|label-kinds=foreign-consul": {
+   "wrong-kind": 1
+  },
+  "S_after|head|label-kinds=foreign-legation": {
+   "right": 3
+  },
+  "S_after|head|label-kinds=foreign-legation|us-mission": {
+   "right": 29
+  },
+  "S_after|head|label-kinds=us-consulate": {
+   "right": 16
+  },
+  "S_after|head|label-kinds=us-mission": {
+   "right": 192,
+   "wrong-kind": 1
+  },
+  "S_after|head|label-multi": {
+   "right": 29
+  },
+  "S_after|head|label-single": {
+   "right": 620,
+   "wrong-kind": 2
+  },
+  "S_after|head|reach": {
+   "labeled": 843,
+   "labeled_and_evidenced": 651,
+   "labeled_single": 788,
+   "linked": 811,
+   "rows": 1023
+  },
+  "S_after|head|side=from": {
+   "right": 262,
+   "wrong-kind": 2
+  },
+  "S_after|head|side=to": {
+   "right": 387
+  },
+  "S_before|enclosure/body|reach": {
+   "labeled": 0,
+   "labeled_and_evidenced": 0,
+   "labeled_single": 0,
+   "linked": 123,
+   "rows": 431
+  },
+  "S_before|head|all": {
+   "right": 39,
+   "wrong-kind": 1
+  },
+  "S_before|head|evidence=department-only": {
+   "right": 23
+  },
+  "S_before|head|evidence=department-only|label-single": {
+   "right": 23
+  },
+  "S_before|head|evidence=not-department-only": {
+   "right": 16,
+   "wrong-kind": 1
+  },
+  "S_before|head|evidence=not-department-only|label-single": {
+   "right": 16,
+   "wrong-kind": 1
+  },
+  "S_before|head|label-kinds=department": {
+   "right": 23
+  },
+  "S_before|head|label-kinds=foreign-consul": {
+   "wrong-kind": 1
+  },
+  "S_before|head|label-kinds=us-consulate": {
+   "right": 16
+  },
+  "S_before|head|label-single": {
+   "right": 39,
+   "wrong-kind": 1
+  },
+  "S_before|head|reach": {
+   "labeled": 52,
+   "labeled_and_evidenced": 40,
+   "labeled_single": 52,
+   "linked": 811,
+   "rows": 1023
+  },
+  "S_before|head|side=from": {
+   "right": 16,
+   "wrong-kind": 1
+  },
+  "S_before|head|side=to": {
+   "right": 23
+  },
+  "T_after|enclosure/body|reach": {
+   "labeled": 0,
+   "labeled_and_evidenced": 0,
+   "labeled_single": 0,
+   "linked": 123,
+   "rows": 431
+  },
+  "T_after|head|all": {
+   "right": 730,
+   "wrong-kind": 2,
+   "wrong-place": 4
+  },
+  "T_after|head|evidence=department-only": {
+   "right": 453
+  },
+  "T_after|head|evidence=department-only|label-single": {
+   "right": 453
+  },
+  "T_after|head|evidence=not-department-only": {
+   "right": 277,
+   "wrong-kind": 2,
+   "wrong-place": 4
+  },
+  "T_after|head|evidence=not-department-only|label-multi": {
+   "right": 29
+  },
+  "T_after|head|evidence=not-department-only|label-single": {
+   "right": 248,
+   "wrong-kind": 2,
+   "wrong-place": 4
+  },
+  "T_after|head|label-kinds=department": {
+   "right": 453
+  },
+  "T_after|head|label-kinds=foreign-consul": {
+   "wrong-kind": 1
+  },
+  "T_after|head|label-kinds=foreign-legation": {
+   "right": 3
+  },
+  "T_after|head|label-kinds=foreign-legation|us-mission": {
+   "right": 29
+  },
+  "T_after|head|label-kinds=us-consulate": {
+   "right": 21,
+   "wrong-place": 3
+  },
+  "T_after|head|label-kinds=us-mission": {
+   "right": 224,
+   "wrong-kind": 1,
+   "wrong-place": 1
+  },
+  "T_after|head|label-multi": {
+   "right": 29
+  },
+  "T_after|head|label-single": {
+   "right": 701,
+   "wrong-kind": 2,
+   "wrong-place": 4
+  },
+  "T_after|head|reach": {
+   "labeled": 937,
+   "labeled_and_evidenced": 736,
+   "labeled_single": 882,
+   "linked": 811,
+   "rows": 1023
+  },
+  "T_after|head|side=from": {
+   "right": 299,
+   "wrong-kind": 2,
+   "wrong-place": 4
+  },
+  "T_after|head|side=to": {
+   "right": 431
+  },
+  "T_before|enclosure/body|reach": {
+   "labeled": 0,
+   "labeled_and_evidenced": 0,
+   "labeled_single": 0,
+   "linked": 123,
+   "rows": 431
+  },
+  "T_before|head|all": {
+   "right": 53,
+   "wrong-kind": 1,
+   "wrong-place": 4
+  },
+  "T_before|head|evidence=department-only": {
+   "right": 32
+  },
+  "T_before|head|evidence=department-only|label-single": {
+   "right": 32
+  },
+  "T_before|head|evidence=not-department-only": {
+   "right": 21,
+   "wrong-kind": 1,
+   "wrong-place": 4
+  },
+  "T_before|head|evidence=not-department-only|label-single": {
+   "right": 21,
+   "wrong-kind": 1,
+   "wrong-place": 4
+  },
+  "T_before|head|label-kinds=department": {
+   "right": 32
+  },
+  "T_before|head|label-kinds=foreign-consul": {
+   "wrong-kind": 1
+  },
+  "T_before|head|label-kinds=us-consulate": {
+   "right": 21,
+   "wrong-place": 3
+  },
+  "T_before|head|label-kinds=us-mission": {
+   "wrong-place": 1
+  },
+  "T_before|head|label-single": {
+   "right": 53,
+   "wrong-kind": 1,
+   "wrong-place": 4
+  },
+  "T_before|head|reach": {
+   "labeled": 76,
+   "labeled_and_evidenced": 58,
+   "labeled_single": 76,
+   "linked": 811,
+   "rows": 1023
+  },
+  "T_before|head|side=from": {
+   "right": 21,
+   "wrong-kind": 1,
+   "wrong-place": 4
+  },
+  "T_before|head|side=to": {
+   "right": 32
+  },
+  "documents|frus1873p1v1": {
+   "S_after:shown": 269,
+   "S_before:shown": 0,
+   "docs": 310,
+   "kind:country": 301,
+   "kind:no-dateline(kind unread)": 5,
+   "kind:topical": 4
+  },
+  "documents|frus1873p1v2": {
+   "S_after:shown": 179,
+   "S_before:shown": 50,
+   "docs": 324,
+   "kind:country": 255,
+   "kind:no-dateline(kind unread)": 8,
+   "kind:topical": 61
+  },
+  "evidence classes|enclosure/body": {
+   "department": 11,
+   "no-link": 308,
+   "us-consulate": 3,
+   "us-consulate|us-mission": 2,
+   "us-mission": 107
+  },
+  "evidence classes|head": {
+   "department": 494,
+   "foreign-legation": 29,
+   "no-link": 212,
+   "us-consulate": 16,
+   "us-consulate|us-mission": 16,
+   "us-mission": 256
+  }
+ },
+ "distinct_documents_judged": {
+  "S_after|evidence=department-only": 409,
+  "S_after|evidence=not-department-only": 242,
+  "S_before|evidence=department-only": 23,
+  "S_before|evidence=not-department-only": 17,
+  "T_after|evidence=department-only": 453,
+  "T_after|evidence=not-department-only": 283,
+  "T_before|evidence=department-only": 32,
+  "T_before|evidence=not-department-only": 26
+ },
+ "distinct_list_entries_judged": {
+  "S_after|evidence=department-only": 6,
+  "S_after|evidence=not-department-only": 25,
+  "S_before|evidence=department-only": 3,
+  "S_before|evidence=not-department-only": 4,
+  "T_after|evidence=department-only": 6,
+  "T_after|evidence=not-department-only": 31,
+  "T_before|evidence=department-only": 3,
+  "T_before|evidence=not-department-only": 5
+ },
+ "generated_by": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/measure-se-pocom/proxy_1873.py",
+ "inputs": {
+  "after": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/reframe/measure-se-pocom/classified/head-listvols-docs.jsonl",
+  "before": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/chapter-context/label-validation/classified-list-volumes.jsonl",
+  "gold_entries": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/chapter-context/label-validation/gold-entries.jsonl",
+  "gold_mentions": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/chapter-context/label-validation/gold-mentions.jsonl"
+ },
+ "non_right_examples": {
+  "S_after|wrong-kind": [
+   {
+    "chapter": "XV.\u2014Great Britain.",
+    "dateline": "Catskill Station , July 18, 1873 . (Received July 19.)",
+    "doc": "frus1873p1v1/d196",
+    "entry": "Sir Edward Thornton -- envoy extraordinary and minister plenipotentiary of Her Britannic Majesty at Washington.",
+    "evidence": [
+     "('foreign-legation', ('united-kingdom',))"
+    ],
+    "header": "No. 194. Sir Edward Thornton to Mr. Davis .",
+    "heading": "great britain.",
+    "label": "the U.S. mission in Great Britain -- writing to the Department of State",
+    "name": "Sir Edward Thornton",
+    "side": "from"
+   },
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "United Stated Consulate , Tripoli, (Barbary,) May 26, 1871 . (Received",
+    "doc": "frus1873p1v2/d176",
+    "entry": "Michel Vidal -- consul of the United States at Tripoli.",
+    "evidence": [
+     "('us-consulate', 'tripoli')"
+    ],
+    "header": "No. 482. Mr. Vidal to Mr. Hunter .",
+    "heading": "turkish empire.",
+    "label": "a foreign consul in the United States -- writing to the Department of State",
+    "name": "Vidal",
+    "side": "from"
+   }
+  ],
+  "S_before|wrong-kind": [
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "United Stated Consulate , Tripoli, (Barbary,) May 26, 1871 . (Received",
+    "doc": "frus1873p1v2/d176",
+    "entry": "Michel Vidal -- consul of the United States at Tripoli.",
+    "evidence": [
+     "('us-consulate', 'tripoli')"
+    ],
+    "header": "No. 482. Mr. Vidal to Mr. Hunter .",
+    "heading": "turkish empire.",
+    "label": "a foreign consul in the United States -- writing to the Department of State",
+    "name": "Vidal",
+    "side": "from"
+   }
+  ],
+  "T_after|wrong-kind": [
+   {
+    "chapter": "XV.\u2014Great Britain.",
+    "dateline": "Catskill Station , July 18, 1873 . (Received July 19.)",
+    "doc": "frus1873p1v1/d196",
+    "entry": "Sir Edward Thornton -- envoy extraordinary and minister plenipotentiary of Her Britannic Majesty at Washington.",
+    "evidence": [
+     "('foreign-legation', ('united-kingdom',))"
+    ],
+    "header": "No. 194. Sir Edward Thornton to Mr. Davis .",
+    "heading": "great britain.",
+    "label": "the U.S. mission in Great Britain -- writing to the Department of State",
+    "name": "Sir Edward Thornton",
+    "side": "from"
+   },
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "United Stated Consulate , Tripoli, (Barbary,) May 26, 1871 . (Received",
+    "doc": "frus1873p1v2/d176",
+    "entry": "Michel Vidal -- consul of the United States at Tripoli.",
+    "evidence": [
+     "('us-consulate', 'tripoli')"
+    ],
+    "header": "No. 482. Mr. Vidal to Mr. Hunter .",
+    "heading": "turkish empire.",
+    "label": "a foreign consul in the United States -- writing to the Department of State",
+    "name": "Vidal",
+    "side": "from"
+   }
+  ],
+  "T_after|wrong-place": [
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "Agency and Consulate-General of the United States of America at Alexan",
+    "doc": "frus1873p1v2/d165",
+    "entry": "R. Beardsley -- agent and consul general of the United States at Alexandria.",
+    "evidence": [
+     "('us-consulate', 'alexandria')",
+     "('us-mission', ('egypt',))"
+    ],
+    "header": "No. 471. Mr. Beardsley to Mr. Fish .",
+    "heading": "turkish empire.",
+    "label": "the U.S. consulate at Egypt -- writing to the Department of State",
+    "name": "Beardsley",
+    "side": "from"
+   },
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "Agency and Consulate-General of the United States of America at Alexan",
+    "doc": "frus1873p1v2/d166",
+    "entry": "R. Beardsley -- agent and consul general of the United States at Alexandria.",
+    "evidence": [
+     "('us-consulate', 'alexandria')",
+     "('us-mission', ('egypt',))"
+    ],
+    "header": "No. 472. Mr. Beardsley to Mr. Fish .",
+    "heading": "turkish empire.",
+    "label": "the U.S. consulate at Egypt -- writing to the Department of State",
+    "name": "Beardsley",
+    "side": "from"
+   },
+   {
+    "chapter": "Opinions of the heads of the executive departments, and other papers, relating to expatriation, naturalization, and change of allegiance",
+    "dateline": "Agency and Consulate-General of the United States of America at Alexan",
+    "doc": "frus1873p1v2/d228",
+    "entry": "R. Beardsley -- agent and consul general of the United States at Alexandria.",
+    "evidence": [
+     "('us-consulate', 'alexandria')",
+     "('us-mission', ('egypt',))"
+    ],
+    "header": "Mr. Beardsley to Mr. Fish .",
+    "heading": "turkish empire.",
+    "label": "the U.S. consulate at Egypt -- writing to the Department of State",
+    "name": "Beardsley",
+    "side": "from"
+   },
+   {
+    "chapter": "Persia.",
+    "dateline": "\u201c Foreign Office , August 25, 1860 .",
+    "doc": "frus1873p1v2/d264",
+    "entry": "J. Russell Jones -- minister resident of the United States at Brussels.",
+    "evidence": [
+     "('us-mission', ('belgium',))"
+    ],
+    "header": "Lord J. Russell to Mr. Alison .",
+    "heading": "belgium.",
+    "label": "the U.S. mission in Persia -- writing to the Department of State",
+    "name": "Lord J. Russell",
+    "side": "from"
+   }
+  ],
+  "T_before|wrong-kind": [
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "United Stated Consulate , Tripoli, (Barbary,) May 26, 1871 . (Received",
+    "doc": "frus1873p1v2/d176",
+    "entry": "Michel Vidal -- consul of the United States at Tripoli.",
+    "evidence": [
+     "('us-consulate', 'tripoli')"
+    ],
+    "header": "No. 482. Mr. Vidal to Mr. Hunter .",
+    "heading": "turkish empire.",
+    "label": "a foreign consul in the United States -- writing to the Department of State",
+    "name": "Vidal",
+    "side": "from"
+   }
+  ],
+  "T_before|wrong-place": [
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "Agency and Consulate-General of the United States of America at Alexan",
+    "doc": "frus1873p1v2/d165",
+    "entry": "R. Beardsley -- agent and consul general of the United States at Alexandria.",
+    "evidence": [
+     "('us-consulate', 'alexandria')",
+     "('us-mission', ('egypt',))"
+    ],
+    "header": "No. 471. Mr. Beardsley to Mr. Fish .",
+    "heading": "turkish empire.",
+    "label": "the U.S. consulate at Egypt -- writing to the Department of State",
+    "name": "Beardsley",
+    "side": "from"
+   },
+   {
+    "chapter": "XXXII.\u2014Turkish Empire.",
+    "dateline": "Agency and Consulate-General of the United States of America at Alexan",
+    "doc": "frus1873p1v2/d166",
+    "entry": "R. Beardsley -- agent and consul general of the United States at Alexandria.",
+    "evidence": [
+     "('us-consulate', 'alexandria')",
+     "('us-mission', ('egypt',))"
+    ],
+    "header": "No. 472. Mr. Beardsley to Mr. Fish .",
+    "heading": "turkish empire.",
+    "label": "the U.S. consulate at Egypt -- writing to the Department of State",
+    "name": "Beardsley",
+    "side": "from"
+   },
+   {
+    "chapter": "Opinions of the heads of the executive departments, and other papers, relating to expatriation, naturalization, and change of allegiance",
+    "dateline": "Agency and Consulate-General of the United States of America at Alexan",
+    "doc": "frus1873p1v2/d228",
+    "entry": "R. Beardsley -- agent and consul general of the United States at Alexandria.",
+    "evidence": [
+     "('us-consulate', 'alexandria')",
+     "('us-mission', ('egypt',))"
+    ],
+    "header": "Mr. Beardsley to Mr. Fish .",
+    "heading": "turkish empire.",
+    "label": "the U.S. consulate at Egypt -- writing to the Department of State",
+    "name": "Beardsley",
+    "side": "from"
+   },
+   {
+    "chapter": "Persia.",
+    "dateline": "\u201c Foreign Office , August 25, 1860 .",
+    "doc": "frus1873p1v2/d264",
+    "entry": "J. Russell Jones -- minister resident of the United States at Brussels.",
+    "evidence": [
+     "('us-mission', ('belgium',))"
+    ],
+    "header": "Lord J. Russell to Mr. Alison .",
+    "heading": "belgium.",
+    "label": "the U.S. mission in Persia -- writing to the Department of State",
+    "name": "Lord J. Russell",
+    "side": "from"
+   }
+  ]
+ },
+ "precision": {
+  "S_after|head|all": {
+   "judged": 651,
+   "loose_precision_wilson95": [
+    0.9969,
+    0.9889,
+    0.9992
+   ],
+   "right": 649,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9969,
+    0.9889,
+    0.9992
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 0
+  },
+  "S_after|head|evidence=department-only": {
+   "judged": 409,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9907,
+    1.0
+   ],
+   "right": 409,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9907,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|evidence=department-only|label-single": {
+   "judged": 409,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9907,
+    1.0
+   ],
+   "right": 409,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9907,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|evidence=not-department-only": {
+   "judged": 242,
+   "loose_precision_wilson95": [
+    0.9917,
+    0.9704,
+    0.9977
+   ],
+   "right": 240,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9917,
+    0.9704,
+    0.9977
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 0
+  },
+  "S_after|head|evidence=not-department-only|label-multi": {
+   "judged": 29,
+   "loose_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "right": 29,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|evidence=not-department-only|label-single": {
+   "judged": 213,
+   "loose_precision_wilson95": [
+    0.9906,
+    0.9664,
+    0.9974
+   ],
+   "right": 211,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9906,
+    0.9664,
+    0.9974
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 0
+  },
+  "S_after|head|label-kinds=department": {
+   "judged": 409,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9907,
+    1.0
+   ],
+   "right": 409,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9907,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|label-kinds=foreign-consul": {
+   "judged": 1,
+   "loose_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "right": 0,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_after|head|label-kinds=foreign-legation": {
+   "judged": 3,
+   "loose_precision_wilson95": [
+    1.0,
+    0.4385,
+    1.0
+   ],
+   "right": 3,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.4385,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|label-kinds=foreign-legation|us-mission": {
+   "judged": 29,
+   "loose_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "right": 29,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|label-kinds=us-consulate": {
+   "judged": 16,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8064,
+    1.0
+   ],
+   "right": 16,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8064,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|label-kinds=us-mission": {
+   "judged": 193,
+   "loose_precision_wilson95": [
+    0.9948,
+    0.9712,
+    0.9991
+   ],
+   "right": 192,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9948,
+    0.9712,
+    0.9991
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_after|head|label-multi": {
+   "judged": 29,
+   "loose_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "right": 29,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_after|head|label-single": {
+   "judged": 622,
+   "loose_precision_wilson95": [
+    0.9968,
+    0.9884,
+    0.9991
+   ],
+   "right": 620,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9968,
+    0.9884,
+    0.9991
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 0
+  },
+  "S_after|head|side=from": {
+   "judged": 264,
+   "loose_precision_wilson95": [
+    0.9924,
+    0.9728,
+    0.9979
+   ],
+   "right": 262,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9924,
+    0.9728,
+    0.9979
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 0
+  },
+  "S_after|head|side=to": {
+   "judged": 387,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9902,
+    1.0
+   ],
+   "right": 387,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9902,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_before|head|all": {
+   "judged": 40,
+   "loose_precision_wilson95": [
+    0.975,
+    0.8712,
+    0.9956
+   ],
+   "right": 39,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.975,
+    0.8712,
+    0.9956
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_before|head|evidence=department-only": {
+   "judged": 23,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "right": 23,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_before|head|evidence=department-only|label-single": {
+   "judged": 23,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "right": 23,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_before|head|evidence=not-department-only": {
+   "judged": 17,
+   "loose_precision_wilson95": [
+    0.9412,
+    0.7302,
+    0.9895
+   ],
+   "right": 16,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9412,
+    0.7302,
+    0.9895
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_before|head|evidence=not-department-only|label-single": {
+   "judged": 17,
+   "loose_precision_wilson95": [
+    0.9412,
+    0.7302,
+    0.9895
+   ],
+   "right": 16,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9412,
+    0.7302,
+    0.9895
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_before|head|label-kinds=department": {
+   "judged": 23,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "right": 23,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_before|head|label-kinds=foreign-consul": {
+   "judged": 1,
+   "loose_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "right": 0,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_before|head|label-kinds=us-consulate": {
+   "judged": 16,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8064,
+    1.0
+   ],
+   "right": 16,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8064,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "S_before|head|label-single": {
+   "judged": 40,
+   "loose_precision_wilson95": [
+    0.975,
+    0.8712,
+    0.9956
+   ],
+   "right": 39,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.975,
+    0.8712,
+    0.9956
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_before|head|side=from": {
+   "judged": 17,
+   "loose_precision_wilson95": [
+    0.9412,
+    0.7302,
+    0.9895
+   ],
+   "right": 16,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9412,
+    0.7302,
+    0.9895
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "S_before|head|side=to": {
+   "judged": 23,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "right": 23,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8569,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|all": {
+   "judged": 736,
+   "loose_precision_wilson95": [
+    0.9918,
+    0.9823,
+    0.9963
+   ],
+   "right": 730,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9918,
+    0.9823,
+    0.9963
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 4
+  },
+  "T_after|head|evidence=department-only": {
+   "judged": 453,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9916,
+    1.0
+   ],
+   "right": 453,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9916,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|evidence=department-only|label-single": {
+   "judged": 453,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9916,
+    1.0
+   ],
+   "right": 453,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9916,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|evidence=not-department-only": {
+   "judged": 283,
+   "loose_precision_wilson95": [
+    0.9788,
+    0.9545,
+    0.9902
+   ],
+   "right": 277,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9788,
+    0.9545,
+    0.9902
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 4
+  },
+  "T_after|head|evidence=not-department-only|label-multi": {
+   "judged": 29,
+   "loose_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "right": 29,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|evidence=not-department-only|label-single": {
+   "judged": 254,
+   "loose_precision_wilson95": [
+    0.9764,
+    0.9494,
+    0.9891
+   ],
+   "right": 248,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9764,
+    0.9494,
+    0.9891
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 4
+  },
+  "T_after|head|label-kinds=department": {
+   "judged": 453,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9916,
+    1.0
+   ],
+   "right": 453,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9916,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|label-kinds=foreign-consul": {
+   "judged": 1,
+   "loose_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "right": 0,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "T_after|head|label-kinds=foreign-legation": {
+   "judged": 3,
+   "loose_precision_wilson95": [
+    1.0,
+    0.4385,
+    1.0
+   ],
+   "right": 3,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.4385,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|label-kinds=foreign-legation|us-mission": {
+   "judged": 29,
+   "loose_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "right": 29,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|label-kinds=us-consulate": {
+   "judged": 24,
+   "loose_precision_wilson95": [
+    0.875,
+    0.69,
+    0.9566
+   ],
+   "right": 21,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.875,
+    0.69,
+    0.9566
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 3
+  },
+  "T_after|head|label-kinds=us-mission": {
+   "judged": 226,
+   "loose_precision_wilson95": [
+    0.9912,
+    0.9683,
+    0.9976
+   ],
+   "right": 224,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9912,
+    0.9683,
+    0.9976
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 1
+  },
+  "T_after|head|label-multi": {
+   "judged": 29,
+   "loose_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "right": 29,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.883,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_after|head|label-single": {
+   "judged": 707,
+   "loose_precision_wilson95": [
+    0.9915,
+    0.9816,
+    0.9961
+   ],
+   "right": 701,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9915,
+    0.9816,
+    0.9961
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 4
+  },
+  "T_after|head|side=from": {
+   "judged": 305,
+   "loose_precision_wilson95": [
+    0.9803,
+    0.9578,
+    0.991
+   ],
+   "right": 299,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9803,
+    0.9578,
+    0.991
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 2,
+   "wrong_place": 4
+  },
+  "T_after|head|side=to": {
+   "judged": 431,
+   "loose_precision_wilson95": [
+    1.0,
+    0.9912,
+    1.0
+   ],
+   "right": 431,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.9912,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_before|head|all": {
+   "judged": 58,
+   "loose_precision_wilson95": [
+    0.9138,
+    0.8136,
+    0.9626
+   ],
+   "right": 53,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9138,
+    0.8136,
+    0.9626
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 4
+  },
+  "T_before|head|evidence=department-only": {
+   "judged": 32,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "right": 32,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_before|head|evidence=department-only|label-single": {
+   "judged": 32,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "right": 32,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_before|head|evidence=not-department-only": {
+   "judged": 26,
+   "loose_precision_wilson95": [
+    0.8077,
+    0.6212,
+    0.9149
+   ],
+   "right": 21,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.8077,
+    0.6212,
+    0.9149
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 4
+  },
+  "T_before|head|evidence=not-department-only|label-single": {
+   "judged": 26,
+   "loose_precision_wilson95": [
+    0.8077,
+    0.6212,
+    0.9149
+   ],
+   "right": 21,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.8077,
+    0.6212,
+    0.9149
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 4
+  },
+  "T_before|head|label-kinds=department": {
+   "judged": 32,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "right": 32,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  },
+  "T_before|head|label-kinds=foreign-consul": {
+   "judged": 1,
+   "loose_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "right": 0,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 0
+  },
+  "T_before|head|label-kinds=us-consulate": {
+   "judged": 24,
+   "loose_precision_wilson95": [
+    0.875,
+    0.69,
+    0.9566
+   ],
+   "right": 21,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.875,
+    0.69,
+    0.9566
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 3
+  },
+  "T_before|head|label-kinds=us-mission": {
+   "judged": 1,
+   "loose_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "right": 0,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.0,
+    0.0,
+    0.7935
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 1
+  },
+  "T_before|head|label-single": {
+   "judged": 58,
+   "loose_precision_wilson95": [
+    0.9138,
+    0.8136,
+    0.9626
+   ],
+   "right": 53,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.9138,
+    0.8136,
+    0.9626
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 4
+  },
+  "T_before|head|side=from": {
+   "judged": 26,
+   "loose_precision_wilson95": [
+    0.8077,
+    0.6212,
+    0.9149
+   ],
+   "right": 21,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    0.8077,
+    0.6212,
+    0.9149
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 1,
+   "wrong_place": 4
+  },
+  "T_before|head|side=to": {
+   "judged": 32,
+   "loose_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "right": 32,
+   "right_kind_place_untestable": 0,
+   "strict_precision_wilson95": [
+    1.0,
+    0.8928,
+    1.0
+   ],
+   "unlabeled": 0,
+   "wrong_kind": 0,
+   "wrong_place": 0
+  }
+ }
+}

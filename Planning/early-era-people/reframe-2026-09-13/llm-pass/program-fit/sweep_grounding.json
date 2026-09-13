@@ -1,0 +1,12 @@
+{
+ "heads": 267,
+ "returned": 2601312,
+ "unlocated": 88009,
+ "located": 2510890,
+ "mentions": 3656238,
+ "truncated": 155,
+ "failed_chunks": 0,
+ "chunks": 330979,
+ "unlocated_share_of_returned": 0.0338,
+ "occurrences_per_located_string": 1.456
+}

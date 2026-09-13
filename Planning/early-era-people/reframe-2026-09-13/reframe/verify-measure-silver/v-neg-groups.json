@@ -1,0 +1,357 @@
+{
+ "classes": {
+  "1946-": {
+   "different_or_unknown": 1176,
+   "birth_equal_forename_differs": 649,
+   "likely_registry_miss": 15
+  },
+  "1930-1945": {
+   "different_or_unknown": 71,
+   "likely_registry_miss": 1
+  },
+  "1900-1929": {
+   "different_or_unknown": 113,
+   "likely_registry_miss": 2
+  }
+ },
+ "top_groups": {
+  "1946-": [
+   [
+    "Johnson, Lyndon Baines",
+    1908,
+    "johnson-ural-alexis",
+    "Ural Alexis",
+    1908,
+    "birth_equal_forename_differs",
+    649
+   ],
+   [
+    "Bundy, McGeorge",
+    null,
+    "bundy-william-putnam",
+    "William Putnam",
+    1917,
+    "different_or_unknown",
+    619
+   ],
+   [
+    "Dulles, Allen W.",
+    null,
+    "dulles-john-foster",
+    "John Foster",
+    1888,
+    "different_or_unknown",
+    92
+   ],
+   [
+    "Parsons, Howard L.",
+    null,
+    "parsons-james-graham",
+    "James Graham",
+    1907,
+    "different_or_unknown",
+    40
+   ],
+   [
+    "Peterson, Peter G.",
+    null,
+    "peterson-frederick-valdemar-erastus",
+    "Frederick Valdemar Erastus",
+    1903,
+    "different_or_unknown",
+    33
+   ],
+   [
+    "Smith, K. Wayne",
+    null,
+    "smith-gerard-coad",
+    "Gerard Coad",
+    1914,
+    "different_or_unknown",
+    25
+   ],
+   [
+    "Allen, Ward P.",
+    null,
+    "allen-george-venable",
+    "George Venable",
+    1903,
+    "different_or_unknown",
+    23
+   ],
+   [
+    "Andrews, George D.",
+    null,
+    "andrews-stanley",
+    "Stanley",
+    1894,
+    "different_or_unknown",
+    21
+   ],
+   [
+    "Jones, J. Jefferson, III",
+    null,
+    "jones-harold-armstrong",
+    "Harold Armstrong",
+    1897,
+    "different_or_unknown",
+    16
+   ],
+   [
+    "Freeman, Orville L.",
+    null,
+    "freeman-fulton",
+    "Fulton",
+    1915,
+    "different_or_unknown",
+    16
+   ],
+   [
+    "Cabot, Thomas D.",
+    null,
+    "cabot-john-moors",
+    "John Moors",
+    1901,
+    "different_or_unknown",
+    14
+   ],
+   [
+    "Cooper, Charles A.",
+    null,
+    "cooper-john-sherman",
+    "John Sherman",
+    1901,
+    "different_or_unknown",
+    14
+   ]
+  ],
+  "1930-1945": [
+   [
+    "Harriman, Kathleen",
+    null,
+    "harriman-william-averell",
+    "William Averell",
+    1891,
+    "different_or_unknown",
+    43
+   ],
+   [
+    "Harrison, George L.",
+    null,
+    "harrison-leland",
+    "Leland",
+    1883,
+    "different_or_unknown",
+    8
+   ],
+   [
+    "Patterson, Robert P.",
+    null,
+    "patterson-richard-cunningham",
+    "Richard Cunningham",
+    1896,
+    "different_or_unknown",
+    7
+   ],
+   [
+    "Smith, Harold D.",
+    null,
+    "smith-walter-bedell",
+    "Walter Bedell",
+    1895,
+    "different_or_unknown",
+    4
+   ],
+   [
+    "White, Harry Dexter",
+    null,
+    "white-john-campbell",
+    "John Campbell",
+    1884,
+    "different_or_unknown",
+    3
+   ],
+   [
+    "Gardner, Matthias B.",
+    null,
+    "gardner-oliver-maxwell",
+    "Oliver Maxwell",
+    1882,
+    "different_or_unknown",
+    2
+   ],
+   [
+    "Allen, William Denis",
+    null,
+    "allen-george-venable",
+    "George Venable",
+    1903,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Maisky, Ivan Mikhailovich",
+    null,
+    "dunn-james-clement",
+    "James Clement",
+    1890,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Davis, Elmer",
+    null,
+    "davis-monnett-bain",
+    "Monnett Bain",
+    1893,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Roosevelt, Franklin D.",
+    1882,
+    "roosevelt-nicholas",
+    "Nicholas",
+    1893,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Stimson, Henry Louis",
+    null,
+    "stimson-henry-lewis",
+    "Henry Lewis",
+    1867,
+    "likely_registry_miss",
+    1
+   ]
+  ],
+  "1900-1929": [
+   [
+    "Wilson, Woodrow",
+    1856,
+    "wilson-charles-stetson",
+    "Charles Stetson",
+    1873,
+    "different_or_unknown",
+    88
+   ],
+   [
+    "Morgan, Henry H.",
+    null,
+    "morgan-edwin-vernon",
+    "Edwin Vernon",
+    1865,
+    "different_or_unknown",
+    19
+   ],
+   [
+    "Osborne, John Ball",
+    null,
+    "osborne-john-eugene",
+    "John Eugene",
+    1858,
+    "likely_registry_miss",
+    2
+   ],
+   [
+    "Wilson, William B.",
+    null,
+    "wilson-charles-stetson",
+    "Charles Stetson",
+    1873,
+    "different_or_unknown",
+    2
+   ],
+   [
+    "Hale, William Bayard",
+    null,
+    "hale-edward-joseph",
+    "Edward Joseph",
+    1839,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Fletcher, Duncan U.",
+    null,
+    "fletcher-henry-prather",
+    "Henry Prather",
+    1873,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Williams, John Sharp",
+    null,
+    "williams-george-fred",
+    "George Fred",
+    1852,
+    "different_or_unknown",
+    1
+   ],
+   [
+    "Howard, Esme William",
+    null,
+    "howard-henry-clay",
+    "Henry Clay",
+    1860,
+    "different_or_unknown",
+    1
+   ]
+  ]
+ },
+ "likely_registry_miss_groups": {
+  "1946-": [
+   [
+    "Reischauer, Edwin O.",
+    null,
+    "reischauer-edwin-oldfather",
+    "Edwin Oldfather",
+    1910,
+    "likely_registry_miss",
+    11
+   ],
+   [
+    "Sullivan, William C.",
+    null,
+    "sullivan-william-healy",
+    "William Healy",
+    1922,
+    "likely_registry_miss",
+    3
+   ],
+   [
+    "Schmidt, Helmut",
+    null,
+    "sonnenfeldt-helmut",
+    "Helmut",
+    1926,
+    "likely_registry_miss",
+    1
+   ]
+  ],
+  "1930-1945": [
+   [
+    "Stimson, Henry Louis",
+    null,
+    "stimson-henry-lewis",
+    "Henry Lewis",
+    1867,
+    "likely_registry_miss",
+    1
+   ]
+  ],
+  "1900-1929": [
+   [
+    "Osborne, John Ball",
+    null,
+    "osborne-john-eugene",
+    "John Eugene",
+    1858,
+    "likely_registry_miss",
+    2
+   ]
+  ]
+ }
+}

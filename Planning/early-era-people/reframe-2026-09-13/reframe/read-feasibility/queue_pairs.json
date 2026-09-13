@@ -1,0 +1,74 @@
+{
+ "volumes": 267,
+ "totals": {
+  "marked": 223505,
+  "fc": 732022,
+  "fs": 1579296,
+  "marked|fc": 864469,
+  "marked|fs": 1596691,
+  "three_way": 1841697,
+  "fs_only_increment": 977228,
+  "fc&fs_same_key": 482269
+ },
+ "by_band": {
+  "1861-1899": {
+   "marked": 72162,
+   "fc": 188523,
+   "fs": 349848,
+   "marked|fc": 236790,
+   "marked|fs": 353837,
+   "three_way": 425169,
+   "fs_only_increment": 188379,
+   "fc&fs_same_key": 116812
+  },
+  "1900-1929": {
+   "marked": 47330,
+   "fc": 157187,
+   "fs": 330565,
+   "marked|fc": 185355,
+   "marked|fs": 337436,
+   "three_way": 394266,
+   "fs_only_increment": 208911,
+   "fc&fs_same_key": 97966
+  },
+  "1930-1945": {
+   "marked": 75006,
+   "fc": 224347,
+   "fs": 541284,
+   "marked|fc": 263113,
+   "marked|fs": 546051,
+   "three_way": 606537,
+   "fs_only_increment": 343424,
+   "fc&fs_same_key": 162391
+  },
+  "1946-": {
+   "marked": 29007,
+   "fc": 161965,
+   "fs": 357599,
+   "marked|fc": 179211,
+   "marked|fs": 359367,
+   "three_way": 415725,
+   "fs_only_increment": 236514,
+   "fc&fs_same_key": 105100
+  }
+ },
+ "documents_reached": {
+  "marked|fc": 192128,
+  "three_way": 196434
+ },
+ "documents_reached_only_through_fs_by_band": {
+  "1861-1899": 89,
+  "1900-1929": 1374,
+  "1930-1945": 1668,
+  "1946-": 1175
+ },
+ "positive_control_expected": {
+  "marked": 223505,
+  "fc": 732022,
+  "fs": 1579296,
+  "marked|fc": 864469,
+  "marked|fs": 1596691
+ },
+ "secs": 8.1,
+ "positive_control_pass": true
+}

@@ -1,0 +1,34 @@
+{
+ "people_records": 16312,
+ "records_with_slug": 3928,
+ "records_with_anchor_and_slug": 1242,
+ "by_band": {
+  "1861-1899": {
+   "silver_heads": 459,
+   "overlay": 459,
+   "linked_head_no_crosswalk": 351,
+   "no_crosswalk_S_picks_unscoreable": 274
+  },
+  "1900-1929": {
+   "silver_heads": 7097,
+   "registry": 2942,
+   "linked_head_no_crosswalk": 2672,
+   "overlay": 4155,
+   "no_crosswalk_S_picks_unscoreable": 539
+  },
+  "1930-1945": {
+   "silver_heads": 1526,
+   "registry": 849,
+   "linked_head_no_crosswalk": 2503,
+   "no_crosswalk_S_picks_unscoreable": 1490,
+   "overlay": 677
+  },
+  "1946-": {
+   "silver_heads": 23655,
+   "registry": 23655
+  },
+  "pre-1861": {
+   "linked_head_no_crosswalk": 1
+  }
+ }
+}
