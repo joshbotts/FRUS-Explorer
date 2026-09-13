@@ -859,7 +859,7 @@ struct AddresseeRuleTests {
     }
 
     /// The same letter through the roster the app ships, rather than a hand-built Dayton: the generator's
-    /// table, the decoder's floor and ceiling, the altname and the keying all have to agree for this to pass.
+    /// table, the decoder's dates, the altname and the keying all have to agree for this to pass.
     @Test("The bundled register decides d573: Instructions alone, at Likely, naming Dayton")
     func bundledRosterDecidesD573() throws {
         let homes = CentralFilesClassifier.documentHomes(
@@ -1258,9 +1258,10 @@ struct SourceExplorerEvaluationTests {
         #expect(homes.first?.classification.rationale.contains("William L. Dayton") == true)
     }
 
-    /// Each refusal `evaluate` reaches from real reads, not from a hand-built gate input. The last two
-    /// alter the fixture's database in place, so they run last: an emptied structure table, then none.
-    @Test("evaluate: no row, no pipeline, a later year, no dateline, no structure, and a failed structure read")
+    /// Each refusal `evaluate` reaches from real reads, not from a hand-built gate input. The last three
+    /// alter the fixture's database in place, so they run last: an emptied structure table, no structure
+    /// table, then no document table.
+    @Test("evaluate: no row, no pipeline, a later year, no dateline, no structure, and failed structure and row reads")
     func evaluateRefusals() async throws {
         let fixture = try await Self.indexedD573Volume()
         defer { try? FileManager.default.removeItem(at: fixture.dir) }
@@ -1274,7 +1275,14 @@ struct SourceExplorerEvaluationTests {
                 "fixture guard: d573 must resolve, or the refusals below prove nothing")
         #expect(await outcome(Self.route("d999"), pipeline: fixture.pipeline) == .notChecked(.documentNotIndexed))
         #expect(await outcome(Self.route(), pipeline: nil) == .notChecked(.indexStarting))
-        #expect(await outcome(Self.route(year: 1908), pipeline: fixture.pipeline) == .notApplicable)
+        let later = await CentralFilesClassifier.evaluate(
+            route: Self.route(year: 1908), pipeline: fixture.pipeline, index: index,
+            roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+        #expect(later.outcome == .notApplicable)
+        // Answered before the index read: the route's own xml:id header, not the indexed one. The gate would
+        // return .notApplicable either way, so only the context shows the pipeline was not waited on.
+        #expect(later.context.header == "d573" && later.context.dateline == nil && later.context.year == 1908,
+                "a later year must not wait on the pipeline for a row it never uses: \(later.context)")
         #expect(await outcome(Self.route("d1"), pipeline: fixture.pipeline) == .notChecked(.noDateline))
 
         var handle: OpaquePointer?
@@ -1286,6 +1294,15 @@ struct SourceExplorerEvaluationTests {
         #expect(sqlite3_exec(handle, "DROP TABLE volume_structures", nil, nil, nil) == SQLITE_OK)
         #expect(await outcome(Self.route(), pipeline: fixture.pipeline) == .notChecked(.indexReadFailed),
                 "a structure read that throws is a read failure, not an absent structure")
+        // Now the row read throws too. The route's own header surviving shows the failure was the row
+        // read's: had it succeeded, the context would carry the indexed header.
+        #expect(sqlite3_exec(handle, "DROP TABLE document_cache", nil, nil, nil) == SQLITE_OK)
+        let failedRow = await CentralFilesClassifier.evaluate(
+            route: Self.route(), pipeline: fixture.pipeline, index: index,
+            roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+        #expect(failedRow.outcome == .notChecked(.indexReadFailed),
+                "a row read that throws is a read failure, not an unindexed document")
+        #expect(failedRow.context.header == "d573" && failedRow.context.dateline == nil, "\(failedRow.context)")
     }
 
     @Test("Every state says something different, and none claims a prediction was attempted")
@@ -1336,6 +1353,67 @@ struct SourceExplorerEvaluationTests {
     }
 
     // MARK: The serial label
+
+    /// An undecided Department letter lists both reels at Possible and may be a note, so its serial must not be
+    /// called an instruction's. frus1895p1/d458, "Mr. Olney to Baron Thielmann." (No. 42), went to the German
+    /// ambassador; d573 with no roster is the ordinary undecided pair, and the same letter decided is the control.
+    @Test("An undecided Instructions / Notes-to pair reads plain No.; the rule's decision makes it Instruction No.")
+    func serialLabelUndecidedPairIsNeutral() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let thielmann = CentralFilesClassifier.documentHomes(
+            header: "Mr. Olney to Baron Thielmann.", dateline: "Department of State, Washington, September 26, 1895.",
+            sectionPath: ["Germany"], index: index, roster: .bundled)
+        #expect(thielmann.map(\.classification.category) == [.instructions, .notesTo],
+                "fixture guard: \(thielmann.map(\.classification.category))")
+        #expect(CentralFilesSerialLabel(homes: thielmann) == .neutral)
+        let undecided = CentralFilesClassifier.documentHomes(
+            header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: AddresseeRuleTests.d573Path, index: index, roster: .empty)
+        #expect(undecided.map(\.classification.category) == [.instructions, .notesTo], "fixture guard")
+        #expect(CentralFilesSerialLabel(homes: undecided) == .neutral)
+        let decided = CentralFilesClassifier.documentHomes(
+            header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: AddresseeRuleTests.d573Path, index: index, roster: AddresseeRuleTests.daytonRoster)
+        #expect(CentralFilesSerialLabel(homes: decided) == .instruction, "control: the same letter, decided")
+    }
+
+    /// The label reads the FIRST document home. A decided letter routed through a consul keeps its consular note
+    /// run after the promoted Instructions reel, so reading the last home would call the serial a note's.
+    @Test("The label follows the first document home, not the last")
+    func serialLabelFollowsTheLeadHome() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Seward to Mr. Dayton, through the consul at Havre.", dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: ["France."], index: index, roster: AddresseeRuleTests.daytonRoster)
+        #expect(homes.map(\.classification.category) == [.instructions, .notesToForeignConsuls],
+                "fixture guard: \(homes.map(\.classification.category))")
+        #expect(CentralFilesSerialLabel(homes: homes) == .instruction)
+    }
+
+    @Test("Each instruction series reads plain No. beside its own notes twin, and only its own")
+    func serialLabelTwinTable() {
+        func homes(_ categories: [CentralFilesSeriesCategory]) -> [CentralFilesResolution] {
+            categories.map {
+                CentralFilesResolution(classification: CentralFilesClassification(
+                    category: $0, geoKeys: [], confidence: .medium, rationale: ""), rolls: [])
+            }
+        }
+        let rows: [([CentralFilesSeriesCategory], CentralFilesSerialLabel)] = [
+            ([.instructions], .instruction),
+            ([.instructions, .notesTo], .neutral),
+            ([.instructions, .notesToForeignConsuls], .instruction),
+            ([.consularInstructions], .instruction),
+            ([.consularInstructions, .notesToForeignConsuls], .neutral),
+            ([.consularInstructions, .notesTo], .instruction),
+            ([.specialAgentsInstructions, .notesTo], .instruction),
+        ]
+        var checked = 0
+        for (categories, expected) in rows {
+            #expect(CentralFilesSerialLabel(homes: homes(categories)) == expected, "\(categories)")
+            checked += 1
+        }
+        #expect(checked == 7)
+    }
 
     @Test("d573's serial is an instruction's, not the post's")
     func serialLabelD573IsInstruction() throws {

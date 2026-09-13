@@ -920,6 +920,12 @@ struct CentralFilesResolution: Identifiable, Sendable, Equatable {
 /// A Department instruction carries the Department's number for it, a despatch the post's, and a note
 /// its sender's. Labelling every serial "Despatch No." — as the views did — named the wrong side for
 /// 7,392 Department-outbound documents.
+///
+/// **It claims no more than the section does.** A Department letter the addressee rule did not decide lists
+/// Notes to Foreign Missions beside its Instructions reel, both at "Possible", and it may well be a note:
+/// `Mr. Olney to Baron Thielmann.` (frus1895p1/d458, No. 42) went to the German ambassador. The number is the
+/// Department's either way, so such a pair reads plain "No.", and "Instruction No." only once the rule names
+/// the U.S. chief of mission and drops the notes reel.
 enum CentralFilesSerialLabel: Sendable, Equatable {
     /// An instruction from the Department (Diplomatic, Consular or Special Agents Instructions).
     case instruction
@@ -929,7 +935,9 @@ enum CentralFilesSerialLabel: Sendable, Equatable {
     case neutral
 
     /// The label for a set of homes: the first DOCUMENT home's series, after the addressee rule, and
-    /// never an enclosure's, which can run the other way. Only enclosure homes → `.neutral`.
+    /// never an enclosure's, which can run the other way. Only enclosure homes → `.neutral`. An instruction
+    /// series listed beside its own notes twin (Notes to Foreign Missions; Notes to Foreign Consuls for
+    /// Consular Instructions) is a pair the rule did not decide → `.neutral`.
     init(homes: [CentralFilesResolution]) {
         guard let lead = homes.first(where: { !$0.part.isEnclosure }) else {
             self = .neutral
@@ -937,7 +945,13 @@ enum CentralFilesSerialLabel: Sendable, Equatable {
         }
         switch lead.classification.category {
         case .instructions, .consularInstructions, .specialAgentsInstructions:
-            self = .instruction
+            let twin: CentralFilesSeriesCategory? = switch lead.classification.category {
+            case .instructions: .notesTo
+            case .consularInstructions: .notesToForeignConsuls
+            default: nil
+            }
+            let undecidedPair = homes.contains { !$0.part.isEnclosure && $0.classification.category == twin }
+            self = undecidedPair ? .neutral : .instruction
         case .despatches, .consularDespatches, .specialAgentsDespatches:
             self = .despatch
         case .notesFrom, .notesTo, .notesToForeignConsuls, .notesFromForeignConsuls,

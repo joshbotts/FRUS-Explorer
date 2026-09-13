@@ -20,7 +20,8 @@ import Foundation
 /// ## Version 2: chiefs of mission by territory
 /// Version 2 adds three tables beside `careers`, and leaves `careers` byte-identical:
 /// - `chiefs` holds every U.S. chief of mission the register records as having **served** at a
-///   country mission between 1861 and 1906. It is keyed by the mission file's `<territory-id>`.
+///   country mission between 1861 and 1906, plus those whose tenure ended in the 90 days before 1861
+///   (the app's grace still reaches them). It is keyed by the mission file's `<territory-id>`.
 /// - `names` holds those people's name parts.
 /// - `roles` holds the singular labels of the roles they held.
 ///

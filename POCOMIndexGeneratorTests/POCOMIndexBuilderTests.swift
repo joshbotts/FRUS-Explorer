@@ -758,15 +758,24 @@ struct POCOMIndexBuilderTests {
                 "vass-laurence-coolidge", surname: "Vass", forename: "Laurence Coolidge",
                 altnames: ["Laurence C. Vass "]),
             "people/n/no-altname.xml": Self.personXML("no-altname", surname: "Plain", forename: "Name"),
+            // A blank first altname gives way to the next real one, and whitespace inside a name collapses.
+            "people/b/blank-first-altname.xml": Self.personXML(
+                "blank-first-altname", surname: "Blank", forename: "First", altnames: ["   ", "B. First"]),
+            "people/s/spaced-altname.xml": Self.personXML(
+                "spaced-altname", surname: "Spaced", forename: "Name", altnames: ["Name   S.\n  Spaced"]),
             "missions-countries/france.xml": Self.missionXML("france", chiefs: [
                 Self.chiefXML("fr-1", "dayton-william-lewis", ap: "1861-03-18", en: "1864-12-01"),
                 Self.chiefXML("fr-2", "vass-laurence-coolidge", ap: "1865-01-01", en: "1866-01-01"),
                 Self.chiefXML("fr-3", "no-altname", ap: "1867-01-01", en: "1868-01-01"),
+                Self.chiefXML("fr-4", "blank-first-altname", ap: "1869-01-01", en: "1870-01-01"),
+                Self.chiefXML("fr-5", "spaced-altname", ap: "1871-01-01", en: "1872-01-01"),
             ]),
         ]
         let (index, _) = try buildCheckout(files)
         #expect(index.names["dayton-william-lewis"]?.a == "William L. Dayton")
         #expect(index.names["vass-laurence-coolidge"]?.a == "Laurence C. Vass")
+        #expect(index.names["blank-first-altname"]?.a == "B. First")
+        #expect(index.names["spaced-altname"]?.a == "Name S. Spaced")
         let plain = try #require(index.names["no-altname"])
         #expect(plain.a == nil)
     }
@@ -867,8 +876,10 @@ struct POCOMIndexBuilderTests {
 
     // MARK: - Version 2: the runner's refusal
 
-    /// `filler` rows under a territory of their own, plus Dayton under `territory` when one is given.
-    static func refusalFixture(filler: Int, daytonUnder territory: String?) -> POCOMIndex {
+    /// `filler` rows under a territory of their own, plus one `slug` row (Dayton by default) under
+    /// `territory` when one is given.
+    static func refusalFixture(filler: Int, daytonUnder territory: String?,
+                               slug: String = "dayton-william-lewis") -> POCOMIndex {
         var chiefs: [String: [POCOMChiefRow]] = [
             "filler": (0..<filler).map {
                 POCOMChiefRow(s: "filler-\($0)", r: "r", ap: "1870", st: nil, en: nil, ex: nil)
@@ -876,7 +887,7 @@ struct POCOMIndexBuilderTests {
         ]
         if let territory {
             chiefs[territory, default: []].append(POCOMChiefRow(
-                s: "dayton-william-lewis", r: "r", ap: "1861-03-18", st: nil, en: "1864-12-01", ex: nil))
+                s: slug, r: "r", ap: "1861-03-18", st: nil, en: "1864-12-01", ex: nil))
         }
         return POCOMIndex(version: 2, generated: "g", source: "s", careers: [:], chiefs: chiefs)
     }
@@ -887,6 +898,9 @@ struct POCOMIndexBuilderTests {
         #expect(POCOMIndexRunner.chiefsRefusal(Self.refusalFixture(filler: 599, daytonUnder: "france")) == nil)
         #expect(POCOMIndexRunner.chiefsRefusal(Self.refusalFixture(filler: 598, daytonUnder: "france")) == .tooFewRows(599))
         #expect(POCOMIndexRunner.chiefsRefusal(Self.refusalFixture(filler: 599, daytonUnder: "spain")) == .missingSentinel)
+        // France present and 600 rows, but not Dayton: the slug half of the sentinel, on its own.
+        #expect(POCOMIndexRunner.chiefsRefusal(
+            Self.refusalFixture(filler: 599, daytonUnder: "france", slug: "bigelow-john")) == .missingSentinel)
     }
 
     @Test("dataToWrite throws each refusal before encoding, and otherwise returns the runner's encoding")
@@ -896,6 +910,10 @@ struct POCOMIndexBuilderTests {
         }
         #expect(throws: POCOMIndexRunner.ChiefsRefusal.missingSentinel) {
             try POCOMIndexRunner.dataToWrite(Self.refusalFixture(filler: 599, daytonUnder: "spain"))
+        }
+        #expect(throws: POCOMIndexRunner.ChiefsRefusal.missingSentinel) {
+            try POCOMIndexRunner.dataToWrite(
+                Self.refusalFixture(filler: 599, daytonUnder: "france", slug: "bigelow-john"))
         }
         let accepted = Self.refusalFixture(filler: 599, daytonUnder: "france")
         #expect(try POCOMIndexRunner.dataToWrite(accepted) == POCOMIndexRunner.encode(accepted))

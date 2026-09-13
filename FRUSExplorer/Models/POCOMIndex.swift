@@ -29,8 +29,9 @@ import Foundation
 ///
 /// ## Chiefs of mission (version 2)
 /// Version 2 adds three tables that do NOT go through the person authority: `chiefs`, every U.S.
-/// chief of mission the register records as having served between 1861 and 1906, keyed by POCOM
-/// territory id; `names`, the register's name parts for those people; and `roles`, the singular
+/// chief of mission the register records as having served between 1861 and 1906, plus those whose
+/// tenure ended in the 90 days before 1861 (the addressee rule's grace still reaches them), keyed by
+/// POCOM territory id; `names`, the register's name parts for those people; and `roles`, the singular
 /// role labels. They exist so Source Explorer can tell a Department letter to the U.S. minister (an
 /// instruction) from a note to a foreign legation in Washington — `frus1863p2/d573`, "Mr. Seward to
 /// Mr. Dayton", is the type case — and they are read only by `ChiefsOfMissionRoster`. `careers` is
@@ -40,6 +41,8 @@ import Foundation
 ///   1.0 — Session 2026-08-07: #736
 ///   1.1 — Session 2026-08-07: `POCOMCareer.lifespanText` (moved off the view, grouping off)
 ///   1.2 — 2026-09-13: version 2's `chiefs`, `names` and `roles` tables and `chiefs(territoryId:)`
+///   1.3 — 2026-09-13: `displayName` keeps a generational suffix the altname omits; the chiefs
+///         table's doc names its grace rows
 struct POCOMIndex: Codable, Sendable {
 
     /// Index schema version.

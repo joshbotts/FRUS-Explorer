@@ -294,7 +294,15 @@ struct SourceExplorerReloadWiringAuditTests {
             // `evaluate` reads the bundled roster itself, off the main actor and only once both gates pass;
             // a twin passing `roster:` would decode pocom-index.json on the main actor on first open.
             #expect(!resolve.contains("roster:"), "\(path) passes its own roster to evaluate")
-            #expect(resolve.contains("guard !Task.isCancelled"), "\(path) writes the outcome after a cancel")
+            // Order, not presence: the cancel check comes after the evaluation's await and before either write,
+            // or a load cancelled mid-evaluation writes its document's answer over the next one's reset.
+            let evaluated = try #require(resolve.range(of: "CentralFilesClassifier.evaluate("), "\(path)")
+            let cancelCheck = try #require(resolve.range(of: "guard !Task.isCancelled"), "\(path) has no cancel check")
+            let writeContext = try #require(resolve.range(of: "documentContext = result.context"), "\(path)")
+            let writeOutcome = try #require(resolve.range(of: "countrySeriesOutcome = result.outcome"), "\(path)")
+            #expect(evaluated.lowerBound < cancelCheck.lowerBound, "\(path) checks for a cancel before the evaluation")
+            #expect(cancelCheck.lowerBound < writeContext.lowerBound && cancelCheck.lowerBound < writeOutcome.lowerBound,
+                    "\(path) writes the outcome before checking for a cancel")
             #expect(text.components(separatedBy: "CentralFilesClassifier.evaluate(").count - 1 == 1)
             // The loop, the enclosure lookup and the serial read moved into the classifier; a copy left
             // in a twin is the drift this refactor exists to end.

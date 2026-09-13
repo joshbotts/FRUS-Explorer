@@ -309,6 +309,22 @@ struct POCOMIndexTests {
         #expect(chiefs.first { $0.slug == "year-end" }?.lastDayISO == "1864-12-31")
     }
 
+    @Test("A partial start date floors to the first day of its month or year")
+    func partialStartFloorsToMonthStart() throws {
+        // The register's own shape: mx-1864-corw-01 states only `st: 1864-04`, and it is the second Corwin in the
+        // Mexico collision. A floor that filled in the month's LAST day would open the tenure weeks late.
+        let index = try chiefsIndex("""
+            {"en":"1866-04","r":"envoy-extraordinary-minister-plenipotentiary","s":"corwin-william-henry","st":"1864-04"},
+            {"ap":"1866","en":"1867-01-01","r":"envoy-extraordinary-minister-plenipotentiary","s":"year-start"}
+            """, names: """
+            "corwin-william-henry":{"a":"William H. Corwin","fn":"William Henry","sn":"Corwin"},"year-start":{"fn":"Year","sn":"Start"}
+            """)
+        let chiefs = index.chiefs(territoryId: "mexico")
+        #expect(chiefs.map(\.slug) == ["corwin-william-henry", "year-start"])
+        #expect(chiefs.first { $0.slug == "corwin-william-henry" }?.firstDayISO == "1864-04-01")
+        #expect(chiefs.first { $0.slug == "year-start" }?.firstDayISO == "1866-01-01")
+    }
+
     @Test("A row with no end and no derived end has no last day; a derived end supplies one")
     func nilLastDayWhenNoEnd() throws {
         // The two rows differ only in `ex`.
@@ -385,7 +401,8 @@ struct POCOMIndexTests {
     }
 
     /// Through `ChiefsOfMissionRoster.init(index:)` — the initializer `.bundled` uses — from JSON in the
-    /// generator's shape, so the floor, the ceiling, the altname and the dropped rows are the decoder's.
+    /// generator's shape, so the ceiling, the altname and the dropped rows are the decoder's (the floor has its
+    /// own test, `partialStartFloorsToMonthStart`).
     @Test("A decoded version-2 file becomes a roster that decides d573 for Dayton, and drops unplaceable rows")
     func rosterFromDecodedIndexDecidesD573() throws {
         let index = try decode(POCOMIndex.self, """

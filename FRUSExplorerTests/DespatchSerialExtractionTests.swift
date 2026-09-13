@@ -36,6 +36,7 @@ import SQLite3
 ///   1.0 — Session 2026-08-20: #965
 ///   1.1 — 2026-09-13: `sourceExplorerFacts(volumeId:documentId:)`, which replaced
 ///         `despatchSerial(volumeId:documentId:)`, read back through the same indexed fixture
+///   1.2 — 2026-09-13: a row read that fails throws, rather than reading as not indexed
 @Suite("Pre-1906 serial extraction")
 struct DespatchSerialExtractionTests {
 
@@ -329,5 +330,22 @@ struct DespatchSerialExtractionTests {
         let facts = try #require(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573"))
         #expect(facts.dateline == nil, "got: \(facts.dateline.map { "\"\($0)\"" } ?? "nil")")
         #expect(facts.header.contains("Seward"), "the row itself still reads")
+    }
+
+    /// Source Explorer says "not in the search index" for nil and "could not be read" for a throw, so an
+    /// unreadable row must throw.
+    @Test("sourceExplorerFacts throws when the row cannot be read, rather than returning nil")
+    func sourceExplorerFactsThrowsOnReadFailure() async throws {
+        let fixture = try await indexedFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        #expect(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573") != nil,
+                "fixture guard: the row must read before the table goes")
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(fixture.db.path, &handle) == SQLITE_OK)
+        #expect(sqlite3_exec(handle, "DROP TABLE document_cache", nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(handle)
+        await #expect(throws: (any Error).self) {
+            _ = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573")
+        }
     }
 }

@@ -549,11 +549,13 @@ wrong one and a chart of "FRUS documents per decade" becomes a chart of publishi
 in Salvador (Engert)*, 1925-08-06 — Kellogg, not Hughes, who left office 4 March 1925); the bundle's
 `pocom-index.json` (Principal Officers and Chiefs of Mission) and `person-authority-index.json`
 carry the tenures to resolve it by date. For 1861–1906 the POCOM file also has a `chiefs` table
-keyed by POCOM territory id — every U.S. chief of mission in those years (641 rows), with appointment,
-start and end dates as the register writes them, plus `names` and singular `roles` — which is what
-tells a Department letter to the U.S. minister (an instruction) from one to a foreign envoy in
-Washington (a note) when the header styles both *Mr.*. A surname settles it only when exactly one
-register person with that name held the post on the date.
+keyed by POCOM territory id — 641 rows: every U.S. chief of mission serving in those years, plus the
+four whose tenure ended in the 90 days before 1861 — with appointment, start and end dates as the
+register writes them (`ex`, on 2 rows, is an end the generator derived where the register gives
+none), plus `names` and singular `roles`. That is what tells a Department letter to the U.S. minister
+(an instruction) from one to a foreign envoy in Washington (a note) when the header styles both *Mr.*;
+the app decides only when exactly one register person with that surname, and any forenames given,
+held the post on the date or left it no more than 90 days before.
 
 ---
 
