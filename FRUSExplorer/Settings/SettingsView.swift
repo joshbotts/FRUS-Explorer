@@ -493,10 +493,26 @@ final class RootElementSnifferDelegate: NSObject, XMLParserDelegate {
 ///   1.0 — Session 24: initial implementation
 ///   1.1 — S-3a: rows carry their attachment tally; merge moved to `UserTagAdmin`
 ///   1.2 — S-3b: row → editor; "New Tag…" ends the list; the empty state says where tags come from
+///   1.3 — #1275: the reader's own order, set here by drag in Reorder mode or by Move to Top / Up /
+///          Down, and read live so a reorder anywhere re-renders the list
 private struct UserTagsView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \UserTag.name) private var tags: [UserTag]
+    /// The preferences record carrying the reader's own tag order (#1275). Observed, so a reorder
+    /// from this list's drag, another window or another device re-renders it.
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
+    #if os(iOS)
+    /// Reorder mode. Bound on the whole Form: bound on the tag Section it flipped the Reorder button
+    /// while SwiftUI never entered editing, and no drag handle appeared (measured on iPad mini).
+    @State private var listEditMode: EditMode = .inactive
+    #endif
+
+    /// The tags in the reader's own order over the alphabetical baseline (#1275).
+    private var orderedTags: [UserTag] {
+        ListOrderPreferences.apply(tags, order: ListOrderPreferences.order(for: .tags, in: preferences),
+                                   id: \.id)
+    }
 
     /// The tag open in the editor sheet.
     @State private var editingTag: UserTag? = nil
@@ -516,7 +532,8 @@ private struct UserTagsView: View {
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
-                    ForEach(tags) { tag in
+                    let orderedIDs = orderedTags.map(\.id)
+                    ForEach(orderedTags) { tag in
                         Button {
                             editingTag = tag
                         } label: {
@@ -549,6 +566,14 @@ private struct UserTagsView: View {
                             }
                             .tint(.accentColor)
                         }
+                        // Move to Top / Up / Down (#1275): the way to set the order without a drag,
+                        // and the only way VoiceOver can reach.
+                        .listOrderMoveControls(for: tag.id, displayed: orderedIDs, list: .tags,
+                                               in: modelContext, includesContextMenu: true)
+                    }
+                    .onMove { source, destination in
+                        ListOrderPreferences.storeMove(of: orderedIDs, from: source, to: destination,
+                                                       for: .tags, in: modelContext)
                     }
                 }
 
@@ -562,13 +587,31 @@ private struct UserTagsView: View {
             } header: {
                 Text(String(localized: "settings.tags.list.header", defaultValue: "Tags"))
             } footer: {
-                Text(String(localized: "settings.tags.list.footer.grammar",
-                            defaultValue: "Tags are global — they are not scoped to a project."))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(String(localized: "settings.tags.list.footer.grammar",
+                                defaultValue: "Tags are global — they are not scoped to a project."))
+                    Text(String(localized: "settings.tags.list.footer.order",
+                                defaultValue: "This order is also the order of your tags in the note editor, the document tag picker and Search."))
+                }
             }
         }
+        #if os(iOS)
+        // Edit mode is the LIST's, not a section's: set on the Section it flips the Reorder button
+        // while UIKit never enters editing, so no drag handles appear (measured on iPad mini).
+        .environment(\.editMode, $listEditMode)
+        #endif
         .navigationTitle(String(localized: "settings.tags.title", defaultValue: "Tags"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Kept while editing even if a merge or delete elsewhere leaves one tag, or the list
+            // would be stuck in edit mode with no Done.
+            if tags.count > 1 || listEditMode.isEditing {
+                ToolbarItem(placement: .primaryAction) {
+                    SettingsReorderButton(editMode: $listEditMode)
+                }
+            }
+        }
         #endif
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(item: $editingTag) { tag in
@@ -588,7 +631,7 @@ private struct UserTagsView: View {
         .sheet(item: $mergingTag) { sourceTag in
             MergeTagSheet(
                 sourceTag: sourceTag,
-                allTags: tags.filter { $0.id != sourceTag.id },
+                allTags: orderedTags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
                     UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
                     mergingTag = nil
@@ -647,6 +690,8 @@ private struct ProjectHomeReadingHost: View {
 ///   1.0 — Session 153: initial implementation (closes the iOS delete/merge gap)
 ///   1.1 — #377 Phase 5 follow-up: New Project toolbar button (iOS project creation)
 ///   1.2 — S-3b: row → editor, counts on rows, "New Project…" ends the list, Related group
+///   1.3 — #1275: the reader's own order, set here by drag in Reorder mode or by Move to Top / Up /
+///          Down, and shared by the Active Project picker
 private struct ProjectsSettingsView: View {
 
     @Environment(AppState.self) private var appState
@@ -655,6 +700,23 @@ private struct ProjectsSettingsView: View {
     @Query(sort: \UserTag.name) private var tags: [UserTag]
     @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
     @Query(sort: \WorkingCorpus.name) private var workingCorpora: [WorkingCorpus]
+    /// The preferences record carrying the reader's own project order (#1275). Observed, so the
+    /// Active Project picker and the list re-render when the order changes anywhere.
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
+    #if os(iOS)
+    /// Reorder mode, bound on the whole Form for the reason `UserTagsView` gives. Only the project rows
+    /// carry `onMove`, so only they show a handle. While it is on, Project Home and the Related links
+    /// are dimmed until Done; the Active Project picker stays usable (measured on iPad mini).
+    @State private var listEditMode: EditMode = .inactive
+    #endif
+
+    /// The projects in the reader's own order over the alphabetical baseline (#1275). The Active
+    /// Project picker and the list both read it, so the two never disagree.
+    private var orderedProjects: [Project] {
+        ListOrderPreferences.apply(projects,
+                                   order: ListOrderPreferences.order(for: .projects, in: preferences),
+                                   id: \.id)
+    }
 
     /// The project open in the editor sheet.
     @State private var editingProject: Project? = nil
@@ -673,7 +735,7 @@ private struct ProjectsSettingsView: View {
                                           set: { appState.activeProjectId = $0 })) {
                     Text(String(localized: "settings.projects.active.global",
                                 defaultValue: "Global Context")).tag(UUID?.none)
-                    ForEach(projects) { project in
+                    ForEach(orderedProjects) { project in
                         Text(project.name).tag(UUID?.some(project.id))
                     }
                 } label: {
@@ -710,7 +772,8 @@ private struct ProjectsSettingsView: View {
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
-                    ForEach(projects) { project in
+                    let orderedIDs = orderedProjects.map(\.id)
+                    ForEach(orderedProjects) { project in
                         Button {
                             editingProject = project
                         } label: {
@@ -745,6 +808,14 @@ private struct ProjectsSettingsView: View {
                             }
                             .tint(.accentColor)
                         }
+                        // Move to Top / Up / Down (#1275): the way to set the order without a drag,
+                        // and the only way VoiceOver can reach.
+                        .listOrderMoveControls(for: project.id, displayed: orderedIDs, list: .projects,
+                                               in: modelContext, includesContextMenu: true)
+                    }
+                    .onMove { source, destination in
+                        ListOrderPreferences.storeMove(of: orderedIDs, from: source, to: destination,
+                                                       for: .projects, in: modelContext)
                     }
                 }
 
@@ -754,6 +825,9 @@ private struct ProjectsSettingsView: View {
                 }
             } header: {
                 Text(String(localized: "settings.projects.list.header", defaultValue: "All Projects"))
+            } footer: {
+                Text(String(localized: "settings.projects.list.footer.order",
+                            defaultValue: "This order is also the order of the Active Project picker, the project switcher and the note editor's project list."))
             }
 
             // 3. The two lists that share this grammar.
@@ -788,9 +862,23 @@ private struct ProjectsSettingsView: View {
                             defaultValue: "Open Tags to rename, merge or delete a tag. Open Volume Scopes to edit or delete a scope — scopes cannot be merged."))
             }
         }
+        #if os(iOS)
+        // Edit mode is the LIST's, not a section's — see UserTagsView. Only the project rows carry
+        // `onMove`, so they are the only rows that show a handle.
+        .environment(\.editMode, $listEditMode)
+        #endif
         .navigationTitle(String(localized: "settings.projects.title", defaultValue: "Projects"))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // Kept while editing even if a merge or delete elsewhere leaves one project, or the list
+            // would be stuck in edit mode with no Done.
+            if projects.count > 1 || listEditMode.isEditing {
+                ToolbarItem(placement: .primaryAction) {
+                    SettingsReorderButton(editMode: $listEditMode)
+                }
+            }
+        }
         #endif
         .task { counts = ResearchItemCounts.fetch(from: modelContext) }
         .sheet(isPresented: $showEditor) {
@@ -813,7 +901,7 @@ private struct ProjectsSettingsView: View {
         .sheet(item: $mergingProject) { sourceProject in
             MergeProjectSheet(
                 sourceProject: sourceProject,
-                allProjects: projects.filter { $0.id != sourceProject.id },
+                allProjects: orderedProjects.filter { $0.id != sourceProject.id },
                 onMerge: { targetProject in
                     ProjectAdminService.merge(sourceProject, into: targetProject,
                                               context: modelContext, appState: appState)

@@ -3850,7 +3850,9 @@ struct ResearchMenuContent: View {
 /// resolves via the `.modelContainer(modelContainer)` attached to `ResearchMenuContent` at the
 /// CommandMenu site, exactly as the sibling History submenu's `@Query` does, so the list stays live
 /// (re-renders on create/rename/delete) with no `AppState` project cache. The checkmark idiom mirrors
-/// `ProjectPickerMenu`; "Manage Projects…" hands off to the Settings Projects pane.
+/// `ProjectPickerMenu`; "Manage Projects…" hands off to the Settings Projects pane. Projects follow the
+/// reader's own order over the alphabetical baseline (#1275), read through `@Query` so the menu stays
+/// current when the order changes in Settings, a note picker, or on another device.
 struct ProjectSwitcherMenuContent: View {
 
     /// Shared app state — the active-project lens this submenu reads and writes.
@@ -3859,6 +3861,15 @@ struct ProjectSwitcherMenuContent: View {
     let openSettings: OpenSettingsAction
 
     @Query(sort: \Project.name) private var projects: [Project]
+    /// The preferences record carrying the reader's own project order (#1275).
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
+
+    /// The projects in the reader's own order over the alphabetical baseline (#1275).
+    private var orderedProjects: [Project] {
+        ListOrderPreferences.apply(projects,
+                                   order: ListOrderPreferences.order(for: .projects, in: preferences),
+                                   id: \.id)
+    }
 
     /// While the first CloudKit import is still populating projects — AND we have none to show yet —
     /// show a "Syncing…" placeholder instead of a list that would churn as records arrive one batch at
@@ -3900,7 +3911,7 @@ struct ProjectSwitcherMenuContent: View {
             .disabled(true)
         } else if !projects.isEmpty {
             Divider()
-            ForEach(projects) { project in
+            ForEach(orderedProjects) { project in
                 Button {
                     appState.activeProjectId = project.id
                 } label: {

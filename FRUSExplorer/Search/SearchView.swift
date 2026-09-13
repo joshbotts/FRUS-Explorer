@@ -208,6 +208,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          Save this search — it is an action, not a reading.
 ///   1.19 — Session 2026-08-11: #833 — the facet panel's provenance section opens an archival
 ///          profile of the volumes the results sit in
+///   1.20 — #1275 follow-up: the My Tags filter follows the reader's tag order, and is re-sent
+///          when that order changes as well as when a tag is added or renamed
 
 struct SearchView: View {
 
@@ -237,6 +239,14 @@ struct SearchView: View {
     /// `vm.availableUserTags` so a tag created elsewhere (e.g. the research-note
     /// editor) appears as a search filter chip without an app restart (#188-D).
     @Query(sort: \UserTag.name) private var liveUserTags: [UserTag]
+    /// The preferences record carrying the reader's own tag order (#1275), so My Tags follows it.
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
+    /// `liveUserTags` in the reader's own order over the alphabetical baseline (#1275).
+    private var orderedUserTags: [UserTag] {
+        ListOrderPreferences.apply(liveUserTags,
+                                   order: ListOrderPreferences.order(for: .tags, in: preferences),
+                                   id: \.id)
+    }
     /// The Query Inspector's state (Q-2).
     @State private var inspectorController = QueryInspectorController()
 
@@ -687,7 +697,7 @@ struct SearchView: View {
         }
 
         .task {
-            vm.availableUserTags = liveUserTags
+            vm.availableUserTags = orderedUserTags
             // Load the volume/subseries picker options before applying any incoming
             // parameters so `applyParameters` can reconstruct the subseries selection
             // from a flat `volumeIds` scope (see `SearchViewModel.reconstructScope`).
@@ -707,11 +717,12 @@ struct SearchView: View {
         }
         // Keep the filter panel's tag chips current: when SwiftData reports a tag
         // added/removed/renamed (on this device or via CloudKit), feed the fresh
-        // list into the view model so chips update live (#188-D). Keyed on the name
-        // list so a rename also propagates — an array of `@Model` objects compares by
-        // persistent identity, which a rename does not change.
-        .onChange(of: liveUserTags.map(\.name)) { _, _ in
-            vm.availableUserTags = liveUserTags
+        // list into the view model so chips update live (#188-D). Keyed on each tag's id
+        // AND name, in the reader's order: the name so a rename propagates (an array of
+        // `@Model` objects compares by persistent identity, which a rename does not
+        // change), and the order so a reorder in Settings or a note picker does (#1275).
+        .onChange(of: orderedUserTags.map { "\($0.id.uuidString)|\($0.name)" }) { _, _ in
+            vm.availableUserTags = orderedUserTags
         }
         // Consume handoffs that arrive while the Search tab is already alive —
         // `AppState.pendingSearch` is set by Corpus Analytics, "Find all mentions",

@@ -82,9 +82,9 @@ final class ResearchNoteEditorViewModel {
         richText = noteToEdit?.richText
         // **Sorted, which this was the one surface in the app not to do.** Both fetches were bare
         // descriptors, so the two lists came back in SwiftData's storage order — roughly creation
-        // order, and stable only by accident. Every other tag or project list sorts by name. The
-        // reader's own order is applied over this baseline by `ListOrderPreferences`; a permutation
-        // needs something to permute.
+        // order, and stable only by accident. Every list that follows the reader's own order sorts
+        // by name first, and `ListOrderPreferences` names those lists. The order is applied over
+        // this baseline; a permutation needs something to permute.
         let tagsByName = (try? context.fetch(
             FetchDescriptor<UserTag>(sortBy: [SortDescriptor(\.name)]))) ?? []
         let projectsByName = (try? context.fetch(

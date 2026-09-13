@@ -197,8 +197,8 @@ enum SettingsPane: String, Identifiable, Hashable, CaseIterable, Sendable {
                                        "spotlight", "download", "github", "volumes", "corpus",
                                        "fetch", "sideload", "xml", "import", "tei", "local file",
                                        "updates", "corrections", "storage"]
-        case .projects:        return ["project", "research question", "active project"]
-        case .tags:            return ["user tags", "labels", "merge", "rename"]
+        case .projects:        return ["project", "research question", "active project", "reorder", "order"]
+        case .tags:            return ["user tags", "labels", "merge", "rename", "reorder", "order"]
         case .scopes:          return ["volume scope", "custom scope", "my volume scopes", "subset"]
         // Searchable by what it does, so "working corpus" and "document set" both find it — the
         // pane search is how a researcher who half-remembers the feature gets back to it.

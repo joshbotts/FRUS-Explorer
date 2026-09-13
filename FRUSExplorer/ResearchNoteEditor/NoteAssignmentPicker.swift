@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import SwiftData
 
 // MARK: - NoteAssignmentPicker
 
@@ -35,6 +36,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — #1275: initial implementation
+///   1.1 — The sheet watches the stored order, so a reorder made in Settings, another window or on
+///          another device while it is open re-orders what it shows instead of being undone by its
+///          next drag, and a drag keeps the place of every stored id the sheet does not show.
 struct NoteAssignmentPicker: View {
 
     /// One choosable thing — a tag or a project — reduced to what this control needs.
@@ -126,16 +130,27 @@ private struct NoteAssignmentPickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @State private var query = ""
+    /// The preferences record carrying the stored order (#1275). Observed so a reorder made elsewhere
+    /// while this sheet is open re-orders what the reader sees. Without it, the sheet's next drag
+    /// would write its stale copy back over that reorder.
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
 
-    /// The list as shown, so a drag reorders something the reader can see. Seeded from `items` and
-    /// only ever changed by a move — the editor behind this sheet re-reads the stored order when it
-    /// next loads.
+    /// The list as shown, so a drag reorders something the reader can see. Seeded from `items` in the
+    /// stored order, re-derived whenever the stored order changes, and moved ahead of the store by a
+    /// drag so the row lands at once.
     @State private var ordered: [NoteAssignmentPicker.Item] = []
 
     private var filtered: [NoteAssignmentPicker.Item] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return ordered }
         return ordered.filter { $0.name.localizedCaseInsensitiveContains(trimmed) }
+    }
+
+    /// `items` in the order currently stored. `items` arrive already alphabetical with the order
+    /// applied, so anything the stored order does not name keeps its alphabetical place.
+    private var storedOrdering: [NoteAssignmentPicker.Item] {
+        ListOrderPreferences.apply(items, order: ListOrderPreferences.order(for: orderedList, in: preferences),
+                                   id: \.id)
     }
 
     /// Whether a drag would mean anything right now.
@@ -155,9 +170,15 @@ private struct NoteAssignmentPickerSheet: View {
     }
 
     /// Persists the reader's order after a drag.
+    ///
+    /// The sheet shows `items`, which the editor loaded when it opened, so the store can name ids it
+    /// does not show — a tag created and placed in Settings since. Storing the drag outright would drop
+    /// those to the alphabetical tail; `merging(_:into:)` keeps them where they were.
     private func move(from source: IndexSet, to destination: Int) {
         ordered.move(fromOffsets: source, toOffset: destination)
-        ListOrderPreferences.setOrder(ordered.map(\.id), for: orderedList, in: modelContext)
+        let stored = ListOrderPreferences.order(for: orderedList, in: preferences)
+        ListOrderPreferences.setOrder(ListOrderPreferences.merging(ordered.map(\.id), into: stored),
+                                      for: orderedList, in: modelContext)
     }
 
     var body: some View {
@@ -183,7 +204,8 @@ private struct NoteAssignmentPickerSheet: View {
                 .onMove(perform: reorderAction)
             }
             .navigationTitle(title)
-            .onAppear { if ordered.isEmpty { ordered = items } }
+            .onAppear { if ordered.isEmpty { ordered = storedOrdering } }
+            .onChange(of: preferences.first?.listOrderJSON) { _, _ in ordered = storedOrdering }
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             // **The drawer placement, and Done in the BOTTOM bar.** Both are `CustomScopesView`'s

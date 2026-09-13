@@ -15137,3 +15137,36 @@ with metadata only, and gate 6 now says so. `CodingStandardsAuditTests` passed w
 
 **Next.** The owner decides §6: the v51 reindex, the summary templates' participant fields, the API authorization
 scope, wording, spend caps, pre-registered floors and the blind keying protocol.
+
+## Session 2026-09-13 (later still) — The reader's tag and project order, everywhere it is shown (#1275)
+
+The owner asked for the order #1275 introduced in the note editor's pickers to drive the Settings Tags and
+Projects lists and the four other lists that show tags or projects, and for platform fit to be verified on
+iOS and macOS. It now drives the Settings Tags and Projects lists on both platforms, the Active Project
+picker, the iOS Browse project switcher, the macOS Research ▸ Switch Project menu, the document tag picker,
+and Search's My Tags filter on both platforms. No schema change; the #1275 identifiers were already deployed
+(PR #1294 cleared the marker).
+
+- **Verified on iPad mini (UI-test store).** Reorder shows drag handles and a drag moves the row; long-press
+  offers Move to Top / Move Up with no Move Down on the last row; Search ▸ My Tags, the Active Project picker
+  and the Browse switcher all followed a reorder; row taps open the editor again after Done; and deleting a
+  tag from its editor while reordering left one tag with Done still in the toolbar.
+- **Verified on the Mac test build (UI-test store).** Right-click Move to Top reordered both lists; Research
+  ▸ Switch Project and the Search window's Advanced ▸ My Tags followed it.
+- **Two things the device showed that the code did not.** Edit mode bound on the tag Section flipped the
+  Reorder button and showed no handle, so it is bound on the Form (and in Projects the navigation rows dim
+  while reordering). And a press-and-drag in the macOS grouped Form moved nothing in two attempts, so the Mac
+  panes carry no `onMove`, and their footers and the manual say right-click.
+- **An independent review found six defects, all fixed.** The note picker stored a drag outright and dropped
+  the place of any id it was not showing (now `ListOrderPreferences.merging(_:into:)`); Reorder could strand
+  the list in edit mode with no Done after a merge or delete elsewhere; three doc comments described
+  section-scoped edit mode; the Mac search popover was claimed to update live (it copies the tags when it
+  opens — now said so); two version histories were stale; and the wiring test did not require the sorted
+  `@Query` that makes `records.first` the record `setOrder` writes.
+
+**Not verified on screen.** The note editor's pickers and the document tag picker (no volume was downloaded
+on either test store — covered by the wiring test and the merge test), the iPhone layout (the simulator
+access prompt went unanswered), and the Mac note editor's drag-to-reorder, which predates this change.
+
+**Tests.** `ListOrderEverywhereTests` in `NotesEnhancementsTests.swift`; the full `FRUSExplorerTests` target
+passed with 4,780 tests in 613 suites on the final tree, and the macOS scheme builds.

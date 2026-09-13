@@ -99,6 +99,8 @@ import SwiftUI
 ///          so ↑/↓ traverse rows natively and ↩ opens the selected result; a row
 ///          click now also selects it (so arrow keys continue from the row the
 ///          user last opened), preserving the click-to-open behavior
+///   1.15 — #1275 follow-up: the Advanced popover's My Tags list follows the reader's tag order,
+///          over a tag query now sorted by name so the order has an alphabetical baseline
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -228,8 +230,12 @@ struct MacSearchWindowView: View {
     @State private var selectedResultId: SearchResult.ID? = nil
 
     /// All user tags fetched from SwiftData. Passed to `SearchResultRow` so tag UUID
-    /// strings in results can be resolved to human-readable names.
-    @Query private var allUserTags: [UserTag]
+    /// strings in results can be resolved to human-readable names. Sorted by name, because the
+    /// Advanced popover's My Tags lists them in the reader's own order over that baseline (#1275);
+    /// unsorted, it listed them in SwiftData's storage order.
+    @Query(sort: \UserTag.name) private var allUserTags: [UserTag]
+    /// The preferences record carrying the reader's own tag order (#1275).
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
 
     /// All known projects, for resolving the active project's name in the advanced
     /// filter panel's project-scope picker (#377 Phase 2).
@@ -1423,7 +1429,8 @@ struct MacSearchWindowView: View {
             volumeEntries: appState.manifestStore.diffResult?.known
                 ?? appState.manifestStore.bundledEntries,
             indexedVolumeIds: appState.indexedVolumeIds,
-            userTags: allUserTags
+            userTags: ListOrderPreferences.apply(
+                allUserTags, order: ListOrderPreferences.order(for: .tags, in: preferences), id: \.id)
         )
         // Open the popover IMMEDIATELY, then load the project-scope engaged set off the main
         // thread (#377 Phase 2a fix). Doing the fetch synchronously here froze the UI on a large

@@ -49,12 +49,16 @@ import SwiftData
 ///          under a new key after the field reorder; Cancel now clears `newlyCreatedTags`
 ///          before deleting so `displayTags` never renders context-deleted models
 ///          (mid-dismissal SwiftData trap).
+///   1.3 — #1275: "Your Tags" follows the reader's own order over the alphabetical baseline; tags
+///          created in this session still pin to the top.
 struct UserTagPickerSheet: View {
     let entry: DocumentBrowserEntry
     let indexingPipeline: IndexingPipeline?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \UserTag.name) private var allTags: [UserTag]
+    /// The preferences record carrying the reader's own tag order (#1275).
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
     @State private var selectedTagIds: Set<UUID>
     @State private var newTagName: String = ""
     /// Tags inserted during this session — deleted if the user cancels rather than
@@ -90,13 +94,15 @@ struct UserTagPickerSheet: View {
     private var newTagIDs: Set<UUID> { Set(newlyCreatedTags.map(\.id)) }
 
     /// The tag list in display order: tags created this session first (newest-first),
-    /// then the remaining tags in their alphabetical `@Query` order (#242). Built from the
+    /// then the remaining tags in the reader's own order over the alphabetical baseline (#1275). Built from the
     /// synchronous `newlyCreatedTags` state so a just-created tag appears at the top
     /// immediately rather than materialising at its alphabetical position off-screen.
     private var displayTags: [UserTag] {
-        guard !newlyCreatedTags.isEmpty else { return allTags }
+        let ordered = ListOrderPreferences.apply(
+            allTags, order: ListOrderPreferences.order(for: .tags, in: preferences), id: \.id)
+        guard !newlyCreatedTags.isEmpty else { return ordered }
         let pinned = newTagIDs
-        return newlyCreatedTags.reversed() + allTags.filter { !pinned.contains($0.id) }
+        return newlyCreatedTags.reversed() + ordered.filter { !pinned.contains($0.id) }
     }
 
     /// The toggle rows and the new-tag field — identical content on both platforms.

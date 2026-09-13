@@ -682,7 +682,7 @@ The note editor opens from the Research rail on any document, and from any note 
 **Tags and projects** are pickers rather than lists. The row shows what is applied; tapping it opens the full list with a search field. Two things live in that sheet worth knowing about:
 
 - **Search** — type to narrow a long list instead of scrolling it.
-- **Edit → drag to reorder** — put the tags and projects you are working with *now* at the top. That order follows you between devices, and it is a rearrangement of the alphabetical list rather than a replacement for it: anything you have not placed stays in alphabetical order behind the ones you have, and a tag created later still appears.
+- **Edit → drag to reorder** — put the tags and projects you are working with *now* at the top. It is the same order as **Settings → Research → Tags** and **Projects**, so setting it in either place sets it in both. That order follows you between devices, and it is a rearrangement of the alphabetical list rather than a replacement for it: anything you have not placed stays in alphabetical order behind the ones you have, and a tag created later still appears.
 
 **Insert a summary** adds a generated summary's text to the body, where you can edit it as your own prose.
 
@@ -690,7 +690,7 @@ The note editor opens from the Research rail on any document, and from any note 
 
 ### 9.3 Tags
 
-Open the **Tags** accordion in the Research rail to apply custom labels you define yourself — "Berlin Crisis," "needs follow-up," "key source," "week 6 reading." Tags are global (not per-project) and cut across volumes, which makes them the natural way to gather material for a theme or a syllabus week regardless of where it sits in the series. In the tag picker, the **New Tag** field sits at the top of the sheet, and a tag you create pins to the top with a **New** badge until the sheet closes; the sheet's title names exactly which document you're tagging. Manage the full list — names, colors, renames, merges, deletions — in **Settings → Research → Tags**, where each row shows what is attached so the cost of a delete is visible before you choose it.
+Open the **Tags** accordion in the Research rail to apply custom labels you define yourself — "Berlin Crisis," "needs follow-up," "key source," "week 6 reading." Tags are global (not per-project) and cut across volumes, which makes them the natural way to gather material for a theme or a syllabus week regardless of where it sits in the series. In the tag picker, the **New Tag** field sits at the top of the sheet, and a tag you create pins to the top with a **New** badge until the sheet closes; the sheet's title names exactly which document you're tagging. Manage the full list — names, colors, renames, merges, deletions — in **Settings → Research → Tags**, where each row shows what is attached so the cost of a delete is visible before you choose it. The order of that list is yours to set: tap **Reorder** and drag, or long-press a tag for **Move to Top**, **Move Up** and **Move Down**. It is the order your tags appear in everywhere you pick one — the note editor, this tag picker, and Search's **My Tags** filter.
 
 ### 9.4 The Research Tab
 
@@ -731,7 +731,7 @@ Onboarding creates a first project named **"My Research"**; rename it or add mor
 
 ### 10.2 Creating, Switching, and Managing
 
-The **project picker** in the Browse toolbar (Section 6.3) is the everyday control: it shows your current context and switches instantly. **Manage Projects** in the same picker — or **Settings → Research → Projects** — is where you create, rename, **merge**, and delete projects, and give each a name and an optional research question or description. The active project's **Project Home** lives in the Research tab.
+The **project picker** in the Browse toolbar (Section 6.3) is the everyday control: it shows your current context and switches instantly. **Manage Projects** in the same picker — or **Settings → Research → Projects** — is where you create, rename, **merge**, and delete projects, and give each a name and an optional research question or description. Its list also sets the order of your projects: tap **Reorder** and drag, or long-press a project to move it. The project picker, the **Active Project** picker and the note editor all follow that order. The active project's **Project Home** lives in the Research tab.
 
 ### 10.3 Filtering Your Research by Project
 

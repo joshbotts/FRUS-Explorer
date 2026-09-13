@@ -196,6 +196,17 @@ private struct SettingsProjectsPane: View {
     @Query(sort: \Project.name) private var projects: [Project]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
     @Query(sort: \CustomVolumeScope.name) private var scopes: [CustomVolumeScope]
+    /// The preferences record carrying the reader's own project order (#1275). Observed, so the
+    /// Active Project picker and the list re-render when the order changes anywhere.
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
+
+    /// The projects in the reader's own order over the alphabetical baseline (#1275). The Active
+    /// Project picker and the list both read it, so the two never disagree.
+    private var orderedProjects: [Project] {
+        ListOrderPreferences.apply(projects,
+                                   order: ListOrderPreferences.order(for: .projects, in: preferences),
+                                   id: \.id)
+    }
 
     @State private var showEditor = false
     @State private var editingProject: Project? = nil
@@ -210,7 +221,7 @@ private struct SettingsProjectsPane: View {
                                           set: { appState.activeProjectId = $0 })) {
                     Text(String(localized: "settings.projects.active.global",
                                 defaultValue: "Global Context")).tag(UUID?.none)
-                    ForEach(projects) { project in
+                    ForEach(orderedProjects) { project in
                         Text(project.name).tag(UUID?.some(project.id))
                     }
                 } label: {
@@ -252,7 +263,8 @@ private struct SettingsProjectsPane: View {
                                 defaultValue: "No projects yet. A project keeps one line of research — its notes, collections, history and searches — separate from the rest."))
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(projects) { project in
+                    let orderedIDs = orderedProjects.map(\.id)
+                    ForEach(orderedProjects) { project in
                         Button {
                             editingProject = project
                         } label: {
@@ -280,8 +292,26 @@ private struct SettingsProjectsPane: View {
                                       systemImage: "arrow.triangle.merge")
                             }
                             .disabled(projects.count < 2)
+                            // Move to Top / Up / Down (#1275), spliced into the row's one menu.
+                            if projects.count > 1 {
+                                Divider()
+                                listOrderMoveMenuItems(
+                                    onMoveToTop: ListOrderPreferences.moveCommand(
+                                        for: project.id, .toTop, displayed: orderedIDs,
+                                        list: .projects, in: modelContext),
+                                    onMoveUp: ListOrderPreferences.moveCommand(
+                                        for: project.id, .up, displayed: orderedIDs,
+                                        list: .projects, in: modelContext),
+                                    onMoveDown: ListOrderPreferences.moveCommand(
+                                        for: project.id, .down, displayed: orderedIDs,
+                                        list: .projects, in: modelContext))
+                            }
                         }
+                        .listOrderMoveControls(for: project.id, displayed: orderedIDs, list: .projects,
+                                               in: modelContext, includesContextMenu: false)
                     }
+                    // No `.onMove`: in this grouped Form on macOS a drag does not reorder rows
+                    // (measured 2026-09-13), so the order is set with the context menu's Move commands.
                 }
 
                 SettingsNewItemRow(label: String(localized: "settings.projects.new",
@@ -290,6 +320,11 @@ private struct SettingsProjectsPane: View {
                 }
             } header: {
                 Text(String(localized: "settings.projects.list.header", defaultValue: "All Projects"))
+            } footer: {
+                Text(String(localized: "settings.projects.list.footer.order.mac",
+                            defaultValue: "This order is also the order of the Active Project picker, the Switch Project menu and the note editor's project list. Right-click a project to move it."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section {
@@ -340,7 +375,7 @@ private struct SettingsProjectsPane: View {
         .sheet(item: $mergingProject) { sourceProject in
             MergeProjectSheet(
                 sourceProject: sourceProject,
-                allProjects: projects.filter { $0.id != sourceProject.id },
+                allProjects: orderedProjects.filter { $0.id != sourceProject.id },
                 onMerge: { targetProject in
                     ProjectAdminService.merge(sourceProject, into: targetProject,
                                               context: modelContext, appState: appState)
@@ -573,6 +608,15 @@ private struct SettingsScopesPane: View {
 private struct SettingsTagsPane: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \UserTag.name) private var tags: [UserTag]
+    /// The preferences record carrying the reader's own tag order (#1275). Observed, so a reorder
+    /// from this list's Move commands, another window or another device re-renders it.
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
+
+    /// The tags in the reader's own order over the alphabetical baseline (#1275).
+    private var orderedTags: [UserTag] {
+        ListOrderPreferences.apply(tags, order: ListOrderPreferences.order(for: .tags, in: preferences),
+                                   id: \.id)
+    }
 
     @State private var editingTag: UserTag? = nil
     @State private var mergingTag: UserTag? = nil
@@ -589,7 +633,8 @@ private struct SettingsTagsPane: View {
                                 defaultValue: "No tags yet. Tags are the labels you apply to research notes and documents as you read — create one here, or from any note."))
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(tags) { tag in
+                    let orderedIDs = orderedTags.map(\.id)
+                    ForEach(orderedTags) { tag in
                         Button {
                             editingTag = tag
                         } label: {
@@ -617,8 +662,26 @@ private struct SettingsTagsPane: View {
                                       systemImage: "arrow.triangle.merge")
                             }
                             .disabled(tags.count < 2)
+                            // Move to Top / Up / Down (#1275), spliced into the row's one menu.
+                            if tags.count > 1 {
+                                Divider()
+                                listOrderMoveMenuItems(
+                                    onMoveToTop: ListOrderPreferences.moveCommand(
+                                        for: tag.id, .toTop, displayed: orderedIDs,
+                                        list: .tags, in: modelContext),
+                                    onMoveUp: ListOrderPreferences.moveCommand(
+                                        for: tag.id, .up, displayed: orderedIDs,
+                                        list: .tags, in: modelContext),
+                                    onMoveDown: ListOrderPreferences.moveCommand(
+                                        for: tag.id, .down, displayed: orderedIDs,
+                                        list: .tags, in: modelContext))
+                            }
                         }
+                        .listOrderMoveControls(for: tag.id, displayed: orderedIDs, list: .tags,
+                                               in: modelContext, includesContextMenu: false)
                     }
+                    // No `.onMove`: in this grouped Form on macOS a drag does not reorder rows
+                    // (measured 2026-09-13), so the order is set with the context menu's Move commands.
                 }
 
                 SettingsNewItemRow(label: String(localized: "settings.tags.new",
@@ -629,8 +692,12 @@ private struct SettingsTagsPane: View {
                     pendingNewTag = tag
                 }
             } footer: {
-                Text(String(localized: "settings.tags.pane.subtitle",
-                            defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project."))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(String(localized: "settings.tags.pane.subtitle",
+                                defaultValue: "Tags are global labels you apply to research notes and documents. They are not scoped to a project."))
+                    Text(String(localized: "settings.tags.list.footer.order.mac",
+                                defaultValue: "This order is also the order of your tags in the note editor, the document tag picker and Search. Right-click a tag to move it."))
+                }
             }
         }
         .formStyle(.grouped)
@@ -651,7 +718,7 @@ private struct SettingsTagsPane: View {
         .sheet(item: $mergingTag) { sourceTag in
             MergeTagSheet(
                 sourceTag: sourceTag,
-                allTags: tags.filter { $0.id != sourceTag.id },
+                allTags: orderedTags.filter { $0.id != sourceTag.id },
                 onMerge: { targetTag in
                     UserTagAdmin.merge(sourceTag, into: targetTag, context: modelContext)
                     mergingTag = nil
