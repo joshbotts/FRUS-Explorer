@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // MARK: - StorageUsageBreakdown
 
@@ -562,3 +563,156 @@ enum IndexCompaction {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 }
+
+// MARK: - List order controls
+
+/// The localized titles for the commands that move a row in a list the reader orders themselves.
+///
+/// These keys are the list order's own (`settings.listOrder.*`), not the collection editor's, so the
+/// two cannot collide.
+@MainActor
+enum ListOrderMoveTitle {
+    /// "Move to Top".
+    static var toTop: String {
+        String(localized: "settings.listOrder.moveToTop", defaultValue: "Move to Top")
+    }
+    /// "Move Up".
+    static var up: String {
+        String(localized: "settings.listOrder.moveUp", defaultValue: "Move Up")
+    }
+    /// "Move Down".
+    static var down: String {
+        String(localized: "settings.listOrder.moveDown", defaultValue: "Move Down")
+    }
+}
+
+/// Context-menu items for moving one row of a list the reader orders themselves (#1275).
+///
+/// The macOS Settings rows splice these into the context menu they already carry, because a second
+/// `.contextMenu` would replace the first. A `nil` command omits its item.
+///
+/// - Parameters:
+///   - onMoveToTop: Moves the row to the head of the list.
+///   - onMoveUp: Moves the row one place up.
+///   - onMoveDown: Moves the row one place down.
+@MainActor @ViewBuilder
+func listOrderMoveMenuItems(onMoveToTop: (@MainActor () -> Void)?,
+                            onMoveUp: (@MainActor () -> Void)?,
+                            onMoveDown: (@MainActor () -> Void)?) -> some View {
+    if let onMoveToTop {
+        Button(action: onMoveToTop) {
+            Label(ListOrderMoveTitle.toTop, systemImage: "arrow.up.to.line")
+        }
+    }
+    if let onMoveUp {
+        Button(action: onMoveUp) {
+            Label(ListOrderMoveTitle.up, systemImage: "arrow.up")
+        }
+    }
+    if let onMoveDown {
+        Button(action: onMoveDown) {
+            Label(ListOrderMoveTitle.down, systemImage: "arrow.down")
+        }
+    }
+}
+
+/// Named accessibility actions, and optionally a context menu, for moving one row of a list the
+/// reader orders themselves (#1275).
+///
+/// Drag handles and `onMove` are invisible to VoiceOver. That is the UI audit's A4 finding, which
+/// `EntryMoveControls` answers for collections. So a drag alone would leave the order out of a
+/// VoiceOver reader's reach. iOS rows carry only swipe actions, so they take the context menu here;
+/// macOS rows already have one and splice `listOrderMoveMenuItems` into it instead.
+///
+/// Version history:
+///   1.0 — initial implementation
+private struct ListOrderMoveControls: ViewModifier {
+    /// Moves the row to the head of the list; `nil` when it is already there.
+    let onMoveToTop: (@MainActor () -> Void)?
+    /// Moves the row one place up; `nil` when it is first.
+    let onMoveUp: (@MainActor () -> Void)?
+    /// Moves the row one place down; `nil` when it is last.
+    let onMoveDown: (@MainActor () -> Void)?
+    /// Whether to attach a context menu with the same commands.
+    let includesContextMenu: Bool
+
+    func body(content: Content) -> some View {
+        withMenu(content)
+            .accessibilityActions {
+                if let onMoveToTop {
+                    Button(ListOrderMoveTitle.toTop, action: onMoveToTop)
+                }
+                if let onMoveUp {
+                    Button(ListOrderMoveTitle.up, action: onMoveUp)
+                }
+                if let onMoveDown {
+                    Button(ListOrderMoveTitle.down, action: onMoveDown)
+                }
+            }
+    }
+
+    /// Attaches the context menu when requested.
+    @ViewBuilder
+    private func withMenu(_ content: Content) -> some View {
+        if includesContextMenu {
+            content.contextMenu {
+                listOrderMoveMenuItems(onMoveToTop: onMoveToTop, onMoveUp: onMoveUp,
+                                       onMoveDown: onMoveDown)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Move to Top, Move Up and Move Down for one row of a list the reader orders themselves, as
+    /// named accessibility actions and optionally a context menu. See `ListOrderMoveControls`.
+    ///
+    /// - Parameters:
+    ///   - id: The row's id.
+    ///   - displayed: Every row's id, in the order shown.
+    ///   - list: Which stored order the commands write.
+    ///   - context: The SwiftData context holding the preferences record.
+    ///   - includesContextMenu: Pass `false` when the row already has a context menu and splices
+    ///     `listOrderMoveMenuItems` into it.
+    @MainActor
+    func listOrderMoveControls(for id: UUID, displayed: [UUID], list: ListOrderPreferences.List,
+                               in context: ModelContext, includesContextMenu: Bool) -> some View {
+        modifier(ListOrderMoveControls(
+            onMoveToTop: ListOrderPreferences.moveCommand(for: id, .toTop, displayed: displayed,
+                                                          list: list, in: context),
+            onMoveUp: ListOrderPreferences.moveCommand(for: id, .up, displayed: displayed,
+                                                       list: list, in: context),
+            onMoveDown: ListOrderPreferences.moveCommand(for: id, .down, displayed: displayed,
+                                                         list: list, in: context),
+            includesContextMenu: includesContextMenu))
+    }
+}
+
+#if os(iOS)
+/// The "Reorder" / "Done" toolbar control for a settings list the reader orders themselves (#1275).
+///
+/// It is a control of its own rather than `EditButton` for two reasons. The edit mode it drives is the
+/// view's own state, bound on its `Form` and not on a `Section`: bound on the section holding the rows,
+/// it flipped this button while SwiftUI never entered editing, and no drag handle appeared (measured on
+/// iPad mini). And "Edit" promises deletion, which these lists do not offer in edit mode. While it is
+/// on, the form's navigation rows are dimmed until Done.
+///
+/// Version history:
+///   1.0 — initial implementation
+struct SettingsReorderButton: View {
+    /// The edit mode of the list holding the orderable rows — bound on the Form, never a Section.
+    @Binding var editMode: EditMode
+
+    var body: some View {
+        Button {
+            withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+        } label: {
+            Text(editMode.isEditing
+                 ? String(localized: "settings.listOrder.done", defaultValue: "Done")
+                 : String(localized: "settings.listOrder.reorder", defaultValue: "Reorder"))
+        }
+    }
+}
+#endif

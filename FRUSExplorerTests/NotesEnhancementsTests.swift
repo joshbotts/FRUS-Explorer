@@ -15,6 +15,7 @@
 import Testing
 import Foundation
 import SwiftData
+import SwiftUI
 @testable import FRUSExplorer
 
 /// The #1275 notes work: the reader's own list order, the formatted body, and the FTS5 column the
@@ -22,6 +23,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #1275: initial implementation
+///   1.1 — `ListOrderEverywhereTests` below: the live reader, the move helpers, and the wiring of every
+///          list that follows the order
 @Suite("Notes enhancements (#1275)")
 @MainActor
 struct NotesEnhancementsTests {
@@ -309,5 +312,242 @@ struct NotesEnhancementsTests {
                 moved, this guard moved with it — and nothing else asserts the column is left alone.
                 """)
         }
+    }
+}
+
+// MARK: - The order in every list that follows it
+
+/// The reader's own tag and project order, extended from the note editor to the Settings lists and the
+/// four lists that show it: the live reader views observe, the move helpers behind drag and Move to
+/// Top / Up / Down, and a wiring guard over every consumer.
+///
+/// Version history:
+///   1.0 — initial implementation
+@Suite("List order in every list that follows it (#1275)")
+@MainActor
+struct ListOrderEverywhereTests {
+
+    // MARK: Reading
+
+    @Test("The stored JSON decodes to each list, and anything unreadable means no order")
+    func orderDecodesFromJSON() {
+        let tag = UUID(), project = UUID()
+        let json = #"{"tags":["\#(tag.uuidString)"],"projects":["\#(project.uuidString)"]}"#
+        #expect(ListOrderPreferences.order(for: .tags, inJSON: json) == [tag])
+        #expect(ListOrderPreferences.order(for: .projects, inJSON: json) == [project])
+        #expect(ListOrderPreferences.order(for: .tags, inJSON: "").isEmpty)
+        #expect(ListOrderPreferences.order(for: .tags, inJSON: "not json").isEmpty)
+    }
+
+    @Test("A view's observed records give the same order as the context reader, earliest record first")
+    func observedRecordsMatchTheContextReader() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let earlierOrder = [UUID(), UUID()]
+        let laterOrder = [UUID()]
+
+        let earlier = SyncedPreferences()
+        earlier.createdAt = Date(timeIntervalSince1970: 1_000)
+        earlier.listOrderJSON = #"{"tags":[\#(earlierOrder.map { "\"\($0.uuidString)\"" }.joined(separator: ",")) ],"projects":[]}"#
+        let later = SyncedPreferences()
+        later.createdAt = Date(timeIntervalSince1970: 2_000)
+        later.listOrderJSON = #"{"tags":["\#(laterOrder[0].uuidString)"],"projects":[]}"#
+        // Inserted later-first, so a reader that took insertion order would pick the wrong record.
+        ctx.insert(later)
+        ctx.insert(earlier)
+        try ctx.save()
+
+        // The fetch every view's `@Query(sort: \SyncedPreferences.createdAt)` performs.
+        let observed = try ctx.fetch(FetchDescriptor<SyncedPreferences>(sortBy: [SortDescriptor(\.createdAt)]))
+        #expect(ListOrderPreferences.order(for: .tags, in: observed) == earlierOrder, """
+            The observed-records reader did not take the earliest record. Views read the order this \
+            way and the note editor reads it through the context; if the two disagree, a list shows \
+            one order and the editor another.
+            """)
+        #expect(ListOrderPreferences.order(for: .tags, in: observed)
+                    == ListOrderPreferences.order(for: .tags, in: ctx))
+        #expect(ListOrderPreferences.order(for: .tags, in: [SyncedPreferences]()).isEmpty)
+    }
+
+    // MARK: Moving
+
+    @Test("A drag's new order matches SwiftUI's own move, for every source set and destination")
+    func dragMoveMatchesSwiftUI() {
+        var cases = 0
+        for count in 1...5 {
+            let ids = (0..<count).map { _ in UUID() }
+            // Every non-empty subset of offsets, to every destination onMove can report.
+            for mask in 1..<(1 << count) {
+                let source = IndexSet((0..<count).filter { mask & (1 << $0) != 0 })
+                for destination in 0...count {
+                    var oracle = ids
+                    oracle.move(fromOffsets: source, toOffset: destination)
+                    #expect(ListOrderPreferences.moving(ids, from: source, to: destination) == oracle,
+                            "count \(count), source \(Array(source)), destination \(destination)")
+                    cases += 1
+                }
+            }
+        }
+        // The sweep must have run: a range edit that emptied it would pass every expectation above.
+        // Σ over n = 1…5 of (2ⁿ − 1) source sets × (n + 1) destinations = 2 + 9 + 28 + 75 + 186.
+        #expect(cases == 300)
+    }
+
+    @Test("Move to Top, Move Up and Move Down move one row, and do nothing at the edges")
+    func stepMoves() {
+        let a = UUID(), b = UUID(), c = UUID()
+        let ids = [a, b, c]
+        #expect(ListOrderPreferences.moving(c, .toTop, in: ids) == [c, a, b])
+        #expect(ListOrderPreferences.moving(b, .up, in: ids) == [b, a, c])
+        #expect(ListOrderPreferences.moving(b, .down, in: ids) == [a, c, b])
+        #expect(ListOrderPreferences.moving(a, .toTop, in: ids) == nil)
+        #expect(ListOrderPreferences.moving(a, .up, in: ids) == nil)
+        #expect(ListOrderPreferences.moving(c, .down, in: ids) == nil)
+        #expect(ListOrderPreferences.moving(UUID(), .up, in: ids) == nil)
+    }
+
+    @Test("A move command stores the moved order for its own list and leaves the other untouched")
+    func moveCommandStoresOnlyItsList() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let a = UUID(), b = UUID(), c = UUID()
+        let projectOrder = [UUID(), UUID()]
+        ListOrderPreferences.setOrder(projectOrder, for: .projects, in: ctx)
+
+        #expect(ListOrderPreferences.moveCommand(for: a, .up, displayed: [a, b, c], list: .tags, in: ctx) == nil,
+                "The first row offered Move Up.")
+        let command = try #require(ListOrderPreferences.moveCommand(for: c, .toTop, displayed: [a, b, c],
+                                                                    list: .tags, in: ctx))
+        command()
+        #expect(ListOrderPreferences.order(for: .tags, in: ctx) == [c, a, b])
+        #expect(ListOrderPreferences.order(for: .projects, in: ctx) == projectOrder)
+
+        ListOrderPreferences.storeMove(of: [c, a, b], from: IndexSet(integer: 0), to: 3, for: .tags, in: ctx)
+        #expect(ListOrderPreferences.order(for: .tags, in: ctx) == [a, b, c])
+        #expect(ListOrderPreferences.order(for: .projects, in: ctx) == projectOrder)
+    }
+
+    /// A list that shows only some of the ids must not drop the rest when it stores a drag. The type
+    /// case: a note editor is open on tags a, b, c while tag d is created and moved to the top in Settings.
+    @Test("A partial list stores its drag without dropping the ids it does not show")
+    func mergingKeepsHiddenIDs() {
+        let a = UUID(), b = UUID(), c = UUID(), d = UUID(), e = UUID()
+        // The picker shows a, b, c and drags c to the top; d keeps the top slot.
+        #expect(ListOrderPreferences.merging([c, a, b], into: [d, a, b, c]) == [d, c, a, b])
+        // A hidden id between two shown ones keeps its slot.
+        #expect(ListOrderPreferences.merging([b, a], into: [a, d, b]) == [b, d, a])
+        // A shown id the store never named follows everything stored.
+        #expect(ListOrderPreferences.merging([e, a], into: [d, a]) == [d, e, a])
+        // Nothing stored: the drag is the order.
+        #expect(ListOrderPreferences.merging([b, a], into: []) == [b, a])
+        // Everything shown: the same as storing the drag outright.
+        #expect(ListOrderPreferences.merging([c, a, b], into: [a, b, c]) == [c, a, b])
+    }
+
+    // MARK: Wiring
+
+    /// One list that must follow the order: where it lives, what it must call, and what it must no
+    /// longer iterate.
+    private struct Consumer {
+        let file: String
+        let structName: String
+        let required: [String]
+        let forbidden: [String]
+    }
+
+    /// `order(for:in:)` reads `records.first`, so every consumer must fetch the earliest record first —
+    /// the one `setOrder` writes. An unsorted query can show another record's order, and the view's own
+    /// drags would then never appear in it.
+    private static let sortedPreferencesQuery =
+        "@Query(sort: \\SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]"
+
+    private static let consumers: [Consumer] = [
+        Consumer(file: "FRUSExplorer/Settings/SettingsView.swift", structName: "UserTagsView",
+                 required: ["ForEach(orderedTags)", "ListOrderPreferences.storeMove(of: orderedIDs",
+                            "listOrderMoveControls(for: tag.id", "allTags: orderedTags.filter",
+                            ".environment(\\.editMode, $listEditMode)", "SettingsReorderButton(editMode:",
+                            "tags.count > 1 || listEditMode.isEditing"],
+                 forbidden: ["ForEach(tags)"]),
+        Consumer(file: "FRUSExplorer/Settings/SettingsView.swift", structName: "ProjectsSettingsView",
+                 required: ["ForEach(orderedProjects) { project in\n                        Text(project.name)",
+                            "ListOrderPreferences.storeMove(of: orderedIDs",
+                            "listOrderMoveControls(for: project.id", "allProjects: orderedProjects.filter",
+                            ".environment(\\.editMode, $listEditMode)", "SettingsReorderButton(editMode:",
+                            "projects.count > 1 || listEditMode.isEditing"],
+                 forbidden: ["ForEach(projects)"]),
+        Consumer(file: "FRUSExplorer/Settings/FRUSSettingsView.swift", structName: "SettingsProjectsPane",
+                 required: ["ForEach(orderedProjects) { project in\n                        Text(project.name)",
+                            "listOrderMoveMenuItems(",
+                            "listOrderMoveControls(for: project.id", "allProjects: orderedProjects.filter"],
+                 // A drag does not reorder rows in this grouped Form on macOS (measured), so a move
+                 // handler here would be a promise the list cannot keep.
+                 forbidden: ["ForEach(projects)", ".onMove"]),
+        Consumer(file: "FRUSExplorer/Settings/FRUSSettingsView.swift", structName: "SettingsTagsPane",
+                 required: ["ForEach(orderedTags)", "listOrderMoveMenuItems(", "listOrderMoveControls(for: tag.id",
+                            "allTags: orderedTags.filter"],
+                 forbidden: ["ForEach(tags)", ".onMove"]),
+        Consumer(file: "FRUSExplorer/ProjectContext/ProjectPickerMenu.swift", structName: "ProjectPickerMenu",
+                 required: ["ForEach(orderedProjects)", "order(for: .projects, in: preferences)"],
+                 forbidden: ["ForEach(projects)"]),
+        Consumer(file: "FRUSExplorer/App/FRUSExplorerApp.swift", structName: "ProjectSwitcherMenuContent",
+                 required: ["ForEach(orderedProjects)", "order(for: .projects, in: preferences)"],
+                 forbidden: ["ForEach(projects)"]),
+        Consumer(file: "FRUSExplorer/DocumentView/UserTagPickerSheet.swift", structName: "UserTagPickerSheet",
+                 required: ["order(for: .tags, in: preferences)", "else { return ordered }",
+                            "ordered.filter { !pinned.contains($0.id) }", "ForEach(displayTags)"],
+                 forbidden: ["ForEach(allTags)", "else { return allTags }"]),
+        Consumer(file: "FRUSExplorer/Search/SearchView.swift", structName: "SearchView",
+                 required: ["vm.availableUserTags = orderedUserTags", "order(for: .tags, in: preferences)"],
+                 forbidden: ["vm.availableUserTags = liveUserTags"]),
+        Consumer(file: "FRUSExplorer/App/SearchSheet.swift", structName: "MacSearchWindowView",
+                 required: ["userTags: ListOrderPreferences.apply(", "order(for: .tags, in: preferences)"],
+                 // Only the Advanced popover's list: result rows pass `allUserTags` too, to look tag
+                 // names up by id, and a lookup has no order to follow.
+                 forbidden: ["indexedVolumeIds: appState.indexedVolumeIds,\n            userTags: allUserTags"]),
+        Consumer(file: "FRUSExplorer/ResearchNoteEditor/NoteAssignmentPicker.swift",
+                 structName: "NoteAssignmentPickerSheet",
+                 required: [".onChange(of: preferences.first?.listOrderJSON)", "ListOrderPreferences.setOrder(",
+                            "ListOrderPreferences.merging(ordered.map(\\.id), into: stored)"],
+                 forbidden: ["ordered = items }", "setOrder(ordered.map(\\.id)"]),
+    ]
+
+    /// The code lines of one top-level struct: from its declaration to the closing brace in column 0,
+    /// with comment lines dropped so a requirement cannot be met by a comment naming it.
+    private static func structCode(_ name: String, in file: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appendingPathComponent(file), encoding: .utf8)
+        let lines = source.components(separatedBy: "\n")
+        let declaration = try #require(lines.firstIndex { line in
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return (trimmed.hasPrefix("struct \(name)") || trimmed.hasPrefix("private struct \(name)"))
+                && (trimmed.dropFirst(trimmed.hasPrefix("private ") ? "private struct \(name)".count
+                                                                     : "struct \(name)".count)
+                        .first.map { !$0.isLetter && !$0.isNumber } ?? true)
+        }, "struct \(name) not found in \(file)")
+        let end = try #require(lines[declaration...].firstIndex(of: "}"), "no closing brace for \(name)")
+        return lines[declaration...end]
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
+    @Test("Every list that follows the order reads it, and none still iterates its unordered source")
+    func everyConsumerIsWired() throws {
+        var checked = 0
+        for consumer in Self.consumers {
+            let code = try Self.structCode(consumer.structName, in: consumer.file)
+            #expect(code.contains(Self.sortedPreferencesQuery),
+                    "\(consumer.structName) does not observe the earliest preferences record")
+            checked += 1
+            for needle in consumer.required {
+                #expect(code.contains(needle), "\(consumer.structName) no longer contains: \(needle)")
+                checked += 1
+            }
+            for needle in consumer.forbidden {
+                #expect(!code.contains(needle), "\(consumer.structName) still contains: \(needle)")
+                checked += 1
+            }
+        }
+        #expect(checked == Self.consumers.reduce(Self.consumers.count) { $0 + $1.required.count + $1.forbidden.count })
+        #expect(Self.consumers.count == 10)
     }
 }

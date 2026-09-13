@@ -26,12 +26,23 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 15: initial implementation
+///   1.1 — #1275: sorted by name, then the reader's own order. It was unsorted, so it listed
+///          projects in SwiftData's storage order.
 struct ProjectPickerMenu: View {
 
     @Environment(AppState.self) private var appState
-    @Query private var projects: [Project]
+    @Query(sort: \Project.name) private var projects: [Project]
+    /// The preferences record carrying the reader's own project order (#1275).
+    @Query(sort: \SyncedPreferences.createdAt) private var preferences: [SyncedPreferences]
 
     let onManageProjects: () -> Void
+
+    /// The projects in the reader's own order over the alphabetical baseline (#1275).
+    private var orderedProjects: [Project] {
+        ListOrderPreferences.apply(projects,
+                                   order: ListOrderPreferences.order(for: .projects, in: preferences),
+                                   id: \.id)
+    }
 
     var body: some View {
         Menu {
@@ -56,7 +67,7 @@ struct ProjectPickerMenu: View {
 
             if !projects.isEmpty {
                 Divider()
-                ForEach(projects) { project in
+                ForEach(orderedProjects) { project in
                     Button {
                         appState.activeProjectId = project.id
                     } label: {
