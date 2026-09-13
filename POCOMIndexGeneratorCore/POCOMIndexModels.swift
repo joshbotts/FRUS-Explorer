@@ -48,7 +48,8 @@ public struct POCOMIndex: Codable, Sendable, Equatable {
     public let source: String
     /// `slug → career record`, for slugs that have at least one appointment.
     public let careers: [String: POCOMCareer]
-    /// `POCOM territory id → served chief-of-mission rows` overlapping 1861–1906 (version 2).
+    /// `POCOM territory id → served chief-of-mission rows` overlapping 1861–1906, a last day allowed
+    /// 90 days' grace before the window (version 2).
     /// Each territory's rows are ordered by (first day, slug, chief id).
     public let chiefs: [String: [POCOMChiefRow]]
     /// `slug → name parts`, for exactly the slugs `chiefs` names (version 2).
@@ -205,7 +206,7 @@ public struct POCOMBuildStats: Sendable, Equatable {
     public var otherNomineeChiefRows = 0
     /// Served rows stating neither an appointment nor a start date. They cannot be placed in time.
     public var chiefRowsWithoutStart = 0
-    /// Served rows whose tenure does not overlap the 1861–1906 window.
+    /// Served rows whose tenure does not overlap the window (1861–1906, last days from 1860-10-03).
     public var chiefRowsOutsideWindow = 0
     /// In-window served rows whose person has no register file with a surname.
     public var chiefRowsWithoutName = 0

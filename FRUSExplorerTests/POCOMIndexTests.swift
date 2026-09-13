@@ -355,4 +355,77 @@ struct POCOMIndexTests {
         #expect(dayton.lastDayISO == "1864-12-01")
         #expect(dayton.displayName == "William L. Dayton")
     }
+
+    @Test("A display name is the altname plus any suffix it omits, and never carries the suffix twice")
+    func displayNamePrefersAltname() {
+        // The register's own name parts. Dayton Jr.'s altname omits his suffix, which printed him exactly
+        // as his father; Thomas's altname already carries its own.
+        let rows: [(POCOMPersonName, String)] = [
+            (POCOMPersonName(sn: "Dayton", fn: "William Lewis", g: nil, a: "William L. Dayton"), "William L. Dayton"),
+            (POCOMPersonName(sn: "Dayton", fn: "William Lewis", g: "Jr.", a: "William L. Dayton"), "William L. Dayton Jr."),
+            (POCOMPersonName(sn: "Thomas", fn: "William Widgery", g: "Jr.", a: "William W. Thomas Jr."), "William W. Thomas Jr."),
+            (POCOMPersonName(sn: "Thomas", fn: "William Widgery", g: "Jr.", a: "William W. Thomas, Jr"), "William W. Thomas, Jr"),
+            (POCOMPersonName(sn: "Jay", fn: "John", g: "II", a: nil), "John Jay II"),
+            (POCOMPersonName(sn: "Bigelow", fn: "John", g: nil, a: nil), "John Bigelow"),
+            (POCOMPersonName(sn: "Bigelow", fn: "John", g: nil, a: "  "), "John Bigelow"),
+        ]
+        var checked = 0
+        for (name, expected) in rows {
+            #expect(name.displayName == expected, "\(name)")
+            checked += 1
+        }
+        #expect(checked == 7)
+    }
+
+    @Test("The bundled names table prints Dayton's son as a different person from Dayton")
+    func bundledDaytonJuniorIsDistinct() throws {
+        let index = try #require(POCOMIndexStore.shared)
+        #expect(index.names["dayton-william-lewis"]?.displayName == "William L. Dayton")
+        #expect(index.names["dayton-william-lewis-jr"]?.displayName == "William L. Dayton Jr.")
+    }
+
+    /// Through `ChiefsOfMissionRoster.init(index:)` — the initializer `.bundled` uses — from JSON in the
+    /// generator's shape, so the floor, the ceiling, the altname and the dropped rows are the decoder's.
+    @Test("A decoded version-2 file becomes a roster that decides d573 for Dayton, and drops unplaceable rows")
+    func rosterFromDecodedIndexDecidesD573() throws {
+        let index = try decode(POCOMIndex.self, """
+            {"careers":{},"chiefs":{"france":[
+               {"ap":"1861-03-18","en":"1864-12-01","r":"envoy-extraordinary-minister-plenipotentiary","s":"dayton-william-lewis","st":"1861-05-19"},
+               {"ap":"1865-03-15","en":"1866-12","r":"envoy-extraordinary-minister-plenipotentiary","s":"bigelow-john"},
+               {"ap":"1870","en":"1872","r":"envoy-extraordinary-minister-plenipotentiary","s":"no-name-entry"},
+               {"en":"1880","r":"envoy-extraordinary-minister-plenipotentiary","s":"bigelow-john"}]},
+             "generated":"2026-09-13",
+             "names":{"bigelow-john":{"fn":"John","sn":"Bigelow"},
+                      "dayton-william-lewis":{"a":"William L. Dayton","fn":"William Lewis","sn":"Dayton"}},
+             "roles":{"envoy-extraordinary-minister-plenipotentiary":"Envoy Extraordinary and Minister Plenipotentiary"},
+             "source":"test","version":2}
+            """)
+        #expect(index.chiefs(territoryId: "france").map(\.slug) == ["dayton-william-lewis", "bigelow-john"],
+                "a row whose person has no names entry, and a row with no start, are both dropped")
+        #expect(index.chiefs(territoryId: "france").last?.lastDayISO == "1866-12-31")
+        let roster = ChiefsOfMissionRoster(index: index)
+        let chief = try #require(roster.decide(header: "Mr. Seward to Mr. Dayton.",
+                                               dateline: "Department of State , Washington , November 10, 1863.",
+                                               geoKeys: ["france"]))
+        #expect(chief.slug == "dayton-william-lewis")
+        #expect(chief.displayName == "William L. Dayton")
+        #expect(chief.roleLabel == "Envoy Extraordinary and Minister Plenipotentiary")
+        #expect(roster.decide(header: "Mr. Seward to Mr. Dayton.",
+                              dateline: "Department of State , Washington , November 10, 1863.",
+                              geoKeys: ["spain"]) == nil, "control: the post is part of the decision")
+    }
+
+    /// `POCOMIndexBuilder` admits rows whose last day falls up to 90 days before 1861
+    /// (`chiefsWindowEarliestLastDay`, 1860-10-03), because a letter of early 1861 reaches such a chief
+    /// under the app's grace and the rule decides only when one person can. The two constants live in
+    /// different targets, so this is where they meet.
+    @Test("The bundled table reaches back before 1861 as far as the addressee rule's grace does")
+    func bundledTableCoversTheGrace() throws {
+        #expect(ChiefsOfMissionRoster.graceDaysAfterLastDay <= 90,
+                "the grace reaches past the generator's window: widen chiefsWindowGraceDays and regenerate")
+        let index = try #require(POCOMIndexStore.shared)
+        let ward = index.chiefs(territoryId: "china").filter { $0.slug == "ward-john-elliott" }
+        #expect(ward.map(\.lastDayISO) == ["1860-12-15"],
+                "the first row the grace admits is missing — the table was cut at 1861 again")
+    }
 }

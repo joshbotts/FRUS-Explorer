@@ -301,6 +301,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         `generated` stamp. Review fix: `resolvePageBasedCrossReferences` enforces
 ///         its same-volume-only contract (`target_volume_id IS NULL`) —
 ///         `currentDateIndexVersion` → 22 (see the v22 note above).
+///  4.14 — 2026-09-13: `sourceExplorerFacts(volumeId:documentId:)` (header, dateline and
+///         serial in one seek, stepped through `auxStep`) replaces `despatchSerial(volumeId:documentId:)`;
+///         `cachedVolumeStructure` steps through `auxStep` too, so a read fault throws rather than
+///         reading as no structure
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -2465,13 +2469,16 @@ public actor IndexingPipeline {
     /// if the volume has not been indexed (or was indexed before the
     /// `volume_structures` table existed — the Browser then falls back to parsing
     /// the volume XML on demand, exactly as before).
-
+    ///
+    /// Stepped through `auxStep`, so an I/O or corruption fault throws rather than reading as "no
+    /// structure" — Source Explorer tells those two apart on screen. A stored structure that no longer
+    /// decodes still reads as `nil`, which sends the Browser to the XML.
     public func cachedVolumeStructure(forVolumeId volumeId: String) throws -> VolumeStructure? {
         let stmt = try auxPrepare(
             "SELECT structure_json FROM volume_structures WHERE volume_id = ?")
         defer { sqlite3_finalize(stmt) }
         sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
-        guard sqlite3_step(stmt) == SQLITE_ROW,
+        guard try auxStep(stmt),
               let json = auxColumnString(stmt, 0),
               let data = json.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(VolumeStructure.self, from: data)

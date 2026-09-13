@@ -621,16 +621,19 @@ extension CentralFilesClassifier {
     /// Name suffixes that mark a foreign envoy wherever they appear (`Mavroyeni Bey`, `Tevfik Pasha`).
     static let foreignNameSuffixes: Set<String> = ["bey", "pasha", "effendi", "khan"]
 
-    /// OCR forms of `Mr.` measured in the two-reel set (`Mr` 9, `Mr,` 1, `Air.` 1).
-    static let ocrMisterForms: Set<String> = ["air.", "mr", "mr,"]
+    /// OCR forms of `Mr.` measured in the two-reel set (`Mr` 9, `Air.` 1). The third, `Mr,` (1), never
+    /// reaches this table: the addressee is cut at its first comma, so `addressee(inHeader:)` reads a
+    /// leading `Mr, ` as `Mr. ` before it cuts.
+    static let ocrMisterForms: Set<String> = ["air.", "mr"]
 
     /// Reads the addressee (and whether the sender is foreign) from a document header, or `nil` when
     /// the header names no addressee (no ` to `: `[Untitled]`, memoranda, circulars).
     ///
-    /// The grammar, in order: strip a leading `No. N.` serial; split at the first ` to `; cut the
-    /// addressee at `;`, `(`, `,`, ` through ` or ` [` (`Mr. Seward to Mr. Adams; (same to Mr. Dayton …)`
-    /// is Adams); `and`, `&` or a leading `Messrs.` is several people; an OCR `Air.`/`Mr`/`Mr,` is
-    /// `Mr.`; a `the …` addressee is a description; then the honorific tables. Names are folded and
+    /// The grammar, in order: strip a leading `No. N.` serial; split at the first ` to `; read a leading
+    /// OCR `Mr,` as `Mr.`, because the next step would cut at its comma; cut the addressee at `;`, `(`,
+    /// `,`, ` through ` or ` [` (`Mr. Seward to Mr. Adams; (same to Mr. Dayton …)` is Adams); `and`, `&`
+    /// or a leading `Messrs.` is several people; an OCR `Air.`/`Mr` is `Mr.`; a `the …` addressee is a
+    /// description; then the honorific tables. Names are folded and
     /// lose their initials and `Jr.`.
     static func addressee(inHeader header: String) -> CentralFilesAddressee? {
         var h = header.split(whereSeparator: \.isWhitespace).joined(separator: " ")
@@ -640,6 +643,9 @@ extension CentralFilesClassifier {
         guard let toRange = h.range(of: " to ") else { return nil }
         let sender = String(h[..<toRange.lowerBound])
         var addressee = String(h[toRange.upperBound...])
+        if let ocr = addressee.range(of: #"^Mr,\s+"#, options: .regularExpression) {
+            addressee.replaceSubrange(ocr, with: "Mr. ")
+        }
         if let cut = addressee.range(of: #"\s*[;(,]|\s+through\s+|\s+\["#, options: .regularExpression) {
             addressee = String(addressee[..<cut.lowerBound])
         }
@@ -740,6 +746,11 @@ struct ChiefsOfMissionRoster: Sendable {
     /// (Seward to Dayton three days after Dayton died at post). None is granted BEFORE the first day:
     /// the 19 that would add are mostly letters to Bigelow while he headed the Paris legation before
     /// his appointment, and the register does not make him its chief then.
+    ///
+    /// **The bundled table is cut to this.** The generator admits rows whose last day falls up to 90 days
+    /// before 1861 (`POCOMIndexBuilder.chiefsWindowEarliestLastDay`, `1860-10-03`), so a letter of early
+    /// 1861 still sees every chief it could reach and the rule's one-person count is complete. Raising
+    /// this past 90 needs a regeneration with a wider window; `POCOMIndexTests` pins the pair.
     static let graceDaysAfterLastDay = 90
 
     /// Territory ids FRUS names by a different chapter title (the plan's measured list). Without
@@ -1100,6 +1111,8 @@ enum CountrySeriesSectionPathRead: Sendable, Equatable {
     case unread
     /// The volume has no cached structure.
     case noStructure
+    /// Reading the structure threw: an I/O or corruption fault, which is not the same as no row.
+    case readFailed
     /// The chain of section titles to the document; empty when the document is not in it.
     case path([String])
 }
@@ -1130,8 +1143,8 @@ extension CentralFilesClassifier {
     ///
     /// In order: a host year of 1906 or later is not applicable; no ids; no pipeline; no dateline
     /// (split by what the index read gave: it threw, there is no row, or the row has none); no year;
-    /// a hydrated year of 1906 or later; no central-files index; no volume structure; the document is
-    /// not in it. `sectionPath == .unread` passes the last two, so `evaluate` can refuse cheaply
+    /// a hydrated year of 1906 or later; no central-files index; no volume structure (or reading it
+    /// threw); the document is not in it. `sectionPath == .unread` passes the last two, so `evaluate` can refuse cheaply
     /// before it reads the structure and then ask again.
     static func gate(_ input: CountrySeriesGateInput) -> CountrySeriesOutcome? {
         if let year = input.routeYear, year >= 1906 { return .notApplicable }
@@ -1152,6 +1165,8 @@ extension CentralFilesClassifier {
             return nil
         case .noStructure:
             return .notChecked(.noVolumeStructure)
+        case .readFailed:
+            return .notChecked(.indexReadFailed)
         case .path(let path):
             return path.isEmpty ? .notChecked(.documentNotInStructure) : nil
         }
@@ -1212,7 +1227,9 @@ extension CentralFilesClassifier {
         else { return homes }
         let lastYear = String((chief.lastDayISO ?? chief.firstDayISO).prefix(4))
         let firstYear = String(chief.firstDayISO.prefix(4))
-        let years = firstYear == lastYear ? firstYear : "\(firstYear)–\(lastYear)"
+        let years = firstYear == lastYear ? firstYear : String(
+            format: String(localized: "centralFiles.rationale.tenureYears %@ %@", defaultValue: "%1$@–%2$@"),
+            firstYear, lastYear)
         let rationale = String(
             format: String(localized: "centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@",
                            defaultValue: "From the Department of State to %1$@, U.S. %2$@ to %3$@ (%4$@): an instruction."),
@@ -1227,7 +1244,8 @@ extension CentralFilesClassifier {
     }
 
     /// A chapter title as printed, for a sentence: its chapter number and `(Continued.)` removed and
-    /// its trailing period dropped (`XXIX.—Spain.` → `Spain`, `France.` → `France`).
+    /// its trailing period, colon, semicolon or comma dropped (`XXIX.—Spain.` → `Spain`, `Denmark:` →
+    /// `Denmark`). Measured, 20 decided documents sit under `Denmark:`.
     static func printedCountry(fromChapterTitle title: String) -> String {
         var text = title.trimmingCharacters(in: .whitespacesAndNewlines)
         if let r = text.range(of: #"^(?:\[\d+\]\s*)?\*?\s*(?:[IVXLCDM]+|\d{1,3})\.\s*[—–-]\s*"#, options: .regularExpression) {
@@ -1236,7 +1254,7 @@ extension CentralFilesClassifier {
         if let r = text.range(of: #"\s*\(\s*continued\.?\s*\)\s*$"#, options: [.regularExpression, .caseInsensitive]) {
             text = String(text[..<r.lowerBound])
         }
-        return text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ".")))
+        return text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ".:;,")))
     }
 
     /// The enclosures' homes with their rolls, each matched by the enclosure's OWN date (B-5).
@@ -1280,13 +1298,27 @@ extension CentralFilesClassifier {
 
     /// Everything the pre-1906 section shows for a document, for both Source Explorer views.
     ///
-    /// Reads the document's row, hydrates what the route left out, gates, reads the volume structure,
-    /// gates again, then finds the document's homes (with the addressee rule) and its enclosures'.
+    /// A host year of 1906 or later is answered at once, reading nothing. Otherwise: reads the
+    /// document's row, hydrates what the route left out, gates, reads the volume structure, gates
+    /// again, then finds the document's homes (with the addressee rule) and its enclosures'.
     /// Nonisolated: each view reads `DocumentASTCache` and the volume URL on the main actor, passes
     /// them in, and writes the result only if its task was not cancelled.
+    ///
+    /// - Parameter roster: The chiefs of mission the addressee rule reads, or `nil` for the bundled
+    ///   register. Resolved here, after both gates, rather than by the caller: `.bundled` decodes
+    ///   `pocom-index.json` on first use, and a view passing it would do that on the main actor — for
+    ///   a document the rule never reads, too.
     static func evaluate(route: CountrySeriesRoute, pipeline: IndexingPipeline?, index: CentralFilesIndex?,
-                         roster: ChiefsOfMissionRoster, astCache: DocumentASTCache,
+                         roster: ChiefsOfMissionRoster? = nil, astCache: DocumentASTCache,
                          volumeURL: URL?) async -> (context: SourceExplorerDocumentContext, outcome: CountrySeriesOutcome) {
+        if let year = route.year, year >= 1906 {
+            // The gate's first refusal, before the index read: awaiting the pipeline actor, which may be
+            // busy indexing, would show "Checking…" for a check that cannot run.
+            let context = SourceExplorerDocumentContext.hydrate(
+                routeHeader: route.header, routeDateline: route.dateline, routeYear: year,
+                documentId: route.documentId, indexed: nil)
+            return (context, .notApplicable)
+        }
         var lookup = SourceExplorerFactsLookup.notAttempted
         if let pipeline, let volumeId = route.volumeId, let documentId = route.documentId {
             do {
@@ -1312,13 +1344,21 @@ extension CentralFilesClassifier {
               let dateline = context.dateline, let index else {
             return (context, .notChecked(.noDocumentIdentity))
         }
-        let structure = try? await pipeline.cachedVolumeStructure(forVolumeId: volumeId)
-        let path = structure.map { documentSectionPath(in: $0, documentId: documentId) }
-        input.sectionPath = path.map { CountrySeriesSectionPathRead.path($0) } ?? .noStructure
+        var path: [String] = []
+        do {
+            if let structure = try await pipeline.cachedVolumeStructure(forVolumeId: volumeId) {
+                path = documentSectionPath(in: structure, documentId: documentId)
+                input.sectionPath = .path(path)
+            } else {
+                input.sectionPath = .noStructure
+            }
+        } catch {
+            input.sectionPath = .readFailed
+        }
         if let refused = gate(input) { return (context, refused) }
 
-        let homes = documentHomes(header: context.header, dateline: dateline, sectionPath: path ?? [],
-                                  index: index, roster: roster)
+        let homes = documentHomes(header: context.header, dateline: dateline, sectionPath: path,
+                                  index: index, roster: roster ?? .bundled)
         let openers = await enclosureOpeners(volumeId: volumeId, documentId: documentId,
                                              astCache: astCache, volumeURL: volumeURL)
         let all = homes + enclosureRolls(openers: openers, index: index)

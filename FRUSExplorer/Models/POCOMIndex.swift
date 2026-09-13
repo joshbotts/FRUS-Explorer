@@ -135,9 +135,20 @@ struct POCOMPersonName: Codable, Sendable, Equatable {
 
     /// The name to print: the register's alternative name when it has one, otherwise the forename,
     /// surname and suffix.
+    ///
+    /// The suffix is appended to the alternative name when the register's altname omits it, and not
+    /// when it already ends with it. Without that, `dayton-william-lewis-jr` (a `William L. Dayton`,
+    /// g `Jr.`, Netherlands 1882–1885) prints exactly as his father, the France type case — two people,
+    /// one string. `thomas-william-widgery`'s altname already carries its `Jr.`.
     var displayName: String {
-        if let a, !a.trimmingCharacters(in: .whitespaces).isEmpty { return a }
-        return [fn, sn, g ?? ""].filter { !$0.isEmpty }.joined(separator: " ")
+        let suffix = g?.trimmingCharacters(in: .whitespaces) ?? ""
+        if let a, !a.trimmingCharacters(in: .whitespaces).isEmpty {
+            guard !suffix.isEmpty else { return a }
+            let bare = { (text: Substring) in text.trimmingCharacters(in: .punctuationCharacters).lowercased() }
+            let lastToken = a.split(whereSeparator: { $0 == " " || $0 == "," }).last.map(bare) ?? ""
+            return lastToken == bare(Substring(suffix)) ? a : a + " " + suffix
+        }
+        return [fn, sn, suffix].filter { !$0.isEmpty }.joined(separator: " ")
     }
 }
 

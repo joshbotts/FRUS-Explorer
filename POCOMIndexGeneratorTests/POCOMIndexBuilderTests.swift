@@ -544,20 +544,22 @@ struct POCOMIndexBuilderTests {
         #expect(index.names["dayton-william-lewis"]?.sn == "Dayton")
     }
 
-    @Test("A row is kept when its widened tenure overlaps 1861-01-01…1906-12-31, both edges inclusive")
+    @Test("A row is kept when its widened tenure overlaps the window, its last day allowed the app's grace")
     func chiefsWindowBoundaries() throws {
         #expect(POCOMIndexBuilder.chiefsWindowFirstDay == "1861-01-01")
         #expect(POCOMIndexBuilder.chiefsWindowLastDay == "1906-12-31")
-        // Each pair differs in one date, across one edge. A partial date widens: an end of `1861`
-        // runs to 1861-12-31, and a start of `1906-12` opens on 1906-12-01. Every row states its
-        // end, or the edge would be moved by a derived end instead.
+        #expect(POCOMIndexBuilder.chiefsWindowEarliestLastDay == "1860-10-03")
+        // Each pair differs in one date, across one edge. A partial date widens: an end of `1860-10`
+        // runs to 1860-10-31, and a start of `1906-12` opens on 1906-12-01. Every row states its
+        // end, or the edge would be moved by a derived end instead. The lower edge is a LAST day of
+        // 1860-10-03: the app's 90-day grace still reaches a letter of 1 January 1861 from there.
         let cases: [(slug: String, ap: String, en: String, kept: Bool)] = [
-            ("end-1860", "1850-01-01", "1860", false),
-            ("end-1861", "1850-01-01", "1861", true),
-            ("end-1860-12", "1850-01-01", "1860-12", false),
-            ("end-1861-01", "1850-01-01", "1861-01", true),
-            ("end-1860-12-31", "1850-01-01", "1860-12-31", false),
-            ("end-1861-01-01", "1850-01-01", "1861-01-01", true),
+            ("end-1859", "1850-01-01", "1859", false),
+            ("end-1860", "1850-01-01", "1860", true),
+            ("end-1860-09", "1850-01-01", "1860-09", false),
+            ("end-1860-10", "1850-01-01", "1860-10", true),
+            ("end-1860-10-02", "1850-01-01", "1860-10-02", false),
+            ("end-1860-10-03", "1850-01-01", "1860-10-03", true),
             ("start-1906", "1906", "1910-01-01", true),
             ("start-1907", "1907", "1910-01-01", false),
             ("start-1906-12", "1906-12", "1910-01-01", true),
@@ -578,6 +580,23 @@ struct POCOMIndexBuilderTests {
         }
         #expect(checked == 12)
         #expect(stats.chiefRowsOutsideWindow == 6)
+    }
+
+    /// The literal edge is what a reader sees; this is what keeps it honest.
+    @Test("The earliest last day is the window's first day less the grace, by the calendar")
+    func chiefsEarliestLastDayIsFirstDayLessGrace() throws {
+        #expect(POCOMIndexBuilder.chiefsWindowGraceDays == 90)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let first = try #require(formatter.date(from: POCOMIndexBuilder.chiefsWindowFirstDay))
+        let earliest = try #require(calendar.date(
+            byAdding: .day, value: -POCOMIndexBuilder.chiefsWindowGraceDays, to: first))
+        #expect(formatter.string(from: earliest) == POCOMIndexBuilder.chiefsWindowEarliestLastDay)
     }
 
     @Test("A row with neither an appointment nor a start date is skipped")
@@ -794,7 +813,25 @@ struct POCOMIndexBuilderTests {
         #expect(careers == Self.careersGolden)
     }
 
-    @Test("Two builds of one checkout, written in opposite file orders, encode to identical bytes")
+    /// `xml` with the `<chief>` rows inside its `<chiefs>` block in reverse order.
+    static func reversingChiefs(_ xml: String) throws -> String {
+        let open = try #require(xml.range(of: "<chiefs>"))
+        let close = try #require(xml.range(of: "</chiefs>"))
+        let rows = xml[open.upperBound..<close.lowerBound]
+            .components(separatedBy: "</chief>")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .map { $0 + "</chief>" }
+        try #require(rows.count >= 2 && rows.allSatisfy { $0.hasPrefix("<chief>") }, "\(rows)")
+        return String(xml[..<open.upperBound]) + rows.reversed().joined() + String(xml[close.lowerBound...])
+    }
+
+    /// `xmlFiles` sorts filenames, so the order files are WRITTEN in never reaches the builder; the
+    /// order of `<chief>` rows inside a file does. The second checkout reverses both mission files'
+    /// rows, so only the builder's total sort can make the bytes agree — deleting it fails here. (One
+    /// process shares a Hasher seed, so Dictionary iteration order is not covered by this; the
+    /// encoder's sorted keys are what cover it.)
+    @Test("Two builds of one checkout, its <chief> rows and file order reversed, encode to identical bytes")
     func rebuildIsByteIdentical() throws {
         var files = Self.goldenCheckoutFiles
         files.merge(Self.people(["pacheco-romualdo", "same-day-colleague"])) { current, _ in current }
@@ -804,8 +841,15 @@ struct POCOMIndexBuilderTests {
             Self.chiefXML("gt-1890-same-01", "same-day-colleague", ap: "1890-12-11", en: "1891-01-01"),
             Self.chiefXML("gt-1890-pach-01", "pacheco-romualdo", ap: "1890-12-11", st: "1891-02-28"),
         ])
+        var permuted = files
+        for path in ["missions-countries/guatemala.xml", "missions-countries/france.xml"] {
+            let original = try #require(files[path])
+            let reversed = try Self.reversingChiefs(original)
+            #expect(reversed != original, "fixture guard: \(path) must actually be permuted")
+            permuted[path] = reversed
+        }
         let forward = try writeCheckout(files, order: files.keys.sorted())
-        let backward = try writeCheckout(files, order: Array(files.keys.sorted().reversed()))
+        let backward = try writeCheckout(permuted, order: Array(permuted.keys.sorted().reversed()))
         defer {
             try? FileManager.default.removeItem(at: forward)
             try? FileManager.default.removeItem(at: backward)
@@ -823,23 +867,52 @@ struct POCOMIndexBuilderTests {
 
     // MARK: - Version 2: the runner's refusal
 
+    /// `filler` rows under a territory of their own, plus Dayton under `territory` when one is given.
+    static func refusalFixture(filler: Int, daytonUnder territory: String?) -> POCOMIndex {
+        var chiefs: [String: [POCOMChiefRow]] = [
+            "filler": (0..<filler).map {
+                POCOMChiefRow(s: "filler-\($0)", r: "r", ap: "1870", st: nil, en: nil, ex: nil)
+            },
+        ]
+        if let territory {
+            chiefs[territory, default: []].append(POCOMChiefRow(
+                s: "dayton-william-lewis", r: "r", ap: "1861-03-18", st: nil, en: "1864-12-01", ex: nil))
+        }
+        return POCOMIndex(version: 2, generated: "g", source: "s", careers: [:], chiefs: chiefs)
+    }
+
     @Test("The runner refuses a chiefs table under 600 rows, or one without Dayton under France")
     func runnerRefusesThinOrSentinelLessChiefs() {
-        func index(filler: Int, daytonUnder territory: String?) -> POCOMIndex {
-            var chiefs: [String: [POCOMChiefRow]] = [
-                "filler": (0..<filler).map {
-                    POCOMChiefRow(s: "filler-\($0)", r: "r", ap: "1870", st: nil, en: nil, ex: nil)
-                },
-            ]
-            if let territory {
-                chiefs[territory, default: []].append(POCOMChiefRow(
-                    s: "dayton-william-lewis", r: "r", ap: "1861-03-18", st: nil, en: "1864-12-01", ex: nil))
-            }
-            return POCOMIndex(version: 2, generated: "g", source: "s", careers: [:], chiefs: chiefs)
-        }
         #expect(POCOMIndexRunner.chiefsMinimumRows == 600)
-        #expect(POCOMIndexRunner.chiefsRefusal(index(filler: 599, daytonUnder: "france")) == nil)
-        #expect(POCOMIndexRunner.chiefsRefusal(index(filler: 598, daytonUnder: "france")) == .tooFewRows(599))
-        #expect(POCOMIndexRunner.chiefsRefusal(index(filler: 599, daytonUnder: "spain")) == .missingSentinel)
+        #expect(POCOMIndexRunner.chiefsRefusal(Self.refusalFixture(filler: 599, daytonUnder: "france")) == nil)
+        #expect(POCOMIndexRunner.chiefsRefusal(Self.refusalFixture(filler: 598, daytonUnder: "france")) == .tooFewRows(599))
+        #expect(POCOMIndexRunner.chiefsRefusal(Self.refusalFixture(filler: 599, daytonUnder: "spain")) == .missingSentinel)
+    }
+
+    @Test("dataToWrite throws each refusal before encoding, and otherwise returns the runner's encoding")
+    func dataToWriteRefusesOrEncodes() throws {
+        #expect(throws: POCOMIndexRunner.ChiefsRefusal.tooFewRows(599)) {
+            try POCOMIndexRunner.dataToWrite(Self.refusalFixture(filler: 598, daytonUnder: "france"))
+        }
+        #expect(throws: POCOMIndexRunner.ChiefsRefusal.missingSentinel) {
+            try POCOMIndexRunner.dataToWrite(Self.refusalFixture(filler: 599, daytonUnder: "spain"))
+        }
+        let accepted = Self.refusalFixture(filler: 599, daytonUnder: "france")
+        #expect(try POCOMIndexRunner.dataToWrite(accepted) == POCOMIndexRunner.encode(accepted))
+    }
+
+    /// Scoped to `run()`'s own body: a `run()` that called `encode` would write a collapsed table and
+    /// pass every test that calls `dataToWrite` or `chiefsRefusal` directly.
+    @Test("run() takes the bytes it writes from dataToWrite, and never encodes around it")
+    func runWritesThroughDataToWrite() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("POCOMIndexGeneratorCore/POCOMIndexRunner.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "public static func run("))
+        let end = try #require(source.range(of: "// MARK: - Helpers", range: start.upperBound..<source.endIndex))
+        let body = source[start.upperBound..<end.lowerBound]
+        #expect(body.components(separatedBy: "try dataToWrite(index)").count - 1 == 1)
+        #expect(!body.contains("encode("), "run() encodes the index itself, around the refusal")
     }
 }

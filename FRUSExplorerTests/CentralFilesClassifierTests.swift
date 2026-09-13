@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - CentralFilesClassifierTests
@@ -717,6 +718,7 @@ struct AddresseeRuleTests {
             ("Mr. Seward to Mr. W. L. Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
             ("Mr. Seward to Mr. Charles Francis Adams Jr.", A(style: .usStyle, names: ["charles", "francis", "adams"], senderIsForeign: false)),
             ("Mr. Seward to Air. Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("Mr. Seward to Mr, Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
             ("Mr. Seward to Mr. Adams; (same to Mr. Dayton, No. 501.)", A(style: .usStyle, names: ["adams"], senderIsForeign: false)),
             ("Mr. Seward to Mr. Dayton through Mr. Bigelow.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
             ("Mr. Evarts to Dr. Aceval.", A(style: .usStyle, names: ["aceval"], senderIsForeign: false)),
@@ -742,7 +744,7 @@ struct AddresseeRuleTests {
             #expect(CentralFilesClassifier.addressee(inHeader: header) == expected, "\(header)")
             checked += 1
         }
-        #expect(checked == 25)
+        #expect(checked == 26)
     }
 
     /// A missing foreign title turns straight into a false "Likely", so every entry is driven through
@@ -788,8 +790,9 @@ struct AddresseeRuleTests {
         #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "united-kingdom") == ["great britain"])
         #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "germany") == ["germany"],
                 "a Prussia chapter must not borrow the German Empire's chiefs")
-        // Through the injection initializer, the path `.bundled` takes: a chief keyed at Guatemala answers
-        // a letter printed in a "Central America." chapter. (A synthetic chief — the keying is under test.)
+        // Through `init(chiefsByTerritory:)`, the keying `init(index:)` — and so `.bundled` — ends in: a chief
+        // keyed at Guatemala answers a letter printed in a "Central America." chapter. (A synthetic chief;
+        // the keying is under test. The decoder's path is `POCOMIndexTests.rosterFromDecodedIndexDecidesD573`.)
         let envoy = Self.chief("fixture-envoy", surname: "Fixture", forename: "Test", display: "Test Fixture",
                                territory: "guatemala", first: "1880-01-01", last: "1882-12-31")
         let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["guatemala": [envoy]])
@@ -798,13 +801,12 @@ struct AddresseeRuleTests {
                               geoKeys: GeoKeyNormalizer.keys(from: "Central America."))?.slug == "fixture-envoy")
     }
 
-    /// Measured over the register: 51 territories carry a served chief of mission between 1861 and 1906.
     /// A territory whose keys reach no diplomatic roll can never decide anything, which is a silent loss
     /// of reach — the three historical names the overrides exist for were found exactly this way.
     ///
-    /// The ids are pinned here rather than read from the bundled `chiefs` table, which this test must
-    /// not depend on; a test over the bundled table belongs with the regenerated artifact.
-    @Test("Every register territory's keys reach the central-files vocabulary, Bulgaria excepted")
+    /// Iterates the bundled `chiefs` table rather than a pinned list, so a territory a regeneration adds
+    /// is checked against the roll vocabulary too.
+    @Test("Every bundled register territory's keys reach the central-files vocabulary, bar the allow-list")
     func rosterKeysJoinCentralFilesVocabulary() throws {
         let index = try index()
         var vocabulary = Set<String>()
@@ -812,17 +814,14 @@ struct AddresseeRuleTests {
             let series = try #require(index.series(category: category))
             for roll in series.rolls { vocabulary.formUnion(roll.geoKeys) }
         }
-        let territories = [
-            "argentina", "austria", "belgium", "bolivia", "brazil", "bulgaria", "chile", "china", "colombia",
-            "costa-rica", "cuba", "denmark", "dominican-republic", "ecuador", "egypt", "el-salvador", "france",
-            "germany", "greece", "guatemala", "haiti", "hawaii", "holy-see", "honduras", "iran", "italy", "japan",
-            "korea", "liberia", "luxembourg", "mexico", "montenegro", "morocco", "netherlands", "nicaragua",
-            "norway", "panama", "paraguay", "peru", "portugal", "romania", "russia", "serbia", "spain", "sweden",
-            "switzerland", "thailand", "turkey", "united-kingdom", "uruguay", "venezuela",
-        ]
+        let territories = try #require(POCOMIndexStore.shared, "pocom-index.json should be bundled").chiefTerritoryIds
+        // 51 territories carry a served chief in 1861–1906, 52 with Two Sicilies (reached through the
+        // 90-day grace before 1861); fewer than 51 means the table collapsed.
+        try #require(territories.count >= 51, "the bundled chiefs table has \(territories.count) territories")
         // Bulgaria: the bundled index files no diplomatic roll under it, so its chiefs have nothing to
-        // decide. Asserted below as well, so the exception cannot go stale silently.
+        // decide. Each entry must still be in the table, so the exception cannot go stale silently.
         let allowList: Set<String> = ["bulgaria"]
+        #expect(allowList.isSubset(of: Set(territories)), "an allow-listed territory left the table")
         var checked = 0
         for territory in territories {
             let keys = ChiefsOfMissionRoster.geoKeys(forTerritoryId: territory)
@@ -830,7 +829,7 @@ struct AddresseeRuleTests {
             #expect(joined != allowList.contains(territory), "\(territory) → \(keys), joined: \(joined)")
             checked += 1
         }
-        #expect(checked == 51)
+        #expect(checked == territories.count)
     }
 
     // MARK: The rule, end to end against the bundled central-files index
@@ -857,6 +856,39 @@ struct AddresseeRuleTests {
         #expect(lead.chiefOfMission == Self.dayton)
         #expect(lead.classification.rationale
                 == "From the Department of State to William L. Dayton, U.S. Envoy Extraordinary and Minister Plenipotentiary to France (1861–1864): an instruction.")
+    }
+
+    /// The same letter through the roster the app ships, rather than a hand-built Dayton: the generator's
+    /// table, the decoder's floor and ceiling, the altname and the keying all have to agree for this to pass.
+    @Test("The bundled register decides d573: Instructions alone, at Likely, naming Dayton")
+    func bundledRosterDecidesD573() throws {
+        let homes = CentralFilesClassifier.documentHomes(
+            header: Self.d573Header, dateline: Self.d573Dateline, sectionPath: Self.d573Path,
+            index: try index(), roster: .bundled)
+        #expect(homes.map(\.classification.category) == [.instructions])
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["149305041"])
+        let lead = try #require(homes.first)
+        #expect(lead.classification.confidence == .high)
+        #expect(lead.chiefOfMission?.slug == "dayton-william-lewis")
+        #expect(lead.classification.rationale
+                == "From the Department of State to William L. Dayton, U.S. Envoy Extraordinary and Minister Plenipotentiary to France (1861–1864): an instruction.")
+    }
+
+    @Test("A chapter title prints as its country: number, continuation and trailing punctuation removed")
+    func printedCountryTable() {
+        let rows: [(String, String)] = [
+            ("France.", "France"),
+            ("Denmark:", "Denmark"),
+            ("XXIX.—Spain.", "Spain"),
+            ("Austria-Hungary.", "Austria-Hungary"),
+            ("Great Britain (Continued.)", "Great Britain"),
+        ]
+        var checked = 0
+        for (title, expected) in rows {
+            #expect(CentralFilesClassifier.printedCountry(fromChapterTitle: title) == expected, "\(title)")
+            checked += 1
+        }
+        #expect(checked == 5)
     }
 
     @Test("frus1863p1/d573: a Department note in the British legation chapter is unchanged by the rule")
@@ -1046,14 +1078,16 @@ struct AddresseeRuleTests {
                               geoKeys: ["france"]) == nil)
     }
 
-    /// The rule drops only the Notes-to-Foreign-Missions home. A header that names a consul adds the
-    /// consular pair, and whatever of it resolves must survive a decision untouched. (Consular
+    /// The rule drops only the Notes-to-Foreign-Missions home. A header that mentions a consul adds the
+    /// consular pair, and whatever of it resolves must survive a decision untouched. The header names the
+    /// minister and routes the letter through a consul — the corpus's shape (`to Mr. Conger, via Consul
+    /// Fowler`) — so the promotion it shows is one the rule should make. (Consular
     /// Instructions end in 1834 in the bundled index, so at this date only the Notes-to-Foreign-Consuls
     /// run resolves — roll 40038220.) The path is `France.` alone: a date-only consular run resolves
     /// under any title, so behind `Supplement.` the title loop would stop before reaching the country.
     @Test("A decided letter keeps its consular candidates exactly as they were")
     func consularPairUntouched() throws {
-        let header = "Mr. Seward to Mr. Dayton, consul."
+        let header = "Mr. Seward to Mr. Dayton, through the consul at Havre."
         let control = CentralFilesClassifier.documentHomes(
             header: header, dateline: Self.d573Dateline, sectionPath: ["France."], index: try index(), roster: .empty)
         #expect(control.map(\.classification.category) == [.instructions, .notesTo, .notesToForeignConsuls],
@@ -1134,6 +1168,7 @@ struct SourceExplorerEvaluationTests {
             (Self.input(facts: Self.facts(dateline: "Department of State, Washington, March 1, 1906.")), .notApplicable),
             (Self.input(index: false), .notChecked(.centralFilesIndexMissing)),
             (Self.input(path: .noStructure), .notChecked(.noVolumeStructure)),
+            (Self.input(path: .readFailed), .notChecked(.indexReadFailed)),
             (Self.input(path: .path([])), .notChecked(.documentNotInStructure)),
         ]
         var reasons = Set<String>()
@@ -1145,6 +1180,112 @@ struct SourceExplorerEvaluationTests {
         }
         #expect(reasons == Set(CountrySeriesOutcome.NotCheckedReason.allCases.map { "\($0)" }),
                 "the gate reaches \(reasons.count) of the \(CountrySeriesOutcome.NotCheckedReason.allCases.count) reasons")
+    }
+
+    // MARK: evaluate, through a real index
+
+    /// A volume shaped like `frus1863p2`: `d573` inside a `France.` chapter with its printed serial, and
+    /// `d1` with no dateline, indexed through the real pipeline — so `evaluate` reads the row and the
+    /// volume structure the app reads.
+    private static func indexedD573Volume() async throws -> (dir: URL, db: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSEvaluate-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="chapter" xml:id="ch1">
+          <head>France.</head>
+          <div type="document" xml:id="d573">
+            <head>Mr. Seward to Mr. Dayton.</head>
+            <opener><dateline>Department of State , Washington , November 10, 1863.</dateline>
+              <seg rendition="#left">No. 428.]</seg></opener>
+            <p>Sir: Your despatch has been received.</p>
+          </div>
+          <div type="document" xml:id="d1">
+            <head>A memorandum</head>
+            <p>This document prints no dateline.</p>
+          </div>
+        </div>
+        </body></text></TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, dbURL, pipeline)
+    }
+
+    /// The route History, the Research tab and a restored window take: the xml:id as the header, no dateline.
+    private static func route(_ documentId: String = "d573", year: Int? = nil) -> CountrySeriesRoute {
+        CountrySeriesRoute(header: documentId, dateline: nil, year: year, volumeId: "vol1", documentId: documentId)
+    }
+
+    @Test("evaluate: the Research-tab route to d573 hydrates from the index and resolves to Instructions alone")
+    func evaluateResolvesD573FromTheIndex() async throws {
+        let fixture = try await Self.indexedD573Volume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        let result = await CentralFilesClassifier.evaluate(
+            route: Self.route(), pipeline: fixture.pipeline, index: index,
+            roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+        #expect(result.context.header.contains("Mr. Seward to Mr. Dayton"), "not the route's xml:id: \(result.context.header)")
+        #expect(result.context.dateline?.contains("November 10, 1863") == true)
+        #expect(result.context.year == 1863)
+        #expect(result.context.despatchSerial == "428")
+        let homes = result.outcome.homes
+        #expect(homes.map(\.classification.category) == [.instructions], "\(result.outcome)")
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["149305041"])
+        #expect(homes.first?.classification.confidence == .high)
+        #expect(homes.first?.chiefOfMission == AddresseeRuleTests.dayton)
+        #expect(result.outcome == .resolved(homes, serialLabel: .instruction))
+    }
+
+    @Test("evaluate with no roster reads the bundled register, which names Dayton for d573")
+    func evaluateDefaultsToTheBundledRoster() async throws {
+        let fixture = try await Self.indexedD573Volume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        let result = await CentralFilesClassifier.evaluate(
+            route: Self.route(), pipeline: fixture.pipeline, index: index,
+            astCache: DocumentASTCache(), volumeURL: nil)
+        let homes = result.outcome.homes
+        #expect(homes.map(\.classification.category) == [.instructions], "\(result.outcome)")
+        #expect(homes.first?.chiefOfMission?.slug == "dayton-william-lewis")
+        #expect(homes.first?.classification.rationale.contains("William L. Dayton") == true)
+    }
+
+    /// Each refusal `evaluate` reaches from real reads, not from a hand-built gate input. The last two
+    /// alter the fixture's database in place, so they run last: an emptied structure table, then none.
+    @Test("evaluate: no row, no pipeline, a later year, no dateline, no structure, and a failed structure read")
+    func evaluateRefusals() async throws {
+        let fixture = try await Self.indexedD573Volume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        func outcome(_ route: CountrySeriesRoute, pipeline: IndexingPipeline?) async -> CountrySeriesOutcome {
+            await CentralFilesClassifier.evaluate(route: route, pipeline: pipeline, index: index,
+                                                  roster: AddresseeRuleTests.daytonRoster,
+                                                  astCache: DocumentASTCache(), volumeURL: nil).outcome
+        }
+        #expect(!(await outcome(Self.route(), pipeline: fixture.pipeline)).homes.isEmpty,
+                "fixture guard: d573 must resolve, or the refusals below prove nothing")
+        #expect(await outcome(Self.route("d999"), pipeline: fixture.pipeline) == .notChecked(.documentNotIndexed))
+        #expect(await outcome(Self.route(), pipeline: nil) == .notChecked(.indexStarting))
+        #expect(await outcome(Self.route(year: 1908), pipeline: fixture.pipeline) == .notApplicable)
+        #expect(await outcome(Self.route("d1"), pipeline: fixture.pipeline) == .notChecked(.noDateline))
+
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(fixture.db.path, &handle) == SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        #expect(sqlite3_exec(handle, "DELETE FROM volume_structures WHERE volume_id = 'vol1'", nil, nil, nil) == SQLITE_OK)
+        #expect(sqlite3_changes(handle) == 1, "the fixture's structure row must be the one removed")
+        #expect(await outcome(Self.route(), pipeline: fixture.pipeline) == .notChecked(.noVolumeStructure))
+        #expect(sqlite3_exec(handle, "DROP TABLE volume_structures", nil, nil, nil) == SQLITE_OK)
+        #expect(await outcome(Self.route(), pipeline: fixture.pipeline) == .notChecked(.indexReadFailed),
+                "a structure read that throws is a read failure, not an absent structure")
     }
 
     @Test("Every state says something different, and none claims a prediction was attempted")

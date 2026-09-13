@@ -284,14 +284,16 @@ struct SourceExplorerReloadWiringAuditTests {
         #expect(swept == 2)
     }
 
-    @Test("Both twins run the shared evaluation with the bundled roster, and neither re-implements it")
+    @Test("Both twins run the shared evaluation, leave the roster to it, and neither re-implements it")
     func bothTwinsCallEvaluate() throws {
         var swept = 0
         for path in Self.twins {
             let text = try Self.code(path)
             let resolve = try Self.body(of: "private func resolveCountrySeries() async {", in: text)
             #expect(resolve.contains("CentralFilesClassifier.evaluate("), "\(path) does not call evaluate")
-            #expect(resolve.contains("roster: .bundled"), "\(path) does not pass the bundled roster")
+            // `evaluate` reads the bundled roster itself, off the main actor and only once both gates pass;
+            // a twin passing `roster:` would decode pocom-index.json on the main actor on first open.
+            #expect(!resolve.contains("roster:"), "\(path) passes its own roster to evaluate")
             #expect(resolve.contains("guard !Task.isCancelled"), "\(path) writes the outcome after a cancel")
             #expect(text.components(separatedBy: "CentralFilesClassifier.evaluate(").count - 1 == 1)
             // The loop, the enclosure lookup and the serial read moved into the classifier; a copy left
@@ -299,6 +301,27 @@ struct SourceExplorerReloadWiringAuditTests {
             for moved in ["CentralFilesClassifier.classify(", "enclosureHomes(", ".despatchSerial(volumeId:"] {
                 #expect(!text.contains(moved), "\(path) still calls \(moved) itself")
             }
+            swept += 1
+        }
+        #expect(swept == 2)
+    }
+
+    /// The evaluation can parse the document for its enclosures on an AST-cache miss, so whatever waits
+    /// behind it waits on that. The authority record reads no year and goes first; everything that reads
+    /// the year the evaluation may fill in comes after it.
+    @Test("Both twins evaluate after the authority record and before the pointers and related documents")
+    func evaluateRunsAfterTheAuthorityRecord() throws {
+        var swept = 0
+        for path in Self.twins {
+            let load = try Self.body(of: "private func load() async {", in: Self.code(path))
+            let authority = try #require(load.range(of: "authorityRecord = await"), "\(path)")
+            let evaluate = try #require(load.range(of: "await resolveCountrySeries()"), "\(path)")
+            let pointers = try #require(load.range(of: "await loadUnprintedPointers()"), "\(path)")
+            let related = try #require(load.range(of: "await loadRelatedDocuments("), "\(path)")
+            #expect(authority.lowerBound < evaluate.lowerBound, "\(path) evaluates before the authority record")
+            #expect(evaluate.lowerBound < pointers.lowerBound, "\(path) evaluates after the pointers")
+            #expect(evaluate.lowerBound < related.lowerBound, "\(path) evaluates after Related Documents")
+            #expect(load.components(separatedBy: "await resolveCountrySeries()").count - 1 == 1)
             swept += 1
         }
         #expect(swept == 2)

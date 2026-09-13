@@ -38,7 +38,7 @@ public enum POCOMIndexRunner {
 
     /// The fewest `chiefs` rows a build may write.
     ///
-    /// The measured table has 637 rows for 1861–1906. Every way the chiefs parse can break shows
+    /// The measured table has 641 rows for 1861–1906. Every way the chiefs parse can break shows
     /// up as a collapse, not an error: a renamed element, or a scope that reads the wrong block.
     /// The app's addressee rule would then silently decide nothing, so the runner refuses.
     public static let chiefsMinimumRows = 600
@@ -89,6 +89,17 @@ public enum POCOMIndexRunner {
         try makeEncoder().encode(index)
     }
 
+    /// The bytes `run()` writes for a built index, or the refusal that stops the write.
+    ///
+    /// The refuse-or-encode decision lives here rather than inline in `run()` so that it is tested
+    /// where it is made: a `run()` that encoded without asking would otherwise pass every test that
+    /// calls ``chiefsRefusal(_:)`` directly, and write a collapsed table.
+    /// - Throws: ``ChiefsRefusal`` before encoding anything, or the encoder's error.
+    public static func dataToWrite(_ index: POCOMIndex) throws -> Data {
+        if let refusal = chiefsRefusal(index) { throw refusal }
+        return try encode(index)
+    }
+
     public static func run(environment: [String: String] = ProcessInfo.processInfo.environment) {
         guard let dirPath = environment["POCOM_DIR"], !dirPath.isEmpty else {
             FileHandle.standardError.write(Data("""
@@ -132,7 +143,7 @@ public enum POCOMIndexRunner {
             let chiefRows = index.chiefs.values.reduce(0) { $0 + $1.count }
             let chiefSlugs = Set(index.chiefs.values.flatMap { $0.map(\.s) })
             let chiefsReport = """
-                  chiefs of mission \(POCOMIndexBuilder.chiefsWindowFirstDay)…\(POCOMIndexBuilder.chiefsWindowLastDay):
+                  chiefs of mission \(POCOMIndexBuilder.chiefsWindowFirstDay)…\(POCOMIndexBuilder.chiefsWindowLastDay) (last days from \(POCOMIndexBuilder.chiefsWindowEarliestLastDay)):
                     served rows read:           \(stats.servedChiefRows)
                     other-nominee rows skipped: \(stats.otherNomineeChiefRows)
                     rows with no start:         \(stats.chiefRowsWithoutStart)
@@ -145,14 +156,15 @@ public enum POCOMIndexRunner {
                     derived ends (ex):          \(stats.derivedEndsWritten)
                 """
 
-            if let refusal = chiefsRefusal(index) {
+            let data: Data
+            do {
+                data = try dataToWrite(index)
+            } catch let refusal as ChiefsRefusal {
                 print(chiefsReport)
                 FileHandle.standardError.write(Data(
                     "error: refusing to write \(outputURL.path): \(refusal)\n".utf8))
                 exit(1)
             }
-
-            let data = try encode(index)
             try FileManager.default.createDirectory(
                 at: outputURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             try data.write(to: outputURL)

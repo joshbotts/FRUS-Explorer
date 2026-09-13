@@ -37,13 +37,14 @@ import Foundation
 /// - Rows are keyed by the file's `<territory-id>`, never by a row's contemporary territory id.
 ///   Korea's rows, for example, carry `joseon-dynasty-1910`.
 /// - A row starts on the earlier of its appointment and start dates; the 49 rows stating neither
-///   are skipped. A row is kept when its widened tenure overlaps 1861-01-01…1906-12-31, and an
-///   open end is closed by `ex` before that test.
+///   are skipped. A row is kept when its widened tenure overlaps 1861-01-01…1906-12-31, a last day
+///   from 1860-10-03 counting (the app's 90-day grace), and an open end is closed by `ex` before
+///   that test.
 /// - `keepSlug` does not apply.
 ///
-/// Measured output: 637 rows over 424 people, 51 territories and 15 roles. Two rows carry `ex`:
+/// Measured output: 641 rows over 427 people, 52 territories and 15 roles. Two rows carry `ex`:
 /// Pacheco's 1890 commissions to Guatemala and Honduras, both closed at 1891-06-30. The whole file
-/// is 529,950 bytes, and `careers` is byte-identical to version 1's.
+/// is 530,712 bytes, and `careers` is byte-identical to version 1's.
 ///
 /// Pure and file-system-light — the per-file parsers work on strings so tests need no checkout.
 public enum POCOMIndexBuilder {
@@ -188,6 +189,20 @@ public enum POCOMIndexBuilder {
 
     /// First day of the window the `chiefs` table covers. 1861 is FRUS's first year.
     public static let chiefsWindowFirstDay = "1861-01-01"
+
+    /// Days before ``chiefsWindowFirstDay`` that a row's last day may fall and the row still ship.
+    ///
+    /// The app's addressee rule lets a letter reach a chief for 90 days after the register's last day
+    /// (`ChiefsOfMissionRoster.graceDaysAfterLastDay`), and decides only when exactly ONE name-matching
+    /// person covers the date. A letter of early 1861 can therefore reach a chief whose tenure ended in
+    /// late 1860, and a table cut at ``chiefsWindowFirstDay`` would hide that person from the count the
+    /// rule's uniqueness rests on. Keep this at least the app's grace; the app's bundled-table test pins
+    /// the pair by the first row it admits (`ward-john-elliott`, China, ended 1860-12-15).
+    public static let chiefsWindowGraceDays = 90
+
+    /// The earliest last day a row may have and still ship: ``chiefsWindowFirstDay`` less
+    /// ``chiefsWindowGraceDays``. A literal, so a reader sees the edge; a test recomputes it.
+    public static let chiefsWindowEarliestLastDay = "1860-10-03"
 
     /// Last day of the window the `chiefs` table covers. 1906 is the last year of the Department's
     /// numbered diplomatic instruction and despatch series, which the table helps Source Explorer
@@ -468,7 +483,7 @@ public enum POCOMIndexBuilder {
                     ? allStarts.filter { $0 > first }.min().flatMap(dayBefore) : nil
                 let lastDay = chief.ended == nil ? derivedEnd : chief.ended.flatMap(ceilDay)
                 guard first <= chiefsWindowLastDay,
-                      lastDay.map({ $0 >= chiefsWindowFirstDay }) ?? true else {
+                      lastDay.map({ $0 >= chiefsWindowEarliestLastDay }) ?? true else {
                     stats.chiefRowsOutsideWindow += 1
                     continue
                 }

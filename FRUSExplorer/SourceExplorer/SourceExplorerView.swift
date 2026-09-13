@@ -994,7 +994,7 @@ struct SourceExplorerView: View {
         let volumeURL = documentVolumeId.flatMap { appState.downloadManager?.volumeURL(for: $0) }
         let result = await CentralFilesClassifier.evaluate(
             route: route, pipeline: indexingPipeline, index: CentralFilesIndexStore.shared,
-            roster: .bundled, astCache: appState.documentASTCache, volumeURL: volumeURL)
+            astCache: appState.documentASTCache, volumeURL: volumeURL)
         guard !Task.isCancelled else { return }
         documentContext = result.context
         countrySeriesOutcome = result.outcome
@@ -2189,10 +2189,6 @@ struct SourceExplorerView: View {
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
 
-        // Pre-1906 country-series resolution (no source note; no API key). Runs before everything
-        // that reads the year, because it is also what reads a year the route did not pass.
-        await resolveCountrySeries()
-
         // Phase 4: resolve the note against the bundled cross-volume authority.
         // Warmed off the main thread (one ~2 MB decode, once per launch).
         if hasSourceNote {
@@ -2201,6 +2197,12 @@ struct SourceExplorerView: View {
                 CollectionAuthorityStore.shared?.record(forParsed: note, note: raw)
             }.value
         }
+
+        // Pre-1906 country-series resolution (no source note; no API key). Runs before everything
+        // that reads the year — Related Documents and the filing period — because it is also what
+        // reads a year the route did not pass. After the authority record, which reads no year and
+        // should not wait on an enclosure parse.
+        await resolveCountrySeries()
 
         await loadUnprintedPointers()
 
