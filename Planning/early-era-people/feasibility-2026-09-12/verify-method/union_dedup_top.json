@@ -1,0 +1,100 @@
+{
+ "union_marked_filtered_control": {
+  "dedup_rows": 1445209,
+  "overlap_rows": 62390,
+  "top10_dedup": [
+   [
+    "seward",
+    14261
+   ],
+   [
+    "wilson",
+    9826
+   ],
+   [
+    "molotov",
+    9523
+   ],
+   [
+    "johnson",
+    8906
+   ],
+   [
+    "marshall",
+    8099
+   ],
+   [
+    "bevin",
+    7704
+   ],
+   [
+    "roosevelt",
+    7425
+   ],
+   [
+    "byrnes",
+    5809
+   ],
+   [
+    "adams",
+    5338
+   ],
+   [
+    "hay",
+    4954
+   ]
+  ],
+  "distinct_K2": 143940,
+  "share_singleton": 0.0593,
+  "share_ge20": 0.7772
+ },
+ "union_marked_filtered_sweep": {
+  "dedup_rows": 2694267,
+  "overlap_rows": 148523,
+  "top10_dedup": [
+   [
+    "marshall",
+    13201
+   ],
+   [
+    "seward",
+    12349
+   ],
+   [
+    "wilson",
+    11267
+   ],
+   [
+    "johnson",
+    10935
+   ],
+   [
+    "hull",
+    10862
+   ],
+   [
+    "hay",
+    10752
+   ],
+   [
+    "roosevelt",
+    10151
+   ],
+   [
+    "molotov",
+    9972
+   ],
+   [
+    "bevin",
+    8306
+   ],
+   [
+    "william h. seward",
+    8019
+   ]
+  ],
+  "distinct_K2": 414185,
+  "share_singleton": 0.1021,
+  "share_ge20": 0.6952
+ }
+}

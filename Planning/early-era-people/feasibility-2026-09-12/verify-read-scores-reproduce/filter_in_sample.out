@@ -1,0 +1,3 @@
+raw sweep predicted 1003 -> filtered 736: removed 267 spans in the 64 docs; relaxed hits 379 -> 378, strict hits 347 -> 347
+=> 266 of 267 (99.6%) in-sample removed spans matched no gold mention; the one lost is King's (frus1951v01/d410)
+control 343 -> 316: removed 27; relaxed hits 258 -> 256 => 25 of 27 removed matched no gold

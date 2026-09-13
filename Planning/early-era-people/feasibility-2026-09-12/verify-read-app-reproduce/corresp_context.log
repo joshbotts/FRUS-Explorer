@@ -1,0 +1,14 @@
+volumes with corresp persName: 3 total: 10616
+top volumes: [('frus1932v04', 5743), ('frus1918Supp01v02', 3395), ('frus1917Supp02v02', 1478)]
+by region: {'front': 1100, 'body': 9228, 'back': 288}
+by (region, nearest-div type): {('front', 'table-of-contents'): 2, ('front', 'index'): 1098, ('body', 'historical-document'): 9215, ('body', 'subchapter'): 3, ('back', 'index'): 288, ('body', 'chapter'): 10}
+nearest div is type=document: 0
+SAMPLE ('frus1917Supp02v02', 'front', 'table-of-contents', 'toc', 'frus1917Supp02v01#p_BAJ1', '<persName                                         corresp="frus1917Supp02v01#p_BAJ1">Balfour</persName>                 ')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_BAJ1', '<persName corresp="frus1917Supp02v01#p_BAJ1"                                 >Balfour</persName>’s note of Apr. 10 enclo')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_SSCA1', '<persName corresp="frus1917Supp02v01#p_SSCA1">Spring                                 Rice</persName> on trade and transp')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_BAJ1', '<persName corresp="frus1917Supp02v01#p_BAJ1">balfour</persName>                         mission—report of the joint subc')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_PLE1', '<persName                                 corresp="frus1917Supp02v01#p_PLE1">Lord Percy</persName>.)</cell>             ')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_MVC1', '<persName corresp="frus1917Supp02v01#p_MVC1"                                 >McCormick</persName>: further discussion o')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_MVC1', '<persName                                 corresp="frus1917Supp02v01#p_MVC1">McCormick</persName>                       ')
+SAMPLE ('frus1917Supp02v02', 'front', 'index', 'papers', 'frus1917Supp02v01#p_MWG1', '<persName                                 corresp="frus1917Supp02v01#p_MWG1">McAdoo</persName>                         <')
+marked rows: 245747 rows with non-null c: 9215 distinct c: 634 [('frus1932v03#p_JNT1', 606), ('frus1918Supp01v01#p_PWH1', 304), ('frus1918Supp01v01#p_SLP1', 300), ('frus1918Supp01v01#p_LR1', 291), ('frus1932v03#p_BCC1', 195)]

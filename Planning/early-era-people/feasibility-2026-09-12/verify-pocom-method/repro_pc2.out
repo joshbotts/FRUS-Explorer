@@ -1,0 +1,42 @@
+{
+ "8000": {
+  "names_with_surname_dated": 12384,
+  "known": 10310,
+  "unique": 7916,
+  "fromto_with_surname_in_undated_docs": 0,
+  "share_known": 0.8325,
+  "share_unique": 0.6392
+ },
+ "None": {
+  "names_with_surname_dated": 13037,
+  "known": 10633,
+  "unique": 8134,
+  "fromto_with_surname_in_undated_docs": 0,
+  "share_known": 0.8156,
+  "share_unique": 0.6239
+ },
+ "seward": {
+  "seward-frederick-william": [
+   [
+    1861,
+    1869
+   ],
+   [
+    1877,
+    1879
+   ]
+  ],
+  "seward-george-frederick": [
+   [
+    1876,
+    1880
+   ]
+  ],
+  "seward-william-henry": [
+   [
+    1861,
+    1869
+   ]
+  ]
+ }
+}

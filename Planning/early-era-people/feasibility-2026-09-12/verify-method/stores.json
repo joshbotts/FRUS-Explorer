@@ -1,0 +1,1807 @@
+{
+ "marked": {
+  "heads": 267,
+  "mentions_sum": 245747,
+  "docs_sum": 197534,
+  "keys": {
+   "chars": 267,
+   "defines_ids": 267,
+   "docs": 267,
+   "linked": 267,
+   "mentions": 267,
+   "secs": 267,
+   "typed_from": 267,
+   "typed_to": 267,
+   "untyped": 267,
+   "volume": 267
+  }
+ },
+ "control": {
+  "forced_english": true,
+  "generated": "2026-09-10",
+  "model": "NLTagger nameType (Version 26.6.2 (Build 25G83))",
+  "operating_system": "Version 26.6.2 (Build 25G83)",
+  "store": "/Users/jbotts/frus-ner-raw",
+  "text_dir": "/Users/jbotts/frus-semantic-raw/text",
+  "totals": {
+   "chars": 679401514,
+   "docs": 197534,
+   "mentions": 1353849,
+   "overlapping_marked": 80670,
+   "secs": 475.7
+  },
+  "volumes_in_store": 267,
+  "volumes_missing": [],
+  "volumes_requested": 267,
+  "volumes_rescanned": 0,
+  "volumes_reused": 0,
+  "_keys": [
+   "forced_english",
+   "generated",
+   "model",
+   "operating_system",
+   "store",
+   "tagger_options",
+   "text_dir",
+   "totals",
+   "volumes_in_store",
+   "volumes_missing",
+   "volumes_requested",
+   "volumes_rescanned",
+   "volumes_reused"
+  ]
+ },
+ "control_filtered": {
+  "frozen_before_ground_truth": "2026-09-12, with the M2a sample un-keyed",
+  "generated": "2026-09-12",
+  "marked_store": "/Users/jbotts/frus-ner-raw",
+  "script_sha256": "dd64d8dc8415f5b41b83e23e9752e49336be3eb8760c4532db0350c1921fa30c",
+  "source_run_manifest_sha256": "acbf6ce34de9c497f5cd1aeb8b3550cf2227c4b6824f729dc8f1e07b808982f4",
+  "source_store": "/Users/jbotts/frus-ner-raw-control",
+  "text_dir": "/Users/jbotts/frus-semantic-raw/text",
+  "tool": "filter_detections.py",
+  "totals": {
+   "examples_by_rule": {
+    "boundary": [
+     "Victori",
+     "Ido",
+     "Mr. M\u2019",
+     "Wang Tsin-",
+     "Jose",
+     "Li Hung-",
+     "Shang-",
+     "Thi",
+     "Mais s\u2019",
+     "Kung-",
+     "Lin-",
+     "J\u2019",
+     "Lord Clarendon-",
+     "Enfin M. Bullock s\u2019",
+     "M. Arman s\u2019",
+     "Garibaldi s\u2019",
+     "Mil-",
+     "Cus",
+     "Patey obt",
+     "A. Ca"
+    ],
+    "curated": [
+     "D. C.",
+     "Vera Cruz",
+     "U. S.",
+     "Brit",
+     "Petersburg",
+     "VIII",
+     "A. D.",
+     "Vichy",
+     "Rome",
+     "Telegram",
+     "Buenos Ayres",
+     "S. C.",
+     "S.C",
+     "XVII",
+     "XXIII",
+     "VI",
+     "Arab",
+     "Sc",
+     "XI",
+     "XV"
+    ],
+    "institution": [
+     "Bureau",
+     "Nations",
+     "Commissioner Bureau",
+     "Mr. Bureau",
+     "Court",
+     "Board",
+     "The Bureau",
+     "Embassy",
+     "A. The Council",
+     "Mission",
+     "Department",
+     "A. Embassy",
+     "A. League",
+     "Legation",
+     "Committee",
+     "Council",
+     "Board Bureau",
+     "Consulate",
+     "Conference",
+     "Embassy Attach\u00e9"
+    ],
+    "place": [
+     "Java",
+     "Hong Kong",
+     "Marion",
+     "Victoria",
+     "Spanish",
+     "Salvador",
+     "Morea",
+     "Martinique",
+     "Derna",
+     "Reunion",
+     "Sarawak",
+     "Trieste",
+     "Surinam",
+     "Formosa",
+     "Moon",
+     "Chosen",
+     "Tunis",
+     "Quebec",
+     "Siam",
+     "Peru"
+    ],
+    "pronoun": [
+     "I.",
+     "Me.",
+     "Mine"
+    ],
+    "title": [
+     "Esq.",
+     "Majesty",
+     "Esq",
+     "Hon",
+     "Monsieur le Baron",
+     "M.",
+     "Honorable",
+     "Her Majesty",
+     "Sultan",
+     "Earl",
+     "Marquis",
+     "M. A.",
+     "Pope",
+     "Monsieur",
+     "Mr.",
+     "Duke",
+     "Mrs.",
+     "Senor",
+     "Mr. Consul",
+     "Mr. M."
+    ]
+   },
+   "kept": 1261852,
+   "removed": 91997,
+   "removed_by_rule": {
+    "boundary": 404,
+    "curated": 49448,
+    "institution": 1345,
+    "place": 12127,
+    "pronoun": 154,
+    "title": 28519
+   },
+   "removed_spans_editors_marked_as_person_by_rule": {
+    "boundary": 5,
+    "curated": 10,
+    "institution": 0,
+    "place": 3,
+    "pronoun": 0,
+    "title": 85
+   },
+   "source_mentions": 1353849,
+   "volumes": 267
+  },
+  "vocabulary_sha256": "d81a40891e3c7abfe0f9d1dd1c771079308255ee6100bf9b8bc29224e80b9613",
+  "_keys": [
+   "frozen_before_ground_truth",
+   "gazetteer",
+   "generated",
+   "marked_store",
+   "rules",
+   "script_sha256",
+   "source_run_manifest_sha256",
+   "source_store",
+   "text_dir",
+   "tool",
+   "totals",
+   "vocabulary_sha256"
+  ]
+ },
+ "filtered": {
+  "frozen_before_ground_truth": "2026-09-12, with the M2a sample un-keyed",
+  "generated": "2026-09-12",
+  "marked_store": "/Users/jbotts/frus-ner-raw",
+  "script_sha256": "dd64d8dc8415f5b41b83e23e9752e49336be3eb8760c4532db0350c1921fa30c",
+  "source_run_manifest_sha256": "2554e4a32d5abc65a17525e8f76e2894a9b24e272ee76549198f2e82d96dfdbc",
+  "source_store": "/Users/jbotts/FRUS Explorer Development Files from Mac Studio/frus-ner-raw",
+  "text_dir": "/Users/jbotts/frus-semantic-raw/text",
+  "tool": "filter_detections.py",
+  "totals": {
+   "examples_by_rule": {
+    "boundary": [
+     "you",
+     "No. 1",
+     "Europe",
+     "her Majesty\u2019s consul",
+     "Austria",
+     "Lord John Russel",
+     "the captain",
+     "Russia",
+     "he",
+     "America",
+     "men",
+     "them",
+     "war",
+     "nation",
+     "the surveyor",
+     "their government",
+     "Consul",
+     "neutral",
+     "despatch",
+     "He"
+    ],
+    "curated": [
+     "Washington",
+     "Berlin",
+     "Paris",
+     "London",
+     "the British",
+     "New York",
+     "Madrid",
+     "Rome",
+     "D. C.",
+     "Dutch",
+     "the Italian",
+     "Americans",
+     "Buenos Ayres",
+     "telegram",
+     "St. Petersburg",
+     "French",
+     "Vera Cruz",
+     "English",
+     "the French",
+     "British"
+    ],
+    "institution": [
+     "Congress",
+     "Department of State",
+     "the President of the United States",
+     "her Majesty\u2019s government",
+     "United States",
+     "Secretary of State of the United States",
+     "his Majesty\u2019s envoy extraordinary and minister plenipotentiary to the United States",
+     "Secretary of the United States",
+     "the United States",
+     "the foreign department",
+     "President of the United States",
+     "his government",
+     "Legation of the United States",
+     "Parliament",
+     "the government",
+     "this government",
+     "their government",
+     "foreign nations",
+     "this department",
+     "your legation"
+    ],
+    "place": [
+     "Georgia",
+     "Russia",
+     "Great Britain",
+     "France",
+     "Austria",
+     "Belgium",
+     "Italy",
+     "Denmark",
+     "the Bermuda",
+     "Gibraltar",
+     "Spain",
+     "America",
+     "South America",
+     "Canada",
+     "England",
+     "Europe",
+     "the Bahamas",
+     "Poland",
+     "Germany",
+     "Mexico"
+    ],
+    "pronoun": [
+     "you",
+     "You",
+     "He",
+     "Your",
+     "yourself",
+     "We",
+     "your",
+     "him",
+     "he",
+     "them",
+     "It",
+     "She",
+     "me",
+     "myself",
+     "My",
+     "they",
+     "we",
+     "I.",
+     "us",
+     "Yours"
+    ],
+    "title": [
+     "Secretary of State",
+     "the Emperor",
+     "the President",
+     "Sir",
+     "Your excellency",
+     "your excellency",
+     "the Secretary of State",
+     "his Majesty the King",
+     "her Majesty",
+     "Esq.",
+     "Her Majesty",
+     "her Majesty\u2019s ministers",
+     "my lord",
+     "the Secretary of the Navy",
+     "foreign ministers",
+     "The President",
+     "his Majesty",
+     "the admiral",
+     "the consul",
+     "the president"
+    ]
+   },
+   "kept": 2597043,
+   "removed": 1059195,
+   "removed_by_rule": {
+    "boundary": 82167,
+    "curated": 193798,
+    "institution": 211865,
+    "place": 208236,
+    "pronoun": 22969,
+    "title": 340160
+   },
+   "removed_spans_editors_marked_as_person_by_rule": {
+    "boundary": 69,
+    "curated": 71,
+    "institution": 25,
+    "place": 39,
+    "pronoun": 0,
+    "title": 213
+   },
+   "source_mentions": 3656238,
+   "volumes": 267
+  },
+  "vocabulary_sha256": "d81a40891e3c7abfe0f9d1dd1c771079308255ee6100bf9b8bc29224e80b9613",
+  "_keys": [
+   "frozen_before_ground_truth",
+   "gazetteer",
+   "generated",
+   "marked_store",
+   "rules",
+   "script_sha256",
+   "source_run_manifest_sha256",
+   "source_store",
+   "text_dir",
+   "tool",
+   "totals",
+   "vocabulary_sha256"
+  ]
+ },
+ "boundary": {
+  "frozen_before_ground_truth": "2026-09-12, with the M2a sample un-keyed",
+  "gazetteer": null,
+  "generated": "2026-09-12",
+  "marked_store": "/Users/jbotts/frus-ner-raw",
+  "script_sha256": "dd64d8dc8415f5b41b83e23e9752e49336be3eb8760c4532db0350c1921fa30c",
+  "source_run_manifest_sha256": "2554e4a32d5abc65a17525e8f76e2894a9b24e272ee76549198f2e82d96dfdbc",
+  "source_store": "/Users/jbotts/FRUS Explorer Development Files from Mac Studio/frus-ner-raw",
+  "text_dir": "/Users/jbotts/frus-semantic-raw/text",
+  "tool": "filter_detections.py",
+  "totals": {
+   "examples_by_rule": {
+    "boundary": [
+     "you",
+     "No. 1",
+     "Europe",
+     "her Majesty\u2019s consul",
+     "Austria",
+     "Lord John Russel",
+     "the captain",
+     "Russia",
+     "he",
+     "America",
+     "men",
+     "them",
+     "war",
+     "nation",
+     "the surveyor",
+     "their government",
+     "Consul",
+     "neutral",
+     "despatch",
+     "He"
+    ]
+   },
+   "kept": 3574071,
+   "removed": 82167,
+   "removed_by_rule": {
+    "boundary": 82167
+   },
+   "removed_spans_editors_marked_as_person_by_rule": {
+    "boundary": 69
+   },
+   "source_mentions": 3656238,
+   "volumes": 267
+  },
+  "vocabulary_sha256": "d81a40891e3c7abfe0f9d1dd1c771079308255ee6100bf9b8bc29224e80b9613",
+  "_keys": [
+   "frozen_before_ground_truth",
+   "gazetteer",
+   "generated",
+   "marked_store",
+   "rules",
+   "script_sha256",
+   "source_run_manifest_sha256",
+   "source_store",
+   "text_dir",
+   "tool",
+   "totals",
+   "vocabulary_sha256"
+  ]
+ },
+ "studio": {
+  "aborted": null,
+  "chunk_chars": 3200,
+  "detect": "llm",
+  "extractor_sha256": "77a1af999923da6ba6b4f109c880285c46aec26fc833b58973085c24dffcdd0b",
+  "failure_abort": 20,
+  "generated": "2026-09-10T18:28:58",
+  "max_tokens": 1024,
+  "model": "qwen3-14b",
+  "model_file_sha256": "eefff4dee3bb479332d264f7b884f05bf70596e34a723f2f23fe5c3be7597891",
+  "only_documents": null,
+  "overlap_chars": 480,
+  "r0_text_layer_verified_against": "/Users/jbotts/frus-semantic-raw/text",
+  "sample_docs": 0,
+  "script_sha256": "13b70f9e2827a6ad48f2053a693fd87d29f614fd2bdfba4223587351f456d278",
+  "seed": "234",
+  "system_prompt": "You identify PERSON mentions in printed United States diplomatic correspondence from the 1860s to the 1950s (the Foreign Relations of the United States series). Return every distinct span of text in the passage that names an individual human being, copied VERBATIM and EXACTLY as printed, including any title or honorific attached to the name (\"Mr. Bevin\", \"Sir Edward Grey\", \"Count Bernstorff\"). Include a bare surname when it names a person (\"Marshall\"). Exclude countries, cities, ships, treaties, conferences, legations, departments, companies, and every other non-person name. Exclude a title with no name attached (\"the Secretary of State\"). Copy each string once, exactly as it appears in the passage \u2014 do not correct spelling, expand abbreviations, or translate. Answer with JSON only.",
+  "temperature": 0.0,
+  "totals_this_run": {
+   "chars": 610973307,
+   "completion_tokens": 18926673,
+   "detected": 3350419,
+   "docs": 184389,
+   "marked": 214811,
+   "prompt_tokens": 197871174,
+   "secs": 890913.6
+  },
+  "volumes_missing": [],
+  "volumes_requested": 267,
+  "workers": 4,
+  "_keys": [
+   "aborted",
+   "chunk_chars",
+   "detect",
+   "extractor_sha256",
+   "failure_abort",
+   "generated",
+   "incomplete_volumes",
+   "machine",
+   "max_tokens",
+   "model",
+   "model_file_sha256",
+   "models_listing",
+   "only_documents",
+   "overlap_chars",
+   "r0_text_layer_verified_against",
+   "response_format",
+   "retry_backoffs",
+   "sample_docs",
+   "script_sha256",
+   "seed",
+   "system_prompt",
+   "temperature",
+   "totals_this_run",
+   "volumes_missing",
+   "volumes_requested",
+   "workers"
+  ]
+ },
+ "local_detected_files": 0,
+ "studio_detected_files": 534,
+ "progress": {
+  "rows": 72,
+  "cols": [
+   "file",
+   "volume",
+   "document",
+   "band",
+   "chars",
+   "seeded_spans",
+   "annotated"
+  ],
+  "annotated": {
+   "y": 60,
+   "": 8,
+   "None": 2,
+   "none": 1,
+   "Y": 1
+  }
+ },
+ "gold_lines": 406,
+ "gold_doc_lines": 64,
+ "gold_doc_keys": [
+  "v",
+  "d",
+  "band",
+  "mentions",
+  "mark"
+ ],
+ "gold_span_keys": [
+  "v",
+  "d",
+  "s",
+  "e",
+  "n",
+  "seeded",
+  "band"
+ ],
+ "gold_editor_keys": [
+  "seeded"
+ ],
+ "gold_seeded": {
+  "True": 53,
+  "False": 353
+ },
+ "m2a_manifest": {
+  "docs_requested": 72,
+  "documents": [
+   {
+    "band": "1861-1899",
+    "chars": 1331,
+    "document": "d354",
+    "file": "frus1864p2__d354.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      24
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "55007a0a71cfdd9e7f6016f87631908e3c00ab706627762f2f7f22d4659b8374",
+    "text_sha256": "dfc67efdf0374e68fe0e3e13579755da6735fef6215dbea443207b5181a131c2",
+    "volume": "frus1864p2"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 3103,
+    "document": "d358",
+    "file": "frus1864p2__d358.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      24
+     ],
+     [
+      484,
+      494
+     ],
+     [
+      498,
+      508
+     ]
+    ],
+    "seeded_spans": 4,
+    "staged_sha256": "4facabffc35f636e3f888941bb462582a8468e4cc055619158cd36a39d6d7072",
+    "text_sha256": "d39a34dcbf665ac263d2a844aaa40756d67e6a64a94caf5260eed40c3b78f14b",
+    "volume": "frus1864p2"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 1151,
+    "document": "d47",
+    "file": "frus1864p2__d47.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      23
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "7b8026fa03f2030143a89e6010923a0fd7f224dca7151888e0177609b3ea2405",
+    "text_sha256": "ffd04db02ed5b87754b58c255ce0cd496cb04cd2b1869871376d17a0c28d9c38",
+    "volume": "frus1864p2"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 811,
+    "document": "d280",
+    "file": "frus1865p1__d280.txt",
+    "seeded": [
+     [
+      12,
+      22
+     ],
+     [
+      26,
+      35
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "f281e62437a893953736ae95a2406fb8bdb5ea6aa7550f6d0b21645c6e5132a0",
+    "text_sha256": "c7857d687d82eb0e3aaac72450e9344d3a8db5418f6fb2049f9bb4fbc4f847bb",
+    "volume": "frus1865p1"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 2812,
+    "document": "d366",
+    "file": "frus1865p1__d366.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      23
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "28ce3354cec6d74d69025e8df59317c16135f83998347410f9b6ff7dcce4f5ae",
+    "text_sha256": "02067bad20f0424f9f67de7e2dbce83499e099d7ec58b55840174fe70f407b2c",
+    "volume": "frus1865p1"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 3119,
+    "document": "d93",
+    "file": "frus1865p1__d93.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      23
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "9a8872ef110e385dcf1bb881e0767deeb8cd3419a1b1074f4b2afe3e7815150a",
+    "text_sha256": "f2d13618e296f3c3c6b39443ab6c0bd8a265338c2406e9850a81eb048cb01b9a",
+    "volume": "frus1865p1"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 2513,
+    "document": "d175",
+    "file": "frus1866p3__d175.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      24
+     ],
+     [
+      1031,
+      1044
+     ],
+     [
+      1048,
+      1058
+     ],
+     [
+      1751,
+      1761
+     ],
+     [
+      1765,
+      1778
+     ]
+    ],
+    "seeded_spans": 6,
+    "staged_sha256": "16897056b827811aa1f829ba4a0a876114ecf5221d6722b828728877e87f9e5c",
+    "text_sha256": "ee6316cd7a81f23ab17997c56eda9a3cf5178e6f5bc6c19a9ab86fdbb0496f7f",
+    "volume": "frus1866p3"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 2889,
+    "document": "d206",
+    "file": "frus1866p3__d206.txt",
+    "seeded": [
+     [
+      0,
+      10
+     ],
+     [
+      14,
+      24
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "6b9f869dafb04c42ae833cd6f7d495779291a38834a31dda76cdadc117e05e01",
+    "text_sha256": "bf469d1f58ece6d052eb2b530a3f46264be55a1b58d44adb650a8454b30b3156",
+    "volume": "frus1866p3"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 1873,
+    "document": "d69",
+    "file": "frus1866p3__d69.txt",
+    "seeded": [
+     [
+      15,
+      27
+     ],
+     [
+      31,
+      41
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "102196efcb40f4b9e36a3b0a76030d6911e0e5833fb5beaa37a5a662232d4fc7",
+    "text_sha256": "f09b79a4406b23aa5ec11bcdeaf551c08f1bb99044f7aede69655f98b51c3549",
+    "volume": "frus1866p3"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 1205,
+    "document": "d11",
+    "file": "frus1872p2v5__d11.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "f0bff299cefe21567be7d18b7277925eaf8336f2000a980ae7a44e292ca9f333",
+    "text_sha256": "f0bff299cefe21567be7d18b7277925eaf8336f2000a980ae7a44e292ca9f333",
+    "volume": "frus1872p2v5"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 2028,
+    "document": "d115",
+    "file": "frus1872p2v5__d115.txt",
+    "seeded": [
+     [
+      20,
+      35
+     ],
+     [
+      39,
+      51
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "a4188118882694eecb03131edeb4b0052497b91c82c788c89f03258e4396a231",
+    "text_sha256": "62a8922f73829936a1ff6f89acaefc8ed9c9bc803dfe3210081ddf1e51314634",
+    "volume": "frus1872p2v5"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 2046,
+    "document": "d82",
+    "file": "frus1872p2v5__d82.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "e87e4b2cce37775fd2e4159975092220b1cbb6ac3b339860dc4ee7c3942b524e",
+    "text_sha256": "e87e4b2cce37775fd2e4159975092220b1cbb6ac3b339860dc4ee7c3942b524e",
+    "volume": "frus1872p2v5"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 2207,
+    "document": "d396",
+    "file": "frus1888p2__d396.txt",
+    "seeded": [
+     [
+      14,
+      20
+     ],
+     [
+      28,
+      36
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "a875a1ab17a31a262104853a67b745734c4ea96e366d5fa5d9b80ee6378ab99a",
+    "text_sha256": "c00df23b1feacba782843802dd125b5a8a54bab416ec96e22f52348810e9e396",
+    "volume": "frus1888p2"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 1759,
+    "document": "d589",
+    "file": "frus1888p2__d589.txt",
+    "seeded": [
+     [
+      12,
+      18
+     ],
+     [
+      26,
+      38
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "6c709ec3457172087da29191285e7765cd15ab15c9fe7428b4e5ceedb4e848e9",
+    "text_sha256": "b2c5cfd98609512d6451b5e80ef1c50d8229dcc112c1bc3dbdf1cdd97ccc694a",
+    "volume": "frus1888p2"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 4917,
+    "document": "d84",
+    "file": "frus1888p2__d84.txt",
+    "seeded": [
+     [
+      13,
+      18
+     ],
+     [
+      26,
+      32
+     ],
+     [
+      466,
+      471
+     ],
+     [
+      479,
+      487
+     ],
+     [
+      4513,
+      4521
+     ],
+     [
+      4529,
+      4534
+     ]
+    ],
+    "seeded_spans": 6,
+    "staged_sha256": "bd49e3152280dde6aef311ff0166e808bd2dbfb60dc26c503592fcb69b66b443",
+    "text_sha256": "817db8b4f4ce8db510f90292864a675ea22db05318dd8db3fd79b6c99c9bb6a5",
+    "volume": "frus1888p2"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 6578,
+    "document": "d119",
+    "file": "frus1889__d119.txt",
+    "seeded": [
+     [
+      4,
+      10
+     ],
+     [
+      18,
+      24
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "02b482b61778e3f9ddd0ae85b1cb7aea0b95d53f57663eaafe35e71f1800c357",
+    "text_sha256": "55beb0fd7b90be8a4c9cca35575fa7a016c35ea89efc3b36bbca98d878bfc1f6",
+    "volume": "frus1889"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 4697,
+    "document": "d129",
+    "file": "frus1889__d129.txt",
+    "seeded": [
+     [
+      4,
+      10
+     ],
+     [
+      18,
+      25
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "0d5de7aa3c63712b65db06555921ea95cba52136c0764be37932d73182715753",
+    "text_sha256": "6ab774021ecaecb83ac39e6f2f7b3567318ed5656e3f756287fab993209826e0",
+    "volume": "frus1889"
+   },
+   {
+    "band": "1861-1899",
+    "chars": 7160,
+    "document": "d339",
+    "file": "frus1889__d339.txt",
+    "seeded": [
+     [
+      4,
+      10
+     ],
+     [
+      18,
+      24
+     ],
+     [
+      2987,
+      3002
+     ],
+     [
+      3010,
+      3016
+     ]
+    ],
+    "seeded_spans": 4,
+    "staged_sha256": "6bbc406de7593ddaa956c0a58cda0912cd0825af174c9334418480a6b559aae2",
+    "text_sha256": "dc335dd68be782badff9523973bcd2e07965b4240c0f957d377e1b790fcc6b6d",
+    "volume": "frus1889"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 2711,
+    "document": "d364",
+    "file": "frus1902__d364.txt",
+    "seeded": [
+     [
+      4,
+      10
+     ],
+     [
+      18,
+      21
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "01ca87284b12cf6a09128696cfdacd0d53340c70cf7cb082f865833bf2ce021a",
+    "text_sha256": "c89d612c9f1a0d267213a841ab750563c31c29d815be551f92cc20dc5f28ccde",
+    "volume": "frus1902"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 892,
+    "document": "d739",
+    "file": "frus1902__d739.txt",
+    "seeded": [
+     [
+      4,
+      7
+     ],
+     [
+      15,
+      22
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "0400d2065fd284364db41bdb11a572de67c322bdaa12bfe6a5bd0d8f01facab1",
+    "text_sha256": "021128f1023854a49af25c59dbdcc3fcd69fbeee78d2b3e9d89065e3120b4319",
+    "volume": "frus1902"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 990,
+    "document": "d862",
+    "file": "frus1902__d862.txt",
+    "seeded": [
+     [
+      4,
+      10
+     ],
+     [
+      18,
+      21
+     ],
+     [
+      551,
+      560
+     ],
+     [
+      568,
+      574
+     ]
+    ],
+    "seeded_spans": 4,
+    "staged_sha256": "c43c0f5f0cf9feeebe6941f4bee856fb791a8a4f6ccfb295930c6be81f263ad7",
+    "text_sha256": "91eec1925bf4a75b13bef98130a1ce2d51da23b8a24f4df5113661923c04c3e1",
+    "volume": "frus1902"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 879,
+    "document": "d367",
+    "file": "frus1903__d367.txt",
+    "seeded": [
+     [
+      4,
+      7
+     ],
+     [
+      15,
+      27
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "a648444359ccb5e15b608a34161012425f824fe71803be87f26a291565482d2b",
+    "text_sha256": "c0ecf868ddf128ca94d0882dadc66e3cee6b5be89ea6658caa09117ce5f17e17",
+    "volume": "frus1903"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 1825,
+    "document": "d392",
+    "file": "frus1903__d392.txt",
+    "seeded": [
+     [
+      4,
+      7
+     ],
+     [
+      15,
+      20
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "398fb10c3b3c0c8c231e9b66a55d3d4e98e6ba8a32e4191888a3b4ad61c1ae5a",
+    "text_sha256": "229826f539f607de6a680b019a84e80c41ad549e405c10de28370410336b8ccd",
+    "volume": "frus1903"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 1522,
+    "document": "d822",
+    "file": "frus1903__d822.txt",
+    "seeded": [
+     [
+      4,
+      9
+     ],
+     [
+      17,
+      20
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "9fb1c1782ec83db43433115611535a1b2edcd19598d278f76855311955de12fd",
+    "text_sha256": "75f5387bbdf3867e0e8dd82bb704dc34b2c6a5fc67979b8da9eb87d4c48eec90",
+    "volume": "frus1903"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 1566,
+    "document": "d447",
+    "file": "frus1905__d447.txt",
+    "seeded": [
+     [
+      7,
+      13
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "6c2bf9bd4d6bd59f49b9cb9b30bbf2c36adb4e7fb0a8b2373683e2ea2e5f1245",
+    "text_sha256": "41755e533ca571f2a5c74aca51549311462126e1b3007694b4ac0724ec9e1c75",
+    "volume": "frus1905"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 1208,
+    "document": "d589",
+    "file": "frus1905__d589.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "a56b00c5a2070d26af80584c137b9782191bb87b5a8d5078130aec2b4ae63158",
+    "text_sha256": "a56b00c5a2070d26af80584c137b9782191bb87b5a8d5078130aec2b4ae63158",
+    "volume": "frus1905"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 2185,
+    "document": "d773",
+    "file": "frus1905__d773.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "aa95ace4083d4c77339b2e38832b7d14247642c6307ec21efbd2547013eda2e7",
+    "text_sha256": "aa95ace4083d4c77339b2e38832b7d14247642c6307ec21efbd2547013eda2e7",
+    "volume": "frus1905"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 1791,
+    "document": "d450",
+    "file": "frus1911__d450.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "8e6c71bf1c28e960f3892b3b3607fdecba578057456fac0e3bd35102ed713d8b",
+    "text_sha256": "8e6c71bf1c28e960f3892b3b3607fdecba578057456fac0e3bd35102ed713d8b",
+    "volume": "frus1911"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 2304,
+    "document": "d585",
+    "file": "frus1911__d585.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "95f5b9a9af362d9397d05716e1deb8ca9c198780c7abc2cfbb75a5402d5f9d79",
+    "text_sha256": "95f5b9a9af362d9397d05716e1deb8ca9c198780c7abc2cfbb75a5402d5f9d79",
+    "volume": "frus1911"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 3160,
+    "document": "d839",
+    "file": "frus1911__d839.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "2a0438426d3fceed2387c2f44d9198f77229d06f279444304f951589abe8e26b",
+    "text_sha256": "2a0438426d3fceed2387c2f44d9198f77229d06f279444304f951589abe8e26b",
+    "volume": "frus1911"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 2978,
+    "document": "d1594",
+    "file": "frus1912__d1594.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "2a614982f151b2a2f029aba72a307be88ffb309367a3030fcf5ba0701957b105",
+    "text_sha256": "2a614982f151b2a2f029aba72a307be88ffb309367a3030fcf5ba0701957b105",
+    "volume": "frus1912"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 1032,
+    "document": "d357",
+    "file": "frus1912__d357.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "7f34c7dde0c0db2cc2d9eef385f271662817a329e6936b71a33a5c755e661cc1",
+    "text_sha256": "7f34c7dde0c0db2cc2d9eef385f271662817a329e6936b71a33a5c755e661cc1",
+    "volume": "frus1912"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 976,
+    "document": "d422",
+    "file": "frus1912__d422.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "3e6002ce8a52e1bad9a082b6812d4b09613751d5cf8b339de04890853277886b",
+    "text_sha256": "3e6002ce8a52e1bad9a082b6812d4b09613751d5cf8b339de04890853277886b",
+    "volume": "frus1912"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 4109,
+    "document": "d315",
+    "file": "frus1919v02__d315.txt",
+    "seeded": [
+     [
+      68,
+      84
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "81749ebed3d59353906153baa9a833c0c994e094aafeff679091713d3b62c897",
+    "text_sha256": "737d840e153d928a2924b2e53e564a2c7e92fc4dd58ac6cbd0ee2d7857387d40",
+    "volume": "frus1919v02"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 989,
+    "document": "d432",
+    "file": "frus1919v02__d432.txt",
+    "seeded": [
+     [
+      45,
+      50
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "8e1ba36cbda9d0453da61c34ef55d5127fe36c7735e63a4cecc57971fa602413",
+    "text_sha256": "8b83c03de464a46c5425ef665d393dda5bc929591886b0891708e6042f0a0ffe",
+    "volume": "frus1919v02"
+   },
+   {
+    "band": "1900-1929",
+    "chars": 2625,
+    "document": "d570",
+    "file": "frus1919v02__d570.txt",
+    "seeded": [
+     [
+      79,
+      88
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "4812e9818566dcbcf79768dc082b5d4b5feec4ea906eaa439ce47b2e96614437",
+    "text_sha256": "76c3b87006c14387e80506b9af25e33ea2aaeefa01577eab0f986178b43243a8",
+    "volume": "frus1919v02"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1030,
+    "document": "d287",
+    "file": "frus1933v05__d287.txt",
+    "seeded": [
+     [
+      47,
+      53
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "919823db82346939c3fed65186070f70162b2bf6d58d17dc76e82b613f534a2f",
+    "text_sha256": "8acfaee34db3a1264f2d02984e904cd55650c8a5be64eff5652b88eaf2580b6c",
+    "volume": "frus1933v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 3436,
+    "document": "d407",
+    "file": "frus1933v05__d407.txt",
+    "seeded": [
+     [
+      47,
+      53
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "9793ee6931498fbd56c11e9983ba981274c1d98ddc4d467f431c92dc88a889b8",
+    "text_sha256": "813d6bcfd150d5d0ae38284e951b5783f3ab4a41e67187cd71b362f0385bde8c",
+    "volume": "frus1933v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1422,
+    "document": "d520",
+    "file": "frus1933v05__d520.txt",
+    "seeded": [
+     [
+      47,
+      53
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "3ed22e0ab37a9008742e991961f2f5d3cafac20f0a767b36915e32e814e93dd8",
+    "text_sha256": "6a4435417b5c6138cc1a19692150e076be31bfd3272ce6d44a48db0737b5abd8",
+    "volume": "frus1933v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 966,
+    "document": "d382",
+    "file": "frus1937v01__d382.txt",
+    "seeded": [
+     [
+      45,
+      48
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "dea9c3baec848779140ccd48af35f42a5e2f42ee27048ebd6303848235262d75",
+    "text_sha256": "5ad6644f1cffd8a34363e77bb8a7a59625f1d326508f8381644b874df97b62a9",
+    "volume": "frus1937v01"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1312,
+    "document": "d566",
+    "file": "frus1937v01__d566.txt",
+    "seeded": [
+     [
+      72,
+      79
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "16f59ea2a7337751c915ecb3922b3cfca5869b63bd44bd1ca4fe133ccc78f721",
+    "text_sha256": "ac053c827104ef4d270be25430aebe025c1d7bfd06e7a051673d2e2ae6ef059b",
+    "volume": "frus1937v01"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1484,
+    "document": "d748",
+    "file": "frus1937v01__d748.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "1356ea89069866c01791beba29e4021d0ab321943b741bf223f75b0252098bd2",
+    "text_sha256": "1356ea89069866c01791beba29e4021d0ab321943b741bf223f75b0252098bd2",
+    "volume": "frus1937v01"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 4034,
+    "document": "d211",
+    "file": "frus1937v04__d211.txt",
+    "seeded": [
+     [
+      58,
+      62
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "4c8e31a07b429053f1e59db3cb7e0ead33d9a3ab91c1b210d7496b051ff15e44",
+    "text_sha256": "36e5dd9f93c47cbc6e36782b72e76403937178b7baed03c6ffd4a33afa416e5c",
+    "volume": "frus1937v04"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1410,
+    "document": "d436",
+    "file": "frus1937v04__d436.txt",
+    "seeded": [
+     [
+      56,
+      61
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "7a8050ec75dabf394e1ac4a6967631bb103a9f708a2d16e6c5b3eadb1abc56d9",
+    "text_sha256": "06f60482b3596f0689a06dc3d10f9cafb3f8f42d5f78521683900aea7f645a62",
+    "volume": "frus1937v04"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 856,
+    "document": "d689",
+    "file": "frus1937v04__d689.txt",
+    "seeded": [
+     [
+      76,
+      83
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "36e05cf426b2d820c267d9bc32c2171d7454dafcee6a01d9fb05ee7e7181505d",
+    "text_sha256": "f7f394d57a35938c258d6ed463196c10ae1b9a5de2ccb850c47996a6e732c9ff",
+    "volume": "frus1937v04"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 3534,
+    "document": "d132",
+    "file": "frus1938v05__d132.txt",
+    "seeded": [
+     [
+      55,
+      62
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "f75ae12a7d6d6af421f833b2005faf965b5a65715db67880b589eefc213594d3",
+    "text_sha256": "c64369a0ffdf88a191fd82b7f3c9398cffa9cb7007572f397c4b26fc8f744638",
+    "volume": "frus1938v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1381,
+    "document": "d776",
+    "file": "frus1938v05__d776.txt",
+    "seeded": [
+     [
+      46,
+      52
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "7fbac2539c42c1d4d2704e60a87930b471fe85e4328f2aeab9a9fe10b71f0804",
+    "text_sha256": "d84906ab5128cbdb782160737533833c4729514b3b37ffe8fccb6b076aaa2dfc",
+    "volume": "frus1938v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 2485,
+    "document": "d91",
+    "file": "frus1938v05__d91.txt",
+    "seeded": [
+     [
+      55,
+      62
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "32be7da363539855c09f42421868663f2a703c2fb2eff0d408798914bb507930",
+    "text_sha256": "73bbcaa28efba3ea20c12a9403e4baf9b3ed67fcf558c87dbab5b4e8db615328",
+    "volume": "frus1938v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 1008,
+    "document": "d422",
+    "file": "frus1941v05__d422.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "b120dc04c2b7d3cd1409d095187279b3140de5440598eeceb82a2fa55a0a1eee",
+    "text_sha256": "b120dc04c2b7d3cd1409d095187279b3140de5440598eeceb82a2fa55a0a1eee",
+    "volume": "frus1941v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 2161,
+    "document": "d454",
+    "file": "frus1941v05__d454.txt",
+    "seeded": [
+     [
+      92,
+      98
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "a088bf1ee38dfd6af79cde13b3cf52576099d0491eb9ce4f61bd3df1d798aff0",
+    "text_sha256": "a3ff34d5f14eb17cb922d4d2473dd023dab108cd6b6cde10fbb0faff83a34199",
+    "volume": "frus1941v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 2296,
+    "document": "d756",
+    "file": "frus1941v05__d756.txt",
+    "seeded": [
+     [
+      42,
+      55
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "b5944cfe0300eacffbd643ba7933d82311b51f0817d9516d936993ae0274e2c4",
+    "text_sha256": "2f291d840f2443b5cb39711aec1c0cb435df8074869bcd2740949532f414cff9",
+    "volume": "frus1941v05"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 2495,
+    "document": "d421",
+    "file": "frus1944v06__d421.txt",
+    "seeded": [
+     [
+      46,
+      53
+     ],
+     [
+      85,
+      90
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "6ef08bd7c5eba319d921df49e8e512042f2c98bd314d787e88ca863396760bf0",
+    "text_sha256": "91c6c97197d5a1d5589156fcf89da1b6f664771c99930c3c0a8e97e7272eda85",
+    "volume": "frus1944v06"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 875,
+    "document": "d706",
+    "file": "frus1944v06__d706.txt",
+    "seeded": [
+     [
+      92,
+      98
+     ],
+     [
+      150,
+      156
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "ba42560c70a8444e26ac2cf13b227d44697599b7be3a805296fae7fcbbbdf01b",
+    "text_sha256": "db2a1fbcbce59f4b0f19348845531d2cebcff3a5738ae757f06b1e105dbf6e3b",
+    "volume": "frus1944v06"
+   },
+   {
+    "band": "1930-1945",
+    "chars": 5530,
+    "document": "d93",
+    "file": "frus1944v06__d93.txt",
+    "seeded": [
+     [
+      62,
+      67
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "80fa01f91391c363247de6ffda88ec5b7cc1bc6d8becec73103191ff7a66b218",
+    "text_sha256": "a9ca2e9b8aa902a7cbebeb7c504a784066c2726549a0c36fe248c7972807d663",
+    "volume": "frus1944v06"
+   },
+   {
+    "band": "1946-",
+    "chars": 6007,
+    "document": "d390",
+    "file": "frus1946v01__d390.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "edf21e04130c349a4ef9163acf567672517c8a0926af83a5c0dda1c93050818c",
+    "text_sha256": "edf21e04130c349a4ef9163acf567672517c8a0926af83a5c0dda1c93050818c",
+    "volume": "frus1946v01"
+   },
+   {
+    "band": "1946-",
+    "chars": 6723,
+    "document": "d483",
+    "file": "frus1946v01__d483.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "2e7e657de7210d174d9c5e362e02c02b143b01b05f7e5e56a5bd143bdb5dd7bf",
+    "text_sha256": "2e7e657de7210d174d9c5e362e02c02b143b01b05f7e5e56a5bd143bdb5dd7bf",
+    "volume": "frus1946v01"
+   },
+   {
+    "band": "1946-",
+    "chars": 1187,
+    "document": "d715",
+    "file": "frus1946v01__d715.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "ae30d27cfaa0e0b92519ee1a09e389d67e35c03af892bd60e1cb2b3e55eb612c",
+    "text_sha256": "ae30d27cfaa0e0b92519ee1a09e389d67e35c03af892bd60e1cb2b3e55eb612c",
+    "volume": "frus1946v01"
+   },
+   {
+    "band": "1946-",
+    "chars": 2027,
+    "document": "d159",
+    "file": "frus1946v06__d159.txt",
+    "seeded": [
+     [
+      93,
+      103
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "3c6a553a601e349accf67a1644aa64bae9bd24197868a1c98bb91046e6c0b72e",
+    "text_sha256": "f19f0d640858e7fda0bbcc16e744ef916d5be1ffb5adfd4226650b4e30cc088c",
+    "volume": "frus1946v06"
+   },
+   {
+    "band": "1946-",
+    "chars": 5068,
+    "document": "d329",
+    "file": "frus1946v06__d329.txt",
+    "seeded": [
+     [
+      52,
+      56
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "b117a4cbdfcf4d4f708b719faf923ab3baa67976ba3af7816a6ab285238c5e62",
+    "text_sha256": "2357d07219456a7e53c3e0b7fa66041421dc7d374acdb5cf61124aabd7921066",
+    "volume": "frus1946v06"
+   },
+   {
+    "band": "1946-",
+    "chars": 2886,
+    "document": "d88",
+    "file": "frus1946v06__d88.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "b47ceeb103aca3ff50c32bb4e1a2a20fc4c42e24ecac8c2e70b07cc67b1f2bb8",
+    "text_sha256": "b47ceeb103aca3ff50c32bb4e1a2a20fc4c42e24ecac8c2e70b07cc67b1f2bb8",
+    "volume": "frus1946v06"
+   },
+   {
+    "band": "1946-",
+    "chars": 2600,
+    "document": "d337",
+    "file": "frus1946v10__d337.txt",
+    "seeded": [
+     [
+      51,
+      57
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "3e6f066975a06c64c056942269cc21d74646622263fa047d464c8136fe056cd3",
+    "text_sha256": "55fe8e05212d75f7639f9afe138185e49189a5ca7b1d6fea3dd55c4a8f9e0fe0",
+    "volume": "frus1946v10"
+   },
+   {
+    "band": "1946-",
+    "chars": 898,
+    "document": "d720",
+    "file": "frus1946v10__d720.txt",
+    "seeded": [
+     [
+      76,
+      82
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "0745b04f3080854027d3baf57513b3457dd6f946093e14548efe8a75f80c439c",
+    "text_sha256": "451f5e1c9268ba8809a1901152cec8a9f371bf38aff032785d05262467c6bbb7",
+    "volume": "frus1946v10"
+   },
+   {
+    "band": "1946-",
+    "chars": 2216,
+    "document": "d965",
+    "file": "frus1946v10__d965.txt",
+    "seeded": [
+     [
+      51,
+      57
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "deec85003f9cc9f562b60295b772067092a2c1b9b4e61148734eb858cffa12f5",
+    "text_sha256": "6c014545720d06ef7da545cda78dcea3443f060023a5c4c12acefbd6e585c735",
+    "volume": "frus1946v10"
+   },
+   {
+    "band": "1946-",
+    "chars": 2204,
+    "document": "d112",
+    "file": "frus1947v04__d112.txt",
+    "seeded": [
+     [
+      57,
+      63
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "ec51648a0a605831dadb53d0e9e1edfa1dc4a3c25f1a983c9a6a397a424126ed",
+    "text_sha256": "5ed6594f72ace7e64c7c06a4d449e55306460ef6802e75326451b8e6cbb14529",
+    "volume": "frus1947v04"
+   },
+   {
+    "band": "1946-",
+    "chars": 2040,
+    "document": "d322",
+    "file": "frus1947v04__d322.txt",
+    "seeded": [
+     [
+      55,
+      60
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "a3bf63938c1d2fda40a5727c8da2120bbfcacfa27b5977ce26ebc00bf89a1c5d",
+    "text_sha256": "5a1f90f5bcd36a319fec643654e56437a75b377eca51a5b20345f73849472b3b",
+    "volume": "frus1947v04"
+   },
+   {
+    "band": "1946-",
+    "chars": 2527,
+    "document": "d341",
+    "file": "frus1947v04__d341.txt",
+    "seeded": [
+     [
+      47,
+      53
+     ],
+     [
+      85,
+      95
+     ]
+    ],
+    "seeded_spans": 2,
+    "staged_sha256": "6e7ebb9d2ae0621b7203b7141bf66ab90dba200eb8bf39998450b4c3a2790b9a",
+    "text_sha256": "e2e5fb95c1faead2197c3eeed7b9b0d991c6b29b4d5e9b9554296e7c61275194",
+    "volume": "frus1947v04"
+   },
+   {
+    "band": "1946-",
+    "chars": 1734,
+    "document": "d365",
+    "file": "frus1947v05__d365.txt",
+    "seeded": [
+     [
+      29,
+      43
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "4a4b09c26c1de0db067248a15024cca1b6a20dd380331a595e9a78dc46e18d9b",
+    "text_sha256": "0615851f02d7ddadac6c5f504d33b82d3e5f4d2e0ccc20131731a2de29131f47",
+    "volume": "frus1947v05"
+   },
+   {
+    "band": "1946-",
+    "chars": 1157,
+    "document": "d369",
+    "file": "frus1947v05__d369.txt",
+    "seeded": [
+     [
+      52,
+      58
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "f64c7984c1c1af5dd91098a7c83fbffc333c91a9685988753e0fd71e45457919",
+    "text_sha256": "c9d4df5fa461c00c64b8d554f209b37a0560fe3dd031c9688b2a314d273b651f",
+    "volume": "frus1947v05"
+   },
+   {
+    "band": "1946-",
+    "chars": 4353,
+    "document": "d44",
+    "file": "frus1947v05__d44.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "9755ee471e9c78d9f5c1b366da85b99864ad123450b5165eb5140a6cd9e9bfa0",
+    "text_sha256": "9755ee471e9c78d9f5c1b366da85b99864ad123450b5165eb5140a6cd9e9bfa0",
+    "volume": "frus1947v05"
+   },
+   {
+    "band": "1946-",
+    "chars": 2605,
+    "document": "d183",
+    "file": "frus1951v01__d183.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "2d30683e4535c9ad6ca0a6f150464ea8e23e693c10bdfa086b92d2e5f64a3ff5",
+    "text_sha256": "2d30683e4535c9ad6ca0a6f150464ea8e23e693c10bdfa086b92d2e5f64a3ff5",
+    "volume": "frus1951v01"
+   },
+   {
+    "band": "1946-",
+    "chars": 6286,
+    "document": "d241",
+    "file": "frus1951v01__d241.txt",
+    "seeded": [],
+    "seeded_spans": 0,
+    "staged_sha256": "79379b7c5467b45e1bcb57e49455d32b59bed4f6092e42565ab42a2c4d0e02a1",
+    "text_sha256": "79379b7c5467b45e1bcb57e49455d32b59bed4f6092e42565ab42a2c4d0e02a1",
+    "volume": "frus1951v01"
+   },
+   {
+    "band": "1946-",
+    "chars": 2111,
+    "document": "d410",
+    "file": "frus1951v01__d410.txt",
+    "seeded": [
+     [
+      63,
+      70
+     ]
+    ],
+    "seeded_spans": 1,
+    "staged_sha256": "c7cb35fc94b4aac5ef6a007369255490d7c827ae8d23fbb44316cc824cbee2e2",
+    "text_sha256": "ae8b611ebb8baa265fea2dd49b79cfa211b221b2ccf32f328a76dccc47140104",
+    "volume": "frus1951v01"
+   }
+  ],
+  "documents_outside_length_window": 6003,
+  "generated": "2026-08-25T13:56:23",
+  "max_chars": 8000,
+  "min_chars": 800,
+  "seed": "234",
+  "skipped": {
+   "documents_with_bracket_char": 0,
+   "documents_with_overlapping_marked_spans": 0,
+   "documents_with_span_mismatch": 0,
+   "volumes_without_marked_layer": 0,
+   "volumes_without_text_layer": 0
+  },
+  "store": "/Users/jbotts/frus-ner-raw",
+  "text_dir": "/Users/jbotts/frus-semantic-raw/text",
+  "vols_per_band": 6
+ },
+ "score_top_keys": [
+  "document_list",
+  "documents",
+  "documents_without_mentions",
+  "ground_truth",
+  "mentions",
+  "results"
+ ]
+}

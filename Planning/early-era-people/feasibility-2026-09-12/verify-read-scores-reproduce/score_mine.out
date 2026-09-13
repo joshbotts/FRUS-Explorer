@@ -1,0 +1,53 @@
+gold docs 64 mentions 406 docs with 0 mentions 2 marks {'y': 61, 'none': 3}
+band docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16} band mentions {'1861-1899': 186, '1900-1929': 55, '1930-1945': 61, '1946-': 104}
+gold docs in seg1 vols 12 mentions 105 | 1861-1899 docs 18 mentions 186
+seeded gold spans 53
+gold spans not matching R-0 text: 0
+
+== OVERALL (64 docs) strict P/R/F1 | relaxed P/R/F1 | strict hits, relaxed hits, predicted, gold
+editor             0.602/0.131/0.215 | 1.000/0.217/0.356 | (53, 88, 88, 406)
+raw_sweep          0.346/0.855/0.493 | 0.378/0.933/0.538 | (347, 379, 1003, 406)
+boundary           0.356/0.855/0.502 | 0.388/0.933/0.548 | (347, 379, 976, 406)
+filtered_sweep     0.471/0.855/0.608 | 0.514/0.931/0.662 | (347, 378, 736, 406)
+nltagger           0.434/0.367/0.398 | 0.752/0.635/0.689 | (149, 258, 343, 406)
+filtered_nltagger  0.472/0.367/0.413 | 0.810/0.631/0.709 | (149, 256, 316, 406)
+
+== BY BAND strict F1 / relaxed F1 / strict P / relaxed P / relaxed R
+editor             1861-1899 0.226/0.383/0.591/1.000/0.237 | 1900-1929 0.056/0.472/0.118/1.000/0.309 | 1930-1945 0.368/0.395/0.933/1.000/0.246 | 1946- 0.190/0.207/0.917/1.000/0.115
+raw_sweep          1861-1899 0.655/0.710/0.540/0.585/0.903 | 1900-1929 0.440/0.466/0.288/0.305/0.982 | 1930-1945 0.362/0.389/0.228/0.245/0.951 | 1946- 0.429/0.488/0.288/0.328/0.952
+boundary           1861-1899 0.658/0.713/0.544/0.589/0.903 | 1900-1929 0.442/0.468/0.290/0.307/0.982 | 1930-1945 0.384/0.413/0.245/0.264/0.951 | 1946- 0.436/0.496/0.295/0.336/0.952
+filtered_sweep     1861-1899 0.723/0.783/0.638/0.691/0.903 | 1900-1929 0.567/0.600/0.408/0.432/0.982 | 1930-1945 0.509/0.547/0.358/0.384/0.951 | 1946- 0.542/0.611/0.401/0.452/0.942
+nltagger           1861-1899 0.347/0.682/0.367/0.723/0.645 | 1900-1929 0.387/0.688/0.474/0.842/0.582 | 1930-1945 0.410/0.684/0.429/0.714/0.656 | 1946- 0.492/0.706/0.554/0.795/0.635
+filtered_nltagger  1861-1899 0.366/0.709/0.415/0.803/0.634 | 1900-1929 0.409/0.727/0.545/0.970/0.582 | 1930-1945 0.414/0.690/0.436/0.727/0.656 | 1946- 0.497/0.714/0.568/0.815/0.635
+
+NLTagger - raw sweep strict gap (points): -9.5 rule met: False
+band strict winners raw (nlt-sweep): {'1861-1899': -30.9, '1900-1929': -5.3, '1930-1945': 4.8, '1946-': 6.3}
+band relaxed winners raw (nlt-sweep): {'1861-1899': -2.9, '1900-1929': 22.3, '1930-1945': 29.4, '1946-': 21.8}
+band relaxed (nlt-filtered sweep): {'1861-1899': -10.1, '1900-1929': 8.8, '1930-1945': 13.7, '1946-': 9.5}
+
+== band-stratified bootstrap 95% intervals (N=10000, seed 20260912)
+nltagger - filtered_sweep strict: point -21.0  CI -28.0 to -14.5
+nltagger - raw_sweep strict: point -9.5  CI -17.1 to -2.6
+nltagger - filtered_sweep relaxed: point 2.7  CI -4.8 to 10.2
+nltagger - raw_sweep relaxed: point 15.1  CI 7.3 to 22.7
+filtered_sweep - raw_sweep strict: point 11.5  CI 9.1 to 13.8
+filtered_sweep - raw_sweep relaxed: point 12.4  CI 9.8 to 15.0
+stopping rule met in bootstrap: 2.6%
+8-unkeyed simulation: rule met 0 of 10000; strict gap range -11.7 to -3.3
+
+== unions (relaxed P/R/F1 ; strict P/R/F1)
+editor+filtered_nltagger [naive] relaxed 0.816/0.773/0.794 strict 0.499/0.473/0.485
+editor+filtered_nltagger [nonoverlap] relaxed 0.840/0.773/0.805 strict 0.495/0.456/0.474
+editor+nltagger [naive] relaxed 0.767/0.778/0.773 strict 0.466/0.473/0.469
+editor+nltagger [nonoverlap] relaxed 0.788/0.778/0.783 strict 0.461/0.456/0.458
+editor+filtered_sweep [naive] relaxed 0.493/0.936/0.646 strict 0.451/0.857/0.591
+editor+filtered_sweep [nonoverlap] relaxed 0.514/0.933/0.663 strict 0.472/0.857/0.609
+
+== titles/possessives stripped, strict F1 (APPROXIMATE rule, mine)
+raw_sweep          strict P/R/F1 0.379/0.926/0.538
+filtered_sweep     strict P/R/F1 0.514/0.924/0.661
+nltagger           strict P/R/F1 0.618/0.522/0.566
+filtered_nltagger  strict P/R/F1 0.671/0.522/0.587
+
+editor baseline counts (strict hits, relaxed hits, predicted, gold): (53, 88, 88, 406)
+raw sweep zero-overlap FPs (first 40 sorted): vols Counter({'frus1864p2': 20, 'frus1865p1': 20})

@@ -1,0 +1,23 @@
+{
+ "marked": {
+  "persons_rows_sum_per_volume_distinct": 30327,
+  "pre1910": 12654,
+  "corpus_distinct_strings": 12171,
+  "corpus_distinct_pre1910": 7362,
+  "name_bytes_sum": 282320
+ },
+ "ctrl_filt": {
+  "persons_rows_sum_per_volume_distinct": 326305,
+  "pre1910": 139289,
+  "corpus_distinct_strings": 161010,
+  "corpus_distinct_pre1910": 83289,
+  "name_bytes_sum": 3704559
+ },
+ "union": {
+  "persons_rows_sum_per_volume_distinct": 340614,
+  "pre1910": 146301,
+  "corpus_distinct_strings": 166453,
+  "corpus_distinct_pre1910": 87024,
+  "name_bytes_sum": 3862020
+ }
+}

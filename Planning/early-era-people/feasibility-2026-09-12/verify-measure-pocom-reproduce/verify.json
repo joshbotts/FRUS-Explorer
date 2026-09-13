@@ -1,0 +1,2146 @@
+{
+ "pocom_et": {
+  "people": 4261,
+  "with_surname": 4261,
+  "dated": 4167,
+  "surnames": 2867,
+  "surnames_cf": 2866
+ },
+ "sewards": {
+  "seward-frederick-william": [
+   [
+    1861,
+    1869
+   ],
+   [
+    1877,
+    1879
+   ]
+  ],
+  "seward-william-henry": [
+   [
+    1861,
+    1869
+   ]
+  ],
+  "seward-george-frederick": [
+   [
+    1876,
+    1880
+   ]
+  ]
+ },
+ "sewards_in_office_1865": [
+  "seward-frederick-william",
+  "seward-william-henry"
+ ],
+ "loader_parity": {
+  "surnames_equal": true,
+  "spans_equal": false,
+  "by_surname_equal": true
+ },
+ "scope": {
+  "volumes": 267,
+  "docs_head": 197534,
+  "div_tags_tei": 197534,
+  "docs_tei_with_id_and_year": 197534,
+  "marked_rows_without_doc_year": 0,
+  "types": {
+   "from": 140504,
+   "to": 95247,
+   "untyped": 9996
+  },
+  "filtered_control_rows": 1261852,
+  "novel": 1181285,
+  "overlap": 80567,
+  "overlap_check_vs_raw_heads": {
+   "compared": 267,
+   "match": 267,
+   "mismatch": []
+  }
+ },
+ "windows": {
+  "single_year": 20,
+  "multi": 247,
+  "max_hi_minus_lo": 252,
+  "min_nonzero": 1
+ },
+ "sample12": {
+  "full_seg_ws_dated": 13037,
+  "first8000_ws_dated": 12384,
+  "fromto_anywhere": 13049,
+  "store_fromto": 13049,
+  "store_fromto_ws": 13037,
+  "store_undated": 0
+ },
+ "sample12_store": {
+  "n": 13049,
+  "with_surname": 13037,
+  "known": 10633,
+  "uniq_doc": 8134,
+  "uniq_win": 8142,
+  "dated": 13049,
+  "nobody": 1734,
+  "several": 765,
+  "known_1tok": 9343,
+  "k2_empty": 1,
+  "proxy_loses": 60,
+  "proxy_gains": 68,
+  "share_known": 0.8156,
+  "share_uniq_doc": 0.6239,
+  "share_uniq_win": 0.624,
+  "top10_known": [
+   [
+    "Hay",
+    794
+   ],
+   [
+    "Seward",
+    520
+   ],
+   [
+    "Fish",
+    479
+   ],
+   [
+    "MacMurray",
+    452
+   ],
+   [
+    "Olney",
+    357
+   ],
+   [
+    "Armour",
+    273
+   ],
+   [
+    "Caffery",
+    266
+   ],
+   [
+    "Denby",
+    172
+   ],
+   [
+    "Wilson",
+    155
+   ],
+   [
+    "Eustis",
+    150
+   ]
+  ],
+  "top5_uniq": [
+   [
+    "Hay",
+    794
+   ],
+   [
+    "Fish",
+    479
+   ],
+   [
+    "MacMurray",
+    452
+   ],
+   [
+    "Olney",
+    357
+   ],
+   [
+    "Caffery",
+    266
+   ]
+  ],
+  "distinct_uniq_sur": 245,
+  "top10_share_of_uniq": 0.3878,
+  "doc_x_surface": {
+   "n": 11982,
+   "known": 9891,
+   "uniq_win": 7541
+  },
+  "vol_x_surface": {
+   "n": 1459,
+   "known": 754,
+   "uniq_win": 380
+  },
+  "distinct_surface": {
+   "n": 1188,
+   "known": 517,
+   "uniq_union_win": 259
+  }
+ },
+ "whole": {
+  "fromto": {
+   "n": 235751,
+   "with_surname": 235218,
+   "known": 189613,
+   "uniq_doc": 130326,
+   "uniq_win": 131323,
+   "dated": 235751,
+   "nobody": 40558,
+   "several": 18729,
+   "known_1tok": 164812,
+   "k2_empty": 327,
+   "proxy_loses": 3800,
+   "proxy_gains": 4797,
+   "share_known": 0.8061,
+   "share_uniq_doc": 0.5541,
+   "share_uniq_win": 0.557,
+   "top10_known": [
+    [
+     "Seward",
+     9551
+    ],
+    [
+     "Johnson",
+     5114
+    ],
+    [
+     "Hay",
+     4887
+    ],
+    [
+     "Fish",
+     3550
+    ],
+    [
+     "Bayard",
+     3547
+    ],
+    [
+     "Grew",
+     3084
+    ],
+    [
+     "Wilson",
+     2959
+    ],
+    [
+     "Winant",
+     2920
+    ],
+    [
+     "Stuart",
+     2414
+    ],
+    [
+     "Adams",
+     2391
+    ]
+   ],
+   "top5_uniq": [
+    [
+     "Hay",
+     4855
+    ],
+    [
+     "Johnson",
+     3858
+    ],
+    [
+     "Bayard",
+     3544
+    ],
+    [
+     "Fish",
+     3131
+    ],
+    [
+     "Grew",
+     3083
+    ]
+   ],
+   "distinct_uniq_sur": 742,
+   "top10_share_of_uniq": 0.2341,
+   "doc_x_surface": {
+    "n": 216726,
+    "known": 176213,
+    "uniq_win": 121846
+   },
+   "vol_x_surface": {
+    "n": 28212,
+    "known": 14953,
+    "uniq_win": 7128
+   },
+   "distinct_surface": {
+    "n": 9969,
+    "known": 2627,
+    "uniq_union_win": 1012
+   }
+  },
+  "all": {
+   "n": 245747,
+   "with_surname": 245090,
+   "known": 194743,
+   "uniq_doc": 132765,
+   "uniq_win": 133798,
+   "dated": 245747,
+   "nobody": 42915,
+   "several": 19063,
+   "known_1tok": 168213,
+   "k2_empty": 333,
+   "proxy_loses": 3835,
+   "proxy_gains": 4868,
+   "share_known": 0.7946,
+   "share_uniq_doc": 0.5417,
+   "share_uniq_win": 0.5445,
+   "top10_known": [
+    [
+     "Seward",
+     9574
+    ],
+    [
+     "Johnson",
+     5373
+    ],
+    [
+     "Hay",
+     4887
+    ],
+    [
+     "Bayard",
+     3788
+    ],
+    [
+     "Fish",
+     3550
+    ],
+    [
+     "Grew",
+     3154
+    ],
+    [
+     "Wilson",
+     3108
+    ],
+    [
+     "Winant",
+     2922
+    ],
+    [
+     "Adams",
+     2451
+    ],
+    [
+     "Stuart",
+     2416
+    ]
+   ],
+   "top5_uniq": [
+    [
+     "Hay",
+     4855
+    ],
+    [
+     "Johnson",
+     4115
+    ],
+    [
+     "Bayard",
+     3785
+    ],
+    [
+     "Grew",
+     3153
+    ],
+    [
+     "Fish",
+     3131
+    ]
+   ],
+   "distinct_uniq_sur": 742,
+   "top10_share_of_uniq": 0.2341,
+   "doc_x_surface": {
+    "n": 223219,
+    "known": 179474,
+    "uniq_win": 123535
+   },
+   "vol_x_surface": {
+    "n": 29949,
+    "known": 15477,
+    "uniq_win": 7261
+   },
+   "distinct_surface": {
+    "n": 11244,
+    "known": 2926,
+    "uniq_union_win": 1090
+   }
+  },
+  "novel": {
+   "n": 1181285,
+   "with_surname": 1164835,
+   "known": 383428,
+   "uniq_doc": 147996,
+   "uniq_win": 157628,
+   "dated": 1181285,
+   "nobody": 220260,
+   "several": 15172,
+   "known_1tok": 180364,
+   "k2_empty": 675,
+   "proxy_loses": 6457,
+   "proxy_gains": 16089,
+   "share_known": 0.3292,
+   "share_uniq_doc": 0.1271,
+   "share_uniq_win": 0.1334,
+   "top10_known": [
+    [
+     "Wilson",
+     8617
+    ],
+    [
+     "Marshall",
+     7550
+    ],
+    [
+     "Byrnes",
+     5962
+    ],
+    [
+     "Roosevelt",
+     5908
+    ],
+    [
+     "Seward",
+     5374
+    ],
+    [
+     "Acheson",
+     5164
+    ],
+    [
+     "Johnson",
+     4605
+    ],
+    [
+     "Adams",
+     4547
+    ],
+    [
+     "George",
+     4372
+    ],
+    [
+     "John",
+     3845
+    ]
+   ],
+   "top5_uniq": [
+    [
+     "Marshall",
+     5945
+    ],
+    [
+     "Byrnes",
+     5888
+    ],
+    [
+     "Acheson",
+     4784
+    ],
+    [
+     "Wilson",
+     4398
+    ],
+    [
+     "Welles",
+     3622
+    ]
+   ],
+   "distinct_uniq_sur": 754,
+   "top10_share_of_uniq": 0.254,
+   "doc_x_surface": {
+    "n": 676351,
+    "known": 235461,
+    "uniq_win": 101839
+   },
+   "vol_x_surface": {
+    "n": 286949,
+    "known": 67985,
+    "uniq_win": 16994
+   },
+   "distinct_surface": {
+    "n": 135393,
+    "known": 21104,
+    "uniq_union_win": 4645
+   }
+  },
+  "union": {
+   "n": 1427032,
+   "with_surname": 1409925,
+   "known": 578171,
+   "uniq_doc": 280761,
+   "uniq_win": 291426,
+   "dated": 1427032,
+   "nobody": 263175,
+   "several": 34235,
+   "known_1tok": 348577,
+   "k2_empty": 1008,
+   "proxy_loses": 10292,
+   "proxy_gains": 20957,
+   "share_known": 0.4101,
+   "share_uniq_doc": 0.1991,
+   "share_uniq_win": 0.2042,
+   "top10_known": [
+    [
+     "Seward",
+     14948
+    ],
+    [
+     "Wilson",
+     11725
+    ],
+    [
+     "Johnson",
+     9978
+    ],
+    [
+     "Marshall",
+     8331
+    ],
+    [
+     "Roosevelt",
+     8101
+    ],
+    [
+     "Adams",
+     6998
+    ],
+    [
+     "Hay",
+     6378
+    ],
+    [
+     "Byrnes",
+     5964
+    ],
+    [
+     "Acheson",
+     5508
+    ],
+    [
+     "Bayard",
+     5348
+    ]
+   ],
+   "top5_uniq": [
+    [
+     "Marshall",
+     6550
+    ],
+    [
+     "Hay",
+     6231
+    ],
+    [
+     "Johnson",
+     6040
+    ],
+    [
+     "Byrnes",
+     5889
+    ],
+    [
+     "Bayard",
+     5282
+    ]
+   ],
+   "distinct_uniq_sur": 784,
+   "top10_share_of_uniq": 0.194,
+   "doc_x_surface": {
+    "n": 853622,
+    "known": 379493,
+    "uniq_win": 202328
+   },
+   "vol_x_surface": {
+    "n": 300240,
+    "known": 73931,
+    "uniq_win": 19508
+   },
+   "distinct_surface": {
+    "n": 140015,
+    "known": 22305,
+    "uniq_union_win": 5018
+   }
+  }
+ },
+ "band": {
+  "1861-1899": {
+   "fromto": {
+    "n": 84234,
+    "with_surname": 83936,
+    "known": 65848,
+    "uniq_doc": 45263,
+    "uniq_win": 44224,
+    "dated": 84234,
+    "nobody": 8590,
+    "several": 11995,
+    "known_1tok": 43850,
+    "k2_empty": 215,
+    "proxy_loses": 1629,
+    "proxy_gains": 590,
+    "share_known": 0.7845,
+    "share_uniq_doc": 0.5393,
+    "share_uniq_win": 0.525,
+    "top10_known": [
+     [
+      "Seward",
+      9551
+     ],
+     [
+      "Bayard",
+      3546
+     ],
+     [
+      "Fish",
+      3331
+     ],
+     [
+      "Adams",
+      2308
+     ],
+     [
+      "Gresham",
+      2298
+     ],
+     [
+      "Blaine",
+      2115
+     ],
+     [
+      "Evarts",
+      2082
+     ],
+     [
+      "Olney",
+      1604
+     ],
+     [
+      "Frelinghuysen",
+      1542
+     ],
+     [
+      "Foster",
+      1112
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Bayard",
+      3543
+     ],
+     [
+      "Fish",
+      2913
+     ],
+     [
+      "Adams",
+      2305
+     ],
+     [
+      "Gresham",
+      2295
+     ],
+     [
+      "Evarts",
+      2074
+     ]
+    ],
+    "distinct_uniq_sur": 350,
+    "top10_share_of_uniq": 0.4409,
+    "doc_x_surface": {
+     "n": 70795,
+     "known": 56529,
+     "uniq_win": 37871
+    },
+    "vol_x_surface": {
+     "n": 9342,
+     "known": 4028,
+     "uniq_win": 1751
+    },
+    "distinct_surface": {
+     "n": 5109,
+     "known": 1426,
+     "uniq_union_win": 520
+    }
+   },
+   "all": {
+    "n": 85578,
+    "with_surname": 85279,
+    "known": 66690,
+    "uniq_doc": 45878,
+    "uniq_win": 44833,
+    "dated": 85578,
+    "nobody": 8776,
+    "several": 12036,
+    "known_1tok": 43882,
+    "k2_empty": 215,
+    "proxy_loses": 1641,
+    "proxy_gains": 596,
+    "share_known": 0.782,
+    "share_uniq_doc": 0.538,
+    "share_uniq_win": 0.5239,
+    "top10_known": [
+     [
+      "Seward",
+      9574
+     ],
+     [
+      "Bayard",
+      3787
+     ],
+     [
+      "Fish",
+      3331
+     ],
+     [
+      "Adams",
+      2317
+     ],
+     [
+      "Gresham",
+      2298
+     ],
+     [
+      "Blaine",
+      2117
+     ],
+     [
+      "Evarts",
+      2083
+     ],
+     [
+      "Olney",
+      1604
+     ],
+     [
+      "Frelinghuysen",
+      1542
+     ],
+     [
+      "Foster",
+      1112
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Bayard",
+      3784
+     ],
+     [
+      "Fish",
+      2913
+     ],
+     [
+      "Adams",
+      2314
+     ],
+     [
+      "Gresham",
+      2295
+     ],
+     [
+      "Evarts",
+      2074
+     ]
+    ],
+    "distinct_uniq_sur": 350,
+    "top10_share_of_uniq": 0.4412,
+    "doc_x_surface": {
+     "n": 71984,
+     "known": 57279,
+     "uniq_win": 38418
+    },
+    "vol_x_surface": {
+     "n": 9789,
+     "known": 4160,
+     "uniq_win": 1796
+    },
+    "distinct_surface": {
+     "n": 5529,
+     "known": 1544,
+     "uniq_union_win": 560
+    }
+   },
+   "novel": {
+    "n": 315060,
+    "with_surname": 310594,
+    "known": 100787,
+    "uniq_doc": 26635,
+    "uniq_win": 29796,
+    "dated": 315060,
+    "nobody": 68087,
+    "several": 6065,
+    "known_1tok": 35781,
+    "k2_empty": 123,
+    "proxy_loses": 2214,
+    "proxy_gains": 5375,
+    "share_known": 0.3245,
+    "share_uniq_doc": 0.0858,
+    "share_uniq_win": 0.0946,
+    "top10_known": [
+     [
+      "Seward",
+      5322
+     ],
+     [
+      "Adams",
+      4151
+     ],
+     [
+      "Lincoln",
+      2859
+     ],
+     [
+      "Russell",
+      2817
+     ],
+     [
+      "Bayard",
+      1514
+     ],
+     [
+      "John",
+      1328
+     ],
+     [
+      "Smith",
+      1270
+     ],
+     [
+      "Johnson",
+      1157
+     ],
+     [
+      "Blaine",
+      866
+     ],
+     [
+      "Romero",
+      781
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Adams",
+      2725
+     ],
+     [
+      "Bayard",
+      1496
+     ],
+     [
+      "Olney",
+      724
+     ],
+     [
+      "Stevens",
+      707
+     ],
+     [
+      "Blaine",
+      659
+     ]
+    ],
+    "distinct_uniq_sur": 350,
+    "top10_share_of_uniq": 0.332,
+    "doc_x_surface": {
+     "n": 173846,
+     "known": 62275,
+     "uniq_win": 22446
+    },
+    "vol_x_surface": {
+     "n": 92929,
+     "known": 22180,
+     "uniq_win": 4520
+    },
+    "distinct_surface": {
+     "n": 54966,
+     "known": 9369,
+     "uniq_union_win": 1703
+    }
+   },
+   "union": {
+    "n": 400638,
+    "with_surname": 395873,
+    "known": 167477,
+    "uniq_doc": 72513,
+    "uniq_win": 74629,
+    "dated": 400638,
+    "nobody": 76863,
+    "several": 18101,
+    "known_1tok": 79663,
+    "k2_empty": 338,
+    "proxy_loses": 3855,
+    "proxy_gains": 5971,
+    "share_known": 0.4231,
+    "share_uniq_doc": 0.1832,
+    "share_uniq_win": 0.1863,
+    "top10_known": [
+     [
+      "Seward",
+      14896
+     ],
+     [
+      "Adams",
+      6468
+     ],
+     [
+      "Bayard",
+      5301
+     ],
+     [
+      "Fish",
+      3751
+     ],
+     [
+      "Russell",
+      3415
+     ],
+     [
+      "Lincoln",
+      3016
+     ],
+     [
+      "Blaine",
+      2983
+     ],
+     [
+      "Gresham",
+      2676
+     ],
+     [
+      "Evarts",
+      2453
+     ],
+     [
+      "Olney",
+      2338
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Bayard",
+      5280
+     ],
+     [
+      "Adams",
+      5039
+     ],
+     [
+      "Fish",
+      3241
+     ],
+     [
+      "Gresham",
+      2628
+     ],
+     [
+      "Olney",
+      2327
+     ]
+    ],
+    "distinct_uniq_sur": 374,
+    "top10_share_of_uniq": 0.3824,
+    "doc_x_surface": {
+     "n": 232538,
+     "known": 110315,
+     "uniq_win": 57035
+    },
+    "vol_x_surface": {
+     "n": 97616,
+     "known": 23858,
+     "uniq_win": 5224
+    },
+    "distinct_surface": {
+     "n": 57626,
+     "known": 10073,
+     "uniq_union_win": 1946
+    }
+   }
+  },
+  "1900-1929": {
+   "fromto": {
+    "n": 49602,
+    "with_surname": 49422,
+    "known": 39030,
+    "uniq_doc": 27261,
+    "uniq_win": 27522,
+    "dated": 49602,
+    "nobody": 9568,
+    "several": 2201,
+    "known_1tok": 38364,
+    "k2_empty": 90,
+    "proxy_loses": 1012,
+    "proxy_gains": 1273,
+    "share_known": 0.7897,
+    "share_uniq_doc": 0.5516,
+    "share_uniq_win": 0.5549,
+    "top10_known": [
+     [
+      "Hay",
+      3822
+     ],
+     [
+      "MacMurray",
+      1662
+     ],
+     [
+      "Wilson",
+      1425
+     ],
+     [
+      "Conger",
+      822
+     ],
+     [
+      "Reinsch",
+      732
+     ],
+     [
+      "Rockhill",
+      729
+     ],
+     [
+      "Schurman",
+      681
+     ],
+     [
+      "Page",
+      576
+     ],
+     [
+      "Herrick",
+      561
+     ],
+     [
+      "Fletcher",
+      540
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Hay",
+      3822
+     ],
+     [
+      "MacMurray",
+      1544
+     ],
+     [
+      "Conger",
+      813
+     ],
+     [
+      "Reinsch",
+      731
+     ],
+     [
+      "Schurman",
+      681
+     ]
+    ],
+    "distinct_uniq_sur": 245,
+    "top10_share_of_uniq": 0.3724,
+    "doc_x_surface": {
+     "n": 44888,
+     "known": 35533,
+     "uniq_win": 24805
+    },
+    "vol_x_surface": {
+     "n": 6401,
+     "known": 3268,
+     "uniq_win": 1640
+    },
+    "distinct_surface": {
+     "n": 2838,
+     "known": 802,
+     "uniq_union_win": 294
+    }
+   },
+   "all": {
+    "n": 53083,
+    "with_surname": 52886,
+    "known": 40985,
+    "uniq_doc": 28168,
+    "uniq_win": 28459,
+    "dated": 53083,
+    "nobody": 10432,
+    "several": 2385,
+    "known_1tok": 39937,
+    "k2_empty": 90,
+    "proxy_loses": 1032,
+    "proxy_gains": 1323,
+    "share_known": 0.775,
+    "share_uniq_doc": 0.5326,
+    "share_uniq_win": 0.5361,
+    "top10_known": [
+     [
+      "Hay",
+      3822
+     ],
+     [
+      "MacMurray",
+      1662
+     ],
+     [
+      "Wilson",
+      1473
+     ],
+     [
+      "Conger",
+      822
+     ],
+     [
+      "Reinsch",
+      732
+     ],
+     [
+      "Rockhill",
+      729
+     ],
+     [
+      "Page",
+      724
+     ],
+     [
+      "Schurman",
+      682
+     ],
+     [
+      "Herrick",
+      561
+     ],
+     [
+      "Fletcher",
+      540
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Hay",
+      3822
+     ],
+     [
+      "MacMurray",
+      1544
+     ],
+     [
+      "Conger",
+      813
+     ],
+     [
+      "Reinsch",
+      731
+     ],
+     [
+      "Schurman",
+      682
+     ]
+    ],
+    "distinct_uniq_sur": 245,
+    "top10_share_of_uniq": 0.3611,
+    "doc_x_surface": {
+     "n": 47253,
+     "known": 36758,
+     "uniq_win": 25463
+    },
+    "vol_x_surface": {
+     "n": 6913,
+     "known": 3452,
+     "uniq_win": 1688
+    },
+    "distinct_surface": {
+     "n": 3206,
+     "known": 903,
+     "uniq_union_win": 319
+    }
+   },
+   "novel": {
+    "n": 239824,
+    "with_surname": 236031,
+    "known": 78671,
+    "uniq_doc": 31841,
+    "uniq_win": 32026,
+    "dated": 239824,
+    "nobody": 43783,
+    "several": 3047,
+    "known_1tok": 34850,
+    "k2_empty": 221,
+    "proxy_loses": 2704,
+    "proxy_gains": 2889,
+    "share_known": 0.3333,
+    "share_uniq_doc": 0.1349,
+    "share_uniq_win": 0.1335,
+    "top10_known": [
+     [
+      "Wilson",
+      6077
+     ],
+     [
+      "George",
+      3482
+     ],
+     [
+      "Lansing",
+      2712
+     ],
+     [
+      "Polk",
+      1774
+     ],
+     [
+      "Bryan",
+      1354
+     ],
+     [
+      "MacMurray",
+      1327
+     ],
+     [
+      "Knox",
+      1325
+     ],
+     [
+      "White",
+      1162
+     ],
+     [
+      "Hay",
+      1095
+     ],
+     [
+      "Adee",
+      950
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Wilson",
+      4163
+     ],
+     [
+      "Lansing",
+      2686
+     ],
+     [
+      "Polk",
+      1755
+     ],
+     [
+      "Knox",
+      1272
+     ],
+     [
+      "MacMurray",
+      1211
+     ]
+    ],
+    "distinct_uniq_sur": 263,
+    "top10_share_of_uniq": 0.4942,
+    "doc_x_surface": {
+     "n": 145044,
+     "known": 49417,
+     "uniq_win": 20898
+    },
+    "vol_x_surface": {
+     "n": 65009,
+     "known": 13947,
+     "uniq_win": 3542
+    },
+    "distinct_surface": {
+     "n": 37065,
+     "known": 5416,
+     "uniq_union_win": 1077
+    }
+   },
+   "union": {
+    "n": 292907,
+    "with_surname": 288917,
+    "known": 119656,
+    "uniq_doc": 60009,
+    "uniq_win": 60485,
+    "dated": 292907,
+    "nobody": 54215,
+    "several": 5432,
+    "known_1tok": 74787,
+    "k2_empty": 311,
+    "proxy_loses": 3736,
+    "proxy_gains": 4212,
+    "share_known": 0.4142,
+    "share_uniq_doc": 0.2077,
+    "share_uniq_win": 0.2065,
+    "top10_known": [
+     [
+      "Wilson",
+      7550
+     ],
+     [
+      "Hay",
+      4917
+     ],
+     [
+      "George",
+      3493
+     ],
+     [
+      "Lansing",
+      3196
+     ],
+     [
+      "MacMurray",
+      2989
+     ],
+     [
+      "Polk",
+      1970
+     ],
+     [
+      "White",
+      1598
+     ],
+     [
+      "Bryan",
+      1479
+     ],
+     [
+      "Davis",
+      1433
+     ],
+     [
+      "Reinsch",
+      1346
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Hay",
+      4883
+     ],
+     [
+      "Wilson",
+      4647
+     ],
+     [
+      "Lansing",
+      3168
+     ],
+     [
+      "MacMurray",
+      2755
+     ],
+     [
+      "Polk",
+      1951
+     ]
+    ],
+    "distinct_uniq_sur": 276,
+    "top10_share_of_uniq": 0.3932,
+    "doc_x_surface": {
+     "n": 182445,
+     "known": 78475,
+     "uniq_win": 40371
+    },
+    "vol_x_surface": {
+     "n": 68439,
+     "known": 15489,
+     "uniq_win": 4206
+    },
+    "distinct_surface": {
+     "n": 38273,
+     "known": 5674,
+     "uniq_union_win": 1162
+    }
+   }
+  },
+  "1930-1945": {
+   "fromto": {
+    "n": 72988,
+    "with_surname": 72950,
+    "known": 61793,
+    "uniq_doc": 43363,
+    "uniq_win": 44801,
+    "dated": 72988,
+    "nobody": 15168,
+    "several": 3262,
+    "known_1tok": 60873,
+    "k2_empty": 20,
+    "proxy_loses": 831,
+    "proxy_gains": 2269,
+    "share_known": 0.8471,
+    "share_uniq_doc": 0.5944,
+    "share_uniq_win": 0.6138,
+    "top10_known": [
+     [
+      "Johnson",
+      4425
+     ],
+     [
+      "Grew",
+      2877
+     ],
+     [
+      "Winant",
+      2863
+     ],
+     [
+      "Gauss",
+      2037
+     ],
+     [
+      "Roosevelt",
+      1795
+     ],
+     [
+      "Caffery",
+      1592
+     ],
+     [
+      "Harriman",
+      1338
+     ],
+     [
+      "Wilson",
+      1324
+     ],
+     [
+      "Kirk",
+      1128
+     ],
+     [
+      "Steinhardt",
+      1052
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Johnson",
+      3582
+     ],
+     [
+      "Grew",
+      2877
+     ],
+     [
+      "Winant",
+      2863
+     ],
+     [
+      "Caffery",
+      1592
+     ],
+     [
+      "Gauss",
+      1478
+     ]
+    ],
+    "distinct_uniq_sur": 215,
+    "top10_share_of_uniq": 0.4067,
+    "doc_x_surface": {
+     "n": 72284,
+     "known": 61313,
+     "uniq_win": 44456
+    },
+    "vol_x_surface": {
+     "n": 7651,
+     "known": 4538,
+     "uniq_win": 2224
+    },
+    "distinct_surface": {
+     "n": 2306,
+     "known": 782,
+     "uniq_union_win": 281
+    }
+   },
+   "all": {
+    "n": 77899,
+    "with_surname": 77756,
+    "known": 63942,
+    "uniq_doc": 44206,
+    "uniq_win": 45647,
+    "dated": 77899,
+    "nobody": 16372,
+    "several": 3364,
+    "known_1tok": 62524,
+    "k2_empty": 26,
+    "proxy_loses": 833,
+    "proxy_gains": 2274,
+    "share_known": 0.8223,
+    "share_uniq_doc": 0.5685,
+    "share_uniq_win": 0.586,
+    "top10_known": [
+     [
+      "Johnson",
+      4680
+     ],
+     [
+      "Grew",
+      2947
+     ],
+     [
+      "Winant",
+      2865
+     ],
+     [
+      "Gauss",
+      2039
+     ],
+     [
+      "Roosevelt",
+      1918
+     ],
+     [
+      "Caffery",
+      1592
+     ],
+     [
+      "Wilson",
+      1422
+     ],
+     [
+      "Harriman",
+      1343
+     ],
+     [
+      "Kirk",
+      1132
+     ],
+     [
+      "Steinhardt",
+      1052
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Johnson",
+      3837
+     ],
+     [
+      "Grew",
+      2947
+     ],
+     [
+      "Winant",
+      2865
+     ],
+     [
+      "Caffery",
+      1592
+     ],
+     [
+      "Gauss",
+      1478
+     ]
+    ],
+    "distinct_uniq_sur": 215,
+    "top10_share_of_uniq": 0.4064,
+    "doc_x_surface": {
+     "n": 74977,
+     "known": 62426,
+     "uniq_win": 44861
+    },
+    "vol_x_surface": {
+     "n": 8355,
+     "known": 4703,
+     "uniq_win": 2252
+    },
+    "distinct_surface": {
+     "n": 2852,
+     "known": 874,
+     "uniq_union_win": 295
+    }
+   },
+   "novel": {
+    "n": 335881,
+    "with_surname": 332613,
+    "known": 106686,
+    "uniq_doc": 41486,
+    "uniq_win": 45063,
+    "dated": 335881,
+    "nobody": 62590,
+    "several": 2610,
+    "known_1tok": 58790,
+    "k2_empty": 184,
+    "proxy_loses": 706,
+    "proxy_gains": 4283,
+    "share_known": 0.3208,
+    "share_uniq_doc": 0.1247,
+    "share_uniq_win": 0.1342,
+    "top10_known": [
+     [
+      "Roosevelt",
+      4614
+     ],
+     [
+      "Welles",
+      3627
+     ],
+     [
+      "Hull",
+      2446
+     ],
+     [
+      "Byrnes",
+      2309
+     ],
+     [
+      "Stettinius",
+      2013
+     ],
+     [
+      "Gauss",
+      1957
+     ],
+     [
+      "Winant",
+      1858
+     ],
+     [
+      "Stimson",
+      1588
+     ],
+     [
+      "Hornbeck",
+      1529
+     ],
+     [
+      "Phillips",
+      1353
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Welles",
+      3622
+     ],
+     [
+      "Hull",
+      2445
+     ],
+     [
+      "Byrnes",
+      2254
+     ],
+     [
+      "Stettinius",
+      1986
+     ],
+     [
+      "Winant",
+      1858
+     ]
+    ],
+    "distinct_uniq_sur": 223,
+    "top10_share_of_uniq": 0.4398,
+    "doc_x_surface": {
+     "n": 201468,
+     "known": 70945,
+     "uniq_win": 32680
+    },
+    "vol_x_surface": {
+     "n": 71933,
+     "known": 17515,
+     "uniq_win": 4687
+    },
+    "distinct_surface": {
+     "n": 35981,
+     "known": 5747,
+     "uniq_union_win": 1194
+    }
+   },
+   "union": {
+    "n": 413780,
+    "with_surname": 410369,
+    "known": 170628,
+    "uniq_doc": 85692,
+    "uniq_win": 90710,
+    "dated": 413780,
+    "nobody": 78962,
+    "several": 5974,
+    "known_1tok": 121314,
+    "k2_empty": 210,
+    "proxy_loses": 1539,
+    "proxy_gains": 6557,
+    "share_known": 0.4158,
+    "share_uniq_doc": 0.2088,
+    "share_uniq_win": 0.2192,
+    "top10_known": [
+     [
+      "Roosevelt",
+      6532
+     ],
+     [
+      "Johnson",
+      5979
+     ],
+     [
+      "Winant",
+      4723
+     ],
+     [
+      "Welles",
+      4524
+     ],
+     [
+      "Gauss",
+      3996
+     ],
+     [
+      "Grew",
+      3439
+     ],
+     [
+      "Wilson",
+      2749
+     ],
+     [
+      "Caffery",
+      2707
+     ],
+     [
+      "Harriman",
+      2686
+     ],
+     [
+      "Hull",
+      2683
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Winant",
+      4723
+     ],
+     [
+      "Johnson",
+      4626
+     ],
+     [
+      "Welles",
+      4519
+     ],
+     [
+      "Grew",
+      3439
+     ],
+     [
+      "Gauss",
+      2771
+     ]
+    ],
+    "distinct_uniq_sur": 233,
+    "top10_share_of_uniq": 0.38,
+    "doc_x_surface": {
+     "n": 261018,
+     "known": 120645,
+     "uniq_win": 67864
+    },
+    "vol_x_surface": {
+     "n": 75429,
+     "known": 19260,
+     "uniq_win": 5447
+    },
+    "distinct_surface": {
+     "n": 36861,
+     "known": 5956,
+     "uniq_union_win": 1261
+    }
+   }
+  },
+  "1946-": {
+   "fromto": {
+    "n": 28927,
+    "with_surname": 28910,
+    "known": 22942,
+    "uniq_doc": 14439,
+    "uniq_win": 14776,
+    "dated": 28927,
+    "nobody": 7232,
+    "several": 1271,
+    "known_1tok": 21725,
+    "k2_empty": 2,
+    "proxy_loses": 328,
+    "proxy_gains": 665,
+    "share_known": 0.7936,
+    "share_uniq_doc": 0.4994,
+    "share_uniq_win": 0.5108,
+    "top10_known": [
+     [
+      "Stuart",
+      2347
+     ],
+     [
+      "Austin",
+      874
+     ],
+     [
+      "Marshall",
+      677
+     ],
+     [
+      "Cabot",
+      560
+     ],
+     [
+      "Douglas",
+      485
+     ],
+     [
+      "Caffery",
+      465
+     ],
+     [
+      "Smith",
+      420
+     ],
+     [
+      "Henderson",
+      374
+     ],
+     [
+      "Clark",
+      359
+     ],
+     [
+      "Johnson",
+      324
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Stuart",
+      2347
+     ],
+     [
+      "Austin",
+      874
+     ],
+     [
+      "Marshall",
+      604
+     ],
+     [
+      "Douglas",
+      485
+     ],
+     [
+      "Caffery",
+      465
+     ]
+    ],
+    "distinct_uniq_sur": 209,
+    "top10_share_of_uniq": 0.4317,
+    "doc_x_surface": {
+     "n": 28759,
+     "known": 22838,
+     "uniq_win": 14714
+    },
+    "vol_x_surface": {
+     "n": 4818,
+     "known": 3119,
+     "uniq_win": 1513
+    },
+    "distinct_surface": {
+     "n": 1746,
+     "known": 793,
+     "uniq_union_win": 272
+    }
+   },
+   "all": {
+    "n": 29187,
+    "with_surname": 29169,
+    "known": 23126,
+    "uniq_doc": 14513,
+    "uniq_win": 14859,
+    "dated": 29187,
+    "nobody": 7335,
+    "several": 1278,
+    "known_1tok": 21870,
+    "k2_empty": 2,
+    "proxy_loses": 329,
+    "proxy_gains": 675,
+    "share_known": 0.7928,
+    "share_uniq_doc": 0.4975,
+    "share_uniq_win": 0.5091,
+    "top10_known": [
+     [
+      "Stuart",
+      2349
+     ],
+     [
+      "Austin",
+      874
+     ],
+     [
+      "Marshall",
+      681
+     ],
+     [
+      "Cabot",
+      562
+     ],
+     [
+      "Douglas",
+      485
+     ],
+     [
+      "Caffery",
+      465
+     ],
+     [
+      "Smith",
+      422
+     ],
+     [
+      "Henderson",
+      374
+     ],
+     [
+      "Clark",
+      359
+     ],
+     [
+      "Johnson",
+      327
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Stuart",
+      2349
+     ],
+     [
+      "Austin",
+      874
+     ],
+     [
+      "Marshall",
+      605
+     ],
+     [
+      "Douglas",
+      485
+     ],
+     [
+      "Caffery",
+      465
+     ]
+    ],
+    "distinct_uniq_sur": 209,
+    "top10_share_of_uniq": 0.4303,
+    "doc_x_surface": {
+     "n": 29005,
+     "known": 23011,
+     "uniq_win": 14793
+    },
+    "vol_x_surface": {
+     "n": 4892,
+     "known": 3162,
+     "uniq_win": 1525
+    },
+    "distinct_surface": {
+     "n": 1785,
+     "known": 811,
+     "uniq_union_win": 276
+    }
+   },
+   "novel": {
+    "n": 290520,
+    "with_surname": 285597,
+    "known": 97284,
+    "uniq_doc": 48034,
+    "uniq_win": 50743,
+    "dated": 290520,
+    "nobody": 45800,
+    "several": 3450,
+    "known_1tok": 50943,
+    "k2_empty": 147,
+    "proxy_loses": 833,
+    "proxy_gains": 3542,
+    "share_known": 0.3406,
+    "share_uniq_doc": 0.1682,
+    "share_uniq_win": 0.1747,
+    "top10_known": [
+     [
+      "Marshall",
+      6170
+     ],
+     [
+      "Acheson",
+      4040
+     ],
+     [
+      "Byrnes",
+      3646
+     ],
+     [
+      "Lovett",
+      3093
+     ],
+     [
+      "Dulles",
+      2251
+     ],
+     [
+      "Rusk",
+      1777
+     ],
+     [
+      "Hickerson",
+      1568
+     ],
+     [
+      "Stuart",
+      1550
+     ],
+     [
+      "Johnson",
+      1517
+     ],
+     [
+      "McGhee",
+      1424
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Marshall",
+      5941
+     ],
+     [
+      "Acheson",
+      4040
+     ],
+     [
+      "Byrnes",
+      3634
+     ],
+     [
+      "Lovett",
+      2807
+     ],
+     [
+      "Rusk",
+      1672
+     ]
+    ],
+    "distinct_uniq_sur": 231,
+    "top10_share_of_uniq": 0.5125,
+    "doc_x_surface": {
+     "n": 155993,
+     "known": 52824,
+     "uniq_win": 25815
+    },
+    "vol_x_surface": {
+     "n": 57078,
+     "known": 14343,
+     "uniq_win": 4245
+    },
+    "distinct_surface": {
+     "n": 30713,
+     "known": 5536,
+     "uniq_union_win": 1417
+    }
+   },
+   "union": {
+    "n": 319707,
+    "with_surname": 314766,
+    "known": 120410,
+    "uniq_doc": 62547,
+    "uniq_win": 65602,
+    "dated": 319707,
+    "nobody": 53135,
+    "several": 4728,
+    "known_1tok": 72813,
+    "k2_empty": 149,
+    "proxy_loses": 1162,
+    "proxy_gains": 4217,
+    "share_known": 0.3825,
+    "share_uniq_doc": 0.1987,
+    "share_uniq_win": 0.2052,
+    "top10_known": [
+     [
+      "Marshall",
+      6851
+     ],
+     [
+      "Acheson",
+      4192
+     ],
+     [
+      "Stuart",
+      3899
+     ],
+     [
+      "Byrnes",
+      3647
+     ],
+     [
+      "Lovett",
+      3381
+     ],
+     [
+      "Dulles",
+      2369
+     ],
+     [
+      "Rusk",
+      2055
+     ],
+     [
+      "Johnson",
+      1844
+     ],
+     [
+      "Hickerson",
+      1722
+     ],
+     [
+      "Smith",
+      1673
+     ]
+    ],
+    "top5_uniq": [
+     [
+      "Marshall",
+      6546
+     ],
+     [
+      "Acheson",
+      4192
+     ],
+     [
+      "Stuart",
+      3896
+     ],
+     [
+      "Byrnes",
+      3635
+     ],
+     [
+      "Lovett",
+      3039
+     ]
+    ],
+    "distinct_uniq_sur": 236,
+    "top10_share_of_uniq": 0.4578,
+    "doc_x_surface": {
+     "n": 177621,
+     "known": 70058,
+     "uniq_win": 37058
+    },
+    "vol_x_surface": {
+     "n": 58756,
+     "known": 15324,
+     "uniq_win": 4631
+    },
+    "distinct_surface": {
+     "n": 31185,
+     "known": 5719,
+     "uniq_union_win": 1459
+    }
+   }
+  }
+ }
+}

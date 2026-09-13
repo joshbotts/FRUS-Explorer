@@ -1,0 +1,35 @@
+{
+ "marked": {
+  "volumes": 267,
+  "rows_offsets_grain": 245747,
+  "documents_with_a_mention": 159182,
+  "pairs_presence_grain": 223600,
+  "distinct_normalised_surfaces": 12171,
+  "offsets_jsonl_bytes": 16790980,
+  "offsets_jsonl_gz_bytes": 1509612,
+  "presence_jsonl_bytes": 11124801,
+  "presence_jsonl_gz_bytes": 877607
+ },
+ "filtered_sweep": {
+  "volumes": 267,
+  "rows_offsets_grain": 2597043,
+  "documents_with_a_mention": 196113,
+  "pairs_presence_grain": 1615304,
+  "distinct_normalised_surfaces": 450194,
+  "offsets_jsonl_bytes": 203317033,
+  "offsets_jsonl_gz_bytes": 28425048,
+  "presence_jsonl_bytes": 94826932,
+  "presence_jsonl_gz_bytes": 11243965
+ },
+ "filtered_control": {
+  "volumes": 267,
+  "rows_offsets_grain": 1261852,
+  "documents_with_a_mention": 173996,
+  "pairs_presence_grain": 761652,
+  "distinct_normalised_surfaces": 161010,
+  "offsets_jsonl_bytes": 92944601,
+  "offsets_jsonl_gz_bytes": 12745082,
+  "presence_jsonl_bytes": 39934711,
+  "presence_jsonl_gz_bytes": 4281608
+ }
+}

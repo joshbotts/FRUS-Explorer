@@ -1,0 +1,14 @@
+
+detector                          P      R     F1       P~     R~    F1~   docs
+------------------------------------------------------------------------------  (~ = relaxed, any-overlap)
+editor markup (baseline)      0.602  0.131  0.215    1.000  0.217  0.356     64
+frus-ner-raw                  0.346  0.855  0.492    0.378  0.933  0.538     64
+frus-ner-raw-filtered-bounda  0.355  0.855  0.502    0.388  0.933  0.548     64
+frus-ner-raw-filtered         0.471  0.855  0.608    0.514  0.931  0.662     64
+frus-ner-raw-control          0.434  0.367  0.398    0.752  0.635  0.689     64
+frus-ner-raw-control-filtere  0.471  0.367  0.413    0.810  0.630  0.709     64
+
+Ground truth: 406 mentions over 64 documents, 2 of which name no one. Full detail,
+including false positives and misses to read by hand: /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-grains/score-detections.json
+The baseline row is the editors' own markup scored as if it were a detector — its
+recall is the share of mentions the free layer already gives you.

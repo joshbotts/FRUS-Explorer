@@ -1,0 +1,1133 @@
+{
+ "filtered_control": {
+  "fp_total": 60,
+  "miss_total": 150,
+  "fp_categories": {
+   "place": 35,
+   "pronoun-common": 6,
+   "ship-treaty-conference": 4,
+   "institution": 4,
+   "other:document-furniture": 4,
+   "title-only": 3,
+   "other:citation-caption-name": 2,
+   "partial-name-boundary": 1,
+   "other:calendar-month": 1
+  },
+  "fp_categories_by_band": {
+   "1861-1899": {
+    "place": 19,
+    "pronoun-common": 6,
+    "ship-treaty-conference": 2,
+    "partial-name-boundary": 1,
+    "other:calendar-month": 1
+   },
+   "1900-1929": {
+    "institution": 1
+   },
+   "1930-1945": {
+    "place": 9,
+    "other:citation-caption-name": 2,
+    "ship-treaty-conference": 2,
+    "institution": 1,
+    "other:document-furniture": 1
+   },
+   "1946-": {
+    "place": 7,
+    "title-only": 3,
+    "other:document-furniture": 3,
+    "institution": 2
+   }
+  },
+  "fp_examples": {
+   "ship-treaty-conference": [
+    "frus1864p2/d358 [1861-1899] … who was first captured in the schooner ⟦Anna⟧, took the oath of allegiance, and was a…",
+    "frus1864p2/d358 [1861-1899] …blockade. Of the seven prisoners of the ⟦Dee⟧, and one of the Nutfield, confined in C…",
+    "frus1937v01/d566 [1930-1945] …p.m. Not printed. Planes from President ⟦Harding⟧ and American Traveler are already lande…",
+    "frus1937v01/d566 [1930-1945] …ing to France, sailing on the President ⟦Harding⟧ , to reassemble and test fly planes for…"
+   ],
+   "place": [
+    "frus1865p1/d93 [1861-1899] …de by our land and naval forces against ⟦Fort Anderson⟧, a defence of Wilmington, situated on t…",
+    "frus1865p1/d93 [1861-1899] …hic communication between that city and ⟦Wilmington⟧ has not been broken. The gold market is…",
+    "frus1865p1/d93 [1861-1899] …ces. Our advance on the Edisto and from ⟦Bull⟧’s bay hastened the retreat. The cotton,…",
+    "frus1872p2v5/d115 [1861-1899] …iar conditions the channel known as the ⟦Rosario Strait⟧ most entirely answers. Admiral Prevost …",
+    "frus1872p2v5/d115 [1861-1899] …treaty. November 9, 1857 . The Canal de ⟦Haro⟧, or Arro, is undoubtedly the navigable …"
+   ],
+   "partial-name-boundary": [
+    "frus1872p2v5/d82 [1861-1899] …e United States Boundary Commissioner . ⟦JNO⟧. G. PARKE, Major of Engineers , Brevet …"
+   ],
+   "pronoun-common": [
+    "frus1889/d129 [1861-1899] …overnment desired to act in relation to ⟦Samoan⟧ affairs in a spirit of friendliness and…",
+    "frus1889/d129 [1861-1899] …d ordered the German fleet to return to ⟦Samoan⟧ waters. I inquired whether there was an…",
+    "frus1889/d129 [1861-1899] … to control or thwart the action of the ⟦Samoan⟧ people in respect of their choice of a …",
+    "frus1889/d129 [1861-1899] …nderstanding, respect the choice of the ⟦Samoan⟧ people, as this Government intended to …",
+    "frus1889/d129 [1861-1899] …sued by the treaty powers in request to ⟦Samoan⟧ affairs. Since it is expected that our …"
+   ],
+   "other:calendar-month": [
+    "frus1889/d339 [1861-1899] … governors-general of the Empire, dated ⟦Ramazan⟧ 16, 1306 ( May 16, 1889). The legation …"
+   ],
+   "institution": [
+    "frus1903/d367 [1900-1929] …ote—the letter of October 26 last, from ⟦Rickmers Reismühlen Rhederei⟧ &amp; Schiffbau Stock Company—is return…",
+    "frus1937v01/d566 [1930-1945] … night. All 19 planes have been sold by ⟦Hunzedal⟧ to an Antwerp firm known as Socdeco and…",
+    "frus1946v06/d88 [1946-] …en has also been subject of approach to ⟦Leg Cairo⟧ by her father, ex-King Victor Emmanuel,…",
+    "frus1947v05/d44 [1946-] …in Greece that: “If practicable we hope ⟦Greek Govt⟧ will withhold publicity re this request…"
+   ],
+   "other:citation-caption-name": [
+    "frus1937v01/d566 [1930-1945] …711.00111 Lic. ⟦Wolf⟧, Rudolf/51 /44: Telegram The Ambassador…",
+    "frus1937v01/d566 [1930-1945] …711.00111 Lic. Wolf, ⟦Rudolf⟧/51 /44: Telegram The Ambassador in Fran…"
+   ],
+   "other:document-furniture": [
+    "frus1941v05/d422 [1930-1945] …740.0011 ⟦Pacific⟧ War/1457 Memorandum by Mr. William P. G…",
+    "frus1951v01/d183 [1946-] …1—6:31 p. m . Gadel 243. For Jessup. Re ⟦Delga⟧ 333, Nov. 23, Telegram Delga 333, from …",
+    "frus1951v01/d183 [1946-] …243. For Jessup. Re Delga 333, Nov. 23, ⟦Telegram Delga⟧ 333, from Jessup for Hickerson, Chase, …",
+    "frus1951v01/d183 [1946-] …s most satisfactory answer to inquiring ⟦Del⟧ s. Further comments may follow after re…"
+   ],
+   "title-only": [
+    "frus1946v06/d88 [1946-] … (either before or after referendum) as ⟦Queen Mother⟧ may desire, pointing out that as prerog…",
+    "frus1946v06/d88 [1946-] … of royal family might be influenced by ⟦Queen Mother⟧’s willingness to issue public statement…",
+    "frus1946v06/d88 [1946-] …while Barnes should not of course, urge ⟦Queen Mother⟧ to commit herself, it might be helpful …"
+   ]
+  },
+  "miss_categories": {
+   "correspondence-frame:header": 61,
+   "unmarked-in-prose": 46,
+   "correspondence-frame:signature": 30,
+   "correspondence-frame:routing": 5,
+   "correspondence-frame:addressee": 4,
+   "other:footnote-doubled-name": 3,
+   "correspondence-frame:salutation": 1
+  },
+  "miss_categories_by_band": {
+   "1861-1899": {
+    "correspondence-frame:header": 29,
+    "unmarked-in-prose": 27,
+    "correspondence-frame:signature": 9,
+    "correspondence-frame:addressee": 3
+   },
+   "1900-1929": {
+    "correspondence-frame:header": 14,
+    "correspondence-frame:signature": 5,
+    "unmarked-in-prose": 3,
+    "correspondence-frame:addressee": 1
+   },
+   "1930-1945": {
+    "correspondence-frame:header": 10,
+    "correspondence-frame:signature": 4,
+    "unmarked-in-prose": 3,
+    "correspondence-frame:routing": 2,
+    "other:footnote-doubled-name": 1,
+    "correspondence-frame:salutation": 1
+   },
+   "1946-": {
+    "unmarked-in-prose": 13,
+    "correspondence-frame:signature": 12,
+    "correspondence-frame:header": 8,
+    "correspondence-frame:routing": 3,
+    "other:footnote-doubled-name": 2
+   }
+  },
+  "miss_examples": {
+   "correspondence-frame:header": [
+    "frus1864p2/d354 [1861-1899] …⟦Lord Lyons⟧ to Mr. Seward . Washington , April 27, …",
+    "frus1864p2/d354 [1861-1899] …Lord Lyons to ⟦Mr. Seward⟧ . Washington , April 27, 1864. Sir: Her…",
+    "frus1864p2/d358 [1861-1899] …⟦Mr. Seward⟧ to Lord Lyons . Department of State , W…",
+    "frus1864p2/d358 [1861-1899] …Mr. Seward to ⟦Lord Lyons⟧ . Department of State , Washington , Ma…",
+    "frus1864p2/d358 [1861-1899] …&amp;c., &amp;c., &amp;c. Mr. Welles to ⟦Mr. Seward⟧ . Navy Department , Washington , April …"
+   ],
+   "correspondence-frame:signature": [
+    "frus1864p2/d354 [1861-1899] …ir, your most obedient, humble servant. ⟦LYONS⟧. Hon. William H. Seward , &amp;c., &amp…",
+    "frus1864p2/d358 [1861-1899] …ration, my lord, your obedient servant, ⟦WILLIAM H. SEWARD⟧. Right Hon. Lord Lyons , &amp;c., &amp;…",
+    "frus1864p2/d358 [1861-1899] … Princeton. Very respectfully, &amp;c., ⟦GIDEON WELLES⟧, Secretary of the Navy. Hon. William H.…",
+    "frus1865p1/d280 [1861-1899] …fect. I am, sir, your obedient servant, ⟦WILLIAM H. SEWARD⟧. Charles Francis Adams, Esq., &amp;c., …",
+    "frus1865p1/d366 [1861-1899] …inet. I am, sir, your obedient servant, ⟦WILLIAM H. SEWARD⟧. Charles Francis Adams , Esq., &amp;c.…"
+   ],
+   "correspondence-frame:addressee": [
+    "frus1864p2/d358 [1861-1899] …ur obedient servant, WILLIAM H. SEWARD. ⟦Right Hon. Lord Lyons⟧ , &amp;c., &amp;c., &amp;c. Mr. Welles …",
+    "frus1866p3/d175 [1861-1899] …your obedient servant, ALLAN A. BURTON. ⟦Hon. William H. Seward⟧ , Secretary of State, Washington, D. C …",
+    "frus1866p3/d206 [1861-1899] …your obedient servant, ALLAN A. BURTON. ⟦Hon. William H. Seward⟧ , Secretary of State, Washington, D. C …",
+    "frus1902/d364 [1900-1929] …can Chamber of Commerce of Paris to the ⟦Hon. John Hay⟧, Secretary of State, Washington, D. C. …"
+   ],
+   "unmarked-in-prose": [
+    "frus1864p2/d358 [1861-1899] …copy of a note of the 18th instant from ⟦Lord Lyons⟧, accom-panied by a communication from t…",
+    "frus1864p2/d358 [1861-1899] …n the list above referred to, only two, ⟦William H. Hall⟧ and Bernard Harding, were, in the opini…",
+    "frus1864p2/d358 [1861-1899] …inform you of the grounds for detaining ⟦J. D. Coleman⟧ and W. H. Thompson, captured in the Ros…",
+    "frus1865p1/d280 [1861-1899] …ts proceedings to a close by sentencing ⟦Mary E. Surratt⟧ Lewis Payne, David E. Herold, and Georg…",
+    "frus1865p1/d280 [1861-1899] …o a close by sentencing Mary E. Surratt ⟦Lewis Payne⟧, David E. Herold, and George Atzerodt, …"
+   ],
+   "correspondence-frame:routing": [
+    "frus1937v01/d382 [1930-1945] …general for further action. Repeated to ⟦Ambassador Bowers⟧. Bay…",
+    "frus1938v05/d91 [1930-1945] …38—3 p.m. [Received 4:43 p.m.] 93. From ⟦Braden⟧. My 91, April 15, 11 a.m. Delegates ret…",
+    "frus1946v06/d88 [1946-] ….m. 3924. Secdel 619. For Secretary and ⟦Matthews⟧. Subject your approval recommend follow…",
+    "frus1946v10/d720 [1946-] …hington , July 26, 1946—6 p.m. 518. For ⟦General Marshall⟧. Applications recently received Eximban…",
+    "frus1951v01/d183 [1946-] …ber 24, 1951—6:31 p. m . Gadel 243. For ⟦Jessup⟧. Re Delga 333, Nov. 23, Telegram Delga …"
+   ],
+   "other:footnote-doubled-name": [
+    "frus1937v01/d566 [1930-1945] …o obtain any information. Ernest Powell ⟦Ernest Powell⟧ and Jack A. Martin, to whom passports h…",
+    "frus1951v01/d410 [1946-] … basis lunch conversation with Berthoud ⟦Eric A. Berthoud⟧, Assistant Under Secretary of State in …",
+    "frus1951v01/d410 [1946-] …supplied by Dept. 4. Pls inform Bissell ⟦Richard M. Bissell, Jr.⟧, Deputy Administrator for Economic Coop…"
+   ],
+   "correspondence-frame:salutation": [
+    "frus1944v06/d706 [1930-1945] …at ) Washington , April 23, 1944 . Dear ⟦Mr. Moffat⟧ : The enclosed Not printed. covers the …"
+   ]
+  },
+  "fp_vocab_removable": {
+   "count": 53,
+   "share": 0.883
+  },
+  "fp_needs_context": {
+   "count": 7,
+   "share": 0.117,
+   "categories": [
+    "other:citation-caption-name",
+    "partial-name-boundary",
+    "ship-treaty-conference"
+   ]
+  },
+  "fp_danger": {
+   "A": 13,
+   "B": 3
+  },
+  "fp_danger_A_surfaces": [
+   [
+    "Harding",
+    2
+   ],
+   [
+    "Anna",
+    1
+   ],
+   [
+    "Dee",
+    1
+   ],
+   [
+    "Bull",
+    1
+   ],
+   [
+    "Haro",
+    1
+   ],
+   [
+    "Arro",
+    1
+   ],
+   [
+    "JNO",
+    1
+   ],
+   [
+    "Ramazan",
+    1
+   ],
+   [
+    "Seville",
+    1
+   ],
+   [
+    "Wolf",
+    1
+   ],
+   [
+    "Rudolf",
+    1
+   ],
+   [
+    "Hunzedal",
+    1
+   ]
+  ],
+  "fp_danger_B_surfaces": [
+   [
+    "Queen Mother",
+    3
+   ]
+  ],
+  "fp_nested_duplicate_of_a_hit": 1,
+  "fp_danger_A_excluding_nested_duplicates": 12,
+  "fp_danger_A_excluding_nested_surfaces": [
+   [
+    "Harding",
+    2
+   ],
+   [
+    "Anna",
+    1
+   ],
+   [
+    "Dee",
+    1
+   ],
+   [
+    "Bull",
+    1
+   ],
+   [
+    "Haro",
+    1
+   ],
+   [
+    "Arro",
+    1
+   ],
+   [
+    "Ramazan",
+    1
+   ],
+   [
+    "Seville",
+    1
+   ],
+   [
+    "Wolf",
+    1
+   ],
+   [
+    "Rudolf",
+    1
+   ],
+   [
+    "Hunzedal",
+    1
+   ]
+  ],
+  "fp_person_gold_missed": 0,
+  "fp_editor_overlap": 0,
+  "miss_editor_covers": {
+   "count": 59,
+   "total": 150
+  },
+  "miss_editor_covers_by_category": {
+   "correspondence-frame:header": {
+    "editor_covers": 59,
+    "total": 61
+   },
+   "unmarked-in-prose": {
+    "editor_covers": 0,
+    "total": 46
+   },
+   "correspondence-frame:signature": {
+    "editor_covers": 0,
+    "total": 30
+   },
+   "correspondence-frame:routing": {
+    "editor_covers": 0,
+    "total": 5
+   },
+   "correspondence-frame:addressee": {
+    "editor_covers": 0,
+    "total": 4
+   },
+   "other:footnote-doubled-name": {
+    "editor_covers": 0,
+    "total": 3
+   },
+   "correspondence-frame:salutation": {
+    "editor_covers": 0,
+    "total": 1
+   }
+  },
+  "miss_found_by_other_arm": {
+   "filtered_sweep": 142,
+   "raw_sweep": 143,
+   "raw_control": 5
+  },
+  "miss_flags": {
+   "all-caps-surface": 8,
+   "initial-or-abbreviated": 4,
+   "OCR-or-odd-spelling": 6,
+   "title-plus-name": 14
+  }
+ },
+ "filtered_sweep": {
+  "fp_total": 358,
+  "miss_total": 28,
+  "fp_categories": {
+   "institution": 103,
+   "place": 90,
+   "title-only": 72,
+   "pronoun-common": 53,
+   "partial-name-boundary": 17,
+   "other:document-furniture": 10,
+   "ship-treaty-conference": 8,
+   "other:date": 3,
+   "other:citation-caption-name": 2
+  },
+  "fp_categories_by_band": {
+   "1861-1899": {
+    "place": 29,
+    "title-only": 23,
+    "institution": 13,
+    "pronoun-common": 6,
+    "other:document-furniture": 3,
+    "partial-name-boundary": 1
+   },
+   "1900-1929": {
+    "institution": 29,
+    "title-only": 19,
+    "place": 9,
+    "pronoun-common": 9,
+    "other:date": 2,
+    "other:document-furniture": 2,
+    "partial-name-boundary": 1
+   },
+   "1930-1945": {
+    "place": 28,
+    "pronoun-common": 24,
+    "title-only": 15,
+    "institution": 15,
+    "partial-name-boundary": 5,
+    "ship-treaty-conference": 4,
+    "other:citation-caption-name": 2
+   },
+   "1946-": {
+    "institution": 46,
+    "place": 24,
+    "title-only": 15,
+    "pronoun-common": 14,
+    "partial-name-boundary": 10,
+    "other:document-furniture": 5,
+    "ship-treaty-conference": 4,
+    "other:date": 1
+   }
+  },
+  "fp_examples": {
+   "place": [
+    "frus1864p2/d354 [1861-1899] …hem official information of the fact of ⟦the port of Brownsville⟧ being in possession of the United State…",
+    "frus1864p2/d354 [1861-1899] … information of the fact of the port of ⟦Brownsville⟧ being in possession of the United State…",
+    "frus1864p2/d354 [1861-1899] …ast, when accounts of the occupation of ⟦Brownsville⟧ first appeared in the newspapers, I had…",
+    "frus1864p2/d354 [1861-1899] …to her Majesty’s government the fact of ⟦the port of Brownsville⟧ being in possession of the United State…",
+    "frus1864p2/d354 [1861-1899] …ty’s government the fact of the port of ⟦Brownsville⟧ being in possession of the United State…"
+   ],
+   "institution": [
+    "frus1864p2/d354 [1861-1899] … Brownsville being in possession of the ⟦United States troops⟧. I recollect that in the month of Novem…",
+    "frus1864p2/d354 [1861-1899] … Brownsville being in possession of the ⟦United States troops⟧, and the date at which they repossessed…",
+    "frus1866p3/d175 [1861-1899] …anslation.] Señor Mendoza to Mr. Burton ⟦UNITED STATES OF COLOMBIA—LEGISLATIVE POWER OF THE UNION—PRESIDENCY OF THE SENATE OF PLENIPOTENTIARIES⟧. In to-day’s session, the senate approv…",
+    "frus1866p3/d175 [1861-1899] …f America . Mr. Burton to Señor Mendoza ⟦Legation of the United States of America⟧ , Bogota , February 23, 1866. Sir : I h…",
+    "frus1866p3/d206 [1861-1899] …emonth. In March last the emissaries of ⟦the State authorities of Panama⟧, deposed in March, 1866, attempted to i…"
+   ],
+   "pronoun-common": [
+    "frus1864p2/d354 [1861-1899] …venture, therefore, to have recourse to ⟦your kindness⟧, and to ask you to communicate to me an…",
+    "frus1889/d129 [1861-1899] …t by Count Arco, the German minister at ⟦this capital⟧, who began his statement with the assur…",
+    "frus1889/d129 [1861-1899] …n injuries had lately been committed by ⟦the warring natives⟧ to German subjects and property, and in…",
+    "frus1889/d129 [1861-1899] …sence of the consul-general on leave in ⟦this country⟧, had not abstained from interference in…",
+    "frus1889/d129 [1861-1899] …l recall my telegraphic instructions of ⟦the 1st ultimo⟧, in which it was stated that our Samoan…"
+   ],
+   "partial-name-boundary": [
+    "frus1864p2/d358 [1861-1899] … servant, WILLIAM H. SEWARD. Right Hon. ⟦Lord Lyons⟧ , &amp;c., &amp;c., &amp;c. Mr. Welles …",
+    "frus1902/d862 [1900-1929] …terim. [Inclosure.—Translation.] Prince ⟦Obolensky⟧ to Mr. Riddle . Ministry for Foreign Af…",
+    "frus1933v05/d520 [1930-1945] …4492: Telegram The Ambassador in Cuba ( ⟦Welles⟧ ) to the Acting Secretary of State Haba…",
+    "frus1938v05/d91 [1930-1945] … Telegram The Ambassador in Argentina ( ⟦Weddell⟧ ) to the Secretary of State Buenos Aire…",
+    "frus1944v06/d421 [1930-1945] …ir country. Respectfully yours, Wm . R. ⟦Langdon⟧…"
+   ],
+   "title-only": [
+    "frus1866p3/d175 [1861-1899] …y.” In communicating this resolution to ⟦his excellency the minister resident of the United States of America⟧, I have the honor to subscribe myself, …",
+    "frus1866p3/d175 [1861-1899] … RAFAEL MENDOZA. Hon. Allan A. Burton , ⟦Minister Resident of the United States of America⟧ . Mr. Burton to Señor Mendoza Legation …",
+    "frus1866p3/d175 [1861-1899] …very obedient servant, ALLAN A. BURTON. ⟦Hon. President of the Senate of Plenipotentiaries Of the United States of Colombia⟧ , &amp; c ., &amp; c ., &amp; c .…",
+    "frus1866p3/d69 [1861-1899] …ERDO DE TEJADA. Citizen Matias Romero , ⟦Envoy Extraordinary and Plenipotentiary of the Mexican Republic⟧ .…",
+    "frus1872p2v5/d82 [1861-1899] … Boundary Commissioner . JNO. G. PARKE, ⟦Major of Engineers⟧ , Brevet Major-General.…"
+   ],
+   "other:document-furniture": [
+    "frus1866p3/d175 [1861-1899] …ries Of the United States of Colombia , ⟦&amp; c .⟧, &amp; c ., &amp; c .…",
+    "frus1866p3/d175 [1861-1899] … United States of Colombia , &amp; c ., ⟦&amp; c .⟧, &amp; c .…",
+    "frus1866p3/d175 [1861-1899] …tes of Colombia , &amp; c ., &amp; c ., ⟦&amp; c .⟧…",
+    "frus1905/d589 [1900-1929] …Japan , Washington , November 4, 1905 . ⟦No. 72⟧.] Sir : Acknowledging the receipt of yo…",
+    "frus1905/d589 [1900-1929] …72.] Sir : Acknowledging the receipt of ⟦your note No. 230⟧, dated the 1st of November, advising me…"
+   ],
+   "other:date": [
+    "frus1905/d589 [1900-1929] …tate . Legation of Japan , Washington , ⟦November 4, 1905⟧ . No. 72.] Sir : Acknowledging the rece…",
+    "frus1905/d589 [1900-1929] …the receipt of your note No. 230, dated ⟦the 1st of November⟧, advising me of the receipt of a telegr…",
+    "frus1946v06/d88 [1946-] …tate , at Paris top secret Washington , ⟦August 7, 1946⟧—8 p.m. 3924. Secdel 619. For Secretary …"
+   ],
+   "other:citation-caption-name": [
+    "frus1937v01/d566 [1930-1945] …711.00111 ⟦Lic. Wolf⟧, Rudolf/51 /44: Telegram The Ambassador…",
+    "frus1937v01/d566 [1930-1945] …711.00111 Lic. Wolf, ⟦Rudolf/51⟧ /44: Telegram The Ambassador in France …"
+   ],
+   "ship-treaty-conference": [
+    "frus1937v01/d566 [1930-1945] …[ 15 ], 6 p.m. Not printed. Planes from ⟦President Harding⟧ and American Traveler are already lande…",
+    "frus1937v01/d566 [1930-1945] …nted. Planes from President Harding and ⟦American Traveler⟧ are already landed at Le Havre. The Waa…",
+    "frus1937v01/d566 [1930-1945] …ler are already landed at Le Havre. The ⟦Waalhaven⟧ was due to arrive at Havre last night. …",
+    "frus1937v01/d566 [1930-1945] …ey were going to France, sailing on the ⟦President Harding⟧ , to reassemble and test fly planes for…",
+    "frus1947v04/d112 [1946-] …iple obligated to show some respect for ⟦Yalta agreement⟧, I doubt that any government seeking re…"
+   ]
+  },
+  "miss_categories": {
+   "unmarked-in-prose": 16,
+   "correspondence-frame:signature": 4,
+   "correspondence-frame:header": 3,
+   "other:list-span-merged": 2,
+   "correspondence-frame:salutation": 1,
+   "initial-or-abbreviated": 1,
+   "other:filter-removed-bare-King": 1
+  },
+  "miss_categories_by_band": {
+   "1861-1899": {
+    "unmarked-in-prose": 11,
+    "correspondence-frame:signature": 3,
+    "correspondence-frame:header": 3,
+    "other:list-span-merged": 1
+   },
+   "1900-1929": {
+    "unmarked-in-prose": 1
+   },
+   "1930-1945": {
+    "unmarked-in-prose": 1,
+    "correspondence-frame:salutation": 1,
+    "correspondence-frame:signature": 1
+   },
+   "1946-": {
+    "unmarked-in-prose": 3,
+    "other:list-span-merged": 1,
+    "initial-or-abbreviated": 1,
+    "other:filter-removed-bare-King": 1
+   }
+  },
+  "miss_examples": {
+   "unmarked-in-prose": [
+    "frus1865p1/d93 [1861-1899] …on twenty miles from Columbia, and that ⟦Sherman⟧ with a large force passed directly thro…",
+    "frus1865p1/d93 [1861-1899] …vacuating all the works last night, and ⟦Mayor Macbeth⟧ surrendered the city to the troops of G…",
+    "frus1865p1/d93 [1861-1899] …h surrendered the city to the troops of ⟦General Schimmelpfennig⟧ at 9 o’clock this morning, at which tim…",
+    "frus1866p3/d175 [1861-1899] … the transcendent republican virtues of ⟦George Washington⟧, the founder of the independence of the…",
+    "frus1866p3/d175 [1861-1899] …th and services of my great countryman, ⟦George Washington⟧; and pray that that august body and the…"
+   ],
+   "correspondence-frame:signature": [
+    "frus1865p1/d93 [1861-1899] …ters. I am, sir, your obedient servant, ⟦WILLIAM H. SEWARD⟧. Charles Francis Adams . Esq., &amp;c.,…",
+    "frus1865p1/d93 [1861-1899] … the poorer classes. Very respectfully, ⟦Q. A. GILLMORE⟧, Major General, Commanding. Major Gener…",
+    "frus1872p2v5/d82 [1861-1899] … to the date of the treaty. * * * * * * ⟦ARCHIBALD CAMPBELL⟧, Late United States Boundary Commission…",
+    "frus1944v06/d93 [1930-1945] … against the Jap ground and air forces. ⟦Gauss⟧…"
+   ],
+   "correspondence-frame:header": [
+    "frus1866p3/d69 [1861-1899] …[Translation.] ⟦Señor Romero⟧ to Mr. Seward Mexican Legation in the U…",
+    "frus1872p2v5/d82 [1861-1899] …No. 56. Extract from letter of ⟦Messrs. Campbell⟧ and Parke to the Secretary of State. Wa…",
+    "frus1872p2v5/d82 [1861-1899] …act from letter of Messrs. Campbell and ⟦Parke⟧ to the Secretary of State. Washington ,…"
+   ],
+   "other:list-span-merged": [
+    "frus1889/d339 [1861-1899] …osure 1 in No. 196.] Messrs. Jessup and ⟦Ford⟧ to Mr. Straus . [Extract.] Syria Missio…",
+    "frus1946v10/d337 [1946-] …uest in Nanking while Generals Yang and ⟦Chang Hsuehliang⟧ (the Young Marshal) have been prisoners…"
+   ],
+   "correspondence-frame:salutation": [
+    "frus1941v05/d756 [1930-1945] …ashington , September 5, 1941 . My Dear ⟦Mr. Luce⟧ : I was interested to learn from your l…"
+   ],
+   "initial-or-abbreviated": [
+    "frus1951v01/d183 [1946-] …, good faith. Dept suggests ref to part ⟦Pres Truman’s⟧ Nov. 7 speech and See’s Nov. 19 See edi…"
+   ],
+   "other:filter-removed-bare-King": [
+    "frus1951v01/d410 [1946-] …gn Office. before first mtg and in view ⟦King’s⟧ judgment Paris situation, our present e…"
+   ]
+  },
+  "fp_vocab_removable": {
+   "count": 331,
+   "share": 0.925
+  },
+  "fp_needs_context": {
+   "count": 27,
+   "share": 0.075,
+   "categories": [
+    "other:citation-caption-name",
+    "partial-name-boundary",
+    "ship-treaty-conference"
+   ]
+  },
+  "fp_danger": {
+   "A": 27,
+   "B": 9
+  },
+  "fp_danger_A_surfaces": [
+   [
+    "Liu Chieh",
+    4
+   ],
+   [
+    "Hunzedal",
+    3
+   ],
+   [
+    "President Harding",
+    2
+   ],
+   [
+    "Lane",
+    2
+   ],
+   [
+    "Lord Lyons",
+    1
+   ],
+   [
+    "Obolensky",
+    1
+   ],
+   [
+    "Welles",
+    1
+   ],
+   [
+    "Seville",
+    1
+   ],
+   [
+    "Lic. Wolf",
+    1
+   ],
+   [
+    "Rudolf/51",
+    1
+   ],
+   [
+    "Waalhaven",
+    1
+   ],
+   [
+    "Socdeco",
+    1
+   ],
+   [
+    "Weddell",
+    1
+   ],
+   [
+    "Langdon",
+    1
+   ],
+   [
+    "Moffat",
+    1
+   ],
+   [
+    "McCann",
+    1
+   ],
+   [
+    "Georgiev",
+    1
+   ],
+   [
+    "Howard",
+    1
+   ],
+   [
+    "Berthoud",
+    1
+   ],
+   [
+    "Bissell",
+    1
+   ]
+  ],
+  "fp_danger_B_surfaces": [
+   [
+    "Queen Mother",
+    4
+   ],
+   [
+    "the Khedive",
+    2
+   ],
+   [
+    "Commanding General Seville",
+    1
+   ],
+   [
+    "Military Governor Bilbao",
+    1
+   ],
+   [
+    "the Young Marshal",
+    1
+   ]
+  ],
+  "fp_nested_duplicate_of_a_hit": 17,
+  "fp_danger_A_excluding_nested_duplicates": 10,
+  "fp_danger_A_excluding_nested_surfaces": [
+   [
+    "Hunzedal",
+    3
+   ],
+   [
+    "President Harding",
+    2
+   ],
+   [
+    "Seville",
+    1
+   ],
+   [
+    "Lic. Wolf",
+    1
+   ],
+   [
+    "Rudolf/51",
+    1
+   ],
+   [
+    "Waalhaven",
+    1
+   ],
+   [
+    "Socdeco",
+    1
+   ]
+  ],
+  "fp_person_gold_missed": 0,
+  "fp_editor_overlap": 4,
+  "miss_editor_covers": {
+   "count": 2,
+   "total": 28
+  },
+  "miss_editor_covers_by_category": {
+   "unmarked-in-prose": {
+    "editor_covers": 0,
+    "total": 16
+   },
+   "correspondence-frame:signature": {
+    "editor_covers": 0,
+    "total": 4
+   },
+   "correspondence-frame:header": {
+    "editor_covers": 1,
+    "total": 3
+   },
+   "other:list-span-merged": {
+    "editor_covers": 1,
+    "total": 2
+   },
+   "correspondence-frame:salutation": {
+    "editor_covers": 0,
+    "total": 1
+   },
+   "initial-or-abbreviated": {
+    "editor_covers": 0,
+    "total": 1
+   },
+   "other:filter-removed-bare-King": {
+    "editor_covers": 0,
+    "total": 1
+   }
+  },
+  "miss_found_by_other_arm": {
+   "filtered_control": 19,
+   "raw_sweep": 3,
+   "raw_control": 19
+  },
+  "miss_flags": {
+   "all-caps-surface": 3,
+   "title-plus-name": 5,
+   "initial-or-abbreviated": 2,
+   "famous-name-in-prose-no-arm-found": 2,
+   "OCR-or-odd-spelling": 1
+  }
+ },
+ "raw_sweep": {
+  "fp_total": 624,
+  "miss_total": 27,
+  "fp_categories": {
+   "institution": 103,
+   "place": 90,
+   "removed-by-filter:title": 83,
+   "title-only": 72,
+   "pronoun-common": 53,
+   "removed-by-filter:curated": 51,
+   "removed-by-filter:institution": 50,
+   "removed-by-filter:place": 36,
+   "removed-by-filter:boundary": 27,
+   "removed-by-filter:pronoun": 19,
+   "partial-name-boundary": 17,
+   "other:document-furniture": 10,
+   "ship-treaty-conference": 8,
+   "other:date": 3,
+   "other:citation-caption-name": 2
+  },
+  "fp_categories_by_band": {
+   "1861-1899": {
+    "place": 29,
+    "title-only": 23,
+    "removed-by-filter:title": 15,
+    "removed-by-filter:institution": 14,
+    "institution": 13,
+    "removed-by-filter:pronoun": 10,
+    "pronoun-common": 6,
+    "removed-by-filter:curated": 3,
+    "other:document-furniture": 3,
+    "removed-by-filter:boundary": 2,
+    "partial-name-boundary": 1
+   },
+   "1900-1929": {
+    "institution": 29,
+    "removed-by-filter:title": 21,
+    "title-only": 19,
+    "removed-by-filter:institution": 14,
+    "removed-by-filter:place": 12,
+    "place": 9,
+    "pronoun-common": 9,
+    "removed-by-filter:curated": 4,
+    "other:date": 2,
+    "other:document-furniture": 2,
+    "partial-name-boundary": 1,
+    "removed-by-filter:boundary": 1
+   },
+   "1930-1945": {
+    "place": 28,
+    "removed-by-filter:curated": 27,
+    "pronoun-common": 24,
+    "removed-by-filter:place": 17,
+    "removed-by-filter:boundary": 17,
+    "title-only": 15,
+    "institution": 15,
+    "removed-by-filter:title": 14,
+    "removed-by-filter:institution": 11,
+    "partial-name-boundary": 5,
+    "ship-treaty-conference": 4,
+    "other:citation-caption-name": 2
+   },
+   "1946-": {
+    "institution": 46,
+    "removed-by-filter:title": 33,
+    "place": 24,
+    "removed-by-filter:curated": 17,
+    "title-only": 15,
+    "pronoun-common": 14,
+    "removed-by-filter:institution": 11,
+    "partial-name-boundary": 10,
+    "removed-by-filter:pronoun": 9,
+    "removed-by-filter:place": 7,
+    "removed-by-filter:boundary": 7,
+    "other:document-furniture": 5,
+    "ship-treaty-conference": 4,
+    "other:date": 1
+   }
+  },
+  "fp_examples": {
+   "removed-by-filter:institution": [
+    "frus1864p2/d354 [1861-1899] …ard . Washington , April 27, 1864. Sir: ⟦Her Majesty’s government⟧, with a view to rightly understanding t…",
+    "frus1864p2/d354 [1861-1899] …the subject, and that you observed that ⟦the government⟧ had not yet received official reports, …",
+    "frus1864p2/d354 [1861-1899] …h will enable me to state officially to ⟦her Majesty’s government⟧ the fact of the port of Brownsville bei…",
+    "frus1865p1/d280 [1861-1899] …[Circular.] Mr. Seward to Mr. Adams ⟦Department of State⟧, Washington, July 8, 1865 . Sir: The mi…",
+    "frus1888p2/d396 [1861-1899] …No. 1109. Mr. Bayard to Mr. Cardwell . ⟦Department of State⟧ , Washington , February 4, 1888 . No. 1…"
+   ],
+   "removed-by-filter:title": [
+    "frus1864p2/d354 [1861-1899] …t, with a view to rightly understanding ⟦the President⟧’s proclamation of the 18th February las…",
+    "frus1864p2/d358 [1861-1899] …epartment , Washington , April 23,1864. ⟦Sir⟧: I have the honor to acknowledge the re…",
+    "frus1864p2/d47 [1861-1899] …LIAM II. SEWARD. Charles Francis Adams, ⟦Esq.⟧, &amp;c., &amp;c., &amp;c.…",
+    "frus1865p1/d280 [1861-1899] …nt of State, Washington, July 8, 1865 . ⟦Sir⟧: The military commission appointed to t…",
+    "frus1865p1/d280 [1861-1899] …LLIAM H. SEWARD. Charles Francis Adams, ⟦Esq.⟧, &amp;c., &amp;c., &amp;c. [Same, mutat…"
+   ],
+   "place": [
+    "frus1864p2/d354 [1861-1899] …hem official information of the fact of ⟦the port of Brownsville⟧ being in possession of the United State…",
+    "frus1864p2/d354 [1861-1899] … information of the fact of the port of ⟦Brownsville⟧ being in possession of the United State…",
+    "frus1864p2/d354 [1861-1899] …ast, when accounts of the occupation of ⟦Brownsville⟧ first appeared in the newspapers, I had…",
+    "frus1864p2/d354 [1861-1899] …to her Majesty’s government the fact of ⟦the port of Brownsville⟧ being in possession of the United State…",
+    "frus1864p2/d354 [1861-1899] …ty’s government the fact of the port of ⟦Brownsville⟧ being in possession of the United State…"
+   ],
+   "institution": [
+    "frus1864p2/d354 [1861-1899] … Brownsville being in possession of the ⟦United States troops⟧. I recollect that in the month of Novem…",
+    "frus1864p2/d354 [1861-1899] … Brownsville being in possession of the ⟦United States troops⟧, and the date at which they repossessed…",
+    "frus1866p3/d175 [1861-1899] …anslation.] Señor Mendoza to Mr. Burton ⟦UNITED STATES OF COLOMBIA—LEGISLATIVE POWER OF THE UNION—PRESIDENCY OF THE SENATE OF PLENIPOTENTIARIES⟧. In to-day’s session, the senate approv…",
+    "frus1866p3/d175 [1861-1899] …f America . Mr. Burton to Señor Mendoza ⟦Legation of the United States of America⟧ , Bogota , February 23, 1866. Sir : I h…",
+    "frus1866p3/d206 [1861-1899] …emonth. In March last the emissaries of ⟦the State authorities of Panama⟧, deposed in March, 1866, attempted to i…"
+   ],
+   "removed-by-filter:pronoun": [
+    "frus1864p2/d354 [1861-1899] …ewspapers, I had some conversation with ⟦you⟧ on the subject, and that you observed t…",
+    "frus1864p2/d354 [1861-1899] …ation with you on the subject, and that ⟦you⟧ observed that the government had not ye…",
+    "frus1864p2/d354 [1861-1899] …yet received official reports, but that ⟦you⟧ entertained no doubt that the intellige…",
+    "frus1864p2/d354 [1861-1899] …e recourse to your kindness, and to ask ⟦you⟧ to communicate to me any document, or t…",
+    "frus1889/d129 [1861-1899] …s and comity towards the United States. ⟦He⟧ then said that in this spirit he had be…"
+   ],
+   "removed-by-filter:boundary": [
+    "frus1864p2/d354 [1861-1899] …venture, therefore, to have recourse to ⟦you⟧r kindness, and to ask you to communicat…",
+    "frus1864p2/d354 [1861-1899] …e, with the highest consideration, sir, ⟦you⟧r most obedient, humble servant. LYONS. …",
+    "frus1903/d822 [1900-1929] …se, prejudicial to the interests of the ⟦Venezuela⟧n Government, which wishes its warships …",
+    "frus1941v05/d454 [1930-1945] … March 20, 1941—6 p.m. 15. 1. The Depart⟦men⟧t has given careful consideration to the…",
+    "frus1941v05/d454 [1930-1945] …l telegram of February 20, 4 p.m. Depart⟦men⟧t has decided for the time being not to …"
+   ],
+   "pronoun-common": [
+    "frus1864p2/d354 [1861-1899] …venture, therefore, to have recourse to ⟦your kindness⟧, and to ask you to communicate to me an…",
+    "frus1889/d129 [1861-1899] …t by Count Arco, the German minister at ⟦this capital⟧, who began his statement with the assur…",
+    "frus1889/d129 [1861-1899] …n injuries had lately been committed by ⟦the warring natives⟧ to German subjects and property, and in…",
+    "frus1889/d129 [1861-1899] …sence of the consul-general on leave in ⟦this country⟧, had not abstained from interference in…",
+    "frus1889/d129 [1861-1899] …l recall my telegraphic instructions of ⟦the 1st ultimo⟧, in which it was stated that our Samoan…"
+   ],
+   "partial-name-boundary": [
+    "frus1864p2/d358 [1861-1899] … servant, WILLIAM H. SEWARD. Right Hon. ⟦Lord Lyons⟧ , &amp;c., &amp;c., &amp;c. Mr. Welles …",
+    "frus1902/d862 [1900-1929] …terim. [Inclosure.—Translation.] Prince ⟦Obolensky⟧ to Mr. Riddle . Ministry for Foreign Af…",
+    "frus1933v05/d520 [1930-1945] …4492: Telegram The Ambassador in Cuba ( ⟦Welles⟧ ) to the Acting Secretary of State Haba…",
+    "frus1938v05/d91 [1930-1945] … Telegram The Ambassador in Argentina ( ⟦Weddell⟧ ) to the Secretary of State Buenos Aire…",
+    "frus1944v06/d421 [1930-1945] …ir country. Respectfully yours, Wm . R. ⟦Langdon⟧…"
+   ],
+   "removed-by-filter:curated": [
+    "frus1865p1/d280 [1861-1899] …eward to Mr. Adams Department of State, ⟦Washington⟧, July 8, 1865 . Sir: The military commi…",
+    "frus1888p2/d396 [1861-1899] …to Mr. Cardwell . Department of State , ⟦Washington⟧ , February 4, 1888 . No. 127.] Sir : Yo…",
+    "frus1889/d129 [1861-1899] … to Mr. Coleman . Department of State , ⟦Washington⟧ , November 21, 1888 . No. 384.] Sir : O…",
+    "frus1902/d739 [1900-1929] … to Mr. Clayton . Department of State , ⟦Washington⟧ , July 17, 1897 . No. 57.] Sir : I incl…",
+    "frus1905/d589 [1900-1929] …ecretary of State . Legation of Japan , ⟦Washington⟧ , November 4, 1905 . No. 72.] Sir : Ack…"
+   ],
+   "title-only": [
+    "frus1866p3/d175 [1861-1899] …y.” In communicating this resolution to ⟦his excellency the minister resident of the United States of America⟧, I have the honor to subscribe myself, …",
+    "frus1866p3/d175 [1861-1899] … RAFAEL MENDOZA. Hon. Allan A. Burton , ⟦Minister Resident of the United States of America⟧ . Mr. Burton to Señor Mendoza Legation …",
+    "frus1866p3/d175 [1861-1899] …very obedient servant, ALLAN A. BURTON. ⟦Hon. President of the Senate of Plenipotentiaries Of the United States of Colombia⟧ , &amp; c ., &amp; c ., &amp; c .…",
+    "frus1866p3/d69 [1861-1899] …ERDO DE TEJADA. Citizen Matias Romero , ⟦Envoy Extraordinary and Plenipotentiary of the Mexican Republic⟧ .…",
+    "frus1872p2v5/d82 [1861-1899] … Boundary Commissioner . JNO. G. PARKE, ⟦Major of Engineers⟧ , Brevet Major-General.…"
+   ],
+   "other:document-furniture": [
+    "frus1866p3/d175 [1861-1899] …ries Of the United States of Colombia , ⟦&amp; c .⟧, &amp; c ., &amp; c .…",
+    "frus1866p3/d175 [1861-1899] … United States of Colombia , &amp; c ., ⟦&amp; c .⟧, &amp; c .…",
+    "frus1866p3/d175 [1861-1899] …tes of Colombia , &amp; c ., &amp; c ., ⟦&amp; c .⟧…",
+    "frus1905/d589 [1900-1929] …Japan , Washington , November 4, 1905 . ⟦No. 72⟧.] Sir : Acknowledging the receipt of yo…",
+    "frus1905/d589 [1900-1929] …72.] Sir : Acknowledging the receipt of ⟦your note No. 230⟧, dated the 1st of November, advising me…"
+   ],
+   "removed-by-filter:place": [
+    "frus1903/d392 [1900-1929] …itrator in the matters now pending with ⟦Venezuela⟧. If no other or better means of settlin…",
+    "frus1903/d392 [1900-1929] …ure in announcing to the Governments of ⟦Great Britain⟧, Germany, Italy, and Venezuela that all…",
+    "frus1903/d392 [1900-1929] …ng to the Governments of Great Britain, ⟦Germany⟧, Italy, and Venezuela that all of them …",
+    "frus1903/d392 [1900-1929] … Governments of Great Britain, Germany, ⟦Italy⟧, and Venezuela that all of them have ac…",
+    "frus1903/d392 [1900-1929] …s of Great Britain, Germany, Italy, and ⟦Venezuela⟧ that all of them have accepted in princ…"
+   ],
+   "other:date": [
+    "frus1905/d589 [1900-1929] …tate . Legation of Japan , Washington , ⟦November 4, 1905⟧ . No. 72.] Sir : Acknowledging the rece…",
+    "frus1905/d589 [1900-1929] …the receipt of your note No. 230, dated ⟦the 1st of November⟧, advising me of the receipt of a telegr…",
+    "frus1946v06/d88 [1946-] …tate , at Paris top secret Washington , ⟦August 7, 1946⟧—8 p.m. 3924. Secdel 619. For Secretary …"
+   ],
+   "other:citation-caption-name": [
+    "frus1937v01/d566 [1930-1945] …711.00111 ⟦Lic. Wolf⟧, Rudolf/51 /44: Telegram The Ambassador…",
+    "frus1937v01/d566 [1930-1945] …711.00111 Lic. Wolf, ⟦Rudolf/51⟧ /44: Telegram The Ambassador in France …"
+   ],
+   "ship-treaty-conference": [
+    "frus1937v01/d566 [1930-1945] …[ 15 ], 6 p.m. Not printed. Planes from ⟦President Harding⟧ and American Traveler are already lande…",
+    "frus1937v01/d566 [1930-1945] …nted. Planes from President Harding and ⟦American Traveler⟧ are already landed at Le Havre. The Waa…",
+    "frus1937v01/d566 [1930-1945] …ler are already landed at Le Havre. The ⟦Waalhaven⟧ was due to arrive at Havre last night. …",
+    "frus1937v01/d566 [1930-1945] …ey were going to France, sailing on the ⟦President Harding⟧ , to reassemble and test fly planes for…",
+    "frus1947v04/d112 [1946-] …iple obligated to show some respect for ⟦Yalta agreement⟧, I doubt that any government seeking re…"
+   ]
+  },
+  "miss_categories": {
+   "unmarked-in-prose": 16,
+   "correspondence-frame:signature": 4,
+   "correspondence-frame:header": 3,
+   "other:list-span-merged": 2,
+   "correspondence-frame:salutation": 1,
+   "initial-or-abbreviated": 1
+  },
+  "miss_categories_by_band": {
+   "1861-1899": {
+    "unmarked-in-prose": 11,
+    "correspondence-frame:signature": 3,
+    "correspondence-frame:header": 3,
+    "other:list-span-merged": 1
+   },
+   "1900-1929": {
+    "unmarked-in-prose": 1
+   },
+   "1930-1945": {
+    "unmarked-in-prose": 1,
+    "correspondence-frame:salutation": 1,
+    "correspondence-frame:signature": 1
+   },
+   "1946-": {
+    "unmarked-in-prose": 3,
+    "other:list-span-merged": 1,
+    "initial-or-abbreviated": 1
+   }
+  },
+  "miss_examples": {
+   "unmarked-in-prose": [
+    "frus1865p1/d93 [1861-1899] …on twenty miles from Columbia, and that ⟦Sherman⟧ with a large force passed directly thro…",
+    "frus1865p1/d93 [1861-1899] …vacuating all the works last night, and ⟦Mayor Macbeth⟧ surrendered the city to the troops of G…",
+    "frus1865p1/d93 [1861-1899] …h surrendered the city to the troops of ⟦General Schimmelpfennig⟧ at 9 o’clock this morning, at which tim…",
+    "frus1866p3/d175 [1861-1899] … the transcendent republican virtues of ⟦George Washington⟧, the founder of the independence of the…",
+    "frus1866p3/d175 [1861-1899] …th and services of my great countryman, ⟦George Washington⟧; and pray that that august body and the…"
+   ],
+   "correspondence-frame:signature": [
+    "frus1865p1/d93 [1861-1899] …ters. I am, sir, your obedient servant, ⟦WILLIAM H. SEWARD⟧. Charles Francis Adams . Esq., &amp;c.,…",
+    "frus1865p1/d93 [1861-1899] … the poorer classes. Very respectfully, ⟦Q. A. GILLMORE⟧, Major General, Commanding. Major Gener…",
+    "frus1872p2v5/d82 [1861-1899] … to the date of the treaty. * * * * * * ⟦ARCHIBALD CAMPBELL⟧, Late United States Boundary Commission…",
+    "frus1944v06/d93 [1930-1945] … against the Jap ground and air forces. ⟦Gauss⟧…"
+   ],
+   "correspondence-frame:header": [
+    "frus1866p3/d69 [1861-1899] …[Translation.] ⟦Señor Romero⟧ to Mr. Seward Mexican Legation in the U…",
+    "frus1872p2v5/d82 [1861-1899] …No. 56. Extract from letter of ⟦Messrs. Campbell⟧ and Parke to the Secretary of State. Wa…",
+    "frus1872p2v5/d82 [1861-1899] …act from letter of Messrs. Campbell and ⟦Parke⟧ to the Secretary of State. Washington ,…"
+   ],
+   "other:list-span-merged": [
+    "frus1889/d339 [1861-1899] …osure 1 in No. 196.] Messrs. Jessup and ⟦Ford⟧ to Mr. Straus . [Extract.] Syria Missio…",
+    "frus1946v10/d337 [1946-] …uest in Nanking while Generals Yang and ⟦Chang Hsuehliang⟧ (the Young Marshal) have been prisoners…"
+   ],
+   "correspondence-frame:salutation": [
+    "frus1941v05/d756 [1930-1945] …ashington , September 5, 1941 . My Dear ⟦Mr. Luce⟧ : I was interested to learn from your l…"
+   ],
+   "initial-or-abbreviated": [
+    "frus1951v01/d183 [1946-] …, good faith. Dept suggests ref to part ⟦Pres Truman’s⟧ Nov. 7 speech and See’s Nov. 19 See edi…"
+   ]
+  },
+  "fp_by_filter_rule": {
+   "institution": 50,
+   "title": 83,
+   "kept": 358,
+   "pronoun": 19,
+   "boundary": 27,
+   "curated": 51,
+   "place": 36
+  },
+  "fp_surface_frequency_top40": [
+   [
+    "secretary of state",
+    28
+   ],
+   [
+    "men",
+    12
+   ],
+   [
+    "you",
+    11
+   ],
+   [
+    "us",
+    11
+   ],
+   [
+    "washington",
+    10
+   ],
+   [
+    "jap",
+    10
+   ],
+   [
+    "polish government",
+    10
+   ],
+   [
+    "chinese",
+    9
+   ],
+   [
+    "united states",
+    8
+   ],
+   [
+    "venezuela",
+    8
+   ],
+   [
+    "secretary",
+    8
+   ],
+   [
+    "president",
+    7
+   ],
+   [
+    "acting secretary of state",
+    7
+   ],
+   [
+    "sir",
+    6
+   ],
+   [
+    "department of state",
+    6
+   ],
+   [
+    "department",
+    6
+   ],
+   [
+    "mexican government",
+    6
+   ],
+   [
+    "dept",
+    6
+   ],
+   [
+    "columbia",
+    5
+   ],
+   [
+    "powers",
+    5
+   ],
+   [
+    "officers",
+    5
+   ],
+   [
+    "japs",
+    5
+   ],
+   [
+    "generalissimo",
+    5
+   ],
+   [
+    "chicago",
+    5
+   ],
+   [
+    "imperial government",
+    4
+   ],
+   [
+    "foreign office",
+    4
+   ],
+   [
+    "government of the united states",
+    4
+   ],
+   [
+    "american citizens",
+    4
+   ],
+   [
+    "canton",
+    4
+   ],
+   [
+    "conference",
+    4
+   ],
+   [
+    "dutch",
+    4
+   ],
+   [
+    "paris",
+    4
+   ],
+   [
+    "queen mother",
+    4
+   ],
+   [
+    "liu chieh",
+    4
+   ],
+   [
+    "sov",
+    4
+   ],
+   [
+    "brownsville",
+    3
+   ],
+   [
+    "esq.",
+    3
+   ],
+   [
+    "wilmington",
+    3
+   ],
+   [
+    "&amp; c .",
+    3
+   ],
+   [
+    "mr. secretary",
+    3
+   ]
+  ],
+  "fp_removed_by_filter": 266,
+  "misses_shared_with_filtered_sweep": 27
+ }
+}

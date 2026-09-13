@@ -1,0 +1,35 @@
+== point estimates (all 64) F1 strict/relaxed, and strict_hits/relaxed_hits (boundary accuracy among found)
+editor   strict F1 0.2146 P 0.602 R 0.131 | relaxed F1 0.3563 P 1.000 R 0.217 | exact-of-found 53/88=0.602
+raw      strict F1 0.4925 P 0.346 R 0.855 | relaxed F1 0.5380 P 0.378 R 0.933 | exact-of-found 347/379=0.916
+bnd      strict F1 0.5022 P 0.356 R 0.855 | relaxed F1 0.5485 P 0.388 R 0.933 | exact-of-found 347/379=0.916
+filt     strict F1 0.6077 P 0.471 R 0.855 | relaxed F1 0.6620 P 0.514 R 0.931 | exact-of-found 347/378=0.918
+ctl      strict F1 0.3979 P 0.434 R 0.367 | relaxed F1 0.6889 P 0.752 R 0.635 | exact-of-found 149/258=0.578
+ctlf     strict F1 0.4127 P 0.472 R 0.367 | relaxed F1 0.7091 P 0.810 R 0.631 | exact-of-found 149/256=0.582
+ed+ctlf  strict F1 0.4855 P 0.499 R 0.473 | relaxed F1 0.7939 P 0.816 R 0.773 | exact-of-found 192/314=0.611
+ed+filt  strict F1 0.5913 P 0.451 R 0.857 | relaxed F1 0.6457 P 0.493 R 0.936 | exact-of-found 348/380=0.916
+ed+ctl   strict F1 0.4694 P 0.466 R 0.473 | relaxed F1 0.7726 P 0.767 R 0.778 | exact-of-found 192/316=0.608
+bands {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+rule met at 64: False gap ctl-raw strict -0.0947
+== band-stratified document bootstrap, N=10000, seed 234
+stopping rule met in 2.62% of resamples
+ctl-filt strict                point -0.2109  95% [-0.2812, -0.1417]
+ctl-raw strict                 point -0.0958  95% [-0.1715, -0.0235]
+ctl-filt relaxed               point +0.0259  95% [-0.0493, +0.1017]
+ctl-raw relaxed                point +0.1491  95% [+0.0704, +0.2267]
+filt-raw strict                point +0.1147  95% [+0.0912, +0.1381]
+filt-raw relaxed               point +0.1234  95% [+0.0976, +0.1495]
+ctlf-filt relaxed              point +0.0461  95% [-0.0287, +0.1219]
+ed+ctlf - filt relaxed         point +0.1315  95% [+0.0607, +0.2054]
+ed+ctlf - ctlf relaxed         point +0.0848  95% [+0.0609, +0.1136]
+ed+ctlf - ed+filt relaxed      point +0.1477  95% [+0.0788, +0.2209]
+ed+ctlf relaxed F1             point +0.7948  95% [+0.7397, +0.8407]
+ed+ctlf strict F1              point +0.4855  95% [+0.4282, +0.5387]
+filt relaxed F1                point +0.6628  95% [+0.5945, +0.7259]
+filt strict F1                 point +0.6081  95% [+0.5466, +0.6680]
+ctl relaxed F1                 point +0.6889  95% [+0.6224, +0.7469]
+ctl strict F1                  point +0.3971  95% [+0.3384, +0.4519]
+ctlf relaxed F1                point +0.7091  95% [+0.6445, +0.7658]
+ctlf strict F1                 point +0.4121  95% [+0.3528, +0.4680]
+raw relaxed F1                 point +0.5385  95% [+0.4665, +0.6107]
+raw strict F1                  point +0.4931  95% [+0.4279, +0.5587]
+8-unkeyed simulation: rule met 1 of 10000; strict gap ctl-raw range [-0.1164, -0.0395]

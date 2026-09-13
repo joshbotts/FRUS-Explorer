@@ -1,0 +1,26 @@
+{
+ "marked": {
+  "volumes": 267,
+  "rows": 245747,
+  "docs": 159182,
+  "presence_pairs": 223600,
+  "volume_surface_pairs": 30327,
+  "corpus_surfaces": 12171
+ },
+ "filtered_sweep": {
+  "volumes": 267,
+  "rows": 2597043,
+  "docs": 196113,
+  "presence_pairs": 1615304,
+  "volume_surface_pairs": 798129,
+  "corpus_surfaces": 450194
+ },
+ "filtered_control": {
+  "volumes": 267,
+  "rows": 1261852,
+  "docs": 173996,
+  "presence_pairs": 761652,
+  "volume_surface_pairs": 326305,
+  "corpus_surfaces": 161010
+ }
+}

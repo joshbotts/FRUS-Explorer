@@ -1,0 +1,2654 @@
+{
+ "document_list": "/Users/jbotts/FRUS Explorer Development Files from Mac Studio/frus-m2a/m2a-ground-truth-documents.jsonl",
+ "documents": 64,
+ "documents_without_mentions": 2,
+ "ground_truth": "/Users/jbotts/FRUS Explorer Development Files from Mac Studio/frus-m2a/m2a-ground-truth.jsonl",
+ "mentions": 406,
+ "results": [
+  {
+   "by_band": {
+    "1861-1899": {
+     "documents": 18,
+     "relaxed": {
+      "f1": 0.3826,
+      "gold": 186,
+      "hits": 44,
+      "precision": 1.0,
+      "predicted": 44,
+      "recall": 0.2366
+     },
+     "strict": {
+      "f1": 0.2261,
+      "gold": 186,
+      "hits": 26,
+      "precision": 0.5909,
+      "predicted": 44,
+      "recall": 0.1398
+     }
+    },
+    "1900-1929": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.4722,
+      "gold": 55,
+      "hits": 17,
+      "precision": 1.0,
+      "predicted": 17,
+      "recall": 0.3091
+     },
+     "strict": {
+      "f1": 0.0556,
+      "gold": 55,
+      "hits": 2,
+      "precision": 0.1176,
+      "predicted": 17,
+      "recall": 0.0364
+     }
+    },
+    "1930-1945": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.3947,
+      "gold": 61,
+      "hits": 15,
+      "precision": 1.0,
+      "predicted": 15,
+      "recall": 0.2459
+     },
+     "strict": {
+      "f1": 0.3684,
+      "gold": 61,
+      "hits": 14,
+      "precision": 0.9333,
+      "predicted": 15,
+      "recall": 0.2295
+     }
+    },
+    "1946-": {
+     "documents": 16,
+     "relaxed": {
+      "f1": 0.2069,
+      "gold": 104,
+      "hits": 12,
+      "precision": 1.0,
+      "predicted": 12,
+      "recall": 0.1154
+     },
+     "strict": {
+      "f1": 0.1897,
+      "gold": 104,
+      "hits": 11,
+      "precision": 0.9167,
+      "predicted": 12,
+      "recall": 0.1058
+     }
+    }
+   },
+   "detector": "editor markup (baseline)",
+   "documents_in_ground_truth": 64,
+   "documents_not_scored": [],
+   "documents_not_scored_naming_no_one": [],
+   "documents_scored": 64,
+   "false_positive_examples": [],
+   "missed_examples": [
+    {
+     "d": "d354",
+     "n": "LYONS",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Hon. William H. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Right Hon. Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Marshal Murray",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "William H. Hall",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Bernard Harding",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Mr. Murray",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "William Patterson",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Adolphus Russell",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Acting Rear-Admiral Bailey",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "J. D. Coleman",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "W. H. Thompson",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "John Ring",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Acting Rear-Admiral Bailey",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Isaac Fisher",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "GIDEON WELLES",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Hon. William H. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Earl Russell\u2019s",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "WILLIAM II. SEWARD",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Charles Francis Adams",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d280",
+     "n": "Mary E. Surratt",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Lewis Payne",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "David E. Herold",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "George Atzerodt",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Samuel A, Mudd",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Michael O\u2019Laughlin",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Samuel Arnold",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Edward Spangler",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Charles Francis Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Earl Russell",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Earl Russell",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Earl Russell",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Charles Francis Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Admiral Dahlgren",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "General Sherman",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Beauregard",
+     "v": "frus1865p1"
+    }
+   ],
+   "relaxed": {
+    "f1": 0.3563,
+    "gold": 406,
+    "hits": 88,
+    "precision": 1.0,
+    "predicted": 88,
+    "recall": 0.2167
+   },
+   "strict": {
+    "f1": 0.2146,
+    "gold": 406,
+    "hits": 53,
+    "precision": 0.6023,
+    "predicted": 88,
+    "recall": 0.1305
+   },
+   "volumes_refused": []
+  },
+  {
+   "by_band": {
+    "1861-1899": {
+     "documents": 18,
+     "relaxed": {
+      "f1": 0.7104,
+      "gold": 186,
+      "hits": 168,
+      "precision": 0.5854,
+      "predicted": 287,
+      "recall": 0.9032
+     },
+     "strict": {
+      "f1": 0.6554,
+      "gold": 186,
+      "hits": 155,
+      "precision": 0.5401,
+      "predicted": 287,
+      "recall": 0.8333
+     }
+    },
+    "1900-1929": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.4655,
+      "gold": 55,
+      "hits": 54,
+      "precision": 0.3051,
+      "predicted": 177,
+      "recall": 0.9818
+     },
+     "strict": {
+      "f1": 0.4397,
+      "gold": 55,
+      "hits": 51,
+      "precision": 0.2881,
+      "predicted": 177,
+      "recall": 0.9273
+     }
+    },
+    "1930-1945": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.3893,
+      "gold": 61,
+      "hits": 58,
+      "precision": 0.2447,
+      "predicted": 237,
+      "recall": 0.9508
+     },
+     "strict": {
+      "f1": 0.3624,
+      "gold": 61,
+      "hits": 54,
+      "precision": 0.2278,
+      "predicted": 237,
+      "recall": 0.8852
+     }
+    },
+    "1946-": {
+     "documents": 16,
+     "relaxed": {
+      "f1": 0.4877,
+      "gold": 104,
+      "hits": 99,
+      "precision": 0.3278,
+      "predicted": 302,
+      "recall": 0.9519
+     },
+     "strict": {
+      "f1": 0.4286,
+      "gold": 104,
+      "hits": 87,
+      "precision": 0.2881,
+      "predicted": 302,
+      "recall": 0.8365
+     }
+    }
+   },
+   "detector": "frus-ner-raw",
+   "documents_in_ground_truth": 64,
+   "documents_not_scored": [],
+   "documents_not_scored_naming_no_one": [],
+   "documents_scored": 64,
+   "false_positive_examples": [
+    {
+     "d": "d354",
+     "n": "Her Majesty\u2019s government",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the President",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the port of Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "United States troops",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the government",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "your kindness",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "her Majesty\u2019s government",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the port of Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "United States troops",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Sir",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Esq.",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d280",
+     "n": "Department of State",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Washington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Sir",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Esq.",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Sir",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "the President",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Branchville",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Orangeburg",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "South Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Branchville",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Winnsboro\u2019",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "North Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Fort Anderson",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    }
+   ],
+   "missed_examples": [
+    {
+     "d": "d93",
+     "n": "Sherman",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mayor Macbeth",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "General Schimmelpfennig",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Q. A. GILLMORE",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d69",
+     "n": "Se\u00f1or Romero",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d82",
+     "n": "Messrs. Campbell",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Parke",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "ARCHIBALD CAMPBELL",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d84",
+     "n": "Mr. Allen",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Glasier",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Lola Willis",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Judge Herara",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Asp\u00edroz",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Judge Herara",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d339",
+     "n": "Ford",
+     "v": "frus1889"
+    },
+    {
+     "d": "d447",
+     "n": "Prince George",
+     "v": "frus1905"
+    },
+    {
+     "d": "d382",
+     "n": "Chapman",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d756",
+     "n": "Mr. Luce",
+     "v": "frus1941v05"
+    },
+    {
+     "d": "d93",
+     "n": "Gauss",
+     "v": "frus1944v06"
+    },
+    {
+     "d": "d159",
+     "n": "Connolly",
+     "v": "frus1946v06"
+    },
+    {
+     "d": "d337",
+     "n": "Chiang",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d337",
+     "n": "Chou",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d337",
+     "n": "Chang Hsuehliang",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d183",
+     "n": "Pres Truman\u2019s",
+     "v": "frus1951v01"
+    }
+   ],
+   "relaxed": {
+    "f1": 0.538,
+    "gold": 406,
+    "hits": 379,
+    "precision": 0.3779,
+    "predicted": 1003,
+    "recall": 0.9335
+   },
+   "strict": {
+    "f1": 0.4925,
+    "gold": 406,
+    "hits": 347,
+    "precision": 0.346,
+    "predicted": 1003,
+    "recall": 0.8547
+   },
+   "volumes_refused": []
+  },
+  {
+   "by_band": {
+    "1861-1899": {
+     "documents": 18,
+     "relaxed": {
+      "f1": 0.7134,
+      "gold": 186,
+      "hits": 168,
+      "precision": 0.5895,
+      "predicted": 285,
+      "recall": 0.9032
+     },
+     "strict": {
+      "f1": 0.6582,
+      "gold": 186,
+      "hits": 155,
+      "precision": 0.5439,
+      "predicted": 285,
+      "recall": 0.8333
+     }
+    },
+    "1900-1929": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.4675,
+      "gold": 55,
+      "hits": 54,
+      "precision": 0.3068,
+      "predicted": 176,
+      "recall": 0.9818
+     },
+     "strict": {
+      "f1": 0.4416,
+      "gold": 55,
+      "hits": 51,
+      "precision": 0.2898,
+      "predicted": 176,
+      "recall": 0.9273
+     }
+    },
+    "1930-1945": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.4128,
+      "gold": 61,
+      "hits": 58,
+      "precision": 0.2636,
+      "predicted": 220,
+      "recall": 0.9508
+     },
+     "strict": {
+      "f1": 0.3843,
+      "gold": 61,
+      "hits": 54,
+      "precision": 0.2455,
+      "predicted": 220,
+      "recall": 0.8852
+     }
+    },
+    "1946-": {
+     "documents": 16,
+     "relaxed": {
+      "f1": 0.4962,
+      "gold": 104,
+      "hits": 99,
+      "precision": 0.3356,
+      "predicted": 295,
+      "recall": 0.9519
+     },
+     "strict": {
+      "f1": 0.4361,
+      "gold": 104,
+      "hits": 87,
+      "precision": 0.2949,
+      "predicted": 295,
+      "recall": 0.8365
+     }
+    }
+   },
+   "detector": "frus-ner-raw-filtered-boundary",
+   "documents_in_ground_truth": 64,
+   "documents_not_scored": [],
+   "documents_not_scored_naming_no_one": [],
+   "documents_scored": 64,
+   "false_positive_examples": [
+    {
+     "d": "d354",
+     "n": "Her Majesty\u2019s government",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the President",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the port of Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "United States troops",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the government",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "your kindness",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "you",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "her Majesty\u2019s government",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the port of Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "United States troops",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Sir",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Esq.",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d280",
+     "n": "Department of State",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Washington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Sir",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Esq.",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Sir",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "the President",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Branchville",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Orangeburg",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "South Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Branchville",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Winnsboro\u2019",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "North Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Fort Anderson",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Cape Fear",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Newbern",
+     "v": "frus1865p1"
+    }
+   ],
+   "missed_examples": [
+    {
+     "d": "d93",
+     "n": "Sherman",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mayor Macbeth",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "General Schimmelpfennig",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Q. A. GILLMORE",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d69",
+     "n": "Se\u00f1or Romero",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d82",
+     "n": "Messrs. Campbell",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Parke",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "ARCHIBALD CAMPBELL",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d84",
+     "n": "Mr. Allen",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Glasier",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Lola Willis",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Judge Herara",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Asp\u00edroz",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Judge Herara",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d339",
+     "n": "Ford",
+     "v": "frus1889"
+    },
+    {
+     "d": "d447",
+     "n": "Prince George",
+     "v": "frus1905"
+    },
+    {
+     "d": "d382",
+     "n": "Chapman",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d756",
+     "n": "Mr. Luce",
+     "v": "frus1941v05"
+    },
+    {
+     "d": "d93",
+     "n": "Gauss",
+     "v": "frus1944v06"
+    },
+    {
+     "d": "d159",
+     "n": "Connolly",
+     "v": "frus1946v06"
+    },
+    {
+     "d": "d337",
+     "n": "Chiang",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d337",
+     "n": "Chou",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d337",
+     "n": "Chang Hsuehliang",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d183",
+     "n": "Pres Truman\u2019s",
+     "v": "frus1951v01"
+    }
+   ],
+   "relaxed": {
+    "f1": 0.5485,
+    "gold": 406,
+    "hits": 379,
+    "precision": 0.3883,
+    "predicted": 976,
+    "recall": 0.9335
+   },
+   "strict": {
+    "f1": 0.5022,
+    "gold": 406,
+    "hits": 347,
+    "precision": 0.3555,
+    "predicted": 976,
+    "recall": 0.8547
+   },
+   "volumes_refused": []
+  },
+  {
+   "by_band": {
+    "1861-1899": {
+     "documents": 18,
+     "relaxed": {
+      "f1": 0.7832,
+      "gold": 186,
+      "hits": 168,
+      "precision": 0.6914,
+      "predicted": 243,
+      "recall": 0.9032
+     },
+     "strict": {
+      "f1": 0.7226,
+      "gold": 186,
+      "hits": 155,
+      "precision": 0.6379,
+      "predicted": 243,
+      "recall": 0.8333
+     }
+    },
+    "1900-1929": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.6,
+      "gold": 55,
+      "hits": 54,
+      "precision": 0.432,
+      "predicted": 125,
+      "recall": 0.9818
+     },
+     "strict": {
+      "f1": 0.5667,
+      "gold": 55,
+      "hits": 51,
+      "precision": 0.408,
+      "predicted": 125,
+      "recall": 0.9273
+     }
+    },
+    "1930-1945": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.5472,
+      "gold": 61,
+      "hits": 58,
+      "precision": 0.3841,
+      "predicted": 151,
+      "recall": 0.9508
+     },
+     "strict": {
+      "f1": 0.5094,
+      "gold": 61,
+      "hits": 54,
+      "precision": 0.3576,
+      "predicted": 151,
+      "recall": 0.8852
+     }
+    },
+    "1946-": {
+     "documents": 16,
+     "relaxed": {
+      "f1": 0.6106,
+      "gold": 104,
+      "hits": 98,
+      "precision": 0.4516,
+      "predicted": 217,
+      "recall": 0.9423
+     },
+     "strict": {
+      "f1": 0.5421,
+      "gold": 104,
+      "hits": 87,
+      "precision": 0.4009,
+      "predicted": 217,
+      "recall": 0.8365
+     }
+    }
+   },
+   "detector": "frus-ner-raw-filtered",
+   "documents_in_ground_truth": 64,
+   "documents_not_scored": [],
+   "documents_not_scored_naming_no_one": [],
+   "documents_scored": 64,
+   "false_positive_examples": [
+    {
+     "d": "d354",
+     "n": "the port of Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "United States troops",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "your kindness",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "the port of Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Brownsville",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "United States troops",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d93",
+     "n": "Branchville",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Orangeburg",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "South Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Branchville",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Winnsboro\u2019",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "North Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Columbia",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Fort Anderson",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Cape Fear",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Newbern",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Weldon road",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "North Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "South Carolina",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "Bogota",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "UNITED STATES OF COLOMBIA\u2014LEGISLATIVE POWER OF THE UNION\u2014PRESIDENCY OF THE SENATE OF PLENIPOTENTIARIES",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "his excellency the minister resident of the United States of America",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Minister Resident of the United States of America",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Legation of the United States of America",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Bogota",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Hon. President of the Senate of Plenipotentiaries Of the United States of Colombia",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "&amp; c .",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "&amp; c .",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "&amp; c .",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d206",
+     "n": "the State authorities of Panama",
+     "v": "frus1866p3"
+    }
+   ],
+   "missed_examples": [
+    {
+     "d": "d93",
+     "n": "Sherman",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mayor Macbeth",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "General Schimmelpfennig",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Q. A. GILLMORE",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d69",
+     "n": "Se\u00f1or Romero",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d82",
+     "n": "Messrs. Campbell",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Parke",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "ARCHIBALD CAMPBELL",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d84",
+     "n": "Mr. Allen",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Glasier",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Lola Willis",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Judge Herara",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Asp\u00edroz",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d84",
+     "n": "Judge Herara",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d339",
+     "n": "Ford",
+     "v": "frus1889"
+    },
+    {
+     "d": "d447",
+     "n": "Prince George",
+     "v": "frus1905"
+    },
+    {
+     "d": "d382",
+     "n": "Chapman",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d756",
+     "n": "Mr. Luce",
+     "v": "frus1941v05"
+    },
+    {
+     "d": "d93",
+     "n": "Gauss",
+     "v": "frus1944v06"
+    },
+    {
+     "d": "d159",
+     "n": "Connolly",
+     "v": "frus1946v06"
+    },
+    {
+     "d": "d337",
+     "n": "Chiang",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d337",
+     "n": "Chou",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d337",
+     "n": "Chang Hsuehliang",
+     "v": "frus1946v10"
+    },
+    {
+     "d": "d183",
+     "n": "Pres Truman\u2019s",
+     "v": "frus1951v01"
+    },
+    {
+     "d": "d410",
+     "n": "King\u2019s",
+     "v": "frus1951v01"
+    }
+   ],
+   "relaxed": {
+    "f1": 0.662,
+    "gold": 406,
+    "hits": 378,
+    "precision": 0.5136,
+    "predicted": 736,
+    "recall": 0.931
+   },
+   "strict": {
+    "f1": 0.6077,
+    "gold": 406,
+    "hits": 347,
+    "precision": 0.4715,
+    "predicted": 736,
+    "recall": 0.8547
+   },
+   "volumes_refused": []
+  },
+  {
+   "by_band": {
+    "1861-1899": {
+     "documents": 18,
+     "relaxed": {
+      "f1": 0.6818,
+      "gold": 186,
+      "hits": 120,
+      "precision": 0.7229,
+      "predicted": 166,
+      "recall": 0.6452
+     },
+     "strict": {
+      "f1": 0.3466,
+      "gold": 186,
+      "hits": 61,
+      "precision": 0.3675,
+      "predicted": 166,
+      "recall": 0.328
+     }
+    },
+    "1900-1929": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.6882,
+      "gold": 55,
+      "hits": 32,
+      "precision": 0.8421,
+      "predicted": 38,
+      "recall": 0.5818
+     },
+     "strict": {
+      "f1": 0.3871,
+      "gold": 55,
+      "hits": 18,
+      "precision": 0.4737,
+      "predicted": 38,
+      "recall": 0.3273
+     }
+    },
+    "1930-1945": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.6838,
+      "gold": 61,
+      "hits": 40,
+      "precision": 0.7143,
+      "predicted": 56,
+      "recall": 0.6557
+     },
+     "strict": {
+      "f1": 0.4103,
+      "gold": 61,
+      "hits": 24,
+      "precision": 0.4286,
+      "predicted": 56,
+      "recall": 0.3934
+     }
+    },
+    "1946-": {
+     "documents": 16,
+     "relaxed": {
+      "f1": 0.7059,
+      "gold": 104,
+      "hits": 66,
+      "precision": 0.7952,
+      "predicted": 83,
+      "recall": 0.6346
+     },
+     "strict": {
+      "f1": 0.492,
+      "gold": 104,
+      "hits": 46,
+      "precision": 0.5542,
+      "predicted": 83,
+      "recall": 0.4423
+     }
+    }
+   },
+   "detector": "frus-ner-raw-control",
+   "documents_in_ground_truth": 64,
+   "documents_not_scored": [],
+   "documents_not_scored_naming_no_one": [],
+   "documents_scored": 64,
+   "false_positive_examples": [
+    {
+     "d": "d354",
+     "n": "Her Majesty",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Majesty",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Hon",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Anna",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Dee",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Hon",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Esq.",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d280",
+     "n": "Esq.",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Majesty",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Majesty",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Majesty",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Esq.",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Fort Anderson",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Esq.",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Bull",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "Hon",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Hon",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d69",
+     "n": "Hon",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d115",
+     "n": "Rosario Strait",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d115",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d115",
+     "n": "Arro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fort Langley",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fraser River",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario Straits",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fort Langley",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fraser River",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Victoria",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fraser River",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fort Langley",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario Strait",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "JNO",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d84",
+     "n": "Vera Cruz",
+     "v": "frus1888p2"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    }
+   ],
+   "missed_examples": [
+    {
+     "d": "d354",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "LYONS",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Right Hon. Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "William H. Hall",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "J. D. Coleman",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "GIDEON WELLES",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Mr. Adams",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d280",
+     "n": "Mr. Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Mary E. Surratt",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Lewis Payne",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "David E. Herold",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "George Atzerodt",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Samuel A, Mudd",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Michael O\u2019Laughlin",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Samuel Arnold",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Edward Spangler",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Mr. Seward",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Mr. Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mr. Seward",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mr. Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "Mr. Seward",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Se\u00f1or Mendoza",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Se\u00f1or Mendoza",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d206",
+     "n": "Mr. Seward",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d69",
+     "n": "LERDO DE TEJADA",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d115",
+     "n": "Mr. Campbell",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Messrs. Campbell",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "ARCHIBALD CAMPBELL",
+     "v": "frus1872p2v5"
+    }
+   ],
+   "relaxed": {
+    "f1": 0.6889,
+    "gold": 406,
+    "hits": 258,
+    "precision": 0.7522,
+    "predicted": 343,
+    "recall": 0.6355
+   },
+   "strict": {
+    "f1": 0.3979,
+    "gold": 406,
+    "hits": 149,
+    "precision": 0.4344,
+    "predicted": 343,
+    "recall": 0.367
+   },
+   "volumes_refused": []
+  },
+  {
+   "by_band": {
+    "1861-1899": {
+     "documents": 18,
+     "relaxed": {
+      "f1": 0.7087,
+      "gold": 186,
+      "hits": 118,
+      "precision": 0.8027,
+      "predicted": 147,
+      "recall": 0.6344
+     },
+     "strict": {
+      "f1": 0.3664,
+      "gold": 186,
+      "hits": 61,
+      "precision": 0.415,
+      "predicted": 147,
+      "recall": 0.328
+     }
+    },
+    "1900-1929": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.7273,
+      "gold": 55,
+      "hits": 32,
+      "precision": 0.9697,
+      "predicted": 33,
+      "recall": 0.5818
+     },
+     "strict": {
+      "f1": 0.4091,
+      "gold": 55,
+      "hits": 18,
+      "precision": 0.5455,
+      "predicted": 33,
+      "recall": 0.3273
+     }
+    },
+    "1930-1945": {
+     "documents": 15,
+     "relaxed": {
+      "f1": 0.6897,
+      "gold": 61,
+      "hits": 40,
+      "precision": 0.7273,
+      "predicted": 55,
+      "recall": 0.6557
+     },
+     "strict": {
+      "f1": 0.4138,
+      "gold": 61,
+      "hits": 24,
+      "precision": 0.4364,
+      "predicted": 55,
+      "recall": 0.3934
+     }
+    },
+    "1946-": {
+     "documents": 16,
+     "relaxed": {
+      "f1": 0.7135,
+      "gold": 104,
+      "hits": 66,
+      "precision": 0.8148,
+      "predicted": 81,
+      "recall": 0.6346
+     },
+     "strict": {
+      "f1": 0.4973,
+      "gold": 104,
+      "hits": 46,
+      "precision": 0.5679,
+      "predicted": 81,
+      "recall": 0.4423
+     }
+    }
+   },
+   "detector": "frus-ner-raw-control-filtered",
+   "documents_in_ground_truth": 64,
+   "documents_not_scored": [],
+   "documents_not_scored_naming_no_one": [],
+   "documents_scored": 64,
+   "false_positive_examples": [
+    {
+     "d": "d358",
+     "n": "Anna",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Dee",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d93",
+     "n": "Fort Anderson",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Wilmington",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Bull",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d115",
+     "n": "Rosario Strait",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d115",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d115",
+     "n": "Arro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fort Langley",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fraser River",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario Straits",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fort Langley",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fraser River",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fraser River",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Fort Langley",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Rosario Strait",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "Haro",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d82",
+     "n": "JNO",
+     "v": "frus1872p2v5"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d129",
+     "n": "Samoan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d339",
+     "n": "Ramazan",
+     "v": "frus1889"
+    },
+    {
+     "d": "d367",
+     "n": "Rickmers Reism\u00fchlen Rhederei",
+     "v": "frus1903"
+    },
+    {
+     "d": "d382",
+     "n": "Seville",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d566",
+     "n": "Wolf",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d566",
+     "n": "Rudolf",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d566",
+     "n": "Harding",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d566",
+     "n": "Hunzedal",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d566",
+     "n": "Harding",
+     "v": "frus1937v01"
+    },
+    {
+     "d": "d91",
+     "n": "Puerto Caballo",
+     "v": "frus1938v05"
+    },
+    {
+     "d": "d422",
+     "n": "Pacific",
+     "v": "frus1941v05"
+    },
+    {
+     "d": "d422",
+     "n": "Dutch Timor",
+     "v": "frus1941v05"
+    },
+    {
+     "d": "d454",
+     "n": "British Malaya",
+     "v": "frus1941v05"
+    }
+   ],
+   "missed_examples": [
+    {
+     "d": "d354",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d354",
+     "n": "LYONS",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Right Hon. Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "Lord Lyons",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "William H. Hall",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "J. D. Coleman",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d358",
+     "n": "GIDEON WELLES",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Mr. Seward",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d47",
+     "n": "Mr. Adams",
+     "v": "frus1864p2"
+    },
+    {
+     "d": "d280",
+     "n": "Mr. Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Mary E. Surratt",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Lewis Payne",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "David E. Herold",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "George Atzerodt",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Samuel A, Mudd",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Michael O\u2019Laughlin",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Samuel Arnold",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "Edward Spangler",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d280",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Mr. Seward",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "Mr. Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d366",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mr. Seward",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "Mr. Adams",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d93",
+     "n": "WILLIAM H. SEWARD",
+     "v": "frus1865p1"
+    },
+    {
+     "d": "d175",
+     "n": "Mr. Seward",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Hon. William H. Seward",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Se\u00f1or Mendoza",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "Se\u00f1or Mendoza",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d175",
+     "n": "George Washington",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d206",
+     "n": "Mr. Seward",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d206",
+     "n": "Hon. William H. Seward",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d69",
+     "n": "LERDO DE TEJADA",
+     "v": "frus1866p3"
+    },
+    {
+     "d": "d115",
+     "n": "Mr. Campbell",
+     "v": "frus1872p2v5"
+    }
+   ],
+   "relaxed": {
+    "f1": 0.7091,
+    "gold": 406,
+    "hits": 256,
+    "precision": 0.8101,
+    "predicted": 316,
+    "recall": 0.6305
+   },
+   "strict": {
+    "f1": 0.4127,
+    "gold": 406,
+    "hits": 149,
+    "precision": 0.4715,
+    "predicted": 316,
+    "recall": 0.367
+   },
+   "volumes_refused": []
+  }
+ ]
+}

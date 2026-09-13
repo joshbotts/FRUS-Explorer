@@ -1,0 +1,33 @@
+{
+ "control_minus_filtered_sweep_strict": {
+  "point": -21.0,
+  "ci95": [
+   -28.2,
+   -14.3
+  ]
+ },
+ "control_minus_filtered_sweep_relaxed": {
+  "point": 2.7,
+  "ci95": [
+   -5.0,
+   10.1
+  ]
+ },
+ "control_minus_raw_sweep_strict": {
+  "point": -9.5,
+  "ci95": [
+   -17.1,
+   -2.3
+  ]
+ },
+ "filter_gain_strict": {
+  "point": 11.5,
+  "ci95": [
+   9.1,
+   13.8
+  ]
+ },
+ "stopping_rule_met_fraction": 0.0253,
+ "resamples": 10000,
+ "seed": 1
+}

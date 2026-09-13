@@ -1,0 +1,13 @@
+sweep heads 267 control heads 267
+sweep head keys ['chars_scanned', 'chunk_chars', 'chunks', 'completion_tokens', 'docs_in_volume', 'docs_scanned', 'located', 'marked_in_scanned_docs', 'max_tokens', 'mentions', 'model', 'novel', 'overlap_chars', 'overlapping_marked', 'prompt_tokens', 'returned', 'sampled', 'sampled_doc_ids', 'secs', 'temperature', 'truncated', 'unlocated', 'unlocated_examples', 'unparsable', 'volume', 'workers']
+control head keys ['chars_scanned', 'docs_in_volume', 'docs_scanned', 'forced_english', 'marked_in_scanned_docs', 'mentions', 'model', 'novel', 'overlapping_marked', 'sampled', 'secs', 'volume']
+seg1 count 27 frus1861 frus1872p2v5 seg2 count 240
+seg1 {'chunks': 30831, 'marked_in_scanned_docs': 30936, 'mentions': 305819, 'overlapping_marked': 31037, 'secs': 107081.40000000002, 'truncated': 17, 'unlocated': 16347}
+   failed_chunks key present in 0 of 27
+seg2 {'chunks': 300148, 'failed_chunks': 0, 'marked_in_scanned_docs': 214811, 'mentions': 3350419, 'overlapping_marked': 218878, 'secs': 890726.1999999994, 'truncated': 138, 'unlocated': 71662}
+   failed_chunks key present in 240 of 240
+all {'chunks': 330979, 'failed_chunks': 0, 'marked_in_scanned_docs': 245747, 'mentions': 3656238, 'overlapping_marked': 249915, 'secs': 997807.5999999994, 'truncated': 155, 'unlocated': 88009}
+   failed_chunks key present in 240 of 267
+control totals {'marked_in_scanned_docs': 245747, 'mentions': 1353849, 'overlapping_marked': 80670, 'secs': 475.7999999999999}
+per-volume doc-count mismatches 0 []
+sampled flags sweep Counter({'False': 267}) control Counter({'False': 267})

@@ -1,0 +1,13 @@
+sweep volumes 267 control volumes 267 same set True
+SWEEP totals: {"docs_scanned": 197534, "chars_scanned": 679401514, "mentions": 3656238, "novel": 3406323, "overlapping_marked": 249915, "marked_in_scanned_docs": 245747, "secs": 997807.5999999994, "chunks": 330979, "unlocated": 88009, "truncated": 155, "unparsable": 0, "returned": 2601312, "located": 2510890, "prompt_tokens": 220645005, "completion_tokens": 21131474, "failed_chunks": 0}
+CTRL  totals: {"docs_scanned": 197534, "chars_scanned": 679401514, "mentions": 1353849, "novel": 1273179, "overlapping_marked": 80670, "marked_in_scanned_docs": 245747, "secs": 475.7999999999999}
+sweep sampled any: False control sampled any: False
+docs match per volume in all: True docs_scanned==docs_in_volume all: True
+sweep days = 11.55 unlocated % = 3.38 truncated % = 0.047
+landing ratio sweep = 249915 / 245747 = 101.7%
+landing ratio ctrl  = 80670 / 245747 = 32.8%
+scope volumes 267 first frus1861 27th frus1872p2v5 28th frus1873p2v3
+volumes lacking failed_chunks key: 27 frus1861 frus1872p2v5 == first 27 of scope: True
+seg1 vols 27 mentions/doc 23.27 unlocated 6.32% s/chunk 3.47 docs 13145 mentions 305819
+seg2 vols 240 mentions/doc 18.17 unlocated 3.06% s/chunk 2.97 docs 184389 mentions 3350419
+runs.jsonl rows 534 keys ['chars', 'detected', 'docs', 'marked', 'secs', 'ts', 'vol']
