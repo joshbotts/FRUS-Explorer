@@ -1,0 +1,90 @@
+{
+ "scope_volumes": 267,
+ "scope_pre1910_volumes": 76,
+ "scope_pre1930_volumes": 127,
+ "unparsed": [],
+ "gold_docs_pre1910": 27,
+ "gold_spans_pre1910": 229,
+ "gold_docs_pre1910_by_band": {
+  "1861-1899": 18,
+  "1900-1929": 9
+ },
+ "gold_volumes_pre1910": [
+  "frus1864p2",
+  "frus1865p1",
+  "frus1866p3",
+  "frus1872p2v5",
+  "frus1888p2",
+  "frus1889",
+  "frus1902",
+  "frus1903",
+  "frus1905"
+ ],
+ "pre1910_scores": {
+  "baseline": {
+   "strict": {
+    "precision": 0.4407,
+    "recall": 0.1135,
+    "f1": 0.1806
+   },
+   "relaxed": {
+    "precision": 1.0,
+    "recall": 0.2576,
+    "f1": 0.4097
+   },
+   "docs": 27
+  },
+  "sweep_filtered": {
+   "strict": {
+    "precision": 0.5988,
+    "recall": 0.8472,
+    "f1": 0.7016
+   },
+   "relaxed": {
+    "precision": 0.6481,
+    "recall": 0.917,
+    "f1": 0.7595
+   },
+   "docs": 27
+  },
+  "sweep_raw": {
+   "strict": {
+    "precision": 0.4838,
+    "recall": 0.8472,
+    "f1": 0.6159
+   },
+   "relaxed": {
+    "precision": 0.5237,
+    "recall": 0.917,
+    "f1": 0.6667
+   },
+   "docs": 27
+  },
+  "control_filtered": {
+   "strict": {
+    "precision": 0.4419,
+    "recall": 0.3319,
+    "f1": 0.3791
+   },
+   "relaxed": {
+    "precision": 0.8256,
+    "recall": 0.6201,
+    "f1": 0.7082
+   },
+   "docs": 27
+  },
+  "control_raw": {
+   "strict": {
+    "precision": 0.3897,
+    "recall": 0.3319,
+    "f1": 0.3585
+   },
+   "relaxed": {
+    "precision": 0.7385,
+    "recall": 0.6288,
+    "f1": 0.6792
+   },
+   "docs": 27
+  }
+ }
+}

@@ -1,0 +1,1536 @@
+{
+ "generated": "2026-09-12T20:30:04",
+ "scope": {
+  "volumes": 267,
+  "documents": 197534,
+  "documents_by_band": {
+   "1861-1899": 32760,
+   "1900-1929": 48852,
+   "1930-1945": 77899,
+   "1946-": 38023
+  },
+  "source": "sum of docs over ~/frus-ner-raw/marked/<vol>.head.json (scope.json volume list)"
+ },
+ "honorifics": [
+  "mr",
+  "mrs",
+  "miss",
+  "dr",
+  "sir",
+  "hon",
+  "general",
+  "colonel",
+  "captain",
+  "major",
+  "admiral",
+  "señor",
+  "monsieur",
+  "herr",
+  "mme",
+  "messrs",
+  "rev",
+  "judge",
+  "governor",
+  "president",
+  "minister",
+  "count",
+  "baron",
+  "lord",
+  "lady",
+  "prince",
+  "king",
+  "queen",
+  "m."
+ ],
+ "keys": {
+  "K1": "casefold + whitespace-collapse + strip trailing ’s/'s/’/'",
+  "K2": "K1 with ONE leading honorific (optional trailing period; 'm.' requires it) stripped; falls back to K1 if empty"
+ },
+ "head_docs_mismatch": [],
+ "positive_controls": {
+  "marked": {
+   "expected": 245747,
+   "measured": 245747,
+   "ok": true
+  },
+  "raw_control": {
+   "expected": 1353849,
+   "measured": 1353849,
+   "ok": true
+  },
+  "filtered_control": {
+   "expected": 1261852,
+   "measured": 1261852,
+   "ok": true
+  },
+  "raw_sweep": {
+   "expected": 3656238,
+   "measured": 3656238,
+   "ok": true
+  },
+  "filtered_sweep": {
+   "expected": 2597043,
+   "measured": 2597043,
+   "ok": true
+  },
+  "marked_typed_split": {
+   "expected": {
+    "from": 140504,
+    "to": 95247,
+    "untyped": 9996
+   },
+   "measured": {
+    "from": 140504,
+    "to": 95247,
+    "untyped": 9996
+   }
+  }
+ },
+ "arms": {
+  "marked": {
+   "rows": 245747,
+   "mentions_by_band": {
+    "1861-1899": 85578,
+    "1900-1929": 53083,
+    "1930-1945": 77899,
+    "1946-": 29187
+   },
+   "distinct_K1": 12164,
+   "distinct_K2": 11377,
+   "pairs_volume_doc_K2": 223505,
+   "pairs_by_band": {
+    "1861-1899": 72162,
+    "1900-1929": 47330,
+    "1930-1945": 75006,
+    "1946-": 29007
+   },
+   "docs_with_mention": 159182,
+   "docs_with_mention_share": 0.8058,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 30872,
+     "share": 0.9424
+    },
+    "1900-1929": {
+     "docs": 36871,
+     "share": 0.7547
+    },
+    "1930-1945": {
+     "docs": 66591,
+     "share": 0.8548
+    },
+    "1946-": {
+     "docs": 24848,
+     "share": 0.6535
+    }
+   },
+   "docs_only_marked_fromto": 155653,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.9778,
+   "concentration_K2": {
+    "mentions": 245747,
+    "distinct": 11377,
+    "mentions_in_singleton_surfaces": 5566,
+    "share_singleton": 0.0226,
+    "mentions_in_surfaces_ge5": 232695,
+    "share_ge5": 0.9469,
+    "mentions_in_surfaces_ge20": 216556,
+    "share_ge20": 0.8812,
+    "surfaces_singleton": 5566,
+    "surfaces_ge5": 2955,
+    "surfaces_ge20": 1196,
+    "top30": [
+     [
+      "seward",
+      8929
+     ],
+     [
+      "johnson",
+      5303
+     ],
+     [
+      "hay",
+      4863
+     ],
+     [
+      "bayard",
+      3544
+     ],
+     [
+      "fish",
+      3481
+     ],
+     [
+      "grew",
+      3132
+     ],
+     [
+      "wilson",
+      3050
+     ],
+     [
+      "winant",
+      2921
+     ],
+     [
+      "stuart",
+      2412
+     ],
+     [
+      "adams",
+      2392
+     ],
+     [
+      "gresham",
+      2267
+     ],
+     [
+      "roosevelt",
+      2170
+     ],
+     [
+      "caffery",
+      2163
+     ],
+     [
+      "blaine",
+      2111
+     ],
+     [
+      "evarts",
+      2079
+     ],
+     [
+      "gauss",
+      2075
+     ],
+     [
+      "macmurray",
+      1982
+     ],
+     [
+      "olney",
+      1618
+     ],
+     [
+      "frelinghuysen",
+      1542
+     ],
+     [
+      "harriman",
+      1486
+     ],
+     [
+      "davis",
+      1482
+     ],
+     [
+      "kirk",
+      1278
+     ],
+     [
+      "foster",
+      1168
+     ],
+     [
+      "steinhardt",
+      1133
+     ],
+     [
+      "welles",
+      1099
+     ],
+     [
+      "armour",
+      1097
+     ],
+     [
+      "bowers",
+      1085
+     ],
+     [
+      "white",
+      1060
+     ],
+     [
+      "denby",
+      1044
+     ],
+     [
+      "bingham",
+      1011
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 245747,
+    "distinct": 12164,
+    "mentions_in_singleton_surfaces": 5986,
+    "share_singleton": 0.0244,
+    "mentions_in_surfaces_ge5": 231667,
+    "share_ge5": 0.9427,
+    "mentions_in_surfaces_ge20": 214673,
+    "share_ge20": 0.8736,
+    "surfaces_singleton": 5986,
+    "surfaces_ge5": 3082,
+    "surfaces_ge20": 1224
+   },
+   "per_volume_distinct_K2": {
+    "median": 103,
+    "max": 696,
+    "max_volume": "frus1932v04",
+    "min": 0
+   },
+   "per_volume_pairs": {
+    "median": 795,
+    "max": 3038
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-marked.json",
+    "bytes": 2632099,
+    "gzip_bytes": 588607,
+    "vocab_size": 11377
+   },
+   "head_body_mismatches": [],
+   "typed_split": {
+    "from": 140504,
+    "to": 95247,
+    "untyped": 9996
+   }
+  },
+  "raw_control": {
+   "rows": 1353849,
+   "mentions_by_band": {
+    "1861-1899": 367450,
+    "1900-1929": 270983,
+    "1930-1945": 390149,
+    "1946-": 325267
+   },
+   "distinct_K1": 161513,
+   "distinct_K2": 140170,
+   "pairs_volume_doc_K2": 794528,
+   "pairs_by_band": {
+    "1861-1899": 207209,
+    "1900-1929": 167124,
+    "1930-1945": 243620,
+    "1946-": 176575
+   },
+   "docs_with_mention": 177991,
+   "docs_with_mention_share": 0.9011,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 31568,
+     "share": 0.9636
+    },
+    "1900-1929": {
+     "docs": 42668,
+     "share": 0.8734
+    },
+    "1930-1945": {
+     "docs": 68761,
+     "share": 0.8827
+    },
+    "1946-": {
+     "docs": 34994,
+     "share": 0.9203
+    }
+   },
+   "docs_only_marked_fromto": 0,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.0,
+   "concentration_K2": {
+    "mentions": 1353849,
+    "distinct": 140170,
+    "mentions_in_singleton_surfaces": 83437,
+    "share_singleton": 0.0616,
+    "mentions_in_surfaces_ge5": 1185687,
+    "share_ge5": 0.8758,
+    "mentions_in_surfaces_ge20": 1039261,
+    "share_ge20": 0.7676,
+    "surfaces_singleton": 83437,
+    "surfaces_ge5": 23909,
+    "surfaces_ge20": 7532,
+    "top30": [
+     [
+      "peiping",
+      10168
+     ],
+     [
+      "molotov",
+      9454
+     ],
+     [
+      "telegram the chargé",
+      9384
+     ],
+     [
+      "wilson",
+      8941
+     ],
+     [
+      "johnson",
+      8564
+     ],
+     [
+      "hon",
+      8348
+     ],
+     [
+      "bevin",
+      7701
+     ],
+     [
+      "marshall",
+      7403
+     ],
+     [
+      "roosevelt",
+      6065
+     ],
+     [
+      "seward",
+      5841
+     ],
+     [
+      "byrnes",
+      5809
+     ],
+     [
+      "formosa",
+      4814
+     ],
+     [
+      "hitler",
+      4619
+     ],
+     [
+      "acheson",
+      4249
+     ],
+     [
+      "majesty",
+      4213
+     ],
+     [
+      "gauss",
+      4065
+     ],
+     [
+      "john",
+      3943
+     ],
+     [
+      "stalin",
+      3813
+     ],
+     [
+      "harriman",
+      3621
+     ],
+     [
+      "chou",
+      3481
+     ],
+     [
+      "eden",
+      3367
+     ],
+     [
+      "lloyd george",
+      3318
+     ],
+     [
+      "clemenceau",
+      3260
+     ],
+     [
+      "lovett",
+      3243
+     ],
+     [
+      "smith",
+      3179
+     ],
+     [
+      "truman",
+      3165
+     ],
+     [
+      "sc",
+      3141
+     ],
+     [
+      "soong",
+      3091
+     ],
+     [
+      "mr.",
+      3066
+     ],
+     [
+      "esq.",
+      3045
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 1353849,
+    "distinct": 161513,
+    "mentions_in_singleton_surfaces": 96043,
+    "share_singleton": 0.0709,
+    "mentions_in_surfaces_ge5": 1158882,
+    "share_ge5": 0.856,
+    "mentions_in_surfaces_ge20": 989073,
+    "share_ge20": 0.7306,
+    "surfaces_singleton": 96043,
+    "surfaces_ge5": 27142,
+    "surfaces_ge20": 8191
+   },
+   "per_volume_distinct_K2": {
+    "median": 1004,
+    "max": 2977,
+    "max_volume": "frus1887",
+    "min": 12
+   },
+   "per_volume_pairs": {
+    "median": 2772,
+    "max": 6212
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-raw_control.json",
+    "bytes": 8348025,
+    "gzip_bytes": 2765095,
+    "vocab_size": 140170
+   },
+   "head_body_mismatches": []
+  },
+  "filtered_control": {
+   "rows": 1261852,
+   "mentions_by_band": {
+    "1861-1899": 338588,
+    "1900-1929": 257892,
+    "1930-1945": 366281,
+    "1946-": 299091
+   },
+   "distinct_K1": 161010,
+   "distinct_K2": 139727,
+   "pairs_volume_doc_K2": 732022,
+   "pairs_by_band": {
+    "1861-1899": 188523,
+    "1900-1929": 157187,
+    "1930-1945": 224347,
+    "1946-": 161965
+   },
+   "docs_with_mention": 173996,
+   "docs_with_mention_share": 0.8808,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 31193,
+     "share": 0.9522
+    },
+    "1900-1929": {
+     "docs": 41726,
+     "share": 0.8541
+    },
+    "1930-1945": {
+     "docs": 66859,
+     "share": 0.8583
+    },
+    "1946-": {
+     "docs": 34218,
+     "share": 0.8999
+    }
+   },
+   "docs_only_marked_fromto": 0,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.0,
+   "concentration_K2": {
+    "mentions": 1261852,
+    "distinct": 139727,
+    "mentions_in_singleton_surfaces": 83295,
+    "share_singleton": 0.066,
+    "mentions_in_surfaces_ge5": 1094110,
+    "share_ge5": 0.8671,
+    "mentions_in_surfaces_ge20": 948438,
+    "share_ge20": 0.7516,
+    "surfaces_singleton": 83295,
+    "surfaces_ge5": 23707,
+    "surfaces_ge20": 7407,
+    "top30": [
+     [
+      "molotov",
+      9454
+     ],
+     [
+      "wilson",
+      8941
+     ],
+     [
+      "johnson",
+      8564
+     ],
+     [
+      "bevin",
+      7701
+     ],
+     [
+      "marshall",
+      7403
+     ],
+     [
+      "roosevelt",
+      6065
+     ],
+     [
+      "seward",
+      5841
+     ],
+     [
+      "byrnes",
+      5809
+     ],
+     [
+      "hitler",
+      4619
+     ],
+     [
+      "acheson",
+      4249
+     ],
+     [
+      "gauss",
+      4065
+     ],
+     [
+      "john",
+      3943
+     ],
+     [
+      "stalin",
+      3813
+     ],
+     [
+      "harriman",
+      3621
+     ],
+     [
+      "chou",
+      3481
+     ],
+     [
+      "eden",
+      3367
+     ],
+     [
+      "lloyd george",
+      3318
+     ],
+     [
+      "clemenceau",
+      3260
+     ],
+     [
+      "lovett",
+      3243
+     ],
+     [
+      "smith",
+      3179
+     ],
+     [
+      "truman",
+      3165
+     ],
+     [
+      "soong",
+      3091
+     ],
+     [
+      "welles",
+      3036
+     ],
+     [
+      "adams",
+      3033
+     ],
+     [
+      "chiang",
+      2994
+     ],
+     [
+      "churchill",
+      2924
+     ],
+     [
+      "stettinius",
+      2594
+     ],
+     [
+      "davis",
+      2475
+     ],
+     [
+      "chiang kai",
+      2454
+     ],
+     [
+      "balfour",
+      2439
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 1261852,
+    "distinct": 161010,
+    "mentions_in_singleton_surfaces": 95867,
+    "share_singleton": 0.076,
+    "mentions_in_surfaces_ge5": 1067367,
+    "share_ge5": 0.8459,
+    "mentions_in_surfaces_ge20": 898466,
+    "share_ge20": 0.712,
+    "surfaces_singleton": 95867,
+    "surfaces_ge5": 26927,
+    "surfaces_ge20": 8066
+   },
+   "per_volume_distinct_K2": {
+    "median": 972,
+    "max": 2934,
+    "max_volume": "frus1887",
+    "min": 9
+   },
+   "per_volume_pairs": {
+    "median": 2525,
+    "max": 5911
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-filtered_control.json",
+    "bytes": 8006608,
+    "gzip_bytes": 2668070,
+    "vocab_size": 139727
+   },
+   "head_body_mismatches": []
+  },
+  "raw_sweep": {
+   "rows": 3656238,
+   "mentions_by_band": {
+    "1861-1899": 708315,
+    "1900-1929": 725374,
+    "1930-1945": 1271126,
+    "1946-": 951423
+   },
+   "distinct_K1": 454349,
+   "distinct_K2": 417178,
+   "pairs_volume_doc_K2": 2056345,
+   "pairs_by_band": {
+    "1861-1899": 416728,
+    "1900-1929": 433542,
+    "1930-1945": 732645,
+    "1946-": 473430
+   },
+   "docs_with_mention": 196455,
+   "docs_with_mention_share": 0.9945,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 32708,
+     "share": 0.9984
+    },
+    "1900-1929": {
+     "docs": 48716,
+     "share": 0.9972
+    },
+    "1930-1945": {
+     "docs": 77656,
+     "share": 0.9969
+    },
+    "1946-": {
+     "docs": 37375,
+     "share": 0.983
+    }
+   },
+   "docs_only_marked_fromto": 0,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.0,
+   "concentration_K2": {
+    "mentions": 3656238,
+    "distinct": 417178,
+    "mentions_in_singleton_surfaces": 276063,
+    "share_singleton": 0.0755,
+    "mentions_in_surfaces_ge5": 3155056,
+    "share_ge5": 0.8629,
+    "mentions_in_surfaces_ge20": 2826459,
+    "share_ge20": 0.7731,
+    "surfaces_singleton": 276063,
+    "surfaces_ge5": 52481,
+    "surfaces_ge20": 15224,
+    "top30": [
+     [
+      "secretary of state",
+      63489
+     ],
+     [
+      "the secretary of state",
+      52668
+     ],
+     [
+      "united states",
+      24617
+     ],
+     [
+      "department",
+      21228
+     ],
+     [
+      "the president",
+      21214
+     ],
+     [
+      "japan",
+      20602
+     ],
+     [
+      "president",
+      19763
+     ],
+     [
+      "the united states",
+      19517
+     ],
+     [
+      "washington",
+      18823
+     ],
+     [
+      "he",
+      18726
+     ],
+     [
+      "your excellency",
+      14616
+     ],
+     [
+      "british",
+      13634
+     ],
+     [
+      "sir",
+      13441
+     ],
+     [
+      "us",
+      12992
+     ],
+     [
+      "marshall",
+      12784
+     ],
+     [
+      "germany",
+      11905
+     ],
+     [
+      "seward",
+      11562
+     ],
+     [
+      "france",
+      11125
+     ],
+     [
+      "hull",
+      10859
+     ],
+     [
+      "johnson",
+      10761
+     ],
+     [
+      "china",
+      10339
+     ],
+     [
+      "japanese",
+      10233
+     ],
+     [
+      "department of state",
+      10045
+     ],
+     [
+      "wilson",
+      10013
+     ],
+     [
+      "molotov",
+      9964
+     ],
+     [
+      "secretary",
+      9242
+     ],
+     [
+      "the department",
+      8844
+     ],
+     [
+      "french",
+      8774
+     ],
+     [
+      "roosevelt",
+      8356
+     ],
+     [
+      "bevin",
+      8302
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 3656238,
+    "distinct": 454349,
+    "mentions_in_singleton_surfaces": 298176,
+    "share_singleton": 0.0816,
+    "mentions_in_surfaces_ge5": 3108718,
+    "share_ge5": 0.8503,
+    "mentions_in_surfaces_ge20": 2742229,
+    "share_ge20": 0.75,
+    "surfaces_singleton": 298176,
+    "surfaces_ge5": 58096,
+    "surfaces_ge20": 16462
+   },
+   "per_volume_distinct_K2": {
+    "median": 2995,
+    "max": 6134,
+    "max_volume": "frus1950v05",
+    "min": 21
+   },
+   "per_volume_pairs": {
+    "median": 7497,
+    "max": 18249
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-raw_sweep.json",
+    "bytes": 24318643,
+    "gzip_bytes": 7934540,
+    "vocab_size": 417178
+   },
+   "head_body_mismatches": []
+  },
+  "filtered_sweep": {
+   "rows": 2597043,
+   "mentions_by_band": {
+    "1861-1899": 564811,
+    "1900-1929": 521771,
+    "1930-1945": 865777,
+    "1946-": 644684
+   },
+   "distinct_K1": 449449,
+   "distinct_K2": 412545,
+   "pairs_volume_doc_K2": 1579296,
+   "pairs_by_band": {
+    "1861-1899": 349848,
+    "1900-1929": 330565,
+    "1930-1945": 541284,
+    "1946-": 357599
+   },
+   "docs_with_mention": 196113,
+   "docs_with_mention_share": 0.9928,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 32699,
+     "share": 0.9981
+    },
+    "1900-1929": {
+     "docs": 48608,
+     "share": 0.995
+    },
+    "1930-1945": {
+     "docs": 77517,
+     "share": 0.9951
+    },
+    "1946-": {
+     "docs": 37289,
+     "share": 0.9807
+    }
+   },
+   "docs_only_marked_fromto": 0,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.0,
+   "concentration_K2": {
+    "mentions": 2597043,
+    "distinct": 412545,
+    "mentions_in_singleton_surfaces": 274558,
+    "share_singleton": 0.1057,
+    "mentions_in_surfaces_ge5": 2100570,
+    "share_ge5": 0.8088,
+    "mentions_in_surfaces_ge20": 1780371,
+    "share_ge20": 0.6855,
+    "surfaces_singleton": 274558,
+    "surfaces_ge5": 50570,
+    "surfaces_ge20": 14206,
+    "top30": [
+     [
+      "marshall",
+      12778
+     ],
+     [
+      "seward",
+      11562
+     ],
+     [
+      "hull",
+      10859
+     ],
+     [
+      "johnson",
+      10761
+     ],
+     [
+      "wilson",
+      10010
+     ],
+     [
+      "molotov",
+      9964
+     ],
+     [
+      "roosevelt",
+      8354
+     ],
+     [
+      "bevin",
+      8299
+     ],
+     [
+      "william h. seward",
+      8019
+     ],
+     [
+      "acheson",
+      7630
+     ],
+     [
+      "grew",
+      6704
+     ],
+     [
+      "hay",
+      6063
+     ],
+     [
+      "stuart",
+      5482
+     ],
+     [
+      "adams",
+      5315
+     ],
+     [
+      "byrnes",
+      5097
+     ],
+     [
+      "welles",
+      5089
+     ],
+     [
+      "winant",
+      5056
+     ],
+     [
+      "eden",
+      4701
+     ],
+     [
+      "stalin",
+      4689
+     ],
+     [
+      "fish",
+      4606
+     ],
+     [
+      "bayard",
+      4446
+     ],
+     [
+      "davis",
+      4396
+     ],
+     [
+      "harriman",
+      4270
+     ],
+     [
+      "japanese government",
+      4207
+     ],
+     [
+      "chinese government",
+      4134
+     ],
+     [
+      "hitler",
+      3987
+     ],
+     [
+      "clemenceau",
+      3920
+     ],
+     [
+      "chou",
+      3892
+     ],
+     [
+      "caffery",
+      3871
+     ],
+     [
+      "churchill",
+      3856
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 2597043,
+    "distinct": 449449,
+    "mentions_in_singleton_surfaces": 296576,
+    "share_singleton": 0.1142,
+    "mentions_in_surfaces_ge5": 2054552,
+    "share_ge5": 0.7911,
+    "mentions_in_surfaces_ge20": 1697033,
+    "share_ge20": 0.6534,
+    "surfaces_singleton": 296576,
+    "surfaces_ge5": 56093,
+    "surfaces_ge20": 15408
+   },
+   "per_volume_distinct_K2": {
+    "median": 2726,
+    "max": 5749,
+    "max_volume": "frus1950v05",
+    "min": 13
+   },
+   "per_volume_pairs": {
+    "median": 5765,
+    "max": 12904
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-filtered_sweep.json",
+    "bytes": 22027175,
+    "gzip_bytes": 7150068,
+    "vocab_size": 412545
+   },
+   "head_body_mismatches": []
+  },
+  "union_marked_filtered_control": {
+   "rows": 1507599,
+   "mentions_by_band": {
+    "1861-1899": 424166,
+    "1900-1929": 310975,
+    "1930-1945": 444180,
+    "1946-": 328278
+   },
+   "distinct_K1": 166442,
+   "distinct_K2": 143940,
+   "pairs_volume_doc_K2": 864469,
+   "pairs_by_band": {
+    "1861-1899": 236790,
+    "1900-1929": 185355,
+    "1930-1945": 263113,
+    "1946-": 179211
+   },
+   "docs_with_mention": 192128,
+   "docs_with_mention_share": 0.9726,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 32652,
+     "share": 0.9967
+    },
+    "1900-1929": {
+     "docs": 47319,
+     "share": 0.9686
+    },
+    "1930-1945": {
+     "docs": 75928,
+     "share": 0.9747
+    },
+    "1946-": {
+     "docs": 36229,
+     "share": 0.9528
+    }
+   },
+   "docs_only_marked_fromto": 17699,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.0921,
+   "concentration_K2": {
+    "mentions": 1507599,
+    "distinct": 143940,
+    "mentions_in_singleton_surfaces": 85447,
+    "share_singleton": 0.0567,
+    "mentions_in_surfaces_ge5": 1334923,
+    "share_ge5": 0.8855,
+    "mentions_in_surfaces_ge20": 1185199,
+    "share_ge20": 0.7862,
+    "surfaces_singleton": 85447,
+    "surfaces_ge5": 24707,
+    "surfaces_ge20": 7956,
+    "top30": [
+     [
+      "seward",
+      14770
+     ],
+     [
+      "johnson",
+      13867
+     ],
+     [
+      "wilson",
+      11991
+     ],
+     [
+      "molotov",
+      9548
+     ],
+     [
+      "roosevelt",
+      8235
+     ],
+     [
+      "marshall",
+      8171
+     ],
+     [
+      "bevin",
+      7778
+     ],
+     [
+      "gauss",
+      6140
+     ],
+     [
+      "byrnes",
+      5811
+     ],
+     [
+      "adams",
+      5425
+     ],
+     [
+      "harriman",
+      5107
+     ],
+     [
+      "hay",
+      4954
+     ],
+     [
+      "winant",
+      4797
+     ],
+     [
+      "hitler",
+      4627
+     ],
+     [
+      "acheson",
+      4591
+     ],
+     [
+      "bayard",
+      4434
+     ],
+     [
+      "welles",
+      4135
+     ],
+     [
+      "john",
+      3962
+     ],
+     [
+      "davis",
+      3957
+     ],
+     [
+      "stalin",
+      3946
+     ],
+     [
+      "smith",
+      3894
+     ],
+     [
+      "grew",
+      3839
+     ],
+     [
+      "truman",
+      3816
+     ],
+     [
+      "caffery",
+      3728
+     ],
+     [
+      "stuart",
+      3697
+     ],
+     [
+      "fish",
+      3668
+     ],
+     [
+      "macmurray",
+      3603
+     ],
+     [
+      "lovett",
+      3535
+     ],
+     [
+      "churchill",
+      3489
+     ],
+     [
+      "chou",
+      3481
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 1507599,
+    "distinct": 166442,
+    "mentions_in_singleton_surfaces": 98543,
+    "share_singleton": 0.0654,
+    "mentions_in_surfaces_ge5": 1307064,
+    "share_ge5": 0.867,
+    "mentions_in_surfaces_ge20": 1131530,
+    "share_ge20": 0.7506,
+    "surfaces_singleton": 98543,
+    "surfaces_ge5": 28384,
+    "surfaces_ge20": 8783
+   },
+   "per_volume_distinct_K2": {
+    "median": 1002,
+    "max": 3005,
+    "max_volume": "frus1887",
+    "min": 9
+   },
+   "per_volume_pairs": {
+    "median": 2889,
+    "max": 6515
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-union_marked_filtered_control.json",
+    "bytes": 8986340,
+    "gzip_bytes": 2877706,
+    "vocab_size": 143940
+   },
+   "head_body_mismatches": [],
+   "rows_note": "rows = component rows summed (overlapping spans counted in both layers); rows_dedup_span = distinct (doc,s,e)",
+   "rows_dedup_span": 1445209
+  },
+  "union_marked_filtered_sweep": {
+   "rows": 2842790,
+   "mentions_by_band": {
+    "1861-1899": 650389,
+    "1900-1929": 574854,
+    "1930-1945": 943676,
+    "1946-": 673871
+   },
+   "distinct_K1": 452866,
+   "distinct_K2": 414185,
+   "pairs_volume_doc_K2": 1596691,
+   "pairs_by_band": {
+    "1861-1899": 353837,
+    "1900-1929": 337436,
+    "1930-1945": 546051,
+    "1946-": 359367
+   },
+   "docs_with_mention": 196162,
+   "docs_with_mention_share": 0.9931,
+   "docs_with_mention_by_band": {
+    "1861-1899": {
+     "docs": 32701,
+     "share": 0.9982
+    },
+    "1900-1929": {
+     "docs": 48638,
+     "share": 0.9956
+    },
+    "1930-1945": {
+     "docs": 77523,
+     "share": 0.9952
+    },
+    "1946-": {
+     "docs": 37300,
+     "share": 0.981
+    }
+   },
+   "docs_only_marked_fromto": 45,
+   "docs_only_marked_fromto_share_of_docs_with_mention": 0.0002,
+   "concentration_K2": {
+    "mentions": 2842790,
+    "distinct": 414185,
+    "mentions_in_singleton_surfaces": 274308,
+    "share_singleton": 0.0965,
+    "mentions_in_surfaces_ge5": 2343943,
+    "share_ge5": 0.8245,
+    "mentions_in_surfaces_ge20": 2019762,
+    "share_ge20": 0.7105,
+    "surfaces_singleton": 274308,
+    "surfaces_ge5": 51363,
+    "surfaces_ge20": 14585,
+    "top30": [
+     [
+      "seward",
+      20491
+     ],
+     [
+      "johnson",
+      16064
+     ],
+     [
+      "marshall",
+      13546
+     ],
+     [
+      "wilson",
+      13060
+     ],
+     [
+      "hull",
+      11096
+     ],
+     [
+      "hay",
+      10926
+     ],
+     [
+      "roosevelt",
+      10524
+     ],
+     [
+      "molotov",
+      10058
+     ],
+     [
+      "grew",
+      9836
+     ],
+     [
+      "bevin",
+      8376
+     ],
+     [
+      "fish",
+      8087
+     ],
+     [
+      "william h. seward",
+      8024
+     ],
+     [
+      "bayard",
+      7990
+     ],
+     [
+      "winant",
+      7977
+     ],
+     [
+      "acheson",
+      7972
+     ],
+     [
+      "stuart",
+      7894
+     ],
+     [
+      "adams",
+      7707
+     ],
+     [
+      "welles",
+      6188
+     ],
+     [
+      "caffery",
+      6034
+     ],
+     [
+      "davis",
+      5878
+     ],
+     [
+      "harriman",
+      5756
+     ],
+     [
+      "gauss",
+      5702
+     ],
+     [
+      "macmurray",
+      5429
+     ],
+     [
+      "byrnes",
+      5099
+     ],
+     [
+      "gresham",
+      4862
+     ],
+     [
+      "stalin",
+      4822
+     ],
+     [
+      "eden",
+      4772
+     ],
+     [
+      "blaine",
+      4749
+     ],
+     [
+      "evarts",
+      4552
+     ],
+     [
+      "churchill",
+      4421
+     ]
+    ]
+   },
+   "concentration_K1": {
+    "mentions": 2842790,
+    "distinct": 452866,
+    "mentions_in_singleton_surfaces": 297505,
+    "share_singleton": 0.1047,
+    "mentions_in_surfaces_ge5": 2295960,
+    "share_ge5": 0.8076,
+    "mentions_in_surfaces_ge20": 1932375,
+    "share_ge20": 0.6797,
+    "surfaces_singleton": 297505,
+    "surfaces_ge5": 57282,
+    "surfaces_ge20": 15988
+   },
+   "per_volume_distinct_K2": {
+    "median": 2730,
+    "max": 5751,
+    "max_volume": "frus1950v05",
+    "min": 13
+   },
+   "per_volume_pairs": {
+    "median": 5805,
+    "max": 12944
+   },
+   "artifact": {
+    "path": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-census/artifact-union_marked_filtered_sweep.json",
+    "bytes": 22183217,
+    "gzip_bytes": 7185608,
+    "vocab_size": 414185
+   },
+   "head_body_mismatches": [],
+   "rows_note": "rows = component rows summed (overlapping spans counted in both layers); rows_dedup_span = distinct (doc,s,e)",
+   "rows_dedup_span": 2694267
+  }
+ },
+ "elapsed_secs": 41.2
+}

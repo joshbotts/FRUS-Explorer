@@ -1,0 +1,158 @@
+author:	joshbotts
+association:	owner
+edited:	false
+status:	none
+--
+**Carried forward from the 233–243 wave (2026-07-10 wave-close decision).** The wave shipped its people-family prerequisite — #243 manual merge + corrections/undo ([PR #252](https://github.com/joshbotts/FRUS-Explorer/pull/252)) — but the M0 session itself (POCOM ingestion + career UI + the colleague-data authority enrichment overlay: Wikidata QIDs, VIAF, role text keyed on `people-id`) was **deferred to the next wave** when review-pass budget ran out. Nothing shipped depends on it.
+
+The next wave opens directly from the intact **Session 8 block** in `Planning/Issues-233-243-Plan.md` — it carries the environment prerequisites (local `HistoryAtState/pocom` + `frus-name-authority` checkouts), the empirically-derived defensive generator rules for the enrichment overlay, and the review focus. Related deferred-with-it items: PersonAuthorityKit shared-target extraction (gated on the schema-v2 bump) and the M1/M2/M3 NER program (own multi-week offline program per the plan's feasibility note; `persons-new.xml` reframes M1 as adopt-and-review of the colleague's extraction).
+--
+author:	joshbotts
+association:	owner
+edited:	false
+status:	none
+--
+## Readiness check — the scoped slice is ready to run, but it does not close this issue
+
+### Prerequisites: all satisfied
+
+| | |
+|---|---|
+| `HistoryAtState/pocom` checkout | **present** — `/Users/jbotts/Development/pocom`, `people/{a-z}/*.xml` (4,261), `missions-countries/` (199), `code-tables/`; HEAD 2026-07-25 |
+| `frus-name-authority` checkout | **present** — `persons-complete.xml` + `merge_audit_report.csv` |
+| `HistoryAtState/people` checkout | **present** — 16,312 records, 3,928 carrying a `departmenthistory/people/{slug}` URL |
+| blocking predecessor #243 | **merged** — PR #252, 2026-07-10 |
+| Session 8 plan block | intact in `Planning/Completed/Issues-233-243-Plan.md` |
+
+The plan's claims still describe the shipped code. `PersonAuthorityIndexBuilder` still keeps only `historicaldocuments/(frus…)/persons#(.+)` and discards the `departmenthistory/people/{slug}` URLs, so the slug crosswalk does fall out of the existing checkout as stated. No `pocom` symbol exists anywhere in the app. The bundled index is still `version: 1` with `b`/`d`/`n`/`v` only.
+
+So Session 8 is **mechanically ready**.
+
+### But it does not address what this issue describes
+
+The body says the people browser "is limited to volumes where editors created lists of people in the volume. This excludes the first ~70 years of documentation." Measured against the manifest and the owner's index:
+
+| volumes | 552 |
+|---|---|
+| with an editor person list | 284 |
+| **without one** | **268 (48.6%)** |
+
+By start year, the no-list volumes are: **1860s 38 (all of them), 1880s 25 (all), 1900s 42 of 58, 1920s 67 of 72, 1940s 96 of 191.** Only 21 of the 173 pre-1940 volumes carry a list. The complaint is exactly right.
+
+**POCOM cannot fix it.** POCOM records carry no FRUS anchor of any kind — a person file is `{id, persName, birth, death, career-type, residence}`, and assignments live in `missions-*/` keyed by POCOM slug, not by volume. The only join into this app runs *backwards* through the authority index: app people-id → `HistoryAtState/people` record → its `departmenthistory` slug → POCOM. That path reaches only people the app **already has from volume front matter**. It adds zero people to the 268 no-list volumes.
+
+POCOM is also narrower than "early-era State officials and diplomats": it is **chiefs of mission** — 5,968 appointments, 3,677 distinct people, 1778–2020, of which 942 (15.8%) are pre-1900.
+
+### What Session 8 would actually deliver
+
+| | |
+|---|---|
+| people-id → POCOM slug pairs available | 3,928 |
+| of those, in the app's 12,836 authority people | **1,242 (9.7%)** |
+| of those, POCOM has an appointment for | **1,027** |
+| live person rows that would gain a Career section | **12,561 of 62,818 (20.0%)** |
+
+The row figure is much higher than the people figure because chiefs of mission recur across many volumes. Plus the enrichment overlay: Wikidata ~3,810, VIAF 142 → ~3,186, role text.
+
+That is a real, worthwhile feature. It is just **enrichment of existing person records**, not extension to unserved volumes.
+
+### Two things to fold in before running it
+
+1. **[#260](https://github.com/joshbotts/FRUS-Explorer/issues/260) belongs in the same session.** Same generator, same bundled artifact, same `indexVersion` bump — and it is the piece that actually improves coverage: 78.5% → 90.1% of person rows, 98.96% agreement on shared anchors, 0.14% rollup churn (measured on the issue). Two separate regenerations of `person-authority-index.json` would be wasted work. Note it does *not* close this issue either — 54 of its 56 new volumes already have person rows.
+2. **The enrichment overlay's audit guard has a keying problem.** The plan mandates skipping entries whose verdict in `merge_audit_report.csv` is unmerge/unmerge_likely/uncertain, *and* forbids reading the `FRUS-NNNNN` xml:ids. But that CSV's `pid_a`/`pid_b` columns **hold `FRUS-NNNNN` xml:ids**, not people-ids. The guard is applicable only by resolving them to people-ids inside the same file version at generation time (verified: 62/62 resolve, 30 distinct people-ids, 25 in the app) and pinning the result in provenance — it cannot be recomputed after the planned v2 re-mint.
+
+### Recommendation
+
+Run Session 8 — with #260 folded in — as its **own** issue, titled for what it is (POCOM career data + authority enrichment + crosswalk expansion). Keep **this** issue open for the M1/M2/M3 NER program, which is the only thing that reaches the 268 volumes it is actually about, and which the plan already scopes as a multi-week offline program.
+
+Closing #234 on Session 8 would mark the pre-1930 people gap as solved when not one of those 268 volumes gained a person.
+
+--
+author:	joshbotts
+association:	owner
+edited:	false
+status:	none
+--
+## The deferred M1/M2/M3 program is now a live doc — and two of its premises were wrong
+
+The program was defined inside `Planning/Completed/Issues-233-243-Plan.md`, archived in the 2026-08-05 cleanup as a "closed issue-wave plan". The wave closed; this didn't. It is now **`Planning/People-Early-Era-Program.md`** (PR #739), with the archived row corrected in place so the old claim cannot be re-read as current.
+
+### The `persons-new.xml` reframe does not hold
+
+The plan's 2026-07-09 revision says that drop turns M1 from "NER from scratch" into "adopt + review the colleague's extraction — much smaller program". Measured, it reaches **2 of the 268 volumes that have no person list**, and 2 of the 129 pre-1930 ones, out of the 111 volumes it covers.
+
+That is structural: its anchors are `volume/persons#ref`, so they can only land in volumes that *already have* a persons page. It enriches the covered corpus and cannot extend into the uncovered one. **M1 is not smaller than originally scoped.**
+
+### The gap is bigger than the volume count suggests
+
+268 of 552 volumes have no list — but they hold **199,246 documents, 62.9% of the corpus**, because they are the large early annual volumes. 82,862 of those are pre-1930.
+
+### But the problem is better-posed than "NER"
+
+Those volumes are not unmarked text. Across all 268 they carry **253,919 editor-marked `<persName>` elements** — 141,064 typed `from`, 95,837 `to`, 17,018 untyped; 13,914 distinct name strings, 3,253 appearing five or more times — with **zero** links to any identity.
+
+A *covered* volume links its mentions with `corresp="#p_W1"` back to an editor list entry (`<persName xml:id="p_W1">Wilhelmina</persName> Queen of the Netherlands.`); `frus1915Supp` carries `corresp` on 4,033 of its 5,392 names. The difference between covered and uncovered is **not whether the names are marked up — it is whether there is a list for them to point at.**
+
+So the core work is **reconciliation, not detection**. And with 93.3% of the names sitting in `from`/`to` correspondence headers, POCOM is load-bearing here in a way it was not for the M0 work that shipped in #736: sender + recipient + document date + who held which post when is a three-way constraint.
+
+One thing deliberately **not** claimed: 253,919 is the count of names the editors chose to mark up. What share of *all* person mentions that represents is unmeasured, and detection may still be needed for people named only in running prose. Measuring it is the first task in the new **M1a** gate, ahead of the ground-truth eval set and a measurement of POCOM's constraint strength — because the program's size depends on all three answers.
+
+The eval-first, pilot-first, offline-batch discipline is carried forward unchanged.
+
+--
+author:	joshbotts
+association:	owner
+edited:	false
+status:	none
+--
+## Audit against the build, 2026-08-19
+
+Prompted by six issues found substantially or entirely shipped while still open (#829, #825, #888, #838, #372, #681). Every open issue was decomposed into its concrete deliverables — including scope enrolled by later comments — and each checked against the current tree at `d30633c1`. Markers like `#NNN(a)` in a doc comment were treated as a lead, never as proof: the code was opened and the wiring confirmed, because a correct mechanism with no caller is a recurring failure mode here.
+
+Nothing in this comment changes any code or scope. Correct it where it is wrong.
+
+---
+
+VERDICT: PARTIAL 8/16 — every measurement, harness and gate-instrument is built and run; nothing that puts a person into any of the 268 unserved volumes exists, and the ship gate is owner-only.
+
+**Scope note.** The issue's operative scope is set by its own comments, not the one-line body: the M0 half (POCOM ingestion + authority enrichment + #260 crosswalk) was deliberately carved out to **#736** (closed, shipped) with the owner writing "This does not close #234", and what remains here is the **M1/M2/M3 early-era program** now tracked in `Planning/People-Early-Era-Program.md` (live doc, PR #739).
+
+| # | Deliverable | Shipped? | Where |
+|---|---|---|---|
+| 1 | (body a) POCOM evaluated as source of truth for early-era officials | **yes — and the answer is "it cannot reach them"** | `POCOMIndexGeneratorCore/` (`Package.swift:329-353`); `FRUSExplorer/Models/POCOMIndex.swift`; `Resources/pocom-index.json` (420 KB); career UI `FRUSExplorer/Browser/PersonIndexView.swift:457-461, 547-591, 744`. Reach measured at 20.0% of *existing* person rows, 0 new volumes (#736 body) |
+| 2 | M1a(1) markup-coverage measurement | yes | `Planning/early-era-people/M1a-Findings.md` + `m1a_survey.py`, `m1a-survey.json` (~34% pooled ⇒ detection required) |
+| 3 | M1a(3) POCOM constraint strength | yes | same findings doc (83.2% surname-known / 63.9% unique-by-year) |
+| 4 | Two M1a-found parser defects | yes | `FRUSExplorer/TEI/FRUSDocumentParser.swift:1477-1486` (#740, `xml:id="correspondents"`); `:1381-1391` + `:1462` and `Search/IndexingPipeline.swift:791` (#741, frus1941-43 index rows). Both issues closed |
+| 5 | R-1 runbook + harness | yes | `tools/semantic-harvest/NER-RUNBOOK.md:1` (674 lines); `harvest_ner.py` (729 lines, 26-check selftest) |
+| 6 | N-0 scope + N-1 marked layer, run over the corpus | yes (owner-run) | `~/frus-ner-raw/scope.json`; `~/frus-ner-raw/marked/` holds **267** `*.head.json` + `.jsonl.gz` pairs |
+| 7 | Free NLTagger control detector | yes | `Package.swift:1040-1071`; `EarlyEraNERControlCore/{EarlyEraNERControlRunner,NERStoreIO,PersonMentionDetector}.swift` (1,001 lines) |
+| 8 | M2a loop + scorer | yes (as *instruments*) | `tools/semantic-harvest/stage_m2a.py` (453), `score_detections.py` (325), `ner_store.py` (141), `selftest_m2a.py` |
+| 9 | Detector pilot, measured | yes | `Planning/DEVELOPMENT-PLAN.md:6607-6660` and `:7062-7110` (commits `76067bd7`, `55da038d`) |
+| 10 | **M1a(2) 300-row eval set keyed** | **no** | `Planning/early-era-people/m1a-eval-candidates.csv` — 300 rows, `TRUE_IDENTITY_pocom_slug_or_name` empty on every row |
+| 11 | **M2a prose ground truth staged + keyed** | **no** | no `frus-m2a/` store exists anywhere on this machine; no `m2a-ground-truth.jsonl` (searched `$HOME` and `/`). `NER-RUNBOOK.md:11-14` and `People-Early-Era-Program.md:157` both name this as the gate |
+| 12 | **Corpus-scale detection sweep** | **no** | `~/frus-ner-raw/detected/` is **empty**; the control store holds 12 volumes (24 files) from the pilot only |
+| 13 | **R-2 mention-context embedding pass** | **no** | `M2-Semantic-Pipeline-Ride-Along.md:107` — row open, no code anywhere |
+| 14 | **M1b reconciliation of the 253,919 marked names → identities** | **no** | `People-Early-Era-Program.md:133-137`; no clusterer, no synthetic-ref namespace in the tree |
+| 15 | **R-4 derived/pre-bundled person index (body b)** | **no** | no artifact in `FRUSExplorer/Resources/`, and **no app code reads either NER store** (grep for `frus-ner`/`NERStore` across `FRUSExplorer/` returns nothing) |
+| 16 | **M3 provenance UI for derived people** | **no** | the only seal is `PersonIndexView.swift:621` "Reconciled identity", which is #736's authority match, not a derived-person marker |
+
+**The user-visible gap is untouched.** `IndexingPipeline.extractPersonRefs` (`Search/IndexingPipeline.swift:4627-4633`) inserts a `person_mentions` row only when a `<persName>` carries a `ref`; the 253,919 marked names in the 268 no-list volumes carry none (`People-Early-Era-Program.md:77-85`), so those volumes still contribute zero people to the browser, person search, analytics and the co-mention graph — exactly the complaint in the issue body.
+
+REMAINING (in the order the program's own gates impose):
+1. **Owner-only:** key `m1a-eval-candidates.csv` (300 rows).
+2. **Owner-only:** stage M2a (`DOCS=72 python3 tools/semantic-harvest/stage_m2a.py` — engineer can run this), then annotate the 72 documents and `COLLECT=1`. Until this exists, `NER-RUNBOOK.md:31` forbids publishing anything from the harvest.
+3. Score the three existing arms with `score_detections.py`; decide the detector on evidence rather than on the descriptive counts now in hand.
+4. Run the chosen detector at scope (or drop detection and ship M1b alone).
+5. Build M1b: cluster the marked names, POCOM year-constraint anchored, synthetic-ref namespace, force-merge-only.
+6. R-2 mention-context pass, R-3 clustering + adversarial-review tier, R-4 artifact.
+7. M3 provenance UI so a derived person never presents like an editor-listed one.
+
+EFFORT: **L** for the remainder. Steps 5–7 alone are a bundled-artifact generator + an indexing path + UI; the program doc calls the whole thing a multi-week offline program (`People-Early-Era-Program.md:169-170`).
+
+RISK:
+- **Owner-gated, and the gate is not a formality.** Both eval sets are unkeyed; `Plan-Of-Record-2026-08-17.md:211` lists #234 as deferred precisely on "§5's M2a gate (keyed sample) still unmet". An engineer picking this up today can build instruments and stage samples, and can ship nothing.
+- **The cheap route is measured as insufficient.** `NLTagger` runs the whole scope in ~8 min but misses **at least 71%** of the mentions the editors themselves marked (`DEVELOPMENT-PLAN.md:7085-7095`); the 14 B LLM extrapolates to ~76 days on the Air with a ~35-day prefill-only floor, and concurrency is an unexploited lever. The detector decision is unresolved and expensive either way.
+- **Index/rollup version churn.** Admitting derived people changes parse output and rollup membership: `IndexingPipeline.currentDateIndexVersion` and `currentPersonRollupVersion` (see `App/AppState.swift:726`) must move in the same commit, forcing a corpus re-index and rollup consolidation on every device.
+- **New bundled resource** ⇒ the one-time `xcodegen generate` + `git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/` restore.
+- **Defect class.** `People-Early-Era-Program.md:175-177`: "a confidently-wrong person is this app's most serious defect class"; #259 was closed not-planned for proposing merges that would have undone the rollup guardrails. Any output here is held to that standard.
+--

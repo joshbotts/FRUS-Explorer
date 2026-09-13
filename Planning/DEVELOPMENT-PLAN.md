@@ -14984,3 +14984,31 @@ because its 35 "rejected" editor spans are 34 seeds extended to their title and 
 surface gets at best a tie from an 11.55-day sweep against an 8-minute NLTagger pass, and NLTagger in union with
 the free layer scores higher still (0.794 relaxed).
 
+## #234 N-2 — the feasibility assessment, measured at the grain the app stores
+
+`Planning/234-Early-Era-People-Feasibility-Assessment-2026-09-12.md` reads the M2a score against what the app
+actually consumes. Its evidence (scripts, logs, summary JSON) is kept under
+`Planning/early-era-people/feasibility-2026-09-12/`. **No code changed.** It is an assessment, and the owner
+decisions it asks for are pending.
+
+**The grain is presence, settled by code.** `person_mentions` is unique on (volume, document, ref) and no person
+surface reads a character offset. The name string shown is still the detected span, so boundaries return through
+it.
+
+**What was measured, all post-hoc on the 64-document gold unless stated:**
+- **Editor-marked names:** presence P 1.000, 0 false keys of 79. At corpus scale they reach 159,182 of 197,534
+  documents (80.6%), 97.8% of them through the from/to header alone.
+- **Editor ∪ (filtered NLTagger ∩ filtered sweep), sweep-side spans:** presence P 0.898 [0.852, 0.942], 25 false
+  keys. Editor ∪ filtered NLTagger has 46; any sweep-bearing presence arm about 240.
+- **POCOM:** from/to names resolve to one officeholder in the year for 55.4% of the marked layer and 12.7% of the
+  detector's novel layer. Both are ceilings. The 300-row eval set is still 0 keyed.
+- **The clusterer:** read from `decide()`, it would merge same-surname derived records of overlapping era. The
+  synthetic-ref and force-merge-only rules the program doc cites are not written down anywhere.
+
+**Two shipped defects found on the way, outside #234.** In the live index, the three split-set second parts
+(`frus1932v04`, `frus1918Supp01v02`, `frus1917Supp02v02`) hold 5,530 `person_mentions` rows whose refs point into the
+sibling part's list, and 0 `persons` rows. `frus1873p1v2` keeps its list under `xml:id="correspondence"`, a spelling
+#740's allow-list does not carry.
+
+**Next.** The owner decides the six questions in the assessment's §6.3. The first is whether a per-volume,
+name-string entry disclosed as derived is acceptable in the People browser at all.

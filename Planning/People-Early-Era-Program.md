@@ -155,6 +155,12 @@ tie, and NLTagger added to the free editor layer scores highest. The frozen stop
 unkeyed documents cannot meet it. Which detector to build on is N-2's decision, and it turns on the use: offsets
 or presence. Nothing the detectors produce may ship until M2a is keyed.
 
+**N-2's reading is `Planning/234-Early-Era-People-Feasibility-Assessment-2026-09-12.md`** (an assessment;
+the owner decisions it lists in §6.3 are pending). No shipping person surface reads an offset, so the
+grain is presence. The editor-marked names alone are feasible as a correspondent index behind a
+`PersonClusterer` code gate. A detected layer is acceptable only at the detector-agreement arm, behind an
+owner precision floor. Identity waits on the 300-row eval set.
+
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
 discipline, same hardware window, and the embedding model doubles as a mention-context
 reconciliation signal for identity clustering. The seam (what rides, what must not — gates and

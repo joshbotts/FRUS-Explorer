@@ -1,0 +1,52 @@
+{
+ "gold_documents": 64,
+ "gold_documents_with_mentions": 62,
+ "marked": {
+  "volumes": 267,
+  "rows": 245747,
+  "documents_with_a_mention": 159182,
+  "pairs_presence_grain": 223600,
+  "persons_rows_if_keyed_per_volume_surface": 30327,
+  "single_token_rows": 204234,
+  "single_token_share": 0.8311,
+  "docs_with_surface_collision_on_cleaned_last_token": 1520,
+  "presence_rows_in_excess_of_last_token_keys": 1988,
+  "presence_rows_excess_share": 0.0089,
+  "gold_docs_with_at_least_one_row": 49,
+  "gold_docs_with_mentions_and_at_least_one_row": 49,
+  "rows_with_c_link_attribute": 9215,
+  "rows_by_t": {
+   "from": 140504,
+   "to": 95247,
+   "null": 9996
+  }
+ },
+ "filtered_control": {
+  "volumes": 267,
+  "rows": 1261852,
+  "documents_with_a_mention": 173996,
+  "pairs_presence_grain": 761652,
+  "persons_rows_if_keyed_per_volume_surface": 326305,
+  "single_token_rows": 668131,
+  "single_token_share": 0.5295,
+  "docs_with_surface_collision_on_cleaned_last_token": 48089,
+  "presence_rows_in_excess_of_last_token_keys": 95440,
+  "presence_rows_excess_share": 0.1253,
+  "gold_docs_with_at_least_one_row": 57,
+  "gold_docs_with_mentions_and_at_least_one_row": 57
+ },
+ "filtered_sweep": {
+  "volumes": 267,
+  "rows": 2597043,
+  "documents_with_a_mention": 196113,
+  "pairs_presence_grain": 1615304,
+  "persons_rows_if_keyed_per_volume_surface": 798129,
+  "single_token_rows": 824719,
+  "single_token_share": 0.3176,
+  "docs_with_surface_collision_on_cleaned_last_token": 106097,
+  "presence_rows_in_excess_of_last_token_keys": 263898,
+  "presence_rows_excess_share": 0.1634,
+  "gold_docs_with_at_least_one_row": 63,
+  "gold_docs_with_mentions_and_at_least_one_row": 62
+ }
+}

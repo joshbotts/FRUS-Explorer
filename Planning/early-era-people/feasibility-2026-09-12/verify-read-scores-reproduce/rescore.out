@@ -1,0 +1,40 @@
+doc-list rows 64 keys ['band', 'd', 'mark', 'mentions', 'v']
+gold docs 64 mentions 406 zero-mention docs [('frus1946v01', 'd483'), ('frus1946v01', 'd715')]
+marks by value: {'y': 61, 'none': 3}
+by band docs/mentions: {'1861-1899': [18, 186], '1900-1929': [15, 55], '1930-1945': [15, 61], '1946-': [16, 104]}
+segment-1 gold docs 12 mentions 105 of 1861-1899 docs 18 mentions 186
+gold volumes 24 docs per volume min/max 2 3
+
+== OVERALL (64 docs)
+editor            strict 0.602/0.131/0.215 relaxed 1.000/0.217/0.356 pred 88 strictHits 53 relaxedHits 88
+raw_sweep         strict 0.346/0.855/0.493 relaxed 0.378/0.933/0.538 pred 1003 strictHits 347 relaxedHits 379
+boundary          strict 0.356/0.855/0.502 relaxed 0.388/0.933/0.548 pred 976 strictHits 347 relaxedHits 379
+filtered_sweep    strict 0.471/0.855/0.608 relaxed 0.514/0.931/0.662 pred 736 strictHits 347 relaxedHits 378
+control           strict 0.434/0.367/0.398 relaxed 0.752/0.635/0.689 pred 343 strictHits 149 relaxedHits 258
+filtered_control  strict 0.472/0.367/0.413 relaxed 0.810/0.631/0.709 pred 316 strictHits 149 relaxedHits 256
+
+== BY BAND F1 (strict | relaxed), and precision
+1861-1899 editor S0.226(P0.591) R0.383(P1.000) | raw_sweep S0.655(P0.540) R0.710(P0.585) | boundary S0.658(P0.544) R0.713(P0.589) | filtered_sweep S0.723(P0.638) R0.783(P0.691) | control S0.347(P0.367) R0.682(P0.723) | filtered_control S0.366(P0.415) R0.709(P0.803)
+1900-1929 editor S0.056(P0.118) R0.472(P1.000) | raw_sweep S0.440(P0.288) R0.466(P0.305) | boundary S0.442(P0.290) R0.468(P0.307) | filtered_sweep S0.567(P0.408) R0.600(P0.432) | control S0.387(P0.474) R0.688(P0.842) | filtered_control S0.409(P0.545) R0.727(P0.970)
+1930-1945 editor S0.368(P0.933) R0.395(P1.000) | raw_sweep S0.362(P0.228) R0.389(P0.245) | boundary S0.384(P0.245) R0.413(P0.264) | filtered_sweep S0.509(P0.358) R0.547(P0.384) | control S0.410(P0.429) R0.684(P0.714) | filtered_control S0.414(P0.436) R0.690(P0.727)
+1946- editor S0.190(P0.917) R0.207(P1.000) | raw_sweep S0.429(P0.288) R0.488(P0.328) | boundary S0.436(P0.295) R0.496(P0.336) | filtered_sweep S0.542(P0.401) R0.611(P0.452) | control S0.492(P0.554) R0.706(P0.795) | filtered_control S0.497(P0.568) R0.714(P0.815)
+
+== POINT GAPS: ctrl-filt strict -21.0 relaxed 2.7; ctrl-raw strict -9.5 relaxed 15.1; filt-raw strict 11.5 relaxed 12.4
+== BOOTSTRAP 10000 band-stratified resamples, 95% percentile intervals (points)
+  ctrl-filt strict     -28.0 to -14.5
+  ctrl-raw strict      -17.1 to -2.6
+  ctrl-filt relaxed    -4.8 to 10.2
+  ctrl-raw relaxed     7.3 to 22.7
+  filt-raw strict      9.1 to 13.8
+  filt-raw relaxed     9.8 to 15.0
+  stopping rule met in 2.6% of resamples (point estimate met: False)
+== SIM 8 unkeyed (10000 draws): rule met 0; strict gap range -11.7 to -3.3
+UNION editor+filtered_control [set]: relaxed P 0.816 R 0.773 F1 0.794 | strict F1 0.485
+UNION editor+filtered_control [overlap-dedupe]: relaxed P 0.840 R 0.773 F1 0.805 | strict F1 0.487
+UNION editor+filtered_sweep [set]: relaxed P 0.493 R 0.936 F1 0.646 | strict F1 0.591
+UNION editor+filtered_sweep [overlap-dedupe]: relaxed P 0.517 R 0.933 F1 0.665 | strict F1 0.551
+UNION editor+control [set]: relaxed P 0.767 R 0.778 F1 0.773 | strict F1 0.469
+UNION editor+control [overlap-dedupe]: relaxed P 0.788 R 0.778 F1 0.783 | strict F1 0.471
+STRIPPED-TITLES (approx rule) filtered_sweep strict F1 0.656
+STRIPPED-TITLES (approx rule) control strict F1 0.569
+STRIPPED-TITLES (approx rule) raw_sweep strict F1 0.532

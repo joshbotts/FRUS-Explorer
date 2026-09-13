@@ -1,0 +1,96 @@
+top keys: ['document_list', 'documents', 'documents_without_mentions', 'ground_truth', 'mentions', 'results']
+document_list "/Users/jbotts/FRUS Explorer Development Files from Mac Studio/frus-m2a/m2a-ground-truth-documents.jsonl"
+documents 64
+documents_without_mentions 2
+ground_truth "/Users/jbotts/FRUS Explorer Development Files from Mac Studio/frus-m2a/m2a-ground-truth.jsonl"
+mentions 406
+===  editor markup (baseline)
+  band 1861-1899 {"documents": 18, "relaxed": {"f1": 0.3826, "gold": 186, "hits": 44, "precision": 1.0, "predicted": 44, "recall": 0.2366}, "strict": {"f1": 0.2261, "gold": 186, "hits": 26, "precision": 0.5909, "predicted": 44, "recall": 0.1398}}
+  band 1900-1929 {"documents": 15, "relaxed": {"f1": 0.4722, "gold": 55, "hits": 17, "precision": 1.0, "predicted": 17, "recall": 0.3091}, "strict": {"f1": 0.0556, "gold": 55, "hits": 2, "precision": 0.1176, "predicted": 17, "recall": 0.0364}}
+  band 1930-1945 {"documents": 15, "relaxed": {"f1": 0.3947, "gold": 61, "hits": 15, "precision": 1.0, "predicted": 15, "recall": 0.2459}, "strict": {"f1": 0.3684, "gold": 61, "hits": 14, "precision": 0.9333, "predicted": 15, "recall": 0.2295}}
+  band 1946- {"documents": 16, "relaxed": {"f1": 0.2069, "gold": 104, "hits": 12, "precision": 1.0, "predicted": 12, "recall": 0.1154}, "strict": {"f1": 0.1897, "gold": 104, "hits": 11, "precision": 0.9167, "predicted": 12, "recall": 0.1058}}
+detector "editor markup (baseline)"
+documents_in_ground_truth 64
+documents_not_scored []
+documents_not_scored_naming_no_one []
+documents_scored 64
+false_positive_examples 0 []
+missed_examples 40 [{'d': 'd354', 'n': 'LYONS', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Hon. William H. Seward', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'WILLIAM H. SEWARD', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Right Hon. Lord Lyons', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Lord Lyons', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Marshal Murray', 'v': 'frus1864p2'}]
+relaxed {"f1": 0.3563, "gold": 406, "hits": 88, "precision": 1.0, "predicted": 88, "recall": 0.2167}
+strict {"f1": 0.2146, "gold": 406, "hits": 53, "precision": 0.6023, "predicted": 88, "recall": 0.1305}
+volumes_refused []
+===  frus-ner-raw
+  band 1861-1899 {"documents": 18, "relaxed": {"f1": 0.7104, "gold": 186, "hits": 168, "precision": 0.5854, "predicted": 287, "recall": 0.9032}, "strict": {"f1": 0.6554, "gold": 186, "hits": 155, "precision": 0.5401, "predicted": 287, "recall": 0.8333}}
+  band 1900-1929 {"documents": 15, "relaxed": {"f1": 0.4655, "gold": 55, "hits": 54, "precision": 0.3051, "predicted": 177, "recall": 0.9818}, "strict": {"f1": 0.4397, "gold": 55, "hits": 51, "precision": 0.2881, "predicted": 177, "recall": 0.9273}}
+  band 1930-1945 {"documents": 15, "relaxed": {"f1": 0.3893, "gold": 61, "hits": 58, "precision": 0.2447, "predicted": 237, "recall": 0.9508}, "strict": {"f1": 0.3624, "gold": 61, "hits": 54, "precision": 0.2278, "predicted": 237, "recall": 0.8852}}
+  band 1946- {"documents": 16, "relaxed": {"f1": 0.4877, "gold": 104, "hits": 99, "precision": 0.3278, "predicted": 302, "recall": 0.9519}, "strict": {"f1": 0.4286, "gold": 104, "hits": 87, "precision": 0.2881, "predicted": 302, "recall": 0.8365}}
+detector "frus-ner-raw"
+documents_in_ground_truth 64
+documents_not_scored []
+documents_not_scored_naming_no_one []
+documents_scored 64
+false_positive_examples 40 [{'d': 'd354', 'n': 'Her Majesty’s government', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'the President', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'the port of Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'United States troops', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Brownsville', 'v': 'frus1864p2'}]
+missed_examples 27 [{'d': 'd93', 'n': 'Sherman', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'WILLIAM H. SEWARD', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Mayor Macbeth', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'General Schimmelpfennig', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Q. A. GILLMORE', 'v': 'frus1865p1'}, {'d': 'd175', 'n': 'George Washington', 'v': 'frus1866p3'}]
+relaxed {"f1": 0.538, "gold": 406, "hits": 379, "precision": 0.3779, "predicted": 1003, "recall": 0.9335}
+strict {"f1": 0.4925, "gold": 406, "hits": 347, "precision": 0.346, "predicted": 1003, "recall": 0.8547}
+volumes_refused []
+===  frus-ner-raw-filtered-boundary
+  band 1861-1899 {"documents": 18, "relaxed": {"f1": 0.7134, "gold": 186, "hits": 168, "precision": 0.5895, "predicted": 285, "recall": 0.9032}, "strict": {"f1": 0.6582, "gold": 186, "hits": 155, "precision": 0.5439, "predicted": 285, "recall": 0.8333}}
+  band 1900-1929 {"documents": 15, "relaxed": {"f1": 0.4675, "gold": 55, "hits": 54, "precision": 0.3068, "predicted": 176, "recall": 0.9818}, "strict": {"f1": 0.4416, "gold": 55, "hits": 51, "precision": 0.2898, "predicted": 176, "recall": 0.9273}}
+  band 1930-1945 {"documents": 15, "relaxed": {"f1": 0.4128, "gold": 61, "hits": 58, "precision": 0.2636, "predicted": 220, "recall": 0.9508}, "strict": {"f1": 0.3843, "gold": 61, "hits": 54, "precision": 0.2455, "predicted": 220, "recall": 0.8852}}
+  band 1946- {"documents": 16, "relaxed": {"f1": 0.4962, "gold": 104, "hits": 99, "precision": 0.3356, "predicted": 295, "recall": 0.9519}, "strict": {"f1": 0.4361, "gold": 104, "hits": 87, "precision": 0.2949, "predicted": 295, "recall": 0.8365}}
+detector "frus-ner-raw-filtered-boundary"
+documents_in_ground_truth 64
+documents_not_scored []
+documents_not_scored_naming_no_one []
+documents_scored 64
+false_positive_examples 40 [{'d': 'd354', 'n': 'Her Majesty’s government', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'the President', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'the port of Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'United States troops', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Brownsville', 'v': 'frus1864p2'}]
+missed_examples 27 [{'d': 'd93', 'n': 'Sherman', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'WILLIAM H. SEWARD', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Mayor Macbeth', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'General Schimmelpfennig', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Q. A. GILLMORE', 'v': 'frus1865p1'}, {'d': 'd175', 'n': 'George Washington', 'v': 'frus1866p3'}]
+relaxed {"f1": 0.5485, "gold": 406, "hits": 379, "precision": 0.3883, "predicted": 976, "recall": 0.9335}
+strict {"f1": 0.5022, "gold": 406, "hits": 347, "precision": 0.3555, "predicted": 976, "recall": 0.8547}
+volumes_refused []
+===  frus-ner-raw-filtered
+  band 1861-1899 {"documents": 18, "relaxed": {"f1": 0.7832, "gold": 186, "hits": 168, "precision": 0.6914, "predicted": 243, "recall": 0.9032}, "strict": {"f1": 0.7226, "gold": 186, "hits": 155, "precision": 0.6379, "predicted": 243, "recall": 0.8333}}
+  band 1900-1929 {"documents": 15, "relaxed": {"f1": 0.6, "gold": 55, "hits": 54, "precision": 0.432, "predicted": 125, "recall": 0.9818}, "strict": {"f1": 0.5667, "gold": 55, "hits": 51, "precision": 0.408, "predicted": 125, "recall": 0.9273}}
+  band 1930-1945 {"documents": 15, "relaxed": {"f1": 0.5472, "gold": 61, "hits": 58, "precision": 0.3841, "predicted": 151, "recall": 0.9508}, "strict": {"f1": 0.5094, "gold": 61, "hits": 54, "precision": 0.3576, "predicted": 151, "recall": 0.8852}}
+  band 1946- {"documents": 16, "relaxed": {"f1": 0.6106, "gold": 104, "hits": 98, "precision": 0.4516, "predicted": 217, "recall": 0.9423}, "strict": {"f1": 0.5421, "gold": 104, "hits": 87, "precision": 0.4009, "predicted": 217, "recall": 0.8365}}
+detector "frus-ner-raw-filtered"
+documents_in_ground_truth 64
+documents_not_scored []
+documents_not_scored_naming_no_one []
+documents_scored 64
+false_positive_examples 40 [{'d': 'd354', 'n': 'the port of Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'United States troops', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Brownsville', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'your kindness', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'the port of Brownsville', 'v': 'frus1864p2'}]
+missed_examples 28 [{'d': 'd93', 'n': 'Sherman', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'WILLIAM H. SEWARD', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Mayor Macbeth', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'General Schimmelpfennig', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Q. A. GILLMORE', 'v': 'frus1865p1'}, {'d': 'd175', 'n': 'George Washington', 'v': 'frus1866p3'}]
+relaxed {"f1": 0.662, "gold": 406, "hits": 378, "precision": 0.5136, "predicted": 736, "recall": 0.931}
+strict {"f1": 0.6077, "gold": 406, "hits": 347, "precision": 0.4715, "predicted": 736, "recall": 0.8547}
+volumes_refused []
+===  frus-ner-raw-control
+  band 1861-1899 {"documents": 18, "relaxed": {"f1": 0.6818, "gold": 186, "hits": 120, "precision": 0.7229, "predicted": 166, "recall": 0.6452}, "strict": {"f1": 0.3466, "gold": 186, "hits": 61, "precision": 0.3675, "predicted": 166, "recall": 0.328}}
+  band 1900-1929 {"documents": 15, "relaxed": {"f1": 0.6882, "gold": 55, "hits": 32, "precision": 0.8421, "predicted": 38, "recall": 0.5818}, "strict": {"f1": 0.3871, "gold": 55, "hits": 18, "precision": 0.4737, "predicted": 38, "recall": 0.3273}}
+  band 1930-1945 {"documents": 15, "relaxed": {"f1": 0.6838, "gold": 61, "hits": 40, "precision": 0.7143, "predicted": 56, "recall": 0.6557}, "strict": {"f1": 0.4103, "gold": 61, "hits": 24, "precision": 0.4286, "predicted": 56, "recall": 0.3934}}
+  band 1946- {"documents": 16, "relaxed": {"f1": 0.7059, "gold": 104, "hits": 66, "precision": 0.7952, "predicted": 83, "recall": 0.6346}, "strict": {"f1": 0.492, "gold": 104, "hits": 46, "precision": 0.5542, "predicted": 83, "recall": 0.4423}}
+detector "frus-ner-raw-control"
+documents_in_ground_truth 64
+documents_not_scored []
+documents_not_scored_naming_no_one []
+documents_scored 64
+false_positive_examples 40 [{'d': 'd354', 'n': 'Her Majesty', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Majesty', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Hon', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Anna', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Dee', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Hon', 'v': 'frus1864p2'}]
+missed_examples 40 [{'d': 'd354', 'n': 'Lord Lyons', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Mr. Seward', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'LYONS', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Mr. Seward', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Lord Lyons', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'WILLIAM H. SEWARD', 'v': 'frus1864p2'}]
+relaxed {"f1": 0.6889, "gold": 406, "hits": 258, "precision": 0.7522, "predicted": 343, "recall": 0.6355}
+strict {"f1": 0.3979, "gold": 406, "hits": 149, "precision": 0.4344, "predicted": 343, "recall": 0.367}
+volumes_refused []
+===  frus-ner-raw-control-filtered
+  band 1861-1899 {"documents": 18, "relaxed": {"f1": 0.7087, "gold": 186, "hits": 118, "precision": 0.8027, "predicted": 147, "recall": 0.6344}, "strict": {"f1": 0.3664, "gold": 186, "hits": 61, "precision": 0.415, "predicted": 147, "recall": 0.328}}
+  band 1900-1929 {"documents": 15, "relaxed": {"f1": 0.7273, "gold": 55, "hits": 32, "precision": 0.9697, "predicted": 33, "recall": 0.5818}, "strict": {"f1": 0.4091, "gold": 55, "hits": 18, "precision": 0.5455, "predicted": 33, "recall": 0.3273}}
+  band 1930-1945 {"documents": 15, "relaxed": {"f1": 0.6897, "gold": 61, "hits": 40, "precision": 0.7273, "predicted": 55, "recall": 0.6557}, "strict": {"f1": 0.4138, "gold": 61, "hits": 24, "precision": 0.4364, "predicted": 55, "recall": 0.3934}}
+  band 1946- {"documents": 16, "relaxed": {"f1": 0.7135, "gold": 104, "hits": 66, "precision": 0.8148, "predicted": 81, "recall": 0.6346}, "strict": {"f1": 0.4973, "gold": 104, "hits": 46, "precision": 0.5679, "predicted": 81, "recall": 0.4423}}
+detector "frus-ner-raw-control-filtered"
+documents_in_ground_truth 64
+documents_not_scored []
+documents_not_scored_naming_no_one []
+documents_scored 64
+false_positive_examples 40 [{'d': 'd358', 'n': 'Anna', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Dee', 'v': 'frus1864p2'}, {'d': 'd93', 'n': 'Fort Anderson', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Wilmington', 'v': 'frus1865p1'}, {'d': 'd93', 'n': 'Bull', 'v': 'frus1865p1'}, {'d': 'd115', 'n': 'Rosario Strait', 'v': 'frus1872p2v5'}]
+missed_examples 40 [{'d': 'd354', 'n': 'Lord Lyons', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'Mr. Seward', 'v': 'frus1864p2'}, {'d': 'd354', 'n': 'LYONS', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Mr. Seward', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'Lord Lyons', 'v': 'frus1864p2'}, {'d': 'd358', 'n': 'WILLIAM H. SEWARD', 'v': 'frus1864p2'}]
+relaxed {"f1": 0.7091, "gold": 406, "hits": 256, "precision": 0.8101, "predicted": 316, "recall": 0.6305}
+strict {"f1": 0.4127, "gold": 406, "hits": 149, "precision": 0.4715, "predicted": 316, "recall": 0.367}
+volumes_refused []

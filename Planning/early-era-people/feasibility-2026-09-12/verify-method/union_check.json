@@ -1,0 +1,253 @@
+{
+ "documents": 64,
+ "mentions": 406,
+ "baseline_refused": [],
+ "baseline": {
+  "strict": {
+   "precision": 0.6023,
+   "recall": 0.1305,
+   "f1": 0.2146
+  },
+  "relaxed": {
+   "precision": 1.0,
+   "recall": 0.2167,
+   "f1": 0.3563
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.3826,
+    "strict_f1": 0.2261,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.4722,
+    "strict_f1": 0.0556,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.3947,
+    "strict_f1": 0.3684,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.2069,
+    "strict_f1": 0.1897,
+    "documents": 16
+   }
+  }
+ },
+ "control_filtered": {
+  "strict": {
+   "precision": 0.4715,
+   "recall": 0.367,
+   "f1": 0.4127
+  },
+  "relaxed": {
+   "precision": 0.8101,
+   "recall": 0.6305,
+   "f1": 0.7091
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.7087,
+    "strict_f1": 0.3664,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.7273,
+    "strict_f1": 0.4091,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.6897,
+    "strict_f1": 0.4138,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.7135,
+    "strict_f1": 0.4973,
+    "documents": 16
+   }
+  },
+  "refused": []
+ },
+ "editor+control_filtered": {
+  "strict": {
+   "precision": 0.4987,
+   "recall": 0.4729,
+   "f1": 0.4855
+  },
+  "relaxed": {
+   "precision": 0.8156,
+   "recall": 0.7734,
+   "f1": 0.7939
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.7902,
+    "strict_f1": 0.4632,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.8846,
+    "strict_f1": 0.3846,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.7778,
+    "strict_f1": 0.5238,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.7629,
+    "strict_f1": 0.5567,
+    "documents": 16
+   }
+  }
+ },
+ "sweep_filtered": {
+  "strict": {
+   "precision": 0.4715,
+   "recall": 0.8547,
+   "f1": 0.6077
+  },
+  "relaxed": {
+   "precision": 0.5136,
+   "recall": 0.931,
+   "f1": 0.662
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.7832,
+    "strict_f1": 0.7226,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.6,
+    "strict_f1": 0.5667,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.5472,
+    "strict_f1": 0.5094,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.6106,
+    "strict_f1": 0.5421,
+    "documents": 16
+   }
+  },
+  "refused": []
+ },
+ "editor+sweep_filtered": {
+  "strict": {
+   "precision": 0.4514,
+   "recall": 0.8571,
+   "f1": 0.5913
+  },
+  "relaxed": {
+   "precision": 0.4929,
+   "recall": 0.936,
+   "f1": 0.6457
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.7589,
+    "strict_f1": 0.6964,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.5567,
+    "strict_f1": 0.5258,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.5446,
+    "strict_f1": 0.507,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.6087,
+    "strict_f1": 0.5404,
+    "documents": 16
+   }
+  }
+ },
+ "control_raw": {
+  "strict": {
+   "precision": 0.4344,
+   "recall": 0.367,
+   "f1": 0.3979
+  },
+  "relaxed": {
+   "precision": 0.7522,
+   "recall": 0.6355,
+   "f1": 0.6889
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.6818,
+    "strict_f1": 0.3466,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.6882,
+    "strict_f1": 0.3871,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.6838,
+    "strict_f1": 0.4103,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.7059,
+    "strict_f1": 0.492,
+    "documents": 16
+   }
+  },
+  "refused": []
+ },
+ "editor+control_raw": {
+  "strict": {
+   "precision": 0.466,
+   "recall": 0.4729,
+   "f1": 0.4694
+  },
+  "relaxed": {
+   "precision": 0.767,
+   "recall": 0.7783,
+   "f1": 0.7726
+  },
+  "documents_scored": 64,
+  "by_band": {
+   "1861-1899": {
+    "relaxed_f1": 0.7617,
+    "strict_f1": 0.4404,
+    "documents": 18
+   },
+   "1900-1929": {
+    "relaxed_f1": 0.844,
+    "strict_f1": 0.367,
+    "documents": 15
+   },
+   "1930-1945": {
+    "relaxed_f1": 0.7717,
+    "strict_f1": 0.5197,
+    "documents": 15
+   },
+   "1946-": {
+    "relaxed_f1": 0.7551,
+    "strict_f1": 0.551,
+    "documents": 16
+   }
+  }
+ }
+}

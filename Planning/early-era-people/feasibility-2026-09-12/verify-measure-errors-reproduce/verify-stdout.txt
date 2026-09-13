@@ -1,0 +1,30 @@
+gold docs 64 mentions 406 docs naming no one 2
+loaded filtered_control distinct spans 316 raw rows in gold docs 316
+loaded filtered_sweep distinct spans 736 raw rows in gold docs 736
+loaded raw_sweep distinct spans 1003 raw rows in gold docs 1003
+loaded raw_control distinct spans 343 raw rows in gold docs 343
+loaded boundary_sweep distinct spans 976 raw rows in gold docs 976
+editor markup                relaxed hits 88 pred 88 gold 406 P 1.0000 R 0.2167 F1 0.3563 | strict hits 53 P 0.6023 R 0.1305 F1 0.2146 | FP 0 miss 318
+filtered_control             relaxed hits 256 pred 316 gold 406 P 0.8101 R 0.6305 F1 0.7091 | strict hits 149 P 0.4715 R 0.3670 F1 0.4127 | FP 60 miss 150
+filtered_sweep               relaxed hits 378 pred 736 gold 406 P 0.5136 R 0.9310 F1 0.6620 | strict hits 347 P 0.4715 R 0.8547 F1 0.6077 | FP 358 miss 28
+raw_sweep                    relaxed hits 379 pred 1003 gold 406 P 0.3779 R 0.9335 F1 0.5380 | strict hits 347 P 0.3460 R 0.8547 F1 0.4925 | FP 624 miss 27
+raw_control                  relaxed hits 258 pred 343 gold 406 P 0.7522 R 0.6355 F1 0.6889 | strict hits 149 P 0.4344 R 0.3670 F1 0.3979 | FP 85 miss 148
+boundary_sweep               relaxed hits 379 pred 976 gold 406 P 0.3883 R 0.9335 F1 0.5485 | strict hits 347 P 0.3555 R 0.8547 F1 0.5022 | FP 597 miss 27
+UNION editor+filtered_control relaxed hits 314 pred 385 gold 406 P 0.8156 R 0.7734 F1 0.7939 | strict hits 192 P 0.4987 R 0.4729 F1 0.4855 | FP 71 miss 92
+UNION editor+filtered_sweep  relaxed hits 380 pred 771 gold 406 P 0.4929 R 0.9360 F1 0.6457 | strict hits 348 P 0.4514 R 0.8571 F1 0.5913 | FP 391 miss 26
+identity vs author filtered_control FP same False |sym diff| 2 miss same True |sym diff| 0
+identity vs author filtered_sweep FP same True |sym diff| 0 miss same True |sym diff| 0
+identity vs author raw_sweep FP same False |sym diff| 2 miss same True |sym diff| 0
+identity vs author raw_control FP same False |sym diff| 10 miss same True |sym diff| 0
+control misses 150 found by filtered sweep 142 editor covers 59 editor covers by band {'1861-1899': 28, '1900-1929': 14, '1930-1945': 9, '1946-': 8} misses by band {'1861-1899': 68, '1900-1929': 23, '1930-1945': 21, '1946-': 38}
+sweep misses 28 found by filtered control 19 editor covers 2 by band {'1861-1899': 18, '1900-1929': 1, '1930-1945': 3, '1946-': 6}
+sweep misses covered by editor: [(('frus1866p3', 'd69'), 'Señor Romero'), (('frus1889', 'd339'), 'Ford')]
+gold found by neither editor nor either filtered arm: 8 [('frus1865p1', 'd93', 'WILLIAM H. SEWARD'), ('frus1866p3', 'd175', 'George Washington'), ('frus1866p3', 'd175', 'George Washington'), ('frus1872p2v5', 'd82', 'Messrs. Campbell'), ('frus1872p2v5', 'd82', 'ARCHIBALD CAMPBELL'), ('frus1888p2', 'd84', 'Aspíroz'), ('frus1946v10', 'd337', 'Chou'), ('frus1951v01', 'd410', 'King’s')]
+raw sweep misses 27 shared with filtered sweep misses 27 filtered-only misses: [(('frus1951v01', 'd410'), 'King’s', 'found by raw:', True)]
+gold spans containing 'Washington': [(('frus1866p3', 'd175'), (1289, 1306, 'George Washington'), [], False), (('frus1866p3', 'd175'), (2059, 2076, 'George Washington'), [], False)]
+author arithmetic (406-91)/406 = 0.7758620689655172 ; my union recall hits 314
+raw sweep FP 624 removed by filter (absent from filtered store) 265 survivors 359 survivors == filtered sweep FP set False
+raw sweep FP top surfaces (phrase-folded): [('secretary of state', 28), ('men', 12), ('you', 11), ('us', 11), ('washington', 10), ('jap', 10), ('polish government', 10), ('chinese', 9), ('united states', 8), ('venezuela', 8), ('secretary', 8), ('president', 7), ('acting secretary of state', 7), ('sir', 6), ('department of state', 6), ('department', 6), ('mexican government', 6), ('dept', 6), ('columbia', 5), ('powers', 5), ('officers', 5), ('japs', 5), ('chicago', 5), ('imperial government', 4), ('foreign office', 4), ('government of the united states', 4), ('american citizens', 4), ('canton', 4), ('conference', 4), ('dutch', 4)]
+raw FP 'washington' count 10 any survive filter? False
+raw-sweep spans overlapping gold that the filter removed: [(('frus1944v06', 'd93'), 'Generalissimo'), (('frus1946v06', 'd88'), 'King'), (('frus1951v01', 'd410'), 'King')]
+raw sweep distinct spans in gold docs 1003 filtered 736

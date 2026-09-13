@@ -1,0 +1,3 @@
+gazetteer entries 887
+raw sweep FP by rule (MY FP list; one pair differs from the author's by matching choice): {'institution': 50, 'title': 82, 'kept': 359, 'pronoun': 19, 'boundary': 27, 'curated': 51, 'place': 36}
+'washington' FPs by rule: {'curated': 10}

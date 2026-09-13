@@ -1,0 +1,26 @@
+sweep heads 267 control heads 267 marked heads (studio) 267 marked heads (mac) 267
+SWEEP {"docs_scanned": 197534, "docs_in_volume": 197534, "chars_scanned": 679401514, "mentions": 3656238, "novel": 3406323, "overlapping_marked": 249915, "marked_in_scanned_docs": 245747, "secs": 997807.5999999994, "chunks": 330979, "returned": 2601312, "located": 2510890, "unlocated": 88009, "truncated": 155, "failed_chunks": 0, "unparsable": 0, "prompt_tokens": 220645005, "completion_tokens": 21131474}
+CTRL {"docs_scanned": 197534, "docs_in_volume": 197534, "chars_scanned": 679401514, "mentions": 1353849, "novel": 1273179, "overlapping_marked": 80670, "marked_in_scanned_docs": 245747, "secs": 475.7999999999999, "chunks": 0, "returned": 0, "located": 0, "unlocated": 0, "truncated": 0, "failed_chunks": 0, "unparsable": 0, "prompt_tokens": 0, "completion_tokens": 0}
+sweep secs/days 997807.5999999994 11.548699074074067
+sweep sampled any? False ctrl sampled any? False
+sweep unlocated %: 3.38 truncated % of chunks: 0.047
+marked mentions (studio store) = 245747 ; mac store = 245747
+sweep overlapping/marked = 249915/245747 = 101.7%
+ctrl overlapping/marked = 80670/245747 = 32.8%
+volumes with docs_scanned mismatch between arms: 0 []
+sweep volumes docs_scanned != docs_in_volume: []
+segment1 (no failed_chunks key): 27 ['frus1861', 'frus1862', 'frus1863p1'] ... ['frus1872p2v3', 'frus1872p2v4', 'frus1872p2v5']
+seg1 vols 27 docs 13145 mentions/doc 23.27 unlocated 6.32% s/chunk 3.47
+seg2 vols 240 docs 184389 mentions/doc 18.17 unlocated 3.06% s/chunk 2.97
+seg1 all pre-1873? True max year 1872
+gold vols in seg1: ['frus1864p2', 'frus1865p1', 'frus1866p3', 'frus1872p2v5']
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/verify-read-scores-reproduce/sum_heads.py", line 45, in <module>
+    print("runs.jsonl rows",len(runs),"detected rows",len(det),"sum detected",sum(r["detected"] for r in det),"sum secs",sum(r["secs"] for r in det),"distinct vols",len({r["vol"] for r in det}))
+TypeError: unsupported operand type(s) for +: 'int' and 'dict'
+seg1 all pre-1873? True max year 1872
+gold vols in seg1: ['frus1864p2', 'frus1865p1', 'frus1866p3', 'frus1872p2v5']
+runs.jsonl rows 534 detected rows 267 distinct vols 267 sum mentions(last per vol) 3656238 sum secs(last per vol) 998015.1
+filtered heads 267 kept(sum heads) 2597043 manifest kept 2597043 rules(sum heads) {'boundary': 82167, 'curated': 193798, 'institution': 211865, 'place': 208236, 'pronoun': 22969, 'title': 340160} manifest {'boundary': 82167, 'curated': 193798, 'institution': 211865, 'place': 208236, 'pronoun': 22969, 'title': 340160} editor-overlap(sum heads) {'boundary': 69, 'curated': 71, 'institution': 25, 'place': 39, 'pronoun': 0, 'title': 213} 417
+boundary heads 267 kept(sum heads) 3574071 manifest kept 3574071 rules(sum heads) {'boundary': 82167} manifest {'boundary': 82167} editor-overlap(sum heads) {'boundary': 69} 69
+ctrl-filtered heads 267 kept(sum heads) 1261852 manifest kept 1261852 rules(sum heads) {'boundary': 404, 'curated': 49448, 'institution': 1345, 'place': 12127, 'pronoun': 154, 'title': 28519} manifest {'boundary': 404, 'curated': 49448, 'institution': 1345, 'place': 12127, 'pronoun': 154, 'title': 28519} editor-overlap(sum heads) {'boundary': 5, 'curated': 10, 'institution': 0, 'place': 3, 'pronoun': 0, 'title': 85} 103

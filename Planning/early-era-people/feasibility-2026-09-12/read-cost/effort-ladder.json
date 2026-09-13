@@ -1,0 +1,31 @@
+{
+ "note": "Effort ladder for #234 ship shapes. MEASURED = computed by slice.py / persons_rows.py in this directory; DOCUMENTED = read from the named file; INFERRED = arithmetic on measured or documented inputs.",
+ "shape_a_M1b_only": {
+  "input": "marked layer ~/frus-ner-raw/marked (267 vols, 245,747 mentions, 3.6 MB gz)",
+  "rows_measured": {"person_mentions": 223600, "persons_per_volume_distinct": 30327, "corpus_distinct_strings_lowercased": 12171},
+  "artifact_bytes_inferred": "30,327x~40 B + 223,600x~18 B ~= 5.2 MB flat JSON; ~2.5-3.5 MB with one-letter keys + per-volume grouping",
+  "machine_time": "none new (marked layer exists; generator seconds-minutes)",
+  "dollars": "0",
+  "owner_time": "none mandatory for a no-identity ship; write the synthetic-ref + force-merge-only rules (not found in any Planning file)",
+  "versions": "currentPersonRollupVersion 9->10 required; currentDateIndexVersion 50->51 ONLY if ingested at parse time (route A); route B (applyDocumentSubjectsIfNeeded pattern) avoids the ~10 min full reindex",
+  "engineering_inferred_sessions": "2-3 (calibrated on PR #737 = 2,600 adds / 25 files / 1 session)"
+ },
+ "shape_b_a_plus_filtered_NLTagger": {
+  "input": "~/frus-ner-raw-control-filtered/detected (1,261,852 mentions, 78 MB uncompressed)",
+  "rows_measured": {"ctrl_person_mentions_pairs": 761652, "union_persons_rows": 340614, "union_corpus_distinct_strings": 166453, "union_mention_pairs_upper_bound": 985252},
+  "artifact_bytes_inferred": "340,614x~45 B + ~950kx~18 B ~= 25-35 MB raw JSON -> exceeds the 19.52 MB semantic binary the project treated as a bundle decision; needs a download tier or binary",
+  "machine_time": "control 476 s (done); filter re-run minutes; generator minutes; NLTagger rows pinned to OS build 26.6.2 (25G83)",
+  "dollars": "0",
+  "owner_time": "none mandatory; M2a already keyed 64/72 (406 mentions) and the stopping rule cannot move",
+  "quality_64_docs": "union relaxed F1 0.794 (P 0.816 R 0.773); ~18% of derived mention rows are not persons (~170-180k of <=985k, INFERRED)",
+  "engineering_inferred_sessions": "+1-2 over (a)"
+ },
+ "shape_c_b_plus_identity": {
+  "owner_time": "key 300-row m1a-eval-candidates.csv (0 keyed; 100 pre-1910 / 200 post; documented estimate 2-3 h) + an unbudgeted R-3 review sitting (INFERRED 2-4 h)",
+  "machine_time": "R-2: ~3.9 h at measured 28.2 chunks/s for 1.26M 1,000-char windows (INFERRED), ~0 h if reusing stored chunk vectors; R-3 clustering CPU minutes-hours; local 8B review of the uncertain band 2-4 days Studio (ride-along 4.4)",
+  "dollars": "Haiku-class batch review of the uncertain band ~$15-60 (INFERRED from ride-along 4.4's $45-90 per 100-150k, rescaled to 33-102k identity decisions); Sonnet-class ~3x; electricity $0.30-0.75",
+  "engineering_inferred_sessions": "+4-6 over (b): R-2 runner, R-3 generator (>= app PersonClusterer's 538 lines/30 tests) + verdict artifacts, R-4 artifact, M3 seal qualification across 11 reader files"
+ },
+ "pre1910_pilot_measured": {"vols": "85/267", "docs": "53,894/197,534", "marked": "108,288/245,747 (44.1%)", "ctrl_filt": "447,257/1,261,852 (35.4%)", "sunk_sweep_days": "3.95/11.55", "eval_rows": "100/300"},
+ "pilot_verdict": "Not for (a)/(b): engineering is slice-independent, machine time is minutes, and M2a's per-band control F1 is flat (0.682-0.706 relaxed). Still right for (c): the POCOM constraint and the marked share are strongest there; cost ~35-45% of the whole for R-2/review, engineering identical."
+}

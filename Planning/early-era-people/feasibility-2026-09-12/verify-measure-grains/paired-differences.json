@@ -1,0 +1,687 @@
+{
+ "comparisons": {
+  "editor+filtered_control MINUS editor": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      0.3629,
+      0.5031
+     ],
+     "diff": 0.4377,
+     "p_le_0": 0.0
+    },
+    "relaxed_precision": {
+     "ci95": [
+      -0.264,
+      -0.1185
+     ],
+     "diff": -0.1844,
+     "p_le_0": 1.0
+    },
+    "relaxed_recall": {
+     "ci95": [
+      0.4911,
+      0.615
+     ],
+     "diff": 0.5567,
+     "p_le_0": 0.0
+    },
+    "strict_f1": {
+     "ci95": [
+      0.1982,
+      0.3383
+     ],
+     "diff": 0.2709,
+     "p_le_0": 0.0
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      0.3076,
+      0.4449
+     ],
+     "diff": 0.3803,
+     "p_le_0": 0.0
+    },
+    "precision": {
+     "ci95": [
+      -0.2391,
+      -0.1124
+     ],
+     "diff": -0.1729,
+     "p_le_0": 1.0
+    },
+    "recall": {
+     "ci95": [
+      0.4519,
+      0.5805
+     ],
+     "diff": 0.5208,
+     "p_le_0": 0.0
+    }
+   }
+  },
+  "editor+filtered_control MINUS editor+filtered_sweep": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      0.0788,
+      0.2209
+     ],
+     "diff": 0.1482,
+     "p_le_0": 0.0
+    },
+    "relaxed_precision": {
+     "ci95": [
+      0.2378,
+      0.3989
+     ],
+     "diff": 0.3227,
+     "p_le_0": 0.0
+    },
+    "relaxed_recall": {
+     "ci95": [
+      -0.2347,
+      -0.0871
+     ],
+     "diff": -0.1626,
+     "p_le_0": 1.0
+    },
+    "strict_f1": {
+     "ci95": [
+      -0.1753,
+      -0.0355
+     ],
+     "diff": -0.1059,
+     "p_le_0": 0.9981
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      0.065,
+      0.2067
+     ],
+     "diff": 0.1358,
+     "p_le_0": 0.0001
+    },
+    "precision": {
+     "ci95": [
+      0.2236,
+      0.3719
+     ],
+     "diff": 0.2997,
+     "p_le_0": 0.0
+    },
+    "recall": {
+     "ci95": [
+      -0.2204,
+      -0.0625
+     ],
+     "diff": -0.1424,
+     "p_le_0": 0.9997
+    }
+   }
+  },
+  "editor+filtered_control+filtered_sweep MINUS editor+filtered_control": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.2438,
+      -0.1314
+     ],
+     "diff": -0.1872,
+     "p_le_0": 1.0
+    },
+    "relaxed_precision": {
+     "ci95": [
+      -0.4362,
+      -0.3133
+     ],
+     "diff": -0.3763,
+     "p_le_0": 1.0
+    },
+    "relaxed_recall": {
+     "ci95": [
+      0.1537,
+      0.2632
+     ],
+     "diff": 0.2069,
+     "p_le_0": 0.0
+    },
+    "strict_f1": {
+     "ci95": [
+      0.0054,
+      0.1272
+     ],
+     "diff": 0.0679,
+     "p_le_0": 0.0167
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.2181,
+      -0.0947
+     ],
+     "diff": -0.1573,
+     "p_le_0": 1.0
+    },
+    "precision": {
+     "ci95": [
+      -0.3954,
+      -0.276
+     ],
+     "diff": -0.3358,
+     "p_le_0": 1.0
+    },
+    "recall": {
+     "ci95": [
+      0.1233,
+      0.2439
+     ],
+     "diff": 0.1806,
+     "p_le_0": 0.0
+    }
+   }
+  },
+  "editor+intersection_control_side MINUS editor+filtered_control": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.0239,
+      0.0416
+     ],
+     "diff": 0.0066,
+     "p_le_0": 0.3488
+    },
+    "relaxed_precision": {
+     "ci95": [
+      0.0197,
+      0.1352
+     ],
+     "diff": 0.0683,
+     "p_le_0": 0.0001
+    },
+    "relaxed_recall": {
+     "ci95": [
+      -0.0726,
+      -0.0153
+     ],
+     "diff": -0.0419,
+     "p_le_0": 1.0
+    },
+    "strict_f1": {
+     "ci95": [
+      -0.0297,
+      0.0222
+     ],
+     "diff": -0.003,
+     "p_le_0": 0.5768
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.0192,
+      0.0329
+     ],
+     "diff": 0.0063,
+     "p_le_0": 0.3128
+    },
+    "precision": {
+     "ci95": [
+      0.0175,
+      0.1044
+     ],
+     "diff": 0.0558,
+     "p_le_0": 0.0006
+    },
+    "recall": {
+     "ci95": [
+      -0.0658,
+      -0.0089
+     ],
+     "diff": -0.0347,
+     "p_le_0": 1.0
+    }
+   }
+  },
+  "editor+intersection_sweep_side MINUS editor": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      0.3715,
+      0.4987
+     ],
+     "diff": 0.4374,
+     "p_le_0": 0.0
+    },
+    "relaxed_precision": {
+     "ci95": [
+      -0.1821,
+      -0.1024
+     ],
+     "diff": -0.1429,
+     "p_le_0": 1.0
+    },
+    "relaxed_recall": {
+     "ci95": [
+      0.4621,
+      0.5771
+     ],
+     "diff": 0.5222,
+     "p_le_0": 0.0
+    },
+    "strict_f1": {
+     "ci95": [
+      0.396,
+      0.5127
+     ],
+     "diff": 0.4574,
+     "p_le_0": 0.0
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      0.3301,
+      0.4582
+     ],
+     "diff": 0.397,
+     "p_le_0": 0.0
+    },
+    "precision": {
+     "ci95": [
+      -0.1483,
+      -0.0579
+     ],
+     "diff": -0.102,
+     "p_le_0": 1.0
+    },
+    "recall": {
+     "ci95": [
+      0.4291,
+      0.5486
+     ],
+     "diff": 0.4931,
+     "p_le_0": 0.0
+    }
+   }
+  },
+  "editor+intersection_sweep_side MINUS editor+filtered_control": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.04,
+      0.0421
+     ],
+     "diff": -0.0003,
+     "p_le_0": 0.4996
+    },
+    "relaxed_precision": {
+     "ci95": [
+      -0.0243,
+      0.1202
+     ],
+     "diff": 0.0416,
+     "p_le_0": 0.1249
+    },
+    "relaxed_recall": {
+     "ci95": [
+      -0.0674,
+      -0.0044
+     ],
+     "diff": -0.0345,
+     "p_le_0": 0.9924
+    },
+    "strict_f1": {
+     "ci95": [
+      0.1416,
+      0.2341
+     ],
+     "diff": 0.1865,
+     "p_le_0": 0.0
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.0104,
+      0.0482
+     ],
+     "diff": 0.0168,
+     "p_le_0": 0.119
+    },
+    "precision": {
+     "ci95": [
+      0.0279,
+      0.1283
+     ],
+     "diff": 0.0709,
+     "p_le_0": 0.0002
+    },
+    "recall": {
+     "ci95": [
+      -0.0614,
+      0.0035
+     ],
+     "diff": -0.0278,
+     "p_le_0": 0.9674
+    }
+   }
+  },
+  "editor+intersection_sweep_side MINUS editor+intersection_control_side": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.0223,
+      0.0075
+     ],
+     "diff": -0.0069,
+     "p_le_0": 0.7998
+    },
+    "relaxed_precision": {
+     "ci95": [
+      -0.0615,
+      0.0065
+     ],
+     "diff": -0.0268,
+     "p_le_0": 0.9382
+    },
+    "relaxed_recall": {
+     "ci95": [
+      0.0,
+      0.0189
+     ],
+     "diff": 0.0074,
+     "p_le_0": 0.1264
+    },
+    "strict_f1": {
+     "ci95": [
+      0.1422,
+      0.2377
+     ],
+     "diff": 0.1895,
+     "p_le_0": 0.0
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      0.0014,
+      0.0218
+     ],
+     "diff": 0.0105,
+     "p_le_0": 0.0099
+    },
+    "precision": {
+     "ci95": [
+      -0.0003,
+      0.033
+     ],
+     "diff": 0.0151,
+     "p_le_0": 0.0287
+    },
+    "recall": {
+     "ci95": [
+      0.0,
+      0.0221
+     ],
+     "diff": 0.0069,
+     "p_le_0": 0.3512
+    }
+   }
+  },
+  "filtered_control MINUS filtered_sweep": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.0287,
+      0.1219
+     ],
+     "diff": 0.0471,
+     "p_le_0": 0.1111
+    },
+    "relaxed_precision": {
+     "ci95": [
+      0.2005,
+      0.3823
+     ],
+     "diff": 0.2965,
+     "p_le_0": 0.0
+    },
+    "relaxed_recall": {
+     "ci95": [
+      -0.3866,
+      -0.2125
+     ],
+     "diff": -0.3005,
+     "p_le_0": 1.0
+    },
+    "strict_f1": {
+     "ci95": [
+      -0.2668,
+      -0.1261
+     ],
+     "diff": -0.195,
+     "p_le_0": 1.0
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.0525,
+      0.0938
+     ],
+     "diff": 0.0221,
+     "p_le_0": 0.2783
+    },
+    "precision": {
+     "ci95": [
+      0.1886,
+      0.3476
+     ],
+     "diff": 0.2707,
+     "p_le_0": 0.0
+    },
+    "recall": {
+     "ci95": [
+      -0.4014,
+      -0.2284
+     ],
+     "diff": -0.316,
+     "p_le_0": 1.0
+    }
+   }
+  },
+  "intersection_control_side MINUS filtered_control": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.0341,
+      0.0336
+     ],
+     "diff": -0.0019,
+     "p_le_0": 0.5484
+    },
+    "relaxed_precision": {
+     "ci95": [
+      0.021,
+      0.1617
+     ],
+     "diff": 0.0813,
+     "p_le_0": 0.0001
+    },
+    "relaxed_recall": {
+     "ci95": [
+      -0.0749,
+      -0.018
+     ],
+     "diff": -0.0443,
+     "p_le_0": 1.0
+    },
+    "strict_f1": {
+     "ci95": [
+      -0.0371,
+      0.0171
+     ],
+     "diff": -0.0086,
+     "p_le_0": 0.7123
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.0253,
+      0.0287
+     ],
+     "diff": 0.0019,
+     "p_le_0": 0.4324
+    },
+    "precision": {
+     "ci95": [
+      0.0274,
+      0.1308
+     ],
+     "diff": 0.0726,
+     "p_le_0": 0.0
+    },
+    "recall": {
+     "ci95": [
+      -0.0658,
+      -0.0089
+     ],
+     "diff": -0.0347,
+     "p_le_0": 1.0
+    }
+   }
+  },
+  "intersection_sweep_side MINUS filtered_sweep": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.0221,
+      0.1013
+     ],
+     "diff": 0.0417,
+     "p_le_0": 0.1007
+    },
+    "relaxed_precision": {
+     "ci95": [
+      0.2829,
+      0.4182
+     ],
+     "diff": 0.3502,
+     "p_le_0": 0.0
+    },
+    "relaxed_recall": {
+     "ci95": [
+      -0.406,
+      -0.2717
+     ],
+     "diff": -0.3374,
+     "p_le_0": 1.0
+    },
+    "strict_f1": {
+     "ci95": [
+      -0.0345,
+      0.083
+     ],
+     "diff": 0.0259,
+     "p_le_0": 0.2002
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.0391,
+      0.0946
+     ],
+     "diff": 0.0302,
+     "p_le_0": 0.1845
+    },
+    "precision": {
+     "ci95": [
+      0.281,
+      0.4144
+     ],
+     "diff": 0.3473,
+     "p_le_0": 0.0
+    },
+    "recall": {
+     "ci95": [
+      -0.4149,
+      -0.2772
+     ],
+     "diff": -0.3438,
+     "p_le_0": 1.0
+    }
+   }
+  },
+  "intersection_sweep_side MINUS intersection_control_side": {
+   "mention": {
+    "relaxed_f1": {
+     "ci95": [
+      -0.0134,
+      0.0055
+     ],
+     "diff": -0.0036,
+     "p_le_0": 0.7815
+    },
+    "relaxed_precision": {
+     "ci95": [
+      -0.0543,
+      -0.0058
+     ],
+     "diff": -0.0276,
+     "p_le_0": 0.9941
+    },
+    "relaxed_recall": {
+     "ci95": [
+      0.0,
+      0.0189
+     ],
+     "diff": 0.0074,
+     "p_le_0": 0.1264
+    },
+    "strict_f1": {
+     "ci95": [
+      0.1718,
+      0.2882
+     ],
+     "diff": 0.2294,
+     "p_le_0": 0.0
+    }
+   },
+   "presence": {
+    "f1": {
+     "ci95": [
+      -0.0034,
+      0.019
+     ],
+     "diff": 0.0063,
+     "p_le_0": 0.1324
+    },
+    "precision": {
+     "ci95": [
+      -0.0147,
+      0.0224
+     ],
+     "diff": 0.004,
+     "p_le_0": 0.3302
+    },
+    "recall": {
+     "ci95": [
+      0.0,
+      0.0221
+     ],
+     "diff": 0.0069,
+     "p_le_0": 0.3512
+    }
+   }
+  }
+ },
+ "label": "POST-HOC paired bootstrap differences; same seed-234 band-stratified document resamples as grains.json; p_le_0 = share of resamples where the difference is <= 0"
+}

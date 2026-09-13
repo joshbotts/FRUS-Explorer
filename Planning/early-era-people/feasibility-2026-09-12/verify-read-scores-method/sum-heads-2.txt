@@ -1,0 +1,3 @@
+seg1 vols 27 docs 13145 chars 68428207 mentions 305819 returned 258729 unlocated 16347 chunks 30831 secs 107081 | mentions/doc 23.27 unlocated% 6.32 s/chunk 3.47
+seg2 vols 240 docs 184389 chars 610973307 mentions 3350419 returned 2342583 unlocated 71662 chunks 300148 secs 890726 | mentions/doc 18.17 unlocated% 3.06 s/chunk 2.97
+all vols 267 docs 197534 chars 679401514 mentions 3656238 returned 2601312 unlocated 88009 chunks 330979 secs 997808 | mentions/doc 18.51 unlocated% 3.38 s/chunk 3.01

@@ -1,0 +1,21 @@
+{
+ "linked_volumes": {
+  "frus1932v04": 5028,
+  "frus1917Supp02v02": 1297,
+  "frus1918Supp01v02": 2890
+ },
+ "kinds": {
+  "corresp": 10616
+ },
+ "per_volume": {
+  "frus1917Supp02v02": {
+   "corresp": 1478
+  },
+  "frus1918Supp01v02": {
+   "corresp": 3395
+  },
+  "frus1932v04": {
+   "corresp": 5743
+  }
+ }
+}

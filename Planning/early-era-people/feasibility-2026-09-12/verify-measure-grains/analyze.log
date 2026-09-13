@@ -1,0 +1,81 @@
+== 1. ranking by relaxed mention F1 vs presence F1 ==
+  editor+intersection_control_side         0.800 | editor+intersection_sweep_side           0.828
+  editor+filtered_control                  0.794 | editor+intersection_control_side         0.817
+  editor+intersection_sweep_side           0.794 | editor+filtered_control                  0.811
+  filtered_control                         0.709 | intersection_sweep_side                  0.705
+  intersection_control_side                0.707 | intersection_control_side                0.699
+  intersection_sweep_side                  0.704 | filtered_control                         0.697
+  raw_control_intersect_raw_sweep          0.697 | raw_control_intersect_raw_sweep          0.690
+  raw_control                              0.689 | raw_control                              0.677
+  filtered_sweep                           0.662 | editor+filtered_sweep                    0.675
+  editor+filtered_sweep                    0.646 | filtered_sweep                           0.675
+  editor+filtered_control+filtered_sweep   0.607 | editor+filtered_control+filtered_sweep   0.653
+  boundary_sweep                           0.548 | boundary_sweep                           0.571
+  raw_sweep                                0.538 | raw_sweep                                0.570
+  editor                                   0.356 | editor                                   0.430
+  same order: False
+== 2. grain shift presence F1 - relaxed mention F1 ==
+  boundary_sweep                           +0.022
+  editor                                   +0.074
+  editor+filtered_control                  +0.017
+  editor+filtered_control+filtered_sweep   +0.047
+  editor+filtered_sweep                    +0.029
+  editor+intersection_control_side         +0.017
+  editor+intersection_sweep_side           +0.034
+  filtered_control                         -0.012
+  filtered_sweep                           +0.013
+  intersection_control_side                -0.008
+  intersection_sweep_side                  +0.002
+  raw_control                              -0.011
+  raw_control_intersect_raw_sweep          -0.007
+  raw_sweep                                +0.032
+== 3. MG-6 per-band figures from grains.json ==
+  editor                             1861-1899 1.000/0.263/0.416; 1900-1929 1.000/0.372/0.542; 1930-1945 1.000/0.341/0.508; 1946- 1.000/0.188/0.316
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  filtered_control                   1861-1899 0.817/0.584/0.681; 1900-1929 0.963/0.605/0.743; 1930-1945 0.698/0.727/0.712; 1946- 0.765/0.625/0.688
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  filtered_sweep                     1861-1899 0.705/0.905/0.792; 1900-1929 0.452/0.977/0.618; 1930-1945 0.407/0.977/0.575; 1946- 0.448/0.938/0.606
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  intersection_control_side          1861-1899 0.959/0.533/0.685; 1900-1929 1.000/0.581/0.735; 1930-1945 0.714/0.705/0.709; 1946- 0.808/0.609/0.695
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  editor+filtered_control            1861-1899 0.845/0.766/0.804; 1900-1929 0.949/0.861/0.902; 1930-1945 0.745/0.886/0.810; 1946- 0.783/0.750/0.766
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  editor+intersection_control_side   1861-1899 0.958/0.715/0.819; 1900-1929 0.973/0.837/0.900; 1930-1945 0.740/0.864/0.797; 1946- 0.821/0.734/0.775
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  editor+intersection_sweep_side     1861-1899 0.980/0.715/0.827; 1900-1929 0.973/0.837/0.900; 1930-1945 0.745/0.864/0.800; 1946- 0.842/0.766/0.802
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  editor+filtered_sweep              1861-1899 0.705/0.912/0.795; 1900-1929 0.447/0.977/0.613; 1930-1945 0.407/0.977/0.575; 1946- 0.448/0.938/0.606
+     gold keys per band: {'1861-1899': 137, '1900-1929': 43, '1930-1945': 44, '1946-': 64} docs {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+  editor+int_ctrl 1930-1945 P ci: [0.6274, 0.8837]
+== 4. MG-2 mention per band, intersection_control_side ==
+   1861-1899 18 {'f1': 0.723, 'gold': 186, 'hits': 107, 'precision': 0.9727, 'predicted': 110, 'recall': 0.5753} [0.9231, 1.0]
+   1900-1929 15 {'f1': 0.7209, 'gold': 55, 'hits': 31, 'precision': 1.0, 'predicted': 31, 'recall': 0.5636} [1.0, 1.0]
+   1930-1945 15 {'f1': 0.6607, 'gold': 61, 'hits': 37, 'precision': 0.7255, 'predicted': 51, 'recall': 0.6066} [0.5652, 0.9091]
+   1946- 16 {'f1': 0.7039, 'gold': 104, 'hits': 63, 'precision': 0.84, 'predicted': 75, 'recall': 0.6058} [0.7722, 0.9254]
+  overall predicted: 267 279 editor+fc: 385 3way: 906
+== 5. band of false keys, intersection_control_side ==
+   1861-1899 3 ['fort anderson', 'wilmington', 'jno']
+   1930-1945 12 ['seville', 'harding', 'hunzedal', 'rudolf', 'wolf', 'puerto caballo', 'dutch timor', 'british malaya', 'medan', 'kunming', 'shensi', 'tungkuan']
+   1946- 9 ['zecho', 'mother', 'north kiangsu', 'yellow river', 'fuhsin', 'peipiao', 'takao', 'delga', 'telegram delga']
+== 6. missed gold pairs of intersection_sweep_side: band + text position ==
+  missed pairs by band: {'1861-1899': 64, '1900-1929': 18, '1930-1945': 13, '1946-': 23}
+  missed gold mentions under missed keys: 141 in last 10% of doc: 28 (19.9%)
+  all gold mentions in last 10%: 87 of 406 (21.4%)
+  seward/bayard/hay/w.h.seward/adams missed mentions: 28, in last 10%: 2, bands Counter({'1861-1899': 22, '1900-1929': 6})
+  int_sweep misses subset of fc misses: False fc misses subset of int_sweep misses: False | extra beyond fc: 11 ['frus1865p1/d93: mayor macbeth', 'frus1865p1/d93: q. a. gillmore', 'frus1865p1/d93: schimmelpfennig', 'frus1872p2v5/d82: parke', 'frus1888p2/d84: allen', 'frus1888p2/d84: glasier', 'frus1888p2/d84: lola willis', 'frus1905/d447: george', 'frus1941v05/d756: luce', 'frus1946v10/d337: chang hsuehliang', 'frus1951v01/d183: pres truman']
+  int_ctrl misses ⊇ fc misses: True extra: 10
+== 7. key-identity presence variant (pred key true only if EQUAL to a gold key in the doc) ==
+  editor                                   P 0.975 R 0.267 F1 0.420 (tp 77 fp 2 fn 211) | report presence P 1.000 R 0.274 F1 0.430
+  filtered_control                         P 0.668 R 0.497 F1 0.570 (tp 143 fp 71 fn 145) | report presence P 0.799 R 0.618 F1 0.697
+  filtered_sweep                           P 0.521 R 0.924 F1 0.666 (tp 266 fp 245 fn 22) | report presence P 0.528 R 0.934 F1 0.675
+  intersection_control_side                P 0.733 R 0.476 F1 0.577 (tp 137 fp 50 fn 151) | report presence P 0.872 R 0.583 F1 0.699
+  intersection_sweep_side                  P 0.876 R 0.587 F1 0.703 (tp 169 fp 24 fn 119) | report presence P 0.876 R 0.590 F1 0.705
+  editor+filtered_control                  P 0.726 R 0.670 F1 0.697 (tp 193 fp 73 fn 95) | report presence P 0.827 R 0.795 F1 0.811
+  editor+intersection_control_side         P 0.782 R 0.649 F1 0.710 (tp 187 fp 52 fn 101) | report presence P 0.883 R 0.760 F1 0.817
+  editor+intersection_sweep_side           P 0.894 R 0.760 F1 0.822 (tp 219 fp 26 fn 69) | report presence P 0.898 R 0.767 F1 0.828
+  editor+filtered_sweep                    P 0.520 R 0.924 F1 0.665 (tp 266 fp 246 fn 22) | report presence P 0.527 R 0.938 F1 0.675
+  editor+filtered_control+filtered_sweep   P 0.481 R 0.958 F1 0.640 (tp 276 fp 298 fn 12) | report presence P 0.491 R 0.976 F1 0.653
+== 8. same-person gold key over-count: gold keys that are a token-suffix of another gold key in the same document ==
+  gold keys 288 that are a suffix of another gold key in same doc: 46 [('seward', 'william h. seward'), ('lyons', 'right hon. lord lyons'), ('seward', 'william h. seward'), ('welles', 'gideon welles'), ('adams', 'charles francis adams'), ('seward', 'william ii. seward'), ('adams', 'charles francis adams'), ('seward', 'william h. seward'), ('adams', 'charles francis adams'), ('seward', 'william h. seward'), ('adams', 'charles francis adams'), ('seward', 'william h. seward'), ('burton', 'allan a. burton'), ('mendoza', 'rafael mendoza'), ('seward', 'william h. seward')]
+  gold docs with >1 key sharing a last token: 27
+  gold keys collapsed by last token: 238 vs 288

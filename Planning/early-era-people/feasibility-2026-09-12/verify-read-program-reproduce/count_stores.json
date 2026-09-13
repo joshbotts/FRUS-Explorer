@@ -1,0 +1,99 @@
+{
+ "scope_json_volumes": 267,
+ "scope_keys": [
+  "generated",
+  "rule",
+  "manifest_volumes",
+  "volumes_without_editor_list",
+  "volumes_with_editor_list",
+  "volumes_missing_from_disk",
+  "volumes"
+ ],
+ "marked": {
+  "files": 267,
+  "rows": 245747,
+  "rows_with_corresp": 9215,
+  "keys": {
+   "d": 245747,
+   "o": 245747,
+   "s": 245747,
+   "e": 245747,
+   "n": 245747,
+   "t": 245747,
+   "x": 245747,
+   "c": 245747
+  },
+  "by_type": {
+   "?": 245747
+  }
+ },
+ "text_layer_docs_in_scope": {
+  "docs": 197534,
+  "missing_volumes": []
+ },
+ "text_layer_volume_files": 553,
+ "sweep_raw_studio": {
+  "jsonl_files": 267,
+  "head_files": 267,
+  "rows": 3656238,
+  "head_mentions_sum": 3656238,
+  "head_docs_sum": 0,
+  "sampled": {
+   "False": 267
+  },
+  "all_files_in_dir": 534
+ },
+ "sweep_filtered": {
+  "jsonl_files": 267,
+  "head_files": 267,
+  "rows": 2597043,
+  "head_mentions_sum": 2597043,
+  "head_docs_sum": 0,
+  "sampled": {
+   "False": 267
+  },
+  "all_files_in_dir": 534
+ },
+ "sweep_boundary": {
+  "jsonl_files": 267,
+  "head_files": 267,
+  "rows": 3574071,
+  "head_mentions_sum": 3574071,
+  "head_docs_sum": 0,
+  "sampled": {
+   "False": 267
+  },
+  "all_files_in_dir": 534
+ },
+ "control": {
+  "jsonl_files": 267,
+  "head_files": 267,
+  "rows": 1353849,
+  "head_mentions_sum": 1353849,
+  "head_docs_sum": 0,
+  "sampled": {
+   "False": 267
+  },
+  "all_files_in_dir": 534
+ },
+ "control_filtered": {
+  "jsonl_files": 267,
+  "head_files": 267,
+  "rows": 1261852,
+  "head_mentions_sum": 1261852,
+  "head_docs_sum": 0,
+  "sampled": {
+   "False": 267
+  },
+  "all_files_in_dir": 534
+ },
+ "local_frus_ner_raw_detected": {
+  "jsonl_files": 0,
+  "head_files": 0,
+  "rows": 0,
+  "head_mentions_sum": 0,
+  "head_docs_sum": 0,
+  "sampled": {},
+  "all_files_in_dir": 0
+ }
+}

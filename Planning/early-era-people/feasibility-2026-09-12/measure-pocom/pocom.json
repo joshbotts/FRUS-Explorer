@@ -1,0 +1,3739 @@
+{
+ "by_band": {
+  "1861-1899": {
+   "marked_all": {
+    "distinct_surface": {
+     "n": 5529,
+     "share_surname_known": 0.2793,
+     "share_unique_by_union_window": 0.1013,
+     "surname_known": 1544,
+     "unique_by_union_window": 560
+    },
+    "document_x_surface": {
+     "n": 71984,
+     "share_surname_known": 0.7957,
+     "share_unique_by_volume_window": 0.5337,
+     "surname_known": 57279,
+     "unique_by_volume_window": 38418
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 350,
+     "k2_key_empty_after_stripping": 215,
+     "known_but_nobody_in_office_that_year": 8781,
+     "known_several_in_office_that_year": 12036,
+     "known_single_token_surface": 43882,
+     "n": 85578,
+     "share_surname_known": 0.7793,
+     "share_surname_known_among_dated": 0.7793,
+     "share_surname_known_over_with_surname": 0.782,
+     "share_unique_by_document_year_among_dated": 0.536,
+     "share_unique_by_document_year_over_with_surname": 0.5379,
+     "share_unique_by_volume_window": 0.5239,
+     "surname_known": 66690,
+     "surname_known_among_dated": 66690,
+     "top_15_known_surnames": [
+      [
+       "Seward",
+       9574
+      ],
+      [
+       "Bayard",
+       3787
+      ],
+      [
+       "Fish",
+       3331
+      ],
+      [
+       "Adams",
+       2317
+      ],
+      [
+       "Gresham",
+       2298
+      ],
+      [
+       "Blaine",
+       2117
+      ],
+      [
+       "Evarts",
+       2083
+      ],
+      [
+       "Olney",
+       1604
+      ],
+      [
+       "Frelinghuysen",
+       1542
+      ],
+      [
+       "Foster",
+       1112
+      ],
+      [
+       "Denby",
+       1067
+      ],
+      [
+       "Hay",
+       1050
+      ],
+      [
+       "Sherman",
+       902
+      ],
+      [
+       "Romero",
+       661
+      ],
+      [
+       "Dayton",
+       653
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Bayard",
+       3784
+      ],
+      [
+       "Fish",
+       2913
+      ],
+      [
+       "Adams",
+       2314
+      ],
+      [
+       "Gresham",
+       2295
+      ],
+      [
+       "Evarts",
+       2074
+      ],
+      [
+       "Olney",
+       1603
+      ],
+      [
+       "Blaine",
+       1568
+      ],
+      [
+       "Frelinghuysen",
+       1541
+      ],
+      [
+       "Foster",
+       1083
+      ],
+      [
+       "Denby",
+       1067
+      ],
+      [
+       "Hay",
+       1033
+      ],
+      [
+       "Sherman",
+       874
+      ],
+      [
+       "Dayton",
+       641
+      ],
+      [
+       "Hunter",
+       615
+      ],
+      [
+       "Uhl",
+       554
+      ]
+     ],
+     "unique_by_document_year_among_dated": 45873,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4413,
+     "unique_by_volume_window": 44833,
+     "unique_doc_single_token_surface": 36307,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 601,
+      "proxy_loses_unique (doc-year unique, window not)": 1641
+     },
+     "with_surname_m1a_denominator": 85279,
+     "with_tei_document_year": 85578
+    },
+    "volume_x_surface": {
+     "n": 9789,
+     "share_surname_known": 0.425,
+     "share_unique_by_volume_window": 0.1835,
+     "surname_known": 4160,
+     "unique_by_volume_window": 1796
+    }
+   },
+   "marked_fromto": {
+    "distinct_surface": {
+     "n": 5109,
+     "share_surname_known": 0.2791,
+     "share_unique_by_union_window": 0.1018,
+     "surname_known": 1426,
+     "unique_by_union_window": 520
+    },
+    "document_x_surface": {
+     "n": 70795,
+     "share_surname_known": 0.7985,
+     "share_unique_by_volume_window": 0.5349,
+     "surname_known": 56529,
+     "unique_by_volume_window": 37871
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 350,
+     "k2_key_empty_after_stripping": 215,
+     "known_but_nobody_in_office_that_year": 8595,
+     "known_several_in_office_that_year": 11995,
+     "known_single_token_surface": 43850,
+     "n": 84234,
+     "share_surname_known": 0.7817,
+     "share_surname_known_among_dated": 0.7817,
+     "share_surname_known_over_with_surname": 0.7845,
+     "share_unique_by_document_year_among_dated": 0.5373,
+     "share_unique_by_document_year_over_with_surname": 0.5392,
+     "share_unique_by_volume_window": 0.525,
+     "surname_known": 65848,
+     "surname_known_among_dated": 65848,
+     "top_15_known_surnames": [
+      [
+       "Seward",
+       9551
+      ],
+      [
+       "Bayard",
+       3546
+      ],
+      [
+       "Fish",
+       3331
+      ],
+      [
+       "Adams",
+       2308
+      ],
+      [
+       "Gresham",
+       2298
+      ],
+      [
+       "Blaine",
+       2115
+      ],
+      [
+       "Evarts",
+       2082
+      ],
+      [
+       "Olney",
+       1604
+      ],
+      [
+       "Frelinghuysen",
+       1542
+      ],
+      [
+       "Foster",
+       1112
+      ],
+      [
+       "Hay",
+       1050
+      ],
+      [
+       "Denby",
+       980
+      ],
+      [
+       "Sherman",
+       902
+      ],
+      [
+       "Romero",
+       660
+      ],
+      [
+       "Dayton",
+       651
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Bayard",
+       3543
+      ],
+      [
+       "Fish",
+       2913
+      ],
+      [
+       "Adams",
+       2305
+      ],
+      [
+       "Gresham",
+       2295
+      ],
+      [
+       "Evarts",
+       2074
+      ],
+      [
+       "Olney",
+       1603
+      ],
+      [
+       "Blaine",
+       1566
+      ],
+      [
+       "Frelinghuysen",
+       1541
+      ],
+      [
+       "Foster",
+       1083
+      ],
+      [
+       "Hay",
+       1033
+      ],
+      [
+       "Denby",
+       980
+      ],
+      [
+       "Sherman",
+       874
+      ],
+      [
+       "Dayton",
+       639
+      ],
+      [
+       "Hunter",
+       611
+      ],
+      [
+       "Uhl",
+       554
+      ]
+     ],
+     "unique_by_document_year_among_dated": 45258,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4409,
+     "unique_by_volume_window": 44224,
+     "unique_doc_single_token_surface": 36283,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 595,
+      "proxy_loses_unique (doc-year unique, window not)": 1629
+     },
+     "with_surname_m1a_denominator": 83936,
+     "with_tei_document_year": 84234
+    },
+    "volume_x_surface": {
+     "n": 9342,
+     "share_surname_known": 0.4312,
+     "share_unique_by_volume_window": 0.1874,
+     "surname_known": 4028,
+     "unique_by_volume_window": 1751
+    }
+   },
+   "novel_control": {
+    "distinct_surface": {
+     "n": 54966,
+     "share_surname_known": 0.1705,
+     "share_unique_by_union_window": 0.031,
+     "surname_known": 9369,
+     "unique_by_union_window": 1703
+    },
+    "document_x_surface": {
+     "n": 173846,
+     "share_surname_known": 0.3582,
+     "share_unique_by_volume_window": 0.1291,
+     "surname_known": 62275,
+     "unique_by_volume_window": 22446
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 350,
+     "k2_key_empty_after_stripping": 123,
+     "known_but_nobody_in_office_that_year": 68090,
+     "known_several_in_office_that_year": 6065,
+     "known_single_token_surface": 35781,
+     "n": 315060,
+     "share_surname_known": 0.3199,
+     "share_surname_known_among_dated": 0.3199,
+     "share_surname_known_over_with_surname": 0.3245,
+     "share_unique_by_document_year_among_dated": 0.0845,
+     "share_unique_by_document_year_over_with_surname": 0.0857,
+     "share_unique_by_volume_window": 0.0946,
+     "surname_known": 100787,
+     "surname_known_among_dated": 100787,
+     "top_15_known_surnames": [
+      [
+       "Seward",
+       5322
+      ],
+      [
+       "Adams",
+       4151
+      ],
+      [
+       "Lincoln",
+       2859
+      ],
+      [
+       "Russell",
+       2817
+      ],
+      [
+       "Bayard",
+       1514
+      ],
+      [
+       "John",
+       1328
+      ],
+      [
+       "Smith",
+       1270
+      ],
+      [
+       "Johnson",
+       1157
+      ],
+      [
+       "Blaine",
+       866
+      ],
+      [
+       "Romero",
+       781
+      ],
+      [
+       "Stevens",
+       763
+      ],
+      [
+       "Jones",
+       736
+      ],
+      [
+       "Olney",
+       734
+      ],
+      [
+       "Grant",
+       729
+      ],
+      [
+       "Davis",
+       687
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Adams",
+       2725
+      ],
+      [
+       "Bayard",
+       1496
+      ],
+      [
+       "Olney",
+       724
+      ],
+      [
+       "Stevens",
+       707
+      ],
+      [
+       "Blaine",
+       659
+      ],
+      [
+       "Uhl",
+       607
+      ],
+      [
+       "Denby",
+       560
+      ],
+      [
+       "Adee",
+       475
+      ],
+      [
+       "Smith",
+       474
+      ],
+      [
+       "Egan",
+       416
+      ],
+      [
+       "Dayton",
+       380
+      ],
+      [
+       "Terrell",
+       379
+      ],
+      [
+       "Bigelow",
+       368
+      ],
+      [
+       "Sherman",
+       363
+      ],
+      [
+       "Baker",
+       343
+      ]
+     ],
+     "unique_by_document_year_among_dated": 26632,
+     "unique_by_document_year_share_in_top_10_surnames": 0.332,
+     "unique_by_volume_window": 29796,
+     "unique_doc_single_token_surface": 5694,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 5378,
+      "proxy_loses_unique (doc-year unique, window not)": 2214
+     },
+     "with_surname_m1a_denominator": 310594,
+     "with_tei_document_year": 315060
+    },
+    "volume_x_surface": {
+     "n": 92929,
+     "share_surname_known": 0.2387,
+     "share_unique_by_volume_window": 0.0486,
+     "surname_known": 22180,
+     "unique_by_volume_window": 4520
+    }
+   },
+   "union": {
+    "distinct_surface": {
+     "n": 57626,
+     "share_surname_known": 0.1748,
+     "share_unique_by_union_window": 0.0338,
+     "surname_known": 10073,
+     "unique_by_union_window": 1946
+    },
+    "document_x_surface": {
+     "n": 232538,
+     "share_surname_known": 0.4744,
+     "share_unique_by_volume_window": 0.2453,
+     "surname_known": 110315,
+     "unique_by_volume_window": 57035
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 374,
+     "k2_key_empty_after_stripping": 338,
+     "known_but_nobody_in_office_that_year": 76871,
+     "known_several_in_office_that_year": 18101,
+     "known_single_token_surface": 79663,
+     "n": 400638,
+     "share_surname_known": 0.418,
+     "share_surname_known_among_dated": 0.418,
+     "share_surname_known_over_with_surname": 0.4231,
+     "share_unique_by_document_year_among_dated": 0.181,
+     "share_unique_by_document_year_over_with_surname": 0.1832,
+     "share_unique_by_volume_window": 0.1863,
+     "surname_known": 167477,
+     "surname_known_among_dated": 167477,
+     "top_15_known_surnames": [
+      [
+       "Seward",
+       14896
+      ],
+      [
+       "Adams",
+       6468
+      ],
+      [
+       "Bayard",
+       5301
+      ],
+      [
+       "Fish",
+       3751
+      ],
+      [
+       "Russell",
+       3415
+      ],
+      [
+       "Lincoln",
+       3016
+      ],
+      [
+       "Blaine",
+       2983
+      ],
+      [
+       "Gresham",
+       2676
+      ],
+      [
+       "Evarts",
+       2453
+      ],
+      [
+       "Olney",
+       2338
+      ],
+      [
+       "Frelinghuysen",
+       1777
+      ],
+      [
+       "Denby",
+       1627
+      ],
+      [
+       "Sherman",
+       1555
+      ],
+      [
+       "Romero",
+       1442
+      ],
+      [
+       "Smith",
+       1427
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Bayard",
+       5280
+      ],
+      [
+       "Adams",
+       5039
+      ],
+      [
+       "Fish",
+       3241
+      ],
+      [
+       "Gresham",
+       2628
+      ],
+      [
+       "Olney",
+       2327
+      ],
+      [
+       "Evarts",
+       2289
+      ],
+      [
+       "Blaine",
+       2227
+      ],
+      [
+       "Frelinghuysen",
+       1724
+      ],
+      [
+       "Denby",
+       1627
+      ],
+      [
+       "Hay",
+       1348
+      ],
+      [
+       "Foster",
+       1307
+      ],
+      [
+       "Sherman",
+       1237
+      ],
+      [
+       "Uhl",
+       1161
+      ],
+      [
+       "Dayton",
+       1021
+      ],
+      [
+       "Stevens",
+       954
+      ]
+     ],
+     "unique_by_document_year_among_dated": 72505,
+     "unique_by_document_year_share_in_top_10_surnames": 0.3825,
+     "unique_by_volume_window": 74629,
+     "unique_doc_single_token_surface": 42001,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 5979,
+      "proxy_loses_unique (doc-year unique, window not)": 3855
+     },
+     "with_surname_m1a_denominator": 395873,
+     "with_tei_document_year": 400638
+    },
+    "volume_x_surface": {
+     "n": 97616,
+     "share_surname_known": 0.2444,
+     "share_unique_by_volume_window": 0.0535,
+     "surname_known": 23858,
+     "unique_by_volume_window": 5224
+    }
+   }
+  },
+  "1900-1929": {
+   "marked_all": {
+    "distinct_surface": {
+     "n": 3206,
+     "share_surname_known": 0.2817,
+     "share_unique_by_union_window": 0.0995,
+     "surname_known": 903,
+     "unique_by_union_window": 319
+    },
+    "document_x_surface": {
+     "n": 47253,
+     "share_surname_known": 0.7779,
+     "share_unique_by_volume_window": 0.5389,
+     "surname_known": 36758,
+     "unique_by_volume_window": 25463
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 245,
+     "k2_key_empty_after_stripping": 90,
+     "known_but_nobody_in_office_that_year": 10432,
+     "known_several_in_office_that_year": 2385,
+     "known_single_token_surface": 39937,
+     "n": 53083,
+     "share_surname_known": 0.7721,
+     "share_surname_known_among_dated": 0.7721,
+     "share_surname_known_over_with_surname": 0.775,
+     "share_unique_by_document_year_among_dated": 0.5306,
+     "share_unique_by_document_year_over_with_surname": 0.5326,
+     "share_unique_by_volume_window": 0.5361,
+     "surname_known": 40985,
+     "surname_known_among_dated": 40985,
+     "top_15_known_surnames": [
+      [
+       "Hay",
+       3822
+      ],
+      [
+       "MacMurray",
+       1662
+      ],
+      [
+       "Wilson",
+       1473
+      ],
+      [
+       "Conger",
+       822
+      ],
+      [
+       "Reinsch",
+       732
+      ],
+      [
+       "Rockhill",
+       729
+      ],
+      [
+       "Page",
+       724
+      ],
+      [
+       "Schurman",
+       682
+      ],
+      [
+       "Herrick",
+       561
+      ],
+      [
+       "Fletcher",
+       540
+      ],
+      [
+       "Russell",
+       535
+      ],
+      [
+       "Davis",
+       512
+      ],
+      [
+       "Leishman",
+       492
+      ],
+      [
+       "Lansing",
+       484
+      ],
+      [
+       "White",
+       436
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Hay",
+       3822
+      ],
+      [
+       "MacMurray",
+       1544
+      ],
+      [
+       "Conger",
+       813
+      ],
+      [
+       "Reinsch",
+       731
+      ],
+      [
+       "Schurman",
+       682
+      ],
+      [
+       "Herrick",
+       561
+      ],
+      [
+       "Rockhill",
+       550
+      ],
+      [
+       "Fletcher",
+       493
+      ],
+      [
+       "Leishman",
+       492
+      ],
+      [
+       "Wilson",
+       484
+      ],
+      [
+       "Lansing",
+       482
+      ],
+      [
+       "Russell",
+       414
+      ],
+      [
+       "Summerlin",
+       410
+      ],
+      [
+       "Wallace",
+       410
+      ],
+      [
+       "Eberhardt",
+       399
+      ]
+     ],
+     "unique_by_document_year_among_dated": 28168,
+     "unique_by_document_year_share_in_top_10_surnames": 0.3611,
+     "unique_by_volume_window": 28459,
+     "unique_doc_single_token_surface": 27979,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 1323,
+      "proxy_loses_unique (doc-year unique, window not)": 1032
+     },
+     "with_surname_m1a_denominator": 52886,
+     "with_tei_document_year": 53083
+    },
+    "volume_x_surface": {
+     "n": 6913,
+     "share_surname_known": 0.4993,
+     "share_unique_by_volume_window": 0.2442,
+     "surname_known": 3452,
+     "unique_by_volume_window": 1688
+    }
+   },
+   "marked_fromto": {
+    "distinct_surface": {
+     "n": 2838,
+     "share_surname_known": 0.2826,
+     "share_unique_by_union_window": 0.1036,
+     "surname_known": 802,
+     "unique_by_union_window": 294
+    },
+    "document_x_surface": {
+     "n": 44888,
+     "share_surname_known": 0.7916,
+     "share_unique_by_volume_window": 0.5526,
+     "surname_known": 35533,
+     "unique_by_volume_window": 24805
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 245,
+     "k2_key_empty_after_stripping": 90,
+     "known_but_nobody_in_office_that_year": 9568,
+     "known_several_in_office_that_year": 2201,
+     "known_single_token_surface": 38364,
+     "n": 49602,
+     "share_surname_known": 0.7869,
+     "share_surname_known_among_dated": 0.7869,
+     "share_surname_known_over_with_surname": 0.7897,
+     "share_unique_by_document_year_among_dated": 0.5496,
+     "share_unique_by_document_year_over_with_surname": 0.5516,
+     "share_unique_by_volume_window": 0.5549,
+     "surname_known": 39030,
+     "surname_known_among_dated": 39030,
+     "top_15_known_surnames": [
+      [
+       "Hay",
+       3822
+      ],
+      [
+       "MacMurray",
+       1662
+      ],
+      [
+       "Wilson",
+       1425
+      ],
+      [
+       "Conger",
+       822
+      ],
+      [
+       "Reinsch",
+       732
+      ],
+      [
+       "Rockhill",
+       729
+      ],
+      [
+       "Schurman",
+       681
+      ],
+      [
+       "Page",
+       576
+      ],
+      [
+       "Herrick",
+       561
+      ],
+      [
+       "Fletcher",
+       540
+      ],
+      [
+       "Russell",
+       535
+      ],
+      [
+       "Davis",
+       496
+      ],
+      [
+       "Leishman",
+       492
+      ],
+      [
+       "White",
+       423
+      ],
+      [
+       "Summerlin",
+       422
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Hay",
+       3822
+      ],
+      [
+       "MacMurray",
+       1544
+      ],
+      [
+       "Conger",
+       813
+      ],
+      [
+       "Reinsch",
+       731
+      ],
+      [
+       "Schurman",
+       681
+      ],
+      [
+       "Herrick",
+       561
+      ],
+      [
+       "Rockhill",
+       550
+      ],
+      [
+       "Fletcher",
+       493
+      ],
+      [
+       "Leishman",
+       492
+      ],
+      [
+       "Wilson",
+       466
+      ],
+      [
+       "Russell",
+       414
+      ],
+      [
+       "Summerlin",
+       410
+      ],
+      [
+       "Wallace",
+       410
+      ],
+      [
+       "Eberhardt",
+       399
+      ],
+      [
+       "Price",
+       374
+      ]
+     ],
+     "unique_by_document_year_among_dated": 27261,
+     "unique_by_document_year_share_in_top_10_surnames": 0.3724,
+     "unique_by_volume_window": 27522,
+     "unique_doc_single_token_surface": 27176,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 1273,
+      "proxy_loses_unique (doc-year unique, window not)": 1012
+     },
+     "with_surname_m1a_denominator": 49422,
+     "with_tei_document_year": 49602
+    },
+    "volume_x_surface": {
+     "n": 6401,
+     "share_surname_known": 0.5105,
+     "share_unique_by_volume_window": 0.2562,
+     "surname_known": 3268,
+     "unique_by_volume_window": 1640
+    }
+   },
+   "novel_control": {
+    "distinct_surface": {
+     "n": 37065,
+     "share_surname_known": 0.1461,
+     "share_unique_by_union_window": 0.0291,
+     "surname_known": 5416,
+     "unique_by_union_window": 1077
+    },
+    "document_x_surface": {
+     "n": 145044,
+     "share_surname_known": 0.3407,
+     "share_unique_by_volume_window": 0.1441,
+     "surname_known": 49417,
+     "unique_by_volume_window": 20898
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 263,
+     "k2_key_empty_after_stripping": 221,
+     "known_but_nobody_in_office_that_year": 43783,
+     "known_several_in_office_that_year": 3047,
+     "known_single_token_surface": 34850,
+     "n": 239824,
+     "share_surname_known": 0.328,
+     "share_surname_known_among_dated": 0.328,
+     "share_surname_known_over_with_surname": 0.3333,
+     "share_unique_by_document_year_among_dated": 0.1328,
+     "share_unique_by_document_year_over_with_surname": 0.1349,
+     "share_unique_by_volume_window": 0.1335,
+     "surname_known": 78671,
+     "surname_known_among_dated": 78671,
+     "top_15_known_surnames": [
+      [
+       "Wilson",
+       6077
+      ],
+      [
+       "George",
+       3482
+      ],
+      [
+       "Lansing",
+       2712
+      ],
+      [
+       "Polk",
+       1774
+      ],
+      [
+       "Bryan",
+       1354
+      ],
+      [
+       "MacMurray",
+       1327
+      ],
+      [
+       "Knox",
+       1325
+      ],
+      [
+       "White",
+       1162
+      ],
+      [
+       "Hay",
+       1095
+      ],
+      [
+       "Adee",
+       950
+      ],
+      [
+       "Root",
+       936
+      ],
+      [
+       "Davis",
+       921
+      ],
+      [
+       "Hughes",
+       917
+      ],
+      [
+       "Hoover",
+       861
+      ],
+      [
+       "Diaz",
+       850
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Wilson",
+       4163
+      ],
+      [
+       "Lansing",
+       2686
+      ],
+      [
+       "Polk",
+       1755
+      ],
+      [
+       "Knox",
+       1272
+      ],
+      [
+       "MacMurray",
+       1211
+      ],
+      [
+       "Bryan",
+       1072
+      ],
+      [
+       "Hay",
+       1061
+      ],
+      [
+       "Adee",
+       950
+      ],
+      [
+       "Hughes",
+       787
+      ],
+      [
+       "Root",
+       778
+      ],
+      [
+       "Stimson",
+       594
+      ],
+      [
+       "Fletcher",
+       581
+      ],
+      [
+       "Reinsch",
+       577
+      ],
+      [
+       "Leishman",
+       501
+      ],
+      [
+       "Schurman",
+       466
+      ]
+     ],
+     "unique_by_document_year_among_dated": 31841,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4942,
+     "unique_by_volume_window": 32026,
+     "unique_doc_single_token_surface": 14197,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 2889,
+      "proxy_loses_unique (doc-year unique, window not)": 2704
+     },
+     "with_surname_m1a_denominator": 236031,
+     "with_tei_document_year": 239824
+    },
+    "volume_x_surface": {
+     "n": 65009,
+     "share_surname_known": 0.2145,
+     "share_unique_by_volume_window": 0.0545,
+     "surname_known": 13947,
+     "unique_by_volume_window": 3542
+    }
+   },
+   "union": {
+    "distinct_surface": {
+     "n": 38273,
+     "share_surname_known": 0.1483,
+     "share_unique_by_union_window": 0.0304,
+     "surname_known": 5674,
+     "unique_by_union_window": 1162
+    },
+    "document_x_surface": {
+     "n": 182445,
+     "share_surname_known": 0.4301,
+     "share_unique_by_volume_window": 0.2213,
+     "surname_known": 78475,
+     "unique_by_volume_window": 40371
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 276,
+     "k2_key_empty_after_stripping": 311,
+     "known_but_nobody_in_office_that_year": 54215,
+     "known_several_in_office_that_year": 5432,
+     "known_single_token_surface": 74787,
+     "n": 292907,
+     "share_surname_known": 0.4085,
+     "share_surname_known_among_dated": 0.4085,
+     "share_surname_known_over_with_surname": 0.4142,
+     "share_unique_by_document_year_among_dated": 0.2049,
+     "share_unique_by_document_year_over_with_surname": 0.2077,
+     "share_unique_by_volume_window": 0.2065,
+     "surname_known": 119656,
+     "surname_known_among_dated": 119656,
+     "top_15_known_surnames": [
+      [
+       "Wilson",
+       7550
+      ],
+      [
+       "Hay",
+       4917
+      ],
+      [
+       "George",
+       3493
+      ],
+      [
+       "Lansing",
+       3196
+      ],
+      [
+       "MacMurray",
+       2989
+      ],
+      [
+       "Polk",
+       1970
+      ],
+      [
+       "White",
+       1598
+      ],
+      [
+       "Bryan",
+       1479
+      ],
+      [
+       "Davis",
+       1433
+      ],
+      [
+       "Reinsch",
+       1346
+      ],
+      [
+       "Knox",
+       1338
+      ],
+      [
+       "Adee",
+       1261
+      ],
+      [
+       "Fletcher",
+       1153
+      ],
+      [
+       "Schurman",
+       1148
+      ],
+      [
+       "Conger",
+       1075
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Hay",
+       4883
+      ],
+      [
+       "Wilson",
+       4647
+      ],
+      [
+       "Lansing",
+       3168
+      ],
+      [
+       "MacMurray",
+       2755
+      ],
+      [
+       "Polk",
+       1951
+      ],
+      [
+       "Reinsch",
+       1308
+      ],
+      [
+       "Knox",
+       1282
+      ],
+      [
+       "Adee",
+       1261
+      ],
+      [
+       "Bryan",
+       1195
+      ],
+      [
+       "Schurman",
+       1148
+      ],
+      [
+       "Fletcher",
+       1074
+      ],
+      [
+       "Conger",
+       1052
+      ],
+      [
+       "Leishman",
+       993
+      ],
+      [
+       "Hughes",
+       787
+      ],
+      [
+       "Root",
+       785
+      ]
+     ],
+     "unique_by_document_year_among_dated": 60009,
+     "unique_by_document_year_share_in_top_10_surnames": 0.3932,
+     "unique_by_volume_window": 60485,
+     "unique_doc_single_token_surface": 42176,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 4212,
+      "proxy_loses_unique (doc-year unique, window not)": 3736
+     },
+     "with_surname_m1a_denominator": 288917,
+     "with_tei_document_year": 292907
+    },
+    "volume_x_surface": {
+     "n": 68439,
+     "share_surname_known": 0.2263,
+     "share_unique_by_volume_window": 0.0615,
+     "surname_known": 15489,
+     "unique_by_volume_window": 4206
+    }
+   }
+  },
+  "1930-1945": {
+   "marked_all": {
+    "distinct_surface": {
+     "n": 2852,
+     "share_surname_known": 0.3065,
+     "share_unique_by_union_window": 0.1034,
+     "surname_known": 874,
+     "unique_by_union_window": 295
+    },
+    "document_x_surface": {
+     "n": 74977,
+     "share_surname_known": 0.8326,
+     "share_unique_by_volume_window": 0.5983,
+     "surname_known": 62426,
+     "unique_by_volume_window": 44861
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 215,
+     "k2_key_empty_after_stripping": 26,
+     "known_but_nobody_in_office_that_year": 16372,
+     "known_several_in_office_that_year": 3364,
+     "known_single_token_surface": 62524,
+     "n": 77899,
+     "share_surname_known": 0.8208,
+     "share_surname_known_among_dated": 0.8208,
+     "share_surname_known_over_with_surname": 0.8223,
+     "share_unique_by_document_year_among_dated": 0.5675,
+     "share_unique_by_document_year_over_with_surname": 0.5685,
+     "share_unique_by_volume_window": 0.586,
+     "surname_known": 63942,
+     "surname_known_among_dated": 63942,
+     "top_15_known_surnames": [
+      [
+       "Johnson",
+       4680
+      ],
+      [
+       "Grew",
+       2947
+      ],
+      [
+       "Winant",
+       2865
+      ],
+      [
+       "Gauss",
+       2039
+      ],
+      [
+       "Roosevelt",
+       1918
+      ],
+      [
+       "Caffery",
+       1592
+      ],
+      [
+       "Wilson",
+       1422
+      ],
+      [
+       "Harriman",
+       1343
+      ],
+      [
+       "Kirk",
+       1132
+      ],
+      [
+       "Steinhardt",
+       1052
+      ],
+      [
+       "Bowers",
+       979
+      ],
+      [
+       "Bullitt",
+       941
+      ],
+      [
+       "Armour",
+       936
+      ],
+      [
+       "Harrison",
+       936
+      ],
+      [
+       "Welles",
+       897
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Johnson",
+       3837
+      ],
+      [
+       "Grew",
+       2947
+      ],
+      [
+       "Winant",
+       2865
+      ],
+      [
+       "Caffery",
+       1592
+      ],
+      [
+       "Gauss",
+       1478
+      ],
+      [
+       "Harriman",
+       1341
+      ],
+      [
+       "Steinhardt",
+       1052
+      ],
+      [
+       "Bowers",
+       979
+      ],
+      [
+       "Bullitt",
+       939
+      ],
+      [
+       "Harrison",
+       936
+      ],
+      [
+       "Armour",
+       915
+      ],
+      [
+       "Welles",
+       897
+      ],
+      [
+       "Weddell",
+       741
+      ],
+      [
+       "Kennedy",
+       719
+      ],
+      [
+       "Kirk",
+       718
+      ]
+     ],
+     "unique_by_document_year_among_dated": 44206,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4064,
+     "unique_by_volume_window": 45647,
+     "unique_doc_single_token_surface": 43875,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 2274,
+      "proxy_loses_unique (doc-year unique, window not)": 833
+     },
+     "with_surname_m1a_denominator": 77756,
+     "with_tei_document_year": 77899
+    },
+    "volume_x_surface": {
+     "n": 8355,
+     "share_surname_known": 0.5629,
+     "share_unique_by_volume_window": 0.2695,
+     "surname_known": 4703,
+     "unique_by_volume_window": 2252
+    }
+   },
+   "marked_fromto": {
+    "distinct_surface": {
+     "n": 2306,
+     "share_surname_known": 0.3391,
+     "share_unique_by_union_window": 0.1219,
+     "surname_known": 782,
+     "unique_by_union_window": 281
+    },
+    "document_x_surface": {
+     "n": 72284,
+     "share_surname_known": 0.8482,
+     "share_unique_by_volume_window": 0.615,
+     "surname_known": 61313,
+     "unique_by_volume_window": 44456
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 215,
+     "k2_key_empty_after_stripping": 20,
+     "known_but_nobody_in_office_that_year": 15168,
+     "known_several_in_office_that_year": 3262,
+     "known_single_token_surface": 60873,
+     "n": 72988,
+     "share_surname_known": 0.8466,
+     "share_surname_known_among_dated": 0.8466,
+     "share_surname_known_over_with_surname": 0.8471,
+     "share_unique_by_document_year_among_dated": 0.5941,
+     "share_unique_by_document_year_over_with_surname": 0.5944,
+     "share_unique_by_volume_window": 0.6138,
+     "surname_known": 61793,
+     "surname_known_among_dated": 61793,
+     "top_15_known_surnames": [
+      [
+       "Johnson",
+       4425
+      ],
+      [
+       "Grew",
+       2877
+      ],
+      [
+       "Winant",
+       2863
+      ],
+      [
+       "Gauss",
+       2037
+      ],
+      [
+       "Roosevelt",
+       1795
+      ],
+      [
+       "Caffery",
+       1592
+      ],
+      [
+       "Harriman",
+       1338
+      ],
+      [
+       "Wilson",
+       1324
+      ],
+      [
+       "Kirk",
+       1128
+      ],
+      [
+       "Steinhardt",
+       1052
+      ],
+      [
+       "Bowers",
+       979
+      ],
+      [
+       "Bullitt",
+       941
+      ],
+      [
+       "Harrison",
+       936
+      ],
+      [
+       "Armour",
+       934
+      ],
+      [
+       "Welles",
+       895
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Johnson",
+       3582
+      ],
+      [
+       "Grew",
+       2877
+      ],
+      [
+       "Winant",
+       2863
+      ],
+      [
+       "Caffery",
+       1592
+      ],
+      [
+       "Gauss",
+       1478
+      ],
+      [
+       "Harriman",
+       1338
+      ],
+      [
+       "Steinhardt",
+       1052
+      ],
+      [
+       "Bowers",
+       979
+      ],
+      [
+       "Bullitt",
+       939
+      ],
+      [
+       "Harrison",
+       936
+      ],
+      [
+       "Armour",
+       913
+      ],
+      [
+       "Welles",
+       895
+      ],
+      [
+       "Weddell",
+       741
+      ],
+      [
+       "Kennedy",
+       719
+      ],
+      [
+       "Kirk",
+       717
+      ]
+     ],
+     "unique_by_document_year_among_dated": 43363,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4067,
+     "unique_by_volume_window": 44801,
+     "unique_doc_single_token_surface": 43177,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 2269,
+      "proxy_loses_unique (doc-year unique, window not)": 831
+     },
+     "with_surname_m1a_denominator": 72950,
+     "with_tei_document_year": 72988
+    },
+    "volume_x_surface": {
+     "n": 7651,
+     "share_surname_known": 0.5931,
+     "share_unique_by_volume_window": 0.2907,
+     "surname_known": 4538,
+     "unique_by_volume_window": 2224
+    }
+   },
+   "novel_control": {
+    "distinct_surface": {
+     "n": 35981,
+     "share_surname_known": 0.1597,
+     "share_unique_by_union_window": 0.0332,
+     "surname_known": 5747,
+     "unique_by_union_window": 1194
+    },
+    "document_x_surface": {
+     "n": 201468,
+     "share_surname_known": 0.3521,
+     "share_unique_by_volume_window": 0.1622,
+     "surname_known": 70945,
+     "unique_by_volume_window": 32680
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 223,
+     "k2_key_empty_after_stripping": 184,
+     "known_but_nobody_in_office_that_year": 62590,
+     "known_several_in_office_that_year": 2610,
+     "known_single_token_surface": 58790,
+     "n": 335881,
+     "share_surname_known": 0.3176,
+     "share_surname_known_among_dated": 0.3176,
+     "share_surname_known_over_with_surname": 0.3208,
+     "share_unique_by_document_year_among_dated": 0.1235,
+     "share_unique_by_document_year_over_with_surname": 0.1247,
+     "share_unique_by_volume_window": 0.1342,
+     "surname_known": 106686,
+     "surname_known_among_dated": 106686,
+     "top_15_known_surnames": [
+      [
+       "Roosevelt",
+       4614
+      ],
+      [
+       "Welles",
+       3627
+      ],
+      [
+       "Hull",
+       2446
+      ],
+      [
+       "Byrnes",
+       2309
+      ],
+      [
+       "Stettinius",
+       2013
+      ],
+      [
+       "Gauss",
+       1957
+      ],
+      [
+       "Winant",
+       1858
+      ],
+      [
+       "Stimson",
+       1588
+      ],
+      [
+       "Hornbeck",
+       1529
+      ],
+      [
+       "Phillips",
+       1353
+      ],
+      [
+       "Eisenhower",
+       1348
+      ],
+      [
+       "Harriman",
+       1343
+      ],
+      [
+       "Wilson",
+       1327
+      ],
+      [
+       "Murphy",
+       1316
+      ],
+      [
+       "Johnson",
+       1299
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Welles",
+       3622
+      ],
+      [
+       "Hull",
+       2445
+      ],
+      [
+       "Byrnes",
+       2254
+      ],
+      [
+       "Stettinius",
+       1986
+      ],
+      [
+       "Winant",
+       1858
+      ],
+      [
+       "Harriman",
+       1343
+      ],
+      [
+       "Gauss",
+       1293
+      ],
+      [
+       "Stimson",
+       1229
+      ],
+      [
+       "Caffery",
+       1115
+      ],
+      [
+       "Phillips",
+       1101
+      ],
+      [
+       "Steinhardt",
+       1074
+      ],
+      [
+       "Sayre",
+       1073
+      ],
+      [
+       "Johnson",
+       789
+      ],
+      [
+       "Davis",
+       755
+      ],
+      [
+       "Acheson",
+       744
+      ]
+     ],
+     "unique_by_document_year_among_dated": 41486,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4398,
+     "unique_by_volume_window": 45063,
+     "unique_doc_single_token_surface": 22894,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 4283,
+      "proxy_loses_unique (doc-year unique, window not)": 706
+     },
+     "with_surname_m1a_denominator": 332613,
+     "with_tei_document_year": 335881
+    },
+    "volume_x_surface": {
+     "n": 71933,
+     "share_surname_known": 0.2435,
+     "share_unique_by_volume_window": 0.0652,
+     "surname_known": 17515,
+     "unique_by_volume_window": 4687
+    }
+   },
+   "union": {
+    "distinct_surface": {
+     "n": 36861,
+     "share_surname_known": 0.1616,
+     "share_unique_by_union_window": 0.0342,
+     "surname_known": 5956,
+     "unique_by_union_window": 1261
+    },
+    "document_x_surface": {
+     "n": 261018,
+     "share_surname_known": 0.4622,
+     "share_unique_by_volume_window": 0.26,
+     "surname_known": 120645,
+     "unique_by_volume_window": 67864
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 233,
+     "k2_key_empty_after_stripping": 210,
+     "known_but_nobody_in_office_that_year": 78962,
+     "known_several_in_office_that_year": 5974,
+     "known_single_token_surface": 121314,
+     "n": 413780,
+     "share_surname_known": 0.4124,
+     "share_surname_known_among_dated": 0.4124,
+     "share_surname_known_over_with_surname": 0.4158,
+     "share_unique_by_document_year_among_dated": 0.2071,
+     "share_unique_by_document_year_over_with_surname": 0.2088,
+     "share_unique_by_volume_window": 0.2192,
+     "surname_known": 170628,
+     "surname_known_among_dated": 170628,
+     "top_15_known_surnames": [
+      [
+       "Roosevelt",
+       6532
+      ],
+      [
+       "Johnson",
+       5979
+      ],
+      [
+       "Winant",
+       4723
+      ],
+      [
+       "Welles",
+       4524
+      ],
+      [
+       "Gauss",
+       3996
+      ],
+      [
+       "Grew",
+       3439
+      ],
+      [
+       "Wilson",
+       2749
+      ],
+      [
+       "Caffery",
+       2707
+      ],
+      [
+       "Harriman",
+       2686
+      ],
+      [
+       "Hull",
+       2683
+      ],
+      [
+       "Byrnes",
+       2310
+      ],
+      [
+       "Stettinius",
+       2193
+      ],
+      [
+       "Steinhardt",
+       2126
+      ],
+      [
+       "Phillips",
+       2015
+      ],
+      [
+       "Stimson",
+       1926
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Winant",
+       4723
+      ],
+      [
+       "Johnson",
+       4626
+      ],
+      [
+       "Welles",
+       4519
+      ],
+      [
+       "Grew",
+       3439
+      ],
+      [
+       "Gauss",
+       2771
+      ],
+      [
+       "Caffery",
+       2707
+      ],
+      [
+       "Harriman",
+       2684
+      ],
+      [
+       "Hull",
+       2682
+      ],
+      [
+       "Byrnes",
+       2254
+      ],
+      [
+       "Stettinius",
+       2160
+      ],
+      [
+       "Steinhardt",
+       2126
+      ],
+      [
+       "Phillips",
+       1667
+      ],
+      [
+       "Stimson",
+       1435
+      ],
+      [
+       "Harrison",
+       1150
+      ],
+      [
+       "Sayre",
+       1126
+      ]
+     ],
+     "unique_by_document_year_among_dated": 85692,
+     "unique_by_document_year_share_in_top_10_surnames": 0.38,
+     "unique_by_volume_window": 90710,
+     "unique_doc_single_token_surface": 66769,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 6557,
+      "proxy_loses_unique (doc-year unique, window not)": 1539
+     },
+     "with_surname_m1a_denominator": 410369,
+     "with_tei_document_year": 413780
+    },
+    "volume_x_surface": {
+     "n": 75429,
+     "share_surname_known": 0.2553,
+     "share_unique_by_volume_window": 0.0722,
+     "surname_known": 19260,
+     "unique_by_volume_window": 5447
+    }
+   }
+  },
+  "1946-": {
+   "marked_all": {
+    "distinct_surface": {
+     "n": 1785,
+     "share_surname_known": 0.4543,
+     "share_unique_by_union_window": 0.1546,
+     "surname_known": 811,
+     "unique_by_union_window": 276
+    },
+    "document_x_surface": {
+     "n": 29005,
+     "share_surname_known": 0.7933,
+     "share_unique_by_volume_window": 0.51,
+     "surname_known": 23011,
+     "unique_by_volume_window": 14793
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 209,
+     "k2_key_empty_after_stripping": 2,
+     "known_but_nobody_in_office_that_year": 7335,
+     "known_several_in_office_that_year": 1278,
+     "known_single_token_surface": 21870,
+     "n": 29187,
+     "share_surname_known": 0.7923,
+     "share_surname_known_among_dated": 0.7923,
+     "share_surname_known_over_with_surname": 0.7928,
+     "share_unique_by_document_year_among_dated": 0.4972,
+     "share_unique_by_document_year_over_with_surname": 0.4975,
+     "share_unique_by_volume_window": 0.5091,
+     "surname_known": 23126,
+     "surname_known_among_dated": 23126,
+     "top_15_known_surnames": [
+      [
+       "Stuart",
+       2349
+      ],
+      [
+       "Austin",
+       874
+      ],
+      [
+       "Marshall",
+       681
+      ],
+      [
+       "Cabot",
+       562
+      ],
+      [
+       "Douglas",
+       485
+      ],
+      [
+       "Caffery",
+       465
+      ],
+      [
+       "Smith",
+       422
+      ],
+      [
+       "Henderson",
+       374
+      ],
+      [
+       "Clark",
+       359
+      ],
+      [
+       "Johnson",
+       327
+      ],
+      [
+       "Sebald",
+       308
+      ],
+      [
+       "Kirk",
+       305
+      ],
+      [
+       "Ridgway",
+       298
+      ],
+      [
+       "Lovett",
+       288
+      ],
+      [
+       "Butterworth",
+       284
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Stuart",
+       2349
+      ],
+      [
+       "Austin",
+       874
+      ],
+      [
+       "Marshall",
+       605
+      ],
+      [
+       "Douglas",
+       485
+      ],
+      [
+       "Caffery",
+       465
+      ],
+      [
+       "Henderson",
+       374
+      ],
+      [
+       "Cabot",
+       343
+      ],
+      [
+       "Kirk",
+       268
+      ],
+      [
+       "Rusk",
+       250
+      ],
+      [
+       "Lovett",
+       232
+      ],
+      [
+       "Muccio",
+       229
+      ],
+      [
+       "Butterworth",
+       228
+      ],
+      [
+       "Dunn",
+       219
+      ],
+      [
+       "Allen",
+       180
+      ],
+      [
+       "Jacobs",
+       180
+      ]
+     ],
+     "unique_by_document_year_among_dated": 14513,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4303,
+     "unique_by_volume_window": 14859,
+     "unique_doc_single_token_surface": 14305,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 675,
+      "proxy_loses_unique (doc-year unique, window not)": 329
+     },
+     "with_surname_m1a_denominator": 29169,
+     "with_tei_document_year": 29187
+    },
+    "volume_x_surface": {
+     "n": 4892,
+     "share_surname_known": 0.6464,
+     "share_unique_by_volume_window": 0.3117,
+     "surname_known": 3162,
+     "unique_by_volume_window": 1525
+    }
+   },
+   "marked_fromto": {
+    "distinct_surface": {
+     "n": 1746,
+     "share_surname_known": 0.4542,
+     "share_unique_by_union_window": 0.1558,
+     "surname_known": 793,
+     "unique_by_union_window": 272
+    },
+    "document_x_surface": {
+     "n": 28759,
+     "share_surname_known": 0.7941,
+     "share_unique_by_volume_window": 0.5116,
+     "surname_known": 22838,
+     "unique_by_volume_window": 14714
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 209,
+     "k2_key_empty_after_stripping": 2,
+     "known_but_nobody_in_office_that_year": 7232,
+     "known_several_in_office_that_year": 1271,
+     "known_single_token_surface": 21725,
+     "n": 28927,
+     "share_surname_known": 0.7931,
+     "share_surname_known_among_dated": 0.7931,
+     "share_surname_known_over_with_surname": 0.7936,
+     "share_unique_by_document_year_among_dated": 0.4992,
+     "share_unique_by_document_year_over_with_surname": 0.4994,
+     "share_unique_by_volume_window": 0.5108,
+     "surname_known": 22942,
+     "surname_known_among_dated": 22942,
+     "top_15_known_surnames": [
+      [
+       "Stuart",
+       2347
+      ],
+      [
+       "Austin",
+       874
+      ],
+      [
+       "Marshall",
+       677
+      ],
+      [
+       "Cabot",
+       560
+      ],
+      [
+       "Douglas",
+       485
+      ],
+      [
+       "Caffery",
+       465
+      ],
+      [
+       "Smith",
+       420
+      ],
+      [
+       "Henderson",
+       374
+      ],
+      [
+       "Clark",
+       359
+      ],
+      [
+       "Johnson",
+       324
+      ],
+      [
+       "Sebald",
+       308
+      ],
+      [
+       "Kirk",
+       305
+      ],
+      [
+       "Ridgway",
+       298
+      ],
+      [
+       "Butterworth",
+       284
+      ],
+      [
+       "Lovett",
+       282
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Stuart",
+       2347
+      ],
+      [
+       "Austin",
+       874
+      ],
+      [
+       "Marshall",
+       604
+      ],
+      [
+       "Douglas",
+       485
+      ],
+      [
+       "Caffery",
+       465
+      ],
+      [
+       "Henderson",
+       374
+      ],
+      [
+       "Cabot",
+       341
+      ],
+      [
+       "Kirk",
+       268
+      ],
+      [
+       "Rusk",
+       246
+      ],
+      [
+       "Muccio",
+       229
+      ],
+      [
+       "Butterworth",
+       228
+      ],
+      [
+       "Lovett",
+       227
+      ],
+      [
+       "Dunn",
+       218
+      ],
+      [
+       "Jacobs",
+       180
+      ],
+      [
+       "Allen",
+       179
+      ]
+     ],
+     "unique_by_document_year_among_dated": 14439,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4317,
+     "unique_by_volume_window": 14776,
+     "unique_doc_single_token_surface": 14238,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 665,
+      "proxy_loses_unique (doc-year unique, window not)": 328
+     },
+     "with_surname_m1a_denominator": 28910,
+     "with_tei_document_year": 28927
+    },
+    "volume_x_surface": {
+     "n": 4818,
+     "share_surname_known": 0.6474,
+     "share_unique_by_volume_window": 0.314,
+     "surname_known": 3119,
+     "unique_by_volume_window": 1513
+    }
+   },
+   "novel_control": {
+    "distinct_surface": {
+     "n": 30713,
+     "share_surname_known": 0.1802,
+     "share_unique_by_union_window": 0.0461,
+     "surname_known": 5536,
+     "unique_by_union_window": 1417
+    },
+    "document_x_surface": {
+     "n": 155993,
+     "share_surname_known": 0.3386,
+     "share_unique_by_volume_window": 0.1655,
+     "surname_known": 52824,
+     "unique_by_volume_window": 25815
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 231,
+     "k2_key_empty_after_stripping": 147,
+     "known_but_nobody_in_office_that_year": 45800,
+     "known_several_in_office_that_year": 3450,
+     "known_single_token_surface": 50943,
+     "n": 290520,
+     "share_surname_known": 0.3349,
+     "share_surname_known_among_dated": 0.3349,
+     "share_surname_known_over_with_surname": 0.3406,
+     "share_unique_by_document_year_among_dated": 0.1653,
+     "share_unique_by_document_year_over_with_surname": 0.1682,
+     "share_unique_by_volume_window": 0.1747,
+     "surname_known": 97284,
+     "surname_known_among_dated": 97284,
+     "top_15_known_surnames": [
+      [
+       "Marshall",
+       6170
+      ],
+      [
+       "Acheson",
+       4040
+      ],
+      [
+       "Byrnes",
+       3646
+      ],
+      [
+       "Lovett",
+       3093
+      ],
+      [
+       "Dulles",
+       2251
+      ],
+      [
+       "Rusk",
+       1777
+      ],
+      [
+       "Hickerson",
+       1568
+      ],
+      [
+       "Stuart",
+       1550
+      ],
+      [
+       "Johnson",
+       1517
+      ],
+      [
+       "McGhee",
+       1424
+      ],
+      [
+       "Jessup",
+       1299
+      ],
+      [
+       "Smith",
+       1251
+      ],
+      [
+       "John",
+       1079
+      ],
+      [
+       "Harriman",
+       1060
+      ],
+      [
+       "Clayton",
+       1039
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Marshall",
+       5941
+      ],
+      [
+       "Acheson",
+       4040
+      ],
+      [
+       "Byrnes",
+       3634
+      ],
+      [
+       "Lovett",
+       2807
+      ],
+      [
+       "Rusk",
+       1672
+      ],
+      [
+       "Stuart",
+       1547
+      ],
+      [
+       "McGhee",
+       1369
+      ],
+      [
+       "Jessup",
+       1299
+      ],
+      [
+       "Hickerson",
+       1282
+      ],
+      [
+       "Clayton",
+       1028
+      ],
+      [
+       "Bohlen",
+       814
+      ],
+      [
+       "Johnson",
+       789
+      ],
+      [
+       "Webb",
+       716
+      ],
+      [
+       "Henderson",
+       665
+      ],
+      [
+       "Harriman",
+       657
+      ]
+     ],
+     "unique_by_document_year_among_dated": 48034,
+     "unique_by_document_year_share_in_top_10_surnames": 0.5125,
+     "unique_by_volume_window": 50743,
+     "unique_doc_single_token_surface": 25386,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 3542,
+      "proxy_loses_unique (doc-year unique, window not)": 833
+     },
+     "with_surname_m1a_denominator": 285597,
+     "with_tei_document_year": 290520
+    },
+    "volume_x_surface": {
+     "n": 57078,
+     "share_surname_known": 0.2513,
+     "share_unique_by_volume_window": 0.0744,
+     "surname_known": 14343,
+     "unique_by_volume_window": 4245
+    }
+   },
+   "union": {
+    "distinct_surface": {
+     "n": 31185,
+     "share_surname_known": 0.1834,
+     "share_unique_by_union_window": 0.0468,
+     "surname_known": 5719,
+     "unique_by_union_window": 1459
+    },
+    "document_x_surface": {
+     "n": 177621,
+     "share_surname_known": 0.3944,
+     "share_unique_by_volume_window": 0.2086,
+     "surname_known": 70058,
+     "unique_by_volume_window": 37058
+    },
+    "mention": {
+     "distinct_surnames_among_unique_by_document_year": 236,
+     "k2_key_empty_after_stripping": 149,
+     "known_but_nobody_in_office_that_year": 53135,
+     "known_several_in_office_that_year": 4728,
+     "known_single_token_surface": 72813,
+     "n": 319707,
+     "share_surname_known": 0.3766,
+     "share_surname_known_among_dated": 0.3766,
+     "share_surname_known_over_with_surname": 0.3825,
+     "share_unique_by_document_year_among_dated": 0.1956,
+     "share_unique_by_document_year_over_with_surname": 0.1987,
+     "share_unique_by_volume_window": 0.2052,
+     "surname_known": 120410,
+     "surname_known_among_dated": 120410,
+     "top_15_known_surnames": [
+      [
+       "Marshall",
+       6851
+      ],
+      [
+       "Acheson",
+       4192
+      ],
+      [
+       "Stuart",
+       3899
+      ],
+      [
+       "Byrnes",
+       3647
+      ],
+      [
+       "Lovett",
+       3381
+      ],
+      [
+       "Dulles",
+       2369
+      ],
+      [
+       "Rusk",
+       2055
+      ],
+      [
+       "Johnson",
+       1844
+      ],
+      [
+       "Hickerson",
+       1722
+      ],
+      [
+       "Smith",
+       1673
+      ],
+      [
+       "McGhee",
+       1528
+      ],
+      [
+       "Jessup",
+       1431
+      ],
+      [
+       "Harriman",
+       1211
+      ],
+      [
+       "Clayton",
+       1123
+      ],
+      [
+       "John",
+       1079
+      ]
+     ],
+     "top_15_unique_by_document_year_surnames": [
+      [
+       "Marshall",
+       6546
+      ],
+      [
+       "Acheson",
+       4192
+      ],
+      [
+       "Stuart",
+       3896
+      ],
+      [
+       "Byrnes",
+       3635
+      ],
+      [
+       "Lovett",
+       3039
+      ],
+      [
+       "Rusk",
+       1922
+      ],
+      [
+       "McGhee",
+       1458
+      ],
+      [
+       "Jessup",
+       1431
+      ],
+      [
+       "Hickerson",
+       1400
+      ],
+      [
+       "Clayton",
+       1112
+      ],
+      [
+       "Caffery",
+       1040
+      ],
+      [
+       "Henderson",
+       1039
+      ],
+      [
+       "Douglas",
+       1025
+      ],
+      [
+       "Johnson",
+       947
+      ],
+      [
+       "Austin",
+       885
+      ]
+     ],
+     "unique_by_document_year_among_dated": 62547,
+     "unique_by_document_year_share_in_top_10_surnames": 0.4578,
+     "unique_by_volume_window": 65602,
+     "unique_doc_single_token_surface": 39691,
+     "volume_window_proxy_vs_document_year": {
+      "proxy_gains_unique (window unique, doc-year not)": 4217,
+      "proxy_loses_unique (doc-year unique, window not)": 1162
+     },
+     "with_surname_m1a_denominator": 314766,
+     "with_tei_document_year": 319707
+    },
+    "volume_x_surface": {
+     "n": 58756,
+     "share_surname_known": 0.2608,
+     "share_unique_by_volume_window": 0.0788,
+     "surname_known": 15324,
+     "unique_by_volume_window": 4631
+    }
+   }
+  }
+ },
+ "definitions": {
+  "K2 surface key": "casefold, whitespace-collapse, trailing 's / \u2019s stripped, leading honorific token(s) stripped repeatedly from the fixed list `honorifics`; the surname is surname_of() over the stripped original-case string, compared casefolded.",
+  "bands": "ner_store.band_of \u2014 1861-1899 / 1900-1929 / 1930-1945 / 1946-",
+  "distinct_surface": "K2 key distinct over the population; window = union of the windows of the volumes it appears in.",
+  "document_x_surface": "(volume, document, K2 key) distinct \u2014 the person_mentions grain (one row per unique person per document).",
+  "honorifics": [
+   "adm",
+   "admiral",
+   "ambassador",
+   "baron",
+   "baroness",
+   "capt",
+   "captain",
+   "col",
+   "colonel",
+   "commodore",
+   "count",
+   "countess",
+   "don",
+   "dona",
+   "do\u00f1a",
+   "dr",
+   "duke",
+   "earl",
+   "excellency",
+   "gen",
+   "general",
+   "governor",
+   "her",
+   "herr",
+   "his",
+   "hon",
+   "judge",
+   "king",
+   "lady",
+   "lieut",
+   "lieutenant",
+   "lord",
+   "lt",
+   "m",
+   "madame",
+   "maj",
+   "majesty",
+   "major",
+   "marquis",
+   "minister",
+   "miss",
+   "mlle",
+   "mme",
+   "monsieur",
+   "mr",
+   "mrs",
+   "ms",
+   "president",
+   "prince",
+   "princess",
+   "prof",
+   "professor",
+   "queen",
+   "rev",
+   "reverend",
+   "secretary",
+   "senor",
+   "se\u00f1or",
+   "se\u00f1ora",
+   "sir",
+   "the",
+   "viscount"
+  ],
+  "novel_control": "filtered-control detections whose span does not overlap (s < me and e > ms) any marked span in the same document; overlap computed here from spans, cross-checked against the raw control heads' `novel`.",
+  "surname_known (mention grain)": "m1a_survey.surname_of(text_of(surface)) is a key of by_surname (exact case; only officeholders with a dated appointment).",
+  "union": "marked (all types) + novel filtered control.",
+  "unique_by_document_year_among_dated": "m1a's rule exactly: the document's TEI frus:doc-dateTime-min year, \u00b11.",
+  "unique_by_volume_window": "exactly one POCOM officeholder with that surname has an appointment span overlapping [window_lo-1, window_hi+1], where the window is the manifest dateRange years of the VOLUME. PROXY: the store carries no document date. Bias: a multi-year window admits more officeholders than a document's own year, so this share is a LOWER bound on the per-document unique share m1a measured; the per-document figure is reported beside it wherever the TEI carries frus:doc-dateTime-min.",
+  "volume_x_surface": "(volume, K2 key) distinct; window = the volume's."
+ },
+ "generated_by": "/private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-pocom/measure_pocom.py",
+ "inputs": {
+  "filtered_control_store": "/Users/jbotts/frus-ner-raw-control-filtered",
+  "m1a_survey": "/Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/Planning/early-era-people/m1a-survey.json",
+  "manifest": "/Users/jbotts/Development/FRUS-Explorer/.claude/worktrees/234-feasibility-assessment-518fe5/FRUSExplorer/Resources/manifest.json",
+  "marked_store": "/Users/jbotts/frus-ner-raw",
+  "pocom_dir": "/Users/jbotts/Development/pocom",
+  "raw_control_store": "/Users/jbotts/frus-ner-raw-control",
+  "tei_volumes_dir": "/Users/jbotts/Development/frus/volumes"
+ },
+ "interpretation": {
+  "derived_index_ceiling": {
+   "marked_layer_all_types_mention_grain": {
+    "rows_with_surname": 245090,
+    "share_with_any_pocom_candidate": 0.7946,
+    "share_with_exactly_one_by_document_year": 0.5417
+   },
+   "marked_layer_all_types_person_mentions_grain (doc x K2 surface)": {
+    "rows": 223219,
+    "share_with_any_pocom_candidate": 0.804,
+    "share_with_exactly_one_in_window_candidate": 0.5534
+   },
+   "marked_union_filtered_control_mention_grain": {
+    "rows_with_surname": 1409925,
+    "share_with_any_pocom_candidate": 0.4101,
+    "share_with_exactly_one_by_document_year": 0.1991
+   },
+   "marked_union_filtered_control_person_mentions_grain": {
+    "rows": 853622,
+    "share_with_any_pocom_candidate": 0.4446,
+    "share_with_exactly_one_in_window_candidate": 0.237
+   },
+   "novel_filtered_control_alone_mention_grain": {
+    "caveat": "57.4% of the novel control's surname-known mentions (220,263 of 383,428) name nobody in office that year, and 47.0% (180,364) are single-token surfaces \u2014 given names (George, John) and places match POCOM surnames; the 32.9% is a string coincidence rate more than a candidate rate.",
+    "rows_with_surname": 1164835,
+    "share_with_any_pocom_candidate": 0.3292,
+    "share_with_exactly_one_by_document_year": 0.1271
+   }
+  },
+  "eval_set": "Planning/early-era-people/m1a-eval-candidates.csv: 300 rows, 0 keyed. It samples ONLY from/to names in the 12 m1a volumes, so once keyed it prices the MARKED from/to population (precision of 'the unique in-year officeholder is the person', and how often the person is in POCOM at all among the 'nobody in office' 17.2% and 'several' 8.0%); at 300 rows a ~55% rate carries a 95% half-width of about \u00b15.6 pts pooled and \u00b111 pts per 75-row band. It says NOTHING about the 1.18M novel-control surfaces, for which no ground truth exists; the M2a gold (64 of 72 documents, 406 mentions) is span-level and carries no identity column.",
+  "marked_fromto_whole_scope": "235,218 from/to mentions with a surname over 267 volumes: 80.6% surname-known, 55.4% unique-by-document-year (m1a's 12-volume 83.2% / 63.9% overstated the unique ceiling by 8.5 pts; the sample's own store-based figure is 62.4%). Of the known, 40,563 (17.2% of with-surname) have NOBODY of that surname in office that year and 18,729 (8.0%) have several.",
+  "primary_rule": "unique_by_document_year (m1a's rule, TEI frus:doc-dateTime-min \u00b11) is PRIMARY: all 197,534 in-scope documents carry a TEI year, so the volume-window proxy was not needed; it is reported beside it and its bias is measured (it both loses and gains uniques: from/to whole scope loses 3,800 / gains 4,802, net +0.3 pt)."
+ },
+ "overlap_cross_check_vs_raw_control_heads": {
+  "mismatches": [],
+  "volumes_compared": 267,
+  "volumes_matching_raw_head_novel": 267
+ },
+ "pocom": {
+  "distinct_surnames_casefolded": 2866,
+  "distinct_surnames_with_dated_appointment": 2867,
+  "people_files": 4261,
+  "people_with_dated_appointment": 4167,
+  "people_with_surname": 4261
+ },
+ "positive_control": {
+  "nearest_store_comparison_same_12_volumes": {
+   "mention_n": 13049,
+   "population": "marked-layer rows with t in {from,to} over the 12 m1a volumes (ALL such rows, not only those in dated documents, and with no 8,000-char cut per document)",
+   "share_surname_known": 0.8149,
+   "share_surname_known_among_dated": 0.8149,
+   "share_surname_known_over_with_surname": 0.8156,
+   "share_unique_by_document_year_among_dated": 0.6233,
+   "share_unique_by_document_year_over_with_surname": 0.6239,
+   "share_unique_by_volume_window": 0.624,
+   "surname_known": 10633,
+   "unique_by_document_year_among_dated": 8134,
+   "unique_by_volume_window": 8142,
+   "with_surname_m1a_denominator": 13037,
+   "with_tei_document_year": 13049
+  },
+  "recorded_in_m1a_survey_json": {
+   "pooled_names": 12384,
+   "pooled_surname_known": 10310,
+   "pooled_uniquely_resolved": 7916
+  },
+  "reproduced_exactly": true,
+  "rerun_verbatim_today": {
+   "per_volume": [
+    {
+     "band": "1861-1899",
+     "from_to_names": 1189,
+     "surname_known": 1045,
+     "uniquely_resolved": 930,
+     "volume": "frus1872p1"
+    },
+    {
+     "band": "1861-1899",
+     "from_to_names": 1230,
+     "surname_known": 974,
+     "uniquely_resolved": 275,
+     "volume": "frus1867p2"
+    },
+    {
+     "band": "1861-1899",
+     "from_to_names": 1571,
+     "surname_known": 1271,
+     "uniquely_resolved": 1198,
+     "volume": "frus1895p1"
+    },
+    {
+     "band": "1900-1929",
+     "from_to_names": 2252,
+     "surname_known": 1880,
+     "uniquely_resolved": 1741,
+     "volume": "frus1904"
+    },
+    {
+     "band": "1900-1929",
+     "from_to_names": 681,
+     "surname_known": 535,
+     "uniquely_resolved": 358,
+     "volume": "frus1924v02"
+    },
+    {
+     "band": "1900-1929",
+     "from_to_names": 1102,
+     "surname_known": 974,
+     "uniquely_resolved": 636,
+     "volume": "frus1929v02"
+    },
+    {
+     "band": "1930-1945",
+     "from_to_names": 774,
+     "surname_known": 724,
+     "uniquely_resolved": 689,
+     "volume": "frus1942v05"
+    },
+    {
+     "band": "1930-1945",
+     "from_to_names": 647,
+     "surname_known": 565,
+     "uniquely_resolved": 443,
+     "volume": "frus1937v02"
+    },
+    {
+     "band": "1930-1945",
+     "from_to_names": 887,
+     "surname_known": 820,
+     "uniquely_resolved": 562,
+     "volume": "frus1938v01"
+    },
+    {
+     "band": "1946-",
+     "from_to_names": 579,
+     "surname_known": 462,
+     "uniquely_resolved": 366,
+     "volume": "frus1948v05p2"
+    },
+    {
+     "band": "1946-",
+     "from_to_names": 772,
+     "surname_known": 464,
+     "uniquely_resolved": 294,
+     "volume": "frus1948v06"
+    },
+    {
+     "band": "1946-",
+     "from_to_names": 700,
+     "surname_known": 596,
+     "uniquely_resolved": 424,
+     "volume": "frus1949v06"
+    }
+   ],
+   "pooled_names": 12384,
+   "pooled_surname_known": 10310,
+   "pooled_uniquely_resolved": 7916,
+   "share_surname_known": 0.8325,
+   "share_uniquely_resolved": 0.6392
+  },
+  "sample_population_gap_explained": {
+   "explanation": "the whole 653-row gap is m1a_survey.py's seg[:8000] cut per document segment; reading the full segment from the TEI gives 13,037 = the store's count exactly, and every from/to row sits in a dated document.",
+   "in_undated_documents": 0,
+   "m1a_pooled_names": 12384,
+   "store_fromto_rows_with_surname_same_12_volumes": 13037,
+   "tei_fromto_with_surname_dated_docs_full_segment": 13037,
+   "tei_same_first_8000_chars_per_segment": 12384
+  }
+ },
+ "scope": {
+  "docs_per_marked_heads": 197534,
+  "filtered_control_volumes_missing": [],
+  "marked_rows_by_type": {
+   "from": 140504,
+   "to": 95247,
+   "untyped": 9996
+  },
+  "volumes": 267
+ },
+ "whole_scope": {
+  "marked_all": {
+   "distinct_surface": {
+    "n": 11244,
+    "share_surname_known": 0.2602,
+    "share_unique_by_union_window": 0.0969,
+    "surname_known": 2926,
+    "unique_by_union_window": 1090
+   },
+   "document_x_surface": {
+    "n": 223219,
+    "share_surname_known": 0.804,
+    "share_unique_by_volume_window": 0.5534,
+    "surname_known": 179474,
+    "unique_by_volume_window": 123535
+   },
+   "mention": {
+    "distinct_surnames_among_unique_by_document_year": 742,
+    "k2_key_empty_after_stripping": 333,
+    "known_but_nobody_in_office_that_year": 42920,
+    "known_several_in_office_that_year": 19063,
+    "known_single_token_surface": 168213,
+    "n": 245747,
+    "share_surname_known": 0.7925,
+    "share_surname_known_among_dated": 0.7925,
+    "share_surname_known_over_with_surname": 0.7946,
+    "share_unique_by_document_year_among_dated": 0.5402,
+    "share_unique_by_document_year_over_with_surname": 0.5417,
+    "share_unique_by_volume_window": 0.5445,
+    "surname_known": 194743,
+    "surname_known_among_dated": 194743,
+    "top_15_known_surnames": [
+     [
+      "Seward",
+      9574
+     ],
+     [
+      "Johnson",
+      5373
+     ],
+     [
+      "Hay",
+      4887
+     ],
+     [
+      "Bayard",
+      3788
+     ],
+     [
+      "Fish",
+      3550
+     ],
+     [
+      "Grew",
+      3154
+     ],
+     [
+      "Wilson",
+      3108
+     ],
+     [
+      "Winant",
+      2922
+     ],
+     [
+      "Adams",
+      2451
+     ],
+     [
+      "Stuart",
+      2416
+     ],
+     [
+      "Gresham",
+      2298
+     ],
+     [
+      "Roosevelt",
+      2193
+     ],
+     [
+      "Caffery",
+      2165
+     ],
+     [
+      "Blaine",
+      2120
+     ],
+     [
+      "Evarts",
+      2083
+     ]
+    ],
+    "top_15_unique_by_document_year_surnames": [
+     [
+      "Hay",
+      4855
+     ],
+     [
+      "Johnson",
+      4115
+     ],
+     [
+      "Bayard",
+      3785
+     ],
+     [
+      "Grew",
+      3153
+     ],
+     [
+      "Fish",
+      3131
+     ],
+     [
+      "Winant",
+      2922
+     ],
+     [
+      "Stuart",
+      2352
+     ],
+     [
+      "Adams",
+      2314
+     ],
+     [
+      "Gresham",
+      2295
+     ],
+     [
+      "Caffery",
+      2162
+     ],
+     [
+      "Evarts",
+      2074
+     ],
+     [
+      "MacMurray",
+      1865
+     ],
+     [
+      "Olney",
+      1617
+     ],
+     [
+      "Blaine",
+      1570
+     ],
+     [
+      "Frelinghuysen",
+      1541
+     ]
+    ],
+    "unique_by_document_year_among_dated": 132760,
+    "unique_by_document_year_share_in_top_10_surnames": 0.2341,
+    "unique_by_volume_window": 133798,
+    "unique_doc_single_token_surface": 122466,
+    "volume_window_proxy_vs_document_year": {
+     "proxy_gains_unique (window unique, doc-year not)": 4873,
+     "proxy_loses_unique (doc-year unique, window not)": 3835
+    },
+    "with_surname_m1a_denominator": 245090,
+    "with_tei_document_year": 245747
+   },
+   "volume_x_surface": {
+    "n": 29949,
+    "share_surname_known": 0.5168,
+    "share_unique_by_volume_window": 0.2424,
+    "surname_known": 15477,
+    "unique_by_volume_window": 7261
+   }
+  },
+  "marked_fromto": {
+   "distinct_surface": {
+    "n": 9969,
+    "share_surname_known": 0.2635,
+    "share_unique_by_union_window": 0.1015,
+    "surname_known": 2627,
+    "unique_by_union_window": 1012
+   },
+   "document_x_surface": {
+    "n": 216726,
+    "share_surname_known": 0.8131,
+    "share_unique_by_volume_window": 0.5622,
+    "surname_known": 176213,
+    "unique_by_volume_window": 121846
+   },
+   "mention": {
+    "distinct_surnames_among_unique_by_document_year": 742,
+    "k2_key_empty_after_stripping": 327,
+    "known_but_nobody_in_office_that_year": 40563,
+    "known_several_in_office_that_year": 18729,
+    "known_single_token_surface": 164812,
+    "n": 235751,
+    "share_surname_known": 0.8043,
+    "share_surname_known_among_dated": 0.8043,
+    "share_surname_known_over_with_surname": 0.8061,
+    "share_unique_by_document_year_among_dated": 0.5528,
+    "share_unique_by_document_year_over_with_surname": 0.554,
+    "share_unique_by_volume_window": 0.557,
+    "surname_known": 189613,
+    "surname_known_among_dated": 189613,
+    "top_15_known_surnames": [
+     [
+      "Seward",
+      9551
+     ],
+     [
+      "Johnson",
+      5114
+     ],
+     [
+      "Hay",
+      4887
+     ],
+     [
+      "Fish",
+      3550
+     ],
+     [
+      "Bayard",
+      3547
+     ],
+     [
+      "Grew",
+      3084
+     ],
+     [
+      "Wilson",
+      2959
+     ],
+     [
+      "Winant",
+      2920
+     ],
+     [
+      "Stuart",
+      2414
+     ],
+     [
+      "Adams",
+      2391
+     ],
+     [
+      "Gresham",
+      2298
+     ],
+     [
+      "Caffery",
+      2165
+     ],
+     [
+      "Blaine",
+      2118
+     ],
+     [
+      "Evarts",
+      2082
+     ],
+     [
+      "Gauss",
+      2073
+     ]
+    ],
+    "top_15_unique_by_document_year_surnames": [
+     [
+      "Hay",
+      4855
+     ],
+     [
+      "Johnson",
+      3858
+     ],
+     [
+      "Bayard",
+      3544
+     ],
+     [
+      "Fish",
+      3131
+     ],
+     [
+      "Grew",
+      3083
+     ],
+     [
+      "Winant",
+      2920
+     ],
+     [
+      "Stuart",
+      2350
+     ],
+     [
+      "Adams",
+      2305
+     ],
+     [
+      "Gresham",
+      2295
+     ],
+     [
+      "Caffery",
+      2162
+     ],
+     [
+      "Evarts",
+      2074
+     ],
+     [
+      "MacMurray",
+      1864
+     ],
+     [
+      "Olney",
+      1617
+     ],
+     [
+      "Blaine",
+      1568
+     ],
+     [
+      "Frelinghuysen",
+      1541
+     ]
+    ],
+    "unique_by_document_year_among_dated": 130321,
+    "unique_by_document_year_share_in_top_10_surnames": 0.2341,
+    "unique_by_volume_window": 131323,
+    "unique_doc_single_token_surface": 120874,
+    "volume_window_proxy_vs_document_year": {
+     "proxy_gains_unique (window unique, doc-year not)": 4802,
+     "proxy_loses_unique (doc-year unique, window not)": 3800
+    },
+    "with_surname_m1a_denominator": 235218,
+    "with_tei_document_year": 235751
+   },
+   "volume_x_surface": {
+    "n": 28212,
+    "share_surname_known": 0.53,
+    "share_unique_by_volume_window": 0.2527,
+    "surname_known": 14953,
+    "unique_by_volume_window": 7128
+   }
+  },
+  "novel_control": {
+   "distinct_surface": {
+    "n": 135393,
+    "share_surname_known": 0.1559,
+    "share_unique_by_union_window": 0.0343,
+    "surname_known": 21104,
+    "unique_by_union_window": 4645
+   },
+   "document_x_surface": {
+    "n": 676351,
+    "share_surname_known": 0.3481,
+    "share_unique_by_volume_window": 0.1506,
+    "surname_known": 235461,
+    "unique_by_volume_window": 101839
+   },
+   "mention": {
+    "distinct_surnames_among_unique_by_document_year": 754,
+    "k2_key_empty_after_stripping": 675,
+    "known_but_nobody_in_office_that_year": 220263,
+    "known_several_in_office_that_year": 15172,
+    "known_single_token_surface": 180364,
+    "n": 1181285,
+    "share_surname_known": 0.3246,
+    "share_surname_known_among_dated": 0.3246,
+    "share_surname_known_over_with_surname": 0.3292,
+    "share_unique_by_document_year_among_dated": 0.1253,
+    "share_unique_by_document_year_over_with_surname": 0.1271,
+    "share_unique_by_volume_window": 0.1334,
+    "surname_known": 383428,
+    "surname_known_among_dated": 383428,
+    "top_15_known_surnames": [
+     [
+      "Wilson",
+      8617
+     ],
+     [
+      "Marshall",
+      7550
+     ],
+     [
+      "Byrnes",
+      5962
+     ],
+     [
+      "Roosevelt",
+      5908
+     ],
+     [
+      "Seward",
+      5374
+     ],
+     [
+      "Acheson",
+      5164
+     ],
+     [
+      "Johnson",
+      4605
+     ],
+     [
+      "Adams",
+      4547
+     ],
+     [
+      "George",
+      4372
+     ],
+     [
+      "John",
+      3845
+     ],
+     [
+      "Welles",
+      3830
+     ],
+     [
+      "Smith",
+      3702
+     ],
+     [
+      "Russell",
+      3483
+     ],
+     [
+      "Davis",
+      3196
+     ],
+     [
+      "Lovett",
+      3113
+     ]
+    ],
+    "top_15_unique_by_document_year_surnames": [
+     [
+      "Marshall",
+      5945
+     ],
+     [
+      "Byrnes",
+      5888
+     ],
+     [
+      "Acheson",
+      4784
+     ],
+     [
+      "Wilson",
+      4398
+     ],
+     [
+      "Welles",
+      3622
+     ],
+     [
+      "Lovett",
+      2807
+     ],
+     [
+      "Adams",
+      2725
+     ],
+     [
+      "Lansing",
+      2686
+     ],
+     [
+      "Hull",
+      2446
+     ],
+     [
+      "Stettinius",
+      2293
+     ],
+     [
+      "Harriman",
+      2000
+     ],
+     [
+      "Johnson",
+      1925
+     ],
+     [
+      "Winant",
+      1911
+     ],
+     [
+      "Stimson",
+      1823
+     ],
+     [
+      "Polk",
+      1755
+     ]
+    ],
+    "unique_by_document_year_among_dated": 147993,
+    "unique_by_document_year_share_in_top_10_surnames": 0.254,
+    "unique_by_volume_window": 157628,
+    "unique_doc_single_token_surface": 68171,
+    "volume_window_proxy_vs_document_year": {
+     "proxy_gains_unique (window unique, doc-year not)": 16092,
+     "proxy_loses_unique (doc-year unique, window not)": 6457
+    },
+    "with_surname_m1a_denominator": 1164835,
+    "with_tei_document_year": 1181285
+   },
+   "volume_x_surface": {
+    "n": 286949,
+    "share_surname_known": 0.2369,
+    "share_unique_by_volume_window": 0.0592,
+    "surname_known": 67985,
+    "unique_by_volume_window": 16994
+   }
+  },
+  "union": {
+   "distinct_surface": {
+    "n": 140015,
+    "share_surname_known": 0.1593,
+    "share_unique_by_union_window": 0.0358,
+    "surname_known": 22305,
+    "unique_by_union_window": 5018
+   },
+   "document_x_surface": {
+    "n": 853622,
+    "share_surname_known": 0.4446,
+    "share_unique_by_volume_window": 0.237,
+    "surname_known": 379493,
+    "unique_by_volume_window": 202328
+   },
+   "mention": {
+    "distinct_surnames_among_unique_by_document_year": 784,
+    "k2_key_empty_after_stripping": 1008,
+    "known_but_nobody_in_office_that_year": 263183,
+    "known_several_in_office_that_year": 34235,
+    "known_single_token_surface": 348577,
+    "n": 1427032,
+    "share_surname_known": 0.4052,
+    "share_surname_known_among_dated": 0.4052,
+    "share_surname_known_over_with_surname": 0.4101,
+    "share_unique_by_document_year_among_dated": 0.1967,
+    "share_unique_by_document_year_over_with_surname": 0.1991,
+    "share_unique_by_volume_window": 0.2042,
+    "surname_known": 578171,
+    "surname_known_among_dated": 578171,
+    "top_15_known_surnames": [
+     [
+      "Seward",
+      14948
+     ],
+     [
+      "Wilson",
+      11725
+     ],
+     [
+      "Johnson",
+      9978
+     ],
+     [
+      "Marshall",
+      8331
+     ],
+     [
+      "Roosevelt",
+      8101
+     ],
+     [
+      "Adams",
+      6998
+     ],
+     [
+      "Hay",
+      6378
+     ],
+     [
+      "Byrnes",
+      5964
+     ],
+     [
+      "Acheson",
+      5508
+     ],
+     [
+      "Bayard",
+      5348
+     ],
+     [
+      "Welles",
+      4933
+     ],
+     [
+      "Winant",
+      4842
+     ],
+     [
+      "Davis",
+      4767
+     ],
+     [
+      "Russell",
+      4693
+     ],
+     [
+      "Smith",
+      4450
+     ]
+    ],
+    "top_15_unique_by_document_year_surnames": [
+     [
+      "Marshall",
+      6550
+     ],
+     [
+      "Hay",
+      6231
+     ],
+     [
+      "Johnson",
+      6040
+     ],
+     [
+      "Byrnes",
+      5889
+     ],
+     [
+      "Bayard",
+      5282
+     ],
+     [
+      "Acheson",
+      5082
+     ],
+     [
+      "Adams",
+      5039
+     ],
+     [
+      "Wilson",
+      5009
+     ],
+     [
+      "Winant",
+      4833
+     ],
+     [
+      "Welles",
+      4519
+     ],
+     [
+      "Stuart",
+      3914
+     ],
+     [
+      "Caffery",
+      3913
+     ],
+     [
+      "Grew",
+      3853
+     ],
+     [
+      "Fish",
+      3473
+     ],
+     [
+      "Harriman",
+      3444
+     ]
+    ],
+    "unique_by_document_year_among_dated": 280753,
+    "unique_by_document_year_share_in_top_10_surnames": 0.194,
+    "unique_by_volume_window": 291426,
+    "unique_doc_single_token_surface": 190637,
+    "volume_window_proxy_vs_document_year": {
+     "proxy_gains_unique (window unique, doc-year not)": 20965,
+     "proxy_loses_unique (doc-year unique, window not)": 10292
+    },
+    "with_surname_m1a_denominator": 1409925,
+    "with_tei_document_year": 1427032
+   },
+   "volume_x_surface": {
+    "n": 300240,
+    "share_surname_known": 0.2462,
+    "share_unique_by_volume_window": 0.065,
+    "surname_known": 73931,
+    "unique_by_volume_window": 19508
+   }
+  }
+ }
+}

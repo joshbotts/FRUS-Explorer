@@ -1,0 +1,102 @@
+gold docs 64 mentions 406 naming no one 2 bands {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+gold spans slice back: OK
+arms loaded; span totals {'editor': 88, 'raw_sweep': 1003, 'boundary_sweep': 976, 'filtered_sweep': 736, 'raw_control': 343, 'filtered_control': 316}
+
+== MENTION GRAIN (own matcher) ==
+editor                                     spans   88 strict P 0.602 R 0.131 F1 0.215 | relaxed P 1.000 R 0.217 F1 0.356
+raw_sweep                                  spans 1003 strict P 0.346 R 0.855 F1 0.493 | relaxed P 0.378 R 0.933 F1 0.538
+boundary_sweep                             spans  976 strict P 0.356 R 0.855 F1 0.502 | relaxed P 0.388 R 0.933 F1 0.548
+filtered_sweep                             spans  736 strict P 0.471 R 0.855 F1 0.608 | relaxed P 0.514 R 0.931 F1 0.662
+raw_control                                spans  343 strict P 0.434 R 0.367 F1 0.398 | relaxed P 0.752 R 0.635 F1 0.689
+filtered_control                           spans  316 strict P 0.472 R 0.367 F1 0.413 | relaxed P 0.810 R 0.631 F1 0.709
+intersection_control_side                  spans  267 strict P 0.509 R 0.335 F1 0.404 | relaxed P 0.891 R 0.586 F1 0.707
+      1861-1899  n=18 gold=186 relaxed P 0.973 R 0.575 F1 0.723
+      1900-1929  n=15 gold=55 relaxed P 1.000 R 0.564 F1 0.721
+      1930-1945  n=15 gold=61 relaxed P 0.725 R 0.607 F1 0.661
+      1946-      n=16 gold=104 relaxed P 0.840 R 0.606 F1 0.704
+intersection_sweep_side                    spans  279 strict P 0.778 R 0.534 F1 0.634 | relaxed P 0.864 R 0.594 F1 0.704
+      1861-1899  n=18 gold=186 relaxed P 0.982 R 0.575 F1 0.725
+      1900-1929  n=15 gold=55 relaxed P 0.969 R 0.564 F1 0.713
+      1930-1945  n=15 gold=61 relaxed P 0.704 R 0.623 F1 0.661
+      1946-      n=16 gold=104 relaxed P 0.774 R 0.625 F1 0.691
+editor+filtered_control                    spans  385 strict P 0.499 R 0.473 F1 0.485 | relaxed P 0.816 R 0.773 F1 0.794
+      1861-1899  n=18 gold=186 relaxed P 0.801 R 0.780 F1 0.790
+      1900-1929  n=15 gold=55 relaxed P 0.939 R 0.836 F1 0.885
+      1930-1945  n=15 gold=61 relaxed P 0.754 R 0.803 F1 0.778
+      1946-      n=16 gold=104 relaxed P 0.822 R 0.712 F1 0.763
+editor+filtered_sweep                      spans  771 strict P 0.451 R 0.857 F1 0.591 | relaxed P 0.493 R 0.936 F1 0.646
+editor+intersection_control_side           spans  336 strict P 0.533 R 0.441 F1 0.482 | relaxed P 0.884 R 0.732 F1 0.801
+      1861-1899  n=18 gold=186 relaxed P 0.938 R 0.726 F1 0.818
+      1900-1929  n=15 gold=55 relaxed P 0.957 R 0.818 F1 0.882
+      1930-1945  n=15 gold=61 relaxed P 0.754 R 0.754 F1 0.754
+      1946-      n=16 gold=104 relaxed P 0.845 R 0.683 F1 0.755
+editor+intersection_sweep_side             spans  350 strict P 0.726 R 0.626 F1 0.672 | relaxed P 0.857 R 0.739 F1 0.794
+editor+filtered_control+filtered_sweep     spans  906 strict P 0.401 R 0.894 F1 0.553 | relaxed P 0.439 R 0.980 F1 0.607
+      1861-1899  n=18 gold=186 relaxed P 0.529 R 0.968 F1 0.684
+      1900-1929  n=15 gold=55 relaxed P 0.362 R 1.000 F1 0.531
+      1930-1945  n=15 gold=61 relaxed P 0.347 R 1.000 F1 0.515
+      1946-      n=16 gold=104 relaxed P 0.429 R 0.981 F1 0.596
+raw_control_intersect_raw_sweep            spans  283 strict P 0.481 R 0.335 F1 0.395 | relaxed P 0.848 R 0.591 F1 0.697
+
+== PRESENCE GRAIN (own matcher, own key) ==
+editor                                     P 1.000 R 0.274 F1 0.431 | pred keys 79 true 79 false 0 | gold keys 288 found 79 | false distinct 0 occ 0 | missed distinct 191 occ 209
+raw_sweep                                  P 0.409 R 0.938 F1 0.570 | pred keys 662 true 271 false 391 | gold keys 288 found 270 | false distinct 312 occ 391 | missed distinct 18 occ 18
+boundary_sweep                             P 0.410 R 0.938 F1 0.570 | pred keys 661 true 271 false 390 | gold keys 288 found 270 | false distinct 312 occ 390 | missed distinct 18 occ 18
+filtered_sweep                             P 0.528 R 0.934 F1 0.675 | pred keys 511 true 270 false 241 | gold keys 288 found 269 | false distinct 234 occ 241 | missed distinct 19 occ 19
+raw_control                                P 0.748 R 0.625 F1 0.681 | pred keys 234 true 175 false 59 | gold keys 288 found 180 | false distinct 50 occ 59 | missed distinct 83 occ 108
+filtered_control                           P 0.804 R 0.618 F1 0.699 | pred keys 214 true 172 false 42 | gold keys 288 found 178 | false distinct 40 occ 42 | missed distinct 83 occ 110
+intersection_control_side                  P 0.872 R 0.583 F1 0.699 | pred keys 187 true 163 false 24 | gold keys 288 found 168 | false distinct 24 occ 24 | missed distinct 93 occ 120
+intersection_sweep_side                    P 0.876 R 0.590 F1 0.705 | pred keys 193 true 169 false 24 | gold keys 288 found 170 | false distinct 24 occ 24 | missed distinct 91 occ 118
+editor+filtered_control                    P 0.831 R 0.795 F1 0.813 | pred keys 266 true 221 false 45 | gold keys 288 found 229 | false distinct 43 occ 45 | missed distinct 54 occ 59
+editor+filtered_sweep                      P 0.527 R 0.938 F1 0.675 | pred keys 512 true 270 false 242 | gold keys 288 found 270 | false distinct 235 occ 242 | missed distinct 18 occ 18
+editor+intersection_control_side           P 0.883 R 0.760 F1 0.817 | pred keys 239 true 211 false 28 | gold keys 288 found 219 | false distinct 28 occ 28 | missed distinct 64 occ 69
+editor+intersection_sweep_side             P 0.898 R 0.767 F1 0.828 | pred keys 245 true 220 false 25 | gold keys 288 found 221 | false distinct 25 occ 25 | missed distinct 62 occ 67
+editor+filtered_control+filtered_sweep     P 0.491 R 0.976 F1 0.654 | pred keys 574 true 282 false 292 | gold keys 288 found 281 | false distinct 283 occ 292 | missed distinct 7 occ 7
+raw_control_intersect_raw_sweep            P 0.834 R 0.590 F1 0.691 | pred keys 199 true 166 false 33 | gold keys 288 found 170 | false distinct 30 occ 33 | missed distinct 93 occ 118
+
+== PRESENCE by band ==
+editor                               1861-1899 n=18 gk=137 1.000/0.263/0.416 ; 1900-1929 n=15 gk=43 1.000/0.372/0.542 ; 1930-1945 n=15 gk=44 1.000/0.341/0.508 ; 1946- n=16 gk=64 1.000/0.188/0.316
+filtered_control                     1861-1899 n=18 gk=137 0.828/0.584/0.685 ; 1900-1929 n=15 gk=43 0.963/0.605/0.743 ; 1930-1945 n=15 gk=44 0.698/0.727/0.712 ; 1946- n=16 gk=64 0.765/0.625/0.688
+filtered_sweep                       1861-1899 n=18 gk=137 0.705/0.905/0.792 ; 1900-1929 n=15 gk=43 0.452/0.977/0.618 ; 1930-1945 n=15 gk=44 0.407/0.977/0.575 ; 1946- n=16 gk=64 0.448/0.938/0.606
+intersection_control_side            1861-1899 n=18 gk=137 0.959/0.533/0.685 ; 1900-1929 n=15 gk=43 1.000/0.581/0.735 ; 1930-1945 n=15 gk=44 0.714/0.705/0.709 ; 1946- n=16 gk=64 0.809/0.609/0.695
+editor+filtered_control              1861-1899 n=18 gk=137 0.853/0.766/0.808 ; 1900-1929 n=15 gk=43 0.949/0.860/0.902 ; 1930-1945 n=15 gk=44 0.745/0.886/0.810 ; 1946- n=16 gk=64 0.783/0.750/0.766
+editor+intersection_control_side     1861-1899 n=18 gk=137 0.958/0.715/0.819 ; 1900-1929 n=15 gk=43 0.973/0.837/0.900 ; 1930-1945 n=15 gk=44 0.740/0.864/0.797 ; 1946- n=16 gk=64 0.821/0.734/0.775
+editor+intersection_sweep_side       1861-1899 n=18 gk=137 0.980/0.715/0.827 ; 1900-1929 n=15 gk=43 0.973/0.837/0.900 ; 1930-1945 n=15 gk=44 0.745/0.864/0.800 ; 1946- n=16 gk=64 0.842/0.766/0.802
+editor+filtered_sweep                1861-1899 n=18 gk=137 0.705/0.912/0.795 ; 1900-1929 n=15 gk=43 0.447/0.977/0.613 ; 1930-1945 n=15 gk=44 0.407/0.977/0.575 ; 1946- n=16 gk=64 0.448/0.938/0.606
+
+== FALSE KEY LISTS ==
+intersection_control_side 24 ['british malaya', 'delga', 'dutch timor', 'fort anderson', 'fuhsin', 'harding', 'hunzedal', 'kunming', 'medan', 'mother', 'north kiangsu', 'parke', 'peipiao', 'puerto caballo', 'rudolf', 'seville', 'shensi', 'takao', 'telegram delga', 'tungkuan', 'wilmington', 'wolf', 'yellow river', 'zecho']
+intersection_sweep_side 24 ['british malaya', 'commanding general seville', 'delga', 'fort anderson', 'fuhsin', 'governors of portuguese and dutch timor', 'harding', 'howard', 'hunzedal', 'kunming', 'lic. wolf', 'medan', 'mother', 'north kiangsu', 'peipiao', 'puerto caballo', 'rudolf/51', 'seville', 'shensi', 'takao refinery', 'tungkuan', 'wilmington', 'yellow river', 'zecho']
+filtered_control 40 ['anna', 'arro', 'british malaya', 'bull', 'dee', 'del', 'delga', 'dutch timor', 'fort anderson', 'fort langley', 'fraser river', 'fuhsin', 'greek govt', 'harding', 'haro(x2)', 'hunzedal', 'kunming', 'leg cairo', 'medan', 'mother', 'north kiangsu', 'pacific', 'peipiao', 'puerto caballo', 'ramazan', 'rickmers reismühlen rhederei', 'rosario', 'rosario strait(x2)', 'rosario straits', 'rudolf', 'samoan', 'seville', 'shensi', 'takao', 'telegram delga', 'tungkuan', 'wilmington', 'wolf', 'yellow river', 'zecho']
+editor+filtered_control 43 ['anna', 'arro', 'british malaya', 'bull', 'dee', 'del', 'delga', 'dutch timor', 'fort anderson', 'fort langley', 'fraser river', 'fuhsin', 'greek govt', 'harding', 'haro(x2)', 'hunzedal', 'john b. howard', 'kunming', 'leg cairo', 'medan', 'mother', 'north kiangsu', 'pacific', 'peipiao', 'puerto caballo', 'ramazan', 'rickmers reismühlen rhederei', 'rosario', 'rosario strait(x2)', 'rosario straits', 'rudolf', 'samoan', 'seville', 'seward mexican', 'shensi', 'takao', 'telegram delga', 'tungkuan', 'wilmington', 'wilson', 'wolf', 'yellow river', 'zecho']
+editor+intersection_control_side 28 ['british malaya', 'delga', 'dutch timor', 'fort anderson', 'fuhsin', 'harding', 'hunzedal', 'john b. howard', 'kunming', 'luce', 'medan', 'mother', 'north kiangsu', 'parke', 'peipiao', 'puerto caballo', 'rudolf', 'seville', 'seward mexican', 'shensi', 'takao', 'telegram delga', 'tungkuan', 'wilmington', 'wilson', 'wolf', 'yellow river', 'zecho']
+editor+intersection_sweep_side 25 ['british malaya', 'commanding general seville', 'delga', 'fort anderson', 'fuhsin', 'governors of portuguese and dutch timor', 'harding', 'howard', 'hunzedal', 'kunming', 'lic. wolf', 'medan', 'mother', 'north kiangsu', 'peipiao', 'puerto caballo', 'rudolf/51', 'seville', 'shensi', 'takao refinery', 'tungkuan', 'wilmington', 'wilson', 'yellow river', 'zecho']
+
+== MISSED KEY HEADS ==
+intersection_sweep_side [('seward', 7), ('william h. seward', 5), ('bayard', 5), ('hay', 5), ('adams', 4), ('stuart', 3), ('lyons', 2), ('campbell', 2), ('clayton', 2), ('marshall', 2), ('right hon. lord lyons', 1), ('william h. hall', 1)]
+editor [('william h. seward', 8), ('charles francis adams', 4), ('t. f. bayard', 3), ('russell', 2), ('allan a. burton', 2), ('john hay', 2), ('welles', 2), ('hickerson', 2), ('marshall', 2), ('right hon. lord lyons', 1), ('murray', 1), ('william h. hall', 1)]
+three-way missed: [('archibald campbell', 1), ('aspíroz', 1), ('campbell', 1), ('chou', 1), ('george washington', 1), ('king', 1), ('william h. seward', 1)]
+
+== BOOTSTRAP CIs (own RNG seed 9001) ==
+intersection_control_side                  mention rP (0.838, 0.939) rR (0.53, 0.639) rF (0.659, 0.749) sF (0.346, 0.463) | presence P (0.813, 0.928) R (0.525, 0.637) F (0.649, 0.744)
+intersection_sweep_side                    mention rP (0.813, 0.911) rR (0.536, 0.646) rF (0.655, 0.746) sF (0.589, 0.674) | presence P (0.818, 0.929) R (0.531, 0.645) F (0.654, 0.751)
+editor+intersection_control_side           mention rP (0.841, 0.923) rR (0.682, 0.777) rF (0.764, 0.834) sF (0.425, 0.541) | presence P (0.835, 0.928) R (0.705, 0.813) F (0.777, 0.855)
+editor+intersection_sweep_side             mention rP (0.818, 0.899) rR (0.689, 0.784) rF (0.759, 0.826) sF (0.628, 0.715) | presence P (0.852, 0.941) R (0.711, 0.82) F (0.788, 0.866)
+editor+filtered_control                    mention rP (0.734, 0.881) rR (0.718, 0.825) rF (0.74, 0.841) sF (0.43, 0.539) | presence P (0.769, 0.888) R (0.735, 0.851) F (0.769, 0.854)
+editor+filtered_control+filtered_sweep     mention rP (0.383, 0.497) rR (0.964, 0.994) rF (0.55, 0.66) sF (0.5, 0.605) | presence P (0.429, 0.558) R (0.955, 0.992) F (0.595, 0.711)
+filtered_control                           mention rP (0.712, 0.891) rR (0.566, 0.695) rF (0.645, 0.767) sF (0.355, 0.468) | presence P (0.729, 0.873) R (0.553, 0.68) F (0.644, 0.749)
+filtered_sweep                             mention rP (0.441, 0.59) rR (0.892, 0.966) rF (0.596, 0.725) sF (0.547, 0.667) | presence P (0.458, 0.606) R (0.89, 0.972) F (0.611, 0.738)
+editor                                     mention rP (1.0, 1.0) rR (0.178, 0.265) rF (0.302, 0.419) sF (0.152, 0.284) | presence P (1.0, 1.0) R (0.225, 0.333) F (0.367, 0.5)
+
+== PAIRED DIFFERENCES (own RNG) ==
+editor+intersection_sweep_side         - editor+filtered_control                | mention rF -0.000 (-0.04, 0.042) sF +0.186 (0.142, 0.234) rP +0.042 (-0.025, 0.122) | presence F +0.015 (-0.011, 0.042) P +0.067 (0.028, 0.117) R -0.028 (-0.062, 0.003)
+editor+intersection_control_side       - editor+filtered_control                | mention rF +0.007 (-0.024, 0.042) sF -0.003 (-0.03, 0.023) rP +0.068 (0.019, 0.134) | presence F +0.004 (-0.02, 0.029) P +0.052 (0.017, 0.094) R -0.035 (-0.066, -0.009)
+editor+filtered_control                - editor+filtered_sweep                  | mention rF +0.148 (0.076, 0.221) sF -0.106 (-0.175, -0.034) rP +0.323 (0.239, 0.401) | presence F +0.138 (0.066, 0.21) P +0.303 (0.23, 0.376) R -0.142 (-0.22, -0.063)
+editor+filtered_control                - editor                                 | mention rF +0.438 (0.362, 0.502) sF +0.271 (0.2, 0.338) rP -0.184 (-0.266, -0.119) | presence F +0.382 (0.31, 0.446) P -0.169 (-0.231, -0.112) R +0.521 (0.452, 0.58)
+editor+intersection_sweep_side         - editor                                 | mention rF +0.437 (0.372, 0.498) sF +0.457 (0.397, 0.514) rP -0.143 (-0.182, -0.101) | presence F +0.397 (0.331, 0.457) P -0.102 (-0.148, -0.059) R +0.493 (0.429, 0.547)
+intersection_control_side              - filtered_control                       | mention rF -0.002 (-0.034, 0.033) sF -0.009 (-0.037, 0.017) rP +0.081 (0.021, 0.16) | presence F +0.000 (-0.026, 0.025) P +0.068 (0.027, 0.118) R -0.035 (-0.066, -0.009)
+intersection_sweep_side                - filtered_sweep                         | mention rF +0.042 (-0.022, 0.103) sF +0.026 (-0.035, 0.084) rP +0.350 (0.283, 0.417) | presence F +0.030 (-0.039, 0.096) P +0.347 (0.281, 0.416) R -0.344 (-0.415, -0.277)
+filtered_control                       - filtered_sweep                         | mention rF +0.047 (-0.03, 0.122) sF -0.195 (-0.267, -0.125) rP +0.297 (0.202, 0.384) | presence F +0.024 (-0.051, 0.097) P +0.275 (0.197, 0.352) R -0.316 (-0.401, -0.227)
+editor+filtered_control+filtered_sweep - editor+filtered_control                | mention rF -0.187 (-0.245, -0.13) sF +0.068 (0.005, 0.127) rP -0.376 (-0.438, -0.314) | presence F -0.159 (-0.221, -0.097) P -0.340 (-0.398, -0.282) R +0.181 (0.122, 0.244)
+
+key spot-check {'Mr. Mariscal’s': 'mariscal', 'General Stoessel': 'stoessel', 'Sir Edward Grey': 'edward grey', 'Earl Russell': 'russell', "Señor Romero's": 'romero', 'Vyshinsky’s': 'vyshinsky', 'Rt. Hon. Lord Lyons': 'rt. hon. lord lyons', 'the Secretary': 'the secretary'}

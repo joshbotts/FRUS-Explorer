@@ -1,0 +1,30 @@
+editor markup (baseline)                 strict P 0.602 R 0.131 F1 0.215 pred 88 | relaxed P 1.000 R 0.217 F1 0.356 hits 88 | scored 64 refused [] not_scored [] | extra keys []
+    1861-1899  docs 18 gold 186 strict P 0.591 R 0.140 F1 0.226 | relaxed P 1.000 R 0.237 F1 0.383
+    1900-1929  docs 15 gold  55 strict P 0.118 R 0.036 F1 0.056 | relaxed P 1.000 R 0.309 F1 0.472
+    1930-1945  docs 15 gold  61 strict P 0.933 R 0.230 F1 0.368 | relaxed P 1.000 R 0.246 F1 0.395
+    1946-      docs 16 gold 104 strict P 0.917 R 0.106 F1 0.190 | relaxed P 1.000 R 0.115 F1 0.207
+frus-ner-raw                             strict P 0.346 R 0.855 F1 0.492 pred 1003 | relaxed P 0.378 R 0.933 F1 0.538 hits 379 | scored 64 refused [] not_scored [] | extra keys []
+    1861-1899  docs 18 gold 186 strict P 0.540 R 0.833 F1 0.655 | relaxed P 0.585 R 0.903 F1 0.710
+    1900-1929  docs 15 gold  55 strict P 0.288 R 0.927 F1 0.440 | relaxed P 0.305 R 0.982 F1 0.466
+    1930-1945  docs 15 gold  61 strict P 0.228 R 0.885 F1 0.362 | relaxed P 0.245 R 0.951 F1 0.389
+    1946-      docs 16 gold 104 strict P 0.288 R 0.837 F1 0.429 | relaxed P 0.328 R 0.952 F1 0.488
+frus-ner-raw-filtered-boundary           strict P 0.355 R 0.855 F1 0.502 pred 976 | relaxed P 0.388 R 0.933 F1 0.548 hits 379 | scored 64 refused [] not_scored [] | extra keys []
+    1861-1899  docs 18 gold 186 strict P 0.544 R 0.833 F1 0.658 | relaxed P 0.590 R 0.903 F1 0.713
+    1900-1929  docs 15 gold  55 strict P 0.290 R 0.927 F1 0.442 | relaxed P 0.307 R 0.982 F1 0.468
+    1930-1945  docs 15 gold  61 strict P 0.245 R 0.885 F1 0.384 | relaxed P 0.264 R 0.951 F1 0.413
+    1946-      docs 16 gold 104 strict P 0.295 R 0.837 F1 0.436 | relaxed P 0.336 R 0.952 F1 0.496
+frus-ner-raw-filtered                    strict P 0.471 R 0.855 F1 0.608 pred 736 | relaxed P 0.514 R 0.931 F1 0.662 hits 378 | scored 64 refused [] not_scored [] | extra keys []
+    1861-1899  docs 18 gold 186 strict P 0.638 R 0.833 F1 0.723 | relaxed P 0.691 R 0.903 F1 0.783
+    1900-1929  docs 15 gold  55 strict P 0.408 R 0.927 F1 0.567 | relaxed P 0.432 R 0.982 F1 0.600
+    1930-1945  docs 15 gold  61 strict P 0.358 R 0.885 F1 0.509 | relaxed P 0.384 R 0.951 F1 0.547
+    1946-      docs 16 gold 104 strict P 0.401 R 0.837 F1 0.542 | relaxed P 0.452 R 0.942 F1 0.611
+frus-ner-raw-control                     strict P 0.434 R 0.367 F1 0.398 pred 343 | relaxed P 0.752 R 0.635 F1 0.689 hits 258 | scored 64 refused [] not_scored [] | extra keys []
+    1861-1899  docs 18 gold 186 strict P 0.367 R 0.328 F1 0.347 | relaxed P 0.723 R 0.645 F1 0.682
+    1900-1929  docs 15 gold  55 strict P 0.474 R 0.327 F1 0.387 | relaxed P 0.842 R 0.582 F1 0.688
+    1930-1945  docs 15 gold  61 strict P 0.429 R 0.393 F1 0.410 | relaxed P 0.714 R 0.656 F1 0.684
+    1946-      docs 16 gold 104 strict P 0.554 R 0.442 F1 0.492 | relaxed P 0.795 R 0.635 F1 0.706
+frus-ner-raw-control-filtered            strict P 0.471 R 0.367 F1 0.413 pred 316 | relaxed P 0.810 R 0.630 F1 0.709 hits 256 | scored 64 refused [] not_scored [] | extra keys []
+    1861-1899  docs 18 gold 186 strict P 0.415 R 0.328 F1 0.366 | relaxed P 0.803 R 0.634 F1 0.709
+    1900-1929  docs 15 gold  55 strict P 0.545 R 0.327 F1 0.409 | relaxed P 0.970 R 0.582 F1 0.727
+    1930-1945  docs 15 gold  61 strict P 0.436 R 0.393 F1 0.414 | relaxed P 0.727 R 0.656 F1 0.690
+    1946-      docs 16 gold 104 strict P 0.568 R 0.442 F1 0.497 | relaxed P 0.815 R 0.635 F1 0.714

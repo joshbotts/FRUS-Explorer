@@ -1,0 +1,13 @@
+doc rows 64 span rows 406
+doc keys ['band', 'd', 'mark', 'mentions', 'v'] span keys ['band', 'd', 'e', 'n', 's', 'seeded', 'v']
+zero-mention doc {'v': 'frus1946v01', 'd': 'd483', 'band': '1946-', 'mentions': 0, 'mark': 'none'}
+zero-mention doc {'v': 'frus1946v01', 'd': 'd715', 'band': '1946-', 'mentions': 0, 'mark': 'none'}
+docs by band {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+mentions by band {'1861-1899': 186, '1900-1929': 55, '1930-1945': 61, '1946-': 104}
+seg1 docs by band {'1861-1899': 12} total 12
+seg1 mentions by band {'1861-1899': 105} total 105
+mark values {'y': 61, 'none': 3} zero-mention docs 2
+span-file mention count by band {'1861-1899': 186, '1900-1929': 55, '1930-1945': 61, '1946-': 104}
+volumes 24 [('frus1864p2', 3), ('frus1865p1', 3), ('frus1866p3', 3), ('frus1872p2v5', 3), ('frus1888p2', 3), ('frus1889', 3), ('frus1902', 3), ('frus1903', 3), ('frus1905', 3), ('frus1911', 2), ('frus1912', 2), ('frus1919v02', 2), ('frus1933v05', 2), ('frus1937v01', 3), ('frus1937v04', 2), ('frus1938v05', 2), ('frus1941v05', 3), ('frus1944v06', 3), ('frus1946v01', 2), ('frus1946v06', 3), ('frus1946v10', 3), ('frus1947v04', 3), ('frus1947v05', 3), ('frus1951v01', 2)]
+sample doc row {'v': 'frus1864p2', 'd': 'd354', 'band': '1861-1899', 'mentions': 4, 'mark': 'y'}
+sample span row {'v': 'frus1864p2', 'd': 'd354', 's': 0, 'e': 10, 'n': 'Lord Lyons', 'seeded': True, 'band': '1861-1899'}

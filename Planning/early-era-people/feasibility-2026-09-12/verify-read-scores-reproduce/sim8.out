@@ -1,0 +1,4 @@
+extra {'1900-1929': 3, '1930-1945': 3, '1946-': 2} with_replacement True rule met 0 of 10000 strict gap range -12.4 to -3.6
+extra {'1900-1929': 3, '1930-1945': 3, '1946-': 2} with_replacement False rule met 0 of 10000 strict gap range -11.7 to -4.3
+extra {'1900-1929': 2, '1930-1945': 3, '1946-': 3} with_replacement True rule met 0 of 10000 strict gap range -11.6 to -3.6
+extra {'1900-1929': 2, '1930-1945': 3, '1946-': 3} with_replacement False rule met 0 of 10000 strict gap range -11.5 to -4.3

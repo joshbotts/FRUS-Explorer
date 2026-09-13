@@ -1,0 +1,41 @@
+gold: 64 documents, 406 mentions, bands {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+control1 editor             expected (0.215, 0.356) got (0.215, 0.356) OK
+control1 raw_sweep          expected (0.492, 0.538) got (0.492, 0.538) OK
+control1 boundary_sweep     expected (0.502, 0.548) got (0.502, 0.548) OK
+control1 filtered_sweep     expected (0.608, 0.662) got (0.608, 0.662) OK
+control1 raw_control        expected (0.398, 0.689) got (0.398, 0.689) OK
+control1 filtered_control   expected (0.413, 0.709) got (0.413, 0.709) OK
+control2 editor+filtered_control  exact_dedup                  expected (0.794, 0.816, 0.773) got (0.794, 0.816, 0.773) OK
+control2 editor+filtered_control  overlap_dedup_editor_first   expected (0.794, 0.816, 0.773) got (0.805, 0.84, 0.773) no
+control2 editor+filtered_sweep    exact_dedup                  expected (0.646, 0.493, 0.936) got (0.646, 0.493, 0.936) OK
+control2 editor+filtered_sweep    overlap_dedup_editor_first   expected (0.646, 0.493, 0.936) got (0.665, 0.517, 0.933) no
+bootstrap: 10000 resamples, seed 234, strata {'1861-1899': 18, '1900-1929': 15, '1930-1945': 15, '1946-': 16}
+mention  editor                                   strict F1 0.215 [0.154,0.283]  relaxed P 1.000 [1.000,1.000] R 0.217 F1 0.356 [0.301,0.418]
+presence editor                                   P 1.000 [1.000,1.000] R 0.274 [0.225,0.335] F1 0.430 [0.368,0.501]  false keys 0 (distinct 0)  missed 209 (distinct 191)
+mention  raw_sweep                                strict F1 0.492 [0.428,0.559]  relaxed P 0.378 [0.312,0.451] R 0.933 F1 0.538 [0.467,0.611]
+presence raw_sweep                                P 0.409 [0.349,0.476] R 0.938 [0.894,0.976] F1 0.570 [0.507,0.634]  false keys 391 (distinct 311)  missed 18 (distinct 18)
+mention  boundary_sweep                           strict F1 0.502 [0.440,0.565]  relaxed P 0.388 [0.325,0.459] R 0.933 F1 0.548 [0.480,0.617]
+presence boundary_sweep                           P 0.410 [0.349,0.477] R 0.938 [0.894,0.976] F1 0.571 [0.508,0.634]  false keys 390 (distinct 311)  missed 18 (distinct 18)
+mention  filtered_sweep                           strict F1 0.608 [0.547,0.668]  relaxed P 0.514 [0.440,0.591] R 0.931 F1 0.662 [0.595,0.726]
+presence filtered_sweep                           P 0.528 [0.456,0.606] R 0.934 [0.890,0.973] F1 0.675 [0.610,0.738]  false keys 241 (distinct 234)  missed 19 (distinct 19)
+mention  raw_control                              strict F1 0.398 [0.338,0.452]  relaxed P 0.752 [0.660,0.829] R 0.635 F1 0.689 [0.622,0.747]
+presence raw_control                              P 0.739 [0.658,0.811] R 0.625 [0.560,0.686] F1 0.677 [0.618,0.728]  false keys 61 (distinct 51)  missed 108 (distinct 83)
+mention  filtered_control                         strict F1 0.413 [0.353,0.468]  relaxed P 0.810 [0.713,0.891] R 0.630 F1 0.709 [0.644,0.766]
+presence filtered_control                         P 0.799 [0.719,0.873] R 0.618 [0.553,0.679] F1 0.697 [0.640,0.747]  false keys 43 (distinct 41)  missed 110 (distinct 83)
+mention  intersection_control_side                strict F1 0.404 [0.344,0.461]  relaxed P 0.891 [0.839,0.940] R 0.586 F1 0.707 [0.660,0.749]
+presence intersection_control_side                P 0.872 [0.812,0.928] R 0.583 [0.527,0.637] F1 0.699 [0.649,0.743]  false keys 24 (distinct 24)  missed 120 (distinct 93)
+mention  intersection_sweep_side                  strict F1 0.634 [0.588,0.673]  relaxed P 0.864 [0.813,0.910] R 0.594 F1 0.704 [0.656,0.745]
+presence intersection_sweep_side                  P 0.876 [0.818,0.930] R 0.590 [0.533,0.644] F1 0.705 [0.654,0.750]  false keys 24 (distinct 24)  missed 118 (distinct 91)
+mention  editor+filtered_control                  strict F1 0.485 [0.428,0.539]  relaxed P 0.816 [0.736,0.881] R 0.773 F1 0.794 [0.740,0.841]
+presence editor+filtered_control                  P 0.827 [0.761,0.888] R 0.795 [0.735,0.849] F1 0.811 [0.765,0.853]  false keys 46 (distinct 44)  missed 59 (distinct 54)
+mention  editor+filtered_sweep                    strict F1 0.591 [0.533,0.648]  relaxed P 0.493 [0.425,0.564] R 0.936 F1 0.646 [0.582,0.706]
+presence editor+filtered_sweep                    P 0.527 [0.455,0.605] R 0.938 [0.893,0.976] F1 0.675 [0.610,0.738]  false keys 242 (distinct 235)  missed 18 (distinct 18)
+mention  editor+intersection_control_side         strict F1 0.482 [0.424,0.541]  relaxed P 0.884 [0.841,0.924] R 0.732 F1 0.800 [0.765,0.834]
+presence editor+intersection_control_side         P 0.883 [0.835,0.928] R 0.760 [0.706,0.812] F1 0.817 [0.778,0.854]  false keys 28 (distinct 28)  missed 69 (distinct 64)
+mention  editor+intersection_sweep_side           strict F1 0.672 [0.628,0.715]  relaxed P 0.857 [0.818,0.898] R 0.739 F1 0.794 [0.760,0.827]
+presence editor+intersection_sweep_side           P 0.898 [0.852,0.942] R 0.767 [0.712,0.820] F1 0.828 [0.788,0.865]  false keys 25 (distinct 25)  missed 67 (distinct 62)
+mention  editor+filtered_control+filtered_sweep   strict F1 0.553 [0.499,0.606]  relaxed P 0.439 [0.382,0.498] R 0.980 F1 0.607 [0.549,0.661]
+presence editor+filtered_control+filtered_sweep   P 0.491 [0.427,0.558] R 0.976 [0.955,0.992] F1 0.653 [0.593,0.711]  false keys 292 (distinct 283)  missed 7 (distinct 7)
+mention  raw_control_intersect_raw_sweep          strict F1 0.395 [0.335,0.452]  relaxed P 0.848 [0.786,0.904] R 0.591 F1 0.697 [0.646,0.742]
+presence raw_control_intersect_raw_sweep          P 0.829 [0.764,0.891] R 0.590 [0.533,0.645] F1 0.690 [0.638,0.736]  false keys 34 (distinct 30)  missed 118 (distinct 93)
+wrote /private/tmp/claude-501/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-234-feasibility-assessment-518fe5/1ccebcd5-11bc-42dd-8b13-b2025658e2f3/scratchpad/measure-grains/grains.json
