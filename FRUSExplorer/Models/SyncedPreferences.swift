@@ -76,9 +76,9 @@ final class SyncedPreferences {
     ///
     /// **Synced rather than device-local, by owner decision.** "My current research priorities" is
     /// a property of the research, not of the iPad — a reorder on one device should follow the
-    /// reader to the other. That choice is what puts this identifier in
-    /// `CloudKitSchemaInventory.identifiersAwaitingDeploy`; a device-local `@AppStorage` would have
-    /// cost nothing and synced nothing.
+    /// reader to the other. That choice is what made this identifier need a
+    /// CloudKit Production deploy (the tenth promotion, 2026-09-13); a device-local `@AppStorage`
+    /// would have cost nothing and synced nothing.
     ///
     /// IDs are stored rather than positions, so a tag renamed, merged or deleted elsewhere does not
     /// renumber the rest — `ListOrderPreferences` drops unknown ids on read and appends unordered

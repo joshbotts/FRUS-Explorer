@@ -88,6 +88,10 @@ import SwiftData
 ///          ``identifiersAwaitingDeploy`` because no build has written a non-nil value, so
 ///          CloudKit never created the field to promote. Baseline 260 → 269 with the digest
 ///          the suite printed; `deployedThroughBuild` 43 → 44, `deployedOn` → 2026-09-03.
+///   1.8 — The TENTH promotion ran (2026-09-13, build 47): the owner deployed #1275's
+///          `CD_ResearchNote.CD_richText` and `CD_SyncedPreferences.CD_listOrderJSON`, and
+///          ``identifiersAwaitingDeploy`` is empty again. Baseline 269 → 271 with the digest the
+///          suite printed; `deployedThroughBuild` 44 → 47, `deployedOn` → 2026-09-13.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -394,12 +398,14 @@ enum CloudKitSchemaInventory {
     /// line) promoted the reserved batch in one step — 41 identifiers: Archive Visits Phase 2's
     /// three plan record types (32), W-4's `CD_DocumentClassificationOverride` (7), and W-5's two
     /// `CD_SavedSearch` fields — the deliberate one-Dashboard-visit block the owner reserved when
-    /// Phase 2 shipped its schema ahead of its deploy.
-    static let deployedThroughBuild = "44"
+    /// Phase 2 shipped its schema ahead of its deploy. The ninth (2026-09-03, build 44) promoted
+    /// nine of R-5 P3b-2's ten identifiers, and the tenth (2026-09-13, build 47) promoted #1275's
+    /// rich-text note body and the reader's synced tag and project order.
+    static let deployedThroughBuild = "47"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit
     /// Console's history alongside this file.
-    static let deployedOn = "2026-09-03"
+    static let deployedOn = "2026-09-13"
 
     /// How many identifiers **this build mirrors that are attested deployed**. Pinned by the
     /// test against `installedIdentifiers.count - identifiersAwaitingDeploy.count`, so the
@@ -416,13 +422,13 @@ enum CloudKitSchemaInventory {
     /// equality claim about Production's contents. A future ADDITION still needs the full R-7
     /// checklist; a future removal needs only this number and the digest, and must NOT bump
     /// `deployedThroughBuild`, which would assert a promotion that never happened.
-    static let deployedIdentifierCount = 269
+    static let deployedIdentifierCount = 271
 
     /// SHA-256 (hex) of the newline-joined deployed baseline. The count alone would not catch a
     /// rename, an add-and-remove in the same change, or a paste that dropped one line and gained
     /// another.
     static let deployedIdentifierDigest =
-        "6a5a6ec1cb02249c14ee67f4b7cf147e963dbdb9154a10c565d5c8c387ae259e"
+        "3a12b3faf107b6b31cb80cef93f8d22087780ffa2e2f68f2d40097bddbc224b8"
 
     /// Identifiers present in this build that have **not** been promoted to Production.
     ///
@@ -447,18 +453,10 @@ enum CloudKitSchemaInventory {
     /// remain in Production unmirrored. See `deployedIdentifierCount` for what that does to the
     /// baseline's meaning.
     static let identifiersAwaitingDeploy: [String] = [
-        // Empty since R-1g, until #1275. The NINTH promotion ran 2026-09-03 (build 44) and carried
-        // nine of R-5 P3b-2's ten identifiers; the tenth moved to ``identifiersAwaitingWriter``
-        // below, because it is not awaiting a deploy — no deploy is possible for it.
-        //
-        // **#1275 adds two, and they are the TENTH promotion.** Both have real writers from the day
-        // they land, so unlike the reserved identifier below they are deployable immediately: the
-        // note editor's formatting bar writes `richText` the first time a reader presses Bold, and
-        // the tag/project reorder control writes `listOrderJSON` the first time a reader drags a
-        // row. Owner step, once, on a Development build with iCloud signed in: format a note and
-        // reorder a list, then CloudKit Dashboard → Schema → Deploy Schema Changes to Production.
-        "CD_ResearchNote.CD_richText",
-        "CD_SyncedPreferences.CD_listOrderJSON",
+        // Empty since the TENTH promotion (2026-09-13, build 47), which carried #1275's two
+        // identifiers: `CD_ResearchNote.CD_richText` and `CD_SyncedPreferences.CD_listOrderJSON`.
+        // The NINTH (2026-09-03, build 44) carried nine of R-5 P3b-2's ten identifiers; the tenth
+        // of those moved to ``identifiersAwaitingWriter`` below, because no deploy is possible for it.
     ]
 
     /// Identifiers this build mirrors that **cannot be deployed yet, because nothing writes them**.
