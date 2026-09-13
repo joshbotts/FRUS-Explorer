@@ -15044,3 +15044,63 @@ in 611 suites and passed on `00070d5b`, after the sweep's last revert.
 **Not in this change.** A borrower shows people only while its source is downloaded. The live index's other 304
 orphan mention rows sit in volumes that have lists of their own, such as 129 in `frus1969-76v14`; that class was
 not examined. The one-time v51 re-index belongs in the next build's TestFlight notes.
+
+## Pre-1906 chapter titles Source Explorer could not read as countries (PR #1292)
+
+Source Explorer places a pre-1906 document in a diplomatic series by walking its chapter titles from the root to
+the first one that names a country with rolls. Five title forms never named one, so 1861–1899 documents under them
+got no central-file suggestion. Both `GeoKeyNormalizer` copies now read them:
+
+- **Chapter numbers**: `XXIX.—Spain.`, `1.—Ottoman Porte.`, and `frus1872p2v2`'s page-marked `[199] *I.—France.`
+- **`(Continued.)` suffixes**: `Great Britain. (Continued.)`
+- **`Chili`**, aliased to `chile`.
+- **A letter-to-letter en dash**: `Austria–Hungary.` No document is newly shown by the dash alone.
+- **Foreign-legation chapters**: `British legation.`, `Correspondence with the legation of Mexico at Washington.`,
+  `Correspondence Between the Department of State and the German Embassy.` A U.S. mission is refused.
+
+**Two title decisions.** `Rome.` reads as `papal states`, but only as a whole chapter title. Its instruction roll
+(149327614, 1848–1868) resolves. Its despatches stay unresolved, because the index files the Papal States despatch
+roll under `italian states` beside the Kingdom of Italy's. `canonicalize("Rome")` stays `rome`, the consular post
+key. `Turkish Empire` is deliberately not aliased to Turkey. It is the parent chapter of `Egypt.` in `frus1876`, and
+the walk stops at the first title that resolves, so the alias moved `frus1876/d334` from Egypt's roll to Turkey's.
+
+**Legation chapters needed the classifier, not just the key.** Their documents are notes between the Department and
+the foreign minister in Washington. A title-only fix would have offered each Department reply as an instruction, and
+each foreign dateline as a despatch. In these chapters the classifier now offers only notes to or from the legation,
+and refuses the despatch fallback. Auditing the suggestions by sender found 15 Department letters read as notes from
+the legation, under a bare `Washington` or a damaged dateline. A letter the Secretary of State signs is now the
+Department's whatever its dateline, and the President's letters to sovereigns are refused. The sender rule is scoped
+to legation chapters: elsewhere 692 shown documents carry a Secretary's surname as sender, such as Hay's despatches
+from London.
+
+**Measured** with the real classifier, compiled from `origin/v2` and from the branch, over 46,837 pre-1906 documents:
+
+| | 1861–1899 | 1900–1905 |
+|---|---|---|
+| documents | 32,478 | 5,932 |
+| with a suggestion, before | 24,981 (76.9%) | 5,061 (85.3%) |
+| with a suggestion, after | 27,884 (85.9%) | 5,061 (85.3%) |
+
+Newly shown, counted under the first form a title carries: foreign legation 1,969 (895 notes to, 1,074 notes
+from), chapter number 450, `Chili` 287, `(Continued.)` 177, `Rome` 20. No document lost a suggestion and none
+changed country. `frus1882/d36` gains a Chile row beside its date-only row.
+
+**No regeneration and no index bump.** No bundled roll or file-unit title uses these forms, and
+`CountrySeriesParser` calls only `canonicalize`, so `central-files-index.json` is unchanged. The classifier runs at
+render time, so `currentDateIndexVersion` stays put.
+
+**The enclosure comment was wrong, not the code.** Both Source Explorer views said an enclosure inherits the chapter
+country. `enclosureHomes` classifies enclosures with no chapter country, and the `path` parameter was never read.
+The comment is rewritten and the parameter removed.
+
+**Verification.** The targeted app suites ran 54 tests in 6 suites, and the generator suite 156 tests in 17. Two mutation sweeps ran 42 mutants against the committed trees `392099ab` and `cf08c5b1`. Every mutant that compiled was killed, and each log names the failing test. The one that did not compile, the Rome alias removal, was rerun in a compiling form and killed. The whole `FRUSExplorerTests` target then ran 4,773 tests in 612 suites and passed on `cf08c5b1`. Both manuals now say what a foreign-legation chapter resolves to.
+
+**Not in this change.**
+- The classifier's `department of state` cue predates this work and is wrong both ways. It reads the Confederate
+  `Department of State, Richmond` and foreign ministries as the U.S. Department: 27 documents already shown, and 7
+  more this change newly shows in `frus1872p2v2`. Outside legation chapters it misses damaged datelines, and the
+  despatch fallback reads a Secretary's letters from home (`Auburn`, `Bar Harbor`) as despatches.
+- Two legation-chapter letters still read as notes to the legation: `Mr. Seward to Mr. Welles`, a domestic letter,
+  and `Mr. Seward to Mr. Dayton`, an instruction.
+- The 60 documents under `Rome` chapters left unshown need the generator to re-key the Papal States despatch roll,
+  which is a regeneration.
