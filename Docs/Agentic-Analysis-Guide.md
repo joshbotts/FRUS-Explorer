@@ -548,7 +548,12 @@ wrong one and a chart of "FRUS documents per decade" becomes a chart of publishi
 **Office-holders.** A header names the office, not the person (*The Secretary of State to the Chargé
 in Salvador (Engert)*, 1925-08-06 — Kellogg, not Hughes, who left office 4 March 1925); the bundle's
 `pocom-index.json` (Principal Officers and Chiefs of Mission) and `person-authority-index.json`
-carry the tenures to resolve it by date.
+carry the tenures to resolve it by date. For 1861–1906 the POCOM file also has a `chiefs` table
+keyed by POCOM territory id — every U.S. chief of mission in those years (641 rows), with appointment,
+start and end dates as the register writes them, plus `names` and singular `roles` — which is what
+tells a Department letter to the U.S. minister (an instruction) from one to a foreign envoy in
+Washington (a note) when the header styles both *Mr.*. A surname settles it only when exactly one
+register person with that name held the post on the date.
 
 ---
 

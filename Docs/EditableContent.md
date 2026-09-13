@@ -5075,6 +5075,8 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 
 #### No source note on this document
 
+*Shown while the pre-1906 check runs, when it found no roll, and when it resolved. When the check did not run, or does not apply, the left column shows one of the two blocks below instead.*
+
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 237–238 | key: source.explorer.noNote.body -->
 
 This document has no archival source note. Its likely filing is predicted from its dateline and FRUS chapter — see the resolution on the right.
@@ -5109,7 +5111,7 @@ This document has no archival source note, and its likely filing has not been ch
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1651–1652 | key: source.explorer.noNote.body.notApplicable -->
 
-This document has no archival source note. Filing predictions cover only documents from before 1906.
+This document has no archival source note. Roll suggestions cover only documents from before 1906.
 
 <!-- END SOURCE: source.explorer.noNote.body.notApplicable -->
 

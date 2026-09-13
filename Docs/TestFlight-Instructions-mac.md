@@ -1,6 +1,6 @@
 # What's New Since Build 46 (Mac)
 
-**Semantic matching is on by default**, weighted 0.5 and still labelled experimental, because how well it reads nineteenth-century prose is not established. **Your notes get formatting, and your tags and projects your own order.**
+**Semantic matching is on by default**, weighted 0.5 and still labelled experimental: how well it reads nineteenth-century prose is not established. **Your notes get formatting, and your tags and projects your own order.**
 
 **First launch re-indexes every downloaded volume, once**, to join person lists in four older volumes; three show people only while their set's first part is downloaded. The app may be slower until it finishes. Nothing is re-downloaded.
 
@@ -31,13 +31,14 @@ FRUS 1981–1988 vol. XVI is new and partial: 88 of 485 documents, an orange *Pa
 
 1. **The semantic default.** Do semantic matches earn their place in Related, or push better rows down? Nineteenth-century material especially: if it is bad there, say so.
 2. **Data use.** Open a few Related panels, then check **Volumes & Storage ▸ Semantic Vectors**. Was 31 MB a surprise? With the switch off, does **Download Missing Vectors** say why?
-3. **Notes.** Format a note, save, reopen. Search a picker, then clear the search and drag to reorder. Open Contains Notes and All Notes. Search a word only in a second note, then delete that note and search again.
+3. **Notes.** Format a note, save, reopen. Search a picker, clear the search, drag to reorder. Open Contains Notes and All Notes. Search a word only in a second note, delete that note, search again.
 4. **Order.** Move tags and projects in Settings; check the pickers, Switch Project and My Tags.
 5. **Archives.** Group, sort and collapse in Corpus Browser ▸ Archives ▸ Collections, then Source Explorer.
 6. **Related** from the document's Research panel (⇧⌘R): is the new order better?
-7. **Vol. XVI**: does *Partial* read as "OH hasn't finished" rather than "this failed"?
-8. Anything slow, especially during the first-launch re-index.
+7. **Pre-1906 Source Explorer**, from Research: does a letter to a U.S. minister list Instructions first?
+8. **Vol. XVI**: does *Partial* read as "OH hasn't finished" rather than "this failed"?
+9. Anything slow, especially during the first-launch re-index.
 
 Not bugs: a class row with a number and no reading; iCloud Schema "Up to date" beside "Reserved"; vol. XVI's missing chapters; Related order differing from build 46; no drag reordering in the Settings tag and project lists.
 
-Include macOS version, the window and the clicks, expected, actual — and for anything archival, the document id. Thanks!
+Include macOS version, window, clicks, expected, actual — and for anything archival, the document id. Thanks!
