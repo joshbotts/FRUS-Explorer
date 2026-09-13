@@ -1432,6 +1432,9 @@ enum PersonListHeuristics {
 /// Version history:
 ///   … — see the file's other delegates for the earlier history
 ///   2026-08-07 — #740: `correspondents` accepted as a persons-list `xml:id`.
+///   2026-09-13 — `correspondence` accepted too: `frus1873p1v2`'s spelling of the same list, which
+///          #740 missed while describing both 1873 parts as using `correspondents`.
+///          `currentDateIndexVersion` 50 → 51.
 ///   2026-08-07 — #741: only the OUTERMOST `<item>` is a person. A back-of-book
 ///          "Index of Persons" nests its sub-entries, so one person is a tree; every nested
 ///          `<item>` was being emitted as its own person and text accumulation swallowed the
@@ -1474,15 +1477,17 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     /// The `xml:id` values that name a volume's list of persons.
     ///
-    /// `correspondents` is the 1873 spelling (#740). `frus1873p1v1` and `frus1873p1v2` each carry
-    /// a real 57-entry editor list under
-    /// `<div type="section" xml:id="correspondents">` headed "List of persons whose correspondence
-    /// with or from the Department of State is contained in this volume" — no `subtype`, and an
-    /// `xml:id` none of the other spellings match. Measured across all 552 manifest volumes, these
-    /// two are the only ones using it, and they were the only volumes in the corpus whose editor
-    /// list the app held but never read.
+    /// The two 1873 parts each carry a real 57-entry editor list, headed "List of persons whose
+    /// correspondence with or from the Department of State is contained in this volume", as a
+    /// `<div type="section">` with no `subtype` — and they SPELL THE ID DIFFERENTLY:
+    /// `frus1873p1v1` uses `correspondents` (#740) and `frus1873p1v2` uses `correspondence`.
+    /// Re-measured 2026-09-13 over all 744 TEI files in the local corpus, which include the 553
+    /// manifest volumes: each spelling occurs in exactly one file, so neither can match another
+    /// volume's section. #740 added only the first while describing both
+    /// parts as using it; the live index then held 57 persons rows for `frus1873p1v1` and none for
+    /// `frus1873p1v2`, whose 454 mention rows joined nothing.
     private static let personsSectionIds: Set<String> = [
-        "persons", "persname", "listofpersons", "correspondents"
+        "persons", "persname", "listofpersons", "correspondents", "correspondence"
     ]
 
     /// Returns `true` when the given element starts a persons section.

@@ -806,7 +806,18 @@ public actor IndexingPipeline {
     ///   `.naraCollection` takes its bare number from the note's own text. Re-parsing writes the
     ///   single spelling; an idempotent healing UPDATE strips the prefix from rows already
     ///   stored, so an index that is not re-parsed is corrected in place too.
-    public static let currentDateIndexVersion: Int = 50
+    /// - v50→51 — two person lists the index never joined, both found by reading the live index for
+    ///   the #234 N-2 assessment (`Planning/234-Early-Era-People-Feasibility-Assessment-2026-09-12.md`
+    ///   §4.0). (1) `frus1873p1v2` keeps its 57-entry list under `xml:id="correspondence"`. #740
+    ///   added only `correspondents`, the `frus1873p1v1` spelling, so this part still listed no one
+    ///   and its 454 mention rows joined no `persons` row. (2) v13's premise that "each part carries
+    ///   its own copy of the set's persons list" is false for three second parts — `frus1932v04`,
+    ///   `frus1918Supp01v02`, `frus1917Supp02v02` — which carry no list and held 5,530 mention rows
+    ///   against 0 `persons` rows. Re-parsing records each such part in the new `person_list_sources`
+    ///   table and copies the entries it mentions from its sibling (`resolveBorrowedPersonLists`).
+    ///   No `currentPersonRollupVersion` bump: both fixes only ADD `persons` rows, and the rollup's
+    ///   members-versus-persons drift check rebuilds on the first launch that sees them.
+    public static let currentDateIndexVersion: Int = 51
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -1144,6 +1155,21 @@ public actor IndexingPipeline {
             mentionCounts["\(vol)||\(ref)"] = Int(sqlite3_column_int64(cntStmt, 2))
         }
 
+        // A borrowed row (`resolveBorrowedPersonLists`) IS its source list's entry, so when the
+        // crosswalk has no id for the borrower's own `(volume, ref)` it takes the source row's.
+        // Without this the copy is authority-uncovered beside a covered original: their join falls
+        // to the name × era heuristic, and an uncovered row is exactly what that heuristic may
+        // bridge toward a different covered cluster.
+        var listSources: [String: [String]] = [:]
+        let sourceStmt = try auxPrepare(
+            "SELECT volume_id, source_volume_id FROM person_list_sources ORDER BY volume_id, source_volume_id")
+        defer { sqlite3_finalize(sourceStmt) }
+        while try auxStep(sourceStmt) {
+            guard let borrower = auxColumnString(sourceStmt, 0),
+                  let source = auxColumnString(sourceStmt, 1) else { continue }
+            listSources[borrower, default: []].append(source)
+        }
+
         let authIndex = authorityIndex()
         var inputs: [PersonClusterInput] = []
         let pStmt = try auxPrepare("SELECT volume_id, ref, name, description, role, start_year, end_year FROM persons")
@@ -1162,7 +1188,8 @@ public actor IndexingPipeline {
                 listEndYear: auxColumnIntOptional(pStmt, 6),
                 mentionStartYear: era?.0,
                 mentionEndYear: era?.1,
-                authorityId: authIndex?.canonicalId(volumeId: vol, ref: ref),
+                authorityId: authIndex?.canonicalId(volumeId: vol, ref: ref)
+                    ?? listSources[vol]?.compactMap { authIndex?.canonicalId(volumeId: $0, ref: ref) }.first,
                 mentionCount: mentionCounts["\(vol)||\(ref)"] ?? 0
             ))
         }
@@ -1654,6 +1681,9 @@ public actor IndexingPipeline {
     public func removeVolume(_ volumeId: String) async throws {
         cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
         try auxDeleteVolume(volumeId)
+        // A volume that borrowed from this one loses what it borrowed, so its people exist exactly
+        // while the list they point into is indexed — what a fresh index of the library would hold.
+        try resolveBorrowedPersonLists(touching: volumeId)
         try? await CSSearchableIndex.default().deleteSearchableItems(withDomainIdentifiers: [volumeId])
 
         logger.info("removeVolume: removed FTS5 and auxiliary rows for \(volumeId, privacy: .public)")
@@ -1685,7 +1715,7 @@ public actor IndexingPipeline {
         // recorded as populated against an empty table, and the Subjects facet would read zero
         // for the rest of the install (#308).
         for table in ["cross_references", "page_ranges", "document_dates",
-                      "document_cache", "person_mentions", "persons", "terms",
+                      "document_cache", "person_mentions", "persons", "person_list_sources", "terms",
                       "document_sources", "external_citations", "volume_sources",
                       "volume_structures", "document_subjects", "document_subject_refs",
                       "document_subject_volumes"] {
@@ -4204,6 +4234,8 @@ public actor IndexingPipeline {
         var cacheRows: [DocumentCacheRow] = []
         var revisionRows: [DocumentRevisionRow] = []
         var personMentionRows: [PersonMentionRow] = []
+        // Every volume a person ref in this volume names (`personRefListVolume`), across all documents.
+        var personListVolumes: Set<String> = []
         var externalCitationRows: [ExternalCitationRow] = []
         // Hoisted once per volume: `shared` is a lazily-initialised static and this scan runs over
         // every body footnote in the volume. Nil (the artifact missing from the bundle) means no
@@ -4258,6 +4290,7 @@ public actor IndexingPipeline {
                 volumeId: volumeId, documentId: did,
                 crossRefs: &docCrossRefs,
                 personRefs: &docPersonRefs,
+                personListVolumes: &personListVolumes,
                 pageRanges: &docPageRanges
             )
             crossRefs.append(contentsOf: docCrossRefs)
@@ -4367,6 +4400,22 @@ public actor IndexingPipeline {
         let termRows = fullResult.terms.map { t in
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
         }
+        // A volume that parsed NO persons list, but whose refs name another volume's, borrows the
+        // entries it mentions once both are stored (`resolveBorrowedPersonLists`). Two refusals:
+        // - never for a volume with a list of its own — `frus1951v04p2` holds 365 entries and spells
+        //   ONE ref `frus1951v04p1#…`, and that single spelling must not make it a borrower;
+        // - never when the refs name MORE than one other volume. All three borrowers in the corpus
+        //   name exactly one. Two named lists would need a rule for which owns a shared ref, and the
+        //   row copy and the authority fallback would each answer it their own way.
+        let foreignListVolumes = personListVolumes.subtracting([volumeId])
+        let personListSources = personRows.isEmpty && foreignListVolumes.count == 1
+            ? Array(foreignListVolumes)
+            : []
+        #if DEBUG
+        if personRows.isEmpty && foreignListVolumes.count > 1 {
+            print("[IndexingPipeline] \(volumeId): person refs name \(foreignListVolumes.count) other volumes' lists; borrowing from none.")
+        }
+        #endif
 
         // Parse source notes into structured archival citation fields.
         // This is pure string processing — no I/O — so it adds negligible overhead
@@ -4436,6 +4485,7 @@ public actor IndexingPipeline {
             documentRevisions: revisionRows,
             personMentions: personMentionRows,
             persons: personRows,
+            personListSources: personListSources,
             terms: termRows,
             documentSources: documentSourceRows,
             externalCitations: externalCitationRows,
@@ -4610,6 +4660,10 @@ public actor IndexingPipeline {
         try auxInsertDocumentDates(data.documentDates)
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
+        // After BOTH this volume's mentions and its persons rows exist: a borrower needs its own
+        // mentions, and a source's dependents need its fresh rows.
+        try auxReplacePersonListSources(volumeId: data.volumeId, sources: data.personListSources)
+        try resolveBorrowedPersonLists(touching: data.volumeId)
         try auxInsertTerms(data.terms)
         try auxInsertDocumentSources(data.documentSources)
         // #784: same delete-then-insert shape as `volume_sources` below, and for the same reason —
@@ -5085,6 +5139,9 @@ public actor IndexingPipeline {
     ///
     /// The existing `extract*` functions are kept for external callers (tests etc.);
     /// `parseAndExtract` uses this unified variant for indexing throughput.
+    ///
+    /// `personListVolumes` receives every volume a person ref NAMES (`personRefListVolume`), which
+    /// `personRefs` cannot carry because its refs are already normalised to the bare fragment.
     nonisolated static func collectDocumentRefs(
         from nodes: [FRUSASTNode],
         volumeId: String,
@@ -5093,6 +5150,7 @@ public actor IndexingPipeline {
         enclosingText: String? = nil,
         crossRefs: inout [CrossReferenceRow],
         personRefs: inout Set<String>,
+        personListVolumes: inout Set<String>,
         pageRanges: inout [PageRangeRow]
     ) {
         for node in nodes {
@@ -5113,16 +5171,17 @@ public actor IndexingPipeline {
                 }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
-                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── Person-name links ──────────────────────────────────────────────
             case .persName(let ref, let children):
                 if let ref, let normalised = normalizePersonRef(ref) {
                     personRefs.insert(normalised)
+                    if let listVolume = personRefListVolume(ref) { personListVolumes.insert(listVolume) }
                 }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
-                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── Page breaks ────────────────────────────────────────────────────
             case .pageBreak(let pageNumber):
@@ -5151,7 +5210,7 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: refType,
                     enclosingText: noteText.isEmpty ? nil : noteText,
-                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── Editorial notes — captures enclosing text ──────────────────────
             case .editorialNote(let children):
@@ -5161,13 +5220,13 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: "editorialNote",
                     enclosingText: editorialText.isEmpty ? nil : editorialText,
-                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── All other nodes — recurse into children ────────────────────────
             default:
                 collectDocumentRefs(from: node.children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
-                    crossRefs: &crossRefs, personRefs: &personRefs, pageRanges: &pageRanges)
+                    crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
             }
         }
     }
@@ -5288,6 +5347,19 @@ public actor IndexingPipeline {
         guard let hash = ref.lastIndex(of: "#") else { return ref.isEmpty ? nil : ref }
         let fragment = String(ref[ref.index(after: hash)...])
         return fragment.isEmpty ? nil : fragment
+    }
+
+    /// The volume whose persons list a `persName` ref points into, when the ref names one:
+    /// `"frus1932v03#p_JNT1"` → `"frus1932v03"`. `nil` for a bare or `#`-leading ref.
+    ///
+    /// This is exactly the prefix `normalizePersonRef` discards. The index keeps it for a volume
+    /// with no persons list of its own, whose refs all point into a sibling's list
+    /// (`person_list_sources`, `resolveBorrowedPersonLists`). Whether the named volume is a
+    /// DIFFERENT volume is the caller's test.
+    nonisolated static func personRefListVolume(_ ref: String) -> String? {
+        guard let hash = ref.lastIndex(of: "#") else { return nil }
+        let prefix = String(ref[..<hash])
+        return prefix.isEmpty ? nil : prefix
     }
 
     /// Recursively collects all `ref` attribute values from `.persName` nodes.
@@ -5903,6 +5975,16 @@ public actor IndexingPipeline {
         try? exec("ALTER TABLE persons ADD COLUMN role TEXT")
         try? exec("ALTER TABLE persons ADD COLUMN start_year INTEGER")
         try? exec("ALTER TABLE persons ADD COLUMN end_year INTEGER")
+        // A split-set part with no persons list of its own, and the volume whose list its refs name
+        // (`resolveBorrowedPersonLists`). One row per (borrower, source); written at store time.
+        try exec("""
+            CREATE TABLE IF NOT EXISTS person_list_sources (
+                volume_id        TEXT NOT NULL,
+                source_volume_id TEXT NOT NULL,
+                PRIMARY KEY (volume_id, source_volume_id)
+            )
+            """)
+        try exec("CREATE INDEX IF NOT EXISTS idx_person_list_sources_source ON person_list_sources(source_volume_id)")
 
         // Person rollup (Phase 0): a materialised cross-volume person index read by the People
         // browser. The per-volume `ref` is the TEI xml:id and is only meaningful within its volume
@@ -7378,6 +7460,99 @@ public actor IndexingPipeline {
         try auxStep(stmt)
     }
 
+    /// Replaces a volume's recorded borrowed-list sources in `person_list_sources`.
+    ///
+    /// Delete-then-insert, so a re-index that finds the volume now carries a list of its own (and
+    /// therefore records no sources) stops it being a borrower.
+    private func auxReplacePersonListSources(volumeId: String, sources: [String]) throws {
+        let del = try auxPrepare("DELETE FROM person_list_sources WHERE volume_id = ?")
+        defer { sqlite3_finalize(del) }
+        sqlite3_bind_text(del, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        try auxStep(del)
+        guard !sources.isEmpty else { return }
+        let ins = try auxPrepare(
+            "INSERT OR IGNORE INTO person_list_sources (volume_id, source_volume_id) VALUES (?, ?)")
+        defer { sqlite3_finalize(ins) }
+        for source in sources {
+            sqlite3_bind_text(ins, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+            sqlite3_bind_text(ins, 2, source, -1, SQLITE_TRANSIENT_IP)
+            try auxStep(ins)
+            sqlite3_reset(ins)
+        }
+    }
+
+    /// Gives a split-set part with no persons list of its own the entries it mentions from the
+    /// list its refs point into.
+    ///
+    /// ## The defect this closes
+    /// Index v13 normalised `frus1918Supp01v01#p_LR1` to `p_LR1` on the premise that "each part
+    /// carries its own copy of the set's persons list". Three parts carry none. `frus1932v04`,
+    /// `frus1918Supp01v02` and `frus1917Supp02v02` define no `persName xml:id` and point 5,743,
+    /// 3,395 and 1,478 refs into `frus1932v03`, `frus1918Supp01v01` and `frus1917Supp02v01`, where
+    /// all 435, 120 and 114 distinct fragments resolve. With no `persons` row to join, a v50 index
+    /// held 5,530 of their mention rows that no person surface could show (measured 2026-09-12).
+    ///
+    /// ## What it writes
+    /// Each target's `persons` rows are replaced by copies of the source rows that its own
+    /// `person_mentions` name. The targets are `volumeId` if it borrows, and every volume that
+    /// borrows FROM `volumeId`. A copy makes the part look exactly like the split sets that do
+    /// carry their own list, so every reader keyed on `persons(volume_id, ref)` — the per-volume
+    /// list, the inline `persName` link, the rollup — works unchanged. Only MENTIONED entries are
+    /// copied, because a whole-list copy would list people the part never names.
+    ///
+    /// ## Why both the store and the removal path run it
+    /// Download order is the reader's. Storing the borrower before its source copies nothing, and
+    /// storing the source afterwards fills the borrower; removing the source empties it again.
+    ///
+    /// The `DELETE` is safe because a volume is recorded as a borrower only when its own parse
+    /// produced no persons list, so every `persons` row a borrower holds is a copy.
+    private func resolveBorrowedPersonLists(touching volumeId: String) throws {
+        var targets: [String] = []
+        let find = try auxPrepare("""
+            SELECT DISTINCT volume_id FROM person_list_sources
+            WHERE volume_id = ?1 OR source_volume_id = ?1
+            ORDER BY volume_id
+            """)
+        defer { sqlite3_finalize(find) }
+        sqlite3_bind_text(find, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        while try auxStep(find) {
+            if let target = auxColumnString(find, 0) { targets.append(target) }
+        }
+        guard !targets.isEmpty else { return }
+
+        try inTransaction {
+            let clear = try auxPrepare("DELETE FROM persons WHERE volume_id = ?1")
+            defer { sqlite3_finalize(clear) }
+            // Never copies FROM a volume that is itself a borrower: its rows are copies, and this
+            // loop may visit a target before that source has been refilled. No borrower in the
+            // corpus names another borrower. `WHERE s.volume_id = ?1` is load-bearing, not
+            // tidiness: ref fragments collide across sets — 31 of `frus1932v04`'s also exist in
+            // `frus1918Supp01v01`'s list, which sorts before its own source. `INSERT OR IGNORE` is
+            // defensive only, since a borrower records exactly one source.
+            let copy = try auxPrepare("""
+                INSERT OR IGNORE INTO persons (volume_id, ref, name, description, role, start_year, end_year)
+                SELECT ?1, p.ref, p.name, p.description, p.role, p.start_year, p.end_year
+                FROM person_list_sources s
+                JOIN persons p ON p.volume_id = s.source_volume_id
+                WHERE s.volume_id = ?1
+                  AND NOT EXISTS (SELECT 1 FROM person_list_sources chained
+                                  WHERE chained.volume_id = s.source_volume_id)
+                  AND EXISTS (SELECT 1 FROM person_mentions pm
+                              WHERE pm.volume_id = ?1 AND pm.person_ref = p.ref)
+                ORDER BY s.source_volume_id, p.ref
+                """)
+            defer { sqlite3_finalize(copy) }
+            for target in targets {
+                sqlite3_reset(clear)
+                sqlite3_bind_text(clear, 1, target, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(clear)
+                sqlite3_reset(copy)
+                sqlite3_bind_text(copy, 1, target, -1, SQLITE_TRANSIENT_IP)
+                try auxStep(copy)
+            }
+        }
+    }
+
     /// Deletes all `page_ranges` rows for a volume before re-inserting.
     ///
     /// `page_ranges` uses plain `INSERT` with no UNIQUE constraint, so without this
@@ -7871,6 +8046,7 @@ public actor IndexingPipeline {
             ("document_cache",    "volume_id"),
             ("person_mentions",   "volume_id"),
             ("persons",           "volume_id"),
+            ("person_list_sources", "volume_id"),
             ("terms",             "volume_id"),
             ("document_sources",  "volume_id"),
             ("external_citations", "volume_id"),
@@ -10631,6 +10807,9 @@ private struct VolumeIndexData: Sendable {
     var documentRevisions: [DocumentRevisionRow] = []
     let personMentions: [PersonMentionRow]
     let persons: [PersonRow]
+    /// The volumes whose persons lists this volume's refs point into — non-empty only when the
+    /// volume parsed no list of its own (`parseAndExtract`). Stored as `person_list_sources`.
+    let personListSources: [String]
     let terms: [TermRow]
     let documentSources: [DocumentSourceRow]
     let externalCitations: [ExternalCitationRow]

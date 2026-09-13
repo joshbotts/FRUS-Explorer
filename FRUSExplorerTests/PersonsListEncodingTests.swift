@@ -27,6 +27,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #740 / #741
+///   1.1 — 2026-09-13: `frus1873p1v2`'s `correspondence` spelling, which #740 missed
 @Suite("Persons list encodings")
 struct PersonsListEncodingTests {
 
@@ -70,6 +71,34 @@ struct PersonsListEncodingTests {
         #expect(fish.name == "Hamilton Fish")
         #expect(fish.description?.contains("Secretary of State") == true)
         #expect(persons.contains { $0.ref == "p_CH1" && $0.name == "Charles Hale" })
+    }
+
+    @Test("A list under xml:id=\"correspondence\" is read too — frus1873p1v2's spelling")
+    func readsCorrespondenceList() async throws {
+        // Real shape from frus1873p1v2: the same 57-entry list and the same head as frus1873p1v1,
+        // under `xml:id="correspondence"`. #740 added only `correspondents`, the v1 spelling, while
+        // describing both parts as using it — so a v50 index held 57 persons rows for v1 and none
+        // for v2, whose 454 mention rows joined nothing. Of the 744 TEI files in the local corpus,
+        // this spelling occurs in this one only.
+        let url = try makeVolume(front: """
+            <div type="section" xml:id="correspondence">
+              <head>List of persons whose correspondence with or from the Department of State is
+                    contained in this volume.</head>
+              <list>
+                <item><persName xml:id="p_HF1">Hamilton Fish</persName>, Secretary of State.</item>
+                <item><persName xml:id="p_JCBD1">J. C. Bancroft Davis</persName>, Assistant
+                      Secretary of State.</item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        #expect(persons.map(\.ref).sorted() == ["p_HF1", "p_JCBD1"])
+        #expect(persons.first { $0.ref == "p_HF1" }?.name == "Hamilton Fish")
+        // An installed index reads this list only when it re-parses, which only a bump triggers.
+        #expect(IndexingPipeline.currentDateIndexVersion >= 51,
+                "the spelling fix changes parse output and needs the v51 re-index")
     }
 
     @Test("The previously-accepted spellings still work (#740)")
