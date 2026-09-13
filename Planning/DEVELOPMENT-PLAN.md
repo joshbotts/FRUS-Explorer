@@ -15104,3 +15104,36 @@ The comment is rewritten and the parameter removed.
   and `Mr. Seward to Mr. Dayton`, an instruction.
 - The 60 documents under `Rome` chapters left unshown need the generator to re-key the Papal States despatch roll,
   which is a regeneration.
+
+## #234 reframed — the assessment delta for untagged-people features (PR #1293)
+
+The owner asked how the latest #234 assessments change if the issue becomes "make maximum possible use of the Qwen
+harvest, NLTagger, POCOM, Source Explorer, and Claude verification/synthesis to develop features for untagged people".
+The answer is `Planning/234-Early-Era-People-Reframe-Assessment-2026-09-13.md`, with its evidence under
+`Planning/early-era-people/reframe-2026-09-13/`. It re-reads the #1290 feasibility assessment and two in-session
+answers, a Claude-pass estimate and a Source Explorer chapter-context measurement, whose text is now recorded there.
+No code changed.
+
+- **What decides feasibility moves.** Features kept out of the person tables never reach `PersonClusterer`, so its
+  code gate becomes an isolation test. Per-feature precision floors, blind-keyed samples for any identity or post
+  claim, and verifiers scored on unseen documents decide instead. Such features extend none of the surfaces #234 names.
+- **What stands.** Editor markup yields a correspondent index, and identity is not shippable (0 of 300 rows keyed).
+- **What was measured for the first time.** The detector-agreement layer at corpus scale (768,928 document-name pairs
+  in 190,658 documents, census key); an R-0-to-render offset mapping (88% of sampled spans placed, none wrongly);
+  Source Explorer against POCOM on the merged #1292 classifier; and Source Explorer's era ceiling, volumes through
+  1905, which hold 19.7% of untagged documents.
+- **What changed in the earlier answers.** Claude narrows to checking candidates the free detectors found, at $209
+  and $223 central on Sonnet 5 batch for the two jobs, with high scenarios about five times that. Source Explorer's
+  best product is a filing-role label, which reads as a post claim and needs a keyed sample.
+- **A live gap.** The shipped on-device summary templates can name participants from model memory, and that output
+  syncs and is indexed for search.
+
+**Method.** Three reader agents and five offline measurements, each independently reproduced, then a synthesis and a
+critic (32 corrections), a corrected rewrite, an independent check (14 residual items, fixed by hand), and an independent
+check of the PR and issue text, whose corrections were applied before posting. No scripted LLM or token-count API call was made; corpus snippets were read
+inside Claude Code sessions. Evidence files over 1 MB and build caches were not copied. No file in the new evidence folder
+names any of the 8 unkeyed M2a documents; #1290's `verify-method/stores.json` already lists them by staged filename,
+with metadata only, and gate 6 now says so. `CodingStandardsAuditTests` passed with 17 tests.
+
+**Next.** The owner decides §6: the v51 reindex, the summary templates' participant fields, the API authorization
+scope, wording, spend caps, pre-registered floors and the blind keying protocol.
