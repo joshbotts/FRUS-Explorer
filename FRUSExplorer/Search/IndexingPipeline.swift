@@ -2418,32 +2418,53 @@ public actor IndexingPipeline {
 
     // MARK: - Volume Structure Cache (used by BrowserViewModel)
 
+    /// What Source Explorer reads about one document from the index: the printed header, the
+    /// dateline, and the pre-1906 serial (#965).
+    ///
+    /// Source Explorer needs the header and dateline to place a pre-1906 document, and several of the
+    /// routes that open it — History, a related-document tap, a restored window — pass the xml:id as
+    /// the header and no dateline at all. The index already holds both, so the view fills the gap
+    /// from here rather than every host having to.
+    public struct SourceExplorerFacts: Sendable, Equatable {
+        /// The document's printed header (`Mr. Seward to Mr. Dayton.`), as stored; empty when none.
+        public let header: String
+        /// The dateline, or `nil` when the index stores none or only whitespace.
+        public let dateline: String?
+        /// The despatch or instruction serial FRUS prints above the document, or `nil`.
+        ///
+        /// **Not an archival identifier.** A serial resolves to no NAID and no catalog record; it
+        /// locates a document *within* a series. Everything that renders it has to say so. `nil` for
+        /// the overwhelming majority of the corpus, and on an index built before v45.
+        public let despatchSerial: String?
+    }
+
+    /// The header, dateline and serial stored for one document, or `nil` when it is not indexed.
+    ///
+    /// One PRIMARY KEY seek on `document_cache`. Stepped through `auxStep`, so an I/O or corruption
+    /// fault throws rather than reading as "not indexed" — Source Explorer tells those two apart on
+    /// screen. A dateline that is empty or only whitespace is returned as `nil`.
+    ///
+    /// Replaces `despatchSerial(volumeId:documentId:)`, whose only callers were the two Source
+    /// Explorer views and which read the serial alone through a raw `sqlite3_step`.
+    public func sourceExplorerFacts(volumeId: String, documentId: String) throws -> SourceExplorerFacts? {
+        let stmt = try auxPrepare(
+            "SELECT header, dateline, despatch_serial FROM document_cache WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard try auxStep(stmt) else { return nil }
+        let dateline = auxColumnString(stmt, 1)
+        let blank = dateline?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+        return SourceExplorerFacts(
+            header: auxColumnString(stmt, 0) ?? "",
+            dateline: blank ? nil : dateline,
+            despatchSerial: auxColumnString(stmt, 2))
+    }
+
     /// Returns the Browser structure persisted for a volume at index time, or `nil`
     /// if the volume has not been indexed (or was indexed before the
     /// `volume_structures` table existed — the Browser then falls back to parsing
     /// the volume XML on demand, exactly as before).
-    /// The pre-1906 despatch/instruction serial stored for a document, or `nil` (#965).
-    ///
-    /// The number the sending post gave its own outgoing correspondence, printed by FRUS above the
-    /// document. Source Explorer shows it beside the digitised rolls it resolves for pre-1906
-    /// documents, because the rolls are browsed by eye and this is the mark a reader looks for on
-    /// the images — a second handle alongside the date, and often a sharper one.
-    ///
-    /// **Not an archival identifier.** A serial resolves to no NAID and no catalogue record; it
-    /// locates a document *within* a post's series. Everything that renders it has to say so.
-    ///
-    /// Returns `nil` for the overwhelming majority of the corpus — the serial is a pre-decimal-file
-    /// convention — and also on an index built before v45, where the column exists but is empty
-    /// until each volume is re-parsed.
-    public func despatchSerial(volumeId: String, documentId: String) throws -> String? {
-        let stmt = try auxPrepare(
-            "SELECT despatch_serial FROM document_cache WHERE volume_id = ? AND document_id = ?")
-        defer { sqlite3_finalize(stmt) }
-        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
-        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
-        return auxColumnString(stmt, 0)
-    }
 
     public func cachedVolumeStructure(forVolumeId volumeId: String) throws -> VolumeStructure? {
         let stmt = try auxPrepare(

@@ -37,6 +37,8 @@ import Testing
 ///         export and lens copy, chronology, person analytics, series dashboards), so those
 ///         files join `sources` and the banned list gains `analyse`/`catalogu` — otherwise the
 ///         sweep holds only until the next edit reintroduces one
+///   1.2 — 2026-09-13: `CentralFilesClassifier.swift` joins `sources`, because the pre-1906 section's
+///         state sentences and serial captions moved there out of the two Source Explorer views
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -52,6 +54,10 @@ struct ArchivalCopyRulesTests {
         // artboard-derived strings wherever they ship.
         "SourceExplorer/SourceExplorerView.swift",
         "SourceExplorer/MacSourceExplorerView.swift",
+        // 1.2: the pre-1906 section's state sentences, the serial labels and their captions moved out of
+        // the two twins into the classifier they share. The guard follows the copy, or the move would
+        // take those strings out of its reach.
+        "SourceExplorer/CentralFilesClassifier.swift",
         // #838 item 4: the archival popover copy lives here, not in the Analytics family, and the
         // rule is about artboard-derived strings wherever they ship. Its absence is why `centre`
         // shipped in `archival.info.method.title` while this suite stayed green — the guard was

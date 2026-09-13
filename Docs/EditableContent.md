@@ -5083,13 +5083,145 @@ This document has no archival source note. Its likely filing is predicted from i
 
 ---
 
-#### No source note — what you can still do
+#### No source note — the pre-1906 check ran and found no roll
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1376–1377 | key: source.explorer.noNote.detail | shared: iOS+macOS (the same key in both views — edit both) -->
+*Shown only in that one state. While the check runs, when it could not run, and for a document from 1906 on, the section shows the sentences in the blocks that follow instead — each of which would make this one false.*
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1623–1624 | key: source.explorer.noNote.detail | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This document carries no archival source note, and its exact filing couldn’t be predicted from its dateline and FRUS chapter.
 
 <!-- END SOURCE: source.explorer.noNote.detail -->
+
+---
+
+#### No source note — the left column, when the check did not run (macOS)
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1648–1649 | key: source.explorer.noNote.body.notChecked -->
+
+This document has no archival source note, and its likely filing has not been checked — the right column says why.
+
+<!-- END SOURCE: source.explorer.noNote.body.notChecked -->
+
+---
+
+#### No source note — the left column, for a document from 1906 on (macOS)
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1651–1652 | key: source.explorer.noNote.body.notApplicable -->
+
+This document has no archival source note. Filing predictions cover only documents from before 1906.
+
+<!-- END SOURCE: source.explorer.noNote.body.notApplicable -->
+
+---
+
+#### Pre-1906 check — while it runs
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1052–1053 | key: source.explorer.countrySeries.state.loading | shared: iOS+macOS (single edit point) -->
+
+Checking the digitized pre-1906 records for this document…
+
+<!-- END SOURCE: source.explorer.countrySeries.state.loading -->
+
+---
+
+#### Pre-1906 check — a document from 1906 on, where it does not apply
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1058–1059 | key: source.explorer.countrySeries.state.notApplicable | shared: iOS+macOS (single edit point) -->
+
+This document carries no archival source note. Roll suggestions cover documents from before 1906, when the Department filed its correspondence by country, so none is offered for a later document.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notApplicable -->
+
+---
+
+#### Pre-1906 check not run — the search index is still starting
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1003–1004 | key: source.explorer.countrySeries.state.notChecked.indexStarting | shared: iOS+macOS (single edit point) -->
+
+Not checked yet — the search index is still starting. This section fills in when it is ready.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.indexStarting -->
+
+---
+
+#### Pre-1906 check not run — no document to look up
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1006–1007 | key: source.explorer.countrySeries.state.notChecked.noDocumentIdentity | shared: iOS+macOS (single edit point) -->
+
+Not checked — Source Explorer was opened without a document to look up, so there is no dateline or FRUS chapter to read.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.noDocumentIdentity -->
+
+---
+
+#### Pre-1906 check not run — the search index could not be read
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1009–1010 | key: source.explorer.countrySeries.state.notChecked.indexReadFailed | shared: iOS+macOS (single edit point) -->
+
+Not checked — the search index could not be read. Close Source Explorer and open it again.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.indexReadFailed -->
+
+---
+
+#### Pre-1906 check not run — the document is not indexed
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1012–1013 | key: source.explorer.countrySeries.state.notChecked.documentNotIndexed | shared: iOS+macOS (single edit point) -->
+
+Not checked — this document is not in the search index on this device, so its dateline and FRUS chapter could not be read.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.documentNotIndexed -->
+
+---
+
+#### Pre-1906 check not run — no dateline
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1015–1016 | key: source.explorer.countrySeries.state.notChecked.noDateline | shared: iOS+macOS (single edit point) -->
+
+Not checked — this document prints no dateline, and the dateline is what places a pre-1906 document in a series.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.noDateline -->
+
+---
+
+#### Pre-1906 check not run — no year
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1018–1019 | key: source.explorer.countrySeries.state.notChecked.noYear | shared: iOS+macOS (single edit point) -->
+
+Not checked — this document’s dateline gives no year, so no roll’s dates can be compared.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.noYear -->
+
+---
+
+#### Pre-1906 check not run — the roll list did not load
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1021–1022 | key: source.explorer.countrySeries.state.notChecked.centralFilesIndexMissing | shared: iOS+macOS (single edit point) -->
+
+Not checked — the app’s list of digitized rolls could not be loaded.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.centralFilesIndexMissing -->
+
+---
+
+#### Pre-1906 check not run — no chapter structure
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1024–1025 | key: source.explorer.countrySeries.state.notChecked.noVolumeStructure | shared: iOS+macOS (single edit point) -->
+
+Not checked — this volume’s chapters are not in the search index on this device, and the chapter is what names the country.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.noVolumeStructure -->
+
+---
+
+#### Pre-1906 check not run — the document is not in its volume's chapters
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1027–1028 | key: source.explorer.countrySeries.state.notChecked.documentNotInStructure | shared: iOS+macOS (single edit point) -->
+
+Not checked — this document was not found among its volume’s chapters, so no chapter names its country.
+
+<!-- END SOURCE: source.explorer.countrySeries.state.notChecked.documentNotInStructure -->
 
 ---
 
@@ -5444,6 +5576,80 @@ A named file series cited without a lot number. The repository is not stated in 
 This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date.
 
 <!-- END SOURCE: source.explorer.countrySeries.intro -->
+
+---
+
+#### A country series — the serial, on a despatch
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 945–946 | key: source.explorer.countrySeries.serial %@ | shared: iOS+macOS (single edit point) -->
+
+Despatch No. %@
+
+*%@ is the serial FRUS prints above the document.*
+
+<!-- END SOURCE: source.explorer.countrySeries.serial %@ -->
+
+---
+
+#### A country series — the serial's caption, on a despatch
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 960–961 | key: source.explorer.countrySeries.serial.caption | shared: iOS+macOS (single edit point) -->
+
+FRUS prints this number above the document — the post’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
+
+<!-- END SOURCE: source.explorer.countrySeries.serial.caption -->
+
+---
+
+#### A country series — the serial, on an instruction
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 942–943 | key: source.explorer.countrySeries.serial.instruction %@ | shared: iOS+macOS (single edit point) -->
+
+Instruction No. %@
+
+<!-- END SOURCE: source.explorer.countrySeries.serial.instruction %@ -->
+
+---
+
+#### A country series — the serial's caption, on an instruction
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 957–958 | key: source.explorer.countrySeries.serial.instruction.caption | shared: iOS+macOS (single edit point) -->
+
+FRUS prints this number above the document — the Department’s own number for its instruction to the post. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
+
+<!-- END SOURCE: source.explorer.countrySeries.serial.instruction.caption -->
+
+---
+
+#### A country series — the serial, on a note or letter
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 948–949 | key: source.explorer.countrySeries.serial.neutral %@ | shared: iOS+macOS (single edit point) -->
+
+No. %@
+
+<!-- END SOURCE: source.explorer.countrySeries.serial.neutral %@ -->
+
+---
+
+#### A country series — the serial's caption, on a note or letter
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 963–964 | key: source.explorer.countrySeries.serial.neutral.caption | shared: iOS+macOS (single edit point) -->
+
+FRUS prints this number above the document — its sender’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record.
+
+<!-- END SOURCE: source.explorer.countrySeries.serial.neutral.caption -->
+
+---
+
+#### A country series — why an instruction is Likely
+
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift | lines: 1217–1218 | key: centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+
+From the Department of State to %1$@, U.S. %2$@ to %3$@ (%4$@): an instruction.
+
+*In order: the chief of mission's name as the Office of the Historian's register prints it, their role, the FRUS chapter's country, and the years of their tenure there.*
+
+<!-- END SOURCE: centralFiles.rationale.instructionToChiefOfMission %@ %@ %@ %@ -->
 
 ---
 

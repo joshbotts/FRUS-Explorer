@@ -26,6 +26,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — P-1: initial implementation
+///   1.1 — 2026-09-13: the country-series section's pinned sources gain `.ohPeopleRegister`, mounted
+///         only on a row the addressee rule promoted (owner decision D1)
 @Suite("Source Explorer per-row provenance (P-1)")
 struct SourceExplorerProvenanceTests {
 
@@ -221,11 +223,13 @@ struct SourceExplorerProvenanceTests {
         #expect(swept == 2, "the twin sweep ran over \(swept) files")
     }
 
-    /// The country-series section carries BOTH tiers in BOTH twins.
+    /// The country-series section carries ALL THREE sources in BOTH twins.
     ///
     /// This is the assertion that fails in both directions: a twin that badges only the NARA half,
-    /// and a twin that badges more than its sibling.
-    @Test("Both twins badge the country-series section with both sources")
+    /// and a twin that badges more than its sibling. Since the addressee rule (owner decision D1), a
+    /// row it promoted to "Likely" also rests on the Office of the Historian's register — and that chip
+    /// must be CONDITIONAL on the promotion, or every row would claim a register match it never had.
+    @Test("Both twins badge the country-series section with FRUS, NARA and — on a promoted row — the register")
     func countrySeriesCarriesBothTiersInBothTwins() throws {
         let members = [Self.iOSTwin: "countrySeriesSection", Self.macTwin: "countrySeriesBox"]
         var swept = 0
@@ -233,16 +237,23 @@ struct SourceExplorerProvenanceTests {
             let text = Self.code(try Self.source(path))
             var sources: Set<String> = []
             var current = "<file scope>"
+            var previousCodeLine = ""
             for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 if let r = trimmed.range(of: #"(?:var|func)\s+(\w+)"#, options: .regularExpression) {
                     current = String(trimmed[r]).split(separator: " ").last.map(String.init) ?? current
                 }
+                defer { if !trimmed.isEmpty { previousCodeLine = trimmed } }
                 guard current == member, line.contains("ProvenanceChip(source:") else { continue }
                 if line.contains(".frusText") { sources.insert("frusText") }
                 if line.contains(".naraCatalog") { sources.insert("naraCatalog") }
+                if line.contains(".ohPeopleRegister") {
+                    sources.insert("ohPeopleRegister")
+                    #expect(previousCodeLine == "if resolution.chiefOfMission != nil {",
+                            "\(path) mounts the register chip without gating it on the promotion: \(previousCodeLine)")
+                }
             }
-            #expect(sources == ["frusText", "naraCatalog"],
+            #expect(sources == ["frusText", "naraCatalog", "ohPeopleRegister"],
                     "\(path) \(member) badges \(sources.sorted())")
             swept += 1
         }
