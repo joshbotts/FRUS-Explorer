@@ -78,8 +78,8 @@ struct PersonsListEncodingTests {
         // Real shape from frus1873p1v2: the same 57-entry list and the same head as frus1873p1v1,
         // under `xml:id="correspondence"`. #740 added only `correspondents`, the v1 spelling, while
         // describing both parts as using it — so a v50 index held 57 persons rows for v1 and none
-        // for v2, whose 454 mention rows joined nothing. Across all 552 volumes this spelling
-        // occurs in this one volume only.
+        // for v2, whose 454 mention rows joined nothing. Of the 744 TEI files in the local corpus,
+        // this spelling occurs in this one only.
         let url = try makeVolume(front: """
             <div type="section" xml:id="correspondence">
               <head>List of persons whose correspondence with or from the Department of State is
@@ -96,6 +96,9 @@ struct PersonsListEncodingTests {
         let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
         #expect(persons.map(\.ref).sorted() == ["p_HF1", "p_JCBD1"])
         #expect(persons.first { $0.ref == "p_HF1" }?.name == "Hamilton Fish")
+        // An installed index reads this list only when it re-parses, which only a bump triggers.
+        #expect(IndexingPipeline.currentDateIndexVersion >= 51,
+                "the spelling fix changes parse output and needs the v51 re-index")
     }
 
     @Test("The previously-accepted spellings still work (#740)")

@@ -1481,8 +1481,9 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// correspondence with or from the Department of State is contained in this volume", as a
     /// `<div type="section">` with no `subtype` — and they SPELL THE ID DIFFERENTLY:
     /// `frus1873p1v1` uses `correspondents` (#740) and `frus1873p1v2` uses `correspondence`.
-    /// Re-measured 2026-09-13 across all 552 volumes, each spelling occurs in exactly one volume, so
-    /// neither can match another volume's section. #740 added only the first while describing both
+    /// Re-measured 2026-09-13 over all 744 TEI files in the local corpus, which include the 553
+    /// manifest volumes: each spelling occurs in exactly one file, so neither can match another
+    /// volume's section. #740 added only the first while describing both
     /// parts as using it; the live index then held 57 persons rows for `frus1873p1v1` and none for
     /// `frus1873p1v2`, whose 454 mention rows joined nothing.
     private static let personsSectionIds: Set<String> = [

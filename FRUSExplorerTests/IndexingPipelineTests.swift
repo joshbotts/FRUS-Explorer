@@ -4374,6 +4374,82 @@ struct BorrowedPersonListTests {
             #expect(joinedB.authorityId == 4242)
         }
     }
+
+    @Test("A borrower that gains a list of its own on re-index stops borrowing")
+    func borrowerThatGainsAListStopsBorrowing() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try await pipeline.indexVolume(source)
+            try await pipeline.indexVolume(borrower)
+            #expect(try await persons(dir, borrower).map(\.ref).sorted() == ["p_HS1", "p_WC1"])
+
+            // The part is republished printing its own list, with the same body refs.
+            try writeVolume(in: dir, id: borrower, date: "1932-04-01",
+                            documents: [("d1", ["setv01#p_HS1", "setv01#p_WC1"]), ("d2", ["setv01#p_HS1"])],
+                            list: [("p_HS1", "H. L. Stimson"), ("p_AK1", "Allen T. Klots")])
+            try await pipeline.indexVolume(borrower)
+            let own = try await persons(dir, borrower)
+            #expect(own.map(\.ref).sorted() == ["p_AK1", "p_HS1"], "its own list, not the sibling's entries")
+            #expect(own.first { $0.ref == "p_HS1" }?.name == "H. L. Stimson")
+
+            try await pipeline.indexVolume(source)
+            #expect(try await persons(dir, borrower).map(\.ref).sorted() == ["p_AK1", "p_HS1"],
+                    "re-storing the former source must not treat this volume as its borrower")
+        }
+    }
+
+    @Test("Each borrower copies only from its own source, even when two sets share a ref")
+    func eachBorrowerCopiesOnlyFromItsOwnSource() async throws {
+        try await withTempDir { dir in
+            // Fragments really collide across sets: 31 of frus1932v04's also exist in
+            // frus1918Supp01v01's list, which sorts before frus1932v03. setA01 sorts before setB01
+            // the same way, so a copy that ignored WHICH source a borrower names gives setB02 the
+            // wrong person.
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeVolume(in: dir, id: "setA01", date: "1917-01-01", documents: [("d1", ["#p_X1"])],
+                            list: [("p_X1", "Alvey A. Adee")])
+            try writeVolume(in: dir, id: "setA02", date: "1917-02-01", documents: [("d1", ["setA01#p_X1"])])
+            try writeVolume(in: dir, id: "setB01", date: "1932-01-01", documents: [("d1", ["#p_X1"])],
+                            list: [("p_X1", "Wilbur J. Carr")])
+            try writeVolume(in: dir, id: "setB02", date: "1932-02-01", documents: [("d1", ["setB01#p_X1"])])
+            for id in ["setA01", "setA02", "setB01", "setB02"] { try await pipeline.indexVolume(id) }
+
+            #expect(try await persons(dir, "setA02").map(\.name) == ["Alvey A. Adee"])
+            #expect(try await persons(dir, "setB02").map(\.name) == ["Wilbur J. Carr"])
+
+            try await pipeline.removeVolume("setA01")
+            #expect(try await persons(dir, "setA02").isEmpty,
+                    "its own source is gone, and another set's list is not a substitute")
+            #expect(try await persons(dir, "setB02").map(\.name) == ["Wilbur J. Carr"])
+        }
+    }
+
+    @Test("A volume whose refs name two lists, or a borrower's list, borrows nothing")
+    func refusesAmbiguousAndChainedSources() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            try writeSource(in: dir)
+            try writeBorrower(in: dir)
+            try writeVolume(in: dir, id: "otherlist", date: "1932-01-15", documents: [("d1", ["#p_WC1"])],
+                            list: [("p_WC1", "William R. Castle")])
+            // Two lists named: which one owns a ref is a question the index refuses to answer.
+            try writeVolume(in: dir, id: "twolists", date: "1932-05-01",
+                            documents: [("d1", ["setv01#p_HS1", "otherlist#p_WC1"])])
+            // A borrower's list named: that list is itself copies, refilled in an order this volume
+            // cannot see.
+            try writeVolume(in: dir, id: "chained", date: "1932-06-01",
+                            documents: [("d1", ["setv02#p_HS1"])])
+            for id in [source, borrower, "otherlist", "twolists", "chained"] {
+                try await pipeline.indexVolume(id)
+            }
+
+            #expect(try await persons(dir, borrower).count == 2, "the ordinary borrower still borrows")
+            #expect(try await persons(dir, "twolists").isEmpty)
+            #expect(try await persons(dir, "chained").isEmpty)
+        }
+    }
 }
 
 /// End-to-end tests for the head-nested source-note extraction fix, using the **real**

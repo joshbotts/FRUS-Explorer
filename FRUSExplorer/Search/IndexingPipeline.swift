@@ -4401,12 +4401,21 @@ public actor IndexingPipeline {
             TermRow(volumeId: volumeId, ref: t.ref, term: t.term, definition: t.definition)
         }
         // A volume that parsed NO persons list, but whose refs name another volume's, borrows the
-        // entries it mentions once both are stored (`resolveBorrowedPersonLists`). Never recorded
-        // for a volume that has a list of its own: `frus1951v04p2` holds 365 entries and spells ONE
-        // ref `frus1951v04p1#…`, and that single spelling must not make it a borrower.
-        let personListSources = personRows.isEmpty
-            ? personListVolumes.subtracting([volumeId]).sorted()
+        // entries it mentions once both are stored (`resolveBorrowedPersonLists`). Two refusals:
+        // - never for a volume with a list of its own — `frus1951v04p2` holds 365 entries and spells
+        //   ONE ref `frus1951v04p1#…`, and that single spelling must not make it a borrower;
+        // - never when the refs name MORE than one other volume. All three borrowers in the corpus
+        //   name exactly one. Two named lists would need a rule for which owns a shared ref, and the
+        //   row copy and the authority fallback would each answer it their own way.
+        let foreignListVolumes = personListVolumes.subtracting([volumeId])
+        let personListSources = personRows.isEmpty && foreignListVolumes.count == 1
+            ? Array(foreignListVolumes)
             : []
+        #if DEBUG
+        if personRows.isEmpty && foreignListVolumes.count > 1 {
+            print("[IndexingPipeline] \(volumeId): person refs name \(foreignListVolumes.count) other volumes' lists; borrowing from none.")
+        }
+        #endif
 
         // Parse source notes into structured archival citation fields.
         // This is pure string processing — no I/O — so it adds negligible overhead
@@ -7514,14 +7523,20 @@ public actor IndexingPipeline {
         try inTransaction {
             let clear = try auxPrepare("DELETE FROM persons WHERE volume_id = ?1")
             defer { sqlite3_finalize(clear) }
-            // `INSERT OR IGNORE` + the ordering: if two sources held the same ref, the first
-            // source by id wins, deterministically. No volume in the corpus has two sources.
+            // Never copies FROM a volume that is itself a borrower: its rows are copies, and this
+            // loop may visit a target before that source has been refilled. No borrower in the
+            // corpus names another borrower. `WHERE s.volume_id = ?1` is load-bearing, not
+            // tidiness: ref fragments collide across sets — 31 of `frus1932v04`'s also exist in
+            // `frus1918Supp01v01`'s list, which sorts before its own source. `INSERT OR IGNORE` is
+            // defensive only, since a borrower records exactly one source.
             let copy = try auxPrepare("""
                 INSERT OR IGNORE INTO persons (volume_id, ref, name, description, role, start_year, end_year)
                 SELECT ?1, p.ref, p.name, p.description, p.role, p.start_year, p.end_year
                 FROM person_list_sources s
                 JOIN persons p ON p.volume_id = s.source_volume_id
                 WHERE s.volume_id = ?1
+                  AND NOT EXISTS (SELECT 1 FROM person_list_sources chained
+                                  WHERE chained.volume_id = s.source_volume_id)
                   AND EXISTS (SELECT 1 FROM person_mentions pm
                               WHERE pm.volume_id = ?1 AND pm.person_ref = p.ref)
                 ORDER BY s.source_volume_id, p.ref
