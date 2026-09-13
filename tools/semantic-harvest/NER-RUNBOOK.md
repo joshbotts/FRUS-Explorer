@@ -891,6 +891,80 @@ spans and touched none.
 
 The first two are filed as separate fixes. The third is the owner's decision, alongside the seed titles.
 
+
+### 7.2 The score over 64 documents, with the conventions decided and both audits applied (2026-09-12)
+
+The owner keyed 40 more documents, bringing the sample to **64 of 72**. The 8 still unmarked are 2 in 1900–1929, 3
+in 1930–1945 and 3 in 1946–. The owner also ruled on both audits and decided the conventions §7.1 left open:
+- an attached title or honorific belongs inside the span, **seeds included**;
+- a possessive belongs inside the span;
+- a shared plural honorific goes on the first name of its list;
+- one span per person;
+- a name inside a source-citation caption is not a mention.
+
+**What was applied**, each change span by span with the prose verified unchanged:
+- **The first audit:** 5 missed mentions added (`Wolf, Rudolf` was rejected as citation furniture), 3 annotator
+  spans and 13 seeds extended to their attached title, and the shared plural in `frus1889/d119`.
+- **The conventions, mechanically, across all 64 documents:** 20 more spans extended to an attached unambiguous
+  honorific (`Mr.`, `Mrs.`, `Messrs.`, `Dr.`, `Hon.`, `Sir`, `Señor`, `Mme.`, `Monsieur`, `Herr`). No possessive
+  needed adding. Rank and office titles were left to the audit, because where such a title begins is a judgement.
+- **The second audit.** Two adjudicators per band covered the 40 new documents: 246 gold spans and 500 detector
+  disagreements. They were unanimous on every verdict that decides a change, and found **no missed mention**.
+  All six proposals were accepted:
+  - two spans that name no one (`General Seville`, `Stockholm`);
+  - three rank titles (`Citizen`, `Prince`, `Chargé`);
+  - one span split into one per person (`Messrs. Jessup` + `Ford`).
+- **ASCII brackets.** The sitting was typed with `[ ]` again. `CONVERT_ASCII_BRACKETS=1` converted 188 pairs in 38
+  documents and refused nothing.
+
+**Collection.** 406 mentions over 64 documents, 2 of which name no one. **The collector's markup share now reads
+13.1%, and that figure is an artefact of the conventions**: its 35 "rejected" editor spans are 34 seeds extended to
+their attached title and one split into a span per person, not spans anyone judged wrong. By overlap the editors mark **21.7%** of mentions, the baseline's relaxed recall, and
+that is the number to quote.
+
+| detector | strict P / R / F1 | relaxed P / R / F1 |
+|---|---|---|
+| editor markup (baseline) | 0.602 / 0.131 / 0.215 | 1.000 / 0.217 / 0.356 |
+| qwen3-14b sweep | 0.346 / 0.855 / 0.492 | 0.378 / 0.933 / 0.538 |
+| sweep, boundary rule only | 0.355 / 0.855 / 0.502 | 0.388 / 0.933 / 0.548 |
+| sweep, all rules | 0.471 / 0.855 / **0.608** | 0.514 / 0.931 / 0.662 |
+| NLTagger control | 0.434 / 0.367 / 0.398 | 0.752 / 0.635 / 0.689 |
+| control, all rules | 0.471 / 0.367 / 0.413 | 0.810 / 0.630 / **0.709** |
+
+By band (sweep / filtered sweep / control), strict: 1861–1899 0.655 / 0.723 / 0.347 · 1900–1929 0.440 / 0.567 /
+0.387 · 1930–1945 0.362 / 0.509 / 0.410 · 1946– 0.429 / 0.542 / 0.492. Relaxed: 0.710 / 0.783 / 0.682 · 0.466 / 0.600
+/ 0.688 · 0.389 / 0.547 / 0.684 · 0.488 / 0.611 / 0.706.
+
+**The stopping rule is not met, and cannot be.** NLTagger minus the raw sweep is −9.5 strict, short of the 10 the
+rule needs, and the band winners split: the sweep takes 1861–1929 and NLTagger takes 1930 onwards. In a
+band-stratified bootstrap (10,000 resamples) the rule is met 2.6% of the time. Simulating the 8 unmarked documents
+from their own bands, it is met in none of 10,000 draws, with the strict gap between −10.2 and −5.9. With 89% of
+the sample keyed, the rule has done what it was for, and what follows is the result on a near-complete sample.
+
+**What the 64 documents say.** Intervals below are band-stratified 95% bootstrap intervals:
+- **Boundaries go to the filtered sweep, clearly.** NLTagger minus the filtered sweep is **−21.0 strict, interval
+  −28.1 to −14.2**. The raw sweep leads NLTagger too, by 9.5 (−17.2 to −2.4). This is not the title convention
+  alone: with titles and possessives stripped on both sides, the filtered sweep still leads, 0.653 to 0.563.
+- **Finding the mention is a tie between the filtered sweep and NLTagger.** NLTagger minus the filtered sweep is
+  **+2.7 relaxed, interval −4.9 to +10.2**. NLTagger does clearly beat the raw sweep, +15.1 (+7.0 to +22.7). The
+  two fail differently: the filtered sweep finds 93% of mentions at 51% precision, and NLTagger 64% at 75%.
+- **The filter is worth about 12 points to the sweep** on either metric (+11.5 strict, +9.1 to +13.8), which
+  confirms §7's rules on real gold.
+- **Strict reversed since §7.1.** At 24 documents NLTagger led strict by 6.3 points; the raw sweep now leads by
+  9.5. Two things changed: the owner's title convention extended seeds to their titles, which the sweep emits and
+  NLTagger does not, and 40 documents were added. Relaxed moved the same way but less: NLTagger's lead over the raw
+  sweep went from +23 to +15, and over the filtered sweep from +11 to +3.
+- **The free layer plus a detector.** This comparison was not planned before scoring, so read it as a direction.
+  Editor markup plus the filtered control scores 0.794 relaxed (P 0.816, R 0.773). Editor markup plus the filtered
+  sweep scores 0.646 (P 0.493, R 0.936).
+
+**What this does not settle** is which detector to build on, because that depends on the use:
+- a surface that slices text by offset needs the sweep's boundaries;
+- a surface that asks whether someone is named here gets a tie at best from an 11.55-day sweep against an
+  8-minute NLTagger pass, and NLTagger in union with the free layer scores higher still.
+
+That consequence is the program's next step to draw (N-2), not this section's.
+
 ---
 
 ## 8. The store contract
@@ -1009,6 +1083,12 @@ the stubs and the long editorial notes), `SEED`, `COLLECT`, `FORCE`, `CONVERT_AS
   offset arithmetic on strings where code points, characters and UTF-16 units disagree
 
 Version history:
+  1.8 — 2026-09-12: the score over 64 of 72 documents (§7.2), with the owner's conventions decided (titles inside the
+        span, seeds included; possessives inside; a shared plural on the first name) and both audits ruled on and
+        applied. Strict: the filtered sweep leads NLTagger by 21 points (interval −28 to −14). Relaxed: a tie
+        (+2.7, −4.9 to +10.2). The stopping rule is not met, and a simulation of the 8 unmarked documents meets
+        it in none of 10,000 draws. The collector's markup share (13.1%) is an artefact of the title convention;
+        the editors mark 21.7% of mentions by overlap.
   1.7 — 2026-09-12: annotation typed with ASCII `[ ]` is diagnosed by name (§6): a failing file is aligned against its
         staged R-0 text, and when the only edits are inserted brackets every marked document with that pattern is
         listed with its pair count and any reason it cannot be converted. `CONVERT_ASCII_BRACKETS=1` rewrites exactly

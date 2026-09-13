@@ -149,9 +149,11 @@ shortlisted Qwen3 14 B runs at 4.68 s/chunk on the Studio, pricing a full sweep 
 the probed 4-worker pool), while Qwen3 1.7 B is disqualified on verbatim-copy discipline. The free `NLTagger`
 control is **built** (`EarlyEraNERControl`) and measured at **~8 min** over the same scope. The sweep then RAN in full
 (2026-08-28 → 09-10, 11.55 days; NER-RUNBOOK §4.8.3), so both detectors cover every gold document. **M2a is
-partly keyed:** the first 24 of the 72 documents were scored on 2026-09-12 (§7.1), and the frozen stopping rule
-was not met. The remaining 48 are owed, and three conventions in the gold — audit corrections, seed titles,
-possessives — must be settled before them. Nothing the detectors produce may ship until M2a is keyed.
+keyed to 64 of 72 and scored** (2026-09-12, NER-RUNBOOK §7.2), with both independent audits ruled on and the owner's
+conventions applied. On exact boundaries the filtered sweep leads NLTagger by 21 points. On finding a mention they
+tie, and NLTagger added to the free editor layer scores highest. The frozen stopping rule is not met, and the 8
+unkeyed documents cannot meet it. Which detector to build on is N-2's decision, and it turns on the use: offsets
+or presence. Nothing the detectors produce may ship until M2a is keyed.
 
 **Execution plan: ride the semantic-vectors pipeline** — same corpus pass, same pinned-tooling
 discipline, same hardware window, and the embedding model doubles as a mention-context
