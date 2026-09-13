@@ -15012,3 +15012,35 @@ sibling part's list, and 0 `persons` rows. `frus1873p1v2` keeps its list under `
 
 **Next.** The owner decides the six questions in the assessment's §6.3. The first is whether a per-volume,
 name-string entry disclosed as derived is acceptable in the People browser at all.
+
+## #740 residue and split-set parts: two person lists the index never joined (PR #1291)
+
+Both defects were found by reading the live index for the #234 assessment (#1290 §4.0). Both change what a
+re-parse stores, so `currentDateIndexVersion` moves **50 → 51** in one bump.
+
+- **`frus1873p1v2`'s list is `xml:id="correspondence"`.** #740 added `correspondents`, `frus1873p1v1`'s spelling,
+  and described both parts as using it. The v50 index held 57 persons rows for v1 and none for v2, whose 454
+  mention rows joined nothing. Of the 744 TEI files in the corpus, each spelling occurs in exactly one.
+- **Three split-set second parts carry no list.** `frus1932v04`, `frus1918Supp01v02` and `frus1917Supp02v02`
+  point every person ref into the first part's list, so v13's premise that each part carries its own copy is
+  false for them. They held 5,530 mention rows against 0 `persons` rows. A volume that parses no list, and whose
+  refs name exactly one other volume, is now recorded in `person_list_sources`. When either volume is stored or
+  removed, the entries the borrower mentions are copied across (`resolveBorrowedPersonLists`). A borrowed row
+  takes the source row's authority id when it has none of its own.
+
+**No `currentPersonRollupVersion` bump.** Both fixes only add `persons` rows, and the members-versus-persons drift
+check rebuilds on the first launch that sees them.
+
+**Review.** A three-lens review with a skeptic per lens confirmed four findings and refuted three. The confirmed
+ones: an unpinned delete that stops a former borrower borrowing; a copy that ignored which source a borrower
+names, which matters because fragments collide across the real sets (31 of `frus1932v04`'s also exist in
+`frus1918Supp01v01`'s list); two-list and chained borrowers handled inconsistently, now refused; and the version
+bump, now pinned.
+
+**Verification.** The targeted suites ran 57 tests in 6 suites, 12 of them new. A 14-mutant sweep against the committed tree caught all
+14, and each run's log shows the named killer test failing. The whole `FRUSExplorerTests` target then ran 4,762 tests
+in 611 suites and passed on `00070d5b`, after the sweep's last revert.
+
+**Not in this change.** A borrower shows people only while its source is downloaded. The live index's other 304
+orphan mention rows sit in volumes that have lists of their own, such as 129 in `frus1969-76v14`; that class was
+not examined. The one-time v51 re-index belongs in the next build's TestFlight notes.
