@@ -25,6 +25,15 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-15: Phase 2 — seed table
+///   1.1 — 2026-09-13: FRUS chapter-title forms the pre-1906 classifier could not read as a
+///         country — a chapter number (`XXIX.—Spain.`), a `(Continued.)` suffix, a letter-to-letter
+///         en dash (`Austria–Hungary.`), a chapter of correspondence with a foreign legation in
+///         Washington (`British legation.`), `Chili`, and `Rome.` for the Papal States.
+///         `canonicalize` gains one alias (`chili`) and nothing else: no roll title in the bundled
+///         index contains that spelling, so the keys the generator harvests are unchanged.
+///         `Turkish Empire` is deliberately NOT aliased: in `frus1876` it is the parent chapter of
+///         `Egypt.`, and Source Explorer takes the first title from the volume root that resolves,
+///         so reading it as Turkey moved a document that resolved to Egypt onto the Turkey rolls.
 enum GeoKeyNormalizer {
 
     /// Maps a normalized variant → preferred canonical key.
@@ -47,6 +56,7 @@ enum GeoKeyNormalizer {
         "belgian": "belgium",
         // Bolivia / Brazil / Chile
         "bolivian": "bolivia", "brazilian": "brazil", "chilean": "chile", "chilian": "chile",
+        "chili": "chile",
         // China / Colombia
         "chinese": "china",
         "colombian": "colombia", "new granada": "colombia",
@@ -113,10 +123,30 @@ enum GeoKeyNormalizer {
         "central american": "central america", "central american states": "central america",
     ]
 
+    /// Whole FRUS chapter titles that file under a country their words do not spell.
+    ///
+    /// Read ONLY by `keys(from:)`, never by `canonicalize`: the same word is a consular POST key
+    /// elsewhere in the index, and `canonicalize` is what the generator's roll parser calls — an
+    /// alias for `rome` there would move the Rome consulate's rolls.
+    ///
+    /// **`Rome.` is the Papal States.** FRUS titles a chapter `Rome.` only in the 1861–1867
+    /// volumes, and every document in it is the U.S. legation at Rome — the mission to the Papal
+    /// States, closed in 1868 — or the Department's instructions to it; after 1870 FRUS files Rome
+    /// under Italy. The index holds the Papal States instructions as a roll of their own, so those
+    /// resolve exactly. Its Papal States despatches sit inside the Italian States series under
+    /// `italian states`, beside the Kingdom of Italy's, so a despatch from Rome resolves to nothing
+    /// rather than to a set that also names another legation's rolls.
+    static let chapterTitleAliases: [String: String] = [
+        "rome": "papal states",
+    ]
+
     /// Returns the canonical geographic key(s) for a raw country/post string.
     ///
     /// Splits combined names (`Uruguay and Paraguay`, `Brazil & Argentina`) into multiple
     /// keys, strips a leading `Volume N:` segment, applies the alias table, and lower-cases.
+    /// A FRUS chapter title is read through its decoration first (1.1): a chapter number, a
+    /// `(Continued.)` suffix, a letter-to-letter en dash, a foreign-legation chapter, and the whole
+    /// titles in `chapterTitleAliases`.
     /// Returns `[]` when no usable name remains (e.g. an empty or purely numeric string).
     static func keys(from raw: String) -> [String] {
         var text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -132,19 +162,91 @@ enum GeoKeyNormalizer {
             text = String(text[..<colon])
         }
 
+        text = stripChapterDecoration(text)
+        if let legationCountry = foreignLegationName(inChapterTitle: text) {
+            text = legationCountry
+        } else if let alias = chapterTitleAliases[fold(text)] {
+            return [alias]
+        }
+
         return splitConjunctions(text)
             .map(canonicalize)
             .filter { !$0.isEmpty }
     }
 
+    /// The country a FRUS chapter of correspondence with a FOREIGN legation or embassy in
+    /// Washington is about, as the title spells it, or `nil` when the title is not such a chapter.
+    ///
+    /// The 1860s volumes title these `British legation.` or `Correspondence with the Mexican
+    /// legation.`; the 1880s volumes `Correspondence with the legation of Mexico at Washington.`;
+    /// `frus1894app1` `Correspondence Between the Department of State and the German Embassy.`
+    /// The distinction matters to the classifier as well as to the key: documents in these chapters
+    /// are notes to and from the foreign minister in Washington, not instructions to or despatches
+    /// from the U.S. minister abroad.
+    ///
+    /// Refused, so a U.S. mission is never read as a foreign one: a name that is the United States
+    /// or American, and any name carrying a place clause (`the embassy of the United States at
+    /// Paris`) — the only place a foreign legation's chapter may name is Washington or the United
+    /// States.
+    static func foreignLegationName(inChapterTitle raw: String) -> String? {
+        let title = fold(stripChapterDecoration(raw))
+        let lead = #"(?:correspondence (?:with|between the department of state and) )?(?:the )?"#
+        let washington = #"(?:,? (?:at|in) (?:washington(?:,? d\. ?c)?|the united states(?: of america)?))?"#
+        let patterns = [
+            "^" + lead + #"(?:legation|embassy) of (?:the )?(.+?)"# + washington + "$",
+            "^" + lead + #"(\p{L}[\p{L}'-]*(?: \p{L}[\p{L}'-]*){0,2}) (?:legation|embassy)"# + washington + "$",
+        ]
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern),
+                  let match = regex.firstMatch(in: title, range: NSRange(title.startIndex..., in: title)),
+                  let range = Range(match.range(at: 1), in: title) else { continue }
+            let name = String(title[range])
+            let words = name.split(separator: " ").map(String.init)
+            if words.contains(where: { ["at", "in", "to", "for", "from", "by"].contains($0) }) { return nil }
+            if ["american", "united states", "united states of america"].contains(name)
+                || name.hasPrefix("u. s") || name.hasPrefix("u.s") { return nil }
+            return name
+        }
+        return nil
+    }
+
     /// Normalizes a single already-isolated name to its canonical key (no splitting).
     static func canonicalize(_ name: String) -> String {
-        let collapsed = name
+        let collapsed = fold(name)
+        return aliases[collapsed] ?? collapsed
+    }
+
+    /// Trims surrounding whitespace and `.,;`, lower-cases, and collapses internal spaces.
+    private static func fold(_ name: String) -> String {
+        name
             .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ".,;")))
             .lowercased()
             .split(whereSeparator: { $0 == " " })
             .joined(separator: " ")
-        return aliases[collapsed] ?? collapsed
+    }
+
+    /// Removes the decoration a FRUS chapter title puts around its name (1.1).
+    ///
+    /// - a chapter number with its dash: `XXIX.—Spain.`, `1.—Ottoman Porte.`, and the page-marked
+    ///   `[199] *I.—France.` / `[347] *III. — Portugal.` of `frus1872p2v2`;
+    /// - a `(Continued.)` suffix: `Great Britain. (Continued.)`;
+    /// - an en or em dash between two letters, which is the hyphen the aliases spell:
+    ///   `Austria–Hungary.`.
+    ///
+    /// A title without decoration is returned unchanged, so no title that already read as a country
+    /// can read differently.
+    private static func stripChapterDecoration(_ title: String) -> String {
+        var text = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let r = text.range(of: #"^(?:\[\d+\]\s*)?\*?\s*(?:[IVXLCDM]+|\d{1,3})\.\s*[—–-]\s*"#,
+                              options: .regularExpression) {
+            text = String(text[r.upperBound...])
+        }
+        if let r = text.range(of: #"\s*\(\s*continued\.?\s*\)\s*$"#,
+                              options: [.regularExpression, .caseInsensitive]) {
+            text = String(text[..<r.lowerBound])
+        }
+        return text.replacingOccurrences(of: #"(?<=\p{L})[–—](?=\p{L})"#, with: "-",
+                                         options: .regularExpression)
     }
 
     /// Splits `A and B`, `A & B`, `A, B` conjunction forms into component names.

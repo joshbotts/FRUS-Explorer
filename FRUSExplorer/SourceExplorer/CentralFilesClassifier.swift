@@ -187,6 +187,15 @@ struct CentralFilesClassification: Sendable, Equatable {
 ///         Instructions / Notes-to-Foreign-Consuls pair — the same shape of honest
 ///         ambiguity as the existing Instructions / Notes-to pair, and resolved by date
 ///         alone (the three tail series carry no geography).
+///   1.3 — 2026-09-13: a chapter of correspondence with a FOREIGN legation in Washington
+///         (`British legation.`, `Correspondence with the legation of Mexico at Washington.`) now
+///         reads as that country, so it is also read for what it says about direction. The
+///         Department's letter there is a note TO the legation, never an instruction; a letter from
+///         Washington is a note FROM it; and nothing else in the chapter falls back to a U.S.
+///         mission's despatch, because the chapter names the legation's country, not a mission's.
+///         Measured before the change: the documents in these chapters are Lord Lyons's notes and
+///         the Department's replies, and a title-only fix would have offered every reply as an
+///         instruction to Great Britain.
 enum CentralFilesClassifier {
 
     /// Returns candidate classifications, best-first, or `[]` when no cue applies (e.g. a
@@ -251,12 +260,18 @@ enum CentralFilesClassifier {
 
         // Diplomatic series — geography is the FRUS chapter country.
         let geoKeys = chapterCountry.map { GeoKeyNormalizer.keys(from: $0) } ?? []
+        // A chapter of correspondence WITH a foreign legation in Washington (1.3). Its country is
+        // the legation's, so every branch below that would place a document with a U.S. mission
+        // abroad refuses instead.
+        let legationChapter = chapterCountry.map {
+            GeoKeyNormalizer.foreignLegationName(inChapterTitle: $0) != nil
+        } ?? false
 
         // A U.S. diplomatic mission abroad → a despatch home.
         if containsAny(dl, ["legation of the united states", "embassy of the united states",
                             "american legation", "american embassy",
                             "united states legation", "u. s. legation", "u.s. legation"]) {
-            guard !geoKeys.isEmpty else { return [] }
+            guard !geoKeys.isEmpty, !legationChapter else { return [] }
             return [CentralFilesClassification(
                 category: .despatches, geoKeys: geoKeys, confidence: .high,
                 rationale: String(localized: "centralFiles.rationale.despatch",
@@ -270,7 +285,13 @@ enum CentralFilesClassifier {
         // their candidates carry no geography and resolve by date.
         if dl.contains("department of state") {
             var candidates: [CentralFilesClassification] = []
-            if !geoKeys.isEmpty {
+            if !geoKeys.isEmpty, legationChapter {
+                // The chapter settles what the dateline cannot: the addressee is the legation.
+                candidates.append(CentralFilesClassification(
+                    category: .notesTo, geoKeys: geoKeys, confidence: .medium,
+                    rationale: String(localized: "centralFiles.rationale.legationNoteTo",
+                                      defaultValue: "Department of State outbound, printed in FRUS’s correspondence with the foreign legation in Washington — a note to the legation.")))
+            } else if !geoKeys.isEmpty {
                 candidates.append(CentralFilesClassification(
                     category: .instructions, geoKeys: geoKeys, confidence: .medium,
                     rationale: String(localized: "centralFiles.rationale.instruction",
@@ -311,6 +332,18 @@ enum CentralFilesClassifier {
                 category: .notesFrom, geoKeys: geoKeys, confidence: .high,
                 rationale: String(localized: "centralFiles.rationale.noteFrom",
                                   defaultValue: "Dateline is a foreign legation in Washington — a note from the foreign mission."))]
+        }
+
+        // In a foreign-legation chapter (1.3), a letter from Washington or from the legation
+        // wherever it wrote is a note FROM it — most of Lord Lyons's notes are datelined
+        // "Washington, <date>" and nothing more. Anything else refuses: the despatch fallback below
+        // would name a U.S. mission in the legation's country, which the chapter does not say.
+        if legationChapter {
+            guard dl.contains("washington") || containsAny(dl, ["legation", "embassy"]) else { return [] }
+            return [CentralFilesClassification(
+                category: .notesFrom, geoKeys: geoKeys, confidence: .medium,
+                rationale: String(localized: "centralFiles.rationale.legationNoteFrom",
+                                  defaultValue: "Printed in FRUS’s correspondence with the foreign legation in Washington, and not from the Department — a note from the legation."))]
         }
 
         // Fallback: datelined abroad — no Washington / Department of State marker. The

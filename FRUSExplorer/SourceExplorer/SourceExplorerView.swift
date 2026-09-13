@@ -1022,7 +1022,7 @@ struct SourceExplorerView: View {
         // from the shared `DocumentASTCache` — this sheet is only ever opened from an open
         // document, so the parse has just happened; a miss simply yields no enclosure rows rather
         // than a wrong one.
-        resolutions += await enclosureResolutions(index: index, path: path)
+        resolutions += await enclosureResolutions(index: index)
         countryResolutions = resolutions
         // Fetched here rather than threaded through the snapshot types: this method already runs
         // only for pre-1906 documents and already holds the pipeline, volume id and document id.
@@ -1123,13 +1123,16 @@ struct SourceExplorerView: View {
     /// miss the result is empty — the surface then says exactly what it said before B-5, which is
     /// the honest degradation for a fact that could not be read.
     ///
-    /// - Parameters:
-    ///   - index: the bundled central-files index.
-    ///   - path: the FRUS section chain, reused so an enclosure inherits the chapter country its
-    ///     parent was resolved under — the enclosure prints no chapter of its own.
+    /// An enclosure is classified from its own opener with NO chapter country. The parent's chapter
+    /// is deliberately not passed down — `CentralFilesClassifier.enclosureHomes` gives the measured
+    /// reason: borrowing it would let a city-only dateline resolve to the parent's country and be
+    /// labelled as the enclosure's home. (This comment used to say the enclosure inherits the
+    /// parent's chapter country through a `path` parameter. The code never read that parameter,
+    /// and it has been removed.)
+    ///
+    /// - Parameter index: the bundled central-files index.
     /// - Returns: one resolution per enclosure that resolves, tagged with its part.
-    private func enclosureResolutions(index: CentralFilesIndex,
-                                      path: [String]) async -> [CountrySeriesResolution] {
+    private func enclosureResolutions(index: CentralFilesIndex) async -> [CountrySeriesResolution] {
         guard let volumeId = documentVolumeId, let docId = documentId else { return [] }
         // Cache hit, else parse — the `CollectionContentResolver.cachedAST` shape. The cache is a
         // 24-slot LRU that empties itself on an iOS memory warning, so "the document is open, so
