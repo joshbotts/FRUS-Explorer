@@ -14978,7 +14978,7 @@ Backups of every state are beside the data.
   the title convention, which the sweep's spans follow and NLTagger's do not, and the added documents.
 
 **A figure that now misleads, recorded so nobody quotes it.** The collector's measured markup share reads 13.1%,
-because every seed extended to its title counts as rejected. By overlap the editors mark **21.7%** of mentions.
+because its 35 "rejected" editor spans are 34 seeds extended to their title and one split per person. By overlap the editors mark **21.7%** of mentions.
 
 **Next.** N-2 draws the consequence. A surface that slices by offset needs the sweep's boundaries. A presence
 surface gets at best a tie from an 11.55-day sweep against an 8-minute NLTagger pass, and NLTagger in union with
