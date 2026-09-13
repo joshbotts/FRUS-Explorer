@@ -1,39 +1,43 @@
 # What's New Since Build 46 (Mac)
 
-The headline: **semantic matching is now on by default.** It shipped switched off, you had to find a slider to try it, and almost nobody did. It is now weighted 0.5 out of the box — still labelled experimental, because how well it reads nineteenth-century prose is genuinely not established.
+**Semantic matching is on by default**, weighted 0.5 and still labelled experimental, because how well it reads nineteenth-century prose is not established. **Your notes get formatting, and your tags and projects your own order.**
 
-**No re-index this time.** Build 46 rebuilt every downloaded volume; build 47 does not. Nothing is re-downloaded except the new volume's own vector file.
+**First launch re-indexes every downloaded volume, once**, to join person lists in four older volumes; three show people only while their set's first part is downloaded. The app may be slower until it finishes. Nothing is re-downloaded.
 
 ## Semantic matches, on by default
 
-Every Related Documents list now includes matches found by the shape of the language rather than by citations or archival provenance. Two knock-on effects worth knowing:
+- Related Documents now includes matches found by the shape of the language, and the semantic axis also re-scores rows other signals found, so Related order changes.
+- **Vector files download as you read**: opening Related asks for the files of the volumes its matches sit in, measured on a full library at a median of 104 volumes, about 31 MB.
+- **Download With Volumes** governs that. There is no metered-connection check: turn it off in **Settings ▸ Volumes & Storage ▸ Semantic Vectors** and use **Download Missing Vectors** later.
+- Setting the axis to 0 in **Related ▸ Adjust weights** stops semantic matches and Related's vector requests, not the files fetched by volume downloads or Meaning searches. Only the switch stops those.
 
-- **Vector files now download as you read.** Opening a document's Related panel asks for the vector files of the volumes its matches sit in — **measured at a median of 104 volumes, about 31 MB, for a full library.** They are small files for volumes you already have, but there are a lot of them at once.
-- **"Download With Volumes" now governs that too.** Previously the switch covered only the files riding along with a volume download; the read-as-you-go path ignored it. It no longer does. **There is still no separate cellular or metered check** — on a tethered link, turn the switch off (Settings ▸ Storage ▸ vectors) and use **Download Missing Vectors** later instead. That row now says when the switch is the reason nothing is arriving.
-- Taking the axis back down to 0 in **Related ▸ Adjust weights** switches all of it off, including the downloads.
+## Notes
 
-## FRUS 1981–1988, Volume XVI, South America
+An unlabelled switch by the **Note** header, on by default, shows a formatting bar. **Tags** and **Projects** are one row each, opening a searchable list you drag to reorder. The Research window adds **Contains Notes** and **All Notes**; the Settings Notes pane is gone. Search now finds every note on a document, a deleted note's words drop out, and saving a note no longer erases a document's tags from tag search.
 
-New, and **partially published** — the Office of the Historian has cleared 4 of its 11 chapters, so the app carries **88 of its 485 documents** and shows an orange *Partial* badge in the Corpus Browser. That is OH's state, not a download problem; the rest arrive when they clear. The corpus is now **553 volumes**.
+## Your order for tags and projects
 
-## Beyond your library, now for a whole project
+Set it in **Settings ▸ Research ▸ Tags** or **Projects**: right-click a row for **Move to Top**, **Move Up**, **Move Down**. The note editor's pickers, the document tag picker, the Active Project picker, **Research ▸ Switch Project** and Search's **My Tags** follow it.
 
-The Project window gains a section under Suggested Next: volumes you have **not** downloaded that your project's own documents point into, ranked by **how many of your documents reach each one** rather than by how many matches it holds. The Related panel has had the per-document version since build 46; this is the project-wide one.
+## Archives
+
+In **Corpus Browser ▸ Archives**, **Collections** gets a group menu (**Repository**, **Record Group**, **Ungrouped**); it and **Classes** get a sort menu, collapsing headers and **Collapse All**. Source Explorer's **Collections** gets the same row.
 
 ## Also
 
-"Archive Visits" is now **"Archives Visits"** throughout, including the exported trip packet's filename. Highlights in exported PDF, DOCX and HTML use a corrected offset rule — you should see no difference, which is the point.
+FRUS 1981–1988 vol. XVI is new and partial: 88 of 485 documents, an orange *Partial* badge; 553 volumes. Project Home adds **Beyond your library**. Pre-1906 Source Explorer suggests a series for more documents. "Archive Visits" is now **"Archives Visits"**.
 
 ## What to test
 
-1. **The default change is the whole build.** Read Related lists on documents you know well, in the document window and in Find Related (⌘⌥F). Do the semantic matches earn their place, or push better rows down? Would you have chosen 0.5?
-2. **Nineteenth-century material especially.** This is the declared unknown. If it is bad there, say so plainly — that is the finding.
-3. **Watch the network.** Open a few Related panels and check Settings ▸ Storage. Did vector files arrive faster than you expected? Was 31 MB a surprise?
-4. Turn **Download With Volumes** off, open a Related panel, and confirm the semantic section goes quiet — then that Settings tells you why, and that **Download Missing Vectors** still works.
-5. **FRUS 1981–1988 vol. XVI** — download it. Does the *Partial* badge read as "OH hasn't finished" rather than "this failed"?
-6. **Project ▸ Beyond your library** — are those volumes ones you would actually fetch? Is "reached from 7 of yours" the number you want, or would you rather see match counts?
-7. Anything that got slower, in any window. The Related panel now does more work on every open.
+1. **The semantic default.** Do semantic matches earn their place in Related, or push better rows down? Nineteenth-century material especially: if it is bad there, say so.
+2. **Data use.** Open a few Related panels, then check **Volumes & Storage ▸ Semantic Vectors**. Was 31 MB a surprise? With the switch off, does **Download Missing Vectors** say why?
+3. **Notes.** Format a note, save, reopen. Search a picker, then clear the search and drag to reorder. Open Contains Notes and All Notes. Search a word only in a second note, then delete that note and search again.
+4. **Order.** Move tags and projects in Settings; check the pickers, Switch Project and My Tags.
+5. **Archives.** Group, sort and collapse in Corpus Browser ▸ Archives ▸ Collections, then Source Explorer.
+6. **Related** from the document's Research panel (⇧⌘R): is the new order better?
+7. **Vol. XVI**: does *Partial* read as "OH hasn't finished" rather than "this failed"?
+8. Anything slow, especially during the first-launch re-index.
 
-Not bugs: a class row with a number and no reading; Facets off in Meaning mode; iCloud Schema "Up to date" beside "Reserved"; vol. XVI's missing chapters.
+Not bugs: a class row with a number and no reading; iCloud Schema "Up to date" beside "Reserved"; vol. XVI's missing chapters; Related order differing from build 46; no drag reordering in the Settings tag and project lists.
 
 Include macOS version, the window and the clicks, expected, actual — and for anything archival, the document id. Thanks!

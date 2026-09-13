@@ -15170,3 +15170,38 @@ access prompt went unanswered), and the Mac note editor's drag-to-reorder, which
 
 **Tests.** `ListOrderEverywhereTests` in `NotesEnhancementsTests.swift`; the full `FRUSExplorerTests` target
 passed with 4,780 tests in 613 suites on the final tree, and the macOS scheme builds.
+
+## Session 2026-09-13 (evening) — Build 47's TestFlight notes, rewritten for the build that actually ships
+
+Build 47 was never uploaded (owner, this session): it ships from `origin/v2` at `c7ef571e`, 25 PRs past
+the bump (#1266) whose notes described it. Both notes stay "What's New Since Build 46" and now cover
+those PRs too, at **3930 characters (iOS) and 3919 (Mac)**, measured as code points — which is also the
+UTF-16 count here. `wc -m` in this shell reads about 30 higher, because it counts ▸, —, ⇧ and ⌘ as more
+than one character. Both measures are under App Store Connect's 4,000.
+
+- **New in the notes.** The one-time re-index (`currentDateIndexVersion` 50 → 51, #1291). Formatted
+  notes, picker rows, Contains Notes / All Notes, and search over every note on a document (#1281,
+  #1282). The reader's tag and project order (#1295). Archives Group / Sort / Collapse All, also in
+  Source Explorer (#1270, #1271). On iOS, documents that stay in their tab and the "Browse all topics…"
+  door (#1272, #1277). The semantic re-score of other axes' candidates (S-1, #1269). Pre-1906 Source
+  Explorer is in the Mac note only, cut from iOS for space.
+- **Seven claims in the old notes were wrong on `origin/v2`**, found by a claim-by-claim audit:
+  - "No re-index this time" (it re-indexes).
+  - "Settings ▸ Storage ▸ vectors" (it is Volumes & Storage ▸ Semantic Vectors).
+  - Weight 0 "switches all of it off" (volume downloads and Meaning searches still fetch vectors).
+  - A "semantic section" that goes quiet (matches are rows and chips, not a section).
+  - The Mac "Find Related (⌘⌥F)", which does not exist (⌥⌘F is Search…).
+  - The not-bug "Facets off in Meaning mode", stale since #1221.
+  - "Almost nobody did", which nothing measures.
+- **Traps a reviewer caught in the drafts, each a likely false bug report.**
+  - Browse ▸ Archives opens on Provenance Types, which has no controls; they are on Collections.
+  - Tapping a collection row opens the inspector; Open Document is a long-press.
+  - A picker cannot reorder while its search has text.
+  - The formatting switch's label is hidden; it sits by the Note header.
+  - Vol. XVI shows no Reagan, Shultz or Haig chips, because its manifest slugs are unknown to the
+    taxonomy.
+- **Noticed, not fixed.** The Download With Volumes accessibility hint (`settings.vectors.auto.a11y.v2`)
+  still says opening Related fetches that volume's file, which #1265 made untrue.
+
+**Owner steps.** Archive and upload build 47 for both platforms. Paste each file into its platform's
+*What to Test*. Tag `build-47` on the uploaded commit.
