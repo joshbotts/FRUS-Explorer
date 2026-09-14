@@ -1,0 +1,657 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Testing
+import SQLite3
+@testable import FTS5Store
+
+// MARK: - #1297: exclusions FTS5 rejected
+//
+// An exclusion typed first in its AND-run (`-korea cold`) or right after a typed `AND`/`OR`
+// (`cold AND -korea`) used to render a `NOT` with no left operand, which FTS5 rejects: the
+// search failed outright. These tests pin the owner's decided semantics for the tree-based
+// renderer, and every one of them EXECUTES its render against a real FTS5 table, because a
+// string that looks right can still be a syntax error or match the wrong documents.
+
+// MARK: - Truth-table corpus
+
+/// The corpus every #1297 test executes against, built so a wrong exclusion cannot hide.
+///
+/// Rows 1...16 are every subset of {cold, war, korea, vietnam} after "memo" (rowid = mask + 1:
+/// bit 0 cold, bit 1 war, bit 2 korea, bit 3 vietnam), so every boolean combination of the four
+/// words selects its own row set. The two-document corpus the older parser tests use cannot
+/// tell a correct exclusion from no match at all. Rows 17–19 hold the literal words "and",
+/// "or" and "not", so a render that silently requires one of them is visible; row 20 holds the
+/// phrase "naval quarantine" and row 21 "blockade" alone.
+///
+/// Version history:
+///   1.0 — #1297: initial implementation — the judged design's tests, plus the owner's
+///          attached-dash decision (`-(X)` parses as `NOT (X)`), its invariant, and oracle,
+///          validity and permutation runs that exercise `-(`
+enum Issue1297Corpus {
+    /// The four query words, in bit order.
+    static let vocabulary = ["cold", "war", "korea", "vietnam"]
+
+    /// Row bodies; index 0 holds rowid 1.
+    static let bodies: [String] = (0..<16).map { mask in
+        (["memo"] + vocabulary.enumerated().filter { mask & (1 << $0.offset) != 0 }.map(\.element))
+            .joined(separator: " ")
+    } + ["memo and", "memo or", "memo not", "memo naval quarantine blockade", "memo blockade"]
+
+    /// Every rowid in the corpus.
+    static let all = Set(1...bodies.count)
+
+    /// The rows containing cold.
+    static let coldRows = [2, 4, 6, 8, 10, 12, 14, 16]
+
+    /// The rows containing cold but not korea.
+    static let coldNotKorea = [2, 4, 10, 12]
+
+    /// The rows matching (cold AND NOT korea) OR war.
+    static let coldNotKoreaOrWar = [2, 3, 4, 7, 8, 10, 11, 12, 15, 16]
+
+    /// The rows whose body contains `word` as a whole word.
+    static func rows(with word: String) -> Set<Int> {
+        Set(bodies.indices.filter { bodies[$0].split(separator: " ").contains(Substring(word)) }.map { $0 + 1 })
+    }
+}
+
+/// A MATCH expression SQLite refused.
+enum Issue1297MatchFailure: Error {
+    /// SQLite rejected `expression` with `message`.
+    case sqlite(expression: String, message: String)
+}
+
+/// An in-memory `porter unicode61` FTS5 table over `Issue1297Corpus`, queried for rowids.
+final class Issue1297TruthTable {
+    /// The open database handle.
+    private var db: OpaquePointer?
+    /// The FTS5 table's name: `d` for one column, `d2` for header + body.
+    private let name: String
+
+    /// Creates and seeds the table. The two-column form carries a constant header so a
+    /// column prefix has something to scope away from.
+    init(twoColumn: Bool = false) {
+        sqlite3_open(":memory:", &db)
+        name = twoColumn ? "d2" : "d"
+        sqlite3_exec(db, twoColumn
+            ? "CREATE VIRTUAL TABLE d2 USING fts5(header, body, tokenize='porter unicode61');"
+            : "CREATE VIRTUAL TABLE d USING fts5(body, tokenize='porter unicode61');", nil, nil, nil)
+        for (index, body) in Issue1297Corpus.bodies.enumerated() {
+            var stmt: OpaquePointer?
+            sqlite3_prepare_v2(db, twoColumn
+                ? "INSERT INTO d2(rowid, header, body) VALUES (?, 'heading', ?);"
+                : "INSERT INTO d(rowid, body) VALUES (?, ?);", -1, &stmt, nil)
+            sqlite3_bind_int(stmt, 1, Int32(index + 1))
+            sqlite3_bind_text(stmt, 2, body, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            sqlite3_step(stmt)
+            sqlite3_finalize(stmt)
+        }
+    }
+
+    deinit { sqlite3_close(db) }
+
+    /// The matching rowids in order. Throws when SQLite rejects the expression — FTS5 reports
+    /// syntax errors when the statement steps, not when it is prepared.
+    func rows(_ expression: String) throws -> [Int] {
+        var stmt: OpaquePointer?
+        sqlite3_prepare_v2(db, "SELECT rowid FROM \(name) WHERE \(name) MATCH ? ORDER BY rowid;", -1, &stmt, nil)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, expression, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+        var out: [Int] = []
+        while true {
+            let rc = sqlite3_step(stmt)
+            if rc == SQLITE_ROW { out.append(Int(sqlite3_column_int64(stmt, 0))); continue }
+            if rc == SQLITE_DONE { return out }
+            throw Issue1297MatchFailure.sqlite(expression: expression, message: String(cString: sqlite3_errmsg(db)))
+        }
+    }
+}
+
+/// One typed query, the expression it must render, and the rows that expression must match.
+struct Issue1297RenderCase: Sendable, CustomTestStringConvertible {
+    /// What the researcher typed.
+    let query: String
+    /// The MATCH expression it must render.
+    let rendered: String
+    /// The rowids that expression must match.
+    let rows: [Int]
+    /// The typed query, which is how a failing argument is named.
+    var testDescription: String { query }
+
+    /// Creates a case.
+    init(_ query: String, _ rendered: String, _ rows: [Int]) {
+        self.query = query
+        self.rendered = rendered
+        self.rows = rows
+    }
+}
+
+// MARK: - Named cases
+
+/// The decided renders, each executed against the truth table.
+@Suite("#1297 exclusion placement")
+struct Issue1297ExclusionTests {
+
+    /// Renders `c.query` and asserts both the string and the rows it matches.
+    private func check(_ c: Issue1297RenderCase) throws {
+        let table = Issue1297TruthTable()
+        let expression = try #require(FTS5InlineQueryParser.parse(c.query))
+        #expect(expression == c.rendered)
+        let got = try table.rows(expression)
+        #expect(got == c.rows)
+    }
+
+    /// A leading exclusion is placed behind the first positive member of its run.
+    @Test("An exclusion with no positive operand before it in its AND-run is placed after the run's first positive operand",
+          arguments: [
+            Issue1297RenderCase("-korea cold", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("NOT korea cold", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("-korea -vietnam cold", "\"cold\" NOT \"korea\" NOT \"vietnam\"", [2, 4]),
+            Issue1297RenderCase("-\"naval quarantine\" blockade", "\"blockade\" NOT \"naval quarantine\"", [21]),
+            Issue1297RenderCase("(-korea cold) OR war", "(\"cold\" NOT \"korea\") OR \"war\"", Issue1297Corpus.coldNotKoreaOrWar),
+            Issue1297RenderCase("-korea cold OR war", "\"cold\" NOT \"korea\" OR \"war\"", Issue1297Corpus.coldNotKoreaOrWar),
+            Issue1297RenderCase("-korea AND cold", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("-korea AND cold AND war", "\"cold\" NOT \"korea\" AND \"war\"", [4, 12]),
+            Issue1297RenderCase("NOT (korea OR vietnam) cold", "\"cold\" NOT (\"korea\" OR \"vietnam\")", [2, 4]),
+            Issue1297RenderCase("-korea (cold OR war)", "(\"cold\" OR \"war\") NOT \"korea\"", [2, 3, 4, 10, 11, 12]),
+            Issue1297RenderCase("NOT NEAR(cold war, 5) vietnam", "\"vietnam\" NOT NEAR(\"cold\" \"war\", 5)", [9, 10, 11, 13, 14, 15]),
+            Issue1297RenderCase("-=containment europe", "\"europe\" NOT \"containment\"", []),
+            Issue1297RenderCase("-korea cold AND", "\"cold\" NOT \"korea\" AND \"and\"", []),
+          ])
+    func leadingExclusion(_ c: Issue1297RenderCase) throws {
+        try check(c)
+    }
+
+    /// A typed `AND` or `NOT` directly before an exclusion is absorbed, never a literal word.
+    @Test("A typed AND or NOT directly before an exclusion adds nothing to it",
+          arguments: [
+            Issue1297RenderCase("cold AND -korea", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("cold AND NOT korea", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("war AND NOT (korea OR vietnam)", "\"war\" NOT (\"korea\" OR \"vietnam\")", [3, 4]),
+            Issue1297RenderCase("(cold OR war) AND -korea", "(\"cold\" OR \"war\") NOT \"korea\"", [2, 3, 4, 10, 11, 12]),
+            Issue1297RenderCase("cold AND (-korea war)", "\"cold\" AND (\"war\" NOT \"korea\")", [4, 12]),
+            Issue1297RenderCase("cold NOT -korea", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("NOT -korea cold", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("cold NOT NOT korea", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+          ])
+    func operatorBeforeExclusion(_ c: Issue1297RenderCase) throws {
+        try check(c)
+    }
+
+    /// An exclusion's scope is its AND-run.
+    @Test("An exclusion stays inside its own AND-run and never crosses an OR",
+          arguments: [
+            Issue1297RenderCase("cold OR -korea war", "\"cold\" OR \"war\" NOT \"korea\"", [2, 3, 4, 6, 8, 10, 11, 12, 14, 16]),
+            Issue1297RenderCase("-korea cold OR -vietnam war", "\"cold\" NOT \"korea\" OR \"war\" NOT \"vietnam\"", [2, 3, 4, 7, 8, 10, 12]),
+          ])
+    func exclusionScope(_ c: Issue1297RenderCase) throws {
+        try check(c)
+    }
+
+    /// An alternative with nothing to search is left out, and says so through `droppedOperands`.
+    @Test("An OR alternative made only of exclusions is left out and reported as not applied",
+          arguments: [
+            Issue1297RenderCase("cold OR -korea", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("-korea OR cold", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("cold OR NOT korea", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("NOT korea OR cold", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("cold OR (-korea)", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("cold OR -(korea OR vietnam)", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("-\"naval quarantine\" OR blockade", "\"blockade\"", [20, 21]),
+          ])
+    func exclusionOnlyAlternative(_ c: Issue1297RenderCase) throws {
+        let table = Issue1297TruthTable()
+        let parsed = FTS5InlineQueryParser.parseDetailed(c.query)
+        let expression = try #require(parsed.expression)
+        #expect(expression == c.rendered)
+        let got = try table.rows(expression)
+        #expect(got == c.rows)
+        #expect(!parsed.droppedOperands.isEmpty)
+        #expect(parsed.droppedOperands.allSatisfy { $0.isNegated })
+        #expect(parsed.operands.allSatisfy { !$0.isNegated })
+    }
+
+    /// A group holding only exclusions behaves as its members would bare.
+    @Test("A group of only exclusions excludes from the AND-run around it",
+          arguments: [
+            Issue1297RenderCase("cold (-korea)", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("cold (NOT korea)", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("cold (-korea -vietnam)", "\"cold\" NOT (\"korea\" OR \"vietnam\")", [2, 4]),
+            Issue1297RenderCase("cold NOT (-korea)", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("-korea (-vietnam) cold", "\"cold\" NOT \"korea\" NOT \"vietnam\"", [2, 4]),
+          ])
+    func negationOnlyGroup(_ c: Issue1297RenderCase) throws {
+        try check(c)
+    }
+
+    /// The owner's attached-dash decision: `-(X)` is `NOT (X)`.
+    @Test("A dash attached to an opening parenthesis negates the group exactly as NOT does",
+          arguments: [
+            Issue1297RenderCase("cold -(korea OR vietnam)", "\"cold\" NOT (\"korea\" OR \"vietnam\")", [2, 4]),
+            Issue1297RenderCase("-(korea OR vietnam) cold", "\"cold\" NOT (\"korea\" OR \"vietnam\")", [2, 4]),
+            Issue1297RenderCase("cold AND -(korea OR vietnam)", "\"cold\" NOT (\"korea\" OR \"vietnam\")", [2, 4]),
+            Issue1297RenderCase("-(korea OR vietnam) cold OR war", "\"cold\" NOT (\"korea\" OR \"vietnam\") OR \"war\"",
+                                [2, 3, 4, 7, 8, 11, 12, 15, 16]),
+            Issue1297RenderCase("-(-korea) cold", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("cold -(-korea)", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("war -(cold OR -korea)", "\"war\" AND \"korea\" NOT \"cold\"", [7, 15]),
+            Issue1297RenderCase("cold -(korea OR (vietnam -(war)))",
+                                "\"cold\" NOT (\"korea\" OR (\"vietnam\" NOT (\"war\")))", [2, 4, 12]),
+          ])
+    func attachedDashNegatesGroup(_ c: Issue1297RenderCase) throws {
+        try check(c)
+    }
+
+    /// Negations that reach no positive term leave nothing to search.
+    @Test("Queries with no positive term still render nil",
+          arguments: ["NOT NOT cold", "NOT (-korea)", "NOT NOT NOT cold", "-(cold OR war) -korea"])
+    func stillNil(_ query: String) {
+        #expect(FTS5InlineQueryParser.parseDetailed(query) == ParsedQuery(expression: nil, exactTerms: []))
+    }
+
+    /// Hoisting moves whole column-prefixed operands.
+    @Test("A column prefix moves with the operand it belongs to")
+    func columnPrefixSurvivesReordering() throws {
+        let table = Issue1297TruthTable(twoColumn: true)
+        let prefix = "{body}:"
+        let cases: [(String, String, [Int])] = [
+            ("-korea cold", "{body}:\"cold\" NOT {body}:\"korea\"", Issue1297Corpus.coldNotKorea),
+            ("cold AND NOT korea", "{body}:\"cold\" NOT {body}:\"korea\"", Issue1297Corpus.coldNotKorea),
+            ("-\"naval quarantine\" blockade", "{body}:\"blockade\" NOT \"naval quarantine\"", [21]),
+            ("cold OR war OR -korea", "{body}:\"cold\" OR {body}:\"war\"", [2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15, 16]),
+            ("-(korea OR vietnam) cold", "{body}:\"cold\" NOT ({body}:\"korea\" OR {body}:\"vietnam\")", [2, 4]),
+        ]
+        for (query, rendered, rows) in cases {
+            let expression = try #require(FTS5InlineQueryParser.parse(query, columnPrefix: prefix))
+            #expect(expression == rendered, "\(query)")
+            let got = try table.rows(expression)
+            #expect(got == rows, "\(query)")
+        }
+    }
+
+    /// `isNegated` is effective polarity, whichever spelling excluded the operand.
+    @Test("NOT marks its operand excluded exactly as - does")
+    func keywordNotOperandsAreNegated() {
+        let notForm = FTS5InlineQueryParser.parseDetailed("cold NOT korea")
+        #expect(notForm.operands.map { $0.isNegated } == [false, true])
+        #expect(notForm == FTS5InlineQueryParser.parseDetailed("cold -korea"))
+        let group = FTS5InlineQueryParser.parseDetailed("NOT (korea OR vietnam) cold")
+        #expect(group.operands.filter { $0.isNegated }.map(\.text) == ["korea", "vietnam"])
+        let dashGroup = FTS5InlineQueryParser.parseDetailed("cold -(korea OR vietnam)")
+        #expect(dashGroup.operands.filter { $0.isNegated }.map(\.text) == ["korea", "vietnam"])
+        let near = FTS5InlineQueryParser.parseDetailed("aid NOT NEAR(military europe, 5)")
+        #expect(near.operands.last?.isNegated == true)
+    }
+
+    /// No post-filter may require a word the MATCH excludes.
+    @Test("An exact mark on an excluded term is ignored, whichever way it was excluded")
+    func exactTermsArePositiveOnly() {
+        #expect(FTS5InlineQueryParser.parseDetailed("europe NOT =containment").exactTerms.isEmpty)
+        #expect(FTS5InlineQueryParser.parseDetailed("war NOT (=containment OR rollback)").exactTerms.isEmpty)
+        #expect(FTS5InlineQueryParser.parseDetailed("war -(=containment OR rollback)").exactTerms.isEmpty)
+        let leading = FTS5InlineQueryParser.parseDetailed("-korea =cold")
+        #expect(leading.expression == "\"cold\" NOT \"korea\"")
+        #expect(leading.exactTerms == ["cold"])
+    }
+
+    /// Guards, meant to pass before and after the fix: what already worked must not move.
+    @Test("Renders that were already valid and correct do not move",
+          arguments: [
+            Issue1297RenderCase("cold -korea", "\"cold\" NOT \"korea\"", Issue1297Corpus.coldNotKorea),
+            Issue1297RenderCase("cold -korea war", "\"cold\" NOT \"korea\" AND \"war\"", [4, 12]),
+            Issue1297RenderCase("cold -korea OR war", "\"cold\" NOT \"korea\" OR \"war\"", Issue1297Corpus.coldNotKoreaOrWar),
+            Issue1297RenderCase("\"cold war\" OR detente -korea negoti*", "\"cold war\" OR \"detente\" NOT \"korea\" AND \"negoti\"*", [4, 8, 12, 16]),
+            Issue1297RenderCase("cold - (korea OR vietnam)", "\"cold\" AND (\"korea\" OR \"vietnam\")", [6, 8, 10, 12, 14, 16]),
+            Issue1297RenderCase("cold -(korea", "\"cold\" AND \"korea\"", [6, 8, 14, 16]),
+            Issue1297RenderCase("cold -()", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("cold -(   )", "\"cold\"", Issue1297Corpus.coldRows),
+            Issue1297RenderCase("cold-(korea)", "\"cold-\" AND (\"korea\")", [6, 8, 14, 16]),
+            Issue1297RenderCase("AND -korea cold", "\"and\" NOT \"korea\" AND \"cold\"", []),
+            Issue1297RenderCase("OR -korea cold", "\"or\" NOT \"korea\" AND \"cold\"", []),
+            Issue1297RenderCase("cold OR OR war", "\"cold\" AND \"or\" OR \"war\"", [3, 4, 7, 8, 11, 12, 15, 16]),
+            Issue1297RenderCase("europe -=containment", "\"europe\" NOT \"containment\"", []),
+            // Already this render before the attached-dash rule, because the old parser dropped the
+            // dash as punctuation and applied the NOT; under the rule the two marks count once.
+            Issue1297RenderCase("cold NOT -(korea OR vietnam)", "\"cold\" NOT (\"korea\" OR \"vietnam\")", [2, 4]),
+          ])
+    func preserved(_ c: Issue1297RenderCase) throws {
+        try check(c)
+    }
+
+    /// Guards: a query of only exclusions still reaches SQLite as nothing. `-(-korea)` was nil
+    /// before the attached-dash rule too: the old parser dropped `(-korea)` as contentless.
+    @Test("Queries with only exclusions stay nil",
+          arguments: ["-korea", "-korea -vietnam", "NOT korea", "-korea OR -vietnam", "NOT (korea OR vietnam)", "NOT -korea",
+                      "-(-korea)"])
+    func preservedNil(_ query: String) {
+        #expect(FTS5InlineQueryParser.parse(query) == nil)
+    }
+}
+
+// MARK: - Properties executed against real FTS5
+
+/// SplitMix64: a fixed, platform-independent sequence, so a failure reproduces.
+struct Issue1297Random {
+    /// The generator state.
+    var state: UInt64
+
+    /// The next 64 random bits.
+    mutating func next() -> UInt64 {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        return z ^ (z >> 31)
+    }
+
+    /// A value in `0..<n`.
+    mutating func below(_ n: Int) -> Int { Int(next() % UInt64(n)) }
+}
+
+/// A generated well-formed query and its meaning as a SET, built together from one tree and
+/// never from the parser's output.
+struct Issue1297Generated {
+    /// The query text.
+    var text: String
+    /// The rows it means.
+    var rows: Set<Int>
+    /// Whether it contains a positive term.
+    var hasPositive: Bool
+    /// Whether it contains an excluded term.
+    var hasNegative: Bool
+}
+
+/// Generates queries with their set meaning, under the decided negation policy.
+enum Issue1297QueryGenerator {
+    /// Every rowid.
+    static let all = Issue1297Corpus.all
+
+    /// An operator keyword in one of three random casings.
+    static func keyword(_ word: String, _ rng: inout Issue1297Random) -> String {
+        [word, word.lowercased(), word.prefix(1) + word.dropFirst().lowercased()][rng.below(3)]
+    }
+
+    /// A word, an excluded word, the phrase "cold war", or the excluded phrase.
+    static func leaf(_ rng: inout Issue1297Random) -> Issue1297Generated {
+        let word = Issue1297Corpus.vocabulary[rng.below(4)]
+        let phraseRows = Issue1297Corpus.rows(with: "cold").intersection(Issue1297Corpus.rows(with: "war"))
+        switch rng.below(5) {
+        case 0, 1:
+            return Issue1297Generated(text: word, rows: Issue1297Corpus.rows(with: word), hasPositive: true, hasNegative: false)
+        case 2:
+            return Issue1297Generated(text: "-" + word, rows: all.subtracting(Issue1297Corpus.rows(with: word)),
+                                      hasPositive: false, hasNegative: true)
+        case 3:
+            return Issue1297Generated(text: "\"cold war\"", rows: phraseRows, hasPositive: true, hasNegative: false)
+        default:
+            return Issue1297Generated(text: "-\"cold war\"", rows: all.subtracting(phraseRows), hasPositive: false, hasNegative: true)
+        }
+    }
+
+    /// The decided rule: one or more negation marks complement what they reach, unless what they
+    /// reach contains no positive term, in which case they change nothing. With `attachDash` the
+    /// last mark is spelled as a dash attached to `g`, which must then be a group.
+    static func negate(_ g: Issue1297Generated, marks: Int, attachDash: Bool = false,
+                       _ rng: inout Issue1297Random) -> Issue1297Generated {
+        let keywordMarks = attachDash ? marks - 1 : marks
+        let prefix = (0..<keywordMarks).map { _ in keyword("NOT", &rng) + " " }.joined() + (attachDash ? "-" : "")
+        guard g.hasPositive else {
+            return Issue1297Generated(text: prefix + g.text, rows: g.rows, hasPositive: false, hasNegative: g.hasNegative)
+        }
+        return Issue1297Generated(text: prefix + g.text, rows: all.subtracting(g.rows),
+                                  hasPositive: g.hasNegative, hasNegative: g.hasPositive)
+    }
+
+    /// A group (sometimes negated), a negated leaf, or a bare leaf.
+    static func item(depth: Int, attachDash: Bool, _ rng: inout Issue1297Random) -> Issue1297Generated {
+        let roll = rng.below(10)
+        if depth > 0, roll < 3 {
+            let inner = query(depth: depth - 1, attachDash: attachDash, &rng)
+            let group = Issue1297Generated(text: "(" + inner.text + ")", rows: inner.rows,
+                                           hasPositive: inner.hasPositive, hasNegative: inner.hasNegative)
+            return roll == 0 ? negate(group, marks: 1 + rng.below(2), attachDash: attachDash, &rng) : group
+        }
+        let base = leaf(&rng)
+        return roll < 6 ? negate(base, marks: 1 + rng.below(2), &rng) : base
+    }
+
+    /// One to three items joined by a space or a randomly cased AND.
+    static func run(depth: Int, attachDash: Bool, _ rng: inout Issue1297Random) -> Issue1297Generated {
+        var g = item(depth: depth, attachDash: attachDash, &rng)
+        for _ in 0..<rng.below(3) {
+            let next = item(depth: depth, attachDash: attachDash, &rng)
+            let sep = rng.below(2) == 0 ? " " : " " + keyword("AND", &rng) + " "
+            g = Issue1297Generated(text: g.text + sep + next.text, rows: g.rows.intersection(next.rows),
+                                   hasPositive: g.hasPositive || next.hasPositive,
+                                   hasNegative: g.hasNegative || next.hasNegative)
+        }
+        return g
+    }
+
+    /// One to three runs joined by a randomly cased OR.
+    static func query(depth: Int, attachDash: Bool = false, _ rng: inout Issue1297Random) -> Issue1297Generated {
+        var g = run(depth: depth, attachDash: attachDash, &rng)
+        for _ in 0..<rng.below(3) {
+            let next = run(depth: depth, attachDash: attachDash, &rng)
+            g = Issue1297Generated(text: g.text + " " + keyword("OR", &rng) + " " + next.text, rows: g.rows.union(next.rows),
+                                   hasPositive: g.hasPositive || next.hasPositive,
+                                   hasNegative: g.hasNegative || next.hasNegative)
+        }
+        return g
+    }
+}
+
+/// One set-oracle run: a seed, and whether negated groups are spelled `-(` rather than `NOT (`.
+struct Issue1297OracleRun: Sendable, CustomTestStringConvertible {
+    /// The generator seed.
+    let seed: UInt64
+    /// Whether a negated group's last mark is an attached dash.
+    let attachDash: Bool
+    /// The minimum count each outcome must reach, so a run that never exercises one fails.
+    let minimums: (exact: Int, narrowed: Int, nilApproximation: Int)
+    /// Names the run in the test report.
+    var testDescription: String { "seed \(seed)\(attachDash ? ", -( groups" : "")" }
+}
+
+/// Exhaustive, generated and algebraic properties of the renderer.
+@Suite("#1297 properties")
+struct Issue1297PropertyTests {
+
+    /// The alphabet of the judged 7,380-sequence measurement.
+    static let alphabet = ["cold", "war", "-korea", "NOT", "korea", "AND", "OR", "(", ")"]
+
+    /// Every space-joined sequence of 1...`maxLength` tokens over `tokens`.
+    static func sequences(maxLength: Int, over tokens: [String] = alphabet) -> [String] {
+        var out: [[String]] = [[]]
+        var all: [String] = []
+        for _ in 0..<maxLength {
+            out = out.flatMap { prefix in tokens.map { prefix + [$0] } }
+            all += out.map { $0.joined(separator: " ") }
+        }
+        return all
+    }
+
+    /// No render is ever rejected, including sequences that use the attached dash.
+    @Test("Every token sequence of length 1-4 renders nil or FTS5 SQLite accepts, with and without a column prefix",
+          arguments: [false, true])
+    func exhaustiveValidity(withAttachedDash: Bool) {
+        let tokens = withAttachedDash ? Self.alphabet + ["-("] : Self.alphabet
+        let queries = Self.sequences(maxLength: 4, over: tokens)
+        #expect(queries.count == (withAttachedDash ? 11_110 : 7_380))
+        for (prefix, table) in [("", Issue1297TruthTable()), ("{body}:", Issue1297TruthTable(twoColumn: true))] {
+            var executed = 0
+            var rejected: [String] = []
+            for query in queries {
+                guard let expression = FTS5InlineQueryParser.parse(query, columnPrefix: prefix) else { continue }
+                executed += 1
+                do { _ = try table.rows(expression) } catch { rejected.append("\(query) -> \(expression)") }
+            }
+            print("[1297] validity attachedDash=\(withAttachedDash) prefix=\(prefix) executed=\(executed) rejected=\(rejected.count)")
+            #expect(executed > (withAttachedDash ? 9_000 : 6_000))
+            #expect(rejected.isEmpty, "\(rejected.prefix(5))")
+        }
+    }
+
+    /// The renderer agrees with an independent set semantics, or narrows and says so.
+    @Test("Generated well-formed queries match their set meaning exactly, or a narrower subset that reports what it left out",
+          arguments: [
+            Issue1297OracleRun(seed: 1297, attachDash: false, minimums: (1_000, 100, 100)),
+            Issue1297OracleRun(seed: 1299, attachDash: true, minimums: (1_000, 100, 100)),
+          ])
+    func setOracle(_ run: Issue1297OracleRun) throws {
+        let table = Issue1297TruthTable()
+        var rng = Issue1297Random(state: run.seed)
+        var exact = 0, narrowed = 0, nilApproximation = 0, dashGroups = 0
+        for _ in 0..<4_000 {
+            let g = Issue1297QueryGenerator.query(depth: 2, attachDash: run.attachDash, &rng)
+            if g.text.contains("-(") { dashGroups += 1 }
+            let parsed = FTS5InlineQueryParser.parseDetailed(g.text)
+            if !g.rows.contains(1) {
+                exact += 1
+                let expression = try #require(parsed.expression, "\(g.text)")
+                let got = Set(try table.rows(expression))
+                #expect(got == g.rows, "\(g.text) -> \(expression)")
+                #expect(parsed.droppedOperands.isEmpty, "\(g.text)")
+            } else if let expression = parsed.expression {
+                narrowed += 1
+                let got = Set(try table.rows(expression))
+                #expect(got.isSubset(of: g.rows), "\(g.text) -> \(expression)")
+                #expect(!parsed.droppedOperands.isEmpty, "\(g.text)")
+            } else {
+                nilApproximation += 1
+            }
+        }
+        print("[1297] oracle \(run.testDescription) exact=\(exact) narrowed=\(narrowed) nil=\(nilApproximation) dashGroups=\(dashGroups)")
+        #expect(exact > run.minimums.exact)
+        #expect(narrowed > run.minimums.narrowed)
+        #expect(nilApproximation > run.minimums.nilApproximation)
+        #expect(run.attachDash ? dashGroups > 500 : dashGroups == 0)
+    }
+
+    /// Widening never loses rows; excluding never gains any.
+    @Test("Adding an OR alternative never removes a row; adding an exclusion never adds one")
+    func monotonicity() throws {
+        let table = Issue1297TruthTable()
+        var rng = Issue1297Random(state: 1298)
+        var compared = 0
+        for _ in 0..<2_000 {
+            let g = Issue1297QueryGenerator.query(depth: 2, &rng)
+            guard let base = FTS5InlineQueryParser.parse(g.text) else { continue }
+            let baseRows = Set(try table.rows(base))
+            let widened = try #require(FTS5InlineQueryParser.parse(g.text + " OR vietnam"))
+            let widenedRows = Set(try table.rows(widened))
+            #expect(widenedRows.isSuperset(of: baseRows), "\(g.text) OR vietnam")
+            var narrowedRows: Set<Int> = []
+            if let narrowed = FTS5InlineQueryParser.parse(g.text + " -vietnam") { narrowedRows = Set(try table.rows(narrowed)) }
+            #expect(narrowedRows.isSubset(of: baseRows), "\(g.text) -vietnam")
+            compared += 1
+        }
+        print("[1297] monotonicity compared=\(compared)")
+        #expect(compared > 1_000)
+    }
+
+    /// `-x` and `NOT x` are one spelling.
+    @Test("-x and NOT x parse identically in every position")
+    func dashEqualsNot() {
+        var compared = 0
+        for query in Self.sequences(maxLength: 4) where query.split(separator: " ").contains("-korea") {
+            let spelled = query.split(separator: " ").map { $0 == "-korea" ? "NOT korea" : String($0) }.joined(separator: " ")
+            #expect(FTS5InlineQueryParser.parseDetailed(query) == FTS5InlineQueryParser.parseDetailed(spelled), "\(query) vs \(spelled)")
+            compared += 1
+        }
+        print("[1297] dash=not compared=\(compared)")
+        #expect(compared == 2_700)
+    }
+
+    /// What a generated group's contents are built from. `⊖(` stands for a negated group and is
+    /// spelled the same way as the group under test, so nested negated groups are covered too.
+    static let groupContentUnits = ["cold", "war", "-korea", "NOT", "korea", "AND", "OR",
+                                    "⊖(cold OR -korea)", "⊖(vietnam)", "(war)"]
+
+    /// Positions a negated group can take, with `◻` marking it.
+    static let groupContexts = ["◻", "cold ◻", "◻ cold", "cold AND ◻", "◻ AND cold", "cold OR ◻", "◻ OR cold",
+                                "cold NOT ◻", "NOT ◻", "war (◻)", "(cold OR ◻) war", "cold ◻ war", "◻ ◻"]
+
+    /// `-(X)` is `NOT (X)`, everywhere, for every X built from `groupContentUnits`.
+    @Test("-(X) and NOT (X) parse identically in every position, for every X of one to three members")
+    func attachedDashGroupEqualsNotGroup() throws {
+        let table = Issue1297TruthTable()
+        var contents: [[String]] = [[]]
+        var allContents: [String] = []
+        for _ in 0..<3 {
+            contents = contents.flatMap { prefix in Self.groupContentUnits.map { prefix + [$0] } }
+            allContents += contents.map { $0.joined(separator: " ") }
+        }
+        #expect(allContents.count == 1_110)
+
+        var compared = 0, rendered = 0, negating = 0, differsFromDetached = 0
+        for context in Self.groupContexts {
+            for inner in allContents {
+                let template = context.replacingOccurrences(of: "◻", with: "⊖(" + inner + ")")
+                let dash = template.replacingOccurrences(of: "⊖(", with: "-(")
+                let keyword = template.replacingOccurrences(of: "⊖(", with: "NOT (")
+                let detached = template.replacingOccurrences(of: "⊖(", with: "- (")
+                let dashParsed = FTS5InlineQueryParser.parseDetailed(dash)
+                #expect(dashParsed == FTS5InlineQueryParser.parseDetailed(keyword), "\(dash) vs \(keyword)")
+                compared += 1
+                if dashParsed != FTS5InlineQueryParser.parseDetailed(detached) { differsFromDetached += 1 }
+                guard let expression = dashParsed.expression else { continue }
+                rendered += 1
+                if dashParsed.operands.contains(where: \.isNegated) { negating += 1 }
+                #expect(throws: Never.self, "\(dash) -> \(expression)") { _ = try table.rows(expression) }
+            }
+        }
+        print("[1297] -(X)=NOT (X) compared=\(compared) rendered=\(rendered) negating=\(negating) differsFromDetached=\(differsFromDetached)")
+        #expect(compared == 14_430)
+        #expect(rendered > 10_000)
+        #expect(negating > 7_000)
+        #expect(differsFromDetached > 10_000)
+    }
+
+    /// The members an AND-run is permuted over, one of them a dash-negated group.
+    static let runUnits = ["cold", "war", "-korea", "NOT vietnam", "(cold OR war)", "(-korea)", "\"cold war\"",
+                           "-\"cold war\"", "NOT (korea OR vietnam)", "NEAR(cold war, 5)", "-(korea OR vietnam)"]
+
+    /// Every ordered arrangement of `count` distinct indices into `runUnits`.
+    static func arrangements(of count: Int) -> [[Int]] {
+        guard count > 0 else { return [[]] }
+        return arrangements(of: count - 1).flatMap { prefix in
+            runUnits.indices.filter { !prefix.contains($0) }.map { prefix + [$0] }
+        }
+    }
+
+    /// Order within a run is not meaning, and neither are parentheses around it.
+    @Test("Reordering or explicitly AND-ing the members of one AND-run never changes the match set, and parenthesising the run changes nothing")
+    func runPermutationAndGrouping() throws {
+        let table = Issue1297TruthTable()
+        func rows(_ q: String) throws -> Set<Int>? { try FTS5InlineQueryParser.parse(q).map { Set(try table.rows($0)) } }
+        var groups = 0, wraps = 0
+        for size in 1...3 {
+            var seen: [String: Set<Int>?] = [:]
+            for arrangement in Self.arrangements(of: size) {
+                let key = arrangement.sorted().map(String.init).joined(separator: ",")
+                for sep in [" ", " AND "] {
+                    let run = arrangement.map { Self.runUnits[$0] }.joined(separator: sep)
+                    let result = try rows(run)
+                    if let expected = seen[key] { #expect(result == expected, "\(run)") } else { seen[key] = result; groups += 1 }
+                    let wrapped = try rows("(" + run + ")")
+                    let andWrapped = try rows("war (" + run + ")"), andBare = try rows("war " + run)
+                    let orWrapped = try rows("vietnam OR (" + run + ")"), orBare = try rows("vietnam OR " + run)
+                    #expect(wrapped == result, "(\(run))")
+                    #expect(andWrapped == andBare, "war (\(run))")
+                    #expect(orWrapped == orBare, "vietnam OR (\(run))")
+                    wraps += 3
+                }
+            }
+        }
+        print("[1297] permutation groups=\(groups) wraps=\(wraps)")
+        #expect(groups == 231)
+        #expect(wraps == 6_666)
+    }
+}

@@ -281,12 +281,13 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("(cold OR)") == "(\"cold\" AND \"or\")")
     }
 
-    @Test("A group with no positive content is dropped entirely rather than rendered empty")
+    @Test("A content-free group is dropped; a group of only exclusions excludes from its run")
     func contentlessGroupDropped() {
         #expect(FTS5InlineQueryParser.parse("cold ()") == "\"cold\"")
         #expect(FTS5InlineQueryParser.parse("cold (   )") == "\"cold\"")
-        #expect(FTS5InlineQueryParser.parse("cold (-korea)") == "\"cold\"")
-        #expect(FTS5InlineQueryParser.parse("cold (NOT korea)") == "\"cold\"")
+        // #1297: dropping these returned the korea documents the group asked to exclude.
+        #expect(FTS5InlineQueryParser.parse("cold (-korea)") == "\"cold\" NOT \"korea\"")
+        #expect(FTS5InlineQueryParser.parse("cold (NOT korea)") == "\"cold\" NOT \"korea\"")
     }
 
     @Test("Unmatched parentheses degrade gracefully to dropped punctuation rather than malformed output")
@@ -296,12 +297,14 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("cold )(") == "\"cold\"")
     }
 
-    @Test("Leading hyphen does not negate a group — only the keyword NOT does")
-    func leadingHyphenDoesNotNegateGroup() {
-        // Documented asymmetry: "-(...)" tokenises as a standalone "-" (dropped) plus
-        // an ordinary, positive group — not as "exclude this group". Users must spell
-        // out "NOT (...)" to negate a group.
+    @Test("A hyphen attached to a group negates it as NOT does; a detached hyphen is punctuation")
+    func attachedHyphenNegatesGroup() {
+        // #1297 retired the asymmetry this test used to pin, where "-(...)" searched FOR the
+        // group. An attached "-(" now reads as "NOT (". A hyphen with whitespace after it is a
+        // lone "-", which is dropped as punctuation everywhere, so that group stays positive.
         #expect(FTS5InlineQueryParser.parse("cold -(korea OR vietnam)")
+                == "\"cold\" NOT (\"korea\" OR \"vietnam\")")
+        #expect(FTS5InlineQueryParser.parse("cold - (korea OR vietnam)")
                 == "\"cold\" AND (\"korea\" OR \"vietnam\")")
     }
 
