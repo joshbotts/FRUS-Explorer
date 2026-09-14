@@ -20,6 +20,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
+///   1.1 — #1297: `notApplied`, the operands a query typed but its expression leaves out, and
+///         `hasUncountedOperands` / `replacingOperands(_:)`, so neither the count offer nor the
+///         scoped-count rebuild reads past `operands` or loses a field
 struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
@@ -43,8 +46,46 @@ struct QueryInspection: Sendable, Equatable {
     /// better than showing an empty strip.
     let isFilterOnly: Bool
 
+    /// Operands the researcher typed that the search leaves out, in the order typed.
+    ///
+    /// FTS5 has no universal set, so an `OR` alternative made only of exclusions — the
+    /// `-korea` in `cold OR -korea` — has nothing to search for. The parser leaves it out of
+    /// the expression and reports its operands in `ParsedQuery.droppedOperands`; they are
+    /// carried here so the inspector can say they were **not applied**, rather than listing
+    /// them among ``operands`` as if they had excluded something.
+    ///
+    /// Never counted and never blamed: ``QueryInspector/scopedCounts(for:parameters:)``,
+    /// ``QueryInspector/emptyConjuncts(in:parameters:)`` and ``hasUncountedOperands`` read
+    /// ``operands`` only, because a number for a term the query did not use describes
+    /// nothing in the result set.
+    ///
+    /// A `var` with a default so every memberwise call site that predates it compiles
+    /// unchanged — which is also why ``replacingOperands(_:)`` exists.
+    var notApplied: [ParsedOperand] = []
+
     /// Whether every operand is present and none of them is the problem.
     var hasOperands: Bool { !operands.isEmpty }
+
+    /// Whether any applied operand that is not excluded still lacks its scoped count — the
+    /// condition for offering "Count each term in scope…".
+    ///
+    /// An excluded operand has no hit count to fetch, and a ``notApplied`` one was never
+    /// searched, so neither may keep the offer open.
+    var hasUncountedOperands: Bool {
+        operands.contains { $0.scopedCount == nil && !$0.operand.isNegated }
+    }
+
+    /// This inspection with its operands replaced and every other fact carried across.
+    ///
+    /// The scoped-count pass rebuilds the operand list. Rebuilding the whole value at that
+    /// call site would repeat every field, and a field added later with a default — as
+    /// ``notApplied`` was — would silently fall back to it there, so the not-applied rows
+    /// would vanish the moment the researcher asked for counts.
+    func replacingOperands(_ operands: [InspectedOperand]) -> QueryInspection {
+        QueryInspection(expression: expression, operands: operands,
+                        indexedVolumeCount: indexedVolumeCount, isFilterOnly: isFilterOnly,
+                        notApplied: notApplied)
+    }
 }
 
 // MARK: - RenderedExpression
@@ -176,6 +217,8 @@ struct InspectedOperand: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
+///   1.1 — #1297: the parser's dropped operands become `QueryInspection.notApplied`, uncounted
+///         and unblamed; `inspect(parsed:parameters:indexedVolumeCount:)` takes a caller's parse
 struct QueryInspector: Sendable {
 
     /// The service every lookup runs through — counts, stems and vocabulary alike.
@@ -197,8 +240,30 @@ struct QueryInspector: Sendable {
     ///   by the caller because it is app state (`AppState.indexedVolumeIds`), and because
     ///   passing it in keeps this type testable without one.
     func inspect(parameters: SearchParameters, indexedVolumeCount: Int) async -> QueryInspection {
-        let expression = await renderedExpression(for: parameters)
         let parsed = parameters.keywords.map { FTS5InlineQueryParser.parseDetailed($0) }
+        return await inspect(parsed: parsed, parameters: parameters,
+                             indexedVolumeCount: indexedVolumeCount)
+    }
+
+    /// Describes `parameters` from a parse the caller has already made, without running a
+    /// search.
+    ///
+    /// ``inspect(parameters:indexedVolumeCount:)`` is this with the parse made from
+    /// `parameters.keywords`, and is its only production caller. The split lets a test hand
+    /// the inspector a `ParsedQuery` of a shape the parser produces — dropped operands
+    /// included — and check what the inspector does with it against a real index, without
+    /// depending on which queries the parser of the day happens to drop.
+    ///
+    /// - Parameters:
+    ///   - parsed: the parse of `parameters.keywords`, or `nil` when there are no keywords.
+    ///     Its `operands` are inspected; its `droppedOperands` become
+    ///     ``QueryInspection/notApplied``.
+    ///   - parameters: the query, which still supplies the rendered expression and the filters.
+    ///   - indexedVolumeCount: how many volumes this device has indexed.
+    func inspect(
+        parsed: ParsedQuery?, parameters: SearchParameters, indexedVolumeCount: Int
+    ) async -> QueryInspection {
+        let expression = await renderedExpression(for: parameters)
         let operands = parsed?.operands ?? []
 
         var inspected: [InspectedOperand] = []
@@ -221,7 +286,10 @@ struct QueryInspector: Sendable {
             expression: expression,
             operands: inspected,
             indexedVolumeCount: indexedVolumeCount,
-            isFilterOnly: expression == nil && parameters.supportsFilterOnlySearch
+            isFilterOnly: expression == nil && parameters.supportsFilterOnlySearch,
+            // No stem or vocabulary lookup for these: a count beside a term the search did not
+            // use would read as evidence about the result set.
+            notApplied: parsed?.droppedOperands ?? []
         )
     }
 
@@ -251,7 +319,8 @@ struct QueryInspector: Sendable {
     ///
     /// A **negated** operand is skipped rather than counted: "how many documents contain
     /// the thing you excluded" is not a number the result set contains, and showing it
-    /// beside the others would read as a hit count.
+    /// beside the others would read as a hit count. Operands in
+    /// ``QueryInspection/notApplied`` are not visited at all — the search never used them.
     func scopedCounts(
         for inspection: QueryInspection, parameters: SearchParameters
     ) async -> [InspectedOperand] {
@@ -277,7 +346,8 @@ struct QueryInspector: Sendable {
     /// 41 documents here, *Formosa* matches 0" is a finding.
     ///
     /// Negated operands are excluded: an excluded term matching nothing is not why the
-    /// query is empty.
+    /// query is empty. Neither is a ``QueryInspection/notApplied`` operand, which is not
+    /// visited: the search never used it, whatever it would match on its own.
     func emptyConjuncts(
         in inspection: QueryInspection, parameters: SearchParameters
     ) async -> [ParsedOperand] {

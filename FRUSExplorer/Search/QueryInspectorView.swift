@@ -21,6 +21,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Q-2b: initial implementation
+///   1.1 — #1297: the scoped-count update rebuilds through `replacingOperands(_:)`, so the
+///         not-applied operands survive a request for counts
 @Observable
 @MainActor
 final class QueryInspectorController {
@@ -70,9 +72,8 @@ final class QueryInspectorController {
         let counted = await QueryInspector(searchService: service)
             .scopedCounts(for: current, parameters: parameters)
         guard !Task.isCancelled else { return }
-        inspection = QueryInspection(
-            expression: current.expression, operands: counted,
-            indexedVolumeCount: current.indexedVolumeCount, isFilterOnly: current.isFilterOnly)
+        // Every other fact — the not-applied operands included — carries across unchanged.
+        inspection = current.replacingOperands(counted)
     }
 
     /// Works out which conjunct is empty, for the zero-result surface.
@@ -100,6 +101,9 @@ final class QueryInspectorController {
 ///
 /// Version history:
 ///   1.0 — Q-2b: initial implementation
+///   1.1 — #1297: a NOT APPLIED row for each operand the expression leaves out, never counted
+///         or offered for counting; the excluded operand's line says an exclusion removes
+///         documents from the terms it is typed with (`search.inspector.excludedDetail.v2`)
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -118,7 +122,7 @@ struct QueryInspectorStrip: View {
         VStack(alignment: .leading, spacing: 6) {
             expressionRow
             if isExpanded {
-                if inspection.hasOperands { operandRows }
+                if inspection.hasOperands || !inspection.notApplied.isEmpty { operandRows }
                 denominatorCaption
             }
         }
@@ -183,7 +187,13 @@ struct QueryInspectorStrip: View {
             }
         }
 
-        if !isCountingScoped, inspection.operands.contains(where: { $0.scopedCount == nil && !$0.operand.isNegated }) {
+        // Beside the operands, and before the count offer, which reads `operands` only: a term
+        // the search did not use has no count to fetch.
+        ForEach(Array(inspection.notApplied.enumerated()), id: \.offset) { _, operand in
+            notAppliedRow(for: operand)
+        }
+
+        if !isCountingScoped, inspection.hasUncountedOperands {
             Button(String(localized: "search.inspector.countInScope",
                           defaultValue: "Count each term in scope…")) {
                 onRequestScopedCounts()
@@ -198,12 +208,40 @@ struct QueryInspectorStrip: View {
         }
     }
 
+    /// One operand the expression leaves out: its text, a NOT APPLIED tag, and why.
+    ///
+    /// No count line, stem warning, or EXCLUDED/EXACT tag: each describes how a term took
+    /// part in the search, and this one took none. The row is one accessibility element so
+    /// VoiceOver reads the term, the tag and the reason together rather than as three
+    /// unrelated fragments.
+    private func notAppliedRow(for operand: ParsedOperand) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 6) {
+                Text(operand.text)
+                    .font(.system(.caption, design: .monospaced))
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                microTag(String(localized: "search.inspector.notAppliedTag",
+                                defaultValue: "NOT APPLIED"))
+                Spacer(minLength: 0)
+            }
+            Text(String(localized: "search.inspector.notAppliedDetail",
+                        defaultValue: "not searched — an OR alternative made only of exclusions has nothing to search for, so it was left out"))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     /// Every count names its scope, because a bare number is the thing this workstream
     /// exists to stop producing.
     private func countLine(for item: InspectedOperand) -> String {
         if item.operand.isNegated {
-            return String(localized: "search.inspector.excludedDetail",
-                          defaultValue: "excluded — documents containing this are removed")
+            // v2 (#1297): v1 said "documents containing this are removed", a removal from the
+            // whole result set that was never true across OR — `cold -korea OR war` keeps war
+            // documents that mention korea. An exclusion belongs to the terms typed with it.
+            return String(localized: "search.inspector.excludedDetail.v2",
+                          defaultValue: "excluded — removes documents containing this from the matches of the terms it is typed with, not across OR")
         }
         var parts: [String] = []
         if let scoped = item.scopedCount {

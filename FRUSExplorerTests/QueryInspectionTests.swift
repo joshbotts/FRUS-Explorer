@@ -24,6 +24,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
+///   1.1 — #1297: terms the expression leaves out are reported as not applied and never counted,
+///         blamed or offered for counting; keyword `NOT` is inspected exactly like `-`
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -406,6 +408,161 @@ struct QueryInspectionTests {
         #expect(narrowed.prefixWildcard == nil)
         #expect(narrowed.excludedTerms.isEmpty)
         #expect(narrowed.volumeIds == ["v1"], "but the scope must survive")
+    }
+
+    // MARK: - Terms the expression leaves out (#1297)
+
+    /// What the inspector does with a parse that drops operands, independent of which queries
+    /// the parser drops — so this holds on any parser that fills `droppedOperands`.
+    ///
+    /// The dropped pair is the shape the #1297 parser gives `europe OR NOT (formosa -zzznothing)`:
+    /// that alternative only excludes, so both its operands leave the expression, `formosa`
+    /// negated once and `zzznothing` twice and so NOT negated. The un-negated one is what makes
+    /// the blame assertion bite — `emptyConjuncts` skips negated operands anyway — and the
+    /// control at the end proves `zzznothing` WOULD be blamed were it applied.
+    @Test("Dropped operands become not-applied rows that are never counted, blamed or offered for counting")
+    func droppedOperandsAreNotApplied() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let applied = try #require(FTS5InlineQueryParser.parseDetailed("europe").operands.first)
+        let dropped = [
+            ParsedOperand(text: "formosa", rendered: "NOT \"formosa\"",
+                          kind: .word, isNegated: true, isExact: false),
+            ParsedOperand(text: "zzznothing", rendered: "\"zzznothing\"",
+                          kind: .word, isNegated: false, isExact: false),
+        ]
+        // `keywords` carries what the expression is equivalent to, so the rendered expression
+        // and every per-operand count run against the same query the parse describes.
+        let params = SearchParameters(keywords: "europe")
+        let parsed = ParsedQuery(expression: "\"europe\"", exactTerms: [],
+                                 operands: [applied], droppedOperands: dropped)
+
+        let inspection = await inspector.inspect(parsed: parsed, parameters: params,
+                                                 indexedVolumeCount: 1)
+        #expect(inspection.operands.map(\.operand) == [applied])
+        #expect(inspection.notApplied == dropped, "dropped operands are carried, in typed order")
+        #expect(inspection.operands.first?.corpusDocumentFrequency == 2,
+                "the applied operand still gets its vocabulary lookup")
+        #expect(inspection.hasUncountedOperands, "europe has not been counted yet")
+
+        let counted = await inspector.scopedCounts(for: inspection, parameters: params)
+        #expect(counted.map(\.operand.text) == ["europe"], "a not-applied operand is never counted")
+        #expect(counted.first?.scopedCount == 2)
+        let afterCounting = inspection.replacingOperands(counted)
+        #expect(!afterCounting.hasUncountedOperands,
+                "with europe counted, not-applied operands must not keep the count offer open")
+        #expect(afterCounting.notApplied == dropped, "and asking for counts must not drop the rows")
+
+        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).isEmpty,
+                "zzznothing matches nothing, but the search never used it, so it is not why anything is empty")
+
+        // Control: applied, the same operand IS blamed — so the assertion above is about
+        // `notApplied`, not about a fixture where nothing could be blamed.
+        let controlParams = SearchParameters(keywords: "europe zzznothing")
+        let appliedControl = ParsedQuery(expression: "\"europe\" AND \"zzznothing\"", exactTerms: [],
+                                         operands: [applied, dropped[1]])
+        let control = await inspector.inspect(parsed: appliedControl, parameters: controlParams,
+                                              indexedVolumeCount: 1)
+        #expect(await inspector.emptyConjuncts(in: control, parameters: controlParams)
+                .map(\.text) == ["zzznothing"])
+    }
+
+    @Test("Replacing the operands carries every other fact across, the not-applied ones included")
+    func replacingOperandsKeepsEverythingElse() throws {
+        let operand = try #require(FTS5InlineQueryParser.parseDetailed("europe").operands.first)
+        let notApplied = [ParsedOperand(text: "korea", rendered: "NOT \"korea\"",
+                                        kind: .word, isNegated: true, isExact: false)]
+        let expression = RenderedExpression(corpus: "\"europe\"", userContent: "\"europe\"")
+        let uncounted = InspectedOperand(operand: operand, stem: "europ", scopedCount: nil,
+                                         corpusDocumentFrequency: 2, corpusOccurrences: 2)
+        let counted = InspectedOperand(operand: operand, stem: "europ", scopedCount: 2,
+                                       corpusDocumentFrequency: 2, corpusOccurrences: 2)
+        let before = QueryInspection(expression: expression, operands: [uncounted],
+                                     indexedVolumeCount: 37, isFilterOnly: false,
+                                     notApplied: notApplied)
+
+        #expect(before.replacingOperands([counted])
+                == QueryInspection(expression: expression, operands: [counted],
+                                   indexedVolumeCount: 37, isFilterOnly: false,
+                                   notApplied: notApplied))
+        #expect(before.hasUncountedOperands)
+        #expect(!before.replacingOperands([counted]).hasUncountedOperands)
+
+        // Only not-applied operands: nothing the search used is waiting for a count.
+        let onlyNotApplied = QueryInspection(expression: expression, operands: [],
+                                             indexedVolumeCount: 37, isFilterOnly: false,
+                                             notApplied: notApplied)
+        #expect(!onlyNotApplied.hasUncountedOperands)
+    }
+
+    /// Needs the #1297 parser, which leaves an exclusion-only `OR` alternative out of the
+    /// expression and reports its operands in `droppedOperands`.
+    @Test("An OR alternative made only of an exclusion is reported as not applied")
+    func exclusionOnlyAlternativeIsNotApplied() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let params = SearchParameters(keywords: "cold OR -korea")
+        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+        #expect(inspection.expression?.displayed == "\"cold\"",
+                "the exclusion-only alternative has nothing to search for and is left out")
+        #expect(inspection.operands.map(\.operand.text) == ["cold"])
+        #expect(inspection.notApplied.map(\.text) == ["korea"])
+        #expect(inspection.notApplied.map(\.isNegated) == [true])
+
+        let counted = await inspector.scopedCounts(for: inspection, parameters: params)
+        #expect(counted.map(\.operand.text) == ["cold"], "korea was never searched, so never counted")
+        // Neither word is in the fixture: cold is empty on its own and may be blamed; korea may not.
+        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).map(\.text) == ["cold"])
+    }
+
+    /// Needs the #1297 parser: the not-applied rows must survive the controller's scoped-count
+    /// update, which rebuilds the inspection.
+    @Test("Asking the controller for scoped counts keeps the not-applied rows")
+    @MainActor
+    func controllerKeepsNotAppliedRowsThroughCounting() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let controller = QueryInspectorController()
+        let params = SearchParameters(keywords: "europe OR -containment")
+        await controller.refresh(parameters: params, service: inspector.searchService,
+                                 indexedVolumeCount: 1)
+        #expect(controller.inspection?.notApplied.map(\.text) == ["containment"])
+
+        await controller.loadScopedCounts(parameters: params, service: inspector.searchService)
+        let inspection = try #require(controller.inspection)
+        #expect(inspection.operands.map(\.scopedCount) == [2], "d1 and d3 carry europe")
+        #expect(inspection.notApplied.map(\.text) == ["containment"],
+                "a request for counts must not drop the not-applied rows")
+    }
+
+    /// Needs the #1297 parser, under which keyword `NOT` marks its operand negated exactly as
+    /// `-` does. Before it, `cold NOT korea` listed korea as a second positive term: counted,
+    /// and blamed when empty.
+    @Test("NOT korea is inspected exactly like -korea: excluded, uncounted, never blamed")
+    func keywordNotIsInspectedLikeDash() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let keyword = SearchParameters(keywords: "cold NOT korea")
+        let dash = SearchParameters(keywords: "cold -korea")
+        let viaKeyword = await inspector.inspect(parameters: keyword, indexedVolumeCount: 1)
+        let viaDash = await inspector.inspect(parameters: dash, indexedVolumeCount: 1)
+
+        #expect(viaKeyword.operands.map(\.operand.isNegated) == [false, true])
+        #expect(viaKeyword.operands == viaDash.operands, "the operand rows must be identical")
+        #expect(viaKeyword.expression == viaDash.expression)
+
+        let counted = await inspector.scopedCounts(for: viaKeyword, parameters: keyword)
+        #expect(counted.map(\.scopedCount) == [0, nil],
+                "cold is counted (0 in this fixture); the excluded korea gets no hit count")
+
+        // Neither word is in the fixture, so each is empty on its own — only the applied,
+        // non-excluded one may be blamed.
+        #expect(await inspector.emptyConjuncts(in: viaKeyword, parameters: keyword).map(\.text) == ["cold"])
+        #expect(await inspector.emptyConjuncts(in: viaDash, parameters: dash).map(\.text) == ["cold"])
     }
 
     // MARK: - The denominator

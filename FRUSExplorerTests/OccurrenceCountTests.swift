@@ -76,6 +76,18 @@ struct OccurrenceAvailabilityTests {
         #expect(onlyNegative.reason == .noPositiveTerm)
     }
 
+    /// Needs the #1297 parser, under which keyword `NOT` marks its operand negated exactly as `-`
+    /// does. Before it, `treaty NOT alliance` counted alliance as a second positive term and was
+    /// refused as composite — the same search, classified differently by how it was typed.
+    @Test("NOT alliance classifies exactly like -alliance: one countable term")
+    func keywordNotClassifiesLikeDash() {
+        let dash = OccurrenceAvailability.classify(term: "treaty -alliance", resolveStem: resolver())
+        let keyword = OccurrenceAvailability.classify(term: "treaty NOT alliance", resolveStem: resolver())
+        #expect(dash == .available(stem: "treaty"), "control: the dash form counts treaty")
+        #expect(keyword == dash,
+                "NOT alliance must classify as the dash form does, got \(keyword)")
+    }
+
     @Test("A word the tokenizer cannot reduce to one term is refused")
     func multiTokenWordsAreRefused() {
         let a = OccurrenceAvailability.classify(term: "U.S.S.R.", resolveStem: { _ in nil })
