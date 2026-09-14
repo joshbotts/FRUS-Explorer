@@ -34,6 +34,9 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-20: #965
+///   1.1 — 2026-09-13: `sourceExplorerFacts(volumeId:documentId:)`, which replaced
+///         `despatchSerial(volumeId:documentId:)`, read back through the same indexed fixture
+///   1.2 — 2026-09-13: a row read that fails throws, rather than reading as not indexed
 @Suite("Pre-1906 serial extraction")
 struct DespatchSerialExtractionTests {
 
@@ -252,5 +255,103 @@ struct DespatchSerialExtractionTests {
         #expect(stored["d1"] == .some(nil),
                 "the enclosure marker names another document's serial and must store NULL")
         #expect(stored["d2"] == .some(nil), "a document with no serial stores NULL, not an empty string")
+    }
+
+    // MARK: - Source Explorer's read of the row
+
+    /// Indexes one fixture volume — `d573` shaped like `frus1863p2/d573`, and `d1` with no dateline —
+    /// through the real pipeline, and returns the pipeline and the database file.
+    private func indexedFixture() async throws -> (dir: URL, db: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSFacts-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="document" xml:id="d573">
+          <head>Mr. Seward to Mr. Dayton.</head>
+          <opener><dateline>Department of State , Washington , November 10, 1863.</dateline>
+            <seg rendition="#left">No. 428.]</seg></opener>
+          <p>Sir: Your despatch has been received.</p>
+        </div>
+        <div type="document" xml:id="d1">
+          <head>A memorandum</head>
+          <p>This document prints no dateline.</p>
+        </div>
+        </body></text></TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, dbURL, pipeline)
+    }
+
+    @Test("sourceExplorerFacts reads the header, dateline and serial from the indexed row")
+    func sourceExplorerFactsReadsRow() async throws {
+        let fixture = try await indexedFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let facts = try #require(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573"))
+        #expect(facts.header.contains("Mr. Seward to Mr. Dayton"), "got: \(facts.header)")
+        #expect(facts.dateline?.contains("November 10, 1863") == true, "got: \(facts.dateline ?? "nil")")
+        #expect(facts.despatchSerial == "428")
+    }
+
+    @Test("sourceExplorerFacts is nil for a document that is not indexed")
+    func sourceExplorerFactsMissingIsNil() async throws {
+        let fixture = try await indexedFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        #expect(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573") != nil,
+                "fixture guard: the indexed document must read, or nil below proves nothing")
+        #expect(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d999") == nil)
+        #expect(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol2", documentId: "d573") == nil)
+    }
+
+    /// A whitespace-only dateline must read as none: Source Explorer would otherwise hold a "dateline"
+    /// that places nothing, and report the document as checked rather than as having no dateline.
+    @Test("sourceExplorerFacts treats a blank dateline as nil")
+    func sourceExplorerFactsBlankDatelineIsNil() async throws {
+        let fixture = try await indexedFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        #expect(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573")?.dateline != nil,
+                "fixture guard: the dateline must read before it is blanked")
+
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(fixture.db.path, &handle) == SQLITE_OK)
+        #expect(sqlite3_exec(handle,
+            "UPDATE document_cache SET dateline = '   ' WHERE volume_id = 'vol1' AND document_id = 'd573'",
+            nil, nil, nil) == SQLITE_OK)
+        #expect(sqlite3_changes(handle) == 1, "the fixture row must be the one blanked")
+        sqlite3_close(handle)
+
+        let facts = try #require(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573"))
+        #expect(facts.dateline == nil, "got: \(facts.dateline.map { "\"\($0)\"" } ?? "nil")")
+        #expect(facts.header.contains("Seward"), "the row itself still reads")
+    }
+
+    /// Source Explorer says "not in the search index" for nil and "could not be read" for a throw, so an
+    /// unreadable row must throw.
+    @Test("sourceExplorerFacts throws when the row cannot be read, rather than returning nil")
+    func sourceExplorerFactsThrowsOnReadFailure() async throws {
+        let fixture = try await indexedFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        #expect(try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573") != nil,
+                "fixture guard: the row must read before the table goes")
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(fixture.db.path, &handle) == SQLITE_OK)
+        #expect(sqlite3_exec(handle, "DROP TABLE document_cache", nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(handle)
+        // The table went through another connection, so the pipeline's first read prepares against its cached
+        // schema and fails at the step; that failure reloads the schema, so the second read fails at the
+        // prepare. Both halves must throw: a mutation swallowing the prepare's error survived one read.
+        await #expect(throws: (any Error).self, "the read that fails at the step") {
+            _ = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573")
+        }
+        await #expect(throws: (any Error).self, "the read that fails at the prepare") {
+            _ = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573")
+        }
     }
 }

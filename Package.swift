@@ -399,7 +399,9 @@ let package = Package(
         /// Builds `pocom-index.json` from a checkout of the Office of the Historian's
         /// public-domain `HistoryAtState/pocom` register — the Principal Officers and Chiefs of
         /// Mission data — so a person's posts and dates can be shown beside their FRUS mentions.
-        /// Keyed by POCOM slug, which `person-authority-index.json` schema v2 supplies.
+        /// Keyed by POCOM slug, which `person-authority-index.json` schema v2 supplies. Version 2 adds
+        /// the 1861–1906 chiefs-of-mission table (`chiefs`, `names`, `roles`) that Source Explorer's
+        /// pre-1906 addressee rule reads to tell an instruction from a note.
         .target(
             name: "POCOMIndexGeneratorCore",
             path: "POCOMIndexGeneratorCore",

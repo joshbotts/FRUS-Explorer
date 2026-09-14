@@ -16,7 +16,7 @@ import Foundation
 /// | directory | what it holds | measured |
 /// |---|---|---|
 /// | `people/{a-z}/*.xml` | the person register — name, life dates, career type | 4,261 files |
-/// | `missions-countries/*.xml` | chiefs of mission to countries | 5,743 appointments |
+/// | `missions-countries/*.xml` | chiefs of mission to countries | 5,743 appointments (5,350 served + 393 `<other-nominees>`) |
 /// | `missions-orgs/*.xml` | chiefs of mission to organizations | 225 |
 /// | `positions-principals/*.xml` | posts **inside the Department** — Secretary, Under Secretary… | 1,293 |
 ///
@@ -27,6 +27,24 @@ import Foundation
 /// `concurrent-appointments/` is deliberately **not** harvested: its records are cross-references
 /// between chief appointments already counted (`<chief-id>` pointers), so reading them would
 /// double-count a posting rather than add one.
+///
+/// ## Version 2: the chiefs-of-mission tables
+/// `missions-countries` is read a second way, for the `chiefs`, `names` and `roles` tables. That
+/// read differs from the careers harvest in four ways, each measured on the register at
+/// `ccc1f033`:
+/// - Only `<chief>` rows inside `<chiefs>` count: 5,350 served rows. The 393 `<other-nominees>`
+///   rows stay in `careers` and never reach `chiefs`.
+/// - Rows are keyed by the file's `<territory-id>`, never by a row's contemporary territory id.
+///   Korea's rows, for example, carry `joseon-dynasty-1910`.
+/// - A row starts on the earlier of its appointment and start dates; the 49 rows stating neither
+///   are skipped. A row is kept when its widened tenure overlaps 1861-01-01…1906-12-31, a last day
+///   from 1860-10-03 counting (the app's 90-day grace), and an open end is closed by `ex` before
+///   that test.
+/// - `keepSlug` does not apply.
+///
+/// Measured output: 641 rows over 427 people, 52 territories and 15 roles. Two rows carry `ex`:
+/// Pacheco's 1890 commissions to Guatemala and Honduras, both closed at 1891-06-30. The whole file
+/// is 530,712 bytes, and `careers` is byte-identical to version 1's.
 ///
 /// Pure and file-system-light — the per-file parsers work on strings so tests need no checkout.
 public enum POCOMIndexBuilder {
@@ -167,13 +185,175 @@ public enum POCOMIndexBuilder {
         return note
     }
 
+    // MARK: - Chiefs of mission (version 2)
+
+    /// First day of the window the `chiefs` table covers. 1861 is FRUS's first year.
+    public static let chiefsWindowFirstDay = "1861-01-01"
+
+    /// Days before ``chiefsWindowFirstDay`` that a row's last day may fall and the row still ship.
+    ///
+    /// The app's addressee rule lets a letter reach a chief for 90 days after the register's last day
+    /// (`ChiefsOfMissionRoster.graceDaysAfterLastDay`), and decides only when exactly ONE name-matching
+    /// person covers the date. A letter of early 1861 can therefore reach a chief whose tenure ended in
+    /// late 1860, and a table cut at ``chiefsWindowFirstDay`` would hide that person from the count the
+    /// rule's uniqueness rests on. Keep this at least the app's grace; the app's bundled-table test pins
+    /// the pair by the first row it admits (`ward-john-elliott`, China, ended 1860-12-15).
+    public static let chiefsWindowGraceDays = 90
+
+    /// The earliest last day a row may have and still ship: ``chiefsWindowFirstDay`` less
+    /// ``chiefsWindowGraceDays``. A literal, so a reader sees the edge; a test recomputes it.
+    public static let chiefsWindowEarliestLastDay = "1860-10-03"
+
+    /// Last day of the window the `chiefs` table covers. 1906 is the last year of the Department's
+    /// numbered diplomatic instruction and despatch series, which the table helps Source Explorer
+    /// choose between.
+    public static let chiefsWindowLastDay = "1906-12-31"
+
+    /// One served `<chief>` row from a country-mission file, before the window and the derived end
+    /// are applied.
+    public struct RawChief: Sendable, Equatable {
+        /// The register's chief id (`fr-1861-dayt-01`). It is not unique registry-wide, so it is
+        /// only ever a sort tie-break, never a key.
+        public let chiefId: String
+        /// The person's POCOM slug.
+        public let personId: String
+        /// The POCOM role id.
+        public let roleId: String
+        /// Date of appointment, as the register writes it.
+        public let appointed: String?
+        /// Date the chief took up the post, as the register writes it.
+        public let started: String?
+        /// Date they left it, as the register writes it.
+        public let ended: String?
+    }
+
+    /// Reads a country-mission file's `<territory-id>`, its served chiefs, and its nominee count.
+    ///
+    /// Only a `<chief>` inside `<chiefs>` is a served row. `<other-nominees>` uses the same element
+    /// for people nominated or commissioned who did not serve as listed (France's Pinckney, "not
+    /// received by the Directory"). A whole-file scan would admit them, and that whole-file scan is
+    /// exactly what ``parseAppointments(xml:tag:fallbackRoleId:)`` does for `careers`.
+    ///
+    /// A row naming no person or no role is skipped, because it cannot be matched to a letter.
+    ///
+    /// - Returns: `nil` when the file states no `<territory-id>`.
+    public static func parseCountryMission(xml: String)
+    -> (territoryId: String, served: [RawChief], otherNominees: Int)? {
+        guard let territory = firstTag(xml, "territory-id")?.trimmed, !territory.isEmpty else {
+            return nil
+        }
+        let served = blocks(firstBlock(xml, "chiefs") ?? "", "chief").compactMap { block -> RawChief? in
+            guard let person = firstTag(block, "person-id")?.trimmed, !person.isEmpty,
+                  let role = firstTag(block, "role-title-id")?.trimmed, !role.isEmpty else { return nil }
+            return RawChief(chiefId: firstTag(block, "id")?.trimmed ?? "", personId: person,
+                            roleId: role, appointed: dateIn(block, "appointed"),
+                            started: dateIn(block, "started"), ended: dateIn(block, "ended"))
+        }
+        let nominees = blocks(firstBlock(xml, "other-nominees") ?? "", "chief").count
+        return (territory, served, nominees)
+    }
+
+    /// Parses one person record's name parts for the `names` table.
+    ///
+    /// Reads the `<persName>` block only, and collapses whitespace in every value: two register
+    /// altnames carry a trailing space. An empty `<genName>` reads as absent, and the first
+    /// NON-EMPTY `<altname>` is kept. A record with no surname yields `nil`, because the surname
+    /// is what the app matches a letter's addressee against.
+    ///
+    /// ``parsePerson(xml:)`` is deliberately left alone: `careers` must stay byte-identical, and it
+    /// only trims.
+    public static func parsePersonName(xml: String) -> (slug: String, name: POCOMPersonName)? {
+        guard let slug = firstTag(xml, "id")?.trimmed, !slug.isEmpty,
+              let persName = firstBlock(xml, "persName") else { return nil }
+        let surname = (firstTag(persName, "surname") ?? "").collapsedWhitespace
+        guard !surname.isEmpty else { return nil }
+        let forename = (firstTag(persName, "forename") ?? "").collapsedWhitespace
+        let genName = (firstTag(persName, "genName") ?? "").collapsedWhitespace
+        let altname = blocks(persName, "altname").map(\.collapsedWhitespace).first { !$0.isEmpty }
+        return (slug, POCOMPersonName(sn: surname, fn: forename,
+                                      g: genName.isEmpty ? nil : genName, a: altname))
+    }
+
+    /// A row's first day: the EARLIER of its floored appointment and start dates.
+    ///
+    /// It is not `appointed ?? started`. The register has an in-window row whose appointment
+    /// FOLLOWS its start (`do-1885-thom-01`), and taking the appointment first would open that
+    /// tenure late.
+    static func firstDay(of chief: RawChief) -> String? {
+        [chief.appointed, chief.started].compactMap { $0.flatMap(floorDay) }.min()
+    }
+
+    /// The first day a register date can mean. `1864` → `1864-01-01`, `1866-04` → `1866-04-01`,
+    /// and a full date is unchanged.
+    ///
+    /// Accepts the same shapes as the app's `POCOMPartialDate.floorISO` and refuses the same ones:
+    /// anything that is not `YYYY`, `YYYY-MM` or a real `YYYY-MM-DD` is `nil`. Measured, every
+    /// dated event in `missions-countries` has one of the three shapes.
+    static func floorDay(_ raw: String) -> String? {
+        guard let parts = dateParts(raw) else { return nil }
+        return isoDay(parts.year, parts.month ?? 1, parts.day ?? 1)
+    }
+
+    /// The last day a register date can mean. `1864` → `1864-12-31`, `1866-04` → `1866-04-30`, and
+    /// a full date is unchanged. Refuses the same shapes as ``floorDay(_:)``.
+    static func ceilDay(_ raw: String) -> String? {
+        guard let parts = dateParts(raw) else { return nil }
+        let month = parts.month ?? 12
+        return isoDay(parts.year, month, parts.day ?? daysIn(month: month, year: parts.year))
+    }
+
+    /// The day before a full `YYYY-MM-DD` date, across month and year ends and leap days. `nil`
+    /// for anything else.
+    static func dayBefore(_ iso: String) -> String? {
+        guard let parts = dateParts(iso), let month = parts.month, let day = parts.day else {
+            return nil
+        }
+        if day > 1 { return isoDay(parts.year, month, day - 1) }
+        if month > 1 { return isoDay(parts.year, month - 1, daysIn(month: month - 1, year: parts.year)) }
+        return isoDay(parts.year - 1, 12, 31)
+    }
+
+    private static func dateParts(_ raw: String) -> (year: Int, month: Int?, day: Int?)? {
+        let pieces = raw.trimmingCharacters(in: .whitespaces)
+            .split(separator: "-", omittingEmptySubsequences: false)
+        guard (1...3).contains(pieces.count), pieces[0].count == 4, let year = Int(pieces[0]) else {
+            return nil
+        }
+        var month: Int?
+        var day: Int?
+        if pieces.count >= 2 {
+            guard pieces[1].count == 2, let m = Int(pieces[1]), (1...12).contains(m) else { return nil }
+            month = m
+        }
+        if pieces.count == 3, let m = month {
+            guard pieces[2].count == 2, let d = Int(pieces[2]),
+                  (1...daysIn(month: m, year: year)).contains(d) else { return nil }
+            day = d
+        }
+        return (year, month, day)
+    }
+
+    private static func daysIn(month: Int, year: Int) -> Int {
+        switch month {
+        case 2: return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28
+        case 4, 6, 9, 11: return 30
+        default: return 31
+        }
+    }
+
+    private static func isoDay(_ year: Int, _ month: Int, _ day: Int) -> String {
+        String(format: "%04ld-%02ld-%02ld", year, month, day)
+    }
+
     // MARK: - Full build
 
     /// Builds the index from a POCOM checkout.
     ///
-    /// - Parameter keepSlug: when non-nil, only these slugs are emitted. The runner passes the set
-    ///   the app can actually reach through the authority index, which keeps the bundled artifact
-    ///   to the people who will ever be looked up.
+    /// - Parameter keepSlug: when non-nil, only these slugs are emitted into `careers`. The runner
+    ///   passes the set the app can actually reach through the authority index, which keeps the
+    ///   bundled careers to the people who will ever be looked up. The version-2 `chiefs`, `names`
+    ///   and `roles` tables IGNORE it: the chief of mission a letter is addressed to need not be
+    ///   anyone the authority index reaches.
     public static func build(checkout: URL, version: Int, generated: String, source: String,
                              keepSlug: Set<String>? = nil)
     throws -> (index: POCOMIndex, stats: POCOMBuildStats) {
@@ -201,20 +381,29 @@ public enum POCOMIndexBuilder {
 
         // 2. People.
         var people: [String: (name: String, birth: Int?, death: Int?)] = [:]
+        var nameParts: [String: POCOMPersonName] = [:]
         for url in xmlFiles("people") {
             guard let xml = read(url) else { continue }
             stats.personFiles += 1
+            if let parsed = parsePersonName(xml: xml) { nameParts[parsed.slug] = parsed.name }
             guard let p = parsePerson(xml: xml) else { continue }
             people[p.slug] = (p.name, p.birth, p.death)
         }
 
-        // 3. Appointments from all three sources.
+        // 3. Appointments from all three sources. A country-mission file is also read for its
+        //    served chiefs here, rather than a second time below.
         var raw: [RawAppointment] = []
+        var servedByTerritory: [String: [RawChief]] = [:]
         for url in xmlFiles("missions-countries") {
             guard let xml = read(url) else { continue }
             let found = parseAppointments(xml: xml, tag: "chief")
             stats.countryChiefs += found.count
             raw += found
+            if let mission = parseCountryMission(xml: xml) {
+                servedByTerritory[mission.territoryId, default: []] += mission.served
+                stats.servedChiefRows += mission.served.count
+                stats.otherNomineeChiefRows += mission.otherNominees
+            }
         }
         for url in xmlFiles("missions-orgs") {
             guard let xml = read(url) else { continue }
@@ -272,8 +461,63 @@ public enum POCOMIndexBuilder {
         }
         stats.careersEmitted = careers.count
 
+        // 5. Chiefs of mission (version 2), independent of keepSlug.
+        var chiefs: [String: [POCOMChiefRow]] = [:]
+        var chiefNames: [String: POCOMPersonName] = [:]
+        var chiefRoles: [String: String] = [:]
+        for (territory, rows) in servedByTerritory {
+            let firstDays = rows.map(firstDay(of:))
+            // Every placeable start at this territory across the WHOLE register, not just the
+            // window. A 1905 open row is capped by a 1910 successor the table never emits.
+            let allStarts = firstDays.compactMap { $0 }
+            var kept: [(first: String, chiefId: String, position: Int, row: POCOMChiefRow)] = []
+            for (position, chief) in rows.enumerated() {
+                guard let first = firstDays[position] else {
+                    stats.chiefRowsWithoutStart += 1
+                    continue
+                }
+                // `ex` only when the register states no end. A stated end that will not parse
+                // (measured: none) leaves the tenure open for the window test and writes no `ex`,
+                // so the app reads no last day and the row never matches a date.
+                let derivedEnd = chief.ended == nil
+                    ? allStarts.filter { $0 > first }.min().flatMap(dayBefore) : nil
+                let lastDay = chief.ended == nil ? derivedEnd : chief.ended.flatMap(ceilDay)
+                guard first <= chiefsWindowLastDay,
+                      lastDay.map({ $0 >= chiefsWindowEarliestLastDay }) ?? true else {
+                    stats.chiefRowsOutsideWindow += 1
+                    continue
+                }
+                guard let name = nameParts[chief.personId] else {
+                    stats.chiefRowsWithoutName += 1
+                    continue
+                }
+                chiefNames[chief.personId] = name
+                if chiefRoles[chief.roleId] == nil {
+                    if let label = roleNames[chief.roleId] {
+                        chiefRoles[chief.roleId] = label
+                    } else {
+                        stats.unknownRoleIds.insert(chief.roleId)
+                        chiefRoles[chief.roleId] = humanize(territoryId: chief.roleId)
+                    }
+                }
+                kept.append((first, chief.chiefId, position, POCOMChiefRow(
+                    s: chief.personId, r: chief.roleId, ap: chief.appointed, st: chief.started,
+                    en: chief.ended, ex: derivedEnd)))
+            }
+            guard !kept.isEmpty else { continue }
+            // Total order: first day, slug, chief id, then file position. The last key only
+            // separates rows that repeat all three, which the register's non-unique chief ids
+            // make possible, so a rebuild never depends on sort stability.
+            kept.sort {
+                ($0.first, $0.row.s, $0.chiefId, $0.position) < ($1.first, $1.row.s, $1.chiefId, $1.position)
+            }
+            chiefs[territory] = kept.map(\.row)
+            stats.derivedEndsWritten += kept.filter { $0.row.ex != nil }.count
+        }
+
         return (POCOMIndex(version: version, generated: generated, source: source,
-                           careers: careers), stats)
+                           careers: careers, chiefs: chiefs, names: chiefNames, roles: chiefRoles),
+                stats)
     }
 }
 
@@ -310,6 +554,8 @@ private func blocks(_ xml: String, _ name: String) -> [String] {
 
 private extension String {
     var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
+    /// Trimmed, with every internal whitespace run collapsed to a single space.
+    var collapsedWhitespace: String { split(whereSeparator: \.isWhitespace).joined(separator: " ") }
     /// Upper-cases the first character and leaves the rest alone.
     ///
     /// `capitalized` would additionally lower-case everything after the first letter of each

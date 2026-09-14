@@ -62,6 +62,12 @@ import SwiftUI
 ///          Flagged mis-resolutions (#321, `ancestryLacksRecordGroup` — measured 0/16
 ///          precision) are treated as unresolved by `lotFile(forRawLot:)` and fall back
 ///          to the live lookup. Mirrors MacSourceExplorerView 1.6.
+///   1.7 — 2026-09-13: the pre-1906 section runs through the shared
+///          `CentralFilesClassifier.evaluate` — a header and dateline the route did not pass are read
+///          from the index, a letter to the U.S. chief of mission reads as a "Likely" instruction
+///          badged with the register that decided it, the serial is labelled by direction, and
+///          loading / not checked / no match / not applicable are distinct states. Pipeline
+///          availability joins the load key. Mirrors MacSourceExplorerView 1.7.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -120,11 +126,13 @@ struct SourceExplorerView: View {
     /// True while the related-documents query is running.
     @State private var relatedLoading: Bool = false
 
-    /// The document's own despatch serial (#965), shown with the rolls it helps browse.
-    @State private var despatchSerial: String? = nil
+    /// The document with the route's gaps filled from the index — header, dateline, year, and the
+    /// serial (#965) shown with the rolls it helps browse. `nil` until `load()` has read it.
+    @State private var documentContext: SourceExplorerDocumentContext? = nil
 
-    /// Pre-1906 country-series classifications + the rolls each resolves to (Phase 2).
-    @State private var countryResolutions: [CountrySeriesResolution] = []
+    /// What the pre-1906 section knows: loading, not checked (and why), no match, not applicable, or
+    /// the homes found (Phase 2).
+    @State private var countrySeriesOutcome: CountrySeriesOutcome = .loading
 
     /// The bundled cross-volume authority record the parsed note resolves to (Phase 4),
     /// or `nil` when the note's keys land in no tracked collection.
@@ -163,10 +171,13 @@ struct SourceExplorerView: View {
                     provenanceSection(parsed: parsed)
                 }
 
-                if !countryResolutions.isEmpty {
+                switch countrySeriesOutcome {
+                case .resolved:
                     countrySeriesSection
-                } else if !hasSourceNote {
-                    noSourceNoteSection
+                case .loading, .notChecked, .noMatch, .notApplicable:
+                    if !hasSourceNote {
+                        noSourceNoteSection
+                    }
                 }
 
                 if indexingPipeline != nil {
@@ -759,7 +770,7 @@ struct SourceExplorerView: View {
         // 1906–1910 Numerical File: resolve the exact digitized roll(s) for this
         // File No. from the bundled index — a direct, page-by-page-ready catalog link
         // with no API key required.
-        if let fileIdentifier, let year = documentYear, (1906...1910).contains(year) {
+        if let fileIdentifier, let year = effectiveYear, (1906...1910).contains(year) {
             numericalFileSection(fileIdentifier: fileIdentifier)
         }
 
@@ -957,78 +968,36 @@ struct SourceExplorerView: View {
 
     // MARK: - Country-Series Resolution (pre-1906, Phase 2)
 
-    /// One classification candidate paired with the rolls it resolves to in the index.
-    struct CountrySeriesResolution: Identifiable {
-        let classification: CentralFilesClassification
-        let rolls: [CountryRoll]
-        /// Whose dateline produced this home — the document's, or one enclosure's (B-5).
-        var part: CentralFilesDocumentPart = .document
-        /// Keyed on the part as well as the category: a document and its enclosure can resolve to
-        /// the SAME series, and an id of the category alone silently drops one of the two rows.
-        var id: String { "\(part.key)|\(classification.category.rawValue)" }
-    }
+    /// One classification candidate paired with the rolls it resolves to. The type is shared with the
+    /// Mac twin, which keeps the same alias, so the two cannot come to disagree about a row's identity.
+    typealias CountrySeriesResolution = CentralFilesResolution
 
-    /// Classifies a pre-1906 document (which carries no source note) from its dateline,
-    /// heading, and FRUS chapter, and resolves each candidate series to its roll(s) in the
-    /// bundled index. Populates `countryResolutions`; a no-op when inputs are missing or
-    /// the document is 1906 or later (handled by the Numerical File / decimal paths).
+    /// The homes the pre-1906 section lists — empty unless it resolved.
+    private var countryResolutions: [CountrySeriesResolution] { countrySeriesOutcome.homes }
+
+    /// The year every year-dependent section reads: the index-hydrated one, else the host's.
+    ///
+    /// `loadIdentity` deliberately keeps reading the host's `documentYear`: a key that read the
+    /// hydrated year would change the moment hydration landed and reload the view.
+    private var effectiveYear: Int? { documentContext?.year ?? documentYear }
+
+    /// Classifies a pre-1906 document (which carries no source note) through the shared
+    /// `CentralFilesClassifier.evaluate` and stores what it found.
+    ///
+    /// The main-actor values the evaluation needs — the AST cache and the volume's file URL — are read
+    /// here and passed in, because `AppState` cannot be read from the nonisolated evaluation. The result
+    /// is written only when this load was not cancelled: a key change mid-evaluation would otherwise
+    /// let the previous document's answer land on the next one.
     private func resolveCountrySeries() async {
-        // Cleared BEFORE the guards, not after them. Every `return` below is an early exit for a
-        // document this section does not describe — post-1906, no dateline, no structure — and
-        // assigning only on success leaves the PREVIOUS document's rolls and serial on screen in
-        // any host that keeps this view alive. That is the latent bug the `.task(id:)` keying was
-        // chosen to avoid; clearing here closes it at the source rather than relying on the host.
-        countryResolutions = []
-        despatchSerial = nil
-        guard let dateline = documentDateline,
-              let year = documentYear, year < 1906,
-              let index = CentralFilesIndexStore.shared else { return }
-
-        // Resolve the section chain to the document from the cached volume structure. The
-        // country (e.g. "Great Britain.") is usually a parent chapter, not the leaf subject
-        // section, so we try each title in the chain below.
-        var path: [String] = []
-        if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId,
-           let structure = try? await pipeline.cachedVolumeStructure(forVolumeId: volumeId) {
-            path = CentralFilesClassifier.documentSectionPath(in: structure, documentId: docId)
-        }
-        guard !path.isEmpty else { return }
-
-        let dateISO = CentralFilesClassifier.datelineDateISO(from: dateline)
-        var resolutions: [CountrySeriesResolution] = []
-        for title in path where resolutions.isEmpty {
-            let classifications = CentralFilesClassifier.classify(
-                header: documentHeader ?? "", dateline: dateline, chapterCountry: title)
-            for classification in classifications {
-                guard let series = index.series(category: classification.category) else { continue }
-                let rolls: [CountryRoll]
-                if classification.category.isChronologicalRun {
-                    // W-8: a chronological run carries no geography — matched by date
-                    // alone, and only WITH a date (an undated query would list the whole
-                    // series, which is noise, not a resolution).
-                    guard let dateISO else { continue }
-                    rolls = series.rolls(containingDate: dateISO)
-                } else {
-                    guard let geoKey = classification.geoKeys.first else { continue }
-                    rolls = series.rolls(geoKey: geoKey, dateISO: dateISO)
-                }
-                if !rolls.isEmpty {
-                    resolutions.append(CountrySeriesResolution(classification: classification, rolls: rolls))
-                }
-            }
-        }
-        // B-5 / Finding 4: an enclosure is filmed in ITS originating series, not with the
-        // document that enclosed it, so its own dateline gets the same treatment. The AST comes
-        // from the shared `DocumentASTCache` — this sheet is only ever opened from an open
-        // document, so the parse has just happened; a miss simply yields no enclosure rows rather
-        // than a wrong one.
-        resolutions += await enclosureResolutions(index: index)
-        countryResolutions = resolutions
-        // Fetched here rather than threaded through the snapshot types: this method already runs
-        // only for pre-1906 documents and already holds the pipeline, volume id and document id.
-        if let pipeline = indexingPipeline, let volumeId = documentVolumeId, let docId = documentId {
-            despatchSerial = try? await pipeline.despatchSerial(volumeId: volumeId, documentId: docId)
-        }
+        let route = CountrySeriesRoute(header: documentHeader, dateline: documentDateline, year: documentYear,
+                                       volumeId: documentVolumeId, documentId: documentId)
+        let volumeURL = documentVolumeId.flatMap { appState.downloadManager?.volumeURL(for: $0) }
+        let result = await CentralFilesClassifier.evaluate(
+            route: route, pipeline: indexingPipeline, index: CentralFilesIndexStore.shared,
+            astCache: appState.documentASTCache, volumeURL: volumeURL)
+        guard !Task.isCancelled else { return }
+        documentContext = result.context
+        countrySeriesOutcome = result.outcome
     }
 
     @ViewBuilder
@@ -1038,22 +1007,22 @@ struct SourceExplorerView: View {
                         defaultValue: "This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                if let serial = despatchSerial {
+                if case .resolved(_, let serialLabel) = countrySeriesOutcome,
+                   let serial = documentContext?.despatchSerial {
                     // #965. Placed INSIDE the roll section deliberately: the serial is not an
                     // archival identifier and resolves to no catalogue record, so shown beside the
                     // resolved NARA rows above it would read as a resolution it cannot make. Here
                     // it is what it actually is — the mark to look for while browsing the images.
+                    // Its label follows the lead home's direction (`CentralFilesSerialLabel`): an
+                    // instruction carries the Department's number, a despatch the post's.
                     VStack(alignment: .leading, spacing: 2) {
                         Label {
-                            Text(String(format: String(
-                                localized: "source.explorer.countrySeries.serial %@",
-                                defaultValue: "Despatch No. %@"), serial))
+                            Text(serialLabel.title(serial: serial))
                                 .font(.callout.weight(.semibold))
                         } icon: {
                             Image(systemName: "number").foregroundStyle(.secondary)
                         }
-                        Text(String(localized: "source.explorer.countrySeries.serial.caption",
-                                    defaultValue: "FRUS prints this number above the document — the post’s own serial for it. The rolls below are browsed by eye, so look for it on the images alongside the date. It is not a NARA identifier and does not resolve to a catalog record."))
+                        Text(serialLabel.caption)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         // P-1: the serial is read from the volumes' own text (`IndexingPipeline
@@ -1076,10 +1045,15 @@ struct SourceExplorerView: View {
                         Text(c.category.displayName).font(.callout.weight(.semibold))
                         ConfidenceChip(confidence: c.confidence)
                         // P-1: the series, and the rolls under it, exist here only because the bundled
-                        // NARA artifact answered — `resolveCountrySeries` appends nothing otherwise. The chip
-                        // sits beside the confidence capsule, where it reads as *this NARA series, attributed
+                        // NARA artifact answered — `CentralFilesClassifier.evaluate` returns no home otherwise. The
+                        // chip sits beside the confidence capsule, where it reads as *this NARA series, attributed
                         // with this confidence by us*, rather than around the app's own rationale below.
                         ProvenanceChip(source: .naraCatalog)
+                        if resolution.chiefOfMission != nil {
+                            // D1: a row the addressee rule promoted to "Likely" rests on the Office of the
+                            // Historian's register as well — it named the chief of mission the letter went to.
+                            ProvenanceChip(source: .ohPeopleRegister)
+                        }
                     }
                     if showsPartLabels {
                         Text(resolution.part.displayName)
@@ -1115,83 +1089,38 @@ struct SourceExplorerView: View {
         countryResolutions.contains { $0.part.isEnclosure }
     }
 
-    /// Archival homes for the document's enclosures, each classified from its OWN opener (B-5).
-    ///
-    /// Reads the parsed AST from the app-wide `DocumentASTCache`, the same actor
-    /// `CollectionContentResolver` serves its previews from. Nothing is parsed here: the Source
-    /// Explorer is reached from a document that is already open, so its AST is in the cache. On a
-    /// miss the result is empty — the surface then says exactly what it said before B-5, which is
-    /// the honest degradation for a fact that could not be read.
-    ///
-    /// An enclosure is classified from its own opener with NO chapter country. The parent's chapter
-    /// is deliberately not passed down — `CentralFilesClassifier.enclosureHomes` gives the measured
-    /// reason: borrowing it would let a city-only dateline resolve to the parent's country and be
-    /// labelled as the enclosure's home. (This comment used to say the enclosure inherits the
-    /// parent's chapter country through a `path` parameter. The code never read that parameter,
-    /// and it has been removed.)
-    ///
-    /// - Parameter index: the bundled central-files index.
-    /// - Returns: one resolution per enclosure that resolves, tagged with its part.
-    private func enclosureResolutions(index: CentralFilesIndex) async -> [CountrySeriesResolution] {
-        guard let volumeId = documentVolumeId, let docId = documentId else { return [] }
-        // Cache hit, else parse — the `CollectionContentResolver.cachedAST` shape. The cache is a
-        // 24-slot LRU that empties itself on an iOS memory warning, so "the document is open, so
-        // its AST is cached" is probabilistic rather than structural; an eviction or a restored
-        // scene would otherwise give two readers of the SAME document different archival answers,
-        // with nothing on screen to say why.
-        var cached = await appState.documentASTCache.ast(volumeId: volumeId, documentId: docId)
-        if cached == nil, let dm = appState.downloadManager {
-            let volumeURL = dm.volumeURL(for: volumeId)
-            if FileManager.default.fileExists(atPath: volumeURL.path),
-               let parsed = try? await FRUSDocumentParser().parseDocument(documentId: docId,
-                                                                          volumeURL: volumeURL) {
-                await appState.documentASTCache.store([parsed], volumeId: volumeId)
-                cached = parsed
-            }
-        }
-        guard let ast = cached else { return [] }
-        let openers = IndexingPipeline.extractEnclosureOpeners(from: ast.nodes)
-        // Each enclosure's OWN date, keyed by part — a chronological run is matched by date alone,
-        // and using the parent's would file the enclosure under the covering document's date.
-        var enclosureDates: [String: String] = [:]
-        for opener in openers {
-            let part = CentralFilesDocumentPart.enclosure(label: opener.label)
-            enclosureDates[part.key] = CentralFilesClassifier.datelineDateISO(from: opener.dateline)
-        }
-        guard !openers.isEmpty else { return [] }
-
-        var found: [CountrySeriesResolution] = []
-        // The rule lives in `CentralFilesClassifier.enclosureHomes` so these two hand-maintained
-        // twins cannot come to disagree about what an enclosure resolves to — they already drifted
-        // once here — and so it can be tested, which a private method inside a view cannot be.
-        for home in CentralFilesClassifier.enclosureHomes(openers: openers) {
-            guard let series = index.series(category: home.classification.category) else { continue }
-            let rolls: [CountryRoll]
-            if home.classification.category.isChronologicalRun {
-                guard let date = enclosureDates[home.part.key] else { continue }
-                rolls = series.rolls(containingDate: date)
-            } else {
-                guard let geoKey = home.classification.geoKeys.first else { continue }
-                rolls = series.rolls(geoKey: geoKey, dateISO: enclosureDates[home.part.key])
-            }
-            guard !rolls.isEmpty else { continue }
-            found.append(CountrySeriesResolution(classification: home.classification,
-                                                 rolls: rolls, part: home.part))
-        }
-        return found
-    }
-
-    /// Shown for a document with no source note that the country-series classifier could not
-    /// resolve to a specific roll (e.g. 1906–1910 Numerical File documents, whose case-number
-    /// filing can't be predicted from metadata). Names the likely series for the era instead
-    /// of presenting an "unrecognized note" parse failure.
+    /// Shown for a document with no source note whenever the pre-1906 section did not resolve to a
+    /// roll: while it checks, when it could not check (saying why), when it checked and nothing
+    /// matched, and for a document from 1906 on, where it does not apply. Only "nothing matched" says
+    /// the filing couldn't be predicted from the dateline and chapter, because it is the one state in
+    /// which that was tried. Every state adds the era's likely series when the year is known.
     @ViewBuilder
     private var noSourceNoteSection: some View {
         Section {
-            Text(String(localized: "source.explorer.noNote.detail",
-                        defaultValue: "This document carries no archival source note, and its exact filing couldn’t be predicted from its dateline and FRUS chapter."))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            switch countrySeriesOutcome {
+            case .loading:
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text(CountrySeriesOutcome.loadingMessage)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            case .notChecked(let reason):
+                Text(reason.message)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .notApplicable:
+                Text(CountrySeriesOutcome.notApplicableMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .noMatch:
+                Text(String(localized: "source.explorer.noNote.detail",
+                            defaultValue: "This document carries no archival source note, and its exact filing couldn’t be predicted from its dateline and FRUS chapter."))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            case .resolved:
+                EmptyView()
+            }
             if let series = predictedSeriesNote {
                 Text(series)
                     .font(.caption)
@@ -1206,7 +1135,7 @@ struct SourceExplorerView: View {
     /// A plain-language note on the likely State Department file series for a note-less
     /// document, inferred from its year. Used when no specific roll can be predicted.
     private var predictedSeriesNote: String? {
-        guard let year = documentYear else { return nil }
+        guard let year = effectiveYear else { return nil }
         switch year {
         case ..<1906:
             return String(localized: "source.explorer.noNote.series.diplomatic",
@@ -1269,14 +1198,14 @@ struct SourceExplorerView: View {
 
     /// Period-specific finding-aid section for RG-59 central files (1789–1973).
     ///
-    /// When `documentYear` is available, shows the matching filing period, a link
+    /// When the year (`effectiveYear`) is available, shows the matching filing period, a link
     /// to the NARA finding-aid page, and (when applicable) a link to the filing
     /// manual PDF for that period. When unavailable, shows the full period table.
     @ViewBuilder
     private func centralFilesPeriodSection(fileIdentifier: String?) -> some View {
         Section(String(localized: "source.explorer.decimalPeriod.header",
                        defaultValue: "NARA Finding Aids by Period")) {
-            if let year = documentYear {
+            if let year = effectiveYear {
                 // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
                 // mid-year era boundaries where the year alone is ambiguous.
                 let periodLabel = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)
@@ -2221,7 +2150,8 @@ struct SourceExplorerView: View {
     /// Mirrors `MacSourceExplorerView.loadIdentity` — keep in sync.
     var loadIdentity: String {
         MacSourceExplorerLoadIdentity.make(volumeId: documentVolumeId, documentId: documentId,
-                                           rawSourceNote: rawSourceNote, documentYear: documentYear)
+                                           rawSourceNote: rawSourceNote, documentYear: documentYear,
+                                           pipelineAvailable: indexingPipeline != nil)
     }
 
     /// Reads this document's footnote pointers and joins each to the authority.
@@ -2250,6 +2180,12 @@ struct SourceExplorerView: View {
     }
 
     private func load() async {
+        // Reset before any `await`. The key changes in place — the pipeline appearing is one such
+        // change — so without this the previous document's homes, serial and year stay on screen for
+        // the whole of the load, and "not checked yet" would outlive the pipeline it was waiting for.
+        documentContext = nil
+        countrySeriesOutcome = .loading
+
         let note = SourceNoteParser().parse(rawSourceNote)
         parsed = note
 
@@ -2262,11 +2198,13 @@ struct SourceExplorerView: View {
             }.value
         }
 
-        await loadUnprintedPointers()
-
-        // Pre-1906 country-series resolution (no source note; no API key). Runs first so
-        // the resolved roll links appear even without a NARA Catalog key.
+        // Pre-1906 country-series resolution (no source note; no API key). Runs before everything
+        // that reads the year — Related Documents and the filing period — because it is also what
+        // reads a year the route did not pass. After the authority record, which reads no year and
+        // should not wait on an enclosure parse.
         await resolveCountrySeries()
+
+        await loadUnprintedPointers()
 
         // Local related-documents query — runs unconditionally; no API key needed.
         // Must be called before the hasAPIKey guard so it runs even for users
@@ -2349,13 +2287,13 @@ struct SourceExplorerView: View {
                 // Anchored to an indexed document → the widened, anchor-excluding entry
                 // point, identical to the dedicated neighbors surfaces (#217 parity).
                 let r = try await pipeline.archivalNeighbors(
-                    forVolumeId: volId, documentId: docId, documentYear: documentYear)
+                    forVolumeId: volId, documentId: docId, documentYear: effectiveYear)
                 result = (r.documents, r.totalCount)
             } else {
                 // A source note explored without an indexed-document anchor: the
                 // note-keyed query, nothing to exclude.
                 result = try await pipeline.relatedDocuments(
-                    for: note, limit: 30, documentYear: documentYear)
+                    for: note, limit: 30, documentYear: effectiveYear)
             }
             relatedDocs       = result.documents
             relatedTotalCount = result.totalCount
@@ -2396,7 +2334,7 @@ struct SourceExplorerView: View {
                           defaultValue: "Same collection — RG \(rg), \(series)")
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             let location = DecimalFileSegment.location(from: fileId)
-            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: documentYear) {
+            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: effectiveYear) {
                 return String(localized: "source.explorer.related.basis.decimalSegment",
                               defaultValue: "Same decimal file — \(location), \(segment)")
             }

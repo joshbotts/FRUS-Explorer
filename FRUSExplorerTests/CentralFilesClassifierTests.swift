@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - CentralFilesClassifierTests
@@ -637,5 +638,844 @@ struct ChapterTitleFormTests {
             return lines
         }
         #expect(comparable(app) == comparable(generator))
+    }
+}
+
+// MARK: - The addressee rule (2026-09-13)
+
+/// The rule that tells a Department letter to the U.S. chief of mission (an instruction) from one to a
+/// foreign minister in Washington (a note), by matching the header's addressee against the Office of
+/// the Historian's register.
+///
+/// **Every roster here is injected**, built from `POCOMChiefOfMission` values carrying the register's
+/// measured tenures, so no test depends on the bundled `chiefs` table. Each refusal fixture breaks
+/// exactly ONE of the rule's conditions and sits beside a positive control that differs from it in
+/// that condition alone — a refusal that would also happen for another reason proves nothing.
+/// Assertions read `.confidence` explicitly, because `CentralFilesClassification.==` ignores it.
+///
+/// Version history:
+///   1.0 — 2026-09-13: initial implementation
+struct AddresseeRuleTests {
+
+    // MARK: Fixtures
+
+    /// A resolved chief, built the way `POCOMIndex.chiefs(territoryId:)` resolves one.
+    static func chief(_ slug: String, surname: String, forename: String, display: String,
+                      role: String = "Envoy Extraordinary and Minister Plenipotentiary",
+                      territory: String, first: String, last: String?) -> POCOMChiefOfMission {
+        POCOMChiefOfMission(slug: slug, surname: surname, forename: forename, displayName: display,
+                            roleLabel: role, territoryId: territory, firstDayISO: first, lastDayISO: last)
+    }
+
+    /// fr-1861-dayt-01: minister to France, died at post.
+    static let dayton = chief("dayton-william-lewis", surname: "Dayton", forename: "William Lewis",
+                              display: "William L. Dayton", territory: "france",
+                              first: "1861-03-18", last: "1864-12-01")
+    /// fr-1865-bige-01.
+    static let bigelow = chief("bigelow-john", surname: "Bigelow", forename: "John", display: "John Bigelow",
+                               territory: "france", first: "1865-03-15", last: "1866-12-23")
+    /// mx-1861-corw-01.
+    static let thomasCorwin = chief("corwin-thomas", surname: "Corwin", forename: "Thomas", display: "Thomas Corwin",
+                                    territory: "mexico", first: "1861-03-22", last: "1864-04-27")
+    /// mx-1864-corw-01: `1864-04` … `1866-04`, floored and ceiled.
+    static let williamCorwin = chief("corwin-william-henry", surname: "Corwin", forename: "William Henry",
+                                     display: "William H. Corwin", role: "Chargé d’Affaires ad interim",
+                                     territory: "mexico", first: "1864-04-01", last: "1866-04-30")
+    /// mx-1885-jack-01.
+    static let jackson = chief("jackson-henry-rootes", surname: "Jackson", forename: "Henry Rootes",
+                               display: "Henry R. Jackson", territory: "mexico",
+                               first: "1885-03-23", last: "1886-10-07")
+    /// ru-1899-towe-01.
+    static let tower = chief("tower-charlemagne", surname: "Tower", forename: "Charlemagne", display: "Charlemagne Tower",
+                             role: "Ambassador Extraordinary and Plenipotentiary", territory: "russia",
+                             first: "1899-01-12", last: "1902-11-19")
+    /// it-1861-mars-01.
+    static let marsh = chief("marsh-george-perkins", surname: "Marsh", forename: "George Perkins",
+                             display: "George P. Marsh", territory: "italy", first: "1861-03-20", last: "1882-07-23")
+    /// py-1863-wash-01.
+    static let washburn = chief("washburn-charles-ames", surname: "Washburn", forename: "Charles Ames",
+                                display: "Charles A. Washburn", role: "Minister Resident", territory: "paraguay",
+                                first: "1863-01-19", last: "1868-09-10")
+
+    /// `frus1863p2/d573`, the type case: opened from the iPad Research tab, it showed no reels at all.
+    static let d573Header = "Mr. Seward to Mr. Dayton."
+    static let d573Dateline = "Department of State , Washington , November 10, 1863."
+    static let d573Path = ["Supplement.", "France."]
+    static let daytonRoster = ChiefsOfMissionRoster(chiefsByTerritory: ["france": [dayton]])
+
+    private func index() throws -> CentralFilesIndex { try #require(CentralFilesIndexStore.shared) }
+
+    // MARK: The grammar
+
+    @Test("The header grammar reads the addressee, its style and the sender, row by row")
+    func addresseeGrammarTable() {
+        typealias A = CentralFilesAddressee
+        let rows: [(String, A?)] = [
+            ("Mr. Seward to Mr. Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("No. 163. Mr. Davis to General Schenck .", A(style: .usStyle, names: ["schenck"], senderIsForeign: false)),
+            ("The Acting Secretary of State to Ambassador White .", A(style: .usStyle, names: ["white"], senderIsForeign: false)),
+            ("Mr. Davis to Mr. De Long", A(style: .usStyle, names: ["de", "long"], senderIsForeign: false)),
+            ("Mr. Seward to Mr. W. L. Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("Mr. Seward to Mr. Charles Francis Adams Jr.", A(style: .usStyle, names: ["charles", "francis", "adams"], senderIsForeign: false)),
+            ("Mr. Seward to Air. Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("Mr. Seward to Mr, Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("Mr. Seward to Mr. Adams; (same to Mr. Dayton, No. 501.)", A(style: .usStyle, names: ["adams"], senderIsForeign: false)),
+            ("Mr. Seward to Mr. Dayton through Mr. Bigelow.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("Mr. Evarts to Dr. Aceval.", A(style: .usStyle, names: ["aceval"], senderIsForeign: false)),
+            ("Mr. Seward to Lord Lyons .", A(style: .foreign, names: ["lyons"], senderIsForeign: false)),
+            ("No. 333. Mr. Bayard to M. Jackson .", A(style: .foreign, names: ["jackson"], senderIsForeign: false)),
+            ("Mr. Fish to Baron Gerolt.", A(style: .foreign, names: ["gerolt"], senderIsForeign: false)),
+            ("Mr. Frelinghuysen to Señor Romero .", A(style: .foreign, names: ["romero"], senderIsForeign: false)),
+            ("Mr. Seward to Mons. Drouyn de Lhuys", A(style: .foreign, names: ["drouyn", "de", "lhuys"], senderIsForeign: false)),
+            ("Mr. Seward to Mavroyeni Bey", A(style: .foreign, names: ["mavroyeni", "bey"], senderIsForeign: false)),
+            ("Mr. Hay to Tevfik Pasha", A(style: .foreign, names: ["tevfik", "pasha"], senderIsForeign: false)),
+            ("Mr. Seward to Romero", A(style: .none, names: ["romero"], senderIsForeign: false)),
+            ("Mr. Hay to the Japanese Minister", A(style: .descriptive(foreignEnvoy: true), names: [], senderIsForeign: false)),
+            ("Instructions sent mutatis mutandis to the United States ambassadors at London",
+             A(style: .descriptive(foreignEnvoy: false), names: [], senderIsForeign: false)),
+            ("Mr. Blaine to Messrs. Norton & Co.", A(style: .multiple, names: [], senderIsForeign: false)),
+            ("Mr. Seward to Mr. Adams and Mr. Dayton", A(style: .multiple, names: [], senderIsForeign: false)),
+            ("Señor Benitez to Mr. Washburn .", A(style: .usStyle, names: ["washburn"], senderIsForeign: true)),
+            ("M. Seward to Mr. Dayton.", A(style: .usStyle, names: ["dayton"], senderIsForeign: false)),
+            ("[Untitled]", nil),
+        ]
+        var checked = 0
+        for (header, expected) in rows {
+            #expect(CentralFilesClassifier.addressee(inHeader: header) == expected, "\(header)")
+            checked += 1
+        }
+        #expect(checked == 26)
+    }
+
+    /// A missing foreign title turns straight into a false "Likely", so every entry is driven through
+    /// the parser — as an addressee, and as a sender — rather than trusting the table's membership.
+    @Test("Every honorific in both tables classifies as its table says, as addressee and as sender")
+    func honorificTablesTokenByToken() {
+        var foreign = 0
+        for token in CentralFilesClassifier.foreignHonorifics.sorted() {
+            let capitalised = token.prefix(1).uppercased() + token.dropFirst()
+            let asAddressee = CentralFilesClassifier.addressee(inHeader: "Mr. Seward to \(capitalised) Smith .")
+            // `Señores` is a plural title, and a plural addressee reads as several people before any title
+            // is consulted — which refuses just the same, and says why more precisely.
+            let expected: CentralFilesAddressee.Style = token == "señores" ? .multiple : .foreign
+            #expect(asAddressee?.style == expected, "\(capitalised) as an addressee read \(String(describing: asAddressee?.style))")
+            let asSender = CentralFilesClassifier.addressee(inHeader: "\(capitalised) Smith to Mr. Dayton .")
+            #expect(asSender?.senderIsForeign == (token != "m."), "\(capitalised) as a sender")
+            foreign += 1
+        }
+        var usStyle = 0
+        for token in CentralFilesClassifier.usStyleHonorifics.sorted() {
+            let capitalised = token.prefix(1).uppercased() + token.dropFirst()
+            let parsed = CentralFilesClassifier.addressee(inHeader: "Mr. Seward to \(capitalised) Smith .")
+            #expect(parsed?.style == .usStyle && parsed?.names == ["smith"], "\(capitalised) read \(String(describing: parsed))")
+            usStyle += 1
+        }
+        #expect(foreign == CentralFilesClassifier.foreignHonorifics.count && foreign >= 40)
+        #expect(usStyle == CentralFilesClassifier.usStyleHonorifics.count && usStyle >= 30)
+        #expect(CentralFilesClassifier.usStyleHonorifics.isDisjoint(with: CentralFilesClassifier.foreignHonorifics))
+    }
+
+    // MARK: The roster
+
+    @Test("Territory ids reach the historical chapter keys, and Germany is not Prussia")
+    func rosterOverrides() {
+        for id in ["guatemala", "costa-rica", "honduras", "nicaragua", "el-salvador"] {
+            let keys = ChiefsOfMissionRoster.geoKeys(forTerritoryId: id)
+            #expect(keys.contains("central america"), "\(id): \(keys)")
+            #expect(keys.first == id.replacingOccurrences(of: "-", with: " "), "\(id) lost its own key: \(keys)")
+        }
+        #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "iran") == ["iran", "persia"])
+        #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "thailand") == ["thailand", "siam"])
+        #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "holy-see") == ["holy see", "papal states"])
+        #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "united-kingdom") == ["great britain"])
+        #expect(ChiefsOfMissionRoster.geoKeys(forTerritoryId: "germany") == ["germany"],
+                "a Prussia chapter must not borrow the German Empire's chiefs")
+        // Through `init(chiefsByTerritory:)`, the keying `init(index:)` — and so `.bundled` — ends in: a chief
+        // keyed at Guatemala answers a letter printed in a "Central America." chapter. (A synthetic chief;
+        // the keying is under test. The decoder's path is `POCOMIndexTests.rosterFromDecodedIndexDecidesD573`.)
+        let envoy = Self.chief("fixture-envoy", surname: "Fixture", forename: "Test", display: "Test Fixture",
+                               territory: "guatemala", first: "1880-01-01", last: "1882-12-31")
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["guatemala": [envoy]])
+        #expect(roster.decide(header: "Mr. Evarts to Mr. Fixture .",
+                              dateline: "Department of State, Washington, May 1, 1881.",
+                              geoKeys: GeoKeyNormalizer.keys(from: "Central America."))?.slug == "fixture-envoy")
+    }
+
+    /// A territory whose keys reach no diplomatic roll can never decide anything, which is a silent loss
+    /// of reach — the three historical names the overrides exist for were found exactly this way.
+    ///
+    /// Iterates the bundled `chiefs` table rather than a pinned list, so a territory a regeneration adds
+    /// is checked against the roll vocabulary too.
+    @Test("Every bundled register territory's keys reach the central-files vocabulary, bar the allow-list")
+    func rosterKeysJoinCentralFilesVocabulary() throws {
+        let index = try index()
+        var vocabulary = Set<String>()
+        for category in [CentralFilesSeriesCategory.despatches, .instructions, .notesFrom, .notesTo] {
+            let series = try #require(index.series(category: category))
+            for roll in series.rolls { vocabulary.formUnion(roll.geoKeys) }
+        }
+        let territories = try #require(POCOMIndexStore.shared, "pocom-index.json should be bundled").chiefTerritoryIds
+        // 51 territories carry a served chief in 1861–1906, 52 with Two Sicilies (reached through the
+        // 90-day grace before 1861); fewer than 51 means the table collapsed.
+        try #require(territories.count >= 51, "the bundled chiefs table has \(territories.count) territories")
+        // Bulgaria: the bundled index files no diplomatic roll under it, so its chiefs have nothing to
+        // decide. Each entry must still be in the table, so the exception cannot go stale silently.
+        let allowList: Set<String> = ["bulgaria"]
+        #expect(allowList.isSubset(of: Set(territories)), "an allow-listed territory left the table")
+        var checked = 0
+        for territory in territories {
+            let keys = ChiefsOfMissionRoster.geoKeys(forTerritoryId: territory)
+            let joined = keys.contains(where: vocabulary.contains)
+            #expect(joined != allowList.contains(territory), "\(territory) → \(keys), joined: \(joined)")
+            checked += 1
+        }
+        #expect(checked == territories.count)
+    }
+
+    // MARK: The rule, end to end against the bundled central-files index
+
+    @Test("d573: a letter to Dayton is Diplomatic Instructions only, at Likely, naming him")
+    func addresseeRuleDecidesD573() throws {
+        let index = try index()
+        // Control: with no roster, the same letter shows both reels at Possible.
+        let undecided = CentralFilesClassifier.documentHomes(
+            header: Self.d573Header, dateline: Self.d573Dateline, sectionPath: Self.d573Path,
+            index: index, roster: .empty)
+        #expect(undecided.map(\.classification.category) == [.instructions, .notesTo])
+        #expect(undecided.flatMap { $0.rolls.map(\.naId) } == ["149305041", "216905138"])
+        #expect(undecided.allSatisfy { $0.classification.confidence == .medium && $0.chiefOfMission == nil })
+
+        let homes = CentralFilesClassifier.documentHomes(
+            header: Self.d573Header, dateline: Self.d573Dateline, sectionPath: Self.d573Path,
+            index: index, roster: Self.daytonRoster)
+        #expect(homes.map(\.classification.category) == [.instructions])
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["149305041"])
+        let lead = try #require(homes.first)
+        #expect(lead.classification.confidence == .high)
+        #expect(lead.classification.geoKeys == ["france"])
+        #expect(lead.chiefOfMission == Self.dayton)
+        #expect(lead.classification.rationale
+                == "From the Department of State to William L. Dayton, U.S. Envoy Extraordinary and Minister Plenipotentiary to France (1861–1864): an instruction.")
+    }
+
+    /// The same letter through the roster the app ships, rather than a hand-built Dayton: the generator's
+    /// table, the decoder's dates, the altname and the keying all have to agree for this to pass.
+    @Test("The bundled register decides d573: Instructions alone, at Likely, naming Dayton")
+    func bundledRosterDecidesD573() throws {
+        let homes = CentralFilesClassifier.documentHomes(
+            header: Self.d573Header, dateline: Self.d573Dateline, sectionPath: Self.d573Path,
+            index: try index(), roster: .bundled)
+        #expect(homes.map(\.classification.category) == [.instructions])
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["149305041"])
+        let lead = try #require(homes.first)
+        #expect(lead.classification.confidence == .high)
+        #expect(lead.chiefOfMission?.slug == "dayton-william-lewis")
+        #expect(lead.classification.rationale
+                == "From the Department of State to William L. Dayton, U.S. Envoy Extraordinary and Minister Plenipotentiary to France (1861–1864): an instruction.")
+    }
+
+    @Test("A chapter title prints as its country: number, continuation and trailing punctuation removed")
+    func printedCountryTable() {
+        let rows: [(String, String)] = [
+            ("France.", "France"),
+            ("Denmark:", "Denmark"),
+            ("XXIX.—Spain.", "Spain"),
+            ("Austria-Hungary.", "Austria-Hungary"),
+            ("Great Britain (Continued.)", "Great Britain"),
+        ]
+        var checked = 0
+        for (title, expected) in rows {
+            #expect(CentralFilesClassifier.printedCountry(fromChapterTitle: title) == expected, "\(title)")
+            checked += 1
+        }
+        #expect(checked == 5)
+    }
+
+    @Test("frus1863p1/d573: a Department note in the British legation chapter is unchanged by the rule")
+    func legationChapterUnchanged() throws {
+        let adams = Self.chief("adams-charles-francis", surname: "Adams", forename: "Charles Francis",
+                               display: "Charles Francis Adams", territory: "united-kingdom",
+                               first: "1861-03-20", last: "1868-05-13")
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Seward to Lord Lyons .", dateline: "Department of State, Washington, June 18, 1863.",
+            sectionPath: ["Correspondence.", "British legation."], index: try index(),
+            roster: ChiefsOfMissionRoster(chiefsByTerritory: ["united-kingdom": [adams]]))
+        #expect(homes.map(\.classification.category) == [.notesTo])
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["216910345"])
+        #expect(homes.first?.classification.confidence == .medium)
+        #expect(homes.first?.chiefOfMission == nil)
+    }
+
+    /// frus1861/d212. The title classifies to both series but only an Instructions reel covers the date;
+    /// the rule decides, so that one reel is promoted — the draft left these at "Possible".
+    @Test("An Instructions-only home is promoted when the rule decides")
+    func instructionsOnlyHomePromoted() throws {
+        let header = "Mr. Seward to Mr. Marsh ."
+        let dateline = "Department of State , Washington , May 9, 1861 ."
+        let path = ["Instructions and despatches", "Italy"]
+        let control = CentralFilesClassifier.documentHomes(header: header, dateline: dateline, sectionPath: path,
+                                                           index: try index(), roster: .empty)
+        #expect(control.map(\.classification.category) == [.instructions], "fixture guard: one reel, Instructions")
+        #expect(control.first?.classification.confidence == .medium)
+
+        let homes = CentralFilesClassifier.documentHomes(
+            header: header, dateline: dateline, sectionPath: path, index: try index(),
+            roster: ChiefsOfMissionRoster(chiefsByTerritory: ["italy": [Self.marsh]]))
+        #expect(homes.map(\.classification.category) == [.instructions])
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["149319723"])
+        #expect(homes.first?.classification.confidence == .high)
+        #expect(homes.first?.chiefOfMission == Self.marsh)
+    }
+
+    /// frus1861/d119. The rule decides this letter is an instruction, but the only reel covering the date is
+    /// Notes to Foreign Missions. Removing it would leave "no match", which is false; it stays at Possible (D2).
+    @Test("A Notes-to-only home is kept at Possible even when the rule decides")
+    func notesToOnlyHomeKept() throws {
+        let header = "Mr. Seward to Mr. Dayton ."
+        let dateline = "Department of State , Washington , April 22, 1861 ."
+        #expect(Self.daytonRoster.decide(header: header, dateline: dateline, geoKeys: ["france"]) == Self.dayton,
+                "fixture guard: the rule must decide, or keeping the reel proves nothing")
+        let homes = CentralFilesClassifier.documentHomes(
+            header: header, dateline: dateline, sectionPath: ["Instructions and despatches", "France"],
+            index: try index(), roster: Self.daytonRoster)
+        #expect(homes.map(\.classification.category) == [.notesTo])
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["216905138"])
+        #expect(homes.first?.classification.confidence == .medium)
+        #expect(homes.first?.chiefOfMission == nil)
+    }
+
+    // MARK: Uniqueness
+
+    /// The register's one same-surname pair at one post: Thomas Corwin leaves Mexico on 1864-04-27, and
+    /// William H. Corwin is chargé from April 1864. The date is synthetic; the pair is real.
+    @Test("Two register people with the header's surname at the post refuse, and both reels stay")
+    func corwinCollisionKeepsBoth() throws {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["mexico": [Self.thomasCorwin, Self.williamCorwin]])
+        let dateline = "Department of State, Washington, April 20, 1864."
+        #expect(roster.decide(header: "Mr. Seward to Mr. Corwin .", dateline: dateline, geoKeys: ["mexico"]) == nil)
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Seward to Mr. Corwin .", dateline: dateline, sectionPath: ["Mexico."],
+            index: try index(), roster: roster)
+        #expect(homes.map(\.classification.category) == [.instructions, .notesTo])
+        #expect(homes.allSatisfy { $0.classification.confidence == .medium })
+    }
+
+    @Test("The same roster decides a date only Thomas Corwin covers")
+    func corwinSingleTenureDecides() throws {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["mexico": [Self.thomasCorwin, Self.williamCorwin]])
+        let dateline = "Department of State, Washington, June 1, 1863."
+        #expect(roster.decide(header: "Mr. Seward to Mr. Corwin .", dateline: dateline, geoKeys: ["mexico"])
+                == Self.thomasCorwin)
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Seward to Mr. Corwin .", dateline: dateline, sectionPath: ["Mexico."],
+            index: try index(), roster: roster)
+        #expect(homes.map(\.classification.category) == [.instructions])
+        #expect(homes.first?.classification.confidence == .high)
+    }
+
+    /// Two chiefs of DIFFERENT surnames at the post on the date — a turnover. The rule counts people
+    /// matching the NAME, so this decides; counting chiefs at post would refuse 290 real documents.
+    @Test("A turnover overlap still decides for the one chief the header names")
+    func turnoverOverlapDecides() {
+        let successor = Self.chief("fixture-successor", surname: "Successor", forename: "Test", display: "Test Successor",
+                                   territory: "france", first: "1864-11-15", last: "1866-12-23")
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["france": [Self.dayton, successor]])
+        #expect(roster.decide(header: "Mr. Seward to Mr. Dayton .",
+                              dateline: "Department of State, Washington, November 20, 1864.",
+                              geoKeys: ["france"]) == Self.dayton)
+    }
+
+    // MARK: Refusals, one condition each
+
+    /// frus1899/d292: Hay writes to "Mr. Tower" in the Great Britain chapter, while the register's
+    /// Charlemagne Tower is at St. Petersburg. Only the country differs from the control.
+    @Test("A U.S. chief at another post refuses; the same letter under his own post decides")
+    func towerOtherCountryKeepsBoth() throws {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["russia": [Self.tower]])
+        let header = "Mr. Hay to Mr. Tower ."
+        let dateline = "Department of State , Washington , September 6, 1899 ."
+        #expect(roster.decide(header: header, dateline: dateline, geoKeys: ["russia"]) == Self.tower, "control")
+        #expect(roster.decide(header: header, dateline: dateline, geoKeys: ["great britain"]) == nil)
+        let homes = CentralFilesClassifier.documentHomes(header: header, dateline: dateline, sectionPath: ["Great Britain"],
+                                                         index: try index(), roster: roster)
+        #expect(homes.map(\.classification.category) == [.instructions, .notesTo])
+        #expect(homes.allSatisfy { $0.classification.confidence == .medium })
+    }
+
+    /// frus1886/d337, "No. 333. Mr. Bayard to M. Jackson .". Henry R. Jackson WAS at post (1885-03-23 …
+    /// 1886-10-07), so the name and the date match and only the honorific refuses — which a Lord Lyons
+    /// fixture, having no roster match at all, could never show. It pins a known cost: `M.` is OCR here.
+    @Test("A foreign honorific refuses even when the name and tenure match")
+    func foreignHonorificKeepsBoth() throws {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["mexico": [Self.jackson]])
+        let dateline = "Department of State, Washington, August 14, 1886."
+        #expect(roster.decide(header: "No. 333. Mr. Bayard to Mr. Jackson .", dateline: dateline,
+                              geoKeys: ["mexico"]) == Self.jackson, "control")
+        #expect(roster.decide(header: "No. 333. Mr. Bayard to M. Jackson .", dateline: dateline, geoKeys: ["mexico"]) == nil)
+        let homes = CentralFilesClassifier.documentHomes(header: "No. 333. Mr. Bayard to M. Jackson .", dateline: dateline,
+                                                         sectionPath: ["Mexico"], index: try index(), roster: roster)
+        #expect(homes.map(\.classification.category) == [.instructions, .notesTo])
+        #expect(homes.allSatisfy { $0.classification.confidence == .medium })
+    }
+
+    @Test("A foreign sender refuses under an ordinary Department dateline")
+    func foreignSenderRefused() {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["paraguay": [Self.washburn]])
+        let dateline = "Department of State, Washington, March 27, 1868."
+        #expect(roster.decide(header: "Mr. Seward to Mr. Washburn .", dateline: dateline, geoKeys: ["paraguay"])
+                == Self.washburn, "control")
+        #expect(roster.decide(header: "Señor Benitez to Mr. Washburn .", dateline: dateline, geoKeys: ["paraguay"]) == nil)
+    }
+
+    /// Paraguay's foreign ministry styled itself "Department of State and Foreign Relations", which the
+    /// classifier reads as Department outbound. `frus1868p2/d409` has a foreign sender as well, so it
+    /// would refuse for two reasons and test neither; this fixture keeps the U.S. sender.
+    @Test("A foreign ministry's 'Department of State and Foreign …' dateline refuses")
+    func foreignMinistryDatelineRefused() {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["paraguay": [Self.washburn]])
+        #expect(roster.decide(header: "Mr. Seward to Mr. Washburn .",
+                              dateline: "Department of State, Washington, March 27, 1868.",
+                              geoKeys: ["paraguay"]) == Self.washburn, "control")
+        #expect(roster.decide(header: "Mr. Seward to Mr. Washburn .",
+                              dateline: "Department of State and Foreign Relations, Luque, March 27, 1868.",
+                              geoKeys: ["paraguay"]) == nil)
+        #expect(roster.decide(header: "Mr. Seward to Mr. Washburn .",
+                              dateline: "Department of State for Foreign Affairs, Lisbon, March 27, 1868.",
+                              geoKeys: ["paraguay"]) == nil)
+    }
+
+    // MARK: Dates
+
+    /// Dayton died at post on 1864-12-01; Seward's letters to him kept coming for days after. Ninety days
+    /// past the last day is 1865-03-01.
+    @Test("Ninety days of grace after the last day, and not one more")
+    func graceAfterEnd() {
+        func decides(_ date: String) -> Bool {
+            Self.daytonRoster.decide(header: "Mr. Seward to Mr. Dayton .",
+                                     dateline: "Department of State, Washington, \(date).",
+                                     geoKeys: ["france"]) != nil
+        }
+        #expect(decides("December 5, 1864"))
+        #expect(decides("March 1, 1865"), "day 90")
+        #expect(!decides("March 2, 1865"), "day 91")
+        #expect(!decides("March 15, 1865"))
+        #expect(decides("March 18, 1861"), "the first day is inclusive")
+    }
+
+    /// Bigelow headed the Paris legation before his 1865-03-15 appointment; the register does not make him
+    /// its chief then, and the rule gives no grace before the first day.
+    @Test("No grace before the first day")
+    func noGraceBeforeStart() {
+        let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["france": [Self.bigelow]])
+        #expect(roster.decide(header: "Mr. Seward to Mr. Bigelow .",
+                              dateline: "Department of State, Washington, March 15, 1865.",
+                              geoKeys: ["france"]) == Self.bigelow, "control: the first day decides")
+        #expect(roster.decide(header: "Mr. Seward to Mr. Bigelow .",
+                              dateline: "Department of State, Washington, March 14, 1865.",
+                              geoKeys: ["france"]) == nil)
+        #expect(roster.decide(header: "Mr. Seward to Mr. Bigelow .",
+                              dateline: "Department of State, Washington, January 10, 1865.",
+                              geoKeys: ["france"]) == nil)
+    }
+
+    /// The rule drops only the Notes-to-Foreign-Missions home. A header that mentions a consul adds the
+    /// consular pair, and whatever of it resolves must survive a decision untouched. The header names the
+    /// minister and routes the letter through a consul — the corpus's shape (`to Mr. Conger, via Consul
+    /// Fowler`) — so the promotion it shows is one the rule should make. (Consular
+    /// Instructions end in 1834 in the bundled index, so at this date only the Notes-to-Foreign-Consuls
+    /// run resolves — roll 40038220.) The path is `France.` alone: a date-only consular run resolves
+    /// under any title, so behind `Supplement.` the title loop would stop before reaching the country.
+    @Test("A decided letter keeps its consular candidates exactly as they were")
+    func consularPairUntouched() throws {
+        let header = "Mr. Seward to Mr. Dayton, through the consul at Havre."
+        let control = CentralFilesClassifier.documentHomes(
+            header: header, dateline: Self.d573Dateline, sectionPath: ["France."], index: try index(), roster: .empty)
+        #expect(control.map(\.classification.category) == [.instructions, .notesTo, .notesToForeignConsuls],
+                "fixture guard: the consular run must resolve beside the diplomatic pair")
+
+        let homes = CentralFilesClassifier.documentHomes(
+            header: header, dateline: Self.d573Dateline, sectionPath: ["France."], index: try index(),
+            roster: Self.daytonRoster)
+        #expect(homes.map(\.classification.category) == [.instructions, .notesToForeignConsuls])
+        #expect(homes.first?.classification.confidence == .high)
+        let consular = try #require(homes.last)
+        let controlConsular = try #require(control.last)
+        #expect(consular == controlConsular)
+        #expect(consular.classification.confidence == .medium && consular.chiefOfMission == nil)
+        #expect(consular.rolls.map(\.naId) == ["40038220"])
+    }
+
+    @Test("A chief with no last day never matches, and neither does a dateline with no date")
+    func openTenureAndUndatedRefuse() {
+        let open = Self.chief("fixture-open", surname: "Dayton", forename: "William Lewis", display: "William L. Dayton",
+                              territory: "france", first: "1861-03-18", last: nil)
+        #expect(ChiefsOfMissionRoster(chiefsByTerritory: ["france": [open]])
+            .decide(header: "Mr. Seward to Mr. Dayton .", dateline: "Department of State, Washington, November 10, 1863.",
+                    geoKeys: ["france"]) == nil)
+        #expect(Self.daytonRoster.decide(header: "Mr. Seward to Mr. Dayton .", dateline: "Department of State, Washington.",
+                                         geoKeys: ["france"]) == nil)
+    }
+}
+
+// MARK: - Source Explorer's shared evaluation (2026-09-13)
+
+/// The gate, the outcome states, the serial label and the year both Source Explorer views now take from
+/// `CentralFilesClassifier` rather than deciding each for themselves.
+///
+/// Version history:
+///   1.0 — 2026-09-13: initial implementation
+struct SourceExplorerEvaluationTests {
+
+    private static let d573Facts = IndexingPipeline.SourceExplorerFacts(
+        header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline, despatchSerial: "428")
+
+    /// The d573 History route — no dateline, no year — with every gate condition passing unless overridden.
+    private static func input(facts: SourceExplorerFactsLookup = .found(d573Facts), routeYear: Int? = nil,
+                              volumeId: String? = "frus1863p2", documentId: String? = "d573",
+                              pipeline: Bool = true, index: Bool = true,
+                              path: CountrySeriesSectionPathRead = .path(AddresseeRuleTests.d573Path)) -> CountrySeriesGateInput {
+        CountrySeriesGateInput(
+            routeYear: routeYear, volumeId: volumeId, documentId: documentId, pipelineAvailable: pipeline,
+            facts: facts,
+            context: SourceExplorerDocumentContext.hydrate(routeHeader: documentId, routeDateline: nil,
+                                                           routeYear: routeYear, documentId: documentId,
+                                                           indexed: facts.facts),
+            centralFilesIndexAvailable: index, sectionPath: path)
+    }
+
+    private static func facts(dateline: String?) -> SourceExplorerFactsLookup {
+        .found(IndexingPipeline.SourceExplorerFacts(header: "Mr. Seward to Mr. Dayton.", dateline: dateline,
+                                                    despatchSerial: nil))
+    }
+
+    // MARK: The gate
+
+    @Test("Each gate refusal is reached by breaking exactly one condition")
+    func gateReasons() {
+        #expect(CentralFilesClassifier.gate(Self.input()) == nil, "every condition holds")
+        #expect(CentralFilesClassifier.gate(Self.input(path: .unread)) == nil, "an unread structure passes")
+        #expect(CentralFilesClassifier.gate(Self.input(routeYear: 1905)) == nil, "1905 is pre-1906")
+
+        let cases: [(CountrySeriesGateInput, CountrySeriesOutcome)] = [
+            (Self.input(routeYear: 1906), .notApplicable),
+            (Self.input(volumeId: nil), .notChecked(.noDocumentIdentity)),
+            (Self.input(documentId: nil), .notChecked(.noDocumentIdentity)),
+            (Self.input(pipeline: false), .notChecked(.indexStarting)),
+            (Self.input(facts: .failed), .notChecked(.indexReadFailed)),
+            (Self.input(facts: .missing), .notChecked(.documentNotIndexed)),
+            (Self.input(facts: Self.facts(dateline: nil)), .notChecked(.noDateline)),
+            (Self.input(facts: Self.facts(dateline: "Department of State, Washington.")), .notChecked(.noYear)),
+            (Self.input(facts: Self.facts(dateline: "Department of State, Washington, March 1, 1906.")), .notApplicable),
+            (Self.input(index: false), .notChecked(.centralFilesIndexMissing)),
+            (Self.input(path: .noStructure), .notChecked(.noVolumeStructure)),
+            (Self.input(path: .readFailed), .notChecked(.indexReadFailed)),
+            (Self.input(path: .path([])), .notChecked(.documentNotInStructure)),
+        ]
+        var reasons = Set<String>()
+        for (input, expected) in cases {
+            let outcome = CentralFilesClassifier.gate(input)
+            #expect(outcome == expected, "\(input) → \(String(describing: outcome))")
+            #expect(outcome != .noMatch)
+            if case .notChecked(let reason) = outcome { reasons.insert("\(reason)") }
+        }
+        #expect(reasons == Set(CountrySeriesOutcome.NotCheckedReason.allCases.map { "\($0)" }),
+                "the gate reaches \(reasons.count) of the \(CountrySeriesOutcome.NotCheckedReason.allCases.count) reasons")
+    }
+
+    // MARK: evaluate, through a real index
+
+    /// A volume shaped like `frus1863p2`: `d573` inside a `France.` chapter with its printed serial, and
+    /// `d1` with no dateline, indexed through the real pipeline — so `evaluate` reads the row and the
+    /// volume structure the app reads.
+    private static func indexedD573Volume() async throws -> (dir: URL, db: URL, pipeline: IndexingPipeline) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSEvaluate-\(UUID().uuidString)", isDirectory: true)
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let xml = """
+        <?xml version="1.0"?>
+        <TEI><text><body>
+        <div type="chapter" xml:id="ch1">
+          <head>France.</head>
+          <div type="document" xml:id="d573">
+            <head>Mr. Seward to Mr. Dayton.</head>
+            <opener><dateline>Department of State , Washington , November 10, 1863.</dateline>
+              <seg rendition="#left">No. 428.]</seg></opener>
+            <p>Sir: Your despatch has been received.</p>
+          </div>
+          <div type="document" xml:id="d1">
+            <head>A memorandum</head>
+            <p>This document prints no dateline.</p>
+          </div>
+        </div>
+        </body></text></TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: volDir.appendingPathComponent("vol1.xml"))
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: fts5, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        try await pipeline.indexVolume("vol1")
+        return (dir, dbURL, pipeline)
+    }
+
+    /// The route History, the Research tab and a restored window take: the xml:id as the header, no dateline.
+    private static func route(_ documentId: String = "d573", year: Int? = nil) -> CountrySeriesRoute {
+        CountrySeriesRoute(header: documentId, dateline: nil, year: year, volumeId: "vol1", documentId: documentId)
+    }
+
+    @Test("evaluate: the Research-tab route to d573 hydrates from the index and resolves to Instructions alone")
+    func evaluateResolvesD573FromTheIndex() async throws {
+        let fixture = try await Self.indexedD573Volume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        let result = await CentralFilesClassifier.evaluate(
+            route: Self.route(), pipeline: fixture.pipeline, index: index,
+            roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+        #expect(result.context.header.contains("Mr. Seward to Mr. Dayton"), "not the route's xml:id: \(result.context.header)")
+        #expect(result.context.dateline?.contains("November 10, 1863") == true)
+        #expect(result.context.year == 1863)
+        #expect(result.context.despatchSerial == "428")
+        let homes = result.outcome.homes
+        #expect(homes.map(\.classification.category) == [.instructions], "\(result.outcome)")
+        #expect(homes.flatMap { $0.rolls.map(\.naId) } == ["149305041"])
+        #expect(homes.first?.classification.confidence == .high)
+        #expect(homes.first?.chiefOfMission == AddresseeRuleTests.dayton)
+        #expect(result.outcome == .resolved(homes, serialLabel: .instruction))
+    }
+
+    @Test("evaluate with no roster reads the bundled register, which names Dayton for d573")
+    func evaluateDefaultsToTheBundledRoster() async throws {
+        let fixture = try await Self.indexedD573Volume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        let result = await CentralFilesClassifier.evaluate(
+            route: Self.route(), pipeline: fixture.pipeline, index: index,
+            astCache: DocumentASTCache(), volumeURL: nil)
+        let homes = result.outcome.homes
+        #expect(homes.map(\.classification.category) == [.instructions], "\(result.outcome)")
+        #expect(homes.first?.chiefOfMission?.slug == "dayton-william-lewis")
+        #expect(homes.first?.classification.rationale.contains("William L. Dayton") == true)
+    }
+
+    /// Each refusal `evaluate` reaches from real reads, not from a hand-built gate input. The last three
+    /// alter the fixture's database in place, so they run last: an emptied structure table, no structure
+    /// table, then no document table.
+    @Test("evaluate: no row, no pipeline, a later year, no dateline, no structure, and failed structure and row reads")
+    func evaluateRefusals() async throws {
+        let fixture = try await Self.indexedD573Volume()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let index = try #require(CentralFilesIndexStore.shared)
+        func outcome(_ route: CountrySeriesRoute, pipeline: IndexingPipeline?) async -> CountrySeriesOutcome {
+            await CentralFilesClassifier.evaluate(route: route, pipeline: pipeline, index: index,
+                                                  roster: AddresseeRuleTests.daytonRoster,
+                                                  astCache: DocumentASTCache(), volumeURL: nil).outcome
+        }
+        #expect(!(await outcome(Self.route(), pipeline: fixture.pipeline)).homes.isEmpty,
+                "fixture guard: d573 must resolve, or the refusals below prove nothing")
+        #expect(await outcome(Self.route("d999"), pipeline: fixture.pipeline) == .notChecked(.documentNotIndexed))
+        #expect(await outcome(Self.route(), pipeline: nil) == .notChecked(.indexStarting))
+        let later = await CentralFilesClassifier.evaluate(
+            route: Self.route(year: 1908), pipeline: fixture.pipeline, index: index,
+            roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+        #expect(later.outcome == .notApplicable)
+        // Answered before the index read: the route's own xml:id header, not the indexed one. The gate would
+        // return .notApplicable either way, so only the context shows the pipeline was not waited on.
+        #expect(later.context.header == "d573" && later.context.dateline == nil && later.context.year == 1908,
+                "a later year must not wait on the pipeline for a row it never uses: \(later.context)")
+        #expect(await outcome(Self.route("d1"), pipeline: fixture.pipeline) == .notChecked(.noDateline))
+
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(fixture.db.path, &handle) == SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        #expect(sqlite3_exec(handle, "DELETE FROM volume_structures WHERE volume_id = 'vol1'", nil, nil, nil) == SQLITE_OK)
+        #expect(sqlite3_changes(handle) == 1, "the fixture's structure row must be the one removed")
+        #expect(await outcome(Self.route(), pipeline: fixture.pipeline) == .notChecked(.noVolumeStructure))
+        #expect(sqlite3_exec(handle, "DROP TABLE volume_structures", nil, nil, nil) == SQLITE_OK)
+        #expect(await outcome(Self.route(), pipeline: fixture.pipeline) == .notChecked(.indexReadFailed),
+                "a structure read that throws is a read failure, not an absent structure")
+        // Now the row read throws too. The route's own header surviving shows the failure was the row
+        // read's: had it succeeded, the context would carry the indexed header.
+        #expect(sqlite3_exec(handle, "DROP TABLE document_cache", nil, nil, nil) == SQLITE_OK)
+        let failedRow = await CentralFilesClassifier.evaluate(
+            route: Self.route(), pipeline: fixture.pipeline, index: index,
+            roster: AddresseeRuleTests.daytonRoster, astCache: DocumentASTCache(), volumeURL: nil)
+        #expect(failedRow.outcome == .notChecked(.indexReadFailed),
+                "a row read that throws is a read failure, not an unindexed document")
+        #expect(failedRow.context.header == "d573" && failedRow.context.dateline == nil, "\(failedRow.context)")
+    }
+
+    @Test("Every state says something different, and none claims a prediction was attempted")
+    func notCheckedMessagesDistinct() {
+        let reasons = CountrySeriesOutcome.NotCheckedReason.allCases
+        #expect(reasons.count == 9)
+        let messages = reasons.map(\.message) + [CountrySeriesOutcome.loadingMessage, CountrySeriesOutcome.notApplicableMessage]
+        #expect(Set(messages).count == messages.count, "two states share a sentence")
+        for message in messages {
+            #expect(!message.isEmpty)
+            #expect(!message.contains("couldn’t be predicted") && !message.contains("couldn't be predicted"),
+                    "only a check that ran and found nothing may say that: \(message)")
+        }
+        // Indexing a volume does not change the load key, so this state must not promise to fill in.
+        let notIndexed = CountrySeriesOutcome.NotCheckedReason.documentNotIndexed.message
+        #expect(!notIndexed.contains("fills in") && !notIndexed.contains("when it is ready"))
+    }
+
+    // MARK: The year
+
+    @Test("documentYear(fromDateline:) agrees with the platform's extractYear")
+    @MainActor
+    func documentYearParity() {
+        func platform(_ dateline: String?) -> Int? {
+            #if os(iOS)
+            return DocumentView.extractYear(from: dateline)
+            #elseif os(macOS)
+            return MacDocumentView.extractYear(from: dateline)
+            #else
+            return nil
+            #endif
+        }
+        let datelines: [String?] = [
+            "Department of State, Washington, November 30, 1862.", "Department of State , Washington , November 10, 1863.",
+            "Legation of the United States, Berne, September 28, 1875.", "American Legation, Tokyo, March 14, 1905.",
+            "Washington, January 1, 1906.", "Washington, January 1, 2029.", "Meeting held in room 2030.",
+            "An antique note dated 1799.", "Department of State, Washington.",
+            "Ref. telegram No. 1805. Tokyo, March 14, 1905.", "Executive Mansion , Washington, D. C. , 1861 .", nil,
+        ]
+        var checked = 0
+        for dateline in datelines {
+            #expect(CentralFilesClassifier.documentYear(fromDateline: dateline) == platform(dateline), "\(String(describing: dateline))")
+            checked += 1
+        }
+        #expect(checked == 12)
+        #expect(CentralFilesClassifier.documentYear(fromDateline: "Executive Mansion , Washington, D. C. , 1861 .") == 1861,
+                "fixture guard: the loose scan must be exercised")
+    }
+
+    // MARK: The serial label
+
+    /// An undecided Department letter lists both reels at Possible and may be a note, so its serial must not be
+    /// called an instruction's. frus1895p1/d458, "Mr. Olney to Baron Thielmann." (No. 42), went to the German
+    /// ambassador; d573 with no roster is the ordinary undecided pair, and the same letter decided is the control.
+    @Test("An undecided Instructions / Notes-to pair reads plain No.; the rule's decision makes it Instruction No.")
+    func serialLabelUndecidedPairIsNeutral() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let thielmann = CentralFilesClassifier.documentHomes(
+            header: "Mr. Olney to Baron Thielmann.", dateline: "Department of State, Washington, September 26, 1895.",
+            sectionPath: ["Germany"], index: index, roster: .bundled)
+        #expect(thielmann.map(\.classification.category) == [.instructions, .notesTo],
+                "fixture guard: \(thielmann.map(\.classification.category))")
+        #expect(CentralFilesSerialLabel(homes: thielmann) == .neutral)
+        let undecided = CentralFilesClassifier.documentHomes(
+            header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: AddresseeRuleTests.d573Path, index: index, roster: .empty)
+        #expect(undecided.map(\.classification.category) == [.instructions, .notesTo], "fixture guard")
+        #expect(CentralFilesSerialLabel(homes: undecided) == .neutral)
+        let decided = CentralFilesClassifier.documentHomes(
+            header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: AddresseeRuleTests.d573Path, index: index, roster: AddresseeRuleTests.daytonRoster)
+        #expect(CentralFilesSerialLabel(homes: decided) == .instruction, "control: the same letter, decided")
+    }
+
+    /// The label reads the FIRST document home. A decided letter routed through a consul keeps its consular note
+    /// run after the promoted Instructions reel, so reading the last home would call the serial a note's.
+    @Test("The label follows the first document home, not the last")
+    func serialLabelFollowsTheLeadHome() throws {
+        let index = try #require(CentralFilesIndexStore.shared)
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Seward to Mr. Dayton, through the consul at Havre.", dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: ["France."], index: index, roster: AddresseeRuleTests.daytonRoster)
+        #expect(homes.map(\.classification.category) == [.instructions, .notesToForeignConsuls],
+                "fixture guard: \(homes.map(\.classification.category))")
+        #expect(CentralFilesSerialLabel(homes: homes) == .instruction)
+    }
+
+    @Test("Each instruction series reads plain No. beside its own notes twin, and only its own")
+    func serialLabelTwinTable() {
+        func homes(_ categories: [CentralFilesSeriesCategory]) -> [CentralFilesResolution] {
+            categories.map {
+                CentralFilesResolution(classification: CentralFilesClassification(
+                    category: $0, geoKeys: [], confidence: .medium, rationale: ""), rolls: [])
+            }
+        }
+        let rows: [([CentralFilesSeriesCategory], CentralFilesSerialLabel)] = [
+            ([.instructions], .instruction),
+            ([.instructions, .notesTo], .neutral),
+            ([.instructions, .notesToForeignConsuls], .instruction),
+            ([.consularInstructions], .instruction),
+            ([.consularInstructions, .notesToForeignConsuls], .neutral),
+            ([.consularInstructions, .notesTo], .instruction),
+            ([.specialAgentsInstructions, .notesTo], .instruction),
+        ]
+        var checked = 0
+        for (categories, expected) in rows {
+            #expect(CentralFilesSerialLabel(homes: homes(categories)) == expected, "\(categories)")
+            checked += 1
+        }
+        #expect(checked == 7)
+    }
+
+    @Test("d573's serial is an instruction's, not the post's")
+    func serialLabelD573IsInstruction() throws {
+        let homes = CentralFilesClassifier.documentHomes(
+            header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: AddresseeRuleTests.d573Path, index: try #require(CentralFilesIndexStore.shared),
+            roster: AddresseeRuleTests.daytonRoster)
+        let label = CentralFilesSerialLabel(homes: homes)
+        #expect(label == .instruction)
+        #expect(label.title(serial: "428") == "Instruction No. 428")
+        #expect(!label.caption.contains("post’s own"))
+        #expect(label.title(serial: "4 (Greek Series)") == "Instruction No. 4 (Greek Series)")
+    }
+
+    @Test("A despatch from the legation keeps Despatch No.")
+    func serialLabelDespatch() throws {
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Dayton to Mr. Seward.", dateline: "Paris, December 11, 1863.", sectionPath: ["France."],
+            index: try #require(CentralFilesIndexStore.shared), roster: .empty)
+        #expect(homes.map(\.classification.category) == [.despatches], "fixture guard")
+        let label = CentralFilesSerialLabel(homes: homes)
+        #expect(label == .despatch)
+        #expect(label.title(serial: "74") == "Despatch No. 74")
+        #expect(label.caption.contains("post’s own serial"))
+    }
+
+    @Test("A note leads to a neutral No.")
+    func serialLabelNotesNeutral() throws {
+        let homes = CentralFilesClassifier.documentHomes(
+            header: "Mr. Seward to Lord Lyons .", dateline: "Department of State, Washington, June 18, 1863.",
+            sectionPath: ["Correspondence.", "British legation."],
+            index: try #require(CentralFilesIndexStore.shared), roster: .empty)
+        #expect(homes.map(\.classification.category) == [.notesTo], "fixture guard")
+        let label = CentralFilesSerialLabel(homes: homes)
+        #expect(label == .neutral)
+        #expect(label.title(serial: "12") == "No. 12")
+        #expect(Set([label.caption, CentralFilesSerialLabel.instruction.caption, CentralFilesSerialLabel.despatch.caption]).count == 3)
+    }
+
+    /// An enclosure's series can run the other way from the document's — a consul's despatch enclosed in
+    /// an instruction — so enclosure homes alone name no direction for the document's own serial.
+    @Test("Only enclosure homes → neutral")
+    func serialLabelEnclosureOnlyNeutral() {
+        let enclosure = CentralFilesResolution(
+            classification: CentralFilesClassification(category: .consularDespatches, geoKeys: ["havana"],
+                                                       confidence: .high, rationale: "test"),
+            rolls: [], part: .enclosure(label: "1"))
+        #expect(CentralFilesSerialLabel(homes: [enclosure]) == .neutral)
+        #expect(CentralFilesSerialLabel(homes: []) == .neutral)
+    }
+
+    @Test("The document's home decides even when an enclosure's comes first")
+    func serialLabelIgnoresEnclosures() throws {
+        let enclosure = CentralFilesResolution(
+            classification: CentralFilesClassification(category: .consularDespatches, geoKeys: ["havana"],
+                                                       confidence: .high, rationale: "test"),
+            rolls: [], part: .enclosure(label: "1"))
+        let document = CentralFilesClassifier.documentHomes(
+            header: AddresseeRuleTests.d573Header, dateline: AddresseeRuleTests.d573Dateline,
+            sectionPath: AddresseeRuleTests.d573Path, index: try #require(CentralFilesIndexStore.shared),
+            roster: AddresseeRuleTests.daytonRoster)
+        #expect(!document.isEmpty, "fixture guard")
+        #expect(CentralFilesSerialLabel(homes: [enclosure] + document) == .instruction)
     }
 }
