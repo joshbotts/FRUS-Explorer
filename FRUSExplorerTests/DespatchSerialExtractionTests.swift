@@ -344,7 +344,13 @@ struct DespatchSerialExtractionTests {
         #expect(sqlite3_open(fixture.db.path, &handle) == SQLITE_OK)
         #expect(sqlite3_exec(handle, "DROP TABLE document_cache", nil, nil, nil) == SQLITE_OK)
         sqlite3_close(handle)
-        await #expect(throws: (any Error).self) {
+        // The table went through another connection, so the pipeline's first read prepares against its cached
+        // schema and fails at the step; that failure reloads the schema, so the second read fails at the
+        // prepare. Both halves must throw: a mutation swallowing the prepare's error survived one read.
+        await #expect(throws: (any Error).self, "the read that fails at the step") {
+            _ = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573")
+        }
+        await #expect(throws: (any Error).self, "the read that fails at the prepare") {
             _ = try await fixture.pipeline.sourceExplorerFacts(volumeId: "vol1", documentId: "d573")
         }
     }
