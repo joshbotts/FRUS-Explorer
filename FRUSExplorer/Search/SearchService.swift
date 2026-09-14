@@ -50,6 +50,12 @@ import Foundation
 ///          expression and the exact-word terms come from it. The typed text used to be
 ///          rendered alone and handed to `FTS5Query` as a string, which discarded a typed
 ///          exclusion beside a restored phrase or prefix. RESULTS MOVE for those searches.
+///   2.2 — #1297 fixes review: `makeMatchExpressions` runs no scope for a query the unscoped
+///          parse refuses. `exactTerms(from:)` and the Query Inspector read that parse, so a
+///          summaries-only or notes-only search could run a single-column render beside the
+///          refusal with its `=` post-filter silently empty — `=cold "korea" -korea OR -korea`
+///          ran as `{summary_text}:"cold" AND "korea" NOT {summary_text}:"korea"`, because a
+///          typed phrase spans every column. It now throws `FTS5Error.emptyQuery` in every scope.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -298,8 +304,13 @@ public actor SearchService {
             corpus = renderExpression(from: parameters, columns: nil)
         }
 
+        // The unscoped parse is the one the exact-word post-filter and the Query Inspector read, so a query it
+        // refuses runs in no scope. A single-column parse can still render one: a typed phrase spans every column,
+        // so a scoped exclusion of the same word cannot be shown to remove it, and the search would run without the
+        // exact terms it marked (#1297).
+        let unscopedRenders = Self.parsedQuery(for: parameters).expression != nil
         var userContent: String? = nil
-        if parameters.includeSummaries || parameters.includeNotes {
+        if unscopedRenders, parameters.includeSummaries || parameters.includeNotes {
             var columns: [FTS5Column]? = nil
             if !(parameters.includeSummaries && parameters.includeNotes) {
                 columns = parameters.includeSummaries ? [.summaryText] : [.noteText]
@@ -418,7 +429,9 @@ public actor SearchService {
     ///
     /// Read from the same combined parse that builds the MATCH expression,
     /// `parsedQuery(for:columnPrefix:)`, so the two can never disagree about which terms were
-    /// marked. Only typed words carry the mark; the structured fields never add one.
+    /// marked. This reads the unscoped parse, and `makeMatchExpressions` runs no scope that parse
+    /// refuses, so no search runs whose marked terms this cannot read. Only typed words carry the
+    /// mark; the structured fields never add one.
     static func exactTerms(from parameters: SearchParameters) -> [String] {
         parsedQuery(for: parameters).exactTerms
     }

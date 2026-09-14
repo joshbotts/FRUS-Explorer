@@ -743,6 +743,35 @@ struct SearchParametersTests {
                     == ParsedQuery(expression: nil, exactTerms: []))
         }
     }
+
+    /// The unscoped parse decides whether a query runs in any scope, because the exact-word post-filter and the Query
+    /// Inspector read it. Both queries here are refused by it and rendered in a single-column scope: a demoted `NOT`
+    /// beside `-not` until parser 6.2 scoped the demoted word, and a typed phrase beside the excluded word, which spans
+    /// every column and so is never shown removed by a scoped exclusion. Each marks `=cold`, whose post-filter ran empty.
+    @Test("A query the unscoped parse refuses throws emptyQuery in every scope",
+          arguments: ["( =cold NOT OR -korea ) -not", "=cold \"korea\" -korea OR -korea"])
+    func unscopedRefusalHoldsInEveryScope(keywords: String) async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            #expect(SearchService.parsedQuery(for: SearchParameters(keywords: keywords))
+                    == ParsedQuery(expression: nil, exactTerms: []))
+            let scopes = [(true, true, true), (true, true, false), (true, false, true), (false, true, true),
+                          (false, true, false), (false, false, true)]
+            for (documentText, summaries, notes) in scopes {
+                var params = SearchParameters(keywords: keywords)
+                params.includeDocumentText = documentText
+                params.includeSummaries = summaries
+                params.includeNotes = notes
+                do {
+                    let pair = try await service.makeMatchExpressions(from: params)
+                    Issue.record("Expected emptyQuery with text \(documentText), summaries \(summaries), notes \(notes); got \(String(describing: pair))")
+                } catch FTS5Error.emptyQuery {
+                    // expected
+                }
+            }
+        }
+    }
 }
 
 // MARK: - ConcurrencyTest

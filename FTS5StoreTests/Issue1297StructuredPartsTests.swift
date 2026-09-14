@@ -223,6 +223,9 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///   1.1 — #1297 fixes: parser 6.1's refusal of an approximation that provably matches nothing — eleven named
 ///          cases, the oracle's proof mirror, and combinedSweep's count against a universal corpus; the exact-term
 ///          sweep over `=cold` and `-=cold`, because combinedSweep's alphabet carries no `=`
+///   1.2 — #1297 fixes review: parser 6.2 scopes a demoted operator word, so `(NOT OR -korea) -not` is refused in both
+///          scopes and the scope guard is now the typed phrase "korea", which still spans every column;
+///          `refusalAcrossScopesSweep`; and `combinedSweep` fails a refusal that depends on the column prefix
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -425,8 +428,12 @@ struct Issue1297StructuredPartsTests {
                                     expression: nil, meaning: N(k)),
             // Nor need it be approximated itself: the alternative kept here is an exact render, and matches nothing.
             Issue1297StructuredCase(typed: "korea -korea OR -korea", expression: nil, meaning: N(k)),
-            // The unscoped form of the scope guard below: the demoted word "not" is removed by `-not`.
+            // The demoted word "not" is removed by `-not` in either scope. Since parser 6.2 a demoted operator word
+            // carries the column prefix like any other typed word; before, it spanned every column, and the scoped
+            // query ran `("not") NOT {body_text}:"not"` beside this refusal.
             Issue1297StructuredCase(typed: "(NOT OR -korea) -not", expression: nil, meaning: N(k).subtracting(notWord)),
+            Issue1297StructuredCase(typed: "(NOT OR -korea) -not", scoped: true, expression: nil,
+                                    meaning: N(k).subtracting(notWord)),
             // Guards. An exact render is never refused, even one that matches nothing, because it is what was typed...
             Issue1297StructuredCase(typed: "korea -korea", expression: "\"korea\" NOT \"korea\"", meaning: [],
                                     operands: [korea, notKorea]),
@@ -434,13 +441,16 @@ struct Issue1297StructuredPartsTests {
             Issue1297StructuredCase(typed: "cold OR -(war -korea) -korea", expression: "\"cold\" OR \"korea\" NOT \"korea\"",
                                     meaning: c.union(N(w).intersection(N(k))), approximation: c,
                                     operands: [cold, korea, notKorea], dropped: [notWar], isApproximate: true),
-            // ...nor one whose anchor the exclusion's scope does not cover. A demoted operator word carries no column
-            // prefix, so a scoped `-not` cannot be shown to remove it — even though this table, whose only header is a
-            // constant, happens to hold no "not" outside the body.
-            Issue1297StructuredCase(typed: "(NOT OR -korea) -not", scoped: true,
-                                    expression: "(\"not\") NOT {body_text}:\"not\"",
-                                    meaning: N(k).subtracting(notWord), approximation: [],
-                                    operands: [typedOperand("not", "NOT {body_text}:\"not\"", .word, negated: true)],
+            // ...nor one whose anchor the exclusion's scope does not cover. A phrase carries no column prefix, so a
+            // scoped `-korea` cannot be shown to remove the phrase "korea" — even though this table, whose only header
+            // is a constant, happens to hold no korea outside the body. Unscoped, the same query is refused, and
+            // `SearchService` refuses it in every scope, because its exact terms and Query Inspector read that parse.
+            Issue1297StructuredCase(typed: "\"korea\" -korea OR -korea", expression: nil, meaning: N(k)),
+            Issue1297StructuredCase(typed: "\"korea\" -korea OR -korea", scoped: true,
+                                    expression: "\"korea\" NOT {body_text}:\"korea\"",
+                                    meaning: N(k), approximation: [],
+                                    operands: [typedOperand("korea", "\"korea\"", .phrase, negated: false),
+                                               typedOperand("korea", "NOT {body_text}:\"korea\"", .word, negated: true)],
                                     dropped: [typedOperand("korea", "NOT {body_text}:\"korea\"", .word, negated: true)],
                                     isApproximate: true),
         ]
@@ -450,7 +460,7 @@ struct Issue1297StructuredPartsTests {
     @Test("A typed query beside structured fields renders, matches and reports what the judged table says",
           arguments: Issue1297StructuredPartsTests.namedCases)
     func namedCombinations(_ c: Issue1297StructuredCase) throws {
-        #expect(Self.namedCases.count == 50)
+        #expect(Self.namedCases.count == 52)
         let table = Issue1297StructuredTable(twoColumn: c.scoped)
         let parsed = FTS5InlineQueryParser.parseDetailed(c.typed, columnPrefix: c.scoped ? "{body_text}:" : "",
                                                          structured: c.structured)
@@ -693,6 +703,9 @@ struct Issue1297StructuredPartsTests {
                 let parsed = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix, structured: combination)
                 let other = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: otherPrefix, structured: combination)
                 let label = "\(typed) \(combination) -> \(parsed.expression ?? "nil")"
+                if (parsed.expression == nil) != (other.expression == nil) {
+                    fail("refusal depends on the column prefix", label)
+                }
                 if reporting(parsed.operands) != reporting(other.operands)
                     || reporting(parsed.droppedOperands) != reporting(other.droppedOperands)
                     || parsed.exactTerms != other.exactTerms || parsed.isApproximate != other.isApproximate {
@@ -828,6 +841,85 @@ struct Issue1297StructuredPartsTests {
         #expect(approximate > 0)
         // Only 6.1 refuses a typed text that marks a positive `=` word, so before it this was zero.
         #expect(typedAloneRefused > 0)
+        #expect(failures.isEmpty, "\(samples)")
+    }
+
+    // MARK: - Refusal across scopes
+
+    /// Tokens that demote an operator into a word and exclude that word, beside `=cold`.
+    static let demotedAlphabet = ["=cold", "-not", "-and", "-or", "NOT", "AND", "OR", "-korea", "(", ")", "-("]
+
+    /// Tokens that anchor on the quoted phrase "korea" and exclude the word korea, beside `=cold`.
+    static let phraseAlphabet = ["=cold", "\"korea\"", "-\"korea\"", "-korea", "korea", "NOT", "OR", "war", "(", ")", "-("]
+
+    /// The sequences a typed phrase lets render in a scope while the unscoped parse refuses them.
+    static let phraseAnchoredOnlyUnscopedRefusals: Set<String> = [
+        "\"korea\" -korea OR -\"korea\"", "\"korea\" -korea OR -korea", "-\"korea\" OR \"korea\" -korea",
+        "-\"korea\" OR -korea \"korea\"", "-korea \"korea\" OR -\"korea\"", "-korea \"korea\" OR -korea",
+        "-korea OR \"korea\" -korea", "-korea OR -korea \"korea\"",
+    ]
+
+    /// Whether a query is refused does not depend on the column prefix, except where a typed phrase — which spans
+    /// every column in either scope — is the anchor a scoped exclusion cannot be shown to remove.
+    ///
+    /// `SearchService` reads its exact-word post-filter and the Query Inspector's rows from the unscoped parse, so a
+    /// scoped parse that renders beside an unscoped refusal ran a search neither could describe. Parser 6.2 scopes a
+    /// demoted operator word, which closes that for `-not`, `-and` and `-or`: over the demoted alphabet 128 pairs
+    /// disagreed before it, from 32 sequences. The phrase class remains in the parser, is pinned here, and never runs
+    /// in the app. A scoped refusal always implies the unscoped one, since a scoped exclusion covers no more than an
+    /// unscoped one, so the disagreement never runs the other way.
+    @Test("Every token sequence of length 1-4 is refused in both scopes or neither, beside every structured combination, unless a typed phrase anchors it",
+          arguments: ["demoted", "phrase"])
+    func refusalAcrossScopesSweep(alphabet: String) {
+        let sequences = Issue1297PropertyTests.sequences(maxLength: 4,
+                                                         over: alphabet == "demoted" ? Self.demotedAlphabet : Self.phraseAlphabet)
+        #expect(sequences.count == 16_104)
+        var compared = 0, bothRender = 0, neitherRenders = 0, onlyUnscopedRefused = 0, onlyScopedRefused = 0
+        var onlyUnscopedSequences = Set<String>()
+        var failures: [String: Int] = [:]
+        var samples: [String] = []
+        func fail(_ category: String, _ detail: String) {
+            failures[category, default: 0] += 1
+            if samples.count < 8 { samples.append("[\(category)] \(detail)") }
+        }
+
+        for typed in sequences {
+            for combination in Self.combinations {
+                compared += 1
+                let unscoped = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: "", structured: combination)
+                let scoped = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: "{body_text}:", structured: combination)
+                let label = "\(typed) \(combination) -> \(unscoped.expression ?? "nil") / \(scoped.expression ?? "nil")"
+                switch (unscoped.expression, scoped.expression) {
+                case (.some, .some): bothRender += 1
+                case (nil, nil): neitherRenders += 1
+                case (.some, nil):
+                    onlyScopedRefused += 1
+                    fail("refused only in the scope", label)
+                case (nil, .some):
+                    onlyUnscopedRefused += 1
+                    onlyUnscopedSequences.insert(typed)
+                    if !scoped.operands.contains(where: { $0.kind == .phrase && $0.source == .typed && !$0.isNegated }) {
+                        fail("refused only unscoped without a typed phrase anchor", label)
+                    }
+                }
+            }
+        }
+
+        print("[1297] refusal across scopes alphabet=\(alphabet) compared=\(compared) bothRender=\(bothRender) neitherRenders=\(neitherRenders) onlyUnscopedRefused=\(onlyUnscopedRefused) onlyScopedRefused=\(onlyScopedRefused) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " "))")
+        #expect(compared == 161_040)
+        #expect(bothRender > 0)
+        #expect(neitherRenders > 0)
+        #expect(onlyScopedRefused == 0)
+        if alphabet == "demoted" {
+            // 128 before parser 6.2, from 32 sequences such as `-korea OR -not NOT`.
+            #expect(onlyUnscopedRefused == 0)
+            #expect(FTS5InlineQueryParser.parseDetailed("-korea OR -not NOT", columnPrefix: "{body_text}:").expression == nil)
+        } else {
+            // Each beside no structured field and beside the excluded phrase "cold war", the two combinations that
+            // neither anchor the query nor exclude korea.
+            #expect(onlyUnscopedRefused == 16)
+            #expect(onlyUnscopedSequences == Self.phraseAnchoredOnlyUnscopedRefusals)
+        }
         #expect(failures.isEmpty, "\(samples)")
     }
 

@@ -303,6 +303,23 @@
 ///          seed 1299 narrowed 2,056 → 1,750 and nil 570 → 876. The `FTS5Query` join sweep executed
 ///          65,133 → 65,121 per scope and its carrier identity carried 20,374 → 20,366, because fewer typed
 ///          renders reach the carrier; the carrier itself is never approximate, so no byte of its output moves.
+///   6.2 — #1297 fixes review: an operator word left as a word carries the column prefix, like any other bare word.
+///          RESULTS MOVE only in a scoped parse — in the app, the Summaries-only or Notes-only half of a search — and
+///          only where `AND`, `OR` or `NOT` is demoted: scoped `cold OR` was `{body_text}:"cold" AND "or"`, which
+///          searched "or" outside the scope, and is `{body_text}:"cold" AND {body_text}:"or"`. With it, refusal no
+///          longer depends on the scope wherever a word anchors: 6.1 refused `-korea OR -not NOT` unscoped
+///          (`"not" NOT "not"`) but ran it scoped as `"not" NOT {body_text}:"not"`, since an exclusion is shown to
+///          remove only an anchor in a scope it spans, and `SearchService` read that search's exact terms and Query
+///          Inspector rows from the refused unscoped parse — `( =cold NOT OR -korea ) -not` ran summaries-only
+///          without its `=cold` post-filter. Measured over the length-1–4 sequences of three alphabets (the judged one
+///          with `-(`, the exact-term one, and one with `-not`, `-and` and `-or`) beside every structured combination:
+///          no unscoped parse changes; of 383,240 scoped renders, 195,398 differ only by the prefix on a demoted word
+///          and 128 become `nil` — exactly the 128, from 32 sequences, whose unscoped parse was refused — and no exact
+///          term, approximation flag or operand count changes on a render. A typed phrase still spans every column,
+///          so beside the phrase "korea" a scoped `-korea` removes nothing provably: 16 parses over an alphabet with
+///          that phrase (8 sequences, such as `"korea" -korea OR -korea`) are refused only unscoped.
+///          `refusalAcrossScopesSweep` pins that class, and `SearchService` 2.2 runs no scope for a query its unscoped
+///          parse refuses. No printed count in the #1297 property suites moves.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -312,8 +329,9 @@ public enum FTS5InlineQueryParser {
     ///
     /// - Parameter raw: The user's typed query text, in Google-style inline syntax.
     /// - Parameter columnPrefix: An FTS5 column-filter prefix (e.g. `"{header body_text}:"`)
-    ///   applied to every bare word, phrase, and wildcard operand — never to operator
-    ///   keywords. Pass `""` to search all indexed columns (the default).
+    ///   applied to every bare word, wildcard and operator word left as a word — never to
+    ///   an operator keyword, nor to a phrase, which spans every column. Pass `""` to search
+    ///   all indexed columns (the default).
     /// - Parameter structured: The structured phrase, prefix wildcard and excluded terms to
     ///   combine with `raw` as one query (see "Structured parts"). `.none` by default.
     /// - Returns: The MATCH expression, or `nil` if neither `raw` nor `structured` carries
@@ -611,13 +629,14 @@ public enum FTS5InlineQueryParser {
             index += 1
         }
 
-        demoteOrphanedOperators(in: &items)
+        demoteOrphanedOperators(in: &items, columnPrefix: columnPrefix)
         return structure(items)
     }
 
     /// Walks one nesting level's items left to right, converting any `AND`/`OR`/`NOT` that
-    /// has nothing to bind into a literal leaf for that same word (stemmed, like any other
-    /// bare term).
+    /// has nothing to bind into a literal leaf for that same word — stemmed and scoped by
+    /// `columnPrefix`, like any other bare term, so a scoped `-not` removes a demoted `NOT` in
+    /// its own scope and a scoped query never searches the word outside it.
     ///
     /// An `AND` or `OR` binds when a node sits on its left and, on its right, a node or a
     /// chain of `NOT`s ending in one — so `cold AND NOT korea` keeps both keywords as
@@ -626,7 +645,7 @@ public enum FTS5InlineQueryParser {
     /// `"OR cold"`, `"cold OR OR war"` or a bare `"NOT"` become words). Resolution is in
     /// place and left to right, so chains of misplaced operators (`"cold OR AND war"`)
     /// resolve consistently: each candidate sees the earlier ones already resolved.
-    private static func demoteOrphanedOperators(in items: inout [Item]) {
+    private static func demoteOrphanedOperators(in items: inout [Item], columnPrefix: String) {
         func isNode(_ index: Int) -> Bool {
             guard items.indices.contains(index), case .node = items[index] else { return false }
             return true
@@ -654,7 +673,7 @@ public enum FTS5InlineQueryParser {
 
             let literal = kind.fts5Keyword.lowercased()
             guard let word = stemBareWord(literal) else { continue }
-            items[index] = .node(.leaf("\"\(word)\"", operand: nil))
+            items[index] = .node(.leaf(columnPrefix + "\"\(word)\"", operand: nil))
         }
     }
 
