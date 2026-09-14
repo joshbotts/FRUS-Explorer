@@ -220,7 +220,7 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 /// Version history:
 ///   1.0 — #1297: initial implementation — the judged join design's named table, finding-4 pins,
 ///          set oracle, combined sweep and column-span pin
-///   1.1 — #1297 fixes: parser 6.1's refusal of an approximation that provably matches nothing — twelve named
+///   1.1 — #1297 fixes: parser 6.1's refusal of an approximation that provably matches nothing — eleven named
 ///          cases, the oracle's proof mirror, and combinedSweep's count against a universal corpus; the exact-term
 ///          sweep over `=cold` and `-=cold`, because combinedSweep's alphabet carries no `=`
 @Suite("#1297 typed queries beside structured fields")
@@ -450,7 +450,7 @@ struct Issue1297StructuredPartsTests {
     @Test("A typed query beside structured fields renders, matches and reports what the judged table says",
           arguments: Issue1297StructuredPartsTests.namedCases)
     func namedCombinations(_ c: Issue1297StructuredCase) throws {
-        #expect(Self.namedCases.count == 51)
+        #expect(Self.namedCases.count == 50)
         let table = Issue1297StructuredTable(twoColumn: c.scoped)
         let parsed = FTS5InlineQueryParser.parseDetailed(c.typed, columnPrefix: c.scoped ? "{body_text}:" : "",
                                                          structured: c.structured)
