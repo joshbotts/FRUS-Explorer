@@ -23,6 +23,8 @@ import Foundation
 ///   1.1 — #1297: `notApplied`, the operands a query typed but its expression leaves out, and
 ///         `hasUncountedOperands` / `replacingOperands(_:)`, so neither the count offer nor the
 ///         scoped-count rebuild reads past `operands` or loses a field
+///   1.2 — #1297 join: `isApproximate`, carried by `replacingOperands(_:)`; the operands now include
+///         the structured phrase, prefix and excluded terms, from the same combined parse the search runs
 struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
@@ -54,6 +56,11 @@ struct QueryInspection: Sendable, Equatable {
     /// carried here so the inspector can say they were **not applied**, rather than listing
     /// them among ``operands`` as if they had excluded something.
     ///
+    /// Every one is an excluded term. The parser pushes a negation inward before deciding what to
+    /// leave out, so `cold OR -(war -korea)` searches `korea` and leaves out only `war`; and beside a
+    /// structured phrase or prefix nothing is left out at all, because that part gives every
+    /// exclusion something to exclude from.
+    ///
     /// Never counted and never blamed: ``QueryInspector/scopedCounts(for:parameters:)``,
     /// ``QueryInspector/emptyConjuncts(in:parameters:)`` and ``hasUncountedOperands`` read
     /// ``operands`` only, because a number for a term the query did not use describes
@@ -62,6 +69,15 @@ struct QueryInspection: Sendable, Equatable {
     /// A `var` with a default so every memberwise call site that predates it compiles
     /// unchanged — which is also why ``replacingOperands(_:)`` exists.
     var notApplied: [ParsedOperand] = []
+
+    /// Whether the expression matches only part of what the query means — `ParsedQuery.isApproximate`.
+    ///
+    /// Not the same as `!notApplied.isEmpty`. Pushing a negation inward can leave out nothing but an
+    /// operator word demoted to a search word, which has no operand row: `-( -korea NOT )` searches
+    /// `korea` alone. The strip's narrower-than-typed caption reads this, so that case is still reported.
+    ///
+    /// A `var` with a default for the same reason as ``notApplied``.
+    var isApproximate: Bool = false
 
     /// Whether every operand is present and none of them is the problem.
     var hasOperands: Bool { !operands.isEmpty }
@@ -91,7 +107,7 @@ struct QueryInspection: Sendable, Equatable {
     func replacingOperands(_ operands: [InspectedOperand]) -> QueryInspection {
         QueryInspection(expression: expression, operands: operands,
                         indexedVolumeCount: indexedVolumeCount, isFilterOnly: isFilterOnly,
-                        notApplied: notApplied)
+                        notApplied: notApplied, isApproximate: isApproximate)
     }
 }
 
@@ -226,6 +242,9 @@ struct InspectedOperand: Sendable, Equatable {
 ///   1.0 — Q-2a: initial implementation
 ///   1.1 — #1297: the parser's dropped operands become `QueryInspection.notApplied`, uncounted
 ///         and unblamed; `inspect(parsed:parameters:indexedVolumeCount:)` takes a caller's parse
+///   1.2 — #1297 join: inspects `SearchService.parsedQuery(for:)`, the combined parse the search
+///         renders, and carries its `isApproximate`; a structured operand is narrowed for counting
+///         through its own field
 struct QueryInspector: Sendable {
 
     /// The service every lookup runs through — counts, stems and vocabulary alike.
@@ -247,24 +266,26 @@ struct QueryInspector: Sendable {
     ///   by the caller because it is app state (`AppState.indexedVolumeIds`), and because
     ///   passing it in keeps this type testable without one.
     func inspect(parameters: SearchParameters, indexedVolumeCount: Int) async -> QueryInspection {
-        let parsed = parameters.keywords.map { FTS5InlineQueryParser.parseDetailed($0) }
-        return await inspect(parsed: parsed, parameters: parameters,
-                             indexedVolumeCount: indexedVolumeCount)
+        // The corpus parse, unscoped: operands and their reporting do not depend on the column
+        // prefix, and the corpus expression is the one the strip displays first.
+        await inspect(parsed: SearchService.parsedQuery(for: parameters), parameters: parameters,
+                      indexedVolumeCount: indexedVolumeCount)
     }
 
     /// Describes `parameters` from a parse the caller has already made, without running a
     /// search.
     ///
-    /// ``inspect(parameters:indexedVolumeCount:)`` is this with the parse made from
-    /// `parameters.keywords`, and is its only production caller. The split lets a test hand
-    /// the inspector a `ParsedQuery` of a shape the parser produces — dropped operands
-    /// included — and check what the inspector does with it against a real index, without
-    /// depending on which queries the parser of the day happens to drop.
+    /// ``inspect(parameters:indexedVolumeCount:)`` is this with the parse made by
+    /// `SearchService.parsedQuery(for:)`, and is its only production caller. The split lets a
+    /// test hand the inspector a `ParsedQuery` of a chosen shape — dropped operands included —
+    /// and check what the inspector does with it against a real index, without depending on
+    /// which queries the parser of the day happens to drop.
     ///
     /// - Parameters:
-    ///   - parsed: the parse of `parameters.keywords`, or `nil` when there are no keywords.
-    ///     Its `operands` are inspected; its `droppedOperands` become
-    ///     ``QueryInspection/notApplied``.
+    ///   - parsed: the combined parse of `parameters.keywords` and its structured phrase, prefix
+    ///     and excluded terms, or `nil` for none. Its `operands` are inspected; its
+    ///     `droppedOperands` become ``QueryInspection/notApplied``; its `isApproximate` becomes
+    ///     ``QueryInspection/isApproximate``.
     ///   - parameters: the query, which still supplies the rendered expression and the filters.
     ///   - indexedVolumeCount: how many volumes this device has indexed.
     func inspect(
@@ -296,7 +317,8 @@ struct QueryInspector: Sendable {
             isFilterOnly: expression == nil && parameters.supportsFilterOnlySearch,
             // No stem or vocabulary lookup for these: a count beside a term the search did not
             // use would read as evidence about the result set.
-            notApplied: parsed?.droppedOperands ?? []
+            notApplied: parsed?.droppedOperands ?? [],
+            isApproximate: parsed?.isApproximate ?? false
         )
     }
 
@@ -367,23 +389,43 @@ struct QueryInspector: Sendable {
         return empty
     }
 
-    /// Rebuilds `parameters` with its keyword text replaced by a single operand, keeping
-    /// every filter and scope flag intact.
+    /// Rebuilds `parameters` so its text is a single operand, keeping every filter and scope
+    /// flag intact.
     ///
     /// Keeping the filters is what makes the answer useful: the question is "does this
     /// term match anything *here*", not "anywhere". The operand's own marks are restored
     /// so an exact term is counted exactly and a prefix as a prefix — counting
     /// `=containment` as plain `containment` would report a number the query never used.
+    ///
+    /// A typed operand is re-spelled as search-box text. A structured one goes back into its own
+    /// field instead, because the two spellings are not always the same query: the prefix field
+    /// `neg:oti` renders `"neg oti"*`, while typed `neg oti*` renders `"neg" AND "oti"*`. A
+    /// structured operand is only ever a phrase or a prefix here — an excluded term is negated,
+    /// and negated operands are never narrowed to.
     static func parameters(
         _ base: SearchParameters, narrowedTo operand: ParsedOperand
     ) -> SearchParameters {
         var narrowed = base
-        narrowed.keywords = queryText(for: operand)
-        // The structured fields are alternative ways of specifying keywords; leaving them
-        // set would AND them into a count that is supposed to be about one operand.
+        // Every text field is cleared first; leaving one set would AND it into a count that is
+        // supposed to be about one operand.
+        narrowed.keywords = nil
         narrowed.phrase = nil
         narrowed.prefixWildcard = nil
         narrowed.excludedTerms = []
+        switch operand.source {
+        case .typed:
+            narrowed.keywords = queryText(for: operand)
+        case .structured:
+            switch operand.kind {
+            case .phrase:
+                narrowed.phrase = operand.text
+            case .prefix:
+                // `text` carries the `*` the field appends itself.
+                narrowed.prefixWildcard = String(operand.text.dropLast())
+            case .word, .proximity:
+                narrowed.keywords = queryText(for: operand)
+            }
+        }
         return narrowed
     }
 

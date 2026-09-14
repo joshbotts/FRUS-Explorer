@@ -104,6 +104,9 @@ final class QueryInspectorController {
 ///   1.1 — #1297: a NOT APPLIED row for each operand the expression leaves out, never counted
 ///         or offered for counting; the excluded operand's line says an exclusion removes
 ///         documents from the terms it is typed with (`search.inspector.excludedDetail.v2`)
+///   1.2 — #1297 join: an ADVANCED tag on operands from the structured fields
+///         (`search.inspector.structuredTag`), and a narrower-than-typed caption under the MATCH
+///         line whenever the expression is an approximation (`search.inspector.approximateCaption`)
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -141,6 +144,14 @@ struct QueryInspectorStrip: View {
                     .lineLimit(3)
                 Spacer(minLength: 0)
             }
+            // Here rather than among the detail rows: this row never collapses, and when what was
+            // left out is a demoted operator word there is no NOT APPLIED row to say anything.
+            if inspection.isApproximate {
+                Text(String(localized: "search.inspector.approximateCaption",
+                            defaultValue: "Narrower than typed: part of this query only excludes terms, and a search needs something to find, so that part was left out."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             if inspection.expression?.expressionsDiffer == true {
                 Text(String(localized: "search.inspector.expressionsDiffer",
                             defaultValue: "Documents and your own summaries/notes are searched with different expressions, because only some of them are in scope."))
@@ -170,6 +181,12 @@ struct QueryInspectorStrip: View {
                     if item.operand.isExact {
                         microTag(String(localized: "search.inspector.exactTag",
                                         defaultValue: "EXACT"))
+                    }
+                    // A term the researcher did not type into the box — a restored saved search's
+                    // phrase, prefix or excluded term — named after the popover that set it.
+                    if item.operand.source == .structured {
+                        microTag(String(localized: "search.inspector.structuredTag",
+                                        defaultValue: "ADVANCED"))
                     }
                     Spacer(minLength: 0)
                 }

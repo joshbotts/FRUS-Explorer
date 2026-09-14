@@ -45,6 +45,11 @@ import Foundation
 ///          user-content match merge, SQL-side filters, exact pagination). The
 ///          stemmed-display repair pass and key-set whitelists are gone — FTS5 now
 ///          stores original text and filters evaluate in the database.
+///   2.1 — #1297 join: `parsedQuery(for:columnPrefix:)` parses the typed keywords and the
+///          structured phrase, prefix and excluded terms as one query, and both the MATCH
+///          expression and the exact-word terms come from it. The typed text used to be
+///          rendered alone and handed to `FTS5Query` as a string, which discarded a typed
+///          exclusion beside a restored phrase or prefix. RESULTS MOVE for those searches.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -319,12 +324,30 @@ public actor SearchService {
         return (corpus, userContent)
     }
 
+    /// The combined parse of `parameters`: the typed `keywords` and the structured phrase, prefix
+    /// wildcard and excluded terms, as one query (#1297).
+    ///
+    /// The one place the app turns a query's text into a parse. The MATCH expression
+    /// (`renderExpression(from:columns:)`), the exact-word post-filter (`exactTerms(from:)`) and the
+    /// Query Inspector's operand rows all read it, so none of them can describe a different query
+    /// from the one that runs. `columnPrefix` scopes the typed operands and the prefix wildcard; the
+    /// phrase and the excluded terms span every column, as they always have.
+    ///
+    /// Nonisolated and pure: it parses and touches no store.
+    static func parsedQuery(for parameters: SearchParameters, columnPrefix: String = "") -> ParsedQuery {
+        FTS5InlineQueryParser.parseDetailed(parameters.keywords ?? "", columnPrefix: columnPrefix,
+                                            structured: parameters.structuredQueryParts)
+    }
+
     /// Renders one FTS5 MATCH expression for the given column scope.
     ///
-    /// The raw search-box text is parsed as Google-style inline syntax — quotes,
-    /// `OR`, leading `-`, `NOT`, trailing `*` — by `FTS5InlineQueryParser`, with the
-    /// column prefix applied to each operand. Structured fields (phrase, excluded
-    /// terms, prefix wildcard) are rendered by `FTS5Query`.
+    /// The raw search-box text — Google-style inline syntax: quotes, `OR`, leading `-`, `NOT`,
+    /// trailing `*` — and the structured phrase, prefix wildcard and excluded terms are parsed
+    /// together by `parsedQuery(for:columnPrefix:)`, with the column prefix applied to each typed
+    /// operand and to the prefix. This no longer goes through `FTS5Query`: that builder receives the
+    /// typed text already rendered, so it could not see a typed exclusion the typed text left out on
+    /// its own, and a restored search for the phrase "cold war" with `-korea` typed beside it ran as
+    /// `"cold war"` alone.
     private func renderExpression(
         from parameters: SearchParameters,
         columns: [FTS5Column]?
@@ -335,20 +358,7 @@ public actor SearchService {
         } else {
             columnPrefix = ""
         }
-
-        let keywordExpression = parameters.keywords.flatMap {
-            FTS5InlineQueryParser.parse($0, columnPrefix: columnPrefix)
-        }
-
-        let query = FTS5Query(
-            keywordExpression: keywordExpression,
-            phrase: parameters.phrase,
-            booleanMode: parameters.booleanMode,
-            excludedTerms: parameters.excludedTerms,
-            prefixWildcard: parameters.prefixWildcard,
-            columns: columns
-        )
-        return query.toFTS5MatchExpression()
+        return Self.parsedQuery(for: parameters, columnPrefix: columnPrefix).expression
     }
 
     /// Maps `SearchParameters` to the SQL-side filter set.
@@ -406,11 +416,11 @@ public actor SearchService {
 
     /// The words this query marked exact with `=`.
     ///
-    /// Parsed from the same raw text and by the same parser that builds the MATCH
-    /// expression, so the two can never disagree about which terms were marked.
+    /// Read from the same combined parse that builds the MATCH expression,
+    /// `parsedQuery(for:columnPrefix:)`, so the two can never disagree about which terms were
+    /// marked. Only typed words carry the mark; the structured fields never add one.
     static func exactTerms(from parameters: SearchParameters) -> [String] {
-        guard let keywords = parameters.keywords else { return [] }
-        return FTS5InlineQueryParser.parseDetailed(keywords).exactTerms
+        parsedQuery(for: parameters).exactTerms
     }
 
     /// The `document_cache` columns an exact term may be satisfied by — the columns this

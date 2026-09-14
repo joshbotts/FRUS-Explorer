@@ -514,9 +514,9 @@ struct QueryInspectionTests {
         let stripStart = try #require(source.range(of: "struct QueryInspectorStrip"))
         let strip = source[stripStart.lowerBound...]
         let bodyStart = try #require(strip.range(of: "var body: some View {"))
-        var depth = 0, index = bodyStart.upperBound, opened = false
+        var depth = 0, index = bodyStart.upperBound
         while index < strip.endIndex {
-            if strip[index] == "{" { depth += 1; opened = true }
+            if strip[index] == "{" { depth += 1 }
             if strip[index] == "}" { if depth == 0 { break }; depth -= 1 }
             index = strip.index(after: index)
         }
