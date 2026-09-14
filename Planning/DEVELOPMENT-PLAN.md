@@ -15205,3 +15205,78 @@ than one character. Both measures are under App Store Connect's 4,000.
 
 **Owner steps.** Archive and upload build 47 for both platforms. Paste each file into its platform's
 *What to Test*. Tag `build-47` on the uploaded commit.
+
+## Session 2026-09-13 (night) — Pre-1906 Source Explorer answers from every route, and names the minister
+
+**The report.** `frus1863p2/d573` (*Mr. Seward to Mr. Dayton*, 10 November 1863, No. 428), opened from the iPad
+Research tab, showed no reels where earlier builds had shown two. **Not a code regression since build 46**: both
+Source Explorer views guarded the pre-1906 section on the host's `documentDateline`, and History, the Research tab,
+collections, Citation Lookup, Continue reading and deep links all pass none. #1272's in-tab reading made those routes
+the common way in on iPad.
+
+**The five fixes** (`CentralFilesClassifier.evaluate`, shared by both twins):
+1. **Hydrate.** The header, dateline and serial come from `document_cache` (`IndexingPipeline.sourceExplorerFacts`,
+   one primary-key seek) when the route passes none or passes the xml:id as the header.
+2. **Instructions first.** When the bundled register names the addressee as the U.S. chief of mission at that post
+   on that date, Diplomatic Instructions is promoted to **Likely** with a sentence naming the chief, and carries the
+   OH people-register chip.
+3. **The addressee rule** drops Notes to Foreign Missions in that case. It decides only when exactly one name-matching
+   register person covers the date (90 days' grace after a tenure, none before), and refuses a foreign title, a
+   foreign sender, a foreign-ministry dateline, and descriptive or multiple addressees. A Notes-to-only reel stays
+   *Possible*. Measured before the build: it decides about 61% of two-reel documents; a 40-document audit was 40/40.
+4. **Instruction No.** for a Department-outbound document, **Despatch No.** for a post's, a plain **No.** for a note
+   and for a Department letter the rule did not decide, which may be a note (*Mr. Olney to Baron Thielmann*,
+   frus1895p1/d458, No. 42).
+5. **No silent section.** Loading, not-checked with its reason (nine), no match, not applicable and resolved are
+   distinct, and pipeline availability is part of the load key.
+
+**POCOM index version 2** (`POCOMIndexGenerator`, register checkout `ccc1f033`): `chiefs`, `names` and `roles`
+for 1861–1906 — **641 rows, 427 people (271 with an altname), 52 territories, 15 roles, 2 derived ends,
+530,712 bytes**; `careers` byte-identical. The runner refuses to write under 600 rows or without Dayton under France.
+A review found the first build's window cut at 1 January 1861 while the app grants 90 days' grace; last days from
+1860-10-03 now count (+4 rows: Ward/China, McLane/Mexico, Clay/Peru, Chandler/Two Sicilies), pinned app-side.
+
+**Two reviews, all addressed** (data: 4 minor; app: 2 major, 8 minor). The majors: nothing drove `evaluate`, and
+nothing tested POCOM JSON becoming a roster. Both now have tests through a real index and a decoded file.
+
+**Tests.** `FRUSExplorerTests`: **4,840 tests in 616 suites** passed on the final tree. `POCOMIndexGeneratorTests`:
+35 passed. The macOS scheme builds clean into fresh DerivedData (one pre-existing warning, `ProjectHomeView`).
+
+**Seen on screen (iPad mini, new build).** d573 by deep link through Browse, and through **Research ▸ History** (the
+reported route): *Instruction No. 428*, *Diplomatic Instructions* at Likely naming William L. Dayton, the one
+Instructions France Vol. 16 roll, no Notes-to row.
+
+**Not verified on screen.** The Mac windows (the owner's own FRUS Explorer was open, and a second copy would share
+its SwiftData and CloudKit store), a cold-launch restored window, a note-less 1906–1910 document, and the
+not-checked states.
+
+**Noticed, not fixed.** Opening a document by deep link logs two SwiftUI faults (*NavigationAuthority bound path
+tried to update multiple times per frame*); that path is untouched here. Deferred by design: the index date for 17
+OCR-damaged datelines, the foreign-ministry defect in `departmentOutbound`, 275 cross-country matches,
+frus1865p3/d666's legation-chapter instruction, Citation Lookup's "Subseries 1864" misparse, resume entries labelled
+with the confidence text, and iPad Open in New Window dropping the dateline for other consumers.
+
+**Mutation sweep** (committed tree `666f179b`, its own worktree and simulator): **18 of 18 killed**. That is 13 app
+mutations over `SourceExplorerEvaluationTests`, `AddresseeRuleTests`, `POCOMIndexTests` and the reload wiring audit
+(63 tests), and 5 generator mutations over `POCOMIndexGeneratorTests` (35). Among them: the hydrated header or
+dateline swapped for the route's, a failed structure read reported as no structure, the bundled roster default, the
+display-name suffix dropped or doubled, `roster: .bundled` re-added in each twin separately, the evaluation moved
+after the pointers, grace 90→91, the window edge, `run()` bypassing `dataToWrite`, and the chiefs sort. Every run
+read back its test count; no compile or environment failures.
+
+**A second, adversarial review** (fixes, tests and docs lenses, each finding re-checked by a skeptic): **11
+confirmed, all minor, none refuted, all fixed.** The one behaviour change: the serial label called every undecided
+Department letter an instruction, so a note to a foreign envoy printed *Instruction No.* with a caption saying so;
+an instruction series beside its own notes twin now reads plain *No.* Seven were tests that could not fail as
+written — the cancel check's position in each twin, the 1906+ early return, a failed row read, the sentinel's slug
+half, blank and internally spaced altnames, a partial start date's floor, and which home leads the label. Three
+were docs: the manuals' list of when the register cannot settle a letter omitted the 90-day grace and treated a
+surname shared across years as a refusal, and two descriptions of the chiefs table left out its four grace rows and
+its derived ends.
+
+**Second mutation sweep** (`d12c40ed`, over the tests the second review added): **11 of 12 killed**. The survivor
+was a real gap: `sourceExplorerFacts` swallowing a *prepare* failure (`try? auxPrepare … return nil`) passed,
+because both read-failure fixtures drop the table through another SQLite connection, so the pipeline's first read
+prepares against its cached schema and fails only at the step. The test now reads twice; the second read fails at
+the prepare, and it is that expectation the mutation fails (`8c365df6`). Every run read back its test count, and
+only the sweep's own simulator was booted.
