@@ -85,6 +85,36 @@
 /// same alternative is rendered exactly, by De Morgan's law: `war (cold OR -korea)`
 /// renders `"war" NOT ("korea" NOT "cold")`, and nothing is dropped.
 ///
+/// A complement is never left out whole while it holds a positive term. Before anything is
+/// left out, a negation is pushed inward by De Morgan's law and what that exposes is
+/// anchored like any other query: `cold OR -(war -korea)` means cold OR NOT war OR korea, so
+/// it renders `"cold" OR "korea"` and reports only `war` as dropped. Every dropped operand is
+/// therefore negated, and no applied operand is ever reported as dropped.
+///
+/// `ParsedQuery.isApproximate` is `true` whenever the expression matches less than the query
+/// means. It is the only report when what was left out has no operand of its own:
+/// `-( -korea NOT )` means korea OR NOT the demoted word "not", and renders `"korea"`.
+///
+/// ## Structured parts
+/// `parse(_:columnPrefix:structured:)` and `parseDetailed(_:columnPrefix:structured:)` also
+/// take the structured search fields — a phrase, a prefix wildcard and excluded terms
+/// (`StructuredQueryParts`), as restored saved searches carry them — as further members of
+/// the same tree, conjoined with the typed query and harvested after its operands, with
+/// `ParsedOperand.source` `.structured`. One tree decides meaning, anchoring and reporting
+/// for the query that actually runs, so a phrase or prefix anchors a typed complement beside
+/// it: typed `-korea` beside the phrase "cold war" renders `"cold war" NOT "korea"`, and
+/// `cold OR -korea` beside the prefix `viet` renders `"viet"* NOT ("korea" NOT "cold")`, with
+/// nothing dropped. A structured excluded term is no anchor, so typed `-korea` beside the
+/// excluded term `vietnam` is still `nil`.
+///
+/// The fields are sanitised exactly as `FTS5Query` always sanitised them, and combined by
+/// the rule it always used — positive parts joined by `AND`, each parenthesised unless it is
+/// one operand, then every exclusion applied to the whole — which `FTS5Query` now takes from
+/// here (`combine(renderedKeywords:structured:columnPrefix:)`). The phrase spans every
+/// column, the prefix carries the column prefix, and an excluded term carries none, so it
+/// removes a document whichever column holds the term. With no structured field set, a
+/// typed query renders exactly what it renders alone.
+///
 /// ## Grouping
 /// `(...)` groups parse **recursively** into the same tree: `buildNode` calls itself on
 /// each balanced group's contents and folds the result back into the surrounding level as
@@ -193,6 +223,37 @@
 ///          exact terms come only from positive operands the expression applies:
 ///          `europe NOT =containment` no longer reports a post-filter requiring the word
 ///          its own MATCH excludes.
+///   6.0 — #1297 join: the structured fields join the tree, and a complement is anchored
+///          after its negation is pushed inward. RESULTS MOVE, in two places.
+///          (1) `parse(_:columnPrefix:structured:)` and `parseDetailed(_:columnPrefix:structured:)`
+///          take a phrase, a prefix and excluded terms (`StructuredQueryParts`) as members of
+///          the typed query's root conjunction, and `SearchService` renders through them
+///          instead of handing the typed render to `FTS5Query`, which could not see a typed
+///          complement that render left out. Restored saved searches with a phrase or prefix
+///          beside typed text move: typed `-korea` beside the phrase "cold war" was
+///          `"cold war"` — rows 4, 8, 12 and 16 of the truth table, with nothing reported — and
+///          is `"cold war" NOT "korea"` (4 and 12); `cold OR -korea` beside the prefix `viet` was
+///          `"cold" AND "viet"*` (5 rows, korea not applied) and is
+///          `"viet"* NOT ("korea" NOT "cold")` (8 rows, exact).
+///          (2) A negated group holding a positive term is no longer left out whole with its
+///          positive operands reported as dropped; the negation is pushed inward and anchored.
+///          This moves wherever the typed parse is used — Search, Corpus Analytics, the
+///          retrieval eval routes, `OccurrenceAvailability`: `cold OR -(war -korea)` was
+///          `"cold"` (10 rows) with war and korea dropped, and is `"cold" OR "korea"` (14 rows)
+///          with only war dropped; `-(war -korea)` was `nil` and is `"korea"`. Over the 11,110
+///          token sequences of length 1–4 with `-(`, in both scopes, 22 of 22,220 typed-alone
+///          renders change, every one previously `nil` or narrower.
+///          (3) `ParsedQuery.isApproximate` and `ParsedOperand.source`. A typed `NEAR` beside
+///          structured parts renders `NEAR(...) NOT "korea"` where `FTS5Query` 2.2 wrote
+///          `(NEAR(...)) NOT "korea"`, with the same rows; the `FTS5Query` carrier keeps the
+///          parentheses. The #1297 property suite's printed counts move with (2) and every
+///          inequality guard still holds: validity with `-(` executed 10,176 → 10,187 per
+///          scope; `-(X)` rendered 11,178 → 13,239, negating 7,852 → 7,892, differs from
+///          detached 12,432 → 12,864; monotonicity 1,676 → 1,714; set oracle seed 1297
+///          narrowed 2,018 → 2,088 and nil 633 → 563, seed 1299 narrowed 1,987 → 2,056 and nil
+///          639 → 570. Checked against a set oracle that never reads a render (80,000
+///          comparisons) and a 222,200-case sweep of every short sequence beside every
+///          structured combination, with no failures.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -204,11 +265,15 @@ public enum FTS5InlineQueryParser {
     /// - Parameter columnPrefix: An FTS5 column-filter prefix (e.g. `"{header body_text}:"`)
     ///   applied to every bare word, phrase, and wildcard operand — never to operator
     ///   keywords. Pass `""` to search all indexed columns (the default).
-    /// - Returns: A MATCH expression fragment suitable for embedding alongside the rest
-    ///   of `FTS5Query`'s parts, or `nil` if `raw` contains no positive search content
-    ///   (empty string, only excluded/negated terms, or terms that sanitise to nothing).
-    public static func parse(_ raw: String, columnPrefix: String = "") -> String? {
-        parseDetailed(raw, columnPrefix: columnPrefix).expression
+    /// - Parameter structured: The structured phrase, prefix wildcard and excluded terms to
+    ///   combine with `raw` as one query (see "Structured parts"). `.none` by default.
+    /// - Returns: The MATCH expression, or `nil` if neither `raw` nor `structured` carries
+    ///   positive search content (nothing typed, only excluded/negated terms, or terms that
+    ///   sanitise to nothing). Without `structured`, an expression is also suitable for
+    ///   `FTS5Query.keywordExpression`.
+    public static func parse(_ raw: String, columnPrefix: String = "",
+                             structured: StructuredQueryParts = .none) -> String? {
+        parseDetailed(raw, columnPrefix: columnPrefix, structured: structured).expression
     }
 
     /// Parses `raw` and reports the MATCH expression, the terms the researcher marked
@@ -221,15 +286,31 @@ public enum FTS5InlineQueryParser {
     /// layer can apply a word-boundary filter to what comes back. Dropping either half
     /// silently changes the answer: without the expression there is nothing to filter, and
     /// without the filter the `=` did nothing.
-    public static func parseDetailed(_ raw: String, columnPrefix: String = "") -> ParsedQuery {
+    ///
+    /// `structured` joins the typed query in one tree (see "Structured parts"), so every field
+    /// reported here describes the query that runs: its operands follow the typed ones with
+    /// `source` `.structured`, a typed complement beside a structured phrase or prefix is
+    /// applied rather than dropped, and `isApproximate` says whether the expression matches less
+    /// than the whole query means. Only typed words carry `=`, so `exactTerms` never gains a
+    /// structured term.
+    public static func parseDetailed(_ raw: String, columnPrefix: String = "",
+                                     structured: StructuredQueryParts = .none) -> ParsedQuery {
         var harvest = Harvest()
-        guard let root = buildNode(tokenize(raw), columnPrefix: columnPrefix, into: &harvest) else {
-            return ParsedQuery(expression: nil, exactTerms: [])
+        var parts: [Node] = []
+        if let typed = buildNode(tokenize(raw), columnPrefix: columnPrefix, into: &harvest) {
+            parts.append(typed)
         }
+        parts += structuredParts(structured, columnPrefix: columnPrefix, into: &harvest)
+        guard !parts.isEmpty else { return ParsedQuery(expression: nil, exactTerms: []) }
+        let root = Node.parts(parts)
         var dropped = Set<Int>()
         guard let expression = anchored(root, dropped: &dropped) else {
             return ParsedQuery(expression: nil, exactTerms: [])
         }
+        // Anchoring left something out whenever the query's exact meaning is a complement — even
+        // when all it left out is a demoted operator word, which has no operand to report.
+        var isApproximate = true
+        if case .matching? = exactMeaning(of: root) { isApproximate = false }
         var negated: [Int: Bool] = [:]
         polarity(of: root, negated: false, into: &negated)
 
@@ -243,7 +324,7 @@ public enum FTS5InlineQueryParser {
             let operand = ParsedOperand(text: proto.text,
                                         rendered: isNegated ? "NOT \(proto.core)" : proto.core,
                                         kind: proto.kind, isNegated: isNegated,
-                                        isExact: proto.isExact)
+                                        isExact: proto.isExact, source: proto.source)
             if dropped.contains(index) {
                 droppedOperands.append(operand)
                 continue
@@ -258,7 +339,8 @@ public enum FTS5InlineQueryParser {
             }
         }
         return ParsedQuery(expression: expression.text, exactTerms: exactTerms,
-                           operands: operands, droppedOperands: droppedOperands)
+                           operands: operands, droppedOperands: droppedOperands,
+                           isApproximate: isApproximate)
     }
 
     /// One searchable unit as harvested, before the tree around it settles its polarity.
@@ -280,6 +362,8 @@ public enum FTS5InlineQueryParser {
         /// The literal word a positive, applied occurrence post-filters on, or `nil` when
         /// the sigil is absent or cannot apply.
         var exactTerm: String?
+        /// Where the operand came from.
+        var source: ParsedOperand.Source = .typed
     }
 
     /// Everything `buildNode` gathers on its way down, besides the tree itself.
@@ -317,6 +401,64 @@ public enum FTS5InlineQueryParser {
         case and([Node])
         /// Two or more AND-runs joined by `OR`.
         case or([Node])
+        /// The query that runs: the typed query and each structured field, conjoined. Always
+        /// the root, and never inside anything else.
+        case parts([Node])
+        /// A positive expression rendered outside this parser — `FTS5Query`'s keyword
+        /// fragment — carried as one opaque operand.
+        case opaque(String)
+    }
+
+    /// The structured fields as parts of the query, harvested after the typed operands.
+    ///
+    /// Sanitised exactly as `FTS5Query` always sanitised them, so a restored saved search
+    /// renders the bytes it rendered before: the phrase spans all columns, the prefix carries
+    /// the column prefix, and an excluded term carries none.
+    private static func structuredParts(
+        _ structured: StructuredQueryParts, columnPrefix: String, into harvest: inout Harvest
+    ) -> [Node] {
+        var parts: [Node] = []
+        func leaf(_ proto: ProtoOperand) -> Node {
+            harvest.operands.append(proto)
+            return .leaf(proto.core, operand: harvest.operands.count - 1)
+        }
+        if let raw = structured.phrase, let phrase = stemPhrase(raw) {
+            parts.append(leaf(ProtoOperand(text: phrase, core: "\"\(phrase)\"", kind: .phrase,
+                                           isExact: false, exactTerm: nil, source: .structured)))
+        }
+        if let raw = structured.prefixWildcard {
+            let prefix = sanitizeBareToken(raw)
+            if !prefix.isEmpty {
+                parts.append(leaf(ProtoOperand(text: prefix + "*", core: columnPrefix + "\"\(prefix)\"*",
+                                               kind: .prefix, isExact: false, exactTerm: nil,
+                                               source: .structured)))
+            }
+        }
+        for raw in structured.excludedTerms {
+            let term = sanitizeBareToken(raw).lowercased()
+            guard !term.isEmpty else { continue }
+            parts.append(.not(leaf(ProtoOperand(text: term, core: "\"\(term)\"",
+                                                kind: term.contains(" ") ? .phrase : .word,
+                                                isExact: false, exactTerm: nil, source: .structured))))
+        }
+        return parts
+    }
+
+    /// `FTS5Query`'s expression: an already-rendered keyword fragment, if any, and the
+    /// structured fields, combined by the same rule and anchoring as a parsed query.
+    ///
+    /// The fragment is one opaque, always-positive part, so this reproduces `FTS5Query` 2.2's
+    /// join byte for byte — and, for the same reason, cannot see a complement the fragment's own
+    /// parse left out. `nil` when there is no positive part. Used only by `FTS5Query`.
+    static func combine(renderedKeywords: String?, structured: StructuredQueryParts,
+                        columnPrefix: String) -> String? {
+        var harvest = Harvest()
+        var parts: [Node] = []
+        if let renderedKeywords, !renderedKeywords.isEmpty { parts.append(.opaque(renderedKeywords)) }
+        parts += structuredParts(structured, columnPrefix: columnPrefix, into: &harvest)
+        guard !parts.isEmpty else { return nil }
+        var dropped = Set<Int>()
+        return anchored(.parts(parts), dropped: &dropped)?.text
     }
 
     /// One position in a nesting level's item stream, before its operators are resolved.
@@ -576,6 +718,23 @@ public enum FTS5InlineQueryParser {
         switch node {
         case .leaf(let text, _):
             return .matching(Expr(text: text, precedence: .atom))
+        case .opaque(let text):
+            // Precedence unknown, so it is parenthesised wherever anything binds to it unless it
+            // is one operand — the rule `FTS5Query` has always used for its parts.
+            return .matching(Expr(text: text, precedence: FTS5Query.isSingleOperand(text) ? .atom : .or))
+        case .parts(let members):
+            var positives: [Expr] = []
+            var negatives: [Expr] = []
+            for signed in members.compactMap(exactMeaning(of:)) {
+                switch signed {
+                case .matching(let expression): positives.append(expression)
+                case .lacking(let expression): negatives.append(expression)
+                }
+            }
+            guard !positives.isEmpty else {
+                return negatives.isEmpty ? nil : .lacking(disjoin(negatives))
+            }
+            return .matching(combineParts(positives, negatives))
         case .not(let inner):
             switch exactMeaning(of: inner) {
             case .matching(let expression)?: return .lacking(expression)
@@ -629,18 +788,47 @@ public enum FTS5InlineQueryParser {
     /// The largest part of `node`'s meaning FTS5 can search, or `nil` when there is none.
     ///
     /// When `node` renders exactly as `.matching`, that is the answer. Otherwise — which
-    /// can only happen at the root, or beneath root-level groups, since an enclosing
-    /// positive member anchors anything exactly — an `OR` alternative that cannot be
-    /// anchored is left out together with its `OR`, and its operands are added to
-    /// `dropped` so the inspector can report them as not applied; and a root AND-run of
-    /// complements keeps the members it can anchor and excludes the rest exactly. The
+    /// can only happen at the root, beneath root-level groups, or inside a complement whose
+    /// negation is being pushed inward, since an enclosing positive member anchors anything
+    /// exactly — a negation of anything but a lone leaf is pushed inward by
+    /// `complement(of:)` and anchored again, so the positive terms inside it are kept; an
+    /// `OR` alternative that still cannot be anchored is left out together with its `OR`,
+    /// and its operands are added to `dropped` so the inspector can report them as not
+    /// applied; and a root AND-run of complements, or the root conjunction of typed and
+    /// structured parts, keeps the members it can anchor and excludes the rest exactly. The
     /// result selects a subset of what the query means, never a superset.
+    ///
+    /// By induction the result is `nil` exactly when `node` has no leaf that is positive after
+    /// the negations above it. So every operand added to `dropped` is negated, nothing is
+    /// dropped beside a structured phrase or prefix, and no applied operand is ever dropped.
     private static func anchored(_ node: Node, dropped: inout Set<Int>) -> Expr? {
         guard let signed = exactMeaning(of: node) else { return nil }
         if case .matching(let expression) = signed { return expression }
         switch node {
-        case .leaf, .not:
+        case .leaf, .opaque:
             return nil
+        case .not(let inner):
+            // A complement of something containing a positive term can still hold an anchor:
+            // push the negation inward and anchor what that exposes, so only the alternatives
+            // that really are made only of exclusions are left out.
+            if case .leaf = inner { return nil }
+            return anchored(complement(of: inner), dropped: &dropped)
+        case .parts(let members):
+            var positives: [Expr] = []
+            var negatives: [Expr] = []
+            var local = Set<Int>()
+            for member in members {
+                var memberDropped = Set<Int>()
+                if let expression = anchored(member, dropped: &memberDropped) {
+                    positives.append(expression)
+                    local.formUnion(memberDropped)
+                } else if case .lacking(let expression)? = exactMeaning(of: member) {
+                    negatives.append(expression)
+                }
+            }
+            guard !positives.isEmpty else { return nil }
+            dropped.formUnion(local)
+            return combineParts(positives, negatives)
         case .group(let inner):
             return anchored(inner, dropped: &dropped).map {
                 Expr(text: "(\($0.text))", precedence: .atom)
@@ -680,15 +868,45 @@ public enum FTS5InlineQueryParser {
         }
     }
 
+    /// `node`'s complement with the negation pushed onto its leaves by De Morgan's law.
+    ///
+    /// Group parentheses are not kept: they preserved the typed grouping of text this rewrite
+    /// replaces, and `Expr` precedence parenthesises wherever FTS5 needs it.
+    private static func complement(of node: Node) -> Node {
+        switch node {
+        case .leaf, .opaque: return .not(node)
+        case .not(let inner): return inner
+        case .group(let inner): return complement(of: inner)
+        case .and(let members), .parts(let members): return .or(members.map(complement(of:)))
+        case .or(let disjuncts): return .and(disjuncts.map(complement(of:)))
+        }
+    }
+
+    /// The root conjunction's text: the positive parts joined by `AND`, each parenthesised
+    /// unless atomic, then every excluded part as a `NOT` applied to the whole positive.
+    ///
+    /// A lone positive part with nothing to exclude is emitted exactly as built, which is
+    /// what keeps a typed query with no structured fields byte-identical.
+    private static func combineParts(_ positives: [Expr], _ negatives: [Expr]) -> Expr {
+        func partText(_ expression: Expr) -> String {
+            expression.precedence == .atom ? expression.text : "(\(expression.text))"
+        }
+        let positive = positives.count == 1 ? positives[0]
+            : Expr(text: positives.map(partText).joined(separator: " AND "), precedence: .and)
+        guard !negatives.isEmpty else { return positive }
+        let kept = positives.count == 1 ? partText(positive) : "(\(positive.text))"
+        return Expr(text: kept + negatives.map { " NOT \(atomText($0))" }.joined(), precedence: .not)
+    }
+
     /// Whether `node` contains a leaf that is positive after the negations above it —
     /// what decides whether a negation reaching `node` is applied. A demoted operator
     /// literal counts: it is a word the expression searches for.
     private static func hasPositiveLeaf(_ node: Node, negated: Bool = false) -> Bool {
         switch node {
-        case .leaf: return !negated
+        case .leaf, .opaque: return !negated
         case .not(let inner): return hasPositiveLeaf(inner, negated: !negated)
         case .group(let inner): return hasPositiveLeaf(inner, negated: negated)
-        case .and(let members), .or(let members):
+        case .and(let members), .or(let members), .parts(let members):
             return members.contains { hasPositiveLeaf($0, negated: negated) }
         }
     }
@@ -697,8 +915,9 @@ public enum FTS5InlineQueryParser {
     private static func leaves(of node: Node) -> [Int] {
         switch node {
         case .leaf(_, let operand): return operand.map { [$0] } ?? []
+        case .opaque: return []
         case .not(let inner), .group(let inner): return leaves(of: inner)
-        case .and(let members), .or(let members): return members.flatMap(leaves(of:))
+        case .and(let members), .or(let members), .parts(let members): return members.flatMap(leaves(of:))
         }
     }
 
@@ -708,11 +927,13 @@ public enum FTS5InlineQueryParser {
         switch node {
         case .leaf(_, let operand):
             if let operand { map[operand] = negated }
+        case .opaque:
+            break
         case .not(let inner):
             polarity(of: inner, negated: !negated, into: &map)
         case .group(let inner):
             polarity(of: inner, negated: negated, into: &map)
-        case .and(let members), .or(let members):
+        case .and(let members), .or(let members), .parts(let members):
             for member in members { polarity(of: member, negated: negated, into: &map) }
         }
     }
@@ -1188,6 +1409,39 @@ public enum FTS5InlineQueryParser {
     }
 }
 
+// MARK: - StructuredQueryParts
+
+/// The structured search fields ANDed with the typed query: a phrase, a prefix wildcard and
+/// excluded terms, as set by restored saved searches and the legacy Advanced fields.
+///
+/// Passed to `FTS5InlineQueryParser.parseDetailed(_:columnPrefix:structured:)`, which parses
+/// them into the same tree as the typed text — see the parser's "Structured parts". Each is
+/// sanitised there exactly as `FTS5Query` sanitises the fields of the same names.
+///
+/// Version history:
+///   1.0 — #1297 join: initial implementation
+public struct StructuredQueryParts: Sendable, Equatable {
+    /// An exact phrase, spanning all columns whatever the column prefix. Lowercased word by
+    /// word; `nil` or text that sanitises to nothing adds no part.
+    public var phrase: String?
+    /// A prefix, searched as `"prefix"*` behind the column prefix, `*` appended. `nil` or text
+    /// that sanitises to nothing adds no part.
+    public var prefixWildcard: String?
+    /// Terms excluded from the whole query, each spanning all columns whatever the column
+    /// prefix. A term of several words excludes that phrase. Never an anchor on its own.
+    public var excludedTerms: [String]
+
+    /// No structured fields.
+    public static let none = StructuredQueryParts()
+
+    /// Creates structured parts.
+    public init(phrase: String? = nil, prefixWildcard: String? = nil, excludedTerms: [String] = []) {
+        self.phrase = phrase
+        self.prefixWildcard = prefixWildcard
+        self.excludedTerms = excludedTerms
+    }
+}
+
 // MARK: - ParsedQuery
 
 /// A parsed search box: the FTS5 expression, plus the terms that need a literal-word
@@ -1196,6 +1450,8 @@ public enum FTS5InlineQueryParser {
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
 ///   1.1 — #1297: `droppedOperands`, the operands a query typed but its expression leaves out
+///   1.2 — #1297 join: `isApproximate`; operands and dropped operands include the structured
+///          fields, and every dropped operand is negated
 public struct ParsedQuery: Sendable, Equatable {
 
     /// The MATCH expression, or `nil` when the input carries no positive search content.
@@ -1222,15 +1478,29 @@ public struct ParsedQuery: Sendable, Equatable {
     /// and its operands are reported here instead of in `operands`, so the Query Inspector
     /// can say they were not applied rather than showing them as working exclusions.
     /// Empty whenever `expression` is `nil`.
+    ///
+    /// Every dropped operand is negated: a negation is pushed inward before anything is left
+    /// out, so a positive term inside an excluded group is searched, never dropped. Nothing is
+    /// dropped beside a structured phrase or prefix, which anchors every complement.
     public let droppedOperands: [ParsedOperand]
+
+    /// Whether `expression` matches only part of what the query means, because the query as a
+    /// whole had no positive term to anchor its complement. Always `false` when `expression`
+    /// is `nil`.
+    ///
+    /// Not the same as a non-empty `droppedOperands`: what was left out can be a demoted
+    /// operator word with no operand, as in `-( -korea NOT )`, which renders `"korea"` and
+    /// drops nothing. This flag is the only report of that case.
+    public let isApproximate: Bool
 
     /// Creates a parsed query.
     public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = [],
-                droppedOperands: [ParsedOperand] = []) {
+                droppedOperands: [ParsedOperand] = [], isApproximate: Bool = false) {
         self.expression = expression
         self.exactTerms = exactTerms
         self.operands = operands
         self.droppedOperands = droppedOperands
+        self.isApproximate = isApproximate
     }
 }
 
@@ -1247,6 +1517,7 @@ public struct ParsedQuery: Sendable, Equatable {
 ///   1.0 — Q-2a: initial implementation
 ///   1.1 — #1297: `isNegated` is the operand's effective polarity in the expression, so
 ///          keyword `NOT` and `NOT (...)` report their operands excluded, as `-` always did
+///   1.2 — #1297 join: `source`, which tells a typed operand from one a structured field added
 public struct ParsedOperand: Sendable, Equatable {
 
     /// What kind of searchable unit this is.
@@ -1287,12 +1558,30 @@ public struct ParsedOperand: Sendable, Equatable {
     /// Whether it carried the `=` exact-word mark.
     public let isExact: Bool
 
+    /// Where an operand came from.
+    public enum Source: Sendable, Equatable {
+        /// Typed into the search box.
+        case typed
+        /// A structured field: the phrase, the prefix wildcard, or an excluded term.
+        case structured
+    }
+
+    /// Where this operand came from.
+    ///
+    /// A structured operand is reported after every typed one, and cannot always be re-spelled
+    /// as typed text — the prefix field `neg:oti` renders `"neg oti"*`, typed `neg oti*` renders
+    /// `"neg" AND "oti"*` — so anything that re-runs one operand on its own must use its field.
+    /// Part of equality: a value built by hand for a structured operand must pass `.structured`.
+    public let source: Source
+
     /// Creates an operand.
-    public init(text: String, rendered: String, kind: Kind, isNegated: Bool, isExact: Bool) {
+    public init(text: String, rendered: String, kind: Kind, isNegated: Bool, isExact: Bool,
+                source: Source = .typed) {
         self.text = text
         self.rendered = rendered
         self.kind = kind
         self.isNegated = isNegated
         self.isExact = isExact
+        self.source = source
     }
 }
