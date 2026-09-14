@@ -31,7 +31,7 @@
 /// | `OR` (any case) | either side matches | `Rusk OR Bundy` |
 /// | `AND` (any case) | both sides match | `cold and war` |
 /// | leading `-` | exclude a term, phrase or wildcard — or, attached to `(`, a group — from its AND-run, wherever it sits in the run | `-quarantine blockade`, `-"naval blockade"`, `cold -(korea OR vietnam)` |
-/// | `NOT` (any case) | exactly like `-`, before a term, phrase, wildcard, `NEAR(...)` or group; repeated marks exclude once | `cold NOT korea`, `not (korea OR vietnam) cold` |
+/// | `NOT` (any case) | the same exclusion as `-` before a term, phrase, wildcard or group, and the only way to exclude a `NEAR(...)`; repeated marks exclude once | `cold NOT korea`, `not (korea OR vietnam) cold`, `aid NOT NEAR(military europe, 5)` |
 /// | trailing `*` | prefix wildcard | `negoti*` |
 /// | `( ... )` | groups a sub-expression; combines with the rest of the query like any operand | `(aqaba OR tiran) AND (navigation OR passage OR transit)` |
 ///
@@ -122,6 +122,12 @@
 /// places the spellings differ, because there the keyword is text the researcher can see:
 /// `cold NOT (korea` excludes korea, and a `NOT` stranded by `cold NOT ()` is demoted to
 /// the word "not".
+///
+/// The rule reaches only a dash that begins a token, and only a group. A dash that is not
+/// the first character of its token is not attached to the parenthesis after it, so
+/// `cold --(korea)` still searches for the group. Nor does a dash reach `NEAR(...)`:
+/// `aid -NEAR(military europe, 5)` is the excluded word "near" beside a positive group of
+/// the words, as it always was, so a proximity is excluded only with `NOT NEAR(...)`.
 ///
 /// ## What this does *not* attempt
 /// - **Column filters** (`header:cold`) — handled separately via `columnPrefix`,
