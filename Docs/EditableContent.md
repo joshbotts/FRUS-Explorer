@@ -2938,11 +2938,11 @@ Counts are over the %lld volumes indexed on this device — not the whole publis
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.excludedDetail.v2 -->
 
-excluded — removes documents containing this from the matches of the terms it is typed with, not across OR
+excluded — documents containing this are removed wherever the expression above applies it
 
 <!-- END SOURCE: search.inspector.excludedDetail.v2 -->
 
-Note: the detail line under a term tagged EXCLUDED. Replaces `search.inspector.excludedDetail` (“excluded — documents containing this are removed”), which never had a block here; re-keyed for #1297, because an exclusion never removed documents across OR.
+Note: the detail line under a term tagged EXCLUDED. Replaces `search.inspector.excludedDetail` (“excluded — documents containing this are removed”), which never had a block here; re-keyed for #1297, because an exclusion is not a removal from the whole result set: it applies where the MATCH expression above applies it, which can reach across an OR (`NOT (cold OR -korea)` removes cold from korea’s matches).
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.notAppliedTag -->
 

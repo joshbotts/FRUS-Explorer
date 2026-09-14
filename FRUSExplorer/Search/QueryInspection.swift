@@ -66,6 +66,13 @@ struct QueryInspection: Sendable, Equatable {
     /// Whether every operand is present and none of them is the problem.
     var hasOperands: Bool { !operands.isEmpty }
 
+    /// Whether the strip shows term rows at all: applied operands, or operands the query typed
+    /// but did not apply.
+    ///
+    /// Not `hasOperands` alone: `and OR -korea` applies no operand (the literal `and` is not
+    /// one) yet leaves `korea` out, and that row is the only place the researcher learns it.
+    var showsTermRows: Bool { hasOperands || !notApplied.isEmpty }
+
     /// Whether any applied operand that is not excluded still lacks its scoped count — the
     /// condition for offering "Count each term in scope…".
     ///

@@ -122,7 +122,7 @@ struct QueryInspectorStrip: View {
         VStack(alignment: .leading, spacing: 6) {
             expressionRow
             if isExpanded {
-                if inspection.hasOperands || !inspection.notApplied.isEmpty { operandRows }
+                if inspection.showsTermRows { operandRows }
                 denominatorCaption
             }
         }
@@ -213,7 +213,10 @@ struct QueryInspectorStrip: View {
     /// No count line, stem warning, or EXCLUDED/EXACT tag: each describes how a term took
     /// part in the search, and this one took none. The row is one accessibility element so
     /// VoiceOver reads the term, the tag and the reason together rather than as three
-    /// unrelated fragments.
+    /// unrelated fragments — where the strip is hosted directly, as in the macOS Search window.
+    /// On iOS the strip sits inside a disclosure Button whose own accessibility label currently
+    /// replaces all of its content, so VoiceOver reaches none of these rows there (a separate
+    /// fix, not part of #1297).
     private func notAppliedRow(for operand: ParsedOperand) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             HStack(spacing: 6) {
@@ -239,9 +242,12 @@ struct QueryInspectorStrip: View {
         if item.operand.isNegated {
             // v2 (#1297): v1 said "documents containing this are removed", a removal from the
             // whole result set that was never true across OR — `cold -korea OR war` keeps war
-            // documents that mention korea. An exclusion belongs to the terms typed with it.
+            // documents that mention korea. Nor is "the terms typed with it" always the scope:
+            // `NOT (cold OR -korea)` renders `"korea" NOT "cold"`, so cold is removed from korea's
+            // matches across the OR it was typed in. The expression shown above is the one
+            // statement that holds in every shape, so the line points at it.
             return String(localized: "search.inspector.excludedDetail.v2",
-                          defaultValue: "excluded — removes documents containing this from the matches of the terms it is typed with, not across OR")
+                          defaultValue: "excluded — documents containing this are removed wherever the expression above applies it")
         }
         var parts: [String] = []
         if let scoped = item.scopedCount {

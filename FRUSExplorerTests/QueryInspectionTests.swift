@@ -468,6 +468,61 @@ struct QueryInspectionTests {
                 .map(\.text) == ["zzznothing"])
     }
 
+    @Test("Term rows show for applied operands or not-applied ones, and not for neither")
+    func showsTermRowsGate() throws {
+        let expression = RenderedExpression(corpus: "\"and\"", userContent: "\"and\"")
+        let korea = ParsedOperand(text: "korea", rendered: "NOT \"korea\"",
+                                  kind: .word, isNegated: true, isExact: false)
+        let europe = try #require(FTS5InlineQueryParser.parseDetailed("europe").operands.first)
+        let applied = InspectedOperand(operand: europe, stem: "europ", scopedCount: nil,
+                                       corpusDocumentFrequency: 2, corpusOccurrences: 2)
+        // `and OR -korea`: no applied operand, one not-applied one — the row must still show.
+        let onlyNotApplied = QueryInspection(expression: expression, operands: [],
+                                             indexedVolumeCount: 1, isFilterOnly: false,
+                                             notApplied: [korea])
+        let neither = QueryInspection(expression: expression, operands: [],
+                                      indexedVolumeCount: 1, isFilterOnly: false)
+        let onlyApplied = QueryInspection(expression: expression, operands: [applied],
+                                          indexedVolumeCount: 1, isFilterOnly: false)
+        #expect(onlyNotApplied.showsTermRows)
+        #expect(!neither.showsTermRows)
+        #expect(onlyApplied.showsTermRows)
+    }
+
+    /// The gate and the rows are view code no model test can reach, so these two checks read the
+    /// strip's own source — each scoped to the one member that must do it, not to the file.
+    @Test("The strip gates its term rows on showsTermRows and renders every not-applied operand")
+    func stripRendersNotAppliedRows() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        func member(_ signature: String) throws -> Substring {
+            let start = try #require(source.range(of: signature), "\(signature) not found")
+            var depth = 0, index = start.upperBound, opened = false
+            while index < source.endIndex {
+                if source[index] == "{" { depth += 1; opened = true }
+                if source[index] == "}" { depth -= 1; if opened && depth == 0 { break } }
+                index = source.index(after: index)
+            }
+            return source[start.lowerBound...index]
+        }
+        let stripStart = try #require(source.range(of: "struct QueryInspectorStrip"))
+        let strip = source[stripStart.lowerBound...]
+        let bodyStart = try #require(strip.range(of: "var body: some View {"))
+        var depth = 0, index = bodyStart.upperBound, opened = false
+        while index < strip.endIndex {
+            if strip[index] == "{" { depth += 1; opened = true }
+            if strip[index] == "}" { if depth == 0 { break }; depth -= 1 }
+            index = strip.index(after: index)
+        }
+        let body = strip[bodyStart.upperBound..<index]
+        #expect(body.contains("inspection.showsTermRows"), "the strip must gate term rows on showsTermRows")
+        #expect(!body.contains("inspection.hasOperands"), "hasOperands alone hides the row for `and OR -korea`")
+        let rows = try member("private var operandRows: some View")
+        #expect(rows.contains("inspection.notApplied"), "operandRows must iterate the not-applied operands")
+        #expect(rows.contains("notAppliedRow(for:"), "and render each with notAppliedRow(for:)")
+    }
+
     @Test("Replacing the operands carries every other fact across, the not-applied ones included")
     func replacingOperandsKeepsEverythingElse() throws {
         let operand = try #require(FTS5InlineQueryParser.parseDetailed("europe").operands.first)
