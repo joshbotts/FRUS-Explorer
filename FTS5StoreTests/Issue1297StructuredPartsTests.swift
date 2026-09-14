@@ -76,6 +76,28 @@ enum Issue1297StructuredCorpus {
     }
 }
 
+/// Every combination of the words a length-1–4 sweep can put in an approximation, so a render that matches nothing
+/// here matches nothing by construction, not because the truth table lacks a row.
+///
+/// The truth table holds "and", "or" and "not" only beside "memo", so `"cold" AND "not"` matches none of its rows
+/// while matching plenty of real documents. Here every subset of cold, war, korea, vietnam, and, or and not follows
+/// "memo", and a subset holding both cold and war appears twice — once as the phrase "cold war", once not.
+///
+/// Version history:
+///   1.0 — #1297 fixes: initial implementation
+enum Issue1297UniversalCorpus {
+    /// The words a swept approximation or structured exclusion can hold.
+    static let words = ["cold", "war", "korea", "vietnam", "and", "or", "not"]
+
+    /// Row bodies; index 0 holds rowid 1.
+    static let bodies: [String] = (0..<(1 << words.count)).flatMap { mask -> [String] in
+        let subset = words.enumerated().filter { mask & (1 << $0.offset) != 0 }.map(\.element)
+        let adjacent = (["memo"] + subset).joined(separator: " ")
+        guard subset.contains("cold"), subset.contains("war") else { return [adjacent] }
+        return [adjacent, (["memo", "war"] + subset.filter { $0 != "cold" && $0 != "war" } + ["cold"]).joined(separator: " ")]
+    }
+}
+
 /// An in-memory `porter unicode61` FTS5 table, queried for rowids.
 final class Issue1297StructuredTable {
     /// The open database handle.
@@ -85,13 +107,18 @@ final class Issue1297StructuredTable {
 
     /// The corpus as `d(body_text)`, or with `twoColumn` as `d2(header, body_text)` under a constant
     /// header, so a `{body_text}:` prefix has a column to scope away from.
-    init(twoColumn: Bool = false) {
+    convenience init(twoColumn: Bool = false) {
+        self.init(bodies: Issue1297StructuredCorpus.bodies, twoColumn: twoColumn)
+    }
+
+    /// `bodies` in order from rowid 1, in the same one- or two-column shape.
+    init(bodies: [String], twoColumn: Bool = false) {
         name = twoColumn ? "d2" : "d"
         sqlite3_open(":memory:", &db)
         sqlite3_exec(db, twoColumn
             ? "CREATE VIRTUAL TABLE d2 USING fts5(header, body_text, tokenize='porter unicode61');"
             : "CREATE VIRTUAL TABLE d USING fts5(body_text, tokenize='porter unicode61');", nil, nil, nil)
-        for (index, body) in Issue1297StructuredCorpus.bodies.enumerated() {
+        for (index, body) in bodies.enumerated() {
             insert(twoColumn ? "INSERT INTO d2(rowid, header, body_text) VALUES (?, 'heading', ?);"
                              : "INSERT INTO d(rowid, body_text) VALUES (?, ?);",
                    rowid: index + 1, values: [body])
@@ -193,6 +220,9 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 /// Version history:
 ///   1.0 — #1297: initial implementation — the judged join design's named table, finding-4 pins,
 ///          set oracle, combined sweep and column-span pin
+///   1.1 — #1297 fixes: parser 6.1's refusal of an approximation that provably matches nothing — twelve named
+///          cases, the oracle's proof mirror, and combinedSweep's count against a universal corpus; the exact-term
+///          sweep over `=cold` and `-=cold`, because combinedSweep's alphabet carries no `=`
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -376,6 +406,43 @@ struct Issue1297StructuredPartsTests {
                                                typedOperand("zzznothing", "\"zzznothing\"", .word, negated: false)],
                                     dropped: [typedOperand("formosa", "NOT \"formosa\"", .word, negated: true)],
                                     isApproximate: true),
+            // Parser 6.1: an approximation that matches nothing by construction is refused, not run. The anchor
+            // pushing inward exposes is removed in full by an exclusion beside it, so the query stays nil — refused
+            // with "nothing to search", as before the join — instead of a MATCH no document can satisfy.
+            Issue1297StructuredCase(typed: "-(war -korea) -korea", expression: nil, meaning: N(w).intersection(N(k))),
+            Issue1297StructuredCase(typed: "-(war -korea)", structured: StructuredQueryParts(excludedTerms: ["korea"]),
+                                    expression: nil, meaning: N(w).intersection(N(k))),
+            Issue1297StructuredCase(typed: "-( cold -korea )", structured: StructuredQueryParts(excludedTerms: ["korea"]),
+                                    expression: nil, meaning: N(c).intersection(N(k))),
+            // A structured exclusion carries no column prefix, so it removes a scoped anchor with the same core...
+            Issue1297StructuredCase(typed: "-(war -korea)", structured: StructuredQueryParts(excludedTerms: ["korea"]),
+                                    scoped: true, expression: nil, meaning: N(w).intersection(N(k))),
+            // ...and a typed exclusion removes an anchor in its own scope.
+            Issue1297StructuredCase(typed: "-(war -korea) -korea", scoped: true, expression: nil,
+                                    meaning: N(w).intersection(N(k))),
+            // The removed anchor need not be the whole approximation: every document `cold korea` matches holds korea.
+            Issue1297StructuredCase(typed: "cold korea OR -korea", structured: StructuredQueryParts(excludedTerms: ["korea"]),
+                                    expression: nil, meaning: N(k)),
+            // Nor need it be approximated itself: the alternative kept here is an exact render, and matches nothing.
+            Issue1297StructuredCase(typed: "korea -korea OR -korea", expression: nil, meaning: N(k)),
+            // The unscoped form of the scope guard below: the demoted word "not" is removed by `-not`.
+            Issue1297StructuredCase(typed: "(NOT OR -korea) -not", expression: nil, meaning: N(k).subtracting(notWord)),
+            // Guards. An exact render is never refused, even one that matches nothing, because it is what was typed...
+            Issue1297StructuredCase(typed: "korea -korea", expression: "\"korea\" NOT \"korea\"", meaning: [],
+                                    operands: [korea, notKorea]),
+            // ...nor an approximation that still matches something beside the part that cannot...
+            Issue1297StructuredCase(typed: "cold OR -(war -korea) -korea", expression: "\"cold\" OR \"korea\" NOT \"korea\"",
+                                    meaning: c.union(N(w).intersection(N(k))), approximation: c,
+                                    operands: [cold, korea, notKorea], dropped: [notWar], isApproximate: true),
+            // ...nor one whose anchor the exclusion's scope does not cover. A demoted operator word carries no column
+            // prefix, so a scoped `-not` cannot be shown to remove it — even though this table, whose only header is a
+            // constant, happens to hold no "not" outside the body.
+            Issue1297StructuredCase(typed: "(NOT OR -korea) -not", scoped: true,
+                                    expression: "(\"not\") NOT {body_text}:\"not\"",
+                                    meaning: N(k).subtracting(notWord), approximation: [],
+                                    operands: [typedOperand("not", "NOT {body_text}:\"not\"", .word, negated: true)],
+                                    dropped: [typedOperand("korea", "NOT {body_text}:\"korea\"", .word, negated: true)],
+                                    isApproximate: true),
         ]
     }()
 
@@ -383,7 +450,7 @@ struct Issue1297StructuredPartsTests {
     @Test("A typed query beside structured fields renders, matches and reports what the judged table says",
           arguments: Issue1297StructuredPartsTests.namedCases)
     func namedCombinations(_ c: Issue1297StructuredCase) throws {
-        #expect(Self.namedCases.count == 39)
+        #expect(Self.namedCases.count == 51)
         let table = Issue1297StructuredTable(twoColumn: c.scoped)
         let parsed = FTS5InlineQueryParser.parseDetailed(c.typed, columnPrefix: c.scoped ? "{body_text}:" : "",
                                                          structured: c.structured)
@@ -442,7 +509,9 @@ struct Issue1297StructuredPartsTests {
     /// The generated query that runs with its structured fields beside it, and a failure log.
     ///
     /// Every expectation is built from `Issue1297OracleModel`, which knows sets and the owner's
-    /// anchoring policy and never sees an FTS5 string.
+    /// anchoring policy and never sees an FTS5 string. It mirrors parser 6.1's refusal from operand identities
+    /// alone (`Issue1297OracleProof`), never from the rows a render matched, so a render left empty only by this
+    /// corpus is still expected to run.
     @Test("Generated queries beside every structured combination match the set oracle's rows, operands, drops, exact terms and approximation",
           arguments: [Issue1297StructuredOracleRun(seed: 1297, attachDash: false),
                       Issue1297StructuredOracleRun(seed: 1299, attachDash: true)])
@@ -465,8 +534,8 @@ struct Issue1297StructuredPartsTests {
             let typedCount = typedHarvest.texts.count
             var droppedAlone = Set<Int>()
             let typedLacks = Issue1297OracleModel.meaning(typedModel, typedHarvest).contains(1)
-            let typedAlonePolicy = Issue1297OracleModel.policy(typedModel, negated: false, pushInward: true,
-                                                               typedHarvest, dropped: &droppedAlone)
+            let typedAlonePolicy = Issue1297OracleModel.searched(typedModel, pushInward: true, typedHarvest,
+                                                                 scoped: false, dropped: &droppedAlone)
 
             for (combinationIndex, combination) in Self.combinations.enumerated() {
                 let scoped = (queryIndex + combinationIndex) % 4 == 0
@@ -486,10 +555,12 @@ struct Issue1297StructuredPartsTests {
                 }
                 let root = Issue1297OracleModel.and(parts)
                 let meaning = Issue1297OracleModel.meaning(root, harvest)
-                var dropped = Set<Int>(), droppedWithoutPush = Set<Int>()
-                let policy = Issue1297OracleModel.policy(root, negated: false, pushInward: true, harvest, dropped: &dropped)
-                let policyWithoutPush = Issue1297OracleModel.policy(root, negated: false, pushInward: false, harvest,
-                                                                    dropped: &droppedWithoutPush)
+                var dropped = Set<Int>(), droppedWithoutPush = Set<Int>(), droppedUnrefused = Set<Int>()
+                let policy = Issue1297OracleModel.searched(root, pushInward: true, harvest, scoped: scoped, dropped: &dropped)
+                let policyWithoutPush = Issue1297OracleModel.searched(root, pushInward: false, harvest, scoped: scoped,
+                                                                      dropped: &droppedWithoutPush)
+                let unrefused = Issue1297OracleModel.policy(root, negated: false, pushInward: true, harvest, scoped: scoped,
+                                                            dropped: &droppedUnrefused)
                 var parity: [Int: Bool] = [:]
                 Issue1297OracleModel.parity(root, negated: false, into: &parity)
                 let everyOperand = harvest.texts.indices.map {
@@ -513,6 +584,10 @@ struct Issue1297StructuredPartsTests {
                 } else {
                     events["nil", default: 0] += 1
                 }
+                // Refused by 6.1: the policy anchors, and the proof shows the approximation matches nothing.
+                if policy == nil, unrefused != nil { events["refused", default: 0] += 1 }
+                // Run although it matches nothing here: empty only on this corpus, or beyond what operands can prove.
+                if let policy, meaning.contains(1), policy.isEmpty { events["approximationEmptyUnproved", default: 0] += 1 }
                 if typedLacks, hasStructuredPositive {
                     events[typedAlonePolicy == nil ? "finding1" : "finding2", default: 0] += 1
                 }
@@ -563,7 +638,10 @@ struct Issue1297StructuredPartsTests {
         #expect(events["finding1", default: 0] > 1_200)
         #expect(events["finding2", default: 0] > 8_000)
         #expect(events["pushInward", default: 0] > 1_000)
-        #expect(events["keptNegatedBesideDrops", default: 0] > 4_500)
+        // 5,000 and 4,968 before parser 6.1, whose refusals take 576 and 515 of these queries to nil (4,424 and 4,453).
+        #expect(events["keptNegatedBesideDrops", default: 0] > 4_000)
+        // Measured 699 and 623: the oracle reaches the refusal on its own, not only through the named cases.
+        #expect(events["refused", default: 0] > 600)
         #expect(failures.isEmpty, "\(samples)")
     }
 
@@ -571,15 +649,22 @@ struct Issue1297StructuredPartsTests {
 
     /// Every short token sequence beside every structured combination, checked by invariants and a
     /// metamorphic identity rather than by expected strings.
+    ///
+    /// A render that matches nothing on the truth table while the query means something is re-run on
+    /// `Issue1297UniversalCorpus`: empty there too, it matches nothing by construction, which parser 6.1 refuses,
+    /// so the count must be zero; the rest are empty only because the truth table lacks a row, and are counted.
+    /// Exact terms are swept by `exactTermsSweep`: this alphabet carries no `=`.
     @Test("Every token sequence of length 1-4 beside every structured combination is valid, reports consistently, and applies every typed operand beside a structured phrase or prefix",
           arguments: [false, true])
     func combinedSweep(scoped: Bool) throws {
         let table = Issue1297StructuredTable(twoColumn: scoped)
+        let universalTable = Issue1297StructuredTable(bodies: Issue1297UniversalCorpus.bodies, twoColumn: scoped)
         let prefix = scoped ? "{body_text}:" : "", otherPrefix = scoped ? "" : "{body_text}:"
         let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: Issue1297PropertyTests.alphabet + ["-("])
         #expect(sequences.count == 11_110)
         let phraseRows = Issue1297StructuredCorpus.P("cold war"), prefixRows = Issue1297StructuredCorpus.X("viet")
         var compared = 0, executed = 0, metamorphic = 0, approximateWithoutDrops = 0
+        var emptyByConstruction = 0, emptyByCoincidence = 0
         var approximateWithoutDropsSequences = Set<String>()
         var failures: [String: Int] = [:]
         var samples: [String] = []
@@ -599,7 +684,8 @@ struct Issue1297StructuredPartsTests {
                 fail("memo anchor did not run", "\(typed) -> \(anchored.expression ?? "nil")")
                 continue
             }
-            let alone = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix)
+            // The typed query's meaning on the universal corpus, read only when a render comes back empty.
+            var universalTypedRows: Set<Int>?
 
             for combination in Self.combinations {
                 compared += 1
@@ -613,7 +699,6 @@ struct Issue1297StructuredPartsTests {
                     fail("reporting depends on the column prefix", label)
                 }
                 if parsed.droppedOperands.contains(where: { !$0.isNegated }) { fail("positive operand dropped", label) }
-                if parsed.exactTerms != alone.exactTerms { fail("exactTerms differ from the typed-alone parse", label) }
 
                 guard let expression = parsed.expression else {
                     if !parsed.operands.isEmpty || !parsed.droppedOperands.isEmpty || !parsed.exactTerms.isEmpty
@@ -641,8 +726,19 @@ struct Issue1297StructuredPartsTests {
                     if parsed.operands.filter({ $0.source == .typed }) != anchored.operands.filter({ $0.source == .typed }) {
                         fail("typed operands beside a structured positive are not the fully applied set", label)
                     }
-                } else if !got.isSubset(of: expected) {
-                    fail("superset without a structured positive", "\(label) got \(got.sorted())")
+                } else {
+                    if !got.isSubset(of: expected) { fail("superset without a structured positive", "\(label) got \(got.sorted())") }
+                    if got.isEmpty, !expected.isEmpty {
+                        if universalTypedRows == nil { universalTypedRows = try universalTable.rows(anchoredExpression) }
+                        var universalMeaning = universalTypedRows ?? []
+                        for term in combination.excludedTerms { universalMeaning.subtract(try universalTable.rows("\"\(term)\"")) }
+                        if try universalTable.rows(expression).isEmpty, !universalMeaning.isEmpty {
+                            emptyByConstruction += 1
+                            fail("approximation matches nothing by construction", label)
+                        } else {
+                            emptyByCoincidence += 1
+                        }
+                    }
                 }
                 if parsed.isApproximate && parsed.droppedOperands.isEmpty {
                     approximateWithoutDrops += 1
@@ -651,15 +747,87 @@ struct Issue1297StructuredPartsTests {
             }
         }
 
-        print("[1297] combined sweep scoped=\(scoped) compared=\(compared) executed=\(executed) metamorphic=\(metamorphic) approximateWithoutDrops=\(approximateWithoutDrops) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " "))")
+        print("[1297] combined sweep scoped=\(scoped) compared=\(compared) executed=\(executed) metamorphic=\(metamorphic) approximateWithoutDrops=\(approximateWithoutDrops) emptyByConstruction=\(emptyByConstruction) emptyByCoincidence=\(emptyByCoincidence) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " "))")
         #expect(compared == 111_100)
-        #expect(executed == 107_408)
+        // 107,408 before parser 6.1, which refuses 146 renders per scope that matched nothing by construction.
+        #expect(executed == 107_262)
         #expect(metamorphic == 66_660)
         // Pushing negation inward can leave out nothing but a demoted operator word, which has no operand
-        // to report. These five sequences, beside the four combinations with no positive, are all of them.
-        #expect(approximateWithoutDrops == 20)
+        // to report. These five sequences, beside the two combinations with no positive and no korea exclusion,
+        // are all of them: beside `[korea]` and `[korea, vietnam]` all five expose korea only to have it excluded,
+        // so 6.1 refuses them (20 before it).
+        #expect(approximateWithoutDrops == 10)
         #expect(approximateWithoutDropsSequences == ["-( -korea NOT )", "-( -korea AND )", "-( -korea OR )",
                                                      "-( AND -korea )", "-( OR -korea )"])
+        // Measured over this sweep before 6.1: 500 renders per both scopes matched no truth-table row while the query
+        // meant something — 292 by construction, and 208 only because the truth table holds "and", "or" and "not"
+        // beside nothing but "memo" (`"cold" AND "not"`). The first class is refused; the second is not provable from
+        // operands and runs.
+        #expect(emptyByConstruction == 0)
+        #expect(emptyByCoincidence == 104)
+        #expect(failures.isEmpty, "\(samples)")
+    }
+
+    // MARK: - The exact-term sweep
+
+    /// `combinedSweep`'s alphabet with `=cold` and `-=cold` in place of the words cold and AND, since that alphabet
+    /// carries no `=` and every exact-term list it parses is empty.
+    static let exactAlphabet = ["=cold", "-=cold", "war", "-korea", "NOT", "korea", "OR", "(", ")", "-("]
+
+    /// The exact-word post-filter `SearchService` reads from the combined parse, over sequences that can mark a word.
+    ///
+    /// Two checks. The post-filter is exactly the positive typed `=` operands the expression applies, once each; and
+    /// wherever the typed text also renders on its own, it is that parse's post-filter — the structured fields add no
+    /// exact term and take none away. Where the typed text alone is refused (6.1) but a structured phrase or prefix
+    /// anchors the combination, the combined parse reports the terms it applies, and those are counted, not compared.
+    @Test("Every token sequence of length 1-4 with =cold and -=cold reports, beside every structured combination, the exact terms it applies, and the typed-alone parse's wherever both render",
+          arguments: [false, true])
+    func exactTermsSweep(scoped: Bool) {
+        let prefix = scoped ? "{body_text}:" : ""
+        let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: Self.exactAlphabet)
+        #expect(sequences.count == 11_110)
+        var compared = 0, besidePositive = 0, withoutPositive = 0, approximate = 0, typedAloneRefused = 0
+        var failures: [String: Int] = [:]
+        var samples: [String] = []
+        func fail(_ category: String, _ detail: String) {
+            failures[category, default: 0] += 1
+            if samples.count < 8 { samples.append("[\(category)] \(detail)") }
+        }
+
+        for typed in sequences {
+            let alone = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix)
+            for combination in Self.combinations {
+                compared += 1
+                let hasStructuredPositive = combination.phrase != nil || combination.prefixWildcard != nil
+                let parsed = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix, structured: combination)
+                let label = "\(typed) \(combination) -> \(parsed.expression ?? "nil") \(parsed.exactTerms)"
+                var seen = Set<String>()
+                let applied = parsed.operands.filter { $0.isExact && !$0.isNegated && $0.source == .typed }
+                    .map(\.text).filter { seen.insert($0).inserted }
+                if parsed.exactTerms != applied { fail("exactTerms are not the positive applied = operands", label) }
+                guard parsed.expression != nil else {
+                    if !parsed.exactTerms.isEmpty { fail("exact terms without an expression", label) }
+                    continue
+                }
+                if alone.expression != nil {
+                    if parsed.exactTerms != alone.exactTerms { fail("exactTerms differ from the typed-alone parse", label) }
+                } else if !parsed.exactTerms.isEmpty {
+                    typedAloneRefused += 1
+                }
+                guard !parsed.exactTerms.isEmpty else { continue }
+                if hasStructuredPositive { besidePositive += 1 } else { withoutPositive += 1 }
+                if parsed.isApproximate { approximate += 1 }
+            }
+        }
+
+        print("[1297] exact-term sweep scoped=\(scoped) compared=\(compared) besidePositive=\(besidePositive) withoutPositive=\(withoutPositive) approximate=\(approximate) typedAloneRefused=\(typedAloneRefused) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " "))")
+        #expect(compared == 111_100)
+        // Each branch must actually carry exact terms, or its comparison is as vacuous as the one this sweep replaces.
+        #expect(besidePositive > 0)
+        #expect(withoutPositive > 0)
+        #expect(approximate > 0)
+        // Only 6.1 refuses a typed text that marks a positive `=` word, so before it this was zero.
+        #expect(typedAloneRefused > 0)
         #expect(failures.isEmpty, "\(samples)")
     }
 
@@ -800,53 +968,191 @@ indirect enum Issue1297OracleModel {
         }
     }
 
-    /// The rows the owner's policy searches for `model` under `negated`, or `nil` when nothing anchors,
-    /// with the leaves it leaves out added to `dropped`.
+    /// The rows the owner's policy searches for `model` under `negated`, with what the renderer can prove about
+    /// them, or `nil` when nothing anchors; the leaves it leaves out are added to `dropped`.
     ///
     /// Row 1 holds no query term, so a set containing it is a complement FTS5 cannot search on its own.
     /// A conjunction (or a negated disjunction) approximates what anchors and excludes the rest exactly;
     /// a disjunction (or a negated conjunction) keeps what anchors and leaves out every leaf of the rest.
     /// `pushInward: false` is the rule before negation was pushed into a complement, kept to count how
-    /// often pushing changes the answer.
+    /// often pushing changes the answer. The root refusal is `searched`'s, not this function's.
     static func policy(_ model: Issue1297OracleModel, negated: Bool, pushInward: Bool,
-                       _ harvest: Issue1297OracleHarvest, dropped: inout Set<Int>) -> Set<Int>? {
+                       _ harvest: Issue1297OracleHarvest, scoped: Bool, dropped: inout Set<Int>) -> Issue1297OracleAnchor? {
         let rows = effective(model, negated: negated, harvest)
-        if !rows.contains(1) { return rows }
+        if !rows.contains(1) {
+            return Issue1297OracleAnchor(rows: rows, proof: exactProof(model, negated: negated, harvest, scoped: scoped))
+        }
         switch model {
         case .leaf:
             return nil
         case .not(let inner):
-            return pushInward ? policy(inner, negated: !negated, pushInward: pushInward, harvest, dropped: &dropped) : nil
+            return pushInward
+                ? policy(inner, negated: !negated, pushInward: pushInward, harvest, scoped: scoped, dropped: &dropped)
+                : nil
         case .and(let members) where !negated, .or(let members) where negated:
-            var approximation: Set<Int>?
+            var approximations: [Issue1297OracleAnchor] = []
+            var exclusions: [Issue1297OracleProof] = []
             var excluded = Issue1297StructuredCorpus.all
             var local = Set<Int>()
             for member in members {
                 var memberDropped = Set<Int>()
-                if let anchored = policy(member, negated: negated, pushInward: pushInward, harvest, dropped: &memberDropped) {
-                    approximation = approximation.map { $0.intersection(anchored) } ?? anchored
+                if let anchored = policy(member, negated: negated, pushInward: pushInward, harvest, scoped: scoped,
+                                         dropped: &memberDropped) {
+                    approximations.append(anchored)
                     local.formUnion(memberDropped)
                 } else {
                     excluded.formIntersection(effective(member, negated: negated, harvest))
+                    exclusions.append(exactProof(member, negated: negated, harvest, scoped: scoped))
                 }
             }
-            guard let approximation else { return nil }
+            guard let first = approximations.first else { return nil }
             dropped.formUnion(local)
-            return approximation.intersection(excluded)
+            let approximation = approximations.dropFirst().reduce(first.rows) { $0.intersection($1.rows) }
+            return Issue1297OracleAnchor(rows: approximation.intersection(excluded),
+                                         proof: .conjunction(approximations.map(\.proof), exclusions))
         case .and(let members), .or(let members):
-            var kept: Set<Int>?
+            var kept: [Issue1297OracleAnchor] = []
             for member in members {
                 var memberDropped = Set<Int>()
-                if let anchored = policy(member, negated: negated, pushInward: pushInward, harvest, dropped: &memberDropped) {
-                    kept = (kept ?? []).union(anchored)
+                if let anchored = policy(member, negated: negated, pushInward: pushInward, harvest, scoped: scoped,
+                                         dropped: &memberDropped) {
+                    kept.append(anchored)
                     dropped.formUnion(memberDropped)
                 } else {
                     dropped.formUnion(leaves(member))
                 }
             }
-            return kept
+            guard !kept.isEmpty else { return nil }
+            return Issue1297OracleAnchor(rows: kept.reduce(Set<Int>()) { $0.union($1.rows) },
+                                         proof: .disjunction(kept.map(\.proof)))
         }
     }
+
+    /// The rows the query that runs searches: `policy` at the root, refused — `nil`, nothing dropped — when the query
+    /// is approximated and the proof shows the approximation matches no document (parser 6.1).
+    static func searched(_ root: Issue1297OracleModel, pushInward: Bool, _ harvest: Issue1297OracleHarvest,
+                         scoped: Bool, dropped: inout Set<Int>) -> Set<Int>? {
+        var local = Set<Int>()
+        guard let anchor = policy(root, negated: false, pushInward: pushInward, harvest, scoped: scoped, dropped: &local)
+        else { return nil }
+        if meaning(root, harvest).contains(1), anchor.proof.isEmpty { return nil }
+        dropped.formUnion(local)
+        return anchor.rows
+    }
+
+    /// What the renderer can prove about `model`'s exact render under `negated`: about the documents it matches, or,
+    /// for a complement, about the documents it lacks.
+    ///
+    /// Built the way the parser builds an exact render, member by member: a conjunction with a matching member is
+    /// those members less the complements' exclusions, one without is the union of what they exclude, and a
+    /// disjunction with a complement lacks the complements' conjunction less the matching alternatives.
+    static func exactProof(_ model: Issue1297OracleModel, negated: Bool, _ harvest: Issue1297OracleHarvest,
+                           scoped: Bool) -> Issue1297OracleProof {
+        func signed(_ members: [Issue1297OracleModel]) -> (matching: [Issue1297OracleProof], lacking: [Issue1297OracleProof]) {
+            var matching: [Issue1297OracleProof] = [], lacking: [Issue1297OracleProof] = []
+            for member in members {
+                let proof = exactProof(member, negated: negated, harvest, scoped: scoped)
+                if effective(member, negated: negated, harvest).contains(1) {
+                    lacking.append(proof)
+                } else {
+                    matching.append(proof)
+                }
+            }
+            return (matching, lacking)
+        }
+        switch model {
+        case .leaf(let index):
+            return .leaf(key(index, harvest, scoped: scoped))
+        case .not(let inner):
+            return exactProof(inner, negated: !negated, harvest, scoped: scoped)
+        case .and(let members) where !negated, .or(let members) where negated:
+            let (matching, lacking) = signed(members)
+            return matching.isEmpty ? .disjunction(lacking) : .conjunction(matching, lacking)
+        case .and(let members), .or(let members):
+            let (matching, lacking) = signed(members)
+            guard !lacking.isEmpty else { return .disjunction(matching) }
+            let excluded = Issue1297OracleProof.conjunction(lacking, [])
+            return matching.isEmpty ? excluded : .conjunction([excluded], matching)
+        }
+    }
+
+    /// The identity the proof compares a leaf by: its core without the column prefix, and whether it carries one.
+    ///
+    /// A phrase never carries the prefix, nor does a structured excluded term; every other typed operand does, and
+    /// so does the structured prefix wildcard.
+    static func key(_ index: Int, _ harvest: Issue1297OracleHarvest, scoped: Bool) -> Issue1297OracleKey {
+        let kind = harvest.kinds[index]
+        let carriesPrefix = scoped && kind != .phrase && !(harvest.sources[index] == .structured && kind == .word)
+        let text = harvest.texts[index]
+        return Issue1297OracleKey(core: kind == .word || kind == .phrase ? "\"\(text)\"" : text, scoped: carriesPrefix)
+    }
+}
+
+/// A leaf as the oracle's proof identifies it.
+struct Issue1297OracleKey: Hashable {
+    /// The leaf's core, without a column prefix.
+    let core: String
+    /// Whether it carries the column prefix.
+    let scoped: Bool
+
+    /// Whether every document matching `anchor` matches `self`: the same core, in a scope spanning the anchor's. An
+    /// unscoped leaf spans either; a scoped one only a scoped anchor.
+    func covers(_ anchor: Issue1297OracleKey) -> Bool {
+        core == anchor.core && (!scoped || anchor.scoped)
+    }
+}
+
+/// What can be proved about an expression from its leaves alone, mirroring the parser's proof (6.1) over the
+/// model — computed from operand identities, never from the rows anything matched.
+struct Issue1297OracleProof {
+    /// Leaves every matching document matches.
+    var required: Set<Issue1297OracleKey> = []
+    /// Leaves any one of which makes a document match.
+    var sufficient: Set<Issue1297OracleKey> = []
+    /// Leaves no matching document matches.
+    var forbidden: Set<Issue1297OracleKey> = []
+    /// Whether no document can match: a required leaf is covered by a forbidden one.
+    var isEmpty = false
+
+    /// One leaf.
+    static func leaf(_ key: Issue1297OracleKey) -> Issue1297OracleProof {
+        Issue1297OracleProof(required: [key], sufficient: [key])
+    }
+
+    /// Every one of `positives` (at least one), less whatever any of `exclusions` matches.
+    static func conjunction(_ positives: [Issue1297OracleProof], _ exclusions: [Issue1297OracleProof]) -> Issue1297OracleProof {
+        var proof = Issue1297OracleProof()
+        for positive in positives {
+            proof.required.formUnion(positive.required)
+            proof.forbidden.formUnion(positive.forbidden)
+        }
+        for exclusion in exclusions { proof.forbidden.formUnion(exclusion.sufficient) }
+        proof.sufficient = exclusions.isEmpty
+            ? positives.dropFirst().reduce(positives[0].sufficient) { $0.intersection($1.sufficient) } : []
+        proof.isEmpty = positives.contains { $0.isEmpty }
+            || proof.required.contains { anchor in proof.forbidden.contains { $0.covers(anchor) } }
+        return proof
+    }
+
+    /// Any one of `parts` (at least one).
+    static func disjunction(_ parts: [Issue1297OracleProof]) -> Issue1297OracleProof {
+        var proof = parts[0]
+        for part in parts.dropFirst() {
+            proof.required.formIntersection(part.required)
+            proof.sufficient.formUnion(part.sufficient)
+            proof.forbidden.formIntersection(part.forbidden)
+            proof.isEmpty = proof.isEmpty && part.isEmpty
+        }
+        return proof
+    }
+}
+
+/// An anchored policy result: the rows it searches, and what the renderer can prove about them.
+struct Issue1297OracleAnchor {
+    /// The rows searched.
+    let rows: Set<Int>
+    /// What the operands alone prove about them.
+    let proof: Issue1297OracleProof
 }
 
 /// Generates a query's text and its model together, from one random stream.

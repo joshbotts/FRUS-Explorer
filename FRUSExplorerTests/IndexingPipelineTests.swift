@@ -718,6 +718,31 @@ struct SearchParametersTests {
             }
         }
     }
+
+    /// Parser 6.1: pushing `-(war -korea)` inward anchors it on korea, which the restored excluded term then
+    /// removes in full. The approximation could match no document, so the query is refused as it was before the
+    /// join, rather than running `"korea" NOT "korea"` in every scope.
+    @Test("An anchor a restored exclusion removes in full still throws emptyQuery, in every scope")
+    func approximationRemovedByStructuredExclusionThrows() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            var summariesOnly = SearchParameters(keywords: "-(war -korea)", excludedTerms: ["korea"])
+            summariesOnly.includeDocumentText = false
+            summariesOnly.includeSummaries = true
+            summariesOnly.includeNotes = false
+            for params in [SearchParameters(keywords: "-(war -korea)", excludedTerms: ["korea"]), summariesOnly] {
+                do {
+                    let pair = try await service.makeMatchExpressions(from: params)
+                    Issue.record("Expected emptyQuery error, got \(String(describing: pair))")
+                } catch FTS5Error.emptyQuery {
+                    // expected
+                }
+            }
+            #expect(SearchService.parsedQuery(for: SearchParameters(keywords: "-(war -korea)", excludedTerms: ["korea"]))
+                    == ParsedQuery(expression: nil, exactTerms: []))
+        }
+    }
 }
 
 // MARK: - ConcurrencyTest
