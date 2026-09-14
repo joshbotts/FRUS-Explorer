@@ -109,6 +109,8 @@ struct FeatureInfoItem: Identifiable {
 ///         override control there. Every existing caller keeps its shape through the
 ///         `Footer == EmptyView` convenience init, where the static factories now live
 ///         (a static member of the generic type could not name a concrete Self).
+///   1.4 — #1297: `corpusAnalytics`'s Multiple words row says an exclusion applies to the words
+///         it is typed with, wherever it sits (`analytics.info.multiword.body.v2`)
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -192,9 +194,10 @@ extension FeatureInfoButton where Footer == EmptyView {
     }
 
     /// The Corpus Analytics info button — the shared replacement for that view's former
-    /// hand-rolled popover. The heading and the five explanation rows reuse the original
-    /// `analytics.info.*` keys and copy verbatim, so the shipped text (and String Catalog
-    /// entries) are unchanged.
+    /// hand-rolled popover. The heading and the explanation rows reuse the original
+    /// `analytics.info.*` keys and copy verbatim, except Multiple words, re-keyed to
+    /// `analytics.info.multiword.body.v2` when #1297 made an exclusion apply to the words it
+    /// is typed with wherever it sits.
     static var corpusAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
@@ -207,8 +210,8 @@ extension FeatureInfoButton where Footer == EmptyView {
                                    defaultValue: "Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
-                    detail: String(localized: "analytics.info.multiword.body",
-                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term. All of this works exactly as it does in the Search box.")),
+                    detail: String(localized: "analytics.info.multiword.body.v2",
+                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. All of this works exactly as it does in the Search box.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body",

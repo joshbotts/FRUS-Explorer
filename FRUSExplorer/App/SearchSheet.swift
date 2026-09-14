@@ -101,6 +101,9 @@ import SwiftUI
 ///          user last opened), preserving the click-to-open behavior
 ///   1.15 — #1275 follow-up: the Advanced popover's My Tags list follows the reader's tag order,
 ///          over a tag query now sorted by name so the order has an alphabetical baseline
+///   1.16 — #1297: the search tips stop calling lowercase or/not literal words (false since
+///          Session 159), say an exclusion applies to the terms typed with it wherever it sits
+///          and is the same as NOT, and that `-(…)` or `NOT (…)` excludes a group
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -2146,10 +2149,10 @@ struct MacSearchWindowView: View {
             // strictly more power (mixed AND/OR/NOT/grouping per query, not one global mode).
             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 6) {
                 TipItem(code: "\"exact phrase\"", description: "match these words in this exact order")
-                TipItem(code: "term1 OR term2",   description: "match either term (capital OR — lowercase \"or\" is a literal word)")
-                TipItem(code: "-word",            description: "exclude documents containing this word (also: capital NOT)")
+                TipItem(code: "term1 OR term2",   description: "match either term — OR, AND and NOT work in any case")
+                TipItem(code: "-word",            description: "exclude documents containing this word from the terms typed with it, wherever it sits (same as NOT word)")
                 TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
-                TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match (capital OR inside parens)")
+                TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match; -(a OR b) or NOT (a OR b) excludes a group")
                 TipItem(code: "NEAR(a b, 30)",    description: "proximity — both within 30 words of each other; operands may be phrases or term*")
                 TipItem(code: "=word",            description: "exact word — \"=containment\" excludes contain, containing, container")
                 TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")

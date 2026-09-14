@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1206,7 +1206,7 @@ Where a note resolves to a NARA series or file unit, the explorer links straight
 ---
 
 ### Corpus Analytics — Info Popover ("About these results")
-<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged. Edit once in FRUSTheme.swift to change both platforms. -->
+<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What the numbers mean
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 183–184 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
@@ -1216,11 +1216,13 @@ Each bar shows the number of indexed FRUS documents that contain your search ter
 <!-- END SOURCE: analytics.info.metric.body -->
 
 #### Multiple words
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 187–188 | key: analytics.info.multiword.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 213–214 | key: analytics.info.multiword.body.v2 | shared: iOS+macOS (single edit point) -->
 
-Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term. All of this works exactly as it does in the Search box.
+Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. All of this works exactly as it does in the Search box.
 
-<!-- END SOURCE: analytics.info.multiword.body -->
+<!-- END SOURCE: analytics.info.multiword.body.v2 -->
+
+Note: replaces `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion applies: to the words it is typed with, wherever it sits among them, and never across OR.
 
 #### Phrases
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 191–192 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
@@ -2933,6 +2935,28 @@ Documents and your own summaries/notes are searched with different expressions, 
 Counts are over the %lld volumes indexed on this device — not the whole published series.
 
 <!-- END SOURCE: search.inspector.denominator -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.excludedDetail.v2 -->
+
+excluded — removes documents containing this from the matches of the terms it is typed with, not across OR
+
+<!-- END SOURCE: search.inspector.excludedDetail.v2 -->
+
+Note: the detail line under a term tagged EXCLUDED. Replaces `search.inspector.excludedDetail` (“excluded — documents containing this are removed”), which never had a block here; re-keyed for #1297, because an exclusion never removed documents across OR.
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.notAppliedTag -->
+
+NOT APPLIED
+
+<!-- END SOURCE: search.inspector.notAppliedTag -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.notAppliedDetail -->
+
+not searched — an OR alternative made only of exclusions has nothing to search for, so it was left out
+
+<!-- END SOURCE: search.inspector.notAppliedDetail -->
+
+Note: the tag and detail line on a term the query typed but its expression leaves out — the `-korea` in `cold OR -korea` (#1297). Such a term is never counted or blamed.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.combination -->
 

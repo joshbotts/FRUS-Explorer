@@ -327,11 +327,15 @@ Type and press Return; results update in real time as you refine. FRUS Explorer 
 |--------|---------|--------|
 | Plain keywords | `berlin crisis` | Both words required (AND implied) |
 | Quoted phrase | `"cold war"` | Exact phrase |
-| Boolean AND / OR / NOT | `kissinger AND détente` · `vietnam NOT laos` | Explicit boolean logic |
+| Boolean AND / OR / NOT | `kissinger AND détente` · `vietnam NOT laos` | Explicit boolean logic, in any case; quote an operator (`"and"`) to search for the word itself |
+| Exclusion | `-laos vietnam` · `vietnam AND NOT laos` | Excludes the word from the terms it is typed with, wherever it sits among them; `-word` and `NOT word` are the same |
 | Grouping | `(aqaba OR tiran) AND navig*` | Parentheses nest to any depth |
+| Excluding a group | `vietnam -(laos OR cambodia)` · `vietnam NOT (laos OR cambodia)` | Excludes everything the group matches. The `-` must touch the parenthesis: on its own a `-` is ignored, so `vietnam - (laos OR cambodia)` searches *for* the group |
 | Prefix wildcard | `negoti*` | negotiate, negotiated, negotiating… (suffix wildcards like `*tion` are not supported) |
 | Proximity | `NEAR("military guarantee" Europe, 30)` | Both operands within 30 words |
 | Exact word | `=containment` | The literal word only — not *contain*, *containing*, *container* |
+
+**Exclusions and OR.** An exclusion applies to the terms it is typed with and does not reach across `OR`: `cold -korea OR war` finds documents with *cold* but not *korea*, plus every document with *war*. To exclude from every alternative, group them: `(cold OR war) -korea`. `AND NOT korea` means the same as `-korea`, and doubling the mark (`NOT -korea`) still just excludes *korea*. An `OR` alternative made only of exclusions has nothing to search for on its own, because full-text search finds documents by the words they contain: in `cold OR -korea` the `-korea` is left out, the search runs as `cold` alone, and the Query Inspector marks *korea* **NOT APPLIED**. Put in parentheses beside a word to search for, the same `OR` is searched exactly and nothing is left out — `war (cold OR -korea)` finds the *war* documents that mention *cold* or do not mention *korea*.
 
 **Proximity (`NEAR`).** Two words merely co-occurring in a document tells you little — a hundred-page volume can mention almost anything twice. `NEAR` asks whether the ideas appeared *together*. Operands may be words, phrases, or prefixes (`NEAR(militar* europ*, 20)`); the distance defaults to 10; `NEAR/20(a b)` is accepted as an alternative spelling; and booleans cannot go *inside* a `NEAR` — write `NEAR(a b, 20) OR NEAR(c d, 20)` (if you do write the other form, the app searches your words as an ordinary grouped query rather than failing).
 
@@ -339,7 +343,7 @@ Type and press Return; results update in real time as you refine. FRUS Explorer 
 
 ### 7.3 The Query Inspector
 
-Under the search controls, a strip shows the **FTS5 expression your query actually became** — the string sent to the database, not a paraphrase. Expand it to see, per term: the **index form** it was reduced to, with a warning when that is broader than what you typed (`containment` is searched as `contain`); how many documents contain the term **across everything you have indexed** (free to compute, updates as you type); and, on request, the **exact count within your current filters** (a real query per term, so it sits behind a button). The gap between the two counts is itself information — a term common in the corpus but rare in your scope is telling you something about your scope. The expression line never hides; if you publish method appendices, it is the line you copy.
+Under the search controls, a strip shows the **FTS5 expression your query actually became** — the string sent to the database, not a paraphrase. Expand it to see, per term: the **index form** it was reduced to, with a warning when that is broader than what you typed (`containment` is searched as `contain`); how many documents contain the term **across everything you have indexed** (free to compute, updates as you type); and, on request, the **exact count within your current filters** (a real query per term, so it sits behind a button). The gap between the two counts is itself information — a term common in the corpus but rare in your scope is telling you something about your scope. Excluded terms are tagged **EXCLUDED** and get no count of their own. A term tagged **NOT APPLIED** was typed but is not part of the expression: an `OR` alternative made only of exclusions has nothing to search for, so it was left out (see *Exclusions and OR* in Section 7.2). The expression line never hides; if you publish method appendices, it is the line you copy.
 
 ### 7.4 Filters
 
