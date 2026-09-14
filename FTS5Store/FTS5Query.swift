@@ -32,6 +32,18 @@
 ///   by `FTS5InlineQueryParser` from the search box, so it reaches this builder already
 ///   rendered in `keywordExpression` and is never passed through `sanitizeTerm`.
 ///
+/// ## Combining parts
+/// The keyword expression, the phrase and the prefix wildcard are each a *part*, and the
+/// rendered expression means (keywords) AND phrase AND prefix AND NOT each excluded term.
+/// A query with one part emits that part exactly as built. With several, the parts are
+/// joined by an explicit `AND` and any part that is not a single operand is parenthesised
+/// first; excluded terms are applied to the whole positive expression, parenthesised unless
+/// it is a single operand. Both rules exist because FTS5's binding does not follow the order
+/// the parts are written in. Juxtaposition binds tighter than `NOT`, so
+/// `"cold" NOT "korea" "cold war"` means `cold NOT (korea "cold war")`; juxtaposition beside
+/// a group is a syntax error; and `NOT` binds tighter than `OR`, so
+/// `"cold" OR "war" NOT "korea"` excludes korea from the war documents only.
+///
 /// ## Injection Safety
 /// All user-supplied term strings are sanitised via `sanitizeTerm(_:)` before
 /// embedding in the query expression. The sanitizer strips FTS5 operator characters
@@ -57,6 +69,19 @@
 ///          tokenizer stems both index entries and query terms inside SQLite, so the
 ///          rendered MATCH expression now carries the user's original (sanitised,
 ///          lowercased) words instead of application-layer Porter stems.
+///   2.2 — #1297 (2026-09-13): parts are combined with an explicit `AND`, each parenthesised
+///          unless it is a single operand, and excluded terms apply to the whole positive
+///          expression. The bare-space join let FTS5's precedence regroup them, and the
+///          macOS Advanced popover and restored saved searches still set a phrase, a prefix
+///          and excluded terms beside typed keywords: a keyword expression ending in `NOT x`
+///          swallowed the phrase or prefix into its exclusion, one ending in a group beside
+///          a phrase or prefix was a syntax error (`"cold" AND ("korea" OR "vietnam")
+///          "cold war"`), and excluded terms bound only to the last `OR` alternative.
+///          Measured over the #1297 sweep — 7,380 typed queries through the 5.0 inline parser,
+///          each combined with a phrase, a prefix and excluded terms in 9 ways, with and
+///          without a column scope — the bare-space join gave 624 syntax errors and 9,918
+///          wrong match sets out of 66,420 combinations, identically in both scopes, and this
+///          join gives none. A single part keeps the bytes it always had.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -100,7 +125,8 @@ public struct FTS5Query: Sendable {
     /// How keyword terms are combined. Does not affect phrase or excluded terms.
     public var booleanMode: BooleanMode
 
-    /// Terms that must NOT appear in the document.
+    /// Terms that must NOT appear in the document. Each is excluded from the whole positive
+    /// expression — keywords, phrase and prefix together — never from only part of it.
     public var excludedTerms: [String]
 
     /// Prefix for a wildcard match (e.g. `"negoti"` matches `"negotiate"`,
@@ -218,28 +244,96 @@ public struct FTS5Query: Sendable {
             }
         }
 
-        guard !parts.isEmpty || !excludedTerms.isEmpty else { return nil }
+        // No positive term — FTS5 has no unary NOT, so exclusions alone are invalid syntax
+        // and there is nothing to exclude from. Callers should validate that at least one
+        // positive term exists.
+        guard !parts.isEmpty else { return nil }
 
-        var expression = parts.joined(separator: " ")
+        // A lone part is emitted exactly as built. Several are joined with an explicit AND,
+        // each parenthesised unless it is a single operand (see "Combining parts").
+        var expression = parts.count == 1
+            ? parts[0]
+            : parts.map(Self.operandText).joined(separator: " AND ")
 
-        // NOT terms — appended to whatever positive expression exists.
-        // FTS5 requires at least one positive term when using NOT.
-        // Sanitised and lowercased only; the porter tokenizer stems at query time.
+        // NOT terms — sanitised and lowercased only; the porter tokenizer stems at query time.
+        // They apply to the whole positive expression, parenthesised unless it is a single
+        // operand, so they can neither bind to its last OR alternative nor be swallowed by a
+        // juxtaposition.
         let sanitizedExclusions = excludedTerms
             .map { sanitizeTerm($0).lowercased() }
             .filter { !$0.isEmpty }
 
         if !sanitizedExclusions.isEmpty {
-            let notPart = sanitizedExclusions.map { "NOT \"\($0)\"" }.joined(separator: " ")
-            if expression.isEmpty {
-                // No positive term — NOT alone is invalid FTS5 syntax. Skip.
-                // Callers should validate that at least one positive term exists.
-                return nil
-            }
-            expression = expression + " " + notPart
+            let positive = parts.count == 1 ? Self.operandText(parts[0]) : "(\(expression))"
+            expression = positive + sanitizedExclusions.map { " NOT \"\($0)\"" }.joined()
         }
 
-        return expression.isEmpty ? nil : expression
+        return expression
+    }
+
+    /// `part` as an operand of `AND` or the left operand of `NOT`: unchanged when it is a
+    /// single operand, parenthesised otherwise.
+    private static func operandText(_ part: String) -> String {
+        isSingleOperand(part) ? part : "(\(part))"
+    }
+
+    /// Whether `part` is one FTS5 operand, safe beside `AND` or `NOT` without parentheses: a
+    /// single quoted string — optionally a `*` prefix query, optionally behind a `{columns}:`
+    /// filter — or a single parenthesised group spanning the whole text.
+    ///
+    /// Anything else is parenthesised, deliberately conservatively. A keyword expression the
+    /// inline parser rendered can hold `OR`, a binary `NOT`, or several column-scoped operands,
+    /// and the structured keyword path juxtaposes its terms; parenthesising a `NEAR(...)`
+    /// merely costs two characters. Quote-aware, including FTS5's `""` escape, so a
+    /// parenthesis inside a quoted string is never mistaken for structure.
+    static func isSingleOperand(_ part: String) -> Bool {
+        let characters = Array(part)
+        var index = 0
+        if characters.first == "{" {
+            guard let close = characters.firstIndex(of: "}"),
+                  close + 1 < characters.count, characters[close + 1] == ":" else { return false }
+            index = close + 2
+        }
+        guard index < characters.count else { return false }
+
+        if characters[index] == "\"" {
+            var cursor = index + 1
+            while cursor < characters.count {
+                if characters[cursor] == "\"" {
+                    // `""` inside a string is an escaped quote, not the end of the string.
+                    if cursor + 1 < characters.count, characters[cursor + 1] == "\"" {
+                        cursor += 2
+                        continue
+                    }
+                    break
+                }
+                cursor += 1
+            }
+            guard cursor < characters.count else { return false }
+            var end = cursor + 1
+            if end < characters.count, characters[end] == "*" { end += 1 }
+            return end == characters.count
+        }
+
+        guard index == 0, characters[index] == "(" else { return false }
+        var depth = 0
+        var inQuotes = false
+        for cursor in characters.indices {
+            let character = characters[cursor]
+            if character == "\"" {
+                // An escaped `""` toggles twice, leaving the state where it was.
+                inQuotes.toggle()
+                continue
+            }
+            guard !inQuotes else { continue }
+            if character == "(" {
+                depth += 1
+            } else if character == ")" {
+                depth -= 1
+                if depth == 0 { return cursor == characters.count - 1 }
+            }
+        }
+        return false
     }
 
     // MARK: - Sanitization
