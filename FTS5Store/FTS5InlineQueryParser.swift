@@ -825,6 +825,7 @@ public enum FTS5InlineQueryParser {
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — #1297: `droppedOperands`, the operands a query typed but its expression leaves out
 public struct ParsedQuery: Sendable, Equatable {
 
     /// The MATCH expression, or `nil` when the input carries no positive search content.
@@ -843,11 +844,22 @@ public struct ParsedQuery: Sendable, Equatable {
     /// Empty whenever `expression` is `nil`.
     public let operands: [ParsedOperand]
 
+    /// Operands the researcher typed that the expression leaves out, in the order typed.
+    ///
+    /// FTS5 has no universal set, so an `OR` alternative made only of exclusions
+    /// (`cold OR -korea`) cannot be searched: the alternative is left out of `expression`
+    /// and its operands are reported here instead of in `operands`, so the Query Inspector
+    /// can say they were not applied rather than showing them as working exclusions.
+    /// Empty whenever `expression` is `nil`.
+    public let droppedOperands: [ParsedOperand]
+
     /// Creates a parsed query.
-    public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = []) {
+    public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = [],
+                droppedOperands: [ParsedOperand] = []) {
         self.expression = expression
         self.exactTerms = exactTerms
         self.operands = operands
+        self.droppedOperands = droppedOperands
     }
 }
 
