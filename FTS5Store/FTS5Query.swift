@@ -107,6 +107,8 @@
 ///          beside every structured combination in both scopes, plus the structured-keywords
 ///          path with sanitiser edge cases. The app no longer combines parts here at all (see
 ///          "A keyword expression must be positive").
+///   3.1 — #1297 fixes: `sanitizePhrase(_:)` is removed. 3.0 said it was gone, but the private declaration
+///          stayed behind with no caller; the phrase has been sanitised by `FTS5InlineQueryParser` since 3.0.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -342,15 +344,5 @@ public struct FTS5Query: Sendable {
         let components = stripped.components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
         return components.joined(separator: " ")
-    }
-
-    /// Strips double-quotes and angle-brackets from a phrase string so it can be
-    /// safely embedded between FTS5 double-quote delimiters.
-    private func sanitizePhrase(_ phrase: String) -> String {
-        phrase
-            .replacingOccurrences(of: "\"", with: "")
-            .replacingOccurrences(of: "<", with: "")
-            .replacingOccurrences(of: ">", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

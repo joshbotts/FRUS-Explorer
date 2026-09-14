@@ -25,6 +25,7 @@ import Foundation
 ///         scoped-count rebuild reads past `operands` or loses a field
 ///   1.2 — #1297 join: `isApproximate`, carried by `replacingOperands(_:)`; the operands now include
 ///         the structured phrase, prefix and excluded terms, from the same combined parse the search runs
+///   1.3 — #1297 fixes: `showsApproximateCaption`, the strip's caption gate as a property a test can run
 struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
@@ -78,6 +79,15 @@ struct QueryInspection: Sendable, Equatable {
     ///
     /// A `var` with a default for the same reason as ``notApplied``.
     var isApproximate: Bool = false
+
+    /// Whether the strip shows its narrower-than-typed caption under the MATCH line: exactly when the
+    /// expression is an approximation.
+    ///
+    /// The gate lives here rather than as a condition in the view so a test can run it. A scan of the view's
+    /// source cannot tell `if inspection.isApproximate` from its inversion, and the one fact the caption states
+    /// — the search is narrower than what was typed — must never appear on an exact query or vanish from an
+    /// approximate one.
+    var showsApproximateCaption: Bool { isApproximate }
 
     /// Whether every operand is present and none of them is the problem.
     var hasOperands: Bool { !operands.isEmpty }
@@ -160,10 +170,18 @@ struct RenderedExpression: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
+///   1.1 — #1297 fixes: `showsStructuredTag`, the strip's ADVANCED tag gate as a property a test can run
 struct InspectedOperand: Sendable, Equatable {
 
     /// The parsed operand this describes.
     let operand: ParsedOperand
+
+    /// Whether the strip tags this operand ADVANCED: it came from a structured field — a restored saved
+    /// search's phrase, prefix or excluded term — not from the search box.
+    ///
+    /// A property rather than a condition in the view, for the reason ``QueryInspection/showsApproximateCaption``
+    /// is: a test can run it, where a scan of the view cannot tell a gate from its inversion.
+    var showsStructuredTag: Bool { operand.source == .structured }
 
     /// The index term this operand's word resolves to, from SQLite's own tokenizer.
     ///

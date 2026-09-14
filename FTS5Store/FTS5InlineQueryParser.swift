@@ -20,7 +20,10 @@
 /// and `-` stripped by `sanitizeTerm` — silently producing a far more restrictive query
 /// than the user intended (this was the exact bug reported as "OR yields fewer results
 /// than AND"). This parser recognises that syntax for real and renders it directly to a
-/// valid FTS5 expression, which `SearchService` now feeds into `FTS5Query.keywordExpression`.
+/// valid FTS5 expression. `SearchService` renders every search through
+/// `parseDetailed(_:columnPrefix:structured:)`, which parses the typed text and the structured
+/// phrase, prefix and excluded terms as one query; `FTS5Query.keywordExpression` carries a parsed
+/// expression only where nothing sits beside it, as in `CorpusAnalyticsService`.
 ///
 /// ## Syntax recognised
 ///
@@ -90,6 +93,22 @@
 /// anchored like any other query: `cold OR -(war -korea)` means cold OR NOT war OR korea, so
 /// it renders `"cold" OR "korea"` and reports only `war` as dropped. Every dropped operand is
 /// therefore negated, and no applied operand is ever reported as dropped.
+///
+/// An approximation that provably matches nothing is refused rather than run. Pushing a negation
+/// inward can expose an anchor that an exclusion beside it then removes in full:
+/// `-(war -korea) -korea` would search `"korea" NOT "korea"`, and so would `-(war -korea)` beside
+/// the excluded term korea. Such a query is `nil` — the refusal it got before negation was pushed
+/// inward, on which `SearchService` throws `FTS5Error.emptyQuery` — instead of a search whose empty
+/// result would read as a finding. The same holds for an empty alternative kept on its own, as in
+/// `korea -korea OR -korea`. The proof is over operands, never documents: an approximation is
+/// refused only when an operand every match must match is one it excludes — the same core,
+/// excluded in a scope that spans the anchor's. An excluded
+/// term with no column prefix, as a structured one always is, spans every column, so
+/// `{body_text}:"korea" NOT "korea"` is refused, while a scoped exclusion removes only an anchor in its
+/// own scope. A phrase is not taken to contain its words, nor a prefix the words it begins, so an
+/// approximation left empty by what its words mean still runs; so does one that matches something
+/// beside its empty part, like `"cold" OR "korea" NOT "korea"`. An exact render is never refused:
+/// `korea -korea` is what was typed, and searches `"korea" NOT "korea"`.
 ///
 /// `ParsedQuery.isApproximate` is `true` whenever the expression matches less than the query
 /// means. It is the only report when what was left out has no operand of its own:
@@ -254,6 +273,36 @@
 ///          639 → 570. Checked against a set oracle that never reads a render (80,000
 ///          comparisons) and a 222,200-case sweep of every short sequence beside every
 ///          structured combination, with no failures.
+///   6.1 — #1297 fixes: an approximation that provably matches nothing is refused. RESULTS MOVE, and only from
+///          a MATCH no document can satisfy to `nil`, on which `SearchService` throws `FTS5Error.emptyQuery`. 6.0's
+///          push-inward could anchor a complement on an operand that an exclusion beside it then removed in full,
+///          so queries the app had refused ran a guaranteed-empty search: `-(war -korea) -korea`, and
+///          `-(war -korea)` or `-( cold -korea )` beside the excluded term korea, all `"korea" NOT "korea"`. The
+///          same held without pushing: `korea -korea OR -korea` kept an empty alternative, and
+///          `cold korea OR -korea` beside the excluded korea was `("cold" AND "korea") NOT "korea"`. Each
+///          rendered `Expr` now carries what its operands prove — the operands every match matches, those any
+///          one of which suffices, and those no match can match — and `parseDetailed` returns `nil` when the
+///          query is approximated and its expression requires an operand it forbids. Exact renders are
+///          unchanged, and so is an
+///          approximation that matches something beside an empty part. Measured over the 222,200 renders of the
+///          length-1–4 sweep with `-(`, beside every structured combination in both scopes: 292 change, every
+///          one from a MATCH that matches no row of a corpus holding every combination of the swept words to
+///          `nil`; the 208 that match nothing only on the #1297 truth table (`"cold" AND "not"`, whose words that
+///          table never puts together) still run. Correction to 6.0: its 222,200-case sweep compared every exact
+///          term with the typed-alone parse's, but its alphabet has no `=`, so every list it compared was empty
+///          and the comparison could not fail. The exact terms are now swept over `=cold` and `-=cold` (111,100
+///          combinations per scope): in each scope 20,292 carry an exact term beside a structured phrase or
+///          prefix and 13,480 without one, 452 of those approximated, and every one equals the typed-alone
+///          parse's wherever both render. Where they do not both render the lists can differ, and only because of
+///          this refusal: 48 per scope are refused alone but anchored by a structured phrase or prefix, and
+///          report the exact terms they apply; 16 render alone but are refused beside the excluded korea.
+///          The #1297 property suites' printed counts move with the refusal, and every inequality guard still
+///          holds: validity executed 6,951 → 6,947 without `-(` and 10,187 → 10,183 with it, per scope; `-(X)`
+///          rendered 13,239 → 13,233 and negating 7,892 → 7,886, differing from detached unchanged at 12,864;
+///          monotonicity compared 1,714 → 1,571; set oracle seed 1297 narrowed 2,088 → 1,764 and nil 563 → 887,
+///          seed 1299 narrowed 2,056 → 1,750 and nil 570 → 876. The `FTS5Query` join sweep executed
+///          65,133 → 65,121 per scope and its carrier identity carried 20,374 → 20,366, because fewer typed
+///          renders reach the carrier; the carrier itself is never approximate, so no byte of its output moves.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -311,6 +360,10 @@ public enum FTS5InlineQueryParser {
         // when all it left out is a demoted operator word, which has no operand to report.
         var isApproximate = true
         if case .matching? = exactMeaning(of: root) { isApproximate = false }
+        // An approximation its own operands prove empty is refused, as though nothing had anchored: running it
+        // could only return no documents, which would read as a finding about the corpus. An exact render is what
+        // was typed and always runs.
+        if isApproximate, expression.isEmpty { return ParsedQuery(expression: nil, exactTerms: []) }
         var negated: [Int: Bool] = [:]
         polarity(of: root, negated: false, into: &negated)
 
@@ -651,12 +704,77 @@ public enum FTS5InlineQueryParser {
         case atom
     }
 
-    /// Rendered FTS5 text and the precedence of its top-level operator.
+    /// Rendered FTS5 text, the precedence of its top-level operator, and what its operands alone prove about
+    /// the documents it matches.
+    ///
+    /// The proof is what lets `parseDetailed` refuse an approximation that can match nothing (6.1). It is built
+    /// alongside the text by the same functions — `operand`, `parenthesized`, `conjoin`, `exclude`, `disjoin` and
+    /// `combineParts` — and is sound but not complete: `isEmpty` is `true` only when the expression matches no
+    /// document in any corpus, and `false` says nothing.
     private struct Expr {
         /// The FTS5 text.
         var text: String
         /// How loosely `text`'s top-level operator binds.
         var precedence: Precedence
+        /// Operands every document the expression matches also matches.
+        var required: Set<OperandIdentity> = []
+        /// Operands any one of which a document need only match to match the expression.
+        var sufficient: Set<OperandIdentity> = []
+        /// Operands no document the expression matches can match.
+        var forbidden: Set<OperandIdentity> = []
+        /// Whether the expression provably matches no document.
+        var isEmpty = false
+
+        /// This expression with `isEmpty` set when an operand it requires is covered by one it forbids.
+        func settled() -> Expr {
+            var result = self
+            result.isEmpty = isEmpty || required.contains { anchor in forbidden.contains { $0.covers(anchor) } }
+            return result
+        }
+    }
+
+    /// A rendered operand as the emptiness proof compares it: its core, and the column prefix in front of it.
+    ///
+    /// Two operands with the same core and prefix match the same documents, and a core with no prefix spans
+    /// every column, so it matches every document the same core matches under any prefix. Nothing else is
+    /// compared: a phrase is not taken to contain its words, nor a prefix the words it begins, because stemming
+    /// happens inside SQLite and makes neither claim provable here.
+    private struct OperandIdentity: Hashable {
+        /// The `{columns}:` prefix, or empty when the operand spans every column.
+        let scope: String
+        /// The operand's text after the prefix.
+        let core: String
+
+        /// The identity of an operand rendered as `text`.
+        init(rendered text: String) {
+            if text.hasPrefix("{"), let close = text.range(of: "}:") {
+                scope = String(text[..<close.upperBound])
+                core = String(text[close.upperBound...])
+            } else {
+                scope = ""
+                core = text
+            }
+        }
+
+        /// Whether every document matching `anchor` matches this operand: the same core, in a scope spanning
+        /// the anchor's.
+        func covers(_ anchor: OperandIdentity) -> Bool {
+            core == anchor.core && (scope.isEmpty || scope == anchor.scope)
+        }
+    }
+
+    /// One rendered operand, which requires and suffices for itself.
+    private static func operand(_ text: String) -> Expr {
+        let identity = OperandIdentity(rendered: text)
+        return Expr(text: text, precedence: .atom, required: [identity], sufficient: [identity])
+    }
+
+    /// `expression` in parentheses, which change its precedence and nothing it matches.
+    private static func parenthesized(_ expression: Expr) -> Expr {
+        var grouped = expression
+        grouped.text = "(\(expression.text))"
+        grouped.precedence = .atom
+        return grouped
     }
 
     /// An exact rendering of a node's meaning: the documents an expression matches, or
@@ -684,7 +802,11 @@ public enum FTS5InlineQueryParser {
 
     /// The documents both `left` and `right` match.
     private static func conjoin(_ left: Expr, _ right: Expr) -> Expr {
-        Expr(text: "\(conjunctText(left)) AND \(conjunctText(right))", precedence: .and)
+        Expr(text: "\(conjunctText(left)) AND \(conjunctText(right))", precedence: .and,
+             required: left.required.union(right.required),
+             sufficient: left.sufficient.intersection(right.sufficient),
+             forbidden: left.forbidden.union(right.forbidden),
+             isEmpty: left.isEmpty || right.isEmpty).settled()
     }
 
     /// The documents `kept` matches less those `excluded` matches.
@@ -692,16 +814,32 @@ public enum FTS5InlineQueryParser {
     /// When `kept` is an `AND`, FTS5 reads `a AND b NOT x` as `a AND (b NOT x)`, which
     /// selects the same documents as `(a AND b) NOT x`; the result keeps `AND` precedence
     /// because that is its top-level operator.
+    ///
+    /// Every operand sufficient for `excluded` is forbidden to the result, which is how an exclusion that removes
+    /// an operand the kept side requires is proved to leave nothing.
     private static func exclude(_ kept: Expr, _ excluded: Expr) -> Expr {
         Expr(text: "\(conjunctText(kept)) NOT \(atomText(excluded))",
-             precedence: kept.precedence == .and ? .and : .not)
+             precedence: kept.precedence == .and ? .and : .not,
+             required: kept.required, forbidden: kept.forbidden.union(excluded.sufficient),
+             isEmpty: kept.isEmpty).settled()
     }
 
     /// The documents any of `parts` matches. `OR` binds loosest, so no part needs
     /// parentheses.
+    ///
+    /// Empty only when every part is: an empty alternative beside one that matches leaves the whole searchable.
     private static func disjoin(_ parts: [Expr]) -> Expr {
-        parts.count == 1 ? parts[0]
-            : Expr(text: parts.map(\.text).joined(separator: " OR "), precedence: .or)
+        guard parts.count > 1 else { return parts[0] }
+        var joined = parts[0]
+        joined.text = parts.map(\.text).joined(separator: " OR ")
+        joined.precedence = .or
+        for part in parts.dropFirst() {
+            joined.required.formIntersection(part.required)
+            joined.sufficient.formUnion(part.sufficient)
+            joined.forbidden.formIntersection(part.forbidden)
+            joined.isEmpty = joined.isEmpty && part.isEmpty
+        }
+        return joined
     }
 
     /// The exact meaning of `node`, or `nil` when it contains nothing to render.
@@ -717,7 +855,7 @@ public enum FTS5InlineQueryParser {
     private static func exactMeaning(of node: Node) -> Signed? {
         switch node {
         case .leaf(let text, _):
-            return .matching(Expr(text: text, precedence: .atom))
+            return .matching(operand(text))
         case .opaque(let text):
             // Precedence unknown, so it is parenthesised wherever anything binds to it unless it
             // is one operand — the rule `FTS5Query` has always used for its parts.
@@ -744,7 +882,7 @@ public enum FTS5InlineQueryParser {
         case .group(let inner):
             switch exactMeaning(of: inner) {
             case .matching(let expression)?:
-                return .matching(Expr(text: "(\(expression.text))", precedence: .atom))
+                return .matching(parenthesized(expression))
             case .lacking(let expression)?: return .lacking(expression)
             case nil: return nil
             }
@@ -801,6 +939,11 @@ public enum FTS5InlineQueryParser {
     /// By induction the result is `nil` exactly when `node` has no leaf that is positive after
     /// the negations above it. So every operand added to `dropped` is negated, nothing is
     /// dropped beside a structured phrase or prefix, and no applied operand is ever dropped.
+    ///
+    /// A result can still match nothing: an anchor pushing inward exposes can be removed in full
+    /// by an exclusion beside it. Its proof says so (`Expr.isEmpty`), and `parseDetailed` refuses it
+    /// at the root rather than here, so the invariant above holds and an empty alternative beside
+    /// one that matches changes nothing about the render.
     private static func anchored(_ node: Node, dropped: inout Set<Int>) -> Expr? {
         guard let signed = exactMeaning(of: node) else { return nil }
         if case .matching(let expression) = signed { return expression }
@@ -830,9 +973,7 @@ public enum FTS5InlineQueryParser {
             dropped.formUnion(local)
             return combineParts(positives, negatives)
         case .group(let inner):
-            return anchored(inner, dropped: &dropped).map {
-                Expr(text: "(\($0.text))", precedence: .atom)
-            }
+            return anchored(inner, dropped: &dropped).map(parenthesized)
         case .or(let disjuncts):
             var kept: [Expr] = []
             for disjunct in disjuncts {
@@ -886,16 +1027,30 @@ public enum FTS5InlineQueryParser {
     /// unless atomic, then every excluded part as a `NOT` applied to the whole positive.
     ///
     /// A lone positive part with nothing to exclude is emitted exactly as built, which is
-    /// what keeps a typed query with no structured fields byte-identical.
+    /// what keeps a typed query with no structured fields byte-identical. The proof is `conjoin`'s over the
+    /// positive parts, then `exclude`'s for each excluded part.
     private static func combineParts(_ positives: [Expr], _ negatives: [Expr]) -> Expr {
         func partText(_ expression: Expr) -> String {
             expression.precedence == .atom ? expression.text : "(\(expression.text))"
         }
-        let positive = positives.count == 1 ? positives[0]
-            : Expr(text: positives.map(partText).joined(separator: " AND "), precedence: .and)
+        var positive = positives[0]
+        if positives.count > 1 {
+            positive.text = positives.map(partText).joined(separator: " AND ")
+            positive.precedence = .and
+            for part in positives.dropFirst() {
+                positive.required.formUnion(part.required)
+                positive.sufficient.formIntersection(part.sufficient)
+                positive.forbidden.formUnion(part.forbidden)
+                positive.isEmpty = positive.isEmpty || part.isEmpty
+            }
+            positive = positive.settled()
+        }
         guard !negatives.isEmpty else { return positive }
         let kept = positives.count == 1 ? partText(positive) : "(\(positive.text))"
-        return Expr(text: kept + negatives.map { " NOT \(atomText($0))" }.joined(), precedence: .not)
+        return Expr(text: kept + negatives.map { " NOT \(atomText($0))" }.joined(), precedence: .not,
+                    required: positive.required,
+                    forbidden: negatives.reduce(positive.forbidden) { $0.union($1.sufficient) },
+                    isEmpty: positive.isEmpty).settled()
     }
 
     /// Whether `node` contains a leaf that is positive after the negations above it —
@@ -1343,11 +1498,13 @@ public enum FTS5InlineQueryParser {
 
     // MARK: - Sanitization
     //
-    // Mirrors `FTS5Query.sanitizeTerm`/`sanitizePhrase` exactly — this is what
-    // guarantees a term typed through either the inline parser or the structured
-    // Advanced Filters fields renders to the identical MATCH fragment and therefore
-    // the identical match set. No stemming happens here: the `porter unicode61`
-    // tokenizer stems query terms inside SQLite, symmetrically with indexed text.
+    // `sanitizeBareToken` mirrors `FTS5Query.sanitizeTerm` exactly, and the structured
+    // phrase, prefix and excluded terms are sanitised here for both paths — `FTS5Query`
+    // hands its fields to `combine(renderedKeywords:structured:columnPrefix:)` — which is
+    // what guarantees a term typed through the inline parser or set in the structured
+    // Advanced Filters fields renders to the identical MATCH fragment and therefore the
+    // identical match set. No stemming happens here: the `porter unicode61` tokenizer
+    // stems query terms inside SQLite, symmetrically with indexed text.
 
     /// Strips FTS5 structural/operator characters from a single token, collapsing
     /// runs of resulting whitespace. Equivalent to `FTS5Query.sanitizeTerm`.
@@ -1390,9 +1547,9 @@ public enum FTS5InlineQueryParser {
         return (!lower.isEmpty && alnum == lower) ? lower : nil
     }
 
-    /// Sanitises and lowercases each word of a phrase — identical to the per-word
-    /// transform in `FTS5Query.toFTS5MatchExpression()`'s phrase-handling branch.
-    /// The porter tokenizer stems each phrase token at query time.
+    /// Sanitises and lowercases each word of a phrase — a typed one, or the structured phrase
+    /// field, which `FTS5Query` has sanitised through here since 3.0 rather than with a copy of
+    /// this transform of its own. The porter tokenizer stems each phrase token at query time.
     private static func stemPhrase(_ raw: String) -> String? {
         let sanitized = raw
             .replacingOccurrences(of: "\"", with: "")

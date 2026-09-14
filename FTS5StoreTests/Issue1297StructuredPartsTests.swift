@@ -759,7 +759,7 @@ struct Issue1297StructuredPartsTests {
         #expect(approximateWithoutDrops == 10)
         #expect(approximateWithoutDropsSequences == ["-( -korea NOT )", "-( -korea AND )", "-( -korea OR )",
                                                      "-( AND -korea )", "-( OR -korea )"])
-        // Measured over this sweep before 6.1: 500 renders per both scopes matched no truth-table row while the query
+        // Measured over this sweep before 6.1: 500 renders over both scopes matched no truth-table row while the query
         // meant something — 292 by construction, and 208 only because the truth table holds "and", "or" and "not"
         // beside nothing but "memo" (`"cold" AND "not"`). The first class is refused; the second is not provable from
         // operands and runs.

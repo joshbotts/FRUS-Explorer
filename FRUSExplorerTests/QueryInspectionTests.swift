@@ -29,6 +29,8 @@ import Foundation
 ///   1.2 — #1297 join: typed exclusions beside a structured phrase or prefix are applied and listed,
 ///         structured operands are counted through their own field, and an approximation with no
 ///         operand to report is flagged
+///   1.3 — #1297 fixes: the caption and ADVANCED tag gates are model properties checked at runtime, and the
+///         strip scan matches each gate with its key, so an inverted or unrelated gate fails
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -723,8 +725,31 @@ struct QueryInspectionTests {
         #expect(inspection.isApproximate)
     }
 
-    /// The tag and the caption are view code no model test can reach, so these read the strip's own
-    /// source, each scoped to the one member that must hold it.
+    /// The two gates the strip reads, run against real inspections: a scan of the view could not tell either gate
+    /// from its inversion.
+    @Test("The narrower-than-typed caption shows exactly for an approximation, and the ADVANCED tag exactly on a structured operand")
+    func approximateCaptionAndStructuredTagGates() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let approximate = await inspector.inspect(
+            parameters: SearchParameters(keywords: "-( -containment NOT )"), indexedVolumeCount: 1)
+        #expect(approximate.isApproximate)
+        #expect(approximate.showsApproximateCaption, "the caption is the only report of the left-out word")
+        #expect(approximate.operands.map(\.operand.source) == [.typed])
+        #expect(approximate.operands.map(\.showsStructuredTag) == [false], "a typed operand is not ADVANCED")
+
+        let exact = await inspector.inspect(
+            parameters: SearchParameters(keywords: "-containment", prefixWildcard: "europ"), indexedVolumeCount: 1)
+        #expect(!exact.isApproximate)
+        #expect(!exact.showsApproximateCaption, "an exact query is not narrower than typed")
+        #expect(exact.operands.map(\.operand.source) == [.typed, .structured])
+        #expect(exact.operands.map(\.showsStructuredTag) == [false, true], "only the restored prefix is ADVANCED")
+    }
+
+    /// The gates are the model's (`approximateCaptionAndStructuredTagGates`); these read the strip's own source to
+    /// pin that each member renders its key under that gate and nowhere else. The gate and the key are matched as
+    /// one pattern, so `if !inspection.showsApproximateCaption`, or the key under any other condition, fails.
     @Test("The strip tags structured operands ADVANCED and captions an approximation under the MATCH line")
     func stripShowsStructuredTagAndApproximationCaption() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -741,12 +766,19 @@ struct QueryInspectionTests {
             return source[start.lowerBound...index]
         }
         let expressionRow = try member("private var expressionRow: some View")
-        #expect(expressionRow.contains("inspection.isApproximate"), "the caption is gated on isApproximate")
-        #expect(expressionRow.contains("search.inspector.approximateCaption"),
-                "and sits in the expression row, which never collapses")
+        #expect(expressionRow.range(
+            of: #"if inspection\.showsApproximateCaption \{\s*Text\(String\(localized: "search\.inspector\.approximateCaption""#,
+            options: .regularExpression) != nil,
+                "the caption renders under showsApproximateCaption, in the expression row, which never collapses")
+        #expect(expressionRow.components(separatedBy: "\"search.inspector.approximateCaption\"").count == 2,
+                "and nowhere else in that row")
         let operandRows = try member("private var operandRows: some View")
-        #expect(operandRows.contains("source == .structured"), "the tag is gated on the operand's source")
-        #expect(operandRows.contains("search.inspector.structuredTag"))
+        #expect(operandRows.range(
+            of: #"if item\.showsStructuredTag \{\s*microTag\(String\(localized: "search\.inspector\.structuredTag""#,
+            options: .regularExpression) != nil,
+                "the ADVANCED tag renders under showsStructuredTag")
+        #expect(operandRows.components(separatedBy: "\"search.inspector.structuredTag\"").count == 2,
+                "and nowhere else in the operand rows")
     }
 
     // MARK: - The denominator
