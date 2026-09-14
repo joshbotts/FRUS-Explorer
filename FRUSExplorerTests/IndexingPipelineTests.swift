@@ -671,6 +671,53 @@ struct SearchParametersTests {
             #expect(!results.contains(where: { $0.documentId == "d2" }))
         }
     }
+
+    /// #1297 join: a typed exclusion beside a structured phrase used to be discarded, because the typed
+    /// text was rendered alone and had nothing positive of its own.
+    @Test("makeMatchExpressions combines a typed exclusion with a structured phrase in both expressions")
+    func typedExclusionCombinesWithStructuredPhrase() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            let params = SearchParameters(keywords: "-korea", phrase: "cold war")
+            let (corpus, userContent) = try await service.makeMatchExpressions(from: params)
+            #expect(corpus == "\"cold war\" NOT \"korea\"")
+            #expect(userContent == "\"cold war\" NOT \"korea\"")
+
+            var summariesOnly = params
+            summariesOnly.includeDocumentText = false
+            summariesOnly.includeSummaries = true
+            summariesOnly.includeNotes = false
+            let (scopedCorpus, scopedUserContent) = try await service.makeMatchExpressions(from: summariesOnly)
+            #expect(scopedCorpus == nil)
+            // The structured phrase spans every column; the typed exclusion carries the scope.
+            #expect(scopedUserContent == "\"cold war\" NOT {summary_text}:\"korea\"")
+        }
+    }
+
+    /// The exact-word post-filter reads the same combined parse that renders the MATCH expression.
+    @Test("exactTerms come from the combined parse of typed text and structured fields")
+    func exactTermsComeFromTheCombinedParse() {
+        #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold OR -korea", prefixWildcard: "viet"))
+                == ["cold"])
+        #expect(SearchService.exactTerms(from: SearchParameters(phrase: "cold war")).isEmpty)
+    }
+
+    /// Guard: a structured exclusion is no anchor, so exclusions from both sources still have nothing to run.
+    @Test("A typed exclusion beside structured exclusions alone still throws emptyQuery")
+    func typedExclusionsBesideStructuredExclusionsStillThrow() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            let params = SearchParameters(keywords: "-korea", excludedTerms: ["vietnam"])
+            do {
+                _ = try await service.makeMatchExpressions(from: params)
+                Issue.record("Expected emptyQuery error")
+            } catch FTS5Error.emptyQuery {
+                // expected
+            }
+        }
+    }
 }
 
 // MARK: - ConcurrencyTest

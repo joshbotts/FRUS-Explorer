@@ -26,6 +26,9 @@ import Foundation
 ///   1.0 — Q-2a: initial implementation
 ///   1.1 — #1297: terms the expression leaves out are reported as not applied and never counted,
 ///         blamed or offered for counting; keyword `NOT` is inspected exactly like `-`
+///   1.2 — #1297 join: typed exclusions beside a structured phrase or prefix are applied and listed,
+///         structured operands are counted through their own field, and an approximation with no
+///         operand to report is flagged
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -415,11 +418,13 @@ struct QueryInspectionTests {
     /// What the inspector does with a parse that drops operands, independent of which queries
     /// the parser drops — so this holds on any parser that fills `droppedOperands`.
     ///
-    /// The dropped pair is the shape the #1297 parser gives `europe OR NOT (formosa -zzznothing)`:
-    /// that alternative only excludes, so both its operands leave the expression, `formosa`
-    /// negated once and `zzznothing` twice and so NOT negated. The un-negated one is what makes
-    /// the blame assertion bite — `emptyConjuncts` skips negated operands anyway — and the
-    /// control at the end proves `zzznothing` WOULD be blamed were it applied.
+    /// The dropped pair is HAND-BUILT and is no longer a shape the parser produces. It was once the
+    /// parse of `europe OR NOT (formosa -zzznothing)`; since negation is pushed inward that query
+    /// renders `"europe" OR "zzznothing"`, applies `zzznothing` and leaves out only `formosa`, and
+    /// no parse can now drop an operand that is not negated. The un-negated `zzznothing` stays in
+    /// the fixture because it is what makes the blame assertion bite — `emptyConjuncts` skips
+    /// negated operands anyway — and the control at the end proves `zzznothing` WOULD be blamed
+    /// were it applied.
     @Test("Dropped operands become not-applied rows that are never counted, blamed or offered for counting")
     func droppedOperandsAreNotApplied() async throws {
         let (dir, inspector) = try await makeFixture()
@@ -535,12 +540,14 @@ struct QueryInspectionTests {
                                        corpusDocumentFrequency: 2, corpusOccurrences: 2)
         let before = QueryInspection(expression: expression, operands: [uncounted],
                                      indexedVolumeCount: 37, isFilterOnly: false,
-                                     notApplied: notApplied)
+                                     notApplied: notApplied, isApproximate: true)
 
         #expect(before.replacingOperands([counted])
                 == QueryInspection(expression: expression, operands: [counted],
                                    indexedVolumeCount: 37, isFilterOnly: false,
-                                   notApplied: notApplied))
+                                   notApplied: notApplied, isApproximate: true))
+        #expect(before.replacingOperands([counted]).isApproximate,
+                "a request for counts must not clear the narrower-than-typed caption")
         #expect(before.hasUncountedOperands)
         #expect(!before.replacingOperands([counted]).hasUncountedOperands)
 
@@ -565,6 +572,7 @@ struct QueryInspectionTests {
         #expect(inspection.operands.map(\.operand.text) == ["cold"])
         #expect(inspection.notApplied.map(\.text) == ["korea"])
         #expect(inspection.notApplied.map(\.isNegated) == [true])
+        #expect(inspection.isApproximate, "the search is narrower than what was typed, and says so")
 
         let counted = await inspector.scopedCounts(for: inspection, parameters: params)
         #expect(counted.map(\.operand.text) == ["cold"], "korea was never searched, so never counted")
@@ -618,6 +626,127 @@ struct QueryInspectionTests {
         // non-excluded one may be blamed.
         #expect(await inspector.emptyConjuncts(in: viaKeyword, parameters: keyword).map(\.text) == ["cold"])
         #expect(await inspector.emptyConjuncts(in: viaDash, parameters: dash).map(\.text) == ["cold"])
+    }
+
+    // MARK: - Typed text beside the structured fields (#1297 join)
+
+    /// Finding 1 in the app: a typed exclusion with nothing of its own to exclude from, beside a
+    /// structured prefix, excludes from the prefix — it used to vanish, with no row saying so.
+    @Test("A typed exclusion beside a structured prefix is applied, listed and excluded from the count")
+    func typedExclusionBesideStructuredPrefixIsApplied() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let params = SearchParameters(keywords: "-containment", prefixWildcard: "europ")
+        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+        #expect(inspection.expression?.displayed == "\"europ\"* NOT \"containment\"")
+        #expect(inspection.operands.map(\.operand.text) == ["containment", "europ*"])
+        #expect(inspection.operands.map(\.operand.isNegated) == [true, false])
+        #expect(inspection.operands.map(\.operand.source) == [.typed, .structured])
+        #expect(inspection.notApplied.isEmpty)
+        #expect(!inspection.isApproximate)
+        #expect(inspection.hasUncountedOperands, "the structured prefix is a term the search used")
+
+        let counted = await inspector.scopedCounts(for: inspection, parameters: params)
+        #expect(counted.map(\.scopedCount) == [nil, 2], "europ* is in d1 and d3; the exclusion gets no hit count")
+        #expect(try await inspector.searchService.searchCount(parameters: params) == 1,
+                "d1 carries containment, so only d3 remains")
+    }
+
+    /// Finding 2 in the app: a typed complement that anchors on its own was approximated beside a
+    /// prefix even though the prefix lets it be searched exactly.
+    @Test("A typed OR with an exclusion-only alternative, beside a structured prefix, is searched exactly")
+    func complementBesideStructuredPrefixIsExact() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let params = SearchParameters(keywords: "alliance OR -europe", prefixWildcard: "contain")
+        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+        #expect(inspection.expression?.displayed == "\"contain\"* NOT (\"europe\" NOT \"alliance\")")
+        #expect(inspection.operands.map(\.operand.text) == ["alliance", "europe", "contain*"])
+        #expect(inspection.operands.map(\.operand.isNegated) == [false, true, false])
+        #expect(inspection.operands.map(\.operand.source) == [.typed, .typed, .structured])
+        #expect(inspection.notApplied.isEmpty, "nothing is left out, so europe is not NOT APPLIED")
+        #expect(!inspection.isApproximate)
+
+        #expect(try await inspector.searchService.searchCount(parameters: params) == 1,
+                "d2 carries contain and not europe; d1 carries both and no alliance")
+        let counted = await inspector.scopedCounts(for: inspection, parameters: params)
+        #expect(counted.map(\.scopedCount) == [1, nil, 2])
+        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).isEmpty)
+    }
+
+    /// A structured operand cannot always be re-spelled as typed text, so its count must come from
+    /// its own field — otherwise the count describes a different query.
+    @Test("Narrowing to a structured operand keeps it in its own field, so the count is of what it rendered")
+    func narrowingAStructuredOperandUsesItsOwnField() throws {
+        var prefixBase = SearchParameters(prefixWildcard: "neg:oti")
+        prefixBase.volumeIds = ["v1"]
+        let prefix = try #require(SearchService.parsedQuery(for: prefixBase).operands.first)
+        #expect(prefix.rendered == "\"neg oti\"*")
+        #expect(prefix.source == .structured)
+        let narrowedPrefix = QueryInspector.parameters(prefixBase, narrowedTo: prefix)
+        #expect(narrowedPrefix.keywords == nil)
+        #expect(narrowedPrefix.prefixWildcard == "neg oti")
+        #expect(narrowedPrefix.phrase == nil)
+        #expect(narrowedPrefix.excludedTerms.isEmpty)
+        #expect(narrowedPrefix.volumeIds == ["v1"], "the scope survives narrowing")
+        #expect(SearchService.parsedQuery(for: narrowedPrefix).expression == prefix.rendered)
+
+        let phraseBase = SearchParameters(keywords: "containment", phrase: "Cold  War", excludedTerms: ["korea"])
+        let phrase = try #require(SearchService.parsedQuery(for: phraseBase).operands.first { $0.kind == .phrase })
+        #expect(phrase.rendered == "\"cold war\"")
+        #expect(phrase.source == .structured)
+        let narrowedPhrase = QueryInspector.parameters(phraseBase, narrowedTo: phrase)
+        #expect(narrowedPhrase.keywords == nil, "the typed words must not AND into the phrase's count")
+        #expect(narrowedPhrase.phrase == "cold war")
+        #expect(narrowedPhrase.prefixWildcard == nil)
+        #expect(narrowedPhrase.excludedTerms.isEmpty)
+        #expect(SearchService.parsedQuery(for: narrowedPhrase).expression == phrase.rendered)
+
+        // Control: re-spelled as typed text, the prefix is a different query.
+        #expect(SearchService.parsedQuery(for: SearchParameters(keywords: "neg oti*")).expression
+                == "\"neg\" AND \"oti\"*")
+    }
+
+    /// Pushing negation inward can leave out nothing but a demoted operator word, which has no
+    /// operand to list — the flag is the only report.
+    @Test("A query narrowed with no not-applied operand to show is still flagged approximate")
+    func approximationWithNoNotAppliedRowIsFlagged() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let inspection = await inspector.inspect(
+            parameters: SearchParameters(keywords: "-( -containment NOT )"), indexedVolumeCount: 1)
+        #expect(inspection.expression?.displayed == "\"containment\"")
+        #expect(inspection.notApplied.isEmpty)
+        #expect(inspection.isApproximate)
+    }
+
+    /// The tag and the caption are view code no model test can reach, so these read the strip's own
+    /// source, each scoped to the one member that must hold it.
+    @Test("The strip tags structured operands ADVANCED and captions an approximation under the MATCH line")
+    func stripShowsStructuredTagAndApproximationCaption() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        func member(_ signature: String) throws -> Substring {
+            let start = try #require(source.range(of: signature), "\(signature) not found")
+            var depth = 0, index = start.upperBound, opened = false
+            while index < source.endIndex {
+                if source[index] == "{" { depth += 1; opened = true }
+                if source[index] == "}" { depth -= 1; if opened && depth == 0 { break } }
+                index = source.index(after: index)
+            }
+            return source[start.lowerBound...index]
+        }
+        let expressionRow = try member("private var expressionRow: some View")
+        #expect(expressionRow.contains("inspection.isApproximate"), "the caption is gated on isApproximate")
+        #expect(expressionRow.contains("search.inspector.approximateCaption"),
+                "and sits in the expression row, which never collapses")
+        let operandRows = try member("private var operandRows: some View")
+        #expect(operandRows.contains("source == .structured"), "the tag is gated on the operand's source")
+        #expect(operandRows.contains("search.inspector.structuredTag"))
     }
 
     // MARK: - The denominator

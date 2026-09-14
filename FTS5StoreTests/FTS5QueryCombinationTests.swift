@@ -21,8 +21,19 @@ import SQLite3
 /// juxtaposed with a phrase is a syntax error, and `NOT` binds tighter than `OR`. #1297 made
 /// more keyword expressions end in `NOT x` or a group, so the join is fixed alongside it.
 ///
+/// ## What this suite does NOT cover
+/// `FTS5Query` is a CARRIER: it receives a keyword expression as text, so it cannot see a typed
+/// complement the typed parse left out, and every expectation here is built from that typed-alone
+/// render. That is why the carrier sweep passed while the app discarded `-korea` beside a structured
+/// phrase. The app combines typed and structured parts through
+/// `FTS5InlineQueryParser.parseDetailed(_:columnPrefix:structured:)`, which
+/// `Issue1297StructuredPartsTests` checks against a set oracle; read this suite as pinning the carrier's
+/// bytes, never as app-path coverage.
+///
 /// Version history:
 ///   1.0 — #1297: initial implementation
+///   1.1 — #1297 join: the sweep is renamed and documented as the carrier sweep it always was, and
+///          `carrierIdentity` pins that a parsed expression passes through the carrier unchanged
 @Suite("FTS5Query part combination")
 struct FTS5QueryCombinationTests {
 
@@ -183,10 +194,15 @@ struct FTS5QueryCombinationTests {
         }
     }
 
-    /// Every typed shape of the #1297 sweep, beside every structured field, means what it says.
-    @Test("Every sweep query combined with a phrase, prefix and exclusions is valid and matches its meaning",
+    /// The FTS5Query carrier sweep: every typed shape of the #1297 sweep, rendered ALONE by the inline
+    /// parser and handed to `FTS5Query` beside every structured field, joins into what the two halves mean.
+    ///
+    /// The expected rows start from the typed-alone render, so a typed complement that render left out is
+    /// left out of the expectation too. This certifies the join, not the app's answer — a typed `-korea`
+    /// beside a phrase passes here as `"cold war"`. The app path is `Issue1297StructuredPartsTests`.
+    @Test("FTS5Query carrier combination sweep: every typed-alone render joined with a phrase, prefix and exclusions is valid and matches what the parts mean",
           arguments: [false, true])
-    func sweepCombinations(scoped: Bool) throws {
+    func carrierCombinationSweep(scoped: Bool) throws {
         let table = Table(scoped: scoped)
         let columnPrefix = scoped ? "{body_text}:" : ""
         let phraseRows = Set(try table.rows("\"cold war\""))
@@ -230,5 +246,26 @@ struct FTS5QueryCombinationTests {
         #expect(compared == 66_420)
         #expect(executed > 60_000)
         #expect(failures.isEmpty, "\(failures.prefix(5))")
+    }
+
+    /// `CorpusAnalyticsService` hands a parsed expression to `FTS5Query(keywordExpression:)` with nothing
+    /// beside it, so the carrier must give that expression back byte for byte.
+    @Test("A parsed expression carried through FTS5Query alone comes back unchanged, with and without a column scope")
+    func carrierIdentity() {
+        let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: Issue1297PropertyTests.alphabet + ["-("])
+        #expect(sequences.count == 11_110)
+        var carried = 0
+        var mismatches: [String] = []
+        for (prefix, columns) in [("", nil), ("{body_text}:", [FTS5Column.bodyText])] as [(String, [FTS5Column]?)] {
+            for typed in sequences {
+                guard let expression = FTS5InlineQueryParser.parse(typed, columnPrefix: prefix) else { continue }
+                carried += 1
+                let back = FTS5Query(keywordExpression: expression, columns: columns).toFTS5MatchExpression()
+                if back != expression { mismatches.append("\(typed) [\(prefix)] \(expression) -> \(back ?? "nil")") }
+            }
+        }
+        print("[1297] carrier identity carried=\(carried) mismatches=\(mismatches.count)")
+        #expect(carried >= 20_000)
+        #expect(mismatches.isEmpty, "\(mismatches.prefix(5))")
     }
 }
