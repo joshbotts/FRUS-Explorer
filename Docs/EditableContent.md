@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -2957,6 +2957,20 @@ not searched — an OR alternative made only of exclusions has nothing to search
 <!-- END SOURCE: search.inspector.notAppliedDetail -->
 
 Note: the tag and detail line on a term the query typed but its expression leaves out — the `-korea` in `cold OR -korea` (#1297). Such a term is never counted or blamed.
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.structuredTag -->
+
+ADVANCED
+
+<!-- END SOURCE: search.inspector.structuredTag -->
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.approximateCaption -->
+
+Narrower than typed: part of this query only excludes terms, and a search needs something to find, so that part was left out.
+
+<!-- END SOURCE: search.inspector.approximateCaption -->
+
+Note: the tag marks a term that came from a structured field — the phrase, prefix or excluded terms a restored saved search carries beside the typed text — rather than from the search box; such a term is counted like any other. The caption sits under the MATCH line whenever the expression matches less than the query means (#1297). It is the only report when what was left out is a demoted operator word, which has no term row: `-( -korea NOT )` searches `korea` alone.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.combination -->
 
