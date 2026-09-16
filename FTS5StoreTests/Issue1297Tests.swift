@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
 import Testing
 import SQLite3
 @testable import FTS5Store
@@ -33,6 +34,11 @@ import SQLite3
 ///   1.0 — #1297: initial implementation — the judged design's tests, plus the owner's
 ///          attached-dash decision (`-(X)` parses as `NOT (X)`), its invariant, and oracle,
 ///          validity and permutation runs that exercise `-(`
+///   1.1 — #1297 round-1 fixes: `Issue1297DepthTests` pins parser 6.3's refusal of groups nested deeper than
+///          32 levels, on a 512 KB thread; `setOracle` checks every nil against the oracle's model (nothing
+///          anchors, or 6.1's proof refuses) instead of only counting it; `runPermutationAndGrouping` counts the
+///          comparisons that rendered for every unit, so a parser refusing one unit outright fails it; and the
+///          two-column truth table no longer claims its constant header makes a column prefix observable
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -74,8 +80,9 @@ final class Issue1297TruthTable {
     /// The FTS5 table's name: `d` for one column, `d2` for header + body.
     private let name: String
 
-    /// Creates and seeds the table. The two-column form carries a constant header so a
-    /// column prefix has something to scope away from.
+    /// Creates and seeds the table. The two-column form gives a column prefix a column to name, but its header is
+    /// the constant 'heading', which holds no query word: a render that lost its prefix matches the same rows here.
+    /// `Issue1297StructuredPartsTests.columnPrefixScopesEveryTypedOperand` is the check that a prefix scopes.
     init(twoColumn: Bool = false) {
         sqlite3_open(":memory:", &db)
         name = twoColumn ? "d2" : "d"
@@ -365,6 +372,9 @@ struct Issue1297Generated {
     var hasPositive: Bool
     /// Whether it contains an excluded term.
     var hasNegative: Bool
+    /// The same query as the structured suite's oracle models it, over the leaves in the generator's harvest —
+    /// which is what lets a test ask whether anything anchors, or 6.1's proof refuses, without reading a render.
+    var model: Issue1297OracleModel
 }
 
 /// Generates queries with their set meaning, under the decided negation policy.
@@ -377,20 +387,27 @@ enum Issue1297QueryGenerator {
         [word, word.lowercased(), word.prefix(1) + word.dropFirst().lowercased()][rng.below(3)]
     }
 
-    /// A word, an excluded word, the phrase "cold war", or the excluded phrase.
-    static func leaf(_ rng: inout Issue1297Random) -> Issue1297Generated {
+    /// A word, an excluded word, the phrase "cold war", or the excluded phrase; its leaf is added to `harvest`.
+    static func leaf(_ rng: inout Issue1297Random, _ harvest: inout Issue1297OracleHarvest) -> Issue1297Generated {
         let word = Issue1297Corpus.vocabulary[rng.below(4)]
         let phraseRows = Issue1297Corpus.rows(with: "cold").intersection(Issue1297Corpus.rows(with: "war"))
         switch rng.below(5) {
         case 0, 1:
-            return Issue1297Generated(text: word, rows: Issue1297Corpus.rows(with: word), hasPositive: true, hasNegative: false)
+            let index = harvest.add(word, .word, exact: false, .typed, Issue1297StructuredCorpus.W(word))
+            return Issue1297Generated(text: word, rows: Issue1297Corpus.rows(with: word), hasPositive: true, hasNegative: false,
+                                      model: .leaf(index))
         case 2:
+            let index = harvest.add(word, .word, exact: false, .typed, Issue1297StructuredCorpus.W(word))
             return Issue1297Generated(text: "-" + word, rows: all.subtracting(Issue1297Corpus.rows(with: word)),
-                                      hasPositive: false, hasNegative: true)
+                                      hasPositive: false, hasNegative: true, model: .not(.leaf(index)))
         case 3:
-            return Issue1297Generated(text: "\"cold war\"", rows: phraseRows, hasPositive: true, hasNegative: false)
+            let index = harvest.add("cold war", .phrase, exact: false, .typed, Issue1297StructuredCorpus.P("cold war"))
+            return Issue1297Generated(text: "\"cold war\"", rows: phraseRows, hasPositive: true, hasNegative: false,
+                                      model: .leaf(index))
         default:
-            return Issue1297Generated(text: "-\"cold war\"", rows: all.subtracting(phraseRows), hasPositive: false, hasNegative: true)
+            let index = harvest.add("cold war", .phrase, exact: false, .typed, Issue1297StructuredCorpus.P("cold war"))
+            return Issue1297Generated(text: "-\"cold war\"", rows: all.subtracting(phraseRows), hasPositive: false, hasNegative: true,
+                                      model: .not(.leaf(index)))
         }
     }
 
@@ -402,48 +419,64 @@ enum Issue1297QueryGenerator {
         let keywordMarks = attachDash ? marks - 1 : marks
         let prefix = (0..<keywordMarks).map { _ in keyword("NOT", &rng) + " " }.joined() + (attachDash ? "-" : "")
         guard g.hasPositive else {
-            return Issue1297Generated(text: prefix + g.text, rows: g.rows, hasPositive: false, hasNegative: g.hasNegative)
+            return Issue1297Generated(text: prefix + g.text, rows: g.rows, hasPositive: false, hasNegative: g.hasNegative,
+                                      model: g.model)
         }
         return Issue1297Generated(text: prefix + g.text, rows: all.subtracting(g.rows),
-                                  hasPositive: g.hasNegative, hasNegative: g.hasPositive)
+                                  hasPositive: g.hasNegative, hasNegative: g.hasPositive, model: .not(g.model))
     }
 
     /// A group (sometimes negated), a negated leaf, or a bare leaf.
-    static func item(depth: Int, attachDash: Bool, _ rng: inout Issue1297Random) -> Issue1297Generated {
+    static func item(depth: Int, attachDash: Bool, _ rng: inout Issue1297Random,
+                     _ harvest: inout Issue1297OracleHarvest) -> Issue1297Generated {
         let roll = rng.below(10)
         if depth > 0, roll < 3 {
-            let inner = query(depth: depth - 1, attachDash: attachDash, &rng)
+            let inner = query(depth: depth - 1, attachDash: attachDash, &rng, &harvest)
             let group = Issue1297Generated(text: "(" + inner.text + ")", rows: inner.rows,
-                                           hasPositive: inner.hasPositive, hasNegative: inner.hasNegative)
+                                           hasPositive: inner.hasPositive, hasNegative: inner.hasNegative, model: inner.model)
             return roll == 0 ? negate(group, marks: 1 + rng.below(2), attachDash: attachDash, &rng) : group
         }
-        let base = leaf(&rng)
+        let base = leaf(&rng, &harvest)
         return roll < 6 ? negate(base, marks: 1 + rng.below(2), &rng) : base
     }
 
     /// One to three items joined by a space or a randomly cased AND.
-    static func run(depth: Int, attachDash: Bool, _ rng: inout Issue1297Random) -> Issue1297Generated {
-        var g = item(depth: depth, attachDash: attachDash, &rng)
+    static func run(depth: Int, attachDash: Bool, _ rng: inout Issue1297Random,
+                    _ harvest: inout Issue1297OracleHarvest) -> Issue1297Generated {
+        var g = item(depth: depth, attachDash: attachDash, &rng, &harvest)
+        var members = [g.model]
         for _ in 0..<rng.below(3) {
-            let next = item(depth: depth, attachDash: attachDash, &rng)
+            let next = item(depth: depth, attachDash: attachDash, &rng, &harvest)
             let sep = rng.below(2) == 0 ? " " : " " + keyword("AND", &rng) + " "
+            members.append(next.model)
             g = Issue1297Generated(text: g.text + sep + next.text, rows: g.rows.intersection(next.rows),
                                    hasPositive: g.hasPositive || next.hasPositive,
-                                   hasNegative: g.hasNegative || next.hasNegative)
+                                   hasNegative: g.hasNegative || next.hasNegative,
+                                   model: .and(members))
         }
         return g
     }
 
-    /// One to three runs joined by a randomly cased OR.
-    static func query(depth: Int, attachDash: Bool = false, _ rng: inout Issue1297Random) -> Issue1297Generated {
-        var g = run(depth: depth, attachDash: attachDash, &rng)
+    /// One to three runs joined by a randomly cased OR, its leaves added to `harvest` in the order typed.
+    static func query(depth: Int, attachDash: Bool = false, _ rng: inout Issue1297Random,
+                      _ harvest: inout Issue1297OracleHarvest) -> Issue1297Generated {
+        var g = run(depth: depth, attachDash: attachDash, &rng, &harvest)
+        var members = [g.model]
         for _ in 0..<rng.below(3) {
-            let next = run(depth: depth, attachDash: attachDash, &rng)
+            let next = run(depth: depth, attachDash: attachDash, &rng, &harvest)
+            members.append(next.model)
             g = Issue1297Generated(text: g.text + " " + keyword("OR", &rng) + " " + next.text, rows: g.rows.union(next.rows),
                                    hasPositive: g.hasPositive || next.hasPositive,
-                                   hasNegative: g.hasNegative || next.hasNegative)
+                                   hasNegative: g.hasNegative || next.hasNegative,
+                                   model: .or(members))
         }
         return g
+    }
+
+    /// One to three runs joined by a randomly cased OR, for a caller that does not need the harvest.
+    static func query(depth: Int, attachDash: Bool = false, _ rng: inout Issue1297Random) -> Issue1297Generated {
+        var harvest = Issue1297OracleHarvest()
+        return query(depth: depth, attachDash: attachDash, &rng, &harvest)
     }
 }
 
@@ -508,8 +541,10 @@ struct Issue1297PropertyTests {
         let table = Issue1297TruthTable()
         var rng = Issue1297Random(state: run.seed)
         var exact = 0, narrowed = 0, nilApproximation = 0, dashGroups = 0
+        var nilNothingAnchors = 0, nilRefusedByProof = 0
         for _ in 0..<4_000 {
-            let g = Issue1297QueryGenerator.query(depth: 2, attachDash: run.attachDash, &rng)
+            var harvest = Issue1297OracleHarvest()
+            let g = Issue1297QueryGenerator.query(depth: 2, attachDash: run.attachDash, &rng, &harvest)
             if g.text.contains("-(") { dashGroups += 1 }
             let parsed = FTS5InlineQueryParser.parseDetailed(g.text)
             if !g.rows.contains(1) {
@@ -525,12 +560,25 @@ struct Issue1297PropertyTests {
                 #expect(!parsed.droppedOperands.isEmpty, "\(g.text)")
             } else {
                 nilApproximation += 1
+                // A nil is legitimate only when nothing anchors, or when parser 6.1's proof shows the approximation
+                // matches nothing. Both are read from the oracle's model of the query, never from a render.
+                let root = Issue1297OracleModel.and([g.model])
+                var policyDropped = Set<Int>(), searchedDropped = Set<Int>()
+                let policy = Issue1297OracleModel.policy(root, negated: false, pushInward: true, harvest, scoped: false,
+                                                         dropped: &policyDropped)
+                let searched = Issue1297OracleModel.searched(root, pushInward: true, harvest, scoped: false,
+                                                             dropped: &searchedDropped)
+                #expect(searched == nil, "\(g.text): nil, although the policy anchors and the proof does not refuse")
+                if policy == nil { nilNothingAnchors += 1 } else if searched == nil { nilRefusedByProof += 1 }
             }
         }
-        print("[1297] oracle \(run.testDescription) exact=\(exact) narrowed=\(narrowed) nil=\(nilApproximation) dashGroups=\(dashGroups)")
+        print("[1297] oracle \(run.testDescription) exact=\(exact) narrowed=\(narrowed) nil=\(nilApproximation) nilNothingAnchors=\(nilNothingAnchors) nilRefusedByProof=\(nilRefusedByProof) dashGroups=\(dashGroups)")
         #expect(exact > run.minimums.exact)
         #expect(narrowed > run.minimums.narrowed)
         #expect(nilApproximation > run.minimums.nilApproximation)
+        // Each legitimate kind of nil must occur, or its half of the check above is vacuous.
+        #expect(nilNothingAnchors > 0)
+        #expect(nilRefusedByProof > 0)
         #expect(run.attachDash ? dashGroups > 500 : dashGroups == 0)
     }
 
@@ -632,6 +680,10 @@ struct Issue1297PropertyTests {
         let table = Issue1297TruthTable()
         func rows(_ q: String) throws -> Set<Int>? { try FTS5InlineQueryParser.parse(q).map { Set(try table.rows($0)) } }
         var groups = 0, wraps = 0
+        // Comparisons whose sides rendered, per unit taking part. `groups` and `wraps` are combinatorics of `runUnits`
+        // and cannot depend on the parser, and nil == nil passes every comparison: without these counts a parser
+        // that refused every query holding one unit would pass.
+        var renderedByUnit = [Int](repeating: 0, count: Self.runUnits.count)
         for size in 1...3 {
             var seen: [String: Set<Int>?] = [:]
             for arrangement in Self.arrangements(of: size) {
@@ -647,11 +699,194 @@ struct Issue1297PropertyTests {
                     #expect(andWrapped == andBare, "war (\(run))")
                     #expect(orWrapped == orBare, "vietnam OR (\(run))")
                     wraps += 3
+                    let rendered = [result != nil && wrapped != nil, andWrapped != nil && andBare != nil,
+                                    orWrapped != nil && orBare != nil].filter { $0 }.count
+                    for unit in arrangement { renderedByUnit[unit] += rendered }
                 }
             }
         }
-        print("[1297] permutation groups=\(groups) wraps=\(wraps)")
+        print("[1297] permutation groups=\(groups) wraps=\(wraps) renderedByUnit=\(renderedByUnit)")
         #expect(groups == 231)
         #expect(wraps == 6_666)
+        for (unit, count) in renderedByUnit.enumerated() {
+            #expect(count > 0, "no comparison holding \(Self.runUnits[unit]) rendered")
+        }
+    }
+}
+
+// MARK: - Nesting depth
+
+/// A value handed back from a thread the test started, read only after that thread has signalled.
+final class Issue1297ThreadResult<Value>: @unchecked Sendable {
+    /// What the thread produced.
+    var value: Value?
+}
+
+/// Runs work on a thread with a small stack, the size of a Swift concurrency pool thread's.
+enum Issue1297SmallStack {
+    /// 512 KB: `SearchService` is an actor and the Query Inspector parses from an async method, so the app parses on
+    /// cooperative-pool threads, whose stacks are this size.
+    static let bytes = 512 * 1_024
+
+    /// `body`'s result, computed on a thread with a `bytes` stack. A stack overflow kills the test process, which
+    /// is the failure this exists to surface.
+    static func run<Value>(_ body: @escaping @Sendable () -> Value) -> Value? {
+        let result = Issue1297ThreadResult<Value>()
+        let done = DispatchSemaphore(value: 0)
+        let thread = Thread {
+            result.value = body()
+            done.signal()
+        }
+        thread.stackSize = bytes
+        thread.start()
+        done.wait()
+        return result.value
+    }
+}
+
+/// One way of nesting groups, as the text for `levels` levels of balanced parentheses.
+struct Issue1297NestingPattern: Sendable, CustomTestStringConvertible {
+    /// Names the pattern in the test report.
+    let name: String
+    /// The text opening one level.
+    let open: String
+    /// What sits innermost.
+    let inner: String
+    /// Balanced parenthesis pairs `inner` holds itself, which count as levels.
+    let innerLevels: Int
+
+    /// The query nested `levels` levels deep, counting every balanced pair of parentheses.
+    func query(levels: Int) -> String {
+        let repetitions = levels - innerLevels
+        return String(repeating: open, count: repetitions) + inner + String(repeating: ")", count: repetitions)
+    }
+
+    /// The pattern's name.
+    var testDescription: String { name }
+}
+
+/// Parser 6.3 refuses a query whose groups nest deeper than a limit, before any recursive pass.
+///
+/// Every recursive pass over the tree costs stack per level, and the app parses on 512 KB threads: before the limit,
+/// `-(war ` nested 290 levels (2,034 characters) overflowed a Release build's stack and killed the process, and a
+/// Debug build's at 30. Every check here therefore runs on a thread with that stack.
+@Suite("#1297 nesting depth")
+struct Issue1297DepthTests {
+
+    /// The decided limit: 32 levels render, 33 are refused.
+    static let limit = 32
+
+    /// The refusal every refused query returns.
+    static let refused = ParsedQuery(expression: nil, exactTerms: [])
+
+    /// Nestings chosen for the stack each level costs, including the deepest measured per level.
+    static let patterns: [Issue1297NestingPattern] = [
+        Issue1297NestingPattern(name: "-(war …)", open: "-(war ", inner: "cold", innerLevels: 0),
+        Issue1297NestingPattern(name: "((…))", open: "(", inner: "cold", innerLevels: 0),
+        Issue1297NestingPattern(name: "(a OR …)", open: "(a OR ", inner: "cold", innerLevels: 0),
+        Issue1297NestingPattern(name: "war NOT (…)", open: "war NOT (", inner: "cold", innerLevels: 0),
+        Issue1297NestingPattern(name: "(…NEAR(…)…)", open: "(", inner: "NEAR(cold war, 5)", innerLevels: 1),
+        Issue1297NestingPattern(name: "NEAR(NEAR(…))", open: "NEAR(", inner: "cold war", innerLevels: 0),
+        Issue1297NestingPattern(name: "-(a OR -b …)", open: "-(a OR -b ", inner: "cold", innerLevels: 0),
+        Issue1297NestingPattern(name: "-(-a OR …)", open: "-(-a OR ", inner: "cold", innerLevels: 0),
+        Issue1297NestingPattern(name: "(-a OR …)", open: "(-a OR ", inner: "cold", innerLevels: 0),
+    ]
+
+    /// The limit renders valid FTS5 in each shape; one level deeper is refused whatever sits beside it.
+    @Test("A query nested to the limit renders, and one nested a level deeper is refused, on a 512 KB stack",
+          arguments: Issue1297DepthTests.patterns)
+    func limitRendersAndOneDeeperIsRefused(_ pattern: Issue1297NestingPattern) throws {
+        let atLimit = pattern.query(levels: Self.limit), beyond = pattern.query(levels: Self.limit + 1)
+        let results = try #require(Issue1297SmallStack.run {
+            [FTS5InlineQueryParser.parseDetailed(atLimit),
+             FTS5InlineQueryParser.parseDetailed(atLimit, columnPrefix: "{body}:",
+                                                 structured: StructuredQueryParts(phrase: "cold war")),
+             FTS5InlineQueryParser.parseDetailed(beyond),
+             FTS5InlineQueryParser.parseDetailed(beyond, columnPrefix: "{body}:",
+                                                 structured: StructuredQueryParts(phrase: "cold war", excludedTerms: ["korea"]))]
+        })
+        let expression = try #require(results[0].expression, "\(pattern.name) at the limit")
+        #expect(throws: Never.self) { _ = try Issue1297TruthTable().rows(expression) }
+        let scoped = try #require(results[1].expression, "\(pattern.name) at the limit, scoped beside a phrase")
+        #expect(throws: Never.self) { _ = try Issue1297TruthTable(twoColumn: true).rows(scoped) }
+        #expect(results[2] == Self.refused, "\(pattern.name) one level deeper")
+        #expect(results[3] == Self.refused, "\(pattern.name) one level deeper, scoped beside a phrase and an exclusion")
+    }
+
+    /// A pasted query thousands of levels deep returns instead of overflowing the stack.
+    @Test("A query nested 5,000 levels deep is refused without overflowing a 512 KB stack",
+          arguments: Issue1297DepthTests.patterns)
+    func deepQueriesReturn(_ pattern: Issue1297NestingPattern) throws {
+        let query = pattern.query(levels: 5_000)
+        let results = try #require(Issue1297SmallStack.run {
+            [FTS5InlineQueryParser.parseDetailed(query),
+             FTS5InlineQueryParser.parseDetailed(query, columnPrefix: "{body}:", structured: StructuredQueryParts(prefixWildcard: "viet"))]
+        })
+        #expect(results == [Self.refused, Self.refused], "\(pattern.name)")
+    }
+
+    /// Depth counts balanced pairs of parentheses, not parentheses: what never nests is never refused for it.
+    @Test("Parentheses that do not nest are not depth: unbalanced runs, quoted parentheses and many shallow groups render")
+    func depthCountsOnlyNesting() throws {
+        let deepAtLimit = String(repeating: "(", count: Self.limit) + "cold" + String(repeating: ")", count: Self.limit)
+        let cases: [(query: String, expression: String)] = [
+            (String(repeating: "(", count: 5_000) + " cold", "\"cold\""),
+            ("cold " + String(repeating: ")", count: 5_000), "\"cold\""),
+            (String(repeating: "-(", count: 5_000) + " cold", "\"cold\""),
+            (String(repeating: ")", count: 5_000) + String(repeating: "(", count: 5_000) + " cold", "\"cold\""),
+        ]
+        // A quoted phrase is one token, whatever it holds: its parentheses are text, and it renders as typed.
+        let quoted = "\"" + String(repeating: "(", count: 40) + "cold war" + String(repeating: ")", count: 40) + "\""
+        let results = try #require(Issue1297SmallStack.run {
+            cases.map { FTS5InlineQueryParser.parseDetailed($0.query).expression }
+                + [FTS5InlineQueryParser.parseDetailed(quoted).expression,
+                   FTS5InlineQueryParser.parseDetailed(Array(repeating: deepAtLimit, count: 60).joined(separator: " OR ")).expression]
+        })
+        for (index, testCase) in cases.enumerated() {
+            #expect(results[index] == testCase.expression, "\(testCase.query.prefix(40))…")
+        }
+        #expect(results[cases.count] == quoted)
+        let manyGroups = try #require(results[cases.count + 1], "60 groups each nested to the limit")
+        #expect(throws: Never.self) { _ = try Issue1297TruthTable().rows(manyGroups) }
+    }
+
+    /// Long queries with no nesting at all.
+    static let flatShapes: [(name: String, unit: @Sendable (Int) -> String)] = [
+        ("NOT chain", { _ in "NOT " }),
+        ("OR alternatives", { "w\($0) OR " }),
+        ("OR with exclusion-only alternatives", { "w\($0) OR -k\($0) OR " }),
+        ("AND run", { "w\($0) AND " }),
+        ("exclusions", { "-k\($0) " }),
+        ("anchors and exclusions", { "w\($0) -k\($0) " }),
+        ("demoted operators", { _ in "AND OR " }),
+        ("negated groups", { "-(w\($0) -k\($0)) " }),
+        ("NOT groups beside an anchor", { "NOT (w\($0) OR -k\($0)) " }),
+        ("exact alternatives", { "=w\($0) OR " }),
+        ("NEAR operators", { "NEAR(w\($0) v\($0), 5) " }),
+    ]
+
+    /// A flat query thousands of operators long parses on the small stack.
+    ///
+    /// Only the parse is checked. SQLite refuses some of these renders for a limit of its own — a chain of more than
+    /// 255 `NOT`s is "fts5 expression tree is too large (maximum depth 256)" — which is an error the search reports,
+    /// never a crash, and no part of what this suite pins.
+    @Test("A flat query of thousands of operators and exclusions parses on a 512 KB stack")
+    func flatQueriesParse() throws {
+        var queries: [String] = []
+        for shape in Self.flatShapes {
+            var query = "cold "
+            var index = 0
+            while query.count < 8_000 {
+                query += shape.unit(index)
+                index += 1
+            }
+            queries.append(query + "cold")
+        }
+        let frozen = queries
+        let results = try #require(Issue1297SmallStack.run { frozen.map { FTS5InlineQueryParser.parseDetailed($0).expression } })
+        #expect(results.count == Self.flatShapes.count)
+        for (shape, expression) in zip(Self.flatShapes, results) {
+            #expect(expression != nil, "\(shape.name)")
+        }
     }
 }

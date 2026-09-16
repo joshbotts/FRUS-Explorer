@@ -674,6 +674,10 @@ struct FTS5InlineQueryParserTests {
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — #1297 round-1 fixes: parser 6.3 reports an `=` term only when every match must contain it (its operand is in
+///          the root expression's proof "required" set), because the SQL layer ANDs one exact-word filter per term. So
+///          `=containment OR =rollback` and `(=containment OR rollback) AND europe` report nothing, where 1.0 pinned
+///          both terms and `containment`; the several-terms and inside-a-group tests now pin a conjunction beside them
 @Suite("Exact-word sigil")
 struct FTS5ExactSigilTests {
 
@@ -700,19 +704,24 @@ struct FTS5ExactSigilTests {
         #expect(parsed.exactTerms == ["containment"], "only the marked term is exact")
     }
 
-    @Test("Several exact terms are all reported, in order, de-duplicated")
+    @Test("Several exact terms every match requires are all reported, in order, de-duplicated")
     func severalExactTerms() {
-        let parsed = FTS5InlineQueryParser.parseDetailed("=containment OR =rollback")
+        let parsed = FTS5InlineQueryParser.parseDetailed("=containment =rollback")
         #expect(parsed.exactTerms == ["containment", "rollback"])
         #expect(FTS5InlineQueryParser.parseDetailed("=containment =containment").exactTerms
                 == ["containment"])
+        // Alternatives: a rollback document without containment matches, and one filter per term would remove it.
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =rollback").exactTerms.isEmpty)
     }
 
-    @Test("An exact term inside a group is still reported")
+    @Test("An exact term inside a group is reported when every match requires it, and ignored as an alternative")
     func exactInsideAGroup() {
-        let parsed = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) AND europe")
-        #expect(parsed.exactTerms == ["containment"])
-        #expect(parsed.expression?.contains("\"containment\"") == true)
+        let required = FTS5InlineQueryParser.parseDetailed("(=containment rollback) AND europe")
+        #expect(required.exactTerms == ["containment"])
+        #expect(required.expression?.contains("\"containment\"") == true)
+        let alternative = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) AND europe")
+        #expect(alternative.exactTerms.isEmpty)
+        #expect(alternative.expression == "(\"containment\" OR \"rollback\") AND \"europe\"")
     }
 
     @Test("A query with no sigil reports no exact terms")

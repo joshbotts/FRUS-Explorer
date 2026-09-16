@@ -105,8 +105,9 @@ final class Issue1297StructuredTable {
     /// The FTS5 table's name.
     private let name: String
 
-    /// The corpus as `d(body_text)`, or with `twoColumn` as `d2(header, body_text)` under a constant
-    /// header, so a `{body_text}:` prefix has a column to scope away from.
+    /// The corpus as `d(body_text)`, or with `twoColumn` as `d2(header, body_text)` under the constant header
+    /// 'heading'. That gives a `{body_text}:` prefix a column to name, but the header holds no query word, so a render
+    /// that lost its prefix matches the same rows: `init(headed:)` is the table that tells the two apart.
     convenience init(twoColumn: Bool = false) {
         self.init(bodies: Issue1297StructuredCorpus.bodies, twoColumn: twoColumn)
     }
@@ -122,6 +123,17 @@ final class Issue1297StructuredTable {
             insert(twoColumn ? "INSERT INTO d2(rowid, header, body_text) VALUES (?, 'heading', ?);"
                              : "INSERT INTO d(rowid, body_text) VALUES (?, ?);",
                    rowid: index + 1, values: [body])
+        }
+    }
+
+    /// `d2(header, body_text)` holding `rows` in order from rowid 1, each row with a header of its own.
+    init(headed rows: [(header: String, body: String)]) {
+        name = "d2"
+        sqlite3_open(":memory:", &db)
+        sqlite3_exec(db, "CREATE VIRTUAL TABLE d2 USING fts5(header, body_text, tokenize='porter unicode61');",
+                     nil, nil, nil)
+        for (index, row) in rows.enumerated() {
+            insert("INSERT INTO d2(rowid, header, body_text) VALUES (?, ?, ?);", rowid: index + 1, values: [row.header, row.body])
         }
     }
 
@@ -226,6 +238,12 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///   1.2 — #1297 fixes review: parser 6.2 scopes a demoted operator word, so `(NOT OR -korea) -not` is refused in both
 ///          scopes and the scope guard is now the typed phrase "korea", which still spans every column;
 ///          `refusalAcrossScopesSweep`; and `combinedSweep` fails a refusal that depends on the column prefix
+///   1.3 — #1297 round-1 fixes: parser 6.3's exact-term rule (D1) — the oracle expects an `=` term only when the root
+///          proof requires it, `exactTermsSweep` checks soundness and completeness on the universal corpus instead of
+///          equality with the positive applied operands, and eight named cases pin it (F26); named cases for the
+///          `conjoin` and `disjoin` proof combinators and the approximate AND-run's bytes; and
+///          `columnPrefixScopesEveryTypedOperand` with `columnPrefixNamedRows`, over headers holding query words,
+///          because every scoped sweep ran under a constant header that made a lost column prefix invisible (F5)
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -250,6 +268,9 @@ struct Issue1297StructuredPartsTests {
         let notWar = typedOperand("war", "NOT \"war\"", .word, negated: true)
         let coldWar = structuredOperand("cold war", "\"cold war\"", .phrase, negated: false)
         let viet = structuredOperand("viet*", "\"viet\"*", .prefix, negated: false)
+        let coldExact = typedOperand("cold", "\"cold\"", .word, negated: false, exact: true)
+        let scopedCold = typedOperand("cold", "{body_text}:\"cold\"", .word, negated: false)
+        let scopedNotWar = typedOperand("war", "NOT {body_text}:\"war\"", .word, negated: true)
 
         return [
             // Finding 1: a typed complement with no anchor of its own, beside a phrase or prefix.
@@ -387,11 +408,13 @@ struct Issue1297StructuredPartsTests {
             Issue1297StructuredCase(typed: "cold", structured: StructuredQueryParts(excludedTerms: ["cold war"]),
                                     expression: "\"cold\" NOT \"cold war\"", meaning: c.subtracting(cw),
                                     operands: [cold, structuredOperand("cold war", "NOT \"cold war\"", .phrase, negated: true)]),
+            // Parser 6.3 (D1): `=` filters only on a word every match must contain — an operand in the root expression's
+            // proof "required" set. Beside the prefix, cold is one alternative of a complement the prefix anchors, so a
+            // cold filter would remove every viet document lacking korea and cold, which the query asks for; 6.0 filtered.
             Issue1297StructuredCase(typed: "=cold OR -korea", structured: prefix,
                                     expression: "\"viet\"* NOT (\"korea\" NOT \"cold\")",
                                     meaning: vi.intersection(c.union(N(k))),
-                                    operands: [typedOperand("cold", "\"cold\"", .word, negated: false, exact: true), notKorea, viet],
-                                    exactTerms: ["cold"]),
+                                    operands: [coldExact, notKorea, viet]),
             Issue1297StructuredCase(typed: "war (cold OR -korea)", structured: prefix,
                                     expression: "(\"war\" NOT (\"korea\" NOT \"cold\")) AND \"viet\"*",
                                     meaning: vi.intersection(w).intersection(c.union(N(k))),
@@ -442,9 +465,10 @@ struct Issue1297StructuredPartsTests {
                                     meaning: c.union(N(w).intersection(N(k))), approximation: c,
                                     operands: [cold, korea, notKorea], dropped: [notWar], isApproximate: true),
             // ...nor one whose anchor the exclusion's scope does not cover. A phrase carries no column prefix, so a
-            // scoped `-korea` cannot be shown to remove the phrase "korea" — even though this table, whose only header
-            // is a constant, happens to hold no korea outside the body. Unscoped, the same query is refused, and
-            // `SearchService` refuses it in every scope, because its exact terms and Query Inspector read that parse.
+            // scoped `-korea` cannot be shown to remove the phrase "korea" — a document can hold korea outside the body,
+            // though this table's constant header never does, which is why the render matches nothing here. Unscoped,
+            // the same query is refused, and `SearchService` refuses it in every scope, because its exact terms and
+            // Query Inspector read that parse.
             Issue1297StructuredCase(typed: "\"korea\" -korea OR -korea", expression: nil, meaning: N(k)),
             Issue1297StructuredCase(typed: "\"korea\" -korea OR -korea", scoped: true,
                                     expression: "\"korea\" NOT {body_text}:\"korea\"",
@@ -453,6 +477,58 @@ struct Issue1297StructuredPartsTests {
                                                typedOperand("korea", "NOT {body_text}:\"korea\"", .word, negated: true)],
                                     dropped: [typedOperand("korea", "NOT {body_text}:\"korea\"", .word, negated: true)],
                                     isApproximate: true),
+            // Parser 6.3 (D1): an `=` term is a post-filter only when its operand is in the root expression's proof
+            // "required" set; everywhere else the sigil is ignored and the term runs stemmed. The app ANDs one
+            // exact-word filter per term, so a term a match need not contain would remove documents the MATCH admits.
+            // Inside a negated group (F26): korea is doubly negated, so positive, but a document with cold and neither
+            // war nor korea matches, and a korea filter removed it.
+            Issue1297StructuredCase(typed: "cold -(war -=korea)", expression: "\"cold\" NOT (\"war\" NOT \"korea\")",
+                                    meaning: c.intersection(N(w).union(k)),
+                                    operands: [cold, notWar, typedOperand("korea", "\"korea\"", .word, negated: false, exact: true)]),
+            Issue1297StructuredCase(typed: "cold -(war -=korea)", scoped: true,
+                                    expression: "{body_text}:\"cold\" NOT ({body_text}:\"war\" NOT {body_text}:\"korea\")",
+                                    meaning: c.intersection(N(w).union(k)),
+                                    operands: [scopedCold, scopedNotWar,
+                                               typedOperand("korea", "{body_text}:\"korea\"", .word, negated: false, exact: true)]),
+            // An OR alternative: a war document without cold matches.
+            Issue1297StructuredCase(typed: "=cold OR war", expression: "\"cold\" OR \"war\"", meaning: c.union(w),
+                                    operands: [coldExact, war]),
+            // Every match holds cold, in either scope.
+            Issue1297StructuredCase(typed: "=cold war", expression: "\"cold\" AND \"war\"", meaning: c.intersection(w),
+                                    operands: [coldExact, war], exactTerms: ["cold"]),
+            Issue1297StructuredCase(typed: "=cold war", scoped: true, expression: "{body_text}:\"cold\" AND {body_text}:\"war\"",
+                                    meaning: c.intersection(w),
+                                    operands: [typedOperand("cold", "{body_text}:\"cold\"", .word, negated: false, exact: true),
+                                               typedOperand("war", "{body_text}:\"war\"", .word, negated: false)],
+                                    exactTerms: ["cold"]),
+            Issue1297StructuredCase(typed: "=cold -(war -korea)", expression: "\"cold\" NOT (\"war\" NOT \"korea\")",
+                                    meaning: c.intersection(N(w).union(k)),
+                                    operands: [coldExact, notWar, korea], exactTerms: ["cold"]),
+            // The proof is the expression that RUNS: approximated to `"cold"`, every match holds cold.
+            Issue1297StructuredCase(typed: "=cold OR -korea", expression: "\"cold\"", meaning: c.union(N(k)), approximation: c,
+                                    operands: [coldExact], dropped: [notKorea], exactTerms: ["cold"], isApproximate: true),
+            // An excluded `=` term stays ignored even where another operand makes its word required: the positive
+            // korea here was typed without the sigil, and a filter would narrow it to the literal word.
+            Issue1297StructuredCase(typed: "korea (war OR -=korea)", expression: "\"korea\" NOT (\"korea\" NOT \"war\")",
+                                    meaning: k.intersection(w.union(N(k))),
+                                    operands: [korea, war, typedOperand("korea", "NOT \"korea\"", .word, negated: true, exact: true)]),
+            // Proof combinators, each pinned by name (round-1 Q5/Q5b). `conjoin` forbids what EITHER conjunct forbids:
+            // the right conjunct's approximation `"cold" NOT "korea"` removes the left's anchor korea, so nothing can
+            // match. (`-(war -korea) (cold -korea)` is no such case: its AND-run holds a positive, so it renders exactly.)
+            Issue1297StructuredCase(typed: "-(war -korea) (cold -korea OR -vietnam)", expression: nil,
+                                    meaning: N(w).union(k).intersection(c.subtracting(k).union(N(v)))),
+            // `disjoin` requires only what EVERY alternative requires: a match of `"cold" OR "korea"` need not hold korea,
+            // so excluding korea leaves the cold documents, and the query runs.
+            Issue1297StructuredCase(typed: "(cold OR korea OR -vietnam) -korea", expression: "(\"cold\" OR \"korea\") NOT \"korea\"",
+                                    meaning: c.union(k).union(N(v)).subtracting(k), approximation: c.subtracting(k),
+                                    operands: [cold, korea, notKorea], dropped: [notVietnam], isApproximate: true),
+            // The approximate AND-run's bytes (round-1 P8): every anchored member is conjoined before any exclusion is
+            // applied. Excluding in typed order matches the same rows, but saved-search freshness compares renders.
+            Issue1297StructuredCase(typed: "(cold OR -korea) -vietnam (war OR -x)", expression: "(\"cold\") AND (\"war\") NOT \"vietnam\"",
+                                    meaning: c.union(N(k)).subtracting(v).intersection(w.union(N(Issue1297StructuredCorpus.W("x")))),
+                                    approximation: c.intersection(w).subtracting(v),
+                                    operands: [cold, notVietnam, war],
+                                    dropped: [notKorea, typedOperand("x", "NOT \"x\"", .word, negated: true)], isApproximate: true),
         ]
     }()
 
@@ -460,7 +536,7 @@ struct Issue1297StructuredPartsTests {
     @Test("A typed query beside structured fields renders, matches and reports what the judged table says",
           arguments: Issue1297StructuredPartsTests.namedCases)
     func namedCombinations(_ c: Issue1297StructuredCase) throws {
-        #expect(Self.namedCases.count == 52)
+        #expect(Self.namedCases.count == 63)
         let table = Issue1297StructuredTable(twoColumn: c.scoped)
         let parsed = FTS5InlineQueryParser.parseDetailed(c.typed, columnPrefix: c.scoped ? "{body_text}:" : "",
                                                          structured: c.structured)
@@ -566,7 +642,9 @@ struct Issue1297StructuredPartsTests {
                 let root = Issue1297OracleModel.and(parts)
                 let meaning = Issue1297OracleModel.meaning(root, harvest)
                 var dropped = Set<Int>(), droppedWithoutPush = Set<Int>(), droppedUnrefused = Set<Int>()
-                let policy = Issue1297OracleModel.searched(root, pushInward: true, harvest, scoped: scoped, dropped: &dropped)
+                let searchedAnchor = Issue1297OracleModel.searchedAnchor(root, pushInward: true, harvest, scoped: scoped,
+                                                                         dropped: &dropped)
+                let policy = searchedAnchor?.rows
                 let policyWithoutPush = Issue1297OracleModel.searched(root, pushInward: false, harvest, scoped: scoped,
                                                                       dropped: &droppedWithoutPush)
                 let unrefused = Issue1297OracleModel.policy(root, negated: false, pushInward: true, harvest, scoped: scoped,
@@ -579,9 +657,17 @@ struct Issue1297StructuredPartsTests {
                 }
                 let expectedOperands = policy == nil ? [] : harvest.texts.indices.filter { !dropped.contains($0) }.map { everyOperand[$0] }
                 let expectedDropped = policy == nil ? [] : harvest.texts.indices.filter { dropped.contains($0) }.map { everyOperand[$0] }
+                // Parser 6.3 (D1): a typed, applied, positive `=` operand whose identity every match of the expression that
+                // runs must match — the proof's "required" set, as the oracle computes it from leaves alone.
                 var expectedExact: [String] = []
-                if policy != nil, (0..<typedCount).contains(where: { harvest.exact[$0] && parity[$0] == false && !dropped.contains($0) }) {
+                if let searchedAnchor, (0..<typedCount).contains(where: {
+                    harvest.exact[$0] && parity[$0] == false && !dropped.contains($0)
+                        && searchedAnchor.proof.required.contains(Issue1297OracleModel.key($0, harvest, scoped: scoped))
+                }) {
                     expectedExact = ["cold"]
+                }
+                if policy != nil, (0..<typedCount).contains(where: { harvest.exact[$0] && parity[$0] == false && !dropped.contains($0) }) {
+                    events[expectedExact.isEmpty ? "exactIgnoredNotRequired" : "exactRequired", default: 0] += 1
                 }
                 let expectedApproximate = policy != nil && meaning.contains(1)
 
@@ -652,6 +738,9 @@ struct Issue1297StructuredPartsTests {
         #expect(events["keptNegatedBesideDrops", default: 0] > 4_000)
         // Measured 699 and 623: the oracle reaches the refusal on its own, not only through the named cases.
         #expect(events["refused", default: 0] > 600)
+        // Both sides of the exact-term rule must be exercised, or the comparison above cannot tell them apart.
+        #expect(events["exactRequired", default: 0] > 0)
+        #expect(events["exactIgnoredNotRequired", default: 0] > 0)
         #expect(failures.isEmpty, "\(samples)")
     }
 
@@ -789,17 +878,32 @@ struct Issue1297StructuredPartsTests {
 
     /// The exact-word post-filter `SearchService` reads from the combined parse, over sequences that can mark a word.
     ///
-    /// Two checks. The post-filter is exactly the positive typed `=` operands the expression applies, once each; and
-    /// wherever the typed text also renders on its own, it is that parse's post-filter — the structured fields add no
-    /// exact term and take none away. Where the typed text alone is refused (6.1) but a structured phrase or prefix
-    /// anchors the combination, the combined parse reports the terms it applies, and those are counted, not compared.
-    @Test("Every token sequence of length 1-4 with =cold and -=cold reports, beside every structured combination, the exact terms it applies, and the typed-alone parse's wherever both render",
+    /// Parser 6.3 (D1) reports a typed `=` operand only when it is applied, positive, and in the root expression's proof
+    /// "required" set — an operand every match must match. The sweep cannot read that set, so it checks what the rule
+    /// implies, each from outside the parser:
+    /// - only a typed, applied, positive `=` operand is ever reported, and the column prefix changes nothing (this alphabet
+    ///   has no phrase, the one operand that spans every column in a scoped parse);
+    /// - SOUNDNESS on `Issue1297UniversalCorpus`, which holds every combination of the swept words: a reported term is a
+    ///   word every row the render matches contains. A term that fails this is a filter removing documents the MATCH
+    ///   admits — F26's `cold -(war -=korea)`, and every `=cold OR war`;
+    /// - COMPLETENESS, as far as operands can prove it: an applied `=cold` left unreported although every matched row holds
+    ///   cold is counted and pinned. The proof is sound but not complete (`-korea korea OR =cold` requires cold of every
+    ///   row it matches, but its first alternative is empty, not proved to require cold), so the count is not zero;
+    /// - against the typed-alone parse: beside no structured phrase or prefix the combined parse reports the same terms
+    ///   wherever both render; beside one it reports the same terms when the typed text renders exactly alone, and none
+    ///   when the typed text is approximated or refused alone, because a complement the phrase or prefix anchors
+    ///   requires nothing of its own.
+    @Test("Every token sequence of length 1-4 with =cold and -=cold reports, beside every structured combination, exactly the exact terms every match requires",
           arguments: [false, true])
-    func exactTermsSweep(scoped: Bool) {
-        let prefix = scoped ? "{body_text}:" : ""
+    func exactTermsSweep(scoped: Bool) throws {
+        let prefix = scoped ? "{body_text}:" : "", otherPrefix = scoped ? "" : "{body_text}:"
+        let universalTable = Issue1297StructuredTable(bodies: Issue1297UniversalCorpus.bodies, twoColumn: scoped)
+        let universalColdRows = try universalTable.rows("\"cold\"")
         let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: Self.exactAlphabet)
         #expect(sequences.count == 11_110)
-        var compared = 0, besidePositive = 0, withoutPositive = 0, approximate = 0, typedAloneRefused = 0
+        var compared = 0, reported = 0, soundnessChecked = 0, ignoredNotRequired = 0, unprovedRequired = 0
+        var besideNothing = 0, besidePositiveExactAlone = 0, besidePositiveApproximatedAlone = 0, approximate = 0
+        var unprovedSamples: [String] = []
         var failures: [String: Int] = [:]
         var samples: [String] = []
         func fail(_ category: String, _ detail: String) {
@@ -813,34 +917,69 @@ struct Issue1297StructuredPartsTests {
                 compared += 1
                 let hasStructuredPositive = combination.phrase != nil || combination.prefixWildcard != nil
                 let parsed = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix, structured: combination)
+                let other = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: otherPrefix, structured: combination)
                 let label = "\(typed) \(combination) -> \(parsed.expression ?? "nil") \(parsed.exactTerms)"
                 var seen = Set<String>()
                 let applied = parsed.operands.filter { $0.isExact && !$0.isNegated && $0.source == .typed }
                     .map(\.text).filter { seen.insert($0).inserted }
-                if parsed.exactTerms != applied { fail("exactTerms are not the positive applied = operands", label) }
-                guard parsed.expression != nil else {
+                if parsed.exactTerms != applied.filter(parsed.exactTerms.contains) {
+                    fail("an exact term that is not a typed, applied, positive = operand", label)
+                }
+                if parsed.exactTerms != other.exactTerms { fail("exact terms depend on the column prefix", label) }
+                guard let expression = parsed.expression else {
                     if !parsed.exactTerms.isEmpty { fail("exact terms without an expression", label) }
                     continue
                 }
-                if alone.expression != nil {
-                    if parsed.exactTerms != alone.exactTerms { fail("exactTerms differ from the typed-alone parse", label) }
-                } else if !parsed.exactTerms.isEmpty {
-                    typedAloneRefused += 1
+
+                if applied.contains("cold") {
+                    let matched = try universalTable.rows(expression)
+                    let everyMatchHoldsCold = matched.isSubset(of: universalColdRows)
+                    if parsed.exactTerms.contains("cold") {
+                        soundnessChecked += 1
+                        if !everyMatchHoldsCold {
+                            fail("an exact term a match need not contain", "\(label) matched \(matched.subtracting(universalColdRows).count) rows without cold")
+                        }
+                    } else if everyMatchHoldsCold {
+                        unprovedRequired += 1
+                        if unprovedSamples.count < 4 { unprovedSamples.append(label) }
+                    } else {
+                        ignoredNotRequired += 1
+                    }
                 }
-                guard !parsed.exactTerms.isEmpty else { continue }
-                if hasStructuredPositive { besidePositive += 1 } else { withoutPositive += 1 }
-                if parsed.isApproximate { approximate += 1 }
+
+                if !hasStructuredPositive {
+                    if alone.expression != nil, parsed.exactTerms != alone.exactTerms {
+                        fail("exact terms beside no structured positive differ from the typed-alone parse", label)
+                    }
+                    if !parsed.exactTerms.isEmpty { besideNothing += 1 }
+                } else if alone.expression != nil, !alone.isApproximate {
+                    if parsed.exactTerms != alone.exactTerms {
+                        fail("exact terms beside a structured positive differ from the exact typed-alone parse", label)
+                    }
+                    if !parsed.exactTerms.isEmpty { besidePositiveExactAlone += 1 }
+                } else {
+                    if !parsed.exactTerms.isEmpty {
+                        fail("an exact term from typed text the structured positive anchors as a complement", label)
+                    }
+                    if !alone.exactTerms.isEmpty { besidePositiveApproximatedAlone += 1 }
+                }
+                if !parsed.exactTerms.isEmpty {
+                    reported += 1
+                    if parsed.isApproximate { approximate += 1 }
+                }
             }
         }
 
-        print("[1297] exact-term sweep scoped=\(scoped) compared=\(compared) besidePositive=\(besidePositive) withoutPositive=\(withoutPositive) approximate=\(approximate) typedAloneRefused=\(typedAloneRefused) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " "))")
+        print("[1297] exact-term sweep scoped=\(scoped) compared=\(compared) reported=\(reported) soundnessChecked=\(soundnessChecked) ignoredNotRequired=\(ignoredNotRequired) unprovedRequired=\(unprovedRequired) besideNothing=\(besideNothing) besidePositiveExactAlone=\(besidePositiveExactAlone) besidePositiveApproximatedAlone=\(besidePositiveApproximatedAlone) approximate=\(approximate) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " ")) unproved: \(unprovedSamples)")
         #expect(compared == 111_100)
-        // Each branch must actually carry exact terms, or its comparison is as vacuous as the one this sweep replaces.
-        #expect(besidePositive > 0)
-        #expect(withoutPositive > 0)
+        // Each branch must actually carry exact terms, or its comparison is as vacuous as the one this sweep replaced.
+        #expect(reported > 0)
+        #expect(soundnessChecked == reported)
+        #expect(ignoredNotRequired > 0)
+        #expect(besideNothing > 0)
+        #expect(besidePositiveExactAlone > 0)
+        #expect(besidePositiveApproximatedAlone > 0)
         #expect(approximate > 0)
-        // Only 6.1 refuses a typed text that marks a positive `=` word, so before it this was zero.
-        #expect(typedAloneRefused > 0)
         #expect(failures.isEmpty, "\(samples)")
     }
 
@@ -939,6 +1078,89 @@ struct Issue1297StructuredPartsTests {
         let typed = try #require(FTS5InlineQueryParser.parse("cold -korea", columnPrefix: "{summary_text}:"))
         #expect(typed == "{summary_text}:\"cold\" NOT {summary_text}:\"korea\"")
         #expect(try table.rows(typed) == [1, 3])
+    }
+
+    // MARK: - The column prefix, observed
+
+    /// The truth table's bodies under headers holding query words the body lacks, so a scoped operand that lost its
+    /// column prefix matches a different row set.
+    ///
+    /// Each row's header holds every other word of `Issue1297UniversalCorpus.words` absent from its body, by row
+    /// parity, and — in two rows of three whose body holds no viet-prefixed token — "vietminh". Some headers are empty.
+    static let headerWordRows: [(header: String, body: String)] = Issue1297StructuredCorpus.bodies.enumerated().map { index, body in
+        let row = index + 1
+        let bodyTokens = Set(body.split(separator: " ").map(String.init))
+        let absent = Issue1297UniversalCorpus.words.filter { !bodyTokens.contains($0) }
+        var header = absent.enumerated().filter { (row + $0.offset) % 2 == 0 }.map(\.element)
+        if row % 3 != 0, !bodyTokens.contains(where: { $0.hasPrefix("viet") }) { header.append("vietminh") }
+        return (header.joined(separator: " "), body)
+    }
+
+    /// A scoped render over header words matches what the unscoped render matches over the same bodies with no header.
+    ///
+    /// Typed text in this alphabet holds no phrase, and the only structured part beside it is none or the prefix, so
+    /// every operand of the scoped render carries the column prefix: the typed words and wildcards, a demoted operator
+    /// word (6.2) and the structured prefix. A render that dropped the prefix anywhere matches a header word.
+    @Test("A scoped render ignores query words in another column: its rows over headed documents equal the unscoped render's over the same bodies alone",
+          arguments: [StructuredQueryParts(), StructuredQueryParts(prefixWildcard: "viet")])
+    func columnPrefixScopesEveryTypedOperand(_ structured: StructuredQueryParts) throws {
+        let headed = Issue1297StructuredTable(headed: Self.headerWordRows)
+        let bare = Issue1297StructuredTable(headed: Self.headerWordRows.map { (header: "", body: $0.body) })
+        let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: Issue1297PropertyTests.alphabet + ["-("])
+        #expect(sequences.count == 11_110)
+        var compared = 0, headerObservable = 0
+        var failures: [String: Int] = [:]
+        var samples: [String] = []
+        func fail(_ category: String, _ detail: String) {
+            failures[category, default: 0] += 1
+            if samples.count < 8 { samples.append("[\(category)] \(detail)") }
+        }
+        for typed in sequences {
+            let scoped = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: "{body_text}:", structured: structured)
+            let unscoped = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: "", structured: structured)
+            guard let scopedExpression = scoped.expression, let unscopedExpression = unscoped.expression else {
+                if (scoped.expression == nil) != (unscoped.expression == nil) {
+                    fail("refused in one scope", "\(typed) -> \(scoped.expression ?? "nil") / \(unscoped.expression ?? "nil")")
+                }
+                continue
+            }
+            compared += 1
+            let got = try headed.rows(scopedExpression), want = try bare.rows(unscopedExpression)
+            if got != want {
+                fail("a scoped render matched a header word", "\(typed) -> \(scopedExpression) got \(got.sorted()) want \(want.sorted())")
+            }
+            // The positive signal: the same unscoped render over the headed table matches differently, so a lost prefix is
+            // visible here.
+            if try headed.rows(unscopedExpression) != want { headerObservable += 1 }
+        }
+        print("[1297] column prefix \(structured) compared=\(compared) headerObservable=\(headerObservable) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " "))")
+        #expect(compared > 7_000)
+        #expect(headerObservable > compared / 2)
+        #expect(failures.isEmpty, "\(samples)")
+    }
+
+    /// Row by row: a scoped word and the structured prefix reach only the body, and a structured excluded term every column.
+    @Test("A scoped prefix wildcard does not match a header, and a structured excluded term in a header removes the row")
+    func columnPrefixNamedRows() throws {
+        let table = Issue1297StructuredTable(headed: [(header: "vietminh", body: "memo cold"),
+                                                      (header: "", body: "memo cold vietcong"),
+                                                      (header: "korea", body: "memo cold"),
+                                                      (header: "cold", body: "memo war")])
+        let prefix = StructuredQueryParts(prefixWildcard: "viet")
+        let scopedPrefix = try #require(FTS5InlineQueryParser.parse("cold", columnPrefix: "{body_text}:", structured: prefix))
+        #expect(scopedPrefix == "{body_text}:\"cold\" AND {body_text}:\"viet\"*")
+        #expect(try table.rows(scopedPrefix) == [2], "the header vietminh is outside the scope")
+        #expect(try table.rows(try #require(FTS5InlineQueryParser.parse("cold", structured: prefix))) == [1, 2])
+
+        let scopedWord = try #require(FTS5InlineQueryParser.parse("cold", columnPrefix: "{body_text}:"))
+        #expect(try table.rows(scopedWord) == [1, 2, 3], "the header cold is outside the scope")
+
+        let excluded = try #require(FTS5InlineQueryParser.parse("cold", columnPrefix: "{body_text}:",
+                                                                structured: StructuredQueryParts(excludedTerms: ["korea"])))
+        #expect(excluded == "{body_text}:\"cold\" NOT \"korea\"")
+        #expect(try table.rows(excluded) == [1, 2], "a structured excluded term found only in the header removes the row")
+        let typedExclusion = try #require(FTS5InlineQueryParser.parse("cold -korea", columnPrefix: "{body_text}:"))
+        #expect(try table.rows(typedExclusion) == [1, 2, 3], "a typed exclusion reaches only its own scope")
     }
 }
 
@@ -1124,12 +1346,19 @@ indirect enum Issue1297OracleModel {
     /// is approximated and the proof shows the approximation matches no document (parser 6.1).
     static func searched(_ root: Issue1297OracleModel, pushInward: Bool, _ harvest: Issue1297OracleHarvest,
                          scoped: Bool, dropped: inout Set<Int>) -> Set<Int>? {
+        searchedAnchor(root, pushInward: pushInward, harvest, scoped: scoped, dropped: &dropped)?.rows
+    }
+
+    /// `searched`'s rows together with the proof of the expression that runs, whose "required" set decides which `=`
+    /// operands are exact-word post-filters (parser 6.3).
+    static func searchedAnchor(_ root: Issue1297OracleModel, pushInward: Bool, _ harvest: Issue1297OracleHarvest,
+                               scoped: Bool, dropped: inout Set<Int>) -> Issue1297OracleAnchor? {
         var local = Set<Int>()
         guard let anchor = policy(root, negated: false, pushInward: pushInward, harvest, scoped: scoped, dropped: &local)
         else { return nil }
         if meaning(root, harvest).contains(1), anchor.proof.isEmpty { return nil }
         dropped.formUnion(local)
-        return anchor.rows
+        return anchor
     }
 
     /// What the renderer can prove about `model`'s exact render under `negated`: about the documents it matches, or,
