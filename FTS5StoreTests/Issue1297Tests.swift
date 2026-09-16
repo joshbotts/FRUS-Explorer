@@ -39,6 +39,11 @@ import SQLite3
 ///          anchors, or 6.1's proof refuses) instead of only counting it; `runPermutationAndGrouping` counts the
 ///          comparisons that rendered for every unit, so a parser refusing one unit outright fails it; and the
 ///          two-column truth table no longer claims its constant header makes a column prefix observable
+///   1.2 — #1297 round-2 parser tests: `Issue1297DepthTests` nests `-(a OR -b …)` around the exclusion `-korea`, which
+///          leaves every level a complement to push inward (P3); refuses each one-level-deeper query beside shallow
+///          groups and an unmatched `)`, and each 5,000-level query beside them and after 5,000 unmatched `)`, since a
+///          depth scan taking the last group opened, stopping at the first top-level group, or letting an unmatched `)`
+///          close a level passed every earlier check (P5, the round-1 attack's D8–D10); and pins `groupDepth` directly
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -788,9 +793,17 @@ struct Issue1297DepthTests {
         Issue1297NestingPattern(name: "(…NEAR(…)…)", open: "(", inner: "NEAR(cold war, 5)", innerLevels: 1),
         Issue1297NestingPattern(name: "NEAR(NEAR(…))", open: "NEAR(", inner: "cold war", innerLevels: 0),
         Issue1297NestingPattern(name: "-(a OR -b …)", open: "-(a OR -b ", inner: "cold", innerLevels: 0),
+        // The same nesting around an exclusion leaves every level a complement to push inward (round-2 P3).
+        Issue1297NestingPattern(name: "-(a OR -b … -korea)", open: "-(a OR -b ", inner: "-korea", innerLevels: 0),
         Issue1297NestingPattern(name: "-(-a OR …)", open: "-(-a OR ", inner: "cold", innerLevels: 0),
         Issue1297NestingPattern(name: "(-a OR …)", open: "(-a OR ", inner: "cold", innerLevels: 0),
     ]
+
+    /// `query` beside shallow groups and an unmatched `)`: the deepest nesting is neither the last group opened, nor
+    /// in the first top-level group, and an unmatched `)` is punctuation that closes no level (round-2 P5).
+    static func besideShallowGroups(_ query: String) -> String {
+        ") (war) " + query + " (war)"
+    }
 
     /// The limit renders in each shape; one level deeper is refused whatever sits beside it.
     ///
@@ -807,12 +820,16 @@ struct Issue1297DepthTests {
                                                  structured: StructuredQueryParts(phrase: "cold war")),
              FTS5InlineQueryParser.parseDetailed(beyond),
              FTS5InlineQueryParser.parseDetailed(beyond, columnPrefix: "{body}:",
-                                                 structured: StructuredQueryParts(phrase: "cold war", excludedTerms: ["korea"]))]
+                                                 structured: StructuredQueryParts(phrase: "cold war", excludedTerms: ["korea"])),
+             FTS5InlineQueryParser.parseDetailed(Self.besideShallowGroups(beyond)),
+             FTS5InlineQueryParser.parseDetailed(Self.besideShallowGroups(atLimit))]
         })
         #expect(results[0].expression != nil, "\(pattern.name) at the limit")
         #expect(results[1].expression != nil, "\(pattern.name) at the limit, scoped beside a phrase")
         #expect(results[2] == Self.refused, "\(pattern.name) one level deeper")
         #expect(results[3] == Self.refused, "\(pattern.name) one level deeper, scoped beside a phrase and an exclusion")
+        #expect(results[4] == Self.refused, "\(pattern.name) one level deeper, beside shallow groups and an unmatched )")
+        #expect(results[5].expression != nil, "\(pattern.name) at the limit, beside shallow groups and an unmatched )")
     }
 
     /// A pasted query thousands of levels deep returns instead of overflowing the stack.
@@ -820,11 +837,29 @@ struct Issue1297DepthTests {
           arguments: Issue1297DepthTests.patterns)
     func deepQueriesReturn(_ pattern: Issue1297NestingPattern) throws {
         let query = pattern.query(levels: 5_000)
+        // Beside shallow groups, and after as many unmatched `)` as there are levels, so a depth scan that let either
+        // lower the count would recurse 5,000 levels here rather than merely render.
+        let besideGroups = Self.besideShallowGroups(query)
+        let afterClosers = String(repeating: ")", count: 5_000) + " (war) " + query
         let results = try #require(Issue1297SmallStack.run {
             [FTS5InlineQueryParser.parseDetailed(query),
-             FTS5InlineQueryParser.parseDetailed(query, columnPrefix: "{body}:", structured: StructuredQueryParts(prefixWildcard: "viet"))]
+             FTS5InlineQueryParser.parseDetailed(query, columnPrefix: "{body}:", structured: StructuredQueryParts(prefixWildcard: "viet")),
+             FTS5InlineQueryParser.parseDetailed(besideGroups),
+             FTS5InlineQueryParser.parseDetailed(afterClosers)]
         })
-        #expect(results == [Self.refused, Self.refused], "\(pattern.name)")
+        #expect(results == [Self.refused, Self.refused, Self.refused, Self.refused], "\(pattern.name)")
+    }
+
+    /// The depth scan itself: the deepest level wherever it sits, never lowered by a parenthesis that pairs with nothing.
+    @Test("Depth is the deepest balanced nesting anywhere in the query, and an unmatched ) lowers nothing")
+    func groupDepthTakesTheDeepestLevel() {
+        #expect(FTS5InlineQueryParser.groupDepth(of: ["(", "a", ")", "(", "(", "b", ")", ")"]) == 2,
+                "the deepest group is not the first top-level group")
+        #expect(FTS5InlineQueryParser.groupDepth(of: ["(", "(", "a", ")", ")", "(", "b", ")"]) == 2,
+                "the deepest group is not the last one opened")
+        #expect(FTS5InlineQueryParser.groupDepth(of: [")", "(", "(", "a", ")", ")"]) == 2,
+                "an unmatched ) is punctuation")
+        #expect(FTS5InlineQueryParser.groupDepth(of: ["(", "(", "a", ")"]) == 1, "an unmatched ( is punctuation")
     }
 
     /// Depth counts balanced pairs of parentheses, not parentheses: what never nests is never refused for it.

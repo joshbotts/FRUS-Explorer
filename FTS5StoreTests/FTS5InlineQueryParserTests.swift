@@ -260,7 +260,7 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("NOT (korea OR vietnam)") == nil)
     }
 
-    @Test("Groups nest to arbitrary depth and each level renders its own parentheses")
+    @Test("Groups nest and each level renders its own parentheses")
     func nestedGroups() {
         // "navig*" renders as a quoted prefix wildcard — sanitised but never stemmed.
         #expect(FTS5InlineQueryParser.parse("((aqaba OR tiran) AND navig*) OR (suez NOT canal)")
