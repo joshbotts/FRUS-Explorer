@@ -33,7 +33,7 @@ import Foundation
 /// | phrase `"a b"` | no | needs adjacency, i.e. an offset self-join reimplementing FTS5's own matcher |
 /// | `NEAR(...)` | no | composite: the honest answer is per-operand, not one total |
 /// | boolean `AND`/`OR` | no | same — any single total sums unrelated quantities |
-/// | exact `=word` | no | impossible from a stemmed index, at any cost |
+/// | exact `=word` | no | impossible from a stemmed index, at any cost — where the mark applies (see below) |
 /// | multi-token (`U.S.S.R.`) | no | tokenizes to several terms with no way to attribute them |
 /// | negated-only | no | there is no positive term to count |
 ///
@@ -41,8 +41,14 @@ import Foundation
 /// deliberately **not** exposed to the researcher, who cannot act on it — the reason strings say what
 /// is true now.
 ///
+/// A mark applies only where every match must contain the word — `ParsedQuery.exactTerms`, from parser 6.3 on.
+/// Anywhere else Search ignores it and runs the word by its stem, so the query is classified by its shape like
+/// any other: `=containment OR alliance` is a composite query, not an exact-word one.
+///
 /// Version history:
 ///   1.0 — R-2 PR-D: initial implementation
+///   1.1 — #1297 round 1 (docs only): the exact-word refusal covers the marks parser 6.3 applies, the words
+///         every match must contain; a mark it ignores is classified by the query's shape
 enum OccurrenceAvailability: Equatable, Sendable {
 
     /// Occurrences can be counted, for the single index term named.
@@ -53,7 +59,8 @@ enum OccurrenceAvailability: Equatable, Sendable {
 
     /// Why a query cannot be counted by occurrence.
     enum Reason: String, Equatable, Sendable, CaseIterable {
-        /// `=word` — the index holds stems, so exact-word instances are not recoverable.
+        /// `=word`, applied as an exact-word filter — the index holds stems, so exact-word instances are not
+        /// recoverable. A mark the parser ignores (in one `OR` alternative, say) is not this reason.
         case exactWord
         /// A phrase, prefix, or `NEAR(...)` operand: no single stem to count.
         case multiTermOperand
@@ -118,7 +125,8 @@ enum OccurrenceAvailability: Equatable, Sendable {
 
         // Exact-word first: it is checked before operand shape because `=word` parses as an ordinary
         // word operand, so a shape-first check would call it available and count the stem — the exact
-        // defect PR-A removed from the document numerator.
+        // defect PR-A removed from the document numerator. `exactTerms` holds only the marks Search
+        // applies (parser 6.3); an ignored mark falls through to the shape checks, as its word is stemmed.
         guard parsed.exactTerms.isEmpty else { return .unavailable(reason: .exactWord) }
 
         let positive = parsed.operands.filter { !$0.isNegated }

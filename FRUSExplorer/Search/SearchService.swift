@@ -56,6 +56,9 @@ import Foundation
 ///          refusal with its `=` post-filter silently empty — `=cold "korea" -korea OR -korea`
 ///          ran as `{summary_text}:"cold" AND "korea" NOT {summary_text}:"korea"`, because a
 ///          typed phrase spans every column. It now throws `FTS5Error.emptyQuery` in every scope.
+///   2.3 — #1297 round 1 (docs only): `exactTerms(from:)` says it returns the marked words every match must
+///          contain, which is what parser 6.3 reports, and `matchExpressions(for:)` names the refusals among the
+///          reasons it throws.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -289,7 +292,12 @@ public actor SearchService {
     ///
     /// A thin public face on `makeMatchExpressions` so the inspector displays exactly the
     /// strings the search executed — not a second rendering that could drift from it.
-    /// Rethrows `FTS5Error.emptyQuery` for a query with no searchable content at all.
+    /// Rethrows `FTS5Error.emptyQuery` whenever neither expression renders and the query does not run
+    /// filter-only: the parser refused the text (nothing positive once its negations apply, an
+    /// approximation proved to match nothing, or groups nested past
+    /// `FTS5InlineQueryParser.maximumGroupDepth`), every content scope is off, or there is neither text
+    /// nor a standalone filter. "No searchable content at all", as this said before #1297 round 1, missed
+    /// the refusals, which have content.
     public func matchExpressions(
         for parameters: SearchParameters
     ) throws -> (corpus: String?, userContent: String?) {
@@ -425,13 +433,20 @@ public actor SearchService {
         )
     }
 
-    /// The words this query marked exact with `=`.
+    /// The words the exact-word post-filter requires: those marked `=` that every match must contain.
     ///
     /// Read from the same combined parse that builds the MATCH expression,
     /// `parsedQuery(for:columnPrefix:)`, so the two can never disagree about which terms were
     /// marked. This reads the unscoped parse, and `makeMatchExpressions` runs no scope that parse
     /// refuses, so no search runs whose marked terms this cannot read. Only typed words carry the
     /// mark; the structured fields never add one.
+    ///
+    /// Not every marked word. The SQL layer ANDs one filter per term over every result, so parser 6.3
+    /// reports a mark only where the expression requires the word, and ignores it in one `OR`
+    /// alternative (`=cold OR war` keeps war documents without cold), on an excluded word or inside an
+    /// excluded group. The structured parts can therefore take a term away — `=cold OR -korea` reports
+    /// `cold` alone and nothing beside the restored prefix `viet`, which anchors the complement — and
+    /// never add one.
     static func exactTerms(from parameters: SearchParameters) -> [String] {
         parsedQuery(for: parameters).exactTerms
     }

@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1206,40 +1206,40 @@ Where a note resolves to a NARA series or file unit, the explorer links straight
 ---
 
 ### Corpus Analytics — Info Popover ("About these results")
-<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297. Edit once in FRUSTheme.swift to change both platforms. -->
+<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297 and reworded in place, before shipping, for #1297 round 1. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What the numbers mean
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 183–184 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 214–215 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
 
 Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.
 
 <!-- END SOURCE: analytics.info.metric.body -->
 
 #### Multiple words
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 213–214 | key: analytics.info.multiword.body.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 218–219 | key: analytics.info.multiword.body.v2 | shared: iOS+macOS (single edit point) -->
 
-Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. All of this works exactly as it does in the Search box.
+Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = is ignored where a match need not contain the word, as in one OR alternative, and that word is counted by its stem; where every match must contain it, the query cannot be charted, because these counts are by stem.
 
 <!-- END SOURCE: analytics.info.multiword.body.v2 -->
 
-Note: replaces `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion applies: to the words it is typed with, wherever it sits among them, and never across OR.
+Note: replaces `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a whole group is different — it reverses every mark inside the group — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word.
 
 #### Phrases
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 191–192 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 222–223 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
 
 Wrap words in quotes for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.
 
 <!-- END SOURCE: analytics.info.phrase.body -->
 
 #### Stemming
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 195–196 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 226–227 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
 
 English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.
 
 <!-- END SOURCE: analytics.info.stemming.body -->
 
 #### How dates are determined
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 199–200 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 230–231 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
 
 Each document sits at its TEI <date> attribute, the date it was written, not the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.
 
@@ -2942,7 +2942,7 @@ excluded — documents containing this are removed wherever the expression above
 
 <!-- END SOURCE: search.inspector.excludedDetail.v2 -->
 
-Note: the detail line under a term tagged EXCLUDED. Replaces `search.inspector.excludedDetail` (“excluded — documents containing this are removed”), which never had a block here; re-keyed for #1297, because an exclusion is not a removal from the whole result set: it applies where the MATCH expression above applies it, which can reach across an OR (`NOT (cold OR -korea)` removes cold from korea’s matches).
+Note: the detail line under a term tagged EXCLUDED. Replaces `search.inspector.excludedDetail` (“excluded — documents containing this are removed”), which never had a block here; re-keyed for #1297, because an exclusion is not a removal from the whole result set: it applies where the MATCH expression above applies it. A `-` or NOT on a word never reaches across OR, but excluding a whole group reverses every mark inside it, and that can join the alternatives of an OR typed inside the group — `NOT (cold OR -korea)` removes cold from korea’s matches — so the line points at the expression rather than at the words typed beside the term.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.notAppliedTag -->
 
@@ -2952,11 +2952,11 @@ NOT APPLIED
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.notAppliedDetail -->
 
-not searched — an OR alternative made only of exclusions has nothing to search for, so it was left out
+not searched — this part of the query only excludes, and a search needs something to find, so it was left out
 
 <!-- END SOURCE: search.inspector.notAppliedDetail -->
 
-Note: the tag and detail line on a term the query typed but its expression leaves out — the `-korea` in `cold OR -korea` (#1297). Such a term is never counted or blamed.
+Note: the tag and detail line on a term the query typed but its expression leaves out — the `-korea` in `cold OR -korea`, or the `war` in `-(war -korea)`, which excluding the group turns into a part of its own that only excludes (#1297). Such a term is never counted or blamed. Reworded in place before shipping for #1297 round 1: it said “an OR alternative made only of exclusions has nothing to search for”, which blamed an OR on `-(war -korea)`, a query that types none.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.structuredTag -->
 
@@ -2971,6 +2971,16 @@ Narrower than typed: part of this query only excludes terms, and a search needs 
 <!-- END SOURCE: search.inspector.approximateCaption -->
 
 Note: the tag marks a term that came from a structured field — the phrase, prefix or excluded terms a restored saved search carries beside the typed text — rather than from the search box; such a term is counted like any other. The caption sits under the MATCH line whenever the expression matches less than the query means (#1297). It is the only report when what was left out is a demoted operator word, which has no term row: `-( -korea NOT )` searches `korea` alone.
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.inspector.refused -->
+
+*Interpolated with the nesting limit, `FTS5InlineQueryParser.maximumGroupDepth` (32). Keep the placeholder.*
+
+No expression — this query cannot run: nothing is left to search for once its exclusions apply, or its parentheses nest more than %lld deep.
+
+<!-- END SOURCE: search.inspector.refused -->
+
+Note: shown in place of the MATCH line when the query has text but the parser refuses it — only exclusions (`-korea`), an approximation that could match nothing (`-(war -korea) -korea`), or groups nested past the limit — and the search throws (#1297 round 1). Before it, such a query showed no strip at all, and beside a person or subject filter the strip said “this query is filters only”, which was false.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.combination -->
 

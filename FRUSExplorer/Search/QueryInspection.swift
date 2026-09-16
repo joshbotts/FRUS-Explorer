@@ -26,6 +26,9 @@ import Foundation
 ///   1.2 — #1297 join: `isApproximate`, carried by `replacingOperands(_:)`; the operands now include
 ///         the structured phrase, prefix and excluded terms, from the same combined parse the search runs
 ///   1.3 — #1297 fixes: `showsApproximateCaption`, the strip's caption gate as a property a test can run
+///   1.4 — #1297 round 1: `isFilterOnly` reads `SearchParameters.runsAsFilterOnly`, so a refused text query beside a
+///         person or subject filter is no longer called filters only; `isRefused` says why such a query has no
+///         expression, and `showsStrip` is the one gate both hosts read
 struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
@@ -42,17 +45,23 @@ struct QueryInspection: Sendable, Equatable {
     /// claim actually rests on.
     let indexedVolumeCount: Int
 
-    /// True when the query carries no FTS terms at all — a person filter alone, say.
+    /// True when the query runs as a filter-only search — no text at all, and a standalone filter such as a
+    /// person filter.
     ///
     /// `SearchService.makeMatchExpressions` returns `(nil, nil)` for these and the search
     /// runs as a filter-only query. There is no expression to show, and saying so is
     /// better than showing an empty strip.
+    ///
+    /// The same rule the service applies, `SearchParameters.runsAsFilterOnly`. A query with text and no expression
+    /// is not one of these even beside a filter: the service throws `FTS5Error.emptyQuery` for it, and
+    /// ``isRefused`` describes it.
     let isFilterOnly: Bool
 
     /// Operands the researcher typed that the search leaves out, in the order typed.
     ///
-    /// FTS5 has no universal set, so an `OR` alternative made only of exclusions — the
-    /// `-korea` in `cold OR -korea` — has nothing to search for. The parser leaves it out of
+    /// FTS5 has no universal set, so a part of the query made only of exclusions has nothing to
+    /// search for: the `-korea` in `cold OR -korea`, or the `war` in `-(war -korea)`, which pushing
+    /// the negation inward leaves as a bare exclusion beside `korea`. The parser leaves it out of
     /// the expression and reports its operands in `ParsedQuery.droppedOperands`; they are
     /// carried here so the inspector can say they were **not applied**, rather than listing
     /// them among ``operands`` as if they had excluded something.
@@ -79,6 +88,26 @@ struct QueryInspection: Sendable, Equatable {
     ///
     /// A `var` with a default for the same reason as ``notApplied``.
     var isApproximate: Bool = false
+
+    /// Whether the query has text but the parser refused it, so there is no expression and the search cannot run.
+    ///
+    /// The parse is `nil` when nothing in the query is positive once its negations apply (`-korea`), when an
+    /// approximation of it could match nothing (`-(war -korea) -korea` runs `korea` and excludes it), or when its
+    /// groups nest deeper than `FTS5InlineQueryParser.maximumGroupDepth`. `SearchService` then throws
+    /// `FTS5Error.emptyQuery` in every scope, a standalone filter or not. The strip says so in place of the
+    /// expression; before #1297 round 1 such a query showed nothing, or beside a filter the filters-only line (F8).
+    ///
+    /// Not every text query without an expression: one whose parse renders and whose content scopes are all off has
+    /// no expression either, and this line's reason would be false for it.
+    ///
+    /// A `var` with a default for the same reason as ``notApplied``.
+    var isRefused: Bool = false
+
+    /// Whether a host shows the strip at all: there is an expression, or a line saying why there is none.
+    ///
+    /// Both hosts read this rather than spelling the condition out, so a new reason for an empty expression is
+    /// shown on both platforms or on neither.
+    var showsStrip: Bool { expression != nil || isFilterOnly || isRefused }
 
     /// Whether the strip shows its narrower-than-typed caption under the MATCH line: exactly when the
     /// expression is an approximation.
@@ -117,7 +146,7 @@ struct QueryInspection: Sendable, Equatable {
     func replacingOperands(_ operands: [InspectedOperand]) -> QueryInspection {
         QueryInspection(expression: expression, operands: operands,
                         indexedVolumeCount: indexedVolumeCount, isFilterOnly: isFilterOnly,
-                        notApplied: notApplied, isApproximate: isApproximate)
+                        notApplied: notApplied, isApproximate: isApproximate, isRefused: isRefused)
     }
 }
 
@@ -171,9 +200,15 @@ struct RenderedExpression: Sendable, Equatable {
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
 ///   1.1 — #1297 fixes: `showsStructuredTag`, the strip's ADVANCED tag gate as a property a test can run
+///   1.2 — #1297 round 1: `operand` is the operand as the search applies it, its `=` mark cleared where parser 6.3
+///         ignores it (`QueryInspector.asSearched(_:exactTerms:)`)
 struct InspectedOperand: Sendable, Equatable {
 
-    /// The parsed operand this describes.
+    /// The parsed operand this describes, as the search applies it.
+    ///
+    /// `isExact` is set only where the search filters on the literal word. The parser records the `=` as typed, and
+    /// ``QueryInspector/asSearched(_:exactTerms:)`` clears it where parser 6.3 ignores it, so the strip's EXACT tag
+    /// and the scoped count both describe the query that ran.
     let operand: ParsedOperand
 
     /// Whether the strip tags this operand ADVANCED: it came from a structured field — a restored saved
@@ -263,6 +298,9 @@ struct InspectedOperand: Sendable, Equatable {
 ///   1.2 — #1297 join: inspects `SearchService.parsedQuery(for:)`, the combined parse the search
 ///         renders, and carries its `isApproximate`; a structured operand is narrowed for counting
 ///         through its own field
+///   1.3 — #1297 round 1: `isFilterOnly` is `runsAsFilterOnly` and a refused text query sets `isRefused` (F8); an
+///         `=` mark parser 6.3 ignores is cleared before anything reads the operand, so it is neither tagged EXACT
+///         nor counted as the literal word (`asSearched(_:exactTerms:)`)
 struct QueryInspector: Sendable {
 
     /// The service every lookup runs through — counts, stems and vocabulary alike.
@@ -301,16 +339,18 @@ struct QueryInspector: Sendable {
     ///
     /// - Parameters:
     ///   - parsed: the combined parse of `parameters.keywords` and its structured phrase, prefix
-    ///     and excluded terms, or `nil` for none. Its `operands` are inspected; its
-    ///     `droppedOperands` become ``QueryInspection/notApplied``; its `isApproximate` becomes
-    ///     ``QueryInspection/isApproximate``.
+    ///     and excluded terms, or `nil` for none. Its `operands` are inspected, each as the search
+    ///     applies it (``asSearched(_:exactTerms:)``); its `droppedOperands` become
+    ///     ``QueryInspection/notApplied``; its `isApproximate` becomes ``QueryInspection/isApproximate``;
+    ///     and a `nil` expression beside typed or structured text becomes ``QueryInspection/isRefused``.
     ///   - parameters: the query, which still supplies the rendered expression and the filters.
     ///   - indexedVolumeCount: how many volumes this device has indexed.
     func inspect(
         parsed: ParsedQuery?, parameters: SearchParameters, indexedVolumeCount: Int
     ) async -> QueryInspection {
         let expression = await renderedExpression(for: parameters)
-        let operands = parsed?.operands ?? []
+        let exactTerms = parsed?.exactTerms ?? []
+        let operands = (parsed?.operands ?? []).map { Self.asSearched($0, exactTerms: exactTerms) }
 
         var inspected: [InspectedOperand] = []
         for operand in operands {
@@ -332,12 +372,37 @@ struct QueryInspector: Sendable {
             expression: expression,
             operands: inspected,
             indexedVolumeCount: indexedVolumeCount,
-            isFilterOnly: expression == nil && parameters.supportsFilterOnlySearch,
+            // `runsAsFilterOnly`, the rule `makeMatchExpressions` applies, not `supportsFilterOnlySearch`: beside a
+            // filter a refused text query still throws, and calling it filters only contradicted the error (F8).
+            isFilterOnly: expression == nil && parameters.runsAsFilterOnly,
             // No stem or vocabulary lookup for these: a count beside a term the search did not
             // use would read as evidence about the result set.
             notApplied: parsed?.droppedOperands ?? [],
-            isApproximate: parsed?.isApproximate ?? false
+            isApproximate: parsed?.isApproximate ?? false,
+            // The parse, not only the missing expression: text whose parse renders has no expression when every
+            // content scope is off, and "cannot run because of what was typed" would be false for it.
+            isRefused: expression == nil && parameters.hasTextTerms && parsed?.expression == nil
         )
+    }
+
+    /// `operand` as the search applies it: its `=` mark kept only where the search filters on the literal word.
+    ///
+    /// `ParsedOperand.isExact` records the mark as typed. Parser 6.3 turns a mark into an exact-word filter only where
+    /// every match must contain the word — `ParsedQuery.exactTerms` — and ignores it elsewhere: in one `OR`
+    /// alternative (`=cold OR war`), on an excluded word or inside an excluded group (`cold -(war -=korea)`), and on a
+    /// word that is not a single index token (`=don't`). Kept as typed, the mark would put an EXACT tag on a word the
+    /// search runs by its stem, and ``queryText(for:)`` would re-spell it `=cold` so the scoped count covered the
+    /// literal word where the search had counted the stem — a number for a query that never ran.
+    ///
+    /// The word's own filter term comes from parsing the operand alone, so the spelling rule stays the parser's
+    /// (`=cold:` filters on `cold`): the mark is kept exactly when that term is one of `exactTerms`.
+    static func asSearched(_ operand: ParsedOperand, exactTerms: [String]) -> ParsedOperand {
+        guard operand.isExact else { return operand }
+        let own = FTS5InlineQueryParser.parseDetailed(queryText(for: operand)).exactTerms
+        let isApplied = !operand.isNegated && !own.isEmpty && own.allSatisfy { exactTerms.contains($0) }
+        guard !isApplied else { return operand }
+        return ParsedOperand(text: operand.text, rendered: operand.rendered, kind: operand.kind,
+                             isNegated: operand.isNegated, isExact: false, source: operand.source)
     }
 
     /// The index term an operand's word resolves to, or `nil` when it has no single one.
@@ -414,6 +479,9 @@ struct QueryInspector: Sendable {
     /// term match anything *here*", not "anywhere". The operand's own marks are restored
     /// so an exact term is counted exactly and a prefix as a prefix — counting
     /// `=containment` as plain `containment` would report a number the query never used.
+    /// The reverse holds too, which is why the inspector's operands carry an `=` only where the
+    /// search applies it (``asSearched(_:exactTerms:)``): in `=containment OR alliance` the mark is
+    /// ignored, and counting it exactly would report a number that query never used either.
     ///
     /// A typed operand is re-spelled as search-box text. A structured one goes back into its own
     /// field instead, because the two spellings are not always the same query: the prefix field

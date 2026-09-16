@@ -33,8 +33,9 @@ import Foundation
 ///         strip scan matches each gate with its key, so an inverted or unrelated gate fails
 ///   1.4 — #1297 round 1: the term-row gate and the NOT APPLIED loop are matched as anchored calls; counting keeps
 ///         `isApproximate` through the controller and closes the offer beside an excluded operand; a refused query
-///         beside a filter is not filters only, and the strip and both hosts explain it; an `=` parser 6.3 ignores
-///         is inspected and counted as the stemmed word the search runs; the iOS refresh key covers every query part
+///         beside a filter is not filters only, and the strip and both hosts explain it, while only a refused parse of
+///         real text sets `isRefused`; an `=` parser 6.3 ignores is inspected and counted as the stemmed word the
+///         search runs; the iOS refresh key covers every query part
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -553,14 +554,16 @@ struct QueryInspectionTests {
                                          corpusDocumentFrequency: 2, corpusOccurrences: 2)
         let counted = InspectedOperand(operand: operand, stem: "europ", scopedCount: 2,
                                        corpusDocumentFrequency: 2, corpusOccurrences: 2)
+        // `isRefused` is set on a value no parse produces beside operands, so the equality below proves every field
+        // is carried, not only the ones a real counting pass would have.
         let before = QueryInspection(expression: expression, operands: [uncounted],
                                      indexedVolumeCount: 37, isFilterOnly: false,
-                                     notApplied: notApplied, isApproximate: true)
+                                     notApplied: notApplied, isApproximate: true, isRefused: true)
 
         #expect(before.replacingOperands([counted])
                 == QueryInspection(expression: expression, operands: [counted],
                                    indexedVolumeCount: 37, isFilterOnly: false,
-                                   notApplied: notApplied, isApproximate: true))
+                                   notApplied: notApplied, isApproximate: true, isRefused: true))
         #expect(before.replacingOperands([counted]).isApproximate,
                 "a request for counts must not clear the narrower-than-typed caption")
         #expect(before.hasUncountedOperands)
@@ -838,12 +841,53 @@ struct QueryInspectionTests {
             let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
             #expect(inspection.expression == nil)
             #expect(!inspection.isFilterOnly, "\(label): the search throws, so the strip must not say filters only")
+            #expect(inspection.isRefused, "\(label): it says instead that the query cannot run")
+            #expect(inspection.showsStrip, "\(label): and the hosts show the strip that says it")
         }
 
         // Control: with no text the same filter does run filter-only, and says so.
         var filterOnly = SearchParameters()
         filterOnly.personRef = "#p-acheson"
-        #expect(await inspector.inspect(parameters: filterOnly, indexedVolumeCount: 1).isFilterOnly)
+        let filters = await inspector.inspect(parameters: filterOnly, indexedVolumeCount: 1)
+        #expect(filters.isFilterOnly)
+        #expect(!filters.isRefused)
+        #expect(filters.showsStrip)
+    }
+
+    /// The other side of `isRefused`: it is about the parse, so it must not claim a query cannot run for what was
+    /// typed when the parse renders or nothing was typed at all.
+    @Test("isRefused is set only by a refused parse of real text, and showsStrip only when there is something to say")
+    func refusalGateIsExact() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        // Refused with no filter at all: the case that used to show no strip.
+        let bare = await inspector.inspect(parameters: SearchParameters(keywords: "-europe"), indexedVolumeCount: 1)
+        #expect(bare.expression == nil && !bare.isFilterOnly)
+        #expect(bare.isRefused && bare.showsStrip)
+
+        // Rendering: an expression, nothing refused.
+        let renders = await inspector.inspect(parameters: SearchParameters(keywords: "europe"), indexedVolumeCount: 1)
+        #expect(renders.expression != nil && !renders.isRefused && renders.showsStrip)
+
+        // Nothing typed and no filter: no strip, and no claim.
+        let empty = await inspector.inspect(parameters: SearchParameters(), indexedVolumeCount: 1)
+        #expect(!empty.isRefused && !empty.isFilterOnly && !empty.showsStrip)
+
+        // Text whose parse renders, with every content scope off: no expression, but the reason is the scope, so the
+        // refusal line would be false.
+        var noScope = SearchParameters(keywords: "europe")
+        noScope.includeDocumentText = false
+        noScope.includeSummaries = false
+        noScope.includeNotes = false
+        let scopeless = await inspector.inspect(parameters: noScope, indexedVolumeCount: 1)
+        #expect(scopeless.expression == nil)
+        #expect(!scopeless.isRefused, "the parse renders; the scope is what is missing")
+
+        // A restored excluded term alone is text with nothing positive: refused, like a typed one.
+        let structured = await inspector.inspect(parameters: SearchParameters(excludedTerms: ["europe"]),
+                                                 indexedVolumeCount: 1)
+        #expect(structured.isRefused)
     }
 
     /// F8's view half. With `isFilterOnly` corrected, a refused query had nothing to say and both hosts hid the strip;

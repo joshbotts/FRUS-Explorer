@@ -210,6 +210,10 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          profile of the volumes the results sit in
 ///   1.20 — #1275 follow-up: the My Tags filter follows the reader's tag order, and is re-sent
 ///          when that order changes as well as when a tag is added or renamed
+///   1.21 — #1297 round 1: the Query Inspector refreshes on `vm.queryInspectorRefreshKey`, the whole
+///          parameter set, where it refreshed on `vm.keywords` alone and went stale when a restored
+///          phrase, prefix or excluded term changed; the card shows on `QueryInspection.showsStrip`, so a
+///          refused query says why it has no expression
 
 struct SearchView: View {
 
@@ -584,7 +588,11 @@ struct SearchView: View {
         .onChange(of: vm.executedSearchVersion) { _, _ in
                     facetController.invalidate(signature: "ios-\(vm.executedSearchVersion)")
                 }
-                .task(id: vm.keywords) {
+                // Keyed on every part of the query the inspection reads, not the typed text alone: a
+                // restored search's phrase, prefix and excluded terms join the parse, and Clear Filters
+                // removes them without touching `keywords` (#1297 round 1, F7). macOS keys the same
+                // refresh on `queryText` and `parametersVersion`.
+                .task(id: vm.queryInspectorRefreshKey) {
                     await inspectorController.refresh(
                         parameters: vm.searchParameters,
                         service: appState.searchService,
@@ -1191,7 +1199,7 @@ struct SearchView: View {
     @ViewBuilder
     private var queryInspectorCard: some View {
         if let inspection = inspectorController.inspection,
-           inspection.expression != nil || inspection.isFilterOnly {
+           inspection.showsStrip {
             VStack(spacing: 0) {
                 Button {
                     withAnimation(.easeInOut(duration: 0.15)) { inspectorExpanded.toggle() }

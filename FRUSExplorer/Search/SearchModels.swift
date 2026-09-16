@@ -505,9 +505,16 @@ public struct SearchParameters: Codable, Sendable, Equatable {
 /// is guarded separately — see ``SearchParameters/hasTextTerms``, which is what stops a query with
 /// text in it from silently falling down the filter-only path when every scope flag is off.
 ///
+/// Every site that asks whether a query RUNS filter-only reads ``SearchParameters/runsAsFilterOnly``,
+/// the Query Inspector's `QueryInspection.isFilterOnly` included. Until #1297 round 1 the inspector read
+/// `supportsFilterOnlySearch`, so a refused text query beside a person filter was explained as filters
+/// only while `makeMatchExpressions` threw `FTS5Error.emptyQuery` for it.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-21: #1022, extracted from four independent enumerations and widened
 ///         to admit subject filters
+///   1.1 — #1297 round 1 (docs only): `QueryInspection.isFilterOnly` reads `runsAsFilterOnly`, as the
+///         service does
 public extension SearchParameters {
 
     /// `true` when this parameter set can run as a filter-only query — no keyword, phrase, or
@@ -525,7 +532,8 @@ public extension SearchParameters {
     /// One definition, because the last time this rule was spelled out per site it was spelled out
     /// five times and three of them disagreed (#1022). `SearchService` uses it to decide whether to
     /// run without a MATCH; both view models use it to pick a fetch ceiling, because a browse and a
-    /// keyword search have very different per-row costs (see `searchHardLimit`).
+    /// keyword search have very different per-row costs (see `searchHardLimit`); and the Query
+    /// Inspector uses it to say a query is filters only, so it never says so of a search that throws.
     var runsAsFilterOnly: Bool { supportsFilterOnlySearch && !hasTextTerms }
 
     /// `true` when the reader supplied text that an FTS5 MATCH would carry — a keyword, a phrase,

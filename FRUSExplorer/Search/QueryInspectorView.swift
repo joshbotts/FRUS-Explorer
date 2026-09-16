@@ -102,13 +102,18 @@ final class QueryInspectorController {
 /// Version history:
 ///   1.0 — Q-2b: initial implementation
 ///   1.1 — #1297: a NOT APPLIED row for each operand the expression leaves out, never counted
-///         or offered for counting; the excluded operand's line says an exclusion removes
-///         documents from the terms it is typed with (`search.inspector.excludedDetail.v2`)
+///         or offered for counting; the excluded operand's line points at the expression shown above
+///         ("removed wherever the expression above applies it", `search.inspector.excludedDetail.v2`),
+///         because no shorter statement of where an exclusion applies holds for every query
 ///   1.2 — #1297 join: an ADVANCED tag on operands from the structured fields
 ///         (`search.inspector.structuredTag`), and a narrower-than-typed caption under the MATCH
 ///         line whenever the expression is an approximation (`search.inspector.approximateCaption`)
 ///   1.3 — #1297 fixes: both gates are read from the model — `QueryInspection.showsApproximateCaption` and
 ///         `InspectedOperand.showsStructuredTag` — so they are tested at runtime, not only by reading this file
+///   1.4 — #1297 round 1: a refused query gets a line saying it cannot run (`search.inspector.refused`) where it
+///         used to get nothing, or "filters only" beside a filter; the NOT APPLIED line no longer blames an OR
+///         alternative, since `-(war -korea)` leaves war out with no OR typed (`search.inspector.notAppliedDetail`,
+///         unshipped and reworded in place)
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -165,6 +170,11 @@ struct QueryInspectorStrip: View {
                         defaultValue: "No text search — this query is filters only, so there is no expression to show."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        } else if inspection.isRefused {
+            Text(String(localized: "search.inspector.refused",
+                        defaultValue: "No expression — this query cannot run: nothing is left to search for once its exclusions apply, or its parentheses nest more than \(FTS5InlineQueryParser.maximumGroupDepth) deep."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -180,12 +190,16 @@ struct QueryInspectorStrip: View {
                         microTag(String(localized: "search.inspector.excludedTag",
                                         defaultValue: "EXCLUDED"))
                     }
+                    // Only where the search filters on the literal word: the inspector clears an `=`
+                    // parser 6.3 ignores (`QueryInspector.asSearched`), so `=cold OR war` shows no tag.
                     if item.operand.isExact {
                         microTag(String(localized: "search.inspector.exactTag",
                                         defaultValue: "EXACT"))
                     }
                     // A term the researcher did not type into the box — a restored saved search's
-                    // phrase, prefix or excluded term — named after the popover that set it.
+                    // phrase, prefix or excluded term. No control sets those fields any more (the
+                    // Advanced Filters sheet and popover lost them in Session 2026-06-08), so the tag
+                    // names the Advanced fields the search was saved with, not a place to edit it.
                     if item.showsStructuredTag {
                         microTag(String(localized: "search.inspector.structuredTag",
                                         defaultValue: "ADVANCED"))
@@ -247,8 +261,10 @@ struct QueryInspectorStrip: View {
                                 defaultValue: "NOT APPLIED"))
                 Spacer(minLength: 0)
             }
+            // Not "an OR alternative": `-(war -korea)` leaves war out with no OR typed, because pushing the
+            // negation inward makes `NOT war` a part of its own beside `korea`.
             Text(String(localized: "search.inspector.notAppliedDetail",
-                        defaultValue: "not searched — an OR alternative made only of exclusions has nothing to search for, so it was left out"))
+                        defaultValue: "not searched — this part of the query only excludes, and a search needs something to find, so it was left out"))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

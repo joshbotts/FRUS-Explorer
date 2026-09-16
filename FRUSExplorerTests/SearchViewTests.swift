@@ -404,6 +404,56 @@ struct SearchViewTests {
         // Session 09: they must NOT surface as live filter state or emitted parameters.
         #expect(vm.searchParameters.subjectTagIds.isEmpty)
     }
+
+    // MARK: - QueryInspectorRefreshKeyTest
+
+    /// #1297 round 1 (F7): `SearchView` refreshes the Query Inspector when this key changes. It was `vm.keywords`, so
+    /// Clear Filters could remove a restored phrase and leave the strip describing the search before it — and the
+    /// two describe different searches: beside the phrase "cold war", `cold OR -korea` is searched exactly, and
+    /// without it the query is narrower than typed. `QueryInspectionTests.iOSInspectorRefreshesOnEveryQueryPart`
+    /// pins the view's use of the key; this pins what the key covers.
+    @Test("The inspector refresh key moves with a restored phrase, prefix or excluded term, not only the typed text")
+    @MainActor
+    func inspectorRefreshKeyCoversEveryQueryPart() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSInspectorKey-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("key.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        let inspector = QueryInspector(searchService: service)
+
+        let vm = SearchViewModel(searchService: service)
+        vm.applyParameters(SearchParameters(keywords: "cold OR -korea", phrase: "cold war"))
+        let restored = vm.queryInspectorRefreshKey
+        #expect(restored == vm.searchParameters, "the key is the parameter set the refresh inspects")
+        let beside = await inspector.inspect(parameters: restored, indexedVolumeCount: 0)
+        #expect(!beside.isApproximate, "precondition: beside the phrase the query is searched exactly")
+
+        vm.clearFilters()
+        #expect(vm.keywords == "cold OR -korea", "precondition: Clear Filters leaves the typed text alone")
+        #expect(vm.queryInspectorRefreshKey != restored, "so the key must move, or the strip keeps the phrase")
+        let cleared = await inspector.inspect(parameters: vm.queryInspectorRefreshKey, indexedVolumeCount: 0)
+        #expect(cleared.isApproximate, "and what it refreshes to is the narrower query that now runs")
+
+        // Each structured field moves the key on its own, with the typed text unchanged.
+        var before = vm.queryInspectorRefreshKey
+        vm.phrase = "détente"
+        #expect(vm.queryInspectorRefreshKey != before, "a phrase")
+        vm.clearFilters()
+        before = vm.queryInspectorRefreshKey
+        vm.prefixWildcard = "viet"
+        #expect(vm.queryInspectorRefreshKey != before, "a prefix")
+        vm.clearFilters()
+        before = vm.queryInspectorRefreshKey
+        vm.excludedTermsText = "korea"
+        #expect(vm.queryInspectorRefreshKey != before, "an excluded term")
+    }
 }
 
 // MARK: - PersonFilterTests
