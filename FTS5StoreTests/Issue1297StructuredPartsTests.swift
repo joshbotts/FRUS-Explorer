@@ -243,7 +243,11 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///          equality with the positive applied operands, and eight named cases pin it (F26); named cases for the
 ///          `conjoin` and `disjoin` proof combinators and the approximate AND-run's bytes; and
 ///          `columnPrefixScopesEveryTypedOperand` with `columnPrefixNamedRows`, over headers holding query words,
-///          because every scoped sweep ran under a constant header that made a lost column prefix invisible (F5)
+///          because every scoped sweep ran under a constant header that made a lost column prefix invisible (F5).
+///          Measured at parser 6.3: the exact-term sweep reports 31,082 lists per scope, 1,198 applied `=cold` operands
+///          unreported because a match need not hold cold and 1,492 unreported although every match does; the oracle
+///          sees 1,952 and 1,692 required exact operands against 10,996 and 10,743 ignored; the column-prefix sweep
+///          compares 10,183 and 11,110 renders, 8,601 and 9,139 of them over a header that changes the unscoped rows
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -972,6 +976,10 @@ struct Issue1297StructuredPartsTests {
 
         print("[1297] exact-term sweep scoped=\(scoped) compared=\(compared) reported=\(reported) soundnessChecked=\(soundnessChecked) ignoredNotRequired=\(ignoredNotRequired) unprovedRequired=\(unprovedRequired) besideNothing=\(besideNothing) besidePositiveExactAlone=\(besidePositiveExactAlone) besidePositiveApproximatedAlone=\(besidePositiveApproximatedAlone) approximate=\(approximate) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " ")) unproved: \(unprovedSamples)")
         #expect(compared == 111_100)
+        // Measured per scope at parser 6.3: 1,492 applied `=cold` operands go unreported although every row their render
+        // matches holds cold, because the proof cannot see it (`=cold OR -=cold` beside the phrase renders
+        // `"cold war" NOT ("cold" NOT "cold")`). Pinned, since a parser dropping terms it can prove would only raise it.
+        #expect(unprovedRequired == 1_492)
         // Each branch must actually carry exact terms, or its comparison is as vacuous as the one this sweep replaced.
         #expect(reported > 0)
         #expect(soundnessChecked == reported)

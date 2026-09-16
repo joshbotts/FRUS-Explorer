@@ -15,8 +15,9 @@ import SQLite3
 /// `FTS5Query.toFTS5MatchExpression()` combining a keyword expression with a structured phrase,
 /// prefix wildcard and excluded terms, every combination executed against a real FTS5 table.
 ///
-/// The macOS Advanced popover and restored saved searches still set those fields beside typed
-/// keywords. The builder used to join the parts with a bare space and append ` NOT "x"`, and
+/// Restored saved searches still carry those fields beside typed keywords, as the legacy Advanced
+/// fields they were once set from; the macOS Advanced popover has not set them since 2026-06-08.
+/// The builder used to join the parts with a bare space and append ` NOT "x"`, and
 /// FTS5's precedence then regrouped them: juxtaposition binds tighter than `NOT`, a group
 /// juxtaposed with a phrase is a syntax error, and `NOT` binds tighter than `OR`. #1297 made
 /// more keyword expressions end in `NOT x` or a group, so the join is fixed alongside it.
@@ -34,6 +35,8 @@ import SQLite3
 ///   1.0 — #1297: initial implementation
 ///   1.1 — #1297 join: the sweep is renamed and documented as the carrier sweep it always was, and
 ///          `carrierIdentity` pins that a parsed expression passes through the carrier unchanged
+///   1.2 — #1297 round-1 fixes: documentation only — no popover sets the structured fields; only restored saved
+///          searches carry them
 @Suite("FTS5Query part combination")
 struct FTS5QueryCombinationTests {
 
@@ -43,7 +46,8 @@ struct FTS5QueryCombinationTests {
         /// The open database handle.
         private var db: OpaquePointer?
 
-        /// Creates and seeds the table; `scoped` adds a constant header column beside the body.
+        /// Creates and seeds the table; `scoped` adds a header column beside the body, holding the constant
+        /// 'heading' and no query word, so it names a column without making a lost column prefix visible.
         init(scoped: Bool) {
             sqlite3_open(":memory:", &db)
             sqlite3_exec(db, scoped

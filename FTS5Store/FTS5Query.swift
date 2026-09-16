@@ -109,6 +109,11 @@
 ///          "A keyword expression must be positive").
 ///   3.1 — #1297 fixes: `sanitizePhrase(_:)` is removed. 3.0 said it was gone, but the private declaration
 ///          stayed behind with no caller; the phrase has been sanitised by `FTS5InlineQueryParser` since 3.0.
+///   3.2 — #1297 round-1 fixes: documentation only. `keywordExpression` named `SearchService` as its producer and
+///          `CorpusAnalyticsService` as a user of the structured-keywords path; `SearchService` has rendered through
+///          the parser since #1297's join, and `CorpusAnalyticsService` is the producer of `keywordExpression`.
+///          Correction (2.2): the macOS Advanced popover has not set a phrase, a prefix or excluded terms since
+///          Session 2026-06-08; only restored saved searches carry them. No byte of any render moves.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -132,17 +137,18 @@ public struct FTS5Query: Sendable {
     public var keywords: [String]
 
     /// A pre-rendered, ready-to-embed FTS5 expression fragment for the keyword portion
-    /// of the query — produced by `FTS5InlineQueryParser.parse(_:columnPrefix:)` from
-    /// the raw text typed into the main search box.
+    /// of the query — produced by `FTS5InlineQueryParser.parse(_:columnPrefix:structured:)`
+    /// with no structured parts, as `CorpusAnalyticsService` produces it from a researcher's
+    /// terms. `SearchService` does not build an `FTS5Query`: it renders through the parser.
     ///
     /// When non-nil, `toFTS5MatchExpression()` embeds this fragment directly in place of
     /// building one from `keywords`/`booleanMode` — it already carries its own stemming,
-    /// sanitisation, operator structure (`OR`/`NOT`/implicit `AND`), and column scoping.
+    /// sanitisation, operator structure (`OR`/`NOT`/explicit `AND`), and column scoping.
     /// `keywords` and `booleanMode` are ignored in that case.
     ///
-    /// `nil` (the default) preserves the original structured-`keywords` rendering path
-    /// used by `CorpusAnalyticsService` and the test suite, where callers construct
-    /// `FTS5Query` directly from an already-tokenised `[String]` rather than raw text.
+    /// `nil` (the default) keeps the structured-`keywords` rendering path, used by the test
+    /// suite, where callers construct `FTS5Query` directly from an already-tokenised
+    /// `[String]` rather than raw text.
     ///
     /// Must be a positive expression meant to run as it is: the builder cannot see a
     /// complement its parse left out (see "A keyword expression must be positive").
@@ -221,11 +227,10 @@ public struct FTS5Query: Sendable {
         }
 
         // Keyword portion — `keywordExpression` (pre-rendered by `FTS5InlineQueryParser`
-        // from raw inline-syntax search-box text) takes priority when present; it already
-        // carries its own stemming, sanitisation, operator structure, and column scoping.
-        // Otherwise fall back to the original structured `keywords`/`booleanMode` path
-        // (used by `CorpusAnalyticsService` and the test suite, which construct `FTS5Query`
-        // directly from an already-tokenised `[String]`).
+        // from raw inline-syntax text) takes priority when present; it already carries its
+        // own stemming, sanitisation, operator structure, and column scoping. Otherwise fall
+        // back to the structured `keywords`/`booleanMode` path (used by the test suite, which
+        // constructs `FTS5Query` directly from an already-tokenised `[String]`).
         if let keywordExpression, !keywordExpression.isEmpty {
             parts.append(keywordExpression)
         } else {
