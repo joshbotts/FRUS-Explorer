@@ -46,6 +46,13 @@ struct OccurrenceAvailabilityTests {
         #expect(a.reason == .exactWord)
         #expect(!a.isAvailable)
         #expect(a.stem == nil, "An unavailable classification must not leak a countable stem")
+
+        // Parser 6.3 (#1297 D1): a mark is an exact filter only where every match must contain the word. In one OR
+        // alternative Search ignores it, so this query is classified by its shape — two positive terms — and not
+        // refused as exact-word, which would give a reason that describes a filter nothing applies.
+        let alternative = OccurrenceAvailability.classify(term: "=containment OR alliance",
+                                                          resolveStem: resolver(["containment": "contain"]))
+        #expect(alternative.reason == .compositeQuery)
     }
 
     @Test("Phrases, prefixes and proximity operands are refused as multi-term")

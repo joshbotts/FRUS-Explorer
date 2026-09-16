@@ -584,9 +584,17 @@ struct CorpusAnalyticsServiceTests {
             // as "this word never appears", the opposite of the truth.
             #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "=containment") == ["containment"])
             #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "containment").isEmpty)
-            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment OR =alliance")
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment =alliance")
                         == ["containment", "alliance"],
                     "Every exact operand is named, in typed order, so the explanation can list them")
+
+            // Parser 6.3 (#1297 D1): an `=` is an exact filter only where every match must contain the word. In one OR
+            // alternative Search ignores it and runs the word by its stem, so Analytics charts the stem too — refusing
+            // would name a filter Search does not apply. This was `["containment", "alliance"]` before 6.3.
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment OR =alliance").isEmpty)
+            #expect(try await service.termFrequencyByYear(term: "=containment OR zzznothing")
+                        .first { $0.year == 1971 }?.count == 2,
+                    "The ignored mark charts the stem, both documents, exactly as Search runs the query")
         }
     }
 }

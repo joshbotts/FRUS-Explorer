@@ -31,6 +31,10 @@ import Foundation
 ///         operand to report is flagged
 ///   1.3 — #1297 fixes: the caption and ADVANCED tag gates are model properties checked at runtime, and the
 ///         strip scan matches each gate with its key, so an inverted or unrelated gate fails
+///   1.4 — #1297 round 1: the term-row gate and the NOT APPLIED loop are matched as anchored calls; counting keeps
+///         `isApproximate` through the controller and closes the offer beside an excluded operand; a refused query
+///         beside a filter is not filters only, and the strip and both hosts explain it; an `=` parser 6.3 ignores
+///         is inspected and counted as the stemmed word the search runs; the iOS refresh key covers every query part
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -498,6 +502,10 @@ struct QueryInspectionTests {
 
     /// The gate and the rows are view code no model test can reach, so these two checks read the
     /// strip's own source — each scoped to the one member that must do it, not to the file.
+    ///
+    /// Each check matches the call as one anchored pattern, as `stripShowsStructuredTagAndApproximationCaption` does.
+    /// The substring checks this replaced passed with the gate inverted, with the loop reduced to `.first`, and with
+    /// `.prefix(0)` on the loop's array, which renders no row at all (#1297 round 1, F2 and X1).
     @Test("The strip gates its term rows on showsTermRows and renders every not-applied operand")
     func stripRendersNotAppliedRows() throws {
         let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -523,11 +531,16 @@ struct QueryInspectionTests {
             index = strip.index(after: index)
         }
         let body = strip[bodyStart.upperBound..<index]
-        #expect(body.contains("inspection.showsTermRows"), "the strip must gate term rows on showsTermRows")
+        #expect(body.range(of: #"if inspection\.showsTermRows \{\s*operandRows\s*\}"#, options: .regularExpression) != nil,
+                "the strip must render operandRows under showsTermRows, not under its inversion or another gate")
+        #expect(body.components(separatedBy: "operandRows").count == 2, "and render operandRows nowhere else")
         #expect(!body.contains("inspection.hasOperands"), "hasOperands alone hides the row for `and OR -korea`")
         let rows = try member("private var operandRows: some View")
-        #expect(rows.contains("inspection.notApplied"), "operandRows must iterate the not-applied operands")
-        #expect(rows.contains("notAppliedRow(for:"), "and render each with notAppliedRow(for:)")
+        #expect(rows.range(
+            of: #"ForEach\(Array\(inspection\.notApplied\.enumerated\(\)\), id: \\\.offset\) \{ _, operand in\s*notAppliedRow\(for: operand\)\s*\}"#,
+            options: .regularExpression) != nil,
+                "operandRows must render one notAppliedRow for every not-applied operand, over the whole array")
+        #expect(rows.components(separatedBy: "notAppliedRow(for:").count == 2, "and render the row nowhere else")
     }
 
     @Test("Replacing the operands carries every other fact across, the not-applied ones included")
@@ -595,12 +608,16 @@ struct QueryInspectionTests {
         await controller.refresh(parameters: params, service: inspector.searchService,
                                  indexedVolumeCount: 1)
         #expect(controller.inspection?.notApplied.map(\.text) == ["containment"])
+        #expect(controller.inspection?.isApproximate == true, "precondition: the query is narrower than typed")
 
         await controller.loadScopedCounts(parameters: params, service: inspector.searchService)
         let inspection = try #require(controller.inspection)
         #expect(inspection.operands.map(\.scopedCount) == [2], "d1 and d3 carry europe")
         #expect(inspection.notApplied.map(\.text) == ["containment"],
                 "a request for counts must not drop the not-applied rows")
+        // The controller could rebuild the inspection with `notApplied` and still drop this flag, which clears the
+        // narrower-than-typed caption; `replacingOperandsKeepsEverythingElse` cannot see the controller (X3).
+        #expect(inspection.isApproximate, "a request for counts must not clear the narrower-than-typed caption")
     }
 
     /// Needs the #1297 parser, under which keyword `NOT` marks its operand negated exactly as
@@ -623,6 +640,10 @@ struct QueryInspectionTests {
         let counted = await inspector.scopedCounts(for: viaKeyword, parameters: keyword)
         #expect(counted.map(\.scopedCount) == [0, nil],
                 "cold is counted (0 in this fixture); the excluded korea gets no hit count")
+        // The excluded korea keeps a nil count for good, so it must not hold the count offer open once cold is
+        // counted. No other test counts beside an excluded operand, so none could see the offer stay up (X2).
+        #expect(!viaKeyword.replacingOperands(counted).hasUncountedOperands,
+                "an excluded operand's nil count is not a count still to fetch")
 
         // Neither word is in the fixture, so each is empty on its own — only the applied,
         // non-excluded one may be blamed.
@@ -779,6 +800,122 @@ struct QueryInspectionTests {
                 "the ADVANCED tag renders under showsStructuredTag")
         #expect(operandRows.components(separatedBy: "\"search.inspector.structuredTag\"").count == 2,
                 "and nowhere else in the operand rows")
+    }
+
+    // MARK: - Queries that cannot run (#1297 round 1)
+
+    /// F8: the search throws `FTS5Error.emptyQuery` for a query with text and no expression, filter or not —
+    /// `makeMatchExpressions` runs filter-only only under `runsAsFilterOnly`, which a query with text never is. The
+    /// inspector read the looser `supportsFilterOnlySearch`, so beside a person or subject filter it said "filters only"
+    /// while the search failed. Each refusal here is a different route to a nil expression: the 6.1 empty
+    /// approximation, the 2.2 guard on a summaries-only scope, and the 6.3 nesting limit.
+    @Test("A refused text query beside a standalone filter is not called filters only")
+    func refusedTextQueryIsNotFilterOnly() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        var emptyApproximation = SearchParameters(keywords: "-(containment -europe) -europe")
+        emptyApproximation.personRef = "#p-acheson"
+        var guardedScope = SearchParameters(keywords: "=cold \"europe\" -europe OR -europe")
+        guardedScope.includeDocumentText = false
+        guardedScope.includeSummaries = true
+        guardedScope.includeNotes = false
+        guardedScope.subjectBucketKey = "A\u{1F}B"
+        let nesting = String(repeating: "(", count: 33) + "europe" + String(repeating: ")", count: 33)
+        var tooDeep = SearchParameters(keywords: nesting)
+        tooDeep.personRef = "#p-acheson"
+
+        for params in [emptyApproximation, guardedScope, tooDeep] {
+            let label = params.keywords ?? ""
+            #expect(params.supportsFilterOnlySearch, "\(label): precondition, a standalone filter is set")
+            #expect(SearchService.parsedQuery(for: params).expression == nil, "\(label): precondition, the parse refuses")
+            do {
+                let pair = try await inspector.searchService.matchExpressions(for: params)
+                Issue.record("\(label): expected emptyQuery, got \(String(describing: pair))")
+            } catch FTS5Error.emptyQuery {
+                // expected: the search fails
+            }
+            let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+            #expect(inspection.expression == nil)
+            #expect(!inspection.isFilterOnly, "\(label): the search throws, so the strip must not say filters only")
+        }
+
+        // Control: with no text the same filter does run filter-only, and says so.
+        var filterOnly = SearchParameters()
+        filterOnly.personRef = "#p-acheson"
+        #expect(await inspector.inspect(parameters: filterOnly, indexedVolumeCount: 1).isFilterOnly)
+    }
+
+    /// F8's view half. With `isFilterOnly` corrected, a refused query had nothing to say and both hosts hid the strip;
+    /// the strip now names why there is no expression, and each host shows it on the model's own gate.
+    @Test("The strip explains a refused query, and both hosts show the strip for it")
+    func stripExplainsARefusedQuery() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let view = try String(contentsOf: root.appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift"),
+                              encoding: .utf8)
+        #expect(view.range(
+            of: #"\} else if inspection\.isFilterOnly \{\s*Text\(String\(localized: "search\.inspector\.filterOnly""#,
+            options: .regularExpression) != nil, "the filters-only line stays under isFilterOnly")
+        #expect(view.range(
+            of: #"\} else if inspection\.isRefused \{\s*Text\(String\(localized: "search\.inspector\.refused""#,
+            options: .regularExpression) != nil, "a refused query gets its own line under isRefused")
+        #expect(view.components(separatedBy: "\"search.inspector.refused\"").count == 2, "and that line appears once")
+
+        for host in ["FRUSExplorer/Search/SearchView.swift", "FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try String(contentsOf: root.appendingPathComponent(host), encoding: .utf8)
+            #expect(source.range(
+                of: #"if let inspection = inspectorController\.inspection,\s*inspection\.showsStrip \{"#,
+                options: .regularExpression) != nil,
+                    "\(host) must show the strip on QueryInspection.showsStrip, which a refused query sets")
+        }
+    }
+
+    /// Parser 6.3 (D1) reports an `=` term only where every match must contain it. The operand still carries the typed
+    /// mark, and the inspector showed it as typed: an EXACT tag on a word the search runs by its stem, and a scoped
+    /// count that re-spelled it `=containment` and counted a narrower query than the one that ran.
+    @Test("An = the search ignores is neither tagged EXACT nor counted exactly")
+    func ignoredExactMarkIsInspectedAsStemmed() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let alternative = SearchParameters(keywords: "=containment OR alliance")
+        #expect(SearchService.exactTerms(from: alternative).isEmpty,
+                "precondition: parser 6.3 ignores the mark in an OR alternative")
+        let inspection = await inspector.inspect(parameters: alternative, indexedVolumeCount: 1)
+        #expect(inspection.operands.map(\.operand.text) == ["containment", "alliance"])
+        #expect(inspection.operands.map(\.operand.isExact) == [false, false],
+                "no EXACT tag on a word the search does not filter")
+        #expect(inspection.operands.first?.isStemBroadening == true,
+                "and the stem warning says containment is searched as contain, which it is")
+        #expect(try await inspector.searchService.searchCount(parameters: alternative) == 3,
+                "d1 and d2 by the stem contain, d4 by alliance")
+        let counted = await inspector.scopedCounts(for: inspection, parameters: alternative)
+        #expect(counted.map(\.scopedCount) == [2, 1], "containment is counted by its stem, as the search ran it")
+
+        // Control: required, the mark is applied, tagged and counted exactly.
+        let required = SearchParameters(keywords: "=containment europe")
+        #expect(SearchService.exactTerms(from: required) == ["containment"])
+        let applied = await inspector.inspect(parameters: required, indexedVolumeCount: 1)
+        #expect(applied.operands.map(\.operand.isExact) == [true, false])
+        #expect(await inspector.scopedCounts(for: applied, parameters: required).map(\.scopedCount) == [1, 2],
+                "=containment is d1 alone; europe is d1 and d3")
+    }
+
+    /// F7: the inspection reads the combined parse of the typed text and a restored search's phrase, prefix and
+    /// excluded terms, but the iOS host refreshed it only when `vm.keywords` changed — so Clear Filters could remove a
+    /// restored phrase and leave the strip describing the search before it. macOS keys the same refresh on
+    /// `queryText|parametersVersion`. The key now lives on the view model, where `SearchViewTests` runs it.
+    @Test("The iOS inspector refreshes on the view model's whole-query key, not on the typed text alone")
+    func iOSInspectorRefreshesOnEveryQueryPart() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Search/SearchView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.range(
+            of: #"\.task\(id: vm\.queryInspectorRefreshKey\) \{\s*await inspectorController\.refresh\(\s*parameters: vm\.searchParameters,"#,
+            options: .regularExpression) != nil,
+                "the one refresh of the cheap pass must be keyed on vm.queryInspectorRefreshKey")
+        #expect(source.components(separatedBy: "inspectorController.refresh(").count == 2,
+                "and there must be no second refresh keyed on something narrower")
     }
 
     // MARK: - The denominator
