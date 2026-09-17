@@ -294,6 +294,17 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///          lists per scope, 4,286 applied `=cold` operands unreported because filtering on them would remove a row the
 ///          query admits and 868 unreported although it would not; the oracle sees 1,190 and 1,034 required exact
 ///          operands against 11,758 and 11,401 ignored
+///   1.5 — #1297 round-3 parser tests: D4 — requiredness is proved over the identities of MARKED operands, so a word
+///          marked in every alternative is reported (`=cold war OR =cold peace`, `=cold OR =cold war`, `=cold OR =cold`)
+///          and every positive `=` operand on it applies (`(=cold OR war) =cold` is now applied twice), while an unmarked
+///          word, a phrase or an excluded mark in one alternative still reports nothing (`=cold war OR peace -=cold`);
+///          the oracle's proof mirror follows marked stems instead of occurrences, and `exactTermsSweep`'s completeness
+///          pin moves with it. Named cases also pin the 6.1 refusal of an empty `OR` inside a kept alternative, which
+///          only the oracle caught (round-2 M13), and a typed `=cold` beside a structured phrase and prefix, which only
+///          the sweep and the oracle caught (round-2 M05). Measured at parser 6.5: the exact-term sweep reports 55,518
+///          lists per scope, 4,286 applied `=cold` operands unreported because filtering on them would remove a row the
+///          query admits and 428 unreported although it would not; the oracle sees 1,256 and 1,151 required exact
+///          operands against 11,692 and 11,284 ignored
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -323,6 +334,7 @@ struct Issue1297StructuredPartsTests {
         let scopedCold = typedOperand("cold", "{body_text}:\"cold\"", .word, negated: false)
         let scopedNotWar = typedOperand("war", "NOT {body_text}:\"war\"", .word, negated: true)
         let scopedColdExact = typedOperand("cold", "{body_text}:\"cold\"", .word, negated: false, exact: true)
+        let scopedColdApplied = typedOperand("cold", "{body_text}:\"cold\"", .word, negated: false, exact: true, applied: true)
         let notCold = typedOperand("cold", "NOT \"cold\"", .word, negated: true)
         let koreaExact = typedOperand("korea", "\"korea\"", .word, negated: false, exact: true)
         let koreaApplied = typedOperand("korea", "\"korea\"", .word, negated: false, exact: true, applied: true)
@@ -591,10 +603,10 @@ struct Issue1297StructuredPartsTests {
             // removes the right's anchor korea, so a `conjoin` keeping only the right conjunct's forbidden set would run it.
             Issue1297StructuredCase(typed: "(cold -korea OR -vietnam) -(war -korea)", expression: nil,
                                     meaning: c.subtracting(k).union(N(v)).intersection(N(w).union(k))),
-            // D1 decides per OCCURRENCE (round-2 P1): an `=` operand is a post-filter only when every match must match
-            // THAT operand. An unmarked word, a one-word phrase or a second marked word with the same stem is another
-            // operand, and requiring it says nothing about the literal word: `colds war` matches `(=cold OR war) cold`
-            // through war and the stemmed cold, and a cold filter would remove it.
+            // D1 with D4: an `=` mark is a post-filter only when every match must hold the literal word, which the proof
+            // shows over MARKED operands alone. An unmarked word or a one-word phrase with the same stem says nothing
+            // about the literal word: `colds war` matches `(=cold OR war) cold` through war and the stemmed cold, and a
+            // cold filter would remove it.
             Issue1297StructuredCase(typed: "(=cold OR war) cold", expression: "(\"cold\" OR \"war\") AND \"cold\"",
                                     meaning: c.union(w).intersection(c), operands: [coldExact, war, cold]),
             Issue1297StructuredCase(typed: "=cold OR \"cold\"", expression: "\"cold\" OR \"cold\"",
@@ -610,12 +622,37 @@ struct Issue1297StructuredPartsTests {
                                     meaning: c.intersection(w).union(c.intersection(peace)),
                                     operands: [scopedColdExact, typedOperand("war", "{body_text}:\"war\"", .word, negated: false),
                                                scopedCold, typedOperand("peace", "{body_text}:\"peace\"", .word, negated: false)]),
-            // A required occurrence applies however many other occurrences share its stem, and only that occurrence does.
+            // A required mark applies however many unmarked operands share its stem, and once it applies, it applies to
+            // every positive `=` operand on the word (D4): filtered on the literal word, the alternative reads the same.
             Issue1297StructuredCase(typed: "cold =cold", expression: "\"cold\" AND \"cold\"", meaning: c,
                                     operands: [cold, coldApplied], exactTerms: ["cold"]),
             Issue1297StructuredCase(typed: "(=cold OR war) =cold", expression: "(\"cold\" OR \"war\") AND \"cold\"",
-                                    meaning: c.union(w).intersection(c), operands: [coldExact, war, coldApplied],
+                                    meaning: c.union(w).intersection(c), operands: [coldApplied, war, coldApplied],
                                     exactTerms: ["cold"]),
+            // D4: a word marked in every alternative is one every match holds literally, whichever alternative matched,
+            // so no one occurrence need be required. 6.4 required one, and ran these unfiltered.
+            Issue1297StructuredCase(typed: "=cold war OR =cold peace",
+                                    expression: "\"cold\" AND \"war\" OR \"cold\" AND \"peace\"",
+                                    meaning: c.intersection(w).union(c.intersection(peace)),
+                                    operands: [coldApplied, war, coldApplied, typedOperand("peace", "\"peace\"", .word, negated: false)],
+                                    exactTerms: ["cold"]),
+            Issue1297StructuredCase(typed: "=cold war OR =cold peace", scoped: true,
+                                    expression: "{body_text}:\"cold\" AND {body_text}:\"war\" OR {body_text}:\"cold\" AND {body_text}:\"peace\"",
+                                    meaning: c.intersection(w).union(c.intersection(peace)),
+                                    operands: [scopedColdApplied, typedOperand("war", "{body_text}:\"war\"", .word, negated: false),
+                                               scopedColdApplied, typedOperand("peace", "{body_text}:\"peace\"", .word, negated: false)],
+                                    exactTerms: ["cold"]),
+            Issue1297StructuredCase(typed: "=cold OR =cold war", expression: "\"cold\" OR \"cold\" AND \"war\"",
+                                    meaning: c.union(c.intersection(w)), operands: [coldApplied, coldApplied, war],
+                                    exactTerms: ["cold"]),
+            Issue1297StructuredCase(typed: "=cold OR =cold", expression: "\"cold\" OR \"cold\"", meaning: c,
+                                    operands: [coldApplied, coldApplied], exactTerms: ["cold"]),
+            // ...but not where one alternative only excludes the marked word: a peace document without cold matches.
+            Issue1297StructuredCase(typed: "=cold war OR peace -=cold",
+                                    expression: "\"cold\" AND \"war\" OR \"peace\" NOT \"cold\"",
+                                    meaning: c.intersection(w).union(peace.subtracting(c)),
+                                    operands: [coldExact, war, typedOperand("peace", "\"peace\"", .word, negated: false),
+                                               typedOperand("cold", "NOT \"cold\"", .word, negated: true, exact: true)]),
             // Doubly negated, the mark is positive and required by the approximation that runs: without the filter
             // `"cold"` would match `colds war`, which the query as typed — NOT war, OR the literal word cold — excludes.
             Issue1297StructuredCase(typed: "-(war -=cold)", expression: "\"cold\"", meaning: N(w).union(c), approximation: c,
@@ -630,6 +667,17 @@ struct Issue1297StructuredPartsTests {
                                     expression: "\"cold\" AND ({body_text}:\"cold\" OR {body_text}:\"war\")",
                                     meaning: coldPhraseRows.intersection(c.union(w)),
                                     operands: [coldPhrase, scopedColdExact, typedOperand("war", "{body_text}:\"war\"", .word, negated: false)]),
+            // A typed `=cold` beside a structured phrase or prefix is required by the root conjunction the parts join
+            // (round-2 M05: a `combineParts` intersecting what its parts require passed every named case).
+            Issue1297StructuredCase(typed: "=cold", structured: phrase, expression: "\"cold\" AND \"cold war\"",
+                                    meaning: c.intersection(cw), operands: [coldApplied, coldWar], exactTerms: ["cold"]),
+            Issue1297StructuredCase(typed: "=cold", structured: prefix, expression: "\"cold\" AND \"viet\"*",
+                                    meaning: c.intersection(vi), operands: [coldApplied, viet], exactTerms: ["cold"]),
+            // Parser 6.1 inside a kept alternative (round-2 M13): each alternative of the group matches nothing, so the
+            // group does, and so does the approximation left once `-vietnam` is left out. A `settled()` that recomputed
+            // emptiness over the group's required set, which an `OR` empties, ran it; only the oracle caught that.
+            Issue1297StructuredCase(typed: "(cold -cold OR war -war) -korea OR -vietnam", expression: nil,
+                                    meaning: c.subtracting(c).union(w.subtracting(w)).subtracting(k).union(N(v))),
         ]
     }()
 
@@ -637,7 +685,7 @@ struct Issue1297StructuredPartsTests {
     @Test("A typed query beside structured fields renders, matches and reports what the judged table says",
           arguments: Issue1297StructuredPartsTests.namedCases)
     func namedCombinations(_ c: Issue1297StructuredCase) throws {
-        #expect(Self.namedCases.count == 75)
+        #expect(Self.namedCases.count == 83)
         let table = Issue1297StructuredTable(twoColumn: c.scoped)
         let parsed = FTS5InlineQueryParser.parseDetailed(c.typed, columnPrefix: c.scoped ? "{body_text}:" : "",
                                                          structured: c.structured)
@@ -646,7 +694,9 @@ struct Issue1297StructuredPartsTests {
         // The case must agree with itself before the parser is asked anything.
         #expect((c.expression == nil) == (expectedRows == nil), "fixture: an expression exactly when rows are expected")
         #expect(c.isApproximate == (c.expression != nil && !isExact), "fixture: approximate exactly when narrower")
-        #expect(c.exactTerms == c.operands.filter(\.isExactApplied).map(\.text), "fixture: a term exactly for each applied mark")
+        var appliedWords = Set<String>()
+        #expect(c.exactTerms == c.operands.filter(\.isExactApplied).map(\.text).filter { appliedWords.insert($0).inserted },
+                "fixture: a term exactly for each word with an applied mark, in order, once")
 
         #expect(parsed.expression == c.expression)
         if let expression = parsed.expression {
@@ -753,11 +803,11 @@ struct Issue1297StructuredPartsTests {
                                                             dropped: &droppedUnrefused)
                 var parity: [Int: Bool] = [:]
                 Issue1297OracleModel.parity(root, negated: false, into: &parity)
-                // D1: a typed, applied, positive `=` operand that every match of the expression that runs must match — that
-                // occurrence, not another leaf with its stem — as the oracle's proof computes it from leaves alone.
+                // D1 with D4: a typed, applied, positive `=` operand whose stem every match of the expression that runs holds
+                // through a MARKED leaf — never through an unmarked one — as the oracle's proof computes it from leaves alone.
                 let applied = Set((0..<typedCount).filter {
                     harvest.exact[$0] && parity[$0] == false && !dropped.contains($0)
-                        && searchedAnchor?.proof.requiredExact.contains($0) == true
+                        && searchedAnchor?.proof.requiredMarked.contains(Issue1297OracleModel.key($0, harvest, scoped: scoped).stem) == true
                 })
                 let everyOperand = harvest.texts.indices.map {
                     Issue1297ModelOperand(text: harvest.texts[$0], isNegated: parity[$0] ?? false,
@@ -979,10 +1029,11 @@ struct Issue1297StructuredPartsTests {
 
     /// The exact-word post-filter `SearchService` reads from the combined parse, over sequences that can mark a word.
     ///
-    /// D1 reports a typed `=` operand only when it is applied, positive, and required: every match of the expression that
-    /// runs must match THAT operand, not merely another with its stem. The sweep cannot read the proof, so it checks what
-    /// the rule implies, each from outside the parser, on `Issue1297InflectedCorpus`, where the stemmed and the literal
-    /// word cold select different rows:
+    /// D1 with D4 reports a typed `=` operand only when it is applied and positive and every match of the expression that
+    /// runs holds its word through a MARKED operand — one required mark, or a mark in every alternative — never merely
+    /// through an unmarked operand with its stem. The sweep cannot read the proof, so it checks what the rule implies, each
+    /// from outside the parser, on `Issue1297InflectedCorpus`, where the stemmed and the literal word cold select
+    /// different rows:
     /// - only a typed, applied, positive `=` operand is ever reported, the terms are exactly those of the operands
     ///   `ParsedOperand.isExactApplied` marks, and the column prefix changes nothing;
     /// - SOUNDNESS by the app's literal-word rule, `ExactWordMatcher`: of the rows the render matches, every row the
@@ -994,9 +1045,10 @@ struct Issue1297StructuredPartsTests {
     ///   `cold -(war -=korea)`, and `(=cold OR war) cold`, where the unmarked cold is what every match requires. A
     ///   reported term must also be a word every row the render matches holds by stem;
     /// - COMPLETENESS, as far as operands can prove it: an applied `=cold` left unreported although filtering on it would
-    ///   remove none of those rows is counted and pinned. The proof is sound but not complete — every match of
-    ///   `=cold OR =cold war` holds the literal word through one occurrence or the other, but neither occurrence is
-    ///   required — so the count is not zero;
+    ///   remove none of those rows is counted and pinned. The proof is sound but not complete — every match of `=cold OR
+    ///   korea` beside the excluded term korea holds the literal word, because the exclusion empties the korea alternative,
+    ///   which operands alone cannot show — so the count is not zero. Parser 6.4 followed marked leaves by occurrence and left `=cold OR =cold war` here too, which
+    ///   was a sound filter it lost, not a limit of what operands can prove;
     /// - against the typed-alone parse: beside no structured phrase or prefix the combined parse reports the same terms
     ///   wherever both render; beside one it reports the same terms when the typed text renders exactly alone, and none
     ///   when the typed text is approximated or refused alone, because a complement the phrase or prefix anchors
@@ -1101,10 +1153,10 @@ struct Issue1297StructuredPartsTests {
 
         print("[1297] exact-term sweep scoped=\(scoped) compared=\(compared) reported=\(reported) soundnessChecked=\(soundnessChecked) ignoredNotRequired=\(ignoredNotRequired) unprovedRequired=\(unprovedRequired) besideNothing=\(besideNothing) besidePositiveExactAlone=\(besidePositiveExactAlone) besidePositiveApproximatedAlone=\(besidePositiveApproximatedAlone) approximate=\(approximate) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " ")) unproved: \(unprovedSamples)")
         #expect(compared == 226_200)
-        // Measured per scope at parser 6.4: 868 applied `=cold` operands go unreported although filtering on them would
-        // remove no row the query admits, because no one occurrence is required (`=cold OR =cold` renders
-        // `"cold" OR "cold"`). Pinned, since a parser dropping terms it can prove would only raise it.
-        #expect(unprovedRequired == 868)
+        // Measured per scope at parser 6.5: 428 applied `=cold` operands go unreported although filtering on them would
+        // remove no row the query admits. Pinned, since a parser dropping terms it can prove would only raise it: 6.4,
+        // which required one marked occurrence, left 868, `=cold OR =cold` (`"cold" OR "cold"`) among them.
+        #expect(unprovedRequired == 428)
         // The corpus must tell the two readings of cold apart, or the soundness check above cannot fail.
         #expect(try table.rows("\"cold\"").count > table.rows(Issue1297InflectedCorpus.literalMarker).count)
         // Each branch must actually carry exact terms, or its comparison is as vacuous as the one this sweep replaced.
@@ -1491,8 +1543,8 @@ indirect enum Issue1297OracleModel {
         searchedAnchor(root, pushInward: pushInward, harvest, scoped: scoped, dropped: &dropped)?.rows
     }
 
-    /// `searched`'s rows together with the proof of the expression that runs, whose required marked occurrences decide
-    /// which `=` operands are exact-word post-filters (D1).
+    /// `searched`'s rows together with the proof of the expression that runs, whose required marked stems decide which
+    /// `=` operands are exact-word post-filters (D1, D4).
     static func searchedAnchor(_ root: Issue1297OracleModel, pushInward: Bool, _ harvest: Issue1297OracleHarvest,
                                scoped: Bool, dropped: inout Set<Int>) -> Issue1297OracleAnchor? {
         var local = Set<Int>()
@@ -1545,7 +1597,7 @@ indirect enum Issue1297OracleModel {
     /// A phrase never carries the prefix, nor does a structured excluded term; every other typed operand does, and
     /// so does the structured prefix wildcard. The mark is part of the key so that nothing here can take an unmarked
     /// leaf for a marked one: the refusal proof, which compares what a stemmed MATCH compares, drops it (`stem`), and the
-    /// exact-term rule follows marked leaves by occurrence.
+    /// exact-term rule collects the stems of marked leaves only (D4).
     static func key(_ index: Int, _ harvest: Issue1297OracleHarvest, scoped: Bool) -> Issue1297OracleKey {
         let kind = harvest.kinds[index]
         let carriesPrefix = scoped && kind != .phrase && !(harvest.sources[index] == .structured && kind == .word)
@@ -1583,14 +1635,14 @@ struct Issue1297OracleProof {
     var sufficient: Set<Issue1297OracleKey> = []
     /// Stems no matching document matches.
     var forbidden: Set<Issue1297OracleKey> = []
-    /// Marked leaves, by harvest index, that every matching document matches: the occurrences whose `=` is a filter.
-    var requiredExact: Set<Int> = []
+    /// The stems of marked leaves every matching document matches through a marked leaf: the words whose `=` is a filter.
+    var requiredMarked: Set<Issue1297OracleKey> = []
     /// Whether no document can match: a required leaf is covered by a forbidden one.
     var isEmpty = false
 
     /// The leaf harvested at `index`, identified by `key`.
     static func leaf(_ key: Issue1297OracleKey, index: Int) -> Issue1297OracleProof {
-        Issue1297OracleProof(required: [key.stem], sufficient: [key.stem], requiredExact: key.exact ? [index] : [])
+        Issue1297OracleProof(required: [key.stem], sufficient: [key.stem], requiredMarked: key.exact ? [key.stem] : [])
     }
 
     /// Every one of `positives` (at least one), less whatever any of `exclusions` matches.
@@ -1599,7 +1651,7 @@ struct Issue1297OracleProof {
         for positive in positives {
             proof.required.formUnion(positive.required)
             proof.forbidden.formUnion(positive.forbidden)
-            proof.requiredExact.formUnion(positive.requiredExact)
+            proof.requiredMarked.formUnion(positive.requiredMarked)
         }
         for exclusion in exclusions { proof.forbidden.formUnion(exclusion.sufficient) }
         proof.sufficient = exclusions.isEmpty
@@ -1614,7 +1666,7 @@ struct Issue1297OracleProof {
         var proof = parts[0]
         for part in parts.dropFirst() {
             proof.required.formIntersection(part.required)
-            proof.requiredExact.formIntersection(part.requiredExact)
+            proof.requiredMarked.formIntersection(part.requiredMarked)
             proof.sufficient.formUnion(part.sufficient)
             proof.forbidden.formIntersection(part.forbidden)
             proof.isEmpty = proof.isEmpty && part.isEmpty

@@ -681,6 +681,11 @@ struct FTS5InlineQueryParserTests {
 ///   1.2 — #1297 round-2 parser fixes: parser 6.4 decides per operand (`ParsedOperand.isExactApplied`), so
 ///          `(=containment OR rollback) containment` reports nothing, and in `(=containment OR rollback) =containment`
 ///          only the second operand's mark applies
+///   1.3 — #1297 round-3 parser tests: D4 — a word marked in every alternative is one every match holds literally, so
+///          `(=containment doctrine) OR (=containment policy)`, `=containment OR =containment rollback` and
+///          `=containment OR =containment` report it, while an unmarked, quoted or excluded occurrence in one alternative
+///          still makes no mark apply; once a word's mark applies it applies to every positive `=` operand on the word, so
+///          `(=containment OR rollback) =containment` tags both; and the order of several terms is pinned (round-2 M20)
 @Suite("Exact-word sigil")
 struct FTS5ExactSigilTests {
 
@@ -717,18 +722,50 @@ struct FTS5ExactSigilTests {
         #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =rollback").exactTerms.isEmpty)
     }
 
-    /// `isExactApplied` is decided operand by operand, and an unmarked operand with the same word makes no mark apply.
-    @Test("A mark applies to the operand every match requires, never to another operand with its word")
+    /// The order is the order of each word's first applied operand, never of its last, and never a set's (round-2 M20).
+    @Test("Several exact terms are reported in the order their words' first applied operands were typed")
+    func exactTermsFollowTheFirstAppliedOperand() {
+        // containment's first operand is one alternative, yet its mark applies (D4), so containment comes first.
+        let first = FTS5InlineQueryParser.parseDetailed("(=containment OR europe) =rollback =containment")
+        #expect(first.exactTerms == ["containment", "rollback"])
+        #expect(first.operands.map(\.isExactApplied) == [true, false, true, true])
+        let second = FTS5InlineQueryParser.parseDetailed("=rollback (=containment OR europe) =containment")
+        #expect(second.exactTerms == ["rollback", "containment"])
+        #expect(second.operands.map(\.isExactApplied) == [true, true, false, true])
+    }
+
+    /// Once a word's mark applies it applies to every positive `=` operand on that word, and an unmarked operand with the
+    /// same word never makes a mark apply (D4).
+    @Test("A mark applies to every marked operand of a word every match holds literally, never through an unmarked operand with its word")
     func exactAppliesPerOperand() {
         let parsed = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) =containment")
         #expect(parsed.exactTerms == ["containment"])
-        #expect(parsed.operands.map(\.isExactApplied) == [false, false, true],
-                "the first =containment is one alternative, so a rollback document matches through it")
+        #expect(parsed.operands.map(\.isExactApplied) == [true, false, true],
+                "every match holds the literal word through the second =containment, so the first reads the same filtered")
         // Every match holds containment by stem, through the unmarked word, and none need hold it literally.
         let unmarked = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) containment")
         #expect(unmarked.exactTerms.isEmpty)
         #expect(unmarked.operands.map(\.isExact) == [true, false, false])
         #expect(unmarked.operands.allSatisfy { !$0.isExactApplied })
+    }
+
+    /// D4: a word marked in every alternative is a word every match holds literally, whichever alternative matched.
+    @Test("A word marked with = in every alternative is reported, and one alternative without its mark reports nothing")
+    func exactMarkedInEveryAlternative() {
+        let grouped = FTS5InlineQueryParser.parseDetailed("(=containment doctrine) OR (=containment policy)")
+        #expect(grouped.expression == "(\"containment\" AND \"doctrine\") OR (\"containment\" AND \"policy\")")
+        #expect(grouped.exactTerms == ["containment"])
+        #expect(grouped.operands.map(\.isExactApplied) == [true, false, true, false])
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =containment rollback").exactTerms == ["containment"])
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =containment").exactTerms == ["containment"])
+        // An alternative holding the word unmarked, quoted, or excluded admits a document without the literal word.
+        for query in ["=containment rollback OR containment policy", "=containment OR \"containment\"",
+                      "=containment rollback OR policy -=containment", "=containment OR containment*"] {
+            let parsed = FTS5InlineQueryParser.parseDetailed(query)
+            #expect(parsed.expression != nil, "\(query)")
+            #expect(parsed.exactTerms.isEmpty, "\(query)")
+            #expect(parsed.operands.allSatisfy { !$0.isExactApplied }, "\(query)")
+        }
     }
 
     @Test("An exact term inside a group is reported when every match requires it, and ignored as an alternative")
