@@ -62,6 +62,11 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #1301: initial implementation
+///   1.1 — #1301 round 2: assertion 1 also requires the empty-state label to be ABSENT where the
+///          section has documents. Measured: a composite mutant that drew the pre-load state as
+///          the row list, with #1301's bare `.task` reinstated in full, PASSED assertion 2 — so
+///          the oracle "that string is reachable only through a completed load" was a property of
+///          one line in `CompilationView`, not of the app
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs to the main actor, so this file emits the same
 // "main actor-isolated … nonisolated context" warnings the other UI suites do (see the note at
@@ -210,6 +215,18 @@ final class BrowseNestedSectionTests: XCTestCase {
             "[\(idiom)] No document rows at the FIRST compilation level. This step is the "
                 + "control — it crosses a switch branch and builds a new view — so a failure here "
                 + "is the fixture, the seeding or the indexing, not #1301."
+        )
+        // The empty-state label is the oracle assertion 2 rests on, and this is what keeps that
+        // oracle honest. The first compilation level HOLDS three documents, so "No documents in
+        // this section." must never appear here — a pre-load state drawn as the row list renders
+        // that string for a section whose rows have simply not arrived yet, which would make
+        // assertion 2 satisfiable with no load at all (measured: a composite mutant that drew the
+        // pre-load state as the row list passed assertion 2 on a build carrying #1301 in full).
+        XCTAssertFalse(
+            app.staticTexts[Self.emptyLabel].exists,
+            "[\(idiom)] '\(Self.emptyLabel)' is on screen at the FIRST compilation level, which "
+                + "holds three documents. A section that has rows is claiming it has none — the "
+                + "pre-load or in-flight state is being drawn as the document list."
         )
 
         // ── 2. The reuse step: compilation → compilation ───────────────────────────────────

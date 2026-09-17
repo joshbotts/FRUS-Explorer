@@ -47,6 +47,13 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — #1301: initial implementation
+///   1.1 — #1301 round 2: `.loading` is observed WHILE a load runs (a mutation sweep deleted the
+///          one write that produces it and all 12 tests here stayed green, because the rule's
+///          four-state sweep does not care whether a state is reachable); and the unindexed-volume
+///          trap is measured rather than described in a comment — it records `.loaded` with no
+///          rows, which is the one state that short-circuits. The closing note on
+///          `routedSectionKindsOutrankTheLoadState` said those kinds never call `loadDocuments`;
+///          they do, and the reason the branch order is safe is stated instead
 @Suite("Compilation document loading — per-section state and the render rule")
 @MainActor
 struct CompilationDocumentLoadingTests {
@@ -249,6 +256,70 @@ struct CompilationDocumentLoadingTests {
             """)
     }
 
+    @Test("`.loading` is observable WHILE the load runs, not only before and after it")
+    func loadingIsObservableWhileTheLoadRuns() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(pipeline: fixture.pipeline)
+        let key = vm.compilationKey(volumeId: Self.volumeId,
+                                    sectionId: fixture.subchapter.sectionId)
+
+        // `LoadingIsProducedOnlyByAnInFlightLoad` sweeps the RULE and would stay green if nothing
+        // could ever produce `.loading` — it would then be pinning the mapping of a value the app
+        // cannot reach, and its headline claim ("if and only if a load is genuinely in flight")
+        // would be satisfied from the wrong side. `loadDocuments` holds the ONLY write of
+        // `.loading` in the tree, so this is the test that says the state is real.
+        //
+        // The observation is deterministic rather than timed: `documents(forVolume:)` is a method
+        // on a different actor, so the load always suspends at that hop with `.loading` already
+        // written, and this task's continuation is enqueued behind the write.
+        let task = Task { await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId) }
+        var sawLoading = false
+        var terminatedFirst = false
+        for _ in 0..<200 {
+            await Task.yield()
+            if case .loading = vm.documentLoadState(forKey: key) { sawLoading = true; break }
+            if vm.documentLoadState(forKey: key).isLoaded { terminatedFirst = true; break }
+        }
+        await task.value
+
+        let observed = terminatedFirst
+            ? "The load reached `.loaded` without ever passing through it"
+            : "The state never left `.notStarted`"
+        #expect(sawLoading, """
+            A load in flight must be observable as `.loading`. \(observed) — so nothing in the \
+            app produces `.loading`, and the rule's sweep is pinning a dead value.
+            """)
+        #expect(vm.documentLoadState(forKey: key).isLoaded, "and it still finishes")
+    }
+
+    @Test("An unindexed volume caches as loaded-and-empty — the trap the caller's guard exists for")
+    func unindexedVolumeCachesAsLoadedAndEmpty() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(pipeline: fixture.pipeline)
+        // A volume that exists in no index. `documents(forVolume:)` answers it with an empty set,
+        // exactly as it answers a volume with no matching rows.
+        let unindexedVolumeId = "frus1958-60v01"
+        let key = vm.compilationKey(volumeId: unindexedVolumeId,
+                                    sectionId: fixture.subchapter.sectionId)
+
+        await vm.loadDocuments(for: fixture.subchapter, volumeId: unindexedVolumeId)
+
+        #expect(vm.documentLoadState(forKey: key).isLoaded, """
+            This is the hazard, stated as a measurement rather than as a warning in a comment: an \
+            unindexed volume does not fail and does not stay `.notStarted`. It records `.loaded`.
+            """)
+        #expect(vm.compilationDocuments[key]?.isEmpty == true, """
+            …with no rows. And `.loaded` is the ONE state `loadDocuments` short-circuits on, so \
+            after the volume is indexed the keyed task (same key), the Retry button and all three \
+            `.onChange` kicks would every one of them return early, leaving the reader on "No \
+            documents in this section." for the life of the process — #1301 with a different \
+            label on it. That is why the caller must not call this for an unindexed volume, and \
+            why the gate it calls instead is pinned separately.
+            """)
+    }
+
     @Test("A cancelled load still reaches a terminal state")
     func cancelledLoadStillReachesATerminalState() async throws {
         let fixture = try await makeFixture()
@@ -421,8 +492,14 @@ struct CompilationDocumentLoadingTests {
         #expect(CompilationDocumentsPresentation.resolve(
             canReadDirectly: false, isPersonsList: false, isSourcesList: true,
             isIndexing: true, isIndexed: false, loadState: failed) == .sourcesList)
-        // A prose-only front-matter leaf and the two structured lists never call `loadDocuments`
-        // at all, so their load state stays `.notStarted` for the life of the session. If any of
-        // them fell through to it, every one of them would draw a spinner.
+        // WHY THE ORDER IS SAFE, measured rather than assumed. These three kinds DO load: the
+        // keyed `.task` tests only `isIndexed`, so on an indexed volume it calls `loadDocuments`
+        // for a persons, sources or prose-readable section exactly as for any other — a
+        // full-volume `documents(forVolume:)` query filtered against an empty `documentIds`,
+        // recording `.loaded` with no rows. (`VolumeView.sectionRow` appends `.compilation` for
+        // every section the structure lists, front matter included, so they really do arrive
+        // here.) Nothing breaks because the rule returns their branch BEFORE it consults the load
+        // state — which is what these three assertions pin, each against a `.failed` state that
+        // would otherwise draw the error row over a persons list.
     }
 }
