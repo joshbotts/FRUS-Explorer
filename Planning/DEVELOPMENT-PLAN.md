@@ -15700,13 +15700,15 @@ permitted", so no figure here comes from it.)
   stated the exception.
 - **iOS, every scope off.** `SearchQueryRefusal.everyScopeOff` (`search.error.emptyScope.ios`): "Every search scope is
   turned off, so there is nothing to search. Turn on document text, summaries or research notes in Filters ▸ Search
-  Scope." `readable(_:for:)` maps `emptyQuery` to it only when the parse renders and all three scopes are off; a
+  Scope." (Reworded by round 2 below, since Include front matter is still on.) `readable(_:for:)` maps `emptyQuery` to it
+  only when the parse renders and all three scopes are off; a
   refused parse stays `nothingToSearch` whatever the scope, and `emptyQuery` with a scope on still passes through. On
   macOS the same branch returns `MacSearchError.emptyScope`, which `performSearch`'s own guard already shows, so a Mac
   reader is never pointed at an iOS control. The iOS manual's §7.2 says so.
 - **The Meaning-mode note's departure from brief §2.3 is recorded** (SearchModels doc comment and the §7.13 block):
   capitalized mode names to match the picker; "your words" beside a field asking for "a question in your own words";
-  AND, a minus sign and parentheses added because the rows teach them and a meaning search runs no parser.
+  AND, a minus sign and parentheses added because the rows teach them and a meaning search runs no parser. (That last
+  reason was false for `=`, which reached the Meaning filter intersection; round 2 below fixes the route.)
 
 **UI.**
 - **Mac stale error.** `performSearch`'s and `performMeaningSearch`'s empty-query guards, and the Search window's
@@ -15734,6 +15736,7 @@ permitted", so no figure here comes from it.)
 - `SearchTipsWiringTests` 1.1: the six fixed windows and the file-wide consumer count become block, span and
   argument-list slices — the Mac first-load consumer is now required inside the `.task` that reads `pendingSearch`.
   Its doc no longer claims every assertion is declaration-scoped: three absence bans read a whole file on purpose.
+  (Round 2 below corrects the count to five, and slices the one presence check that still read a whole file.)
 - `Docs/EditableContent.md`: §7.13's three reworded rows (each with a note), the every-scope-off block, blocks for
   `search.error.title`, `search.error.empty` and `search.error.emptyScope`, `menu.find.searchTips` tagged as declared
   in both call sites, the Meaning-note departure, every §7.13 line range recomputed from source, and §5's metric and
@@ -15787,3 +15790,108 @@ permitted", so no figure here comes from it.)
 measure; its unmeasured "no month / no day" and "counts match Search" claims; the iOS actions bar's overflow at
 accessibility sizes; and `ToolbarOverflowAccessibilityTests` failing 2 of 3 on iPad mini, which it does identically on
 the pre-#1299 app.
+
+### #1299 round 2 (2026-09-17): a typed `=` narrowed Meaning results, and two tips that said less than the truth
+
+**Why.** Review of `7bbe3724..a16a7c8c` confirmed, each through a skeptic with its code path, one major finding, two
+minor ones and two nits. Everything below is on the unmerged branch, so keys new on it were edited in place.
+
+**The Meaning-mode note was false for `=` (major).** The note says a Meaning search gives `=` no special effect, and its
+doc comment, its EditableContent note and the iOS manual justified that with "the semantic route passes the text to no
+parser". `SemanticSearchBackend.run` intersects its hits with `SearchService.filterKeySet(parameters:)`, which passed the
+parameters whole to `makeFilters(from:)`, and that builds the exact-word post-filter from the parse of the typed
+`keywords`. So on iOS and iPadOS, whose `searchMeaning()` hands the backend the live `searchParameters`, a Meaning search
+for `=containment policy` dropped every hit whose document lacks the literal word, and the strip said "Your filters
+removed N matches" to a reader who had set no filter. On the Mac, `performMeaningSearch` passes `parameters`, whose
+`keywords` only `applyParameters` sets, so a search restored or handed to the window filtered later Meaning runs by its
+own `=` marks, even under a query typed since. Nothing had ever asked the method for filters alone: exact-word mode
+(#567, 2026-07-29) predates Meaning mode (#1127, 2026-08-28).
+- **Fix.** `filterKeySet` copies the parameters with `keywords = nil` before building the filters (`SearchService` 2.8).
+  The structured phrase, prefix and excluded terms stay, because the parse never takes an exact term from them. Both
+  platforms reach the backend through this one method, so neither view model changed.
+- **Test first**, `HybridSearchModeTests.filterKeySetIgnoresTypedText`, over a real two-volume index: with no filter,
+  `=containment`, `=containment policy` and `=containment -soviet` give `nil`; beside a volume filter, `=containment`
+  gives exactly the filter-only key set. A keyword search over the same index shows the mark is live there (stemmed, two
+  documents; marked, one), so `nil` is the Meaning route ignoring it. **Measured at `a16a7c8c`**: `=containment` gave
+  `{v01/d1, v02/d1}` and, beside the volume filter, `{v01/d1}` against the filter's own `{v01/d1, v01/d2}`.
+- **The note's supporting text is now true**: the `SearchTipNote.meaningMode` doc says what makes the note hold (the
+  encoder reads the text as written, behind its fixed prefix; the filter intersection reads filters alone), the
+  EditableContent note says the same and names the test that guards it, and both manuals' tips sentence adds that the
+  words reach the model as typed and only the reader's filters narrow a meaning search. **The note itself was re-read
+  against the traced route and is unchanged.**
+
+**Every other way typed text reaches the Meaning route, traced at `a16a7c8c`.**
+- The engine: `SemanticQuerySearcher.search` embeds the text as written (behind `SemanticQueryPrompt.queryPrefix`); no
+  parse. The backend reads `parameters.volumeIds` for beyond-library hits and nothing else of the query.
+- The strip (`SemanticModeStrip.caption`) and the empty state read only the `Disclosure` counts, which now describe
+  real filters alone.
+- Facets: `FacetPanelController.load` in Meaning mode passes the result keys with `SearchSQLFilters()` and skips
+  `matchExpressions`, so no parse; `loadedQuery` is only a label.
+- History: `SearchHistoryWriter.record` stores the text verbatim under `semanticRouteSignature` and the route's own
+  rendered expression. Its `isSameQuery` folds typographic double quotation marks to U+0022 to decide whether a re-run
+  refreshes the anchored trail row (both platforms) and, on the Mac, whether checklist marks survive
+  (`performMeaningSearch`). **Left as it is**: that is bookkeeping about which row a run belongs to, not an effect on the
+  search, whose results come from the encoder reading each spelling as written; splitting the two spellings in Meaning
+  mode would mint a second trail row for a respelled query, the #1298 defect in the other mode.
+- The Query Inspector's refresh still parses the text in Meaning mode on both platforms, but both hosts replace its strip
+  with the Meaning strip, so nothing it computes is shown — including the iOS card's Search tips link, which lives in
+  that card. The Mac's zero-result decomposition sits in a branch after the Meaning one, so it never runs there either.
+- **Reported, not changed: the Filters ▸ My Tags counts.** `SearchFilterView` counts tags against
+  `tagCountParameters` — iOS passes `vm.searchParameters`, the Mac `searchVM.submittedSearchParameters` — through
+  `SearchViewModel.loadUserTagCounts`, which runs `matchExpressions` and `filtersForTesting` on them in either mode. So
+  in Meaning mode the counts, captioned "documents in your current results", describe a KEYWORD match of the typed text,
+  where every mark does have its keyword effect. It is not a Meaning search, and the fault is not the syntax: a plain
+  question is counted as a keyword AND of its words just the same, so stripping the marks would count a third set that
+  is still not the results on screen. The fix is the one facets received in the #1193 follow-up — count over the
+  Meaning result keys (`resultSetFacets(documentKeys:)` has the shape) — and it is a Filters change, predating #1299
+  (#574), outside Search Tips.
+
+**The exact-word row omitted split words (minor).** `search.tips.exactWord.detail` now ends "…and always on a prefix,
+inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R." Both manuals'
+§7.2 and the Corpus Analytics Multiple words row already named the case. `SearchTipsTests.checkExactWord` executes
+`=anti-communist` over "the anti-communists met" (1 match, beside a `=communist` control that refuses the plural, 0) and
+requires the detail to name the case. The TEI corpus prints *anti-Communist* 4,578 times and *anti-Communists* 185
+(`grep -ohiw` over `/Users/jbotts/Development/frus/volumes`, re-measured this round).
+
+**The iOS scope message said every scope was off (minor).** Filters ▸ Search Scope also holds Include front matter,
+on by default and not read by `readable`. `search.error.emptyScope.ios` now reads "Document text, summaries and research
+notes are all turned off, so there is nothing to search. Turn one on in Filters ▸ Search Scope."
+`SearchRefusalMessageTests.iOSScopeOffNamesTheScope` requires, with the front-matter toggle still on, that the message
+not say "every" and that it name all three toggles. The iOS manual's condition now names the three toggles, says front
+matter does not count, and says a query that cannot run gets the refusal whatever the scope; EditableContent's block is
+renamed "A search with nowhere to search (iOS)". **The Mac message is unchanged**: "Enable at least one of Documents,
+Notes, or Summaries to search." names its three Search in chips and claims nothing about every scope, and the Mac's
+front matter is a filter-row token, not a chip.
+
+**Nits.**
+- `SearchTipsWiringTests.appStateRequestIsAHandoff` reads the stored hand-off inside the `final class AppState`
+  declaration (lines 199–2532), where it had read the whole file; the suite doc counts the whole-file ABSENCE checks as
+  five — four `sheet.contains` bans in `macPanelReadsTheModel` and the `QueryInspectorView` ban in
+  `inspectorLinkIsASibling` — and says no presence check reads a whole file (1.2).
+- `SearchTipsTests.checkPrefix`'s doc gives *negotiatory* as 21 occurrences in 8 volume files, with misspellings such
+  as *negotiatons* in more, where it said "21 times in 26 volumes".
+- `HybridSearchModeTests.stripCaption` is `@MainActor`, which clears its two pre-existing actor-isolation warnings.
+- EditableContent §7.13: all 32 `SearchModels.swift` line ranges recomputed; a checker over §7.13's other files
+  (`SearchView`, `SearchViewModel`, `MacSearchViewModel`, `SearchSheet`, `FRUSExplorerApp`) finds 35 of 35 blocks
+  matching. Nine `FRUSTheme.swift` ranges outside #1299's rows (Source Explorer, Person and Cross-Reference Analytics)
+  were already stale at `7bbe3724` and are untouched.
+
+**Verification** (iPhone 17 A9FCCA50).
+- **Red at the tests commit `1da6196b`** (tests only, app at `a16a7c8c`; the build log shows only the four test files
+  recompiled): HybridSearchModeTests, SearchTipsTests, SearchRefusalMessageTests, SearchTipsWiringTests — **"Test run
+  with 42 tests in 4 suites failed … with 6 issues"**: the three typed-text key sets and the volume-and-mark key set, the
+  "every" check, and the split-word detail check. Every precondition passed there.
+- **Mutant for the sliced pin** (applied by a script asserting one match, restored with `git checkout --`, status
+  clean): the class's `pendingSearchTips` declaration renamed and the exact declaration text left in a comment after the
+  file's last line, where the old whole-file `contains` still finds it — `SearchTipsWiringTests` **"Test run with 19
+  tests in 1 suite failed … with 1 issue"**, at `state.contains("var pendingSearchTips: Handoff<Bool>? = nil")`.
+- **Green at `d638ca90`** (the build log shows `SearchModels`, `SearchService` and `HybridSearchModeTests` recompiled,
+  with no warning in any of them): `HybridSearchModeTests`, `SearchTipsTests`, `SearchTipsWiringTests`,
+  `SearchRefusalMessageTests`, `SearchQueryRefusalTests`, `EditableContentKeyTests`, `CorpusAnalyticsSyntaxRowsTests`
+  and `CodingStandardsAuditTests`: **"Test run with 69 tests in 8 suites passed"**. `FRUSExplorerTests`, whole target:
+  **"Test run with 4924 tests in 621 suites passed"** (4,923 + the one new test). `FRUSExplorerUITests/SearchTipsSheetTests`:
+  **"Executed 5 tests, with 0 failures"**.
+- **Clean builds into fresh DerivedData**: `FRUSExplorer` (generic iOS Simulator) **CLEAN SUCCEEDED, BUILD SUCCEEDED**,
+  9 unique source-warning sites; `FRUSExplorerMac` (platform=macOS, `CODE_SIGNING_ALLOWED=NO`) **CLEAN SUCCEEDED,
+  BUILD SUCCEEDED**, 8 — the same counts as round 1. **None is in a file this round changed**; the only one in a file
+  the branch changed is still the pre-existing weak capture at `FRUSExplorerApp.swift:1641`.
