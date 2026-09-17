@@ -51,12 +51,16 @@ import SwiftData
 /// them, and re-running one in the other spelling refreshes the row. The row then keeps the spelling of the run it now
 /// describes, as it keeps that run's scope, counts and date: the text a method appendix prints beside a count is the
 /// text that produced it. A double prime or a single quotation mark is not folded, so it still spells another query.
+/// The comparison is `isSameQuery(_:_:)`, which the macOS checklist's re-anchor calls too, so the two agree on what a
+/// re-run is.
 ///
 /// Version history:
 ///   1.0 — M-2 commit 5: initial implementation, extracted from the two view models
 ///   1.1 — #1298: a re-run is recognised by the query text with its typographic double quotation marks folded to U+0022,
 ///          and a refresh writes the re-run's spelling to the row and the anchor. At 55464a46 `“cold war”` then
 ///          `"cold war"` wrote two rows.
+///   1.2 — #1298 follow-up: the comparison is `isSameQuery(_:_:)`, shared with `MacSearchViewModel`'s checklist gates,
+///          which compared the raw text and so wiped the reviewed marks when one spelling was re-run as the other.
 enum SearchHistoryWriter {
 
     /// What the last write left behind, so the next call can tell a re-run from a new query.
@@ -119,6 +123,25 @@ enum SearchHistoryWriter {
         var hasError: Bool
     }
 
+    /// Whether `query` is the query `anchored` names, so that running it re-runs that query rather than starting another.
+    ///
+    /// Two texts are one query when they are equal once `FTS5InlineQueryParser.normalizingQuotationMarks(_:)` has folded
+    /// their typographic double quotation marks (#1298): `“cold war”`, `«cold war»` and `"cold war"` run the same search.
+    /// Nothing else is folded, so case, spacing, a double prime and a single quotation mark still spell another query,
+    /// and `nil` — nothing anchored — matches no query. `record(_:anchor:in:defaults:)` asks it whether a run refreshes
+    /// the anchored row, and `MacSearchViewModel` whether a run keeps the checklist's reviewed marks, so the checklist's
+    /// "mirrors the history anchor" is one rule rather than two copies of one.
+    ///
+    /// - Parameters:
+    ///   - anchored: the trimmed query text last anchored, or `nil` when nothing is.
+    ///   - query: the trimmed query text of the run being recorded.
+    /// - Returns: `true` when the two are one query.
+    static func isSameQuery(_ anchored: String?, _ query: String) -> Bool {
+        guard let anchored else { return false }
+        return FTS5InlineQueryParser.normalizingQuotationMarks(anchored)
+            == FTS5InlineQueryParser.normalizingQuotationMarks(query)
+    }
+
     /// Records `reading`, inserting a new row or refreshing the anchored one.
     ///
     /// - Parameters:
@@ -144,9 +167,7 @@ enum SearchHistoryWriter {
         // second one. Re-fetched by id, because the user can delete it from the History pane
         // between two re-runs — in which case this falls through and inserts. The same query in
         // other quotation marks is a re-run (#1298), compared as the parser reads it.
-        if let existing = anchor,
-           FTS5InlineQueryParser.normalizingQuotationMarks(existing.queryText)
-               == FTS5InlineQueryParser.normalizingQuotationMarks(reading.queryText),
+        if let existing = anchor, isSameQuery(existing.queryText, reading.queryText),
            let row = entry(existing.entryID, in: context) {
             // The spelling of this run, like everything else the refresh writes.
             row.queryText = reading.queryText

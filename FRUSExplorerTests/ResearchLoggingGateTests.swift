@@ -64,7 +64,8 @@ import Testing
 ///   1.4 — #1298 follow-up: the typographic re-run test asserts the typed spelling after the insert and after every
 ///          refresh, and ends on a typographic spelling, so storing the folded text fails it (the attack's A11–A13);
 ///          its comment no longer says a paste arrives straight. `macChecklistAnchorUsesTheWritersSameQueryRule` pins
-///          that both macOS checklist gates decide "same query" through the writer's own rule
+///          that both macOS checklist gates decide "same query" through the writer's own rule, and
+///          `sameQueryRuleFoldsOnlyQuotationMarks` pins that rule, `SearchHistoryWriter.isSameQuery(_:_:)`
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -561,6 +562,29 @@ struct ResearchLoggingGateTests {
         }
         // The first control refreshes the straight row and adds its own; each later one adds a straight row and its own.
         #expect(try rows().count == 6)
+    }
+
+    /// The same-query rule the history writer refreshes by and the macOS checklist re-anchors by, driven directly. The
+    /// macOS gate hands it an optional anchor, which `record` never does, so `nil` is pinned here and nowhere else.
+    @Test("Two query texts are one query when they differ only in typographic double quotation marks")
+    func sameQueryRuleFoldsOnlyQuotationMarks() {
+        // Each folded mark, paired or mixed with U+0022, in both argument positions.
+        for spelling in ["\u{201C}cold war\u{201D}", "\u{201E}cold war\u{201C}", "\u{201F}cold war\u{201D}",
+                         "\u{FF02}cold war\u{FF02}", "\u{00AB}cold war\u{00BB}", "\u{201C}cold war\""] {
+            #expect(SearchHistoryWriter.isSameQuery(spelling, "\"cold war\""), "\(spelling)")
+            #expect(SearchHistoryWriter.isSameQuery("\"cold war\"", spelling), "\(spelling)")
+        }
+        #expect(SearchHistoryWriter.isSameQuery("d\u{00E9}tente", "d\u{00E9}tente"))
+        // Nothing anchored is no query, even an identical-looking one.
+        #expect(!SearchHistoryWriter.isSameQuery(nil, "cold war"))
+        #expect(!SearchHistoryWriter.isSameQuery(nil, ""))
+        // Only quotation marks fold: case, spacing, a double prime and the single marks still spell another query.
+        #expect(!SearchHistoryWriter.isSameQuery("Cold War", "cold war"))
+        #expect(!SearchHistoryWriter.isSameQuery("cold  war", "cold war"))
+        #expect(!SearchHistoryWriter.isSameQuery("\u{2033}cold war\u{2033}", "\"cold war\""))
+        #expect(!SearchHistoryWriter.isSameQuery("\u{2018}cold war\u{2019}", "\"cold war\""))
+        #expect(!SearchHistoryWriter.isSameQuery("\u{2039}cold war\u{203A}", "\"cold war\""))
+        #expect(!SearchHistoryWriter.isSameQuery("\"cold war\"", "cold war"), "a phrase is not its words")
     }
 
     /// The skip conditions inherited from the macOS writer. An empty keyword box records nothing

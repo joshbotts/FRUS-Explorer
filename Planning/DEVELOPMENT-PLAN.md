@@ -15376,3 +15376,104 @@ Survivors were closed with tests, or shown equivalent. What the rounds found and
 - AnalyticsView de-duplicates compared terms by spelling
 - stale EditableContent line refs for `analytics.exactUnsupported.*` and the SearchSheet keys
 - the inspection not refreshing when indexing changes the volume count
+
+
+## Session 2026-09-17 — #1298: typographic double quotation marks make a phrase wherever query text is read
+
+**The defect.** iPadOS Smart Punctuation, macOS smart quotes and text pasted from a FRUS volume type `“ ”`, and the
+inline parser and `SearchService`'s scans read only U+0022. A phrase silently became separate words, and a negated
+phrase excluded one word and required the other. Measured at `55464a46` on a 15-row `porter unicode61` table:
+- `“cold war”` rendered `"“cold" AND "war”"` (2 rows; straight 1).
+- `blockade -“naval quarantine”` rendered `"blockade" NOT "“naval" AND "quarantine”"` (1 row; straight 3).
+- `NEAR(“military guarantee” Europe, 30)` lost its phrase (2 rows; straight 1).
+- The highlighter bolded and concorded nothing for `“cold war”`, whose stems keep the marks.
+
+**Owner decisions (2026-09-17).**
+- Fold U+201C, U+201D, U+201E, U+201F, U+FF02 and the guillemets U+00AB and U+00BB to U+0022. Never U+2033 (a unit
+  mark, `12″ guns`) and never a single mark.
+- Search History treats a curly and a straight run of one query as ONE entry, compared on folded text. A refreshed
+  row keeps the later run's spelling; a new row keeps the typed spelling.
+
+**A corrected claim.** The issue said a standalone `-“naval quarantine”` fails as a Search Error. After #1297 it did
+not: it ran `"quarantine”" NOT "“naval"` (1 row), a one-word exclusion beside a required word. It is now refused
+exactly as `-"naval quarantine"` is.
+
+**What shipped** (`668afb06` tests, `84f81c40` fix; follow-up below).
+- `FTS5InlineQueryParser` 6.7 states the set once (`typographicDoubleQuotationMarks`) with two public functions over
+  it, `normalizingQuotationMarks(_:)` (one character for one, whole `Character`s) and `isDoubleQuotationMark(_:)`.
+- **Census of fold sites.**
+  - Parser: the typed text at the top of `parsedTree`, which `parseDetailed` and the DEBUG `work(parsing:)` hooks
+    share, and each structured field in `structuredParts` (a restored `„korea“` had escaped 6.1's refusal).
+  - `FTS5Query.sanitizeTerm` (3.3).
+  - `SearchService` (2.7): `positiveTerms` folds the keywords, which is what fixes the snippet, concordance and
+    collocates; the two `NEAR` scans test the predicate for direct callers.
+  - `SearchHistoryWriter` (1.1–1.2): `isSameQuery(_:_:)`, also called by both macOS checklist gates (follow-up).
+  - `HistoryPaneSnapshot.SearchRow.matches` folds the row and the term (follow-up).
+  - Reached through the parser with no quote code of their own: Search on both platforms, the Query Inspector,
+    Corpus Analytics, `OccurrenceAvailability`, saved-search freshness, Collections Add Documents, the eval harness.
+- **Left exact on purpose.** The macOS `searchTrigger`, the facet invalidation and the inspector task key decide
+  whether to run or recompute, and a respelled submission must run so the history row and the checklist see it.
+  iOS `search()` re-anchors the checklist on every run and compares no text. `SavedSearch` is matched by id.
+  Corpus Analytics' term de-duplication (case only) and `SavedAnalyticsQuery.matchesQuery` (exact) compare typed text
+  and already treat `cold  war` and `cold AND war` as other queries; the owner's decision named History only.
+- **Docs.** Both manuals' §7.2 (all three styles make a phrase); the follow-up adds the History filter to both and
+  the checklist's re-anchor to the macOS manual's §7.7.
+
+**Byte identity for straight quotes.** Against `55464a46`, 2,754,462 dump lines — every `ParsedQuery` over the 1–4-unit
+sequences of 21 units holding U+0022, U+2033 and the single marks but no folded mark, plus 60,000 random queries,
+each with 5 structured combinations in 2 scopes, and 882 `FTS5Query` renders — hash identically (SHA-256
+`c7a85599…`), while a two-query typographic control hashes differently. Two independent review differentials agreed:
+251,935 lines (`2e7ff604…`) and 153,000 (`8f259d82…`). The #1297 suites' printed counts did not move.
+
+**Verification at `84f81c40`.** `FTS5InlineQueryParserTests` 96 tests in 2 suites; `FTS5StoreTests` 206 in 13;
+`RetrievalEvalHarnessTests` 12. iOS: the three affected suites 87; `FRUSExplorerTests` **4,883 tests in 616 suites**.
+The macOS scheme built into fresh DerivedData with no warning in a changed file. The tests were seen failing at
+`55464a46` first: SPM 8 of 9 new tests (203 issues), app 5 of 6 (63 issues).
+
+**Mutation attack on `84f81c40`: 32 of 37 killed.** Every fold site, each of the seven marks, and adding U+2033,
+U+2019, U+2039 or U+203A were killed. Five survived:
+- **Gaps, closed in the follow-up:** A11 (a new row stores the folded text) and A12 (a refresh writes the folded text
+  to the row). The test's only spelling check came after a straight run, whose folded and typed forms are one string.
+- **Equivalent:** A13 (the anchor holds folded text — read only by the folded comparison), A10 (`positiveTerms` folding
+  per token after the split — the two orders give the same terms), and P23 (the fold moved from `parsedTree` into
+  `parseDetailed` — only the DEBUG hooks differ). A13 and P23 are pinned anyway, because a doc claims each.
+
+**Review (two lenses, a skeptic per finding): 6 confirmed (5 distinct — both lenses found the marks test), 1 refuted,
+3 nits; every confirmed finding and nit is addressed in the follow-up.**
+- The macOS checklist gates compared the raw text while their comment said they mirror the history anchor, so
+  re-submitting `“cold war”` as `"cold war"` refreshed one history row and wiped every reviewed mark. Both gates
+  (`performSearch`, `performMeaningSearch`) now call `SearchHistoryWriter.isSameQuery(_:_:)`.
+- The History pane's search filter used `localizedStandardContains`, which does not equate `“`, `«` or `＂` with `"`,
+  so a filter in the earlier spelling found nothing once the row took the later one. It folds both sides.
+- The "exactly the decided marks" test could not see a mark added from outside its 15-item lists (U+301D, U+2036,
+  U+275D passed). A walk over all 1,112,064 scalars now pins the set (0.6 s).
+- The history test could not tell "later spelling" from "folded spelling" (A11–A13), and its comment said a paste
+  arrives straight. It asserts the typed spelling after every write and ends on `«cold war»`.
+- The concordance test pinned `quarantine` — a word of the EXCLUDED phrase — as an expected anchor, a pre-existing
+  `positiveTerms` quirk. The negated case now asserts only that both spellings concord alike.
+- Refuted: Corpus Analytics' term de-duplication and saved-query match (pre-existing, outside the owner's scope).
+- Nits: `SearchService` 2.7 credited the scan predicate for highlighting, which only the fold affects; `FTS5Query`
+  3.3's "RESULTS MOVE" sentence had its two cases backwards (checked in `sqlite3`: `"cold”war"` matched *the cold war
+  began*, `"coldwar"` matches *coldwar studies*); the parser's doc claimed the fold reached every comparison in the
+  app. All three are corrected, and the parser doc now lists exactly where the app applies it.
+
+**Follow-up (`d6fda19e` tests, then the fix).**
+- Tests first, at `84f81c40`: app 56 tests in 3 suites, 2 failing with 11 issues (the History filter 8, the macOS
+  checklist source-shape guard 3); SPM 105 tests in 3 suites passing (the scalar walk and the counted parse target
+  survivors, not defects).
+- The macOS gate is guarded by reading source: `MacSearchViewModel` is `#if os(macOS)` and `FRUSExplorerTests` builds
+  for iOS only, so `SearchViewTests`' macOS checklist tests compile nowhere and run never. The rule itself,
+  `isSameQuery`, is driven at runtime, `nil` anchor included.
+- Final tree: `FTS5StoreTests` **208 tests in 13 suites**; the affected app suites 114 in 5; `FRUSExplorerTests`
+  **4,886 tests in 616 suites**; the macOS scheme BUILD SUCCEEDED, every changed file recompiled, no warning in one.
+- A/B: each new test against the mutant it targets — recorded in the entry's closing commit.
+
+**Noticed, not fixed.**
+- Corpus Analytics can hold a curly and a straight spelling as two compare chips or two saved entries (and already
+  held case and spacing variants).
+- `positiveTerms` highlights the later words of a negated phrase (`quarantine`) and skips `and` inside a phrase.
+- iOS Checklist Mode clears its marks on every search, including an identical re-run (it compares no text).
+- `QueryInspector.refusesSomethingSearchable`'s doc records a parser 6.5 measurement whose alphabet includes `“`; its
+  counts would move if re-run.
+- Pre-existing macOS warnings in untouched files (ModelContext without a SwiftData import in six views,
+  `ProjectHomeView`, `FRUSExplorerApp`, and the known `GeneratedSummary` redundant `Sendable`).

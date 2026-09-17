@@ -397,7 +397,7 @@ They do not all count the same thing, and each panel names the set it used: the 
 
 Working systematically through a few hundred matches is a triage task, and **Checklist Mode** turns the list into a shrinking to-do list. Click the labeled **Checklist** button in the sort bar; with it on, a result disappears from the list — and from the timeline — as soon as you **open it** by any route, or when you right-click it and choose **Mark Reviewed**. A subtle "N reviewed hidden" banner counts what you've cleared; **All Results Reviewed** appears when nothing is left; clicking the button again brings everything back.
 
-Checklist Mode is a per-session working aid: not saved, reset on relaunch, re-anchored when you run a genuinely new query. Changing a filter or scope on the *same* query keeps your reviewed marks, and the mode never alters your reading history — only what the list shows.
+Checklist Mode is a per-session working aid: not saved, reset on relaunch, re-anchored when you run a genuinely new query. Changing a filter or scope on the *same* query — or re-running it in other quotation marks, `“cold war”` as `"cold war"` — keeps your reviewed marks, and the mode never alters your reading history — only what the list shows.
 
 ### 7.8 Saved Searches
 
@@ -1028,7 +1028,7 @@ FRUS Explorer keeps a running record of every document you open and every search
 **Complete History…** (from the toolbar's My Research ▾ menu or Research ▸ History) shows the full research trail in a dedicated window: documents visited, searches executed, and collections exported, newest first, in three sections. It is the same screen the iPad and iPhone show under Research → History, so a trail that started on one device is legible on the other. For a graduate student this is more than a convenience: it is the raw material of a methods statement (see the method appendix, 17.5).
 
 - **Project scope** — *All Projects*, *Not in a Project*, or one project by name. An entry is filed under whichever project was active *when it was recorded* — switching projects later re-files nothing — so this is the control for reconstructing what you actually read while writing one paper.
-- **Search history…** — a free-text filter over what is loaded: a visited document's title, volume id, and document id; a search's query text; an export's collection name and format.
+- **Search history…** — a free-text filter over what is loaded: a visited document's title, volume id, and document id; a search's query text, where straight, curly and guillemet quotation marks match each other; an export's collection name and format.
 - **Delete** — right-click any row to remove that one entry. Deletions sync, and there is no undo. (To clear the whole trail, use **Delete Recorded Sessions…** in Settings.)
 - **Collections Exported** records what left the app — format, document count, collection name — because nothing else remembers an export happened. It matters most for the Zotero web send, which writes into your live Zotero library: this row is the app's only memory of it. These rows are records, not shortcuts; delete is their only action.
 - Long lists load 500 entries per section, with **Show More** and an honest header ("Showing 500 of 12,904") while anything is unloaded; the search field filters what is *loaded*, so Show More widens what a search can reach.

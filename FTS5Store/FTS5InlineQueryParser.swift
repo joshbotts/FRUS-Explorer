@@ -190,12 +190,13 @@
 /// `“cold war”`, `„cold war“`, `«cold war»`, `＂cold war＂`, or a mixed pair such as `“cold war"`. iPadOS Smart
 /// Punctuation and macOS smart quotes type the curly pair, and a phrase pasted from a FRUS volume carries it, so a
 /// grammar that read only U+0022 silently turned the phrase into separate words (#1298). Each mark is folded to U+0022,
-/// one character for one, where the query is read — the typed text at the top of `parseDetailed` and each structured
-/// field in `structuredParts` — so every scan behind them sees only U+0022, and a typographic spelling parses to exactly
-/// the `ParsedQuery` of its straight one. `normalizingQuotationMarks(_:)` and `isDoubleQuotationMark(_:)` are the fold
-/// and its predicate, shared with the app's own scans of query text so the set is written down once; see
-/// `typographicDoubleQuotationMarks` for what is folded and what is deliberately not. The text a researcher typed is
-/// never rewritten.
+/// one character for one, where the query is read — the typed text at the top of `parsedTree`, the body `parseDetailed`
+/// and the DEBUG `work(parsing:)` hooks share, and each structured field in `structuredParts` — so every scan behind
+/// them sees only U+0022, and a typographic spelling parses to exactly the `ParsedQuery` of its straight one.
+/// `normalizingQuotationMarks(_:)` and `isDoubleQuotationMark(_:)` are the fold and its predicate, shared with the app
+/// so the set is written down once; see `typographicDoubleQuotationMarks` for what is folded and what is deliberately
+/// not, and `normalizingQuotationMarks(_:)` for where the app applies them. The text a researcher typed is never
+/// rewritten.
 ///
 /// ## What this does *not* attempt
 /// - **Column filters** (`header:cold`) — handled separately via `columnPrefix`,
@@ -508,8 +509,9 @@
 ///          respelling with one marker is refused, since 6.1's refusal still compares rendered operands:
 ///          `"cold." NOT "cold"`.
 ///   6.7 — #1298: typographic double quotation marks make a phrase. `normalizingQuotationMarks(_:)` folds U+201C, U+201D,
-///          U+201E, U+201F, U+FF02, U+00AB and U+00BB to U+0022, one character for one, at the top of `parseDetailed`
-///          and on each structured field; `isDoubleQuotationMark(_:)` is its predicate. U+2033 and every single mark are
+///          U+201E, U+201F, U+FF02, U+00AB and U+00BB to U+0022, one character for one, at the top of `parsedTree` —
+///          which `parseDetailed` and the DEBUG `work(parsing:)` hooks share, so the counted parse is the parse — and on
+///          each structured field; `isDoubleQuotationMark(_:)` is its predicate. U+2033 and every single mark are
 ///          not folded. RESULTS MOVE only for text holding a folded mark, and each moves to its straight spelling's parse.
 ///          On a 15-row `porter unicode61` table: `“cold war”` was `"“cold" AND "war”"` (2 rows) and is `"cold war"`
 ///          (1); `“war and peace”` was `"“war" AND "peace”"` (2) and is `"war and peace"` (1);
@@ -1871,8 +1873,8 @@ public enum FTS5InlineQueryParser {
 
     // MARK: - Quotation Marks
 
-    /// The typographic double quotation marks read as U+0022 wherever query text is read (#1298) — the one statement of
-    /// the set, which `normalizingQuotationMarks(_:)` folds and `isDoubleQuotationMark(_:)` tests.
+    /// The typographic double quotation marks read as U+0022 wherever the query grammar reads query text (#1298) — the
+    /// one statement of the set, which `normalizingQuotationMarks(_:)` folds and `isDoubleQuotationMark(_:)` tests.
     ///
     /// Folded, each to U+0022, one character for one:
     /// - U+201C `“` and U+201D `”` — the pair iPadOS Smart Punctuation and macOS smart quotes type, and the pair a phrase
@@ -1910,10 +1912,18 @@ public enum FTS5InlineQueryParser {
     /// `text` with each typographic double quotation mark replaced by U+0022, one character for one, and nothing else
     /// changed (#1298); `text` itself when it holds none.
     ///
-    /// Applied where query text is READ — here at the top of `parseDetailed` and on each structured field, and in the
-    /// app wherever query text is scanned or compared — and never to the text field a researcher types into: rewriting a
-    /// bound field moves the caret and fights input methods and undo, and a saved search or a hand-off assigns the field
-    /// without typing. See `typographicDoubleQuotationMarks` for what is folded and what is deliberately not.
+    /// Applied where query text is READ, and never to the text field a researcher types into: rewriting a bound field
+    /// moves the caret and fights input methods and undo, and a saved search or a hand-off assigns the field without
+    /// typing. Here it runs at the top of `parsedTree` (so under `parseDetailed`, and so under Search, the Query
+    /// Inspector, Corpus Analytics and everything else that parses) and on each structured field, and `FTS5Query`
+    /// applies it to a keyword. In the app it runs at exactly three more places: `SearchService.positiveTerms(from:)`,
+    /// before the highlighter reads the keywords; `SearchHistoryWriter.isSameQuery(_:_:)`, which decides both a history
+    /// re-run and whether the macOS checklist keeps its reviewed marks; and the History pane's search filter
+    /// (`HistoryPaneSnapshot.SearchRow.matches(_:)`), on the row's text and the term. `SearchService`'s two `NEAR` scans
+    /// test `isDoubleQuotationMark(_:)` instead. Every other comparison of query text in the app compares it as typed —
+    /// among them Corpus Analytics' compared-term de-duplication (which ignores only case) and its saved-query match
+    /// (which ignores nothing), where `cold  war` and `cold AND war` were already other queries than `cold war`. See
+    /// `typographicDoubleQuotationMarks` for what is folded and what is deliberately not.
     public static func normalizingQuotationMarks(_ text: String) -> String {
         guard text.contains(where: { typographicDoubleQuotationMarks.contains($0) }) else { return text }
         return String(text.map { typographicDoubleQuotationMarks.contains($0) ? "\"" : $0 })

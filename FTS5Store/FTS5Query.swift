@@ -118,10 +118,13 @@
 ///          Session 2026-06-08; only restored saved searches carry them. No byte of any render moves.
 ///   3.3 — #1298: `sanitizeTerm(_:)` folds a keyword's typographic double quotation marks to U+0022 before stripping, and
 ///          the phrase, prefix and excluded terms are folded by the inline parser's `structuredParts`, so a curly mark is
-///          stripped wherever a straight one is. RESULTS MOVE only for a keyword or field holding a folded mark, and only
-///          in bytes where the mark sits at either end of a word: `["“cold", "war”"]` rendered `"“cold" "war”"` and renders
-///          `"cold" "war"`, matching the same rows, because `unicode61` reads the marks as separators; a mark between two
-///          letters (`a“b`) now joins them, as `a"b` always did. No render of text without a folded mark moves.
+///          stripped wherever a straight one is. RENDERS MOVE only for a keyword or field holding a folded mark. Where the
+///          mark sits at either end of a word the rows do not move: `["“cold", "war”"]` rendered `"“cold" "war”"` and
+///          renders `"cold" "war"`, matching the same rows, because `unicode61` reads the marks as separators. Where it
+///          sits between two letters the rows move: the folded mark is stripped as `"` is, so `cold”war` now joins into
+///          `coldwar`, as `cold"war` always did, where `unicode61` had read the two words `cold` and `war` (checked in
+///          `sqlite3` on a `porter unicode61` table: `"cold”war"` matched `the cold war began`, `"coldwar"` matches
+///          `coldwar studies`). No render of text without a folded mark moves.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types

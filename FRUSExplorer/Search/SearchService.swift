@@ -66,15 +66,18 @@ import Foundation
 ///   2.6 — #1297 round 4 (docs only): `exactTerms(from:)` says parser 6.6 compares marks as the filter reads words, so a
 ///          word is reported once, in the spelling of its first applied mark, and `=Cold war OR =cold. peace` filters;
 ///          the paragraph is reflowed.
-///   2.7 — #1298: the highlighter's scans read typographic double quotation marks as U+0022, through the parser's
-///          shared fold rather than a copy of its set. `strippingNearScaffolding(_:)` and `lastUnquotedComma(in:)` test
-///          `FTS5InlineQueryParser.isDoubleQuotationMark(_:)`, and `positiveTerms(from:)` folds the typed keywords first,
-///          so the snippet, the concordance and the collocates anchor on the words a straight spelling does. At 55464a46
+///   2.7 — #1298: the highlighter reads typographic double quotation marks as U+0022, through the parser's shared fold
+///          rather than a copy of its set. `positiveTerms(from:)` folds the typed keywords before anything reads them,
+///          and that fold is what makes the snippet, the concordance and the collocates anchor on the words a straight
+///          spelling does: the one scan it runs, `strippingNearScaffolding(_:)`, receives text that is already folded.
+///          `strippingNearScaffolding(_:)` and `lastUnquotedComma(in:)` also test
+///          `FTS5InlineQueryParser.isDoubleQuotationMark(_:)` themselves, for consistency with the parser when a caller
+///          hands them unfolded text directly — which no production caller does, and their own tests do. At 55464a46
 ///          `“cold war”` bolded nothing and concorded nothing (its terms were `“cold` and `war”`, whose stems keep the
-///          marks), `«war and peace»` concorded neither word, `blockade -„naval quarantine“` returned no document on a
-///          three-document index where its straight spelling returns one, and a `)` or `,` inside curly marks ended a
-///          `NEAR` span or its distance; each now reads as its straight spelling, and a double prime or a single mark
-///          still does not.
+///          marks), `«war and peace»` concorded neither word, and `blockade -„naval quarantine“` returned no document on a
+///          three-document index where its straight spelling returns one; called directly, a `)` or `,` inside curly
+///          marks ended a `NEAR` span or its distance. Each now reads as its straight spelling, and a double prime or a
+///          single mark still does not.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -525,7 +528,9 @@ public actor SearchService {
     /// typed as an operand is a real search term and survives.
     ///
     /// A quotation mark is any mark the parser reads as one (`FTS5InlineQueryParser.isDoubleQuotationMark(_:)`),
-    /// so a paren inside `“…”` is text exactly as it is inside `"…"` (#1298). The text is returned unfolded.
+    /// so a paren inside `“…”` is text exactly as it is inside `"…"` (#1298). The text is returned unfolded. Its one
+    /// production caller, `positiveTerms(from:)`, folds the text before handing it over, so the predicate keeps a
+    /// direct caller consistent with the parser rather than changing what the highlighter anchors on.
     static func strippingNearScaffolding(_ raw: String) -> String {
         // Cheap bail-out: the overwhelming majority of queries contain no NEAR at all.
         guard raw.range(of: "near", options: .caseInsensitive) != nil else { return raw }
