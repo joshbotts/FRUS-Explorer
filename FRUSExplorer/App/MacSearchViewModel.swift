@@ -83,9 +83,12 @@ import SwiftData
 ///          history writer refreshes one row. The comment claiming the gate mirrors `historyAnchor`
 ///          had stopped being true when #1298 folded the writer's comparison.
 ///   1.8 — #1299: `performSearch` stores `SearchQueryRefusal.readable(error, for: frozenParams)` rather than the raw
-///          error, so a refused query carries the same readable message as iOS. Note that `SearchSheet` does not render
-///          `searchError` at all today — it only gates the zero-result state on it — so the message reaches the model
-///          and not yet the screen.
+///          error, so a refused query carries the same readable message as iOS, and the Search window shows it:
+///          `SearchSheet` 1.19 renders `searchError` through `searchErrorView` (before it, the window only gated the
+///          zero-result state on the error, and every failure was an empty list). Because that view shows ANY standing
+///          error while the results are empty, the empty-query guards in `performSearch` and `performMeaningSearch`
+///          clear `searchError` too — a refused `-korea` followed by Return on a cleared field left the refusal
+///          message under the empty field (#1299 follow-up).
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -981,6 +984,8 @@ final class MacSearchViewModel {
             results = []
             totalMatchCount = nil
             lastRenderedExpression = nil
+            // `SearchSheet` shows any standing error beside empty results, so the last search's must go with them.
+            searchError = nil
             return
         }
 
@@ -1096,6 +1101,8 @@ final class MacSearchViewModel {
             semanticDisclosure = nil
             totalMatchCount = nil
             lastRenderedExpression = nil
+            // As in `performSearch`: the window shows a standing error beside empty results.
+            searchError = nil
             return
         }
         guard let backend = semanticBackend else {

@@ -157,8 +157,8 @@ final class SearchTipsSheetTests: XCTestCase {
     /// that would not scroll.
     func testPreSearchLinkScrollsClearOfTheLocalOnlyBannerAtTheLargestAccessibilitySize() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone,
-                          "iPhone-only: at iPad height the prompt and link sit well above the banner at AX5, so this "
-                          + "scenario passes with or without a defect there")
+                          "iPhone-only: the overlap was measured on iPhone 17 (402 pt); no iPad height was measured, so "
+                          + "a green iPad run would not show the defect absent")
         launch(contentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL")
 
         let banner = app.descendants(matching: .any).matching(identifier: "tabShell.syncBanner").firstMatch
@@ -168,19 +168,25 @@ final class SearchTipsSheetTests: XCTestCase {
         let link = element("search.tips.link.presearch")
         XCTAssertTrue(link.waitForExistence(timeout: 10),
                       "The pre-search screen offers no Search tips link at AX5. Buttons: \(visibleButtonLabels())")
-        let scroller = app.scrollViews.containing(.any, identifier: "search.tips.link.presearch").firstMatch
-        XCTAssertTrue(scroller.exists, "The pre-search link is not inside a scroll view")
+        // The innermost scroll view holding the link — the prompt's own, not a screen-sized ancestor.
+        let scrollers = app.scrollViews.containing(.any, identifier: "search.tips.link.presearch").allElementsBoundByIndex
+        let scroller = try XCTUnwrap(scrollers.min { $0.frame.height < $1.frame.height },
+                                     "The pre-search link is not inside a scroll view")
 
         let origin = app.coordinate(withNormalizedOffset: .zero)
         var drags = 0
         while link.frame.maxY > banner.frame.minY, drags < 6 {
-            let top = scroller.frame.minY + 8
+            // From just above the banner, up by at most 150 pt and never above the scroll view's top edge.
             let start = banner.frame.minY - 12
-            guard start - top > 40 else { break }
+            let end = max(scroller.frame.minY + 8, start - 150)
+            guard start - end > 40 else { break }
             origin.withOffset(CGVector(dx: scroller.frame.midX, dy: start))
-                .press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: scroller.frame.midX, dy: top)))
+                .press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: scroller.frame.midX, dy: end)))
             drags += 1
         }
+        // The measurement the doc comments cite, printed so a run records it.
+        print("[#1299] AX5 pre-search link after \(drags) drag(s): link \(link.frame), banner \(banner.frame), "
+              + "scroll view \(scroller.frame)")
         XCTAssertLessThanOrEqual(link.frame.maxY, banner.frame.minY,
                                  "The pre-search Search tips link stays under the Local Only banner at AX5 after "
                                  + "\(drags) drag(s): link \(link.frame), banner \(banner.frame), scroll view "

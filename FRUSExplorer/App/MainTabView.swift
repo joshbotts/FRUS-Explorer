@@ -91,6 +91,12 @@ import SwiftData
 ///          `safeAreaInset` floats onto the keyboard's accessory row, and the sync banner
 ///          was occluding the #861 Done bar there (measured: the Done existed, unhittable)
 ///          — with the keyboard also covering the tab bar, a reader was trapped
+///   1.16 — #1299 follow-up: the Search tab publishes the height of the banner inset as
+///          `\.tabShellBottomOverlay`. The inset is applied outside `SearchView`'s navigation
+///          stack, which does not pass it on, so the banner is drawn OVER the Search content —
+///          measured at AX5 on iPhone 17, the Local Only banner covered the pre-search Search tips
+///          link (y 707–770) from y = 551, and the prompt's scroll view had nothing to scroll.
+///          `SearchView` reads the value to give its pre-search content room to scroll clear.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -149,6 +155,10 @@ struct MainTabView: View {
     /// the observers on the `TabView` for the measured occlusion this prevents).
     @State private var keyboardIsVisible = false
 
+    /// The measured height of the banner inset on the Search tab, published to `SearchView` as
+    /// `\.tabShellBottomOverlay` (#1299 follow-up). Zero while the inset renders nothing.
+    @State private var searchTabBottomOverlay: CGFloat = 0
+
     var body: some View {
         @Bindable var appState = appState
         TabView(selection: $selectedTab) {
@@ -166,7 +176,15 @@ struct MainTabView: View {
                 value: AppTab.search
             ) {
                 SearchTabView()
-                    .safeAreaInset(edge: .bottom, spacing: 0) { indexingBanner }
+                    .environment(\.tabShellBottomOverlay, searchTabBottomOverlay)
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        // Measured through a stack, which lays out at zero height when the banner renders
+                        // nothing, so the published height falls back to 0 instead of keeping a stale one.
+                        VStack(spacing: 0) { indexingBanner }
+                            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                                searchTabBottomOverlay = height
+                            }
+                    }
             }
             Tab(
                 String(localized: "tab.research", defaultValue: "Research"),
@@ -616,6 +634,19 @@ private struct SearchTabView: View {
             )
         }
     }
+}
+
+// MARK: - Tab shell overlay
+
+extension EnvironmentValues {
+    /// How much of the bottom of a tab's content the tab shell's banner inset covers, in points (#1299 follow-up).
+    ///
+    /// The shell applies the indexing and iCloud banner as a bottom `safeAreaInset` on each tab's root, and a root that
+    /// hosts its own `NavigationStack` does not pass that inset to the stack's content — so the banner is drawn over the
+    /// content rather than beside it. A view that must keep something reachable above the banner reads this and makes
+    /// room, as `SearchView`'s pre-search screen does. Published only by the Search tab; `0` everywhere else and while
+    /// the banner renders nothing.
+    @Entry var tabShellBottomOverlay: CGFloat = 0
 }
 
 #endif

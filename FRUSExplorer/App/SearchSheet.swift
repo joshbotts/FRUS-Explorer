@@ -120,7 +120,8 @@ import SwiftUI
 ///          localized, and the button carries `.isSelected` while open. Find ▸ Search Tips… opens the panel through
 ///          `AppState.pendingSearchTips`. A failed search now shows its message: the window never rendered
 ///          `searchError`, so a refused query, the empty-scope guard and the Meaning-mode errors all fell through to
-///          an empty result list.
+///          an empty result list. Since the view shows any standing error, a rebuilt index clears it with the results
+///          and the field (#1299 follow-up).
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -612,6 +613,8 @@ struct MacSearchWindowView: View {
         .onChange(of: appState.indexGeneration) { _, _ in
             searchVM.results = []
             searchVM.queryText = ""
+            // #1299: `searchErrorView` shows any standing error beside empty results, so it goes with them.
+            searchVM.searchError = nil
         }
         // Project History scope (#377 Phase 2a): the macOS Search window is a persistent
         // Window scene, so an active-project change must reset the scope and drop any stale

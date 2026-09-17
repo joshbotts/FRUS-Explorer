@@ -948,9 +948,15 @@ public enum SearchDefaults {
 /// file its `Docs/EditableContent.md` block names.
 ///
 /// Version history:
-///   1.0 — #1299: initial implementation — thirteen rows; the prefix row warns that a long prefix finds nothing
-///         (owner decision Q6), and the NEAR row says OR, NOT and parentheses cannot go inside and that only
-///         NOT NEAR(…) excludes, describing no fallback (Q7)
+///   1.0 — #1299: initial implementation — thirteen rows; the prefix row warns that a prefix is matched against word
+///         stems, so a long one misses forms whose stem is shorter (owner decision Q6), and the NEAR row says OR, NOT
+///         and parentheses cannot go inside and that only NOT NEAR(…) excludes, describing no fallback (Q7). Corrected
+///         in place before shipping by the #1299 follow-up, each against the parser and SQLite: the prefix row said
+///         `negotiat*` finds nothing (it finds `negotiatory`, 21 times in the shipped corpus); the exact-word row said
+///         `=` matches a word "only as you typed it" (it folds capitalization, a single accent and edge punctuation,
+///         so `=Hull` still counts a ship's hull) and omitted NEAR(…), inside which the mark is dropped; and the last
+///         row said every exclusion-only OR alternative is left out (in parentheses beside a word it is searched
+///         exactly)
 struct SearchTip: Identifiable, Sendable, Equatable {
 
     /// Which rule a row explains. `allCases` is the order the rows are shown in.
@@ -977,7 +983,7 @@ struct SearchTip: Identifiable, Sendable, Equatable {
         case prefix
         /// `NEAR(…)` finds words within a distance of each other.
         case near
-        /// `=` matches the word only as typed.
+        /// `=` turns stemming off for one word.
         case exactWord
         /// A query needs something positive to find.
         case needsAWord
@@ -1062,7 +1068,7 @@ struct SearchTip: Identifiable, Sendable, Equatable {
             example = "negoti*"
             spokenExample = String(localized: "search.tips.prefix.spoken", defaultValue: "negoti, star")
             detail = String(localized: "search.tips.prefix.detail",
-                            defaultValue: "Finds words beginning with these letters. Keep the prefix short, because it is matched against word stems: negoti* finds negotiations, but negotiat* finds nothing.")
+                            defaultValue: "Finds words beginning with these letters. Keep the prefix short, because it is matched against word stems: negotiat* misses negotiations, which negoti* finds.")
         case .near:
             example = "NEAR(military europe, 5)"
             spokenExample = String(localized: "search.tips.near.spoken",
@@ -1073,12 +1079,12 @@ struct SearchTip: Identifiable, Sendable, Equatable {
             example = "=containment"
             spokenExample = String(localized: "search.tips.exactWord.spoken", defaultValue: "equals sign, containment")
             detail = String(localized: "search.tips.exactWord.detail",
-                            defaultValue: "Matches the word only as you typed it, not contain or containing. The = is ignored where a match need not contain the word, such as one side of an OR, and on a prefix.")
+                            defaultValue: "Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent and punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix or inside NEAR(…).")
         case .needsAWord:
             example = "-korea"
             spokenExample = String(localized: "search.tips.needsAWord.spoken", defaultValue: "minus sign, korea")
             detail = String(localized: "search.tips.needsAWord.detail",
-                            defaultValue: "A search needs a word to find. A query made only of exclusions does not run, and an OR alternative made only of exclusions is left out and marked NOT APPLIED in the Query Inspector.")
+                            defaultValue: "A search needs a word to find. A query made only of exclusions does not run, and an OR alternative made only of exclusions is left out and marked NOT APPLIED in the Query Inspector, unless its parentheses sit beside a word to search for.")
         }
     }
 }
@@ -1102,6 +1108,12 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
     /// Where the macOS Search window sets the search scope, and that a change there is not saved as a default.
     case scopeMac
     /// Shown INSTEAD of the syntax rows in Meaning mode, where none of the syntax applies (#1299 Q3).
+    ///
+    /// Its wording departs from the design brief's §2.3 draft in three ways, each to match what the reader sees: the
+    /// mode names are capitalized, as the Keywords and Meaning picker labels are; it says "your words" rather than
+    /// "your question", beside a field that asks for "a question in your own words" and a reader who typed operators
+    /// rather than a question; and it names AND, a minus sign and parentheses beside the brief's OR, NOT, *, NEAR and =,
+    /// since the rows teach all of them and the semantic route passes the text to no parser at all.
     case meaningMode
 
     /// `Identifiable` conformance for `ForEach`.
@@ -1140,7 +1152,7 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
 
 // MARK: - SearchQueryRefusal
 
-/// What a keyword search shows when its query holds nothing it can search for (#1299).
+/// What a keyword search shows when its query holds nothing it can search for, or it has nowhere to search (#1299).
 ///
 /// `SearchService` throws `FTS5Error.emptyQuery` when the parse refuses a query — nothing positive once its negations
 /// apply (`-korea`), an approximation that could match nothing, or groups nested past
@@ -1149,13 +1161,19 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
 /// error 5.)". `SearchViewModel.search()` and `MacSearchViewModel.performSearch` now pass every keyword-search failure
 /// through `readable(_:for:)`.
 ///
+/// **The service throws the same error for a query that parses when every content scope is off**, which iOS's
+/// Filters ▸ Search Scope allows, and until the #1299 follow-up that reader still saw "FTS5Error error 5". It now
+/// reads `everyScopeOff`, naming where a scope is turned back on. The Mac never reaches it: `performSearch` guards all
+/// three Search in chips off with `MacSearchError.emptyScope` before calling the service, and `readable` answers with
+/// that same error on macOS, so a Mac reader is never sent to an iOS control.
+///
 /// **Mapped here, in the app, rather than as a `LocalizedError` conformance on `FTS5Error`**, for three reasons:
 /// - The message points at Search Tips, which is app UI. `FTS5Store` is also a SwiftPM library the generators link,
 ///   and it names no screen.
 /// - `emptyQuery` has two causes. `SearchService.makeMatchExpressions` also throws it for a query that parses when
 ///   every content scope is off, which iOS's Filters sheet allows. A conformance cannot see the parameters, so it would
 ///   tell that reader their query only excludes words. This reads the parse the service and the Query Inspector read,
-///   `SearchService.parsedQuery(for:)`, and maps only a refusal.
+///   `SearchService.parsedQuery(for:)`, and tells the two causes apart.
 /// - Nothing else changes. `FacetPanelView` matches `case FTS5Error.emptyQuery` and describes other failures with
 ///   `String(describing:)`, `IndexingPipeline` throws `emptyQuery` internally, and every other site that shows an
 ///   error's `localizedDescription` keeps the text it had; a conformance would have changed it for every `FTS5Error`
@@ -1167,9 +1185,13 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1299: initial implementation
+///   1.1 — #1299 follow-up: `everyScopeOff`, so every scope off reads as a message rather than "FTS5Error error 5"
 enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
     /// The query's parse rendered no expression, so there is nothing to search for.
     case nothingToSearch
+    /// The query parses, but every content scope — document text, summaries and research notes — is off, so there is
+    /// nowhere to search. The wording names iOS's Filters ▸ Search Scope; macOS answers with `MacSearchError.emptyScope`.
+    case everyScopeOff
 
     /// The reader-facing message. Localized.
     var errorDescription: String? {
@@ -1177,20 +1199,33 @@ enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
         case .nothingToSearch:
             return String(localized: "search.error.refusedQuery",
                           defaultValue: "This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.")
+        case .everyScopeOff:
+            return String(localized: "search.error.emptyScope.ios",
+                          defaultValue: "Every search scope is turned off, so there is nothing to search. Turn on document text, summaries or research notes in Filters ▸ Search Scope.")
         }
     }
 
-    /// What a keyword-search failure shows the reader: `nothingToSearch` in place of `FTS5Error.emptyQuery` when the
-    /// query's own parse refused it, and `error` unchanged otherwise.
+    /// What a keyword-search failure shows the reader, in place of `FTS5Error.emptyQuery`: `nothingToSearch` when the
+    /// query's own parse refused it, whatever the scope — turning a scope on would not run it — and, when the parse
+    /// renders but every content scope is off, `everyScopeOff` (on macOS, `MacSearchError.emptyScope`). Every other
+    /// error, and `emptyQuery` with a scope on, is returned unchanged.
     ///
     /// - Parameters:
     ///   - error: What the search threw.
     ///   - parameters: The parameters the search ran with — the same value, so the parse read here is the one that ran.
     /// - Returns: The error to store and show.
     static func readable(_ error: any Error, for parameters: SearchParameters) -> any Error {
-        guard case FTS5Error.emptyQuery = error,
-              SearchService.parsedQuery(for: parameters).expression == nil
-        else { return error }
-        return SearchQueryRefusal.nothingToSearch
+        guard case FTS5Error.emptyQuery = error else { return error }
+        if SearchService.parsedQuery(for: parameters).expression == nil {
+            return SearchQueryRefusal.nothingToSearch
+        }
+        guard !parameters.includeDocumentText, !parameters.includeSummaries, !parameters.includeNotes else {
+            return error
+        }
+        #if os(macOS)
+        return MacSearchError.emptyScope
+        #else
+        return SearchQueryRefusal.everyScopeOff
+        #endif
     }
 }

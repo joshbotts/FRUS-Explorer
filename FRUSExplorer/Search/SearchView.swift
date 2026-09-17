@@ -218,11 +218,15 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///   1.22 — #1297 round 3: the zero-result decomposition runs under `vm.submittedSearchParameters`, the search
 ///          that ran, not the live field, which the researcher may have edited since
 ///   1.23 — #1299: Search Tips on iOS and iPadOS — `SearchTipsSheet`, reached from More ▸ Search Tips (after Look up
-///          an abbreviation), a keyword-only link on the pre-search screen (now `initialPromptView`, scrolling so the
-///          prompt and link survive accessibility sizes), a link below the Query Inspector's disclosure button on a
-///          refused or narrower-than-typed query, and the iPadOS Find menu through `AppState.pendingSearchTips`. The
-///          More menu's help names the abbreviation lookup and the tips (`search.moreActions.help.v2`). No icon joins
-///          the actions bar.
+///          an abbreviation), a keyword-only link on the pre-search screen (now `initialPromptView`, a scroll view in
+///          place of a fixed frame), a link below the Query Inspector's disclosure button on a refused or
+///          narrower-than-typed query, and the iPadOS Find menu through `AppState.pendingSearchTips`. The More menu's
+///          help names the abbreviation lookup and the tips (`search.moreActions.help.v2`). No icon joins the actions
+///          bar. Corrected by the #1299 follow-up: the scroll view alone did not make the link reachable at AX5 — the
+///          tab shell's Local Only banner is drawn over the Search content, and the prompt fitted its frame, so there was
+///          nothing to scroll. `initialPromptView` now reserves `\.tabShellBottomOverlay` below its content (measured on
+///          iPhone 17 at AX5 with the banner from y = 551: the link sat at y 707–770 and did not move; one drag now
+///          brings it to y 472–535, clear of the banner).
 
 struct SearchView: View {
 
@@ -359,6 +363,10 @@ struct SearchView: View {
     /// #1299: the Search Tips sheet, opened from More ▸ Search Tips, the pre-search link, the Query Inspector's link and
     /// the iPadOS Find menu. iOS-only in effect: the macOS window is `SearchSheet`, which has its own Tips panel.
     @State private var showSearchTips = false
+    #if os(iOS)
+    /// How much of this view's bottom the tab shell's banner covers (#1299 follow-up) — see `initialPromptView`.
+    @Environment(\.tabShellBottomOverlay) private var tabShellBottomOverlay
+    #endif
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
@@ -1627,10 +1635,22 @@ struct SearchView: View {
     /// would be a search entry point, and every one of those must go through `runSearch()`. Meaning mode offers no
     /// link, since none of the syntax applies there.
     ///
-    /// Centred in a scroll view at least as tall as the screen, rather than in a greedy frame: the glyph is capped
-    /// but the prompt and the link are not, and at accessibility sizes a fixed frame clipped them.
+    /// Centred in a scroll view rather than a greedy frame, because the glyph is capped but the prompt and the link are
+    /// not, and text that grows past its frame has to be scrollable to be reachable.
+    ///
+    /// **Centred in the part of the screen the tab shell's banner leaves uncovered, with the covered part reserved as
+    /// scroll room below the content.** The shell draws its Local Only or indexing banner over the Search content
+    /// rather than beside it (`\.tabShellBottomOverlay`), so centring in the whole frame put the link under the banner,
+    /// and at AX5 the content still fitted the frame, leaving nothing to scroll: measured on iPhone 17, the link sat at
+    /// y 707–770 under a banner starting at y = 551. With the reserve, content that fits the uncovered part is centred
+    /// there and does not scroll, and content that does not can scroll up until its end clears the banner.
     private var initialPromptView: some View {
-        GeometryReader { proxy in
+        #if os(iOS)
+        let bottomOverlay = tabShellBottomOverlay
+        #else
+        let bottomOverlay: CGFloat = 0
+        #endif
+        return GeometryReader { proxy in
             ScrollView {
                 VStack(spacing: 8) {
                     Image(systemName: "doc.text.magnifyingglass")
@@ -1653,8 +1673,9 @@ struct SearchView: View {
                     #endif
                 }
                 .padding()
-                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                .frame(maxWidth: .infinity, minHeight: max(0, proxy.size.height - bottomOverlay))
             }
+            .contentMargins(.bottom, bottomOverlay, for: .scrollContent)
             .scrollBounceBehavior(.basedOnSize)
         }
     }

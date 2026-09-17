@@ -15526,7 +15526,8 @@ nothing at all on the Mac.
   screen in Keywords mode only, never a tap-to-run example; a link BELOW the Query Inspector's disclosure button,
   shown only when the query is refused or narrower than typed.
 - Q5: the Research Guide is unchanged.
-- Q6: the prefix row warns that a long prefix finds nothing, because it is matched against word stems.
+- Q6: the prefix row warns about stems: a prefix is matched against word stems, so a long one misses forms whose
+  stem is shorter. (First shipped as "finds nothing", which the review measured false; see the follow-up below.)
 - Q7: the NEAR row says OR, NOT and parentheses cannot go inside and that only `NOT NEAR(…)` excludes. It describes
   no fallback. The macOS manual's "searches your words as an ordinary grouped query" is corrected. The parser is
   not changed; a separate issue follows.
@@ -15547,7 +15548,8 @@ nothing at all on the Mac.
   - More ▸ Search Tips (`questionmark.circle`) after the abbreviation lookup, clear of the save pair; the menu's
     hint is `search.moreActions.help.v2`, which also names the abbreviation lookup it had been missing.
   - The pre-search screen is now `initialPromptView`: the pinned prompt literal is kept, a Keywords-only link
-    follows it, and the whole thing scrolls, so the prompt and link are no longer clipped by a fixed frame.
+    follows it, and the whole thing scrolls, so the prompt and link are no longer clipped by a fixed frame. (That
+    alone did not make the link reachable at AX5 under the Local Only banner; the follow-up below fixes it.)
   - The Query Inspector link is a sibling below the disclosure button, gated on `isRefused || isApproximate`. It
     is never inside `QueryInspectorStrip`, which on iOS is that button's label, out of VoiceOver's reach.
   - `SearchTipsPresenter` is ONE `.modifier` on the body chain, which is at the type-checker's limit. It carries
@@ -15584,8 +15586,9 @@ nothing at all on the Mac.
     show the message. The reconciliation note closing §6 is retargeted from the Research Guide's retired syntax
     wording to the Search Tips rows.
 
-**Tests first.** `02d45af0` committed `SearchTipsWiringTests` (17 source pins, each scoped to one brace-matched
-declaration or one `if`/`else` branch) and `SearchTipsSheetTests` (UI) on the model commit, whose SearchView,
+**Tests first.** `02d45af0` committed `SearchTipsWiringTests` (17 source pins — described here as each scoped to one
+brace-matched declaration or branch, which six fixed windows and one file-wide count were not; the follow-up below
+slices them) and `SearchTipsSheetTests` (UI) on the model commit, whose SearchView,
 SearchSheet, FRUSExplorerApp, AppState and QueryInspectorView are byte-identical to `7bbe3724`.
 - Pins at `02d45af0`: **27 tests in 2 suites** (with `ExamineMenuAuditTests`), **15 of the 17 new tests failed**
   with 34 issues. The two that passed are the slicer's self-check and "no sixth icon", a guard.
@@ -15604,9 +15607,9 @@ SearchSheet, FRUSExplorerApp, AppState and QueryInspectorView are byte-identical
 - **The More menu becomes a scrolling list** of 186–246 pt rows. Search Tips, the sixth, is not in the element tree
   until the menu scrolls, so the suite scrolls it. A query that does not scroll reports the item missing on a
   correct build.
-- **The pre-search link is not reachable at AX5 with iCloud signed out, and the suite does not check it.** It lies
-  inside the Search content (y 377–791), but the tab shell's Local Only banner is drawn over that content from
-  y = 551. The banner is an overlay rather than an inset, so no scrolling of the prompt clears it.
+- **The pre-search link was not reachable at AX5 with iCloud signed out.** It lies inside the Search content
+  (y 377–791), but the tab shell's Local Only banner is drawn over that content from y = 551, and the prompt fitted
+  its frame, so nothing scrolled. The follow-up below reserves the banner's height as scroll room and checks it.
 
 **Verification.**
 - Commits: model `ac46b39f`/`4d04d244` (tests) and `90821d2a`; UI tests `02d45af0`; UI `14eb382d`; docs `9ace640f`.
@@ -15658,9 +15661,107 @@ SearchSheet, FRUSExplorerApp, AppState and QueryInspectorView are byte-identical
   - VoiceOver reaching none of the iOS Query Inspector strip's rows;
   - `sortMenu` with no `.controlHelp`.
 - Also noticed:
-  - The Local Only banner occluding the lower 37% of the Search screen at AX5.
-  - `MacSearchViewModel` 1.8's history note ("not yet the screen") now describes the state before this change.
+  - The Local Only banner occluding the lower 37% of the Search screen at AX5 — for the pre-search link, fixed by
+    the follow-up below; the rest of the Search screen under it was not examined.
+  - `MacSearchViewModel` 1.8's history note ("not yet the screen") — corrected by the follow-up below.
   - Find ▸ Search Tips… on an iPad with two windows is first-wins across windows, like Find ▸ Search, because a
     `.commands` block has no scene to address.
 - Not verified on a device: what VoiceOver says for each spoken label, and the Mac panel at 640×500 (there is no
   Mac UI-test target). Both are on the PR's visual checklist.
+
+### #1299 follow-up (2026-09-17): the review's confirmed findings and the mutation survivors
+
+**Why.** Review of `7bbe3724..de639890` confirmed four Search Tips sentences that were false or incomplete, the
+"FTS5Error error 5" string still reachable on iOS, a Search Error that outlived its search on the Mac, and one owner
+entry point (the pre-search link) unreachable at AX5; the mutation attack left **12 of 40 mutants alive**. Everything
+below is on the unmerged branch, so the new keys and version-history entries were corrected in place.
+
+**Content — every changed sentence re-measured** through a swiftc build of the five `FTS5Store` parser files at
+`de639890` against in-memory `porter unicode61` tables with the `ExactWordMatcher` post-filter, and pinned in
+`SearchTipsTests`. (The live index could not be read: the sandbox refuses the app container, "Operation not
+permitted", so no figure here comes from it.)
+- **Exact word** (`search.tips.exactWord.detail`, and both manuals' table row): "Matches the word only as you typed
+  it" becomes "Turns off stemming for this word … Capitalization, a single accent and punctuation at either end still
+  do not matter". Measured: `=Hull` matches both "Secretary Hull said" and "the ship's hull was damaged";
+  `=containment` and `=Containment` match "the Containment policy", "CONTAINMENT" and "containment." and not
+  "containments", "contain" or "containing"; `=cafe` matches "the Café".
+- **`=` inside NEAR** (the same row, and both manuals' exact-word paragraph): the mark is now listed as always ignored
+  "inside NEAR(…)". Measured: `NEAR(=containment policy, 5)` renders `NEAR("containment" "policy", 5)` with no exact
+  term and matches "containers policy"; `NEAR(=containment policy)` and `NEAR/5(…)` the same.
+- **Prefix** (`search.tips.prefix.detail`, both manuals): "negoti* finds negotiations, but negotiat* finds nothing"
+  becomes "negotiat* misses negotiations, which negoti* finds". Measured: `negotiat*` misses negotiate, negotiated,
+  negotiating, negotiations and negotiator and matches "the negotiatory process"; `negoti*` matches all six. The TEI
+  corpus prints *negotiatory* 21 times across 8 volume files, all in `manifest.json` (`grep -o -i -w` over
+  `/Users/jbotts/Development/frus/volumes`). `SearchTipsTests` now refuses "nothing" in the row.
+- **The last row** (`search.tips.needsAWord.detail`) gains "unless its parentheses sit beside a word to search for".
+  Measured: `war (cold OR -korea)`, `(cold OR -korea) war`, `(war (cold OR -korea))`, `wa* (cold OR -korea)` and
+  `"war korea" (cold OR -korea)` drop nothing and are not approximate; `cold OR -korea`, `(cold OR -korea)`,
+  `war OR (cold OR -korea)`, `war cold OR -korea` and `-war (cold OR -korea)` leave `korea` out. The manuals already
+  stated the exception.
+- **iOS, every scope off.** `SearchQueryRefusal.everyScopeOff` (`search.error.emptyScope.ios`): "Every search scope is
+  turned off, so there is nothing to search. Turn on document text, summaries or research notes in Filters ▸ Search
+  Scope." `readable(_:for:)` maps `emptyQuery` to it only when the parse renders and all three scopes are off; a
+  refused parse stays `nothingToSearch` whatever the scope, and `emptyQuery` with a scope on still passes through. On
+  macOS the same branch returns `MacSearchError.emptyScope`, which `performSearch`'s own guard already shows, so a Mac
+  reader is never pointed at an iOS control. The iOS manual's §7.2 says so.
+- **The Meaning-mode note's departure from brief §2.3 is recorded** (SearchModels doc comment and the §7.13 block):
+  capitalized mode names to match the picker; "your words" beside a field asking for "a question in your own words";
+  AND, a minus sign and parentheses added because the rows teach them and a meaning search runs no parser.
+
+**UI.**
+- **Mac stale error.** `performSearch`'s and `performMeaningSearch`'s empty-query guards, and the Search window's
+  index-rebuild reset, now clear `searchError` (`MacSearchViewModel` 1.8, `SearchSheet` 1.19, corrected in place).
+- **Pre-search link at AX5.** The tab shell's banner inset is applied outside `SearchView`'s navigation stack, which
+  does not pass it on, so the banner covers the content. `MainTabView` 1.16 measures the Search tab's inset (through a
+  `VStack`, so an empty inset reads 0 rather than a stale height) and publishes it as `\.tabShellBottomOverlay`;
+  `initialPromptView` centres the prompt in the uncovered part and reserves the covered part as a bottom content
+  margin. **Measured on iPhone 17 at AX5 with the Local Only banner up** (every UI-test launch skips CloudKit, so the
+  scenario requires the banner): before, the link stayed at y 707.3–770.7 after 6 drags, under a banner from y = 551;
+  after, one drag moves it to y 471.7–535.0 and it opens the sheet.
+
+**Tests and docs.**
+- Survivor pins, each with the assertion the attack named: M02 (NEAR's numbers as whole tokens, exactly {5, 10}),
+  M05 (no row, spoken label, note or message renders its key), M07 (a spoken label says every word and number of its
+  example), M13 (the Mac error branch's whole header), M16 (no `.disabled(` on the More item), M21 (one
+  `showSearchTips = true` in the Inspector card), M23 (the presenter's arguments carry `searchMode: vm.searchMode` and
+  its sheet block `SearchTipsSheet(searchMode: searchMode)`), M26 (no `Text("` in the Mac panel, no "Date filter uses
+  TEI" in the file), M28 (the panel's mount line is exactly `if searchVM.showTips {`), M33 (the presenter's
+  `.onDisappear` block clears `isOnScreen`), M36 (`EditableContentKeyTests.everySearchTipsKeyHasABlock`: every
+  `search.tips.*`, `search.error.*` and `menu.find.searchTips` literal key under `FRUSExplorer/` has a block, with a
+  floor of 40 keys found), M38 (`CorpusAnalyticsSyntaxRowsTests`: Phrases names straight and curly marks and no inner
+  marks, Multiple words contains `NEAR(`, dating has no "TEI <date>", each beside its parser check).
+- The three index reads after a count (`SearchTipsTests` all-words, phrase and either checks) are `try #require`.
+- `SearchTipsWiringTests` 1.1: the six fixed windows and the file-wide consumer count become block, span and
+  argument-list slices — the Mac first-load consumer is now required inside the `.task` that reads `pendingSearch`.
+  Its doc no longer claims every assertion is declaration-scoped: three absence bans read a whole file on purpose.
+- `Docs/EditableContent.md`: §7.13's three reworded rows (each with a note), the every-scope-off block, blocks for
+  `search.error.title`, `search.error.empty` and `search.error.emptyScope`, `menu.find.searchTips` tagged as declared
+  in both call sites, the Meaning-note departure, every §7.13 line range recomputed from source, and §5's metric and
+  stemming ranges (231–232, 243–244). The iOS manual says the pre-search link appears only in Keywords mode.
+
+**Verification** (iPhone 17 A9FCCA50 unless noted).
+- Red at the tests commit `e380a776` (tests only, app at `de639890`): six suites, **"Test run with 38 tests in 6
+  suites failed … with 17 issues"** — every content, scope-off, Mac-guard, index-rebuild and reverse-key pin; the
+  survivor pins passed there, as they must (their A/B is by mutant, below). The AX5 scenario: **"Executed 1 test, with
+  1 failure"**, link y 707.3–770.7 against a banner from 551 after 6 drags.
+- Green: the affected suites (`SearchTipsTests`, `SearchQueryRefusalTests`, `CorpusAnalyticsSyntaxRowsTests`,
+  `SearchRefusalMessageTests`, `SearchTipsWiringTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests`,
+  `UnreferencedDeclarationAuditTests`, `HybridSearchModeTests`, `ExamineMenuAuditTests`, `QueryInspectionTests`,
+  `MacChromeHonestyTests`, `MacTextScalingAuditTests`, `SymbolNameAuditTests`): **"Test run with 143 tests in 14 suites
+  passed"**. `FRUSExplorerTests`, whole target: **"Test run with 4923 tests in 621 suites passed"** (4,915 + 8 new
+  tests, 620 + 1 new suite).
+- `SearchTipsSheetTests` with `AnalyticsRotationTests.testRotateWithFocusedSearchFieldIsSafe` and
+  `KeyboardDismissBarReachTests` (the Search tab's inset and the #1070 keyboard gate beside it): **"Executed 8 tests,
+  with 0 failures"**. iPad mini (A17 Pro): `SearchTipsSheetTests` **"Executed 5 tests, with 2 tests skipped and 0
+  failures"** (both AX5 scenarios are iPhone-only).
+- Clean builds into fresh DerivedData: `FRUSExplorer` (generic iOS Simulator) **CLEAN SUCCEEDED, BUILD SUCCEEDED**, 9
+  unique source-warning sites; `FRUSExplorerMac` (platform=macOS) **CLEAN SUCCEEDED, BUILD SUCCEEDED**, 8. **None is in
+  a file this follow-up changed**; the only one in a file the branch changed is still the pre-existing weak capture at
+  `FRUSExplorerApp.swift:1641`. The test build also reports four `main actor-isolated` warnings in
+  `SearchTipsSheetTests.tearDownWithError`, present since that suite's first build (the SDK-driven pattern
+  `UIObstructionTests` documents); the app-target warning convention does not cover the UI-test target.
+
+**Out of scope, unchanged by owner decision.** Corpus Analytics' metric row ("counted once") against the Occurrences
+measure; its unmeasured "no month / no day" and "counts match Search" claims; the iOS actions bar's overflow at
+accessibility sizes; and `ToolbarOverflowAccessibilityTests` failing 2 of 3 on iPad mini, which it does identically on
+the pre-#1299 app.
