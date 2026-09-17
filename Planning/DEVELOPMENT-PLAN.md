@@ -15442,7 +15442,8 @@ U+2019, U+2039 or U+203A were killed. Five survived:
 3 nits; every confirmed finding and nit is addressed in the follow-up.**
 - The macOS checklist gates compared the raw text while their comment said they mirror the history anchor, so
   re-submitting `“cold war”` as `"cold war"` refreshed one history row and wiped every reviewed mark. Both gates
-  (`performSearch`, `performMeaningSearch`) now call `SearchHistoryWriter.isSameQuery(_:_:)`.
+  (`performSearch`, `performMeaningSearch`) now call `SearchHistoryWriter.isSameQuery(_:_:)`. The parser's doc,
+  which claimed the fold reached every comparison in the app, now lists exactly where the app applies it.
 - The History pane's search filter used `localizedStandardContains`, which does not equate `“`, `«` or `＂` with `"`,
   so a filter in the earlier spelling found nothing once the row took the later one. It folds both sides.
 - The "exactly the decided marks" test could not see a mark added from outside its 15-item lists (U+301D, U+2036,
@@ -15454,8 +15455,8 @@ U+2019, U+2039 or U+203A were killed. Five survived:
 - Refuted: Corpus Analytics' term de-duplication and saved-query match (pre-existing, outside the owner's scope).
 - Nits: `SearchService` 2.7 credited the scan predicate for highlighting, which only the fold affects; `FTS5Query`
   3.3's "RESULTS MOVE" sentence had its two cases backwards (checked in `sqlite3`: `"cold”war"` matched *the cold war
-  began*, `"coldwar"` matches *coldwar studies*); the parser's doc claimed the fold reached every comparison in the
-  app. All three are corrected, and the parser doc now lists exactly where the app applies it.
+  began*, `"coldwar"` matches *coldwar studies*); and the history test's comment saying a pasted query arrives
+  straight. All three are corrected.
 
 **Follow-up (`d6fda19e` tests, `4d1a0368` fix).**
 - Tests first, at `84f81c40`: app 56 tests in 3 suites, 2 failing with 11 issues (the History filter 8, the macOS
@@ -15479,6 +15480,17 @@ U+2019, U+2039 or U+203A were killed. Five survived:
   - A11: 1. A12: 7. A13: 7. `positiveTerms`' fold removed (A03) still fails the reworked concordance test: 7.
   - A compatibility check rather than a kill: with `positiveTerms`' negated-phrase quirk fixed, the reworked
     concordance test passes, and the 1.1 version fails because the straight anchors become `{blockade}`.
+
+**Final review (`f887bfb6`, one lens, a skeptic per finding): 1 confirmed, 1 refuted, 1 nit.**
+- Confirmed: `SearchHistoryWriter` said a curly and a straight spelling "run the same search", which a Meaning run
+  — it embeds the typed text — does not. The docs now say the spellings parse to one keyword query and still name one
+  query.
+- Refuted, then disclosed by owner decision (2026-09-17): a phrase in U+0022 that holds a curly-quoted phrase,
+  `"the “iron curtain” speech"`, searched the phrase at `55464a46` and now searches its four words, as straight
+  nested quotes always have. The rule stays "every mark is U+0022"; both manuals' §7.2 and the parser's
+  quotation-mark doc say a phrase cannot hold its own quotation marks and that leaving them out keeps the phrase.
+- Nit: this entry's nit list named the parser-doc over-claim, part of the checklist finding, instead of the
+  history test's paste comment. Corrected above.
 
 **Noticed, not fixed.**
 - Corpus Analytics can hold a curly and a straight spelling as two compare chips or two saved entries (and already

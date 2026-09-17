@@ -196,7 +196,10 @@
 /// `normalizingQuotationMarks(_:)` and `isDoubleQuotationMark(_:)` are the fold and its predicate, shared with the app
 /// so the set is written down once; see `typographicDoubleQuotationMarks` for what is folded and what is deliberately
 /// not, and `normalizingQuotationMarks(_:)` for where the app applies them. The text a researcher typed is never
-/// rewritten.
+/// rewritten. Because every mark is U+0022 to the grammar, a phrase cannot hold quotation marks of its own:
+/// `"the “iron curtain” speech"` reads as four words, as `"the "iron curtain" speech"` always has, where before
+/// the fold the inner curly pair was punctuation inside one phrase (owner decision, 2026-09-17). Leaving the inner
+/// marks out keeps the phrase, and it still matches a document that prints them.
 ///
 /// ## What this does *not* attempt
 /// - **Column filters** (`header:cold`) — handled separately via `columnPrefix`,

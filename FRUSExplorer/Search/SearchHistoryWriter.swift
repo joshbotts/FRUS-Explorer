@@ -45,14 +45,14 @@ import SwiftData
 /// query — after other queries in between — is a new row, because the anchor has moved on.
 ///
 /// ## Quotation marks
-/// A typographic and a straight spelling of one query — `“cold war”` typed with Smart Punctuation or pasted from a volume,
-/// `"cold war"` typed without — run the same search (#1298), so they are compared after
-/// `FTS5InlineQueryParser.normalizingQuotationMarks(_:)` folds
-/// them, and re-running one in the other spelling refreshes the row. The row then keeps the spelling of the run it now
-/// describes, as it keeps that run's scope, counts and date: the text a method appendix prints beside a count is the
-/// text that produced it. A double prime or a single quotation mark is not folded, so it still spells another query.
-/// The comparison is `isSameQuery(_:_:)`, which the macOS checklist's re-anchor calls too, so the two agree on what a
-/// re-run is.
+/// A typographic and a straight spelling of one query — `“cold war”` typed with Smart Punctuation or pasted from a
+/// volume, `"cold war"` typed without — parse to the same keyword query (#1298), so they are compared after
+/// `FTS5InlineQueryParser.normalizingQuotationMarks(_:)` folds them, and re-running one in the other spelling refreshes
+/// the row. A Meaning run embeds the typed text verbatim, so its two spellings can rank differently, yet they still
+/// name one query. The row then keeps the spelling of the run it now describes, as it keeps that run's scope, counts
+/// and date: the text a method appendix prints beside a count is the text that produced it. A double prime or a single
+/// quotation mark is not folded, so it still spells another query. The comparison is `isSameQuery(_:_:)`, which the
+/// macOS checklist's re-anchor calls too, so the two agree on what a re-run is.
 ///
 /// Version history:
 ///   1.0 — M-2 commit 5: initial implementation, extracted from the two view models
@@ -126,7 +126,9 @@ enum SearchHistoryWriter {
     /// Whether `query` is the query `anchored` names, so that running it re-runs that query rather than starting another.
     ///
     /// Two texts are one query when they are equal once `FTS5InlineQueryParser.normalizingQuotationMarks(_:)` has folded
-    /// their typographic double quotation marks (#1298): `“cold war”`, `«cold war»` and `"cold war"` run the same search.
+    /// their typographic double quotation marks (#1298): `“cold war”`, `«cold war»` and `"cold war"` parse to the same
+    /// keyword query. A Meaning run embeds the typed text, so there the spellings can rank differently, but they
+    /// still name one query.
     /// Nothing else is folded, so case, spacing, a double prime and a single quotation mark still spell another query,
     /// and `nil` — nothing anchored — matches no query. `record(_:anchor:in:defaults:)` asks it whether a run refreshes
     /// the anchored row, and `MacSearchViewModel` whether a run keeps the checklist's reviewed marks, so the checklist's
