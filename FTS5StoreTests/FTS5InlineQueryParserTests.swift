@@ -678,6 +678,9 @@ struct FTS5InlineQueryParserTests {
 ///          the root expression's proof "required" set), because the SQL layer ANDs one exact-word filter per term. So
 ///          `=containment OR =rollback` and `(=containment OR rollback) AND europe` report nothing, where 1.0 pinned
 ///          both terms and `containment`; the several-terms and inside-a-group tests now pin a conjunction beside them
+///   1.2 — #1297 round-2 parser fixes: parser 6.4 decides per operand (`ParsedOperand.isExactApplied`), so
+///          `(=containment OR rollback) containment` reports nothing, and in `(=containment OR rollback) =containment`
+///          only the second operand's mark applies
 @Suite("Exact-word sigil")
 struct FTS5ExactSigilTests {
 
@@ -712,6 +715,20 @@ struct FTS5ExactSigilTests {
                 == ["containment"])
         // Alternatives: a rollback document without containment matches, and one filter per term would remove it.
         #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =rollback").exactTerms.isEmpty)
+    }
+
+    /// `isExactApplied` is decided operand by operand, and an unmarked operand with the same word makes no mark apply.
+    @Test("A mark applies to the operand every match requires, never to another operand with its word")
+    func exactAppliesPerOperand() {
+        let parsed = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) =containment")
+        #expect(parsed.exactTerms == ["containment"])
+        #expect(parsed.operands.map(\.isExactApplied) == [false, false, true],
+                "the first =containment is one alternative, so a rollback document matches through it")
+        // Every match holds containment by stem, through the unmarked word, and none need hold it literally.
+        let unmarked = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) containment")
+        #expect(unmarked.exactTerms.isEmpty)
+        #expect(unmarked.operands.map(\.isExact) == [true, false, false])
+        #expect(unmarked.operands.allSatisfy { !$0.isExactApplied })
     }
 
     @Test("An exact term inside a group is reported when every match requires it, and ignored as an alternative")

@@ -43,7 +43,9 @@ import SQLite3
 ///          leaves every level a complement to push inward (P3); refuses each one-level-deeper query beside shallow
 ///          groups and an unmatched `)`, and each 5,000-level query beside them and after 5,000 unmatched `)`, since a
 ///          depth scan taking the last group opened, stopping at the first top-level group, or letting an unmatched `)`
-///          close a level passed every earlier check (P5, the round-1 attack's D8–D10); and pins `groupDepth` directly
+///          close a level passed every earlier check (P5, the round-1 attack's D8–D10); and pins `groupDepth` directly.
+///          Its doc now gives 6.2's thresholds (277 levels of `-(war …)` in Release, 22 in Debug) where it gave the
+///          first sizes seen to overflow, and the stack its nestings cost at parsers 6.3 and 6.4
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -773,8 +775,8 @@ struct Issue1297NestingPattern: Sendable, CustomTestStringConvertible {
 /// Parser 6.3 refuses a query whose groups nest deeper than a limit, before any recursive pass.
 ///
 /// Every recursive pass over the tree costs stack per level, and the app parses on 512 KB threads: before the limit,
-/// `-(war ` nested 290 levels (2,034 characters) overflowed a Release build's stack and killed the process, and a
-/// Debug build's at 30. Every check here therefore runs on a thread with that stack.
+/// parser 6.2 parsed at most 277 levels of `-(war …)` on such a thread in a Release build and 22 in a Debug build, and
+/// one level more killed the process. Every check here therefore runs on a thread with that stack.
 @Suite("#1297 nesting depth")
 struct Issue1297DepthTests {
 
@@ -784,7 +786,9 @@ struct Issue1297DepthTests {
     /// The refusal every refused query returns.
     static let refused = ParsedQuery(expression: nil, exactTerms: [])
 
-    /// Nestings chosen for the stack each level costs, including the deepest measured per level.
+    /// Nestings chosen for the stack each level costs. Measured as the deepest point a parse reaches on a painted thread
+    /// stack at 32 levels in a Debug build, `-(a OR -b …)` around `-korea` was the costliest at parser 6.3 (322 KB), and
+    /// `-(war …)` is within 3 KB of the costliest at 6.4 (86 KB, around `=cold`).
     static let patterns: [Issue1297NestingPattern] = [
         Issue1297NestingPattern(name: "-(war …)", open: "-(war ", inner: "cold", innerLevels: 0),
         Issue1297NestingPattern(name: "((…))", open: "(", inner: "cold", innerLevels: 0),
