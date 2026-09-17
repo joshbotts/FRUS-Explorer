@@ -49,6 +49,9 @@ import SQLite3
 ///   1.3 — #1297 round-3 parser fixes: `Issue1297DepthTests.nodesAreSettledOnce` counts, in a DEBUG build, how often
 ///          each node of a query nested to the limit has its meaning and anchor settled, because removing parser 6.4's
 ///          memo changed no render and failed no test (the round-2 attack's M22)
+///   1.4 — #1297 round-4 parser fixes: `Issue1297DepthTests.settlementCountsAdd`, the positive control for those counts: a
+///          root settled once more past the memo must read 2, because a counter saturating at 1 passed
+///          `nodesAreSettledOnce` even with the memo removed (the round-3 attack's P5c)
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -935,6 +938,27 @@ struct Issue1297DepthTests {
             #expect(result.work.maximumMeaningSettlements == 1, "\(label): \(result.work)")
             #expect(result.work.meaningSettlements == result.work.nodes, "\(label): every node evaluated, each once")
             #expect(result.work.maximumAnchorSettlements == 1, "\(label): \(result.work)")
+        }
+    }
+
+    /// The counts `nodesAreSettledOnce` reads can exceed one. A counter that stopped adding reads 1 whether the memo holds
+    /// or not, so that test alone passed a saturating counter with the memo removed (the round-3 attack's P5c); here the
+    /// root of each shape is settled once more past the memo, and must say so.
+    @Test("A node settled twice counts two, so the settle-once counts can fail")
+    func settlementCountsAdd() throws {
+        let queries = Self.memoShapes(words: 4) + [("a leaf", "cold"), ("a complement", "cold OR -(war -korea)")]
+        let results = try #require(Issue1297SmallStack.run {
+            queries.map { (FTS5InlineQueryParser.work(parsing: $0.query).work,
+                           FTS5InlineQueryParser.workSettlingRootTwice(parsing: $0.query)) }
+        })
+        #expect(results.count == queries.count)
+        for (shape, result) in zip(queries, results) {
+            let (once, twice) = result
+            #expect(once.maximumMeaningSettlements == 1, "\(shape.name): \(once)")
+            #expect(twice.nodes == once.nodes, "\(shape.name): the same tree")
+            #expect(twice.maximumMeaningSettlements == 2, "\(shape.name): \(twice)")
+            #expect(twice.meaningSettlements == once.meaningSettlements + 1, "\(shape.name): only the root again")
+            #expect(twice.maximumAnchorSettlements == 2, "\(shape.name): \(twice)")
         }
     }
     #endif

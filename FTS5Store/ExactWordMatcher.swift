@@ -38,6 +38,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — #1297 round-4 parser fixes: `word(_:)`, the one index word a term is, which `contains(word:in:)` and
+///          `isSingleToken(_:)` now compare through and the query parser keys `=` marks on, so two spellings of one
+///          word are one filter by the same code that filters (no behaviour change here)
 public enum ExactWordMatcher {
 
     /// Normalises text the way `unicode61` does before comparison: diacritics folded,
@@ -57,13 +60,24 @@ public enum ExactWordMatcher {
             .map(String.init)
     }
 
+    /// The one index word `text` is — its only token, normalised as `unicode61` reads it — or `nil` when `text` is
+    /// not exactly one token.
+    ///
+    /// This is what `contains(word:in:)` compares, so two terms with the same word are the same filter however they
+    /// were spelled: `Cold`, `cold.` and `cold` are all `cold`, and `café` and `cafe` are both `cafe`. The query
+    /// parser keys its `=` marks on it for that reason, rather than on the spelling a mark was typed with.
+    static func word(_ text: String) -> String? {
+        let found = tokens(in: text)
+        return found.count == 1 ? found[0] : nil
+    }
+
     /// Whether `word` is a usable exact term — that is, whether it is exactly one token.
     ///
     /// Multi-token input (`co-operate`, `U.S.S.R.`) has no single-word answer, so the
     /// sigil degrades to an ordinary stemmed search rather than silently filtering on
     /// one fragment of what the researcher typed.
     public static func isSingleToken(_ word: String) -> Bool {
-        tokens(in: word).count == 1
+        self.word(word) != nil
     }
 
     /// Whether `text` contains `word` as a whole token.
@@ -73,9 +87,7 @@ public enum ExactWordMatcher {
     /// than `true` keeps a mistake visible as missing results instead of a filter that
     /// silently does nothing.
     public static func contains(word: String, in text: String) -> Bool {
-        guard !text.isEmpty else { return false }
-        let target = tokens(in: word)
-        guard target.count == 1, let needle = target.first else { return false }
+        guard !text.isEmpty, let needle = self.word(word) else { return false }
         return tokens(in: text).contains(needle)
     }
 

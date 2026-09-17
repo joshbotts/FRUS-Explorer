@@ -388,7 +388,8 @@
 ///          removing no row the query admits — all 720 with a second marked cold, and 112 with an unmarked cold and 96
 ///          with the phrase (`=cold OR =cold cold`, `=cold "cold" OR =cold`) — and so were all 780 lists the demoted
 ///          alphabet lost and all 800 the phrase alphabet lost. They were sound filters 6.4 lost, and 6.5 restores
-///          every one of them but 48 (`=cold OR korea cold` beside the excluded term korea). Nor did the loss "cost
+///          every one of them but 48, all beside the excluded term korea: 32 of the shape `=cold OR korea cold`, in its
+///          word orders and both scopes, and 16 unscoped of the shape `=cold OR korea "cold"`. Nor did the loss "cost
 ///          only the filter", as the `parseDetailed` doc said: the mark was ignored, so the word's inflected forms
 ///          matched and were counted. So exact terms no longer depend on the column prefix.
 ///          Over 60,000 random queries of up to 14 tokens beside random structured fields, 1,799 lists change: 1,794 lose
@@ -397,9 +398,11 @@
 ///          four alphabets of length 1–4 beside every structured combination in both scopes, those random queries, and
 ///          fifteen nestings around eleven innermost terms at 1–33 levels.
 ///          (2) A node is a class that keeps its exact meaning and its anchor, and `evaluate` and `anchor(_:)` recurse over
-///          nodes only, children first, handing every combination to helpers that never recurse into either (corrected at
-///          6.5: this said helpers that never recurse, but `anchoringChildren(of:)` calls the recursive `evaluate` and
-///          `complement(of:)`, and `settleAnchor` the recursive `leaves(of:)`). 6.3 asked again for the
+///          nodes only, children first, handing every combination to helpers that never re-enter their own caller:
+///          `settleMeaning` never calls `evaluate`, and neither `anchoringChildren(of:)` nor `settleAnchor` calls
+///          `anchor(_:)`. The helpers are not all free of recursion — `anchoringChildren(of:)` calls the recursive
+///          `evaluate` and `complement(of:)`, and `settleAnchor` the recursive `leaves(of:)` — which this entry denied
+///          until corrected at 6.6. 6.3 asked again for the
 ///          meaning of the whole subtree at every level that lacked an anchor, and `Expr.settled()` built each required
 ///          anchor's coverers as an array on every conjoin; it now returns at once when nothing is forbidden and looks a
 ///          covering identity up without allocating. Measured interleaved, the minimum of five runs in a Release build
@@ -432,15 +435,15 @@
 ///          cold again, and `(=cold OR war) =cold` applies both marks; an unmarked word, a phrase or a demoted word
 ///          still never makes a mark apply, so `(=cold OR war) cold`, `=cold OR "cold"` and `=cold war OR cold peace`
 ///          report nothing. `exactTerms` keeps the order of each word's first applied operand, which is now its first
-///          positive mark. Measured against 6.4 over its 1,411,430 parses: no expression, operand, dropped operand or
-///          approximation flag moves; no list loses a term or holds one 6.3 did not report; and 6,069 operands become
-///          applied, none the reverse. Per scope, non-empty lists go 55,078 → 55,518 over the exact-term sweep
-///          alphabet, from 44 sequences (`=cold OR =cold`, `war =cold OR =cold`), every change `[]` to `["cold"]`;
-///          42,630 → 43,020 over the demoted alphabet and 41,672 → 42,072 over the phrase alphabet, 6.3's counts in
-///          both. Over the 60,000 random queries 467 lists change: 466 gain every term they report, and 1 reorders back
-///          to 6.3's `["cold", "war"]`; 1,346 still differ from 6.3's, 1,328 of them empty. Read on
-///          `Issue1297InflectedCorpus`, every list 6.5 reports over the three alphabets removes no row the query
-///          admits.
+///          positive mark. Measured against 6.4 over its 1,411,430 parses: no expression, dropped operand,
+///          approximation flag or operand field other than `isExactApplied` moves; no list loses a term or holds one
+///          6.3 did not report; and 6,069 operands become applied, none the reverse. Per scope, non-empty lists go
+///          55,078 → 55,518 over the exact-term sweep alphabet, from 44 sequences (`=cold OR =cold`,
+///          `war =cold OR =cold`), every change `[]` to `["cold"]`; 42,630 → 43,020 over the demoted alphabet and
+///          41,672 → 42,072 over the phrase alphabet, 6.3's counts in both. Over the 60,000 random queries 467 lists
+///          change: 466 gain every term they report, and 1 reorders back to 6.3's `["cold", "war"]`; 1,346 still differ
+///          from 6.3's, 1,328 of them empty. Read on `Issue1297InflectedCorpus`, every list 6.5 reports over the three
+///          alphabets removes no row the query admits.
 ///          (2) In a DEBUG build, `work(parsing:columnPrefix:structured:)` counts on a parse's own tree how often each
 ///          node's meaning and anchor were settled, because removing 6.4's memo changed no render and failed no test.
 ///          Release code does what it did: `parseDetailed` takes its result from the same path and drops the tree.
@@ -448,6 +451,45 @@
 ///          4,286 applied `=cold` operands unreported because filtering on them would remove a row the query admits and
 ///          428 unreported although it would not (868 at 6.4); the structured oracle sees 1,256 and 1,151 required
 ///          exact operands against 11,692 and 11,284 ignored.
+///   6.6 — #1297 round-4 fixes: a mark is compared by the index word the filter reads, never by its spelling, and the
+///          settlement counts get a positive control. RESULTS MOVE, and only in exact terms.
+///          (1) `Expr.requiredMarked`, the applied check and the de-duplication of `exactTerms` key on
+///          `ExactWordMatcher.word(_:)` of each mark's term — the function `ExactWordMatcher.contains(word:in:)`, and
+///          so the `frus_exact_word` filter, compares through — where 6.5 keyed on the rendered operand. That kept the
+///          punctuation beside a word and its diacritics, which `unicode61` and the filter both fold, and it kept every
+///          spelling of a word as a term of its own. So `=cold. war OR =cold peace` reports `["cold."]` where 6.5 ran
+///          it unfiltered and counted `colds`; `(=café OR war) =cafe` applies both marks where 6.5 applied the second;
+///          and `=Soviet =soviet` and `=Cold war OR =cold peace` report `["Soviet"]` and `["Cold"]` where 6.5 reported
+///          both spellings. The reported term is the spelling of the word's first applied operand. The key drops the
+///          column prefix: only a typed word carries a mark, and every typed word carries the same one. Marks still
+///          never join through an unmarked operand, a phrase or a demoted word, whatever their spellings.
+///          Measured against 6.5 (28557157). Over round 2's 1,411,430 parses, none of which spells one marked word two
+///          ways, every line of the dump is byte-identical, and nothing moves over the 444,440 parses of the length-5
+///          sequences of `=cold`, `-=cold`, cold, `"cold"`, war, `OR`, `NOT`, `(`, `)` and `-(`, alone and beside the
+///          excluded term cold, in both scopes. Over the length-1–4 sequences of `=cold`, `=Cold`, `=cold.`, `-=Cold`,
+///          cold, `"cold"`, war, `=war`, `OR`, `NOT`, `(`, `)` and `-(` beside seven structured combinations in both
+///          scopes (433,160 parses), no expression, dropped operand, approximation flag or operand field other than
+///          `isExactApplied` moves and no operand stops being applied; 5,096 operands become applied and 60,612 lists
+///          change, 30,306 per scope: 58,232 only drop a second spelling of a word, 2,296 gain a word
+///          (`=cold OR =cold.`), and 84 report an earlier-typed spelling (`=cold =cold. OR =cold.` was `["cold."]` and
+///          is `["cold"]`); no list loses a word. Over the round-3 review's sixteen-token alphabet, whose only second
+///          spelling is `=Cold` (978,656 parses), 35,400 lists change, 17,700 per scope, each only dropping a second
+///          spelling, and nothing else moves. Over 60,000 random queries of up to 14 units, among them `=Cold` and
+///          `=cold.`, beside random structured fields and scopes, 6,528 lists change — 5,506 drop a second spelling,
+///          883 gain a word, 139 report another spelling — and 2,548 operands become applied, with no other field
+///          moving. On a corpus holding cold, war and or beside colds, wars and ors, with a literal marker standing for
+///          each applied mark, every list reported over those families removes no row the query admits and keeps none
+///          it does not: 288,392 lists over the spelling alphabet, 549,268 over the sixteen-token alphabet, 138,162
+///          over the length-5 sequences and 30,968 over the random queries.
+///          (2) In a DEBUG build, `workSettlingRootTwice(parsing:columnPrefix:structured:)` settles a parse's root once
+///          more past the memo, so a test can see a count read 2: a counter saturating at 1 passed every check of 6.5's
+///          counts, with the memo removed too (the round-3 attack's P5c).
+///          The #1297 suites' printed counts do not move over the exact-term sweep's first alphabet (55,518 lists,
+///          4,286 ignored, 428 unproved per scope). Its new spelling alphabet reports 77,164 lists per scope with 5,180
+///          applied marks unreported because filtering on them would remove a row the query admits and 64 unreported
+///          although it would not (1,304 at 6.5), and 16 approximations that match nothing and run while their
+///          respelling with one marker is refused, since 6.1's refusal still compares rendered operands:
+///          `"cold." NOT "cold"`.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -489,9 +531,11 @@ public enum FTS5InlineQueryParser {
     /// a word every match must contain. So an `=` operand is reported only when it is typed,
     /// applied and positive, and the expression that runs requires its word through a MARKED
     /// operand — a mark every match must match, or a mark in every alternative, which the proof
-    /// tracks over marked operands' identities (`Expr.requiredMarked`, D4). Every positive `=`
-    /// operand on such a word is then `ParsedOperand.isExactApplied`, since inside the filtered
-    /// documents each reads the same: `=cold war OR =cold peace` and `(=cold OR war) =cold` apply
+    /// tracks over marked operands' words (`Expr.requiredMarked`, D4). A word is compared as the
+    /// filter compares it, by `ExactWordMatcher.word(_:)`, so case, diacritics and punctuation
+    /// beside it never tell two marks apart. Every positive `=` operand on such a word is then
+    /// `ParsedOperand.isExactApplied`, since inside the filtered documents each reads the same:
+    /// `=cold war OR =cold peace`, `=Cold war OR =cold. peace` and `(=cold OR war) =cold` apply
     /// both marks. Anywhere else the sigil is ignored and the term runs stemmed: an `OR` alternative
     /// (`=cold OR war`), a term inside a negated group (`cold -(war -=korea)`, which matches cold
     /// documents holding neither war nor korea), or a complement a structured phrase or prefix
@@ -549,7 +593,8 @@ public enum FTS5InlineQueryParser {
         var operands: [ParsedOperand] = []
         var droppedOperands: [ParsedOperand] = []
         var exactTerms: [String] = []
-        // Order-preserving de-duplication: the same word marked exact twice is one filter.
+        // Order-preserving de-duplication by index word, keeping the first spelling applied: `=Cold` and `=cold.` are
+        // one filter, because the filter compares the word `ExactWordMatcher` reads.
         var seen = Set<String>()
         for (index, proto) in harvest.operands.enumerated() {
             let isNegated = negated[index] ?? false
@@ -566,13 +611,14 @@ public enum FTS5InlineQueryParser {
             // through a marked operand: the filter is ANDed over every result, so on a word the expression
             // leaves optional it would remove documents the MATCH admits — even where an unmarked operand with
             // the same stem is required, since that operand admits the stem. Once the word qualifies, every
-            // positive mark on it applies: inside the filtered documents each of them reads the same.
-            let isExactApplied = !isNegated && proto.exactTerm != nil
-                && expression.requiredMarked.contains(OperandIdentity(rendered: proto.core))
+            // positive mark on it applies, whatever its spelling: inside the filtered documents each of them reads the
+            // same.
+            var isExactApplied = false
+            if !isNegated, let word = proto.exactWord { isExactApplied = expression.requiredMarked.contains(word) }
             operands.append(ParsedOperand(text: proto.text, rendered: isNegated ? "NOT \(proto.core)" : proto.core,
                                           kind: proto.kind, isNegated: isNegated, isExact: proto.isExact,
                                           source: proto.source, isExactApplied: isExactApplied))
-            if isExactApplied, let term = proto.exactTerm, seen.insert(term).inserted {
+            if isExactApplied, let term = proto.exactTerm, let word = proto.exactWord, seen.insert(word).inserted {
                 exactTerms.append(term)
             }
         }
@@ -605,8 +651,28 @@ public enum FTS5InlineQueryParser {
     static func work(parsing raw: String, columnPrefix: String = "",
                      structured: StructuredQueryParts = .none) -> (query: ParsedQuery, work: ParseWork) {
         let (query, root) = parsedTree(raw, columnPrefix: columnPrefix, structured: structured)
+        return (query, root.map(work(on:)) ?? ParseWork())
+    }
+
+    /// `work(parsing:columnPrefix:structured:)` with the root's meaning and anchor settled once more after the parse,
+    /// past the memo: the positive control for the counts, which must then read 2 at the root.
+    ///
+    /// A count that stopped adding — one saturating at 1 — would still pass every check of a memo that holds, and with
+    /// the memo removed too it passed them all (the round-3 attack's P5c); only a node settled twice can tell it apart.
+    /// The tree is discarded afterwards, so settling it again changes no parse.
+    static func workSettlingRootTwice(parsing raw: String, columnPrefix: String = "",
+                                      structured: StructuredQueryParts = .none) -> ParseWork {
+        guard let root = parsedTree(raw, columnPrefix: columnPrefix, structured: structured).root else {
+            return ParseWork()
+        }
+        settleMeaning(root)
+        settleAnchor(root)
+        return work(on: root)
+    }
+
+    /// The `ParseWork` counted on the tree under `root`.
+    private static func work(on root: Node) -> ParseWork {
         var work = ParseWork()
-        guard let root else { return (query, work) }
         // Iterative, and each node once: a pushed-inward complement shares every node beneath its negations.
         var seen = Set<ObjectIdentifier>()
         var pending = [root]
@@ -623,7 +689,7 @@ public enum FTS5InlineQueryParser {
             }
             if let pushed = node.pushedInward { pending.append(pushed) }
         }
-        return (query, work)
+        return work
     }
     #endif
 
@@ -643,9 +709,12 @@ public enum FTS5InlineQueryParser {
         var kind: ParsedOperand.Kind
         /// Whether the researcher typed the `=` sigil on it.
         var isExact: Bool
-        /// The literal word the operand post-filters on when its mark applies (`ParsedOperand.isExactApplied`),
-        /// or `nil` when the sigil is absent or cannot apply.
+        /// The literal word the operand post-filters on when its mark applies (`ParsedOperand.isExactApplied`), as
+        /// typed, or `nil` when the sigil is absent or cannot apply.
         var exactTerm: String?
+        /// `exactTerm`'s index word (`ExactWordMatcher.word(_:)`), which decides whether two marks are one filter:
+        /// `nil` exactly when `exactTerm` is.
+        var exactWord: String?
         /// Where the operand came from.
         var source: ParsedOperand.Source = .typed
     }
@@ -736,9 +805,10 @@ public enum FTS5InlineQueryParser {
     private final class Node {
         /// What the node is.
         enum Kind {
-            /// A positive rendered operand, or a demoted operator literal when `operand` is `nil`. `isMarked` when the
-            /// operand carries an `=` that can apply — `ProtoOperand.exactTerm` is not `nil` — so the proof follows it.
-            case leaf(String, operand: Int?, isMarked: Bool)
+            /// A positive rendered operand, or a demoted operator literal when `operand` is `nil`. `markedWord` is the
+            /// index word of an `=` that can apply — `ProtoOperand.exactWord` — so the proof follows it, and `nil` for
+            /// every other leaf.
+            case leaf(String, operand: Int?, markedWord: String?)
             /// A negation — from `-`, `NOT`, or a dash attached to a group.
             case not(Node)
             /// A parenthesised group, kept so the rendered text keeps the researcher's parentheses.
@@ -789,9 +859,10 @@ public enum FTS5InlineQueryParser {
             self.kind = kind
         }
 
-        /// A leaf: the rendered operand `text`, harvested at `operand`, marked exact when `isMarked`.
-        static func leaf(_ text: String, operand: Int?, isMarked: Bool = false) -> Node {
-            Node(.leaf(text, operand: operand, isMarked: isMarked))
+        /// A leaf: the rendered operand `text`, harvested at `operand`, marked exact on `markedWord` when it is not
+        /// `nil`.
+        static func leaf(_ text: String, operand: Int?, markedWord: String? = nil) -> Node {
+            Node(.leaf(text, operand: operand, markedWord: markedWord))
         }
 
         /// The negation of `inner`.
@@ -947,15 +1018,15 @@ public enum FTS5InlineQueryParser {
                     var positive = operand
                     positive.negated = false
                     if let core = render(positive, columnPrefix: columnPrefix) {
-                        var term: String?
+                        var exact: (term: String, word: String)?
                         if operand.isExact, case .word(let raw) = operand.kind {
-                            term = exactTerm(from: raw)
+                            exact = exactTerm(from: raw)
                         }
                         harvest.operands.append(ProtoOperand(
                             text: operand.surfaceText, core: core,
                             kind: operand.kind.parsedKind, isExact: operand.isExact,
-                            exactTerm: term))
-                        let leaf = Node.leaf(core, operand: harvest.operands.count - 1, isMarked: term != nil)
+                            exactTerm: exact?.term, exactWord: exact?.word))
+                        let leaf = Node.leaf(core, operand: harvest.operands.count - 1, markedWord: exact?.word)
                         items.append(.node(operand.negated ? .not(leaf) : leaf))
                     }
                 }
@@ -1065,12 +1136,13 @@ public enum FTS5InlineQueryParser {
     /// `exclude`, `disjoin` and `combineParts` — and is sound but not complete: `isEmpty` is `true` only when the
     /// expression matches no document in any corpus, and `false` says nothing.
     ///
-    /// Both questions compare operands by what they match (`OperandIdentity`), so `=cold`, `cold` and the phrase `"cold"`
-    /// are one identity. They differ in which leaves count. Refusal asks what the stemmed MATCH requires, so every leaf
-    /// does. A post-filter asks what the literal word requires, so `requiredMarked` is seeded by marked leaves alone: every
-    /// match of `(=cold OR war) cold` holds the identity `"cold"` through the unmarked leaf, and none need hold it through
-    /// a marked one, while every match of `=cold war OR =cold peace` holds it through a marked leaf, whichever alternative
-    /// it matches.
+    /// Refusal asks what the stemmed MATCH requires, so every leaf counts, compared by what it matches
+    /// (`OperandIdentity`): `=cold`, `cold` and the phrase `"cold"` are one identity. A post-filter asks what the
+    /// literal word requires, so `requiredMarked` counts marked leaves alone, and compares them the way the filter
+    /// compares words, by index word (`ExactWordMatcher.word(_:)`), never by spelling. Every match of
+    /// `(=cold OR war) cold` holds the identity `"cold"` through the unmarked leaf, and none need hold the word through
+    /// a marked one; every match of `=Cold war OR =cold. peace` holds the word cold through a marked leaf, whichever
+    /// alternative it matches, although the two marks render `"cold"` and `"cold."`.
     private struct Expr {
         /// The FTS5 text.
         var text: String
@@ -1082,15 +1154,18 @@ public enum FTS5InlineQueryParser {
         var sufficient: Set<OperandIdentity> = []
         /// Operands no document the expression matches can match.
         var forbidden: Set<OperandIdentity> = []
-        /// The identities every document the expression matches also matches through a MARKED leaf — one required marked
-        /// leaf, or a marked leaf in every alternative.
+        /// The words every document the expression matches holds through a MARKED leaf — one required marked leaf, or a
+        /// marked leaf in every alternative — each as the index word the exact-word filter compares
+        /// (`ExactWordMatcher.word(_:)`), so marks typed `Cold`, `cold.` and `cold` are one word, and `café` and `cafe`
+        /// one. No column prefix is kept, because only a typed word carries a mark and every typed word carries the
+        /// same one.
         ///
-        /// Structural, so it holds whatever each marked leaf matches: read as the literal word, the marked leaves of an
-        /// identity here still bound every match, so every match holds that literal word. Inside those documents a leaf of
-        /// the identity matches whether it is read literally or by stem, marked or not, positive or excluded, so filtering
+        /// Structural, so it holds whatever each marked leaf matches: read as the literal word, the marked leaves of a
+        /// word here still bound every match, so every match holds that literal word. Inside those documents a leaf of
+        /// the word matches whether it is read literally or by stem, marked or not, positive or excluded, so filtering
         /// the stemmed MATCH on the word returns exactly what the expression means with every mark on it read literally
         /// (D1, D4). An unmarked leaf seeds nothing, because what it requires is the stem.
-        var requiredMarked: Set<OperandIdentity> = []
+        var requiredMarked: Set<String> = []
         /// Whether the expression provably matches no document.
         var isEmpty = false
 
@@ -1145,12 +1220,12 @@ public enum FTS5InlineQueryParser {
         }
     }
 
-    /// One rendered operand, which requires and suffices for itself — and, when it is `marked`, requires its identity
-    /// through a marked leaf.
-    private static func operand(_ text: String, marked: Bool = false) -> Expr {
+    /// One rendered operand, which requires and suffices for itself — and, when it carries a `markedWord`, requires
+    /// that word through a marked leaf.
+    private static func operand(_ text: String, markedWord: String? = nil) -> Expr {
         let identity = OperandIdentity(rendered: text)
         return Expr(text: text, precedence: .atom, required: [identity], sufficient: [identity],
-                    requiredMarked: marked ? [identity] : [])
+                    requiredMarked: markedWord.map { [$0] } ?? [])
     }
 
     /// `expression` in parentheses, which change its precedence and nothing it matches.
@@ -1271,8 +1346,8 @@ public enum FTS5InlineQueryParser {
         node.meaningSettlements += 1
         #endif
         switch node.kind {
-        case .leaf(let text, _, let isMarked):
-            node.meaning = .matching(operand(text, marked: isMarked))
+        case .leaf(let text, _, let markedWord):
+            node.meaning = .matching(operand(text, markedWord: markedWord))
         case .opaque(let text):
             node.meaning = .matching(opaqueOperand(text))
         case .not(let inner):
@@ -1921,17 +1996,17 @@ public enum FTS5InlineQueryParser {
         return .operand(Operand(negated: negated, isExact: isExact, kind: .word(text)))
     }
 
-    /// The literal word an exact operand filters on, or `nil` when the sigil cannot
-    /// apply.
+    /// The literal word an exact operand filters on, as typed and as the index word `ExactWordMatcher` compares, or
+    /// `nil` when the sigil cannot apply.
     ///
     /// Returns `nil` for anything that is not exactly one index token — `="co-operate"`,
     /// `="U.S.S.R."`. Those have no single-word answer, and filtering on one fragment of
     /// what the researcher typed would be worse than ignoring the sigil. The query still
     /// runs stemmed, which is what it would have done without the `=`.
-    private static func exactTerm(from raw: String) -> String? {
+    private static func exactTerm(from raw: String) -> (term: String, word: String)? {
         let sanitized = sanitizeBareToken(raw)
-        guard !sanitized.isEmpty, ExactWordMatcher.isSingleToken(sanitized) else { return nil }
-        return sanitized
+        guard !sanitized.isEmpty, let word = ExactWordMatcher.word(sanitized) else { return nil }
+        return (sanitized, word)
     }
 
     // MARK: - Rendering
@@ -2093,6 +2168,9 @@ public struct StructuredQueryParts: Sendable, Equatable {
 ///          (`ParsedOperand.isExactApplied`), not from any required operand sharing the word's stem
 ///   1.5 — #1297 round-3 parser fixes: `exactTerms` also holds a word marked in every alternative (D4), in the order of each
 ///          word's first applied operand
+///   1.6 — #1297 round-4 parser fixes: `exactTerms` is de-duplicated by index word (`ExactWordMatcher.word(_:)`),
+///          keeping the first spelling applied, so `=Soviet =soviet` reports `["Soviet"]` where it reported both
+///          spellings
 public struct ParsedQuery: Sendable, Equatable {
 
     /// The MATCH expression, or `nil` when the query is refused: it holds no term that is
@@ -2101,10 +2179,14 @@ public struct ParsedQuery: Sendable, Equatable {
     /// `FTS5InlineQueryParser.maximumGroupDepth`.
     public let expression: String?
 
-    /// Words the researcher marked with `=` that every match of `expression` must contain literally, de-duplicated: the
+    /// Words the researcher marked with `=` that every match of `expression` must contain literally, one per word: the
     /// term of every operand that is `isExactApplied`, in the order of each word's first such operand. Every positive
     /// `=` operand on a reported word applies, so that is the word's first positive mark:
     /// `(=containment OR europe) =rollback =containment` reports `["containment", "rollback"]`.
+    ///
+    /// A word is the index word the filter compares (`ExactWordMatcher.word(_:)`), not a spelling, and the term
+    /// reported for it is the spelling of that first operand, as typed: `=Cold war OR =cold. peace` reports `["Cold"]`
+    /// and `(=café OR war) =cafe` reports `["café"]`. Any spelling of a word filters the same.
     ///
     /// The SQL layer ANDs one exact-word filter per term over the results, so a word the
     /// expression leaves optional — an `OR` alternative, a term inside a negated group — is not
@@ -2172,6 +2254,8 @@ public struct ParsedQuery: Sendable, Equatable {
 ///   1.3 — #1297 round-2 parser fixes: `isExactApplied`, whether the search post-filters on this operand's literal word
 ///   1.4 — #1297 round-3 parser fixes: `isExactApplied` is decided per word over marked operands (D4), so it holds for every
 ///          positive `=` operand on a word every match holds literally
+///   1.5 — #1297 round-4 parser fixes: a word is the index word the filter compares, so `isExactApplied` holds for
+///          every spelling of it (`=cold. war OR =cold peace`); `isExact`'s doc states the per-word rule
 public struct ParsedOperand: Sendable, Equatable {
 
     /// What kind of searchable unit this is.
@@ -2211,15 +2295,20 @@ public struct ParsedOperand: Sendable, Equatable {
 
     /// Whether it carried the `=` exact-word mark, as typed — whether or not the search applies it.
     ///
-    /// Use `isExactApplied` for what the search does with the mark: the parser ignores a mark on an operand the
-    /// expression leaves optional or excludes, and on a word that is not a single index token.
+    /// Use `isExactApplied` for what the search does with the mark, which the parser decides per word (D4): it applies
+    /// the mark when every match holds the operand's word through some `=` operand — one every match must match, or one
+    /// in every alternative — and then on every positive `=` operand on that word. It ignores the mark on an excluded
+    /// operand; on a word no marked operand makes every match hold, even where an unmarked operand, a phrase or a
+    /// demoted word with its stem is required (`=cold OR war`, `(=cold OR war) cold`); and on a word that is not a
+    /// single index token.
     public let isExact: Bool
 
     /// Whether the search applies this operand's `=` mark: it is typed, applied and positive, and every match of the
     /// expression holds its word through a marked operand, so the SQL layer post-filters every result on the literal
     /// word — one of `ParsedQuery.exactTerms`.
     ///
-    /// Decided over marked operands only (D4). Once a word's mark applies, every positive `=` operand on it does: in
+    /// Decided over marked operands only (D4), by index word (`ExactWordMatcher.word(_:)`), so marks spelled `Cold`,
+    /// `cold.` and `cold` are marks on one word. Once a word's mark applies, every positive `=` operand on it does: in
     /// `(=cold OR war) =cold` both are applied, because every match holds the literal word through the second and
     /// inside those documents the first reads the same, and in `=cold war OR =cold peace` both are applied, because
     /// every alternative holds a mark. But in `(=cold OR war) cold` neither the mark nor the term applies, although
