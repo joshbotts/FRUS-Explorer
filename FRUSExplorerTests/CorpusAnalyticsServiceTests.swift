@@ -77,6 +77,9 @@ func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: IndexingPipeline
 ///         operand by operand — `(=containment OR alliance) containment` and `=containment OR containment alliance`
 ///         chart, `(=containment OR alliance) =containment`, `-(alliance -=containment)` and, under parser 6.5's D4,
 ///         `=containment OR =containment alliance` refuse
+///   1.2 — #1297 round 4: a word is named once however its marks are spelled (parser 6.6 compares them as the filter
+///         reads words), in the spelling of its first applied mark, and a word marked in every alternative in two
+///         spellings refuses
 @Suite("CorpusAnalyticsService — By Volume")
 struct CorpusAnalyticsServiceTests {
 
@@ -604,13 +607,18 @@ struct CorpusAnalyticsServiceTests {
             // unmarked containment every match requires does not make the alternative's mark apply, so that query charts
             // by stem; a second, required mark applies, and refuses. Parser 6.5 (round 3, D4) decides the field by
             // requirement over marked operands, so a word marked in every alternative refuses too, and a word one
-            // alternative holds unmarked charts. Each answer is the parser's field.
+            // alternative holds unmarked charts. Each answer is the parser's field. Parser 6.6 (round 4) compares marks as
+            // the filter reads words, so a word is named once however its marks are spelled, as its first applied mark
+            // spells it.
             let perOperand: [(term: String, unsupported: [String])] = [
                 ("(=containment OR alliance) containment", []),
                 ("(=containment OR alliance) =containment", ["containment"]),
                 ("-(alliance -=containment)", ["containment"]),
                 ("=containment OR =containment alliance", ["containment"]),
                 ("=containment OR containment alliance", []),
+                ("=Containment =containment", ["Containment"]),
+                ("(=containment OR alliance) =Containment.", ["containment"]),
+                ("=Containment. OR =containment alliance", ["Containment."]),
             ]
             for (term, unsupported) in perOperand {
                 #expect(CorpusAnalyticsService.unsupportedExactTerms(in: term) == unsupported, "\(term)")
@@ -628,6 +636,8 @@ struct CorpusAnalyticsServiceTests {
             #expect(try await service.termFrequencyByYear(term: "=containment OR containment alliance")
                         .first { $0.year == 1971 }?.count == 2,
                     "Unmarked in one alternative, no mark applies, and the stem charts both documents")
+            #expect(try await service.termFrequencyByYear(term: "=Containment. OR =containment alliance").isEmpty,
+                    "Marked in every alternative in two spellings of one word, the stem is not charted either")
         }
     }
 }

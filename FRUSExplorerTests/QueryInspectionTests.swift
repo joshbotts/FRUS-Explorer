@@ -47,6 +47,10 @@ import SwiftUI
 ///         a same-words negation flip clears it while counting and a scope toggle keep it (A3); each unread refresh input
 ///         is checked against a base where reading it would change a count (A5); the strip is rendered, so a NOT APPLIED
 ///         row that is gated out or hidden fails (A6)
+///   1.7 — #1297 round 4: every zero-result blame case runs the production entry, `emptyConjuncts(parameters:)`, and a
+///         restored phrase and prefix are blamed through it (B1); the iOS view model's submitted parameters are run, two
+///         NOT APPLIED rows are rendered, an `=` flip and a word-to-phrase change clear the blame, and a cleared person
+///         label is an unread input (B2); an `=` on one word in two spellings is tagged and counted on both (B4)
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -359,8 +363,7 @@ struct QueryInspectionTests {
         let params = SearchParameters(keywords: "europe formosa")
         #expect(try await inspector.searchService.searchCount(parameters: params) == 0)
 
-        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
-        let empty = await inspector.emptyConjuncts(in: inspection, parameters: params)
+        let empty = await inspector.emptyConjuncts(parameters: params)
         #expect(empty.map(\.text) == ["formosa"],
                 "only the conjunct that is actually empty may be blamed")
     }
@@ -371,8 +374,7 @@ struct QueryInspectionTests {
         defer { cleanUp(dir) }
 
         let params = SearchParameters(keywords: "containment europe")
-        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
-        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).isEmpty)
+        #expect(await inspector.emptyConjuncts(parameters: params).isEmpty)
     }
 
     @Test("Decomposition keeps the filters — the question is 'empty here', not 'anywhere'")
@@ -382,8 +384,7 @@ struct QueryInspectionTests {
 
         var params = SearchParameters(keywords: "containment europe")
         params.documentTypeFilter = .editorialNotesOnly
-        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
-        let empty = await inspector.emptyConjuncts(in: inspection, parameters: params)
+        let empty = await inspector.emptyConjuncts(parameters: params)
         // Under this filter *both* terms are empty, which is itself the answer: the filter
         // is the problem, not either word. A decomposition that dropped the filter would
         // report neither and leave the researcher with "no results" and no explanation.
@@ -396,10 +397,41 @@ struct QueryInspectionTests {
         defer { cleanUp(dir) }
 
         let params = SearchParameters(keywords: "formosa -zzznothing")
-        let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
-        let empty = await inspector.emptyConjuncts(in: inspection, parameters: params)
+        let empty = await inspector.emptyConjuncts(parameters: params)
         #expect(!empty.contains { $0.isNegated })
         #expect(empty.map(\.text) == ["formosa"])
+    }
+
+    /// Round 4 (B1): `emptyConjuncts(parameters:)` is the one entry both hosts reach, through
+    /// `QueryInspectorController.decomposeZeroResult`, and round 3's tests reached it only with typed text. A restored
+    /// saved search carries a phrase, prefix or excluded terms beside what is typed, and the search that came back empty
+    /// ran all of them, so the blame must be measured over all of them: a decomposition of the typed text alone blamed
+    /// nothing here, and the zero-result view then says every term matches on its own.
+    @Test("The zero-result blame measures a restored phrase, prefix and excluded term beside the typed text")
+    @MainActor
+    func emptyConjunctsDecomposeTheStructuredParts() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let service = inspector.searchService
+
+        let phrase = SearchParameters(keywords: "europe", phrase: "zzz qqq", excludedTerms: ["formosa"])
+        #expect(try await service.searchCount(parameters: phrase) == 0, "precondition: the search that ran is empty")
+        #expect(try await service.searchCount(parameters: SearchParameters(keywords: "europe")) == 2,
+                "precondition: the typed europe is in d1 and d3, so it is not the reason")
+        let blamedPhrase = await inspector.emptyConjuncts(parameters: phrase)
+        #expect(blamedPhrase.map(\.text) == ["zzz qqq"],
+                "the restored phrase matches nothing, and the excluded formosa is never blamed")
+        #expect(blamedPhrase.map(\.source) == [.structured])
+
+        let prefix = SearchParameters(keywords: "europe", prefixWildcard: "zzzq")
+        #expect(try await service.searchCount(parameters: prefix) == 0, "precondition: the search that ran is empty")
+        #expect(await inspector.emptyConjuncts(parameters: prefix).map(\.text) == ["zzzq*"])
+
+        // Through the controller, as a host runs it: the field holds only the typed word the restored search kept.
+        let controller = QueryInspectorController()
+        await controller.refresh(parameters: phrase, service: service, indexedVolumeCount: 1)
+        await controller.decomposeZeroResult(parameters: phrase, service: service)
+        #expect(controller.emptyConjuncts.map(\.text) == ["zzz qqq"])
     }
 
     // MARK: - Per-operand re-query fidelity
@@ -575,14 +607,18 @@ struct QueryInspectionTests {
     /// Two inspections that differ only in which word was left out must draw differently, which a row that is absent,
     /// hidden or transparent cannot do. The control shows the renderer draws the strip's text at all, so a failure of
     /// the first assertion is about the rows.
+    ///
+    /// Round 4 (B2, X1i): one row per strip cannot see a gate on WHICH row draws — `.opacity(operand ==
+    /// inspection.notApplied.first ? 1 : 0)` draws the first row and hides the rest. Two rows that differ only in the
+    /// second word must draw differently too.
     @Test("The strip draws every NOT APPLIED row it is given")
     @MainActor
     func stripDrawsNotAppliedRows() throws {
-        func rendered(expression: String, notApplied word: String) throws -> (width: Int, height: Int, pixels: [UInt8]) {
+        func rendered(expression: String, notApplied words: [String]) throws -> (width: Int, height: Int, pixels: [UInt8]) {
             let inspection = QueryInspection(
                 expression: RenderedExpression(corpus: expression, userContent: expression), operands: [],
                 indexedVolumeCount: 1, isFilterOnly: false,
-                notApplied: [ParsedOperand(text: word, rendered: "NOT \"\(word)\"", kind: .word, isNegated: true, isExact: false)],
+                notApplied: words.map { ParsedOperand(text: $0, rendered: "NOT \"\($0)\"", kind: .word, isNegated: true, isExact: false) },
                 isApproximate: true)
             #expect(inspection.showsTermRows, "precondition: the rows are gated in")
             let renderer = ImageRenderer(content: QueryInspectorStrip(inspection: inspection, isExpanded: true,
@@ -598,14 +634,22 @@ struct QueryInspectionTests {
             return (image.width, image.height, pixels)
         }
 
-        let control = try rendered(expression: "\"cold\"", notApplied: "korea")
-        #expect(try rendered(expression: "\"war\"", notApplied: "korea").pixels != control.pixels,
+        let control = try rendered(expression: "\"cold\"", notApplied: ["korea"])
+        #expect(try rendered(expression: "\"war\"", notApplied: ["korea"]).pixels != control.pixels,
                 "control: the renderer draws the strip's text, so an identical pair below is about the rows")
-        let other = try rendered(expression: "\"cold\"", notApplied: "formosa")
+        let other = try rendered(expression: "\"cold\"", notApplied: ["formosa"])
         #expect(other.width == control.width && other.height == control.height,
                 "precondition: one row each, so the two strips are the same size")
         #expect(other.pixels != control.pixels,
                 "a NOT APPLIED row that draws its word makes these differ; an absent, hidden or clear one does not")
+
+        let twoRows = try rendered(expression: "\"cold\"", notApplied: ["korea", "formosa"])
+        let otherSecond = try rendered(expression: "\"cold\"", notApplied: ["korea", "taiwan"])
+        #expect(twoRows.width == otherSecond.width && twoRows.height == otherSecond.height,
+                "precondition: two rows each, so the two strips are the same size")
+        #expect(twoRows.height > control.height, "precondition: the second row takes space of its own")
+        #expect(twoRows.pixels != otherSecond.pixels,
+                "every NOT APPLIED row draws its word, not only the first")
     }
 
     @Test("Replacing the operands carries every other fact across, the not-applied ones included")
@@ -659,7 +703,7 @@ struct QueryInspectionTests {
         let counted = await inspector.scopedCounts(for: inspection, parameters: params)
         #expect(counted.map(\.operand.text) == ["cold"], "korea was never searched, so never counted")
         // Neither word is in the fixture: cold is empty on its own and may be blamed; korea may not.
-        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).map(\.text) == ["cold"])
+        #expect(await inspector.emptyConjuncts(parameters: params).map(\.text) == ["cold"])
     }
 
     /// Needs the #1297 parser: the not-applied rows must survive the controller's scoped-count
@@ -714,8 +758,8 @@ struct QueryInspectionTests {
 
         // Neither word is in the fixture, so each is empty on its own — only the applied,
         // non-excluded one may be blamed.
-        #expect(await inspector.emptyConjuncts(in: viaKeyword, parameters: keyword).map(\.text) == ["cold"])
-        #expect(await inspector.emptyConjuncts(in: viaDash, parameters: dash).map(\.text) == ["cold"])
+        #expect(await inspector.emptyConjuncts(parameters: keyword).map(\.text) == ["cold"])
+        #expect(await inspector.emptyConjuncts(parameters: dash).map(\.text) == ["cold"])
     }
 
     // MARK: - Typed text beside the structured fields (#1297 join)
@@ -763,7 +807,7 @@ struct QueryInspectionTests {
                 "d2 carries contain and not europe; d1 carries both and no alliance")
         let counted = await inspector.scopedCounts(for: inspection, parameters: params)
         #expect(counted.map(\.scopedCount) == [1, nil, 2])
-        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).isEmpty)
+        #expect(await inspector.emptyConjuncts(parameters: params).isEmpty)
     }
 
     /// A structured operand cannot always be re-spelled as typed text, so its count must come from
@@ -1017,15 +1061,21 @@ struct QueryInspectionTests {
     // MARK: - An = mark, operand by operand (#1297 round 2)
 
     /// A1: whether an `=` applies is the parser's per-operand answer (`ParsedOperand.isExactApplied`), and round 1's
-    /// inspector decided it per WORD, keeping a typed mark whenever the operand's word was among `ParsedQuery.exactTerms`.
-    /// The two still part on an excluded mark beside an applied one: in `=cold war -=cold` the word is reported, and
-    /// only the first cold is filtered on.
+    /// inspector decided it per WORD, keeping a typed mark on a positive operand whenever the operand's own term was among
+    /// `ParsedQuery.exactTerms`. `=cold war -=cold` does not separate the two, since round 1 checked negation too; it pins
+    /// the negation, which a word rule that did not check it would tag on both colds.
     ///
     /// Round 3 (D4, parser 6.5): the parser decides the field by requirement over MARKED operands. A word every match
     /// must hold through a mark — a required mark, or a mark in every alternative — applies on every positive `=`
     /// operand on it, since inside the filtered documents each reads the same: `(=cold OR war) =cold` tags both colds,
     /// and `=cold war OR =cold peace` both. An unmarked occurrence never makes a mark apply, so `(=cold OR war) cold`
     /// and `=cold war OR cold peace` tag nothing. The inspected operands are the parser's, compared whole.
+    ///
+    /// Round 4 (B4, parser 6.6): the parser compares marks as the filter compares words, so capitalisation, accents and
+    /// punctuation at either end do not make two words, and `exactTerms` names each word once, in the spelling of its
+    /// first applied operand. That is where a word rule parts from the parser again: in `(=café OR war) =cafe` both marks
+    /// apply and `exactTerms` is `["café"]`, so round 1's rule, or one checking `exactTerms.contains(operand.text)`, tags
+    /// only the first — and counts `=cafe` by its stem.
     @Test("The EXACT tag and the exact count follow each operand's applied mark, which the parser decides by requirement")
     func exactMarkIsReadPerOperand() async throws {
         let (dir, inspector) = try await makeFixture()
@@ -1039,6 +1089,9 @@ struct QueryInspectionTests {
             ("=cold OR =cold war", [true, true, false], [true, true, false]),
             ("=cold war OR cold peace", [true, false, false, false], [false, false, false, false]),
             ("=cold war -=cold", [true, false, true], [true, false, false]),
+            ("(=café OR war) =cafe", [true, false, true], [true, false, true]),
+            ("=Cold war OR =cold. peace", [true, false, true, false], [true, false, true, false]),
+            ("(=cold OR war) Cold", [true, false, false], [false, false, false]),
         ]
         for (text, typed, applied) in cases {
             let inspection = await inspector.inspect(parameters: SearchParameters(keywords: text), indexedVolumeCount: 1)
@@ -1067,6 +1120,8 @@ struct QueryInspectionTests {
         // Marked in every alternative, the word applies in both (d1 only); unmarked in one, in neither (d1 and d2).
         try await check("=containment OR =containment alliance", searched: 1, scoped: [1, 1, 1])
         try await check("=containment OR containment alliance", searched: 2, scoped: [2, 2, 1])
+        // One word in two spellings: both marks apply, and each is counted as the literal word (d1), not by the stem.
+        try await check("(=Containment OR alliance) =containment.", searched: 1, scoped: [1, 1, 1])
     }
 
     /// The strip's EXACT tag must read the parser's per-operand field. The gate and the key are matched as one anchored
@@ -1160,8 +1215,9 @@ struct QueryInspectionTests {
     /// `personLabel`, or scoping user tags by `projectId` alters no filter, so a pass that started to read any of them
     /// still passed. Here the anchor and the label name a person whose rollup counts differently from, and shares no
     /// document with, the one `personRollupId` filters on, and the project sits beside a user tag whose filter changes
-    /// the counts — each difference asserted before the unread field is changed. `booleanMode` keeps the plain base: the inline parser is
-    /// the only thing that could read it, and a parse that did would render a different expression.
+    /// the counts — each difference asserted before the unread field is changed. `booleanMode` keeps the plain base: the
+    /// inline parser is the only thing that could read it, and a parse that did would render a different expression.
+    /// Round 4 (P2c): the label is also cleared, since a pass reading it by presence sees no non-nil rename.
     @Test("The refresh inputs hold exactly the parameter fields the inspection reads")
     func inputsHoldExactlyWhatTheInspectionReads() async throws {
         let (dir, inspector, pipeline) = try await makeFixture(xml: personAndTagVolumeXML())
@@ -1237,6 +1293,9 @@ struct QueryInspectionTests {
         let unread: [(field: String, base: SearchParameters, change: (inout SearchParameters) -> Void)] = [
             ("booleanMode", plain, { $0.booleanMode = .or }),
             ("personLabel", personBase, { $0.personLabel = "Acheson, Dean" }),
+            // Round 4 (B2, P2c): cleared, not only renamed — a pass reading the label by presence beside an anchor
+            // passed every non-nil change.
+            ("personLabel", personBase, { $0.personLabel = nil }),
             ("personAnchor", personBase, { $0.personAnchor = PersonRollupAnchor(volumeId: "vol1", ref: "p_acheson") }),
             ("projectId", tagBase, { $0.projectId = UUID() }),
         ]
@@ -1289,7 +1348,9 @@ struct QueryInspectionTests {
     /// Round 3 pins what "the operands" means, each against a rule that passed round 2's test (B1, C3, C24): the parsed
     /// operands, marks included, so flipping `formosa` to `-formosa` over the same words clears the blame; not the
     /// inspected rows, whose scoped counts a request for counts fills in, so a filter change after counting keeps it; and
-    /// not the expression, which a scope toggle re-renders over the same operands, so that keeps it too.
+    /// not the expression, which a scope toggle re-renders over the same operands, so that keeps it too. Round 4 (B1b) pins
+    /// the marks against a rule comparing each operand's rendering: `=formosa europe` and `"formosa" europe` render as
+    /// `formosa europe` does.
     @Test("A refresh after a filter-only change keeps the zero-result blame; a refresh after editing the terms clears it")
     @MainActor
     func refreshKeepsBlameWhenTheOperandsAreUnchanged() async throws {
@@ -1324,6 +1385,23 @@ struct QueryInspectionTests {
         await controller.refresh(parameters: params, service: service, indexedVolumeCount: 1)
         #expect(controller.inspection?.operands.map(\.operand.text) == ["formosa", "europe"], "precondition: the same words")
         #expect(controller.emptyConjuncts.isEmpty, "an excluded term is never the reason a query is empty")
+
+        // Round 4 (B1b): an `=` flip and a word-to-phrase change render each operand as before, so a rule comparing the
+        // rendered operands kept the blame. Each is a different query: the first filters to the literal word, the second
+        // searches a phrase, and a blame measured for neither must not stay up. (Not the expression: notes are out of
+        // scope here, and the user-content expression narrows the words to the summary column but not a typed phrase.)
+        for edited in ["=formosa europe", "\"formosa\" europe"] {
+            params.keywords = "formosa europe"
+            await controller.refresh(parameters: params, service: service, indexedVolumeCount: 1)
+            await controller.decomposeZeroResult(parameters: params, service: service)
+            #expect(controller.emptyConjuncts.map(\.text) == ["formosa"], "\(edited): precondition, formosa is blamed")
+            let before = controller.inspection
+            params.keywords = edited
+            await controller.refresh(parameters: params, service: service, indexedVolumeCount: 1)
+            #expect(controller.inspection?.operands.map(\.operand.rendered) == before?.operands.map(\.operand.rendered),
+                    "\(edited): precondition, every operand renders as before")
+            #expect(controller.emptyConjuncts.isEmpty, "\(edited): a different query, so the blame is cleared")
+        }
 
         params.keywords = "formosa europe"
         await controller.refresh(parameters: params, service: service, indexedVolumeCount: 1)
@@ -1368,6 +1446,33 @@ struct QueryInspectionTests {
         await controller.refresh(parameters: SearchParameters(keywords: "europe"), service: service, indexedVolumeCount: 1)
         await controller.decomposeZeroResult(parameters: submitted, service: service)
         #expect(controller.emptyConjuncts.map(\.text) == ["formosa"], "formosa ran and matched nothing, whatever the field now holds")
+    }
+
+    /// Round 4 (B2, S1): `hostsDecomposeTheSubmittedQuery` reads that the iOS host passes
+    /// `vm.submittedSearchParameters`, and nothing ran the property. Returning the live parameters, keywords included,
+    /// kept the call site the scan reads and put back the blame of a query nobody ran. Driven here as the host drives it:
+    /// search, keep typing, refresh the field, decompose the submitted parameters.
+    @Test("The iOS view model's submitted parameters keep the text of the search that ran, so the blame names only it")
+    @MainActor
+    func submittedParametersKeepTheSearchedText() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let service = inspector.searchService
+
+        let vm = SearchViewModel(searchService: service)
+        vm.keywords = "formosa europe"
+        await vm.search()
+        #expect(vm.hasSearched && vm.searchError == nil && vm.results.isEmpty,
+                "precondition: the search ran and came back empty")
+        vm.keywords = "formosa europe zzzasia"
+        #expect(vm.searchParameters.keywords == "formosa europe zzzasia", "precondition: the field has moved on")
+        #expect(vm.submittedSearchParameters.keywords == "formosa europe", "the submitted parameters hold what ran")
+
+        let controller = QueryInspectorController()
+        await controller.refresh(parameters: vm.searchParameters, service: service, indexedVolumeCount: 1)
+        await controller.decomposeZeroResult(parameters: vm.submittedSearchParameters, service: service)
+        #expect(controller.emptyConjuncts.map(\.text) == ["formosa"],
+                "zzzasia matches nothing either, but the search that came back empty never held it")
     }
 
     /// A3's host half: each host hands the decomposition the parameters of the search that ran. The iOS host passed the
