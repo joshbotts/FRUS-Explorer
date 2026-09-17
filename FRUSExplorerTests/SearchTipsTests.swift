@@ -46,6 +46,9 @@ import SQLite3
 ///         since "15" contains "5"; no string may be its own localization key, which is what an emptied default
 ///         renders; a spoken label must say every word and number of its example; and the index reads that follow a
 ///         count are `try #require`, so a short split fails the test instead of trapping the host.
+///   1.2 — #1299 round 2: the exact-word row must name a word the index splits into several terms among the places the
+///         mark is always ignored, and `=anti-communist` is executed over "anti-communists" to show it is; the prefix
+///         check's doc gives `negotiatory` as 21 occurrences in 8 volume files, where it said "in 26 volumes".
 @Suite("Search Tips say what the query actually does")
 struct SearchTipsTests {
 
@@ -275,8 +278,9 @@ struct SearchTipsTests {
 
     /// `negoti*`: a prefix is matched against stems, so the short prefix the detail names finds a form the longer one it
     /// names misses. The longer one is not a prefix that finds NOTHING, though — a word whose own stem keeps its letters
-    /// still matches, and the shipped corpus has one: `negotiatory`, 21 times in 26 volumes counting its misspellings
-    /// (#1299 review). So the detail may say the long prefix misses a form, and may not say it finds nothing.
+    /// still matches, and the shipped corpus has one: `negotiatory`, 21 times in 8 volume files, and misspellings such as
+    /// `negotiatons` in more (#1299 review). So the detail may say the long prefix misses a form, and may not say it finds
+    /// nothing.
     private func checkPrefix(_ tip: SearchTip) throws {
         let stem = String(tip.example.dropLast())
         #expect(tip.example.hasSuffix("*"))
@@ -360,7 +364,8 @@ struct SearchTipsTests {
     /// `=containment`: stemming off for that word — and nothing else. The mark folds capitalization, a single accent and
     /// punctuation at either end, as `ExactWordMatcher` reads a word, so a detail saying it matches the word "only as
     /// you typed it" is false (`=Hull` counts every ship's hull). It is ignored where a match need not contain the
-    /// word, on a prefix, and inside `NEAR(…)`, whose operands carry no exact term.
+    /// word, on a prefix, inside `NEAR(…)`, whose operands carry no exact term, and on a word the index splits into
+    /// several terms, which has no single word to filter on.
     private func checkExactWord(_ tip: SearchTip) throws {
         let word = String(tip.example.dropFirst())
         #expect(p(tip.example).exactTerms == [word])
@@ -397,6 +402,19 @@ struct SearchTipsTests {
         #expect(try count("\(tip.example) policy", over: nearRows) == 1, "precondition: outside NEAR the mark applies")
         #expect(try count(nearQuery, over: nearRows) == 2, "inside NEAR the mark is ignored")
         #expect(tip.detail.contains("NEAR("), "the detail does not say the = is ignored inside NEAR(…)")
+
+        // On a word the index splits into several terms the mark is dropped too, and the word is searched by its stems:
+        // `=anti-Communist` still counts anti-Communists, a form the corpus prints 185 times beside 4,578 anti-Communist.
+        // So the detail names that case among the places the mark is always ignored (both manuals and the Corpus
+        // Analytics Multiple words row already do).
+        let split = "anti-Communist"
+        #expect(p("=" + split).exactTerms == [], "the mark reached a word the index splits")
+        let splitRows = ["the \(split.lowercased())s met"]
+        #expect(try count("=communist", over: splitRows) == 0,
+                "precondition: where the mark applies, the plural of a hyphenated word is refused")
+        #expect(try count("=" + split.lowercased(), over: splitRows) == 1, "on a split word the mark is ignored")
+        #expect(tip.detail.contains(split) && tip.detail.contains("splits"),
+                "the detail does not say the = is ignored on a word the index splits, such as \(split)")
     }
 
     /// `-korea`: a query of exclusions alone is refused; an exclusion-only alternative is left out, and the detail

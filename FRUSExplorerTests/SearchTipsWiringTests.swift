@@ -20,14 +20,16 @@ import Foundation
 /// pre-search screen, a link BELOW the Query Inspector's disclosure button on a refused or narrower-than-typed query,
 /// and a Find-menu item on each platform — with no new keyboard shortcut and no sixth icon in the actions bar.
 ///
-/// **Every presence check reads one brace-matched declaration, one block, one branch or one call's argument list —
-/// never a whole file or a fixed window of characters.** `tipsPanel` and `TipItem` sit in one file beside a dozen other
-/// readers of `.meaning`, so a file-wide `contains` passes for the wrong reason
-/// (`HybridSearchModeTests.bothSurfacesMountMeaningPieces` is the weak form this avoids), and a window of N characters
-/// passes for a call that moved. The branch helper takes the THEN and ELSE blocks of one `if`, so a sheet that showed
-/// the rows in both modes, or the note in neither, fails. **Three ABSENCE checks read a whole file on purpose**: a
-/// literal row typed anywhere in `SearchSheet.swift`, or a Search Tips link anywhere in `QueryInspectorView.swift`, is
-/// the defect wherever it sits, so scoping those bans would only narrow them.
+/// **No presence check reads a whole file or a fixed window of characters.** Each reads one brace-matched declaration
+/// (for the stored hand-off, the `AppState` class itself, since its file also holds an extension and a history note that
+/// name the property), or a block, branch, call's argument list, line or key-to-key span inside one. `tipsPanel` and
+/// `TipItem` sit in one file beside a dozen other readers of `.meaning`, so a file-wide `contains` passes for the wrong
+/// reason (`HybridSearchModeTests.bothSurfacesMountMeaningPieces` is the weak form this avoids), and a window of N
+/// characters passes for a call that moved. The branch helper takes the THEN and ELSE blocks of one `if`, so a sheet that
+/// showed the rows in both modes, or the note in neither, fails. **Five ABSENCE checks read a whole file on purpose**:
+/// four in `macPanelReadsTheModel` — a literal `TipItem(code:` row, the removed person row, the false scope row and the
+/// stale date row, anywhere in `SearchSheet.swift` — and one in `inspectorLinkIsASibling`, a Search Tips link anywhere in
+/// `QueryInspectorView.swift`. Each is the defect wherever it sits, so scoping those bans would only narrow them.
 ///
 /// The macOS half is read from source because `SearchSheet.swift` and `FindMenuContent` are `#if os(macOS)` and this
 /// target builds for iOS only; the iOS half is exercised at runtime too, by `SearchTipsSheetTests`.
@@ -41,6 +43,9 @@ import Foundation
 ///         Inspector card (M21), the presenter passing the real mode to the sheet (M23), no stale literal in the Mac
 ///         panel (M26), the panel mounting on the button alone (M28), `onDisappear` clearing `isOnScreen` (M33); and
 ///         the Search window clearing its error when the index is rebuilt.
+///   1.2 — #1299 round 2: `appStateRequestIsAHandoff` reads the stored hand-off inside the `AppState` class declaration
+///         rather than across the whole file, which 1.1's "no presence check reads a whole file" did not hold for; and
+///         the whole-file absence checks are counted as five, where 1.1 said three.
 @Suite("Search Tips are wired where the owner put them")
 struct SearchTipsWiringTests {
 
@@ -302,9 +307,12 @@ struct SearchTipsWiringTests {
 
     @Test("AppState: a Search Tips request is a one-shot hand-off, addressed like a search")
     func appStateRequestIsAHandoff() throws {
-        let state = try Self.source(Self.appState)
+        let file = try Self.source(Self.appState)
+        // The stored property, in the class itself: the file also holds the hand-off's history note and an extension.
+        let state = try Self.declaration("final class AppState {", in: file)
+        #expect(state.count < file.count && !state.contains("\nextension AppState"), "the class slice ran past the class")
         #expect(state.contains("var pendingSearchTips: Handoff<Bool>? = nil"))
-        let open = try Self.declaration("func openSearchTips(from sceneID: SceneID?) {", in: state)
+        let open = try Self.declaration("func openSearchTips(from sceneID: SceneID?) {", in: file)
         #expect(open.contains("pendingSearchTips = Handoff(target: .macSearch, payload: true)"))
         #expect(open.contains("pendingSearchTips = Handoff(target: sceneID ?? .anyWindow, payload: true)"))
     }

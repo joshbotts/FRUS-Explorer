@@ -75,6 +75,58 @@ struct HybridSearchModeTests {
         }
     }
 
+    /// The Meaning mode reads its FILTERS from the parameters and nothing else (#1299 round 2). The typed text is the
+    /// semantic query, so a keyword mark in it must not reach the intersection: `=containment policy` used to add an
+    /// exact-word filter here, which removed every semantic hit whose document lacks the literal word and reported them
+    /// as "Your filters removed N matches" to a reader who had set no filter — while Search Tips said `=` does nothing
+    /// in a Meaning search.
+    @Test("The Meaning filter key set reads no typed text: a typed = adds no exact-word filter")
+    func filterKeySetIgnoresTypedText() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                               volumeId: "frus1969-76v01",
+                               documents: [
+                ("d1", "<head>Memorandum</head><p>The containment policy toward the Soviet Union.</p>"),
+                ("d2", "<head>Telegram</head><p>We must contain Soviet expansion; that is our policy.</p>"),
+            ])
+            try writeTEIVolume(to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+                               volumeId: "frus1969-76v02",
+                               documents: [
+                ("d1", "<head>Letter</head><p>Containment again.</p>"),
+            ])
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v02")
+
+            // Precondition: in a KEYWORD search the mark is live — it narrows the stemmed match to the literal word —
+            // so a nil key set below is the Meaning route ignoring it, not a mark that does nothing anywhere.
+            let typed = "=containment policy"
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: typed)) == ["containment"])
+            let stemmed = try await service.search(parameters: SearchParameters(keywords: "containment policy"))
+            let marked = try await service.search(parameters: SearchParameters(keywords: typed))
+            #expect(Set(stemmed.map { "\($0.volumeId)/\($0.documentId)" })
+                    == ["frus1969-76v01/d1", "frus1969-76v01/d2"], "precondition: stemmed, contain matches too")
+            #expect(marked.map { "\($0.volumeId)/\($0.documentId)" } == ["frus1969-76v01/d1"],
+                    "precondition: marked, the keyword search keeps only the literal word")
+
+            // No filter set: nothing constrains, whatever the reader typed.
+            for keywords in ["=containment", typed, "=containment -soviet"] {
+                let keys = try await service.filterKeySet(parameters: SearchParameters(keywords: keywords))
+                #expect(keys == nil, "\(keywords) reached the Meaning filter intersection as \(String(describing: keys))")
+            }
+
+            // A real filter beside typed syntax: exactly the filter's own key set.
+            let volumeOnly = try await service.filterKeySet(
+                parameters: SearchParameters(volumeIds: ["frus1969-76v01"]))
+            #expect(volumeOnly == Set(["frus1969-76v01/d1", "frus1969-76v01/d2"]), "precondition: the filter alone")
+            let volumeAndMark = try await service.filterKeySet(
+                parameters: SearchParameters(keywords: "=containment", volumeIds: ["frus1969-76v01"]))
+            #expect(volumeAndMark == volumeOnly, "the typed = narrowed the filter's key set")
+        }
+    }
+
     @Test("Semantic display rows carry the FTS row's fields with a bounded body prefix")
     func semanticDisplayRows() async throws {
         try await withTempDir { dir in

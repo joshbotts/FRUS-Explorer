@@ -29,6 +29,8 @@ import Foundation
 ///   1.1 — #1299 follow-up: every scope off reads as a message naming Filters ▸ Search Scope (it read "FTS5Error error
 ///         5", which the old test here allowed, since it checked only that Search Tips went unnamed); and the macOS
 ///         view model's two empty-query guards clear the previous search's error, which the Search window now shows
+///   1.2 — #1299 round 2: the iOS scope message may not say every scope is off, because Include front matter, under
+///         the same Search Scope header, is still on; it must name document text, summaries and research notes instead
 @Suite("A refused keyword query reads as a message, not an error code")
 @MainActor
 struct SearchRefusalMessageTests {
@@ -107,6 +109,15 @@ struct SearchRefusalMessageTests {
         #expect(!message.contains("FTS5Error"), "every scope off shows an error code: \(message)")
         #expect(!message.contains("couldn’t be completed"), "every scope off shows the system message: \(message)")
         #expect(message.contains("Filters ▸ Search Scope"), "every scope off does not say where to turn one on: \(message)")
+
+        // The same section holds a fourth toggle, Include front matter, which is still on — so the message may not say
+        // every scope is off. It names the three it means, which are the three `readable` reads (#1299 round 2).
+        #expect(vm.includeFrontMatter, "precondition: the front-matter toggle under Search Scope is on")
+        #expect(!message.lowercased().contains("every"),
+                "the message says every scope is off while Include front matter is on: \(message)")
+        for toggle in ["document text", "summaries", "research notes"] {
+            #expect(message.lowercased().contains(toggle), "the message does not name \(toggle): \(message)")
+        }
     }
 
     // MARK: - macOS, by source
