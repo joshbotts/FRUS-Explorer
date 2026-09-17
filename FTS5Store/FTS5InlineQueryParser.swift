@@ -373,7 +373,7 @@
 ///   6.4 — #1297 round-2 fixes: an `=` mark applies per operand, and what is computed from a node is computed once.
 ///          RESULTS MOVE, and only in exact terms.
 ///          (1) An `=` operand is an exact-word post-filter only when every match must match THAT operand. The proof
-///          follows marked leaves by occurrence (`Expr.requiredExact`, replaced at 6.5) beside the identities refusal compares, and
+///          follows marked leaves by occurrence (`Expr.requiredExact`) beside the identities refusal compares, and
 ///          `ParsedOperand.isExactApplied` reports the decision operand by operand; `ParsedQuery.exactTerms` is the terms
 ///          of the operands it marks, in the order typed. 6.3 asked whether the required set held the operand's rendered
 ///          identity, which another operand with the word's stem also renders, so an optional mark became a filter
@@ -383,14 +383,14 @@
 ///          every structured combination, 226,200 parses per scope), non-empty lists go 57,158 → 55,078 unscoped and
 ///          56,358 → 55,078 scoped, from 208 sequences, every change `["cold"]` to `[]` and every changed parse holding
 ///          another operand with cold's stem: an unmarked cold (920 unscoped, 880 scoped), otherwise the phrase "cold"
-///          (800, 40), otherwise a second marked cold (360, 360). Corrected at 6.5, because that reads as though every change
-///          fixed an over-filter: read on `Issue1297InflectedCorpus`, 928 of those 3,360 lists were filters removing no row
-///          the query admits — all 720 with a second marked cold, and 112 with an unmarked cold and 96 with the phrase
-///          (`=cold OR =cold cold`, `=cold "cold" OR =cold`) — and so were all 780 lists the demoted alphabet lost and all
-///          800 the phrase alphabet lost. They were sound filters 6.4 lost, and 6.5 restores every one of them but 48
-///          (`=cold OR korea cold` beside the excluded term korea). Nor did the loss "cost only the filter", as the
-///          `parseDetailed` doc said: the mark was ignored, so the word's inflected forms matched and were counted. So exact
-///          terms no longer depend on the column prefix.
+///          (800, 40), otherwise a second marked cold (360, 360). Corrected at 6.5, because that reads as though every
+///          change fixed an over-filter: read on `Issue1297InflectedCorpus`, 928 of those 3,360 lists were filters
+///          removing no row the query admits — all 720 with a second marked cold, and 112 with an unmarked cold and 96
+///          with the phrase (`=cold OR =cold cold`, `=cold "cold" OR =cold`) — and so were all 780 lists the demoted
+///          alphabet lost and all 800 the phrase alphabet lost. They were sound filters 6.4 lost, and 6.5 restores
+///          every one of them but 48 (`=cold OR korea cold` beside the excluded term korea). Nor did the loss "cost
+///          only the filter", as the `parseDetailed` doc said: the mark was ignored, so the word's inflected forms
+///          matched and were counted. So exact terms no longer depend on the column prefix.
 ///          Over 60,000 random queries of up to 14 tokens beside random structured fields, 1,799 lists change: 1,794 lose
 ///          every term, 4 lose one, and 1 reorders (`["cold", "war"]` → `["war", "cold"]`, the first `=cold` being an
 ///          alternative). No expression, operand, dropped operand or approximation flag moves over 1,411,430 parses —
@@ -413,38 +413,41 @@
 ///          characters none parses more slowly in Release than at 73a37003; the closest, a chain of `NOT` keywords,
 ///          takes 1.1 ms at 8,000 characters in all three builds.
 ///          (3) The stack, measured as the deepest point a parse reaches on a painted thread stack: of 328 queries at
-///          32 levels (fifteen nestings around eleven innermost terms, less `NEAR(` around a `NEAR`, alone and scoped beside
-///          a phrase; this said 328 nestings) the costliest needs 86 KB in a Debug build and 43 KB in a Release build (`maximumGroupDepth`), where
-///          at 6.3 it needed 322 KB and 67 KB; `-(a OR -b …)` around `-korea`, the costliest then, needs 77 KB in Debug.
+///          32 levels (fifteen nestings around eleven innermost terms, less `NEAR(` around a `NEAR`, alone and scoped
+///          beside a phrase; this said 328 nestings) the costliest needs 86 KB in a Debug build and 43 KB in a Release
+///          build (`maximumGroupDepth`), where at 6.3 it needed 322 KB and 67 KB; `-(a OR -b …)` around `-korea`, the
+///          costliest then, needs 77 KB in Debug.
 ///          The #1297 suites' printed counts move with (1): the exact-term sweep, over its wider alphabet and a corpus
 ///          holding `colds`, reports 55,078 lists per scope, with 4,286 applied `=cold` operands unreported because
 ///          filtering on them would remove a row the query admits and 868 unreported although it would not; the
 ///          structured oracle sees 1,190 and 1,034 required exact operands against 11,758 and 11,401 ignored.
 ///   6.5 — #1297 round-3 fixes: a word marked in every alternative is exact (D4), and the memo can be counted. RESULTS
 ///          MOVE, and only in exact terms.
-///          (1) Requiredness is proved over the identities of MARKED operands (`Expr.requiredMarked`): seeded by marked leaves
-///          alone and combined as `required` is — a union in `conjoin` and `combineParts`, the kept side in `exclude`, an
-///          intersection in `disjoin` — so it is carried through pushing inward, anchoring and approximation with it. A word
-///          the root expression requires that way is reported, and every positive `=` operand on it is
-///          `ParsedOperand.isExactApplied`, since inside the filtered documents each reads the same. `=cold war OR =cold peace`,
-///          `=cold OR =cold war` and `=cold OR =cold` report cold again, and `(=cold OR war) =cold` applies both marks; an
-///          unmarked word, a phrase or a demoted word still never makes a mark apply, so `(=cold OR war) cold`,
-///          `=cold OR "cold"` and `=cold war OR cold peace` report nothing. `exactTerms` keeps the order of each word's first
-///          applied operand, which is now its first positive mark. Measured against 6.4 over its 1,411,430 parses: no
-///          expression, operand, dropped operand or approximation flag moves; no list loses a term or holds one 6.3 did not
-///          report; and 6,069 operands become applied, none the reverse. Per scope, non-empty lists go 55,078 → 55,518 over
-///          the exact-term sweep alphabet, from 44 sequences (`=cold OR =cold`, `war =cold OR =cold`), every change `[]` to
-///          `["cold"]`; 42,630 → 43,020 over the demoted alphabet and 41,672 → 42,072 over the phrase alphabet, 6.3's counts
-///          in both. Over the 60,000 random queries 467 lists change: 466 gain every term they report, and 1 reorders back
+///          (1) Requiredness is proved over the identities of MARKED operands (`Expr.requiredMarked`, which replaces
+///          6.4's `requiredExact`): seeded by marked leaves alone and combined as `required` is — a union in `conjoin`
+///          and `combineParts`, the kept side in `exclude`, an intersection in `disjoin` — so it is carried through
+///          pushing inward, anchoring and approximation with it. A word the root expression requires that way is
+///          reported, and every positive `=` operand on it is `ParsedOperand.isExactApplied`, since inside the filtered
+///          documents each reads the same. `=cold war OR =cold peace`, `=cold OR =cold war` and `=cold OR =cold` report
+///          cold again, and `(=cold OR war) =cold` applies both marks; an unmarked word, a phrase or a demoted word
+///          still never makes a mark apply, so `(=cold OR war) cold`, `=cold OR "cold"` and `=cold war OR cold peace`
+///          report nothing. `exactTerms` keeps the order of each word's first applied operand, which is now its first
+///          positive mark. Measured against 6.4 over its 1,411,430 parses: no expression, operand, dropped operand or
+///          approximation flag moves; no list loses a term or holds one 6.3 did not report; and 6,069 operands become
+///          applied, none the reverse. Per scope, non-empty lists go 55,078 → 55,518 over the exact-term sweep
+///          alphabet, from 44 sequences (`=cold OR =cold`, `war =cold OR =cold`), every change `[]` to `["cold"]`;
+///          42,630 → 43,020 over the demoted alphabet and 41,672 → 42,072 over the phrase alphabet, 6.3's counts in
+///          both. Over the 60,000 random queries 467 lists change: 466 gain every term they report, and 1 reorders back
 ///          to 6.3's `["cold", "war"]`; 1,346 still differ from 6.3's, 1,328 of them empty. Read on
-///          `Issue1297InflectedCorpus`, every list 6.5 reports over the three alphabets removes no row the query admits.
-///          (2) In a DEBUG build, `work(parsing:columnPrefix:structured:)` counts on a parse's own tree how often each node's
-///          meaning and anchor were settled, because removing 6.4's memo changed no render and failed no test. Release code
-///          does what it did: `parseDetailed` takes its result from the same path and drops the tree.
-///          The #1297 suites' printed counts move with (1): the exact-term sweep reports 55,518 lists per scope, with 4,286
-///          applied `=cold` operands unreported because filtering on them would remove a row the query admits and 428
-///          unreported although it would not (868 at 6.4); the structured oracle sees 1,256 and 1,151 required exact
-///          operands against 11,692 and 11,284 ignored.
+///          `Issue1297InflectedCorpus`, every list 6.5 reports over the three alphabets removes no row the query
+///          admits.
+///          (2) In a DEBUG build, `work(parsing:columnPrefix:structured:)` counts on a parse's own tree how often each
+///          node's meaning and anchor were settled, because removing 6.4's memo changed no render and failed no test.
+///          Release code does what it did: `parseDetailed` takes its result from the same path and drops the tree.
+///          The #1297 suites' printed counts move with (1): the exact-term sweep reports 55,518 lists per scope, with
+///          4,286 applied `=cold` operands unreported because filtering on them would remove a row the query admits and
+///          428 unreported although it would not (868 at 6.4); the structured oracle sees 1,256 and 1,151 required
+///          exact operands against 11,692 and 11,284 ignored.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -670,10 +673,11 @@ public enum FTS5InlineQueryParser {
     /// Every pass over the tree — building it, `evaluate`, `anchor(_:)`, `complement`, `hasPositiveLeaf`, `leaves`,
     /// `polarity`, and releasing it — recurses once per level, and the app parses on Swift concurrency's pool threads,
     /// whose stacks are 512 KB. Measured as the deepest point a parse reaches on a painted 4 MB thread stack, over 328
-    /// queries — fifteen nestings around eleven innermost terms at 32 levels, less `NEAR(` around `NEAR(cold war, 5)`, which
-    /// cannot nest: 164 queries, each alone and scoped beside a phrase — the costliest needs 86 KB in a Debug build (`-(war …)` around `=cold`) and 43 KB in a Release build (`-(a OR -b …)`
-    /// around `cold`, scoped), about 6 and 12 times inside 512 KB. At parser 6.3 the costliest was `-(a OR -b …)` around
-    /// an exclusion such as `-korea`: 322 KB and 67 KB. A query nested that deeply is pasted, not typed.
+    /// queries — fifteen nestings around eleven innermost terms at 32 levels, less `NEAR(` around `NEAR(cold war, 5)`,
+    /// which cannot nest: 164 queries, each alone and scoped beside a phrase — the costliest needs 86 KB in a Debug build
+    /// (`-(war …)` around `=cold`) and 43 KB in a Release build (`-(a OR -b …)` around `cold`, scoped), about 6 and 12
+    /// times inside 512 KB. At parser 6.3 the costliest was `-(a OR -b …)` around an exclusion such as `-korea`: 322 KB
+    /// and 67 KB. A query nested that deeply is pasted, not typed.
     ///
     /// The limit is about this process's stack, not SQLite's grammar. FTS5's parser has a fixed stack of its own, and
     /// a render nested well inside the limit can exceed it: `cold OR war korea NOT (` repeated 14 times is rejected

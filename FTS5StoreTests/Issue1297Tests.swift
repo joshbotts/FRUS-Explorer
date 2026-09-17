@@ -910,7 +910,8 @@ struct Issue1297DepthTests {
     /// Parser 6.4 keeps each node's meaning and anchor on the node, and nothing else shows the memo is there: without it
     /// every render is byte-identical, and 32 levels of `-(a OR -b …)` around 4,000 characters of `=w` words took 1,432 ms
     /// in a Debug build against 25 ms with it (the round-2 attack's M22). So this counts settlements rather than time,
-    /// on the tree the parse itself built.
+    /// on the tree the parse itself built. The anchor half guards a future caller rather than a current path: no parse
+    /// reaches one node's anchor twice, so removing `anchor(_:)`'s guard moved no count over round 2's 1,411,430 parses.
     @Test("Every node of a query nested to the limit is evaluated once and anchored at most once, on a 512 KB stack")
     func nodesAreSettledOnce() throws {
         let queries = Self.memoShapes(words: 60)

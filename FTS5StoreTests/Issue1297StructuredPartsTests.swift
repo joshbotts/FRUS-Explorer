@@ -1047,8 +1047,8 @@ struct Issue1297StructuredPartsTests {
     /// - COMPLETENESS, as far as operands can prove it: an applied `=cold` left unreported although filtering on it would
     ///   remove none of those rows is counted and pinned. The proof is sound but not complete — every match of `=cold OR
     ///   korea` beside the excluded term korea holds the literal word, because the exclusion empties the korea alternative,
-    ///   which operands alone cannot show — so the count is not zero. Parser 6.4 followed marked leaves by occurrence and left `=cold OR =cold war` here too, which
-    ///   was a sound filter it lost, not a limit of what operands can prove;
+    ///   which operands alone cannot show — so the count is not zero. Parser 6.4 followed marked leaves by occurrence and
+    ///   left `=cold OR =cold war` here too, which was a sound filter it lost, not a limit of what operands can prove;
     /// - against the typed-alone parse: beside no structured phrase or prefix the combined parse reports the same terms
     ///   wherever both render; beside one it reports the same terms when the typed text renders exactly alone, and none
     ///   when the typed text is approximated or refused alone, because a complement the phrase or prefix anchors
