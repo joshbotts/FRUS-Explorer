@@ -15914,3 +15914,163 @@ with 37 tests in 4 suites passed"**.
 - #1305: the Analytics metric row versus Occurrences.
 - #1306: the unmeasured Analytics claims.
 - #1307: the actions bar overflows at accessibility sizes.
+
+## Session 2026-09-17 — #1301: a nested Browse section that loaded for ever, and the reuse contract that explains it
+
+**The report.** "browse > all volumes (sort by publication) > 1945 Conferences at Malta and Yalta >
+11. post-conference documents displays Loading documents... with spinner indefinitely. Switching
+tabs and then returning to Browse refreshes view and displays document list." The owner confirmed
+the device: **iPad, full screen.**
+
+**The mechanism**, established by a five-lane scout and two skeptics who each failed to refute it,
+with three compiled SwiftUI probes turning its two load-bearing assumptions from inferred into
+measured. On iPad at 820 pt or more of Browse content width (`BrowserView.isTwoPane`,
+`BrowseTwoPaneMetrics` 340 + 480), `twoPaneLayout`'s `detailPane` **renders** `navigationPath.last`
+in place — "The detail pane RENDERS the path; it does not push it. No second navigation container"
+— through `levelView`, a `Group { switch level }` chosen deliberately so SwiftUI can see the
+concrete view type and preserve `@State`. So a `.compilation → .compilation` step takes the same
+switch branch at the same structural position and SwiftUI **updates** the existing
+`CompilationView`: `section` changes as a property, `@State` survives. Its only unconditional load
+trigger was a **bare** `.task`, which is scoped to appear/disappear and does not re-run on an
+update, so the new section's cache entry was never written. The spinner's condition was
+`vm.isLoadingDocuments || vm.compilationDocuments[cacheKey] == nil` — a disjunction whose second
+operand is the **absence of a result** — and "No documents in this section." was reachable only
+through a *successful* load, so a missing entry had no terminal state at all: no error row, no
+retry, no `.refreshable`. Nothing in the tree ever cleared `compilationDocuments` (7 references,
+one writer). Leaving the tab makes the pane disappear, which cancels the task; returning re-appears
+it and the bare task runs for the first time against the now-current section. That is the reported
+workaround, and it needs no rebuild — a skeptic's probe measured the `@State` instance stamp
+byte-identical across the round trip while the bare task fired again.
+
+iPhone is immune structurally, not accidentally: `stackLayout` pushes each level through
+`.navigationDestination`, which builds a view per push, so the bare task always ran.
+
+**Blast radius, measured from the TEI**: 14,460 sections in 479 of 553 volumes hold documents below
+the first compilation level, about 84% of the corpus's documents. Malta's ch11 is conspicuous
+because it has 8 documents and no subsections, so the spinner is the whole screen; its parents
+comp3 and ch8 have zero direct documents and would show "No documents in this section." — which is
+why that string became the test's oracle. #253 ("some volumes get stuck", closed not-planned after
+a re-index) is the same report on build 31, when `splitLayout` rendered the path in place the same
+way; both volumes it named are this shape. The orchestrator is filing it separately.
+
+**Owner decisions (binding, 2026-09-17).** (1) Fix the iPad two-pane mechanism. (2) Key the task
+**and** give the document list a real terminal state with an error row and a Retry control,
+modelled on `VolumeView`'s structure-error row. (3) Key **every** browse level's load task and
+write the reuse contract down at the detail pane; do **not** put `.id(level)` on the pane.
+(4) #253, the Malta TEI's mis-nesting, the Meaning-mode My Tags counts and the iPad mini toolbar
+failures are out of this PR.
+
+### What shipped
+
+**`.task(id: cacheKey)`** on `CompilationView`, the key it already computed. `DocumentView` met the
+identical failure in the identical container in Session 68 and was fixed the identical way
+(`DocumentView.swift:445-455`); this view never got it.
+
+**A per-section load state.** `isLoadingDocuments` — one app-wide `Bool`, read in exactly one place
+— is gone. `BrowserViewModel.documentLoadStates` records notStarted / loading / loaded /
+failed(Error) per section key; `loadDocuments` writes every outcome, including the two it used to
+decline silently, and short-circuits only on `.loaded`, so Retry and the three `.onChange` kicks
+all work by calling it again. A cancelled load is deliberately re-enterable: returning on
+`.loading` would let a load cancelled by the keyed task strand its section on the spinner, which is
+this bug in new clothes.
+
+**The render rule moved out** to `CompilationDocumentsPresentation.resolve` — a free enum and a
+free `static func` in a new file, not a static on the `View` (those are MainActor-isolated). Three
+properties are load-bearing, each with a test:
+ - **`.loading` if and only if a load is in flight.** `.notStarted` resolves to a separate
+   `.awaitingLoad` value that draws the same spinner, so the claim is checkable rather than
+   intended. The old condition resolved to the spinner for not-started, loading *and* every
+   failure.
+ - **`.indexRequired` before the load state.** That is what makes the one early return left in the
+   `.task` observable. It declines for an unindexed volume and must — `document_cache` answers an
+   unindexed volume with an empty set, which would cache as `.loaded` and never reload after
+   indexing — and the same condition draws a real screen with a real button.
+ - **Every input is an evaluated argument**, so the body always reads the per-section state. The
+   old `||` short-circuited: while the flag was true the body never read `compilationDocuments`, so
+   Observation registered no dependency on the dictionary and it was the flag's own write that
+   invalidated the view. A per-section refactor that kept a short-circuit would have left the rows
+   arriving and the spinner never clearing.
+
+**`guard volume != nil` is deleted** — the load never read the manifest — and the unit tests drive
+the loader through a view model with an **empty** manifest store to keep it that way.
+
+**The reuse contract is written at `BrowserView.levelView`**: a level view rendered in the detail
+pane may be reused across two values of the same case, so every load task in one must be keyed; a
+payload-less level has nothing to key on and is safe by construction; and `.id(level)` is not the
+cure, because it would undo the `Group`-not-`AnyView` choice that comment already exists to explain
+(commit `bc617d3b`, "Fix stuck Loading document… caused by AnyView identity erasure") and would
+throw away `DocumentView`'s loaded document on a page-turn `.replace`. Under it, `VolumeView`'s and
+`ClusterDocumentsView`'s bare tasks are keyed too — both latent, since no row appends either level
+from itself. `CompilationView`'s two front-matter subviews keep their bare tasks, and the contract
+says why: they are not levels, they load per *volume*, a `.compilation → .compilation` step always
+keeps the same `volumeId`, and their `didLoad` guard would defeat a key anyway.
+
+### The harness bug the fixture change exposed
+
+`UITestVolumeSeeder` grew a `chapter → subchapter` branch inside its existing compilation, matching
+Malta's shape, with the middle rung holding no documents of its own. The seeder rewrites its XML on
+every launch precisely so a stale fixture cannot persist — but the **index** survives too, and
+`loadVolumeStructure` prefers the structure persisted in `volume_structures` at index time over
+parsing the file. A warm simulator therefore served the **old** structure from a **new** fixture:
+measured on iPhone 17, the nested chapter was simply absent from the compilation's Sections list
+and the suite failed for a reason it was not about. `seedIfRequested` now reports whether the bytes
+changed and `bootDownloadManager` re-indexes that one volume when they did. Re-indexing rather than
+deleting the database is deliberate: the simulator this was measured on carried a 115 MB index over
+thirteen real volumes beside the 2 KB fixture.
+
+### Verification, every count read back
+
+**A/B on the reproduction**, `-only-testing FRUSExplorerUITests/BrowseNestedSectionTests` held
+identical on both sides:
+ - **RED at the tests commit `8ed4cfd4`**, iPad Pro 13-inch (M5), iOS 26.3, window 1032×1376:
+   **"Executed 2 tests, with 1 test skipped and 1 failure"**, failing at 85.6 s on the nested
+   chapter's terminal-state assertion with "Spinner still on screen: true". The **first**
+   compilation level's assertion passed in the same run — the control that isolates the nesting
+   step from the fixture, the seeding and the indexing.
+ - **GREEN at `296b7e66`** on the same device: **"Executed 2 tests, with 1 test skipped and 0
+   failures"**, the reproduction passing in **29.3 s**.
+ - **iPhone 17, iOS 26.5: green before AND after** — the push path was never affected.
+
+**Suites.**
+ - iPad Pro 13-inch, `BrowseNestedSectionTests` + `CompilationDocumentsTests` +
+   `TwoPaneDocumentTests`: **"Executed 4 tests, with 1 test skipped and 0 failures"**.
+ - iPhone 17, `BrowseNestedSectionTests` + `CompilationDocumentsTests`: **"Executed 3 tests, with 1
+   test skipped and 0 failures"**.
+ - iPad Pro 13-inch, `UIObstructionTests`: **"Executed 16 tests, with 5 tests skipped and 0
+   failures"**.
+ - iPhone 17, whole `FRUSExplorerTests`: **"Test run with 4936 tests in 622 suites passed"** —
+   4,924 at `75e0fff2` plus the 12 added here.
+
+**The 12 new unit tests** drive a real `IndexingPipeline` over a temp database with the seeder's own
+fixture indexed into it, and read their sections back from the persisted structure rather than
+hand-building them. The failure cases are real: a nil pipeline, and a `document_cache` dropped
+through a second connection (the seam `DespatchSerialExtractionTests` established — the first read
+afterwards fails at the step and reports end-of-rows, the second fails at the prepare and throws,
+so the test asserts on the second). Before this suite, `grep` for `loadDocuments`,
+`compilationDocuments` or `isLoadingDocuments` across both test targets returned nothing.
+
+No `@Model`, no stored property, no parse-output change: **no CloudKit deploy and no index-version
+bump.**
+
+**iPad mini (A17 Pro).** `AnalyticsKeyboardTests` + `KeyboardDismissBarReachTests` +
+`ToolbarOverflowAccessibilityTests`: **"Executed 8 tests, with 2 failures"**. The two are
+`testAnalysisMenuKeepsItsNameWithoutOverflow` and `testAnalysisMenuStillOpensItsItems` — **exactly
+the pair already failing on `v2` on this device, no more and no fewer**. The other six pass
+(`AnalyticsKeyboardTests` 3 of 3, `KeyboardDismissBarReachTests` 2 of 2,
+`testAnalysisMenuKeepsItsNameInTheIPadToolbarOverflow`). The orchestrator is filing that pair
+separately.
+
+**Clean builds into fresh DerivedData.** `FRUSExplorer` (generic iOS Simulator): **CLEAN SUCCEEDED,
+BUILD SUCCEEDED**, **9** unique source-warning sites. `FRUSExplorerMac`
+(`platform=macOS`, `CODE_SIGNING_ALLOWED=NO`): **CLEAN SUCCEEDED, BUILD SUCCEEDED**, **8** — the
+same counts and the same sites as the previous session recorded. **None is in a line this branch
+wrote.** One is in a file it touched — `BrowserView.swift`'s `@Environment(\.modelContext)`, the
+long-standing `cannot use class 'ModelContext' in a property declaration` note — and it moved only
+because the version-history block above it grew by three lines; the declaration is byte-identical
+to `75e0fff2`'s.
+
+**Editing surface.** `Docs/EditableContent.md` §14 gains a "Browse — a section's documents could not
+be loaded (#1301)" group with blocks for the two new strings,
+`browser.compilation.loadFailed` and `browser.compilation.loadFailed.retry`. They are the first
+user-facing strings this screen has grown since the plain-language pass, and without blocks the
+owner could not find them to edit.

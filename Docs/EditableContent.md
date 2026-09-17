@@ -7385,6 +7385,33 @@ Undoing a correction restores FRUS’s own classification and syncs across your 
 
 ---
 
+### Browse — a section's documents could not be loaded (#1301)
+
+*Two strings on the Browse compilation/chapter screen. Before #1301 a document load that failed, or
+that was never started, drew the same spinner as one in flight — for ever, with no error row and no
+way to ask again. These are the terminal state that replaced it. The heading is worded after
+`VolumeView`'s structure-error row; the error itself is printed underneath it and comes from the
+failure, not from this file.*
+
+#### Could not load this section's documents.
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 455–456 | key: browser.compilation.loadFailed -->
+
+Could not load this section's documents.
+
+<!-- END SOURCE: browser.compilation.loadFailed -->
+
+#### Retry
+<!-- Placeholder note: this is a button label on the row above, beside a circular-arrow icon. Keep
+     it a verb the reader can act on — it asks for the same section's documents again, and it is
+     the only way out of the error row. -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 469–470 | key: browser.compilation.loadFailed.retry -->
+
+Retry
+
+<!-- END SOURCE: browser.compilation.loadFailed.retry -->
+
+---
+
 ## 15. Archives Visits — the research-trip planner
 
 *Build 44's flagship (#1086–#1097): an Archives Visit turns documents' source notes and their
