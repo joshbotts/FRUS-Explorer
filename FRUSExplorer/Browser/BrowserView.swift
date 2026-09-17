@@ -875,10 +875,29 @@ struct BrowserView: View {
     /// showing whatever it loaded for the previous value. So:
     ///
     ///  - **Every load task in a level view carries `.task(id:)`, keyed on the payload it loads
-    ///    for.** A payload-less level (`.people`, `.subjects`, `.clusters`, `.archives`, …) has
-    ///    nothing to key on and is safe by construction; every level that carries a payload is
-    ///    keyed whether or not a self-to-self step is reachable today, because a rule with
-    ///    exceptions is a rule nobody can apply.
+    ///    for** — and the key is a function in `BrowseLoadKey`, where `BrowseLoadKeyTests` holds
+    ///    each one to varying with every component of its payload. That gate exists because the
+    ///    prose alone could not be checked: keying `CompilationView`'s task on the section's
+    ///    *title* passed every test #1301 shipped. Every level that carries a payload is keyed
+    ///    whether or not a self-to-self step is reachable today, because a rule with exceptions is
+    ///    a rule nobody can apply. Three payload-carrying levels are keyed at their own call sites
+    ///    and predate that registry — `.document` (Session 68), and `.corpusDocuments`, whose two
+    ///    composite keys carry the corpus id beside the indexed-volume count and the engagement
+    ///    revision. `.compilation` is keyed by `View.compilationDocumentLoad(vm:volumeId:section:)`,
+    ///    which takes the section and derives the key itself, so that call site has no key to get
+    ///    wrong.
+    ///  - **A level whose VIEW takes no varying input needs no key.** `.people`, `.clusters`,
+    ///    `.archives` and the rest of the payload-less cases mount views that take only the shared
+    ///    view model, so there is nothing for a reuse to leave stale. `.subjects` is the exception
+    ///    that proves the rule needs stating this way rather than "a payload-less level is safe by
+    ///    construction": its case carries no value, but `SubjectIndexView(request:)` takes
+    ///    `pendingSubjectRequest`, a `@State` reassigned while `.subjects` can already be the
+    ///    displayed level (`consumePendingSubjectExplorer` sets it and calls `select(.subjects)`,
+    ///    which assigns the path). It is correct, and by an explicit
+    ///    `.onChange(of: request)` observer at `SubjectIndexView.swift:219` — **change-observation
+    ///    is the acceptable alternative to a key**, and here it is the only one that works: that
+    ///    view's `load()` guards on `rows.isEmpty`, so keying its task would re-run a function
+    ///    that then does nothing.
     ///  - **Do NOT reach for `.id(level)` on the pane as a general cure.** It recreates the level
     ///    view on every level change, which is precisely what the `Group`-not-`AnyView` choice
     ///    above and commit `bc617d3b` ("Fix stuck Loading document… caused by AnyView identity
@@ -898,6 +917,16 @@ struct BrowserView: View {
     /// *volume*, and a `.compilation → .compilation` step always keeps the same `volumeId` — the
     /// subsection rows append `.compilation(volumeId: volumeId, section: sub)`. They also carry a
     /// `didLoad` guard against `Group`-modifier replication that a key alone would not defeat.
+    ///
+    /// **The sweep behind that claim is a sweep of level views, wherever they live.** Round 1
+    /// counted bare `.task`s in `FRUSExplorer/Browser` and reported none in a payload-carrying
+    /// level view, which was true of that directory and missed `CollectionDetailView` — the whole
+    /// body of `.archivalCollection`, and in `FRUSExplorer/SourceExplorer`. It is keyed now. The
+    /// complete list of payload-carrying levels and where each one's load lives: `.volume`
+    /// (`VolumeView`), `.compilation` (`CompilationView`), `.document` (`DocumentView`),
+    /// `.corpusDocuments` (`CorpusDocumentsView`), `.archivalCollection`
+    /// (`CollectionDetailView`), `.clusterDocuments` (`ClusterDocumentsView`) — all keyed — and
+    /// `.subseries`, `.volumeList`, `.scopeEditor`, which carry a payload and start no load at all.
     ///
     /// ## Breadcrumb suppression
     /// `BrowserBreadcrumbBar` is a pinned `.safeAreaInset(edge: .top)` overlay. It is suppressed in

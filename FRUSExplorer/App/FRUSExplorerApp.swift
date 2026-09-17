@@ -227,6 +227,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          re-indexes that one volume when the fixture's bytes changed, because the index outlives
 ///          the file it was built from and `loadVolumeStructure` prefers the persisted structure.
 ///          DEBUG-only and inert unless `FRUS_UI_TEST_SEED_VOLUME` is set; nothing else moved.
+///   4.12 — #1301 round 2: that re-index moves into `UITestBrowseSeams.prepareSeededVolume` beside
+///          two more DEBUG seams — a cold seeded volume (which also stands the two boot indexing
+///          passes down, or they would re-index what it removed) and a deliberately late pipeline,
+///          reproducing R-9's boot race. All three are inert without their own launch keys.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2131,30 +2135,33 @@ struct FRUSExplorerApp: App {
                volumesDirectory: volumesDir,
                stateTracker: stateTracker
            ) {
+            #if DEBUG
+            // #1301 round 2: bring the UI-test fixture to the state this run asks for BEFORE the
+            // pipeline is published, so the first Browse render already sees it — a re-index for a
+            // fixture whose bytes changed (round 1's repair), or, with the cold seam armed, no
+            // index at all so "Index Now" is reachable. Inert without FRUS_UI_TEST_SEED_VOLUME.
+            await UITestBrowseSeams.prepareSeededVolume(seededVolume, pipeline: pipeline)
+            // And publish the pipeline late when a run wants R-9's boot race, which is the only
+            // way a test can stand on a compilation whose keyed task has already declined for want
+            // of one. Nothing else in boot is delayed: the statements below use `pipeline`.
+            if let delay = UITestBrowseSeams.pipelineAttachDelay {
+                UITestBrowseSeams.attachPipeline(after: delay) {
+                    appState.indexingPipeline = pipeline
+                    appState.connectIndexingProgress(pipeline: pipeline)
+                }
+            } else {
+                appState.indexingPipeline = pipeline
+                appState.connectIndexingProgress(pipeline: pipeline)
+            }
+            #else
             appState.indexingPipeline = pipeline
             appState.connectIndexingProgress(pipeline: pipeline)
+            #endif
             // Collapse any CloudKit-sync duplicate tags / projects / collections
             // (SwiftData + CloudKit can't enforce unique `id`s) so they stop
             // appearing twice in lists.
             DuplicateRecordCleanup.run(context: modelContainer.mainContext)
             #if DEBUG
-            // #1301: a UI-test fixture whose bytes changed since the last run. The volumes
-            // directory and the index both survive between runs, so without this the app serves
-            // the PREVIOUS fixture's `volume_structures` row from a file that no longer matches
-            // it — measured on a warm iPhone 17, where the nested chapter the fixture had just
-            // grown was absent from the compilation's Sections list. Re-indexing one 2 KB fixture
-            // is near-instant and, unlike deleting the database, leaves a developer's real
-            // volumes alone.
-            if let seededVolume, seededVolume.contentChanged {
-                do {
-                    try await pipeline.indexVolume(seededVolume.volumeId)
-                    print("[UITestVolumeSeeder] Re-indexed \(seededVolume.volumeId) after a "
-                          + "fixture change")
-                } catch {
-                    print("[UITestVolumeSeeder] Could not re-index "
-                          + "\(seededVolume.volumeId): \(error)")
-                }
-            }
             // #312: research-content seed for UIObstructionTests scenario 5 — see the seeder.
             UITestResearchSeeder.seedIfRequested(context: modelContainer.mainContext)
             // Visual-marketing §7 step 6: State C, a library that has been worked in. Inert unless
@@ -2223,7 +2230,15 @@ struct FRUSExplorerApp: App {
             //     FTS tables through the document_cache sync triggers, so a pending
             //     FTS rebuild is satisfied by it too).
             let ftsRebuildNeeded = store.didRebuildSchema || pipeline.needsFTSRebuildReindex
-            let dateReindexNeeded = pipeline.needsDateReindex
+            var dateReindexNeeded = pipeline.needsDateReindex
+            #if DEBUG
+            // #1301 round 2: both boot passes below index every downloaded volume they find, and
+            // on a freshly erased simulator the date pass ALWAYS runs (no version is recorded
+            // yet) — which is why "Index Required" has never been reachable in a UI run, warm or
+            // cold, and why three suites merely tolerate their Index Now step. They stand down
+            // while the cold seam is armed, so nothing re-indexes the fixture it just removed.
+            if UITestBrowseSeams.coldVolumeRequested { dateReindexNeeded = false }
+            #endif
             // The user's person-cluster corrections (Phase 3) are snapshotted AT CALL TIME
             // inside each Task, not once at boot: the migration paths below run after
             // multi-minute awaits, during which the user can merge/undo in the People
@@ -2320,7 +2335,13 @@ struct FRUSExplorerApp: App {
             // Volumes marked interrupted are excluded (the user resolves those
             // explicitly from the amber badge). Skipped when a full date re-index
             // is queued above, which re-parses everything anyway.
-            if !dateReindexNeeded {
+            var reconcileUnindexedDownloads = !dateReindexNeeded
+            #if DEBUG
+            // The other half of the cold seam: this pass indexes every downloaded-but-unindexed
+            // volume it finds, the seeded fixture included.
+            if UITestBrowseSeams.coldVolumeRequested { reconcileUnindexedDownloads = false }
+            #endif
+            if reconcileUnindexedDownloads {
                 let indexedIds = (try? pipeline.allIndexedVolumeIds()) ?? []
                 let interrupted = appState.interruptedVolumeIds
                 let unindexed = IndexingPipeline

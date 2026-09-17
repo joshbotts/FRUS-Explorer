@@ -419,6 +419,86 @@ struct CompilationDocumentLoadingTests {
             """)
     }
 
+    // MARK: - What the failure row says, and what its button asks for
+
+    @Test("A reachable failure reads as a sentence, never as a Swift type and an error number")
+    func aReachableFailureReadsAsASentence() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(pipeline: fixture.pipeline)
+
+        // The same seam as `queryFailureRecordsFailed`: the only failure this row can reach in
+        // production is a throwing `documents(forVolume:)`, so the error under test is a real one
+        // the pipeline threw, not a hand-made stand-in.
+        var handle: OpaquePointer?
+        #expect(sqlite3_open(fixture.databaseURL.path, &handle) == SQLITE_OK)
+        #expect(sqlite3_exec(handle, "DROP TABLE document_cache", nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(handle)
+        await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId)
+        await vm.loadDocuments(for: fixture.chapter, volumeId: Self.volumeId)
+        let chapterKey = vm.compilationKey(volumeId: Self.volumeId,
+                                           sectionId: fixture.chapter.sectionId)
+        let failure = try #require(vm.documentLoadState(forKey: chapterKey).failure)
+
+        // The control, and the reason this test exists: left to Foundation, THIS is what the row
+        // showed a historian. If this line ever fails because `IndexingError` gained a
+        // `LocalizedError` conformance, the row is fine and this control is what needs rewriting.
+        #expect(failure.localizedDescription.contains("IndexingError"), """
+            Control: the raw description names the Swift type. Got: \(failure.localizedDescription)
+            """)
+
+        let shown = BrowserDocumentLoadFailure.readable(failure)
+        #expect(!shown.contains("couldn’t be completed") && !shown.contains("couldn't be completed"),
+                "the row shows Foundation's fallback sentence: \(shown)")
+        #expect(!shown.contains("IndexingError") && !shown.contains("FRUSExplorer."),
+                "the row names an internal Swift type: \(shown)")
+        #expect(shown.contains("search index"), """
+            And it says something true and useful instead — the section could not be read out of \
+            the search index, with Retry beside it. Got: \(shown)
+            """)
+    }
+
+    @Test("An error that already has a reader-facing sentence keeps it")
+    func aLocalizedErrorKeepsItsOwnSentence() throws {
+        let expected = try #require(BrowserIndexingError.pipelineUnavailable.errorDescription)
+        #expect(BrowserDocumentLoadFailure.readable(BrowserIndexingError.pipelineUnavailable)
+                == expected, """
+            `pipelineUnavailable` carries a real recovery instruction — relaunch, and reinstall if \
+            it comes back — which is better than anything this mapping could say about it. The \
+            substitution is for errors with NO description, not for all of them.
+            """)
+    }
+
+    @Test("Retry asks for the section it is shown under, and for no other")
+    func retryAsksForItsOwnSection() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(pipeline: nil)
+        let key = vm.compilationKey(volumeId: Self.volumeId,
+                                    sectionId: fixture.subchapter.sectionId)
+        let neighbourKey = vm.compilationKey(volumeId: Self.volumeId,
+                                             sectionId: fixture.chapter.sectionId)
+
+        await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId)
+        #expect(vm.documentLoadState(forKey: key).failure != nil, "precondition: it failed")
+
+        let retry = vm.retryAction(for: fixture.subchapter, volumeId: Self.volumeId)
+        #expect(retry.targetKey == key, """
+            The button is shown INSIDE the failed section's row, so it must ask for that section. \
+            A retry wired to a neighbour is indistinguishable from a correct one by any count of \
+            calls: it fills another section's cache while this one keeps its error row.
+            """)
+        #expect(retry.targetKey != neighbourKey, "control: the neighbour's key is a different one")
+
+        vm.attachIndexingPipelineIfNeeded(fixture.pipeline)
+        await retry.run()
+
+        #expect(vm.documentLoadState(forKey: key).isLoaded, "and pressing it clears the failure")
+        #expect(vm.compilationDocuments[key]?.map(\.documentId) == ["n1", "n2"])
+        #expect(vm.documentLoadState(forKey: neighbourKey).isLoaded == false,
+                "and it loaded THIS section, not the one beside it")
+    }
+
     // MARK: - The render rule
 
     @Test("Loading is produced if and only if a load is genuinely in flight")
@@ -478,6 +558,42 @@ struct CompilationDocumentLoadingTests {
             rather than the banner it is about to replace.
             """
         )
+    }
+
+    @Test("Each presentation draws its own row, and only the two pre-terminal states share one")
+    func eachPresentationDrawsItsOwnRow() {
+        // One assertion per case, not a sweep that counts: a sweep survives a SWAP, and the
+        // mutation this exists for is exactly that — the failure drawn as the spinner, which left
+        // the error row and its Retry button declared, localized, referenced by
+        // `EditableContentKeyTests`, and rendered by nothing.
+        #expect(CompilationDocumentsPresentation.readDirectly.rowKind == .readDirectly)
+        #expect(CompilationDocumentsPresentation.personsList.rowKind == .personsList)
+        #expect(CompilationDocumentsPresentation.sourcesList.rowKind == .sourcesList)
+        #expect(CompilationDocumentsPresentation.indexingProgress.rowKind == .indexingProgress)
+        #expect(CompilationDocumentsPresentation.indexRequired.rowKind == .indexRequired)
+        #expect(CompilationDocumentsPresentation.failed.rowKind == .errorRow, """
+            A load that failed draws the ERROR ROW — the headline, the readable sentence and \
+            Retry. Drawn as the spinner it is #1301's screen again: a terminal state that looks \
+            like a slow load, for ever, with no way to ask again.
+            """)
+        #expect(CompilationDocumentsPresentation.documents.rowKind == .documentRows)
+
+        // The one collapse, asserted as two facts rather than as "some state draws the spinner".
+        #expect(CompilationDocumentsPresentation.awaitingLoad.rowKind == .spinner, """
+            Before the first attempt, the spinner: an error row here would be a lie and a blank \
+            gap reads as a rendering failure.
+            """)
+        #expect(CompilationDocumentsPresentation.loading.rowKind == .spinner)
+
+        // And nothing else shares a row kind — a second collapse would hide a state on screen.
+        let all: [CompilationDocumentsPresentation] = [
+            .readDirectly, .personsList, .sourcesList, .indexingProgress,
+            .indexRequired, .awaitingLoad, .loading, .failed, .documents,
+        ]
+        #expect(Set(all.map(\.rowKind)).count == all.count - 1, """
+            Nine presentations, eight rows: `awaitingLoad` and `loading` share the spinner and \
+            nothing else shares anything.
+            """)
     }
 
     @Test("The three routed section kinds outrank everything, including a failure")

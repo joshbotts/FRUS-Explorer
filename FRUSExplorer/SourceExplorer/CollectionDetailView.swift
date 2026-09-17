@@ -54,6 +54,10 @@ import SwiftUI
 ///   1.3 — Session 2026-08-08 (#762, archival analytics Phase 1): Related Collections,
 ///          Cited Over Time, and Divided at NARA; the citing-volume list gains the same
 ///          preview-plus-"Show all" disclosure the new sections use
+///   1.4 — #1301 round 2: the load `.task` is KEYED on the record, under the reuse contract at
+///          `BrowserView.levelView`. As the `.archivalCollection` level's body this view can be
+///          updated in place on iPad, where a bare task would leave one collection's counts,
+///          related list and timeline under another collection's name
 struct CollectionDetailView: View {
 
     /// The bundled authority record being shown.
@@ -198,7 +202,32 @@ struct CollectionDetailView: View {
         // modifier applied per section (or per `Group` child) mounts once per child.
         .sheet(item: $timelineInspector) { ChartDataInspectorView(data: $0) }
         .seriesExportPresentation(timelineExportBox)
-        .task {
+        // KEYED ON THE RECORD, under the reuse contract at `BrowserView.levelView` (#1301 round 2).
+        // This view is the `.archivalCollection` level's whole body — `BrowseArchivalCollectionLevel`
+        // mounts it inside a single `if let record` branch — so on iPad, where the detail pane
+        // RENDERS the deepest path element in place, an `.archivalCollection → .archivalCollection`
+        // step would update this same instance: `record` would change as a property while these
+        // three `@State` properties kept the PREVIOUS collection's local counts, related
+        // collections and era timeline. That is #1301's shape with a worse screen than a spinner —
+        // one collection's numbers under another's name, with nothing to say so.
+        //
+        // Latent today (`.archivalCollection` is appended from one site, the Archives index, and
+        // the related-collection rows use `NavigationLink`, which builds a fresh view), and keyed
+        // for the reason `VolumeView` and `ClusterDocumentsView` are: a rule with exceptions is a
+        // rule nobody can apply. Round 1's sweep missed this one because it counted bare `.task`s
+        // in `FRUSExplorer/Browser` and this file is in `FRUSExplorer/SourceExplorer`.
+        //
+        // NO TERMINAL STATE IS OWED HERE, unlike the compilation list: none of these three loaders
+        // can fail. `loadTimeline` is a manifest lookup, `loadRelated` returns `[]` when the
+        // authority is absent, and `loadLocalStats` swallows its query with `try?` and falls back
+        // to a zero count — so there is no failure to record and no error row to draw.
+        .task(id: BrowseLoadKey.archivalCollection(recordId: record.id)) {
+            // Cleared first: on a reuse the previous record's values are already on screen, and a
+            // load that only OVERWRITES them leaves another collection's figures showing until it
+            // finishes. `nil` is this view's "still loading".
+            localStats = nil
+            related = nil
+            timeline = []
             loadTimeline()
             await loadRelated()
             await loadLocalStats()

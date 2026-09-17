@@ -52,6 +52,29 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/UIObstructionTests
 ```
 
+**`BrowseNestedSectionTests` (#1301) must run on BOTH an iPad and an iPhone, and one destination
+gives you at most one of its layout tests.** The suite self-skips on the wrong idiom in both
+directions: `testNestedSectionsLoadInTwoPane` needs a pad idiom *and* 820 pt of content width (it
+skips on any iPad below the two-pane gate, naming the width it measured), and
+`testNestedSectionsLoadOnPushPath` — the non-regression control for the `.navigationDestination`
+path — needs a phone. Each reports the other as a **skip**, not a pass. The three round-2 tests
+(the failure row and its Retry, the cold-index kick, the late-pipeline kick) are idiom-agnostic and
+run on whichever destination you give it, so the honest pair is:
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
+```
+
 **`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The command above is scoped to
 `UIObstructionTests`, so it never runs this suite. #1273's test turns a page and rotates across Research's
 820 pt two-pane gate, which needs an iPad whose PORTRAIT canvas is under the gate: iPad mini (744 pt). On

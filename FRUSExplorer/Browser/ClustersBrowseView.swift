@@ -399,6 +399,9 @@ struct ClustersIndexView: View {
 ///          `BrowserView.levelView`. Latent — no row appends `.clusterDocuments` from a
 ///          `.clusterDocuments` — but this is a payload-carrying level view, which is the shape
 ///          the contract covers without exceptions
+///   1.2 — #1301 round 2: both keys come from `BrowseLoadKey`, where a test holds each to varying
+///          with every component of its payload. Nothing behavioural can reach these two (the
+///          self-to-self step does not exist yet), so a value assertion is the only gate there is
 struct ClusterDocumentsView: View {
 
     /// The artifact's cluster id — valid only against the loaded generation, which is
@@ -459,11 +462,15 @@ struct ClusterDocumentsView: View {
         // so a `.clusterDocuments → .clusterDocuments` step would reuse this view and a bare
         // `.task` would never re-run for the new cluster — the #1301 shape exactly. No row
         // appends that step today; the key is what keeps it from mattering if one ever does.
-        .task(id: clusterId) { await loadMembership() }
+        .task(id: BrowseLoadKey.clusterMembership(clusterId: clusterId)) { await loadMembership() }
         // Re-keyed on the indexed-volume count so finishing an index pass upgrades the
         // degraded rows without navigating away (the B-4 idiom), and on the cluster for the
-        // reason above.
-        .task(id: "\(clusterId)-\(appState.indexedVolumeIds.count)") { await loadMetadata() }
+        // reason above. Both components are held to varying by `BrowseLoadKeyTests`: the
+        // count-only form still re-keys on indexing, so it reads in a diff as the working idiom.
+        .task(id: BrowseLoadKey.clusterMetadata(clusterId: clusterId,
+                                                indexedVolumeCount: appState.indexedVolumeIds.count)) {
+            await loadMetadata()
+        }
     }
 
     @ViewBuilder

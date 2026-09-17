@@ -82,6 +82,15 @@ import SwiftUI
 ///          failure draws an error row with a **Retry** control instead of a spinner. The
 ///          `guard volume != nil` early return is gone (the load never read the manifest); the
 ///          `isIndexed` one stays and is made observable by the rule's branch order.
+///   2.3 — #1301 round 2: the load task and its guard move into
+///          `View.compilationDocumentLoad(vm:volumeId:section:)`, so neither the key nor the gate
+///          can be written wrongly here (keyed on `section.title`, both mutations passed every
+///          test). `documentListSection` switches on `CompilationRowKind`, a value, because a
+///          mutation that drew a failure as the spinner left the error row unreachable with every
+///          suite green. The row's second line is a readable sentence rather than
+///          `error.localizedDescription`, which for the only reachable failure named a Swift type;
+///          its **Retry** is a `CompilationRetryAction` carrying the key it asks for. Kick 3's
+///          comment named a state no view can produce.
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -220,10 +229,13 @@ struct CompilationView: View {
         // `CompilationDocumentsPresentation` resolves that same condition to `.indexRequired` —
         // the banner with the "Index Now" button — before it consults the load state at all.
         // The old `guard volume != nil` is gone: the load never read the manifest.
-        .task(id: cacheKey) {
-            if !vm.isIndexed(volumeId) { return }
-            await vm.loadDocuments(for: section, volumeId: volumeId)
-        }
+        //
+        // THE KEY AND THE GUARD BOTH LIVE IN THE MODIFIER, and that is round 2's doing: keyed on
+        // `section.title` instead of the cache key, this line passed every test the fix shipped —
+        // the fixture's two nested heads differ, and so do every parent's and child's in 744 local
+        // volumes, so nothing behavioural could tell the difference. There is now no key here to
+        // get wrong, and no room for the manifest lookup either.
+        .compilationDocumentLoad(vm: vm, volumeId: volumeId, section: section)
         // THE THREE KICKS BELOW ARE FOR INDEXING, NOT FOR SECTION CHANGES. They existed partly
         // because the load could decline silently and nothing else would ever call it again;
         // since #1301 the keyed task covers "the section I am displaying changed", and each of
@@ -250,9 +262,17 @@ struct CompilationView: View {
         }
         // 3. R-9: `indexingPipeline` is back-filled after boot, and this view can already be on
         //    screen when that happens. Making it an observable `var` is enough for the section
-        //    above to stop claiming "Index Required", but the `.task` has already run — and since
-        //    #1301 it has recorded `.failed(.pipelineUnavailable)`, which does not short-circuit,
-        //    so kicking the load here is all that is needed.
+        //    above to stop claiming "Search Index Unavailable", but the `.task` has already run
+        //    and DECLINED — `isIndexed` cannot answer without a pipeline, so it returns `false`
+        //    and the gate above refuses, leaving the state at `.notStarted`. The task will not
+        //    re-run on its own either: `cacheKey` has not changed. So this kick is the only thing
+        //    that asks for the rows, and it works because `.notStarted` — like `.failed` — does
+        //    not short-circuit.
+        //
+        //    NOT `.failed(.pipelineUnavailable)`, which round 1 claimed here: `loadDocuments`
+        //    records that only when it is CALLED with no pipeline, and no view path calls it in
+        //    that state. The model records it so that a direct caller is told why nothing arrived;
+        //    the reader is told by the banner instead.
         .onChange(of: vm.indexingPipeline == nil) { _, isNil in
             guard !isNil, vm.isIndexed(volumeId) else { return }
             Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
@@ -378,6 +398,11 @@ struct CompilationView: View {
     /// `||` SHORT-CIRCUITED: while the flag was true the body never read `compilationDocuments`,
     /// so Observation registered no dependency on it. `CompilationDocumentsPresentation.resolve`
     /// takes every input as an evaluated argument, so the per-section state is always read.
+    ///
+    /// The switch is over `CompilationRowKind` rather than over the presentation itself, so the
+    /// presentation → row mapping is a value with tests of its own. It was a switch here, and a
+    /// mutation that replaced the failure row with the spinner left the row declared, localized
+    /// and unreachable with every suite green (#1301 round 2).
     @ViewBuilder
     private var documentListSection: some View {
         let loadState = vm.documentLoadState(forKey: cacheKey)
@@ -388,7 +413,7 @@ struct CompilationView: View {
             isIndexing: vm.isIndexing,
             isIndexed: vm.isIndexed(volumeId),
             loadState: loadState
-        ) {
+        ).rowKind {
         case .readDirectly:
             // Prose-only front matter section — bypass indexing and open directly.
             readSectionDirectlySection
@@ -407,14 +432,15 @@ struct CompilationView: View {
         case .indexRequired:
             // Not indexed and not currently indexing — show prompt.
             indexRequiredSection
-        case .awaitingLoad, .loading:
-            // One spinner for both: an error row before the first attempt would be a lie, and a
-            // blank gap reads as a rendering failure. They are distinct VALUES so the rule can be
-            // held to "`.loading` only with a load in flight" — see the rule's doc comment.
+        case .spinner:
+            // One spinner for `.awaitingLoad` and `.loading` both: an error row before the first
+            // attempt would be a lie, and a blank gap reads as a rendering failure. They are
+            // distinct VALUES so the rule can be held to "`.loading` only with a load in flight" —
+            // see the rule's doc comment, and `rowKind` for the collapse itself.
             loadingSection
-        case .failed:
+        case .errorRow:
             loadFailedSection(loadState.failure)
-        case .documents:
+        case .documentRows:
             documentRows(docs: vm.compilationDocuments[cacheKey] ?? [])
         }
     }
@@ -445,25 +471,32 @@ struct CompilationView: View {
     /// `.bordered`, not `.borderedProminent`: the HIG rule already recorded on `indexRequiredSection`
     /// applies here too — "Read [Title]" is this view's one primary action.
     ///
+    /// ## The second line is a sentence, not the error's own description
+    /// It was `Text(error.localizedDescription)`, and the only failure this row can reach carries
+    /// `IndexingError` — which has no `LocalizedError` conformance, so that line read "The
+    /// operation couldn’t be completed. (FRUSExplorer.IndexingError error 2.)" in every locale.
+    /// `BrowserDocumentLoadFailure.readable(_:)` answers with the error's own sentence when it has
+    /// one and a localized sentence when it does not; the SQLite detail goes to the DEBUG log in
+    /// `loadDocuments`, where a developer can use it, rather than to a historian (#1301 round 2).
+    ///
     /// - Parameter error: The recorded failure, or `nil` (unreachable through the rule, which
     ///   resolves `.failed` only from `BrowserDocumentLoadState.failed`).
     @ViewBuilder
     private func loadFailedSection(_ error: (any Error)?) -> some View {
+        let retry = vm.retryAction(for: section, volumeId: volumeId)
         Section {
             VStack(alignment: .leading, spacing: 10) {
                 Label(
                     String(localized: "browser.compilation.loadFailed",
-                           defaultValue: "Could not load this section's documents."),
+                           defaultValue: "Could not load this section’s documents."),
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(.headline)
-                if let error {
-                    Text(error.localizedDescription)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
+                Text(BrowserDocumentLoadFailure.readable(error))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 Button {
-                    Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
+                    Task { await retry.run() }
                 } label: {
                     Label(
                         String(localized: "browser.compilation.loadFailed.retry",

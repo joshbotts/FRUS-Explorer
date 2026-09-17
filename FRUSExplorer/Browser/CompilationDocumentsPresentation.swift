@@ -59,6 +59,74 @@ public enum BrowserDocumentLoadState {
     }
 }
 
+// MARK: - BrowserDocumentLoadFailure
+
+/// What the failure row says under its headline (#1301 round 2).
+///
+/// ## Why the row does not print `error.localizedDescription`
+/// The shipped row did, and the only failure it can actually reach is a throwing
+/// `documents(forVolume:)` — which throws `IndexingError.sqliteError` through `auxPrepare` and
+/// nothing else. `IndexingError` is `public enum IndexingError: Error, Sendable` with no
+/// `LocalizedError` conformance anywhere in the tree, so Foundation's bridging produced, verbatim:
+///
+///     The operation couldn’t be completed. (FRUSExplorer.IndexingError error 2.)
+///
+/// — which names a Swift module and an enum ordinal to a historian, drops the SQLite message the
+/// case was carrying, and passes through no `String(localized:)`. That is the exact string #1299
+/// removed from Search one commit before this branch (`SearchQueryRefusal`, whose tests assert the
+/// absence of "couldn’t be completed" and of the type name), so the repo already treats it as a
+/// defect rather than a house style.
+///
+/// ## Mapped here rather than as a conformance on `IndexingError`
+/// The #1299 reasoning applies unchanged: `localizedDescription` is rendered at ~85 sites across
+/// the app — including `indexRequiredSection`, eleven lines below this row's own call site — and a
+/// conformance would silently rewrite every one of them for every case of the enum. This maps at
+/// the one place that has a reader in front of it.
+///
+/// An error that already carries a reader-facing sentence keeps it: ``readable(_:)`` returns
+/// `BrowserIndexingError.pipelineUnavailable`'s own message unchanged, which is a real recovery
+/// instruction and better than anything this type could say about it.
+///
+/// Version history:
+///   1.0 — #1301 round 2: initial implementation
+public enum BrowserDocumentLoadFailure: LocalizedError, Equatable, Sendable {
+
+    /// The section's rows could not be read out of the search index.
+    ///
+    /// Deliberately says nothing about *why* beyond that, because the app cannot tell: the SQLite
+    /// result code distinguishes a missing table from a corrupt page, and neither is something a
+    /// reader can act on differently. What they can act on is the **Retry** button beside this
+    /// sentence, and — if it keeps failing — indexing the volume again.
+    case unreadableIndex
+
+    /// The sentence, localized.
+    public var message: String {
+        switch self {
+        case .unreadableIndex:
+            return String(
+                localized: "browser.compilation.loadFailed.detail",
+                defaultValue: "FRUS Explorer could not read this section from its search index. Retry below; if it keeps failing, index this volume again."
+            )
+        }
+    }
+
+    /// `LocalizedError` conformance, so this reads correctly wherever an error is shown.
+    public var errorDescription: String? { message }
+
+    /// The sentence the failure row shows for a recorded failure.
+    ///
+    /// - Parameter error: `BrowserDocumentLoadState.failure`, which is `nil` only in states the
+    ///   rule never resolves to `.failed`.
+    /// - Returns: The error's own reader-facing description when it has one, else
+    ///   ``unreadableIndex``'s sentence. Never a Foundation fallback naming a Swift type.
+    public static func readable(_ error: (any Error)?) -> String {
+        if let described = (error as? any LocalizedError)?.errorDescription, !described.isEmpty {
+            return described
+        }
+        return BrowserDocumentLoadFailure.unreadableIndex.message
+    }
+}
+
 // MARK: - CompilationDocumentsPresentation
 
 /// What `CompilationView.documentListSection` draws, as a value (#1301).
@@ -105,6 +173,10 @@ public enum BrowserDocumentLoadState {
 ///
 /// Version history:
 ///   1.0 — #1301: initial implementation
+///   1.1 — #1301 round 2: ``rowKind`` hoists the presentation → row mapping out of the view's
+///          `@ViewBuilder`, where a mutation could delete the error row with every test green;
+///          ``shouldLoad(isIndexed:)`` is the caller's gate, with a signature that cannot express
+///          the manifest lookup #1301 deleted
 public enum CompilationDocumentsPresentation: Equatable {
 
     /// A prose-only front-matter leaf — offer "Read [Title]" instead of a document list.
@@ -169,4 +241,88 @@ public enum CompilationDocumentsPresentation: Equatable {
         case .loaded:     return .documents
         }
     }
+
+    /// Which row `CompilationView.documentListSection` draws for this presentation.
+    ///
+    /// ## Why the view's own switch is not the answer
+    /// It was, and a mutation sweep walked straight through it: replacing `case .failed:
+    /// loadFailedSection(…)` with the spinner left the error row and its **Retry** button
+    /// declared, localized, referenced by `EditableContentKeyTests` — and never rendered. Every
+    /// unit test and both iPad browse suites stayed green, because nothing outside a
+    /// `@ViewBuilder` could see which row a presentation produces. Nine cases collapse to eight
+    /// row kinds here, where `#expect` can reach them one at a time.
+    ///
+    /// The one collapse is ``awaitingLoad`` and ``loading`` sharing ``CompilationRowKind/spinner``
+    /// — deliberate, and the reason they stay distinct *values*: an error row before the first
+    /// attempt would be a lie and a blank gap reads as a rendering failure, but the rule can still
+    /// be held to "`loading` only with a load in flight".
+    public var rowKind: CompilationRowKind {
+        switch self {
+        case .readDirectly:     return .readDirectly
+        case .personsList:      return .personsList
+        case .sourcesList:      return .sourcesList
+        case .indexingProgress: return .indexingProgress
+        case .indexRequired:    return .indexRequired
+        case .awaitingLoad:     return .spinner
+        case .loading:          return .spinner
+        case .failed:           return .errorRow
+        case .documents:        return .documentRows
+        }
+    }
+
+    /// Whether `CompilationView`'s keyed load task should run.
+    ///
+    /// ## The signature is the point
+    /// This takes **one** `Bool` and it is the index question. Before #1301 the caller's gate was
+    /// `guard volume != nil else { return }` — a lookup through `allSubseriesGroups`, i.e. the
+    /// *manifest*, which the load never reads. A volume on disk and indexed but absent from the
+    /// catalogue (a side-load) failed that guard and never loaded a single row, with no error and
+    /// no change of spinner. Reinstating it here is not a regression that a test has to catch: it
+    /// is a compile error, because there is nowhere to put a manifest.
+    ///
+    /// What the gate DOES check cannot be dropped either: `document_cache` answers an unindexed
+    /// volume with an empty set, which records `.loaded` — the one state `loadDocuments`
+    /// short-circuits on — so the rows would never be asked for again after the volume was
+    /// indexed. The decline is not silent: `resolve` answers the same condition with
+    /// ``indexRequired``, a real screen with a real button, before it consults the load state.
+    ///
+    /// - Parameter isIndexed: `BrowserViewModel.isIndexed(_:)` for the volume.
+    /// - Returns: `true` when the load may run.
+    public static func shouldLoad(isIndexed: Bool) -> Bool { isIndexed }
+}
+
+// MARK: - CompilationRowKind
+
+/// The rows `CompilationView.documentListSection` can draw, as values (#1301 round 2).
+///
+/// One case per branch of that view's switch, with ``CompilationDocumentsPresentation/awaitingLoad``
+/// and `.loading` sharing ``spinner`` — the view's only collapse, and the only one.
+///
+/// Version history:
+///   1.0 — #1301 round 2: initial implementation
+public enum CompilationRowKind: Hashable, Sendable {
+
+    /// The "Read [Title]" button for a prose-only front-matter leaf.
+    case readDirectly
+
+    /// `FrontMatterPersonsView`.
+    case personsList
+
+    /// `VolumeSourcesView`.
+    case sourcesList
+
+    /// The live indexing progress bar.
+    case indexingProgress
+
+    /// The "Index Required" / "Search Index Unavailable" banner.
+    case indexRequired
+
+    /// "Loading documents…" — a load in flight, or one the keyed task is about to start.
+    case spinner
+
+    /// The terminal failure row: a localized headline, a readable sentence, and **Retry**.
+    case errorRow
+
+    /// The document list, which renders "No documents in this section." for an empty array.
+    case documentRows
 }

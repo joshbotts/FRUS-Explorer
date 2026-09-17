@@ -5981,18 +5981,22 @@ struct RecordGroupSpellingTests {
 /// that dropped, reordered or re-nested its documents would surface as a precondition failure minutes
 /// into a UI run on a simulator. This says the same thing here, in milliseconds, with the cause named.
 ///
-/// #1301 added a nested `chapter → subchapter` branch to the same fixture, so the sequence now runs
-/// `d1, d2, d3, n1, n2`. The nested pair is APPENDED — the `d1 → d2` adjacency `ResearchReadingDepthTests`
-/// turns a page across is untouched, and this test is what says so rather than leaving it to a simulator
-/// run to discover.
+/// #1301 added a nested `chapter → subchapter` branch to the same fixture, and round 2 a third rung
+/// under that, so the sequence now runs `d1, d2, d3, n1, n2, t1`. Every addition is APPENDED — the
+/// `d1 → d2` adjacency `ResearchReadingDepthTests` turns a page across is untouched, and this test is
+/// what says so rather than leaving it to a simulator run to discover.
 ///
 /// Version history:
 ///   1.0 — #1273: initial implementation
 ///   1.1 — #1301: the fixture's nested branch adds `n1`, `n2` after `d3`
+///   1.2 — #1301 round 2: a twin section adds `t1`, and its `<head>` — byte-identical to its own
+///          parent's — is pinned as a PARSE result, because that collision is the whole point of the
+///          rung and a parser that collapsed same-head siblings would fail the UI suite far away
+///          from its cause
 @Suite("UI-test fixture volume")
 struct UITestFixtureVolumeTests {
 
-    @Test("The seeded fixture reads d1, d2, d3 then the nested n1, n2, under their own titles")
+    @Test("The seeded fixture reads d1, d2, d3 then the nested n1, n2 and the twin t1, under their own titles")
     func fixtureReadsInOrder() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
@@ -6003,7 +6007,7 @@ struct UITestFixtureVolumeTests {
             try await pipeline.indexVolume(volumeId)
 
             let sequence = try await pipeline.readingSequence(forVolume: volumeId)
-            #expect(sequence.map(\.documentId) == ["d1", "d2", "d3", "n1", "n2"], """
+            #expect(sequence.map(\.documentId) == ["d1", "d2", "d3", "n1", "n2", "t1"], """
                 The UI-test fixture must read d1, d2, d3: the reading-depth UI test turns the page from \
                 d1 and requires d2. A document the structure walk cannot reach has no neighbours, and \
                 its page-turn zone never appears. #1301's nested chapter contributes n1 and n2 AFTER \
@@ -6018,13 +6022,36 @@ struct UITestFixtureVolumeTests {
                                               "UI Test Document Two",
                                               "UI Test Document Three",
                                               "UI Test Nested Document One",
-                                              "UI Test Nested Document Two"], """
+                                              "UI Test Nested Document Two",
+                                              "UI Test Twin Document"], """
                 The UI test identifies the page it turned to by these titles, which it hard-codes. \
                 Renaming the fixture's heads without updating that suite breaks it on a simulator. \
                 The nested pair must not be a superstring of the first three either: every row query \
                 in the UI suites is CONTAINS[c], so "Nested UI Test Document One" would match a query \
                 for "UI Test Document One" and "UI Test Nested Document One" does not.
                 """)
+
+            // The twin rung's own property, read back from the PARSE rather than from the
+            // constants the XML was generated from: a section whose <head> repeats its parent's,
+            // under a different xml:id. #1301 round 2's deepest UI assertion steps into it to
+            // prove the load task is keyed on the section and not on its title, and a parser that
+            // merged same-head siblings would fail that suite minutes into a simulator run with a
+            // message about a missing row.
+            let structure = try #require(
+                try await pipeline.cachedVolumeStructure(forVolumeId: volumeId))
+            let subchapter = try #require(
+                structure.sections.first { $0.sectionId == "uitestcomp" }?
+                    .subsections.first { $0.sectionId == "uitestchapter" }?
+                    .subsections.first { $0.sectionId == "uitestsubchapter" },
+                "the fixture's nested branch did not parse")
+            let twin = try #require(
+                subchapter.subsections.first { $0.sectionId == "uitestsubchaptertwin" },
+                "the fixture's twin rung did not parse")
+            #expect(twin.title == subchapter.title, """
+                The twin's head must survive the parse EQUAL to its parent's — that collision is \
+                the rung's whole reason to exist. Parent: \(subchapter.title); twin: \(twin.title).
+                """)
+            #expect(twin.documentIds == ["t1"], "and it holds its own one document")
         }
     }
 }

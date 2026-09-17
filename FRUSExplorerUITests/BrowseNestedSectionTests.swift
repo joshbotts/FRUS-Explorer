@@ -46,9 +46,31 @@ import XCTest
 ///     is where the run fails: the chapter sits on the spinner forever.
 ///  3. **The subchapter's own document rows appear.** A second reuse step, one level deeper,
 ///     proving the fix is not a one-off for the first nested level.
+///  4. **A section whose `<head>` repeats its parent's shows its OWN row** (round 2). The fixture's
+///     deepest rung is a twin of the section it sits in, which is the one shape that distinguishes
+///     a load keyed on the section's cache key from one keyed on `section.title` — a mutation that
+///     passed every assertion above. 0 of 744 local TEI volumes publish that shape, so this pins
+///     the contract rather than reproducing a defect.
 ///
 /// Nothing here switches tabs between the taps and the assertions. That is the whole point: the
 /// tab round-trip is the *workaround*, and a test that used it would pass on the broken build.
+///
+/// ## The four states no ordinary run can reach (round 2)
+/// Four further tests run on **either** idiom, because none of them is about two-pane reuse.
+/// Each asks `UITestBrowseSeams` for a state the app cannot otherwise be put in, and each covers a
+/// piece of #1301 that a mutation sweep found undefended:
+///  - ``testFailedSectionShowsAReadableErrorRowAndRetryLoadsIt`` — nothing in the app can be made
+///    to fail a document load, so the error row, its sentence and its **Retry** had never been
+///    rendered by any test. A one-shot injected throw covers the row, the readability of its
+///    message, and that Retry asks for *this* section.
+///  - ``testIndexingFromTheCompilationFillsItsDocumentList`` — the `.onChange(of: vm.isIndexing)`
+///    kick. Three suites carry an "Index Now" step that has never once been taken, because boot
+///    indexes every downloaded volume it finds; the cold seam makes that state explicit and the
+///    walk REQUIRES the button rather than tolerating its absence.
+///  - ``testALoadInFlightShowsTheSpinnerAndNotAnEmptyList`` — a load held open, because a real one
+///    finishes in milliseconds and the row it draws meanwhile had never been asserted at all.
+///  - ``testAPipelineArrivingLateFillsTheOpenCompilation`` — R-9's back-fill kick, driven by
+///    holding the pipeline back past the compilation's first render.
 ///
 /// ## Measured
 /// A/B on one pinned device, `-only-testing` held identical on both sides, iPad Pro 13-inch (M5),
@@ -66,7 +88,10 @@ import XCTest
 ///          section has documents. Measured: a composite mutant that drew the pre-load state as
 ///          the row list, with #1301's bare `.task` reinstated in full, PASSED assertion 2 — so
 ///          the oracle "that string is reachable only through a completed load" was a property of
-///          one line in `CompilationView`, not of the app
+///          one line in `CompilationView`, not of the app. Assertion 4 steps into a section whose
+///          head repeats its parent's, and four new tests drive the failure row, the in-flight
+///          spinner and two of the three indexing kicks through `UITestBrowseSeams`. The launch
+///          moves out of `setUp`, because those four need different app states to exist at all
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs to the main actor, so this file emits the same
 // "main actor-isolated … nonisolated context" warnings the other UI suites do (see the note at
@@ -99,9 +124,25 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// `CONTAINS[c]`, so "Nested UI Test Document One" would have matched both.
     private static let firstNestedDocumentTitle = "UI Test Nested Document One"
 
+    /// The `<head>` of the document inside the fixture's twin section — the third rung, whose own
+    /// `<head>` repeats its parent's. Must match `UITestVolumeSeeder.twinDocumentTitle`.
+    private static let twinDocumentTitle = "UI Test Twin Document"
+
+    /// The `sectionId` of the subchapter, named here because the failure seam takes a section id
+    /// rather than a title. Must match the `xml:id` in `UITestVolumeSeeder.fixtureXML(volumeId:)`.
+    private static let subchapterSectionId = "uitestsubchapter"
+
     /// `CompilationView`'s spinner label — asserted **absent**, never waited on. A spinner that
     /// is merely slow and a spinner that is permanent look identical to a `waitForExistence`.
     private static let loadingLabel = "Loading documents…"
+
+    /// The failure row's headline, and a distinctive fragment of the sentence under it.
+    private static let failureHeadline = "Could not load this section’s documents."
+    private static let failureDetailFragment = "could not read this section"
+
+    /// The banner a compilation shows while its volume has no usable index.
+    private static let indexRequiredLabel = "Index Required"
+    private static let indexUnavailableLabel = "Search Index Unavailable"
 
     /// `CompilationView`'s empty-list label. Reachable only through a completed load.
     private static let emptyLabel = "No documents in this section."
@@ -122,6 +163,18 @@ final class BrowseNestedSectionTests: XCTestCase {
             // matching against real corpus data.
             "-frus.filterDownloadedOnly", "YES",
         ]
+    }
+
+    /// Launches, with any seam this test needs added to the common environment.
+    ///
+    /// The launch is per TEST rather than in `setUp` because three of the five tests below need a
+    /// different app state to exist at all — a document load that throws, a volume nothing has
+    /// indexed, a pipeline that arrives late — and each is requested by its own launch key. See
+    /// `UITestBrowseSeams`.
+    ///
+    /// - Parameter seams: Extra launch-environment entries.
+    private func launch(seams: [String: String] = [:]) {
+        for (key, value) in seams { app.launchEnvironment[key] = value }
         app.launch()
     }
 
@@ -163,7 +216,12 @@ final class BrowseNestedSectionTests: XCTestCase {
     ///
     /// Fails with a distinct message at each step: the causes are different and reporting them
     /// as one is how `UIObstructionTests` lost three investigations.
-    private func navigateToSeededCompilation() {
+    ///
+    /// - Parameter requireIndexNow: When `true`, the volume MUST arrive unindexed and the "Index
+    ///   Now" button must be there and enabled — the cold-seam tests assert the post-indexing path
+    ///   and would pass vacuously on a volume that was already indexed. `false` tolerates the
+    ///   button's absence, which is what every other run finds.
+    private func navigateToSeededCompilation(requireIndexNow: Bool = false) {
         guard let destination = TabDestination(rawValue: "Browse") else {
             XCTFail("'Browse' is not one of MainTabView's five tabs")
             return
@@ -200,7 +258,19 @@ final class BrowseNestedSectionTests: XCTestCase {
 
         // Cold run: the seeded volume is on disk but not yet indexed.
         let indexNow = app.buttons["Index Now"]
-        if indexNow.waitForExistence(timeout: 5), indexNow.isEnabled { indexNow.tap() }
+        if requireIndexNow {
+            XCTAssertTrue(indexNow.waitForExistence(timeout: 20),
+                          "This test asked for a COLD volume (FRUS_UI_TEST_COLD_SEEDED_VOLUME) and "
+                              + "the compilation is not offering 'Index Now' — so the volume is "
+                              + "indexed, the seam did not take, and everything below would pass "
+                              + "without exercising the post-indexing path at all.")
+            XCTAssertTrue(indexNow.isEnabled,
+                          "'Index Now' is disabled, which means the view model has no indexing "
+                              + "pipeline — a different state from an unindexed volume.")
+            indexNow.tap()
+        } else if indexNow.waitForExistence(timeout: 5), indexNow.isEnabled {
+            indexNow.tap()
+        }
     }
 
     /// The three assertions, shared by both idioms so the iPhone control exercises exactly the
@@ -274,6 +344,31 @@ final class BrowseNestedSectionTests: XCTestCase {
             app.staticTexts[Self.loadingLabel].exists,
             "[\(idiom)] The subchapter's rows rendered but the spinner is still beside them."
         )
+
+        // ── 4. A third reuse step, into a section with ITS PARENT'S TITLE ──────────────────
+        // The fixture's deepest rung is a subchapter whose <head> is byte-identical to the
+        // subchapter it sits inside. That is the one shape that tells a load keyed on the
+        // section's cache key from one keyed on `section.title`: the title does not change across
+        // this step, so a title key leaves the task un-re-run and this section shows the previous
+        // one's state. Measured over the local corpus, 0 of 744 volumes publish that shape today —
+        // so this pins the contract rather than reproducing a defect, and it is the only assertion
+        // in either target that can.
+        let twinRow = row(containing: Self.subchapterTitle)
+        scrollDownUntil(twinRow, attempts: 8)
+        XCTAssertTrue(twinRow.waitForExistence(timeout: 15),
+                      "[\(idiom)] The twin section's row is absent from the subchapter's Sections "
+                          + "list — the fixture's third rung was not parsed.")
+        twinRow.tap()
+
+        XCTAssertTrue(
+            row(containing: Self.twinDocumentTitle).waitForExistence(timeout: 60),
+            "[\(idiom)] #1301: the twin section never rendered its own document row. Its title is "
+                + "identical to its parent's, so a load task keyed on the TITLE rather than on the "
+                + "section's cache key does not re-run here and this section goes on showing the "
+                + "previous one's rows. Spinner still on screen: "
+                + "\(app.staticTexts[Self.loadingLabel].exists); the parent's rows still on "
+                + "screen: \(row(containing: Self.firstNestedDocumentTitle).exists)."
+        )
     }
 
     // MARK: - iPad: the reproduction
@@ -288,6 +383,8 @@ final class BrowseNestedSectionTests: XCTestCase {
         #else
         throw XCTSkip("UIKit-only test")
         #endif
+
+        launch()
 
         guard let destination = TabDestination(rawValue: "Browse") else {
             XCTFail("'Browse' is not one of MainTabView's five tabs")
@@ -312,6 +409,175 @@ final class BrowseNestedSectionTests: XCTestCase {
         assertNestedSectionsLoad(idiom: "iPad two-pane")
     }
 
+    // MARK: - The terminal state, on either idiom
+
+    /// A load that fails draws the error row, its sentence reads as English, and **Retry** asks
+    /// for *this* section.
+    ///
+    /// Runs on any device: the failure row is not a two-pane phenomenon. Nothing in the app can be
+    /// made to fail a document load, which is why no suite has ever rendered this row and why a
+    /// mutation that replaced it with the permanent spinner — #1301's own screen — passed every
+    /// test the branch shipped. `FRUS_UI_TEST_FAIL_DOCUMENT_LOAD` throws ONCE, where the real
+    /// query throws; the retry then runs against a healthy index, which is what lets one test
+    /// assert both halves of a terminal state.
+    func testFailedSectionShowsAReadableErrorRowAndRetryLoadsIt() throws {
+        launch(seams: ["FRUS_UI_TEST_FAIL_DOCUMENT_LOAD": Self.subchapterSectionId])
+        navigateToSeededCompilation()
+
+        // Down to the subchapter, whose first load the seam fails.
+        let chapterRow = row(containing: Self.chapterTitle)
+        scrollDownUntil(chapterRow, attempts: 8)
+        XCTAssertTrue(chapterRow.waitForExistence(timeout: 30), "the nested chapter row is absent")
+        chapterRow.tap()
+        let subchapterRow = row(containing: Self.subchapterTitle)
+        scrollDownUntil(subchapterRow, attempts: 8)
+        XCTAssertTrue(subchapterRow.waitForExistence(timeout: 30),
+                      "the nested subchapter row is absent")
+        subchapterRow.tap()
+
+        // 1. The row exists at all.
+        XCTAssertTrue(
+            app.staticTexts[Self.failureHeadline].waitForExistence(timeout: 30),
+            "A failed load must draw the error row. Spinner on screen: "
+                + "\(app.staticTexts[Self.loadingLabel].exists); empty-state label: "
+                + "\(app.staticTexts[Self.emptyLabel].exists). A failure drawn as the spinner is "
+                + "#1301's screen exactly — a terminal state that looks like a slow load, with no "
+                + "way to ask again."
+        )
+        XCTAssertFalse(app.staticTexts[Self.loadingLabel].exists,
+                       "the error row is up and the spinner is still beside it")
+
+        // 2. The sentence under it is a sentence.
+        let systemFallback = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] 'be completed' OR label CONTAINS 'IndexingError'")
+        )
+        // `map(\.label)` cannot be written here: the XCUI APIs are main-actor-isolated under the
+        // iOS 26 SDK and a key path to `label` is a hard error from this nonisolated context.
+        var fallbackLabels: [String] = []
+        for element in systemFallback.allElementsBoundByIndex { fallbackLabels.append(element.label) }
+        XCTAssertEqual(systemFallback.count, 0,
+                       "The failure row is showing Foundation's fallback, which names a Swift "
+                           + "module and an enum ordinal: \(fallbackLabels)")
+        XCTAssertTrue(
+            app.staticTexts.matching(
+                NSPredicate(format: "label CONTAINS[c] %@", Self.failureDetailFragment)
+            ).firstMatch.exists,
+            "The failure row has no readable explanation under its headline."
+        )
+
+        // 3. Retry asks for THIS section, and the seam is spent, so its rows arrive.
+        let retry = app.buttons["Retry"]
+        XCTAssertTrue(retry.exists, "The error row has no Retry control, and it is the only exit "
+                          + "from a failed section — this view has no `.refreshable`.")
+        retry.tap()
+
+        XCTAssertTrue(
+            row(containing: Self.firstNestedDocumentTitle).waitForExistence(timeout: 60),
+            "Retry did not bring back THIS section's rows. Error row still on screen: "
+                + "\(app.staticTexts[Self.failureHeadline].exists). A button whose action is "
+                + "empty, and one wired to a neighbouring section, both look like this."
+        )
+        XCTAssertFalse(app.staticTexts[Self.failureHeadline].exists,
+                       "the rows arrived but the error row is still above them")
+    }
+
+    /// A load in flight shows the spinner — and does **not** show an empty document list.
+    ///
+    /// Real loads finish in milliseconds, so the row a load in flight produces has never been
+    /// asserted by anything: by the time a UI test can look, the documents are up. That is how the
+    /// mutation which drew the pre-load and in-flight states as the *document list* survived every
+    /// suite, and it is not cosmetic — "No documents in this section." is the oracle
+    /// ``assertNestedSectionsLoad``'s second assertion rests on, and a section that merely has not
+    /// loaded yet must never be able to say it. Held open for eight seconds, both halves are
+    /// ordinary assertions.
+    func testALoadInFlightShowsTheSpinnerAndNotAnEmptyList() throws {
+        launch(seams: ["FRUS_UI_TEST_DELAY_DOCUMENT_LOAD": "\(Self.subchapterSectionId):8"])
+        navigateToSeededCompilation()
+
+        let chapterRow = row(containing: Self.chapterTitle)
+        scrollDownUntil(chapterRow, attempts: 8)
+        XCTAssertTrue(chapterRow.waitForExistence(timeout: 30), "the nested chapter row is absent")
+        chapterRow.tap()
+        let subchapterRow = row(containing: Self.subchapterTitle)
+        scrollDownUntil(subchapterRow, attempts: 8)
+        XCTAssertTrue(subchapterRow.waitForExistence(timeout: 30),
+                      "the nested subchapter row is absent")
+        subchapterRow.tap()
+
+        XCTAssertTrue(
+            app.staticTexts[Self.loadingLabel].waitForExistence(timeout: 6),
+            "A load held open for 8 s is not showing '\(Self.loadingLabel)'. Empty-state label on "
+                + "screen instead: \(app.staticTexts[Self.emptyLabel].exists) — which is a section "
+                + "with two documents claiming it has none, and would make the empty label "
+                + "reachable without any load at all."
+        )
+        XCTAssertFalse(
+            app.staticTexts[Self.emptyLabel].exists,
+            "The spinner and the empty-list label are on screen together while the load runs."
+        )
+
+        XCTAssertTrue(
+            row(containing: Self.firstNestedDocumentTitle).waitForExistence(timeout: 60),
+            "and the rows arrive once the load is let go"
+        )
+        XCTAssertFalse(app.staticTexts[Self.loadingLabel].exists,
+                       "the rows arrived and the spinner is still beside them")
+    }
+
+    // MARK: - The two indexing kicks a test can drive
+
+    /// A cold volume, indexed from the compilation itself, fills its document list without
+    /// leaving the screen.
+    ///
+    /// This is the `.onChange(of: vm.isIndexing)` kick. The keyed `.task` declined while the
+    /// volume was unindexed and will not re-run — its key has not changed — so this kick is the
+    /// only thing that asks for the rows once the run finishes.
+    ///
+    /// The cold state is requested rather than hoped for: boot indexes every downloaded volume it
+    /// finds, twice over, so three suites carry an "Index Now" step that has never once been
+    /// taken. `requireIndexNow` makes a run that is not cold a failure instead of a pass.
+    func testIndexingFromTheCompilationFillsItsDocumentList() throws {
+        launch(seams: ["FRUS_UI_TEST_COLD_SEEDED_VOLUME": "1"])
+        navigateToSeededCompilation(requireIndexNow: true)
+
+        XCTAssertTrue(
+            row(containing: Self.firstDocumentTitle).waitForExistence(timeout: 120),
+            "After indexing from this screen the document rows never arrived, and nothing was "
+                + "navigated away from. 'Index Required' still on screen: "
+                + "\(app.staticTexts[Self.indexRequiredLabel].exists); spinner: "
+                + "\(app.staticTexts[Self.loadingLabel].exists)."
+        )
+        XCTAssertFalse(app.staticTexts[Self.indexRequiredLabel].exists,
+                       "the rows are up and the Index Required banner is still above them")
+    }
+
+    /// A pipeline that arrives after the compilation is already on screen fills its document list.
+    ///
+    /// This is R-9's back-fill kick, `.onChange(of: vm.indexingPipeline == nil)`. Without a
+    /// pipeline `isIndexed` answers `false`, so the keyed task declines and the banner reads
+    /// "Search Index Unavailable"; the task will not re-run afterwards, because `cacheKey` has not
+    /// changed. The assertion on the banner is what makes this test non-vacuous: it proves the
+    /// pipeline really was missing when the level rendered.
+    func testAPipelineArrivingLateFillsTheOpenCompilation() throws {
+        launch(seams: ["FRUS_UI_TEST_DELAY_PIPELINE": "25"])
+        navigateToSeededCompilation()
+
+        XCTAssertTrue(
+            app.staticTexts[Self.indexUnavailableLabel].waitForExistence(timeout: 20),
+            "The compilation opened with a pipeline already attached, so this run never reached "
+                + "the state the back-fill kick exists for and everything below it would pass "
+                + "whatever that kick did. Raise FRUS_UI_TEST_DELAY_PIPELINE."
+        )
+
+        XCTAssertTrue(
+            row(containing: Self.firstDocumentTitle).waitForExistence(timeout: 90),
+            "The pipeline was back-filled while this compilation was on screen and its rows never "
+                + "arrived. 'Search Index Unavailable' still on screen: "
+                + "\(app.staticTexts[Self.indexUnavailableLabel].exists); spinner: "
+                + "\(app.staticTexts[Self.loadingLabel].exists)."
+        )
+    }
+
     // MARK: - iPhone: the non-regression control
 
     /// The push path must keep working. `stackLayout` gives every pushed level its own view, so
@@ -328,6 +594,7 @@ final class BrowseNestedSectionTests: XCTestCase {
         throw XCTSkip("UIKit-only test")
         #endif
 
+        launch()
         navigateToSeededCompilation()
         assertNestedSectionsLoad(idiom: "iPhone push")
     }

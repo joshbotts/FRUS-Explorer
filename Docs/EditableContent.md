@@ -7385,33 +7385,6 @@ Undoing a correction restores FRUS’s own classification and syncs across your 
 
 ---
 
-### Browse — a section's documents could not be loaded (#1301)
-
-*Two strings on the Browse compilation/chapter screen. Before #1301 a document load that failed, or
-that was never started, drew the same spinner as one in flight — for ever, with no error row and no
-way to ask again. These are the terminal state that replaced it. The heading is worded after
-`VolumeView`'s structure-error row; the error itself is printed underneath it and comes from the
-failure, not from this file.*
-
-#### Could not load this section's documents.
-<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 455–456 | key: browser.compilation.loadFailed -->
-
-Could not load this section's documents.
-
-<!-- END SOURCE: browser.compilation.loadFailed -->
-
-#### Retry
-<!-- Placeholder note: this is a button label on the row above, beside a circular-arrow icon. Keep
-     it a verb the reader can act on — it asks for the same section's documents again, and it is
-     the only way out of the error row. -->
-<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 469–470 | key: browser.compilation.loadFailed.retry -->
-
-Retry
-
-<!-- END SOURCE: browser.compilation.loadFailed.retry -->
-
----
-
 ## 15. Archives Visits — the research-trip planner
 
 *Build 44's flagship (#1086–#1097): an Archives Visit turns documents' source notes and their
@@ -7757,3 +7730,45 @@ Volumes filed by the administration their documents cover — dated to each term
 %1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
 
 <!-- END SOURCE: subjects.index.coverage.v2 %lld %lld -->
+
+
+---
+
+## 17. Browse — when a section's documents cannot be loaded (#1301)
+
+*The three strings of one row on the Browse compilation/chapter screen. Before #1301 a document load
+that failed, or that was never started, drew the same spinner as one in flight — for ever, with no
+error row and no way to ask again; this row is the terminal state that replaced it. The heading is
+worded after `VolumeView`'s structure-error row, which shows no error text at all; the sentence under
+it is new in round 2 and replaced the system's own "The operation couldn’t be completed.
+(FRUSExplorer.IndexingError error 2.)", which is what a reader saw while the row printed the raw
+error. The standing rule for the three: the reader cannot tell a damaged index from a missing table
+and does not need to — what they can act on is the button. Do not promise that retrying will work,
+and do not name a cause the app has not established.*
+
+### Could not load this section's documents.
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 490–491 | key: browser.compilation.loadFailed -->
+
+Could not load this section’s documents.
+
+<!-- END SOURCE: browser.compilation.loadFailed -->
+
+### The sentence under it
+<!-- This is shown for every failure the row can reach, including ones carrying no message of their
+     own. An error that HAS a reader-facing sentence (the unavailable-index one in §14) keeps its
+     own wording instead, so edits here must stand alone rather than continue that one. -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationDocumentsPresentation.swift | lines: 106–108 | key: browser.compilation.loadFailed.detail -->
+
+FRUS Explorer could not read this section from its search index. Retry below; if it keeps failing, index this volume again.
+
+<!-- END SOURCE: browser.compilation.loadFailed.detail -->
+
+### Retry
+<!-- A button label on the row above, beside a circular-arrow icon. Keep it a verb the reader can
+     act on — it asks for the same section's documents again, and it is the only way out of the
+     error row: this screen has no pull-to-refresh. -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationView.swift | lines: 501–503 | key: browser.compilation.loadFailed.retry -->
+
+Retry
+
+<!-- END SOURCE: browser.compilation.loadFailed.retry -->

@@ -64,6 +64,12 @@ import Observation
 ///          silently, and short-circuits only on `.loaded`, so the error row's Retry and the
 ///          `.onChange` kicks both work by calling it again. The render rule moved out to
 ///          `CompilationDocumentsPresentation`, where it can be tested.
+///   1.7 — #1301 round 2: `compilationKey` forwards to `BrowseLoadKey.compilation`, so the load
+///          task's id and the cache it writes into have ONE definition; `retryAction(for:)` makes
+///          the failure row's button a value carrying the key it will ask for (a retry pointed at
+///          a neighbouring section passed every test); and the nil-pipeline comment no longer
+///          implies a view can reach that branch — no caller can, and two comments in round 1
+///          said otherwise
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -473,8 +479,35 @@ public final class BrowserViewModel {
     // MARK: - Compilation Document Loading
 
     /// Cache key for `compilationDocuments` and ``documentLoadStates``.
+    ///
+    /// Forwards to ``BrowseLoadKey/compilation(volumeId:sectionId:)``, which is also what
+    /// `CompilationView`'s load task is keyed on — one definition, so the id the task re-runs for
+    /// and the dictionary the load writes into cannot drift apart.
     public func compilationKey(volumeId: String, sectionId: String) -> String {
-        "\(volumeId)/\(sectionId)"
+        BrowseLoadKey.compilation(volumeId: volumeId, sectionId: sectionId)
+    }
+
+    /// What the failure row's **Retry** control does, as a value (#1301 round 2).
+    ///
+    /// ## Why a value rather than a closure written at the call site
+    /// The button's action was `Task { await vm.loadDocuments(for: section, volumeId: volumeId) }`,
+    /// written inside the row's `@ViewBuilder`. Two mutations of that line survived every test:
+    /// emptying the body (a button that renders and does nothing — and the error row is the only
+    /// exit from a failed section, since the file has no `.refreshable`), and pointing it at a
+    /// *neighbouring* section, which quietly fills another section's cache while this one goes on
+    /// showing its error. `retryAction(for:volumeId:)` returns the key it will load for, so both
+    /// are ordinary assertions.
+    ///
+    /// - Parameters:
+    ///   - section: The section whose rows failed.
+    ///   - volumeId: Its volume.
+    /// - Returns: The action, carrying the key it targets.
+    public func retryAction(for section: VolumeSection,
+                            volumeId: String) -> CompilationRetryAction {
+        CompilationRetryAction(
+            targetKey: compilationKey(volumeId: volumeId, sectionId: section.sectionId),
+            run: { [weak self] in await self?.loadDocuments(for: section, volumeId: volumeId) }
+        )
     }
 
     /// How far the load for one section key has got, `.notStarted` when nothing has been
@@ -519,15 +552,27 @@ public final class BrowserViewModel {
         let key = compilationKey(volumeId: volumeId, sectionId: section.sectionId)
         guard !documentLoadState(forKey: key).isLoaded else { return }
         guard let pipeline = indexingPipeline else {
-            // Recorded rather than returned silently. A nil pipeline does not reach the failure
-            // row on screen — `isIndexed` answers `false` without one, so the reader sees "Search
-            // Index Unavailable" instead — but leaving the state at `.notStarted` would mean the
-            // model could not say why nothing arrived.
+            // Recorded rather than returned silently — but the honest scope of that is narrow, and
+            // two comments in this branch's first round overstated it. NO VIEW REACHES THIS. Every
+            // caller in `CompilationView` is gated on `isIndexed(_:)`, which answers `false`
+            // without a pipeline, and Retry is drawn only from an already-recorded `.failed`; the
+            // pipeline is also monotone nil → non-nil (`attachIndexingPipelineIfNeeded` guards on
+            // nil), so no race strands a caller here. It is reached by a direct call — which is
+            // what the two unit tests that pin it do — and it exists so the model is not the
+            // place the information stops.
             documentLoadStates[key] = .failed(BrowserIndexingError.pipelineUnavailable)
             return
         }
         documentLoadStates[key] = .loading
         do {
+            #if DEBUG
+            // Inert unless FRUS_UI_TEST_FAIL_DOCUMENT_LOAD names this section. It throws where the
+            // real query throws, so the recording, the row and the retry below are all production
+            // code — see `UITestBrowseSeams`.
+            try UITestBrowseSeams.throwInjectedFailureIfRequested(sectionId: section.sectionId)
+            // And, separately, holds a load open so the in-flight row can be seen at all.
+            await UITestBrowseSeams.delayLoadIfRequested(sectionId: section.sectionId)
+            #endif
             let all = try await pipeline.documents(forVolume: volumeId)
             let sectionIds = Set(section.documentIds)
             // Rows first, THEN the state. The view reads both, and this order means a render
@@ -626,6 +671,43 @@ public final class BrowserViewModel {
         case .topics: return 2
         }
     }
+}
+
+// MARK: - CompilationRetryAction
+
+/// One press of the failure row's **Retry** control (#1301 round 2).
+///
+/// Carries ``targetKey`` so a test can assert *which* section the button asks for, not merely that
+/// it asks for something: a retry wired to a neighbouring section is indistinguishable from a
+/// correct one by any count of calls, and worse on screen than a dead button — it fills another
+/// section's cache while the failed one keeps its error row.
+///
+/// Built by ``BrowserViewModel/retryAction(for:volumeId:)``. Not `Sendable`: it closes over a
+/// `@MainActor` view model and is created and run there.
+///
+/// Version history:
+///   1.0 — #1301 round 2: initial implementation
+public struct CompilationRetryAction {
+
+    /// The `compilationDocuments` / `documentLoadStates` key this retry will load for.
+    public let targetKey: String
+
+    /// The load itself.
+    private let body: @MainActor () async -> Void
+
+    /// Creates an action.
+    ///
+    /// - Parameters:
+    ///   - targetKey: The section key it loads for.
+    ///   - run: The load.
+    init(targetKey: String, run: @escaping @MainActor () async -> Void) {
+        self.targetKey = targetKey
+        self.body = run
+    }
+
+    /// Asks for the section's documents again.
+    @MainActor
+    public func run() async { await body() }
 }
 
 // MARK: - BrowserIndexingError
