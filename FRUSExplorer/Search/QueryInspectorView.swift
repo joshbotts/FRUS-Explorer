@@ -25,6 +25,8 @@ import SwiftUI
 ///         not-applied operands survive a request for counts
 ///   1.2 — #1297 round 2: `refresh` keeps the zero-result blame when the new inspection's operands are the old ones,
 ///         so a filter-only refresh landing after the new search's decomposition no longer wipes what it measured (A4)
+///   1.3 — #1297 round 3: `decomposeZeroResult` decomposes the parse of the parameters it is given, the search that ran,
+///         not the inspection of the text in the field, so the blame never names a term the empty search did not hold (A3)
 @Observable
 @MainActor
 final class QueryInspectorController {
@@ -87,10 +89,17 @@ final class QueryInspectorController {
     }
 
     /// Works out which conjunct is empty, for the zero-result surface.
+    ///
+    /// `parameters` are the search that came back empty, and their own parse is what is decomposed
+    /// (`QueryInspector.emptyConjuncts(parameters:)`). The inspection describes the text in the field, which on macOS
+    /// is not submitted until Return, so decomposing it could blame a term the empty search never held — and ``refresh``
+    /// keeps a blame across a filter change, which made that blame persist (#1297 round 3, A3).
+    ///
+    /// Still waits for an inspection. The refresh that produces the first one compares its operands with none and clears
+    /// the blame, so a blame written before it would be wiped when it lands.
     func decomposeZeroResult(parameters: SearchParameters, service: SearchService?) async {
-        guard let service, let current = inspection else { return }
-        let found = await QueryInspector(searchService: service)
-            .emptyConjuncts(in: current, parameters: parameters)
+        guard let service, inspection != nil else { return }
+        let found = await QueryInspector(searchService: service).emptyConjuncts(parameters: parameters)
         guard !Task.isCancelled else { return }
         emptyConjuncts = found
     }
@@ -124,9 +133,10 @@ final class QueryInspectorController {
 ///         used to get nothing, or "filters only" beside a filter; the NOT APPLIED line no longer blames an OR
 ///         alternative, since `-(war -korea)` leaves war out with no OR typed (`search.inspector.notAppliedDetail`,
 ///         unshipped and reworded in place)
-///   1.5 — #1297 round 2: the EXACT tag reads the operand's `isExactApplied`, which parser 6.4 decides per operand, so in
-///         `(=cold OR war) =cold` only the second cold is tagged (A1); through `QueryInspection.isRefused`, the refused
-///         line shows only for a query holding something searchable, never a lone `"` or `(` typed on the way to one (A2)
+///   1.5 — #1297 round 2: the EXACT tag reads the operand's `isExactApplied`, the parser's answer for that operand, so
+///         `(=cold OR war) cold` tags neither cold and `=cold war -=cold` only the first (A1); through
+///         `QueryInspection.isRefused`, the refused line shows only for a query holding something searchable, never a lone
+///         `"` or `(` typed on the way to one (A2)
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -203,8 +213,8 @@ struct QueryInspectorStrip: View {
                         microTag(String(localized: "search.inspector.excludedTag",
                                         defaultValue: "EXCLUDED"))
                     }
-                    // Only where the search filters on the literal word, operand by operand: in `=cold OR war`
-                    // no tag, and in `(=cold OR war) =cold` only on the second cold.
+                    // Only where the search filters on the literal word, as the parser decides for this operand: in
+                    // `=cold OR war` no tag, in `(=cold OR war) =cold` and `=cold war OR =cold peace` on both colds.
                     if item.operand.isExactApplied {
                         microTag(String(localized: "search.inspector.exactTag",
                                         defaultValue: "EXACT"))

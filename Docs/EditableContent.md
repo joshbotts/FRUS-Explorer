@@ -1209,37 +1209,37 @@ Where a note resolves to a NARA series or file unit, the explorer links straight
 <!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297 and reworded in place, before shipping, for #1297 round 1. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What the numbers mean
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 216–217 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 219–220 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
 
 Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.
 
 <!-- END SOURCE: analytics.info.metric.body -->
 
 #### Multiple words
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 220–221 | key: analytics.info.multiword.body.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 223–224 | key: analytics.info.multiword.body.v2 | shared: iOS+macOS (single edit point) -->
 
-Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked. Where a match need not contain it, as in one OR alternative, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.
+Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.
 
 <!-- END SOURCE: analytics.info.multiword.body.v2 -->
 
-Note: replaces `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 decides the mark operand by operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does.
+Note: replaces `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 reads the mark from each operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does. Reworded in place again for #1297 round 3: parser 6.5 applies a mark on a word marked in every OR alternative (D4), since every match then holds the literal word — `=cold war OR =cold peace` cannot be charted — and "as in one OR alternative" read as though each of those marks were ignored, so the text now names both cases: a word every alternative marks, and one only one alternative marks.
 
 #### Phrases
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 224–225 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 227–228 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
 
 Wrap words in quotes for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.
 
 <!-- END SOURCE: analytics.info.phrase.body -->
 
 #### Stemming
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 228–229 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 231–232 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
 
 English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.
 
 <!-- END SOURCE: analytics.info.stemming.body -->
 
 #### How dates are determined
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 232–233 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 235–236 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
 
 Each document sits at its TEI <date> attribute, the date it was written, not the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.
 
@@ -2980,7 +2980,7 @@ No expression — this query cannot run: nothing is left to search for once its 
 
 <!-- END SOURCE: search.inspector.refused -->
 
-Note: shown in place of the MATCH line when the query holds something to search for and the parser refuses it — only exclusions (`-korea`), an approximation that could match nothing (`-(war -korea) -korea`), or groups nested past the limit — and the search throws (#1297 round 1). Before it, such a query showed no strip at all, and beside a person or subject filter the strip said “this query is filters only”, which was false. Not shown for text with nothing searchable in it, such as a lone `"`, `(` or `=` typed on the way to a query (#1297 round 2): the parser refuses that too and the search throws, but neither reason in the line is true of it, and the strip shows while the researcher pauses mid-typing, so it shows nothing.
+Note: shown in place of the MATCH line when the query holds something to search for and the parser refuses it — only exclusions (`-korea`), an approximation that could match nothing (`-(war -korea) -korea`), or groups nested past the limit — and the search throws (#1297 round 1). Before it, such a query showed no strip at all, and beside a person or subject filter the strip said “this query is filters only”, which was false. Not shown for text with nothing searchable in it, such as a lone `"`, `(` or `=` typed on the way to a query (#1297 round 2): the parser refuses that too and the search throws, but neither reason in the line is true of it, and the strip shows while the researcher pauses mid-typing, so it shows nothing. An operator word the parser searches as a word counts as something searchable (#1297 round 3): `-(or)` and `NOT (AND)` exclude the words or and and, have nothing left to search for, and show the line.
 
 <!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | key: search.empty.combination -->
 

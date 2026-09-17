@@ -61,6 +61,8 @@ import Foundation
 ///          reasons it throws.
 ///   2.4 — #1297 round 2 (docs only): `exactTerms(from:)` describes the `=` rule by requirement and per operand, as parser
 ///          6.4 applies it, rather than by the places a mark sits.
+///   2.5 — #1297 round 3 (docs only): `exactTerms(from:)` states parser 6.5's D4 — requirement is proved over marked
+///          operands, so a word marked in every alternative is reported, and every positive mark on it applies.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -444,13 +446,14 @@ public actor SearchService {
     /// mark; the structured fields never add one.
     ///
     /// Not every marked word. The SQL layer ANDs one filter per term over every result, so the parser
-    /// reports a mark only where every match must contain the word through that very operand — decided
-    /// operand by operand, `ParsedOperand.isExactApplied` (parser 6.4) — and ignores it wherever a match
-    /// need not contain it: in one `OR` alternative (`=cold OR war` keeps war documents without cold), on
-    /// a word an excluded group leaves optional (`cold -(war -=korea)`), and beside the same word required
-    /// without the mark (`(=cold OR fevers) cold` keeps a document holding only colds and fevers). The rule
-    /// is requirement, not position: excluding a group can make a mark apply, as in `NOT (war OR -=cold)`,
-    /// which searches the literal cold without war. A mark on a prefix, or on a word the index splits into
+    /// reports a word only where every match must contain it through a marked operand — a required mark,
+    /// or a mark in every `OR` alternative (`=cold war OR =cold fevers`) — and then every positive mark on
+    /// it applies (`ParsedOperand.isExactApplied`, parser 6.5, D4). It ignores a mark wherever a match need
+    /// not contain the word through one: when only one `OR` alternative marks it (`=cold OR war` keeps war
+    /// documents without cold), on a word an excluded group leaves optional (`cold -(war -=korea)`), and
+    /// beside the same word unmarked (`(=cold OR fevers) cold` keeps a document holding only colds and
+    /// fevers, since the unmarked cold admits the stem). The rule is requirement, not position: excluding a
+    /// group can make a mark apply, as in `NOT (war OR -=cold)`, which searches the literal cold without war. A mark on a prefix, or on a word the index splits into
     /// several terms (`=U.S.S.R.`), is always ignored. The structured parts can therefore take a term away
     /// — `=cold OR -korea` reports `cold` alone and nothing beside the restored prefix `viet`, which anchors
     /// the complement — and never add one.

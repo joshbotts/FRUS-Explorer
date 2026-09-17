@@ -1007,8 +1007,12 @@ final class SearchViewModel {
     /// relabels the filter, without running a search, and a key that moved with them restarted the refresh, which
     /// replaced the inspection's scoped counts and cleared the zero-result blame (#1297 round 2, A3).
     /// `QueryInspector.Inputs` says which fields are read and why, and `QueryInspectionTests` fails when
-    /// `SearchParameters` gains a field neither side names. The macOS window keys the same refresh on `queryText` and `parametersVersion`, which its filter and
-    /// scope edits bump and a person filter's anchor capture or relabel does not.
+    /// `SearchParameters` gains a field neither side names. The macOS window keys the same refresh on `queryText` and
+    /// `parametersVersion`, which its filter and scope edits bump and a person filter's anchor capture or relabel does
+    /// not.
+    ///
+    /// Neither key holds the indexed-volume count or the live index, which the inspection also reads; see
+    /// `QueryInspector.Inputs`.
     var queryInspectorRefreshKey: QueryInspector.Inputs { QueryInspector.Inputs(searchParameters) }
 
     /// The live parameter set: the typed text, the restored structured fields, the scope flags and every filter, as

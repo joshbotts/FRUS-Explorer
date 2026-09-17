@@ -31,6 +31,8 @@ import Foundation
 ///         expression, and `showsStrip` is the one gate both hosts read
 ///   1.5 — #1297 round 2: `isRefused` needs something searchable that was refused, so a lone `"`, `(` or `=` typed on the
 ///         way to a query no longer shows a line whose reasons are false for it
+///   1.6 — #1297 round 3: an operator word the parser searches as a word is something searchable, so `-(or)` and
+///         `NOT (AND)`, refused as exclusions only, set `isRefused` again
 struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
@@ -104,7 +106,9 @@ struct QueryInspection: Sendable, Equatable {
     /// none, and the line's reasons would be false for it. Nor does text with nothing searchable in it set this — a
     /// lone `"`, `(`, `=` or `NEAR()`, which the parser sanitises to nothing. The service throws for that text too, but
     /// the strip shows while the researcher pauses mid-typing, and neither reason is true of an opening quote
-    /// (#1297 round 2, A2; ``QueryInspector/refusesSomethingSearchable(_:)``).
+    /// (#1297 round 2, A2; ``QueryInspector/refusesSomethingSearchable(_:)``). An operator word the parser searches as a
+    /// word is something searchable, although it has no operand row: `-(or)` excludes the word or and has nothing left
+    /// to search for (#1297 round 3).
     ///
     /// A `var` with a default for the same reason as ``notApplied``.
     var isRefused: Bool = false
@@ -209,16 +213,20 @@ struct RenderedExpression: Sendable, Equatable {
 ///   1.2 — #1297 round 1: `operand` is the operand as the search applies it, its `=` mark cleared where parser 6.3
 ///         ignores it (`QueryInspector.asSearched(_:exactTerms:)`)
 ///   1.3 — #1297 round 2: `operand` is the parser's, unrewritten; the EXACT tag and the scoped count read its
-///         `isExactApplied`, which parser 6.4 decides operand by operand, where round 1 cleared `isExact` by word
+///         `isExactApplied`, the parser's answer for that operand (by requirement over marked operands since parser 6.5,
+///         D4), where round 1 cleared `isExact` by word
 struct InspectedOperand: Sendable, Equatable {
 
     /// The parsed operand this describes, exactly as the parser reported it.
     ///
-    /// Its `isExact` is the `=` as typed, and its `isExactApplied` whether the search filters on it. Parser 6.4 decides
-    /// that operand by operand, so in `(=cold OR war) =cold` only the second `cold` applies. The strip's EXACT tag and
-    /// ``QueryInspector/queryText(for:)``, which the scoped count runs, read `isExactApplied`, so both describe the query
-    /// that ran. Round 1 cleared `isExact` wherever the operand's WORD was not among `ParsedQuery.exactTerms`, which kept
-    /// both marks in that query.
+    /// Its `isExact` is the `=` as typed, and its `isExactApplied` whether the search filters on it. The parser decides
+    /// that by requirement over marked operands (parser 6.5, D4): a word every match must hold through a mark — a
+    /// required mark, or a mark in every `OR` alternative — applies on every positive `=` operand on it, so both colds
+    /// apply in `(=cold OR war) =cold` and in `=cold war OR =cold peace`, while an unmarked occurrence never makes a mark
+    /// apply, so none does in `(=cold OR war) cold`. The strip's EXACT tag and ``QueryInspector/queryText(for:)``, which
+    /// the scoped count runs, read `isExactApplied`, so both describe the query that ran. Round 1 decided by WORD,
+    /// keeping a typed mark wherever the operand's word was among `ParsedQuery.exactTerms` — which still differs where
+    /// an excluded mark sits beside an applied one: in `=cold war -=cold` only the first cold is filtered on.
     let operand: ParsedOperand
 
     /// Whether the strip tags this operand ADVANCED: it came from a structured field — a restored saved
@@ -315,6 +323,9 @@ struct InspectedOperand: Sendable, Equatable {
 ///         exactly where the operand's own `isExactApplied` is set (A1), replacing `asSearched(_:exactTerms:)`, which
 ///         decided by word; `isRefused` needs something searchable that was refused (`refusesSomethingSearchable(_:)`,
 ///         A2); `Inputs`, the parts of a parameter set the passes read, keys the iOS refresh (A3)
+///   1.5 — #1297 round 3: `refusesSomethingSearchable(_:)` counts anything the probe renders beyond the stand-in, so an
+///         excluded operator word is something refused (A2); `emptyConjuncts(parameters:)` decomposes the parse of the
+///         parameters it is given (A3); `Inputs` says which inputs of an inspection no key holds (A4)
 struct QueryInspector: Sendable {
 
     /// The service every lookup runs through — counts, stems and vocabulary alike.
@@ -365,8 +376,9 @@ struct QueryInspector: Sendable {
         let expression = await renderedExpression(for: parameters)
 
         var inspected: [InspectedOperand] = []
-        // As parsed: whether an `=` applies is the parser's per-operand `isExactApplied`, which the strip and the scoped
-        // count read. Deciding it again here from the word is how round 1 kept both marks in `(=cold OR war) =cold`.
+        // As parsed: whether an `=` applies is the parser's `isExactApplied` on each operand, which the strip and the
+        // scoped count read. Deciding it again here from the word is how round 1 tagged the excluded mark in
+        // `=cold war -=cold` beside the applied one.
         for operand in parsed?.operands ?? [] {
             let stem = await stem(for: operand)
             // One `fts5vocab` row carries both halves; reading only `doc` fetched `cnt` and
@@ -404,40 +416,68 @@ struct QueryInspector: Sendable {
     /// The stand-in structured phrase ``refusesSomethingSearchable(_:)`` sets beside a query: any word the parser renders.
     private static let refusalProbeAnchor = "anchor"
 
-    /// Whether `parameters` holds something to search for — an operand, or groups nested past the parser's limit — that
-    /// its combined parse refuses. Meaningful only once that parse is `nil`.
+    /// What the stand-in renders on its own, beside no query and no restored excluded term: `"anchor"`.
+    private static let refusalProbeAlone = FTS5InlineQueryParser.parseDetailed(
+        "", structured: StructuredQueryParts(phrase: refusalProbeAnchor, prefixWildcard: nil, excludedTerms: [])).expression
+
+    /// Whether `parameters` holds something to search for — a term, or groups nested past the parser's limit — that its
+    /// combined parse refuses. Meaningful only once that parse is `nil`.
     ///
     /// A `nil` parse does not say so on its own. The parser also refuses text whose terms sanitise to nothing, such as a
     /// lone `"`, `(`, `=`, `-(`, `NEAR()` or `?`, and for that text the strip's refused line would give two reasons,
-    /// exclusions and nesting, neither of them true (#1297 round 2, A2). A refused parse reports no operands, so this
-    /// asks the parser again with a stand-in structured phrase beside the query, keeping its restored excluded terms.
-    /// Beside a phrase every complement has an anchor, so the parse renders and reports every searchable operand the
-    /// query holds; the query holds one exactly when an operand other than the stand-in comes back.
+    /// exclusions and nesting, neither of them true (#1297 round 2, A2). A refused parse reports nothing, so this asks
+    /// the parser again with a stand-in structured phrase beside the query, keeping its restored excluded terms. Beside a
+    /// phrase every complement has an anchor, so the probe renders everything searchable the query holds, and the query
+    /// holds something exactly when the probe renders more than the stand-in does alone.
+    ///
+    /// The rendering, not the operands, because an operator word the parser demotes to a search word has no operand row:
+    /// `-(or)` probes to `"anchor" NOT ("or")` beside the stand-in alone, and round 2, which looked for an operand other
+    /// than the stand-in or a left-out one, hid the refused line for it and for `NOT (AND)` (#1297 round 3, A2). The
+    /// left-out half of that rule never fired: beside a phrase nothing is left out, and over the probes measured below
+    /// none left an operand out.
     ///
     /// The one refusal a stand-in cannot lift is the nesting limit, which is why a `nil` probe counts as something
     /// refused. `FTS5InlineQueryParser.parseDetailed` compares `groupDepth(of:)` over the typed tokens with
     /// `maximumGroupDepth` before it builds anything, and refuses whatever sits beside them. The app cannot run that
     /// scan itself — it reads the parser's private tokenization, and a copy of that would be a second tokenizer to
-    /// drift — so the limit is reached through the parse. Measured with parser 6.4 over every sequence of one to four
-    /// tokens from `cold`, `-korea`, `=cold`, `-=cold`, `OR`, `NOT`, `AND`, `(`, `)`, `-(`, `"`, `"cold"`, `?`, `=`, `-`,
-    /// `NEAR(`, `NEAR()`, `*`, `cold*`, `-"x y"`, `NEAR(cold war, 3)` and `“` — 245,410 queries, each alone, inside 32
-    /// and 33 groups, and inside 33 groups 32 of them excluded, and each of those with and without the restored excluded
-    /// terms `korea` and `?`, 1,963,280 probes — the probe was `nil` exactly when the groups nested past the limit, and
-    /// never approximate. Of the same queries alone, 35,621 are refused: 26,581 hold something searchable, every one of
-    /// them holding a typed exclusion, and 9,040 hold nothing.
+    /// drift — so the limit is reached through the parse.
+    ///
+    /// Measured with parser 6.5 over every sequence of one to four tokens from `cold`, `-korea`, `=cold`, `-=cold`, `OR`,
+    /// `NOT`, `AND`, `(`, `)`, `-(`, `"`, `"cold"`, `?`, `=`, `-`, `NEAR(`, `NEAR()`, `*`, `cold*`, `-"x y"`,
+    /// `NEAR(cold war, 3)` and `“` — 245,410 queries:
+    /// - each alone, inside 32 and 33 groups, and inside 33 groups 32 of them excluded, and each of those with and without
+    ///   the restored excluded terms `korea` and `?` (1,963,280 probes): the probe was `nil` exactly when the groups
+    ///   nested past the limit, and never approximate;
+    /// - each alone, and beside the restored excluded terms `korea` and `?`, and `?` alone (736,230 probes): no probe left
+    ///   an operand out;
+    /// - of the queries alone, 35,621 are refused: 26,695 hold something searchable, every one of them holding a typed
+    ///   exclusion or, in 114 (`-( OR )`, `NOT ( AND )`, `NOT NEAR( OR )`), an excluded operator word; 8,926 hold
+    ///   nothing. Over the refused queries of all three sets, round 2's rule disagrees on 114, all of them alone, and
+    ///   called every one nothing.
+    ///
+    /// A typed term spelled like the stand-in still renders beside it. With `anchor`, `-anchor` and `"anchor"` added to
+    /// the alphabet (every sequence of one to three tokens, 16,275 queries, beside the same three sets), the two rules
+    /// disagree only on `-( OR )`, `-( NOT )` and `-( AND )`, so no refused query holding a term probes to the stand-in
+    /// alone.
     static func refusesSomethingSearchable(_ parameters: SearchParameters) -> Bool {
         let beside = StructuredQueryParts(phrase: refusalProbeAnchor, prefixWildcard: nil,
                                           excludedTerms: parameters.excludedTerms)
-        let probe = FTS5InlineQueryParser.parseDetailed(parameters.keywords ?? "", structured: beside)
-        guard probe.expression != nil else { return true }
-        return probe.operands.contains { !($0.source == .structured && $0.kind == .phrase) }
-            || !probe.droppedOperands.isEmpty
+        guard let probe = FTS5InlineQueryParser.parseDetailed(parameters.keywords ?? "", structured: beside).expression
+        else { return true }
+        return probe != refusalProbeAlone
     }
 
     // MARK: - What the passes read
 
     /// The parts of a `SearchParameters` value the inspector's passes read, and nothing else, so a host can refresh
-    /// exactly when an inspection could change — the iOS strip's refresh key, `SearchViewModel.queryInspectorRefreshKey`.
+    /// whenever the query's parameters could change an inspection — the iOS strip's refresh key,
+    /// `SearchViewModel.queryInspectorRefreshKey`.
+    ///
+    /// Only the parameters. An inspection also reads what no parameter set holds, and no key moves with it: the
+    /// indexed-volume count the host passes in, which the strip's denominator caption and the zero-result view show, and
+    /// the live index, whose corpus document frequencies the operands carry. A volume that finishes indexing leaves
+    /// both stale until the next edit to the query or its filters, and a search service that appears after the first
+    /// refresh returned early — the macOS window before boot finishes — until the same.
     ///
     /// `SearchParameters`' own `==` also compares four fields no pass reads: a person filter's `personLabel` and
     /// `personAnchor`, which name the rollup `personRollupId` filters on and re-find it after a renumber; `booleanMode`,
@@ -451,7 +491,8 @@ struct QueryInspector: Sendable {
     /// `makeFilters` still passes on, included.
     ///
     /// `QueryInspectionTests` enumerates `SearchParameters`' stored properties, so a field added there fails that test
-    /// until it is placed on one side of this line.
+    /// until it is placed on one side of this line, and runs the passes with each unread field changed beside the filter
+    /// it could plausibly change: a person filter for the label and anchor, a user tag for the project.
     struct Inputs: Equatable, Sendable {
         /// `SearchParameters.keywords`.
         let keywords: String?
@@ -583,11 +624,27 @@ struct QueryInspector: Sendable {
     func emptyConjuncts(
         in inspection: QueryInspection, parameters: SearchParameters
     ) async -> [ParsedOperand] {
+        await emptyConjuncts(among: inspection.operands.map(\.operand), parameters: parameters)
+    }
+
+    /// Names the operands of `parameters`' own combined parse that return nothing on their own — the zero-result
+    /// decomposition of the query those parameters describe.
+    ///
+    /// The query that ran, not whatever inspection is at hand. Both hosts refresh the inspection from the text in the
+    /// field, and decompose under the parameters of the search that ran; on macOS the two differ whenever text is typed
+    /// without Return, and decomposing the inspection named a term the empty search never held (#1297 round 3, A3). No
+    /// stem or vocabulary lookup runs: the blame needs the operands and their counts, nothing else.
+    func emptyConjuncts(parameters: SearchParameters) async -> [ParsedOperand] {
+        await emptyConjuncts(among: SearchService.parsedQuery(for: parameters).operands, parameters: parameters)
+    }
+
+    /// The operands among `operands` that are not excluded and count zero under `parameters`' filters.
+    private func emptyConjuncts(among operands: [ParsedOperand], parameters: SearchParameters) async -> [ParsedOperand] {
         var empty: [ParsedOperand] = []
-        for item in inspection.operands where !item.operand.isNegated {
+        for operand in operands where !operand.isNegated {
             let count = try? await searchService.searchCount(
-                parameters: Self.parameters(parameters, narrowedTo: item.operand))
-            if count == 0 { empty.append(item.operand) }
+                parameters: Self.parameters(parameters, narrowedTo: operand))
+            if count == 0 { empty.append(operand) }
         }
         return empty
     }
@@ -638,9 +695,9 @@ struct QueryInspector: Sendable {
     /// The search-box text that reproduces one operand on its own, as the search applied it.
     ///
     /// A word is spelled `=word` exactly when its mark applied — `ParsedOperand.isExactApplied` — and plain otherwise,
-    /// `=` typed or not: parser 6.4 ignores a mark on an operand a match need not contain, such as the first `cold` of
-    /// `(=cold OR war) =cold`, and the search runs that word by its stem. Parsed alone, an applied `=word` is exact
-    /// again, by the parser's own spelling rule (`=cold:` filters on `cold`).
+    /// `=` typed or not: the parser ignores a mark on a word a match need not contain through a mark, such as the first
+    /// `cold` of `(=cold OR war) cold`, and the search runs that word by its stem. Parsed alone, an applied `=word` is
+    /// exact again, by the parser's own spelling rule (`=cold:` filters on `cold`).
     static func queryText(for operand: ParsedOperand) -> String {
         switch operand.kind {
         case .word:

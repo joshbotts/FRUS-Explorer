@@ -1158,9 +1158,9 @@ struct QueryInspectionTests {
     /// Round 3 (A5): each unread field is run against a base where reading it would change a number. Round 2 changed all
     /// four on a query with no person filter and no user tag, where re-resolving `personAnchor`, looking a person up by
     /// `personLabel`, or scoping user tags by `projectId` alters no filter, so a pass that started to read any of them
-    /// still passed. Here the anchor and the label name a person whose rollup counts differently from the one
-    /// `personRollupId` filters on, and the project sits beside a user tag whose filter changes the counts — each
-    /// difference asserted before the unread field is changed. `booleanMode` keeps the plain base: the inline parser is
+    /// still passed. Here the anchor and the label name a person whose rollup counts differently from, and shares no
+    /// document with, the one `personRollupId` filters on, and the project sits beside a user tag whose filter changes
+    /// the counts — each difference asserted before the unread field is changed. `booleanMode` keeps the plain base: the inline parser is
     /// the only thing that could read it, and a parse that did would render a different expression.
     @Test("The refresh inputs hold exactly the parameter fields the inspection reads")
     func inputsHoldExactlyWhatTheInspectionReads() async throws {
@@ -1212,8 +1212,9 @@ struct QueryInspectionTests {
         }
         #expect(await counts(plain) == [2, 2], "precondition: containment d1 and d2, europe d1 and d3")
 
-        // The two people: Kennan is mentioned in d1, Acheson in d1, d2 and d3. Their rollups count differently, so a pass
-        // that re-resolved the anchor, or looked the person up by the label, would change the numbers below.
+        // The two people: Kennan is mentioned in d1 and d2, Acheson in d3 alone. Their rollups count differently and share
+        // no document, so a pass that re-resolved the anchor, filtered on it, or looked the person up by the label would
+        // change the numbers below.
         let people = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
         let kennan = try #require(try await people.rollupEntry(forVolumeId: "vol1", ref: "p_kennan")?.rollupId)
         let acheson = try #require(try await people.rollupEntry(forVolumeId: "vol1", ref: "p_acheson")?.rollupId)
@@ -1221,10 +1222,10 @@ struct QueryInspectionTests {
         personBase.personRollupId = kennan
         personBase.personLabel = "Kennan, George F."
         personBase.personAnchor = PersonRollupAnchor(volumeId: "vol1", ref: "p_kennan")
-        var otherPerson = personBase
+        var otherPerson = plain
         otherPerson.personRollupId = acheson
-        #expect(await counts(personBase) == [1, 1], "precondition: Kennan's rollup filters to d1")
-        #expect(await counts(otherPerson) == [2, 2], "precondition: Acheson's rollup counts differently, d1 to d3")
+        #expect(await counts(personBase) == [2, 1], "precondition: Kennan's rollup filters to d1 and d2")
+        #expect(await counts(otherPerson) == [0, 1], "precondition: Acheson's rollup counts differently, d3 alone")
 
         // The tag: d1 alone carries u1. Dropping the tag filter, or matching no tag, changes the numbers below.
         try await pipeline.updateUserTagIds(volumeId: "vol1", documentId: "d1", userTagIds: "u1")
@@ -1254,8 +1255,7 @@ struct QueryInspectionTests {
     }
 
     /// The fixture's four documents with two people and a persons list, for the checks that need a person filter to
-    /// matter: *Kennan* is mentioned in d1, *Acheson* in d1, d2 and d3. The words the counts read are the plain
-    /// fixture's.
+    /// matter: *Kennan* is mentioned in d1 and d2, *Acheson* in d3. The words the counts read are the plain fixture's.
     private func personAndTagVolumeXML() -> String {
         """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -1265,10 +1265,9 @@ struct QueryInspectionTests {
           <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
           <text><body>
             <div type="document" xml:id="d1"><head>1. Memorandum</head>
-              <p>The doctrine of containment shaped policy toward europe, wrote <persName ref="p_kennan">Kennan</persName>
-              to <persName ref="p_acheson">Acheson</persName>.</p></div>
+              <p>The doctrine of containment shaped policy toward europe, wrote <persName ref="p_kennan">Kennan</persName>.</p></div>
             <div type="document" xml:id="d2"><head>2. Telegram</head>
-              <p>We must contain the threat, and contain it quickly, said <persName ref="p_acheson">Acheson</persName>.</p></div>
+              <p>We must contain the threat, and contain it quickly, said <persName ref="p_kennan">Kennan</persName>.</p></div>
             <div type="document" xml:id="d3"><head>3. Report</head>
               <p>Economic recovery in europe proceeded, <persName ref="p_acheson">Acheson</persName> reported.</p></div>
             <div type="document" xml:id="d4"><head>4. Alliance Politics</head>

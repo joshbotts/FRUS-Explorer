@@ -214,6 +214,8 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          parameter set, where it refreshed on `vm.keywords` alone and went stale when a restored
 ///          phrase, prefix or excluded term changed; the card shows on `QueryInspection.showsStrip`, so a
 ///          refused query says why it has no expression
+///   1.22 — #1297 round 3: the zero-result decomposition runs under `vm.submittedSearchParameters`, the search
+///          that ran, not the live field, which the researcher may have edited since
 
 struct SearchView: View {
 
@@ -1477,8 +1479,9 @@ struct SearchView: View {
                 }
             }
             .task(id: vm.executedSearchVersion) {
+                // The search that came back empty: text typed since it ran is not part of what is decomposed.
                 await inspectorController.decomposeZeroResult(
-                    parameters: vm.searchParameters, service: appState.searchService)
+                    parameters: vm.submittedSearchParameters, service: appState.searchService)
             }
         } else if !vm.results.isEmpty {
             resultCountHeader
