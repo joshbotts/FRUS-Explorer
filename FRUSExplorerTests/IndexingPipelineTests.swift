@@ -5981,12 +5981,18 @@ struct RecordGroupSpellingTests {
 /// that dropped, reordered or re-nested its documents would surface as a precondition failure minutes
 /// into a UI run on a simulator. This says the same thing here, in milliseconds, with the cause named.
 ///
+/// #1301 added a nested `chapter → subchapter` branch to the same fixture, so the sequence now runs
+/// `d1, d2, d3, n1, n2`. The nested pair is APPENDED — the `d1 → d2` adjacency `ResearchReadingDepthTests`
+/// turns a page across is untouched, and this test is what says so rather than leaving it to a simulator
+/// run to discover.
+///
 /// Version history:
 ///   1.0 — #1273: initial implementation
+///   1.1 — #1301: the fixture's nested branch adds `n1`, `n2` after `d3`
 @Suite("UI-test fixture volume")
 struct UITestFixtureVolumeTests {
 
-    @Test("The seeded fixture reads d1, d2, d3 in order, under its own titles")
+    @Test("The seeded fixture reads d1, d2, d3 then the nested n1, n2, under their own titles")
     func fixtureReadsInOrder() async throws {
         try await withTempDir { dir in
             let (pipeline, _) = try await makeTestPipeline(dir: dir)
@@ -5997,10 +6003,12 @@ struct UITestFixtureVolumeTests {
             try await pipeline.indexVolume(volumeId)
 
             let sequence = try await pipeline.readingSequence(forVolume: volumeId)
-            #expect(sequence.map(\.documentId) == ["d1", "d2", "d3"], """
+            #expect(sequence.map(\.documentId) == ["d1", "d2", "d3", "n1", "n2"], """
                 The UI-test fixture must read d1, d2, d3: the reading-depth UI test turns the page from \
                 d1 and requires d2. A document the structure walk cannot reach has no neighbours, and \
-                its page-turn zone never appears.
+                its page-turn zone never appears. #1301's nested chapter contributes n1 and n2 AFTER \
+                them — nesting them anywhere that broke the d1 → d2 adjacency would fail that suite \
+                minutes into a simulator run.
                 """)
             // Literals, NOT `UITestVolumeSeeder.documentTitles`: the fixture XML is generated FROM that
             // array, so comparing back to it moves both sides together and a rename passes here while
@@ -6008,9 +6016,14 @@ struct UITestFixtureVolumeTests {
             // these same strings, and this is what pins them to the seeder.
             #expect(sequence.map(\.header) == ["UI Test Document One",
                                               "UI Test Document Two",
-                                              "UI Test Document Three"], """
+                                              "UI Test Document Three",
+                                              "UI Test Nested Document One",
+                                              "UI Test Nested Document Two"], """
                 The UI test identifies the page it turned to by these titles, which it hard-codes. \
-                Renaming the fixture's heads without updating that suite breaks it on a simulator.
+                Renaming the fixture's heads without updating that suite breaks it on a simulator. \
+                The nested pair must not be a superstring of the first three either: every row query \
+                in the UI suites is CONTAINS[c], so "Nested UI Test Document One" would match a query \
+                for "UI Test Document One" and "UI Test Nested Document One" does not.
                 """)
         }
     }

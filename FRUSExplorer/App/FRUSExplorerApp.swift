@@ -223,6 +223,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          Q2). On iPadOS it raises the Search tab and asks that tab's `SearchView` for its tips sheet; on macOS it
 ///          fronts the Search window and asks it to open the Tips panel. Both requests are
 ///          `AppState.openSearchTips(from:)` hand-offs, consumed once.
+///   4.11 — #1301: `bootDownloadManager()` keeps `UITestVolumeSeeder.seedIfRequested`'s result and
+///          re-indexes that one volume when the fixture's bytes changed, because the index outlives
+///          the file it was built from and `loadVolumeStructure` prefers the persisted structure.
+///          DEBUG-only and inert unless `FRUS_UI_TEST_SEED_VOLUME` is set; nothing else moved.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2034,7 +2038,10 @@ struct FRUSExplorerApp: App {
         // DEBUG-only, and inert unless a UI test names a volume in FRUS_UI_TEST_SEED_VOLUME.
         // Placed before the pipeline is built so the fixture is on disk for the first read.
         #if DEBUG
-        UITestVolumeSeeder.seedIfRequested(in: volumesDir)
+        // #1301: the result is kept because a fixture whose shape changed leaves a
+        // `volume_structures` row describing the PREVIOUS one, and `loadVolumeStructure` prefers
+        // that row over parsing the file. The re-index is issued below, once the pipeline exists.
+        let seededVolume = UITestVolumeSeeder.seedIfRequested(in: volumesDir)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()
@@ -2131,6 +2138,23 @@ struct FRUSExplorerApp: App {
             // appearing twice in lists.
             DuplicateRecordCleanup.run(context: modelContainer.mainContext)
             #if DEBUG
+            // #1301: a UI-test fixture whose bytes changed since the last run. The volumes
+            // directory and the index both survive between runs, so without this the app serves
+            // the PREVIOUS fixture's `volume_structures` row from a file that no longer matches
+            // it — measured on a warm iPhone 17, where the nested chapter the fixture had just
+            // grown was absent from the compilation's Sections list. Re-indexing one 2 KB fixture
+            // is near-instant and, unlike deleting the database, leaves a developer's real
+            // volumes alone.
+            if let seededVolume, seededVolume.contentChanged {
+                do {
+                    try await pipeline.indexVolume(seededVolume.volumeId)
+                    print("[UITestVolumeSeeder] Re-indexed \(seededVolume.volumeId) after a "
+                          + "fixture change")
+                } catch {
+                    print("[UITestVolumeSeeder] Could not re-index "
+                          + "\(seededVolume.volumeId): \(error)")
+                }
+            }
             // #312: research-content seed for UIObstructionTests scenario 5 — see the seeder.
             UITestResearchSeeder.seedIfRequested(context: modelContainer.mainContext)
             // Visual-marketing §7 step 6: State C, a library that has been worked in. Inert unless
