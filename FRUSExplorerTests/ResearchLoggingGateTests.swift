@@ -61,6 +61,10 @@ import Testing
 ///          construct one were listed
 ///   1.3 — #1298: a typographic and a straight spelling of one query refresh one row, which keeps the later
 ///          spelling; a double prime or a single quotation mark still spells another query
+///   1.4 — #1298 follow-up: the typographic re-run test asserts the typed spelling after the insert and after every
+///          refresh, and ends on a typographic spelling, so storing the folded text fails it (the attack's A11–A13);
+///          its comment no longer says a paste arrives straight. `macChecklistAnchorUsesTheWritersSameQueryRule` pins
+///          that both macOS checklist gates decide "same query" through the writer's own rule
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -498,8 +502,14 @@ struct ResearchLoggingGateTests {
         #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 3)
     }
 
-    /// Smart Punctuation types `“cold war”` where a pasted query arrives as `"cold war"`, and both run the same search
-    /// (#1298), so re-running one in the other spelling is the same search being adjusted, not a second one.
+    /// `“cold war”` is what Smart Punctuation types and what a phrase pasted from a FRUS volume carries (#1298 measured
+    /// those pastes as curly), `"cold war"` is what typing without Smart Punctuation gives, and both run the same
+    /// search, so re-running one in the other spelling is the same search being adjusted, not a second one.
+    ///
+    /// The spelling is asserted after the insert and after EVERY refresh, and the run of respellings ends on a
+    /// typographic one: a writer that stored the FOLDED text instead of the typed text wrote `"cold war"` for every
+    /// spelling, and a run ending on the straight spelling — whose folded and typed forms are one string — could not
+    /// tell the two apart (the #1298 attack's A11–A13).
     @Test("A typographic and a straight run of the same query are one row, carrying the later spelling")
     func typographicRerunRefreshesTheRow() throws {
         let scratch = ScratchDefaults()
@@ -522,17 +532,23 @@ struct ResearchLoggingGateTests {
         let first = record("\u{201C}cold war\u{201D}")
         let id = try #require(try rows().first?.id)
         #expect(first == .inserted(id))
+        // A new row keeps the spelling that was typed, not the folded one.
+        #expect(try rows().first?.queryText == "\u{201C}cold war\u{201D}", "the first run's typed spelling")
+        #expect(anchor?.queryText == "\u{201C}cold war\u{201D}")
 
-        // Each folded mark, as a pair or mixed with U+0022, then the straight spelling itself.
+        // Each folded mark, as a pair or mixed with U+0022, then the straight spelling, then back to typographic marks
+        // so the run ends on a spelling whose folded form differs from what was typed.
         let respellings = ["\u{201E}cold war\u{201C}", "\u{201F}cold war\u{201D}", "\u{FF02}cold war\u{FF02}",
-                           "\u{00AB}cold war\u{00BB}", "\u{201C}cold war\"", "\"cold war\""]
+                           "\u{00AB}cold war\u{00BB}", "\u{201C}cold war\"", "\"cold war\"", "\u{00AB}cold war\u{00BB}"]
         for text in respellings {
             #expect(record(text) == .refreshed(id), "\(text) wrote a second row")
+            #expect(try rows().first?.queryText == text, "the refreshed row keeps the spelling of \(text)")
+            #expect(anchor?.queryText == text, "the anchor keeps the spelling of \(text)")
         }
         let row = try #require(try rows().first)
         #expect(try rows().count == 1)
-        #expect(row.queryText == "\"cold war\"", "the row keeps the spelling of the run it now describes")
-        #expect(anchor?.queryText == "\"cold war\"")
+        #expect(row.queryText == "\u{00AB}cold war\u{00BB}", "the row keeps the spelling of the run it now describes")
+        #expect(anchor?.queryText == "\u{00AB}cold war\u{00BB}")
 
         // A double prime and single quotation marks are not folded, so each spells another query than the straight one
         // anchored just before it.
@@ -620,6 +636,40 @@ struct ResearchLoggingGateTests {
         #expect(source[signatureRange.upperBound..<refreshRange.lowerBound]
             .contains("AppState.isResearchLoggingEnabled(in: defaults)"),
                 "the refresh path must be behind the same gate as the insert")
+    }
+
+    /// The macOS checklist keeps its reviewed marks across a re-run of the same query, and its comment says the gate
+    /// mirrors the history anchor. Since #1298 the writer calls `“cold war”` and `"cold war"` one query, while the
+    /// checklist compared the raw text, so re-submitting one spelling as the other refreshed one history row and wiped
+    /// every reviewed mark. Both now decide "same query" through `SearchHistoryWriter.isSameQuery(_:_:)`, whose
+    /// behaviour `sameQueryRuleFoldsOnlyQuotationMarks` pins.
+    ///
+    /// Read from source because `MacSearchViewModel` is `#if os(macOS)` and this bundle builds for iOS, so the macOS
+    /// suite beside `SearchViewTests.checklistSurvivesFilterRerun` compiles nowhere and runs never. The calls are
+    /// matched whole, and the forbidden raw comparison only on lines that are not comments, so this doc and the view
+    /// model's own explanation cannot satisfy or trip it.
+    @Test("The macOS checklist re-anchors on the history writer's same-query rule, on both search paths")
+    func macChecklistAnchorUsesTheWritersSameQueryRule() throws {
+        let mac = try String(contentsOf: Self.sourceRoot.appendingPathComponent("App/MacSearchViewModel.swift"),
+                             encoding: .utf8)
+        let writer = try String(contentsOf: Self.sourceRoot.appendingPathComponent("Search/SearchHistoryWriter.swift"),
+                                encoding: .utf8)
+        let code = mac.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+
+        // `performSearch` and `performMeaningSearch` each carry the gate once.
+        let gate = "if checklistMode, !SearchHistoryWriter.isSameQuery(lastChecklistAnchorQuery, query) {"
+        #expect(code.filter { $0.contains(gate) }.count == 2,
+                "both macOS search paths must re-anchor through the writer's same-query rule")
+        // No exact comparison of the anchored text survives in code.
+        let raw = code.filter {
+            $0.contains("!= lastChecklistAnchorQuery") || $0.contains("== lastChecklistAnchorQuery")
+                || $0.contains("lastChecklistAnchorQuery !=") || $0.contains("lastChecklistAnchorQuery ==")
+        }
+        #expect(raw.isEmpty, "an exact comparison of the checklist anchor remains: \(raw)")
+        // The writer recognises a re-run through the same function, so the two cannot drift apart.
+        #expect(writer.contains("isSameQuery(existing.queryText, reading.queryText)"),
+                "SearchHistoryWriter.record must decide a re-run through isSameQuery")
     }
 
     /// No further writer has appeared without a gate.

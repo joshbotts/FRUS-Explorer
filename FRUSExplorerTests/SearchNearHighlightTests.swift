@@ -31,6 +31,10 @@ import Foundation
 ///   1.1 — #1298: typographic double quotation marks (`“ ”`, `„ “`, `« »`, fullwidth) hide a paren and a comma from
 ///          the scaffolding rewrite as U+0022 does, and a typographic phrase highlights and concords the words its
 ///          straight spelling does; a double prime and the single marks stay ordinary characters
+///   1.2 — #1298 follow-up: the typographic concordance test takes its anchor oracle only from queries that negate
+///          nothing. For `blockade -"naval quarantine"` it asserts only that the two spellings concord alike, because
+///          the straight spelling's anchor on `quarantine` — a word of the excluded phrase — is a highlighter quirk the
+///          1.1 test had pinned as correct
 @Suite("NEAR and the snippet highlighter")
 struct SearchNearHighlightTests {
 
@@ -239,12 +243,23 @@ struct SearchNearHighlightTests {
         let (dir, service) = try await makeService()
         defer { try? FileManager.default.removeItem(at: dir) }
 
-        // Each straight query, a typographic respelling, and the words the straight query's concordance anchors on —
-        // which leave out `and`, because the highlighter skips an operator word however it is quoted.
-        let cases: [(straight: String, typographic: String, anchors: Set<String>)] = [
+        // Each straight query, a typographic respelling, and — where the query negates nothing — the words the straight
+        // query's concordance anchors on, as an oracle that the straight spelling itself is concorded.
+        //
+        // `war and peace` anchors on `war` and `peace` and not `and`: `positiveTerms` splits the text on whitespace
+        // before it looks at quotes, so the phrase's middle word reaches the operator check as a bare `and` and is
+        // skipped like the operator. That is the straight spelling's existing answer, recorded here rather than
+        // endorsed; what #1298 pins is only that the typographic spelling gives the same one.
+        //
+        // The negated case carries NO anchor set. The straight `blockade -"naval quarantine"` anchors on `quarantine`,
+        // a word of the excluded phrase, because the same split skips only the dashed first token `-"naval` — a
+        // highlighter quirk against `positiveTerms`' own "excluded terms are not included" that has nothing to do with
+        // quotation marks, so pinning it here would fail this test when the quirk is fixed. For that case only the
+        // equality of the two spellings' lines is asserted, over a straight concordance that is not empty.
+        let cases: [(straight: String, typographic: String, anchors: Set<String>?)] = [
             ("\"cold war\"", "\u{201C}cold war\u{201D}", ["cold", "war"]),
             ("\"war and peace\"", "\u{00AB}war and peace\u{00BB}", ["war", "peace"]),
-            ("blockade -\"naval quarantine\"", "blockade -\u{201E}naval quarantine\u{201C}", ["blockade", "quarantine"]),
+            ("blockade -\"naval quarantine\"", "blockade -\u{201E}naval quarantine\u{201C}", nil),
             ("NEAR(\"military guarantee\" europe, 5)", "NEAR(\u{FF02}military guarantee\u{FF02} europe, 5)",
              ["military", "guarantee", "europe"]),
         ]
@@ -261,7 +276,11 @@ struct SearchNearHighlightTests {
 
             let straightLines = try await service.concordance(for: straightResults, parameters: straightParameters)
             let typographicLines = try await service.concordance(for: straightResults, parameters: typographicParameters)
-            #expect(Set(straightLines.lines.map { $0.match.lowercased() }) == c.anchors, "\(c.straight)")
+            if let anchors = c.anchors {
+                #expect(Set(straightLines.lines.map { $0.match.lowercased() }) == anchors, "\(c.straight)")
+            } else {
+                #expect(!straightLines.lines.isEmpty, "\(c.straight): an empty concordance would make the equality vacuous")
+            }
             #expect(typographicLines.lines == straightLines.lines, "\(c.typographic)")
             concorded += straightLines.lines.count
         }

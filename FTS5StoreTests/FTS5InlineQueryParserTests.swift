@@ -894,8 +894,9 @@ struct FTS5ExactSigilTests {
 /// iPadOS Smart Punctuation and macOS smart quotes type `“ ”`, and text pasted from a FRUS volume carries them, so a
 /// phrase the parser read only by U+0022 silently became separate words: `“cold war”` searched both words anywhere and
 /// `blockade -“naval quarantine”` excluded *naval* and required *quarantine*. The marks are spelled out here rather
-/// than read from the parser, so a mark dropped from or added to the parser's set fails these tests instead of moving
-/// with them.
+/// than read from the parser, so a mark dropped from the parser's set fails these tests instead of moving with them,
+/// and `foldIsExactlyTheDecidedMarksOverEveryScalar` walks every Unicode scalar, so a mark added to it fails too —
+/// the fifteen listed marks alone could not see an addition from outside the list (U+301D passed every other test).
 extension FTS5InlineQueryParserTests {
 
     /// The marks #1298 folds to U+0022, one character for one — the owner's decision of 2026-09-17.
@@ -979,6 +980,38 @@ extension FTS5InlineQueryParserTests {
         #expect(!FTS5InlineQueryParser.isDoubleQuotationMark(markedCurly))
         #expect(!FTS5InlineQueryParser.isDoubleQuotationMark(markedStraight))
         #expect(FTS5InlineQueryParser.normalizingQuotationMarks("cold war") == "cold war")
+    }
+
+    /// The "exactly" half of the decided set, over the whole code space rather than a list: every scalar from U+0000
+    /// to U+10FFFF (the 2,048 surrogates are not scalars) is taken as a one-scalar character, and the predicate must be
+    /// true for U+0022 and the seven folded marks and for nothing else, while the fold must change those seven and
+    /// nothing else. The listed-mark test above cannot fail when a mark outside its fifteen is added — U+301D `〝`,
+    /// U+2036 `‶` or U+275D `❝` added to the parser's set passed it, and parsed `〝cold war〝` as a phrase.
+    @Test("Over every Unicode scalar, the predicate holds for U+0022 and the seven folded marks and the fold changes only the seven")
+    func foldIsExactlyTheDecidedMarksOverEveryScalar() {
+        var predicateHolds: [UInt32] = []
+        var foldChanges: [UInt32] = []
+        var foldsToStraight: [UInt32] = []
+        var walked = 0
+        for value in UInt32(0)...0x10FFFF {
+            guard let scalar = Unicode.Scalar(value) else { continue }
+            walked += 1
+            let character = Character(scalar)
+            if FTS5InlineQueryParser.isDoubleQuotationMark(character) { predicateHolds.append(value) }
+            let text = String(character)
+            let folded = FTS5InlineQueryParser.normalizingQuotationMarks(text)
+            if folded != text {
+                foldChanges.append(value)
+                if folded == "\"" { foldsToStraight.append(value) }
+            }
+        }
+        // 0x110000 code points less the 0x800 surrogates: the walk reached every scalar there is.
+        #expect(walked == 1_112_064)
+        let folded = Self.foldedQuotationMarks.map { $0.unicodeScalars.first!.value }.sorted()
+        #expect(folded == [0x00AB, 0x00BB, 0x201C, 0x201D, 0x201E, 0x201F, 0xFF02], "the list is the owner's seven")
+        #expect(predicateHolds == ([0x0022] + folded).sorted())
+        #expect(foldChanges == folded)
+        #expect(foldsToStraight == folded, "each folded mark becomes U+0022 and nothing else")
     }
 
     @Test("Every typographic spelling of a quoted query parses, renders and matches as its straight form")
