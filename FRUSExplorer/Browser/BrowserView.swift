@@ -98,6 +98,9 @@ import SwiftUI
 ///          width. A document brings the Research rail with it, and three columns measured
 ///          451.5pt of reader on a 13-inch iPad. `BrowseTwoPaneMetrics` holds the rule; the
 ///          detail pane's Back is coupled to it, or a handed-off document at depth 1 has neither
+///   2.12 — #1301: the REUSE CONTRACT is written down at `levelView` — a level view rendered in
+///          the detail pane may be reused across two values of the same case, so every load task
+///          in one must be keyed. Doc comment only here; the keys are in the level views
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -857,6 +860,44 @@ struct BrowserView: View {
     /// Using `AnyView` here erases structural identity. When `BrowserView.body` re-renders
     /// (triggered by any change to `vm.navigationPath`), SwiftUI cannot diff through `AnyView`
     /// and recreates the wrapped view, resetting `@State` and restarting document loading.
+    ///
+    /// ## THE REUSE CONTRACT: every load task in a level view must be KEYED (#1301)
+    /// **A level view rendered here may be reused across two different values of the same case.**
+    /// `twoPaneLayout`'s `detailPane` *renders* `vm.navigationPath.last` in place — there is no
+    /// navigation container below it and no per-element destination — so when the path's last
+    /// element goes from one `.compilation` to another, this `Group` takes the same switch branch
+    /// at the same structural position and SwiftUI **updates** the existing view: its payload
+    /// changes as a property and its `@State` survives. That is exactly what the `Group` above is
+    /// for, and it is not a defect.
+    ///
+    /// What *is* a defect is a load trigger that cannot see it. A bare `.task` is scoped to
+    /// appear/disappear, not to identity, so on a reuse it never re-runs and the view goes on
+    /// showing whatever it loaded for the previous value. So:
+    ///
+    ///  - **Every load task in a level view carries `.task(id:)`, keyed on the payload it loads
+    ///    for.** A payload-less level (`.people`, `.subjects`, `.clusters`, `.archives`, …) has
+    ///    nothing to key on and is safe by construction; every level that carries a payload is
+    ///    keyed whether or not a self-to-self step is reachable today, because a rule with
+    ///    exceptions is a rule nobody can apply.
+    ///  - **Do NOT reach for `.id(level)` on the pane as a general cure.** It recreates the level
+    ///    view on every level change, which is precisely what the `Group`-not-`AnyView` choice
+    ///    above and commit `bc617d3b` ("Fix stuck Loading document… caused by AnyView identity
+    ///    erasure") exist to prevent, and it would throw away `DocumentView`'s loaded document on
+    ///    a page-turn `.replace`.
+    ///
+    /// **Precedent, twice.** `DocumentView` met this in this same container and was fixed with
+    /// `.task(id: entry.documentId + "/" + entry.volumeId)` — the reasoning is recorded at
+    /// `DocumentView.swift:445-455`. `CompilationView` never got it, which is #1301: on iPad,
+    /// stepping compilation → chapter → subchapter left the reader on "Loading documents…" for
+    /// ever, with a tab round-trip as the only escape. #253 ("some volumes get stuck", closed
+    /// not-planned after a re-index) is the same report on the build where `splitLayout` rendered
+    /// the path in place, and both volumes it named are this shape.
+    ///
+    /// `CompilationView`'s two front-matter subviews (`VolumeSourcesView`,
+    /// `FrontMatterPersonsView`) keep bare tasks deliberately: they are not levels, they load per
+    /// *volume*, and a `.compilation → .compilation` step always keeps the same `volumeId` — the
+    /// subsection rows append `.compilation(volumeId: volumeId, section: sub)`. They also carry a
+    /// `didLoad` guard against `Group`-modifier replication that a key alone would not defeat.
     ///
     /// ## Breadcrumb suppression
     /// `BrowserBreadcrumbBar` is a pinned `.safeAreaInset(edge: .top)` overlay. It is suppressed in

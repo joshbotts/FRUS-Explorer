@@ -395,6 +395,10 @@ struct ClustersIndexView: View {
 ///
 /// Version history:
 ///   1.0 — #1051 B-7: initial implementation
+///   1.1 — #1301: both load tasks are keyed on `clusterId`, under the reuse contract at
+///          `BrowserView.levelView`. Latent — no row appends `.clusterDocuments` from a
+///          `.clusterDocuments` — but this is a payload-carrying level view, which is the shape
+///          the contract covers without exceptions
 struct ClusterDocumentsView: View {
 
     /// The artifact's cluster id — valid only against the loaded generation, which is
@@ -450,10 +454,16 @@ struct ClusterDocumentsView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task { await loadMembership() }
+        // Keyed on the cluster, under the reuse contract at `BrowserView.levelView` (#1301). This
+        // is a level view with a payload, and on iPad the detail pane renders the level in place,
+        // so a `.clusterDocuments → .clusterDocuments` step would reuse this view and a bare
+        // `.task` would never re-run for the new cluster — the #1301 shape exactly. No row
+        // appends that step today; the key is what keeps it from mattering if one ever does.
+        .task(id: clusterId) { await loadMembership() }
         // Re-keyed on the indexed-volume count so finishing an index pass upgrades the
-        // degraded rows without navigating away (the B-4 idiom).
-        .task(id: appState.indexedVolumeIds.count) { await loadMetadata() }
+        // degraded rows without navigating away (the B-4 idiom), and on the cluster for the
+        // reason above.
+        .task(id: "\(clusterId)-\(appState.indexedVolumeIds.count)") { await loadMetadata() }
     }
 
     @ViewBuilder

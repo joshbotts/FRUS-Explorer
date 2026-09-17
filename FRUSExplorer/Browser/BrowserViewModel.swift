@@ -33,8 +33,9 @@ import Observation
 ///
 /// ## Document Cache
 /// `DocumentBrowserEntry` lists are loaded lazily from `IndexingPipeline.documents(forVolume:)`
-/// and cached in `compilationDocuments`. An unindexed volume shows an "Index required"
-/// prompt with an "Index Now" action.
+/// and cached in `compilationDocuments`, with each section's progress recorded in
+/// `documentLoadStates` (#1301). An unindexed volume shows an "Index required" prompt with an
+/// "Index Now" action.
 ///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
@@ -57,6 +58,12 @@ import Observation
 ///          `activateTagFilter` gains the Q-5 fallback: with no `.subseries` ancestor on
 ///          the path it PUSHES the subseries level with the filter applied, instead of
 ///          silently setting latent state (the axis-list route to `VolumeView`).
+///   1.6 — #1301: `isLoadingDocuments`, one app-wide `Bool` read in exactly one place, is replaced
+///          by `documentLoadStates` — notStarted / loading / loaded / failed(Error) PER SECTION
+///          KEY. `loadDocuments` records every outcome, including the two it used to decline
+///          silently, and short-circuits only on `.loaded`, so the error row's Retry and the
+///          `.onChange` kicks both work by calling it again. The render rule moved out to
+///          `CompilationDocumentsPresentation`, where it can be tested.
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -227,8 +234,21 @@ public final class BrowserViewModel {
     /// Documents in a compiled section, keyed by `"volumeId/sectionId"`.
     public var compilationDocuments: [String: [DocumentBrowserEntry]] = [:]
 
-    /// `true` while `documents(forVolume:)` is being loaded.
-    public var isLoadingDocuments: Bool = false
+    /// How far each section's document load has got, keyed the same way as
+    /// ``compilationDocuments`` (#1301).
+    ///
+    /// **Per section, and that is the whole point.** The flag this replaced,
+    /// `isLoadingDocuments`, was one `Bool` for the whole app, read in exactly one place, and it
+    /// could not say anything about the section on screen. `CompilationView` therefore drew its
+    /// spinner on `isLoadingDocuments || compilationDocuments[key] == nil` — a disjunction whose
+    /// second operand is the ABSENCE of a result, which no amount of waiting turns into anything
+    /// else. Nothing in the tree ever cleared `compilationDocuments`, so a section whose load
+    /// never ran spun for the life of the process.
+    ///
+    /// Read it through ``documentLoadState(forKey:)``, which supplies `.notStarted` for an absent
+    /// key so no caller has to decide what a missing entry means — deciding that wrongly is what
+    /// #1301 was.
+    public var documentLoadStates: [String: BrowserDocumentLoadState] = [:]
 
     // MARK: - Indexing
 
@@ -452,12 +472,22 @@ public final class BrowserViewModel {
 
     // MARK: - Compilation Document Loading
 
-    /// Cache key for `compilationDocuments`.
+    /// Cache key for `compilationDocuments` and ``documentLoadStates``.
     public func compilationKey(volumeId: String, sectionId: String) -> String {
         "\(volumeId)/\(sectionId)"
     }
 
-    /// Loads and caches `DocumentBrowserEntry` values for the given section.
+    /// How far the load for one section key has got, `.notStarted` when nothing has been
+    /// attempted (#1301).
+    ///
+    /// - Parameter key: A key from ``compilationKey(volumeId:sectionId:)``.
+    /// - Returns: The section's load state.
+    public func documentLoadState(forKey key: String) -> BrowserDocumentLoadState {
+        documentLoadStates[key] ?? .notStarted
+    }
+
+    /// Loads and caches `DocumentBrowserEntry` values for the given section, recording the
+    /// outcome in ``documentLoadStates``.
     ///
     /// Filters the volume's documents down to the section's *direct* documents
     /// (`section.documentIds`), not every descendant (`allDocumentIds`). A section that has
@@ -466,21 +496,50 @@ public final class BrowserViewModel {
     /// descendant document here (which double-counted them). For a leaf section the two are
     /// identical, so its full document list is unaffected. Mirrors history.state.gov, where
     /// an interior grouping node shows only its child groups (and any direct documents).
+    ///
+    /// ## What short-circuits, and what deliberately does not (#1301)
+    /// Only `.loaded` returns early. `.failed` does not, which is what makes the error row's
+    /// **Retry** button — and the pipeline back-fill's `.onChange` kick — work by simply calling
+    /// this again. `.loading` does not either: re-entering is idempotent and self-healing, where
+    /// returning on it would let a load cancelled mid-flight strand its section on the spinner
+    /// forever. That is #1301 in a new costume, so it is refused by construction rather than
+    /// avoided by argument.
+    ///
+    /// ## The caller's obligation
+    /// **Do not call this for a volume that is not indexed.** `document_cache` answers an
+    /// unindexed volume with an empty set, which would be recorded as `.loaded` and never
+    /// reloaded once the volume *was* indexed. `CompilationView`'s `.task` holds that guard, and
+    /// its silence there is observable because `CompilationDocumentsPresentation` resolves the
+    /// same condition to `.indexRequired` — a real screen with a real button — before it ever
+    /// consults the load state.
+    ///
+    /// The volume does **not** have to be in the manifest: nothing here reads it. The old caller
+    /// gated on a `volume != nil` lookup through `allSubseriesGroups` that the load never needed.
     public func loadDocuments(for section: VolumeSection, volumeId: String) async {
         let key = compilationKey(volumeId: volumeId, sectionId: section.sectionId)
-        guard compilationDocuments[key] == nil else { return }
-        guard let pipeline = indexingPipeline else { return }
-        isLoadingDocuments = true
+        guard !documentLoadState(forKey: key).isLoaded else { return }
+        guard let pipeline = indexingPipeline else {
+            // Recorded rather than returned silently. A nil pipeline does not reach the failure
+            // row on screen — `isIndexed` answers `false` without one, so the reader sees "Search
+            // Index Unavailable" instead — but leaving the state at `.notStarted` would mean the
+            // model could not say why nothing arrived.
+            documentLoadStates[key] = .failed(BrowserIndexingError.pipelineUnavailable)
+            return
+        }
+        documentLoadStates[key] = .loading
         do {
             let all = try await pipeline.documents(forVolume: volumeId)
             let sectionIds = Set(section.documentIds)
+            // Rows first, THEN the state. The view reads both, and this order means a render
+            // triggered by the state's write always finds the rows already there.
             compilationDocuments[key] = all.filter { sectionIds.contains($0.documentId) }
+            documentLoadStates[key] = .loaded
         } catch {
+            documentLoadStates[key] = .failed(error)
             #if DEBUG
             print("[BrowserView] Failed to load documents for \(key): \(error)")
             #endif
         }
-        isLoadingDocuments = false
     }
 
     // MARK: - Indexing

@@ -51,6 +51,10 @@ import SwiftUI
 ///   2.6 — #1051 B-1: the metadata header's document count comes from the R-2 accessor
 ///          (`AdministrationProfilesStore.documentCount(forVolumeId:)`); the old gate read
 ///          the manifest's structurally-dead `documentCount` and had never rendered
+///   2.7 — #1301: the structure `.task` is keyed on `volume.volumeId`, under the reuse contract
+///          written at `BrowserView.levelView`. Latent here — `.volume → .volume` is unreachable
+///          from Browse — but the contract admits no exceptions, because one nobody can state is
+///          one nobody can apply
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -108,7 +112,13 @@ struct VolumeView: View {
         // volume crumb, wasting a ~52pt band above the content. (Corpus root keeps large.)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task { await vm.loadVolumeStructure(for: volume) }
+        // Keyed, under the reuse contract at `BrowserView.levelView` (#1301). A `.volume → .volume`
+        // step is not reachable from Browse today — every row that appends a volume appends it from
+        // a different level — so this is latent rather than a live defect. It is keyed anyway
+        // because the contract is "every load task in a level view is keyed", and a rule with one
+        // documented exception is a rule nobody can apply. `loadVolumeStructure` no-ops on a
+        // cached structure, so a key that does not change costs a single dictionary read.
+        .task(id: volume.volumeId) { await vm.loadVolumeStructure(for: volume) }
         // Download completion: this volume just left the queue. On success the XML is
         // already on disk (`DownloadManager` moves the file into place before firing
         // `onStateChanged`), so the structure loads now; on failure the not-downloaded
