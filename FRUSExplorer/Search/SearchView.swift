@@ -145,8 +145,9 @@ enum ResultReading: String, CaseIterable, Identifiable {
 /// context without affecting the browser's navigation stack.
 ///
 /// ## Suffix Wildcard
-/// Only prefix wildcards are supported by FTS5 (`negoti*`). This limitation is
-/// documented in `SearchFilterView`'s advanced text section and in `SearchViewModel`.
+/// Only prefix wildcards are supported by FTS5 (`negoti*`). The Search Tips sheet's prefix row states what a prefix
+/// does, and warns that it is matched against word stems (#1299); `SearchFilterView`'s advanced text section, which
+/// this comment used to cite, was removed in Session 2026-06-08.
 ///
 /// Version history:
 ///   1.0 — Session 16: initial implementation
@@ -216,6 +217,12 @@ enum ResultReading: String, CaseIterable, Identifiable {
 ///          refused query says why it has no expression
 ///   1.22 — #1297 round 3: the zero-result decomposition runs under `vm.submittedSearchParameters`, the search
 ///          that ran, not the live field, which the researcher may have edited since
+///   1.23 — #1299: Search Tips on iOS and iPadOS — `SearchTipsSheet`, reached from More ▸ Search Tips (after Look up
+///          an abbreviation), a keyword-only link on the pre-search screen (now `initialPromptView`, scrolling so the
+///          prompt and link survive accessibility sizes), a link below the Query Inspector's disclosure button on a
+///          refused or narrower-than-typed query, and the iPadOS Find menu through `AppState.pendingSearchTips`. The
+///          More menu's help names the abbreviation lookup and the tips (`search.moreActions.help.v2`). No icon joins
+///          the actions bar.
 
 struct SearchView: View {
 
@@ -349,6 +356,9 @@ struct SearchView: View {
     @State private var showSavedSearches = false
     /// #265: the corpus-wide abbreviation lookup.
     @State private var showGlossaryLookup = false
+    /// #1299: the Search Tips sheet, opened from More ▸ Search Tips, the pre-search link, the Query Inspector's link and
+    /// the iPadOS Find menu. iOS-only in effect: the macOS window is `SearchSheet`, which has its own Tips panel.
+    @State private var showSearchTips = false
     @State private var showCitationLookup = false
     @State private var saveSearchName = ""
     /// When set, presents the Archival Neighbors sheet for a search result's document.
@@ -742,6 +752,15 @@ struct SearchView: View {
         .onChange(of: appState.pendingSearch) { _, params in
             if params != nil { consumePendingSearch() }
         }
+        #if os(iOS)
+        // #1299: the Search Tips sheet and the Find menu's request for it, as ONE modifier. On this chain rather than
+        // the actions bar so the sheet also opens over a document pushed from the results; one `.modifier` rather than
+        // three because this chain is at the type-checker's limit (see `rebindPersonFilter`).
+        .modifier(SearchTipsPresenter(isPresented: $showSearchTips,
+                                      searchMode: vm.searchMode,
+                                      pendingRequest: appState.pendingSearchTips,
+                                      consume: consumePendingSearchTips))
+        #endif
         // Re-apply project context when the active project changes: refresh the date
         // defaults and the engaged-document set that backs the History search scope
         // (#377 Phase 2). Resets the scope to `.off` so a prior selection can't silently
@@ -896,6 +915,19 @@ struct SearchView: View {
             Task { await runSearch() }
         }
     }
+
+    #if os(iOS)
+    /// Opens Search Tips for a request from the iPadOS Find menu (#1299), once.
+    ///
+    /// Consumed the way `consumePendingSearch()` consumes a query — addressed to this window or to `.anyWindow`, and
+    /// cleared as it is read, so of several windows' Search tabs exactly one opens the sheet. `SearchTipsPresenter`
+    /// calls this only while this view is on screen, so the sheet is never asked to present from a hidden tab.
+    private func consumePendingSearchTips() {
+        guard let sceneID,
+              appState.consumeHandoff(\.pendingSearchTips, for: sceneID, orAnyWindow: true) != nil else { return }
+        showSearchTips = true
+    }
+    #endif
 
     // MARK: - Search Action Controls
 
@@ -1112,6 +1144,17 @@ struct SearchView: View {
                              defaultValue: "Look up an abbreviation"),
                       systemImage: "character.book.closed")
             }
+            #if os(iOS)
+            // #1299: the search-syntax reference. After the two lookups and never between the save items, which
+            // `ExamineMenuAuditTests.saveLivesInMoreMenu` keeps adjacent. Not mode-gated (owner decision Q3): in
+            // Meaning mode the sheet says why the syntax does not apply, which a disabled item could not.
+            Button {
+                showSearchTips = true
+            } label: {
+                Label(String(localized: "search.tips.open", defaultValue: "Search Tips"),
+                      systemImage: "questionmark.circle")
+            }
+            #endif
             // Checklist mode (#189-D): hides results as you review them (open them, or tap
             // "Mark reviewed"), so a long result set becomes a shrinking to-do list.
             // On iOS this now lives as a promoted control in `searchActionsBar` (#218), so the
@@ -1133,8 +1176,8 @@ struct SearchView: View {
         }
         .controlHelp(
             String(localized: "search.moreActions.a11y", defaultValue: "More search actions"),
-            detail: String(localized: "search.moreActions.help",
-                           defaultValue: "Save this search or its results, revisit saved searches, or find a document by citation"),
+            detail: String(localized: "search.moreActions.help.v2",
+                           defaultValue: "Save this search or its results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips"),
             systemImage: "ellipsis.circle"
         )
     }
@@ -1231,6 +1274,24 @@ struct SearchView: View {
                     : String(localized: "search.inspector.expand", defaultValue: "Show term detail"))
                 .padding(.horizontal)
                 .padding(.vertical, 8)
+                // #1299: where the question arises — a query that cannot run, or runs narrower than typed. A SIBLING
+                // below the disclosure button, never inside `QueryInspectorStrip`: on iOS the whole strip is that
+                // button's label, and VoiceOver reaches no control nested there.
+                if inspection.isRefused || inspection.isApproximate {
+                    Button {
+                        showSearchTips = true
+                    } label: {
+                        Label(SearchTipsSheet.linkTitle, systemImage: "questionmark.circle")
+                            .font(.caption)
+                            .padding(.vertical, 4)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityIdentifier("search.tips.link.inspector")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.bottom, 4)
+                }
             }
             .background(.bar)
             .overlay(alignment: .bottom) { Divider() }
@@ -1552,21 +1613,49 @@ struct SearchView: View {
                 resultsList
             }
         } else {
-            // Initial prompt — no search has been performed yet. It varies on two axes.
-            // When a volume scope is active (e.g. just arrived via "Search this volume"),
-            // the prompt reflects that the next query will be scoped to that volume; and it
-            // follows the engine, so Meaning mode stops asking for keywords directly beneath
-            // a field that has already stopped asking for them.
-            VStack(spacing: 8) {
-                Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: FRUSTheme.cappedGlyphSize(promptGlyphSize, base: 48)))
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
-                Text(vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+            initialPromptView
+        }
+    }
+
+    /// The pre-search screen: no search has run yet.
+    ///
+    /// The prompt varies on two axes. When a volume scope is active (e.g. just arrived via "Search this volume"), it
+    /// says the next query will be scoped to that volume; and it follows the engine, so Meaning mode stops asking for
+    /// keywords directly beneath a field that has already stopped asking for them.
+    ///
+    /// In Keywords mode a **Search tips** link follows it (#1299), which only opens the sheet: an example that ran
+    /// would be a search entry point, and every one of those must go through `runSearch()`. Meaning mode offers no
+    /// link, since none of the syntax applies there.
+    ///
+    /// Centred in a scroll view at least as tall as the screen, rather than in a greedy frame: the glyph is capped
+    /// but the prompt and the link are not, and at accessibility sizes a fixed frame clipped them.
+    private var initialPromptView: some View {
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 8) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: FRUSTheme.cappedGlyphSize(promptGlyphSize, base: 48)))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                    Text(vm.searchMode.initialPrompt(scoped: !vm.effectiveVolumeIds.isEmpty))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    #if os(iOS)
+                    if vm.searchMode == .keywords {
+                        Button {
+                            showSearchTips = true
+                        } label: {
+                            Text(SearchTipsSheet.linkTitle)
+                        }
+                        .accessibilityIdentifier("search.tips.link.presearch")
+                        .padding(.top, 4)
+                    }
+                    #endif
+                }
+                .padding()
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .scrollBounceBehavior(.basedOnSize)
         }
     }
 
@@ -2263,3 +2352,164 @@ private struct SearchTagChipsRow: View {
         }
     }
 }
+
+#if os(iOS)
+
+// MARK: - SearchTipsSheet
+
+/// The search-syntax reference on iOS and iPadOS (#1299): the shared `SearchTip.syntaxRows` and the iOS filter notes,
+/// in a sheet.
+///
+/// Shaped like `GlossaryLookupView` — a `NavigationStack` and a `List`, with an inline title and a navigation-bar
+/// **Done**, which is also where `UITestPresentation.dismissAnyPresentation` looks for it — and presented at medium and
+/// large detents, so at medium the search field stays visible above while the reader works from the tips. On a
+/// regular-width iPad the sheet is a form sheet and the detents do not apply.
+///
+/// **In Meaning mode it shows the Meaning-mode note INSTEAD of the rows** (owner decision Q3). A meaning search reads
+/// the words as a whole, so every row would be false there; a reader who typed operators and saw no Boolean behaviour
+/// is the one most likely to open this, and the note says why.
+///
+/// No row sizes are fixed, so the list wraps and scrolls at every text size. `SearchTipsSheetTests` opens it from each
+/// tap-reachable entry point and scrolls to its last row at AX5.
+///
+/// Version history:
+///   1.0 — #1299: initial implementation
+struct SearchTipsSheet: View {
+
+    /// The engine the Search screen is in; Meaning mode shows the note in place of the rows.
+    let searchMode: SearchMode
+
+    @Environment(\.dismiss) private var dismiss
+
+    /// The title of the links that open this sheet from the pre-search screen and the Query Inspector. Localized.
+    static var linkTitle: String {
+        String(localized: "search.tips.link", defaultValue: "Search tips")
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if searchMode == .meaning {
+                    Section {
+                        SearchTipNoteRow(note: .meaningMode)
+                    }
+                } else {
+                    Section {
+                        ForEach(SearchTip.syntaxRows) { tip in
+                            SearchTipRow(tip: tip)
+                        }
+                    } header: {
+                        Text(String(localized: "search.tips.section.syntax", defaultValue: "Typing a search"))
+                    }
+                    Section {
+                        ForEach(SearchTipNote.filterNotesIOS) { note in
+                            SearchTipNoteRow(note: note)
+                        }
+                    } header: {
+                        Text(String(localized: "search.tips.section.filters", defaultValue: "Filters and scope"))
+                    }
+                }
+            }
+            .navigationTitle(String(localized: "search.tips.title", defaultValue: "Search Tips"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "search.done", defaultValue: "Done")) { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+/// One syntax row of the Search Tips sheet: the example as a verbatim chip, then what it does.
+///
+/// **One accessibility element**, read as the spoken example and then the detail. The chip's own text is not read: how
+/// VoiceOver speaks `-`, `*`, `=` and quotation marks depends on the reader's punctuation setting, and the spoken form
+/// names each one in words. The identifier is for UI tests and is never spoken.
+private struct SearchTipRow: View {
+
+    /// The row to show.
+    let tip: SearchTip
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // Verbatim: this is syntax to type exactly, never a localization key.
+            Text(verbatim: tip.example)
+                .font(.body.monospaced())
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 4))
+            Text(tip.detail)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(tip.accessibilityLabel)
+        .accessibilityIdentifier("search.tips.row.\(tip.id.rawValue)")
+    }
+}
+
+/// One note of the Search Tips sheet: what a filter does, where the scope lives, or, in Meaning mode, why none of the
+/// syntax applies.
+private struct SearchTipNoteRow: View {
+
+    /// The note to show.
+    let note: SearchTipNote
+
+    var body: some View {
+        Text(note.text)
+            .font(.callout)
+            .foregroundStyle(note == .meaningMode ? HierarchicalShapeStyle.primary : .secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("search.tips.note.\(note.rawValue)")
+    }
+}
+
+// MARK: - SearchTipsPresenter
+
+/// Presents `SearchTipsSheet` for `SearchView`, and reads the Find menu's request for it (#1299).
+///
+/// A modifier so `SearchView`'s body chain, already at the type-checker's limit, gains one call rather than three.
+///
+/// **The request is read only while the view is on screen.** The Find menu raises the Search tab and asks for the tips
+/// in the same turn; a `SearchView` alive in a hidden tab would otherwise consume the request and ask a sheet to present
+/// from a view that is not in the window. Unread, the request waits for `onAppear`, which the tab switch delivers — and
+/// which a document pushed from the results does not take away, because this modifier sits on the navigation stack
+/// itself, so the sheet still opens over a document being read.
+private struct SearchTipsPresenter: ViewModifier {
+
+    /// Whether the sheet is showing — `SearchView.showSearchTips`.
+    @Binding var isPresented: Bool
+
+    /// The Search screen's engine, which decides whether the sheet shows the rows or the Meaning-mode note.
+    let searchMode: SearchMode
+
+    /// `AppState.pendingSearchTips`, observed for a request that arrives while the view is alive.
+    let pendingRequest: Handoff<Bool>?
+
+    /// Consumes the request and opens the sheet if it was addressed here — `SearchView.consumePendingSearchTips`.
+    let consume: @MainActor () -> Void
+
+    /// Whether the host is on screen: set on appear, cleared on disappear.
+    @State private var isOnScreen = false
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: $isPresented) {
+                SearchTipsSheet(searchMode: searchMode)
+            }
+            .onAppear {
+                isOnScreen = true
+                consume()
+            }
+            .onDisappear { isOnScreen = false }
+            .onChange(of: pendingRequest) { _, request in
+                if request != nil, isOnScreen { consume() }
+            }
+    }
+}
+
+#endif

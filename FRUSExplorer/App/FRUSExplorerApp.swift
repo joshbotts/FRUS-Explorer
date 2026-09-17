@@ -219,6 +219,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          and Word Cloud/semantic-map groups were never added; macOS 27 not 22 — Topics,
 ///          the two Projects groups, plus two type flips the table missed when they shipped
 ///          and one row-order drift). Doc-comment only; no scene changed.
+///   4.10 — #1299: **Search Tips…** in the Find menu on both platforms, with no keyboard shortcut (owner decision
+///          Q2). On iPadOS it raises the Search tab and asks that tab's `SearchView` for its tips sheet; on macOS it
+///          fronts the Search window and asks it to open the Tips panel. Both requests are
+///          `AppState.openSearchTips(from:)` hand-offs, consumed once.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -3518,6 +3522,7 @@ struct DocumentMenuContent: View {
 /// off ⌘F, which Find in Document now owns; the app has no Save command, so ⌘S was
 /// free); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
 /// owners of their key equivalents (removed from the window scenes, mirroring #2).
+/// **Search Tips…** (#1299, no shortcut) fronts the Search window and opens its Tips panel.
 struct FindMenuContent: View {
 
     /// The key document window's commands (nil ⇒ the find-in-document items are disabled).
@@ -3559,6 +3564,15 @@ struct FindMenuContent: View {
         // fought every muscle memory the target user has. ⌥⌘F is the global-search convention
         // (Xcode, Mail) and sits beside its siblings: ⌘F find-in-document, ⌘⇧F Citation Lookup.
         .keyboardShortcut("f", modifiers: [.command, .option])
+
+        // #1299: the Search window's Tips panel, reachable from the keyboard through the menu bar, which lists it
+        // under Find. No shortcut (owner decision Q2): ⇧⌘/ is the system's Help search, and nothing measured whether a
+        // bare ⌘/ conflicts. The request is a hand-off rather than a counter because this item usually OPENS the
+        // window too, and a counter bumped before the window's view exists is never observed by it.
+        Button(String(localized: "menu.find.searchTips", defaultValue: "Search Tips…")) {
+            appState.openSearchTips(from: nil)
+            openWindow.fronting(id: "frus.search")
+        }
 
         // Corpus Browser sits with Search and Citation Lookup because all three answer "find me
         // something in the corpus" — by term, by citation, by where it sits in the series.
@@ -4009,6 +4023,8 @@ private struct SemanticAnalyticsWindowContent: View {
 /// `openWindow.fronting(id:)`, an extension that is itself macOS-only, against `Window` scenes
 /// that do not exist on iOS. The iOS equivalents are tabs, so the verbs genuinely differ; only
 /// the find-in-document item is common, and it reaches the same `\.documentCommands` value.
+/// **Search Tips…** (#1299) has a twin in both menus, but not a shared body: here it raises the Search
+/// tab, there it fronts a window.
 ///
 /// **Find Next / Previous are deliberately absent.** `UIFindInteraction` presents its own bar
 /// with its own next/previous controls and its own key equivalents, so the menu would be a
@@ -4039,6 +4055,15 @@ struct IOSFindMenuContent: View {
             appState.openTab(.search, from: nil)
         }
         .keyboardShortcut("f", modifiers: [.command, .option])
+
+        // #1299: the Search tab's tips sheet, for a keyboard user who cannot reach the More menu without the screen.
+        // It lists in the ⌘-hold overlay with no shortcut of its own (owner decision Q2). Two hand-offs, both addressed
+        // to `.anyWindow` for the reason the item above gives: the tab switch, and a one-shot request the Search tab's
+        // `SearchView` consumes. A counter would open the sheet in every window's Search tab at once.
+        Button(String(localized: "menu.find.searchTips", defaultValue: "Search Tips…")) {
+            appState.openTab(.search, from: nil)
+            appState.openSearchTips(from: nil)
+        }
     }
 }
 

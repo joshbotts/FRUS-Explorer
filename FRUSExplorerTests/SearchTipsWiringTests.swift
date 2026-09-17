@@ -193,7 +193,9 @@ struct SearchTipsWiringTests {
         let zero = try #require(body.range(of: "} else if hasZeroResults {"))
         #expect(branch.lowerBound < zero.lowerBound, "the error branch must precede the zero-result branch")
         let tail = body[branch.upperBound...]
-        #expect(tail.prefix(600).contains("searchError.localizedDescription"))
+        #expect(tail.prefix(600).contains("searchErrorView(searchError)"))
+        let view = try Self.declaration("private func searchErrorView(_ searchError: any Error) -> some View {", in: sheet)
+        #expect(view.contains("Text(searchError.localizedDescription)"))
     }
 
     // MARK: - AppState
@@ -323,17 +325,30 @@ struct SearchTipsWiringTests {
         #expect(shortcuts == 2, "the iPadOS Find menu carries exactly ⌘F and ⌥⌘F; found \(shortcuts)")
     }
 
-    @Test("iOS: SearchView consumes the request once, on first appearance and while alive")
+    @Test("iOS: SearchView consumes the request once, on appearing and while on screen, and presents from the stack")
     func searchViewConsumesTheRequest() throws {
         let view = try Self.source(Self.searchView)
         let consume = try Self.declaration("private func consumePendingSearchTips() {", in: view)
         #expect(consume.contains("consumeHandoff(\\.pendingSearchTips, for: sceneID, orAnyWindow: true)"))
         #expect(consume.contains("showSearchTips = true"))
 
-        let observer = try #require(view.range(of: ".onChange(of: appState.pendingSearchTips)"),
-                                    "a request that arrives while Search is alive is never read")
-        #expect(view[observer.upperBound...].prefix(160).contains("consumePendingSearchTips()"))
-        let calls = view.components(separatedBy: "consumePendingSearchTips()").count - 1
-        #expect(calls >= 3, "declaration, the .onChange and a first-appearance .task; found \(calls)")
+        // One modifier on the body chain carries the sheet and the request.
+        let body = try Self.declaration("var body: some View {", in: view)
+        let mount = try #require(body.range(of: ".modifier(SearchTipsPresenter("),
+                                 "SearchView's body does not mount the Search Tips presenter")
+        let arguments = body[mount.upperBound...].prefix(260)
+        #expect(arguments.contains("isPresented: $showSearchTips"))
+        #expect(arguments.contains("pendingRequest: appState.pendingSearchTips"))
+        #expect(arguments.contains("consume: consumePendingSearchTips"))
+
+        let presenter = try Self.declaration("private struct SearchTipsPresenter: ViewModifier {", in: view)
+        #expect(presenter.contains(".sheet(isPresented: $isPresented)"))
+        let appear = try #require(presenter.range(of: ".onAppear {"),
+                                  "a request made before Search appears is never read")
+        #expect(presenter[appear.upperBound...].prefix(80).contains("consume()"))
+        let observer = try #require(presenter.range(of: ".onChange(of: pendingRequest)"),
+                                    "a request that arrives while Search is on screen is never read")
+        #expect(presenter[observer.upperBound...].prefix(120).contains("if request != nil, isOnScreen { consume() }"),
+                "a hidden tab's SearchView must leave the request for the one on screen")
     }
 }

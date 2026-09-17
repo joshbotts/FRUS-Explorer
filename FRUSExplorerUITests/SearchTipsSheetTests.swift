@@ -23,6 +23,10 @@ import XCTest
 /// deliberately absent from the element tree and a `staticTexts["=containment"]` query would fail against a correct
 /// sheet. The label is asserted instead, which is what VoiceOver reads.
 ///
+/// **Visibility is judged by frames, never by `isHittable`.** Measured on iPhone 17: a List row whose centre sat 49 pt
+/// below the screen reported `isHittable == true`, and a helper that dragged from it moved nothing. A row counts as in
+/// view when its centre lies inside the list's own frame, and the list is scrolled with `swipeUp()` on the list itself.
+///
 /// **Every test closes what it opens**, through the navigation-bar Done and again in `tearDown`
 /// (`UITestPresentation.dismissAnyPresentation`), because a sheet left standing is what the next launch restores (#1279).
 ///
@@ -63,7 +67,7 @@ final class SearchTipsSheetTests: XCTestCase {
         assertSheetShowsTheRows()
 
         let exactWord = element(Self.exactWordRow)
-        XCTAssertTrue(scroll(until: exactWord), "The exact-word row never scrolled into view")
+        XCTAssertTrue(scrollTips(until: exactWord), "The exact-word row never scrolled into view")
         XCTAssertTrue(exactWord.label.hasPrefix("equals sign, containment"),
                       "The exact-word row should read its example as \"equals sign, containment\"; it reads "
                       + "\"\(exactWord.label)\"")
@@ -94,37 +98,49 @@ final class SearchTipsSheetTests: XCTestCase {
         XCTAssertTrue(link.waitForExistence(timeout: 10),
                       "A refused query (-korea) shows no Search tips link below the Query Inspector. "
                       + "Buttons: \(visibleButtonLabels())")
-        XCTAssertTrue(link.isHittable, "The Query Inspector's Search tips link is on screen but not hittable")
+        let window = app.windows.firstMatch.frame
+        XCTAssertTrue(centre(of: link, isInside: window),
+                      "The Query Inspector's Search tips link is not on screen: \(link.frame) in \(window)")
         link.tap()
         assertSheetShowsTheRows()
         closeWithDone()
     }
 
-    /// At the largest accessibility text size the More menu is still reachable, the sheet opens, and its last row
-    /// scrolls into view.
+    /// At the largest accessibility text size (AX5) More ▸ Search Tips still opens the sheet, and its last row scrolls
+    /// into view.
     ///
-    /// iPhone-only, as `UIObstructionTests.testChronologyRangeBarFitsAtAccessibilityTextSize` is: at iPad widths the
-    /// actions bar fits either way, so a green iPad run would not be evidence.
+    /// **What AX5 does to the route, measured on iPhone 17 (402 pt) at #1299**, so a later failure here can be read
+    /// against it:
+    /// - The actions bar overflows BOTH edges — Filter's frame starts at x = −34.7 and More search actions runs from
+    ///   x = 372.3 to 436.6, its centre off screen. That overflow predates #1299 and is outside it (the owner's scope
+    ///   decision); XCUITest still activates the control through its on-screen part, as a finger can, so it is asserted
+    ///   reachable rather than wholly on screen.
+    /// - The More menu becomes a scrolling list of 186–246 pt rows, so Search Tips — the sixth — is not in the element
+    ///   tree until the menu is scrolled. A query that does not scroll reports the item missing on a correct build.
+    /// - The pre-search link is NOT checked here. It lies inside the Search screen's content (y 377–791), but with iCloud
+    ///   signed out the tab shell's Local Only banner is drawn OVER that content from y = 551 down, and it is an overlay
+    ///   rather than an inset, so no scrolling of the prompt clears it. That banner is outside #1299.
+    ///
+    /// iPhone-only, as `UIObstructionTests.testChronologyRangeBarFitsAtAccessibilityTextSize` is: at iPad widths none of
+    /// this crowding happens, so a green iPad run would not be evidence.
     func testSearchTipsAreReachableAtTheLargestAccessibilitySize() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone,
-                          "iPhone-only: at iPad width the actions bar fits at every text size, so this scenario "
-                          + "passes with or without a defect there")
+                          "iPhone-only: at iPad width nothing on this route crowds at AX5, so this scenario passes "
+                          + "with or without a defect there")
         launch(contentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL")
 
         let more = app.buttons["More search actions"].firstMatch
         XCTAssertTrue(more.waitForExistence(timeout: 10), "More search actions was not found")
-        XCTAssertTrue(more.isHittable,
-                      "More search actions is not hittable at AX5: frame \(more.frame) in a window of "
-                      + "\(app.windows.firstMatch.frame)")
+        let window = app.windows.firstMatch.frame
+        XCTAssertTrue(more.isHittable && window.intersects(more.frame),
+                      "More search actions cannot be reached at AX5: frame \(more.frame) in \(window)")
         more.tap()
         let item = app.buttons[Self.moreItem].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 5), "The More menu offers no Search Tips item at AX5")
+        XCTAssertTrue(scrollMenu(until: item), "The More menu offers no Search Tips item at AX5, even scrolled")
         item.tap()
         assertSheetShowsTheRows()
-
         let last = element(Self.lastRow)
-        XCTAssertTrue(scroll(until: last, maxDrags: 40),
-                      "The sheet's last row never scrolled into view at AX5")
+        XCTAssertTrue(scrollTips(until: last, maxSwipes: 30), "The sheet's last row never scrolled into view at AX5")
         closeWithDone()
     }
 
@@ -177,20 +193,43 @@ final class SearchTipsSheetTests: XCTestCase {
         app.descendants(matching: .any)[identifier].firstMatch
     }
 
-    /// Drags the sheet's list up until `target` is hittable, starting each drag on the lowest row still hittable, so
-    /// the drag lands inside the sheet whichever detent or form-sheet size it has.
-    private func scroll(until target: XCUIElement, maxDrags: Int = 15) -> Bool {
-        for _ in 0..<maxDrags {
-            if target.exists && target.isHittable { return true }
-            let rows = app.descendants(matching: .any)
-                .matching(NSPredicate(format: "identifier BEGINSWITH 'search.tips.'"))
-                .allElementsBoundByIndex
-                .filter { $0.exists && $0.isHittable }
-            guard let anchor = rows.max(by: { $0.frame.midY < $1.frame.midY }) else { return false }
-            let start = anchor.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: 0, dy: -220)))
+    /// The sheet's list: the collection view holding a tip row or note. Re-resolved on every use, because a query tied
+    /// to one row stops matching once that row scrolls out of the tree.
+    private func tipsList() -> XCUIElement {
+        app.collectionViews.containing(NSPredicate(
+            format: "identifier BEGINSWITH 'search.tips.row.' OR identifier BEGINSWITH 'search.tips.note.'")).firstMatch
+    }
+
+    /// Whether `element`'s centre lies inside `container`'s frame.
+    private func centre(of element: XCUIElement, isInside container: CGRect) -> Bool {
+        element.exists && container.contains(CGPoint(x: element.frame.midX, y: element.frame.midY))
+    }
+
+    /// Swipes the sheet's list up until `target`'s centre is inside the list's frame. At the medium detent the first
+    /// swipe raises the sheet to large.
+    private func scrollTips(until target: XCUIElement, maxSwipes: Int = 15) -> Bool {
+        for _ in 0..<maxSwipes {
+            let list = tipsList()
+            guard list.exists else { return false }
+            if centre(of: target, isInside: list.frame) { return true }
+            list.swipeUp()
         }
-        return target.exists && target.isHittable
+        let list = tipsList()
+        return list.exists && centre(of: target, isInside: list.frame)
+    }
+
+    /// Swipes the open More menu up until `item`'s centre is on screen.
+    private func scrollMenu(until item: XCUIElement, maxSwipes: Int = 8) -> Bool {
+        let labels = ["Save this search", "Save as Working Corpus…", "Saved searches", "Find by citation",
+                      "Look up an abbreviation", Self.moreItem]
+        let window = app.windows.firstMatch.frame
+        for _ in 0..<maxSwipes {
+            if centre(of: item, isInside: window) { return true }
+            let menu = app.collectionViews.containing(NSPredicate(format: "label IN %@", labels)).firstMatch
+            guard menu.waitForExistence(timeout: 3) else { return false }
+            menu.swipeUp()
+        }
+        return centre(of: item, isInside: window)
     }
 
     /// Failure-message aid: what a query could have matched instead.

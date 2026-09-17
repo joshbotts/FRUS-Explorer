@@ -111,6 +111,16 @@ import SwiftUI
 ///          where every OR alternative marks the word and is ignored when only one does. Its "as in one OR
 ///          alternative" read as though each mark of `=cold war OR =cold peace` were ignored, which parser 6.5
 ///          applies
+///   1.19 — #1299: the Tips panel renders `SearchTip.syntaxRows` and `SearchTipNote.filterNotesMac` from the shared
+///          model, in place of ten literal rows (the date row named an attribute the index no longer prefers, the
+///          person row said "across volumes" and is gone by owner decision, the scope row said a chip change
+///          persisted); in Meaning mode it shows the Meaning-mode note instead of the rows. Rows are one accessibility
+///          element each, in an adaptive grid inside a height-capped scroll view. The button's label, the header
+///          (now a heading) and the help text (`search.tips.help.v2`, which no longer promises a stemming tip) are
+///          localized, and the button carries `.isSelected` while open. Find ▸ Search Tips… opens the panel through
+///          `AppState.pendingSearchTips`. A failed search now shows its message: the window never rendered
+///          `searchError`, so a refused query, the empty-scope guard and the Meaning-mode errors all fell through to
+///          an empty result list.
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -332,6 +342,12 @@ struct MacSearchWindowView: View {
             if searchVM.checklistMode && searchVM.displayedResults.isEmpty && !searchVM.results.isEmpty {
                 // Checklist mode has hidden every result (#189-D).
                 allReviewedEmptyState
+            } else if let searchError = searchVM.searchError, searchVM.results.isEmpty, !searchVM.isSearching {
+                // #1299: the window set `searchError` and never showed it. `hasZeroResults` excludes an errored search,
+                // so every failure fell through to an empty `resultsList`: a query the parser refuses (`-korea`), the
+                // empty-scope guard's own message, and the Meaning-mode errors were all a blank list. Before the
+                // Meaning-mode empty state, which is a zero result and not a failure.
+                searchErrorView(searchError)
             } else if searchVM.searchMode == .meaning && hasZeroResults {
                 // The Meaning mode's empty surface — the keyword zero-state diagnoses which
                 // TERM is absent, the wrong claim twice over here, and beyond-library-only
@@ -567,6 +583,10 @@ struct MacSearchWindowView: View {
             if let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) {
                 searchVM.applyParameters(params)
             }
+            // #1299: Find ▸ Search Tips… usually opens this window as well, so its request is read here too.
+            if appState.consumeHandoff(\.pendingSearchTips, for: .macSearch) != nil {
+                searchVM.showTips = true
+            }
         }
         // Not keyed on the page: a collocation reads the whole retained set, so paging changes
         // nothing about the answer. Keyed on the window, which does.
@@ -584,6 +604,10 @@ struct MacSearchWindowView: View {
         .onChange(of: appState.pendingSearch) { _, _ in
             guard let params = appState.consumeHandoff(\.pendingSearch, for: .macSearch) else { return }
             searchVM.applyParameters(params)
+        }
+        .onChange(of: appState.pendingSearchTips) { _, _ in
+            guard appState.consumeHandoff(\.pendingSearchTips, for: .macSearch) != nil else { return }
+            searchVM.showTips = true
         }
         .onChange(of: appState.indexGeneration) { _, _ in
             searchVM.results = []
@@ -695,15 +719,18 @@ struct MacSearchWindowView: View {
             Button {
                 searchVM.showTips.toggle()
             } label: {
-                Label("Tips", systemImage: "questionmark.circle")
+                Label(String(localized: "search.tips.button", defaultValue: "Tips"),
+                      systemImage: "questionmark.circle")
                     .font(.subheadline)
                     .foregroundStyle(searchVM.showTips ? Color.accentColor : Color.secondary)
             }
             .buttonStyle(.plain)
             .help(String(
-                localized: "search.tips.help",
-                defaultValue: "Show or hide search-syntax tips: quoted phrases, OR, exclusion, date filters, and stemming"
+                localized: "search.tips.help.v2",
+                defaultValue: "Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes, NEAR, exact words, and what the date filter and the Search in chips do"
             ))
+            // The on state was carried by colour alone; the same fix #1215 gave the scope chips.
+            .accessibilityAddTraits(searchVM.showTips ? .isSelected : [])
 
             Button {
                 // B4: Citation Lookup is its own window (⌘⇧F) — the sibling find
@@ -1909,6 +1936,23 @@ struct MacSearchWindowView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    /// Shown in place of the results when a search failed (#1299), with the failure's own message — for a query the
+    /// parser refuses, the message pointing at Search Tips that `SearchQueryRefusal` maps it to; for all three scopes
+    /// off, `MacSearchError.emptyScope`'s; for a meaning search, `SemanticModeError`'s. The same title iOS gives its
+    /// Search Error screen.
+    ///
+    /// - Parameter searchError: What `searchVM.searchError` holds.
+    /// - Returns: The empty-state view.
+    private func searchErrorView(_ searchError: any Error) -> some View {
+        ContentUnavailableView {
+            Label(String(localized: "search.error.title", defaultValue: "Search Error"),
+                  systemImage: "exclamationmark.triangle")
+        } description: {
+            Text(searchError.localizedDescription)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     private var pageSizePicker: some View {
         HStack(spacing: 4) {
             Text("Show")
@@ -2136,35 +2180,39 @@ struct MacSearchWindowView: View {
 
     // MARK: - Tips Panel
 
+    /// The search-syntax reference under the results (#1299): the shared `SearchTip.syntaxRows` and the Mac filter notes
+    /// — the same rows the iOS Search Tips sheet shows, checked against the parser and SQLite by `SearchTipsTests`.
+    ///
+    /// In Meaning mode it shows the Meaning-mode note INSTEAD of the rows (owner decision Q3), since none of the syntax
+    /// applies to a search that reads the words as a whole; the Tips button stays, because that reader is the one most
+    /// likely to open it.
+    ///
+    /// The grid is adaptive and scrolls inside a height cap: the thirteen rows are longer than the ten literals they
+    /// replace, and an uncapped panel under the results would take their height at the window's 640×500 minimum.
     private var tipsPanel: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Search tips")
+            Text(String(localized: "search.tips.header", defaultValue: "Search tips"))
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.tertiary)
                 .textCase(.uppercase)
                 .kerning(0.7)
+                .accessibilityAddTraits(.isHeader)
 
-            // NOTE: as of Session 2026-06-08 the main search field genuinely parses
-            // Google-style inline syntax via FTS5InlineQueryParser — quotes, OR, NOT,
-            // a leading "-", a trailing "*", and now "(...)" grouping are real operators
-            // here, not literal characters. (Previously they were stripped/mangled by a
-            // naive whitespace split — see FTS5InlineQueryParser's doc comment for that
-            // bug's history; this tips panel used to warn users away from typing this
-            // syntax for exactly that reason.) The dedicated Phrase / Keyword-mode /
-            // Excluded-terms / Prefix-wildcard fields were removed from Advanced Filters
-            // the same session — everything they did is now expressible inline, with
-            // strictly more power (mixed AND/OR/NOT/grouping per query, not one global mode).
-            LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 6) {
-                TipItem(code: "\"exact phrase\"", description: "match these words in this exact order")
-                TipItem(code: "term1 OR term2",   description: "match either term — OR, AND and NOT work in any case")
-                TipItem(code: "-word",            description: "exclude documents containing this word from the terms typed with it, wherever it sits (same as NOT word)")
-                TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
-                TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match; -(a OR b) or NOT (a OR b) excludes a group")
-                TipItem(code: "NEAR(a b, 30)",    description: "proximity — both within 30 words of each other; operands may be phrases or term*")
-                TipItem(code: "=word",            description: "exact word — \"=containment\" excludes contain, containing, container; applies only where every match must contain the word, as when every OR alternative marks it, and is ignored where one need not, as when only one OR alternative marks it")
-                TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")
-                TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
-                TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")
+            if searchVM.searchMode == .meaning {
+                TipNoteItem(note: .meaningMode)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 16, alignment: .topLeading)],
+                              alignment: .leading, spacing: 8) {
+                        ForEach(SearchTip.syntaxRows) { tip in
+                            TipItem(tip: tip)
+                        }
+                        ForEach(SearchTipNote.filterNotesMac) { note in
+                            TipNoteItem(note: note)
+                        }
+                    }
+                }
+                .frame(maxHeight: 180)
             }
         }
     }
@@ -2575,24 +2623,48 @@ private struct FilterChip: View {
 
 // MARK: - Tip Item
 
+/// One syntax row of the Tips panel: the example as a verbatim chip, then what it does (#1299).
+///
+/// One accessibility element, read as the spoken example and then the detail, so a row is one VoiceOver stop rather
+/// than three and its symbols are named in words whatever the reader's punctuation setting.
 private struct TipItem: View {
-    let code: String?
-    let description: String
+
+    /// The row to show.
+    let tip: SearchTip
 
     var body: some View {
-        HStack(alignment: .top, spacing: 4) {
-            if let code {
-                Text(code)
-                    .font(.system(.caption2, design: .monospaced))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(Color.secondary.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 3))
-                    .foregroundStyle(.secondary)
-                Text("—").font(.caption2).foregroundStyle(.tertiary)
-            }
-            Text(description).font(.caption2).foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 2) {
+            // Verbatim: this is syntax to type exactly, never a localization key.
+            Text(verbatim: tip.example)
+                .font(.system(.caption2, design: .monospaced))
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(Color.secondary.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .foregroundStyle(.secondary)
+            Text(tip.detail)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(tip.accessibilityLabel)
+    }
+}
+
+/// One note of the Tips panel: what the date filter does, where the scope defaults live, or the Meaning-mode note.
+private struct TipNoteItem: View {
+
+    /// The note to show.
+    let note: SearchTipNote
+
+    var body: some View {
+        Text(note.text)
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
