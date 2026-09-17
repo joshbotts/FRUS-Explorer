@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -2899,10 +2899,11 @@ to the app after the previous revision. Blocks marked `shared: iOS+macOS` are a 
 point (one localization key, or the shared FRUSTheme static) — there is no separate platform
 duplicate to hunt for.*
 
-*Reconciliation to do during revision: the Corpus Analytics search-syntax/dating popover (§5)
-and the Word Cloud popover (§5) overlap the Research Guide's search and word-cloud pages
-(§3.5–§3.6) — align wording, and add the Guide's "finding aid, not evidence" caveat to the
-Word Cloud popover so the two surfaces don't drift.*
+*Reconciliation to do during revision: the Corpus Analytics popover's Multiple words and Phrases
+rows (§5) overlap the Search Tips rows (§7.13), which both Search surfaces render from one model
+— when either is revised, align the other (#1299 aligned them). The Research Guide's search page
+no longer carries syntax wording to align with. Still open: add the Guide's "finding aid, not
+evidence" caveat to the Word Cloud popover (§5) so the two surfaces don't drift.*
 
 ---
 
@@ -3898,13 +3899,99 @@ These tips are for Keywords search. A Meaning search reads your words as a whole
 
 #### A search that cannot run
 
-*Shown when a submitted keyword search holds nothing it can search for — for example `-korea`, or groups nested more than 32 deep. It replaced "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)" on iOS. Keep the pointer to Search Tips: `SearchRefusalMessageTests` requires it. The "for example" is deliberate, because the same message also answers a query with nothing searchable in it at all, such as a lone quotation mark, for which neither reason is true. On the Mac the message is carried by the Search window's model, but the window does not yet display search errors.*
+*Shown when a submitted keyword search holds nothing it can search for — for example `-korea`, or groups nested more than 32 deep. It replaced "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)" on iOS. Keep the pointer to Search Tips: `SearchRefusalMessageTests` requires it. The "for example" is deliberate, because the same message also answers a query with nothing searchable in it at all, such as a lone quotation mark, for which neither reason is true. Both platforms show it under the title Search Error: on the Mac the Search window rendered no search error at all until #1299, so this message, the empty-scope message and the Meaning-mode errors had all been an empty result list there.*
 
 <!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 1178–1179 | key: search.error.refusedQuery | shared: iOS+macOS (single edit point) -->
 
 This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.
 
 <!-- END SOURCE: search.error.refusedQuery -->
+
+#### Where the tips open
+
+*The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
+
+##### Sheet title (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2413–2413 | key: search.tips.title -->
+
+Search Tips
+
+<!-- END SOURCE: search.tips.title -->
+
+##### Sheet section: the syntax rows (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2402–2402 | key: search.tips.section.syntax -->
+
+Typing a search
+
+<!-- END SOURCE: search.tips.section.syntax -->
+
+##### Sheet section: the notes (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2409–2409 | key: search.tips.section.filters -->
+
+Filters and scope
+
+<!-- END SOURCE: search.tips.section.filters -->
+
+##### More menu item (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1154–1154 | key: search.tips.open -->
+
+*After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
+
+Search Tips
+
+<!-- END SOURCE: search.tips.open -->
+
+##### More menu hint (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1179–1180 | key: search.moreActions.help.v2 -->
+
+*The VoiceOver hint and Large Content Viewer detail for the More menu. Replaces `search.moreActions.help`, which named neither the abbreviation lookup nor the tips.*
+
+Save this search or its results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips
+
+<!-- END SOURCE: search.moreActions.help.v2 -->
+
+##### Link to the sheet (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2386–2386 | key: search.tips.link -->
+
+*One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
+
+Search tips
+
+<!-- END SOURCE: search.tips.link -->
+
+##### Find menu item (iPadOS and macOS)
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3572–3572, 4063–4063 | key: menu.find.searchTips | shared: iOS+macOS (single edit point) -->
+
+*On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
+
+Search Tips…
+
+<!-- END SOURCE: menu.find.searchTips -->
+
+##### Tips button (macOS)
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 722–722 | key: search.tips.button -->
+
+Tips
+
+<!-- END SOURCE: search.tips.button -->
+
+##### Tips button help (macOS)
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 729–730 | key: search.tips.help.v2 -->
+
+*The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
+
+Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes, NEAR, exact words, and what the date filter and the Search in chips do
+
+<!-- END SOURCE: search.tips.help.v2 -->
+
+##### Panel heading (macOS)
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2194–2194 | key: search.tips.header -->
+
+*Shown in capitals above the rows.*
+
+Search tips
+
+<!-- END SOURCE: search.tips.header -->
 
 ---
 
