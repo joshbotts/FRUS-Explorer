@@ -431,14 +431,14 @@ struct SearchViewTests {
         let vm = SearchViewModel(searchService: service)
         vm.applyParameters(SearchParameters(keywords: "cold OR -korea", phrase: "cold war"))
         let restored = vm.queryInspectorRefreshKey
-        #expect(restored == vm.searchParameters, "the key is the parameter set the refresh inspects")
-        let beside = await inspector.inspect(parameters: restored, indexedVolumeCount: 0)
+        #expect(restored == QueryInspector.Inputs(vm.searchParameters), "the key is read from the parameters the refresh inspects")
+        let beside = await inspector.inspect(parameters: vm.searchParameters, indexedVolumeCount: 0)
         #expect(!beside.isApproximate, "precondition: beside the phrase the query is searched exactly")
 
         vm.clearFilters()
         #expect(vm.keywords == "cold OR -korea", "precondition: Clear Filters leaves the typed text alone")
         #expect(vm.queryInspectorRefreshKey != restored, "so the key must move, or the strip keeps the phrase")
-        let cleared = await inspector.inspect(parameters: vm.queryInspectorRefreshKey, indexedVolumeCount: 0)
+        let cleared = await inspector.inspect(parameters: vm.searchParameters, indexedVolumeCount: 0)
         #expect(cleared.isApproximate, "and what it refreshes to is the narrower query that now runs")
 
         // Each structured field moves the key on its own, with the typed text unchanged.

@@ -37,8 +37,9 @@ import Foundation
 ///         real text sets `isRefused`; an `=` parser 6.3 ignores is inspected and counted as the stemmed word the
 ///         search runs; the iOS refresh key covers every query part
 ///   1.5 — #1297 round 2: the EXACT tag and exact counts follow each operand's `isExactApplied` (A1); the refused line
-///         needs something searchable that was refused, never punctuation alone (A2); a refresh that leaves the operands
-///         unchanged keeps the zero-result blame (A4)
+///         needs something searchable that was refused, never punctuation alone (A2); `QueryInspector.Inputs`, the iOS
+///         refresh key, holds exactly the parameter fields the passes read, checked field by field and by running the
+///         passes (A3); a refresh that leaves the operands unchanged keeps the zero-result blame (A4)
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -1073,6 +1074,75 @@ struct QueryInspectionTests {
         let atLimit = await inspector.inspect(parameters: SearchParameters(keywords: nested("europe", limit)),
                                               indexedVolumeCount: 1)
         #expect(atLimit.expression != nil && !atLimit.isRefused)
+    }
+
+    /// A3's model half: `QueryInspector.Inputs`, the iOS refresh key, holds exactly the `SearchParameters` fields the
+    /// passes read. Every stored field is enumerated, so one added later fails here until it is placed on a side; each
+    /// read field moves the inputs; and each unread field leaves both the inputs and what the passes produce unchanged —
+    /// checked by running them, since a field a pass started to read would still leave the inputs equal.
+    /// `SearchViewTests.inspectorRefreshKeyIgnoresDisplayOnlyFields` drives the same rule through the view model.
+    @Test("The refresh inputs hold exactly the parameter fields the inspection reads")
+    func inputsHoldExactlyWhatTheInspectionReads() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let read: [String: (inout SearchParameters) -> Void] = [
+            "keywords": { $0.keywords = "europe" },
+            "phrase": { $0.phrase = "cold war" },
+            "excludedTerms": { $0.excludedTerms = ["korea"] },
+            "prefixWildcard": { $0.prefixWildcard = "negoti" },
+            "dateRange": { $0.dateRange = DateRange(earliest: "1950-01-01", latest: "1951-01-01") },
+            "yearKeys": { $0.yearKeys = ["1950"] },
+            "subjectTagIds": { $0.subjectTagIds = ["t"] },
+            "userTagIds": { $0.userTagIds = ["u"] },
+            "volumeIds": { $0.volumeIds = ["vol1"] },
+            "documentIds": { $0.documentIds = ["vol1/d1"] },
+            "subjectBucket": { $0.subjectBucket = 3 },
+            "subjectBucketKey": { $0.subjectBucketKey = "A\u{1F}B" },
+            "subjectRef": { $0.subjectRef = "rec00812a40defabcb" },
+            "subjectName": { $0.subjectName = "Containment" },
+            "excludeDocumentIds": { $0.excludeDocumentIds = ["vol1/d1"] },
+            "includeDocumentText": { $0.includeDocumentText = false },
+            "includeSummaries": { $0.includeSummaries = false },
+            "includeNotes": { $0.includeNotes = false },
+            "documentTypeFilter": { $0.documentTypeFilter = .documentsOnly },
+            "personRef": { $0.personRef = "p1" },
+            "personRollupId": { $0.personRollupId = 1 },
+            "includeFrontMatter": { $0.includeFrontMatter = false },
+        ]
+        let unread: [String: (inout SearchParameters) -> Void] = [
+            "booleanMode": { $0.booleanMode = .or },
+            "personLabel": { $0.personLabel = "Acheson" },
+            "personAnchor": { $0.personAnchor = PersonRollupAnchor(volumeId: "vol1", ref: "p1") },
+            "projectId": { $0.projectId = UUID() },
+        ]
+
+        let base = SearchParameters(keywords: "containment europe")
+        let stored = Set(Mirror(reflecting: base).children.compactMap(\.label))
+        #expect(stored.count == 26, "precondition: SearchParameters' stored fields, as enumerated")
+        #expect(stored == Set(read.keys).union(unread.keys), "every stored field is either read or not, and says which")
+        #expect(Set(read.keys).isDisjoint(with: unread.keys))
+
+        for (field, change) in read {
+            var changed = base
+            change(&changed)
+            #expect(changed != base, "\(field): precondition, the change is a change")
+            #expect(QueryInspector.Inputs(changed) != QueryInspector.Inputs(base), "\(field) is read, so it moves the key")
+        }
+
+        let baseInspection = await inspector.inspect(parameters: base, indexedVolumeCount: 1)
+        let baseCounts = await inspector.scopedCounts(for: baseInspection, parameters: base).map(\.scopedCount)
+        #expect(baseCounts == [2, 2], "precondition: the counts ran — containment d1 and d2, europe d1 and d3")
+        for (field, change) in unread {
+            var changed = base
+            change(&changed)
+            #expect(changed != base, "\(field): precondition, the change is a change")
+            #expect(QueryInspector.Inputs(changed) == QueryInspector.Inputs(base), "\(field) is not read, so the key holds")
+            let inspection = await inspector.inspect(parameters: changed, indexedVolumeCount: 1)
+            #expect(inspection == baseInspection, "\(field): the inspection is the same")
+            #expect(await inspector.scopedCounts(for: inspection, parameters: changed).map(\.scopedCount) == baseCounts,
+                    "\(field): and so are the scoped counts")
+        }
     }
 
     /// A4: `refresh` cleared `emptyConjuncts` on every run, and the zero-result decomposition is keyed on the executed

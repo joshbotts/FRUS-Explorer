@@ -23,6 +23,8 @@ import SwiftUI
 ///   1.0 — Q-2b: initial implementation
 ///   1.1 — #1297: the scoped-count update rebuilds through `replacingOperands(_:)`, so the
 ///         not-applied operands survive a request for counts
+///   1.2 — #1297 round 2: `refresh` keeps the zero-result blame when the new inspection's operands are the old ones,
+///         so a filter-only refresh landing after the new search's decomposition no longer wipes what it measured (A4)
 @Observable
 @MainActor
 final class QueryInspectorController {
@@ -49,6 +51,12 @@ final class QueryInspectorController {
     ///
     /// Cancellation-aware: driven from `.task(id:)`, a new keystroke cancels the previous
     /// call during its sleep, so only the settled query costs anything.
+    ///
+    /// Clears ``emptyConjuncts`` only when the operands change. The blame names operands, and a change that keeps them —
+    /// a filter or a scope — re-runs the search, whose own decomposition (keyed on the executed search, never on this
+    /// refresh) replaces the blame. Clearing it here as well raced that decomposition: when the search and its
+    /// per-operand counts finished inside the debounce, this refresh landed last and left the zero-result view claiming
+    /// every term matches on its own, which nothing had measured (#1297 round 2, A4).
     func refresh(parameters: SearchParameters, service: SearchService?, indexedVolumeCount: Int) async {
         guard let service else { return }
         try? await Task.sleep(for: Self.debounce)
@@ -58,10 +66,12 @@ final class QueryInspectorController {
         let result = await inspector.inspect(parameters: parameters,
                                              indexedVolumeCount: indexedVolumeCount)
         guard !Task.isCancelled else { return }
+        // Edited terms invalidate the previous decomposition: leaving it up would blame a term the researcher has
+        // since edited away. The same terms under a new filter do not, and their new decomposition is not ours to wipe.
+        if result.operands.map(\.operand) != inspection?.operands.map(\.operand) {
+            emptyConjuncts = []
+        }
         inspection = result
-        // A fresh query invalidates the previous decomposition. Leaving it up would blame
-        // a term the researcher has since edited away.
-        emptyConjuncts = []
     }
 
     /// Runs the expensive per-operand scoped counts on demand.
@@ -114,6 +124,9 @@ final class QueryInspectorController {
 ///         used to get nothing, or "filters only" beside a filter; the NOT APPLIED line no longer blames an OR
 ///         alternative, since `-(war -korea)` leaves war out with no OR typed (`search.inspector.notAppliedDetail`,
 ///         unshipped and reworded in place)
+///   1.5 — #1297 round 2: the EXACT tag reads the operand's `isExactApplied`, which parser 6.4 decides per operand, so in
+///         `(=cold OR war) =cold` only the second cold is tagged (A1); through `QueryInspection.isRefused`, the refused
+///         line shows only for a query holding something searchable, never a lone `"` or `(` typed on the way to one (A2)
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -190,9 +203,9 @@ struct QueryInspectorStrip: View {
                         microTag(String(localized: "search.inspector.excludedTag",
                                         defaultValue: "EXCLUDED"))
                     }
-                    // Only where the search filters on the literal word: the inspector clears an `=`
-                    // parser 6.3 ignores (`QueryInspector.asSearched`), so `=cold OR war` shows no tag.
-                    if item.operand.isExact {
+                    // Only where the search filters on the literal word, operand by operand: in `=cold OR war`
+                    // no tag, and in `(=cold OR war) =cold` only on the second cold.
+                    if item.operand.isExactApplied {
                         microTag(String(localized: "search.inspector.exactTag",
                                         defaultValue: "EXACT"))
                     }

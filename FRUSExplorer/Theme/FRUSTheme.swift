@@ -114,6 +114,8 @@ struct FeatureInfoItem: Identifiable {
 ///   1.5 — #1297 round 1: the same row, unshipped and reworded in place, says an OR alternative made only
 ///         of exclusions is left out here as in Search and only Search's Query Inspector marks it, and that
 ///         an `=` is ignored where a match need not contain the word and cannot be charted where it applies
+///   1.6 — #1297 round 2: the same row, still unshipped and reworded in place, says an `=` is also always ignored on a
+///         prefix and on a word the index splits into several terms, which is charted — `=U.S.S.R.` is not refused
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -216,7 +218,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
                     detail: String(localized: "analytics.info.multiword.body.v2",
-                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = is ignored where a match need not contain the word, as in one OR alternative, and that word is counted by its stem; where every match must contain it, the query cannot be charted, because these counts are by stem.")),
+                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked. Where a match need not contain it, as in one OR alternative, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body",

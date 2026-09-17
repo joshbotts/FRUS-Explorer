@@ -73,6 +73,9 @@ func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: IndexingPipeline
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
+///   1.1 — #1297 rounds 1–2: an `=` mark the parser ignores charts the stem, and the exact-word refusal is pinned
+///         operand by operand — `(=containment OR alliance) containment` charts, `(=containment OR alliance) =containment`
+///         and `-(alliance -=containment)` refuse
 @Suite("CorpusAnalyticsService — By Volume")
 struct CorpusAnalyticsServiceTests {
 

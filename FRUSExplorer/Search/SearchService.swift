@@ -59,6 +59,8 @@ import Foundation
 ///   2.3 — #1297 round 1 (docs only): `exactTerms(from:)` says it returns the marked words every match must
 ///          contain, which is what parser 6.3 reports, and `matchExpressions(for:)` names the refusals among the
 ///          reasons it throws.
+///   2.4 — #1297 round 2 (docs only): `exactTerms(from:)` describes the `=` rule by requirement and per operand, as parser
+///          6.4 applies it, rather than by the places a mark sits.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -441,12 +443,17 @@ public actor SearchService {
     /// refuses, so no search runs whose marked terms this cannot read. Only typed words carry the
     /// mark; the structured fields never add one.
     ///
-    /// Not every marked word. The SQL layer ANDs one filter per term over every result, so parser 6.3
-    /// reports a mark only where the expression requires the word, and ignores it in one `OR`
-    /// alternative (`=cold OR war` keeps war documents without cold), on an excluded word or inside an
-    /// excluded group. The structured parts can therefore take a term away — `=cold OR -korea` reports
-    /// `cold` alone and nothing beside the restored prefix `viet`, which anchors the complement — and
-    /// never add one.
+    /// Not every marked word. The SQL layer ANDs one filter per term over every result, so the parser
+    /// reports a mark only where every match must contain the word through that very operand — decided
+    /// operand by operand, `ParsedOperand.isExactApplied` (parser 6.4) — and ignores it wherever a match
+    /// need not contain it: in one `OR` alternative (`=cold OR war` keeps war documents without cold), on
+    /// a word an excluded group leaves optional (`cold -(war -=korea)`), and beside the same word required
+    /// without the mark (`(=cold OR fevers) cold` keeps a document holding only colds and fevers). The rule
+    /// is requirement, not position: excluding a group can make a mark apply, as in `NOT (war OR -=cold)`,
+    /// which searches the literal cold without war. A mark on a prefix, or on a word the index splits into
+    /// several terms (`=U.S.S.R.`), is always ignored. The structured parts can therefore take a term away
+    /// — `=cold OR -korea` reports `cold` alone and nothing beside the restored prefix `viet`, which anchors
+    /// the complement — and never add one.
     static func exactTerms(from parameters: SearchParameters) -> [String] {
         parsedQuery(for: parameters).exactTerms
     }

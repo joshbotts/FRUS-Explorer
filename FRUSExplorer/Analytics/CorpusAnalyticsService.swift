@@ -258,6 +258,8 @@ struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
 ///   1.8 — #1297 round 1 (docs only): `makeQuery(from:)` names the parser's refusals and the exact-word
 ///          refusal instead of "no positive search content", and `unsupportedExactTerms(in:)` says it lists
 ///          only the marks parser 6.3 applies — a mark in one OR alternative is ignored and charted by stem
+///   1.9 — #1297 round 2 (docs only): `unsupportedExactTerms(in:)` states the `=` rule by requirement and per operand
+///          (`ParsedOperand.isExactApplied`, parser 6.4), which `ParsedQuery.exactTerms` and so both refusals already read
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -395,10 +397,15 @@ actor CorpusAnalyticsService {
     /// The `=word` operands in `term` that Search would apply as exact-word filters, which this service
     /// cannot honour.
     ///
-    /// Only the words every match must contain: parser 6.3 ignores a mark anywhere else — in one `OR`
-    /// alternative, on an excluded word, inside an excluded group — and Search then runs the word by its
-    /// stem. So does this service: `=containment OR alliance` names nothing here and charts the stem,
-    /// where before 6.3 it was refused, with a reason naming a filter Search no longer applies.
+    /// Only the marks that apply, which the parser decides operand by operand (`ParsedOperand.isExactApplied`,
+    /// parser 6.4; `ParsedQuery.exactTerms` is the terms of exactly those operands, and ``makeQuery(from:)``
+    /// refuses on the same list): a mark applies where every match must contain the word through that very
+    /// operand. Wherever a match need not contain it — in one `OR` alternative, on a word an excluded group
+    /// leaves optional, even beside the same word required without the mark, as in
+    /// `(=containment OR alliance) containment` — Search ignores it and runs the word by its stem, and so does
+    /// this service, which names nothing and charts the stem. A mark on a prefix, or on a word the index
+    /// splits into several terms (`=U.S.S.R.`), is always ignored. Before parser 6.3 `=containment OR alliance`
+    /// was refused here, with a reason naming a filter Search no longer applies.
     ///
     /// Non-empty means every frequency function will return no data for `term`, by the deliberate
     /// refusal in ``makeQuery(from:)``. Callers use this to explain the empty result instead of

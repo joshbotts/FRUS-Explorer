@@ -71,6 +71,9 @@ import Observation
 ///          de-duplicated against the entries R-4's producer already wrote.
 ///   2.1 — #1297 round 1: `queryInspectorRefreshKey`, the iOS Query Inspector's refresh key — the whole
 ///          parameter set, where `SearchView` had keyed the refresh on `keywords` alone.
+///   2.2 — #1297 round 2: `queryInspectorRefreshKey` is `QueryInspector.Inputs`, the fields the inspection reads, so a
+///          person filter's relabel or anchor capture, or the boolean mode, no longer restarts the refresh and wipes
+///          the scoped counts and zero-result blame (A3).
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -988,20 +991,25 @@ final class SearchViewModel {
         return params
     }
 
-    /// What the iOS Query Inspector refreshes on: the whole live parameter set, `searchParameters`.
+    /// What the iOS Query Inspector refreshes on: the parts of the live parameter set the inspection reads,
+    /// `QueryInspector.Inputs` of `searchParameters`.
     ///
     /// The inspection reads more than the typed text. Its operands, not-applied rows and narrower-than-typed caption
     /// come from the combined parse of `keywords` with a restored search's `phrase`, `prefixWildcard` and excluded
     /// terms (`SearchService.parsedQuery(for:)`); the scope flags decide which expressions render; and the filters
-    /// decide whether a query with no expression runs filter-only. Keyed on `keywords` alone, as `SearchView` was,
-    /// Clear Filters removed a restored phrase and left the strip describing the search before it: `cold OR -korea`
-    /// beside the phrase "cold war" is searched exactly, and without it is narrower than typed (#1297 round 1, F7).
+    /// decide whether a query with no expression runs filter-only, and what the scoped counts count. Keyed on
+    /// `keywords` alone, as `SearchView` was, Clear Filters removed a restored phrase and left the strip describing the
+    /// search before it: `cold OR -korea` beside the phrase "cold war" is searched exactly, and without it is narrower
+    /// than typed (#1297 round 1, F7).
     ///
-    /// The whole set rather than a list of the fields that matter today, so a field the inspection starts reading
-    /// cannot be missed here. The macOS window keys the same refresh on `queryText` and `parametersVersion`, which
-    /// every parameter edit bumps; this view model has no such counter, and a value compares equal exactly when
-    /// nothing the inspection reads has changed.
-    var queryInspectorRefreshKey: SearchParameters { searchParameters }
+    /// Not the whole parameter set, whose `==` also compares four fields no pass reads — `personLabel`, `personAnchor`,
+    /// `booleanMode` and `projectId`. After a rollup rebuild `refreshPersonRollupBinding(using:)` captures an anchor, or
+    /// relabels the filter, without running a search, and a key that moved with them restarted the refresh, which
+    /// replaced the inspection's scoped counts and cleared the zero-result blame (#1297 round 2, A3).
+    /// `QueryInspector.Inputs` says which fields are read and why, and `QueryInspectionTests` fails when
+    /// `SearchParameters` gains a field neither side names. The macOS window keys the same refresh on `queryText` and `parametersVersion`, which its filter and
+    /// scope edits bump and a person filter's anchor capture or relabel does not.
+    var queryInspectorRefreshKey: QueryInspector.Inputs { QueryInspector.Inputs(searchParameters) }
 
     /// The live parameter set: the typed text, the restored structured fields, the scope flags and every filter, as
     /// the next search would run them.

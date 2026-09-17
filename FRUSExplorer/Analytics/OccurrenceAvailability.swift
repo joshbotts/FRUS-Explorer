@@ -41,14 +41,17 @@ import Foundation
 /// deliberately **not** exposed to the researcher, who cannot act on it — the reason strings say what
 /// is true now.
 ///
-/// A mark applies only where every match must contain the word — `ParsedQuery.exactTerms`, from parser 6.3 on.
-/// Anywhere else Search ignores it and runs the word by its stem, so the query is classified by its shape like
-/// any other: `=containment OR alliance` is a composite query, not an exact-word one.
+/// A mark applies only where every match must contain the word through that very operand — decided operand by operand,
+/// `ParsedOperand.isExactApplied`, whose terms are `ParsedQuery.exactTerms` (parser 6.4). Anywhere else Search ignores it
+/// and runs the word by its stem, so the query is classified by its shape like any other: `=containment OR alliance`
+/// and `(=containment OR alliance) containment` are composite queries, not exact-word ones.
 ///
 /// Version history:
 ///   1.0 — R-2 PR-D: initial implementation
 ///   1.1 — #1297 round 1 (docs only): the exact-word refusal covers the marks parser 6.3 applies, the words
 ///         every match must contain; a mark it ignores is classified by the query's shape
+///   1.2 — #1297 round 2 (docs only): the refusal follows parser 6.4's per-operand `isExactApplied`, so a mark beside the
+///         same word required without one is classified by shape
 enum OccurrenceAvailability: Equatable, Sendable {
 
     /// Occurrences can be counted, for the single index term named.
@@ -126,7 +129,8 @@ enum OccurrenceAvailability: Equatable, Sendable {
         // Exact-word first: it is checked before operand shape because `=word` parses as an ordinary
         // word operand, so a shape-first check would call it available and count the stem — the exact
         // defect PR-A removed from the document numerator. `exactTerms` holds only the marks Search
-        // applies (parser 6.3); an ignored mark falls through to the shape checks, as its word is stemmed.
+        // applies, operand by operand (parser 6.4's `isExactApplied`); an ignored mark falls through to the
+        // shape checks, as its word is stemmed.
         guard parsed.exactTerms.isEmpty else { return .unavailable(reason: .exactWord) }
 
         let positive = parsed.operands.filter { !$0.isNegated }
