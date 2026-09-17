@@ -46,6 +46,9 @@ import SQLite3
 ///          close a level passed every earlier check (P5, the round-1 attack's D8–D10); and pins `groupDepth` directly.
 ///          Its doc now gives 6.2's thresholds (277 levels of `-(war …)` in Release, 22 in Debug) where it gave the
 ///          first sizes seen to overflow, and the stack its nestings cost at parsers 6.3 and 6.4
+///   1.3 — #1297 round-3 parser fixes: `Issue1297DepthTests.nodesAreSettledOnce` counts, in a DEBUG build, how often
+///          each node of a query nested to the limit has its meaning and anchor settled, because removing parser 6.4's
+///          memo changed no render and failed no test (the round-2 attack's M22)
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -890,6 +893,50 @@ struct Issue1297DepthTests {
         let manyGroups = try #require(results[cases.count + 1], "60 groups each nested to the limit")
         #expect(throws: Never.self) { _ = try Issue1297TruthTable().rows(manyGroups) }
     }
+
+    #if DEBUG
+    /// The shapes parser 6.4's memo was measured on, at the limit: 32 levels of `-(a OR -b …)` around a run of `=w`
+    /// words and `OR -z`, the same around alternating anchors and exclusions, and 32 plain groups around a run.
+    static func memoShapes(words: Int) -> [(name: String, query: String)] {
+        func run(_ unit: (Int) -> String) -> String { (0..<words).map(unit).joined(separator: " ") }
+        let negated = String(repeating: "-(a OR -b ", count: limit), plain = String(repeating: "(", count: limit)
+        let closers = String(repeating: ")", count: limit)
+        return [("-(a OR -b …) around =w and OR -z", negated + run { "=w\($0)" } + " OR -z" + closers),
+                ("-(a OR -b …) around w -k and OR -z", negated + run { "w\($0) -k\($0)" } + " OR -z" + closers),
+                ("((…)) around w and OR -z", plain + run { "w\($0)" } + " OR -z" + closers)]
+            + patterns.map { ($0.name, $0.query(levels: limit)) }
+    }
+
+    /// Parser 6.4 keeps each node's meaning and anchor on the node, and nothing else shows the memo is there: without it
+    /// every render is byte-identical, and 32 levels of `-(a OR -b …)` around 4,000 characters of `=w` words took 1,432 ms
+    /// in a Debug build against 25 ms with it (the round-2 attack's M22). So this counts settlements rather than time,
+    /// on the tree the parse itself built.
+    @Test("Every node of a query nested to the limit is evaluated once and anchored at most once, on a 512 KB stack")
+    func nodesAreSettledOnce() throws {
+        let queries = Self.memoShapes(words: 60)
+        let results = try #require(Issue1297SmallStack.run {
+            queries.flatMap { shape in
+                [FTS5InlineQueryParser.work(parsing: shape.query),
+                 FTS5InlineQueryParser.work(parsing: shape.query, columnPrefix: "{body}:",
+                                            structured: StructuredQueryParts(phrase: "cold war", excludedTerms: ["korea"]))]
+            }
+        })
+        #expect(results.count == queries.count * 2)
+        for (index, result) in results.enumerated() {
+            let shape = queries[index / 2], label = "\(queries[index / 2].name)\(index % 2 == 1 ? ", scoped beside a phrase" : "")"
+            #expect(result.query.expression != nil, "\(label)")
+            #expect(result.query == FTS5InlineQueryParser.parseDetailed(shape.query, columnPrefix: index % 2 == 1 ? "{body}:" : "",
+                                                                        structured: index % 2 == 1
+                                                                            ? StructuredQueryParts(phrase: "cold war", excludedTerms: ["korea"])
+                                                                            : .none),
+                    "the counted parse is the parse: \(label)")
+            #expect(result.work.nodes > Self.limit, "\(label) builds its tree")
+            #expect(result.work.maximumMeaningSettlements == 1, "\(label): \(result.work)")
+            #expect(result.work.meaningSettlements == result.work.nodes, "\(label): every node evaluated, each once")
+            #expect(result.work.maximumAnchorSettlements == 1, "\(label): \(result.work)")
+        }
+    }
+    #endif
 
     /// Long queries with no nesting at all.
     static let flatShapes: [(name: String, unit: @Sendable (Int) -> String)] = [

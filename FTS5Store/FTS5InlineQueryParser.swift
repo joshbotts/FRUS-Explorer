@@ -373,7 +373,7 @@
 ///   6.4 — #1297 round-2 fixes: an `=` mark applies per operand, and what is computed from a node is computed once.
 ///          RESULTS MOVE, and only in exact terms.
 ///          (1) An `=` operand is an exact-word post-filter only when every match must match THAT operand. The proof
-///          follows marked leaves by occurrence (`Expr.requiredExact`) beside the identities refusal compares, and
+///          follows marked leaves by occurrence (`Expr.requiredExact`, replaced at 6.5) beside the identities refusal compares, and
 ///          `ParsedOperand.isExactApplied` reports the decision operand by operand; `ParsedQuery.exactTerms` is the terms
 ///          of the operands it marks, in the order typed. 6.3 asked whether the required set held the operand's rendered
 ///          identity, which another operand with the word's stem also renders, so an optional mark became a filter
@@ -383,14 +383,23 @@
 ///          every structured combination, 226,200 parses per scope), non-empty lists go 57,158 → 55,078 unscoped and
 ///          56,358 → 55,078 scoped, from 208 sequences, every change `["cold"]` to `[]` and every changed parse holding
 ///          another operand with cold's stem: an unmarked cold (920 unscoped, 880 scoped), otherwise the phrase "cold"
-///          (800, 40), otherwise a second marked cold (360, 360). So exact terms no longer depend on the column prefix.
+///          (800, 40), otherwise a second marked cold (360, 360). Corrected at 6.5, because that reads as though every change
+///          fixed an over-filter: read on `Issue1297InflectedCorpus`, 928 of those 3,360 lists were filters removing no row
+///          the query admits — all 720 with a second marked cold, and 112 with an unmarked cold and 96 with the phrase
+///          (`=cold OR =cold cold`, `=cold "cold" OR =cold`) — and so were all 780 lists the demoted alphabet lost and all
+///          800 the phrase alphabet lost. They were sound filters 6.4 lost, and 6.5 restores every one of them but 48
+///          (`=cold OR korea cold` beside the excluded term korea). Nor did the loss "cost only the filter", as the
+///          `parseDetailed` doc said: the mark was ignored, so the word's inflected forms matched and were counted. So exact
+///          terms no longer depend on the column prefix.
 ///          Over 60,000 random queries of up to 14 tokens beside random structured fields, 1,799 lists change: 1,794 lose
 ///          every term, 4 lose one, and 1 reorders (`["cold", "war"]` → `["war", "cold"]`, the first `=cold` being an
 ///          alternative). No expression, operand, dropped operand or approximation flag moves over 1,411,430 parses —
 ///          four alphabets of length 1–4 beside every structured combination in both scopes, those random queries, and
 ///          fifteen nestings around eleven innermost terms at 1–33 levels.
 ///          (2) A node is a class that keeps its exact meaning and its anchor, and `evaluate` and `anchor(_:)` recurse over
-///          nodes only, children first, handing every combination to helpers that never recurse. 6.3 asked again for the
+///          nodes only, children first, handing every combination to helpers that never recurse into either (corrected at
+///          6.5: this said helpers that never recurse, but `anchoringChildren(of:)` calls the recursive `evaluate` and
+///          `complement(of:)`, and `settleAnchor` the recursive `leaves(of:)`). 6.3 asked again for the
 ///          meaning of the whole subtree at every level that lacked an anchor, and `Expr.settled()` built each required
 ///          anchor's coverers as an array on every conjoin; it now returns at once when nothing is forbidden and looks a
 ///          covering identity up without allocating. Measured interleaved, the minimum of five runs in a Release build
@@ -403,13 +412,39 @@
 ///          `w0 -k0 w1 -k1 …` 108.4 / 18.7 / 6.4 ms and 1,238.5 / 77.5 / 17.6 ms. Of eighteen shapes at 4,000 and 8,000
 ///          characters none parses more slowly in Release than at 73a37003; the closest, a chain of `NOT` keywords,
 ///          takes 1.1 ms at 8,000 characters in all three builds.
-///          (3) The stack, measured as the deepest point a parse reaches on a painted thread stack: of 328 nestings at
-///          32 levels the costliest needs 86 KB in a Debug build and 43 KB in a Release build (`maximumGroupDepth`), where
+///          (3) The stack, measured as the deepest point a parse reaches on a painted thread stack: of 328 queries at
+///          32 levels (fifteen nestings around eleven innermost terms, less `NEAR(` around a `NEAR`, alone and scoped beside
+///          a phrase; this said 328 nestings) the costliest needs 86 KB in a Debug build and 43 KB in a Release build (`maximumGroupDepth`), where
 ///          at 6.3 it needed 322 KB and 67 KB; `-(a OR -b …)` around `-korea`, the costliest then, needs 77 KB in Debug.
 ///          The #1297 suites' printed counts move with (1): the exact-term sweep, over its wider alphabet and a corpus
 ///          holding `colds`, reports 55,078 lists per scope, with 4,286 applied `=cold` operands unreported because
 ///          filtering on them would remove a row the query admits and 868 unreported although it would not; the
 ///          structured oracle sees 1,190 and 1,034 required exact operands against 11,758 and 11,401 ignored.
+///   6.5 — #1297 round-3 fixes: a word marked in every alternative is exact (D4), and the memo can be counted. RESULTS
+///          MOVE, and only in exact terms.
+///          (1) Requiredness is proved over the identities of MARKED operands (`Expr.requiredMarked`): seeded by marked leaves
+///          alone and combined as `required` is — a union in `conjoin` and `combineParts`, the kept side in `exclude`, an
+///          intersection in `disjoin` — so it is carried through pushing inward, anchoring and approximation with it. A word
+///          the root expression requires that way is reported, and every positive `=` operand on it is
+///          `ParsedOperand.isExactApplied`, since inside the filtered documents each reads the same. `=cold war OR =cold peace`,
+///          `=cold OR =cold war` and `=cold OR =cold` report cold again, and `(=cold OR war) =cold` applies both marks; an
+///          unmarked word, a phrase or a demoted word still never makes a mark apply, so `(=cold OR war) cold`,
+///          `=cold OR "cold"` and `=cold war OR cold peace` report nothing. `exactTerms` keeps the order of each word's first
+///          applied operand, which is now its first positive mark. Measured against 6.4 over its 1,411,430 parses: no
+///          expression, operand, dropped operand or approximation flag moves; no list loses a term or holds one 6.3 did not
+///          report; and 6,069 operands become applied, none the reverse. Per scope, non-empty lists go 55,078 → 55,518 over
+///          the exact-term sweep alphabet, from 44 sequences (`=cold OR =cold`, `war =cold OR =cold`), every change `[]` to
+///          `["cold"]`; 42,630 → 43,020 over the demoted alphabet and 41,672 → 42,072 over the phrase alphabet, 6.3's counts
+///          in both. Over the 60,000 random queries 467 lists change: 466 gain every term they report, and 1 reorders back
+///          to 6.3's `["cold", "war"]`; 1,346 still differ from 6.3's, 1,328 of them empty. Read on
+///          `Issue1297InflectedCorpus`, every list 6.5 reports over the three alphabets removes no row the query admits.
+///          (2) In a DEBUG build, `work(parsing:columnPrefix:structured:)` counts on a parse's own tree how often each node's
+///          meaning and anchor were settled, because removing 6.4's memo changed no render and failed no test. Release code
+///          does what it did: `parseDetailed` takes its result from the same path and drops the tree.
+///          The #1297 suites' printed counts move with (1): the exact-term sweep reports 55,518 lists per scope, with 4,286
+///          applied `=cold` operands unreported because filtering on them would remove a row the query admits and 428
+///          unreported although it would not (868 at 6.4); the structured oracle sees 1,256 and 1,151 required exact
+///          operands against 11,692 and 11,284 ignored.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -449,16 +484,21 @@ public enum FTS5InlineQueryParser {
     ///
     /// The SQL layer ANDs one filter per exact term over every result, which is sound only for
     /// a word every match must contain. So an `=` operand is reported only when it is typed,
-    /// applied, positive, and required by the expression that runs — every match must match THAT
-    /// operand, which the proof tracks by occurrence (`Expr.requiredExact`) — and it is then
-    /// `ParsedOperand.isExactApplied`. Anywhere else the sigil is ignored and the term runs
-    /// stemmed: an `OR` alternative (`=cold OR war`), a term inside a negated group
-    /// (`cold -(war -=korea)`, which matches cold documents holding neither war nor korea), or
-    /// a complement a structured phrase or prefix anchors (`=cold OR -korea` beside the prefix
-    /// `viet`). Another operand with the same stem changes nothing, because it admits the stem:
-    /// `(=cold OR war) cold` matches `colds war`, and reports nothing. The proof is sound but not
-    /// complete, so a term every match happens to contain can still go unreported
-    /// (`=cold OR =cold war`), which costs only the filter.
+    /// applied and positive, and the expression that runs requires its word through a MARKED
+    /// operand — a mark every match must match, or a mark in every alternative, which the proof
+    /// tracks over marked operands' identities (`Expr.requiredMarked`, D4). Every positive `=`
+    /// operand on such a word is then `ParsedOperand.isExactApplied`, since inside the filtered
+    /// documents each reads the same: `=cold war OR =cold peace` and `(=cold OR war) =cold` apply
+    /// both marks. Anywhere else the sigil is ignored and the term runs stemmed: an `OR` alternative
+    /// (`=cold OR war`), a term inside a negated group (`cold -(war -=korea)`, which matches cold
+    /// documents holding neither war nor korea), or a complement a structured phrase or prefix
+    /// anchors (`=cold OR -korea` beside the prefix `viet`). An unmarked operand, a phrase or a
+    /// demoted operator word with the same stem never makes a mark apply, because it admits the
+    /// stem: `(=cold OR war) cold` matches `colds war`, and `=cold war OR cold peace` matches
+    /// `colds peace`, so both report nothing. The proof is sound but not complete, so a word every
+    /// match happens to hold literally can still go unreported — `(=cold OR war) -war`, whose war
+    /// alternative its exclusion empties — and then the mark is ignored: its inflected forms match
+    /// and are counted, as for any unapplied mark.
     ///
     /// `structured` joins the typed query in one tree (see "Structured parts"), so every field
     /// reported here describes the query that runs: its operands follow the typed ones with
@@ -468,21 +508,29 @@ public enum FTS5InlineQueryParser {
     /// structured term.
     public static func parseDetailed(_ raw: String, columnPrefix: String = "",
                                      structured: StructuredQueryParts = .none) -> ParsedQuery {
+        parsedTree(raw, columnPrefix: columnPrefix, structured: structured).query
+    }
+
+    /// `parseDetailed`'s result, with the tree it was computed from — `nil` when the query was refused before a tree
+    /// existed — so a DEBUG build can inspect the work the parse did (`work(parsing:columnPrefix:structured:)`) on
+    /// exactly the path that ran.
+    private static func parsedTree(_ raw: String, columnPrefix: String,
+                                   structured: StructuredQueryParts) -> (query: ParsedQuery, root: Node?) {
         let tokens = tokenize(raw)
         // Every pass below recurses once per level of nesting, so the depth is checked first, over the
         // tokens and without recursion: a query nested past the limit is refused before any tree exists.
-        guard groupDepth(of: tokens) <= maximumGroupDepth else { return ParsedQuery(expression: nil, exactTerms: []) }
+        guard groupDepth(of: tokens) <= maximumGroupDepth else { return (ParsedQuery(expression: nil, exactTerms: []), nil) }
         var harvest = Harvest()
         var parts: [Node] = []
         if let typed = buildNode(tokens, columnPrefix: columnPrefix, into: &harvest) {
             parts.append(typed)
         }
         parts += structuredParts(structured, columnPrefix: columnPrefix, into: &harvest)
-        guard !parts.isEmpty else { return ParsedQuery(expression: nil, exactTerms: []) }
+        guard !parts.isEmpty else { return (ParsedQuery(expression: nil, exactTerms: []), nil) }
         let root = Node.parts(parts)
         var dropped = Set<Int>()
         guard let expression = anchored(root, dropped: &dropped) else {
-            return ParsedQuery(expression: nil, exactTerms: [])
+            return (ParsedQuery(expression: nil, exactTerms: []), root)
         }
         // Anchoring left something out whenever the query's exact meaning is a complement — even
         // when all it left out is a demoted operator word, which has no operand to report.
@@ -491,7 +539,7 @@ public enum FTS5InlineQueryParser {
         // An approximation its own operands prove empty is refused, as though nothing had anchored: running it
         // could only return no documents, which would read as a finding about the corpus. An exact render is what
         // was typed and always runs.
-        if isApproximate, expression.isEmpty { return ParsedQuery(expression: nil, exactTerms: []) }
+        if isApproximate, expression.isEmpty { return (ParsedQuery(expression: nil, exactTerms: []), root) }
         var negated: [Int: Bool] = [:]
         polarity(of: root, negated: false, into: &negated)
 
@@ -511,11 +559,13 @@ public enum FTS5InlineQueryParser {
             // Only a *positive* exact term becomes a filter, however the operand came to be
             // excluded — `-=word`, `NOT =word`, `NOT (=word OR x)`. An excluded one would need
             // an inverted post-filter, and getting that subtly wrong silently over-excludes;
-            // a plain one would require the very word the MATCH excludes. And only an occurrence every
-            // match requires: the filter is ANDed over every result, so on an operand the
-            // expression leaves optional it would remove documents the MATCH admits — even where another
-            // operand with the same stem is required, since that operand admits the stem.
-            let isExactApplied = !isNegated && proto.exactTerm != nil && expression.requiredExact.contains(index)
+            // a plain one would require the very word the MATCH excludes. And only a word every match holds
+            // through a marked operand: the filter is ANDed over every result, so on a word the expression
+            // leaves optional it would remove documents the MATCH admits — even where an unmarked operand with
+            // the same stem is required, since that operand admits the stem. Once the word qualifies, every
+            // positive mark on it applies: inside the filtered documents each of them reads the same.
+            let isExactApplied = !isNegated && proto.exactTerm != nil
+                && expression.requiredMarked.contains(OperandIdentity(rendered: proto.core))
             operands.append(ParsedOperand(text: proto.text, rendered: isNegated ? "NOT \(proto.core)" : proto.core,
                                           kind: proto.kind, isNegated: isNegated, isExact: proto.isExact,
                                           source: proto.source, isExactApplied: isExactApplied))
@@ -523,10 +573,56 @@ public enum FTS5InlineQueryParser {
                 exactTerms.append(term)
             }
         }
-        return ParsedQuery(expression: expression.text, exactTerms: exactTerms,
-                           operands: operands, droppedOperands: droppedOperands,
-                           isApproximate: isApproximate)
+        return (ParsedQuery(expression: expression.text, exactTerms: exactTerms,
+                            operands: operands, droppedOperands: droppedOperands,
+                            isApproximate: isApproximate), root)
     }
+
+    #if DEBUG
+    /// What one parse did to its tree, counted on the nodes themselves: how many nodes the tree held, pushed-inward
+    /// complements included, and how many times the busiest node's meaning and anchor were settled.
+    ///
+    /// DEBUG-only, because it exists to make the memo `Node` keeps observable to a test. The memo changes no answer, so
+    /// no render can show it is gone, and the time it saves is a wall-clock budget a loaded machine breaks. A count of
+    /// settlements is neither: with the memo each node's meaning and anchor are settled at most once, and without it
+    /// every level that lacks an anchor settles its whole subtree again.
+    struct ParseWork: Equatable {
+        /// The distinct nodes reachable from the root, through each node's members and its `pushedInward` complement.
+        var nodes = 0
+        /// Every node's meaning settlements, summed: `nodes` when each node was evaluated exactly once.
+        var meaningSettlements = 0
+        /// The most times any one node's meaning was settled.
+        var maximumMeaningSettlements = 0
+        /// The most times any one node's anchor was settled.
+        var maximumAnchorSettlements = 0
+    }
+
+    /// `parseDetailed(raw, columnPrefix:structured:)` and the work it did (`ParseWork`), read from the tree that parse
+    /// built. A query refused before a tree existed did no work: every count is zero.
+    static func work(parsing raw: String, columnPrefix: String = "",
+                     structured: StructuredQueryParts = .none) -> (query: ParsedQuery, work: ParseWork) {
+        let (query, root) = parsedTree(raw, columnPrefix: columnPrefix, structured: structured)
+        var work = ParseWork()
+        guard let root else { return (query, work) }
+        // Iterative, and each node once: a pushed-inward complement shares every node beneath its negations.
+        var seen = Set<ObjectIdentifier>()
+        var pending = [root]
+        while let node = pending.popLast() {
+            guard seen.insert(ObjectIdentifier(node)).inserted else { continue }
+            work.nodes += 1
+            work.meaningSettlements += node.meaningSettlements
+            work.maximumMeaningSettlements = max(work.maximumMeaningSettlements, node.meaningSettlements)
+            work.maximumAnchorSettlements = max(work.maximumAnchorSettlements, node.anchorSettlements)
+            switch node.kind {
+            case .leaf, .opaque: break
+            case .not(let inner), .group(let inner): pending.append(inner)
+            case .and(let members), .or(let members), .parts(let members): pending += members
+            }
+            if let pushed = node.pushedInward { pending.append(pushed) }
+        }
+        return (query, work)
+    }
+    #endif
 
     /// One searchable unit as harvested, before the tree around it settles its polarity.
     ///
@@ -544,8 +640,8 @@ public enum FTS5InlineQueryParser {
         var kind: ParsedOperand.Kind
         /// Whether the researcher typed the `=` sigil on it.
         var isExact: Bool
-        /// The literal word the occurrence post-filters on when it is positive, applied and
-        /// required by the expression, or `nil` when the sigil is absent or cannot apply.
+        /// The literal word the operand post-filters on when its mark applies (`ParsedOperand.isExactApplied`),
+        /// or `nil` when the sigil is absent or cannot apply.
         var exactTerm: String?
         /// Where the operand came from.
         var source: ParsedOperand.Source = .typed
@@ -574,8 +670,8 @@ public enum FTS5InlineQueryParser {
     /// Every pass over the tree — building it, `evaluate`, `anchor(_:)`, `complement`, `hasPositiveLeaf`, `leaves`,
     /// `polarity`, and releasing it — recurses once per level, and the app parses on Swift concurrency's pool threads,
     /// whose stacks are 512 KB. Measured as the deepest point a parse reaches on a painted 4 MB thread stack, over 328
-    /// queries — fifteen nestings around eleven innermost terms at 32 levels, alone and scoped beside a phrase — the
-    /// costliest needs 86 KB in a Debug build (`-(war …)` around `=cold`) and 43 KB in a Release build (`-(a OR -b …)`
+    /// queries — fifteen nestings around eleven innermost terms at 32 levels, less `NEAR(` around `NEAR(cold war, 5)`, which
+    /// cannot nest: 164 queries, each alone and scoped beside a phrase — the costliest needs 86 KB in a Debug build (`-(war …)` around `=cold`) and 43 KB in a Release build (`-(a OR -b …)`
     /// around `cold`, scoped), about 6 and 12 times inside 512 KB. At parser 6.3 the costliest was `-(a OR -b …)` around
     /// an exclusion such as `-korea`: 322 KB and 67 KB. A query nested that deeply is pasted, not typed.
     ///
@@ -676,6 +772,13 @@ public enum FTS5InlineQueryParser {
 
         /// The operands `anchor` leaves out, by harvest index. Meaningful only where `anchor` is not `nil`.
         var dropped: Set<Int> = []
+
+        #if DEBUG
+        /// How many times `settleMeaning` has settled this node's meaning: once, while `evaluate`'s memo holds.
+        var meaningSettlements = 0
+        /// How many times `settleAnchor` has settled this node's anchor: at most once, while `anchor(_:)`'s memo holds.
+        var anchorSettlements = 0
+        #endif
 
         /// A node of `kind`.
         init(_ kind: Kind) {
@@ -954,14 +1057,16 @@ public enum FTS5InlineQueryParser {
     /// the documents it matches.
     ///
     /// The proof is what lets `parseDetailed` refuse an approximation that can match nothing (6.1), and decide which
-    /// `=` marks apply (D1). It is built alongside the text by the same functions — `operand`, `parenthesized`, `conjoin`,
+    /// `=` marks apply (D1, D4). It is built alongside the text by the same functions — `operand`, `parenthesized`, `conjoin`,
     /// `exclude`, `disjoin` and `combineParts` — and is sound but not complete: `isEmpty` is `true` only when the
     /// expression matches no document in any corpus, and `false` says nothing.
     ///
-    /// Two granularities, for two questions. Refusal compares operands by what they match (`OperandIdentity`), so `=cold`,
-    /// `cold` and the phrase `"cold"` are one identity. A post-filter must hold for the operand it narrows and no other, so
-    /// `requiredExact` names occurrences: every match of `(=cold OR war) cold` matches the identity `"cold"`, and none
-    /// need match the marked occurrence.
+    /// Both questions compare operands by what they match (`OperandIdentity`), so `=cold`, `cold` and the phrase `"cold"`
+    /// are one identity. They differ in which leaves count. Refusal asks what the stemmed MATCH requires, so every leaf
+    /// does. A post-filter asks what the literal word requires, so `requiredMarked` is seeded by marked leaves alone: every
+    /// match of `(=cold OR war) cold` holds the identity `"cold"` through the unmarked leaf, and none need hold it through
+    /// a marked one, while every match of `=cold war OR =cold peace` holds it through a marked leaf, whichever alternative
+    /// it matches.
     private struct Expr {
         /// The FTS5 text.
         var text: String
@@ -973,12 +1078,15 @@ public enum FTS5InlineQueryParser {
         var sufficient: Set<OperandIdentity> = []
         /// Operands no document the expression matches can match.
         var forbidden: Set<OperandIdentity> = []
-        /// The marked leaves, by harvest index, that every document the expression matches also matches.
+        /// The identities every document the expression matches also matches through a MARKED leaf — one required marked
+        /// leaf, or a marked leaf in every alternative.
         ///
-        /// Structural, so it holds whatever each leaf matches: read as the literal word, the marked leaf still bounds every
-        /// match, which is why filtering the stemmed MATCH on that word returns exactly what the expression means with the
-        /// mark applied.
-        var requiredExact: Set<Int> = []
+        /// Structural, so it holds whatever each marked leaf matches: read as the literal word, the marked leaves of an
+        /// identity here still bound every match, so every match holds that literal word. Inside those documents a leaf of
+        /// the identity matches whether it is read literally or by stem, marked or not, positive or excluded, so filtering
+        /// the stemmed MATCH on the word returns exactly what the expression means with every mark on it read literally
+        /// (D1, D4). An unmarked leaf seeds nothing, because what it requires is the stem.
+        var requiredMarked: Set<OperandIdentity> = []
         /// Whether the expression provably matches no document.
         var isEmpty = false
 
@@ -1033,12 +1141,12 @@ public enum FTS5InlineQueryParser {
         }
     }
 
-    /// One rendered operand, which requires and suffices for itself — and, when it is the marked leaf harvested at
-    /// `marked`, requires that occurrence.
-    private static func operand(_ text: String, marked: Int? = nil) -> Expr {
+    /// One rendered operand, which requires and suffices for itself — and, when it is `marked`, requires its identity
+    /// through a marked leaf.
+    private static func operand(_ text: String, marked: Bool = false) -> Expr {
         let identity = OperandIdentity(rendered: text)
         return Expr(text: text, precedence: .atom, required: [identity], sufficient: [identity],
-                    requiredExact: marked.map { [$0] } ?? [])
+                    requiredMarked: marked ? [identity] : [])
     }
 
     /// `expression` in parentheses, which change its precedence and nothing it matches.
@@ -1078,7 +1186,7 @@ public enum FTS5InlineQueryParser {
              required: left.required.union(right.required),
              sufficient: left.sufficient.intersection(right.sufficient),
              forbidden: left.forbidden.union(right.forbidden),
-             requiredExact: left.requiredExact.union(right.requiredExact),
+             requiredMarked: left.requiredMarked.union(right.requiredMarked),
              isEmpty: left.isEmpty || right.isEmpty).settled()
     }
 
@@ -1094,7 +1202,7 @@ public enum FTS5InlineQueryParser {
         Expr(text: "\(conjunctText(kept)) NOT \(atomText(excluded))",
              precedence: kept.precedence == .and ? .and : .not,
              required: kept.required, forbidden: kept.forbidden.union(excluded.sufficient),
-             requiredExact: kept.requiredExact, isEmpty: kept.isEmpty).settled()
+             requiredMarked: kept.requiredMarked, isEmpty: kept.isEmpty).settled()
     }
 
     /// The documents any of `parts` matches. `OR` binds loosest, so no part needs
@@ -1110,7 +1218,7 @@ public enum FTS5InlineQueryParser {
             joined.required.formIntersection(part.required)
             joined.sufficient.formUnion(part.sufficient)
             joined.forbidden.formIntersection(part.forbidden)
-            joined.requiredExact.formIntersection(part.requiredExact)
+            joined.requiredMarked.formIntersection(part.requiredMarked)
             joined.isEmpty = joined.isEmpty && part.isEmpty
         }
         return joined
@@ -1155,9 +1263,12 @@ public enum FTS5InlineQueryParser {
     /// Records the meaning of `node`, whose members' meanings are already known.
     @inline(never)
     private static func settleMeaning(_ node: Node) {
+        #if DEBUG
+        node.meaningSettlements += 1
+        #endif
         switch node.kind {
-        case .leaf(let text, let index, let isMarked):
-            node.meaning = .matching(operand(text, marked: isMarked ? index : nil))
+        case .leaf(let text, _, let isMarked):
+            node.meaning = .matching(operand(text, marked: isMarked))
         case .opaque(let text):
             node.meaning = .matching(opaqueOperand(text))
         case .not(let inner):
@@ -1331,6 +1442,9 @@ public enum FTS5InlineQueryParser {
     /// named.
     @inline(never)
     private static func settleAnchor(_ node: Node) {
+        #if DEBUG
+        node.anchorSettlements += 1
+        #endif
         node.isAnchored = true
         switch node.meaning {
         case nil:
@@ -1424,7 +1538,7 @@ public enum FTS5InlineQueryParser {
                 positive.required.formUnion(part.required)
                 positive.sufficient.formIntersection(part.sufficient)
                 positive.forbidden.formUnion(part.forbidden)
-                positive.requiredExact.formUnion(part.requiredExact)
+                positive.requiredMarked.formUnion(part.requiredMarked)
                 positive.isEmpty = positive.isEmpty || part.isEmpty
             }
             positive = positive.settled()
@@ -1434,7 +1548,7 @@ public enum FTS5InlineQueryParser {
         return Expr(text: kept + negatives.map { " NOT \(atomText($0))" }.joined(), precedence: .not,
                     required: positive.required,
                     forbidden: negatives.reduce(positive.forbidden) { $0.union($1.sufficient) },
-                    requiredExact: positive.requiredExact, isEmpty: positive.isEmpty).settled()
+                    requiredMarked: positive.requiredMarked, isEmpty: positive.isEmpty).settled()
     }
 
     /// Whether `node` contains a leaf that is positive after the negations above it —
@@ -1973,6 +2087,8 @@ public struct StructuredQueryParts: Sendable, Equatable {
 ///          contain, and `expression` is also `nil` for a query nested past the parser's depth limit
 ///   1.4 — #1297 round-2 parser fixes: `exactTerms` comes from the operands whose own mark applies
 ///          (`ParsedOperand.isExactApplied`), not from any required operand sharing the word's stem
+///   1.5 — #1297 round-3 parser fixes: `exactTerms` also holds a word marked in every alternative (D4), in the order of each
+///          word's first applied operand
 public struct ParsedQuery: Sendable, Equatable {
 
     /// The MATCH expression, or `nil` when the query is refused: it holds no term that is
@@ -1981,12 +2097,15 @@ public struct ParsedQuery: Sendable, Equatable {
     /// `FTS5InlineQueryParser.maximumGroupDepth`.
     public let expression: String?
 
-    /// Words the researcher marked with `=` that every match of `expression` must contain, in
-    /// the order typed, de-duplicated: the term of every operand that is `isExactApplied`.
+    /// Words the researcher marked with `=` that every match of `expression` must contain literally, de-duplicated: the
+    /// term of every operand that is `isExactApplied`, in the order of each word's first such operand. Every positive
+    /// `=` operand on a reported word applies, so that is the word's first positive mark:
+    /// `(=containment OR europe) =rollback =containment` reports `["containment", "rollback"]`.
     ///
     /// The SQL layer ANDs one exact-word filter per term over the results, so a word the
     /// expression leaves optional — an `OR` alternative, a term inside a negated group — is not
-    /// reported, and runs stemmed, even where another operand with the same stem is required.
+    /// reported, and runs stemmed, even where an unmarked operand with the same stem is required. A
+    /// word marked in every alternative is required literally, and is reported (`=cold war OR =cold peace`).
     /// Empty whenever `expression` is `nil` — there is nothing to post-filter.
     public let exactTerms: [String]
 
@@ -2047,6 +2166,8 @@ public struct ParsedQuery: Sendable, Equatable {
 ///          keyword `NOT` and `NOT (...)` report their operands excluded, as `-` always did
 ///   1.2 — #1297 join: `source`, which tells a typed operand from one a structured field added
 ///   1.3 — #1297 round-2 parser fixes: `isExactApplied`, whether the search post-filters on this operand's literal word
+///   1.4 — #1297 round-3 parser fixes: `isExactApplied` is decided per word over marked operands (D4), so it holds for every
+///          positive `=` operand on a word every match holds literally
 public struct ParsedOperand: Sendable, Equatable {
 
     /// What kind of searchable unit this is.
@@ -2090,15 +2211,17 @@ public struct ParsedOperand: Sendable, Equatable {
     /// expression leaves optional or excludes, and on a word that is not a single index token.
     public let isExact: Bool
 
-    /// Whether the search applies this operand's `=` mark: it is typed, applied, positive, and every match of the
-    /// expression must match this very operand, so the SQL layer post-filters every result on its literal word — one
-    /// of `ParsedQuery.exactTerms`.
+    /// Whether the search applies this operand's `=` mark: it is typed, applied and positive, and every match of the
+    /// expression holds its word through a marked operand, so the SQL layer post-filters every result on the literal
+    /// word — one of `ParsedQuery.exactTerms`.
     ///
-    /// Decided per operand, never per word. In `(=cold OR war) =cold` the second `=cold` is applied and the first is
-    /// not: every match holds the literal word through the second, while the first is one alternative. And in
-    /// `(=cold OR war) cold` neither the mark nor the term applies, although every match holds the stem of cold. So a
-    /// surface that tags a term EXACT, or counts it as the literal word, must read this rather than compare the
-    /// operand's word with `exactTerms`. Always `false` for a dropped, negated or structured operand.
+    /// Decided over marked operands only (D4). Once a word's mark applies, every positive `=` operand on it does: in
+    /// `(=cold OR war) =cold` both are applied, because every match holds the literal word through the second and
+    /// inside those documents the first reads the same, and in `=cold war OR =cold peace` both are applied, because
+    /// every alternative holds a mark. But in `(=cold OR war) cold` neither the mark nor the term applies, although
+    /// every match holds the stem of cold: an unmarked operand, a phrase or a demoted word never makes a mark apply. So
+    /// a surface that tags a term EXACT, or counts it as the literal word, must read this rather than compare the
+    /// operand's word with `exactTerms` or with `isExact`. Always `false` for a dropped, negated or structured operand.
     public let isExactApplied: Bool
 
     /// Where an operand came from.
