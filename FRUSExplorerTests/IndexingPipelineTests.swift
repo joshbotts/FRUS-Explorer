@@ -768,12 +768,21 @@ struct SearchParametersTests {
             // Control: unmarked, d3 is a match, so the line above is the filter at work and not the fixture.
             #expect(try await ids("cold (war OR fevers)") == ["d1", "d3"])
 
-            // Parser 6.4 decides per operand (#1297 round 2): the unmarked cold every match requires admits d3's colds,
-            // so the alternative's mark does not apply and d3 stays; a second, required mark does filter it out.
+            // Parsers 6.4 and 6.5 (#1297 rounds 2 and 3): only a marked operand makes a mark apply. The unmarked cold
+            // every match requires admits d3's colds, so the alternative's mark does not apply and d3 stays; a second,
+            // required mark does filter it out.
             #expect(SearchService.exactTerms(from: SearchParameters(keywords: "(=cold OR fevers) cold")).isEmpty)
             #expect(try await ids("(=cold OR fevers) cold") == ["d1", "d3"])
             #expect(SearchService.exactTerms(from: SearchParameters(keywords: "(=cold OR fevers) =cold")) == ["cold"])
             #expect(try await ids("(=cold OR fevers) =cold") == ["d1"])
+
+            // Parser 6.5 (D4): a word marked in every alternative is held literally by every match, so it filters, and
+            // d3, which matches `cold AND fevers` by the stem of its colds, is removed. Unmarked in one alternative, the
+            // stem admits d3 again and nothing filters.
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold war OR =cold fevers")) == ["cold"])
+            #expect(try await ids("=cold war OR =cold fevers") == ["d1"])
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold war OR cold fevers")).isEmpty)
+            #expect(try await ids("=cold war OR cold fevers") == ["d1", "d3"])
         }
     }
 

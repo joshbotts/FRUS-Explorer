@@ -54,10 +54,15 @@ struct OccurrenceAvailabilityTests {
                                                           resolveStem: resolver(["containment": "contain"]))
         #expect(alternative.reason == .compositeQuery)
 
-        // Parser 6.4 (#1297 round 2): per operand, not per word. The unmarked required containment does not make the
-        // alternative's mark apply, so the query is classified by shape; a required mark, or one an excluded group
-        // makes the whole search, is exact-word.
+        // Parser 6.4 (#1297 round 2): read from each operand, not from the word. The unmarked required containment does
+        // not make the alternative's mark apply, so the query is classified by shape; a required mark, or one an excluded
+        // group makes the whole search, is exact-word. Parser 6.5 (round 3, D4): so is a word marked in every
+        // alternative, and a word one alternative holds unmarked is classified by shape.
         let stems = resolver(["containment": "contain"])
+        #expect(OccurrenceAvailability.classify(term: "=containment OR =containment alliance", resolveStem: stems)
+                    .reason == .exactWord)
+        #expect(OccurrenceAvailability.classify(term: "=containment OR containment alliance", resolveStem: stems)
+                    .reason == .compositeQuery)
         #expect(OccurrenceAvailability.classify(term: "(=containment OR alliance) containment", resolveStem: stems)
                     .reason == .compositeQuery)
         #expect(OccurrenceAvailability.classify(term: "(=containment OR alliance) =containment", resolveStem: stems)
