@@ -20,17 +20,27 @@ import Foundation
 /// pre-search screen, a link BELOW the Query Inspector's disclosure button on a refused or narrower-than-typed query,
 /// and a Find-menu item on each platform — with no new keyboard shortcut and no sixth icon in the actions bar.
 ///
-/// Every assertion is scoped to one brace-matched declaration or branch, never to a whole file or a fixed window:
-/// `tipsPanel` and `TipItem` sit in one file beside a dozen other readers of `.meaning`, so a file-wide `contains`
-/// passes for the wrong reason (`HybridSearchModeTests.bothSurfacesMountMeaningPieces` is the weak form this avoids).
-/// The branch helper takes the THEN and ELSE blocks of one `if`, so a sheet that showed the rows in both modes, or the
-/// note in neither, fails.
+/// **Every presence check reads one brace-matched declaration, one block, one branch or one call's argument list —
+/// never a whole file or a fixed window of characters.** `tipsPanel` and `TipItem` sit in one file beside a dozen other
+/// readers of `.meaning`, so a file-wide `contains` passes for the wrong reason
+/// (`HybridSearchModeTests.bothSurfacesMountMeaningPieces` is the weak form this avoids), and a window of N characters
+/// passes for a call that moved. The branch helper takes the THEN and ELSE blocks of one `if`, so a sheet that showed
+/// the rows in both modes, or the note in neither, fails. **Three ABSENCE checks read a whole file on purpose**: a
+/// literal row typed anywhere in `SearchSheet.swift`, or a Search Tips link anywhere in `QueryInspectorView.swift`, is
+/// the defect wherever it sits, so scoping those bans would only narrow them.
 ///
 /// The macOS half is read from source because `SearchSheet.swift` and `FindMenuContent` are `#if os(macOS)` and this
 /// target builds for iOS only; the iOS half is exercised at runtime too, by `SearchTipsSheetTests`.
 ///
 /// Version history:
 ///   1.0 — #1299: initial implementation
+///   1.1 — #1299 follow-up: the doc claimed every assertion was declaration-scoped while six read fixed windows and the
+///         Mac consumer was only COUNTED across the file, so moving the first-load consumer out of `.task` stayed green.
+///         Each now reads its own block or argument list. Pins added for the mutants that survived the first round:
+///         the Mac error branch's whole header (M13), the More item carrying no `.disabled` (M16), exactly one link in the
+///         Inspector card (M21), the presenter passing the real mode to the sheet (M23), no stale literal in the Mac
+///         panel (M26), the panel mounting on the button alone (M28), `onDisappear` clearing `isOnScreen` (M33); and
+///         the Search window clearing its error when the index is rebuilt.
 @Suite("Search Tips are wired where the owner put them")
 struct SearchTipsWiringTests {
 
@@ -71,6 +81,51 @@ struct SearchTipsWiringTests {
         return ""
     }
 
+    /// The block that opens at the last `{` of `header`, the first occurrence in `scope` — for a header that does not
+    /// begin a declaration (`} else if … {`, `.onAppear {`), where `declaration` would start counting at a `}`.
+    private static func block(after header: String, in scope: String) throws -> String {
+        let range = try #require(scope.range(of: header), "no block: \(header)")
+        let brace = try #require(scope[range].lastIndex(of: "{"), "the header has no opening brace: \(header)")
+        return try balanced(from: brace, in: scope)
+    }
+
+    /// Every block opening with `header` in `scope`, in order.
+    private static func blocks(after header: String, in scope: String) throws -> [String] {
+        var found: [String] = []
+        var searchFrom = scope.startIndex
+        while let range = scope.range(of: header, range: searchFrom..<scope.endIndex) {
+            let brace = try #require(scope[range].lastIndex(of: "{"), "the header has no opening brace: \(header)")
+            found.append(try balanced(from: brace, in: scope))
+            searchFrom = range.upperBound
+        }
+        return found
+    }
+
+    /// The argument list of the call `call` opens (e.g. `SearchTipsPresenter(`), from its `(` to the `)` that closes it.
+    private static func arguments(of call: String, in scope: String) throws -> String {
+        let range = try #require(scope.range(of: call), "no call: \(call)")
+        let open = try #require(scope[range].lastIndex(of: "("), "the call has no opening parenthesis: \(call)")
+        var depth = 0
+        var cursor = open
+        while cursor < scope.endIndex {
+            if scope[cursor] == "(" { depth += 1 }
+            if scope[cursor] == ")" {
+                depth -= 1
+                if depth == 0 { return String(scope[open...cursor]) }
+            }
+            cursor = scope.index(after: cursor)
+        }
+        Issue.record("unbalanced parentheses after \(call)")
+        return ""
+    }
+
+    /// From `start` in `scope` up to (not including) the next `terminator`, or to the end of `scope`.
+    private static func span(from start: String, to terminator: String, in scope: String) throws -> String {
+        let range = try #require(scope.range(of: start), "no \(start)")
+        let tail = scope[range.upperBound...]
+        return String(tail[..<(tail.range(of: terminator)?.lowerBound ?? tail.endIndex)])
+    }
+
     /// The THEN and ELSE blocks of the `if` whose header is exactly `condition` (e.g. `if searchMode == .meaning {`),
     /// the first one in `scope`. The ELSE block is empty when the `if` has none.
     private static func branches(of condition: String, in scope: String) throws -> (then: String, else: String) {
@@ -108,6 +163,13 @@ struct SearchTipsWiringTests {
         #expect(split.else.contains("B") && !split.else.contains("A") && !split.else.contains("C"))
         let noElse = try Self.branches(of: "if flag == .on {", in: "if flag == .on { A }\nC")
         #expect(noElse.then.contains("A") && noElse.else.isEmpty)
+
+        let chained = "x\n} else if let e = error, flag {\n    view(e) { inner }\n} else if other {\n    D\n}"
+        let middle = try Self.block(after: "} else if let e = error, flag {", in: chained)
+        #expect(middle.contains("view(e)") && middle.contains("inner") && !middle.contains("D"))
+        #expect(try Self.blocks(after: ".task {", in: ".task { A }\n.other { B }\n.task { C { D } }") == ["{ A }", "{ C { D } }"])
+        let call = try Self.arguments(of: "Presenter(", in: ".modifier(Presenter(a: f(1), b: g)) .next(x)")
+        #expect(call == "(a: f(1), b: g)")
     }
 
     // MARK: - macOS: the Tips panel
@@ -120,9 +182,25 @@ struct SearchTipsWiringTests {
         #expect(panel.contains("SearchTipNote.filterNotesMac"))
         #expect(!panel.contains("SearchTipNote.filterNotesIOS"), "the Mac panel names the iOS scope controls")
         #expect(!panel.contains("TipItem(code:"), "a row typed beside the parser is back")
+        #expect(!panel.contains("Text(\""), "the panel shows a literal of its own beside the shared rows")
+        // Whole-file bans: a literal row anywhere in this file is the defect.
         #expect(!sheet.contains("TipItem(code: \""), "a literal row survives elsewhere in the file")
         #expect(!sheet.contains("Person filter searches"), "the person row the owner removed (Q1) is back")
         #expect(!sheet.contains("Scope toggles persist"), "the false scope row is back")
+        #expect(!sheet.contains("Date filter uses TEI"), "the stale date row, naming an attribute the index no longer prefers, is back")
+    }
+
+    /// The Meaning-mode note is inside the panel, so a mount condition that also read the mode would leave the Tips
+    /// button doing nothing in Meaning mode — the empty promise owner decision Q3 ruled out.
+    @Test("macOS: the Tips panel mounts on the button alone, in both modes")
+    func macPanelMountsInBothModes() throws {
+        let sheet = try Self.source(Self.searchSheet)
+        let body = try Self.declaration("private var loadedBody: some View {", in: sheet)
+        let use = try #require(body.range(of: "tipsPanel\n"), "loadedBody does not mount the Tips panel")
+        let header = try #require(body[..<use.lowerBound].range(of: "if ", options: .backwards),
+                                  "the Tips panel is not mounted under an if")
+        let line = body[header.lowerBound...].prefix { $0 != "\n" }
+        #expect(line == "if searchVM.showTips {", "the panel's mount reads more than the button: \(line)")
     }
 
     @Test("macOS: in Meaning mode the panel shows the Meaning-mode note INSTEAD of the rows")
@@ -170,32 +248,54 @@ struct SearchTipsWiringTests {
     func macFindMenuOpensThePanel() throws {
         let app = try Self.source(Self.app)
         let menu = try Self.declaration("struct FindMenuContent: View {", in: app)
-        let item = try #require(menu.range(of: "\"menu.find.searchTips\""), "no Search Tips item in the Mac Find menu")
-        // The item's own span: from its key to the next item.
-        let tail = menu[item.upperBound...]
-        let span = String(tail[..<(tail.range(of: "Button(")?.lowerBound ?? tail.endIndex)])
+        #expect(menu.contains("\"menu.find.searchTips\""), "no Search Tips item in the Mac Find menu")
+        // The item's own span: from its key to the next item, or the end of the menu.
+        let span = try Self.span(from: "\"menu.find.searchTips\"", to: "Button(", in: menu)
         #expect(span.contains("appState.openSearchTips(from: nil)"))
         #expect(span.contains("openWindow.fronting(id: \"frus.search\")"))
         #expect(!span.contains(".keyboardShortcut"), "Q2 decided no new keyboard shortcut")
 
         let sheet = try Self.source(Self.searchSheet)
-        let consumers = sheet.components(separatedBy: "consumeHandoff(\\.pendingSearchTips, for: .macSearch)").count - 1
-        #expect(consumers == 2, "the window must consume the request on first load AND while open; found \(consumers)")
-        #expect(sheet.contains(".onChange(of: appState.pendingSearchTips)"))
+        let consumer = "consumeHandoff(\\.pendingSearchTips, for: .macSearch)"
+        // On first load: the `.task` that reads a search requested before the window existed, since the item usually
+        // opens the window too and `.onChange` never sees a value set before its view was created.
+        let firstLoad = try Self.blocks(after: ".task {", in: sheet)
+            .filter { $0.contains("consumeHandoff(\\.pendingSearch, for: .macSearch)") }
+        #expect(firstLoad.count == 1, "expected one first-load .task reading the search hand-off; found \(firstLoad.count)")
+        #expect(firstLoad.first?.contains(consumer) == true, "the window never reads a request made before it opened")
+        #expect(firstLoad.first?.contains("searchVM.showTips = true") == true)
+        // While open.
+        let whileOpen = try Self.block(after: ".onChange(of: appState.pendingSearchTips) { _, _ in", in: sheet)
+        #expect(whileOpen.contains(consumer), "the open window never reads a request")
+        #expect(whileOpen.contains("searchVM.showTips = true"))
     }
 
     @Test("macOS: a search that fails shows its message instead of an empty list")
     func macShowsSearchErrors() throws {
         let sheet = try Self.source(Self.searchSheet)
         let body = try Self.declaration("private var loadedBody: some View {", in: sheet)
-        let branch = try #require(body.range(of: "} else if let searchError = searchVM.searchError"),
-                                  "the refused-query message reaches the Mac model and never the screen")
+        // The whole header: `performSearch` empties `results` on failure, so a condition reading `!results.isEmpty`, or
+        // dropping `!isSearching`, keeps the same prefix and never shows the message.
+        let header = "} else if let searchError = searchVM.searchError, searchVM.results.isEmpty, !searchVM.isSearching {"
+        let branch = try #require(body.range(of: header),
+                                  "the error branch's condition changed, or the message never reaches the screen")
         let zero = try #require(body.range(of: "} else if hasZeroResults {"))
         #expect(branch.lowerBound < zero.lowerBound, "the error branch must precede the zero-result branch")
-        let tail = body[branch.upperBound...]
-        #expect(tail.prefix(600).contains("searchErrorView(searchError)"))
+        let shown = try Self.block(after: header, in: body)
+        #expect(shown.contains("searchErrorView(searchError)"))
         let view = try Self.declaration("private func searchErrorView(_ searchError: any Error) -> some View {", in: sheet)
         #expect(view.contains("Text(searchError.localizedDescription)"))
+    }
+
+    /// The branch above shows ANY standing error, so an error must not outlive the search that set it. A rebuilt
+    /// index empties the results and the field; left alone, the last search's error sat under the empty field.
+    /// (The view model's own empty-query guards are pinned by `SearchRefusalMessageTests.macEmptyQueryClearsTheError`.)
+    @Test("macOS: rebuilding the index clears the error along with the results")
+    func macIndexRebuildClearsTheError() throws {
+        let sheet = try Self.source(Self.searchSheet)
+        let reset = try Self.block(after: ".onChange(of: appState.indexGeneration) { _, _ in", in: sheet)
+        #expect(reset.contains("searchVM.results = []"), "the slice is not the index-rebuild reset")
+        #expect(reset.contains("searchVM.searchError = nil"), "a rebuilt index leaves the last search's error on screen")
     }
 
     // MARK: - AppState
@@ -255,7 +355,10 @@ struct SearchTipsWiringTests {
         let glossary = try #require(more.range(of: "\"search.glossaryLookup.a11y\""))
         #expect(glossary.upperBound < item.lowerBound, "Search Tips must come after Look up an abbreviation")
         #expect(more.contains("showSearchTips = true"))
-        #expect(more[item.upperBound...].prefix(200).contains("\"questionmark.circle\""))
+        // The item's own span: from its key to the `#endif` that closes its iOS-only block, where any modifier sits.
+        let span = try Self.span(from: "\"search.tips.open\"", to: "#endif", in: more)
+        #expect(span.contains("\"questionmark.circle\""))
+        #expect(!span.contains(".disabled("), "Q3 keeps Search Tips enabled in Meaning mode, where the sheet explains why")
 
         let save = try #require(more.range(of: "search.saveSearch.a11y"))
         let corpus = try #require(more.range(of: "search.corpus.save"))
@@ -297,6 +400,9 @@ struct SearchTipsWiringTests {
         let split = try Self.branches(of: "if inspection.isRefused || inspection.isApproximate {", in: card)
         #expect(split.then.contains("showSearchTips = true"))
         #expect(split.else.isEmpty)
+        // And that gated link is the card's only one: a second, ungated link would show on every inspected query.
+        let links = card.components(separatedBy: "showSearchTips = true").count - 1
+        #expect(links == 1, "the Query Inspector card opens Search Tips from \(links) places; only the gated link may")
 
         // Below the disclosure button: after its accessibility label, which is the last modifier on that button.
         let disclosure = try #require(card.range(of: ".accessibilityLabel(inspectorExpanded"))
@@ -307,6 +413,7 @@ struct SearchTipsWiringTests {
         #expect(label.contains("QueryInspectorStrip("), "the label slice missed the strip, so the check proves nothing")
         #expect(!label.contains("showSearchTips"))
 
+        // Whole-file ban: a link anywhere in the strip's file would be nested inside the disclosure button's label.
         let strip = try Self.source("FRUSExplorer/Search/QueryInspectorView.swift")
         #expect(!strip.contains("showSearchTips") && !strip.contains("search.tips."))
     }
@@ -315,9 +422,8 @@ struct SearchTipsWiringTests {
     func iPadFindMenuRequestsTips() throws {
         let app = try Self.source(Self.app)
         let menu = try Self.declaration("struct IOSFindMenuContent: View {", in: app)
-        let item = try #require(menu.range(of: "\"menu.find.searchTips\""), "no Search Tips item in the iPadOS Find menu")
-        let tail = menu[item.upperBound...]
-        let span = String(tail[..<(tail.range(of: "Button(")?.lowerBound ?? tail.endIndex)])
+        #expect(menu.contains("\"menu.find.searchTips\""), "no Search Tips item in the iPadOS Find menu")
+        let span = try Self.span(from: "\"menu.find.searchTips\"", to: "Button(", in: menu)
         #expect(span.contains("appState.openTab(.search, from: nil)"))
         #expect(span.contains("appState.openSearchTips(from: nil)"))
         #expect(!span.contains(".keyboardShortcut"), "Q2 decided no new keyboard shortcut")
@@ -334,21 +440,25 @@ struct SearchTipsWiringTests {
 
         // One modifier on the body chain carries the sheet and the request.
         let body = try Self.declaration("var body: some View {", in: view)
-        let mount = try #require(body.range(of: ".modifier(SearchTipsPresenter("),
-                                 "SearchView's body does not mount the Search Tips presenter")
-        let arguments = body[mount.upperBound...].prefix(260)
+        #expect(body.contains(".modifier(SearchTipsPresenter("), "SearchView's body does not mount the Search Tips presenter")
+        let arguments = try Self.arguments(of: ".modifier(SearchTipsPresenter(", in: body)
         #expect(arguments.contains("isPresented: $showSearchTips"))
         #expect(arguments.contains("pendingRequest: appState.pendingSearchTips"))
         #expect(arguments.contains("consume: consumePendingSearchTips"))
+        // Q3: the sheet shows the Meaning note in Meaning mode only if the Search screen's real mode reaches it.
+        #expect(arguments.contains("searchMode: vm.searchMode"), "the presenter is not given the Search screen's mode")
 
         let presenter = try Self.declaration("private struct SearchTipsPresenter: ViewModifier {", in: view)
-        #expect(presenter.contains(".sheet(isPresented: $isPresented)"))
-        let appear = try #require(presenter.range(of: ".onAppear {"),
-                                  "a request made before Search appears is never read")
-        #expect(presenter[appear.upperBound...].prefix(80).contains("consume()"))
-        let observer = try #require(presenter.range(of: ".onChange(of: pendingRequest)"),
-                                    "a request that arrives while Search is on screen is never read")
-        #expect(presenter[observer.upperBound...].prefix(120).contains("if request != nil, isOnScreen { consume() }"),
+        let sheet = try Self.block(after: ".sheet(isPresented: $isPresented) {", in: presenter)
+        #expect(sheet.contains("SearchTipsSheet(searchMode: searchMode)"), "the sheet is not given the mode it was passed")
+        let appear = try Self.block(after: ".onAppear {", in: presenter)
+        #expect(appear.contains("isOnScreen = true"))
+        #expect(appear.contains("consume()"), "a request made before Search appears is never read")
+        let disappear = try Self.block(after: ".onDisappear {", in: presenter)
+        #expect(disappear.contains("isOnScreen = false"),
+                "a Search tab hidden behind another keeps isOnScreen and takes the Find menu's request")
+        let observer = try Self.block(after: ".onChange(of: pendingRequest) { _, request in", in: presenter)
+        #expect(observer.contains("if request != nil, isOnScreen { consume() }"),
                 "a hidden tab's SearchView must leave the request for the one on screen")
     }
 }

@@ -32,6 +32,8 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #1299: initial implementation
+///   1.1 — #1299 follow-up: the pre-search link at AX5 under the Local Only banner — the one entry point the first
+///         round measured as unreachable and left unchecked
 @MainActor
 final class SearchTipsSheetTests: XCTestCase {
 
@@ -117,9 +119,7 @@ final class SearchTipsSheetTests: XCTestCase {
     ///   reachable rather than wholly on screen.
     /// - The More menu becomes a scrolling list of 186–246 pt rows, so Search Tips — the sixth — is not in the element
     ///   tree until the menu is scrolled. A query that does not scroll reports the item missing on a correct build.
-    /// - The pre-search link is NOT checked here. It lies inside the Search screen's content (y 377–791), but with iCloud
-    ///   signed out the tab shell's Local Only banner is drawn OVER that content from y = 551 down, and it is an overlay
-    ///   rather than an inset, so no scrolling of the prompt clears it. That banner is outside #1299.
+    /// - The pre-search link is checked by its own scenario below, because the tab shell's Local Only banner covers it.
     ///
     /// iPhone-only, as `UIObstructionTests.testChronologyRangeBarFitsAtAccessibilityTextSize` is: at iPad widths none of
     /// this crowding happens, so a green iPad run would not be evidence.
@@ -141,6 +141,52 @@ final class SearchTipsSheetTests: XCTestCase {
         assertSheetShowsTheRows()
         let last = element(Self.lastRow)
         XCTAssertTrue(scrollTips(until: last, maxSwipes: 30), "The sheet's last row never scrolled into view at AX5")
+        closeWithDone()
+    }
+
+    /// At AX5 the pre-search Search tips link scrolls clear of the tab shell's Local Only banner, and opens the sheet.
+    ///
+    /// **Why this needs its own scenario, measured on iPhone 17 (402 pt) at #1299:** the banner is a bottom
+    /// `safeAreaInset` the tab shell applies OUTSIDE `SearchView`'s navigation stack, which does not pass it on, so it is
+    /// drawn OVER the Search content rather than beside it — from y = 551 at AX5, over a prompt area running to y = 791.
+    /// The link sat at y 707–770, entirely under it, and the prompt's scroll view reported one page, so no scrolling
+    /// moved it. Every UI-test launch runs without CloudKit, so the banner is always up here, which is what lets the
+    /// scenario require it rather than hope for it.
+    ///
+    /// The drags start just above the banner and never on it, so a gesture the banner swallowed cannot pass for a view
+    /// that would not scroll.
+    func testPreSearchLinkScrollsClearOfTheLocalOnlyBannerAtTheLargestAccessibilitySize() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone,
+                          "iPhone-only: at iPad height the prompt and link sit well above the banner at AX5, so this "
+                          + "scenario passes with or without a defect there")
+        launch(contentSizeCategory: "UICTContentSizeCategoryAccessibilityXXXL")
+
+        let banner = app.descendants(matching: .any).matching(identifier: "tabShell.syncBanner").firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 10),
+                      "The Local Only banner is not up, so this run cannot judge whether the link clears it. UI-test "
+                      + "launches skip CloudKit, which should always show it.")
+        let link = element("search.tips.link.presearch")
+        XCTAssertTrue(link.waitForExistence(timeout: 10),
+                      "The pre-search screen offers no Search tips link at AX5. Buttons: \(visibleButtonLabels())")
+        let scroller = app.scrollViews.containing(.any, identifier: "search.tips.link.presearch").firstMatch
+        XCTAssertTrue(scroller.exists, "The pre-search link is not inside a scroll view")
+
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        var drags = 0
+        while link.frame.maxY > banner.frame.minY, drags < 6 {
+            let top = scroller.frame.minY + 8
+            let start = banner.frame.minY - 12
+            guard start - top > 40 else { break }
+            origin.withOffset(CGVector(dx: scroller.frame.midX, dy: start))
+                .press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: scroller.frame.midX, dy: top)))
+            drags += 1
+        }
+        XCTAssertLessThanOrEqual(link.frame.maxY, banner.frame.minY,
+                                 "The pre-search Search tips link stays under the Local Only banner at AX5 after "
+                                 + "\(drags) drag(s): link \(link.frame), banner \(banner.frame), scroll view "
+                                 + "\(scroller.frame)")
+        link.tap()
+        assertSheetShowsTheRows()
         closeWithDone()
     }
 

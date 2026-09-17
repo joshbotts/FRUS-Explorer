@@ -26,6 +26,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1299: initial implementation
+///   1.1 — #1299 follow-up: every scope off reads as a message naming Filters ▸ Search Scope (it read "FTS5Error error
+///         5", which the old test here allowed, since it checked only that Search Tips went unnamed); and the macOS
+///         view model's two empty-query guards clear the previous search's error, which the Search window now shows
 @Suite("A refused keyword query reads as a message, not an error code")
 @MainActor
 struct SearchRefusalMessageTests {
@@ -84,9 +87,10 @@ struct SearchRefusalMessageTests {
 
     /// `FTS5Error.emptyQuery` has a second cause the refusal message would describe falsely: text that parses, with
     /// every content scope off, which iOS's Filters sheet allows. The mapping reads the parse, so that case is not
-    /// called a query that only excludes words.
-    @Test("iOS: a query that parses but has every scope off is not called a refusal")
-    func iOSScopeOffIsNotCalledARefusal() async throws {
+    /// called a query that only excludes words — and it reads as a message naming where the scope is set, not as the
+    /// error code it showed before (the Mac guards the same state with `MacSearchError.emptyScope`).
+    @Test("iOS: a query that parses but has every scope off names Search Scope, and is not called a refusal")
+    func iOSScopeOffNamesTheScope() async throws {
         let (dir, vm) = try makeViewModel()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -100,6 +104,9 @@ struct SearchRefusalMessageTests {
         await vm.search()
         let message = try #require(vm.searchError, "precondition: with every scope off the service throws")
         #expect(!message.contains("Search Tips"), "a scope error was explained as a refused query: \(message)")
+        #expect(!message.contains("FTS5Error"), "every scope off shows an error code: \(message)")
+        #expect(!message.contains("couldn’t be completed"), "every scope off shows the system message: \(message)")
+        #expect(message.contains("Filters ▸ Search Scope"), "every scope off does not say where to turn one on: \(message)")
     }
 
     // MARK: - macOS, by source
@@ -144,5 +151,27 @@ struct SearchRefusalMessageTests {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { $0 == "searchError = error" }
         #expect(rawAssignments.isEmpty, "the raw FTS5Error still reaches searchError")
+    }
+
+    /// The Search window shows `searchError` whenever the results are empty and nothing is running, so an error left
+    /// standing by a search that returned early outlives it: a refused `-korea`, then Return on a cleared field, kept
+    /// "This query has nothing it can search for" under an empty field. Both empty-query guards must clear it.
+    @Test("macOS: an empty query clears the previous search's error, in both engines")
+    func macEmptyQueryClearsTheError() throws {
+        let source = try Self.macViewModelSource()
+
+        let keyword = try Self.declaration("func performSearch(service: SearchService?) async {", in: source)
+        let keywordGuard = try Self.declaration("guard (!query.isEmpty || hasStandaloneFilter), let service else {",
+                                                in: keyword)
+        // The slice is the guard's else block, or the check below is vacuous.
+        #expect(keywordGuard.contains("results = []") && keywordGuard.contains("return"))
+        #expect(!keywordGuard.contains("isSearching = true"), "the guard slice ran past its else block")
+        #expect(keywordGuard.contains("searchError = nil"), "a keyword search with an empty query keeps the last error")
+
+        let meaning = try Self.declaration("private func performMeaningSearch() async {", in: source)
+        let meaningGuard = try Self.declaration("guard !query.isEmpty else {", in: meaning)
+        #expect(meaningGuard.contains("results = []") && meaningGuard.contains("return"))
+        #expect(!meaningGuard.contains("isSearching = true"), "the guard slice ran past its else block")
+        #expect(meaningGuard.contains("searchError = nil"), "a meaning search with an empty query keeps the last error")
     }
 }
