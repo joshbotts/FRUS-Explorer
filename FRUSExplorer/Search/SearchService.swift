@@ -78,6 +78,15 @@ import Foundation
 ///          three-document index where its straight spelling returns one; called directly, a `)` or `,` inside curly
 ///          marks ended a `NEAR` span or its distance. Each now reads as its straight spelling, and a double prime or a
 ///          single mark still does not.
+///   2.8 — #1299 round 2: `filterKeySet(parameters:)` builds the Meaning mode's filters with `keywords` removed, as its
+///          documentation always said it did. It passed the parameters whole to `makeFilters(from:)`, which reads the
+///          typed text for the exact-word post-filter, so on iOS and iPadOS — whose Meaning run hands the backend the
+///          live parameters, typed text included — a `=word` in a Meaning search dropped every semantic hit whose
+///          document lacks the literal word, and the strip blamed the reader's filters. On the Mac the keywords of a
+///          search restored or handed to the window did the same, even under a query typed since. RESULTS MOVE for
+///          those Meaning searches: measured over a two-volume index, `=containment` alone went from the two documents
+///          holding the literal word to `nil` (nothing constrains), and beside a volume filter from one document to both
+///          of the volume's.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -208,10 +217,20 @@ public actor SearchService {
     /// `nil` means the parameters carry no SQL-expressible filter and nothing constrains.
     /// Uncapped — see the pipeline method's reasoning.
     ///
+    /// **The typed text is removed before the filters are built** (#1299 round 2). `makeFilters(from:)` also renders the
+    /// exact-word post-filter, which it reads from the parse of `keywords` — right for a keyword search, whose MATCH
+    /// that filter refines, and wrong here, where the typed text is the semantic query and there is no MATCH to refine.
+    /// Built from the parameters as they came, a Meaning search for `=containment policy` removed every hit whose
+    /// document lacks the literal word and reported them as "Your filters removed N matches" to a reader who had set no
+    /// filter. Exact-word mode (#567) predates Meaning mode (#1127), so nothing had ever asked this for filters alone. The
+    /// structured phrase, prefix and excluded terms stay, because the parse never takes an exact term from them.
+    ///
     /// - Parameter parameters: The current search parameters; only their filters are read.
     /// - Returns: Matching keys, or `nil` when unfiltered.
     public func filterKeySet(parameters: SearchParameters) async throws -> Set<String>? {
-        try await pipeline.documentKeysMatchingFilters(makeFilters(from: parameters))
+        var filtersOnly = parameters
+        filtersOnly.keywords = nil
+        return try await pipeline.documentKeysMatchingFilters(makeFilters(from: filtersOnly))
     }
 
     /// Splits a stored space-separated tag-id column for a semantic display row — the same rule

@@ -119,6 +119,13 @@ struct FeatureInfoItem: Identifiable {
 ///   1.7 — #1297 round 3: the same row, still unshipped and reworded in place, names both OR cases, since parser 6.5
 ///         (D4) applies an `=` every alternative marks — `=cold war OR =cold peace` is refused — and ignores one only one
 ///         alternative marks
+///   1.8 — #1299: three `corpusAnalytics` rows re-keyed. Multiple words (`analytics.info.multiword.body.v3`) says a leading -
+///         does not exclude a NEAR(…), which only NOT does — `cold -NEAR(war korea, 5)` does not render NOT NEAR, measured
+///         through the parser. Phrases (`analytics.info.phrase.body.v2`) says straight and curly quotation marks both make
+///         a phrase and a phrase cannot contain marks of its own — `“missile crisis”` and `"missile crisis"` render the same
+///         phrase, and `"the “missile crisis” began"` renders four operands. How dates are determined
+///         (`analytics.info.dating.body.v2`) drops "its TEI <date> attribute": the index prefers the editors'
+///         `frus:doc-dateTime-min`, falls back to the dateline's structured date, and stores the start of a range.
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -203,11 +210,16 @@ extension FeatureInfoButton where Footer == EmptyView {
 
     /// The Corpus Analytics info button — the shared replacement for that view's former
     /// hand-rolled popover. The heading and the explanation rows reuse the original
-    /// `analytics.info.*` keys and copy verbatim, except Multiple words, re-keyed to
+    /// `analytics.info.*` keys and copy verbatim, except three. Multiple words was re-keyed to
     /// `analytics.info.multiword.body.v2` when #1297 made an exclusion apply to the words it
-    /// is typed with wherever it sits. That text also discloses what this surface cannot show: Search
+    /// is typed with wherever it sits, and to `.v3` when #1299 added that a leading - does not exclude a
+    /// NEAR(…). That text also discloses what this surface cannot show: Search
     /// reports a left-out exclusion-only alternative in its Query Inspector, and Corpus Analytics charts
-    /// the narrower query with no such row (#1297 round 1, D3).
+    /// the narrower query with no such row (#1297 round 1, D3). Phrases (`analytics.info.phrase.body.v2`)
+    /// and How dates are determined (`analytics.info.dating.body.v2`) were re-keyed for #1299; the claims
+    /// #1299 left for separate work — the metric row's "counted once" beside the Occurrences measure, the
+    /// phrase row's "the counts here match what Search returns", and the dating row's no-month and no-day
+    /// sentences — are carried over unchanged and remain unmeasured.
     static var corpusAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
@@ -220,20 +232,20 @@ extension FeatureInfoButton where Footer == EmptyView {
                                    defaultValue: "Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
-                    detail: String(localized: "analytics.info.multiword.body.v2",
-                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.")),
+                    detail: String(localized: "analytics.info.multiword.body.v3",
+                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
-                    detail: String(localized: "analytics.info.phrase.body",
-                                   defaultValue: "Wrap words in quotes for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.")),
+                    detail: String(localized: "analytics.info.phrase.body.v2",
+                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so the counts here match what Search returns.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
                     detail: String(localized: "analytics.info.stemming.body",
                                    defaultValue: "English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
-                    detail: String(localized: "analytics.info.dating.body",
-                                   defaultValue: "Each document sits at its TEI <date> attribute, the date it was written, not the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")),
+                    detail: String(localized: "analytics.info.dating.body.v2",
+                                   defaultValue: "Each document sits at the date it was written, as the editors date it, taking the first day when that date is a range, not at the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")),
             ]
         )
     }

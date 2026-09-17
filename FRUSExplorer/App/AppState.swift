@@ -139,6 +139,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///         and the "looked for per-item detail" fact instead of a bare domain and code.
 ///   4.10 — R-5 P3b-7: `summarizeAgainFailure` and its `SummarizeAgainFailure` payload — a
 ///          Summarize Again that failed after its sheet was dismissed, addressed to one document
+///   4.11 — #1299: `pendingSearchTips` and `openSearchTips(from:)` — the Find menu's Search Tips request, a
+///          one-shot hand-off addressed as `openSearch(_:from:)` addresses a query (the iPadOS Search tab's sheet,
+///          the macOS Search window's panel)
 
 // MARK: - CloudKitSyncState
 
@@ -1251,6 +1254,16 @@ final class AppState {
     /// ``consumeHandoff(_:for:)`` so the query runs in the producing window (paired with `openTab`),
     /// fixing the BUG-6 nondeterministic winner + the tab/query decoupling.
     var pendingSearch: Handoff<SearchParameters>? = nil
+
+    /// A request to show Search Tips, from the Find menu on either platform (#1299).
+    ///
+    /// A `Handoff` rather than a counter, on both platforms and for two reasons. On iPad every window has its own
+    /// `SearchView`, so a counter every one of them observed would open the sheet in all of them; a hand-off clears as
+    /// it is consumed, so one window acts. On the Mac the request usually opens the Search window as well, and a
+    /// counter bumped before that window exists is never seen by the `.onChange` of the view it creates — the reason
+    /// `pendingSearch` is also read in a first-load `.task`. The payload carries nothing; the request is the message.
+    /// Set through ``openSearchTips(from:)``.
+    var pendingSearchTips: Handoff<Bool>? = nil
 
     /// Cross-view handoff from Search to Corpus Analytics (and vice versa).
     ///
@@ -2902,6 +2915,21 @@ extension AppState {
         pendingSearch = Handoff(target: .macSearch, payload: params)
         #else
         pendingSearch = Handoff(target: sceneID ?? .anyWindow, payload: params)
+        #endif
+    }
+
+    /// Asks Search to show its tips (#1299): the Search Tips sheet in the addressed window's Search tab on iPad and
+    /// iPhone, the Tips panel in the singleton `frus.search` window on macOS.
+    ///
+    /// Addressed exactly as ``openSearch(_:from:)`` addresses a query, so a request and a search cannot disagree about
+    /// which window they reach. On iOS, pair with `openTab(.search, from:)`; on macOS, front the Search window. A
+    /// `.commands` producer has no `\.sceneID` and passes `nil`, which on an iPad with two windows is the first-wins
+    /// behaviour `openTab(_:from:)` documents for a nil scene.
+    func openSearchTips(from sceneID: SceneID?) {
+        #if os(macOS)
+        pendingSearchTips = Handoff(target: .macSearch, payload: true)
+        #else
+        pendingSearchTips = Handoff(target: sceneID ?? .anyWindow, payload: true)
         #endif
     }
 

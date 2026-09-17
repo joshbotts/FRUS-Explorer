@@ -39,6 +39,18 @@ import Foundation
 ///
 /// So this checks exactly the thing that is load-bearing and cheap to verify: the key exists in the
 /// file the block points at.
+///
+/// ## And, for the Search Tips family, the reverse
+///
+/// A key with NO block is the opposite failure: a shipped string the owner cannot find to edit.
+/// Deleting §7.13's `search.tips.link` block passed this suite (#1299 mutation M36), because the
+/// forward check only walks the blocks that exist. The reverse check is scoped to the families
+/// #1299 documented in full — `search.tips.*`, `search.error.*` and `menu.find.searchTips` — rather
+/// than to every key in the app, which EditableContent has never claimed to cover.
+///
+/// Version history:
+///   1.0 — #990: initial implementation (the forward check)
+///   1.1 — #1299 follow-up: the reverse check for the Search Tips and search-error keys
 @Suite("EditableContent blocks address a live localization key")
 struct EditableContentKeyTests {
 
@@ -129,6 +141,43 @@ struct EditableContentKeyTests {
             legible. Do not delete the annotation.
 
             \(dead.joined(separator: "\n"))
+            """)
+    }
+
+    /// The literal localization keys under `FRUSExplorer/` that begin with one of `prefixes`, each
+    /// with the files that declare it.
+    private static func sourceKeys(withPrefixes prefixes: [String]) throws -> [String: Set<String>] {
+        let appRoot = repoRoot.appendingPathComponent("FRUSExplorer")
+        let enumerator = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
+        let pattern = try NSRegularExpression(pattern: #"localized:\s*"([^"\\]+)""#)
+        var keys: [String: Set<String>] = [:]
+        for case let url as URL in enumerator where url.pathExtension == "swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            let whole = NSRange(text.startIndex..., in: text)
+            for match in pattern.matches(in: text, range: whole) {
+                guard let range = Range(match.range(at: 1), in: text) else { continue }
+                let key = String(text[range])
+                guard prefixes.contains(where: { key.hasPrefix($0) }) else { continue }
+                keys[key, default: []].insert(url.lastPathComponent)
+            }
+        }
+        return keys
+    }
+
+    @Test("Every Search Tips, Find-menu Search Tips and search-error key in the source has a block")
+    func everySearchTipsKeyHasABlock() throws {
+        let docURL = Self.repoRoot.appendingPathComponent("Docs/EditableContent.md")
+        let blockKeys = Set(Self.blocks(in: try String(contentsOf: docURL, encoding: .utf8)).map(\.key))
+
+        let keys = try Self.sourceKeys(withPrefixes: ["search.tips.", "search.error.", "menu.find.searchTips"])
+        // The walk is real: #1299 declared 26 row strings, 4 notes, the refusal, 8 pieces of chrome and the Find item.
+        #expect(keys.count >= 40, "found only \(keys.count) keys; the source walk is not reading the app")
+        #expect(keys["search.tips.near.detail"] != nil, "the walk missed a key it must find")
+
+        let missing = keys.keys.filter { !blockKeys.contains($0) }.sorted()
+        #expect(missing.isEmpty, """
+            \(missing.count) shipped key(s) have no EditableContent block, so the owner has nowhere to edit them:
+            \(missing.map { "\($0) (\(keys[$0, default: []].sorted().joined(separator: ", ")))" }.joined(separator: "\n"))
             """)
     }
 }

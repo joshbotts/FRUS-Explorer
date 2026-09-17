@@ -265,6 +265,8 @@ struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
 ///   1.11 — #1297 round 4 (docs only): `unsupportedExactTerms(in:)` lists words, not operands — parser 6.6 names a word
 ///          once however its marks are spelled, so `=Soviet =soviet` lists `Soviet`, and
 ///          `=Containment. OR =containment alliance`, one word marked in every alternative, is refused where 6.5 charted it
+///   1.12 — #1299 (docs only): `makeQuery(from:)` names the Multiple words help text's current key,
+///          `analytics.info.multiword.body.v3`
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -376,7 +378,7 @@ actor CorpusAnalyticsService {
     ///
     /// A query the parser approximates is charted as its expression, as Search runs it: `cold OR -korea`
     /// charts `cold`. Search's Query Inspector reports what was left out and this service has no such
-    /// surface, which is why the Multiple words help text (`analytics.info.multiword.body.v2`) says so.
+    /// surface, which is why the Multiple words help text (`analytics.info.multiword.body.v3`) says so.
     nonisolated private static func makeQuery(from term: String) -> FTS5Query? {
         let parsed = FTS5InlineQueryParser.parseDetailed(term)
         guard let expression = parsed.expression else { return nil }

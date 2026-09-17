@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers.**
 
 **The 2026-08-29 amendment** re-ran the mechanical sweep over all 466 blocks after build 44 was
 tagged. The verification half came back clean: every block's key is live, and the only source
@@ -1206,44 +1206,48 @@ Where a note resolves to a NARA series or file unit, the explorer links straight
 ---
 
 ### Corpus Analytics — Info Popover ("About these results")
-<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297 and reworded in place, before shipping, for #1297 round 1. Edit once in FRUSTheme.swift to change both platforms. -->
+<!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297, reworded in place, before shipping, for #1297 round 1, and re-keyed to `.v3` for #1299; and Phrases and How dates are determined, re-keyed to `.v2` for #1299. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What the numbers mean
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 219–220 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 231–232 | key: analytics.info.metric.body | shared: iOS+macOS (single edit point) -->
 
 Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.
 
 <!-- END SOURCE: analytics.info.metric.body -->
 
 #### Multiple words
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 223–224 | key: analytics.info.multiword.body.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 235–236 | key: analytics.info.multiword.body.v3 | shared: iOS+macOS (single edit point) -->
 
-Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.
+Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.
 
-<!-- END SOURCE: analytics.info.multiword.body.v2 -->
+<!-- END SOURCE: analytics.info.multiword.body.v3 -->
 
-Note: replaces `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 reads the mark from each operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does. Reworded in place again for #1297 round 3: parser 6.5 applies a mark on a word marked in every OR alternative (D4), since every match then holds the literal word — `=cold war OR =cold peace` cannot be charted — and "as in one OR alternative" read as though each of those marks were ignored, so the text now names both cases: a word every alternative marks, and one only one alternative marks. Unchanged for #1297 round 4: parser 6.6 compares marks as the exact-word filter reads words, so `=Cold war OR =cold. peace` is a word every alternative marks and cannot be charted, which the text already says.
+Note: replaces `analytics.info.multiword.body.v2` (#1299), which said a leading - excludes a term wherever it sits; it does not exclude a NEAR(…) — `cold -NEAR(war korea, 5)` does not search `NOT NEAR`, while `cold NOT NEAR(war korea, 5)` does — so the text now says only NOT excludes one, as the Search Tips NEAR row does (§7.13). `.v2` itself replaced `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 reads the mark from each operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does. Reworded in place again for #1297 round 3: parser 6.5 applies a mark on a word marked in every OR alternative (D4), since every match then holds the literal word — `=cold war OR =cold peace` cannot be charted — and "as in one OR alternative" read as though each of those marks were ignored, so the text now names both cases: a word every alternative marks, and one only one alternative marks. Unchanged for #1297 round 4: parser 6.6 compares marks as the exact-word filter reads words, so `=Cold war OR =cold. peace` is a word every alternative marks and cannot be charted, which the text already says.
 
 #### Phrases
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 227–228 | key: analytics.info.phrase.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 239–240 | key: analytics.info.phrase.body.v2 | shared: iOS+macOS (single edit point) -->
 
-Wrap words in quotes for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. Analytics and Search read a query the same way, so the counts here match what Search returns.
+Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so the counts here match what Search returns.
 
-<!-- END SOURCE: analytics.info.phrase.body -->
+<!-- END SOURCE: analytics.info.phrase.body.v2 -->
+
+Note: replaces `analytics.info.phrase.body` (#1299), which said "quotes" without saying which. Since #1298 straight, curly and guillemet quotation marks all make the same phrase, and a phrase cannot hold marks of its own — `"the “missile crisis” began"` searches four words. The closing sentence, that the counts here match what Search returns, is carried over unchanged and is not verified: Analytics counts document text only, while Search's default scope also reads summaries and notes, and Search applies filters. #1299 left it for separate work.
 
 #### Stemming
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 231–232 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 243–244 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
 
 English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.
 
 <!-- END SOURCE: analytics.info.stemming.body -->
 
 #### How dates are determined
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 235–236 | key: analytics.info.dating.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 247–248 | key: analytics.info.dating.body.v2 | shared: iOS+macOS (single edit point) -->
 
-Each document sits at its TEI <date> attribute, the date it was written, not the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.
+Each document sits at the date it was written, as the editors date it, taking the first day when that date is a range, not at the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.
 
-<!-- END SOURCE: analytics.info.dating.body -->
+<!-- END SOURCE: analytics.info.dating.body.v2 -->
+
+Note: replaces `analytics.info.dating.body` (#1299), whose "its TEI <date> attribute" was stale: the index prefers the editors' `frus:doc-dateTime-min`, falls back to the dateline's structured date, and stores the start of a range. The last two sentences, on documents with no month or no day, are carried over unchanged and are not measured — the index pads a year-only date to its first day — and #1299 left them for separate work. The export methods caveat (`analytics.export.caveat.dating`) still says "TEI <date>".
 
 ### Corpus Analytics — Normalization Caption
 
@@ -2895,10 +2899,11 @@ to the app after the previous revision. Blocks marked `shared: iOS+macOS` are a 
 point (one localization key, or the shared FRUSTheme static) — there is no separate platform
 duplicate to hunt for.*
 
-*Reconciliation to do during revision: the Corpus Analytics search-syntax/dating popover (§5)
-and the Word Cloud popover (§5) overlap the Research Guide's search and word-cloud pages
-(§3.5–§3.6) — align wording, and add the Guide's "finding aid, not evidence" caveat to the
-Word Cloud popover so the two surfaces don't drift.*
+*Reconciliation to do during revision: the Corpus Analytics popover's Multiple words and Phrases
+rows (§5) overlap the Search Tips rows (§7.13), which both Search surfaces render from one model
+— when either is revised, align the other (#1299 aligned them). The Research Guide's search page
+no longer carries syntax wording to align with. Still open: add the Guide's "finding aid, not
+evidence" caveat to the Word Cloud popover (§5) so the two surfaces don't drift.*
 
 ---
 
@@ -3654,6 +3659,389 @@ Meaning search (experimental): ranked by what your question means, across the wh
 Matches in volumes you have not downloaded are checked against your volume scope only, not your other filters.
 
 <!-- END SOURCE: search.meaning.strip.beyondUnchecked -->
+
+---
+
+### 7.13 Search Tips
+
+*Source: `FRUSExplorer/Search/SearchModels.swift` — `SearchTip` (thirteen rows), `SearchTipNote` and `SearchQueryRefusal` (#1299).*
+
+*One model feeds both platforms: the Search Tips sheet on iOS and iPadOS and the Tips panel in the macOS Search window render the same rows, so each block below is a single edit point. Each row has two editable strings — the **detail** a reader sees, and the **spoken** form VoiceOver reads in place of the example. The **example chip is not editable here**: it is search syntax, typed exactly as shown, and `SearchTipsTests` parses it and checks every row's claims against the parser and SQLite. When you revise a detail, keep the parts that test reads: the distances in the NEAR row (5 and 10, and no other number), the two prefixes in the prefix row (negoti\* and negotiat\*) and the form it names (negotiations), `NOT NEAR(` in the NEAR row, the word forms named in the stemming row (negotiated, negotiations), and in the exact-word row the forms (contain, containing), the word stemming, the three things the mark still ignores (capitalization, accent, punctuation) and `NEAR(`; in the last row, NOT APPLIED and "beside a word". The test also refuses a prefix row that says a prefix finds "nothing", and an exact-word row that says "as you typed" — both were false (below). Each spoken form must say every word and number of its example.*
+
+*Owner decisions behind the wording (2026-09-17): the prefix row warns that a long prefix misses forms, because it is matched against word stems (Q6); the NEAR row says OR, NOT and parentheses cannot go inside and that only NOT NEAR(…) excludes, and describes no fallback (Q7); there is no person note (Q1); and in Meaning mode the Meaning-mode note replaces the rows (Q3).*
+
+#### 1. All the words — `berlin crisis`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .allWords | lines: 1022–1023 | key: search.tips.allWords.detail | shared: iOS+macOS (single edit point) -->
+
+Finds documents containing every word, in any order.
+
+<!-- END SOURCE: search.tips.allWords.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .allWords | lines: 1021–1021 | key: search.tips.allWords.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `berlin crisis`, before the detail. Name every symbol in words.*
+
+berlin crisis
+
+<!-- END SOURCE: search.tips.allWords.spoken -->
+
+#### 2. Other forms of a word — `negotiate`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .stemming | lines: 1027–1028 | key: search.tips.stemming.detail | shared: iOS+macOS (single edit point) -->
+
+Each word also matches its other forms, so negotiate finds negotiated and negotiations.
+
+<!-- END SOURCE: search.tips.stemming.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .stemming | lines: 1026–1026 | key: search.tips.stemming.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `negotiate`, before the detail. Name every symbol in words.*
+
+negotiate
+
+<!-- END SOURCE: search.tips.stemming.spoken -->
+
+#### 3. A phrase — `"cold war"`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .phrase | lines: 1032–1033 | key: search.tips.phrase.detail | shared: iOS+macOS (single edit point) -->
+
+Words in double quotation marks, straight or curly, must appear together and in that order. A phrase cannot contain quotation marks of its own.
+
+<!-- END SOURCE: search.tips.phrase.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .phrase | lines: 1031–1031 | key: search.tips.phrase.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `"cold war"`, before the detail. Name every symbol in words.*
+
+quote, cold war, quote
+
+<!-- END SOURCE: search.tips.phrase.spoken -->
+
+#### 4. Either word — `rusk OR bundy`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .either | lines: 1037–1038 | key: search.tips.either.detail | shared: iOS+macOS (single edit point) -->
+
+Finds documents with either word. OR divides everything before it from everything after it, so use parentheses to limit it.
+
+<!-- END SOURCE: search.tips.either.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .either | lines: 1036–1036 | key: search.tips.either.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `rusk OR bundy`, before the detail. Name every symbol in words.*
+
+rusk OR bundy
+
+<!-- END SOURCE: search.tips.either.spoken -->
+
+#### 5. Searching for and, or, not — `"will not intervene"`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .operatorWords | lines: 1043–1044 | key: search.tips.operatorWords.detail | shared: iOS+macOS (single edit point) -->
+
+AND, OR and NOT work in any case, so put a phrase that contains and, or or not in quotation marks.
+
+<!-- END SOURCE: search.tips.operatorWords.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .operatorWords | lines: 1041–1042 | key: search.tips.operatorWords.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `"will not intervene"`, before the detail. Name every symbol in words.*
+
+quote, will not intervene, quote
+
+<!-- END SOURCE: search.tips.operatorWords.spoken -->
+
+#### 6. Leaving a word out — `vietnam -laos`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exclude | lines: 1048–1049 | key: search.tips.exclude.detail | shared: iOS+macOS (single edit point) -->
+
+A minus sign touching a word, or NOT before it, leaves out documents containing that word, wherever it sits among the words typed with it.
+
+<!-- END SOURCE: search.tips.exclude.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .exclude | lines: 1047–1047 | key: search.tips.exclude.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `vietnam -laos`, before the detail. Name every symbol in words.*
+
+vietnam, minus sign, laos
+
+<!-- END SOURCE: search.tips.exclude.spoken -->
+
+#### 7. Exclusions and OR — `(cold OR war) -korea`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .excludeAcrossOr | lines: 1054–1055 | key: search.tips.excludeAcrossOr.detail | shared: iOS+macOS (single edit point) -->
+
+An exclusion does not reach across OR. To exclude a word from every alternative, put the alternatives in parentheses.
+
+<!-- END SOURCE: search.tips.excludeAcrossOr.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .excludeAcrossOr | lines: 1052–1053 | key: search.tips.excludeAcrossOr.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `(cold OR war) -korea`, before the detail. Name every symbol in words.*
+
+open parenthesis, cold OR war, close parenthesis, minus sign, korea
+
+<!-- END SOURCE: search.tips.excludeAcrossOr.spoken -->
+
+#### 8. Groups — `(aqaba OR tiran) navig*`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .group | lines: 1060–1061 | key: search.tips.group.detail | shared: iOS+macOS (single edit point) -->
+
+Parentheses group alternatives, and the group must match along with the words beside it.
+
+<!-- END SOURCE: search.tips.group.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .group | lines: 1058–1059 | key: search.tips.group.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `(aqaba OR tiran) navig*`, before the detail. Name every symbol in words.*
+
+open parenthesis, aqaba OR tiran, close parenthesis, navig, star
+
+<!-- END SOURCE: search.tips.group.spoken -->
+
+#### 9. Leaving a group out — `vietnam -(laos OR cambodia)`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .excludeGroup | lines: 1066–1067 | key: search.tips.excludeGroup.detail | shared: iOS+macOS (single edit point) -->
+
+NOT, or a minus sign touching the parenthesis, leaves out everything the group matches. A minus sign followed by a space is ignored.
+
+<!-- END SOURCE: search.tips.excludeGroup.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .excludeGroup | lines: 1064–1065 | key: search.tips.excludeGroup.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `vietnam -(laos OR cambodia)`, before the detail. Name every symbol in words.*
+
+vietnam, minus sign, open parenthesis, laos OR cambodia, close parenthesis
+
+<!-- END SOURCE: search.tips.excludeGroup.spoken -->
+
+#### 10. Prefixes — `negoti*`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .prefix | lines: 1071–1072 | key: search.tips.prefix.detail | shared: iOS+macOS (single edit point) -->
+
+Finds words beginning with these letters. Keep the prefix short, because it is matched against word stems: negotiat* misses negotiations, which negoti* finds.
+
+<!-- END SOURCE: search.tips.prefix.detail -->
+
+Note: reworded in place before shipping (#1299 follow-up). It said "negoti* finds negotiations, but negotiat* finds nothing", which a reader who tried it would find false: `negotiat*` still matches a word whose own stem keeps those letters — *negotiatory*, printed 21 times in the shipped corpus, and a run of misspellings such as *negotiatons*. What it misses is every form whose stem is *negoti*: negotiate, negotiated, negotiating, negotiations, negotiator.
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .prefix | lines: 1070–1070 | key: search.tips.prefix.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `negoti*`, before the detail. Name every symbol in words.*
+
+negoti, star
+
+<!-- END SOURCE: search.tips.prefix.spoken -->
+
+#### 11. Words near each other — `NEAR(military europe, 5)`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .near | lines: 1077–1078 | key: search.tips.near.detail | shared: iOS+macOS (single edit point) -->
+
+Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes, but OR, NOT and parentheses cannot go inside. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.
+
+<!-- END SOURCE: search.tips.near.detail -->
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .near | lines: 1075–1076 | key: search.tips.near.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `NEAR(military europe, 5)`, before the detail. Name every symbol in words.*
+
+NEAR, open parenthesis, military europe, comma, 5, close parenthesis
+
+<!-- END SOURCE: search.tips.near.spoken -->
+
+#### 12. A word without stemming — `=containment`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exactWord | lines: 1082–1083 | key: search.tips.exactWord.detail | shared: iOS+macOS (single edit point) -->
+
+Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent and punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.
+
+<!-- END SOURCE: search.tips.exactWord.detail -->
+
+Note: reworded in place before shipping (#1299 follow-up). It said the mark "matches the word only as you typed it", but the exact-word filter folds capitalization, a single accent and punctuation at either end — `=Hull`, typed for Cordell Hull, still counts every ship's hull — so a reader could have cited a count as capitalized-only when it was not. It also left out NEAR(…): inside one the mark is dropped, and `NEAR(=containment policy, 5)` still finds *containers policy*. Round 2 added the last case, which both user manuals and the Corpus Analytics Multiple words row already named: a word the index splits into several terms has no single word to filter on, so `=anti-Communist` still counts *anti-Communists* (the corpus prints 4,578 of the one and 185 of the other). `SearchTipsTests` requires the row to name it.
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .exactWord | lines: 1081–1081 | key: search.tips.exactWord.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `=containment`, before the detail. Name every symbol in words.*
+
+equals sign, containment
+
+<!-- END SOURCE: search.tips.exactWord.spoken -->
+
+#### 13. A search needs a word — `-korea`
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .needsAWord | lines: 1087–1088 | key: search.tips.needsAWord.detail | shared: iOS+macOS (single edit point) -->
+
+A search needs a word to find. A query made only of exclusions does not run, and an OR alternative made only of exclusions is left out and marked NOT APPLIED in the Query Inspector, unless its parentheses sit beside a word to search for.
+
+<!-- END SOURCE: search.tips.needsAWord.detail -->
+
+Note: reworded in place before shipping (#1299 follow-up). Without the last clause it said every such alternative is left out, which steered a reader away from a query that works: `war (cold OR -korea)` is searched exactly — the *war* documents that mention *cold* or do not mention *korea* — and nothing is marked. `cold OR -korea`, `(cold OR -korea)` on its own, and `war OR (cold OR -korea)` still leave `-korea` out. The user manuals' §7.2 explain the whole rule.
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) spokenExample .needsAWord | lines: 1086–1086 | key: search.tips.needsAWord.spoken | shared: iOS+macOS (single edit point) -->
+
+*Spoken by VoiceOver in place of the example chip `-korea`, before the detail. Name every symbol in words.*
+
+minus sign, korea
+
+<!-- END SOURCE: search.tips.needsAWord.spoken -->
+
+#### Notes shown with the rows
+
+*iOS and iPadOS show the dates note and the iOS scope note under the rows; the macOS panel shows the dates note and the macOS scope note. In Meaning mode both show the Meaning-mode note instead of the rows.*
+
+##### Dates (both platforms)
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 1148–1149 | key: search.tips.note.dates | shared: iOS+macOS (single edit point) -->
+
+A date filter keeps documents whose dates overlap the range you set, and leaves out documents with no date.
+
+<!-- END SOURCE: search.tips.note.dates -->
+
+##### Search scope (iOS and iPadOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 1151–1152 | key: search.tips.note.scope.ios | shared: iOS+macOS (single edit point) -->
+
+Filters ▸ Search Scope sets what a search reads. Its defaults live in Settings ▸ Reading & Search ▸ Search, and a change made in Filters is not saved as a default.
+
+<!-- END SOURCE: search.tips.note.scope.ios -->
+
+##### Search scope (macOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 1154–1155 | key: search.tips.note.scope.mac | shared: iOS+macOS (single edit point) -->
+
+The Search in chips set what this window searches. Their defaults live in Settings ▸ Reading & Search ▸ Search, and a change made with the chips is not saved as a default.
+
+<!-- END SOURCE: search.tips.note.scope.mac -->
+
+##### Meaning mode (both platforms)
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTipNote.text | lines: 1157–1158 | key: search.tips.note.meaningMode | shared: iOS+macOS (single edit point) -->
+
+These tips are for Keywords search. A Meaning search reads your words as a whole, so quotation marks, AND, OR, NOT, a minus sign, parentheses, *, NEAR and = have no special effect.
+
+<!-- END SOURCE: search.tips.note.meaningMode -->
+
+Note: this departs from the design brief's draft (§2.3: "These tips are for keyword search. A meaning search reads your question as a whole, so quotation marks, OR, NOT, *, NEAR and = have no special effect.") in three ways, each to match what the reader sees. The mode names are capitalized, as the Keywords and Meaning picker labels are. It says "your words" rather than "your question", beside a field that asks for "a question in your own words" and for the reader most likely to open it, who typed operators rather than a question. And it names AND, a minus sign and parentheses too, since the rows above teach all of them.
+
+Why it is true: a meaning search hands your words to the model as typed, and only the filters you set narrow its results. Until #1299 round 2 that was not so for `=`. The Meaning results are intersected with the filters, and that intersection also built the keyword search's exact-word filter from the typed text, so `=containment policy` dropped every match without the literal word and the strip said "Your filters removed N matches" to a reader who had set none. Keep the `=` in the list only while the intersection reads filters alone. The guard is narrower than the intersection: `HybridSearchModeTests.filterKeySetIgnoresTypedText` fails if `SearchService.filterKeySet(parameters:)`, the one method the intersection builds its key set from, reads typed text, but no test drives `SemanticSearchBackend.run` itself, so a backend that built its key set some other way would not be caught.
+
+#### A search that cannot run
+
+*Shown when a submitted keyword search holds nothing it can search for — for example `-korea`, or groups nested more than 32 deep. It replaced "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)" on iOS, where the same code also answered a search with document text, summaries and research notes all turned off; that case now has its own message, below. Keep the pointer to Search Tips: `SearchRefusalMessageTests` requires it. The "for example" is deliberate, because the same message also answers a query with nothing searchable in it at all, such as a lone quotation mark, for which neither reason is true. Both platforms show it under the title Search Error: on the Mac the Search window rendered no search error at all until #1299, so this message, the empty-scope message and the Meaning-mode errors had all been an empty result list there.*
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 1214–1215 | key: search.error.refusedQuery | shared: iOS+macOS (single edit point) -->
+
+This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.
+
+<!-- END SOURCE: search.error.refusedQuery -->
+
+#### A search with nowhere to search (iOS)
+
+*Shown on iPhone and iPad when a keyword search could run but Include document text, Include summaries and Include research notes under Filters ▸ Search Scope are all off, so there is nowhere to search. A query that cannot run gets the message above instead, whatever the scope. The same section's Include front matter toggle does not count and is usually still on, so the message names the three it means rather than saying every scope is off. Until #1299's follow-up it read "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)". Keep "Filters ▸ Search Scope" and the names of the three toggles, and do not say "every": `SearchRefusalMessageTests` requires all three. The Mac never shows it — its Search window stops a search with all three Search in chips off before it runs, with the macOS message below.*
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 1217–1218 | key: search.error.emptyScope.ios | shared: iOS only -->
+
+Document text, summaries and research notes are all turned off, so there is nothing to search. Turn one on in Filters ▸ Search Scope.
+
+<!-- END SOURCE: search.error.emptyScope.ios -->
+
+#### A search with every Search in chip turned off (macOS)
+
+<!-- SOURCE: FRUSExplorer/App/MacSearchViewModel.swift | MacSearchError.errorDescription | lines: 1254–1255 | key: search.error.emptyScope | shared: macOS only -->
+
+*Shown in the Search window, under the title Search Error, when Documents, Notes and Summaries are all turned off.*
+
+Enable at least one of Documents, Notes, or Summaries to search.
+
+<!-- END SOURCE: search.error.emptyScope -->
+
+#### An empty search (iOS)
+
+<!-- SOURCE: FRUSExplorer/Search/SearchViewModel.swift | SearchViewModel.search() | lines: 654–655 | key: search.error.empty | shared: iOS only -->
+
+*Shown under the title Search Error when a search runs with nothing typed and no filter that searches on its own.*
+
+Enter a keyword, phrase, or prefix to search.
+
+<!-- END SOURCE: search.error.empty -->
+
+#### The title above every search error
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1515–1515 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+
+*The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
+
+Search Error
+
+<!-- END SOURCE: search.error.title -->
+
+#### Where the tips open
+
+*The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
+
+##### Sheet title (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2434–2434 | key: search.tips.title -->
+
+Search Tips
+
+<!-- END SOURCE: search.tips.title -->
+
+##### Sheet section: the syntax rows (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2423–2423 | key: search.tips.section.syntax -->
+
+Typing a search
+
+<!-- END SOURCE: search.tips.section.syntax -->
+
+##### Sheet section: the notes (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2430–2430 | key: search.tips.section.filters -->
+
+Filters and scope
+
+<!-- END SOURCE: search.tips.section.filters -->
+
+##### More menu item (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1162–1162 | key: search.tips.open -->
+
+*After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
+
+Search Tips
+
+<!-- END SOURCE: search.tips.open -->
+
+##### More menu hint (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1187–1188 | key: search.moreActions.help.v2 -->
+
+*The VoiceOver hint and Large Content Viewer detail for the More menu. Replaces `search.moreActions.help`, which named neither the abbreviation lookup nor the tips.*
+
+Save this search or its results, revisit saved searches, find a document by citation, look up an abbreviation, or read the search tips
+
+<!-- END SOURCE: search.moreActions.help.v2 -->
+
+##### Link to the sheet (iOS)
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2407–2407 | key: search.tips.link -->
+
+*One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
+
+Search tips
+
+<!-- END SOURCE: search.tips.link -->
+
+##### Find menu item (iPadOS and macOS)
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3572–3572, 4063–4063 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+
+*On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
+
+Search Tips…
+
+<!-- END SOURCE: menu.find.searchTips -->
+
+##### Tips button (macOS)
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 725–725 | key: search.tips.button -->
+
+Tips
+
+<!-- END SOURCE: search.tips.button -->
+
+##### Tips button help (macOS)
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 732–733 | key: search.tips.help.v2 -->
+
+*The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
+
+Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes, NEAR, exact words, and what the date filter and the Search in chips do
+
+<!-- END SOURCE: search.tips.help.v2 -->
+
+##### Panel heading (macOS)
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2197–2197 | key: search.tips.header -->
+
+*Shown in capitals above the rows.*
+
+Search tips
+
+<!-- END SOURCE: search.tips.header -->
 
 ---
 

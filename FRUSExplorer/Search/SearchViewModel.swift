@@ -74,6 +74,11 @@ import Observation
 ///   2.2 — #1297 round 2: `queryInspectorRefreshKey` is `QueryInspector.Inputs`, the fields the inspection reads, so a
 ///          person filter's relabel or anchor capture, or the boolean mode, no longer restarts the refresh and wipes
 ///          the scoped counts and zero-result blame (A3).
+///   2.3 — #1299: `search()` passes a failure through `SearchQueryRefusal.readable(_:for:)`, so a query the parse refuses
+///          (`-korea`, groups nested past 32) shows a message pointing at Search Tips, and — since the #1299 follow-up —
+///          a query that parses with document text, summaries and research notes all off shows one naming Filters ▸
+///          Search Scope. Both showed "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)";
+///          `SearchRefusalMessageTests` measured that on four refused queries and on those three toggles off first.
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -713,7 +718,9 @@ final class SearchViewModel {
             // Bumped here too: a failed search is a completed one for every consumer keyed on the
             // version, and leaving it unchanged would strand them on the previous query's answer.
             executedSearchVersion &+= 1
-            searchError = error.localizedDescription
+            // A query the parse refused reads as a message pointing at Search Tips rather than as
+            // "FTS5Error error 5"; every other failure keeps its own description (#1299).
+            searchError = SearchQueryRefusal.readable(error, for: params).localizedDescription
             #if DEBUG
             print("[SearchView] Search error: \(error)")
             #endif
