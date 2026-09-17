@@ -1166,6 +1166,7 @@
 		CA79796268120140F1AFFADD /* ExcerptReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D5AC262031C78B73AE9B52 /* ExcerptReview.swift */; };
 		CA80EB0BC9ECC4C306A0490B /* SemanticMeaningModeViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C36B6D274D5B2E1889C1E23B /* SemanticMeaningModeViews.swift */; };
 		CA93B2B89AF4B6B10CD2DB3E /* AdministrationProfilesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EDB3F1592C8C223D1967038 /* AdministrationProfilesStore.swift */; };
+		CADEFAA8CF8AE0C6FC455E44 /* SearchTipsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E2A0A8971071BFC1DB992D /* SearchTipsTests.swift */; };
 		CAE25A1CAFECCD15958DA9DC /* SearchHistoryWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5BFBF9FC8519701B23C18C7 /* SearchHistoryWriter.swift */; };
 		CAFA204C8EFE4552CC408CAF /* collection-usage-index.json in Resources */ = {isa = PBXBuildFile; fileRef = 1E19164197E6F258BDA5D7FF /* collection-usage-index.json */; };
 		CAFCD327B1231A506D06609E /* BundledSemanticVectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBE94AA9FE60469904C09F6B /* BundledSemanticVectors.swift */; };
@@ -2022,6 +2023,7 @@
 		852F2B32F82C02E9DCC42E16 /* WordCloudBackdropView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudBackdropView.swift; sourceTree = "<group>"; };
 		85918CBC65CFE5DAFB117542 /* ProjectFocusSubjectsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFocusSubjectsEditor.swift; sourceTree = "<group>"; };
 		8594AC1182F22F5C159A8576 /* FRUSExplorer-DirectDistribution.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "FRUSExplorer-DirectDistribution.entitlements"; sourceTree = "<group>"; };
+		85E2A0A8971071BFC1DB992D /* SearchTipsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTipsTests.swift; sourceTree = "<group>"; };
 		85E7E7F3BD9C97442D4FAC64 /* SourceExplorerStaleStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceExplorerStaleStateTests.swift; sourceTree = "<group>"; };
 		86529079121B0BC9ED304B29 /* WordCloudLexicons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLexicons.swift; sourceTree = "<group>"; };
 		8680C5035EF2B6B6615C76C8 /* curated-library-resolutions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "curated-library-resolutions.json"; sourceTree = "<group>"; };
@@ -3211,6 +3213,7 @@
 				65C1AFE40CEF473CBD3D87F6 /* SearchNearHighlightTests.swift */,
 				209AD6C89ADE581D8989A656 /* SearchRefusalMessageTests.swift */,
 				B47D2592978BE9E43D21DB9A /* SearchSnippetCostTests.swift */,
+				85E2A0A8971071BFC1DB992D /* SearchTipsTests.swift */,
 				381F38D6FE6162A8A67F0016 /* SearchViewTests.swift */,
 				B3060895C0BEACCD853E4AFE /* SemanticAnalyticsEntryPointTests.swift */,
 				8D18D2E931028AF35C88F1BB /* SemanticAxisTests.swift */,
@@ -5393,6 +5396,7 @@
 				42D28CE4FF272178BEB3E191 /* SearchNearHighlightTests.swift in Sources */,
 				E5684A6BD24B4A5BCA2636B7 /* SearchRefusalMessageTests.swift in Sources */,
 				39972D3F22BEB4D0160B48B9 /* SearchSnippetCostTests.swift in Sources */,
+				CADEFAA8CF8AE0C6FC455E44 /* SearchTipsTests.swift in Sources */,
 				846BD22AACDF6E36CB26B611 /* SearchViewTests.swift in Sources */,
 				B7A4331BCF327BE7EAA060DF /* SemanticAnalyticsEntryPointTests.swift in Sources */,
 				07E0DDCA2BD97A1D79ECC21F /* SemanticAxisTests.swift in Sources */,
