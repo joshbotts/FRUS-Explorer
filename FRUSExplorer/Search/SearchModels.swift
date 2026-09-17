@@ -925,3 +925,272 @@ public enum SearchDefaults {
             : String(format: String(localized: "settings.search.snippet.nLines %lld", defaultValue: "%lld lines"), Int64(n))
     }
 }
+
+// MARK: - SearchTip
+
+/// One row of the search-syntax reference both Search surfaces render: the Search Tips sheet on iOS and iPadOS, and
+/// the Tips panel in the macOS Search window (#1299).
+///
+/// `syntaxRows` is the one array both views and `SearchTipsTests` read, so a row cannot say one thing on screen and be
+/// tested as another. The test switches exhaustively over `ID` and parses each row's own `example` through
+/// `FTS5InlineQueryParser.parseDetailed`, the parse `SearchService` runs; the claims that belong to SQLite rather than
+/// the parser — stemming, a prefix matched against stems, NEAR's distance, a phrase's order, the exact-word
+/// post-filter — it executes against an in-memory `porter unicode61` table.
+///
+/// It replaces the literals the macOS panel typed beside the parser, which drifted from it: the NEAR row gave neither
+/// the default distance nor what cannot go inside, the date row named an attribute the index no longer prefers, the
+/// person row said "across volumes" of a filter that matches one per-volume reference, and the scope row said a change
+/// persisted when nothing writes it back.
+///
+/// **An example is syntax, not prose.** It is verbatim ASCII, typed exactly as shown, and never localized — a
+/// translated `OR` or a typographic quotation mark would be a different query. `spokenExample` and `detail` are
+/// localized, each under a literal key, because `EditableContentKeyTests` finds a key only as a quoted literal in the
+/// file its `Docs/EditableContent.md` block names.
+///
+/// Version history:
+///   1.0 — #1299: initial implementation — thirteen rows; the prefix row warns that a long prefix finds nothing
+///         (owner decision Q6), and the NEAR row says OR, NOT and parentheses cannot go inside and that only
+///         NOT NEAR(…) excludes, describing no fallback (Q7)
+struct SearchTip: Identifiable, Sendable, Equatable {
+
+    /// Which rule a row explains. `allCases` is the order the rows are shown in.
+    enum ID: String, CaseIterable, Sendable {
+        /// Words side by side must all appear, in any order.
+        case allWords
+        /// A word also matches its other forms.
+        case stemming
+        /// Words in quotation marks must appear together, in order.
+        case phrase
+        /// `OR` finds either side, and divides everything before it from everything after it.
+        case either
+        /// `AND`, `OR` and `NOT` are operators in any case, so a phrase holding one is quoted.
+        case operatorWords
+        /// A touching minus sign, or `NOT`, leaves a word out.
+        case exclude
+        /// An exclusion stops at `OR` unless the alternatives are grouped.
+        case excludeAcrossOr
+        /// Parentheses group alternatives.
+        case group
+        /// `NOT`, or a minus sign touching the parenthesis, leaves out a whole group.
+        case excludeGroup
+        /// A trailing `*` finds words beginning with a prefix, matched against stems.
+        case prefix
+        /// `NEAR(…)` finds words within a distance of each other.
+        case near
+        /// `=` matches the word only as typed.
+        case exactWord
+        /// A query needs something positive to find.
+        case needsAWord
+    }
+
+    /// The rule this row explains.
+    let id: ID
+
+    /// What the reader types, verbatim ASCII. Never localized: it is syntax, and the test parses it.
+    let example: String
+
+    /// `example` as VoiceOver should say it, with its symbols named in words. Localized.
+    let spokenExample: String
+
+    /// What `example` does. Localized.
+    let detail: String
+
+    /// The row as one VoiceOver element: the spoken example, then the detail.
+    var accessibilityLabel: String { "\(spokenExample). \(detail)" }
+
+    /// Every row, in `ID.allCases` order — what both views render and the test reads.
+    ///
+    /// Computed rather than a `static let`, so a locale change that recreates a view reaches the strings.
+    static var syntaxRows: [SearchTip] { ID.allCases.map(SearchTip.init(id:)) }
+
+    /// The row for `id`.
+    ///
+    /// A switch rather than a table, so a rule added to `ID` without a row does not compile.
+    init(id: ID) {
+        self.id = id
+        switch id {
+        case .allWords:
+            example = "berlin crisis"
+            spokenExample = String(localized: "search.tips.allWords.spoken", defaultValue: "berlin crisis")
+            detail = String(localized: "search.tips.allWords.detail",
+                            defaultValue: "Finds documents containing every word, in any order.")
+        case .stemming:
+            example = "negotiate"
+            spokenExample = String(localized: "search.tips.stemming.spoken", defaultValue: "negotiate")
+            detail = String(localized: "search.tips.stemming.detail",
+                            defaultValue: "Each word also matches its other forms, so negotiate finds negotiated and negotiations.")
+        case .phrase:
+            example = "\"cold war\""
+            spokenExample = String(localized: "search.tips.phrase.spoken", defaultValue: "quote, cold war, quote")
+            detail = String(localized: "search.tips.phrase.detail",
+                            defaultValue: "Words in double quotation marks, straight or curly, must appear together and in that order. A phrase cannot contain quotation marks of its own.")
+        case .either:
+            example = "rusk OR bundy"
+            spokenExample = String(localized: "search.tips.either.spoken", defaultValue: "rusk OR bundy")
+            detail = String(localized: "search.tips.either.detail",
+                            defaultValue: "Finds documents with either word. OR divides everything before it from everything after it, so use parentheses to limit it.")
+        case .operatorWords:
+            example = "\"will not intervene\""
+            spokenExample = String(localized: "search.tips.operatorWords.spoken",
+                                   defaultValue: "quote, will not intervene, quote")
+            detail = String(localized: "search.tips.operatorWords.detail",
+                            defaultValue: "AND, OR and NOT work in any case, so put a phrase that contains and, or or not in quotation marks.")
+        case .exclude:
+            example = "vietnam -laos"
+            spokenExample = String(localized: "search.tips.exclude.spoken", defaultValue: "vietnam, minus sign, laos")
+            detail = String(localized: "search.tips.exclude.detail",
+                            defaultValue: "A minus sign touching a word, or NOT before it, leaves out documents containing that word, wherever it sits among the words typed with it.")
+        case .excludeAcrossOr:
+            example = "(cold OR war) -korea"
+            spokenExample = String(localized: "search.tips.excludeAcrossOr.spoken",
+                                   defaultValue: "open parenthesis, cold OR war, close parenthesis, minus sign, korea")
+            detail = String(localized: "search.tips.excludeAcrossOr.detail",
+                            defaultValue: "An exclusion does not reach across OR. To exclude a word from every alternative, put the alternatives in parentheses.")
+        case .group:
+            example = "(aqaba OR tiran) navig*"
+            spokenExample = String(localized: "search.tips.group.spoken",
+                                   defaultValue: "open parenthesis, aqaba OR tiran, close parenthesis, navig, star")
+            detail = String(localized: "search.tips.group.detail",
+                            defaultValue: "Parentheses group alternatives, and the group must match along with the words beside it.")
+        case .excludeGroup:
+            example = "vietnam -(laos OR cambodia)"
+            spokenExample = String(localized: "search.tips.excludeGroup.spoken",
+                                   defaultValue: "vietnam, minus sign, open parenthesis, laos OR cambodia, close parenthesis")
+            detail = String(localized: "search.tips.excludeGroup.detail",
+                            defaultValue: "NOT, or a minus sign touching the parenthesis, leaves out everything the group matches. A minus sign followed by a space is ignored.")
+        case .prefix:
+            example = "negoti*"
+            spokenExample = String(localized: "search.tips.prefix.spoken", defaultValue: "negoti, star")
+            detail = String(localized: "search.tips.prefix.detail",
+                            defaultValue: "Finds words beginning with these letters. Keep the prefix short, because it is matched against word stems: negoti* finds negotiations, but negotiat* finds nothing.")
+        case .near:
+            example = "NEAR(military europe, 5)"
+            spokenExample = String(localized: "search.tips.near.spoken",
+                                   defaultValue: "NEAR, open parenthesis, military europe, comma, 5, close parenthesis")
+            detail = String(localized: "search.tips.near.detail",
+                            defaultValue: "Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes, but OR, NOT and parentheses cannot go inside. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.")
+        case .exactWord:
+            example = "=containment"
+            spokenExample = String(localized: "search.tips.exactWord.spoken", defaultValue: "equals sign, containment")
+            detail = String(localized: "search.tips.exactWord.detail",
+                            defaultValue: "Matches the word only as you typed it, not contain or containing. The = is ignored where a match need not contain the word, such as one side of an OR, and on a prefix.")
+        case .needsAWord:
+            example = "-korea"
+            spokenExample = String(localized: "search.tips.needsAWord.spoken", defaultValue: "minus sign, korea")
+            detail = String(localized: "search.tips.needsAWord.detail",
+                            defaultValue: "A search needs a word to find. A query made only of exclusions does not run, and an OR alternative made only of exclusions is left out and marked NOT APPLIED in the Query Inspector.")
+        }
+    }
+}
+
+// MARK: - SearchTipNote
+
+/// A note shown with the search-syntax rows (#1299): what a filter does, where the scope and its defaults live on each
+/// platform, and what Meaning mode does with the syntax.
+///
+/// Every case is declared on every platform and the view chooses, so the iOS-hosted test reads the macOS wording too.
+/// There is no person note, by owner decision (#1299 Q1): its accurate form rests on an unmeasured question, whether
+/// one per-volume person reference recurs for different people in other volumes.
+///
+/// Version history:
+///   1.0 — #1299: initial implementation
+enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
+    /// What a date filter keeps and leaves out, on both platforms.
+    case dates
+    /// Where iOS and iPadOS set the search scope, and that a change there is not saved as a default.
+    case scopeIOS
+    /// Where the macOS Search window sets the search scope, and that a change there is not saved as a default.
+    case scopeMac
+    /// Shown INSTEAD of the syntax rows in Meaning mode, where none of the syntax applies (#1299 Q3).
+    case meaningMode
+
+    /// `Identifiable` conformance for `ForEach`.
+    var id: String { rawValue }
+
+    /// The notes the iOS and iPadOS sheet shows under the syntax rows in Keywords mode.
+    static let filterNotesIOS: [SearchTipNote] = [.dates, .scopeIOS]
+
+    /// The notes the macOS Tips panel shows under the syntax rows in Keywords mode.
+    static let filterNotesMac: [SearchTipNote] = [.dates, .scopeMac]
+
+    /// The note's text. Localized.
+    ///
+    /// `dates` states `IndexingPipeline`'s filter: the document's `[date_iso, date_iso_max]` interval must overlap the
+    /// range, and a row with no `date_iso` never matches. The two scope notes state that the per-session scope is
+    /// seeded from `SearchDefaults` and never written back: `SearchViewModel` reads the defaults once and
+    /// `MacSearchViewModel`'s scope `didSet`s update only the search parameters, while the only writer of the keys is
+    /// the Settings pane.
+    var text: String {
+        switch self {
+        case .dates:
+            return String(localized: "search.tips.note.dates",
+                          defaultValue: "A date filter keeps documents whose dates overlap the range you set, and leaves out documents with no date.")
+        case .scopeIOS:
+            return String(localized: "search.tips.note.scope.ios",
+                          defaultValue: "Filters ▸ Search Scope sets what a search reads. Its defaults live in Settings ▸ Reading & Search ▸ Search, and a change made in Filters is not saved as a default.")
+        case .scopeMac:
+            return String(localized: "search.tips.note.scope.mac",
+                          defaultValue: "The Search in chips set what this window searches. Their defaults live in Settings ▸ Reading & Search ▸ Search, and a change made with the chips is not saved as a default.")
+        case .meaningMode:
+            return String(localized: "search.tips.note.meaningMode",
+                          defaultValue: "These tips are for Keywords search. A Meaning search reads your words as a whole, so quotation marks, AND, OR, NOT, a minus sign, parentheses, *, NEAR and = have no special effect.")
+        }
+    }
+}
+
+// MARK: - SearchQueryRefusal
+
+/// What a keyword search shows when its query holds nothing it can search for (#1299).
+///
+/// `SearchService` throws `FTS5Error.emptyQuery` when the parse refuses a query — nothing positive once its negations
+/// apply (`-korea`), an approximation that could match nothing, or groups nested past
+/// `FTS5InlineQueryParser.maximumGroupDepth` — and neither host mapped it. `FTS5Error` has no `LocalizedError`
+/// conformance, so iOS's Search Error screen read "The operation couldn’t be completed. (FRUSExplorer.FTS5Error
+/// error 5.)". `SearchViewModel.search()` and `MacSearchViewModel.performSearch` now pass every keyword-search failure
+/// through `readable(_:for:)`.
+///
+/// **Mapped here, in the app, rather than as a `LocalizedError` conformance on `FTS5Error`**, for three reasons:
+/// - The message points at Search Tips, which is app UI. `FTS5Store` is also a SwiftPM library the generators link,
+///   and it names no screen.
+/// - `emptyQuery` has two causes. `SearchService.makeMatchExpressions` also throws it for a query that parses when
+///   every content scope is off, which iOS's Filters sheet allows. A conformance cannot see the parameters, so it would
+///   tell that reader their query only excludes words. This reads the parse the service and the Query Inspector read,
+///   `SearchService.parsedQuery(for:)`, and maps only a refusal.
+/// - Nothing else changes. `FacetPanelView` matches `case FTS5Error.emptyQuery` and describes other failures with
+///   `String(describing:)`, `IndexingPipeline` throws `emptyQuery` internally, and every other site that shows an
+///   error's `localizedDescription` keeps the text it had; a conformance would have changed it for every `FTS5Error`
+///   case at every such site.
+///
+/// The message says "for example" of its two reasons on purpose. The parse also refuses text with nothing searchable
+/// in it at all, a lone `"` or `(`, for which neither reason is true; the Query Inspector's refused line withholds
+/// itself there (`QueryInspector.refusesSomethingSearchable(_:)`), but a submitted search has to say something.
+///
+/// Version history:
+///   1.0 — #1299: initial implementation
+enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
+    /// The query's parse rendered no expression, so there is nothing to search for.
+    case nothingToSearch
+
+    /// The reader-facing message. Localized.
+    var errorDescription: String? {
+        switch self {
+        case .nothingToSearch:
+            return String(localized: "search.error.refusedQuery",
+                          defaultValue: "This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.")
+        }
+    }
+
+    /// What a keyword-search failure shows the reader: `nothingToSearch` in place of `FTS5Error.emptyQuery` when the
+    /// query's own parse refused it, and `error` unchanged otherwise.
+    ///
+    /// - Parameters:
+    ///   - error: What the search threw.
+    ///   - parameters: The parameters the search ran with — the same value, so the parse read here is the one that ran.
+    /// - Returns: The error to store and show.
+    static func readable(_ error: any Error, for parameters: SearchParameters) -> any Error {
+        guard case FTS5Error.emptyQuery = error,
+              SearchService.parsedQuery(for: parameters).expression == nil
+        else { return error }
+        return SearchQueryRefusal.nothingToSearch
+    }
+}

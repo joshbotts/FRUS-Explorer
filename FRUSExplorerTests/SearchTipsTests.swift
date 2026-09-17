@@ -101,7 +101,8 @@ struct SearchTipsTests {
         #expect(!rows.isEmpty)
         for tip in rows {
             #expect(!tip.example.isEmpty, "\(tip.id)")
-            #expect(tip.example.allSatisfy(\.isASCII), "\(tip.id)'s example is not typeable as shown: \(tip.example)")
+            let isASCII = tip.example.unicodeScalars.allSatisfy { $0.isASCII }
+            #expect(isASCII, "\(tip.id)'s example is not typeable as shown: \(tip.example)")
             #expect(tip.example == tip.example.trimmingCharacters(in: .whitespacesAndNewlines), "\(tip.id)")
             #expect(!tip.spokenExample.isEmpty, "\(tip.id)")
             #expect(!tip.detail.isEmpty, "\(tip.id)")
@@ -266,8 +267,8 @@ struct SearchTipsTests {
         let tooLong = prefixes[1]
         let letters = String(tooLong.dropLast()).lowercased()
         #expect(letters.count > stem.count && letters.hasPrefix(stem), "\(tooLong) is not a longer form of \(tip.example)")
-        #expect(rows.contains { $0.lowercased().split(separator: " ").contains { $0.hasPrefix(letters) } },
-                "precondition: the rows contain words spelled with \(tooLong)'s letters")
+        let spelledWithLetters = rows.contains { $0.lowercased().split(separator: " ").contains { $0.hasPrefix(letters) } }
+        #expect(spelledWithLetters, "precondition: the rows contain words spelled with \(tooLong)'s letters")
         #expect(try count(tooLong, over: rows) == 0, "\(tooLong) should find nothing, because it is longer than the stem")
     }
 
@@ -289,7 +290,8 @@ struct SearchTipsTests {
                 == "NEAR(\"military guarantee\" \"europe\", 30)", "a phrase may go inside")
         #expect(p("NEAR(milit* europ*, 20)").operands.map(\.kind) == [.proximity], "a prefix may go inside")
         for inside in ["NEAR(military OR europe, 5)", "NEAR(military NOT europe, 5)", "NEAR((military europe), 5)"] {
-            #expect(p(inside).operands.allSatisfy { $0.kind != .proximity }, "\(inside) is not a proximity search")
+            let hasProximity = p(inside).operands.contains { $0.kind == .proximity }
+            #expect(!hasProximity, "\(inside) is not a proximity search")
         }
 
         #expect(tip.detail.contains("NOT NEAR("))

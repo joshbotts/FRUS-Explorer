@@ -34,11 +34,16 @@ import Foundation
 /// `datingCaveat` states the rule the code actually implements, including the volume-start-year
 /// fallback for undated documents (see `CorpusAnalyticsService.termFrequencyByYear` and
 /// `documentTotalsByYear`, which apply that fallback to numerator and denominator alike). The
-/// in-app `analytics.info.dating.body` copy is worded to match, so the app and its exports disclose
-/// the same method.
+/// in-app `analytics.info.dating.body` copy was worded to match, so the app and its exports disclosed
+/// the same method. They no longer match word for word: #1299 re-keyed the in-app row to
+/// `analytics.info.dating.body.v2`, dropping "its TEI <date> attribute" — the index prefers the editors'
+/// `frus:doc-dateTime-min` and stores the start of a range — while this caveat still says "TEI <date>",
+/// which the export tests (`AnalyticsExportTests.swift`, `SeriesAnalyticsExportTests.swift`) read as the default rule's marker. Rewording
+/// it is separate work.
 ///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
+///   1.1 — #1299 (docs only): says the in-app dating row and `datingCaveat` no longer match word for word
 struct AnalyticsProvenance: Sendable, Equatable {
 
     /// The figure's own title, e.g. `"sovereignty", "independence" — by Year`.

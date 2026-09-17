@@ -82,6 +82,10 @@ import SwiftData
 ///          re-submitting `“cold war”` as `"cold war"` no longer clears the reviewed marks while the
 ///          history writer refreshes one row. The comment claiming the gate mirrors `historyAnchor`
 ///          had stopped being true when #1298 folded the writer's comparison.
+///   1.8 — #1299: `performSearch` stores `SearchQueryRefusal.readable(error, for: frozenParams)` rather than the raw
+///          error, so a refused query carries the same readable message as iOS. Note that `SearchSheet` does not render
+///          `searchError` at all today — it only gates the zero-result state on it — so the message reaches the model
+///          and not yet the screen.
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -1069,7 +1073,9 @@ final class MacSearchViewModel {
             // CancellationError means this task was superseded by a new search trigger.
             // Preserve the current results rather than flashing an empty list.
             guard !(error is CancellationError) else { return }
-            searchError = error
+            // The same mapping as iOS: a query the parse refused becomes a readable message pointing at Search
+            // Tips, and every other failure is stored unchanged (#1299).
+            searchError = SearchQueryRefusal.readable(error, for: frozenParams)
             results = []
             totalMatchCount = nil
             lastRenderedExpression = nil
