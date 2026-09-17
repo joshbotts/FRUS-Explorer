@@ -73,6 +73,13 @@ func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: IndexingPipeline
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
+///   1.1 — #1297 rounds 1–3: an `=` mark the parser ignores charts the stem, and the exact-word refusal is pinned
+///         operand by operand — `(=containment OR alliance) containment` and `=containment OR containment alliance`
+///         chart, `(=containment OR alliance) =containment`, `-(alliance -=containment)` and, under parser 6.5's D4,
+///         `=containment OR =containment alliance` refuse
+///   1.2 — #1297 round 4: a word is named once however its marks are spelled (parser 6.6 compares them as the filter
+///         reads words), in the spelling of its first applied mark, and a word marked in every alternative in two
+///         spellings refuses
 @Suite("CorpusAnalyticsService — By Volume")
 struct CorpusAnalyticsServiceTests {
 
@@ -584,9 +591,53 @@ struct CorpusAnalyticsServiceTests {
             // as "this word never appears", the opposite of the truth.
             #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "=containment") == ["containment"])
             #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "containment").isEmpty)
-            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment OR =alliance")
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment =alliance")
                         == ["containment", "alliance"],
                     "Every exact operand is named, in typed order, so the explanation can list them")
+
+            // Parser 6.3 (#1297 D1): an `=` is an exact filter only where every match must contain the word. In one OR
+            // alternative Search ignores it and runs the word by its stem, so Analytics charts the stem too — refusing
+            // would name a filter Search does not apply. This was `["containment", "alliance"]` before 6.3.
+            #expect(CorpusAnalyticsService.unsupportedExactTerms(in: "treaty =containment OR =alliance").isEmpty)
+            #expect(try await service.termFrequencyByYear(term: "=containment OR zzznothing")
+                        .first { $0.year == 1971 }?.count == 2,
+                    "The ignored mark charts the stem, both documents, exactly as Search runs the query")
+
+            // Parser 6.4 (#1297 round 2): the mark is read from each operand (`ParsedOperand.isExactApplied`). An
+            // unmarked containment every match requires does not make the alternative's mark apply, so that query charts
+            // by stem; a second, required mark applies, and refuses. Parser 6.5 (round 3, D4) decides the field by
+            // requirement over marked operands, so a word marked in every alternative refuses too, and a word one
+            // alternative holds unmarked charts. Each answer is the parser's field. Parser 6.6 (round 4) compares marks as
+            // the filter reads words, so a word is named once however its marks are spelled, as its first applied mark
+            // spells it.
+            let perOperand: [(term: String, unsupported: [String])] = [
+                ("(=containment OR alliance) containment", []),
+                ("(=containment OR alliance) =containment", ["containment"]),
+                ("-(alliance -=containment)", ["containment"]),
+                ("=containment OR =containment alliance", ["containment"]),
+                ("=containment OR containment alliance", []),
+                ("=Containment =containment", ["Containment"]),
+                ("(=containment OR alliance) =Containment.", ["containment"]),
+                ("=Containment. OR =containment alliance", ["Containment."]),
+            ]
+            for (term, unsupported) in perOperand {
+                #expect(CorpusAnalyticsService.unsupportedExactTerms(in: term) == unsupported, "\(term)")
+                #expect(FTS5InlineQueryParser.parseDetailed(term).operands.contains(where: \.isExactApplied)
+                            == !unsupported.isEmpty,
+                        "\(term): refused exactly when an operand's own mark applies")
+            }
+            #expect(try await service.termFrequencyByYear(term: "(=containment OR alliance) containment")
+                        .first { $0.year == 1971 }?.count == 2,
+                    "Beside an unmarked required containment, no mark applies, and the stem charts both documents")
+            #expect(try await service.termFrequencyByYear(term: "(=containment OR alliance) =containment").isEmpty,
+                    "A required mark still refuses rather than charting the stem")
+            #expect(try await service.termFrequencyByYear(term: "=containment OR =containment alliance").isEmpty,
+                    "Marked in every alternative, every match holds the literal word, so the stem is not charted")
+            #expect(try await service.termFrequencyByYear(term: "=containment OR containment alliance")
+                        .first { $0.year == 1971 }?.count == 2,
+                    "Unmarked in one alternative, no mark applies, and the stem charts both documents")
+            #expect(try await service.termFrequencyByYear(term: "=Containment. OR =containment alliance").isEmpty,
+                    "Marked in every alternative in two spellings of one word, the stem is not charted either")
         }
     }
 }

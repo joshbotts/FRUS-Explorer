@@ -46,6 +46,29 @@ struct OccurrenceAvailabilityTests {
         #expect(a.reason == .exactWord)
         #expect(!a.isAvailable)
         #expect(a.stem == nil, "An unavailable classification must not leak a countable stem")
+
+        // Parser 6.3 (#1297 D1): a mark is an exact filter only where every match must contain the word. In one OR
+        // alternative Search ignores it, so this query is classified by its shape — two positive terms — and not
+        // refused as exact-word, which would give a reason that describes a filter nothing applies.
+        let alternative = OccurrenceAvailability.classify(term: "=containment OR alliance",
+                                                          resolveStem: resolver(["containment": "contain"]))
+        #expect(alternative.reason == .compositeQuery)
+
+        // Parser 6.4 (#1297 round 2): read from each operand, not from the word. The unmarked required containment does
+        // not make the alternative's mark apply, so the query is classified by shape; a required mark, or one an excluded
+        // group makes the whole search, is exact-word. Parser 6.5 (round 3, D4): so is a word marked in every
+        // alternative, and a word one alternative holds unmarked is classified by shape.
+        let stems = resolver(["containment": "contain"])
+        #expect(OccurrenceAvailability.classify(term: "=containment OR =containment alliance", resolveStem: stems)
+                    .reason == .exactWord)
+        #expect(OccurrenceAvailability.classify(term: "=containment OR containment alliance", resolveStem: stems)
+                    .reason == .compositeQuery)
+        #expect(OccurrenceAvailability.classify(term: "(=containment OR alliance) containment", resolveStem: stems)
+                    .reason == .compositeQuery)
+        #expect(OccurrenceAvailability.classify(term: "(=containment OR alliance) =containment", resolveStem: stems)
+                    .reason == .exactWord)
+        #expect(OccurrenceAvailability.classify(term: "-(alliance -=containment)", resolveStem: stems)
+                    .reason == .exactWord)
     }
 
     @Test("Phrases, prefixes and proximity operands are refused as multi-term")
@@ -74,6 +97,18 @@ struct OccurrenceAvailabilityTests {
         // Exclusions only: nothing positive exists to count.
         let onlyNegative = OccurrenceAvailability.classify(term: "-alliance", resolveStem: resolver())
         #expect(onlyNegative.reason == .noPositiveTerm)
+    }
+
+    /// Needs the #1297 parser, under which keyword `NOT` marks its operand negated exactly as `-`
+    /// does. Before it, `treaty NOT alliance` counted alliance as a second positive term and was
+    /// refused as composite — the same search, classified differently by how it was typed.
+    @Test("NOT alliance classifies exactly like -alliance: one countable term")
+    func keywordNotClassifiesLikeDash() {
+        let dash = OccurrenceAvailability.classify(term: "treaty -alliance", resolveStem: resolver())
+        let keyword = OccurrenceAvailability.classify(term: "treaty NOT alliance", resolveStem: resolver())
+        #expect(dash == .available(stem: "treaty"), "control: the dash form counts treaty")
+        #expect(keyword == dash,
+                "NOT alliance must classify as the dash form does, got \(keyword)")
     }
 
     @Test("A word the tokenizer cannot reduce to one term is refused")

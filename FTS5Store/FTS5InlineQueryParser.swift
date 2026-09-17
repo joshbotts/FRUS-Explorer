@@ -20,7 +20,10 @@
 /// and `-` stripped by `sanitizeTerm` — silently producing a far more restrictive query
 /// than the user intended (this was the exact bug reported as "OR yields fewer results
 /// than AND"). This parser recognises that syntax for real and renders it directly to a
-/// valid FTS5 expression, which `SearchService` now feeds into `FTS5Query.keywordExpression`.
+/// valid FTS5 expression. `SearchService` renders every search through
+/// `parseDetailed(_:columnPrefix:structured:)`, which parses the typed text and the structured
+/// phrase, prefix and excluded terms as one query; `FTS5Query.keywordExpression` carries a parsed
+/// expression only where nothing sits beside it, as in `CorpusAnalyticsService`.
 ///
 /// ## Syntax recognised
 ///
@@ -30,18 +33,27 @@
 /// | `"quoted phrase"` | exact word-order phrase match | `"cold war"` |
 /// | `OR` (any case) | either side matches | `Rusk OR Bundy` |
 /// | `AND` (any case) | both sides match | `cold and war` |
-/// | leading `-` | exclude a term or phrase | `-quarantine`, `-"naval blockade"` |
-/// | `NOT` (any case) | exclude the following term/phrase, group, or wildcard | `cold NOT korea`, `not (korea OR vietnam)` |
+/// | leading `-` | exclude a term, phrase or wildcard — or, attached to `(`, a group — from its AND-run, wherever it sits in the run | `-quarantine blockade`, `-"naval blockade"`, `cold -(korea OR vietnam)` |
+/// | `NOT` (any case) | the same exclusion as `-` before a term, phrase, wildcard or group, and the only way to exclude a `NEAR(...)`; repeated marks exclude once | `cold NOT korea`, `not (korea OR vietnam) cold`, `aid NOT NEAR(military europe, 5)` |
 /// | trailing `*` | prefix wildcard | `negoti*` |
 /// | `( ... )` | groups a sub-expression; combines with the rest of the query like any operand | `(aqaba OR tiran) AND (navigation OR passage OR transit)` |
 ///
 /// Operator keywords are recognised **in any case** (`and`/`And`/`AND` all act as the
-/// operator, matching history.state.gov) and **only when they sit between valid
-/// operands** — a leading/trailing/doubled `OR`/`AND`/`NOT`, or an operator with no
-/// operand to bind, is demoted back to a literal search word for that same term instead
-/// of being mis-parsed into invalid syntax. This guarantees the renderer never emits a
-/// MATCH expression SQLite would reject (no orphaned operators). To search for the
-/// literal word "and"/"or"/"not", quote it: `"war and peace"`.
+/// operator, matching history.state.gov) and **only where they can bind**: an `AND` or
+/// `OR` needs an operand on its left and, on its right, an operand or a chain of `NOT`s
+/// ending in one; a `NOT` needs a chain of `NOT`s ending in an operand. An operator that
+/// cannot bind — a leading or trailing `AND`/`OR`, the first of two doubled ones, a
+/// trailing `NOT` — is demoted back to a literal search word for that same term instead
+/// of being mis-parsed. To search for the literal word "and"/"or"/"not", quote it:
+/// `"war and peace"`.
+///
+/// The expression is rendered from a boolean tree, never by splicing tokens, and that is
+/// what guarantees the renderer never emits a MATCH expression SQLite would reject.
+/// FTS5's `NOT` is strictly binary — `NOT "korea" AND "cold"` and `"cold" AND NOT "korea"`
+/// are both syntax errors — so the renderer emits `NOT` only with a left operand, `AND`
+/// and `OR` only between two sub-expressions, and parentheses wherever FTS5's precedence
+/// (`NOT` binds tighter than `AND`, `AND` tighter than `OR`) would otherwise regroup what
+/// the researcher typed.
 ///
 /// Adjacent operands (juxtaposition, an explicit `AND`, or a parenthesised group next to
 /// another operand) are always joined with an **explicit `AND` keyword**, never bare
@@ -53,31 +65,125 @@
 /// `FTS5Query` does today, so results match the stemmed index identically regardless
 /// of which path produced the expression.
 ///
+/// ## Exclusions
+/// An exclusion belongs to its **AND-run** — the members between two surviving `OR`s at
+/// one nesting level, a group counting as one member — wherever it sits in that run, and
+/// it never reaches across an `OR`: `-korea cold OR war` renders
+/// `"cold" NOT "korea" OR "war"`, the same as `cold -korea OR war`. A leading exclusion is
+/// placed behind the run's first positive member, and an `AND` typed directly before an
+/// exclusion adds nothing to it (`cold AND -korea` is `cold -korea`).
+///
+/// Negation marks count once. A negation applied to something with no positive term
+/// changes nothing — `cold NOT -korea` and `cold NOT NOT korea` are `cold -korea`, and
+/// `NOT NOT cold` has no positive term at all, so it renders `nil`. A negation applied to
+/// something that does contain a positive term is a true complement: `NOT (cold OR
+/// -korea)` requires korea and excludes cold.
+///
+/// FTS5 has no universal set, so a query can only exclude from something it searches for.
+/// An `OR` alternative made only of exclusions (`cold OR -korea`) therefore cannot be
+/// searched. At the top level, or inside a top-level group, it is left out together with
+/// its `OR`, and its operands are reported in `ParsedQuery.droppedOperands` — the search
+/// runs as the narrower `cold`, and the Query Inspector can say what was not applied. If
+/// every alternative is left out the expression is `nil`. Inside an enclosing AND-run the
+/// same alternative is rendered exactly, by De Morgan's law: `war (cold OR -korea)`
+/// renders `"war" NOT ("korea" NOT "cold")`, and nothing is dropped.
+///
+/// A complement is never left out whole while it holds a positive term. Before anything is
+/// left out, a negation is pushed inward by De Morgan's law and what that exposes is
+/// anchored like any other query: `cold OR -(war -korea)` means cold OR NOT war OR korea, so
+/// it renders `"cold" OR "korea"` and reports only `war` as dropped. Every dropped operand is
+/// therefore negated, and no applied operand is ever reported as dropped.
+///
+/// An approximation that provably matches nothing is refused rather than run. Pushing a negation
+/// inward can expose an anchor that an exclusion beside it then removes in full:
+/// `-(war -korea) -korea` would search `"korea" NOT "korea"`, and so would `-(war -korea)` beside
+/// the excluded term korea. Such a query is `nil` — the refusal it got before negation was pushed
+/// inward, on which `SearchService` throws `FTS5Error.emptyQuery` — instead of a search whose empty
+/// result would read as a finding. The same holds for an empty alternative kept on its own, as in
+/// `korea -korea OR -korea`. The proof is over operands, never documents: an approximation is
+/// refused only when an operand every match must match is one it excludes — the same core,
+/// excluded in a scope that spans the anchor's. An excluded
+/// term with no column prefix, as a structured one always is, spans every column, so
+/// `{body_text}:"korea" NOT "korea"` is refused, while a scoped exclusion removes only an anchor in its
+/// own scope. A phrase is not taken to contain its words, nor a prefix the words it begins, so an
+/// approximation left empty by what its words mean still runs; so does one that matches something
+/// beside its empty part, like `"cold" OR "korea" NOT "korea"`. An exact render is never refused:
+/// `korea -korea` is what was typed, and searches `"korea" NOT "korea"`.
+///
+/// `ParsedQuery.isApproximate` is `true` whenever the expression matches less than the query
+/// means. It is the only report when what was left out has no operand of its own:
+/// `-( -korea NOT )` means korea OR NOT the demoted word "not", and renders `"korea"`.
+///
+/// ## Structured parts
+/// `parse(_:columnPrefix:structured:)` and `parseDetailed(_:columnPrefix:structured:)` also
+/// take the structured search fields — a phrase, a prefix wildcard and excluded terms
+/// (`StructuredQueryParts`), as restored saved searches carry them — as further members of
+/// the same tree, conjoined with the typed query and harvested after its operands, with
+/// `ParsedOperand.source` `.structured`. One tree decides meaning, anchoring and reporting
+/// for the query that actually runs, so a phrase or prefix anchors a typed complement beside
+/// it: typed `-korea` beside the phrase "cold war" renders `"cold war" NOT "korea"`, and
+/// `cold OR -korea` beside the prefix `viet` renders `"viet"* NOT ("korea" NOT "cold")`, with
+/// nothing dropped. A structured excluded term is no anchor, so typed `-korea` beside the
+/// excluded term `vietnam` is still `nil`.
+///
+/// The fields are sanitised exactly as `FTS5Query` always sanitised them, and combined by
+/// the rule it always used — positive parts joined by `AND`, each parenthesised unless it is
+/// one operand, then every exclusion applied to the whole — which `FTS5Query` now takes from
+/// here (`combine(renderedKeywords:structured:columnPrefix:)`). The phrase spans every
+/// column, the prefix carries the column prefix, and an excluded term carries none, so it
+/// removes a document whichever column holds the term. With no structured field set, a
+/// typed query renders exactly what it renders alone.
+///
 /// ## Grouping
-/// `(...)` groups parse and render **recursively**: `renderTokens` calls itself on
-/// each balanced group's contents, wraps the rendered result in literal parentheses,
-/// and folds it back into the surrounding token stream as a single opaque operand.
-/// That operand then flows through the very same `classify` /
-/// `demoteOrphanedOperators` / `assemble` pipeline as any bare word — so groups
-/// compose with `AND`/`OR`/`NOT` (including negating a whole group via
-/// `NOT (...)`) and nest to arbitrary depth:
+/// `(...)` groups parse **recursively** into the same tree: `buildNode` calls itself on
+/// each balanced group's contents and folds the result back into the surrounding level as
+/// a single member, which then takes part in operator resolution exactly like a bare word
+/// or phrase. Groups therefore compose with `AND`/`OR`/`NOT` — including negating a whole
+/// group via `NOT (...)` or `-(...)` — and nest:
 /// `((aqaba OR tiran) AND navig*) OR (suez NOT canal)` round-trips intact. FTS5
-/// itself natively supports parenthesised grouping in MATCH expressions, so the
-/// rendered fragment needs no further translation — it's valid FTS5 as written.
+/// itself natively supports parenthesised grouping in MATCH expressions, so a group
+/// renders with its parentheses as typed.
+///
+/// Nesting is limited to `maximumGroupDepth`, 32 levels, and a query nested deeper is refused
+/// — `nil`, on which `SearchService` throws `FTS5Error.emptyQuery` — before anything recurses.
+/// Every pass over the tree recurses once per level, and the app parses on 512 KB pool
+/// threads, so without the limit a pasted query could overflow the stack and end the process.
+/// Depth counts balanced pairs of parentheses, a `NEAR(...)`'s own included; an unmatched
+/// parenthesis is punctuation, and one inside a quoted phrase is text, so neither is a level.
+///
+/// A group with no content — `()`, `(   )` — is dropped in its entirety rather than
+/// rendering as an empty `()`. A group of only exclusions is not dropped: it excludes from
+/// the AND-run around it exactly as its members would bare, so `cold (-korea)` renders
+/// `"cold" NOT "korea"` and `cold (-korea -vietnam)` renders
+/// `"cold" NOT ("korea" OR "vietnam")`. As an `OR` alternative it is left out and reported,
+/// like any other alternative made only of exclusions.
 ///
 /// Degradation is graceful by construction: an unmatched `(` or stray `)` never
 /// finds a balanced partner, falls through to ordinary token handling, sanitises to
 /// nothing (parens are structural punctuation to `sanitizeBareToken`, exactly like
-/// `{`/`}`/`:`/`/`), and is silently dropped. A group whose contents carry no
-/// positive search content — `()`, `(   )`, `(-korea)` — is dropped in its entirety
-/// rather than rendering as an empty `()` or a content-free `(NOT korea)`.
+/// `{`/`}`/`:`/`/`), and is silently dropped.
 ///
-/// One asymmetry worth calling out: leading-`-` negation does **not** compose with
-/// groups — `-(korea OR vietnam)` is *not* recognised as "exclude this group" (the
-/// `-` tokenises on its own, sanitises to nothing, and is dropped, leaving the group
-/// itself positive). Use the keyword form `NOT (korea OR vietnam)` instead, which
-/// *is* recognised — consistent with the existing rule that `NOT`, unlike `-`, must
-/// be spelled out and appear in uppercase.
+/// ## A dash before a group
+/// A dash **attached** to an opening parenthesis negates the group exactly as `NOT` does:
+/// `cold -(korea OR vietnam)` and `cold NOT (korea OR vietnam)` both render
+/// `"cold" NOT ("korea" OR "vietnam")`, and `-(...)` parses identically to `NOT (...)` in
+/// every position. A **detached** dash — whitespace between it and the parenthesis — is
+/// punctuation, as a lone `-` is everywhere else, and is dropped:
+/// `cold - (korea OR vietnam)` searches for the group, `"cold" AND ("korea" OR "vietnam")`.
+///
+/// An attached dash with no group to negate keeps the punctuation reading rather than
+/// becoming a stranded negation. Before a parenthesis with no balanced partner
+/// (`cold -(korea` renders `"cold" AND "korea"`) or a group with no content (`cold -()`
+/// renders `"cold"`) it is dropped along with its parenthesis. Those are the only two
+/// places the spellings differ, because there the keyword is text the researcher can see:
+/// `cold NOT (korea` excludes korea, and a `NOT` stranded by `cold NOT ()` is demoted to
+/// the word "not".
+///
+/// The rule reaches only a dash that begins a token, and only a group. A dash that is not
+/// the first character of its token is not attached to the parenthesis after it, so
+/// `cold --(korea)` still searches for the group. Nor does a dash reach `NEAR(...)`:
+/// `aid -NEAR(military europe, 5)` is the excluded word "near" beside a positive group of
+/// the words, as it always was, so a proximity is excluded only with `NOT NEAR(...)`.
 ///
 /// ## What this does *not* attempt
 /// - **Column filters** (`header:cold`) — handled separately via `columnPrefix`,
@@ -111,6 +217,284 @@
 ///          inside a NEAR (booleans, negation, nested groups) and any distance it will not
 ///          parse (negative, decimal, signed, empty, non-numeric) degrade to an ordinary
 ///          boolean group over the same words rather than reaching SQLite.
+///   5.0 — #1297: rendering rebuilt on a boolean tree, because splicing tokens rendered a
+///          `NOT` with no left operand whenever an exclusion led its AND-run or followed a
+///          typed `AND`/`OR`, and FTS5 rejects that. Over every token sequence of length
+///          1–4 on `cold war -korea NOT korea AND OR ( )` (7,380 queries) the old renderer
+///          produced 1,674 expressions SQLite rejects and this one produces none.
+///          (1) An exclusion is placed within its AND-run wherever it was typed:
+///          `-korea cold`, `NOT korea cold`, `-korea (cold OR war)` and `cold AND -korea`,
+///          all previously syntax errors, render `"cold" NOT "korea"` or its equivalent.
+///          (2) An `AND`/`OR` directly before a `NOT` is an operator, no longer a required
+///          literal word. RESULTS MOVE for queries that ran before: `cold AND NOT korea`
+///          was `"cold" AND "and" NOT "korea"`, which matched only documents containing
+///          the word "and", and is now `"cold" NOT "korea"`; `cold OR NOT korea` was
+///          `"cold" AND "or" NOT "korea"` and is now `"cold"`.
+///          (3) Negation marks count once: `cold NOT NOT korea` (was
+///          `"cold" AND "not" NOT "korea"`) and `cold NOT -korea` (was the invalid
+///          `NOT NOT`) render `"cold" NOT "korea"`; a query whose negations reach no
+///          positive term is `nil`, where `NOT NOT cold` used to search for the word "not".
+///          (4) A group of only exclusions excludes from its run instead of being dropped.
+///          RESULTS MOVE: `cold (-korea)` was `"cold"`, returning the korea documents it
+///          asked to exclude, and is now `"cold" NOT "korea"`; `cold OR (-korea)` was
+///          `"cold" AND "or"`.
+///          (5) An `OR` alternative made only of exclusions is left out and reported in
+///          `ParsedQuery.droppedOperands` at the top level, and rendered exactly by De
+///          Morgan's law inside an enclosing AND-run.
+///          (6) A dash attached to `(` negates the group. RESULTS MOVE:
+///          `cold -(korea OR vietnam)` used to search FOR the group, and now excludes it;
+///          a detached `cold - (korea OR vietnam)` still searches for it.
+///          (7) `ParsedOperand.isNegated` is the operand's effective polarity, so keyword
+///          `NOT` and `NOT (...)` report their operands excluded as `-` always did, and
+///          exact terms come only from positive operands the expression applies:
+///          `europe NOT =containment` no longer reports a post-filter requiring the word
+///          its own MATCH excludes.
+///   6.0 — #1297 join: the structured fields join the tree, and a complement is anchored
+///          after its negation is pushed inward. RESULTS MOVE, in two places.
+///          (1) `parse(_:columnPrefix:structured:)` and `parseDetailed(_:columnPrefix:structured:)`
+///          take a phrase, a prefix and excluded terms (`StructuredQueryParts`) as members of
+///          the typed query's root conjunction, and `SearchService` renders through them
+///          instead of handing the typed render to `FTS5Query`, which could not see a typed
+///          complement that render left out. Restored saved searches with a phrase or prefix
+///          beside typed text move: typed `-korea` beside the phrase "cold war" was
+///          `"cold war"` — rows 4, 8, 12 and 16 of the truth table, with nothing reported — and
+///          is `"cold war" NOT "korea"` (4 and 12); `cold OR -korea` beside the prefix `viet` was
+///          `"cold" AND "viet"*` (5 rows, korea not applied) and is
+///          `"viet"* NOT ("korea" NOT "cold")` (8 rows, exact).
+///          (2) A negated group holding a positive term is no longer left out whole with its
+///          positive operands reported as dropped; the negation is pushed inward and anchored.
+///          This moves wherever the typed parse is used — Search, Corpus Analytics, the
+///          retrieval eval routes, `OccurrenceAvailability`: `cold OR -(war -korea)` was
+///          `"cold"` (10 rows) with war and korea dropped, and is `"cold" OR "korea"` (14 rows)
+///          with only war dropped; `-(war -korea)` was `nil` and is `"korea"`. Over the 11,110
+///          token sequences of length 1–4 with `-(`, in both scopes, 22 of 22,220 typed-alone
+///          renders change, every one previously `nil` or narrower.
+///          (3) `ParsedQuery.isApproximate` and `ParsedOperand.source`. A typed `NEAR` beside
+///          structured parts renders `NEAR(...) NOT "korea"` where `FTS5Query` 2.2 wrote
+///          `(NEAR(...)) NOT "korea"`, with the same rows; the `FTS5Query` carrier keeps the
+///          parentheses. The #1297 property suite's printed counts move with (2) and every
+///          inequality guard still holds: validity with `-(` executed 10,176 → 10,187 per
+///          scope; `-(X)` rendered 11,178 → 13,239, negating 7,852 → 7,892, differs from
+///          detached 12,432 → 12,864; monotonicity 1,676 → 1,714; set oracle seed 1297
+///          narrowed 2,018 → 2,088 and nil 633 → 563, seed 1299 narrowed 1,987 → 2,056 and nil
+///          639 → 570. Checked against a set oracle that never reads a render (80,000
+///          comparisons) and a 222,200-case sweep of every short sequence beside every
+///          structured combination, with no failures.
+///   6.1 — #1297 fixes: an approximation that provably matches nothing is refused. RESULTS MOVE, and only from
+///          a MATCH no document can satisfy to `nil`, on which `SearchService` throws `FTS5Error.emptyQuery`. 6.0's
+///          push-inward could anchor a complement on an operand that an exclusion beside it then removed in full,
+///          so queries the app had refused ran a guaranteed-empty search: `-(war -korea) -korea`, and
+///          `-(war -korea)` or `-( cold -korea )` beside the excluded term korea, all `"korea" NOT "korea"`. The
+///          same held without pushing: `korea -korea OR -korea` kept an empty alternative, and
+///          `cold korea OR -korea` beside the excluded korea was `("cold" AND "korea") NOT "korea"`. Each
+///          rendered `Expr` now carries what its operands prove — the operands every match matches, those any
+///          one of which suffices, and those no match can match — and `parseDetailed` returns `nil` when the
+///          query is approximated and its expression requires an operand it forbids. Exact renders are
+///          unchanged, and so is an
+///          approximation that matches something beside an empty part. Measured over the 222,200 renders of the
+///          length-1–4 sweep with `-(`, beside every structured combination in both scopes: 292 change, every
+///          one from a MATCH that matches no row of a corpus holding every combination of the swept words to
+///          `nil`; the 208 that match nothing only on the #1297 truth table (`"cold" AND "not"`, whose words that
+///          table never puts together) still run. Correction to 6.0: its 222,200-case sweep compared every exact
+///          term with the typed-alone parse's, but its alphabet has no `=`, so every list it compared was empty
+///          and the comparison could not fail. The exact terms are now swept over `=cold` and `-=cold` (111,100
+///          combinations per scope): in each scope 20,292 carry an exact term beside a structured phrase or
+///          prefix and 13,480 without one, 452 of those approximated, and every one equals the typed-alone
+///          parse's wherever both render. Where they do not both render the lists can differ, and only because of
+///          this refusal: 48 per scope are refused alone but anchored by a structured phrase or prefix, and
+///          report the exact terms they apply; 16 render alone but are refused beside the excluded korea.
+///          The #1297 property suites' printed counts move with the refusal, and every inequality guard still
+///          holds: validity executed 6,951 → 6,947 without `-(` and 10,187 → 10,183 with it, per scope; `-(X)`
+///          rendered 13,239 → 13,233 and negating 7,892 → 7,886, differing from detached unchanged at 12,864;
+///          monotonicity compared 1,714 → 1,571; set oracle seed 1297 narrowed 2,088 → 1,764 and nil 563 → 887,
+///          seed 1299 narrowed 2,056 → 1,750 and nil 570 → 876. The `FTS5Query` join sweep executed
+///          65,133 → 65,121 per scope and its carrier identity carried 20,374 → 20,366, because fewer typed
+///          renders reach the carrier; the carrier itself is never approximate, so no byte of its output moves.
+///   6.2 — #1297 fixes review: an operator word left as a word carries the column prefix, like any other bare word.
+///          RESULTS MOVE only in a scoped parse — in the app, the Summaries-only or Notes-only half of a search — and
+///          only where `AND`, `OR` or `NOT` is demoted: scoped `cold OR` was `{body_text}:"cold" AND "or"`, which
+///          searched "or" outside the scope, and is `{body_text}:"cold" AND {body_text}:"or"`. With it, refusal no
+///          longer depends on the scope wherever a word anchors: 6.1 refused `-korea OR -not NOT` unscoped
+///          (`"not" NOT "not"`) but ran it scoped as `"not" NOT {body_text}:"not"`, since an exclusion is shown to
+///          remove only an anchor in a scope it spans, and `SearchService` read that search's exact terms and Query
+///          Inspector rows from the refused unscoped parse — `( =cold NOT OR -korea ) -not` ran summaries-only
+///          without its `=cold` post-filter. Measured over the length-1–4 sequences of three alphabets (the judged one
+///          with `-(`, the exact-term one, and one with `-not`, `-and` and `-or`) beside every structured combination:
+///          no unscoped parse changes; of 383,240 scoped renders, 195,398 differ only by the prefix on a demoted word
+///          and 128 become `nil` — exactly the 128, from 32 sequences, whose unscoped parse was refused — and no exact
+///          term, approximation flag or operand count changes on a render. A typed phrase still spans every column,
+///          so beside the phrase "korea" a scoped `-korea` removes nothing provably: 16 parses over an alphabet with
+///          that phrase (8 sequences, such as `"korea" -korea OR -korea`) are refused only unscoped.
+///          `refusalAcrossScopesSweep` pins that class, and `SearchService` 2.2 runs no scope for a query its unscoped
+///          parse refuses. No printed count in the #1297 property suites moves.
+///   6.3 — #1297 round-1 fixes: exact terms only where every match requires them, and a nesting limit. RESULTS MOVE.
+///          (1) An `=` operand is an exact-word post-filter only when it is typed, applied, positive and in the root
+///          expression's proof `required` set; everywhere else the sigil is ignored and the term runs stemmed. The SQL
+///          layer ANDs one filter per term, so 6.0's rule — every positive applied `=` operand — removed documents the
+///          MATCH admits: `cold -(war -=korea)` filtered on korea though a cold document with neither war nor korea
+///          matches (F26), `=cold OR war` filtered every war document without cold, and `=cold OR -korea` beside the
+///          prefix `viet` filtered the viet documents lacking korea. Over the exact-term sweep alphabet (`=cold`,
+///          `-=cold`, war, `-korea`, NOT, korea, OR, `(`, `)`, `-(`), every sequence of length 1–4 typed alone and beside
+///          every structured combination: 2,690 of the 33,772 non-empty lists per scope (of 111,100 parses) change, the
+///          same in both scopes, from 319 sequences, and every change is `["cold"]` to `[]`: 194 typed alone and 582
+///          beside excluded terms only, all exact renders with cold in an alternative (`=cold OR war`); 1,164 beside a
+///          structured phrase or prefix whose typed text renders exactly alone (`("cold" OR "war") AND "viet"*`); and
+///          750 beside a phrase or prefix that anchors a typed complement (`=cold OR -korea` beside the prefix renders
+///          `"viet"* NOT ("korea" NOT "cold")`). No list gains a term. The rule compared rendered identities, so its answer
+///          depended on the column prefix wherever a typed phrase shared the marked word: over that alphabet with the
+///          unmarked cold and the phrase "cold" added, 800 parses report `["cold"]` unscoped and `[]` scoped
+///          (`=cold OR "cold"`), where 6.2 reported `["cold"]` in both. The unscoped list is the wrong one, and 6.4
+///          decides per operand instead.
+///          (2) A query whose balanced groups nest deeper than `maximumGroupDepth` (32) is refused, by a scan of the
+///          tokens that runs before anything recurses. Every pass over the tree recurses per level, and #1297's boolean
+///          tree added six: on a 512 KB thread 6.2 parsed at most 277 levels of `-(war …)` and 208 of `-(a OR -b …)` in a
+///          Release build and 22 and 16 in a Debug build, and one level more killed the process (F24).
+///          (3) No render moves otherwise: over 1,367,260 parses — five alphabets of length 1–4 beside every structured
+///          combination in both scopes, 60,000 random queries of up to 14 tokens in both scopes, and the `FTS5Query`
+///          carrier — every expression, operand, dropped operand and approximation flag is byte-identical to 6.2's. So
+///          is every expression of 19 nestings around 5 cores at 1–32 levels, beside every structured combination in both
+///          scopes (57,600 parses); at 33 levels 1,664 renders become `nil`. Three changes keep
+///          it that way. `exactMeaning` and `anchored` recurse through small frames and combine in helpers that never
+///          recurse, because a frame holds every branch's locals: 32 levels of `-(a OR -b …)` around `cold`, alone or
+///          scoped beside a phrase, needed up to 988 KB of stack in a Debug build and now need up to 226 KB — 322 KB
+///          around an exclusion such as `-korea`, which leaves every level a complement to push inward — and 83 KB in a
+///          Release build and now 67 KB, measured as the deepest point a parse reaches on a painted thread stack. `Expr.settled()` looks up the identities covering
+///          each anchor instead of testing every forbidden operand against it, which made an AND-run alternating anchors
+///          and exclusions cubic: 4,000 characters of `w0 -k0 w1 -k1 …` took 265.7 ms in Release and 2,692.5 ms in Debug,
+///          and take 20.7 ms and 78.6 ms. And groups are paired in one pass (`groupPartners`) instead of scanning from
+///          every `(` to the query's end: 4,000 unmatched `(` took 25.8 ms and 204.7 ms, and take 9.6 ms and 11.2 ms.
+///          It cost elsewhere, which this entry did not say: `settled()` built each required anchor's coverers as an
+///          array on every conjoin, so positive runs slowed — 4,000 characters of `w0 w1 …` went from 9.0 ms to 21.2 ms
+///          in Release, and 32 levels of `(` around such a run and `OR -z` from 128.3 ms to 350.5 ms, measured at round
+///          2 interleaved with 73a37003. 6.4 corrects both.
+///          The #1297 suites' printed counts do not move, except the exact-term sweep, which now prints per scope
+///          reported 31,082 (was 33,772 with the old rule), 1,198 left unreported because a match need not contain
+///          cold, and 1,492 left unreported although every match does, which the proof cannot see.
+///   6.4 — #1297 round-2 fixes: an `=` mark applies per operand, and what is computed from a node is computed once.
+///          RESULTS MOVE, and only in exact terms.
+///          (1) An `=` operand is an exact-word post-filter only when every match must match THAT operand. The proof
+///          follows marked leaves by occurrence (`Expr.requiredExact`) beside the identities refusal compares, and
+///          `ParsedOperand.isExactApplied` reports the decision operand by operand; `ParsedQuery.exactTerms` is the terms
+///          of the operands it marks, in the order typed. 6.3 asked whether the required set held the operand's rendered
+///          identity, which another operand with the word's stem also renders, so an optional mark became a filter
+///          removing documents the MATCH and the query admit: `(=cold OR war) cold` removed `colds war`,
+///          `=cold war OR cold peace` removed `colds peace`, and so did `korea (war OR =korea)` and `=cold OR "cold"`. Over
+///          the exact-term sweep alphabet with the unmarked cold and the phrase "cold" added (22,620 sequences beside
+///          every structured combination, 226,200 parses per scope), non-empty lists go 57,158 → 55,078 unscoped and
+///          56,358 → 55,078 scoped, from 208 sequences, every change `["cold"]` to `[]` and every changed parse holding
+///          another operand with cold's stem: an unmarked cold (920 unscoped, 880 scoped), otherwise the phrase "cold"
+///          (800, 40), otherwise a second marked cold (360, 360). Corrected at 6.5, because that reads as though every
+///          change fixed an over-filter: read on `Issue1297InflectedCorpus`, 928 of those 3,360 lists were filters
+///          removing no row the query admits — all 720 with a second marked cold, and 112 with an unmarked cold and 96
+///          with the phrase (`=cold OR =cold cold`, `=cold "cold" OR =cold`) — and so were all 780 lists the demoted
+///          alphabet lost and all 800 the phrase alphabet lost. They were sound filters 6.4 lost, and 6.5 restores
+///          every one of them but 48, all beside the excluded term korea: 32 of the shape `=cold OR korea cold`, in its
+///          word orders and both scopes, and 16 unscoped of the shape `=cold OR korea "cold"`. Nor did the loss "cost
+///          only the filter", as the `parseDetailed` doc said: the mark was ignored, so the word's inflected forms
+///          matched and were counted. So exact terms no longer depend on the column prefix.
+///          Over 60,000 random queries of up to 14 tokens beside random structured fields, 1,799 lists change: 1,794 lose
+///          every term, 4 lose one, and 1 reorders (`["cold", "war"]` → `["war", "cold"]`, the first `=cold` being an
+///          alternative). No expression, operand, dropped operand or approximation flag moves over 1,411,430 parses —
+///          four alphabets of length 1–4 beside every structured combination in both scopes, those random queries, and
+///          fifteen nestings around eleven innermost terms at 1–33 levels.
+///          (2) A node is a class that keeps its exact meaning and its anchor, and `evaluate` and `anchor(_:)` recurse over
+///          nodes only, children first, handing every combination to helpers that never re-enter their own caller:
+///          `settleMeaning` never calls `evaluate`, and neither `anchoringChildren(of:)` nor `settleAnchor` calls
+///          `anchor(_:)`. The helpers are not all free of recursion — `anchoringChildren(of:)` calls the recursive
+///          `evaluate` and `complement(of:)`, and `settleAnchor` the recursive `leaves(of:)` — which this entry denied
+///          until corrected at 6.6. 6.3 asked again for the
+///          meaning of the whole subtree at every level that lacked an anchor, and `Expr.settled()` built each required
+///          anchor's coverers as an array on every conjoin; it now returns at once when nothing is forbidden and looks a
+///          covering identity up without allocating. Measured interleaved, the minimum of five runs in a Release build
+///          and of two in a Debug build, 73a37003 / cbdb7253 / 6.4: 32 levels of `-(a OR -b …)` around 4,000 characters
+///          of `=w0 =w1 …` and `OR -z` (4,357 characters) 279.1 / 1,088.2 / 9.6 ms in Release and 1,613.1 / 4,800.2 /
+///          24.3 ms in Debug; 32 levels of `(` around `w0 w1 …` and `OR -z` (4,069) 128.3 / 350.5 / 3.9 ms and 658.9 /
+///          2,200.2 / 8.8 ms; the alternating shape, 32 levels of `-(a OR -b …)` around `w0 -k0 w1 -k1 …` and `OR -z`
+///          (4,361), 5,481.2 / 820.2 / 6.9 ms and 60,036.6 / 3,478.6 / 20.3 ms, and at 8,365 characters 38,493.7 / 3,148.1
+///          / 21.8 ms in Release; flat, 4,000 characters of `w0 w1 …` 9.0 / 21.2 / 3.7 ms and 39.3 / 130.5 / 5.9 ms, and of
+///          `w0 -k0 w1 -k1 …` 108.4 / 18.7 / 6.4 ms and 1,238.5 / 77.5 / 17.6 ms. Of eighteen shapes at 4,000 and 8,000
+///          characters none parses more slowly in Release than at 73a37003; the closest, a chain of `NOT` keywords,
+///          takes 1.1 ms at 8,000 characters in all three builds.
+///          (3) The stack, measured as the deepest point a parse reaches on a painted thread stack: of 328 queries at
+///          32 levels (fifteen nestings around eleven innermost terms, less `NEAR(` around a `NEAR`, alone and scoped
+///          beside a phrase; this said 328 nestings) the costliest needs 86 KB in a Debug build and 43 KB in a Release
+///          build (`maximumGroupDepth`), where at 6.3 it needed 322 KB and 67 KB; `-(a OR -b …)` around `-korea`, the
+///          costliest then, needs 77 KB in Debug.
+///          The #1297 suites' printed counts move with (1): the exact-term sweep, over its wider alphabet and a corpus
+///          holding `colds`, reports 55,078 lists per scope, with 4,286 applied `=cold` operands unreported because
+///          filtering on them would remove a row the query admits and 868 unreported although it would not; the
+///          structured oracle sees 1,190 and 1,034 required exact operands against 11,758 and 11,401 ignored.
+///   6.5 — #1297 round-3 fixes: a word marked in every alternative is exact (D4), and the memo can be counted. RESULTS
+///          MOVE, and only in exact terms.
+///          (1) Requiredness is proved over the identities of MARKED operands (`Expr.requiredMarked`, which replaces
+///          6.4's `requiredExact`): seeded by marked leaves alone and combined as `required` is — a union in `conjoin`
+///          and `combineParts`, the kept side in `exclude`, an intersection in `disjoin` — so it is carried through
+///          pushing inward, anchoring and approximation with it. A word the root expression requires that way is
+///          reported, and every positive `=` operand on it is `ParsedOperand.isExactApplied`, since inside the filtered
+///          documents each reads the same. `=cold war OR =cold peace`, `=cold OR =cold war` and `=cold OR =cold` report
+///          cold again, and `(=cold OR war) =cold` applies both marks; an unmarked word, a phrase or a demoted word
+///          still never makes a mark apply, so `(=cold OR war) cold`, `=cold OR "cold"` and `=cold war OR cold peace`
+///          report nothing. `exactTerms` keeps the order of each word's first applied operand, which is now its first
+///          positive mark. Measured against 6.4 over its 1,411,430 parses: no expression, dropped operand,
+///          approximation flag or operand field other than `isExactApplied` moves; no list loses a term or holds one
+///          6.3 did not report; and 6,069 operands become applied, none the reverse. Per scope, non-empty lists go
+///          55,078 → 55,518 over the exact-term sweep alphabet, from 44 sequences (`=cold OR =cold`,
+///          `war =cold OR =cold`), every change `[]` to `["cold"]`; 42,630 → 43,020 over the demoted alphabet and
+///          41,672 → 42,072 over the phrase alphabet, 6.3's counts in both. Over the 60,000 random queries 467 lists
+///          change: 466 gain every term they report, and 1 reorders back to 6.3's `["cold", "war"]`; 1,346 still differ
+///          from 6.3's, 1,328 of them empty. Read on `Issue1297InflectedCorpus`, every list 6.5 reports over the three
+///          alphabets removes no row the query admits.
+///          (2) In a DEBUG build, `work(parsing:columnPrefix:structured:)` counts on a parse's own tree how often each
+///          node's meaning and anchor were settled, because removing 6.4's memo changed no render and failed no test.
+///          Release code does what it did: `parseDetailed` takes its result from the same path and drops the tree.
+///          The #1297 suites' printed counts move with (1): the exact-term sweep reports 55,518 lists per scope, with
+///          4,286 applied `=cold` operands unreported because filtering on them would remove a row the query admits and
+///          428 unreported although it would not (868 at 6.4); the structured oracle sees 1,256 and 1,151 required
+///          exact operands against 11,692 and 11,284 ignored.
+///   6.6 — #1297 round-4 fixes: a mark is compared by the index word the filter reads, never by its spelling, and the
+///          settlement counts get a positive control. RESULTS MOVE, and only in exact terms.
+///          (1) `Expr.requiredMarked`, the applied check and the de-duplication of `exactTerms` key on
+///          `ExactWordMatcher.word(_:)` of each mark's term — the function `ExactWordMatcher.contains(word:in:)`, and
+///          so the `frus_exact_word` filter, compares through — where 6.5 keyed on the rendered operand. That kept the
+///          punctuation beside a word and its diacritics, which the filter folds, and it kept every
+///          spelling of a word as a term of its own. So `=cold. war OR =cold peace` reports `["cold."]` where 6.5 ran
+///          it unfiltered and counted `colds`; `(=café OR war) =cafe` applies both marks where 6.5 applied the second;
+///          and `=Soviet =soviet` and `=Cold war OR =cold peace` report `["Soviet"]` and `["Cold"]` where 6.5 reported
+///          both spellings. The reported term is the spelling of the word's first applied operand. The key drops the
+///          column prefix: only a typed word carries a mark, and every typed word carries the same one. Marks still
+///          never join through an unmarked operand, a phrase or a demoted word, whatever their spellings.
+///          The filter's fold is not quite `unicode61`'s (`ExactWordMatcher.word(_:)`): it also folds stacked
+///          diacritics, `ß` and Greek accents, which the index keeps. So marks spelled `Diệm` and `Diem` join in the
+///          report (`(=Diệm OR coup) =Diem` applies both where 6.5 applied the second) while the rows stay 6.5's,
+///          because a leaf spelled `"diệm"` still matches only the index term `diệm`. Letters such as `ø`, `ł` and
+///          `đ` fold on neither side, so `=Gomułka` and `=Gomulka` stay two words.
+///          Measured against 6.5 (28557157). Over round 2's 1,411,430 parses, none of which spells one marked word two
+///          ways, every line of the dump is byte-identical, and nothing moves over the 444,440 parses of the length-5
+///          sequences of `=cold`, `-=cold`, cold, `"cold"`, war, `OR`, `NOT`, `(`, `)` and `-(`, alone and beside the
+///          excluded term cold, in both scopes. Over the length-1–4 sequences of `=cold`, `=Cold`, `=cold.`, `-=Cold`,
+///          cold, `"cold"`, war, `=war`, `OR`, `NOT`, `(`, `)` and `-(` beside seven structured combinations in both
+///          scopes (433,160 parses), no expression, dropped operand, approximation flag or operand field other than
+///          `isExactApplied` moves and no operand stops being applied; 5,096 operands become applied and 60,612 lists
+///          change, 30,306 per scope: 58,232 only drop a second spelling of a word, 2,296 gain a word
+///          (`=cold OR =cold.`), and 84 report an earlier-typed spelling (`=cold =cold. OR =cold.` was `["cold."]` and
+///          is `["cold"]`); no list loses a word. Over the round-3 review's sixteen-token alphabet, whose only second
+///          spelling is `=Cold` (978,656 parses), 35,400 lists change, 17,700 per scope, each only dropping a second
+///          spelling, and nothing else moves. Over 60,000 random queries of up to 14 units, among them `=Cold` and
+///          `=cold.`, beside random structured fields and scopes, 6,528 lists change — 5,506 drop a second spelling,
+///          883 gain a word, 139 report another spelling — and 2,548 operands become applied, with no other field
+///          moving. On a corpus holding cold, war and or beside colds, wars and ors, with a literal marker standing for
+///          each applied mark, every list reported over those families removes no row the query admits and keeps none
+///          it does not: 288,392 lists over the spelling alphabet, 549,268 over the sixteen-token alphabet, 138,162
+///          over the length-5 sequences and 30,968 over the random queries.
+///          (2) In a DEBUG build, `workSettlingRootTwice(parsing:columnPrefix:structured:)` settles a parse's root once
+///          more past the memo, so a test can see a count read 2: a counter saturating at 1 passed every check of 6.5's
+///          counts, with the memo removed too (the round-3 attack's P5c).
+///          The #1297 suites' printed counts do not move over the exact-term sweep's first alphabet (55,518 lists,
+///          4,286 ignored, 428 unproved per scope). Its new spelling alphabet reports 77,164 lists per scope with 5,180
+///          applied marks unreported because filtering on them would remove a row the query admits and 64 unreported
+///          although it would not (1,304 at 6.5), and 16 approximations that match nothing and run while their
+///          respelling with one marker is refused, since 6.1's refusal still compares rendered operands:
+///          `"cold." NOT "cold"`.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -120,73 +504,470 @@ public enum FTS5InlineQueryParser {
     ///
     /// - Parameter raw: The user's typed query text, in Google-style inline syntax.
     /// - Parameter columnPrefix: An FTS5 column-filter prefix (e.g. `"{header body_text}:"`)
-    ///   applied to every bare word, phrase, and wildcard operand — never to operator
-    ///   keywords. Pass `""` to search all indexed columns (the default).
-    /// - Returns: A MATCH expression fragment suitable for embedding alongside the rest
-    ///   of `FTS5Query`'s parts, or `nil` if `raw` contains no positive search content
-    ///   (empty string, only excluded/negated terms, or terms that sanitise to nothing).
-    public static func parse(_ raw: String, columnPrefix: String = "") -> String? {
-        parseDetailed(raw, columnPrefix: columnPrefix).expression
+    ///   applied to every bare word, wildcard and operator word left as a word, and in front of
+    ///   a whole `NEAR(...)`, phrases inside it included — never to an operator keyword, nor to
+    ///   a phrase outside a `NEAR`, which spans every column. Pass `""` to search all indexed
+    ///   columns (the default).
+    /// - Parameter structured: The structured phrase, prefix wildcard and excluded terms to
+    ///   combine with `raw` as one query (see "Structured parts"). `.none` by default.
+    /// - Returns: The MATCH expression, or `nil` when the query is refused: when neither `raw`
+    ///   nor `structured` holds a term that is positive after its negations (nothing typed,
+    ///   only excluded terms, or terms that sanitise to nothing); when the query is approximated
+    ///   and its operands prove the approximation matches nothing (see "Exclusions"); or when
+    ///   `raw`'s groups nest deeper than `maximumGroupDepth` (see "Grouping"). Without
+    ///   `structured`, an expression is also suitable for `FTS5Query.keywordExpression`.
+    public static func parse(_ raw: String, columnPrefix: String = "",
+                             structured: StructuredQueryParts = .none) -> String? {
+        parseDetailed(raw, columnPrefix: columnPrefix, structured: structured).expression
     }
 
-    /// Parses `raw` and reports both the MATCH expression and the terms the researcher
-    /// marked exact with `=`.
+    /// Parses `raw` and reports the MATCH expression, the terms the researcher marked
+    /// exact with `=`, and which operands the expression applies and which it leaves out.
     ///
-    /// The two travel together because they are two halves of one query. FTS5 cannot
-    /// express "this literal word" over a stemmed index, so an exact term is rendered
-    /// into the expression as an ordinary stemmed operand — which narrows the candidate
-    /// set to a strict superset — and is *also* reported here so the SQL layer can apply
-    /// a word-boundary filter to what comes back. Dropping either half silently changes
-    /// the answer: without the expression there is nothing to filter, and without the
-    /// filter the `=` did nothing.
-    public static func parseDetailed(_ raw: String, columnPrefix: String = "") -> ParsedQuery {
-        var harvest = Harvest()
-        let expression = renderTokens(tokenize(raw), columnPrefix: columnPrefix, into: &harvest)
-        // Order-preserving de-duplication: the same word marked exact twice is one filter.
-        var seen = Set<String>()
-        let unique = harvest.exactTerms.filter { seen.insert($0).inserted }
-        return ParsedQuery(expression: expression,
-                           exactTerms: expression == nil ? [] : unique,
-                           operands: expression == nil ? [] : harvest.operands)
+    /// The expression and the exact terms travel together because they are two halves of
+    /// one query. FTS5 cannot express "this literal word" over a stemmed index, so an exact
+    /// term is rendered into the expression as an ordinary stemmed operand — which narrows
+    /// the candidate set to a strict superset — and is *also* reported here so the SQL
+    /// layer can apply a word-boundary filter to what comes back. Dropping either half
+    /// silently changes the answer: without the expression there is nothing to filter, and
+    /// without the filter the `=` did nothing.
+    ///
+    /// The SQL layer ANDs one filter per exact term over every result, which is sound only for
+    /// a word every match must contain. So an `=` operand is reported only when it is typed,
+    /// applied and positive, and the expression that runs requires its word through a MARKED
+    /// operand — a mark every match must match, or a mark in every alternative, which the proof
+    /// tracks over marked operands' words (`Expr.requiredMarked`, D4). A word is compared as the
+    /// filter compares it, by `ExactWordMatcher.word(_:)`, so case, diacritics and punctuation
+    /// beside it never tell two marks apart. Every positive `=` operand on such a word is then
+    /// `ParsedOperand.isExactApplied`, since inside the filtered documents each reads the same:
+    /// `=cold war OR =cold peace`, `=Cold war OR =cold. peace` and `(=cold OR war) =cold` apply
+    /// both marks. Anywhere else the sigil is ignored and the term runs stemmed: an `OR` alternative
+    /// (`=cold OR war`), a term inside a negated group (`cold -(war -=korea)`, which matches cold
+    /// documents holding neither war nor korea), or a complement a structured phrase or prefix
+    /// anchors (`=cold OR -korea` beside the prefix `viet`). An unmarked operand, a phrase or a
+    /// demoted operator word with the same stem never makes a mark apply, because it admits the
+    /// stem: `(=cold OR war) cold` matches `colds war`, and `=cold war OR cold peace` matches
+    /// `colds peace`, so both report nothing. The proof is sound but not complete, so a word every
+    /// match happens to hold literally can still go unreported — `(=cold OR war) -war`, whose war
+    /// alternative its exclusion empties — and then the mark is ignored: its inflected forms match
+    /// and are counted, as for any unapplied mark.
+    ///
+    /// `structured` joins the typed query in one tree (see "Structured parts"), so every field
+    /// reported here describes the query that runs: its operands follow the typed ones with
+    /// `source` `.structured`, a typed complement beside a structured phrase or prefix is
+    /// applied rather than dropped, and `isApproximate` says whether the expression matches less
+    /// than the whole query means. Only typed words carry `=`, so `exactTerms` never gains a
+    /// structured term.
+    public static func parseDetailed(_ raw: String, columnPrefix: String = "",
+                                     structured: StructuredQueryParts = .none) -> ParsedQuery {
+        parsedTree(raw, columnPrefix: columnPrefix, structured: structured).query
     }
 
-    /// Everything `renderTokens` gathers on its way down, besides the expression itself.
+    /// `parseDetailed`'s result, with the tree it was computed from — `nil` when the query was refused before a tree
+    /// existed — so a DEBUG build can inspect the work the parse did (`work(parsing:columnPrefix:structured:)`) on
+    /// exactly the path that ran.
+    private static func parsedTree(_ raw: String, columnPrefix: String,
+                                   structured: StructuredQueryParts) -> (query: ParsedQuery, root: Node?) {
+        let tokens = tokenize(raw)
+        // Every pass below recurses once per level of nesting, so the depth is checked first, over the
+        // tokens and without recursion: a query nested past the limit is refused before any tree exists.
+        guard groupDepth(of: tokens) <= maximumGroupDepth else { return (ParsedQuery(expression: nil, exactTerms: []), nil) }
+        var harvest = Harvest()
+        var parts: [Node] = []
+        if let typed = buildNode(tokens, columnPrefix: columnPrefix, into: &harvest) {
+            parts.append(typed)
+        }
+        parts += structuredParts(structured, columnPrefix: columnPrefix, into: &harvest)
+        guard !parts.isEmpty else { return (ParsedQuery(expression: nil, exactTerms: []), nil) }
+        let root = Node.parts(parts)
+        var dropped = Set<Int>()
+        guard let expression = anchored(root, dropped: &dropped) else {
+            return (ParsedQuery(expression: nil, exactTerms: []), root)
+        }
+        // Anchoring left something out whenever the query's exact meaning is a complement — even
+        // when all it left out is a demoted operator word, which has no operand to report.
+        var isApproximate = true
+        if case .matching? = exactMeaning(of: root) { isApproximate = false }
+        // An approximation its own operands prove empty is refused, as though nothing had anchored: running it
+        // could only return no documents, which would read as a finding about the corpus. An exact render is what
+        // was typed and always runs.
+        if isApproximate, expression.isEmpty { return (ParsedQuery(expression: nil, exactTerms: []), root) }
+        var negated: [Int: Bool] = [:]
+        polarity(of: root, negated: false, into: &negated)
+
+        var operands: [ParsedOperand] = []
+        var droppedOperands: [ParsedOperand] = []
+        var exactTerms: [String] = []
+        // Order-preserving de-duplication by index word, keeping the first spelling applied: `=Cold` and `=cold.` are
+        // one filter, because the filter compares the word `ExactWordMatcher` reads.
+        var seen = Set<String>()
+        for (index, proto) in harvest.operands.enumerated() {
+            let isNegated = negated[index] ?? false
+            if dropped.contains(index) {
+                droppedOperands.append(ParsedOperand(text: proto.text, rendered: isNegated ? "NOT \(proto.core)" : proto.core,
+                                                     kind: proto.kind, isNegated: isNegated, isExact: proto.isExact,
+                                                     source: proto.source))
+                continue
+            }
+            // Only a *positive* exact term becomes a filter, however the operand came to be
+            // excluded — `-=word`, `NOT =word`, `NOT (=word OR x)`. An excluded one would need
+            // an inverted post-filter, and getting that subtly wrong silently over-excludes;
+            // a plain one would require the very word the MATCH excludes. And only a word every match holds
+            // through a marked operand: the filter is ANDed over every result, so on a word the expression
+            // leaves optional it would remove documents the MATCH admits — even where an unmarked operand with
+            // the same stem is required, since that operand admits the stem. Once the word qualifies, every
+            // positive mark on it applies, whatever its spelling: inside the filtered documents each of them reads the
+            // same.
+            var isExactApplied = false
+            if !isNegated, let word = proto.exactWord { isExactApplied = expression.requiredMarked.contains(word) }
+            operands.append(ParsedOperand(text: proto.text, rendered: isNegated ? "NOT \(proto.core)" : proto.core,
+                                          kind: proto.kind, isNegated: isNegated, isExact: proto.isExact,
+                                          source: proto.source, isExactApplied: isExactApplied))
+            if isExactApplied, let term = proto.exactTerm, let word = proto.exactWord, seen.insert(word).inserted {
+                exactTerms.append(term)
+            }
+        }
+        return (ParsedQuery(expression: expression.text, exactTerms: exactTerms,
+                            operands: operands, droppedOperands: droppedOperands,
+                            isApproximate: isApproximate), root)
+    }
+
+    #if DEBUG
+    /// What one parse did to its tree, counted on the nodes themselves: how many nodes the tree held, pushed-inward
+    /// complements included, and how many times the busiest node's meaning and anchor were settled.
+    ///
+    /// DEBUG-only, because it exists to make the memo `Node` keeps observable to a test. The memo changes no answer, so
+    /// no render can show it is gone, and the time it saves is a wall-clock budget a loaded machine breaks. A count of
+    /// settlements is neither: with the memo each node's meaning and anchor are settled at most once, and without it
+    /// every level that lacks an anchor settles its whole subtree again.
+    struct ParseWork: Equatable {
+        /// The distinct nodes reachable from the root, through each node's members and its `pushedInward` complement.
+        var nodes = 0
+        /// Every node's meaning settlements, summed: `nodes` when each node was evaluated exactly once.
+        var meaningSettlements = 0
+        /// The most times any one node's meaning was settled.
+        var maximumMeaningSettlements = 0
+        /// The most times any one node's anchor was settled.
+        var maximumAnchorSettlements = 0
+    }
+
+    /// `parseDetailed(raw, columnPrefix:structured:)` and the work it did (`ParseWork`), read from the tree that parse
+    /// built. A query refused before a tree existed did no work: every count is zero.
+    static func work(parsing raw: String, columnPrefix: String = "",
+                     structured: StructuredQueryParts = .none) -> (query: ParsedQuery, work: ParseWork) {
+        let (query, root) = parsedTree(raw, columnPrefix: columnPrefix, structured: structured)
+        return (query, root.map(work(on:)) ?? ParseWork())
+    }
+
+    /// `work(parsing:columnPrefix:structured:)` with the root's meaning and anchor settled once more after the parse,
+    /// past the memo: the positive control for the counts, which must then read 2 at the root.
+    ///
+    /// A count that stopped adding — one saturating at 1 — would still pass every check of a memo that holds, and with
+    /// the memo removed too it passed them all (the round-3 attack's P5c); only a node settled twice can tell it apart.
+    /// The tree is discarded afterwards, so settling it again changes no parse.
+    static func workSettlingRootTwice(parsing raw: String, columnPrefix: String = "",
+                                      structured: StructuredQueryParts = .none) -> ParseWork {
+        guard let root = parsedTree(raw, columnPrefix: columnPrefix, structured: structured).root else {
+            return ParseWork()
+        }
+        settleMeaning(root)
+        settleAnchor(root)
+        return work(on: root)
+    }
+
+    /// The `ParseWork` counted on the tree under `root`.
+    private static func work(on root: Node) -> ParseWork {
+        var work = ParseWork()
+        // Iterative, and each node once: a pushed-inward complement shares every node beneath its negations.
+        var seen = Set<ObjectIdentifier>()
+        var pending = [root]
+        while let node = pending.popLast() {
+            guard seen.insert(ObjectIdentifier(node)).inserted else { continue }
+            work.nodes += 1
+            work.meaningSettlements += node.meaningSettlements
+            work.maximumMeaningSettlements = max(work.maximumMeaningSettlements, node.meaningSettlements)
+            work.maximumAnchorSettlements = max(work.maximumAnchorSettlements, node.anchorSettlements)
+            switch node.kind {
+            case .leaf, .opaque: break
+            case .not(let inner), .group(let inner): pending.append(inner)
+            case .and(let members), .or(let members), .parts(let members): pending += members
+            }
+            if let pushed = node.pushedInward { pending.append(pushed) }
+        }
+        return work
+    }
+    #endif
+
+    /// One searchable unit as harvested, before the tree around it settles its polarity.
+    ///
+    /// Polarity cannot be read off the token: `korea` in `NOT (war OR korea)` carries no
+    /// mark of its own, and whether a mark applies at all depends on what it reaches. So
+    /// the harvest records only what the operand *is*, and `parseDetailed` decides whether
+    /// it is excluded — and whether the expression applies it at all — once the tree is
+    /// complete.
+    private struct ProtoOperand {
+        /// The operand's own text, without marks — becomes `ParsedOperand.text`.
+        var text: String
+        /// The operand's positive FTS5 fragment, column prefix included, never `NOT`.
+        var core: String
+        /// The public shape of the operand.
+        var kind: ParsedOperand.Kind
+        /// Whether the researcher typed the `=` sigil on it.
+        var isExact: Bool
+        /// The literal word the operand post-filters on when its mark applies (`ParsedOperand.isExactApplied`), as
+        /// typed, or `nil` when the sigil is absent or cannot apply.
+        var exactTerm: String?
+        /// `exactTerm`'s index word (`ExactWordMatcher.word(_:)`), which decides whether two marks are one filter:
+        /// `nil` exactly when `exactTerm` is.
+        var exactWord: String?
+        /// Where the operand came from.
+        var source: ParsedOperand.Source = .typed
+    }
+
+    /// Everything `buildNode` gathers on its way down, besides the tree itself.
     ///
     /// One value rather than several `inout` parameters because the recursion threads it
-    /// through every group; each new thing the parser reports would otherwise widen four
-    /// call sites.
+    /// through every group. A leaf refers to its operand by index into `operands`.
     private struct Harvest {
-        var exactTerms: [String] = []
-        var operands: [ParsedOperand] = []
+        /// Every operand the query rendered, in the order typed.
+        var operands: [ProtoOperand] = []
     }
 
-    // MARK: - Recursive Group-Aware Rendering
+    // MARK: - Boolean Tree
 
-    /// Renders a flat sequence of raw tokens — which may contain balanced `(...)`
-    /// groups at any depth — into a stemmed, sanitised FTS5 MATCH expression
-    /// fragment, or `nil` if it carries no positive search content.
+    /// The token for a dash attached to an opening parenthesis, which negates the group it
+    /// opens exactly as `NOT (` does.
     ///
-    /// Each balanced `(...)` group is located via `matchingGroup(in:openAt:)`,
-    /// rendered by **recursing into this same function**, and — provided it produced
-    /// any content — wrapped in literal parentheses and folded back into the token
-    /// stream as a single opaque `.operand`. That operand then flows through the
-    /// exact same `classify` / `demoteOrphanedOperators` / `assemble` pipeline as any
-    /// bare word or phrase, so a group composes with `AND`/`OR`/`NOT` — including
-    /// `NOT (a OR b)` — with no special-casing beyond "this operand happens to render
-    /// as a parenthesised sub-expression". FTS5 natively supports parenthesised
-    /// grouping in MATCH expressions, so the rendered fragment is valid as-is.
+    /// `tokenize` emits it only for a dash that begins a token, so neither `cold-(war)`
+    /// (the word `cold-` then a group) nor a detached `- (` ever produces it.
+    private static let attachedDashGroup = "-("
+
+    /// The deepest nesting of groups a query may have: 32 levels render, and a query nested deeper is refused.
     ///
-    /// Degradation is graceful by construction: an unmatched `(` or stray `)` never
-    /// finds a partner in `matchingGroup`, falls through to ordinary `classify`
-    /// handling, sanitises to nothing (parens are structural punctuation to
-    /// `sanitizeBareToken`), and is silently dropped — exactly like any other
-    /// punctuation-only token. A group whose contents render to `nil` (e.g. `()`,
-    /// `(   )`, or `(-korea)` — only excluded terms, no positive content) is
-    /// likewise dropped in its entirety rather than emitted as an empty `()`.
-    private static func renderTokens(
+    /// Every pass over the tree — building it, `evaluate`, `anchor(_:)`, `complement`, `hasPositiveLeaf`, `leaves`,
+    /// `polarity`, and releasing it — recurses once per level, and the app parses on Swift concurrency's pool threads,
+    /// whose stacks are 512 KB. Measured as the deepest point a parse reaches on a painted 4 MB thread stack, over 328
+    /// queries — fifteen nestings around eleven innermost terms at 32 levels, less `NEAR(` around `NEAR(cold war, 5)`,
+    /// which cannot nest: 164 queries, each alone and scoped beside a phrase — the costliest needs 86 KB in a Debug build
+    /// (`-(war …)` around `=cold`) and 43 KB in a Release build (`-(a OR -b …)` around `cold`, scoped), about 6 and 12
+    /// times inside 512 KB. At parser 6.3 the costliest was `-(a OR -b …)` around an exclusion such as `-korea`: 322 KB
+    /// and 67 KB. A query nested that deeply is pasted, not typed.
+    ///
+    /// The limit is about this process's stack, not SQLite's grammar. FTS5's parser has a fixed stack of its own, and
+    /// a render nested well inside the limit can exceed it: `cold OR war korea NOT (` repeated 14 times is rejected
+    /// as "fts5: parser stack overflow", as it was before #1297. That is an error the search reports, never a crash.
+    static let maximumGroupDepth = 32
+
+    /// For each token that opens or closes a balanced group, the index of the token that closes or opens it; `nil`
+    /// for every other token, an unmatched `(` or `)` included.
+    ///
+    /// A `(` or an attached `-(` opens a level and a `)` closes the most recent open one, so a token pairs with exactly
+    /// the token a depth count from it returns to zero at — the partner `buildNode` has always used — found in one pass
+    /// rather than a scan to the end of the query from every opener.
+    private static func groupPartners(_ tokens: [String]) -> [Int?] {
+        var partners = [Int?](repeating: nil, count: tokens.count)
+        var open: [Int] = []
+        for (index, token) in tokens.enumerated() {
+            if token == "(" || token == attachedDashGroup {
+                open.append(index)
+            } else if token == ")", let opener = open.popLast() {
+                partners[opener] = index
+                partners[index] = opener
+            }
+        }
+        return partners
+    }
+
+    /// How deeply `tokens`' balanced groups nest: `cold` is 0, `(cold)` 1, `((a) OR (b))` 2. An unmatched parenthesis
+    /// is punctuation and never a level, a `NEAR(...)`'s own parentheses are one, and nothing here recurses, so it is
+    /// safe on any input.
+    static func groupDepth(of tokens: [String]) -> Int {
+        let partners = groupPartners(tokens)
+        var depth = 0, deepest = 0
+        for (index, partner) in partners.enumerated() {
+            guard let partner else { continue }
+            if partner > index {
+                depth += 1
+                deepest = max(deepest, depth)
+            } else {
+                depth -= 1
+            }
+        }
+        return deepest
+    }
+
+    /// The query as a boolean tree, before anything is rendered.
+    ///
+    /// `-korea` and `NOT korea` both become `.not(.leaf(korea))`, which is what makes the
+    /// two spellings interchangeable in every position. Rendering from a tree rather than
+    /// splicing tokens is what guarantees valid FTS5: its `NOT` is strictly binary, so the
+    /// text has to be built knowing what sits on its left.
+    ///
+    /// A class, so that a node can keep what is computed from it: its exact meaning and its anchor. Anchoring asks for
+    /// the meaning of every node on the path it descends, and pushing a negation inward builds a new tree around the
+    /// same deeper nodes, so while neither was kept a long AND-run nested n levels deep was combined again at every level
+    /// that lacked an anchor. Only those answers change after a node is built, each once.
+    private final class Node {
+        /// What the node is.
+        enum Kind {
+            /// A positive rendered operand, or a demoted operator literal when `operand` is `nil`. `markedWord` is the
+            /// index word of an `=` that can apply — `ProtoOperand.exactWord` — so the proof follows it, and `nil` for
+            /// every other leaf.
+            case leaf(String, operand: Int?, markedWord: String?)
+            /// A negation — from `-`, `NOT`, or a dash attached to a group.
+            case not(Node)
+            /// A parenthesised group, kept so the rendered text keeps the researcher's parentheses.
+            case group(Node)
+            /// An AND-run: the members between two surviving `OR`s at one nesting level.
+            case and([Node])
+            /// Two or more AND-runs joined by `OR`.
+            case or([Node])
+            /// The query that runs: the typed query and each structured field, conjoined. Always
+            /// the root, and never inside anything else.
+            case parts([Node])
+            /// A positive expression rendered outside this parser — `FTS5Query`'s keyword
+            /// fragment — carried as one opaque operand.
+            case opaque(String)
+        }
+
+        /// What the node is.
+        let kind: Kind
+
+        /// Whether `meaning` has been computed (`evaluate`).
+        var isEvaluated = false
+
+        /// The node's exact meaning once `isEvaluated`, or `nil` when it has nothing to render.
+        var meaning: Signed?
+
+        /// Whether `anchor` and `dropped` have been computed (`anchor(_:)`).
+        var isAnchored = false
+
+        /// For a negation whose meaning lacks an anchor, its operand's complement with the negation pushed inward: the
+        /// tree its anchor is taken from.
+        var pushedInward: Node?
+
+        /// The largest part of the node's meaning FTS5 can search once `isAnchored` (`anchored(_:dropped:)`).
+        var anchor: Expr?
+
+        /// The operands `anchor` leaves out, by harvest index. Meaningful only where `anchor` is not `nil`.
+        var dropped: Set<Int> = []
+
+        #if DEBUG
+        /// How many times `settleMeaning` has settled this node's meaning: once, while `evaluate`'s memo holds.
+        var meaningSettlements = 0
+        /// How many times `settleAnchor` has settled this node's anchor: at most once, while `anchor(_:)`'s memo holds.
+        var anchorSettlements = 0
+        #endif
+
+        /// A node of `kind`.
+        init(_ kind: Kind) {
+            self.kind = kind
+        }
+
+        /// A leaf: the rendered operand `text`, harvested at `operand`, marked exact on `markedWord` when it is not
+        /// `nil`.
+        static func leaf(_ text: String, operand: Int?, markedWord: String? = nil) -> Node {
+            Node(.leaf(text, operand: operand, markedWord: markedWord))
+        }
+
+        /// The negation of `inner`.
+        static func not(_ inner: Node) -> Node { Node(.not(inner)) }
+
+        /// `inner` in parentheses.
+        static func group(_ inner: Node) -> Node { Node(.group(inner)) }
+
+        /// An AND-run of `members`.
+        static func and(_ members: [Node]) -> Node { Node(.and(members)) }
+
+        /// The alternatives `disjuncts`.
+        static func or(_ disjuncts: [Node]) -> Node { Node(.or(disjuncts)) }
+
+        /// The root conjunction of `parts`.
+        static func parts(_ parts: [Node]) -> Node { Node(.parts(parts)) }
+
+        /// An already-rendered positive `text`.
+        static func opaque(_ text: String) -> Node { Node(.opaque(text)) }
+    }
+
+    /// The structured fields as parts of the query, harvested after the typed operands.
+    ///
+    /// Sanitised exactly as `FTS5Query` always sanitised them, so a restored saved search
+    /// renders the bytes it rendered before: the phrase spans all columns, the prefix carries
+    /// the column prefix, and an excluded term carries none.
+    private static func structuredParts(
+        _ structured: StructuredQueryParts, columnPrefix: String, into harvest: inout Harvest
+    ) -> [Node] {
+        var parts: [Node] = []
+        func leaf(_ proto: ProtoOperand) -> Node {
+            harvest.operands.append(proto)
+            return .leaf(proto.core, operand: harvest.operands.count - 1)
+        }
+        if let raw = structured.phrase, let phrase = stemPhrase(raw) {
+            parts.append(leaf(ProtoOperand(text: phrase, core: "\"\(phrase)\"", kind: .phrase,
+                                           isExact: false, exactTerm: nil, source: .structured)))
+        }
+        if let raw = structured.prefixWildcard {
+            let prefix = sanitizeBareToken(raw)
+            if !prefix.isEmpty {
+                parts.append(leaf(ProtoOperand(text: prefix + "*", core: columnPrefix + "\"\(prefix)\"*",
+                                               kind: .prefix, isExact: false, exactTerm: nil,
+                                               source: .structured)))
+            }
+        }
+        for raw in structured.excludedTerms {
+            let term = sanitizeBareToken(raw).lowercased()
+            guard !term.isEmpty else { continue }
+            parts.append(.not(leaf(ProtoOperand(text: term, core: "\"\(term)\"",
+                                                kind: term.contains(" ") ? .phrase : .word,
+                                                isExact: false, exactTerm: nil, source: .structured))))
+        }
+        return parts
+    }
+
+    /// `FTS5Query`'s expression: an already-rendered keyword fragment, if any, and the
+    /// structured fields, combined by the same rule and anchoring as a parsed query.
+    ///
+    /// The fragment is one opaque, always-positive part, so this reproduces `FTS5Query` 2.2's
+    /// join byte for byte — and, for the same reason, cannot see a complement the fragment's own
+    /// parse left out. `nil` when there is no positive part. Used only by `FTS5Query`.
+    static func combine(renderedKeywords: String?, structured: StructuredQueryParts,
+                        columnPrefix: String) -> String? {
+        var harvest = Harvest()
+        var parts: [Node] = []
+        if let renderedKeywords, !renderedKeywords.isEmpty { parts.append(.opaque(renderedKeywords)) }
+        parts += structuredParts(structured, columnPrefix: columnPrefix, into: &harvest)
+        guard !parts.isEmpty else { return nil }
+        var dropped = Set<Int>()
+        return anchored(.parts(parts), dropped: &dropped)?.text
+    }
+
+    /// One position in a nesting level's item stream, before its operators are resolved.
+    private enum Item {
+        /// Something that can be an operand: a leaf, a negated leaf, or a group.
+        case node(Node)
+        /// An operator keyword not yet checked for something to bind.
+        case op(Operator)
+    }
+
+    /// Builds the boolean tree for a flat token sequence — which may contain balanced
+    /// `(...)` groups at any depth — or `nil` when it carries nothing to build.
+    ///
+    /// The scan is the historical left-to-right one: `NEAR(...)` first, then balanced
+    /// groups (recursing into this same function), then ordinary tokens through
+    /// `classify`. Every operand is harvested in typed order and its leaf points back at it
+    /// by index.
+    ///
+    /// Degradation is graceful by construction: an unmatched `(` or stray `)` has no
+    /// partner in `groupPartners`, falls through to `classify`, sanitises to nothing
+    /// (parens are structural punctuation to `sanitizeBareToken`), and is silently
+    /// dropped — exactly like any other punctuation-only token. A group that yields no
+    /// node at all — `()`, `(   )`, a group of punctuation — is likewise dropped in its
+    /// entirety. A group of only exclusions is a node, and keeps its meaning.
+    private static func buildNode(
         _ tokens: [String], columnPrefix: String, into harvest: inout Harvest
-    ) -> String? {
-        var resolved: [ResolvedToken] = []
+    ) -> Node? {
+        var items: [Item] = []
+        let partners = groupPartners(tokens)
         var index = 0
         while index < tokens.count {
             let rawToken = tokens[index]
@@ -196,15 +977,16 @@ public enum FTS5InlineQueryParser {
             // are spelled identically and only the preceding keyword distinguishes them.
             if let near = nearOperator(rawToken),
                index + 1 < tokens.count, tokens[index + 1] == "(",
-               let group = matchingGroup(in: tokens, openAt: index + 1) {
-                if let rendered = renderNear(inner: group.inner,
+               let close = partners[index + 1] {
+                let inner = Array(tokens[(index + 2)..<close])
+                if let rendered = renderNear(inner: inner,
                                              aliasDistance: near.aliasDistance,
                                              columnPrefix: columnPrefix) {
-                    resolved.append(.operand(rendered: rendered, isPositive: true))
-                    harvest.operands.append(ParsedOperand(
-                        text: (["NEAR("] + group.inner + [")"]).joined(separator: " "),
-                        rendered: rendered, kind: .proximity, isNegated: false, isExact: false))
-                    index = group.closeIndex + 1
+                    harvest.operands.append(ProtoOperand(
+                        text: (["NEAR("] + inner + [")"]).joined(separator: " "),
+                        core: rendered, kind: .proximity, isExact: false, exactTerm: nil))
+                    items.append(.node(.leaf(rendered, operand: harvest.operands.count - 1)))
+                    index = close + 1
                     continue
                 }
                 // Malformed NEAR — an operand FTS5 forbids inside one (a boolean, a
@@ -218,70 +1000,682 @@ public enum FTS5InlineQueryParser {
                 continue
             }
 
-            if rawToken == "(", let group = matchingGroup(in: tokens, openAt: index) {
-                if let rendered = renderTokens(group.inner, columnPrefix: columnPrefix,
-                                               into: &harvest) {
-                    resolved.append(.operand(rendered: "(\(rendered))", isPositive: true))
+            // A group, opened by `(` or by an attached `-(`. The attached dash is a NOT
+            // before the group, emitted only when the group builds: before `()` it stays the
+            // punctuation it always was, rather than stranding a NOT that
+            // `demoteOrphanedOperators` would turn into a search for the word "not".
+            if rawToken == "(" || rawToken == attachedDashGroup, let close = partners[index] {
+                if let inner = buildNode(Array(tokens[(index + 1)..<close]), columnPrefix: columnPrefix, into: &harvest) {
+                    if rawToken == attachedDashGroup { items.append(.op(.not)) }
+                    items.append(.node(.group(inner)))
                 }
-                index = group.closeIndex + 1
+                index = close + 1
                 continue
             }
 
             if let classified = classify(rawToken) {
                 switch classified {
                 case .op(let kind):
-                    resolved.append(.opCandidate(kind))
+                    items.append(.op(kind))
                 case .operand(let operand):
-                    if let rendered = render(operand, columnPrefix: columnPrefix) {
-                        resolved.append(.operand(rendered: rendered, isPositive: !operand.negated))
-                        harvest.operands.append(ParsedOperand(
-                            text: operand.surfaceText, rendered: rendered,
-                            kind: operand.kind.parsedKind, isNegated: operand.negated,
-                            isExact: operand.isExact))
-                        // Only *positive* exact terms become filters. `-="word"` would
-                        // otherwise need an inverted post-filter, and getting that subtly
-                        // wrong silently over-excludes; the sigil is ignored on a negated
-                        // operand, which leaves ordinary negation — today's behaviour.
-                        if operand.isExact, !operand.negated,
-                           case .word(let raw) = operand.kind,
-                           let term = exactTerm(from: raw) {
-                            harvest.exactTerms.append(term)
+                    // Negation is structure, not text: the leaf holds the positive core, and
+                    // the tree decides where — and whether — a `NOT` is rendered.
+                    var positive = operand
+                    positive.negated = false
+                    if let core = render(positive, columnPrefix: columnPrefix) {
+                        var exact: (term: String, word: String)?
+                        if operand.isExact, case .word(let raw) = operand.kind {
+                            exact = exactTerm(from: raw)
                         }
+                        harvest.operands.append(ProtoOperand(
+                            text: operand.surfaceText, core: core,
+                            kind: operand.kind.parsedKind, isExact: operand.isExact,
+                            exactTerm: exact?.term, exactWord: exact?.word))
+                        let leaf = Node.leaf(core, operand: harvest.operands.count - 1, markedWord: exact?.word)
+                        items.append(.node(operand.negated ? .not(leaf) : leaf))
                     }
                 }
             }
             index += 1
         }
 
-        demoteOrphanedOperators(in: &resolved)
-        return assemble(resolved)
+        demoteOrphanedOperators(in: &items, columnPrefix: columnPrefix)
+        return structure(items)
     }
 
-    /// Scans forward from `tokens[openAt]` (which must be `"("`) for its balanced
-    /// closing `")"`, tracking nested-paren depth so inner groups don't terminate the
-    /// search early — e.g. for `(a (b) c) d`, the outer group's contents are correctly
-    /// identified as `a (b) c`, not just `a (b`.
+    /// Walks one nesting level's items left to right, converting any `AND`/`OR`/`NOT` that
+    /// has nothing to bind into a literal leaf for that same word — stemmed and scoped by
+    /// `columnPrefix`, like any other bare term, so a scoped `-not` removes a demoted `NOT` in
+    /// its own scope and a scoped query never searches the word outside it.
     ///
-    /// Returns the inner token slice (enclosing parens excluded) and the index of the
-    /// matching close, or `nil` if `tokens` never returns to depth zero — i.e. an
-    /// unmatched `(` that the caller should treat as an ordinary literal token.
-    private static func matchingGroup(
-        in tokens: [String], openAt: Int
-    ) -> (inner: [String], closeIndex: Int)? {
-        var depth = 0
-        var i = openAt
-        while i < tokens.count {
-            if tokens[i] == "(" {
-                depth += 1
-            } else if tokens[i] == ")" {
-                depth -= 1
-                if depth == 0 {
-                    return (Array(tokens[(openAt + 1)..<i]), i)
+    /// An `AND` or `OR` binds when a node sits on its left and, on its right, a node or a
+    /// chain of `NOT`s ending in one — so `cold AND NOT korea` keeps both keywords as
+    /// operators. A `NOT` binds when the chain of `NOT`s starting at it ends in a node.
+    /// Everything that survives can therefore be structured (orphans such as `"cold OR"`,
+    /// `"OR cold"`, `"cold OR OR war"` or a bare `"NOT"` become words). Resolution is in
+    /// place and left to right, so chains of misplaced operators (`"cold OR AND war"`)
+    /// resolve consistently: each candidate sees the earlier ones already resolved.
+    private static func demoteOrphanedOperators(in items: inout [Item], columnPrefix: String) {
+        func isNode(_ index: Int) -> Bool {
+            guard items.indices.contains(index), case .node = items[index] else { return false }
+            return true
+        }
+        func isNot(_ index: Int) -> Bool {
+            guard items.indices.contains(index), case .op(.not) = items[index] else { return false }
+            return true
+        }
+        func startsUnary(_ index: Int) -> Bool {
+            var cursor = index
+            while isNot(cursor) { cursor += 1 }
+            return isNode(cursor)
+        }
+
+        for index in items.indices {
+            guard case .op(let kind) = items[index] else { continue }
+            let isValidPlacement: Bool
+            switch kind {
+            case .and, .or:
+                isValidPlacement = isNode(index - 1) && startsUnary(index + 1)
+            case .not:
+                isValidPlacement = startsUnary(index)
+            }
+            guard !isValidPlacement else { continue }
+
+            let literal = kind.fts5Keyword.lowercased()
+            guard let word = stemBareWord(literal) else { continue }
+            items[index] = .node(.leaf(columnPrefix + "\"\(word)\"", operand: nil))
+        }
+    }
+
+    /// Folds one nesting level's resolved items into a node: AND-runs split at each `OR`,
+    /// with every run of `NOT`s applied to the member it reaches.
+    ///
+    /// `AND` needs no node of its own, because every member of a run is conjoined anyway.
+    /// Negation marks count once, and a negation reaching a member with no positive term is
+    /// not applied at all — `NOT -korea` is `-korea`, and `NOT (-korea)` is `(-korea)` —
+    /// since complementing a pure exclusion would ask FTS5 for a universal set it lacks.
+    private static func structure(_ items: [Item]) -> Node? {
+        var disjuncts: [Node] = []
+        var run: [Node] = []
+        var pendingNots = 0
+        for item in items {
+            switch item {
+            case .op(.or):
+                if !run.isEmpty { disjuncts.append(run.count == 1 ? run[0] : .and(run)) }
+                run = []
+            case .op(.and):
+                continue
+            case .op(.not):
+                pendingNots += 1
+            case .node(let node):
+                run.append(pendingNots > 0 && hasPositiveLeaf(node) ? .not(node) : node)
+                pendingNots = 0
+            }
+        }
+        if !run.isEmpty { disjuncts.append(run.count == 1 ? run[0] : .and(run)) }
+        guard !disjuncts.isEmpty else { return nil }
+        return disjuncts.count == 1 ? disjuncts[0] : .or(disjuncts)
+    }
+
+    // MARK: - Signed Rendering
+
+    /// How loosely a rendered expression's top-level operator binds, which decides where
+    /// parentheses are needed. FTS5 binds `NOT` tighter than `AND`, and `AND` tighter than
+    /// `OR`.
+    private enum Precedence {
+        /// The top level is an `OR`.
+        case or
+        /// The top level is an `AND`.
+        case and
+        /// The top level is a binary `NOT`.
+        case not
+        /// A single operand or a parenthesised group.
+        case atom
+    }
+
+    /// Rendered FTS5 text, the precedence of its top-level operator, and what its operands alone prove about
+    /// the documents it matches.
+    ///
+    /// The proof is what lets `parseDetailed` refuse an approximation that can match nothing (6.1), and decide which
+    /// `=` marks apply (D1, D4). It is built alongside the text by the same functions — `operand`, `parenthesized`, `conjoin`,
+    /// `exclude`, `disjoin` and `combineParts` — and is sound but not complete: `isEmpty` is `true` only when the
+    /// expression matches no document in any corpus, and `false` says nothing.
+    ///
+    /// Refusal asks what the stemmed MATCH requires, so every leaf counts, compared by what it matches
+    /// (`OperandIdentity`): `=cold`, `cold` and the phrase `"cold"` are one identity. A post-filter asks what the
+    /// literal word requires, so `requiredMarked` counts marked leaves alone, and compares them the way the filter
+    /// compares words, by index word (`ExactWordMatcher.word(_:)`), never by spelling. Every match of
+    /// `(=cold OR war) cold` holds the identity `"cold"` through the unmarked leaf, and none need hold the word through
+    /// a marked one; every match of `=Cold war OR =cold. peace` holds the word cold through a marked leaf, whichever
+    /// alternative it matches, although the two marks render `"cold"` and `"cold."`.
+    private struct Expr {
+        /// The FTS5 text.
+        var text: String
+        /// How loosely `text`'s top-level operator binds.
+        var precedence: Precedence
+        /// Operands every document the expression matches also matches.
+        var required: Set<OperandIdentity> = []
+        /// Operands any one of which a document need only match to match the expression.
+        var sufficient: Set<OperandIdentity> = []
+        /// Operands no document the expression matches can match.
+        var forbidden: Set<OperandIdentity> = []
+        /// The words every document the expression matches holds through a MARKED leaf — one required marked leaf, or a
+        /// marked leaf in every alternative — each as the index word the exact-word filter compares
+        /// (`ExactWordMatcher.word(_:)`), so marks typed `Cold`, `cold.` and `cold` are one word, and `café` and `cafe`
+        /// one. No column prefix is kept, because only a typed word carries a mark and every typed word carries the
+        /// same one.
+        ///
+        /// Structural, so it holds whatever each marked leaf matches: read as the literal word, the marked leaves of a
+        /// word here still bound every match, so every match holds that literal word. Inside those documents a leaf of
+        /// the word matches whether it is read literally or by stem, marked or not, positive or excluded, so filtering
+        /// the stemmed MATCH on the word returns exactly what the expression means with every mark on it read literally
+        /// (D1, D4). That holds for words the filter and `unicode61` fold alike. Where the filter folds what the index
+        /// keeps (`ệ`, `ß`, Greek accents), a leaf spelled one way does not match a document spelled the other, so the
+        /// result is narrower than that literal reading: `(=Diệm OR coup) =Diem` omits a document holding
+        /// `Diem regime`. An unmarked leaf seeds nothing, because what it requires is the stem.
+        var requiredMarked: Set<String> = []
+        /// Whether the expression provably matches no document.
+        var isEmpty = false
+
+        /// This expression with `isEmpty` set when an operand it requires is covered by one it forbids.
+        ///
+        /// Looked up rather than compared pairwise: an AND-run alternating anchors and exclusions grows both sets by
+        /// one per member, and a pairwise test at every step made a flat 4,000-character query of that shape cubic.
+        /// Nothing is looked up when nothing is forbidden, as along every positive run, and a lookup allocates nothing:
+        /// building each anchor's coverers as an array on every conjoin made positive runs slower than the pairwise
+        /// test it replaced (6.4).
+        func settled() -> Expr {
+            guard !isEmpty, !forbidden.isEmpty else { return self }
+            var result = self
+            result.isEmpty = required.contains { $0.isCovered(by: forbidden) }
+            return result
+        }
+    }
+
+    /// A rendered operand as the emptiness proof compares it: its core, and the column prefix in front of it.
+    ///
+    /// Two operands with the same core and prefix match the same documents, and a core with no prefix spans
+    /// every column, so it matches every document the same core matches under any prefix. Nothing else is
+    /// compared: a phrase is not taken to contain its words, nor a prefix the words it begins, because stemming
+    /// happens inside SQLite and makes neither claim provable here.
+    private struct OperandIdentity: Hashable {
+        /// The `{columns}:` prefix, or empty when the operand spans every column.
+        let scope: String
+        /// The operand's text after the prefix.
+        let core: String
+
+        /// The identity of an operand rendered as `text`.
+        init(rendered text: String) {
+            if text.hasPrefix("{"), let close = text.range(of: "}:") {
+                scope = String(text[..<close.upperBound])
+                core = String(text[close.upperBound...])
+            } else {
+                scope = ""
+                core = text
+            }
+        }
+
+        /// An identity with this scope and core.
+        init(scope: String, core: String) {
+            self.scope = scope
+            self.core = core
+        }
+
+        /// Whether `forbidden` holds an identity covering this one — matching every document it matches: itself, or its
+        /// core in no scope, which spans every column. Nothing else has the same core in a scope spanning this one's.
+        func isCovered(by forbidden: Set<OperandIdentity>) -> Bool {
+            forbidden.contains(self) || (!scope.isEmpty && forbidden.contains(OperandIdentity(scope: "", core: core)))
+        }
+    }
+
+    /// One rendered operand, which requires and suffices for itself — and, when it carries a `markedWord`, requires
+    /// that word through a marked leaf.
+    private static func operand(_ text: String, markedWord: String? = nil) -> Expr {
+        let identity = OperandIdentity(rendered: text)
+        return Expr(text: text, precedence: .atom, required: [identity], sufficient: [identity],
+                    requiredMarked: markedWord.map { [$0] } ?? [])
+    }
+
+    /// `expression` in parentheses, which change its precedence and nothing it matches.
+    private static func parenthesized(_ expression: Expr) -> Expr {
+        var grouped = expression
+        grouped.text = "(\(expression.text))"
+        grouped.precedence = .atom
+        return grouped
+    }
+
+    /// An exact rendering of a node's meaning: the documents an expression matches, or
+    /// their complement.
+    ///
+    /// FTS5 cannot search a complement on its own, so a `.lacking` value is only useful
+    /// once something positive sits beside it to be excluded from.
+    private enum Signed {
+        /// The documents the expression matches.
+        case matching(Expr)
+        /// The documents the expression does not match.
+        case lacking(Expr)
+    }
+
+    /// `expression` as the operand of a `NOT`: parenthesised unless it is already atomic.
+    private static func atomText(_ expression: Expr) -> String {
+        expression.precedence == .atom ? expression.text : "(\(expression.text))"
+    }
+
+    /// `expression` as an operand of `AND`, or the left operand of `NOT`: parenthesised
+    /// only when it is an `OR`, the one operator binding more loosely than both.
+    private static func conjunctText(_ expression: Expr) -> String {
+        expression.precedence == .or ? "(\(expression.text))" : expression.text
+    }
+
+    /// The documents both `left` and `right` match.
+    private static func conjoin(_ left: Expr, _ right: Expr) -> Expr {
+        Expr(text: "\(conjunctText(left)) AND \(conjunctText(right))", precedence: .and,
+             required: left.required.union(right.required),
+             sufficient: left.sufficient.intersection(right.sufficient),
+             forbidden: left.forbidden.union(right.forbidden),
+             requiredMarked: left.requiredMarked.union(right.requiredMarked),
+             isEmpty: left.isEmpty || right.isEmpty).settled()
+    }
+
+    /// The documents `kept` matches less those `excluded` matches.
+    ///
+    /// When `kept` is an `AND`, FTS5 reads `a AND b NOT x` as `a AND (b NOT x)`, which
+    /// selects the same documents as `(a AND b) NOT x`; the result keeps `AND` precedence
+    /// because that is its top-level operator.
+    ///
+    /// Every operand sufficient for `excluded` is forbidden to the result, which is how an exclusion that removes
+    /// an operand the kept side requires is proved to leave nothing.
+    private static func exclude(_ kept: Expr, _ excluded: Expr) -> Expr {
+        Expr(text: "\(conjunctText(kept)) NOT \(atomText(excluded))",
+             precedence: kept.precedence == .and ? .and : .not,
+             required: kept.required, forbidden: kept.forbidden.union(excluded.sufficient),
+             requiredMarked: kept.requiredMarked, isEmpty: kept.isEmpty).settled()
+    }
+
+    /// The documents any of `parts` matches. `OR` binds loosest, so no part needs
+    /// parentheses.
+    ///
+    /// Empty only when every part is: an empty alternative beside one that matches leaves the whole searchable.
+    private static func disjoin(_ parts: [Expr]) -> Expr {
+        guard parts.count > 1 else { return parts[0] }
+        var joined = parts[0]
+        joined.text = parts.map(\.text).joined(separator: " OR ")
+        joined.precedence = .or
+        for part in parts.dropFirst() {
+            joined.required.formIntersection(part.required)
+            joined.sufficient.formUnion(part.sufficient)
+            joined.forbidden.formIntersection(part.forbidden)
+            joined.requiredMarked.formIntersection(part.requiredMarked)
+            joined.isEmpty = joined.isEmpty && part.isEmpty
+        }
+        return joined
+    }
+
+    /// The exact meaning of `node`, or `nil` when it contains nothing to render.
+    ///
+    /// An AND-run with a positive member renders exactly: the first positive member leads
+    /// and every other member follows in typed order — conjoined when positive, excluded
+    /// when negative. That is the hoist that moves `-korea cold` to `"cold" NOT "korea"`,
+    /// and it never crosses an `OR` because runs are split at every `OR` first. A run with
+    /// no positive member is the complement of the union of what it excludes. An `OR` with
+    /// complement alternatives is, by De Morgan's law, the complement of their conjunction
+    /// less the positive alternatives — exact, but searchable only once something positive
+    /// anchors it.
+    ///
+    /// Computed once per node and kept on it (`Node.meaning`), children first, by `evaluate`.
+    private static func exactMeaning(of node: Node) -> Signed? {
+        evaluate(node)
+        return node.meaning
+    }
+
+    /// Computes the exact meaning of `node` and of every node beneath it whose meaning is not yet known.
+    ///
+    /// Only the recursion lives here, over nodes and never over meanings: what each kind of node makes of its members'
+    /// meanings is built by `settleMeaning`, which never recurses and is marked `@inline(never)`. The split is for the
+    /// stack, because a Debug build gives a function's frame every branch's locals: while one function held both,
+    /// 6.2 overflowed a 512 KB thread at 23 levels of `-(war …)`.
+    private static func evaluate(_ node: Node) {
+        guard !node.isEvaluated else { return }
+        switch node.kind {
+        case .leaf, .opaque:
+            break
+        case .not(let inner), .group(let inner):
+            evaluate(inner)
+        case .parts(let members), .and(let members), .or(let members):
+            for member in members { evaluate(member) }
+        }
+        settleMeaning(node)
+    }
+
+    /// Records the meaning of `node`, whose members' meanings are already known.
+    @inline(never)
+    private static func settleMeaning(_ node: Node) {
+        #if DEBUG
+        node.meaningSettlements += 1
+        #endif
+        switch node.kind {
+        case .leaf(let text, _, let markedWord):
+            node.meaning = .matching(operand(text, markedWord: markedWord))
+        case .opaque(let text):
+            node.meaning = .matching(opaqueOperand(text))
+        case .not(let inner):
+            node.meaning = negated(inner.meaning)
+        case .group(let inner):
+            node.meaning = grouped(inner.meaning)
+        case .parts(let members):
+            node.meaning = partsMeaning(members.compactMap(\.meaning))
+        case .and(let members):
+            node.meaning = runMeaning(members.compactMap(\.meaning))
+        case .or(let members):
+            node.meaning = alternativesMeaning(members.compactMap(\.meaning))
+        }
+        node.isEvaluated = true
+    }
+
+    /// An already-rendered keyword fragment as an operand. Its precedence is unknown, so it is
+    /// parenthesised wherever anything binds to it unless it is one operand — the rule `FTS5Query`
+    /// has always used for its parts.
+    @inline(never)
+    private static func opaqueOperand(_ text: String) -> Expr {
+        Expr(text: text, precedence: FTS5Query.isSingleOperand(text) ? .atom : .or)
+    }
+
+    /// The meaning of a negation whose operand means `signed`: the complement of it.
+    @inline(never)
+    private static func negated(_ signed: Signed?) -> Signed? {
+        switch signed {
+        case .matching(let expression)?: return .lacking(expression)
+        case .lacking(let expression)?: return .matching(expression)
+        case nil: return nil
+        }
+    }
+
+    /// The meaning of a group whose contents mean `signed`, parenthesised when it matches.
+    @inline(never)
+    private static func grouped(_ signed: Signed?) -> Signed? {
+        switch signed {
+        case .matching(let expression)?: return .matching(parenthesized(expression))
+        case .lacking(let expression)?: return .lacking(expression)
+        case nil: return nil
+        }
+    }
+
+    /// The meaning of the root conjunction whose parts mean `members`, in order.
+    @inline(never)
+    private static func partsMeaning(_ members: [Signed]) -> Signed? {
+        var positives: [Expr] = []
+        var negatives: [Expr] = []
+        for signed in members {
+            switch signed {
+            case .matching(let expression): positives.append(expression)
+            case .lacking(let expression): negatives.append(expression)
+            }
+        }
+        guard !positives.isEmpty else {
+            return negatives.isEmpty ? nil : .lacking(disjoin(negatives))
+        }
+        return .matching(combineParts(positives, negatives))
+    }
+
+    /// The meaning of an AND-run whose members mean `signed`, in order.
+    @inline(never)
+    private static func runMeaning(_ signed: [Signed]) -> Signed? {
+        guard !signed.isEmpty else { return nil }
+        guard let first = signed.firstIndex(where: {
+            if case .matching = $0 { return true }
+            return false
+        }), case .matching(var accumulated) = signed[first] else {
+            return .lacking(disjoin(signed.compactMap {
+                if case .lacking(let expression) = $0 { return expression }
+                return nil
+            }))
+        }
+        for member in signed[..<first] + signed[(first + 1)...] {
+            switch member {
+            case .matching(let expression): accumulated = conjoin(accumulated, expression)
+            case .lacking(let expression): accumulated = exclude(accumulated, expression)
+            }
+        }
+        return .matching(accumulated)
+    }
+
+    /// The meaning of an `OR` whose alternatives mean `disjuncts`, in order.
+    @inline(never)
+    private static func alternativesMeaning(_ disjuncts: [Signed]) -> Signed? {
+        var matching: [Expr] = []
+        var lacking: [Expr] = []
+        for signed in disjuncts {
+            switch signed {
+            case .matching(let expression): matching.append(expression)
+            case .lacking(let expression): lacking.append(expression)
+            }
+        }
+        guard var excluded = lacking.first else {
+            return matching.isEmpty ? nil : .matching(disjoin(matching))
+        }
+        for expression in lacking.dropFirst() { excluded = conjoin(excluded, expression) }
+        guard !matching.isEmpty else { return .lacking(excluded) }
+        return .lacking(exclude(excluded, disjoin(matching)))
+    }
+
+    /// The largest part of `node`'s meaning FTS5 can search, or `nil` when there is none; the
+    /// operands it leaves out are added to `dropped`.
+    ///
+    /// When `node` renders exactly as `.matching`, that is the answer. Otherwise — which
+    /// can only happen at the root, beneath root-level groups, or inside a complement whose
+    /// negation is being pushed inward, since an enclosing positive member anchors anything
+    /// exactly — a negation of anything but a lone leaf is pushed inward by
+    /// `complement(of:)` and anchored again, so the positive terms inside it are kept; an
+    /// `OR` alternative that still cannot be anchored is left out together with its `OR`,
+    /// and its operands are added to `dropped` so the inspector can report them as not
+    /// applied; and a root AND-run of complements, or the root conjunction of typed and
+    /// structured parts, keeps the members it can anchor and excludes the rest exactly. The
+    /// result selects a subset of what the query means, never a superset.
+    ///
+    /// By induction the result is `nil` exactly when `node` has no leaf that is positive after
+    /// the negations above it. So every operand added to `dropped` is negated, nothing is
+    /// dropped beside a structured phrase or prefix, and no applied operand is ever dropped.
+    ///
+    /// A result can still match nothing: an anchor pushing inward exposes can be removed in full
+    /// by an exclusion beside it. Its proof says so (`Expr.isEmpty`), and `parseDetailed` refuses it
+    /// at the root rather than here, so the invariant above holds and an empty alternative beside
+    /// one that matches changes nothing about the render.
+    ///
+    /// Computed once per node and kept on it (`Node.anchor`), children first, by `anchor(_:)`.
+    private static func anchored(_ node: Node, dropped: inout Set<Int>) -> Expr? {
+        anchor(node)
+        guard let expression = node.anchor else { return nil }
+        dropped.formUnion(node.dropped)
+        return expression
+    }
+
+    /// Computes the anchor of `node` and of every node it is built from, children first.
+    ///
+    /// Only the recursion lives here, as in `evaluate`: `anchoringChildren(of:)` says which nodes to descend into and
+    /// `settleAnchor` combines their answers, and neither recurses into this function. A node whose meaning is exact has
+    /// no children to descend into, so the recursion follows only the path a missing anchor takes.
+    private static func anchor(_ node: Node) {
+        guard !node.isAnchored else { return }
+        for child in anchoringChildren(of: node) { anchor(child) }
+        settleAnchor(node)
+    }
+
+    /// The nodes `node`'s anchor is built from: none when its meaning is exact, when it is empty, or for a leaf; for a
+    /// negation of anything but a leaf, its operand's complement with the negation pushed inward, kept on the node as
+    /// `pushedInward`; for a group, its contents; and otherwise its members.
+    @inline(never)
+    private static func anchoringChildren(of node: Node) -> [Node] {
+        evaluate(node)
+        guard case .lacking? = node.meaning else { return [] }
+        switch node.kind {
+        case .leaf, .opaque:
+            return []
+        case .not(let inner):
+            // A complement of something containing a positive term can still hold an anchor:
+            // push the negation inward and anchor what that exposes, so only the alternatives
+            // that really are made only of exclusions are left out.
+            if case .leaf = inner.kind { return [] }
+            let pushed = complement(of: inner)
+            node.pushedInward = pushed
+            return [pushed]
+        case .group(let inner):
+            return [inner]
+        case .or(let members), .and(let members), .parts(let members):
+            return members
+        }
+    }
+
+    /// Records the anchor of `node`, and what it leaves out, from the anchors of the nodes `anchoringChildren(of:)`
+    /// named.
+    @inline(never)
+    private static func settleAnchor(_ node: Node) {
+        #if DEBUG
+        node.anchorSettlements += 1
+        #endif
+        node.isAnchored = true
+        switch node.meaning {
+        case nil:
+            return
+        case .matching(let expression)?:
+            node.anchor = expression
+            return
+        case .lacking?:
+            break
+        }
+        switch node.kind {
+        case .leaf, .opaque:
+            return
+        case .not:
+            node.anchor = node.pushedInward?.anchor
+            node.dropped = node.pushedInward?.dropped ?? []
+        case .group(let inner):
+            node.anchor = inner.anchor.map(parenthesized)
+            node.dropped = inner.dropped
+        case .or(let disjuncts):
+            var kept: [Expr] = []
+            for disjunct in disjuncts {
+                if let expression = disjunct.anchor {
+                    kept.append(expression)
+                    node.dropped.formUnion(disjunct.dropped)
+                } else {
+                    node.dropped.formUnion(leaves(of: disjunct))
                 }
             }
-            i += 1
+            node.anchor = kept.isEmpty ? nil : disjoin(kept)
+        case .parts(let members), .and(let members):
+            // The same members for both: those that anchor, and the exact complements of those that do not.
+            var anchors: [Expr] = []
+            var exclusions: [Expr] = []
+            for member in members {
+                if let expression = member.anchor {
+                    anchors.append(expression)
+                    node.dropped.formUnion(member.dropped)
+                } else if case .lacking(let expression)? = member.meaning {
+                    exclusions.append(expression)
+                }
+            }
+            guard !anchors.isEmpty else { return }
+            if case .parts = node.kind {
+                node.anchor = combineParts(anchors, exclusions)
+            } else {
+                node.anchor = conjunction(of: anchors, excluding: exclusions)
+            }
         }
-        return nil
+    }
+
+    /// An AND-run's approximation: every anchored member conjoined in order, then every exclusion applied to the
+    /// whole — never an exclusion between two anchors, which matches the same documents but renders other bytes.
+    @inline(never)
+    private static func conjunction(of anchors: [Expr], excluding exclusions: [Expr]) -> Expr {
+        var accumulated = anchors[0]
+        for expression in anchors.dropFirst() { accumulated = conjoin(accumulated, expression) }
+        for expression in exclusions { accumulated = exclude(accumulated, expression) }
+        return accumulated
+    }
+
+    /// `node`'s complement with the negation pushed onto its leaves by De Morgan's law.
+    ///
+    /// Group parentheses are not kept: they preserved the typed grouping of text this rewrite
+    /// replaces, and `Expr` precedence parenthesises wherever FTS5 needs it.
+    private static func complement(of node: Node) -> Node {
+        switch node.kind {
+        case .leaf, .opaque: return .not(node)
+        case .not(let inner): return inner
+        case .group(let inner): return complement(of: inner)
+        case .and(let members), .parts(let members): return .or(members.map(complement(of:)))
+        case .or(let disjuncts): return .and(disjuncts.map(complement(of:)))
+        }
+    }
+
+    /// The root conjunction's text: the positive parts joined by `AND`, each parenthesised
+    /// unless atomic, then every excluded part as a `NOT` applied to the whole positive.
+    ///
+    /// A lone positive part with nothing to exclude is emitted exactly as built, which is
+    /// what keeps a typed query with no structured fields byte-identical. The proof is `conjoin`'s over the
+    /// positive parts, then `exclude`'s for each excluded part.
+    private static func combineParts(_ positives: [Expr], _ negatives: [Expr]) -> Expr {
+        func partText(_ expression: Expr) -> String {
+            expression.precedence == .atom ? expression.text : "(\(expression.text))"
+        }
+        var positive = positives[0]
+        if positives.count > 1 {
+            positive.text = positives.map(partText).joined(separator: " AND ")
+            positive.precedence = .and
+            for part in positives.dropFirst() {
+                positive.required.formUnion(part.required)
+                positive.sufficient.formIntersection(part.sufficient)
+                positive.forbidden.formUnion(part.forbidden)
+                positive.requiredMarked.formUnion(part.requiredMarked)
+                positive.isEmpty = positive.isEmpty || part.isEmpty
+            }
+            positive = positive.settled()
+        }
+        guard !negatives.isEmpty else { return positive }
+        let kept = positives.count == 1 ? partText(positive) : "(\(positive.text))"
+        return Expr(text: kept + negatives.map { " NOT \(atomText($0))" }.joined(), precedence: .not,
+                    required: positive.required,
+                    forbidden: negatives.reduce(positive.forbidden) { $0.union($1.sufficient) },
+                    requiredMarked: positive.requiredMarked, isEmpty: positive.isEmpty).settled()
+    }
+
+    /// Whether `node` contains a leaf that is positive after the negations above it —
+    /// what decides whether a negation reaching `node` is applied. A demoted operator
+    /// literal counts: it is a word the expression searches for.
+    private static func hasPositiveLeaf(_ node: Node, negated: Bool = false) -> Bool {
+        switch node.kind {
+        case .leaf, .opaque: return !negated
+        case .not(let inner): return hasPositiveLeaf(inner, negated: !negated)
+        case .group(let inner): return hasPositiveLeaf(inner, negated: negated)
+        case .and(let members), .or(let members), .parts(let members):
+            return members.contains { hasPositiveLeaf($0, negated: negated) }
+        }
+    }
+
+    /// The harvested operand indices beneath `node`, in tree order.
+    private static func leaves(of node: Node) -> [Int] {
+        switch node.kind {
+        case .leaf(_, let operand, _): return operand.map { [$0] } ?? []
+        case .opaque: return []
+        case .not(let inner), .group(let inner): return leaves(of: inner)
+        case .and(let members), .or(let members), .parts(let members): return members.flatMap(leaves(of:))
+        }
+    }
+
+    /// Records, for each harvested operand beneath `node`, whether an odd number of the
+    /// negations in the tree sit above it — its effective polarity.
+    private static func polarity(of node: Node, negated: Bool, into map: inout [Int: Bool]) {
+        switch node.kind {
+        case .leaf(_, let operand, _):
+            if let operand { map[operand] = negated }
+        case .opaque:
+            break
+        case .not(let inner):
+            polarity(of: inner, negated: !negated, into: &map)
+        case .group(let inner):
+            polarity(of: inner, negated: negated, into: &map)
+        case .and(let members), .or(let members), .parts(let members):
+            for member in members { polarity(of: member, negated: negated, into: &map) }
+        }
     }
 
     // MARK: - NEAR
@@ -430,61 +1824,6 @@ public enum FTS5InlineQueryParser {
         return (tokenize(segments.joined(separator: " ")), tail)
     }
 
-    /// Resolves operator placement and joins the surviving pieces into the final
-    /// MATCH expression fragment. Shared by the top-level call in `renderTokens` and
-    /// every recursive group invocation, so a group's internal "is there any positive
-    /// content?" check is identical to the top-level one. Returns `nil` when there is
-    /// no positive search content.
-    private static func assemble(_ resolved: [ResolvedToken]) -> String? {
-        var pieces: [String] = []
-        var hasPositiveOperand = false
-        // Tracks whether the operand/group about to be emitted sits immediately after
-        // a surviving `NOT` operator — e.g. in `cold NOT korea` or `cold NOT (korea OR
-        // vietnam)`, the right-hand side is excluded even though its own rendering
-        // carries no negation marker of its own (that's a property of `Operand`, which
-        // groups don't have). Without this, `NOT korea` or `NOT (korea OR vietnam)`
-        // alone would be miscounted as having positive content and incorrectly produce
-        // a MATCH expression instead of `nil`.
-        var precededByNot = false
-        // Whether the previously appended piece rendered an operand (vs. an operator
-        // keyword). Two operands with no operator between them are *juxtaposed*; FTS5
-        // only permits implicit-AND between bare phrases (`"a" "b"`), NOT between
-        // parenthesised groups — `(a OR b) (c OR d)` is a hard syntax error. Relying on
-        // juxtaposition therefore silently produced invalid MATCH expressions for every
-        // grouped query (e.g. `(aqaba OR tiran) AND (navigation OR passage)`), which
-        // SQLite rejected and the search surfaced as zero results. So an explicit `AND`
-        // is inserted between juxtaposed positive operands.
-        var previousWasOperand = false
-        for token in resolved {
-            switch token {
-            case .operand(let rendered, let isPositive):
-                // Insert an explicit AND between two juxtaposed operands when this one is
-                // positive. A negated operand renders as `NOT x`, which forms the valid
-                // binary `X NOT x`, so it must NOT be prefixed with AND (`X AND NOT x` is
-                // itself an FTS5 syntax error).
-                if previousWasOperand && isPositive {
-                    pieces.append(Operator.and.fts5Keyword)
-                }
-                pieces.append(rendered)
-                if isPositive && !precededByNot { hasPositiveOperand = true }
-                precededByNot = false
-                previousWasOperand = true
-            case .opCandidate(let kind):
-                // Every surviving operator — including AND — is emitted as a real FTS5
-                // keyword. AND used to be dropped in favour of juxtaposition, but that
-                // is invalid between groups (see `previousWasOperand` above). `AND` is a
-                // documented standard-syntax keyword and is accepted wherever the OR
-                // this builder already emits is.
-                pieces.append(kind.fts5Keyword)
-                precededByNot = (kind == .not)
-                previousWasOperand = false
-            }
-        }
-
-        guard hasPositiveOperand, !pieces.isEmpty else { return nil }
-        return pieces.joined(separator: " ")
-    }
-
     // MARK: - Tokenization
 
     /// Splits `raw` on whitespace, treating `"..."` spans (including unterminated ones,
@@ -517,10 +1856,19 @@ public enum FTS5InlineQueryParser {
                 let end = min(j, chars.count - 1)
                 tokens.append(String(chars[i...end]))
                 i = end + 1
+            } else if chars[i] == "-", i + 1 < chars.count, chars[i + 1] == "(" {
+                // A "-" immediately followed by "(" — `-(korea OR vietnam)` — negates the
+                // group exactly as `NOT (korea OR vietnam)` does, so it is kept as the one
+                // token `-(`: `groupPartners` counts it as an opener and `buildNode` reads
+                // it as a NOT before the group. Without this branch the paren branch below
+                // would split it into a bare "-" (punctuation, dropped) and a positive
+                // group — the reading a DETACHED `- (` still gets.
+                tokens.append(attachedDashGroup)
+                i += 2
             } else if chars[i] == "(" || chars[i] == ")" {
                 // Grouping parens are always emitted as their own single-character
                 // tokens — even when butted directly against a word, e.g. `(aqaba`
-                // or `tiran)` — so the recursive grouping pass in `renderTokens`
+                // or `tiran)` — so the recursive grouping pass in `buildNode`
                 // recognises them regardless of spacing. Any that turn out to be
                 // unmatched or otherwise unusable are mapped to whitespace by
                 // `sanitizeBareToken` and silently dropped, same as today.
@@ -541,8 +1889,8 @@ public enum FTS5InlineQueryParser {
 
     // MARK: - Classification
 
-    /// A binary or unary boolean operator recognised inline. Only `OR` and `NOT` are
-    /// ever rendered as literal FTS5 keywords; `AND` resolves to implicit juxtaposition.
+    /// A binary or unary boolean operator recognised inline. All three render as literal
+    /// FTS5 keywords: conjuncts are joined by an explicit `AND`, never juxtaposed.
     private enum Operator: Equatable {
         case and, or, not
 
@@ -656,62 +2004,17 @@ public enum FTS5InlineQueryParser {
         return .operand(Operand(negated: negated, isExact: isExact, kind: .word(text)))
     }
 
-    /// The literal word an exact operand filters on, or `nil` when the sigil cannot
-    /// apply.
+    /// The literal word an exact operand filters on, as typed and as the index word `ExactWordMatcher` compares, or
+    /// `nil` when the sigil cannot apply.
     ///
     /// Returns `nil` for anything that is not exactly one index token — `="co-operate"`,
     /// `="U.S.S.R."`. Those have no single-word answer, and filtering on one fragment of
     /// what the researcher typed would be worse than ignoring the sigil. The query still
     /// runs stemmed, which is what it would have done without the `=`.
-    private static func exactTerm(from raw: String) -> String? {
+    private static func exactTerm(from raw: String) -> (term: String, word: String)? {
         let sanitized = sanitizeBareToken(raw)
-        guard !sanitized.isEmpty, ExactWordMatcher.isSingleToken(sanitized) else { return nil }
-        return sanitized
-    }
-
-    // MARK: - Operator Resolution
-
-    private enum ResolvedToken {
-        case operand(rendered: String, isPositive: Bool)
-        case opCandidate(Operator)
-    }
-
-    /// Walks `tokens` left-to-right, converting any `OR`/`AND`/`NOT` candidate that
-    /// lacks the operand neighbour(s) it needs into a literal rendered operand for that
-    /// same word (stemmed, like any other bare term).
-    ///
-    /// This is what guarantees `parse` never hands SQLite an expression with an
-    /// orphaned operator (`"cold OR"`, `"OR cold"`, `"cold OR OR war"`, a bare `"NOT"`,
-    /// …) — every operator that survives this pass is provably sandwiched between real
-    /// operands, which is always valid FTS5 syntax. Resolution is left-to-right and
-    /// in-place so chains of misplaced operators (`"cold OR AND war"`) resolve
-    /// consistently: each candidate sees prior candidates' already-resolved state.
-    ///
-    /// `isOperand` treats a rendered `(...)` group exactly like any bare word or
-    /// phrase — both arrive here as `.operand` cases — so `cold OR (war AND korea)`
-    /// and `(cold OR war) NOT korea` resolve with no group-specific logic at all.
-    private static func demoteOrphanedOperators(in tokens: inout [ResolvedToken]) {
-        func isOperand(_ index: Int) -> Bool {
-            guard tokens.indices.contains(index) else { return false }
-            if case .operand = tokens[index] { return true }
-            return false
-        }
-
-        for index in tokens.indices {
-            guard case .opCandidate(let kind) = tokens[index] else { continue }
-            let isValidPlacement: Bool
-            switch kind {
-            case .and, .or:
-                isValidPlacement = isOperand(index - 1) && isOperand(index + 1)
-            case .not:
-                isValidPlacement = isOperand(index + 1)
-            }
-            guard !isValidPlacement else { continue }
-
-            let literal = kind.fts5Keyword.lowercased()
-            guard let word = stemBareWord(literal) else { continue }
-            tokens[index] = .operand(rendered: "\"\(word)\"", isPositive: true)
-        }
+        guard !sanitized.isEmpty, let word = ExactWordMatcher.word(sanitized) else { return nil }
+        return (sanitized, word)
     }
 
     // MARK: - Rendering
@@ -752,11 +2055,17 @@ public enum FTS5InlineQueryParser {
 
     // MARK: - Sanitization
     //
-    // Mirrors `FTS5Query.sanitizeTerm`/`sanitizePhrase` exactly — this is what
-    // guarantees a term typed through either the inline parser or the structured
-    // Advanced Filters fields renders to the identical MATCH fragment and therefore
-    // the identical match set. No stemming happens here: the `porter unicode61`
-    // tokenizer stems query terms inside SQLite, symmetrically with indexed text.
+    // `sanitizeBareToken` mirrors `FTS5Query.sanitizeTerm` exactly, and the structured
+    // phrase, prefix and excluded terms are sanitised here for both paths — `FTS5Query`
+    // hands its fields to `combine(renderedKeywords:structured:columnPrefix:)` — which is
+    // what guarantees that the same term text, typed or carried in a structured field (as a
+    // restored saved search carries the legacy Advanced fields), sanitises to the same quoted
+    // term. Sanitising is all that is shared: column scoping differs by where the term sits. A
+    // structured excluded term spans every column while a typed exclusion carries the column
+    // prefix, and a phrase, typed or structured, spans every column, so in a scoped query the
+    // same text can match different documents. No stemming happens here: the
+    // `porter unicode61` tokenizer stems query terms inside SQLite, symmetrically with indexed
+    // text.
 
     /// Strips FTS5 structural/operator characters from a single token, collapsing
     /// runs of resulting whitespace. Equivalent to `FTS5Query.sanitizeTerm`.
@@ -799,9 +2108,9 @@ public enum FTS5InlineQueryParser {
         return (!lower.isEmpty && alnum == lower) ? lower : nil
     }
 
-    /// Sanitises and lowercases each word of a phrase — identical to the per-word
-    /// transform in `FTS5Query.toFTS5MatchExpression()`'s phrase-handling branch.
-    /// The porter tokenizer stems each phrase token at query time.
+    /// Sanitises and lowercases each word of a phrase — a typed one, or the structured phrase
+    /// field, which `FTS5Query` has sanitised through here since 3.0 rather than with a copy of
+    /// this transform of its own. The porter tokenizer stems each phrase token at query time.
     private static func stemPhrase(_ raw: String) -> String? {
         let sanitized = raw
             .replacingOccurrences(of: "\"", with: "")
@@ -818,6 +2127,39 @@ public enum FTS5InlineQueryParser {
     }
 }
 
+// MARK: - StructuredQueryParts
+
+/// The structured search fields ANDed with the typed query: a phrase, a prefix wildcard and
+/// excluded terms, as restored saved searches carry them from the legacy Advanced fields.
+///
+/// Passed to `FTS5InlineQueryParser.parseDetailed(_:columnPrefix:structured:)`, which parses
+/// them into the same tree as the typed text — see the parser's "Structured parts". Each is
+/// sanitised there exactly as `FTS5Query` sanitises the fields of the same names.
+///
+/// Version history:
+///   1.0 — #1297 join: initial implementation
+public struct StructuredQueryParts: Sendable, Equatable {
+    /// An exact phrase, spanning all columns whatever the column prefix. Lowercased word by
+    /// word; `nil` or text that sanitises to nothing adds no part.
+    public var phrase: String?
+    /// A prefix, searched as `"prefix"*` behind the column prefix, `*` appended. `nil` or text
+    /// that sanitises to nothing adds no part.
+    public var prefixWildcard: String?
+    /// Terms excluded from the whole query, each spanning all columns whatever the column
+    /// prefix. A term of several words excludes that phrase. Never an anchor on its own.
+    public var excludedTerms: [String]
+
+    /// No structured fields.
+    public static let none = StructuredQueryParts()
+
+    /// Creates structured parts.
+    public init(phrase: String? = nil, prefixWildcard: String? = nil, excludedTerms: [String] = []) {
+        self.phrase = phrase
+        self.prefixWildcard = prefixWildcard
+        self.excludedTerms = excludedTerms
+    }
+}
+
 // MARK: - ParsedQuery
 
 /// A parsed search box: the FTS5 expression, plus the terms that need a literal-word
@@ -825,29 +2167,81 @@ public enum FTS5InlineQueryParser {
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — #1297: `droppedOperands`, the operands a query typed but its expression leaves out
+///   1.2 — #1297 join: `isApproximate`; operands include the structured fields, and every
+///          dropped operand is typed and negated
+///   1.3 — #1297 round-1 fixes: `exactTerms` holds only words every match of `expression` must
+///          contain, and `expression` is also `nil` for a query nested past the parser's depth limit
+///   1.4 — #1297 round-2 parser fixes: `exactTerms` comes from the operands whose own mark applies
+///          (`ParsedOperand.isExactApplied`), not from any required operand sharing the word's stem
+///   1.5 — #1297 round-3 parser fixes: `exactTerms` also holds a word marked in every alternative (D4), in the order of each
+///          word's first applied operand
+///   1.6 — #1297 round-4 parser fixes: `exactTerms` is de-duplicated by index word (`ExactWordMatcher.word(_:)`),
+///          keeping the first spelling applied, so `=Soviet =soviet` reports `["Soviet"]` where it reported both
+///          spellings
 public struct ParsedQuery: Sendable, Equatable {
 
-    /// The MATCH expression, or `nil` when the input carries no positive search content.
+    /// The MATCH expression, or `nil` when the query is refused: it holds no term that is
+    /// positive after its negations; it is approximated and its operands prove the
+    /// approximation matches nothing; or its groups nest deeper than
+    /// `FTS5InlineQueryParser.maximumGroupDepth`.
     public let expression: String?
 
-    /// Words the researcher marked with `=`, in the order typed, de-duplicated.
+    /// Words the researcher marked with `=` that every match of `expression` must contain literally, one per word: the
+    /// term of every operand that is `isExactApplied`, in the order of each word's first such operand. Every positive
+    /// `=` operand on a reported word applies, so that is the word's first positive mark:
+    /// `(=containment OR europe) =rollback =containment` reports `["containment", "rollback"]`.
     ///
+    /// A word is the index word the filter compares (`ExactWordMatcher.word(_:)`), not a spelling, and the term
+    /// reported for it is the spelling of that first operand, as typed: `=Cold war OR =cold. peace` reports `["Cold"]`
+    /// and `(=café OR war) =cafe` reports `["café"]`. Any spelling of a word filters the same.
+    ///
+    /// The SQL layer ANDs one exact-word filter per term over the results, so a word the
+    /// expression leaves optional — an `OR` alternative, a term inside a negated group — is not
+    /// reported, and runs stemmed, even where an unmarked operand with the same stem is required. A
+    /// word marked in every alternative is required literally, and is reported (`=cold war OR =cold peace`).
     /// Empty whenever `expression` is `nil` — there is nothing to post-filter.
     public let exactTerms: [String]
 
-    /// The query's searchable units, in the order typed — what the Query Inspector
-    /// renders as pills and counts individually (Q-2).
+    /// The query's searchable units that `expression` applies, in the order typed — what
+    /// the Query Inspector renders as pills and counts individually (Q-2).
     ///
     /// Operators are not operands and do not appear. Nor do boolean groups: a group is
     /// reported as the operands inside it, because "(a OR b)" has no single hit count.
+    /// An operand the expression leaves out is in `droppedOperands` instead.
     /// Empty whenever `expression` is `nil`.
     public let operands: [ParsedOperand]
 
+    /// Operands the researcher typed that the expression leaves out, in the order typed.
+    ///
+    /// FTS5 has no universal set, so an `OR` alternative made only of exclusions
+    /// (`cold OR -korea`) cannot be searched: the alternative is left out of `expression`
+    /// and its operands are reported here instead of in `operands`, so the Query Inspector
+    /// can say they were not applied rather than showing them as working exclusions.
+    /// Empty whenever `expression` is `nil`.
+    ///
+    /// Every dropped operand is negated: a negation is pushed inward before anything is left
+    /// out, so a positive term inside an excluded group is searched, never dropped. Nothing is
+    /// dropped beside a structured phrase or prefix, which anchors every complement.
+    public let droppedOperands: [ParsedOperand]
+
+    /// Whether `expression` matches only part of what the query means, because the query as a
+    /// whole had no positive term to anchor its complement. Always `false` when `expression`
+    /// is `nil`.
+    ///
+    /// Not the same as a non-empty `droppedOperands`: what was left out can be a demoted
+    /// operator word with no operand, as in `-( -korea NOT )`, which renders `"korea"` and
+    /// drops nothing. This flag is the only report of that case.
+    public let isApproximate: Bool
+
     /// Creates a parsed query.
-    public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = []) {
+    public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = [],
+                droppedOperands: [ParsedOperand] = [], isApproximate: Bool = false) {
         self.expression = expression
         self.exactTerms = exactTerms
         self.operands = operands
+        self.droppedOperands = droppedOperands
+        self.isApproximate = isApproximate
     }
 }
 
@@ -862,6 +2256,14 @@ public struct ParsedQuery: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Q-2a: initial implementation
+///   1.1 — #1297: `isNegated` is the operand's effective polarity in the expression, so
+///          keyword `NOT` and `NOT (...)` report their operands excluded, as `-` always did
+///   1.2 — #1297 join: `source`, which tells a typed operand from one a structured field added
+///   1.3 — #1297 round-2 parser fixes: `isExactApplied`, whether the search post-filters on this operand's literal word
+///   1.4 — #1297 round-3 parser fixes: `isExactApplied` is decided per word over marked operands (D4), so it holds for every
+///          positive `=` operand on a word every match holds literally
+///   1.5 — #1297 round-4 parser fixes: a word is the index word the filter compares, so `isExactApplied` holds for
+///          every spelling of it (`=cold. war OR =cold peace`); `isExact`'s doc states the per-word rule
 public struct ParsedOperand: Sendable, Equatable {
 
     /// What kind of searchable unit this is.
@@ -880,27 +2282,74 @@ public struct ParsedOperand: Sendable, Equatable {
     /// marks. A prefix keeps its `*`, because that is part of what was asked for.
     public let text: String
 
-    /// The FTS5 fragment this operand rendered to — what actually went to SQLite.
+    /// The FTS5 fragment this operand rendered to — what actually went to SQLite: its
+    /// positive form, prefixed `NOT ` when the operand is excluded.
     public let rendered: String
 
     /// What kind of unit it is.
     public let kind: Kind
 
-    /// Whether it was excluded with `-` or `NOT`.
+    /// Whether the operand is excluded in the rendered expression — its effective polarity
+    /// after every `-`, `NOT` and negated group above it, not the mark on its own token.
+    ///
+    /// `NOT korea` reports exactly what `-korea` does, and both operands of
+    /// `NOT (korea OR vietnam)` are excluded. Repeated marks count once: a negation that
+    /// reaches no positive term is not applied, so `NOT -korea` is simply excluded, while
+    /// in `NOT (cold OR -korea)` the two negations above `korea` cancel and it is required.
     ///
     /// A negated operand has no meaningful "hit count" of its own in the result set, so
     /// the inspector shows it differently rather than counting it.
     public let isNegated: Bool
 
-    /// Whether it carried the `=` exact-word mark.
+    /// Whether it carried the `=` exact-word mark, as typed — whether or not the search applies it.
+    ///
+    /// Use `isExactApplied` for what the search does with the mark, which the parser decides per word (D4): it applies
+    /// the mark when every match holds the operand's word through some `=` operand — one every match must match, or one
+    /// in every alternative — and then on every positive `=` operand on that word. It ignores the mark on an excluded
+    /// operand; on a word no marked operand makes every match hold, even where an unmarked operand, a phrase or a
+    /// demoted word with its stem is required (`=cold OR war`, `(=cold OR war) cold`); and on a word that is not a
+    /// single index token.
     public let isExact: Bool
 
+    /// Whether the search applies this operand's `=` mark: it is typed, applied and positive, and every match of the
+    /// expression holds its word through a marked operand, so the SQL layer post-filters every result on the literal
+    /// word — one of `ParsedQuery.exactTerms`.
+    ///
+    /// Decided over marked operands only (D4), by index word (`ExactWordMatcher.word(_:)`), so marks spelled `Cold`,
+    /// `cold.` and `cold` are marks on one word. Once a word's mark applies, every positive `=` operand on it does: in
+    /// `(=cold OR war) =cold` both are applied, because every match holds the literal word through the second and
+    /// inside those documents the first reads the same, and in `=cold war OR =cold peace` both are applied, because
+    /// every alternative holds a mark. But in `(=cold OR war) cold` neither the mark nor the term applies, although
+    /// every match holds the stem of cold: an unmarked operand, a phrase or a demoted word never makes a mark apply. So
+    /// a surface that tags a term EXACT, or counts it as the literal word, must read this rather than compare the
+    /// operand's word with `exactTerms` or with `isExact`. Always `false` for a dropped, negated or structured operand.
+    public let isExactApplied: Bool
+
+    /// Where an operand came from.
+    public enum Source: Sendable, Equatable {
+        /// Typed into the search box.
+        case typed
+        /// A structured field: the phrase, the prefix wildcard, or an excluded term.
+        case structured
+    }
+
+    /// Where this operand came from.
+    ///
+    /// A structured operand is reported after every typed one, and cannot always be re-spelled
+    /// as typed text — the prefix field `neg:oti` renders `"neg oti"*`, typed `neg oti*` renders
+    /// `"neg" AND "oti"*` — so anything that re-runs one operand on its own must use its field.
+    /// Part of equality: a value built by hand for a structured operand must pass `.structured`.
+    public let source: Source
+
     /// Creates an operand.
-    public init(text: String, rendered: String, kind: Kind, isNegated: Bool, isExact: Bool) {
+    public init(text: String, rendered: String, kind: Kind, isNegated: Bool, isExact: Bool,
+                source: Source = .typed, isExactApplied: Bool = false) {
         self.text = text
         self.rendered = rendered
         self.kind = kind
         self.isNegated = isNegated
         self.isExact = isExact
+        self.source = source
+        self.isExactApplied = isExactApplied
     }
 }

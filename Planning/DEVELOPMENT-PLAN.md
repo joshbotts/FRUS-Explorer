@@ -15280,3 +15280,99 @@ because both read-failure fixtures drop the table through another SQLite connect
 prepares against its cached schema and fails only at the step. The test now reads twice; the second read fails at
 the prepare, and it is that expectation the mutation fails (`8c365df6`). Every run read back its test count, and
 only the sweep's own simulator was booted.
+
+
+## Session 2026-09-14 → 09-17 — #1297: exclusions render valid FTS5, and apply to the terms typed with them
+
+**The defect.** `FTS5InlineQueryParser` emitted pieces in typed order, and FTS5 accepts `NOT` only in its binary form.
+Measured on v2 (`5ed99ad7`) over all 7,380 token sequences of length 1–4 on `[cold, war, -korea, NOT, korea, AND, OR,
+(, )]`: **1,674 rendered invalid FTS5** (Search Error; Corpus Analytics' error state), and **640 valid renders silently
+required a literal and/or/not** beside a negation (`cold AND NOT korea` searched for the word "and").
+
+**Owner decisions.**
+- 2026-09-14:
+  - An exclusion belongs to its AND-run and never crosses `OR`.
+  - `NOT x` is `-x`, and negation counts once.
+  - A group of only exclusions excludes.
+  - An attached `-(` negates a group; a detached `- (` is punctuation.
+  - An `OR` alternative made only of exclusions is **left out and reported** (NOT APPLIED, with a narrower-than-typed caption).
+  - Later the same day: structured (restored saved-search) phrase, prefix and excluded terms parse into the same tree, and structured exclusions span every column.
+- 2026-09-16:
+  - **D1:** `=word` filters only where every match must contain the word.
+  - **D2:** groups nested deeper than 32 are refused.
+  - **D3:** Corpus Analytics discloses a left-out alternative in its help text only.
+  - **D4:** a word marked in *every* alternative filters, proved over marked operands only.
+- Still open: a root AND of groups that each hold an exclusion-only alternative keeps the leave-it-out rule.
+
+**What shipped.**
+- **Parser 6.0–6.6:**
+  - a boolean-tree renderer;
+  - negation pushed inward and anchored;
+  - an approximation that provably matches nothing refused (`emptyQuery`);
+  - demoted operator words carrying the column prefix;
+  - exact terms decided over marked operands and compared by the index word `ExactWordMatcher` reads;
+  - a nesting limit checked before any recursion.
+- **`FTS5Query` 3.x** delegates to the parser.
+- **`SearchService`** reads one combined parse for the MATCH, the exact-word terms and the Query Inspector, and runs no scope the unscoped parse refuses.
+- **Query Inspector:**
+  - NOT APPLIED rows, an ADVANCED tag, and a narrower-than-typed caption;
+  - a refused-query line shown only when something searchable was refused;
+  - EXACT tags per applied mark;
+  - an iOS refresh key built from exactly what the inspection reads;
+  - zero-result blame decomposed from the executed query and kept across a filter-only refresh.
+- **Corpus Analytics** and `OccurrenceAvailability` follow the applied marks.
+- **Docs:** both manuals §7.2/§7.3, the macOS Search tips, and the Analytics help text.
+
+**Performance and stack.**
+- The tree passes first shipped ~7× shallower than v2's recursion: 290 levels of `-(war …` crashed a 512 KB stack.
+- Now bounded at 32 levels. The costliest nesting needs ~88 KB in Debug and ~44 KB in Release.
+- Nested long runs that took 280–3,900 ms at 4–8k characters in Release now parse in 4–28 ms. No measured shape is slower than v2.
+
+**Verification (final tree).**
+- `FTS5StoreTests` **196 tests in 13 suites**; `RetrievalEvalHarnessTests` **12**.
+- `FRUSExplorerTests` **4,877 tests in 616 suites** (iPhone 17 simulator).
+- The macOS scheme builds into fresh DerivedData, with 33 warning lines, none in a changed file.
+- Every fix's tests were seen failing on the code before it.
+- Property suites:
+  - exhaustive validity and `-x`/`NOT x` equivalence;
+  - a set oracle that never reads a render;
+  - structured, exact-term, spelling and refusal-across-scope sweeps with a literal-word soundness check over inflected corpora;
+  - a depth suite on a 512 KB thread.
+
+**Review.** Four rounds, each an adversarial review with a skeptic per finding plus mutation attacks. Mutants killed:
+
+| Round | Parser | App |
+|---|---|---|
+| 1 | 25 of 26; the continuation killed 27 of 32 | 10 of 14 |
+| 2 | 26 of 28 | 45 of 52 |
+| 3 | 13 of 20 | 24 of 31 |
+| 4 | every new test A/B-proven against its mutant | every new test A/B-proven against its mutant |
+
+Survivors were closed with tests, or shown equivalent. What the rounds found and fixed:
+- the stack overflow (major);
+- exact-word filters that dropped documents the query admits;
+- `=` treated as required through an unmarked copy of the word;
+- a refused-query line appearing mid-typing;
+- an iOS refresh keyed on display-only fields;
+- blame naming unsearched text;
+- a dozen doc and test gaps.
+
+**Environment lessons.**
+- A kept lane worktree lost its git registration between sessions, so an agent's `git -C` reached the main checkout. It was restored to `v2`, and the lesson is recorded in memory.
+- Simulator test hosts hung for one afternoon, then recovered.
+
+**Noticed, not fixed.**
+- `-NEAR(...)`
+- `cold --(korea)`
+- orphan operator words
+- a typed phrase spanning every column in a single-column scope
+- `emptyQuery` shown as a technical error
+- the eval harness scoring FTS5 step errors as zero
+- one-time +N freshness badges
+- VoiceOver cannot reach the Inspector strip's rows
+- raw-text highlight terms
+- a refresh landing after a search's decomposition clears its blame (since v2)
+- `ExactWordMatcher` folds `ệ`, `ß` and Greek accents where unicode61 does not
+- AnalyticsView de-duplicates compared terms by spelling
+- stale EditableContent line refs for `analytics.exactUnsupported.*` and the SearchSheet keys
+- the inspection not refreshing when indexing changes the volume count

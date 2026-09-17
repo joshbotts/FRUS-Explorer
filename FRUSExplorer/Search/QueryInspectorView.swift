@@ -21,6 +21,12 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Q-2b: initial implementation
+///   1.1 — #1297: the scoped-count update rebuilds through `replacingOperands(_:)`, so the
+///         not-applied operands survive a request for counts
+///   1.2 — #1297 round 2: `refresh` keeps the zero-result blame when the new inspection's operands are the old ones,
+///         so a filter-only refresh landing after the new search's decomposition no longer wipes what it measured (A4)
+///   1.3 — #1297 round 3: `decomposeZeroResult` decomposes the parse of the parameters it is given, the search that ran,
+///         not the inspection of the text in the field, so the blame never names a term the empty search did not hold (A3)
 @Observable
 @MainActor
 final class QueryInspectorController {
@@ -47,6 +53,12 @@ final class QueryInspectorController {
     ///
     /// Cancellation-aware: driven from `.task(id:)`, a new keystroke cancels the previous
     /// call during its sleep, so only the settled query costs anything.
+    ///
+    /// Clears ``emptyConjuncts`` only when the operands change. The blame names operands, and a change that keeps them —
+    /// a filter or a scope — re-runs the search, whose own decomposition (keyed on the executed search, never on this
+    /// refresh) replaces the blame. Clearing it here as well raced that decomposition: when the search and its
+    /// per-operand counts finished inside the debounce, this refresh landed last and left the zero-result view claiming
+    /// every term matches on its own, which nothing had measured (#1297 round 2, A4).
     func refresh(parameters: SearchParameters, service: SearchService?, indexedVolumeCount: Int) async {
         guard let service else { return }
         try? await Task.sleep(for: Self.debounce)
@@ -56,10 +68,12 @@ final class QueryInspectorController {
         let result = await inspector.inspect(parameters: parameters,
                                              indexedVolumeCount: indexedVolumeCount)
         guard !Task.isCancelled else { return }
+        // Edited terms invalidate the previous decomposition: leaving it up would blame a term the researcher has
+        // since edited away. The same terms under a new filter do not, and their new decomposition is not ours to wipe.
+        if result.operands.map(\.operand) != inspection?.operands.map(\.operand) {
+            emptyConjuncts = []
+        }
         inspection = result
-        // A fresh query invalidates the previous decomposition. Leaving it up would blame
-        // a term the researcher has since edited away.
-        emptyConjuncts = []
     }
 
     /// Runs the expensive per-operand scoped counts on demand.
@@ -70,16 +84,22 @@ final class QueryInspectorController {
         let counted = await QueryInspector(searchService: service)
             .scopedCounts(for: current, parameters: parameters)
         guard !Task.isCancelled else { return }
-        inspection = QueryInspection(
-            expression: current.expression, operands: counted,
-            indexedVolumeCount: current.indexedVolumeCount, isFilterOnly: current.isFilterOnly)
+        // Every other fact — the not-applied operands included — carries across unchanged.
+        inspection = current.replacingOperands(counted)
     }
 
     /// Works out which conjunct is empty, for the zero-result surface.
+    ///
+    /// `parameters` are the search that came back empty, and their own parse is what is decomposed
+    /// (`QueryInspector.emptyConjuncts(parameters:)`). The inspection describes the text in the field, which on macOS
+    /// is not submitted until Return, so decomposing it could blame a term the empty search never held — and ``refresh``
+    /// keeps a blame across a filter change, which made that blame persist (#1297 round 3, A3).
+    ///
+    /// Still waits for an inspection. The refresh that produces the first one compares its operands with none and clears
+    /// the blame, so a blame written before it would be wiped when it lands.
     func decomposeZeroResult(parameters: SearchParameters, service: SearchService?) async {
-        guard let service, let current = inspection else { return }
-        let found = await QueryInspector(searchService: service)
-            .emptyConjuncts(in: current, parameters: parameters)
+        guard let service, inspection != nil else { return }
+        let found = await QueryInspector(searchService: service).emptyConjuncts(parameters: parameters)
         guard !Task.isCancelled else { return }
         emptyConjuncts = found
     }
@@ -100,6 +120,24 @@ final class QueryInspectorController {
 ///
 /// Version history:
 ///   1.0 — Q-2b: initial implementation
+///   1.1 — #1297: a NOT APPLIED row for each operand the expression leaves out, never counted
+///         or offered for counting; the excluded operand's line points at the expression shown above
+///         ("removed wherever the expression above applies it", `search.inspector.excludedDetail.v2`),
+///         because no shorter statement of where an exclusion applies holds for every query
+///   1.2 — #1297 join: an ADVANCED tag on operands from the structured fields
+///         (`search.inspector.structuredTag`), and a narrower-than-typed caption under the MATCH
+///         line whenever the expression is an approximation (`search.inspector.approximateCaption`)
+///   1.3 — #1297 fixes: both gates are read from the model — `QueryInspection.showsApproximateCaption` and
+///         `InspectedOperand.showsStructuredTag` — so they are tested at runtime, not only by reading this file
+///   1.4 — #1297 round 1: a refused query gets a line saying it cannot run (`search.inspector.refused`) where it
+///         used to get nothing, or "filters only" beside a filter; the NOT APPLIED line no longer blames an OR
+///         alternative, since `-(war -korea)` leaves war out with no OR typed (`search.inspector.notAppliedDetail`,
+///         unshipped and reworded in place)
+///   1.5 — #1297 round 2: the EXACT tag reads the operand's `isExactApplied`, the parser's answer for that operand, so
+///         `(=cold OR war) cold` tags neither cold (A1); through `QueryInspection.isRefused`, the refused line shows only
+///         for a query holding something searchable, never a lone `"` or `(` typed on the way to one (A2)
+///   1.6 — #1297 round 4 (comment only): the EXACT comment names a word marked in two spellings, which parser 6.6
+///         applies on both
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -118,7 +156,7 @@ struct QueryInspectorStrip: View {
         VStack(alignment: .leading, spacing: 6) {
             expressionRow
             if isExpanded {
-                if inspection.hasOperands { operandRows }
+                if inspection.showsTermRows { operandRows }
                 denominatorCaption
             }
         }
@@ -137,6 +175,14 @@ struct QueryInspectorStrip: View {
                     .lineLimit(3)
                 Spacer(minLength: 0)
             }
+            // Here rather than among the detail rows: this row never collapses, and when what was
+            // left out is a demoted operator word there is no NOT APPLIED row to say anything.
+            if inspection.showsApproximateCaption {
+                Text(String(localized: "search.inspector.approximateCaption",
+                            defaultValue: "Narrower than typed: part of this query only excludes terms, and a search needs something to find, so that part was left out."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             if inspection.expression?.expressionsDiffer == true {
                 Text(String(localized: "search.inspector.expressionsDiffer",
                             defaultValue: "Documents and your own summaries/notes are searched with different expressions, because only some of them are in scope."))
@@ -146,6 +192,11 @@ struct QueryInspectorStrip: View {
         } else if inspection.isFilterOnly {
             Text(String(localized: "search.inspector.filterOnly",
                         defaultValue: "No text search — this query is filters only, so there is no expression to show."))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else if inspection.isRefused {
+            Text(String(localized: "search.inspector.refused",
+                        defaultValue: "No expression — this query cannot run: nothing is left to search for once its exclusions apply, or its parentheses nest more than \(FTS5InlineQueryParser.maximumGroupDepth) deep."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -163,9 +214,20 @@ struct QueryInspectorStrip: View {
                         microTag(String(localized: "search.inspector.excludedTag",
                                         defaultValue: "EXCLUDED"))
                     }
-                    if item.operand.isExact {
+                    // Only where the search filters on the literal word, as the parser decides for this operand: in
+                    // `=cold OR war` no tag, in `(=cold OR war) =cold`, `=cold war OR =cold peace` and
+                    // `=Cold war OR =cold. peace` on both colds.
+                    if item.operand.isExactApplied {
                         microTag(String(localized: "search.inspector.exactTag",
                                         defaultValue: "EXACT"))
+                    }
+                    // A term the researcher did not type into the box — a restored saved search's
+                    // phrase, prefix or excluded term. No control sets those fields any more (the
+                    // Advanced Filters sheet and popover lost them in Session 2026-06-08), so the tag
+                    // names the Advanced fields the search was saved with, not a place to edit it.
+                    if item.showsStructuredTag {
+                        microTag(String(localized: "search.inspector.structuredTag",
+                                        defaultValue: "ADVANCED"))
                     }
                     Spacer(minLength: 0)
                 }
@@ -183,7 +245,13 @@ struct QueryInspectorStrip: View {
             }
         }
 
-        if !isCountingScoped, inspection.operands.contains(where: { $0.scopedCount == nil && !$0.operand.isNegated }) {
+        // Beside the operands, and before the count offer, which reads `operands` only: a term
+        // the search did not use has no count to fetch.
+        ForEach(Array(inspection.notApplied.enumerated()), id: \.offset) { _, operand in
+            notAppliedRow(for: operand)
+        }
+
+        if !isCountingScoped, inspection.hasUncountedOperands {
             Button(String(localized: "search.inspector.countInScope",
                           defaultValue: "Count each term in scope…")) {
                 onRequestScopedCounts()
@@ -198,12 +266,48 @@ struct QueryInspectorStrip: View {
         }
     }
 
+    /// One operand the expression leaves out: its text, a NOT APPLIED tag, and why.
+    ///
+    /// No count line, stem warning, or EXCLUDED/EXACT tag: each describes how a term took
+    /// part in the search, and this one took none. The row is one accessibility element so
+    /// VoiceOver reads the term, the tag and the reason together rather than as three
+    /// unrelated fragments — where the strip is hosted directly, as in the macOS Search window.
+    /// On iOS the strip sits inside a disclosure Button whose own accessibility label currently
+    /// replaces all of its content, so VoiceOver reaches none of these rows there (a separate
+    /// fix, not part of #1297).
+    private func notAppliedRow(for operand: ParsedOperand) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 6) {
+                Text(operand.text)
+                    .font(.system(.caption, design: .monospaced))
+                    .fontWeight(.medium)
+                    .foregroundStyle(.secondary)
+                microTag(String(localized: "search.inspector.notAppliedTag",
+                                defaultValue: "NOT APPLIED"))
+                Spacer(minLength: 0)
+            }
+            // Not "an OR alternative": `-(war -korea)` leaves war out with no OR typed, because pushing the
+            // negation inward makes `NOT war` a part of its own beside `korea`.
+            Text(String(localized: "search.inspector.notAppliedDetail",
+                        defaultValue: "not searched — this part of the query only excludes, and a search needs something to find, so it was left out"))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     /// Every count names its scope, because a bare number is the thing this workstream
     /// exists to stop producing.
     private func countLine(for item: InspectedOperand) -> String {
         if item.operand.isNegated {
-            return String(localized: "search.inspector.excludedDetail",
-                          defaultValue: "excluded — documents containing this are removed")
+            // v2 (#1297): v1 said "documents containing this are removed", a removal from the
+            // whole result set that was never true across OR — `cold -korea OR war` keeps war
+            // documents that mention korea. Nor is "the terms typed with it" always the scope:
+            // `NOT (cold OR -korea)` renders `"korea" NOT "cold"`, so cold is removed from korea's
+            // matches across the OR it was typed in. The expression shown above is the one
+            // statement that holds in every shape, so the line points at it.
+            return String(localized: "search.inspector.excludedDetail.v2",
+                          defaultValue: "excluded — documents containing this are removed wherever the expression above applies it")
         }
         var parts: [String] = []
         if let scoped = item.scopedCount {

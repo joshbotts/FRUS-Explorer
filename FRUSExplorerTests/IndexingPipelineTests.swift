@@ -671,6 +671,205 @@ struct SearchParametersTests {
             #expect(!results.contains(where: { $0.documentId == "d2" }))
         }
     }
+
+    /// #1297 join: a typed exclusion beside a structured phrase used to be discarded, because the typed
+    /// text was rendered alone and had nothing positive of its own.
+    @Test("makeMatchExpressions combines a typed exclusion with a structured phrase in both expressions")
+    func typedExclusionCombinesWithStructuredPhrase() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            let params = SearchParameters(keywords: "-korea", phrase: "cold war")
+            let (corpus, userContent) = try await service.makeMatchExpressions(from: params)
+            #expect(corpus == "\"cold war\" NOT \"korea\"")
+            #expect(userContent == "\"cold war\" NOT \"korea\"")
+
+            var summariesOnly = params
+            summariesOnly.includeDocumentText = false
+            summariesOnly.includeSummaries = true
+            summariesOnly.includeNotes = false
+            let (scopedCorpus, scopedUserContent) = try await service.makeMatchExpressions(from: summariesOnly)
+            #expect(scopedCorpus == nil)
+            // The structured phrase spans every column; the typed exclusion carries the scope.
+            #expect(scopedUserContent == "\"cold war\" NOT {summary_text}:\"korea\"")
+        }
+    }
+
+    /// The exact-word post-filter reads the same combined parse that renders the MATCH expression.
+    ///
+    /// Each case pairs the combined answer with the typed text parsed alone, which is what `exactTerms(from:)` read
+    /// before the join, so a revert to the typed-alone parse fails here. The earlier form of this test could not: both
+    /// of its inputs gave the same answer either way (#1297 round 1, F1).
+    ///
+    /// The disagreement only runs one way. Parser 6.3 reports an `=` term only when every match must contain it (D1),
+    /// and a structured part can make a typed approximation exact but never makes an exact typed query require more.
+    /// Measured over every sequence of one to five tokens from `=cold`, `cold`, `-cold`, `-=cold`, `korea`, `-korea`,
+    /// `OR`, `NOT`, `(`, `)`, `-(`, `war`, `-war` and `"cold"` that holds `=cold`, beside seven structured combinations
+    /// (a phrase, two prefixes, two excluded terms, and a phrase or prefix with an excluded term): the two parses
+    /// disagree 38,886 times, and in every one the combined parse reports fewer terms — so a test of the other
+    /// direction, a term the structured parts add, has no input to use.
+    @Test("exactTerms come from the combined parse of typed text and structured fields")
+    func exactTermsComeFromTheCombinedParse() {
+        let typedAlone = FTS5InlineQueryParser.parseDetailed("=cold OR -korea")
+        #expect(typedAlone.exactTerms == ["cold"], "control: alone, the approximation runs cold and requires it")
+
+        // The prefix anchors the typed complement, so cold is one alternative of it and no match must contain it.
+        let besidePrefix = SearchParameters(keywords: "=cold OR -korea", prefixWildcard: "viet")
+        #expect(SearchService.parsedQuery(for: besidePrefix).expression == "\"viet\"* NOT (\"korea\" NOT \"cold\")")
+        #expect(SearchService.exactTerms(from: besidePrefix).isEmpty,
+                "beside the prefix, a viet document with neither cold nor korea matches, so cold cannot be a filter")
+
+        // The restored excluded term removes the approximation's only anchor, so the combined query is refused.
+        let besideExclusion = SearchParameters(keywords: "=cold OR -korea", excludedTerms: ["cold"])
+        #expect(SearchService.parsedQuery(for: besideExclusion).expression == nil)
+        #expect(SearchService.exactTerms(from: besideExclusion).isEmpty)
+
+        // A required typed term is still reported beside a structured phrase.
+        let required = SearchParameters(keywords: "=cold -korea", phrase: "cold war")
+        #expect(SearchService.exactTerms(from: required) == ["cold"])
+        #expect(SearchService.exactTerms(from: SearchParameters(phrase: "cold war")).isEmpty)
+    }
+
+    /// Parser 6.3 (D1) end to end: the SQL layer ANDs one `frus_exact_word` filter per exact term over every result, so
+    /// a term is filtered only when every match must contain it. Before 6.3 `=cold OR war` filtered on cold and lost
+    /// every document that has war but not cold, although the MATCH admits it.
+    @Test("An = term is filtered exactly only where every match must contain it, so =cold OR war keeps war-only documents")
+    func exactFilterAppliesOnlyToRequiredTerms() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            try writeTEIVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>Memo</head><p>The cold war continued.</p>"),
+                    ("d2", "<head>Memo</head><p>The war in Korea went on.</p>"),
+                    ("d3", "<head>Memo</head><p>Colds and fevers spread.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+
+            func ids(_ keywords: String) async throws -> Set<String> {
+                let params = SearchParameters(keywords: keywords)
+                let results = try await service.search(parameters: params)
+                #expect(try await service.searchCount(parameters: params) == results.count,
+                        "\(keywords): the count must agree with the results")
+                return Set(results.map(\.documentId))
+            }
+
+            // In an OR alternative the sigil is ignored: d2 has war and no cold, and d3 matches cold by its stem.
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold OR war")).isEmpty)
+            #expect(try await ids("=cold OR war") == ["d1", "d2", "d3"])
+
+            // Required, the same mark filters: d3 matches the MATCH by stem (colds, fevers) and is removed.
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold (war OR fevers)")) == ["cold"])
+            #expect(try await ids("=cold (war OR fevers)") == ["d1"])
+            // Control: unmarked, d3 is a match, so the line above is the filter at work and not the fixture.
+            #expect(try await ids("cold (war OR fevers)") == ["d1", "d3"])
+
+            // Parsers 6.4 and 6.5 (#1297 rounds 2 and 3): only a marked operand makes a mark apply. The unmarked cold
+            // every match requires admits d3's colds, so the alternative's mark does not apply and d3 stays; a second,
+            // required mark does filter it out.
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "(=cold OR fevers) cold")).isEmpty)
+            #expect(try await ids("(=cold OR fevers) cold") == ["d1", "d3"])
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "(=cold OR fevers) =cold")) == ["cold"])
+            #expect(try await ids("(=cold OR fevers) =cold") == ["d1"])
+
+            // Parser 6.5 (D4): a word marked in every alternative is held literally by every match, so it filters, and
+            // d3, which matches `cold AND fevers` by the stem of its colds, is removed. Unmarked in one alternative, the
+            // stem admits d3 again and nothing filters.
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold war OR =cold fevers")) == ["cold"])
+            #expect(try await ids("=cold war OR =cold fevers") == ["d1"])
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "=cold war OR cold fevers")).isEmpty)
+            #expect(try await ids("=cold war OR cold fevers") == ["d1", "d3"])
+        }
+    }
+
+    /// Guard: a structured exclusion is no anchor, so exclusions from both sources still have nothing to run.
+    @Test("A typed exclusion beside structured exclusions alone still throws emptyQuery")
+    func typedExclusionsBesideStructuredExclusionsStillThrow() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            let params = SearchParameters(keywords: "-korea", excludedTerms: ["vietnam"])
+            do {
+                _ = try await service.makeMatchExpressions(from: params)
+                Issue.record("Expected emptyQuery error")
+            } catch FTS5Error.emptyQuery {
+                // expected
+            }
+        }
+    }
+
+    /// Parser 6.1: pushing `-(war -korea)` inward anchors it on korea, which the restored excluded term then
+    /// removes in full. The approximation could match no document, so the query is refused as it was before the
+    /// join, rather than running `"korea" NOT "korea"` in every scope.
+    @Test("An anchor a restored exclusion removes in full still throws emptyQuery, in every scope")
+    func approximationRemovedByStructuredExclusionThrows() async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            var summariesOnly = SearchParameters(keywords: "-(war -korea)", excludedTerms: ["korea"])
+            summariesOnly.includeDocumentText = false
+            summariesOnly.includeSummaries = true
+            summariesOnly.includeNotes = false
+            for params in [SearchParameters(keywords: "-(war -korea)", excludedTerms: ["korea"]), summariesOnly] {
+                do {
+                    let pair = try await service.makeMatchExpressions(from: params)
+                    Issue.record("Expected emptyQuery error, got \(String(describing: pair))")
+                } catch FTS5Error.emptyQuery {
+                    // expected
+                }
+            }
+            #expect(SearchService.parsedQuery(for: SearchParameters(keywords: "-(war -korea)", excludedTerms: ["korea"]))
+                    == ParsedQuery(expression: nil, exactTerms: []))
+        }
+    }
+
+    /// The unscoped parse decides whether a query runs in any scope, because the exact-word post-filter and the Query
+    /// Inspector read it. Both queries here are refused by it, and each marks `=cold`, whose post-filter ran empty
+    /// wherever a scope rendered the query anyway. The two arguments pin different layers:
+    ///
+    /// - `=cold "korea" -korea OR -korea` pins **SearchService 2.2**, the `unscopedRenders` guard in
+    ///   `makeMatchExpressions`. A typed phrase spans every column, so in a single-column scope the parser cannot show
+    ///   the scoped exclusion removes it and still renders `{summary_text}:"cold" AND "korea" NOT
+    ///   {summary_text}:"korea"`. Only the guard stops that render running; delete it and this argument fails.
+    /// - `( =cold NOT OR -korea ) -not` pins **parser 6.2**, which gave the demoted operator word its column prefix.
+    ///   Before 6.2 it rendered in a single-column scope as this argument's partner does; since 6.2 the parser refuses
+    ///   it in every scope, so it passes with or without the guard and stays as the parser's regression case.
+    ///
+    /// `rendersScoped` states which is which, and is checked against the parser, so an argument that stops
+    /// exercising the layer it is here for fails rather than going quietly dead (F6, F10).
+    @Test("A query the unscoped parse refuses throws emptyQuery in every scope",
+          arguments: zip(["( =cold NOT OR -korea ) -not", "=cold \"korea\" -korea OR -korea"], [false, true]))
+    func unscopedRefusalHoldsInEveryScope(keywords: String, rendersScoped: Bool) async throws {
+        try await withTempDir { dir in
+            let (pipeline, store) = try await makeTestPipeline(dir: dir)
+            let service = SearchService(fts5Store: store, pipeline: pipeline)
+            #expect(SearchService.parsedQuery(for: SearchParameters(keywords: keywords))
+                    == ParsedQuery(expression: nil, exactTerms: []))
+            for prefix in ["{summary_text}:", "{note_text}:"] {
+                #expect((SearchService.parsedQuery(for: SearchParameters(keywords: keywords), columnPrefix: prefix)
+                            .expression != nil) == rendersScoped,
+                        "\(keywords) in \(prefix): rendersScoped says which layer this argument pins")
+            }
+            let scopes = [(true, true, true), (true, true, false), (true, false, true), (false, true, true),
+                          (false, true, false), (false, false, true)]
+            for (documentText, summaries, notes) in scopes {
+                var params = SearchParameters(keywords: keywords)
+                params.includeDocumentText = documentText
+                params.includeSummaries = summaries
+                params.includeNotes = notes
+                do {
+                    let pair = try await service.makeMatchExpressions(from: params)
+                    Issue.record("Expected emptyQuery with text \(documentText), summaries \(summaries), notes \(notes); got \(String(describing: pair))")
+                } catch FTS5Error.emptyQuery {
+                    // expected
+                }
+            }
+        }
+    }
 }
 
 // MARK: - ConcurrencyTest

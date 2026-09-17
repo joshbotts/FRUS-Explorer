@@ -101,6 +101,16 @@ import SwiftUI
 ///          user last opened), preserving the click-to-open behavior
 ///   1.15 — #1275 follow-up: the Advanced popover's My Tags list follows the reader's tag order,
 ///          over a tag query now sorted by name so the order has an alphabetical baseline
+///   1.16 — #1297: the search tips stop calling lowercase or/not literal words (false since
+///          Session 159), say an exclusion applies to the terms typed with it wherever it sits
+///          and is the same as NOT, and that `-(…)` or `NOT (…)` excludes a group
+///   1.17 — #1297 round 1: the Query Inspector strip shows on `QueryInspection.showsStrip`, so a refused
+///          query says why it has no expression; the `=word` tip says the mark is ignored where a match
+///          need not contain the word (parser 6.3)
+///   1.18 — #1297 round 4: the `=word` tip states D4 as the Analytics help and both manuals do — the mark applies
+///          where every OR alternative marks the word and is ignored when only one does. Its "as in one OR
+///          alternative" read as though each mark of `=cold war OR =cold peace` were ignored, which parser 6.5
+///          applies
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -1542,7 +1552,7 @@ struct MacSearchWindowView: View {
     @ViewBuilder
     private var queryInspectorStrip: some View {
         if let inspection = inspectorController.inspection,
-           inspection.expression != nil || inspection.isFilterOnly {
+           inspection.showsStrip {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: 8) {
                     QueryInspectorStrip(
@@ -2146,12 +2156,12 @@ struct MacSearchWindowView: View {
             // strictly more power (mixed AND/OR/NOT/grouping per query, not one global mode).
             LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 3), spacing: 6) {
                 TipItem(code: "\"exact phrase\"", description: "match these words in this exact order")
-                TipItem(code: "term1 OR term2",   description: "match either term (capital OR — lowercase \"or\" is a literal word)")
-                TipItem(code: "-word",            description: "exclude documents containing this word (also: capital NOT)")
+                TipItem(code: "term1 OR term2",   description: "match either term — OR, AND and NOT work in any case")
+                TipItem(code: "-word",            description: "exclude documents containing this word from the terms typed with it, wherever it sits (same as NOT word)")
                 TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
-                TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match (capital OR inside parens)")
+                TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match; -(a OR b) or NOT (a OR b) excludes a group")
                 TipItem(code: "NEAR(a b, 30)",    description: "proximity — both within 30 words of each other; operands may be phrases or term*")
-                TipItem(code: "=word",            description: "exact word — \"=containment\" excludes contain, containing, container")
+                TipItem(code: "=word",            description: "exact word — \"=containment\" excludes contain, containing, container; applies only where every match must contain the word, as when every OR alternative marks it, and is ignored where one need not, as when only one OR alternative marks it")
                 TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")
                 TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
                 TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")

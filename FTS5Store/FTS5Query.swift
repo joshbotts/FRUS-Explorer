@@ -32,10 +32,35 @@
 ///   by `FTS5InlineQueryParser` from the search box, so it reaches this builder already
 ///   rendered in `keywordExpression` and is never passed through `sanitizeTerm`.
 ///
+/// ## Combining parts
+/// The keyword expression, the phrase and the prefix wildcard are each a *part*, and the
+/// rendered expression means (keywords) AND phrase AND prefix AND NOT each excluded term.
+/// The combination is the inline parser's — `FTS5InlineQueryParser.combine(renderedKeywords:
+/// structured:columnPrefix:)` — so this builder and a parsed query carrying the same fields
+/// follow one rule. A query with one part emits that part exactly as built. With several, the
+/// parts are joined by an explicit `AND` and any part that is not a single operand is
+/// parenthesised first; excluded terms are applied to the whole positive expression,
+/// parenthesised unless it is a single operand. Both rules exist because FTS5's binding does
+/// not follow the order the parts are written in. Juxtaposition binds tighter than `NOT`, so
+/// `"cold" NOT "korea" "cold war"` means `cold NOT (korea "cold war")`; juxtaposition beside
+/// a group is a syntax error; and `NOT` binds tighter than `OR`, so
+/// `"cold" OR "war" NOT "korea"` excludes korea from the war documents only.
+///
+/// ## A keyword expression must be positive
+/// This builder is a carrier: it receives `keywordExpression` as text, so it cannot see what
+/// that text's parse left out. Typed `-korea` renders `nil` on its own, and `cold OR -korea`
+/// renders `"cold"`; beside a phrase here both stay that way, although the phrase would have
+/// given the exclusion something to exclude from. Pass only an expression meant to run as it
+/// is, with nothing beside it that could change its meaning. The app does not combine typed
+/// and structured parts here: `SearchService` calls
+/// `FTS5InlineQueryParser.parseDetailed(_:columnPrefix:structured:)`, which parses both into
+/// one tree, and `CorpusAnalyticsService` carries a parsed expression with nothing beside it.
+///
 /// ## Injection Safety
-/// All user-supplied term strings are sanitised via `sanitizeTerm(_:)` before
-/// embedding in the query expression. The sanitizer strips FTS5 operator characters
-/// and double-quotes from free text to prevent syntax errors and injection.
+/// Keyword terms are sanitised via `sanitizeTerm(_:)` before embedding in the query
+/// expression, and the phrase, prefix and excluded terms by the inline parser's sanitisers,
+/// which apply the same transform. They strip FTS5 operator characters and double-quotes from
+/// free text to prevent syntax errors and injection.
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
@@ -57,6 +82,38 @@
 ///          tokenizer stems both index entries and query terms inside SQLite, so the
 ///          rendered MATCH expression now carries the user's original (sanitised,
 ///          lowercased) words instead of application-layer Porter stems.
+///   2.2 — #1297 (2026-09-13): parts are combined with an explicit `AND`, each parenthesised
+///          unless it is a single operand, and excluded terms apply to the whole positive
+///          expression. The bare-space join let FTS5's precedence regroup them, and the
+///          macOS Advanced popover and restored saved searches still set a phrase, a prefix
+///          and excluded terms beside typed keywords: a keyword expression ending in `NOT x`
+///          swallowed the phrase or prefix into its exclusion, one ending in a group beside
+///          a phrase or prefix was a syntax error (`"cold" AND ("korea" OR "vietnam")
+///          "cold war"`), and excluded terms bound only to the last `OR` alternative.
+///          Measured over the #1297 sweep — 7,380 typed queries through the 5.0 inline parser,
+///          each combined with a phrase, a prefix and excluded terms in 9 ways, with and
+///          without a column scope — the bare-space join gave 624 syntax errors and 9,918
+///          wrong match sets out of 66,420 combinations, identically in both scopes, and this
+///          join gives none. A single part keeps the bytes it always had.
+///          Correction (3.0): that sweep took its expected rows from the inline parser's
+///          typed-alone render, so it verified the join, not the answer the app gave — a typed
+///          complement the typed render left out was left out of the expectation too, which is
+///          how `-korea` beside a structured phrase passed while the app discarded it.
+///   3.0 — #1297 join: `toFTS5MatchExpression()` builds the keyword part as before and hands
+///          the combination to `FTS5InlineQueryParser.combine(renderedKeywords:structured:
+///          columnPrefix:)`, so this builder and a parsed query carrying the same fields share
+///          one rule; `operandText(_:)` and `sanitizePhrase(_:)` are gone. Measured
+///          byte-identical to 2.2 over 59,436 inputs — every typed render of the length-4 sweep
+///          beside every structured combination in both scopes, plus the structured-keywords
+///          path with sanitiser edge cases. The app no longer combines parts here at all (see
+///          "A keyword expression must be positive").
+///   3.1 — #1297 fixes: `sanitizePhrase(_:)` is removed. 3.0 said it was gone, but the private declaration
+///          stayed behind with no caller; the phrase has been sanitised by `FTS5InlineQueryParser` since 3.0.
+///   3.2 — #1297 round-1 fixes: documentation only. `keywordExpression` named `SearchService` as its producer and
+///          `CorpusAnalyticsService` as a user of the structured-keywords path; `SearchService` has rendered through
+///          the parser since #1297's join, and `CorpusAnalyticsService` is the producer of `keywordExpression`.
+///          Correction (2.2): the macOS Advanced popover has not set a phrase, a prefix or excluded terms since
+///          Session 2026-06-08; only restored saved searches carry them. No byte of any render moves.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -80,17 +137,21 @@ public struct FTS5Query: Sendable {
     public var keywords: [String]
 
     /// A pre-rendered, ready-to-embed FTS5 expression fragment for the keyword portion
-    /// of the query — produced by `FTS5InlineQueryParser.parse(_:columnPrefix:)` from
-    /// the raw text typed into the main search box.
+    /// of the query — produced by `FTS5InlineQueryParser.parse(_:columnPrefix:structured:)`
+    /// with no structured parts, as `CorpusAnalyticsService` produces it from a researcher's
+    /// terms. `SearchService` does not build an `FTS5Query`: it renders through the parser.
     ///
     /// When non-nil, `toFTS5MatchExpression()` embeds this fragment directly in place of
     /// building one from `keywords`/`booleanMode` — it already carries its own stemming,
-    /// sanitisation, operator structure (`OR`/`NOT`/implicit `AND`), and column scoping.
+    /// sanitisation, operator structure (`OR`/`NOT`/explicit `AND`), and column scoping.
     /// `keywords` and `booleanMode` are ignored in that case.
     ///
-    /// `nil` (the default) preserves the original structured-`keywords` rendering path
-    /// used by `CorpusAnalyticsService` and the test suite, where callers construct
-    /// `FTS5Query` directly from an already-tokenised `[String]` rather than raw text.
+    /// `nil` (the default) keeps the structured-`keywords` rendering path, used by the test
+    /// suite, where callers construct `FTS5Query` directly from an already-tokenised
+    /// `[String]` rather than raw text.
+    ///
+    /// Must be a positive expression meant to run as it is: the builder cannot see a
+    /// complement its parse left out (see "A keyword expression must be positive").
     public var keywordExpression: String?
 
     /// Exact phrase to match. If non-nil, the phrase is added as a quoted FTS5 term.
@@ -100,7 +161,8 @@ public struct FTS5Query: Sendable {
     /// How keyword terms are combined. Does not affect phrase or excluded terms.
     public var booleanMode: BooleanMode
 
-    /// Terms that must NOT appear in the document.
+    /// Terms that must NOT appear in the document. Each is excluded from the whole positive
+    /// expression — keywords, phrase and prefix together — never from only part of it.
     public var excludedTerms: [String]
 
     /// Prefix for a wildcard match (e.g. `"negoti"` matches `"negotiate"`,
@@ -165,11 +227,10 @@ public struct FTS5Query: Sendable {
         }
 
         // Keyword portion — `keywordExpression` (pre-rendered by `FTS5InlineQueryParser`
-        // from raw inline-syntax search-box text) takes priority when present; it already
-        // carries its own stemming, sanitisation, operator structure, and column scoping.
-        // Otherwise fall back to the original structured `keywords`/`booleanMode` path
-        // (used by `CorpusAnalyticsService` and the test suite, which construct `FTS5Query`
-        // directly from an already-tokenised `[String]`).
+        // from raw inline-syntax text) takes priority when present; it already carries its
+        // own stemming, sanitisation, operator structure, and column scoping. Otherwise fall
+        // back to the structured `keywords`/`booleanMode` path (used by the test suite, which
+        // constructs `FTS5Query` directly from an already-tokenised `[String]`).
         if let keywordExpression, !keywordExpression.isEmpty {
             parts.append(keywordExpression)
         } else {
@@ -193,53 +254,73 @@ public struct FTS5Query: Sendable {
             }
         }
 
-        // Phrase search (always full-table, ignores column prefix).
-        // Words are embedded as-is; the porter tokenizer stems each phrase token at
-        // query time, so morphological variants still match in word order.
-        if let phrase, !phrase.isEmpty {
-            let sanitized = sanitizePhrase(phrase)
-            if !sanitized.isEmpty {
-                let phraseWords = sanitized
-                    .split(whereSeparator: \.isWhitespace)
-                    .map { String($0).lowercased() }
-                    .joined(separator: " ")
-                if !phraseWords.isEmpty {
-                    parts.append("\"\(phraseWords)\"")
+        // The phrase, prefix and exclusions are combined with the keyword part by the inline
+        // parser's one combination rule, so a query built here and a parsed query that carries
+        // the same fields render the same bytes.
+        return FTS5InlineQueryParser.combine(
+            renderedKeywords: parts.first,
+            structured: StructuredQueryParts(phrase: phrase, prefixWildcard: prefixWildcard,
+                                             excludedTerms: excludedTerms),
+            columnPrefix: columnPrefix)
+    }
+
+    /// Whether `part` is one FTS5 operand, safe beside `AND` or `NOT` without parentheses: a
+    /// single quoted string — optionally a `*` prefix query, optionally behind a `{columns}:`
+    /// filter — or a single parenthesised group spanning the whole text.
+    ///
+    /// Anything else is parenthesised, deliberately conservatively. A keyword expression the
+    /// inline parser rendered can hold `OR`, a binary `NOT`, or several column-scoped operands,
+    /// and the structured keyword path juxtaposes its terms; parenthesising a `NEAR(...)`
+    /// merely costs two characters. Quote-aware, including FTS5's `""` escape, so a
+    /// parenthesis inside a quoted string is never mistaken for structure.
+    static func isSingleOperand(_ part: String) -> Bool {
+        let characters = Array(part)
+        var index = 0
+        if characters.first == "{" {
+            guard let close = characters.firstIndex(of: "}"),
+                  close + 1 < characters.count, characters[close + 1] == ":" else { return false }
+            index = close + 2
+        }
+        guard index < characters.count else { return false }
+
+        if characters[index] == "\"" {
+            var cursor = index + 1
+            while cursor < characters.count {
+                if characters[cursor] == "\"" {
+                    // `""` inside a string is an escaped quote, not the end of the string.
+                    if cursor + 1 < characters.count, characters[cursor + 1] == "\"" {
+                        cursor += 2
+                        continue
+                    }
+                    break
                 }
+                cursor += 1
             }
+            guard cursor < characters.count else { return false }
+            var end = cursor + 1
+            if end < characters.count, characters[end] == "*" { end += 1 }
+            return end == characters.count
         }
 
-        // Prefix wildcard — quoted-string-plus-star is FTS5's prefix-query form
-        // for non-bareword text.
-        if let prefix = prefixWildcard, !prefix.isEmpty {
-            let sanitized = sanitizeTerm(prefix)
-            if !sanitized.isEmpty {
-                parts.append(columnPrefix + "\"\(sanitized)\"*")
+        guard index == 0, characters[index] == "(" else { return false }
+        var depth = 0
+        var inQuotes = false
+        for cursor in characters.indices {
+            let character = characters[cursor]
+            if character == "\"" {
+                // An escaped `""` toggles twice, leaving the state where it was.
+                inQuotes.toggle()
+                continue
+            }
+            guard !inQuotes else { continue }
+            if character == "(" {
+                depth += 1
+            } else if character == ")" {
+                depth -= 1
+                if depth == 0 { return cursor == characters.count - 1 }
             }
         }
-
-        guard !parts.isEmpty || !excludedTerms.isEmpty else { return nil }
-
-        var expression = parts.joined(separator: " ")
-
-        // NOT terms — appended to whatever positive expression exists.
-        // FTS5 requires at least one positive term when using NOT.
-        // Sanitised and lowercased only; the porter tokenizer stems at query time.
-        let sanitizedExclusions = excludedTerms
-            .map { sanitizeTerm($0).lowercased() }
-            .filter { !$0.isEmpty }
-
-        if !sanitizedExclusions.isEmpty {
-            let notPart = sanitizedExclusions.map { "NOT \"\($0)\"" }.joined(separator: " ")
-            if expression.isEmpty {
-                // No positive term — NOT alone is invalid FTS5 syntax. Skip.
-                // Callers should validate that at least one positive term exists.
-                return nil
-            }
-            expression = expression + " " + notPart
-        }
-
-        return expression.isEmpty ? nil : expression
+        return false
     }
 
     // MARK: - Sanitization
@@ -268,15 +349,5 @@ public struct FTS5Query: Sendable {
         let components = stripped.components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
         return components.joined(separator: " ")
-    }
-
-    /// Strips double-quotes and angle-brackets from a phrase string so it can be
-    /// safely embedded between FTS5 double-quote delimiters.
-    private func sanitizePhrase(_ phrase: String) -> String {
-        phrase
-            .replacingOccurrences(of: "\"", with: "")
-            .replacingOccurrences(of: "<", with: "")
-            .replacingOccurrences(of: ">", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

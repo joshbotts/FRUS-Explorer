@@ -109,6 +109,16 @@ struct FeatureInfoItem: Identifiable {
 ///         override control there. Every existing caller keeps its shape through the
 ///         `Footer == EmptyView` convenience init, where the static factories now live
 ///         (a static member of the generic type could not name a concrete Self).
+///   1.4 — #1297: `corpusAnalytics`'s Multiple words row says an exclusion applies to the words
+///         it is typed with, wherever it sits (`analytics.info.multiword.body.v2`)
+///   1.5 — #1297 round 1: the same row, unshipped and reworded in place, says an OR alternative made only
+///         of exclusions is left out here as in Search and only Search's Query Inspector marks it, and that
+///         an `=` is ignored where a match need not contain the word and cannot be charted where it applies
+///   1.6 — #1297 round 2: the same row, still unshipped and reworded in place, says an `=` is also always ignored on a
+///         prefix and on a word the index splits into several terms, which is charted — `=U.S.S.R.` is not refused
+///   1.7 — #1297 round 3: the same row, still unshipped and reworded in place, names both OR cases, since parser 6.5
+///         (D4) applies an `=` every alternative marks — `=cold war OR =cold peace` is refused — and ignores one only one
+///         alternative marks
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -192,9 +202,12 @@ extension FeatureInfoButton where Footer == EmptyView {
     }
 
     /// The Corpus Analytics info button — the shared replacement for that view's former
-    /// hand-rolled popover. The heading and the five explanation rows reuse the original
-    /// `analytics.info.*` keys and copy verbatim, so the shipped text (and String Catalog
-    /// entries) are unchanged.
+    /// hand-rolled popover. The heading and the explanation rows reuse the original
+    /// `analytics.info.*` keys and copy verbatim, except Multiple words, re-keyed to
+    /// `analytics.info.multiword.body.v2` when #1297 made an exclusion apply to the words it
+    /// is typed with wherever it sits. That text also discloses what this surface cannot show: Search
+    /// reports a left-out exclusion-only alternative in its Query Inspector, and Corpus Analytics charts
+    /// the narrower query with no such row (#1297 round 1, D3).
     static var corpusAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
@@ -207,8 +220,8 @@ extension FeatureInfoButton where Footer == EmptyView {
                                    defaultValue: "Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
-                    detail: String(localized: "analytics.info.multiword.body",
-                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term. All of this works exactly as it does in the Search box.")),
+                    detail: String(localized: "analytics.info.multiword.body.v2",
+                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body",

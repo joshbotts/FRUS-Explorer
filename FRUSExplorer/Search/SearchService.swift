@@ -45,6 +45,27 @@ import Foundation
 ///          user-content match merge, SQL-side filters, exact pagination). The
 ///          stemmed-display repair pass and key-set whitelists are gone — FTS5 now
 ///          stores original text and filters evaluate in the database.
+///   2.1 — #1297 join: `parsedQuery(for:columnPrefix:)` parses the typed keywords and the
+///          structured phrase, prefix and excluded terms as one query, and both the MATCH
+///          expression and the exact-word terms come from it. The typed text used to be
+///          rendered alone and handed to `FTS5Query` as a string, which discarded a typed
+///          exclusion beside a restored phrase or prefix. RESULTS MOVE for those searches.
+///   2.2 — #1297 fixes review: `makeMatchExpressions` runs no scope for a query the unscoped
+///          parse refuses. `exactTerms(from:)` and the Query Inspector read that parse, so a
+///          summaries-only or notes-only search could run a single-column render beside the
+///          refusal with its `=` post-filter silently empty — `=cold "korea" -korea OR -korea`
+///          ran as `{summary_text}:"cold" AND "korea" NOT {summary_text}:"korea"`, because a
+///          typed phrase spans every column. It now throws `FTS5Error.emptyQuery` in every scope.
+///   2.3 — #1297 round 1 (docs only): `exactTerms(from:)` says it returns the marked words every match must
+///          contain, which is what parser 6.3 reports, and `matchExpressions(for:)` names the refusals among the
+///          reasons it throws.
+///   2.4 — #1297 round 2 (docs only): `exactTerms(from:)` describes the `=` rule by requirement and per operand, as parser
+///          6.4 applies it, rather than by the places a mark sits.
+///   2.5 — #1297 round 3 (docs only): `exactTerms(from:)` states parser 6.5's D4 — requirement is proved over marked
+///          operands, so a word marked in every alternative is reported, and every positive mark on it applies.
+///   2.6 — #1297 round 4 (docs only): `exactTerms(from:)` says parser 6.6 compares marks as the filter reads words, so a
+///          word is reported once, in the spelling of its first applied mark, and `=Cold war OR =cold. peace` filters;
+///          the paragraph is reflowed.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -278,7 +299,12 @@ public actor SearchService {
     ///
     /// A thin public face on `makeMatchExpressions` so the inspector displays exactly the
     /// strings the search executed — not a second rendering that could drift from it.
-    /// Rethrows `FTS5Error.emptyQuery` for a query with no searchable content at all.
+    /// Rethrows `FTS5Error.emptyQuery` whenever neither expression renders and the query does not run
+    /// filter-only: the parser refused the text (nothing positive once its negations apply, an
+    /// approximation proved to match nothing, or groups nested past
+    /// `FTS5InlineQueryParser.maximumGroupDepth`), every content scope is off, or there is neither text
+    /// nor a standalone filter. "No searchable content at all", as this said before #1297 round 1, missed
+    /// the refusals, which have content.
     public func matchExpressions(
         for parameters: SearchParameters
     ) throws -> (corpus: String?, userContent: String?) {
@@ -293,8 +319,13 @@ public actor SearchService {
             corpus = renderExpression(from: parameters, columns: nil)
         }
 
+        // The unscoped parse is the one the exact-word post-filter and the Query Inspector read, so a query it
+        // refuses runs in no scope. A single-column parse can still render one: a typed phrase spans every column,
+        // so a scoped exclusion of the same word cannot be shown to remove it, and the search would run without the
+        // exact terms it marked (#1297).
+        let unscopedRenders = Self.parsedQuery(for: parameters).expression != nil
         var userContent: String? = nil
-        if parameters.includeSummaries || parameters.includeNotes {
+        if unscopedRenders, parameters.includeSummaries || parameters.includeNotes {
             var columns: [FTS5Column]? = nil
             if !(parameters.includeSummaries && parameters.includeNotes) {
                 columns = parameters.includeSummaries ? [.summaryText] : [.noteText]
@@ -319,12 +350,30 @@ public actor SearchService {
         return (corpus, userContent)
     }
 
+    /// The combined parse of `parameters`: the typed `keywords` and the structured phrase, prefix
+    /// wildcard and excluded terms, as one query (#1297).
+    ///
+    /// The one place the app turns a query's text into a parse. The MATCH expression
+    /// (`renderExpression(from:columns:)`), the exact-word post-filter (`exactTerms(from:)`) and the
+    /// Query Inspector's operand rows all read it, so none of them can describe a different query
+    /// from the one that runs. `columnPrefix` scopes the typed operands and the prefix wildcard; the
+    /// phrase and the excluded terms span every column, as they always have.
+    ///
+    /// Nonisolated and pure: it parses and touches no store.
+    static func parsedQuery(for parameters: SearchParameters, columnPrefix: String = "") -> ParsedQuery {
+        FTS5InlineQueryParser.parseDetailed(parameters.keywords ?? "", columnPrefix: columnPrefix,
+                                            structured: parameters.structuredQueryParts)
+    }
+
     /// Renders one FTS5 MATCH expression for the given column scope.
     ///
-    /// The raw search-box text is parsed as Google-style inline syntax — quotes,
-    /// `OR`, leading `-`, `NOT`, trailing `*` — by `FTS5InlineQueryParser`, with the
-    /// column prefix applied to each operand. Structured fields (phrase, excluded
-    /// terms, prefix wildcard) are rendered by `FTS5Query`.
+    /// The raw search-box text — Google-style inline syntax: quotes, `OR`, leading `-`, `NOT`,
+    /// trailing `*` — and the structured phrase, prefix wildcard and excluded terms are parsed
+    /// together by `parsedQuery(for:columnPrefix:)`, with the column prefix applied to each typed
+    /// operand and to the prefix. This no longer goes through `FTS5Query`: that builder receives the
+    /// typed text already rendered, so it could not see a typed exclusion the typed text left out on
+    /// its own, and a restored search for the phrase "cold war" with `-korea` typed beside it ran as
+    /// `"cold war"` alone.
     private func renderExpression(
         from parameters: SearchParameters,
         columns: [FTS5Column]?
@@ -335,20 +384,7 @@ public actor SearchService {
         } else {
             columnPrefix = ""
         }
-
-        let keywordExpression = parameters.keywords.flatMap {
-            FTS5InlineQueryParser.parse($0, columnPrefix: columnPrefix)
-        }
-
-        let query = FTS5Query(
-            keywordExpression: keywordExpression,
-            phrase: parameters.phrase,
-            booleanMode: parameters.booleanMode,
-            excludedTerms: parameters.excludedTerms,
-            prefixWildcard: parameters.prefixWildcard,
-            columns: columns
-        )
-        return query.toFTS5MatchExpression()
+        return Self.parsedQuery(for: parameters, columnPrefix: columnPrefix).expression
     }
 
     /// Maps `SearchParameters` to the SQL-side filter set.
@@ -404,13 +440,35 @@ public actor SearchService {
         )
     }
 
-    /// The words this query marked exact with `=`.
+    /// The words the exact-word post-filter requires: those marked `=` that every match must contain.
     ///
-    /// Parsed from the same raw text and by the same parser that builds the MATCH
-    /// expression, so the two can never disagree about which terms were marked.
+    /// Read from the same combined parse that builds the MATCH expression,
+    /// `parsedQuery(for:columnPrefix:)`, so the two can never disagree about which terms were
+    /// marked. This reads the unscoped parse, and `makeMatchExpressions` runs no scope that parse
+    /// refuses, so no search runs whose marked terms this cannot read. Only typed words carry the
+    /// mark; the structured fields never add one.
+    ///
+    /// Not every marked word. The SQL layer ANDs one filter per term over every result, so the parser
+    /// reports a word only where every match must contain it through a marked operand — a required mark,
+    /// or a mark in every `OR` alternative (`=cold war OR =cold fevers`) — and then every positive mark on
+    /// it applies (`ParsedOperand.isExactApplied`, parser 6.5, D4). It ignores a mark wherever a match need
+    /// not contain the word through one: when only one `OR` alternative marks it (`=cold OR war` keeps war
+    /// documents without cold), on a word an excluded group leaves optional (`cold -(war -=korea)`), and
+    /// beside the same word unmarked (`(=cold OR fevers) cold` keeps a document holding only colds and
+    /// fevers, since the unmarked cold admits the stem). The rule is requirement, not position: excluding a
+    /// group can make a mark apply, as in `NOT (war OR -=cold)`, which searches the literal cold without
+    /// war. A mark on a prefix, or on a word the index splits into several terms (`=U.S.S.R.`), is always
+    /// ignored. The structured parts can therefore take a term away — `=cold OR -korea` reports `cold` alone
+    /// and nothing beside the restored prefix `viet`, which anchors the complement — and never add one.
+    ///
+    /// One term per word, and a word is what the filter reads (parser 6.6): capitalisation, the accents the
+    /// filter folds (`café` and `cafe`, never letters such as `ø` or `ł`) and punctuation at either end of a mark do
+    /// not make another word, so `=Cold war OR =cold. peace` marks
+    /// cold in every alternative and reports `["Cold"]`, the spelling of the word's first applied mark, and
+    /// `=Soviet =soviet` reports `["Soviet"]`. The filter folds the spelling itself, so each word is one
+    /// filter whichever spelling is reported.
     static func exactTerms(from parameters: SearchParameters) -> [String] {
-        guard let keywords = parameters.keywords else { return [] }
-        return FTS5InlineQueryParser.parseDetailed(keywords).exactTerms
+        parsedQuery(for: parameters).exactTerms
     }
 
     /// The `document_cache` columns an exact term may be satisfied by — the columns this

@@ -260,7 +260,7 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("NOT (korea OR vietnam)") == nil)
     }
 
-    @Test("Groups nest to arbitrary depth and each level renders its own parentheses")
+    @Test("Groups nest and each level renders its own parentheses")
     func nestedGroups() {
         // "navig*" renders as a quoted prefix wildcard — sanitised but never stemmed.
         #expect(FTS5InlineQueryParser.parse("((aqaba OR tiran) AND navig*) OR (suez NOT canal)")
@@ -281,12 +281,13 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("(cold OR)") == "(\"cold\" AND \"or\")")
     }
 
-    @Test("A group with no positive content is dropped entirely rather than rendered empty")
+    @Test("A content-free group is dropped; a group of only exclusions excludes from its run")
     func contentlessGroupDropped() {
         #expect(FTS5InlineQueryParser.parse("cold ()") == "\"cold\"")
         #expect(FTS5InlineQueryParser.parse("cold (   )") == "\"cold\"")
-        #expect(FTS5InlineQueryParser.parse("cold (-korea)") == "\"cold\"")
-        #expect(FTS5InlineQueryParser.parse("cold (NOT korea)") == "\"cold\"")
+        // #1297: dropping these returned the korea documents the group asked to exclude.
+        #expect(FTS5InlineQueryParser.parse("cold (-korea)") == "\"cold\" NOT \"korea\"")
+        #expect(FTS5InlineQueryParser.parse("cold (NOT korea)") == "\"cold\" NOT \"korea\"")
     }
 
     @Test("Unmatched parentheses degrade gracefully to dropped punctuation rather than malformed output")
@@ -296,12 +297,14 @@ struct FTS5InlineQueryParserTests {
         #expect(FTS5InlineQueryParser.parse("cold )(") == "\"cold\"")
     }
 
-    @Test("Leading hyphen does not negate a group — only the keyword NOT does")
-    func leadingHyphenDoesNotNegateGroup() {
-        // Documented asymmetry: "-(...)" tokenises as a standalone "-" (dropped) plus
-        // an ordinary, positive group — not as "exclude this group". Users must spell
-        // out "NOT (...)" to negate a group.
+    @Test("A hyphen attached to a group negates it as NOT does; a detached hyphen is punctuation")
+    func attachedHyphenNegatesGroup() {
+        // #1297 retired the asymmetry this test used to pin, where "-(...)" searched FOR the
+        // group. An attached "-(" now reads as "NOT (". A hyphen with whitespace after it is a
+        // lone "-", which is dropped as punctuation everywhere, so that group stays positive.
         #expect(FTS5InlineQueryParser.parse("cold -(korea OR vietnam)")
+                == "\"cold\" NOT (\"korea\" OR \"vietnam\")")
+        #expect(FTS5InlineQueryParser.parse("cold - (korea OR vietnam)")
                 == "\"cold\" AND (\"korea\" OR \"vietnam\")")
     }
 
@@ -671,6 +674,23 @@ struct FTS5InlineQueryParserTests {
 ///
 /// Version history:
 ///   1.0 — Q-3b: initial implementation
+///   1.1 — #1297 round-1 fixes: parser 6.3 reports an `=` term only when every match must contain it (its operand is in
+///          the root expression's proof "required" set), because the SQL layer ANDs one exact-word filter per term. So
+///          `=containment OR =rollback` and `(=containment OR rollback) AND europe` report nothing, where 1.0 pinned
+///          both terms and `containment`; the several-terms and inside-a-group tests now pin a conjunction beside them
+///   1.2 — #1297 round-2 parser fixes: parser 6.4 decides per operand (`ParsedOperand.isExactApplied`), so
+///          `(=containment OR rollback) containment` reports nothing, and in `(=containment OR rollback) =containment`
+///          only the second operand's mark applies
+///   1.3 — #1297 round-3 parser tests: D4 — a word marked in every alternative is one every match holds literally, so
+///          `(=containment doctrine) OR (=containment policy)`, `=containment OR =containment rollback` and
+///          `=containment OR =containment` report it, while an unmarked, quoted or excluded occurrence in one alternative
+///          still makes no mark apply; once a word's mark applies it applies to every positive `=` operand on the word, so
+///          `(=containment OR rollback) =containment` tags both; and the order of several terms is pinned (round-2 M20)
+///   1.4 — #1297 round-4 parser tests: marks are compared by index word, not spelling (Q1) —
+///          `=cold. war OR =cold peace` and `(=café OR war) =cafe` apply every mark, and `=Soviet =soviet` and
+///          `=Cold war OR =cold peace` report the first spelling once; a demoted operator word never makes a mark
+///          apply, in either scope (the round-3 attack's D01); the order of a word whose first mark is excluded (D10);
+///          and the order test no longer claims to pin round-2 M20, which D4 made an equivalent mutant
 @Suite("Exact-word sigil")
 struct FTS5ExactSigilTests {
 
@@ -697,19 +717,116 @@ struct FTS5ExactSigilTests {
         #expect(parsed.exactTerms == ["containment"], "only the marked term is exact")
     }
 
-    @Test("Several exact terms are all reported, in order, de-duplicated")
+    @Test("Several exact terms every match requires are all reported, in order, de-duplicated")
     func severalExactTerms() {
-        let parsed = FTS5InlineQueryParser.parseDetailed("=containment OR =rollback")
+        let parsed = FTS5InlineQueryParser.parseDetailed("=containment =rollback")
         #expect(parsed.exactTerms == ["containment", "rollback"])
         #expect(FTS5InlineQueryParser.parseDetailed("=containment =containment").exactTerms
                 == ["containment"])
+        // Alternatives: a rollback document without containment matches, and one filter per term would remove it.
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =rollback").exactTerms.isEmpty)
     }
 
-    @Test("An exact term inside a group is still reported")
-    func exactInsideAGroup() {
-        let parsed = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) AND europe")
+    /// The order is the order of each word's first applied operand, never of its last, never a set's, and never of a
+    /// mark the expression excludes. Round-2 M20 — the order of each word's first POSITIVE mark — is no longer a mutant
+    /// this can catch: under D4 every positive mark on an applied word applies, so the two orders are the same.
+    @Test("Several exact terms are reported in the order their words' first applied operands were typed")
+    func exactTermsFollowTheFirstAppliedOperand() {
+        // containment's first operand is one alternative, yet its mark applies (D4), so containment comes first.
+        let first = FTS5InlineQueryParser.parseDetailed("(=containment OR europe) =rollback =containment")
+        #expect(first.exactTerms == ["containment", "rollback"])
+        #expect(first.operands.map(\.isExactApplied) == [true, false, true, true])
+        let second = FTS5InlineQueryParser.parseDetailed("=rollback (=containment OR europe) =containment")
+        #expect(second.exactTerms == ["rollback", "containment"])
+        #expect(second.operands.map(\.isExactApplied) == [true, true, false, true])
+        // rollback is marked first inside the excluded group, which is never applied, so containment still comes first
+        // (the round-3 attack's D10: ordering by each word's first mark of either polarity reversed these).
+        let excludedFirst = FTS5InlineQueryParser.parseDetailed("-(=rollback europe) =containment =rollback")
+        #expect(excludedFirst.exactTerms == ["containment", "rollback"])
+        #expect(excludedFirst.operands.map(\.isExactApplied) == [false, false, true, true])
+    }
+
+    /// Once a word's mark applies it applies to every positive `=` operand on that word, and an unmarked operand with the
+    /// same word never makes a mark apply (D4).
+    @Test("A mark applies to every marked operand of a word every match holds literally, never through an unmarked operand with its word")
+    func exactAppliesPerOperand() {
+        let parsed = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) =containment")
         #expect(parsed.exactTerms == ["containment"])
-        #expect(parsed.expression?.contains("\"containment\"") == true)
+        #expect(parsed.operands.map(\.isExactApplied) == [true, false, true],
+                "every match holds the literal word through the second =containment, so the first reads the same filtered")
+        // Every match holds containment by stem, through the unmarked word, and none need hold it literally.
+        let unmarked = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) containment")
+        #expect(unmarked.exactTerms.isEmpty)
+        #expect(unmarked.operands.map(\.isExact) == [true, false, false])
+        #expect(unmarked.operands.allSatisfy { !$0.isExactApplied })
+    }
+
+    /// D4: a word marked in every alternative is a word every match holds literally, whichever alternative matched.
+    @Test("A word marked with = in every alternative is reported, and one alternative without its mark reports nothing")
+    func exactMarkedInEveryAlternative() {
+        let grouped = FTS5InlineQueryParser.parseDetailed("(=containment doctrine) OR (=containment policy)")
+        #expect(grouped.expression == "(\"containment\" AND \"doctrine\") OR (\"containment\" AND \"policy\")")
+        #expect(grouped.exactTerms == ["containment"])
+        #expect(grouped.operands.map(\.isExactApplied) == [true, false, true, false])
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =containment rollback").exactTerms == ["containment"])
+        #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =containment").exactTerms == ["containment"])
+        // An alternative holding the word unmarked, quoted, or excluded admits a document without the literal word, and
+        // so does one holding it as a demoted operator word: `=not OR cold NOT` renders `"not" OR "cold" AND "not"`,
+        // which matches `memo cold nots` through the stem (the round-3 attack's D01).
+        for query in ["=containment rollback OR containment policy", "=containment OR \"containment\"",
+                      "=containment rollback OR policy -=containment", "=containment OR containment*",
+                      "=not OR cold NOT", "=and OR cold AND"] {
+            for prefix in ["", "{body_text}:"] {
+                let parsed = FTS5InlineQueryParser.parseDetailed(query, columnPrefix: prefix)
+                #expect(parsed.expression != nil, "\(query) \(prefix)")
+                #expect(parsed.exactTerms.isEmpty, "\(query) \(prefix)")
+                #expect(parsed.operands.allSatisfy { !$0.isExactApplied }, "\(query) \(prefix)")
+            }
+        }
+        // The demoted word is really there, beside the marked one: the mark is ignored, not the query.
+        #expect(FTS5InlineQueryParser.parseDetailed("=not OR cold NOT").expression == "\"not\" OR \"cold\" AND \"not\"")
+        #expect(FTS5InlineQueryParser.parseDetailed("=not OR cold NOT").operands.map(\.isExact) == [true, false])
+    }
+
+    /// The filter compares index words — case, diacritics and punctuation beside the word folded, as `unicode61` and
+    /// `ExactWordMatcher` fold them — so marks on one word are one word however each was spelled (Q1).
+    @Test("Marks on one index word are one word whatever their spelling, and the first spelling is the term reported")
+    func exactMarksCompareIndexWords() {
+        for prefix in ["", "{body_text}:"] {
+            // Punctuation beside the word: `"cold."` is the index word cold, so cold is marked in every alternative.
+            let punctuated = FTS5InlineQueryParser.parseDetailed("=cold. war OR =cold peace", columnPrefix: prefix)
+            #expect(punctuated.exactTerms == ["cold."], "\(prefix)")
+            #expect(punctuated.operands.map(\.isExactApplied) == [true, false, true, false], "\(prefix)")
+            // A diacritic: café and cafe are one index word, so the first mark applies with the second.
+            let accented = FTS5InlineQueryParser.parseDetailed("(=café OR war) =cafe", columnPrefix: prefix)
+            #expect(accented.exactTerms == ["café"], "\(prefix)")
+            #expect(accented.operands.map(\.isExactApplied) == [true, false, true], "\(prefix)")
+            // Case: one word, reported once, in the spelling first applied.
+            let capitalised = FTS5InlineQueryParser.parseDetailed("=Cold war OR =cold peace", columnPrefix: prefix)
+            #expect(capitalised.exactTerms == ["Cold"], "\(prefix)")
+            #expect(capitalised.operands.map(\.isExactApplied) == [true, false, true, false], "\(prefix)")
+            #expect(FTS5InlineQueryParser.parseDetailed("=Soviet =soviet", columnPrefix: prefix).exactTerms == ["Soviet"])
+            #expect(FTS5InlineQueryParser.parseDetailed("=Containment", columnPrefix: prefix).exactTerms == ["Containment"])
+            let alternatives = FTS5InlineQueryParser.parseDetailed("=Containment doctrine OR =containment policy", columnPrefix: prefix)
+            #expect(alternatives.exactTerms == ["Containment"], "\(prefix)")
+            #expect(alternatives.operands.map(\.isExactApplied) == [true, false, true, false], "\(prefix)")
+            // An unmarked spelling still never makes a mark apply.
+            for query in ["=cold. war OR cold peace", "(=café OR war) cafe", "=Cold war OR cold. peace"] {
+                let parsed = FTS5InlineQueryParser.parseDetailed(query, columnPrefix: prefix)
+                #expect(parsed.exactTerms.isEmpty, "\(query) \(prefix)")
+                #expect(parsed.operands.allSatisfy { !$0.isExactApplied }, "\(query) \(prefix)")
+            }
+        }
+    }
+
+    @Test("An exact term inside a group is reported when every match requires it, and ignored as an alternative")
+    func exactInsideAGroup() {
+        let required = FTS5InlineQueryParser.parseDetailed("(=containment rollback) AND europe")
+        #expect(required.exactTerms == ["containment"])
+        #expect(required.expression?.contains("\"containment\"") == true)
+        let alternative = FTS5InlineQueryParser.parseDetailed("(=containment OR rollback) AND europe")
+        #expect(alternative.exactTerms.isEmpty)
+        #expect(alternative.expression == "(\"containment\" OR \"rollback\") AND \"europe\"")
     }
 
     @Test("A query with no sigil reports no exact terms")

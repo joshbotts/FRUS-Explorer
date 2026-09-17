@@ -404,6 +404,114 @@ struct SearchViewTests {
         // Session 09: they must NOT surface as live filter state or emitted parameters.
         #expect(vm.searchParameters.subjectTagIds.isEmpty)
     }
+
+    // MARK: - QueryInspectorRefreshKeyTest
+
+    /// #1297 round 1 (F7): `SearchView` refreshes the Query Inspector when this key changes. It was `vm.keywords`, so
+    /// Clear Filters could remove a restored phrase and leave the strip describing the search before it — and the
+    /// two describe different searches: beside the phrase "cold war", `cold OR -korea` is searched exactly, and
+    /// without it the query is narrower than typed. `QueryInspectionTests.iOSInspectorRefreshesOnEveryQueryPart`
+    /// pins the view's use of the key; this pins what the key covers.
+    @Test("The inspector refresh key moves with a restored phrase, prefix or excluded term, not only the typed text")
+    @MainActor
+    func inspectorRefreshKeyCoversEveryQueryPart() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSInspectorKey-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("key.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        let inspector = QueryInspector(searchService: service)
+
+        let vm = SearchViewModel(searchService: service)
+        vm.applyParameters(SearchParameters(keywords: "cold OR -korea", phrase: "cold war"))
+        let restored = vm.queryInspectorRefreshKey
+        #expect(restored == QueryInspector.Inputs(vm.searchParameters), "the key is read from the parameters the refresh inspects")
+        let beside = await inspector.inspect(parameters: vm.searchParameters, indexedVolumeCount: 0)
+        #expect(!beside.isApproximate, "precondition: beside the phrase the query is searched exactly")
+
+        vm.clearFilters()
+        #expect(vm.keywords == "cold OR -korea", "precondition: Clear Filters leaves the typed text alone")
+        #expect(vm.queryInspectorRefreshKey != restored, "so the key must move, or the strip keeps the phrase")
+        let cleared = await inspector.inspect(parameters: vm.searchParameters, indexedVolumeCount: 0)
+        #expect(cleared.isApproximate, "and what it refreshes to is the narrower query that now runs")
+
+        // Each structured field moves the key on its own, with the typed text unchanged.
+        var before = vm.queryInspectorRefreshKey
+        vm.phrase = "détente"
+        #expect(vm.queryInspectorRefreshKey != before, "a phrase")
+        vm.clearFilters()
+        before = vm.queryInspectorRefreshKey
+        vm.prefixWildcard = "viet"
+        #expect(vm.queryInspectorRefreshKey != before, "a prefix")
+        vm.clearFilters()
+        before = vm.queryInspectorRefreshKey
+        vm.excludedTermsText = "korea"
+        #expect(vm.queryInspectorRefreshKey != before, "an excluded term")
+    }
+
+    /// #1297 round 2 (A3): the key was the whole `searchParameters`, whose synthesized `==` also compares fields the
+    /// inspection never reads. A rollup rebuild captures a person filter's anchor, or relabels it, without changing the
+    /// filter and without running a search — and the key still moved, so the refresh replaced the inspection, dropping
+    /// the scoped counts the researcher had asked for and the zero-result blame. macOS bumps its counter only when the
+    /// filter itself changes.
+    @Test("The inspector refresh key ignores a person filter's label and anchor and the boolean mode, and moves with what the inspection reads")
+    @MainActor
+    func inspectorRefreshKeyIgnoresDisplayOnlyFields() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSInspectorKeyDisplay-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("key.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(
+            fts5Store: store, databaseURL: dbURL, volumesDirectory: volDir, concurrencyLimit: 1)
+        let service = SearchService(fts5Store: store, pipeline: pipeline)
+        let inspector = QueryInspector(searchService: service)
+
+        let vm = SearchViewModel(searchService: service)
+        vm.keywords = "cold OR -korea"
+        vm.personRollupId = 7
+        vm.personLabel = "Acheson"
+        let before = vm.queryInspectorRefreshKey
+        let inspected = await inspector.inspect(parameters: vm.searchParameters, indexedVolumeCount: 0)
+
+        vm.personLabel = "Dean Acheson"
+        #expect(vm.queryInspectorRefreshKey == before, "a relabel changes no filter")
+        vm.personAnchor = PersonRollupAnchor(volumeId: "frus1947v01", ref: "p_ADG_1")
+        #expect(vm.queryInspectorRefreshKey == before, "an anchor capture changes no filter")
+        vm.booleanMode = .or
+        #expect(vm.queryInspectorRefreshKey == before, "the boolean mode is not read: the inline parser combines the text")
+        #expect(await inspector.inspect(parameters: vm.searchParameters, indexedVolumeCount: 0) == inspected,
+                "and what a refresh would inspect is the same inspection")
+
+        // The other direction: each field the inspection reads still moves the key on its own.
+        let moves: [(label: String, change: () -> Void)] = [
+            ("the typed text", { vm.keywords = "cold" }),
+            ("the person filter", { vm.personRollupId = 8 }),
+            ("a single person ref", { vm.personRefText = "p_ADG_1" }),
+            ("the subject name, the fallback half of a subject filter", { vm.subjectName = "Containment" }),
+            ("the subject ref", { vm.subjectRef = "rec00812a40defabcb" }),
+            ("the subject bucket", { vm.subjectBucketKey = "A\u{1F}B" }),
+            ("a content scope", { vm.includeSummaries.toggle() }),
+            ("front matter", { vm.includeFrontMatter.toggle() }),
+            ("the document type", { vm.documentTypeFilter = .editorialNotesOnly }),
+            ("the year facet", { vm.facetYearKeys = ["1950"] }),
+            ("the date range", { vm.dateRangeEnabled.toggle() }),
+        ]
+        for (label, change) in moves {
+            let key = vm.queryInspectorRefreshKey
+            change()
+            #expect(vm.queryInspectorRefreshKey != key, "\(label) moves the key")
+        }
+    }
 }
 
 // MARK: - PersonFilterTests
