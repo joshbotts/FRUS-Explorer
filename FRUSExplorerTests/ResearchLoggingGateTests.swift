@@ -59,6 +59,8 @@ import Testing
 ///          the new third writer and is covered behaviourally; the producer guard now scans for
 ///          `ExportHistoryEntry(` too, which is what made it fail until the two files that
 ///          construct one were listed
+///   1.3 — #1298: a typographic and a straight spelling of one query refresh one row, which keeps the later
+///          spelling; a double prime or a single quotation mark still spells another query
 @MainActor
 struct ResearchLoggingGateTests {
 
@@ -494,6 +496,55 @@ struct ResearchLoggingGateTests {
             vm.recordSearchHistory(projectId: nil, in: context, defaults: scratch.store)
         }
         #expect(try context.fetch(FetchDescriptor<SearchHistoryEntry>()).count == 3)
+    }
+
+    /// Smart Punctuation types `“cold war”` where a pasted query arrives as `"cold war"`, and both run the same search
+    /// (#1298), so re-running one in the other spelling is the same search being adjusted, not a second one.
+    @Test("A typographic and a straight run of the same query are one row, carrying the later spelling")
+    func typographicRerunRefreshesTheRow() throws {
+        let scratch = ScratchDefaults()
+        defer { scratch.destroy() }
+        scratch.setLogging(true)
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        var anchor: SearchHistoryWriter.Anchor?
+        func record(_ text: String) -> SearchHistoryWriter.Outcome {
+            SearchHistoryWriter.record(
+                SearchHistoryWriter.Reading(
+                    queryText: text, resultCount: 1, loadedCount: 1, matchCount: 1, fetchLimit: 1_000,
+                    indexedVolumeCount: 1, parameters: SearchParameters(keywords: text), appliedCorpusId: nil,
+                    renderedExpression: nil, projectId: nil, hasError: false),
+                anchor: &anchor, in: context, defaults: scratch.store)
+        }
+        func rows() throws -> [SearchHistoryEntry] { try context.fetch(FetchDescriptor<SearchHistoryEntry>()) }
+
+        let first = record("\u{201C}cold war\u{201D}")
+        let id = try #require(try rows().first?.id)
+        #expect(first == .inserted(id))
+
+        // Each folded mark, as a pair or mixed with U+0022, then the straight spelling itself.
+        let respellings = ["\u{201E}cold war\u{201C}", "\u{201F}cold war\u{201D}", "\u{FF02}cold war\u{FF02}",
+                           "\u{00AB}cold war\u{00BB}", "\u{201C}cold war\"", "\"cold war\""]
+        for text in respellings {
+            #expect(record(text) == .refreshed(id), "\(text) wrote a second row")
+        }
+        let row = try #require(try rows().first)
+        #expect(try rows().count == 1)
+        #expect(row.queryText == "\"cold war\"", "the row keeps the spelling of the run it now describes")
+        #expect(anchor?.queryText == "\"cold war\"")
+
+        // A double prime and single quotation marks are not folded, so each spells another query than the straight one
+        // anchored just before it.
+        for text in ["\u{2033}cold war\u{2033}", "\u{2018}cold war\u{2019}", "\u{2039}cold war\u{203A}"] {
+            _ = record("\"cold war\"")
+            #expect(anchor?.queryText == "\"cold war\"")
+            if case .refreshed = record(text) {
+                Issue.record("\(text) refreshed the row of \"cold war\"")
+            }
+        }
+        // The first control refreshes the straight row and adds its own; each later one adds a straight row and its own.
+        #expect(try rows().count == 6)
     }
 
     /// The skip conditions inherited from the macOS writer. An empty keyword box records nothing

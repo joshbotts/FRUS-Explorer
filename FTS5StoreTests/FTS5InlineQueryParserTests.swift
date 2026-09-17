@@ -886,3 +886,324 @@ struct FTS5ExactSigilTests {
         }
     }
 }
+
+// MARK: - Typographic Quotation Marks (#1298)
+
+/// Curly, low-9, reversed, fullwidth and angle double quotation marks make a phrase exactly as U+0022 does (#1298).
+///
+/// iPadOS Smart Punctuation and macOS smart quotes type `“ ”`, and text pasted from a FRUS volume carries them, so a
+/// phrase the parser read only by U+0022 silently became separate words: `“cold war”` searched both words anywhere and
+/// `blockade -“naval quarantine”` excluded *naval* and required *quarantine*. The marks are spelled out here rather
+/// than read from the parser, so a mark dropped from or added to the parser's set fails these tests instead of moving
+/// with them.
+extension FTS5InlineQueryParserTests {
+
+    /// The marks #1298 folds to U+0022, one character for one — the owner's decision of 2026-09-17.
+    static let foldedQuotationMarks: [Character] = [
+        "\u{201C}", // LEFT DOUBLE QUOTATION MARK
+        "\u{201D}", // RIGHT DOUBLE QUOTATION MARK
+        "\u{201E}", // DOUBLE LOW-9 QUOTATION MARK
+        "\u{201F}", // DOUBLE HIGH-REVERSED-9 QUOTATION MARK
+        "\u{FF02}", // FULLWIDTH QUOTATION MARK
+        "\u{00AB}", // LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
+        "\u{00BB}", // RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+    ]
+
+    /// Marks that look like quotation marks and are NOT folded: a double prime is a unit mark (`12″ guns`), and a
+    /// single mark is an apostrophe as often as a quote, which the tokenizer already splits alike.
+    static let unfoldedQuotationMarks: [Character] = [
+        "\u{2033}", // DOUBLE PRIME
+        "\u{2018}", // LEFT SINGLE QUOTATION MARK
+        "\u{2019}", // RIGHT SINGLE QUOTATION MARK
+        "\u{201A}", // SINGLE LOW-9 QUOTATION MARK
+        "\u{201B}", // SINGLE HIGH-REVERSED-9 QUOTATION MARK
+        "\u{0027}", // APOSTROPHE
+        "\u{2039}", // SINGLE LEFT-POINTING ANGLE QUOTATION MARK
+        "\u{203A}", // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK
+    ]
+
+    /// Rows the #1298 renders are counted on: the issue's four blockade rows, and rows telling a phrase from its words.
+    static let quotationCorpus: [String] = [
+        "blockade only",
+        "blockade and a naval patrol",
+        "blockade and quarantine",
+        "blockade naval quarantine",
+        "the cold war began",
+        "war turned cold",
+        "war and peace",
+        "peace after war",
+        "the military guarantee finally extended to europe in 1948",
+        "guarantee military europe",
+        "twelve 12 guns were mounted",
+        "don't go",
+        "Kennedy's policy",
+        "cold snap",
+        "detente",
+    ]
+
+    /// `text` with its U+0022 marks replaced alternately by `open` and `close`, as a typed or pasted pair arrives.
+    private func respelling(_ text: String, open: String, close: String) -> String {
+        var isOpen = true
+        var out = ""
+        for character in text {
+            if character == "\"" {
+                out += isOpen ? open : close
+                isOpen.toggle()
+            } else {
+                out.append(character)
+            }
+        }
+        return out
+    }
+
+    @Test("Every typographic spelling of a quoted query parses, renders and matches as its straight form")
+    func typographicQuotesParseAsStraight() throws {
+        // Each straight query with its render and row count at 55464a46, which #1298 must not move.
+        let cases: [(straight: String, rendered: String, rows: Int)] = [
+            ("\"cold war\"", "\"cold war\"", 1),
+            ("\"war and peace\"", "\"war and peace\"", 1),
+            ("blockade -\"naval quarantine\"", "\"blockade\" NOT \"naval quarantine\"", 3),
+            ("NEAR(\"military guarantee\" Europe, 30)", "NEAR(\"military guarantee\" \"europe\", 30)", 1),
+            ("\"cold war\" OR detente", "\"cold war\" OR \"detente\"", 2),
+            ("cold -(korea OR \"naval quarantine\")", "\"cold\" NOT (\"korea\" OR \"naval quarantine\")", 3),
+        ]
+        // Opening and closing marks as they arrive: English, German twice, French both ways, the reversed high mark,
+        // fullwidth, and both mixed spellings.
+        let pairs: [(open: String, close: String)] = [
+            ("\u{201C}", "\u{201D}"), ("\u{201E}", "\u{201C}"), ("\u{201E}", "\u{201D}"),
+            ("\u{00AB}", "\u{00BB}"), ("\u{00BB}", "\u{00AB}"), ("\u{201F}", "\u{201D}"),
+            ("\u{FF02}", "\u{FF02}"), ("\u{201C}", "\""), ("\"", "\u{201D}"),
+        ]
+        var compared = 0
+        for c in cases {
+            let straight = FTS5InlineQueryParser.parseDetailed(c.straight)
+            #expect(straight.expression == c.rendered, "the straight render moved: \(c.straight)")
+            #expect(try runMatch(c.straight, corpus: Self.quotationCorpus) == c.rows)
+            for pair in pairs {
+                let typed = respelling(c.straight, open: pair.open, close: pair.close)
+                #expect(typed != c.straight)
+                let parsed = FTS5InlineQueryParser.parseDetailed(typed)
+                #expect(parsed == straight, "\(typed) parsed differently from \(c.straight)")
+                #expect(parsed.expression == c.rendered, "\(typed)")
+                #expect(try runMatch(typed, corpus: Self.quotationCorpus) == c.rows, "\(typed)")
+                compared += 1
+            }
+        }
+        #expect(compared == 54)
+    }
+
+    @Test("A typographic phrase is one phrase operand, negated where its dash says so")
+    func typographicPhraseIsOnePhraseOperand() {
+        let parsed = FTS5InlineQueryParser.parseDetailed(
+            "blockade -\u{201C}naval quarantine\u{201D} \u{201C}cold war\u{201D}")
+        #expect(parsed.operands.map(\.kind) == [.word, .phrase, .phrase])
+        #expect(parsed.operands.map(\.text) == ["blockade", "naval quarantine", "cold war"])
+        #expect(parsed.operands.map(\.isNegated) == [false, true, false])
+        #expect(parsed.expression == "\"blockade\" NOT \"naval quarantine\" AND \"cold war\"")
+
+        for typed in ["\u{00AB}cold war\u{00BB}", "\u{201E}cold war\u{201C}", "\u{FF02}cold war\u{FF02}",
+                      "\u{201F}cold war\u{201D}", "\u{00BB}cold war\u{00AB}"] {
+            let operands = FTS5InlineQueryParser.parseDetailed(typed).operands
+            #expect(operands.map(\.kind) == [.phrase], "\(typed)")
+            #expect(operands.map(\.text) == ["cold war"], "\(typed)")
+        }
+    }
+
+    @Test("A typographic negated phrase on its own is refused, as its straight form is")
+    func typographicNegatedPhraseAloneIsRefused() {
+        let straight = FTS5InlineQueryParser.parseDetailed("-\"naval quarantine\"")
+        #expect(straight == ParsedQuery(expression: nil, exactTerms: []))
+        for (open, close) in [("\u{201C}", "\u{201D}"), ("\u{00AB}", "\u{00BB}"), ("\u{201E}", "\u{201C}"),
+                              ("\u{FF02}", "\u{FF02}")] {
+            // At 55464a46 the curly form ran `"quarantine”" NOT "“naval"`: the exclusion anchored on its own last word.
+            #expect(FTS5InlineQueryParser.parseDetailed("-\(open)naval quarantine\(close)") == straight)
+        }
+    }
+
+    @Test("An = before typographic quotes unwraps them as it unwraps straight ones")
+    func exactSigilUnwrapsTypographicQuotes() {
+        let straight = FTS5InlineQueryParser.parseDetailed("=\"containment\" europe")
+        #expect(straight.exactTerms == ["containment"])
+        #expect(FTS5InlineQueryParser.parseDetailed("=\u{201C}containment\u{201D} europe") == straight)
+        #expect(FTS5InlineQueryParser.parseDetailed("=\u{00AB}containment\u{00BB} europe") == straight)
+    }
+
+    @Test("NEAR keeps its distance beside a typographic phrase, and a comma inside the marks is not the separator")
+    func nearWithTypographicPhrase() throws {
+        let (open, close) = ("\u{201C}", "\u{201D}")
+        // The corpus row puts three tokens between the phrase and europe, so 3 matches and 2 does not.
+        #expect(FTS5InlineQueryParser.parse("NEAR(\(open)military guarantee\(close) europe, 3)")
+                == "NEAR(\"military guarantee\" \"europe\", 3)")
+        #expect(try runMatch("NEAR(\(open)military guarantee\(close) europe, 3)", corpus: Self.quotationCorpus) == 1)
+        #expect(try runMatch("NEAR(\(open)military guarantee\(close) europe, 2)", corpus: Self.quotationCorpus) == 0)
+
+        #expect(FTS5InlineQueryParser.parse("NEAR(\(open)cold, war\(close) europe, 5)")
+                == "NEAR(\"cold, war\" \"europe\", 5)")
+        // With no distance the comma inside the marks must not be taken for one: at 55464a46 it was, the distance
+        // `war” europe` failed to parse, and the NEAR degraded to a boolean group.
+        #expect(FTS5InlineQueryParser.parse("NEAR(\"cold, war\" europe)") == "NEAR(\"cold, war\" \"europe\", 10)")
+        #expect(FTS5InlineQueryParser.parse("NEAR(\(open)cold, war\(close) europe)")
+                == "NEAR(\"cold, war\" \"europe\", 10)")
+        #expect(FTS5InlineQueryParser.parse("NEAR(\u{00AB}cold, war\u{00BB} europe)")
+                == "NEAR(\"cold, war\" \"europe\", 10)")
+    }
+
+    @Test("Double primes and single marks are not quotation marks: 12″, don’t, Kennedy’s, ‹cold› and ‘cold’ are unchanged")
+    func primesAndSingleMarksAreNotFolded() throws {
+        // A double prime is a unit mark. `12″` sanitises to nothing, where `12"` keeps the number, and inside a NEAR it
+        // opens no phrase, so the distance survives.
+        #expect(FTS5InlineQueryParser.parse("12\u{2033} guns") == "\"guns\"")
+        #expect(FTS5InlineQueryParser.parse("12\" guns") == "\"12\" AND \"guns\"")
+        #expect(FTS5InlineQueryParser.parse("NEAR(12\u{2033} guns, 5)") == "NEAR(\"guns\", 5)")
+        #expect(FTS5InlineQueryParser.parse("\u{2033}cold war\u{2033}") == "\"\u{2033}cold\" AND \"war\u{2033}\"")
+
+        // An apostrophe in either spelling is one word the tokenizer splits alike.
+        #expect(FTS5InlineQueryParser.parse("don\u{2019}t") == "\"don\u{2019}t\"")
+        #expect(try runMatch("don\u{2019}t", corpus: Self.quotationCorpus) == runMatch("don't", corpus: Self.quotationCorpus))
+        #expect(FTS5InlineQueryParser.parse("Kennedy\u{2019}s policy") == "\"kennedy\u{2019}s\" AND \"policy\"")
+        #expect(try runMatch("Kennedy\u{2019}s policy", corpus: Self.quotationCorpus) == 1)
+
+        for typed in ["\u{2039}cold\u{203A}", "\u{2018}cold\u{2019}", "\u{201A}cold\u{201B}", "'cold'"] {
+            let parsed = FTS5InlineQueryParser.parseDetailed(typed)
+            #expect(parsed.operands.map(\.kind) == [.word], "\(typed)")
+            #expect(parsed.expression == "\"\(typed)\"", "\(typed)")
+        }
+    }
+
+    @Test("A restored phrase, prefix or excluded term spelled with typographic marks parses as its straight spelling")
+    func typographicStructuredPartsParseAsStraight() {
+        let (open, close) = ("\u{201C}", "\u{201D}")
+        let pairs: [(typographic: StructuredQueryParts, straight: StructuredQueryParts)] = [
+            (StructuredQueryParts(phrase: "\(open)cold war\(close)"), StructuredQueryParts(phrase: "\"cold war\"")),
+            (StructuredQueryParts(prefixWildcard: "\u{00AB}negoti\u{00BB}"), StructuredQueryParts(prefixWildcard: "\"negoti\"")),
+            (StructuredQueryParts(excludedTerms: ["\u{201E}korea\u{201C}"]), StructuredQueryParts(excludedTerms: ["\"korea\""])),
+        ]
+        var compared = 0
+        for pair in pairs {
+            for typed in ["", "cold", "-(war -korea)", "cold OR -korea"] {
+                for prefix in ["", "{body_text}:"] {
+                    #expect(FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix, structured: pair.typographic)
+                            == FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix, structured: pair.straight),
+                            "\(typed) beside \(pair.typographic)")
+                    compared += 1
+                }
+            }
+        }
+        #expect(compared == 24)
+        // The refusal compares rendered operands, so a curly excluded term that rendered `"„korea“"` was not the korea
+        // the approximation anchors on, and a search that can match nothing ran.
+        #expect(FTS5InlineQueryParser.parse("-(war -korea)", structured: StructuredQueryParts(excludedTerms: ["\"korea\""])) == nil)
+        #expect(FTS5InlineQueryParser.parse("-(war -korea)", structured: pairs[2].typographic) == nil)
+        #expect(FTS5InlineQueryParser.parseDetailed("", structured: pairs[0].typographic).operands.map(\.text) == ["cold war"])
+    }
+
+    @Test("FTS5Query sanitises a typographic mark in a keyword or a field as it sanitises a straight one")
+    func ftsQueryFoldsTypographicMarks() {
+        let keywordsOnly = FTS5Query(keywords: ["\u{201C}cold", "war\u{201D}"])
+        let straightKeywords = FTS5Query(keywords: ["\"cold", "war\""])
+        #expect(straightKeywords.toFTS5MatchExpression() == "\"cold\" \"war\"")
+        #expect(keywordsOnly.toFTS5MatchExpression() == straightKeywords.toFTS5MatchExpression())
+
+        let fields = FTS5Query(keywords: ["containment"], phrase: "\u{201E}iron curtain\u{201C}",
+                               excludedTerms: ["\u{00AB}korea\u{00BB}"], prefixWildcard: "\u{FF02}negoti\u{FF02}")
+        let straightFields = FTS5Query(keywords: ["containment"], phrase: "\"iron curtain\"",
+                                       excludedTerms: ["\"korea\""], prefixWildcard: "\"negoti\"")
+        #expect(straightFields.toFTS5MatchExpression()
+                == "(\"containment\" AND \"iron curtain\" AND \"negoti\"*) NOT \"korea\"")
+        #expect(fields.toFTS5MatchExpression() == straightFields.toFTS5MatchExpression())
+    }
+
+    /// The equivalence #1298 promises, swept rather than sampled: over every sequence of one to four units from an
+    /// alphabet holding a quote slot `Q`, a phrase, an attached dash, an `=`, groups, `OR`, a comma and a `NEAR` whose
+    /// phrase holds its own comma, the text with `Q` spelled as any folded mark — or with folded marks and U+0022 mixed —
+    /// parses to exactly the `ParsedQuery` of the text spelled with U+0022. And every unfolded mark parses differently
+    /// from U+0022 somewhere in the sequences of up to three units, so none of them is folded; that half stops at three
+    /// only to keep the sweep's time down, since one differing sequence is all it needs.
+    @Test("Over every short sequence, each folded mark parses as U+0022, mixed or not, and no unfolded mark does")
+    func quotationMarkSweep() {
+        let units = ["cold", " ", "-", "=", "(", ")", ",", "OR", "Q", "Qcold warQ",
+                     "NEAR(Qmilitary, guaranteeQ europe, 30)"]
+        func spelled(_ text: String, _ slots: (Int) -> String) -> String {
+            var out = ""
+            var slot = 0
+            for character in text {
+                if character == "Q" { out += slots(slot); slot += 1 } else { out.append(character) }
+            }
+            return out
+        }
+
+        var sequences = 0, withSlot = 0, foldedCompared = 0, mixedCompared = 0
+        var failures: [String] = []
+        var differsFromStraight = [Int](repeating: 0, count: Self.unfoldedQuotationMarks.count)
+        var phrases = 0, negatedPhrases = 0, exactUnwrapped = 0, nearPhrases = 0, unterminated = 0, refused = 0
+
+        var indices: [Int] = []
+        func visit() {
+            if !indices.isEmpty {
+                sequences += 1
+                let text = indices.map { units[$0] }.joined()
+                let slotCount = text.filter { $0 == "Q" }.count
+                if slotCount > 0 {
+                    withSlot += 1
+                    let straightText = spelled(text) { _ in "\"" }
+                    let straight = FTS5InlineQueryParser.parseDetailed(straightText)
+
+                    for mark in Self.foldedQuotationMarks {
+                        let typed = spelled(text) { _ in String(mark) }
+                        if FTS5InlineQueryParser.parseDetailed(typed) != straight, failures.count < 20 {
+                            failures.append(typed)
+                        }
+                        foldedCompared += 1
+                        if slotCount > 1 {
+                            for parity in 0...1 {
+                                let mixed = spelled(text) { $0 % 2 == parity ? String(mark) : "\"" }
+                                if FTS5InlineQueryParser.parseDetailed(mixed) != straight, failures.count < 20 {
+                                    failures.append(mixed)
+                                }
+                                mixedCompared += 1
+                            }
+                        }
+                    }
+                    for (index, mark) in Self.unfoldedQuotationMarks.enumerated() where indices.count < 4
+                    && FTS5InlineQueryParser.parseDetailed(spelled(text) { _ in String(mark) }) != straight {
+                        differsFromStraight[index] += 1
+                    }
+
+                    // What the straight spelling exercised, so a branch the alphabet stopped reaching fails here.
+                    if straight.operands.contains(where: { $0.kind == .phrase && !$0.isNegated }) { phrases += 1 }
+                    if straight.operands.contains(where: { $0.kind == .phrase && $0.isNegated }) { negatedPhrases += 1 }
+                    if straightText.contains("=\""), straight.operands.contains(where: { $0.isExact && $0.kind == .word }) {
+                        exactUnwrapped += 1
+                    }
+                    if straight.operands.contains(where: {
+                        $0.kind == .proximity && $0.rendered.contains("\"military, guarantee\"") && $0.rendered.hasSuffix(", 30)")
+                    }) { nearPhrases += 1 }
+                    if slotCount % 2 == 1, straight.operands.contains(where: { $0.kind == .phrase }) { unterminated += 1 }
+                    if straight.expression == nil { refused += 1 }
+                }
+            }
+            guard indices.count < 4 else { return }
+            for unit in units.indices {
+                indices.append(unit)
+                visit()
+                indices.removeLast()
+            }
+        }
+        visit()
+
+        print("[#1298 sweep] sequences \(sequences), with a quote slot \(withSlot), folded compared \(foldedCompared), "
+              + "mixed compared \(mixedCompared); straight spelling: phrase \(phrases), negated phrase \(negatedPhrases), "
+              + "= unwrapped \(exactUnwrapped), NEAR phrase with comma \(nearPhrases), unterminated \(unterminated), "
+              + "refused \(refused); unfolded marks differing from U+0022 \(differsFromStraight)")
+        #expect(sequences == 16_104)
+        #expect(failures.isEmpty, "folded spellings that parsed differently from U+0022: \(failures)")
+        #expect(foldedCompared == withSlot * Self.foldedQuotationMarks.count)
+        #expect(mixedCompared > 0)
+        #expect(phrases > 0 && negatedPhrases > 0 && exactUnwrapped > 0 && nearPhrases > 0 && unterminated > 0
+                && refused > 0)
+        for (index, count) in differsFromStraight.enumerated() {
+            let scalars = Self.unfoldedQuotationMarks[index].unicodeScalars.map { String($0.value, radix: 16, uppercase: true) }
+            #expect(count > 0, "U+\(scalars.joined()) parsed as U+0022 in every sequence, as a folded mark would")
+        }
+    }
+}
