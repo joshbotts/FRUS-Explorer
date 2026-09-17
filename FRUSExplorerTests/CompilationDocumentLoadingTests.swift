@@ -419,6 +419,45 @@ struct CompilationDocumentLoadingTests {
             """)
     }
 
+    @Test("A declined load leaves the section not-loaded, so an indexing kick still has work to do")
+    func aDeclinedLoadLeavesAKickSomethingToDo() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(pipeline: fixture.pipeline)
+        let key = vm.compilationKey(volumeId: Self.volumeId,
+                                    sectionId: fixture.subchapter.sectionId)
+
+        // This is the precondition all three `.onChange` kicks in `CompilationView` stand on, and
+        // it is pinned HERE because one of them cannot be driven from a UI test at all: kick 2
+        // fires when an externally-triggered bulk index finishes while a compilation is open, and
+        // no suite can get a reader onto a compilation and into Settings at the same time. (Kicks
+        // 1 and 3 are driven — see `BrowseNestedSectionTests`'s cold-volume and late-pipeline
+        // tests, each of which fails when its kick is gutted.)
+        //
+        // What every kick needs is that the DECLINE left something to do. If a refactor made the
+        // gate's decline record `.loaded` — the state `loadDocuments` short-circuits on — all
+        // three would call the loader and all three would return immediately, and nothing on
+        // screen would ever change.
+        #expect(CompilationDocumentsPresentation.shouldLoad(isIndexed: false) == false,
+                "precondition: an unindexed volume does not load")
+        #expect(vm.documentLoadState(forKey: key).isLoaded == false, """
+            A section whose load was declined must be left NOT loaded. `.notStarted` is the \
+            default, and it is what makes a later call do work.
+            """)
+        #expect(
+            CompilationDocumentsPresentation.resolve(
+                canReadDirectly: false, isPersonsList: false, isSourcesList: false,
+                isIndexing: false, isIndexed: false, loadState: vm.documentLoadState(forKey: key)
+            ) == .indexRequired,
+            "and while it is declined the reader sees the banner, not a spinner"
+        )
+
+        // The kick itself, at the model grain: the volume is indexed now, so ask again.
+        await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId)
+        #expect(vm.documentLoadState(forKey: key).isLoaded)
+        #expect(vm.compilationDocuments[key]?.count == 2)
+    }
+
     // MARK: - What the failure row says, and what its button asks for
 
     @Test("A reachable failure reads as a sentence, never as a Swift type and an error number")
