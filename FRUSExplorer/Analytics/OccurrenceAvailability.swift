@@ -42,12 +42,13 @@ import Foundation
 /// is true now.
 ///
 /// A mark applies only where every match must contain the word through a marked operand — a required mark, or a mark in
-/// every `OR` alternative — and then on every positive mark on that word: `ParsedOperand.isExactApplied`, whose terms are
-/// `ParsedQuery.exactTerms` (parser 6.5, D4). Anywhere else Search ignores it and runs the word by its stem, so the query
-/// is classified by its shape like any other: `=containment OR alliance`, `(=containment OR alliance) containment` and
-/// `=containment OR containment alliance` are composite queries, and `=containment OR =containment alliance` is an
-/// exact-word one. A word is what the exact-word filter reads (parser 6.6), whatever the capitalisation, accents or
-/// punctuation at either end of each mark, so `=Containment. OR =containment alliance` is an exact-word query too.
+/// every `OR` alternative — and then on every positive mark on that word: `ParsedOperand.isExactApplied`, whose terms
+/// are `ParsedQuery.exactTerms` (parser 6.5, D4). Anywhere else Search ignores it and runs the word by its stem, so the
+/// query is classified by its shape like any other: `=containment OR alliance`,
+/// `(=containment OR alliance) containment` and `=containment OR containment alliance` are composite queries, and
+/// `=containment OR =containment alliance` is an exact-word one. A word is what the exact-word filter reads (parser
+/// 6.6), whatever the capitalisation, the accents the filter folds (not letters such as `ø` or `ł`) or punctuation at
+/// either end of each mark, so `=Containment. OR =containment alliance` is an exact-word query too.
 ///
 /// Version history:
 ///   1.0 — R-2 PR-D: initial implementation

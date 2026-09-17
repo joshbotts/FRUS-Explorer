@@ -228,7 +228,8 @@ struct InspectedOperand: Sendable, Equatable {
     /// required mark, or a mark in every `OR` alternative — applies on every positive `=` operand on it, so both colds
     /// apply in `(=cold OR war) =cold` and in `=cold war OR =cold peace`, while an unmarked occurrence never makes a mark
     /// apply, so none does in `(=cold OR war) cold`. Since parser 6.6 a word is the word the filter reads, whatever the
-    /// capitalisation, accents or punctuation at either end of each mark, so both apply in `(=café OR war) =cafe` and
+    /// capitalisation, the accents the filter folds (not letters such as `ø` or `ł`) or punctuation at either end of
+    /// each mark, so both apply in `(=café OR war) =cafe` and
     /// in `=Cold war OR =cold. peace`. The strip's EXACT tag and ``QueryInspector/queryText(for:)``, which the scoped
     /// count runs, read `isExactApplied`, so both describe the query that ran.
     ///

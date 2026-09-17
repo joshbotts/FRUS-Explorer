@@ -461,8 +461,9 @@ public actor SearchService {
     /// ignored. The structured parts can therefore take a term away — `=cold OR -korea` reports `cold` alone
     /// and nothing beside the restored prefix `viet`, which anchors the complement — and never add one.
     ///
-    /// One term per word, and a word is what the filter reads (parser 6.6): capitalisation, accents and
-    /// punctuation at either end of a mark do not make another word, so `=Cold war OR =cold. peace` marks
+    /// One term per word, and a word is what the filter reads (parser 6.6): capitalisation, the accents the
+    /// filter folds (`café` and `cafe`, never letters such as `ø` or `ł`) and punctuation at either end of a mark do
+    /// not make another word, so `=Cold war OR =cold. peace` marks
     /// cold in every alternative and reports `["Cold"]`, the spelling of the word's first applied mark, and
     /// `=Soviet =soviet` reports `["Soviet"]`. The filter folds the spelling itself, so each word is one
     /// filter whichever spelling is reported.

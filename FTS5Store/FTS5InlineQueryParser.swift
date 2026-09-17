@@ -456,13 +456,18 @@
 ///          (1) `Expr.requiredMarked`, the applied check and the de-duplication of `exactTerms` key on
 ///          `ExactWordMatcher.word(_:)` of each mark's term — the function `ExactWordMatcher.contains(word:in:)`, and
 ///          so the `frus_exact_word` filter, compares through — where 6.5 keyed on the rendered operand. That kept the
-///          punctuation beside a word and its diacritics, which `unicode61` and the filter both fold, and it kept every
+///          punctuation beside a word and its diacritics, which the filter folds, and it kept every
 ///          spelling of a word as a term of its own. So `=cold. war OR =cold peace` reports `["cold."]` where 6.5 ran
 ///          it unfiltered and counted `colds`; `(=café OR war) =cafe` applies both marks where 6.5 applied the second;
 ///          and `=Soviet =soviet` and `=Cold war OR =cold peace` report `["Soviet"]` and `["Cold"]` where 6.5 reported
 ///          both spellings. The reported term is the spelling of the word's first applied operand. The key drops the
 ///          column prefix: only a typed word carries a mark, and every typed word carries the same one. Marks still
 ///          never join through an unmarked operand, a phrase or a demoted word, whatever their spellings.
+///          The filter's fold is not quite `unicode61`'s (`ExactWordMatcher.word(_:)`): it also folds stacked
+///          diacritics, `ß` and Greek accents, which the index keeps. So marks spelled `Diệm` and `Diem` join in the
+///          report (`(=Diệm OR coup) =Diem` applies both where 6.5 applied the second) while the rows stay 6.5's,
+///          because a leaf spelled `"diệm"` still matches only the index term `diệm`. Letters such as `ø`, `ł` and
+///          `đ` fold on neither side, so `=Gomułka` and `=Gomulka` stay two words.
 ///          Measured against 6.5 (28557157). Over round 2's 1,411,430 parses, none of which spells one marked word two
 ///          ways, every line of the dump is byte-identical, and nothing moves over the 444,440 parses of the length-5
 ///          sequences of `=cold`, `-=cold`, cold, `"cold"`, war, `OR`, `NOT`, `(`, `)` and `-(`, alone and beside the
@@ -1164,7 +1169,10 @@ public enum FTS5InlineQueryParser {
         /// word here still bound every match, so every match holds that literal word. Inside those documents a leaf of
         /// the word matches whether it is read literally or by stem, marked or not, positive or excluded, so filtering
         /// the stemmed MATCH on the word returns exactly what the expression means with every mark on it read literally
-        /// (D1, D4). An unmarked leaf seeds nothing, because what it requires is the stem.
+        /// (D1, D4). That holds for words the filter and `unicode61` fold alike. Where the filter folds what the index
+        /// keeps (`ệ`, `ß`, Greek accents), a leaf spelled one way does not match a document spelled the other, so the
+        /// result is narrower than that literal reading: `(=Diệm OR coup) =Diem` omits a document holding
+        /// `Diem regime`. An unmarked leaf seeds nothing, because what it requires is the stem.
         var requiredMarked: Set<String> = []
         /// Whether the expression provably matches no document.
         var isEmpty = false

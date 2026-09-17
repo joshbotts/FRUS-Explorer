@@ -413,10 +413,10 @@ actor CorpusAnalyticsService {
     /// word the index splits into several terms (`=U.S.S.R.`), is always ignored. Before parser 6.3
     /// `=containment OR alliance` was refused here, with a reason naming a filter Search no longer applies.
     ///
-    /// A word is what the exact-word filter reads (parser 6.6): capitalisation, accents and punctuation at either
-    /// end of a mark do not make another one. `=Soviet =soviet` lists `Soviet` once, and
-    /// `=Containment. OR =containment alliance` marks one word in every alternative, so it is refused and lists
-    /// `Containment.`. The view prefixes each with `=`.
+    /// A word is what the exact-word filter reads (parser 6.6): capitalisation, the accents the filter folds (never
+    /// letters such as `ø` or `ł`) and punctuation at either end of a mark do not make another one. `=Soviet =soviet`
+    /// lists `Soviet` once, and `=Containment. OR =containment alliance` marks one word in every alternative, so it is
+    /// refused and lists `Containment.`. The view prefixes each with `=`.
     ///
     /// Non-empty means every frequency function will return no data for `term`, by the deliberate
     /// refusal in ``makeQuery(from:)``. Callers use this to explain the empty result instead of

@@ -60,8 +60,13 @@ public enum ExactWordMatcher {
             .map(String.init)
     }
 
-    /// The one index word `text` is — its only token, normalised as `unicode61` reads it — or `nil` when `text` is
+    /// The one index word `text` is — its only token, normalised by this matcher's fold — or `nil` when `text` is
     /// not exactly one token.
+    ///
+    /// The fold is close to `unicode61`'s and not the same. Both fold case and a single accent on a Latin letter
+    /// (`café`, `cafe`), and neither folds a letter such as `ø`, `ł` or `đ`. This fold also removes stacked diacritics,
+    /// `ß` and Greek accents, which `unicode61` at its default `remove_diacritics=1` keeps, so `Diệm` and `Diem`,
+    /// `Straße` and `Strasse`, `Αθήνα` and `Αθηνα` are one word here and two terms in the index.
     ///
     /// This is what `contains(word:in:)` compares, so two terms with the same word are the same filter however they
     /// were spelled: `Cold`, `cold.` and `cold` are all `cold`, and `café` and `cafe` are both `cafe`. The query
