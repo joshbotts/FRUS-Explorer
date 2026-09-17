@@ -15761,6 +15761,28 @@ permitted", so no figure here comes from it.)
   `SearchTipsSheetTests.tearDownWithError`, present since that suite's first build (the SDK-driven pattern
   `UIObstructionTests` documents); the app-target warning convention does not cover the UI-test target.
 
+**A/B, after the implementation commit** (`0327e95e`; each mutant applied by a script asserting one match, restored with
+`git checkout --`, status confirmed clean; iPhone 17).
+- **Batch 1, eleven survivors** (M02, M05, M07, M13, M16, M21, M23, M26, M28, M36, M38) over `SearchTipsTests`,
+  `CorpusAnalyticsSyntaxRowsTests`, `SearchTipsWiringTests` and `EditableContentKeyTests`: **"Test run with 29 tests in
+  4 suites failed … with 13 issues"**, every mutant at its own assertion — M02 `stated → ["15", "10"]`, M05 the dates
+  note rendering its key, M07 `.near`'s label dropping `["5"]`, M13 the header `#require`, M16 `.disabled(`, M21
+  `links == 1`, M23 the sheet block, M26 both the `Text("` and the "Date filter uses TEI" bans, M28 the mount line, M36
+  `missing → ["search.tips.link"]`, M38 both Phrases checks.
+- **Batch 2** (M03, the presenter passing `.keywords` as its argument, M33, and the Mac tips consumer moved from the
+  first-load `.task` into the focus-token `.onChange`) over `SearchTipsTests` and `SearchTipsWiringTests`: **"Test run
+  with 24 tests in 2 suites failed … with 6 issues"**. M03 now fails at the `try #require(parts.count == 2)` and the
+  spoken-label check, with no host crash — the first round's run printed a passing summary over a trap.
+- **The AX5 scenario on the pre-fix views** (`SearchView.swift` and `MainTabView.swift` from `de639890`, the log showing
+  both recompiled, final test kept): **"Executed 1 test, with 1 failure"** — link y 707.3–770.7 after 6 drags, banner from
+  551.
+- The content, scope-off, Mac-guard, index-rebuild and reverse-key tests are unchanged since their red run at
+  `e380a776`, so that run is their A/B.
+- **Restored and rebuilt at `56bff3e4`**: `SearchTipsTests`, `SearchQueryRefusalTests`, `CorpusAnalyticsSyntaxRowsTests`,
+  `SearchRefusalMessageTests`, `SearchTipsWiringTests`, `EditableContentKeyTests` and `CodingStandardsAuditTests`,
+  **"Test run with 55 tests in 7 suites passed"**; `SearchTipsSheetTests` **"Executed 5 tests, with 0 failures"**, the
+  AX5 link at y 471.7–535.0 after one drag.
+
 **Out of scope, unchanged by owner decision.** Corpus Analytics' metric row ("counted once") against the Occurrences
 measure; its unmeasured "no month / no day" and "counts match Search" claims; the iOS actions bar's overflow at
 accessibility sizes; and `ToolbarOverflowAccessibilityTests` failing 2 of 3 on iPad mini, which it does identically on
