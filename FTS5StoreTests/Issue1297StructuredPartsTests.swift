@@ -109,6 +109,8 @@ enum Issue1297UniversalCorpus {
 ///
 /// Version history:
 ///   1.0 — #1297 round-2 parser tests: initial implementation
+///   1.1 — #1297 round-4 parser tests: `literal(_:)` respells every mark on the index word cold, whatever its spelling
+///          (`=Cold`, `=cold.`), and `indexWord(_:)`
 enum Issue1297InflectedCorpus {
     /// The word standing for "the literal word cold" in a respelled query.
     static let literalMarker = "xcoldexact"
@@ -120,16 +122,19 @@ enum Issue1297InflectedCorpus {
         return [body + " " + literalMarker, tokens.map { $0 == "cold" ? "colds" : $0 }.joined(separator: " ")]
     }
 
-    /// `typed` with every `=cold` spelled as the marker, the same exclusion mark kept: the query whose `=cold` operands
-    /// match only the literal word.
+    /// `typed` with every `=` mark on the index word cold — `=cold`, `=Cold`, `=cold.` — spelled as the marker, the
+    /// same exclusion mark kept: the query whose marks on cold match only the literal word.
     static func literal(_ typed: String) -> String {
         typed.split(separator: " ").map { token in
-            switch token {
-            case "=cold": return literalMarker
-            case "-=cold": return "-" + literalMarker
-            default: return String(token)
-            }
+            if token.hasPrefix("="), indexWord(String(token.dropFirst())) == "cold" { return literalMarker }
+            if token.hasPrefix("-="), indexWord(String(token.dropFirst(2))) == "cold" { return "-" + literalMarker }
+            return String(token)
         }.joined(separator: " ")
+    }
+
+    /// The index words of `text`, as the exact-word filter reads them: what makes two spellings one word.
+    static func indexWord(_ text: String) -> String {
+        ExactWordMatcher.tokens(in: text).joined(separator: " ")
     }
 }
 
@@ -305,6 +310,16 @@ struct Issue1297StructuredCase: Sendable, CustomTestStringConvertible {
 ///          lists per scope, 4,286 applied `=cold` operands unreported because filtering on them would remove a row the
 ///          query admits and 428 unreported although it would not; the oracle sees 1,256 and 1,151 required exact
 ///          operands against 11,692 and 11,284 ignored
+///   1.6 — #1297 round-4 parser tests: marks are compared by index word, never spelling (Q1). `exactTermsSweep` runs a
+///          second alphabet, `=cold`, `=Cold`, `=cold.` and `-=Cold` beside cold, war and the operators, in both
+///          scopes, and checks that positive marks on one word apply together and that the terms are one per word in
+///          its first spelling; `exactFilterReadsIndexWords` executes `cold.`, `Cold`, `café` and `cafe` marks against
+///          rows holding `colds` and `cafés`; three named cases pin the spellings, and four pin the round-3 attack's
+///          survivors and oracle-only kills (D02 a one-word structured phrase, D07 a pushed-inward unmarked word, D11
+///          three alternatives, M05b a structured exclusion). Measured at parser 6.5 (28557157), the spelling alphabet
+///          reports 75,924 lists per scope with 1,304 applied marks on cold unreported although filtering on them would
+///          remove no row the query admits, and 49,776 failures: 24,788 terms that are not a word's first spelling,
+///          24,748 lists that are not one term per word, and 240 parses whose marks on one word disagree
 @Suite("#1297 typed queries beside structured fields")
 struct Issue1297StructuredPartsTests {
 
@@ -340,6 +355,8 @@ struct Issue1297StructuredPartsTests {
         let koreaApplied = typedOperand("korea", "\"korea\"", .word, negated: false, exact: true, applied: true)
         let coldPhrase = typedOperand("cold", "\"cold\"", .phrase, negated: false)
         let coldPhraseRows = Issue1297StructuredCorpus.P("cold"), peace = Issue1297StructuredCorpus.W("peace")
+        let peaceOperand = typedOperand("peace", "\"peace\"", .word, negated: false)
+        let coldPeriodApplied = typedOperand("cold.", "\"cold.\"", .word, negated: false, exact: true, applied: true)
 
         return [
             // Finding 1: a typed complement with no anchor of its own, beside a phrase or prefix.
@@ -678,6 +695,44 @@ struct Issue1297StructuredPartsTests {
             // emptiness over the group's required set, which an `OR` empties, ran it; only the oracle caught that.
             Issue1297StructuredCase(typed: "(cold -cold OR war -war) -korea OR -vietnam", expression: nil,
                                     meaning: c.subtracting(c).union(w.subtracting(w)).subtracting(k).union(N(v))),
+            // Round 4 (Q1): marks are compared by the index word the filter reads, never by spelling, so `"cold."` and
+            // `Cold` are marks on cold — in every alternative, and beside a required mark — and the term is the first
+            // spelling applied. By spelling, the first reported nothing and the third applied only its second mark.
+            Issue1297StructuredCase(typed: "=cold. war OR =cold peace",
+                                    expression: "\"cold.\" AND \"war\" OR \"cold\" AND \"peace\"",
+                                    meaning: c.intersection(w).union(c.intersection(peace)),
+                                    operands: [coldPeriodApplied, war, coldApplied, peaceOperand], exactTerms: ["cold."]),
+            Issue1297StructuredCase(typed: "=Cold war OR =cold peace", scoped: true,
+                                    expression: "{body_text}:\"cold\" AND {body_text}:\"war\" OR {body_text}:\"cold\" AND {body_text}:\"peace\"",
+                                    meaning: c.intersection(w).union(c.intersection(peace)),
+                                    operands: [typedOperand("Cold", "{body_text}:\"cold\"", .word, negated: false, exact: true, applied: true),
+                                               typedOperand("war", "{body_text}:\"war\"", .word, negated: false),
+                                               scopedColdApplied, typedOperand("peace", "{body_text}:\"peace\"", .word, negated: false)],
+                                    exactTerms: ["Cold"]),
+            Issue1297StructuredCase(typed: "(=cold. OR war) =Cold", expression: "(\"cold.\" OR \"war\") AND \"cold\"",
+                                    meaning: c.union(w).intersection(c),
+                                    operands: [coldPeriodApplied, war,
+                                               typedOperand("Cold", "\"cold\"", .word, negated: false, exact: true, applied: true)],
+                                    exactTerms: ["cold."]),
+            // Round-3 attack pins (D4), each once caught only by the oracle or the sweep, or by nothing. A structured
+            // phrase is never a mark (D02): `memo colds war` matches through the stem.
+            Issue1297StructuredCase(typed: "=cold OR war", structured: StructuredQueryParts(phrase: "cold"),
+                                    expression: "(\"cold\" OR \"war\") AND \"cold\"",
+                                    meaning: c.union(w).intersection(coldPhraseRows),
+                                    operands: [coldExact, war, structuredOperand("cold", "\"cold\"", .phrase, negated: false)]),
+            // A doubly negated unmarked word gains no mark when its negation is pushed inward (D07).
+            Issue1297StructuredCase(typed: "-(war -cold) OR =cold", expression: "\"cold\" OR \"cold\"",
+                                    meaning: N(w).union(c), approximation: c,
+                                    operands: [cold, coldExact], dropped: [notWar], isApproximate: true),
+            // Three alternatives, the middle one unmarked: required is what ALL of them require (D11).
+            Issue1297StructuredCase(typed: "=cold OR war OR =cold", expression: "\"cold\" OR \"war\" OR \"cold\"",
+                                    meaning: c.union(w), operands: [coldExact, war, coldExact]),
+            // A structured exclusion keeps the typed mark it is applied to (round-3 M05b; the M05 pins above cover only
+            // a structured phrase and prefix).
+            Issue1297StructuredCase(typed: "=cold", structured: StructuredQueryParts(excludedTerms: ["korea"]),
+                                    expression: "\"cold\" NOT \"korea\"", meaning: c.subtracting(k),
+                                    operands: [coldApplied, structuredOperand("korea", "NOT \"korea\"", .word, negated: true)],
+                                    exactTerms: ["cold"]),
         ]
     }()
 
@@ -685,7 +740,7 @@ struct Issue1297StructuredPartsTests {
     @Test("A typed query beside structured fields renders, matches and reports what the judged table says",
           arguments: Issue1297StructuredPartsTests.namedCases)
     func namedCombinations(_ c: Issue1297StructuredCase) throws {
-        #expect(Self.namedCases.count == 83)
+        #expect(Self.namedCases.count == 90)
         let table = Issue1297StructuredTable(twoColumn: c.scoped)
         let parsed = FTS5InlineQueryParser.parseDetailed(c.typed, columnPrefix: c.scoped ? "{body_text}:" : "",
                                                          structured: c.structured)
@@ -695,8 +750,9 @@ struct Issue1297StructuredPartsTests {
         #expect((c.expression == nil) == (expectedRows == nil), "fixture: an expression exactly when rows are expected")
         #expect(c.isApproximate == (c.expression != nil && !isExact), "fixture: approximate exactly when narrower")
         var appliedWords = Set<String>()
-        #expect(c.exactTerms == c.operands.filter(\.isExactApplied).map(\.text).filter { appliedWords.insert($0).inserted },
-                "fixture: a term exactly for each word with an applied mark, in order, once")
+        #expect(c.exactTerms == c.operands.filter(\.isExactApplied).map(\.text)
+                    .filter { appliedWords.insert(Issue1297InflectedCorpus.indexWord($0)).inserted },
+                "fixture: a term exactly for each index word with an applied mark, in order, once, as first spelled")
 
         #expect(parsed.expression == c.expression)
         if let expression = parsed.expression {
@@ -1027,42 +1083,65 @@ struct Issue1297StructuredPartsTests {
     /// one-word phrase "cold", the two other operands that share `=cold`'s stem.
     static let exactAlphabet = ["=cold", "-=cold", "war", "-korea", "NOT", "korea", "OR", "(", ")", "-(", "cold", "\"cold\""]
 
+    /// Marks on the index word cold in three spellings — `=cold`, `=Cold` and `=cold.`, and the excluded `-=Cold` —
+    /// beside the unmarked cold, war and the operators that put them in alternatives, conjunctions and negated groups:
+    /// a spelling must never decide whether a mark applies, nor which term is reported (round 4, Q1).
+    static let spellingAlphabet = ["=cold", "=Cold", "=cold.", "-=Cold", "cold", "war", "OR", "(", ")", "-("]
+
+    /// The runs of the exact-term sweep: each alphabet in each scope, with the counts measured on it at parser 6.6.
+    static let exactSweeps: [Issue1297ExactSweep] = [
+        Issue1297ExactSweep(name: "=cold, -=cold, cold and \"cold\"", alphabet: exactAlphabet, scoped: false,
+                            sequences: 22_620, unprovedRequired: 428),
+        Issue1297ExactSweep(name: "=cold, -=cold, cold and \"cold\"", alphabet: exactAlphabet, scoped: true,
+                            sequences: 22_620, unprovedRequired: 428),
+        Issue1297ExactSweep(name: "=cold, =Cold, =cold. and -=Cold", alphabet: spellingAlphabet, scoped: false,
+                            sequences: 11_110, unprovedRequired: 64, refusedOnlyRespelled: 16),
+        Issue1297ExactSweep(name: "=cold, =Cold, =cold. and -=Cold", alphabet: spellingAlphabet, scoped: true,
+                            sequences: 11_110, unprovedRequired: 64, refusedOnlyRespelled: 16),
+    ]
+
     /// The exact-word post-filter `SearchService` reads from the combined parse, over sequences that can mark a word.
     ///
     /// D1 with D4 reports a typed `=` operand only when it is applied and positive and every match of the expression that
     /// runs holds its word through a MARKED operand — one required mark, or a mark in every alternative — never merely
-    /// through an unmarked operand with its stem. The sweep cannot read the proof, so it checks what the rule implies, each
-    /// from outside the parser, on `Issue1297InflectedCorpus`, where the stemmed and the literal word cold select
-    /// different rows:
+    /// through an unmarked operand with its stem. A word is the index word the filter compares, so every spelling of it
+    /// is one word. The sweep cannot read the proof, so it checks what the rule implies, each from outside the parser,
+    /// on `Issue1297InflectedCorpus`, where the stemmed and the literal word cold select different rows:
     /// - only a typed, applied, positive `=` operand is ever reported, the terms are exactly those of the operands
-    ///   `ParsedOperand.isExactApplied` marks, and the column prefix changes nothing;
+    ///   `ParsedOperand.isExactApplied` marks, one per index word in the spelling of its first, and the column prefix
+    ///   changes nothing;
+    /// - every positive typed mark on one index word is applied, or none is, whatever its spelling;
     /// - SOUNDNESS by the app's literal-word rule, `ExactWordMatcher`: of the rows the render matches, every row the
     ///   query's literal meaning admits holds the literal word, so the filter the SQL layer ANDs over the results removes
-    ///   none of them. The literal meaning is the render of the same text with every `=cold` spelled
+    ///   none of them. The literal meaning is the render of the same text with every mark on cold spelled
     ///   `Issue1297InflectedCorpus.literalMarker`, which has the same shape and matches what the query means with those
     ///   operands read as the literal word — for an approximation, what the approximation means, since that is what
     ///   runs. A term failing this removes documents the MATCH and the query admit: `=cold OR war`, F26's
     ///   `cold -(war -=korea)`, and `(=cold OR war) cold`, where the unmarked cold is what every match requires. A
     ///   reported term must also be a word every row the render matches holds by stem;
-    /// - COMPLETENESS, as far as operands can prove it: an applied `=cold` left unreported although filtering on it would
-    ///   remove none of those rows is counted and pinned. The proof is sound but not complete — every match of `=cold OR
-    ///   korea` beside the excluded term korea holds the literal word, because the exclusion empties the korea alternative,
-    ///   which operands alone cannot show — so the count is not zero. Parser 6.4 followed marked leaves by occurrence and
-    ///   left `=cold OR =cold war` here too, which was a sound filter it lost, not a limit of what operands can prove;
+    /// - COMPLETENESS, as far as operands can prove it: an applied mark on cold left unreported although filtering on
+    ///   it would remove none of those rows is counted and pinned. The proof is sound but not complete — every match of
+    ///   `=cold OR korea` beside the excluded term korea holds the literal word, because the exclusion empties the
+    ///   korea alternative, which operands alone cannot show — so the count is not zero. Parser 6.4 followed marked
+    ///   leaves by occurrence and left `=cold OR =cold war` here too, and 6.5 compared spellings and left
+    ///   `=cold OR =cold.`: both were sound filters lost, not limits of what operands can prove;
     /// - against the typed-alone parse: beside no structured phrase or prefix the combined parse reports the same terms
     ///   wherever both render; beside one it reports the same terms when the typed text renders exactly alone, and none
     ///   when the typed text is approximated or refused alone, because a complement the phrase or prefix anchors
     ///   requires nothing of its own.
-    @Test("Every token sequence of length 1-4 with =cold, -=cold, cold and \"cold\" reports, beside every structured combination, exactly the exact terms whose filter removes no row the query admits",
-          arguments: [false, true])
-    func exactTermsSweep(scoped: Bool) throws {
+    @Test("Every token sequence of length 1-4 marking cold reports, beside every structured combination, exactly the exact terms whose filter removes no row the query admits",
+          arguments: Issue1297StructuredPartsTests.exactSweeps)
+    func exactTermsSweep(_ sweep: Issue1297ExactSweep) throws {
+        let scoped = sweep.scoped
         let prefix = scoped ? "{body_text}:" : "", otherPrefix = scoped ? "" : "{body_text}:"
         let table = Issue1297StructuredTable(bodies: Issue1297InflectedCorpus.bodies, twoColumn: scoped)
         let stemmedColdRows = try table.rows("\"cold\"")
-        let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: Self.exactAlphabet)
-        #expect(sequences.count == 22_620)
+        let sequences = Issue1297PropertyTests.sequences(maxLength: 4, over: sweep.alphabet)
+        #expect(sequences.count == sweep.sequences)
+        func word(_ text: String) -> String { Issue1297InflectedCorpus.indexWord(text) }
         var compared = 0, reported = 0, soundnessChecked = 0, ignoredNotRequired = 0, unprovedRequired = 0
         var besideNothing = 0, besidePositiveExactAlone = 0, besidePositiveApproximatedAlone = 0, approximate = 0
+        var respelled = 0, refusedOnlyRespelled = 0
         var unprovedSamples: [String] = []
         var failures: [String: Int] = [:]
         var samples: [String] = []
@@ -1080,15 +1159,18 @@ struct Issue1297StructuredPartsTests {
                 let parsed = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: prefix, structured: combination)
                 let other = FTS5InlineQueryParser.parseDetailed(typed, columnPrefix: otherPrefix, structured: combination)
                 let label = "\(typed) \(combination) -> \(parsed.expression ?? "nil") \(parsed.exactTerms)"
+                let marks = parsed.operands.filter { $0.isExact && !$0.isNegated && $0.source == .typed }
                 var seen = Set<String>(), seenApplied = Set<String>()
-                let applied = parsed.operands.filter { $0.isExact && !$0.isNegated && $0.source == .typed }
-                    .map(\.text).filter { seen.insert($0).inserted }
+                let applied = marks.map(\.text).filter { seen.insert(word($0)).inserted }
                 if parsed.exactTerms != applied.filter(parsed.exactTerms.contains) {
-                    fail("an exact term that is not a typed, applied, positive = operand", label)
+                    fail("an exact term that is not the first spelling of a typed, applied, positive = operand's word", label)
                 }
                 // The per-operand flag is the list, operand by operand: in this alphabet a term is its operand's text.
-                if parsed.exactTerms != parsed.operands.filter(\.isExactApplied).map(\.text).filter({ seenApplied.insert($0).inserted }) {
-                    fail("exact terms are not the terms of the operands whose mark applies", label)
+                if parsed.exactTerms != parsed.operands.filter(\.isExactApplied).map(\.text).filter({ seenApplied.insert(word($0)).inserted }) {
+                    fail("exact terms are not the terms of the operands whose mark applies, one per index word", label)
+                }
+                if Dictionary(grouping: marks, by: { word($0.text) }).values.contains(where: { Set($0.map(\.isExactApplied)).count > 1 }) {
+                    fail("positive marks on one index word disagree about whether they apply", label)
                 }
                 if parsed.operands.contains(where: { $0.isExactApplied && (!$0.isExact || $0.isNegated || $0.source != .typed) })
                     || parsed.droppedOperands.contains(where: \.isExactApplied) {
@@ -1100,19 +1182,31 @@ struct Issue1297StructuredPartsTests {
                     continue
                 }
 
-                if applied.contains("cold") {
+                if applied.contains(where: { word($0) == "cold" }) {
                     let matched = try table.rows(expression)
-                    guard let literalExpression = FTS5InlineQueryParser.parseDetailed(
-                        literalTyped, columnPrefix: prefix, structured: combination).expression else {
+                    let literalRows: Set<Int>
+                    if let literalExpression = FTS5InlineQueryParser.parseDetailed(
+                        literalTyped, columnPrefix: prefix, structured: combination).expression {
+                        literalRows = try table.rows(literalExpression)
+                    } else if parsed.isApproximate, matched.isEmpty {
+                        // One marker for every spelling makes one identity of what 6.1's refusal compares as two
+                        // spellings: `=cold. -=Cold OR -=Cold` runs the approximation `"cold." NOT "cold"`, and its
+                        // respelling is refused as `"xcoldexact" NOT "xcoldexact"`. That is the refusal's known
+                        // incompleteness, not the filter's, and it admits nothing only because the render matches
+                        // nothing.
+                        refusedOnlyRespelled += 1
+                        literalRows = []
+                    } else {
                         fail("the literal spelling is refused where the query renders", label)
                         continue
                     }
                     // The rows a cold filter would remove although the render matches them and the literal meaning admits them.
-                    let lost = matched.intersection(try table.rows(literalExpression)).filter {
+                    let lost = matched.intersection(literalRows).filter {
                         !ExactWordMatcher.contains(word: "cold", in: Issue1297InflectedCorpus.bodies[$0 - 1])
                     }
-                    if parsed.exactTerms.contains("cold") {
+                    if parsed.exactTerms.contains(where: { word($0) == "cold" }) {
                         soundnessChecked += 1
+                        if Set(marks.map(\.text)).count > 1 { respelled += 1 }
                         if let row = lost.min() {
                             fail("an exact term removes a row the render and the literal meaning admit",
                                  "\(label) removes \(lost.count) rows such as '\(Issue1297InflectedCorpus.bodies[row - 1])'")
@@ -1151,12 +1245,14 @@ struct Issue1297StructuredPartsTests {
             }
         }
 
-        print("[1297] exact-term sweep scoped=\(scoped) compared=\(compared) reported=\(reported) soundnessChecked=\(soundnessChecked) ignoredNotRequired=\(ignoredNotRequired) unprovedRequired=\(unprovedRequired) besideNothing=\(besideNothing) besidePositiveExactAlone=\(besidePositiveExactAlone) besidePositiveApproximatedAlone=\(besidePositiveApproximatedAlone) approximate=\(approximate) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " ")) unproved: \(unprovedSamples)")
-        #expect(compared == 226_200)
-        // Measured per scope at parser 6.5: 428 applied `=cold` operands go unreported although filtering on them would
-        // remove no row the query admits. Pinned, since a parser dropping terms it can prove would only raise it: 6.4,
-        // which required one marked occurrence, left 868, `=cold OR =cold` (`"cold" OR "cold"`) among them.
-        #expect(unprovedRequired == 428)
+        print("[1297] exact-term sweep \(sweep.testDescription) compared=\(compared) reported=\(reported) soundnessChecked=\(soundnessChecked) respelled=\(respelled) refusedOnlyRespelled=\(refusedOnlyRespelled) ignoredNotRequired=\(ignoredNotRequired) unprovedRequired=\(unprovedRequired) besideNothing=\(besideNothing) besidePositiveExactAlone=\(besidePositiveExactAlone) besidePositiveApproximatedAlone=\(besidePositiveApproximatedAlone) approximate=\(approximate) failures=\(failures.values.reduce(0, +)) \(failures.keys.sorted().map { "\($0)=\(failures[$0]!)" }.joined(separator: " ")) unproved: \(unprovedSamples)")
+        #expect(compared == sweep.sequences * Self.combinations.count)
+        // Measured per scope at parser 6.6: applied marks on cold that go unreported although filtering on them would
+        // remove no row the query admits. Pinned, since a parser dropping terms it can prove would only raise it: over
+        // the first alphabet 6.4, which required one marked occurrence, left 868 (`=cold OR =cold` among them); over
+        // the second, 6.5, which compared spellings, left 1,304 (`=cold OR =cold.` among them).
+        #expect(unprovedRequired == sweep.unprovedRequired)
+        #expect(refusedOnlyRespelled == sweep.refusedOnlyRespelled)
         // The corpus must tell the two readings of cold apart, or the soundness check above cannot fail.
         #expect(try table.rows("\"cold\"").count > table.rows(Issue1297InflectedCorpus.literalMarker).count)
         // Each branch must actually carry exact terms, or its comparison is as vacuous as the one this sweep replaced.
@@ -1167,7 +1263,53 @@ struct Issue1297StructuredPartsTests {
         #expect(besidePositiveExactAlone > 0)
         #expect(besidePositiveApproximatedAlone > 0)
         #expect(approximate > 0)
+        // Over the spelling alphabet, reported lists must include ones whose marks were typed in several spellings.
+        if sweep.alphabet == Self.spellingAlphabet { #expect(respelled > 0) }
         #expect(failures.isEmpty, "\(samples)")
+    }
+
+    /// Rows spelling cold and café every way the index folds together: rowid 1 is `memo cold war`.
+    static let spellingBodies = ["memo cold war", "memo colds war", "memo cold peace", "memo colds peace",
+                                 "memo café war", "memo cafés war", "memo cafe peace", "memo cafes peace", "memo Cold. war"]
+
+    /// Marks spelled differently on one index word, executed: the render's rows filtered on the reported terms, as the
+    /// SQL layer filters them, are exactly the rows the query means with every mark read as the literal word — written
+    /// here as sets over `spellingBodies`, never read from a render. `unicode61` and `ExactWordMatcher` both fold case,
+    /// diacritics and the punctuation beside a word, and Porter folds `colds` into cold and `cafés` into cafe, so a
+    /// mark the parser ignores lets those inflections through (round 4, Q1). The exact-term sweep's corpus has no
+    /// diacritic to spell, so this is where one is.
+    @Test("Marks spelled differently on one index word filter the render to exactly what the query means, in both scopes",
+          arguments: [false, true])
+    func exactFilterReadsIndexWords(scoped: Bool) throws {
+        let table = Issue1297StructuredTable(bodies: Self.spellingBodies, twoColumn: scoped)
+        let prefix = scoped ? "{body_text}:" : ""
+        let literalCold: Set<Int> = [1, 3, 9], stemmedCold: Set<Int> = [1, 2, 3, 4, 9]
+        let literalCafe: Set<Int> = [5, 7], stemmedCafe: Set<Int> = [5, 6, 7, 8]
+        let war: Set<Int> = [1, 2, 5, 6, 9], peace: Set<Int> = [3, 4, 7, 8]
+        // The corpus must tell the literal words from their inflections, or no filter here could fail.
+        #expect(try table.rows("\"cold.\"") == stemmedCold)
+        #expect(try table.rows("\"café\"") == stemmedCafe)
+        let cases: [(typed: String, terms: [String], rows: Set<Int>)] = [
+            ("=cold. war OR =cold peace", ["cold."], literalCold.intersection(war).union(literalCold.intersection(peace))),
+            ("=Cold war OR =cold. peace", ["Cold"], literalCold.intersection(war).union(literalCold.intersection(peace))),
+            ("(=cold. OR peace) =Cold", ["cold."], literalCold.union(peace).intersection(literalCold)),
+            ("=café war OR =cafe peace", ["café"], literalCafe.intersection(war).union(literalCafe.intersection(peace))),
+            ("(=café OR war) =cafe", ["café"], literalCafe.union(war).intersection(literalCafe)),
+            // Ignored marks run stemmed: an alternative, and a word marked in one alternative only.
+            ("=cold. OR war", [], stemmedCold.union(war)),
+            ("=café war OR cafe peace", [], stemmedCafe.intersection(war).union(stemmedCafe.intersection(peace))),
+        ]
+        for testCase in cases {
+            let parsed = FTS5InlineQueryParser.parseDetailed(testCase.typed, columnPrefix: prefix)
+            let expression = try #require(parsed.expression, "\(testCase.typed)")
+            #expect(parsed.exactTerms == testCase.terms, "\(testCase.typed)")
+            let marks = parsed.operands.filter { $0.isExact && !$0.isNegated }
+            #expect(marks.allSatisfy { $0.isExactApplied == !testCase.terms.isEmpty }, "\(testCase.typed): every mark on the word, or none")
+            let filtered = try table.rows(expression).filter { row in
+                parsed.exactTerms.allSatisfy { ExactWordMatcher.contains(word: $0, in: Self.spellingBodies[row - 1]) }
+            }
+            #expect(filtered == testCase.rows, "\(testCase.typed) -> \(expression) \(parsed.exactTerms) kept \(filtered.sorted())")
+        }
     }
 
     // MARK: - Refusal across scopes
@@ -1350,6 +1492,27 @@ struct Issue1297StructuredPartsTests {
         let typedExclusion = try #require(FTS5InlineQueryParser.parse("cold -korea", columnPrefix: "{body_text}:"))
         #expect(try table.rows(typedExclusion) == [1, 2, 3], "a typed exclusion reaches only its own scope")
     }
+}
+
+// MARK: - The exact-term sweep's runs
+
+/// One run of the exact-term sweep: an alphabet, a scope, and the counts measured on them.
+struct Issue1297ExactSweep: Sendable, CustomTestStringConvertible {
+    /// Names the alphabet in the test report.
+    let name: String
+    /// The tokens every sequence of length 1-4 is drawn from.
+    let alphabet: [String]
+    /// Whether every parse carries the `{body_text}:` prefix, over the two-column table.
+    let scoped: Bool
+    /// How many sequences the alphabet yields.
+    let sequences: Int
+    /// The applied marks on cold left unreported although filtering on them removes no row the query admits.
+    let unprovedRequired: Int
+    /// The approximations that match nothing and run, while the same text with every mark on cold respelled as one
+    /// marker is refused: 6.1's refusal compares spellings, so only an alphabet of several spellings has any.
+    var refusedOnlyRespelled = 0
+    /// Names the run in the test report.
+    var testDescription: String { "\(name)\(scoped ? ", scoped" : "")" }
 }
 
 // MARK: - The oracle's model

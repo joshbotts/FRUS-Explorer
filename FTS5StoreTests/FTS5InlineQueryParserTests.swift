@@ -686,6 +686,11 @@ struct FTS5InlineQueryParserTests {
 ///          `=containment OR =containment` report it, while an unmarked, quoted or excluded occurrence in one alternative
 ///          still makes no mark apply; once a word's mark applies it applies to every positive `=` operand on the word, so
 ///          `(=containment OR rollback) =containment` tags both; and the order of several terms is pinned (round-2 M20)
+///   1.4 — #1297 round-4 parser tests: marks are compared by index word, not spelling (Q1) —
+///          `=cold. war OR =cold peace` and `(=café OR war) =cafe` apply every mark, and `=Soviet =soviet` and
+///          `=Cold war OR =cold peace` report the first spelling once; a demoted operator word never makes a mark
+///          apply, in either scope (the round-3 attack's D01); the order of a word whose first mark is excluded (D10);
+///          and the order test no longer claims to pin round-2 M20, which D4 made an equivalent mutant
 @Suite("Exact-word sigil")
 struct FTS5ExactSigilTests {
 
@@ -722,7 +727,9 @@ struct FTS5ExactSigilTests {
         #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =rollback").exactTerms.isEmpty)
     }
 
-    /// The order is the order of each word's first applied operand, never of its last, and never a set's (round-2 M20).
+    /// The order is the order of each word's first applied operand, never of its last, never a set's, and never of a
+    /// mark the expression excludes. Round-2 M20 — the order of each word's first POSITIVE mark — is no longer a mutant
+    /// this can catch: under D4 every positive mark on an applied word applies, so the two orders are the same.
     @Test("Several exact terms are reported in the order their words' first applied operands were typed")
     func exactTermsFollowTheFirstAppliedOperand() {
         // containment's first operand is one alternative, yet its mark applies (D4), so containment comes first.
@@ -732,6 +739,11 @@ struct FTS5ExactSigilTests {
         let second = FTS5InlineQueryParser.parseDetailed("=rollback (=containment OR europe) =containment")
         #expect(second.exactTerms == ["rollback", "containment"])
         #expect(second.operands.map(\.isExactApplied) == [true, true, false, true])
+        // rollback is marked first inside the excluded group, which is never applied, so containment still comes first
+        // (the round-3 attack's D10: ordering by each word's first mark of either polarity reversed these).
+        let excludedFirst = FTS5InlineQueryParser.parseDetailed("-(=rollback europe) =containment =rollback")
+        #expect(excludedFirst.exactTerms == ["containment", "rollback"])
+        #expect(excludedFirst.operands.map(\.isExactApplied) == [false, false, true, true])
     }
 
     /// Once a word's mark applies it applies to every positive `=` operand on that word, and an unmarked operand with the
@@ -758,13 +770,52 @@ struct FTS5ExactSigilTests {
         #expect(grouped.operands.map(\.isExactApplied) == [true, false, true, false])
         #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =containment rollback").exactTerms == ["containment"])
         #expect(FTS5InlineQueryParser.parseDetailed("=containment OR =containment").exactTerms == ["containment"])
-        // An alternative holding the word unmarked, quoted, or excluded admits a document without the literal word.
+        // An alternative holding the word unmarked, quoted, or excluded admits a document without the literal word, and
+        // so does one holding it as a demoted operator word: `=not OR cold NOT` renders `"not" OR "cold" AND "not"`,
+        // which matches `memo cold nots` through the stem (the round-3 attack's D01).
         for query in ["=containment rollback OR containment policy", "=containment OR \"containment\"",
-                      "=containment rollback OR policy -=containment", "=containment OR containment*"] {
-            let parsed = FTS5InlineQueryParser.parseDetailed(query)
-            #expect(parsed.expression != nil, "\(query)")
-            #expect(parsed.exactTerms.isEmpty, "\(query)")
-            #expect(parsed.operands.allSatisfy { !$0.isExactApplied }, "\(query)")
+                      "=containment rollback OR policy -=containment", "=containment OR containment*",
+                      "=not OR cold NOT", "=and OR cold AND"] {
+            for prefix in ["", "{body_text}:"] {
+                let parsed = FTS5InlineQueryParser.parseDetailed(query, columnPrefix: prefix)
+                #expect(parsed.expression != nil, "\(query) \(prefix)")
+                #expect(parsed.exactTerms.isEmpty, "\(query) \(prefix)")
+                #expect(parsed.operands.allSatisfy { !$0.isExactApplied }, "\(query) \(prefix)")
+            }
+        }
+        // The demoted word is really there, beside the marked one: the mark is ignored, not the query.
+        #expect(FTS5InlineQueryParser.parseDetailed("=not OR cold NOT").expression == "\"not\" OR \"cold\" AND \"not\"")
+        #expect(FTS5InlineQueryParser.parseDetailed("=not OR cold NOT").operands.map(\.isExact) == [true, false])
+    }
+
+    /// The filter compares index words — case, diacritics and punctuation beside the word folded, as `unicode61` and
+    /// `ExactWordMatcher` fold them — so marks on one word are one word however each was spelled (Q1).
+    @Test("Marks on one index word are one word whatever their spelling, and the first spelling is the term reported")
+    func exactMarksCompareIndexWords() {
+        for prefix in ["", "{body_text}:"] {
+            // Punctuation beside the word: `"cold."` is the index word cold, so cold is marked in every alternative.
+            let punctuated = FTS5InlineQueryParser.parseDetailed("=cold. war OR =cold peace", columnPrefix: prefix)
+            #expect(punctuated.exactTerms == ["cold."], "\(prefix)")
+            #expect(punctuated.operands.map(\.isExactApplied) == [true, false, true, false], "\(prefix)")
+            // A diacritic: café and cafe are one index word, so the first mark applies with the second.
+            let accented = FTS5InlineQueryParser.parseDetailed("(=café OR war) =cafe", columnPrefix: prefix)
+            #expect(accented.exactTerms == ["café"], "\(prefix)")
+            #expect(accented.operands.map(\.isExactApplied) == [true, false, true], "\(prefix)")
+            // Case: one word, reported once, in the spelling first applied.
+            let capitalised = FTS5InlineQueryParser.parseDetailed("=Cold war OR =cold peace", columnPrefix: prefix)
+            #expect(capitalised.exactTerms == ["Cold"], "\(prefix)")
+            #expect(capitalised.operands.map(\.isExactApplied) == [true, false, true, false], "\(prefix)")
+            #expect(FTS5InlineQueryParser.parseDetailed("=Soviet =soviet", columnPrefix: prefix).exactTerms == ["Soviet"])
+            #expect(FTS5InlineQueryParser.parseDetailed("=Containment", columnPrefix: prefix).exactTerms == ["Containment"])
+            let alternatives = FTS5InlineQueryParser.parseDetailed("=Containment doctrine OR =containment policy", columnPrefix: prefix)
+            #expect(alternatives.exactTerms == ["Containment"], "\(prefix)")
+            #expect(alternatives.operands.map(\.isExactApplied) == [true, false, true, false], "\(prefix)")
+            // An unmarked spelling still never makes a mark apply.
+            for query in ["=cold. war OR cold peace", "(=café OR war) cafe", "=Cold war OR cold. peace"] {
+                let parsed = FTS5InlineQueryParser.parseDetailed(query, columnPrefix: prefix)
+                #expect(parsed.exactTerms.isEmpty, "\(query) \(prefix)")
+                #expect(parsed.operands.allSatisfy { !$0.isExactApplied }, "\(query) \(prefix)")
+            }
         }
     }
 
