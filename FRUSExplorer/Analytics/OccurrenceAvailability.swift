@@ -46,7 +46,8 @@ import Foundation
 /// `ParsedQuery.exactTerms` (parser 6.5, D4). Anywhere else Search ignores it and runs the word by its stem, so the query
 /// is classified by its shape like any other: `=containment OR alliance`, `(=containment OR alliance) containment` and
 /// `=containment OR containment alliance` are composite queries, and `=containment OR =containment alliance` is an
-/// exact-word one.
+/// exact-word one. A word is what the exact-word filter reads (parser 6.6), whatever the capitalisation, accents or
+/// punctuation at either end of each mark, so `=Containment. OR =containment alliance` is an exact-word query too.
 ///
 /// Version history:
 ///   1.0 — R-2 PR-D: initial implementation
@@ -56,6 +57,9 @@ import Foundation
 ///         same word required without one is classified by shape
 ///   1.3 — #1297 round 3 (docs only): parser 6.5 (D4) applies a mark on a word marked in every alternative, which this
 ///         classifies as exact-word
+///   1.4 — #1297 round 4 (docs only): parser 6.6 compares marks by word, so one word marked in every alternative in two
+///         spellings is exact-word; `exactWord`'s doc says a mark is ignored when only one alternative marks the word,
+///         not "in one alternative", which D4 made false for a word every alternative marks
 enum OccurrenceAvailability: Equatable, Sendable {
 
     /// Occurrences can be counted, for the single index term named.
@@ -67,7 +71,8 @@ enum OccurrenceAvailability: Equatable, Sendable {
     /// Why a query cannot be counted by occurrence.
     enum Reason: String, Equatable, Sendable, CaseIterable {
         /// `=word`, applied as an exact-word filter — the index holds stems, so exact-word instances are not
-        /// recoverable. A mark the parser ignores (in one `OR` alternative, say) is not this reason.
+        /// recoverable. A mark the parser ignores (when only one `OR` alternative marks the word, say) is not this
+        /// reason.
         case exactWord
         /// A phrase, prefix, or `NEAR(...)` operand: no single stem to count.
         case multiTermOperand

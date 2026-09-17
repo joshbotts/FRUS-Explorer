@@ -134,9 +134,10 @@ final class QueryInspectorController {
 ///         alternative, since `-(war -korea)` leaves war out with no OR typed (`search.inspector.notAppliedDetail`,
 ///         unshipped and reworded in place)
 ///   1.5 — #1297 round 2: the EXACT tag reads the operand's `isExactApplied`, the parser's answer for that operand, so
-///         `(=cold OR war) cold` tags neither cold and `=cold war -=cold` only the first (A1); through
-///         `QueryInspection.isRefused`, the refused line shows only for a query holding something searchable, never a lone
-///         `"` or `(` typed on the way to one (A2)
+///         `(=cold OR war) cold` tags neither cold (A1); through `QueryInspection.isRefused`, the refused line shows only
+///         for a query holding something searchable, never a lone `"` or `(` typed on the way to one (A2)
+///   1.6 — #1297 round 4 (comment only): the EXACT comment names a word marked in two spellings, which parser 6.6
+///         applies on both
 struct QueryInspectorStrip: View {
 
     /// What to render.
@@ -214,7 +215,8 @@ struct QueryInspectorStrip: View {
                                         defaultValue: "EXCLUDED"))
                     }
                     // Only where the search filters on the literal word, as the parser decides for this operand: in
-                    // `=cold OR war` no tag, in `(=cold OR war) =cold` and `=cold war OR =cold peace` on both colds.
+                    // `=cold OR war` no tag, in `(=cold OR war) =cold`, `=cold war OR =cold peace` and
+                    // `=Cold war OR =cold. peace` on both colds.
                     if item.operand.isExactApplied {
                         microTag(String(localized: "search.inspector.exactTag",
                                         defaultValue: "EXACT"))

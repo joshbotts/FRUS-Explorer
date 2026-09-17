@@ -33,6 +33,8 @@ import Foundation
 ///         way to a query no longer shows a line whose reasons are false for it
 ///   1.6 — #1297 round 3: an operator word the parser searches as a word is something searchable, so `-(or)` and
 ///         `NOT (AND)`, refused as exclusions only, set `isRefused` again
+///   1.7 — #1297 round 4 (docs only): `notApplied` names the zero-result blame the hosts run,
+///         `QueryInspector.emptyConjuncts(parameters:)`, which reads its parse's operands and never its dropped ones
 struct QueryInspection: Sendable, Equatable {
 
     /// The MATCH expression the query rendered to, or `nil` when there is none.
@@ -75,10 +77,10 @@ struct QueryInspection: Sendable, Equatable {
     /// structured phrase or prefix nothing is left out at all, because that part gives every
     /// exclusion something to exclude from.
     ///
-    /// Never counted and never blamed: ``QueryInspector/scopedCounts(for:parameters:)``,
-    /// ``QueryInspector/emptyConjuncts(in:parameters:)`` and ``hasUncountedOperands`` read
-    /// ``operands`` only, because a number for a term the query did not use describes
-    /// nothing in the result set.
+    /// Never counted and never blamed: ``QueryInspector/scopedCounts(for:parameters:)`` and ``hasUncountedOperands``
+    /// read ``operands`` only, and the zero-result blame, ``QueryInspector/emptyConjuncts(parameters:)``, reads the
+    /// operands of the parse it decomposes and never its `droppedOperands`, because a number for a term the query did
+    /// not use describes nothing in the result set.
     ///
     /// A `var` with a default so every memberwise call site that predates it compiles
     /// unchanged — which is also why ``replacingOperands(_:)`` exists.
@@ -215,6 +217,8 @@ struct RenderedExpression: Sendable, Equatable {
 ///   1.3 — #1297 round 2: `operand` is the parser's, unrewritten; the EXACT tag and the scoped count read its
 ///         `isExactApplied`, the parser's answer for that operand (by requirement over marked operands since parser 6.5,
 ///         D4), where round 1 cleared `isExact` by word
+///   1.4 — #1297 round 4 (docs only): `operand` says marks on one word are compared as the filter reads the word (parser
+///         6.6), and no longer says round 1's word rule differs from the parser on `=cold war -=cold`, which it never did
 struct InspectedOperand: Sendable, Equatable {
 
     /// The parsed operand this describes, exactly as the parser reported it.
@@ -223,10 +227,14 @@ struct InspectedOperand: Sendable, Equatable {
     /// that by requirement over marked operands (parser 6.5, D4): a word every match must hold through a mark — a
     /// required mark, or a mark in every `OR` alternative — applies on every positive `=` operand on it, so both colds
     /// apply in `(=cold OR war) =cold` and in `=cold war OR =cold peace`, while an unmarked occurrence never makes a mark
-    /// apply, so none does in `(=cold OR war) cold`. The strip's EXACT tag and ``QueryInspector/queryText(for:)``, which
-    /// the scoped count runs, read `isExactApplied`, so both describe the query that ran. Round 1 decided by WORD,
-    /// keeping a typed mark wherever the operand's word was among `ParsedQuery.exactTerms` — which still differs where
-    /// an excluded mark sits beside an applied one: in `=cold war -=cold` only the first cold is filtered on.
+    /// apply, so none does in `(=cold OR war) cold`. Since parser 6.6 a word is the word the filter reads, whatever the
+    /// capitalisation, accents or punctuation at either end of each mark, so both apply in `(=café OR war) =cafe` and
+    /// in `=Cold war OR =cold. peace`. The strip's EXACT tag and ``QueryInspector/queryText(for:)``, which the scoped
+    /// count runs, read `isExactApplied`, so both describe the query that ran.
+    ///
+    /// Not a word rule. Round 1 kept a typed mark on a positive operand wherever the operand's own term was among
+    /// `ParsedQuery.exactTerms`, which names each word once, in the spelling of its first applied mark; over parser 6.6
+    /// that rule tags only the first mark of `(=café OR war) =cafe`.
     let operand: ParsedOperand
 
     /// Whether the strip tags this operand ADVANCED: it came from a structured field — a restored saved
@@ -295,7 +303,7 @@ struct InspectedOperand: Sendable, Equatable {
 /// - ``inspect(parameters:indexedVolumeCount:)`` is **cheap**: it parses, asks SQLite for
 ///   each word's stem, and does one `fts5vocab` lookup per operand. No search runs. This
 ///   is the pass that can be driven live from typing.
-/// - ``scopedCounts(for:parameters:)`` and ``emptyConjuncts(in:parameters:)`` are
+/// - ``scopedCounts(for:parameters:)`` and ``emptyConjuncts(parameters:)`` are
 ///   **expensive**: one `searchCount` per operand, each a real query, run serially.
 ///
 ///   This doc previously put a common term at 6–12 s, which was measured but misattributed.
@@ -326,6 +334,9 @@ struct InspectedOperand: Sendable, Equatable {
 ///   1.5 — #1297 round 3: `refusesSomethingSearchable(_:)` counts anything the probe renders beyond the stand-in, so an
 ///         excluded operator word is something refused (A2); `emptyConjuncts(parameters:)` decomposes the parse of the
 ///         parameters it is given (A3); `Inputs` says which inputs of an inspection no key holds (A4)
+///   1.6 — #1297 round 4: `emptyConjuncts(in:parameters:)`, which only tests called, is replaced by
+///         `emptyConjuncts(parsed:parameters:)`, which the production entry `emptyConjuncts(parameters:)` runs, so a test
+///         that hands in a parse runs the code the hosts do (B1); the docs say parser 6.6 compares marks by word
 struct QueryInspector: Sendable {
 
     /// The service every lookup runs through — counts, stems and vocabulary alike.
@@ -377,8 +388,8 @@ struct QueryInspector: Sendable {
 
         var inspected: [InspectedOperand] = []
         // As parsed: whether an `=` applies is the parser's `isExactApplied` on each operand, which the strip and the
-        // scoped count read. Deciding it again here from the word is how round 1 tagged the excluded mark in
-        // `=cold war -=cold` beside the applied one.
+        // scoped count read. Deciding it again here from `exactTerms`, as round 1 did, compares spellings: that list
+        // names a word once, so the second mark of `(=café OR war) =cafe` would lose its tag and be counted by its stem.
         for operand in parsed?.operands ?? [] {
             let stem = await stem(for: operand)
             // One `fts5vocab` row carries both halves; reading only `doc` fetched `cnt` and
@@ -611,37 +622,41 @@ struct QueryInspector: Sendable {
         return out
     }
 
-    /// Names the operands that return nothing on their own — the reason a conjunctive
-    /// query came back empty.
+    /// Names the operands that return nothing on their own — the reason a conjunctive query came back empty — for the
+    /// query `parameters` describe, from their own combined parse.
     ///
     /// This is the whole point of the zero path. "No results" is indistinguishable from a
     /// typo, a stemming surprise and a genuine historical absence; "*guarantee* matches
     /// 41 documents here, *Formosa* matches 0" is a finding.
     ///
-    /// Negated operands are excluded: an excluded term matching nothing is not why the
-    /// query is empty. Neither is a ``QueryInspection/notApplied`` operand, which is not
-    /// visited: the search never used it, whatever it would match on its own.
-    func emptyConjuncts(
-        in inspection: QueryInspection, parameters: SearchParameters
-    ) async -> [ParsedOperand] {
-        await emptyConjuncts(among: inspection.operands.map(\.operand), parameters: parameters)
-    }
-
-    /// Names the operands of `parameters`' own combined parse that return nothing on their own — the zero-result
-    /// decomposition of the query those parameters describe.
-    ///
     /// The query that ran, not whatever inspection is at hand. Both hosts refresh the inspection from the text in the
     /// field, and decompose under the parameters of the search that ran; on macOS the two differ whenever text is typed
-    /// without Return, and decomposing the inspection named a term the empty search never held (#1297 round 3, A3). No
-    /// stem or vocabulary lookup runs: the blame needs the operands and their counts, nothing else.
+    /// without Return, and decomposing the inspection named a term the empty search never held (#1297 round 3, A3). The
+    /// parse is `SearchService.parsedQuery(for:)`, the one the search renders, so a restored saved search's phrase and
+    /// prefix are measured beside the typed text: the blame of typed `europe` beside the restored phrase "zzz qqq" is
+    /// that phrase. No stem or vocabulary lookup runs: the blame needs the operands and their counts, nothing else.
+    ///
+    /// The only entry the hosts reach, through `QueryInspectorController.decomposeZeroResult`.
     func emptyConjuncts(parameters: SearchParameters) async -> [ParsedOperand] {
-        await emptyConjuncts(among: SearchService.parsedQuery(for: parameters).operands, parameters: parameters)
+        await emptyConjuncts(parsed: SearchService.parsedQuery(for: parameters), parameters: parameters)
     }
 
-    /// The operands among `operands` that are not excluded and count zero under `parameters`' filters.
-    private func emptyConjuncts(among operands: [ParsedOperand], parameters: SearchParameters) async -> [ParsedOperand] {
+    /// The operands of `parsed` that return nothing on their own under `parameters`' filters.
+    ///
+    /// ``emptyConjuncts(parameters:)`` is this with the parse `SearchService.parsedQuery(for:)` makes of the same
+    /// parameters, and is its only production caller, as ``inspect(parameters:indexedVolumeCount:)`` is of
+    /// ``inspect(parsed:parameters:indexedVolumeCount:)``: a test can hand in a parse of a chosen shape — dropped
+    /// operands included — and run the code the hosts run. It replaced `emptyConjuncts(in:parameters:)`, which read an
+    /// inspection, had no production caller after round 3, and was the only entry the structured, excluded and
+    /// not-applied blame tests reached, so the hosts' entry could stop measuring a restored phrase unseen (#1297
+    /// round 4, B1).
+    ///
+    /// Negated operands are excluded: an excluded term matching nothing is not why the query is empty. Neither is an
+    /// operand in `parsed.droppedOperands`, the inspection's ``QueryInspection/notApplied``, which is not visited: the
+    /// search never used it, whatever it would match on its own.
+    func emptyConjuncts(parsed: ParsedQuery, parameters: SearchParameters) async -> [ParsedOperand] {
         var empty: [ParsedOperand] = []
-        for operand in operands where !operand.isNegated {
+        for operand in parsed.operands where !operand.isNegated {
             let count = try? await searchService.searchCount(
                 parameters: Self.parameters(parameters, narrowedTo: operand))
             if count == 0 { empty.append(operand) }

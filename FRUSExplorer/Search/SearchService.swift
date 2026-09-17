@@ -63,6 +63,9 @@ import Foundation
 ///          6.4 applies it, rather than by the places a mark sits.
 ///   2.5 — #1297 round 3 (docs only): `exactTerms(from:)` states parser 6.5's D4 — requirement is proved over marked
 ///          operands, so a word marked in every alternative is reported, and every positive mark on it applies.
+///   2.6 — #1297 round 4 (docs only): `exactTerms(from:)` says parser 6.6 compares marks as the filter reads words, so a
+///          word is reported once, in the spelling of its first applied mark, and `=Cold war OR =cold. peace` filters;
+///          the paragraph is reflowed.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -453,10 +456,16 @@ public actor SearchService {
     /// documents without cold), on a word an excluded group leaves optional (`cold -(war -=korea)`), and
     /// beside the same word unmarked (`(=cold OR fevers) cold` keeps a document holding only colds and
     /// fevers, since the unmarked cold admits the stem). The rule is requirement, not position: excluding a
-    /// group can make a mark apply, as in `NOT (war OR -=cold)`, which searches the literal cold without war. A mark on a prefix, or on a word the index splits into
-    /// several terms (`=U.S.S.R.`), is always ignored. The structured parts can therefore take a term away
-    /// — `=cold OR -korea` reports `cold` alone and nothing beside the restored prefix `viet`, which anchors
-    /// the complement — and never add one.
+    /// group can make a mark apply, as in `NOT (war OR -=cold)`, which searches the literal cold without
+    /// war. A mark on a prefix, or on a word the index splits into several terms (`=U.S.S.R.`), is always
+    /// ignored. The structured parts can therefore take a term away — `=cold OR -korea` reports `cold` alone
+    /// and nothing beside the restored prefix `viet`, which anchors the complement — and never add one.
+    ///
+    /// One term per word, and a word is what the filter reads (parser 6.6): capitalisation, accents and
+    /// punctuation at either end of a mark do not make another word, so `=Cold war OR =cold. peace` marks
+    /// cold in every alternative and reports `["Cold"]`, the spelling of the word's first applied mark, and
+    /// `=Soviet =soviet` reports `["Soviet"]`. The filter folds the spelling itself, so each word is one
+    /// filter whichever spelling is reported.
     static func exactTerms(from parameters: SearchParameters) -> [String] {
         parsedQuery(for: parameters).exactTerms
     }

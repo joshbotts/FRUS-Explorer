@@ -262,6 +262,9 @@ struct AnalyticsParameters: Sendable, Equatable, Codable, Hashable {
 ///          (`ParsedOperand.isExactApplied`, parser 6.4), which `ParsedQuery.exactTerms` and so both refusals already read
 ///   1.10 — #1297 round 3 (docs only): `unsupportedExactTerms(in:)` states parser 6.5's D4, under which
 ///          `=containment OR =containment alliance`, marked in every alternative, is refused where 6.4 charted it
+///   1.11 — #1297 round 4 (docs only): `unsupportedExactTerms(in:)` lists words, not operands — parser 6.6 names a word
+///          once however its marks are spelled, so `=Soviet =soviet` lists `Soviet`, and
+///          `=Containment. OR =containment alliance`, one word marked in every alternative, is refused where 6.5 charted it
 actor CorpusAnalyticsService {
 
     // MARK: - Dependencies
@@ -396,19 +399,24 @@ actor CorpusAnalyticsService {
         return FTS5Query(keywordExpression: expression)
     }
 
-    /// The `=word` operands in `term` that Search would apply as exact-word filters, which this service
-    /// cannot honour.
+    /// The words in `term` that Search would filter to the literal word, which this service cannot honour —
+    /// one per word, in the spelling of its first applied mark.
     ///
     /// Only the marks that apply, as the parser decides them (`ParsedOperand.isExactApplied`, parser 6.5;
-    /// `ParsedQuery.exactTerms` is the terms of exactly those operands, and ``makeQuery(from:)`` refuses on
+    /// `ParsedQuery.exactTerms` names the words of exactly those operands, and ``makeQuery(from:)`` refuses on
     /// the same list): a mark applies where every match must contain the word through a marked operand — a
     /// required mark, or a mark in every `OR` alternative, as in `=containment OR =containment alliance` —
     /// and then on every positive mark on that word (D4). Wherever a match need not contain it — when only
     /// one `OR` alternative marks it, on a word an excluded group leaves optional, even beside the same word
     /// unmarked, as in `(=containment OR alliance) containment` — Search ignores it and runs the word by its
-    /// stem, and so does this service, which names nothing and charts the stem. A mark on a prefix, or on a word the index
-    /// splits into several terms (`=U.S.S.R.`), is always ignored. Before parser 6.3 `=containment OR alliance`
-    /// was refused here, with a reason naming a filter Search no longer applies.
+    /// stem, and so does this service, which names nothing and charts the stem. A mark on a prefix, or on a
+    /// word the index splits into several terms (`=U.S.S.R.`), is always ignored. Before parser 6.3
+    /// `=containment OR alliance` was refused here, with a reason naming a filter Search no longer applies.
+    ///
+    /// A word is what the exact-word filter reads (parser 6.6): capitalisation, accents and punctuation at either
+    /// end of a mark do not make another one. `=Soviet =soviet` lists `Soviet` once, and
+    /// `=Containment. OR =containment alliance` marks one word in every alternative, so it is refused and lists
+    /// `Containment.`. The view prefixes each with `=`.
     ///
     /// Non-empty means every frequency function will return no data for `term`, by the deliberate
     /// refusal in ``makeQuery(from:)``. Callers use this to explain the empty result instead of

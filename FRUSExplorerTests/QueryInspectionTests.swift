@@ -47,10 +47,12 @@ import SwiftUI
 ///         a same-words negation flip clears it while counting and a scope toggle keep it (A3); each unread refresh input
 ///         is checked against a base where reading it would change a count (A5); the strip is rendered, so a NOT APPLIED
 ///         row that is gated out or hidden fails (A6)
-///   1.7 — #1297 round 4: every zero-result blame case runs the production entry, `emptyConjuncts(parameters:)`, and a
-///         restored phrase and prefix are blamed through it (B1); the iOS view model's submitted parameters are run, two
-///         NOT APPLIED rows are rendered, an `=` flip and a word-to-phrase change clear the blame, and a cleared person
-///         label is an unread input (B2); an `=` on one word in two spellings is tagged and counted on both (B4)
+///   1.7 — #1297 round 4: every zero-result blame case over real text runs the production entry,
+///         `emptyConjuncts(parameters:)`, a restored phrase and prefix are blamed through it, and the hand-built
+///         dropped-operand parse runs `emptyConjuncts(parsed:parameters:)`, the code under it (B1); the iOS view model's
+///         submitted parameters are run, two NOT APPLIED rows are rendered, an `=` flip and a word-to-phrase change clear
+///         the blame, and a cleared person label is an unread input (B2); an `=` on one word in two spellings is tagged
+///         and counted on both (B4)
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -489,6 +491,9 @@ struct QueryInspectionTests {
     /// the fixture because it is what makes the blame assertion bite — `emptyConjuncts` skips
     /// negated operands anyway — and the control at the end proves `zzznothing` WOULD be blamed
     /// were it applied.
+    ///
+    /// The blame runs `emptyConjuncts(parsed:parameters:)`, the code the hosts' `emptyConjuncts(parameters:)` runs over
+    /// its own parse, since no parameters parse to this shape (#1297 round 4, B1).
     @Test("Dropped operands become not-applied rows that are never counted, blamed or offered for counting")
     func droppedOperandsAreNotApplied() async throws {
         let (dir, inspector) = try await makeFixture()
@@ -523,7 +528,7 @@ struct QueryInspectionTests {
                 "with europe counted, not-applied operands must not keep the count offer open")
         #expect(afterCounting.notApplied == dropped, "and asking for counts must not drop the rows")
 
-        #expect(await inspector.emptyConjuncts(in: inspection, parameters: params).isEmpty,
+        #expect(await inspector.emptyConjuncts(parsed: parsed, parameters: params).isEmpty,
                 "zzznothing matches nothing, but the search never used it, so it is not why anything is empty")
 
         // Control: applied, the same operand IS blamed — so the assertion above is about
@@ -531,9 +536,7 @@ struct QueryInspectionTests {
         let controlParams = SearchParameters(keywords: "europe zzznothing")
         let appliedControl = ParsedQuery(expression: "\"europe\" AND \"zzznothing\"", exactTerms: [],
                                          operands: [applied, dropped[1]])
-        let control = await inspector.inspect(parsed: appliedControl, parameters: controlParams,
-                                              indexedVolumeCount: 1)
-        #expect(await inspector.emptyConjuncts(in: control, parameters: controlParams)
+        #expect(await inspector.emptyConjuncts(parsed: appliedControl, parameters: controlParams)
                 .map(\.text) == ["zzznothing"])
     }
 

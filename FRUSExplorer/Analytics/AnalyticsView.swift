@@ -213,6 +213,8 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          pre-CA-4 axis instead of the no-grouping integer format
 ///   1.8 — #1274: `onNavigate`, so the scope bar's Topic-index door closes the sheet it
 ///          navigates out of — and only the sheet; every window still passes nil
+///   1.9 — #1297 round 4 (docs only): `unsupportedExactTerms` lists words, one per word within a term since parser
+///          6.6, and says its de-duplication across compared terms is by spelling
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -500,7 +502,11 @@ struct AnalyticsView: View {
             && effectiveNormalizationMode == .percentOfDocuments
     }
 
-    /// `=word` operands the analytics service refuses to chart, for the term(s) currently committed.
+    /// The `=` words the analytics service refuses to chart, for the term(s) currently committed.
+    ///
+    /// Each term lists a word once, in the spelling of its first applied mark (parser 6.6 compares marks by the word
+    /// the filter reads). Across compared terms the lists are de-duplicated by spelling, so `=Soviet` in one term and
+    /// `=soviet` in another are both named.
     ///
     /// Non-empty means the frequency functions returned nothing **by design** — see
     /// `CorpusAnalyticsService.makeQuery(from:)`. Checked before the No-Results branch so the state

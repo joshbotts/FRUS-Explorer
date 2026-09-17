@@ -107,6 +107,10 @@ import SwiftUI
 ///   1.17 — #1297 round 1: the Query Inspector strip shows on `QueryInspection.showsStrip`, so a refused
 ///          query says why it has no expression; the `=word` tip says the mark is ignored where a match
 ///          need not contain the word (parser 6.3)
+///   1.18 — #1297 round 4: the `=word` tip states D4 as the Analytics help and both manuals do — the mark applies
+///          where every OR alternative marks the word and is ignored when only one does. Its "as in one OR
+///          alternative" read as though each mark of `=cold war OR =cold peace` were ignored, which parser 6.5
+///          applies
 struct MacSearchWindowView: View {
 
     @Environment(AppState.self) private var appState
@@ -2157,7 +2161,7 @@ struct MacSearchWindowView: View {
                 TipItem(code: "term*",            description: "prefix wildcard — \"negoti*\" matches negotiate, negotiations, …")
                 TipItem(code: "(a OR b) (c OR d)", description: "group terms — each group must match; -(a OR b) or NOT (a OR b) excludes a group")
                 TipItem(code: "NEAR(a b, 30)",    description: "proximity — both within 30 words of each other; operands may be phrases or term*")
-                TipItem(code: "=word",            description: "exact word — \"=containment\" excludes contain, containing, container; ignored where a match need not contain the word, as in one OR alternative")
+                TipItem(code: "=word",            description: "exact word — \"=containment\" excludes contain, containing, container; applies only where every match must contain the word, as when every OR alternative marks it, and is ignored where one need not, as when only one OR alternative marks it")
                 TipItem(code: nil, description: "Date filter uses TEI <date @when> — only dated documents match")
                 TipItem(code: nil, description: "Person filter searches indexed <persName> mentions across volumes")
                 TipItem(code: nil, description: "Scope toggles persist across sessions; adjust in Settings")
