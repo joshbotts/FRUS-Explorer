@@ -15895,3 +15895,22 @@ front matter is a filter-row token, not a chip.
   9 unique source-warning sites; `FRUSExplorerMac` (platform=macOS, `CODE_SIGNING_ALLOWED=NO`) **CLEAN SUCCEEDED,
   BUILD SUCCEEDED**, 8 — the same counts as round 1. **None is in a file this round changed**; the only one in a file
   the branch changed is still the pre-existing weak capture at `FRUSExplorerApp.swift:1641`.
+
+**Last review.** The adversarial review of `a16a7c8c..5af8f3ce` confirmed item A on both platforms. `filterKeySet` has
+one caller, `SemanticSearchBackend.run`, and no path that needed the typed text reads it through that method. The review
+found nothing minor or major and three nits, all fixed in the next commit:
+- `SearchViewModel` 2.3 and the `iOSScopeOffNamesTheScope` test title still said "every scope". They now name the three
+  toggles.
+- The EditableContent Meaning note now says what its guard covers: `filterKeySetIgnoresTypedText` pins
+  `SearchService.filterKeySet(parameters:)`, and no test drives `SemanticSearchBackend.run` itself.
+- The `SearchService` 2.8 entry was re-wrapped.
+
+After those edits, `build-for-testing` succeeded with no warning in a changed file. `SearchRefusalMessageTests`,
+`EditableContentKeyTests`, `CodingStandardsAuditTests` and `HybridSearchModeTests` on iPhone 17 reported **"Test run
+with 37 tests in 4 suites passed"**.
+
+**Filed from this session's out-of-scope list** (owner decisions Q7 and Q8):
+- #1304: NEAR with a boolean inside searches its distance as a word.
+- #1305: the Analytics metric row versus Occurrences.
+- #1306: the unmeasured Analytics claims.
+- #1307: the actions bar overflows at accessibility sizes.

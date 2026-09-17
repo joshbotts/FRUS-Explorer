@@ -91,7 +91,7 @@ struct SearchRefusalMessageTests {
     /// every content scope off, which iOS's Filters sheet allows. The mapping reads the parse, so that case is not
     /// called a query that only excludes words — and it reads as a message naming where the scope is set, not as the
     /// error code it showed before (the Mac guards the same state with `MacSearchError.emptyScope`).
-    @Test("iOS: a query that parses but has every scope off names Search Scope, and is not called a refusal")
+    @Test("iOS: a query that parses with document text, summaries and research notes off names Search Scope, and is not called a refusal")
     func iOSScopeOffNamesTheScope() async throws {
         let (dir, vm) = try makeViewModel()
         defer { try? FileManager.default.removeItem(at: dir) }

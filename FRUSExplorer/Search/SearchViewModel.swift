@@ -76,9 +76,9 @@ import Observation
 ///          the scoped counts and zero-result blame (A3).
 ///   2.3 — #1299: `search()` passes a failure through `SearchQueryRefusal.readable(_:for:)`, so a query the parse refuses
 ///          (`-korea`, groups nested past 32) shows a message pointing at Search Tips, and — since the #1299 follow-up —
-///          a query that parses with every scope in Filters ▸ Search Scope off shows one naming that section. Both
-///          showed "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)"; `SearchRefusalMessageTests`
-///          measured that on four refused queries and on every scope off before the changes.
+///          a query that parses with document text, summaries and research notes all off shows one naming Filters ▸
+///          Search Scope. Both showed "The operation couldn’t be completed. (FRUSExplorer.FTS5Error error 5.)";
+///          `SearchRefusalMessageTests` measured that on four refused queries and on those three toggles off first.
 @Observable
 @MainActor
 final class SearchViewModel {

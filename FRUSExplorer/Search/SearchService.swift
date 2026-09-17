@@ -83,9 +83,10 @@ import Foundation
 ///          typed text for the exact-word post-filter, so on iOS and iPadOS — whose Meaning run hands the backend the
 ///          live parameters, typed text included — a `=word` in a Meaning search dropped every semantic hit whose
 ///          document lacks the literal word, and the strip blamed the reader's filters. On the Mac the keywords of a
-///          search restored or handed to the window did the same, even under a query typed since. RESULTS MOVE for those Meaning searches: measured over a two-volume index,
-///          `=containment` alone went from the two documents holding the literal word to `nil` (nothing constrains), and
-///          beside a volume filter from one document to both of the volume's.
+///          search restored or handed to the window did the same, even under a query typed since. RESULTS MOVE for
+///          those Meaning searches: measured over a two-volume index, `=containment` alone went from the two documents
+///          holding the literal word to `nil` (nothing constrains), and beside a volume filter from one document to both
+///          of the volume's.
 public actor SearchService {
 
     // MARK: - Dependencies
