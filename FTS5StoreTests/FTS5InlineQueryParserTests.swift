@@ -956,6 +956,31 @@ extension FTS5InlineQueryParserTests {
         return out
     }
 
+    @Test("The shared fold maps exactly the decided marks to U+0022, one character for one, and its predicate agrees")
+    func sharedFoldCoversExactlyTheDecidedMarks() {
+        #expect(FTS5InlineQueryParser.isDoubleQuotationMark("\""))
+        #expect(FTS5InlineQueryParser.normalizingQuotationMarks("\"") == "\"")
+        for mark in Self.foldedQuotationMarks {
+            #expect(FTS5InlineQueryParser.isDoubleQuotationMark(mark), "\(mark)")
+            #expect(FTS5InlineQueryParser.normalizingQuotationMarks("a\(mark)b \(mark)") == "a\"b \"", "\(mark)")
+        }
+        for mark in Self.unfoldedQuotationMarks {
+            #expect(!FTS5InlineQueryParser.isDoubleQuotationMark(mark), "\(mark)")
+            #expect(FTS5InlineQueryParser.normalizingQuotationMarks("a\(mark)b \(mark)") == "a\(mark)b \(mark)", "\(mark)")
+        }
+        // Every other character is left alone, the count of characters never changes, and a mark carrying a combining
+        // character is not a mark — as U+0022 carrying one is not.
+        let text = "\u{201C}Diệm\u{201D} — 12\u{2033}, don\u{2019}t, \u{2039}x\u{203A} \u{201C}\u{0301}"
+        let folded = FTS5InlineQueryParser.normalizingQuotationMarks(text)
+        #expect(folded == "\"Diệm\" — 12\u{2033}, don\u{2019}t, \u{2039}x\u{203A} \u{201C}\u{0301}")
+        #expect(folded.count == text.count)
+        // Bound first: `#expect` cannot expand a literal holding a quote followed by a combining character.
+        let markedCurly: Character = "\u{201C}\u{0301}", markedStraight: Character = "\"\u{0301}"
+        #expect(!FTS5InlineQueryParser.isDoubleQuotationMark(markedCurly))
+        #expect(!FTS5InlineQueryParser.isDoubleQuotationMark(markedStraight))
+        #expect(FTS5InlineQueryParser.normalizingQuotationMarks("cold war") == "cold war")
+    }
+
     @Test("Every typographic spelling of a quoted query parses, renders and matches as its straight form")
     func typographicQuotesParseAsStraight() throws {
         // Each straight query with its render and row count at 55464a46, which #1298 must not move.
@@ -1132,7 +1157,7 @@ extension FTS5InlineQueryParserTests {
             return out
         }
 
-        var sequences = 0, withSlot = 0, foldedCompared = 0, mixedCompared = 0
+        var sequences = 0, withSlot = 0, shortWithSlot = 0, foldedCompared = 0, mixedCompared = 0
         var failures: [String] = []
         var differsFromStraight = [Int](repeating: 0, count: Self.unfoldedQuotationMarks.count)
         var phrases = 0, negatedPhrases = 0, exactUnwrapped = 0, nearPhrases = 0, unterminated = 0, refused = 0
@@ -1164,6 +1189,7 @@ extension FTS5InlineQueryParserTests {
                             }
                         }
                     }
+                    if indices.count < 4 { shortWithSlot += 1 }
                     for (index, mark) in Self.unfoldedQuotationMarks.enumerated() where indices.count < 4
                     && FTS5InlineQueryParser.parseDetailed(spelled(text) { _ in String(mark) }) != straight {
                         differsFromStraight[index] += 1
@@ -1194,7 +1220,7 @@ extension FTS5InlineQueryParserTests {
         print("[#1298 sweep] sequences \(sequences), with a quote slot \(withSlot), folded compared \(foldedCompared), "
               + "mixed compared \(mixedCompared); straight spelling: phrase \(phrases), negated phrase \(negatedPhrases), "
               + "= unwrapped \(exactUnwrapped), NEAR phrase with comma \(nearPhrases), unterminated \(unterminated), "
-              + "refused \(refused); unfolded marks differing from U+0022 \(differsFromStraight)")
+              + "refused \(refused); unfolded marks differing from U+0022 \(differsFromStraight) of \(shortWithSlot)")
         #expect(sequences == 16_104)
         #expect(failures.isEmpty, "folded spellings that parsed differently from U+0022: \(failures)")
         #expect(foldedCompared == withSlot * Self.foldedQuotationMarks.count)

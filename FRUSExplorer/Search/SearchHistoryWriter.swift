@@ -44,8 +44,19 @@ import SwiftData
 /// searches the researcher meant to run, and are not recorded; a genuine later re-run of the same
 /// query — after other queries in between — is a new row, because the anchor has moved on.
 ///
+/// ## Quotation marks
+/// A typographic and a straight spelling of one query — `“cold war”` typed with Smart Punctuation or pasted from a volume,
+/// `"cold war"` typed without — run the same search (#1298), so they are compared after
+/// `FTS5InlineQueryParser.normalizingQuotationMarks(_:)` folds
+/// them, and re-running one in the other spelling refreshes the row. The row then keeps the spelling of the run it now
+/// describes, as it keeps that run's scope, counts and date: the text a method appendix prints beside a count is the
+/// text that produced it. A double prime or a single quotation mark is not folded, so it still spells another query.
+///
 /// Version history:
 ///   1.0 — M-2 commit 5: initial implementation, extracted from the two view models
+///   1.1 — #1298: a re-run is recognised by the query text with its typographic double quotation marks folded to U+0022,
+///          and a refresh writes the re-run's spelling to the row and the anchor. At 55464a46 `“cold war”` then
+///          `"cold war"` wrote two rows.
 enum SearchHistoryWriter {
 
     /// What the last write left behind, so the next call can tell a re-run from a new query.
@@ -54,7 +65,7 @@ enum SearchHistoryWriter {
     /// the view model rather than derived from a fetch: "the row *this screen* last wrote" is not
     /// recoverable from the table, which is shared across windows, devices and projects.
     struct Anchor: Equatable, Sendable {
-        /// The trimmed query text this screen last recorded.
+        /// The trimmed query text this screen last recorded, in the spelling of its latest run.
         var queryText: String
         /// The entry it wrote. Re-fetched on a refresh, because the user can delete it from the
         /// History pane between two re-runs of the same query.
@@ -131,9 +142,15 @@ enum SearchHistoryWriter {
 
         // A re-run of the anchored query: bring the row it wrote up to date rather than adding a
         // second one. Re-fetched by id, because the user can delete it from the History pane
-        // between two re-runs — in which case this falls through and inserts.
-        if let existing = anchor, existing.queryText == reading.queryText,
+        // between two re-runs — in which case this falls through and inserts. The same query in
+        // other quotation marks is a re-run (#1298), compared as the parser reads it.
+        if let existing = anchor,
+           FTS5InlineQueryParser.normalizingQuotationMarks(existing.queryText)
+               == FTS5InlineQueryParser.normalizingQuotationMarks(reading.queryText),
            let row = entry(existing.entryID, in: context) {
+            // The spelling of this run, like everything else the refresh writes.
+            row.queryText = reading.queryText
+            anchor?.queryText = reading.queryText
             row.resultCount = reading.resultCount
             row.loadedCount = reading.loadedCount
             row.matchCount = reading.matchCount

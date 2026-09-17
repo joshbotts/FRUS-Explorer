@@ -66,6 +66,15 @@ import Foundation
 ///   2.6 — #1297 round 4 (docs only): `exactTerms(from:)` says parser 6.6 compares marks as the filter reads words, so a
 ///          word is reported once, in the spelling of its first applied mark, and `=Cold war OR =cold. peace` filters;
 ///          the paragraph is reflowed.
+///   2.7 — #1298: the highlighter's scans read typographic double quotation marks as U+0022, through the parser's
+///          shared fold rather than a copy of its set. `strippingNearScaffolding(_:)` and `lastUnquotedComma(in:)` test
+///          `FTS5InlineQueryParser.isDoubleQuotationMark(_:)`, and `positiveTerms(from:)` folds the typed keywords first,
+///          so the snippet, the concordance and the collocates anchor on the words a straight spelling does. At 55464a46
+///          `“cold war”` bolded nothing and concorded nothing (its terms were `“cold` and `war”`, whose stems keep the
+///          marks), `«war and peace»` concorded neither word, `blockade -„naval quarantine“` returned no document on a
+///          three-document index where its straight spelling returns one, and a `)` or `,` inside curly marks ended a
+///          `NEAR` span or its distance; each now reads as its straight spelling, and a double prime or a single mark
+///          still does not.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -514,6 +523,9 @@ public actor SearchService {
     ///
     /// The distance is only dropped when it sits in the distance position. A bare `1948`
     /// typed as an operand is a real search term and survives.
+    ///
+    /// A quotation mark is any mark the parser reads as one (`FTS5InlineQueryParser.isDoubleQuotationMark(_:)`),
+    /// so a paren inside `“…”` is text exactly as it is inside `"…"` (#1298). The text is returned unfolded.
     static func strippingNearScaffolding(_ raw: String) -> String {
         // Cheap bail-out: the overwhelming majority of queries contain no NEAR at all.
         guard raw.range(of: "near", options: .caseInsensitive) != nil else { return raw }
@@ -532,7 +544,7 @@ public actor SearchService {
             depth = 1
             while index < rest.endIndex {
                 let character = rest[index]
-                if character == "\"" {
+                if FTS5InlineQueryParser.isDoubleQuotationMark(character) {
                     inQuotes.toggle()
                 } else if !inQuotes, character == "(" {
                     depth += 1
@@ -566,13 +578,16 @@ public actor SearchService {
 
     /// The index of the last comma in `text` that is not inside a double-quoted phrase,
     /// or `nil` when there is none.
+    ///
+    /// A phrase may be quoted with any mark the parser reads as a quote — `"`, `“ ”`, `„ “`, `« »`, `＂` — and a
+    /// double prime (`12″`) or a single mark opens nothing (`FTS5InlineQueryParser.isDoubleQuotationMark(_:)`, #1298).
     static func lastUnquotedComma(in text: String) -> String.Index? {
         var inQuotes = false
         var found: String.Index? = nil
         var index = text.startIndex
         while index < text.endIndex {
             let character = text[index]
-            if character == "\"" {
+            if FTS5InlineQueryParser.isDoubleQuotationMark(character) {
                 inQuotes.toggle()
             } else if character == ",", !inQuotes {
                 found = index
@@ -791,7 +806,9 @@ public actor SearchService {
 
     private func positiveTerms(from parameters: SearchParameters) -> [String] {
         var terms: [String] = []
-        if let kw = parameters.keywords {
+        // Folded first, as the parser folds the text it renders (#1298): without it `“cold war”` leaves `“cold` and
+        // `war”`, whose stems keep the marks and anchor on nothing.
+        if let kw = parameters.keywords.map(FTS5InlineQueryParser.normalizingQuotationMarks) {
             // Lightweight cleanup of inline-syntax artifacts so the snippet highlighter
             // bolds the words the user is actually searching *for* — not the operator
             // syntax around them. This intentionally doesn't run the full

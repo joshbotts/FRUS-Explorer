@@ -60,7 +60,9 @@
 /// Keyword terms are sanitised via `sanitizeTerm(_:)` before embedding in the query
 /// expression, and the phrase, prefix and excluded terms by the inline parser's sanitisers,
 /// which apply the same transform. They strip FTS5 operator characters and double-quotes from
-/// free text to prevent syntax errors and injection.
+/// free text to prevent syntax errors and injection. A typographic double quotation mark (`“`, `„`,
+/// `«`, …) is folded to U+0022 first, as the inline parser folds typed text, so it is stripped too
+/// (`FTS5InlineQueryParser.normalizingQuotationMarks(_:)`, #1298).
 ///
 /// Version history:
 ///   1.0 — Session 03: initial implementation
@@ -114,6 +116,12 @@
 ///          the parser since #1297's join, and `CorpusAnalyticsService` is the producer of `keywordExpression`.
 ///          Correction (2.2): the macOS Advanced popover has not set a phrase, a prefix or excluded terms since
 ///          Session 2026-06-08; only restored saved searches carry them. No byte of any render moves.
+///   3.3 — #1298: `sanitizeTerm(_:)` folds a keyword's typographic double quotation marks to U+0022 before stripping, and
+///          the phrase, prefix and excluded terms are folded by the inline parser's `structuredParts`, so a curly mark is
+///          stripped wherever a straight one is. RESULTS MOVE only for a keyword or field holding a folded mark, and only
+///          in bytes where the mark sits at either end of a word: `["“cold", "war”"]` rendered `"“cold" "war”"` and renders
+///          `"cold" "war"`, matching the same rows, because `unicode61` reads the marks as separators; a mark between two
+///          letters (`a“b`) now joins them, as `a"b` always did. No render of text without a folded mark moves.
 public struct FTS5Query: Sendable {
 
     // MARK: - Nested Types
@@ -328,13 +336,15 @@ public struct FTS5Query: Sendable {
     /// Strips characters that have special meaning in FTS5 query syntax from a
     /// single term, preventing syntax errors and injection.
     ///
-    /// Removed: `"` `(` `)` `^` `*` `-` `+` `{` `}` `:` `/`
+    /// Removed: `"` `(` `)` `^` `*` `-` `+` `{` `}` `:` `/`, and the typographic double quotation
+    /// marks the inline parser reads as `"` (`FTS5InlineQueryParser.normalizingQuotationMarks(_:)`).
     /// Preserved: letters, digits, spaces (for multi-word keywords), apostrophes,
     /// hyphens within words are collapsed to spaces.
     private func sanitizeTerm(_ term: String) -> String {
         // Replace FTS5 operators and structural characters with spaces, then
-        // collapse runs of whitespace and trim.
-        let stripped = term
+        // collapse runs of whitespace and trim. Typographic quotation marks are folded to `"` first,
+        // so they are stripped as a straight one is (#1298).
+        let stripped = FTS5InlineQueryParser.normalizingQuotationMarks(term)
             .replacingOccurrences(of: "\"", with: "")
             .replacingOccurrences(of: "(", with: " ")
             .replacingOccurrences(of: ")", with: " ")
