@@ -53,6 +53,17 @@ struct OccurrenceAvailabilityTests {
         let alternative = OccurrenceAvailability.classify(term: "=containment OR alliance",
                                                           resolveStem: resolver(["containment": "contain"]))
         #expect(alternative.reason == .compositeQuery)
+
+        // Parser 6.4 (#1297 round 2): per operand, not per word. The unmarked required containment does not make the
+        // alternative's mark apply, so the query is classified by shape; a required mark, or one an excluded group
+        // makes the whole search, is exact-word.
+        let stems = resolver(["containment": "contain"])
+        #expect(OccurrenceAvailability.classify(term: "(=containment OR alliance) containment", resolveStem: stems)
+                    .reason == .compositeQuery)
+        #expect(OccurrenceAvailability.classify(term: "(=containment OR alliance) =containment", resolveStem: stems)
+                    .reason == .exactWord)
+        #expect(OccurrenceAvailability.classify(term: "-(alliance -=containment)", resolveStem: stems)
+                    .reason == .exactWord)
     }
 
     @Test("Phrases, prefixes and proximity operands are refused as multi-term")

@@ -595,6 +595,26 @@ struct CorpusAnalyticsServiceTests {
             #expect(try await service.termFrequencyByYear(term: "=containment OR zzznothing")
                         .first { $0.year == 1971 }?.count == 2,
                     "The ignored mark charts the stem, both documents, exactly as Search runs the query")
+
+            // Parser 6.4 (#1297 round 2): the mark is decided per operand (`ParsedOperand.isExactApplied`), never per
+            // word. An unmarked containment every match requires does not make the alternative's mark apply, so that
+            // query charts by stem; a second, required mark applies, and refuses. Each answer is the parser's field.
+            let perOperand: [(term: String, unsupported: [String])] = [
+                ("(=containment OR alliance) containment", []),
+                ("(=containment OR alliance) =containment", ["containment"]),
+                ("-(alliance -=containment)", ["containment"]),
+            ]
+            for (term, unsupported) in perOperand {
+                #expect(CorpusAnalyticsService.unsupportedExactTerms(in: term) == unsupported, "\(term)")
+                #expect(FTS5InlineQueryParser.parseDetailed(term).operands.contains(where: \.isExactApplied)
+                            == !unsupported.isEmpty,
+                        "\(term): refused exactly when an operand's own mark applies")
+            }
+            #expect(try await service.termFrequencyByYear(term: "(=containment OR alliance) containment")
+                        .first { $0.year == 1971 }?.count == 2,
+                    "Beside an unmarked required containment, no mark applies, and the stem charts both documents")
+            #expect(try await service.termFrequencyByYear(term: "(=containment OR alliance) =containment").isEmpty,
+                    "A required mark still refuses rather than charting the stem")
         }
     }
 }

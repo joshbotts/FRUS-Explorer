@@ -767,6 +767,13 @@ struct SearchParametersTests {
             #expect(try await ids("=cold (war OR fevers)") == ["d1"])
             // Control: unmarked, d3 is a match, so the line above is the filter at work and not the fixture.
             #expect(try await ids("cold (war OR fevers)") == ["d1", "d3"])
+
+            // Parser 6.4 decides per operand (#1297 round 2): the unmarked cold every match requires admits d3's colds,
+            // so the alternative's mark does not apply and d3 stays; a second, required mark does filter it out.
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "(=cold OR fevers) cold")).isEmpty)
+            #expect(try await ids("(=cold OR fevers) cold") == ["d1", "d3"])
+            #expect(SearchService.exactTerms(from: SearchParameters(keywords: "(=cold OR fevers) =cold")) == ["cold"])
+            #expect(try await ids("(=cold OR fevers) =cold") == ["d1"])
         }
     }
 

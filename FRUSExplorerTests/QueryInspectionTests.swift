@@ -36,6 +36,9 @@ import Foundation
 ///         beside a filter is not filters only, and the strip and both hosts explain it, while only a refused parse of
 ///         real text sets `isRefused`; an `=` parser 6.3 ignores is inspected and counted as the stemmed word the
 ///         search runs; the iOS refresh key covers every query part
+///   1.5 — #1297 round 2: the EXACT tag and exact counts follow each operand's `isExactApplied` (A1); the refused line
+///         needs something searchable that was refused, never punctuation alone (A2); a refresh that leaves the operands
+///         unchanged keeps the zero-result blame (A4)
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -389,9 +392,16 @@ struct QueryInspectionTests {
     @Test("An operand's solo query reproduces its own marks, not a plainer version")
     func soloQueryPreservesMarks() {
         let exact = ParsedOperand(text: "containment", rendered: "\"containment\"",
-                                  kind: .word, isNegated: false, isExact: true)
+                                  kind: .word, isNegated: false, isExact: true, isExactApplied: true)
         #expect(QueryInspector.queryText(for: exact) == "=containment",
                 "counting an exact term as a stemmed one reports a number the query never used")
+
+        // The mark the search applies, not the mark as typed (#1297 round 2, A1): parser 6.4 decides per operand, so a
+        // typed `=` it ignores is re-spelled without one, and counted by the stem the search ran.
+        let ignored = ParsedOperand(text: "containment", rendered: "\"containment\"",
+                                    kind: .word, isNegated: false, isExact: true, isExactApplied: false)
+        #expect(QueryInspector.queryText(for: ignored) == "containment",
+                "counting an ignored mark as an exact term reports a number the query never used either")
 
         let phrase = ParsedOperand(text: "cold war", rendered: "\"cold war\"",
                                    kind: .phrase, isNegated: false, isExact: false)
@@ -917,6 +927,9 @@ struct QueryInspectionTests {
     /// Parser 6.3 (D1) reports an `=` term only where every match must contain it. The operand still carries the typed
     /// mark, and the inspector showed it as typed: an EXACT tag on a word the search runs by its stem, and a scoped
     /// count that re-spelled it `=containment` and counted a narrower query than the one that ran.
+    ///
+    /// Round 2 (A1): the strip tags and counts on `ParsedOperand.isExactApplied`, the parser's own per-operand answer,
+    /// and the operand keeps the mark as typed. Round 1 cleared `isExact` instead, deciding by the word.
     @Test("An = the search ignores is neither tagged EXACT nor counted exactly")
     func ignoredExactMarkIsInspectedAsStemmed() async throws {
         let (dir, inspector) = try await makeFixture()
@@ -927,8 +940,10 @@ struct QueryInspectionTests {
                 "precondition: parser 6.3 ignores the mark in an OR alternative")
         let inspection = await inspector.inspect(parameters: alternative, indexedVolumeCount: 1)
         #expect(inspection.operands.map(\.operand.text) == ["containment", "alliance"])
-        #expect(inspection.operands.map(\.operand.isExact) == [false, false],
+        #expect(inspection.operands.map(\.operand.isExactApplied) == [false, false],
                 "no EXACT tag on a word the search does not filter")
+        #expect(inspection.operands.map(\.operand.isExact) == [true, false],
+                "the operand keeps the mark as typed; whether it applies is the parser's separate answer")
         #expect(inspection.operands.first?.isStemBroadening == true,
                 "and the stem warning says containment is searched as contain, which it is")
         #expect(try await inspector.searchService.searchCount(parameters: alternative) == 3,
@@ -940,9 +955,152 @@ struct QueryInspectionTests {
         let required = SearchParameters(keywords: "=containment europe")
         #expect(SearchService.exactTerms(from: required) == ["containment"])
         let applied = await inspector.inspect(parameters: required, indexedVolumeCount: 1)
-        #expect(applied.operands.map(\.operand.isExact) == [true, false])
+        #expect(applied.operands.map(\.operand.isExactApplied) == [true, false])
         #expect(await inspector.scopedCounts(for: applied, parameters: required).map(\.scopedCount) == [1, 2],
                 "=containment is d1 alone; europe is d1 and d3")
+    }
+
+    // MARK: - An = mark, operand by operand (#1297 round 2)
+
+    /// A1: parser 6.4 decides whether an `=` applies per operand (`ParsedOperand.isExactApplied`), and the inspector
+    /// decided per WORD — it kept a mark whenever the operand's word was among `ParsedQuery.exactTerms`. So in
+    /// `(=cold OR war) =cold` both colds were tagged EXACT, and the alternative's cold was counted as the literal word
+    /// although the search runs it by its stem. The three named cases are the ones the round-2 findings fix: only the
+    /// second operand; a mark an excluded group makes required; and a mark beside an UNMARKED required cold, which
+    /// applies nowhere.
+    @Test("The EXACT tag and the exact count follow each operand's own applied mark, not its word")
+    func exactMarkIsReadPerOperand() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let cases: [(text: String, typed: [Bool], applied: [Bool])] = [
+            ("(=cold OR war) =cold", [true, false, true], [false, false, true]),
+            ("-(war -=cold)", [true], [true]),
+            ("(=cold OR war) cold", [true, false, false], [false, false, false]),
+        ]
+        for (text, typed, applied) in cases {
+            let inspection = await inspector.inspect(parameters: SearchParameters(keywords: text), indexedVolumeCount: 1)
+            #expect(inspection.operands.map(\.operand) == FTS5InlineQueryParser.parseDetailed(text).operands,
+                    "\(text): the inspected operands are the parser's, unrewritten, in order")
+            #expect(inspection.operands.map(\.operand.isExact) == typed, "\(text): each operand keeps its mark as typed")
+            #expect(inspection.operands.map(\.operand.isExactApplied) == applied,
+                    "\(text): EXACT is on exactly the operands the search filters to the literal word")
+        }
+
+        // Counted as the search ran them. The fixture: d1 containment, d2 contain (twice), d4 alliance — containment's
+        // stem is contain, so a stemmed count of containment is 2 and a literal one is 1.
+        func check(_ text: String, searched: Int, scoped: [Int?]) async throws {
+            let params = SearchParameters(keywords: text)
+            #expect(try await inspector.searchService.searchCount(parameters: params) == searched, "\(text): precondition")
+            let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+            #expect(await inspector.scopedCounts(for: inspection, parameters: params).map(\.scopedCount) == scoped,
+                    "\(text): each operand is counted as the search applies it")
+        }
+        // The alternative's containment runs by its stem (d1, d2); only the required one is the literal word (d1).
+        try await check("(=containment OR alliance) =containment", searched: 1, scoped: [2, 1, 1])
+        // Beside an unmarked required containment no mark applies, so nothing is counted literally.
+        try await check("(=containment OR alliance) containment", searched: 2, scoped: [2, 1, 2])
+        // Excluding the group makes the marked word the whole search, and every match must hold it literally.
+        try await check("-(alliance -=containment)", searched: 1, scoped: [1])
+    }
+
+    /// The strip's EXACT tag must read the parser's per-operand field. The gate and the key are matched as one anchored
+    /// pattern, so `if !item.operand.isExactApplied`, or the typed `isExact` the strip read before round 2, fails.
+    @Test("The strip tags EXACT on the operand's applied mark")
+    func stripTagsExactWhereTheMarkApplies() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Search/QueryInspectorView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "private var operandRows: some View"))
+        var depth = 0, index = start.upperBound, opened = false
+        while index < source.endIndex {
+            if source[index] == "{" { depth += 1; opened = true }
+            if source[index] == "}" { depth -= 1; if opened && depth == 0 { break } }
+            index = source.index(after: index)
+        }
+        let operandRows = source[start.lowerBound...index]
+        #expect(operandRows.range(
+            of: #"if item\.operand\.isExactApplied \{\s*microTag\(String\(localized: "search\.inspector\.exactTag""#,
+            options: .regularExpression) != nil,
+                "the EXACT tag renders under the operand's isExactApplied")
+        #expect(operandRows.components(separatedBy: "\"search.inspector.exactTag\"").count == 2,
+                "and nowhere else in the operand rows")
+        #expect(!operandRows.contains("operand.isExact {"), "the typed mark is not what the search applies")
+    }
+
+    // MARK: - The refused line needs something refused (#1297 round 2)
+
+    /// A2: the refused line said "nothing is left to search for once its exclusions apply, or its parentheses nest more
+    /// than 32 deep" for any text whose parse is nil — including a lone `"`, `(` or `=` typed on the way to a query,
+    /// where neither reason is true, and which the strip shows while the researcher pauses mid-typing. The line now
+    /// needs something searchable that was refused: an operand, or groups nested past the parser's own limit.
+    @Test("The refused line shows only when something searchable was refused, never for punctuation typed on the way to a query")
+    func refusedLineNeedsSomethingSearchable() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        for text in ["\"", "(", "=", "-(", "NEAR()", "?"] {
+            var params = SearchParameters(keywords: text)
+            #expect(params.hasTextTerms, "\(text): precondition, it counts as text")
+            #expect(SearchService.parsedQuery(for: params).expression == nil, "\(text): precondition, the parse is nil")
+            let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+            #expect(!inspection.isRefused, "\(text): nothing searchable was refused, so neither reason would be true")
+            #expect(!inspection.showsStrip, "\(text): and there is nothing to say")
+            // Beside a standalone filter the search still throws, so it is not filters only either.
+            params.personRef = "#p-acheson"
+            let filtered = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+            #expect(!filtered.isRefused && !filtered.isFilterOnly && !filtered.showsStrip, "\(text): beside a filter")
+        }
+
+        let limit = FTS5InlineQueryParser.maximumGroupDepth
+        func nested(_ inner: String, _ levels: Int) -> String {
+            String(repeating: "(", count: levels) + inner + String(repeating: ")", count: levels)
+        }
+        let refused: [(label: String, params: SearchParameters)] = [
+            ("exclusions only", SearchParameters(keywords: "-europe")),
+            ("an approximation that matches nothing", SearchParameters(keywords: "-(containment -europe) -europe")),
+            ("one level past the limit", SearchParameters(keywords: nested("europe", limit + 1))),
+            ("exclusions only, at the limit", SearchParameters(keywords: nested("-europe", limit))),
+            ("punctuation beside a restored exclusion", SearchParameters(keywords: "(", excludedTerms: ["europe"])),
+        ]
+        for (label, params) in refused {
+            #expect(SearchService.parsedQuery(for: params).expression == nil, "\(label): precondition, the parse is nil")
+            let inspection = await inspector.inspect(parameters: params, indexedVolumeCount: 1)
+            #expect(inspection.isRefused && inspection.showsStrip, "\(label): the query cannot run, and the strip says so")
+        }
+
+        // Control: at the limit a query renders, so the depth that refuses is the parser's own.
+        let atLimit = await inspector.inspect(parameters: SearchParameters(keywords: nested("europe", limit)),
+                                              indexedVolumeCount: 1)
+        #expect(atLimit.expression != nil && !atLimit.isRefused)
+    }
+
+    /// A4: `refresh` cleared `emptyConjuncts` on every run, and the zero-result decomposition is keyed on the executed
+    /// search, not on the refresh. So a filter change that re-ran a still-empty search could have its new blame wiped by
+    /// the refresh landing after it, and the zero-result view fell back to "each of your terms matches something on its
+    /// own", which nothing measured. A refresh whose operands are unchanged leaves the blame to the decomposition.
+    @Test("A refresh after a filter-only change keeps the zero-result blame; a refresh after editing the terms clears it")
+    @MainActor
+    func refreshKeepsBlameWhenTheOperandsAreUnchanged() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let service = inspector.searchService
+
+        let controller = QueryInspectorController()
+        var params = SearchParameters(keywords: "formosa europe")
+        await controller.refresh(parameters: params, service: service, indexedVolumeCount: 1)
+        await controller.decomposeZeroResult(parameters: params, service: service)
+        #expect(controller.emptyConjuncts.map(\.text) == ["formosa"], "precondition: formosa is blamed")
+
+        params.volumeIds = ["vol1"]
+        #expect(try await service.searchCount(parameters: params) == 0, "precondition: the narrowed search is still empty")
+        await controller.refresh(parameters: params, service: service, indexedVolumeCount: 1)
+        #expect(controller.emptyConjuncts.map(\.text) == ["formosa"],
+                "the same terms under a different filter: the blame is the decomposition's to replace, not the refresh's")
+
+        await controller.refresh(parameters: SearchParameters(keywords: "containment europe"), service: service,
+                                 indexedVolumeCount: 1)
+        #expect(controller.emptyConjuncts.isEmpty, "a blame naming a term the query no longer has would mislead")
     }
 
     /// F7: the inspection reads the combined parse of the typed text and a restored search's phrase, prefix and
