@@ -323,7 +323,7 @@ Type and press Return; results update in real time as you refine. FRUS Explorer 
 
 ### 7.2 Query Syntax
 
-**Tips.** The **Tips** button beside the query field opens a short reference to this syntax under the results — the same tips the iPhone and iPad app shows — followed by what the date filter does and where the **Search in** defaults are set. **Find → Search Tips…** opens the Search window with the tips showing. In Meaning mode the panel shows no syntax: it says instead that a meaning search reads your words as a whole, so none of these marks has a special effect.
+**Tips.** The **Tips** button beside the query field opens a short reference to this syntax under the results — the same tips the iPhone and iPad app shows — followed by what the date filter does and where the **Search in** defaults are set. **Find → Search Tips…** opens the Search window with the tips showing. In Meaning mode the panel shows no syntax: it says instead that a meaning search reads your words as a whole, so none of these marks has a special effect. The words reach the model as you typed them, and only the filters you set narrow a meaning search, so an `=` there narrows nothing.
 
 [SCREENSHOT: macOS — the Search window with the Tips panel open under the results]
 

@@ -235,6 +235,7 @@ struct HybridSearchModeTests {
     // MARK: - The strip's disclosures
 
     @Test("The Meaning strip states every disclosure it owes, and only those")
+    @MainActor
     func stripCaption() {
         let base = SemanticModeStrip.caption(disclosure: nil, beyondCount: 0)
         #expect(base.contains("Front matter"))

@@ -956,7 +956,8 @@ public enum SearchDefaults {
 ///         `=` matches a word "only as you typed it" (it folds capitalization, a single accent and edge punctuation,
 ///         so `=Hull` still counts a ship's hull) and omitted NEAR(…), inside which the mark is dropped; and the last
 ///         row said every exclusion-only OR alternative is left out (in parentheses beside a word it is searched
-///         exactly)
+///         exactly). And by #1299 round 2: the exact-word row's "always" list also omitted a word the index splits into
+///         several terms, on which the mark is dropped too (`=anti-Communist` still counts anti-Communists)
 struct SearchTip: Identifiable, Sendable, Equatable {
 
     /// Which rule a row explains. `allCases` is the order the rows are shown in.
@@ -1079,7 +1080,7 @@ struct SearchTip: Identifiable, Sendable, Equatable {
             example = "=containment"
             spokenExample = String(localized: "search.tips.exactWord.spoken", defaultValue: "equals sign, containment")
             detail = String(localized: "search.tips.exactWord.detail",
-                            defaultValue: "Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent and punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix or inside NEAR(…).")
+                            defaultValue: "Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent and punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.")
         case .needsAWord:
             example = "-korea"
             spokenExample = String(localized: "search.tips.needsAWord.spoken", defaultValue: "minus sign, korea")
@@ -1113,7 +1114,16 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
     /// mode names are capitalized, as the Keywords and Meaning picker labels are; it says "your words" rather than
     /// "your question", beside a field that asks for "a question in your own words" and a reader who typed operators
     /// rather than a question; and it names AND, a minus sign and parentheses beside the brief's OR, NOT, *, NEAR and =,
-    /// since the rows teach all of them and the semantic route passes the text to no parser at all.
+    /// since the rows teach all of them.
+    ///
+    /// **What makes it true is the Meaning route, not the absence of a parser in the app.** `SemanticQuerySearcher`
+    /// hands the typed text to the encoder as written, behind its fixed query prefix, so a mark there is only more
+    /// text. The one place the route did read syntax was its filter intersection: `SemanticSearchBackend.run`
+    /// intersects the hits with `SearchService.filterKeySet(parameters:)`, which built the exact-word post-filter from
+    /// the typed `keywords`, so a `=word` removed every hit whose document lacks the literal word — on iOS and iPadOS
+    /// from the live field, on the Mac from a restored or handed-off search's keywords. Since #1299 round 2 that method
+    /// removes `keywords` before building the filters, so only the filters the reader set narrow a Meaning search, and
+    /// this note holds on both platforms.
     case meaningMode
 
     /// `Identifiable` conformance for `ForEach`.
@@ -1185,12 +1195,16 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1299: initial implementation
-///   1.1 — #1299 follow-up: `everyScopeOff`, so every scope off reads as a message rather than "FTS5Error error 5"
+///   1.1 — #1299 follow-up: `everyScopeOff`, so every scope off reads as a message rather than "FTS5Error error 5".
+///         Corrected in place by #1299 round 2: its message named "every search scope", but Filters ▸ Search Scope also
+///         holds Include front matter, on by default and not read by `readable`, so it names the three toggles instead
 enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
     /// The query's parse rendered no expression, so there is nothing to search for.
     case nothingToSearch
     /// The query parses, but every content scope — document text, summaries and research notes — is off, so there is
-    /// nowhere to search. The wording names iOS's Filters ▸ Search Scope; macOS answers with `MacSearchError.emptyScope`.
+    /// nowhere to search. The wording names those three toggles rather than "every scope", because iOS's Filters ▸ Search
+    /// Scope also holds Include front matter, which is not somewhere to search and may still be on; macOS answers with
+    /// `MacSearchError.emptyScope`.
     case everyScopeOff
 
     /// The reader-facing message. Localized.
@@ -1201,7 +1215,7 @@ enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
                           defaultValue: "This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.")
         case .everyScopeOff:
             return String(localized: "search.error.emptyScope.ios",
-                          defaultValue: "Every search scope is turned off, so there is nothing to search. Turn on document text, summaries or research notes in Filters ▸ Search Scope.")
+                          defaultValue: "Document text, summaries and research notes are all turned off, so there is nothing to search. Turn one on in Filters ▸ Search Scope.")
         }
     }
 
