@@ -968,9 +968,10 @@ struct Issue1297DepthTests {
     /// `work(parsing:)` documents that it is `parseDetailed` plus a count, and the settle-once tests above lean on that
     /// (`the counted parse is the parse`). Their queries hold no typographic quotation mark, so moving #1298's fold out
     /// of the shared `parsedTree` and into `parseDetailed` alone left every one of them green while the hook parsed
-    /// `“cold war”` as two words (the #1298 attack's P23). Each spelling here holds a folded mark where its parse
-    /// depends on it: a phrase, a negated phrase beside an anchor, a comma inside a `NEAR` phrase, and a restored
-    /// excluded term in low-9 marks.
+    /// `“cold war”` as two words (the #1298 attack's P23). The first three spellings put a folded mark in the typed text
+    /// where the parse depends on it — a phrase, a negated phrase beside an anchor, a comma inside a `NEAR` phrase — and
+    /// under that mutant all three and the render check fail. The fourth puts it in a restored excluded term, which
+    /// `structuredParts` folds and the hook shares either way, so it guards that fold staying shared.
     @Test("The counted parse folds typographic quotation marks exactly as parseDetailed does")
     func countedParseFoldsQuotationMarks() {
         let spellings: [(raw: String, structured: StructuredQueryParts)] = [

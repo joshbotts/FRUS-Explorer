@@ -15457,7 +15457,7 @@ U+2019, U+2039 or U+203A were killed. Five survived:
   began*, `"coldwar"` matches *coldwar studies*); the parser's doc claimed the fold reached every comparison in the
   app. All three are corrected, and the parser doc now lists exactly where the app applies it.
 
-**Follow-up (`d6fda19e` tests, then the fix).**
+**Follow-up (`d6fda19e` tests, `4d1a0368` fix).**
 - Tests first, at `84f81c40`: app 56 tests in 3 suites, 2 failing with 11 issues (the History filter 8, the macOS
   checklist source-shape guard 3); SPM 105 tests in 3 suites passing (the scalar walk and the counted parse target
   survivors, not defects).
@@ -15466,7 +15466,19 @@ U+2019, U+2039 or U+203A were killed. Five survived:
   `isSameQuery`, is driven at runtime, `nil` anchor included.
 - Final tree: `FTS5StoreTests` **208 tests in 13 suites**; the affected app suites 114 in 5; `FRUSExplorerTests`
   **4,886 tests in 616 suites**; the macOS scheme BUILD SUCCEEDED, every changed file recompiled, no warning in one.
-- A/B: each new test against the mutant it targets — recorded in the entry's closing commit.
+- **A/B, each mutant alone** (applied by script asserting one occurrence, restored, status checked): app runs all over
+  the same 5 suites (114 tests), SPM over 105 tests in 3 suites; controls pass before and after, the last rebuilt
+  from HEAD. **15 of 15 targeted mutants fail their test.**
+  - U+301D added to the set: only the scalar walk fails (3 issues) — nothing else noticed, so the gap was real.
+  - P23, the fold moved into `parseDetailed`: only `countedParseFoldsQuotationMarks` (4).
+  - The macOS gate reverted to `!=` in `performSearch`, then in `performMeaningSearch`: the source guard (2 each).
+  - `record` comparing exactly: the re-run test and the guard (18). `isSameQuery` unfolded: 27; matching a `nil`
+    anchor: 2, seen only by the direct test.
+  - History filter unfolded: 8; row side folded only: 4; term side only: 5; `contains` for
+    `localizedStandardContains`: 1.
+  - A11: 1. A12: 7. A13: 7. `positiveTerms`' fold removed (A03) still fails the reworked concordance test: 7.
+  - A compatibility check rather than a kill: with `positiveTerms`' negated-phrase quirk fixed, the reworked
+    concordance test passes, and the 1.1 version fails because the straight anchors become `{blockade}`.
 
 **Noticed, not fixed.**
 - Corpus Analytics can hold a curly and a straight spelling as two compare chips or two saved entries (and already
