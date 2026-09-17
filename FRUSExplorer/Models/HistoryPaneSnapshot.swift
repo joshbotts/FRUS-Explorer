@@ -172,6 +172,8 @@ struct HistoryRowID: Hashable, Sendable {
 ///          which an unloaded table cannot be), and every row carries a distinct
 ///          ``HistoryRowID`` so a same-`id` pair is two rows to `ForEach` rather than SwiftUI's
 ///          documented-undefined case
+///   1.2 — #1298 follow-up: the search filter folds typographic double quotation marks on the row's text and the
+///          term, so the one row a curly and a straight run refresh is found by a filter typed in either spelling
 struct HistoryPaneSnapshot: Equatable, Sendable {
 
     // MARK: - Rows
@@ -233,10 +235,18 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
 
         /// Whether this row matches a free-text filter term.
         ///
+        /// Case- and diacritic-insensitive via `localizedStandardContains`, with the typographic double quotation marks
+        /// on both sides folded to U+0022 first (`FTS5InlineQueryParser.normalizingQuotationMarks(_:)`, #1298).
+        /// `localizedStandardContains` does not equate `“`, `«` or `＂` with `"`, and a curly and a straight run of one
+        /// query refresh ONE row that keeps the later spelling (`SearchHistoryWriter`), so without the fold a filter
+        /// typed in the other spelling hid the row — and an iPad's filter field types the curly marks itself. A double
+        /// prime and the single marks are not folded, as the writer does not fold them.
+        ///
         /// - Parameter term: The already-trimmed search term. An empty term matches everything.
         func matches(_ term: String) -> Bool {
             guard !term.isEmpty else { return true }
-            return queryText.localizedStandardContains(term)
+            return FTS5InlineQueryParser.normalizingQuotationMarks(queryText)
+                .localizedStandardContains(FTS5InlineQueryParser.normalizingQuotationMarks(term))
         }
     }
 

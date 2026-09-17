@@ -53,6 +53,8 @@ import SwiftUI
 ///         submitted parameters are run, two NOT APPLIED rows are rendered, an `=` flip and a word-to-phrase change clear
 ///         the blame, and a cleared person label is an unread input (B2); an `=` on one word in two spellings is tagged
 ///         and counted on both (B4)
+///   1.8 — #1298: a phrase typed with typographic quotation marks is inspected as one phrase operand with no stem
+///         warning, and the whole inspection equals its straight spelling's
 @Suite("Query inspection")
 struct QueryInspectionTests {
 
@@ -193,6 +195,29 @@ struct QueryInspectionTests {
             indexedVolumeCount: 1)
         #expect(inspection.operands.map(\.operand.text) == ["containment", "cold war", "negoti*"])
         #expect(inspection.operands.map(\.operand.kind) == [.word, .phrase, .prefix])
+    }
+
+    /// At 55464a46 `“cold war”` was two words, `“cold` and `war”`, and the strip explained the difference as stemming:
+    /// "“cold is searched as cold — other words with that root match too".
+    @Test("A phrase in typographic quotation marks is one phrase operand, with no stem warning (#1298)")
+    func typographicPhraseIsOnePhraseOperand() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+
+        let straight = await inspector.inspect(
+            parameters: SearchParameters(keywords: "\"cold war\" containment"), indexedVolumeCount: 1)
+        #expect(straight.operands.map(\.operand.kind) == [.phrase, .word])
+        for typed in ["\u{201C}cold war\u{201D} containment", "\u{00AB}cold war\u{00BB} containment",
+                      "\u{201E}cold war\u{201C} containment", "\u{FF02}cold war\u{FF02} containment"] {
+            let inspection = await inspector.inspect(
+                parameters: SearchParameters(keywords: typed), indexedVolumeCount: 1)
+            #expect(inspection.operands.map(\.operand.text) == ["cold war", "containment"], "\(typed)")
+            #expect(inspection.operands.map(\.operand.kind) == [.phrase, .word], "\(typed)")
+            let phrase = try #require(inspection.operands.first)
+            #expect(phrase.stem == nil, "\(typed)")
+            #expect(!phrase.isStemBroadening, "\(typed)")
+            #expect(inspection == straight, "\(typed)")
+        }
     }
 
     @Test("The stem shown names the real index term")

@@ -38,6 +38,8 @@ import Testing
 ///   1.1 — Wave R-2a review fixes: same-`id` rows get distinct identities and a delete that
 ///          removes every copy, and the export table is loaded, scoped, filtered and deletable
 ///          like the other two
+///   1.2 — #1298 follow-up: the search filter folds typographic double quotation marks on both sides, so one row
+///          refreshed by a curly and a straight run is found by a filter typed in either spelling
 @MainActor
 struct HistoryPaneSnapshotTests {
 
@@ -263,6 +265,43 @@ struct HistoryPaneSnapshotTests {
         let snapshot = HistoryPaneSnapshot.fetch(from: context)
         #expect(snapshot.filteredSearches(matching: "blockade").map(\.queryText) == ["Berlin blockade"])
         #expect(snapshot.filteredSearches(matching: "zzz").isEmpty)
+    }
+
+    /// A curly and a straight run of one query are ONE history row since #1298, which keeps the later run's spelling, so
+    /// a filter typed in the other spelling must still find it — and on an iPad the filter field itself types curly
+    /// marks. `localizedStandardContains` does not equate `“` or `«` or `＂` with `"`, so without folding both sides a
+    /// researcher who remembers typing `"cold war"` finds nothing once a curly re-run has refreshed the row.
+    @Test("The search filter reads typographic and straight quotation marks alike, in both directions")
+    func searchFilterEquatesQuotationMarks() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        insertSearch(context, query: "\u{201C}cold war\u{201D} origins")
+        insertSearch(context, query: "\"Berlin blockade\"")
+        insertSearch(context, query: "\u{00AB}d\u{00E9}tente\u{00BB}")
+        insertSearch(context, query: "\u{FF02}Suez crisis\u{FF02}")
+        insertSearch(context, query: "12\u{2033} guns")
+        try context.save()
+
+        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        func found(_ term: String) -> Set<String> { Set(snapshot.filteredSearches(matching: term).map(\.queryText)) }
+
+        // Straight filter, typographic rows.
+        #expect(found("\"cold war\"") == ["\u{201C}cold war\u{201D} origins"])
+        #expect(found("\"d\u{00E9}tente\"") == ["\u{00AB}d\u{00E9}tente\u{00BB}"])
+        #expect(found("\"Suez crisis\"") == ["\u{FF02}Suez crisis\u{FF02}"])
+        // Typographic filter, straight row — curly, guillemet and fullwidth.
+        #expect(found("\u{201C}Berlin blockade\u{201D}") == ["\"Berlin blockade\""])
+        #expect(found("\u{00AB}Berlin") == ["\"Berlin blockade\""])
+        #expect(found("blockade\u{FF02}") == ["\"Berlin blockade\""])
+        // Typographic filter, row in other typographic marks.
+        #expect(found("\u{00BB}Suez") == ["\u{FF02}Suez crisis\u{FF02}"])
+        // Still case- and diacritic-insensitive.
+        #expect(found("\"DETENTE") == ["\u{00AB}d\u{00E9}tente\u{00BB}"])
+        // A double prime is not a quotation mark, on either side.
+        #expect(found("12\"").isEmpty)
+        #expect(found("\u{2033}cold").isEmpty)
+        #expect(found("12\u{2033}") == ["12\u{2033} guns"])
     }
 
     // MARK: - Copy

@@ -52,6 +52,9 @@ import SQLite3
 ///   1.4 — #1297 round-4 parser fixes: `Issue1297DepthTests.settlementCountsAdd`, the positive control for those counts: a
 ///          root settled once more past the memo must read 2, because a counter saturating at 1 passed
 ///          `nodesAreSettledOnce` even with the memo removed (the round-3 attack's P5c)
+///   1.5 — #1298 follow-up: `Issue1297DepthTests.countedParseFoldsQuotationMarks` pins that `work(parsing:)` folds
+///          typographic quotation marks as `parseDetailed` does, because a fold moved from `parsedTree` into
+///          `parseDetailed` alone passed every test (the #1298 attack's P23)
 enum Issue1297Corpus {
     /// The four query words, in bit order.
     static let vocabulary = ["cold", "war", "korea", "vietnam"]
@@ -960,6 +963,31 @@ struct Issue1297DepthTests {
             #expect(twice.meaningSettlements == once.meaningSettlements + 1, "\(shape.name): only the root again")
             #expect(twice.maximumAnchorSettlements == 2, "\(shape.name): \(twice)")
         }
+    }
+
+    /// `work(parsing:)` documents that it is `parseDetailed` plus a count, and the settle-once tests above lean on that
+    /// (`the counted parse is the parse`). Their queries hold no typographic quotation mark, so moving #1298's fold out
+    /// of the shared `parsedTree` and into `parseDetailed` alone left every one of them green while the hook parsed
+    /// `“cold war”` as two words (the #1298 attack's P23). The first three spellings put a folded mark in the typed text
+    /// where the parse depends on it — a phrase, a negated phrase beside an anchor, a comma inside a `NEAR` phrase — and
+    /// under that mutant all three and the render check fail. The fourth puts it in a restored excluded term, which
+    /// `structuredParts` folds and the hook shares either way, so it guards that fold staying shared.
+    @Test("The counted parse folds typographic quotation marks exactly as parseDetailed does")
+    func countedParseFoldsQuotationMarks() {
+        let spellings: [(raw: String, structured: StructuredQueryParts)] = [
+            ("\u{201C}cold war\u{201D}", .none),
+            ("blockade -\u{00AB}naval quarantine\u{00BB}", .none),
+            ("NEAR(\u{201E}cold, war\u{201C} europe, 5)", .none),
+            ("-(war -korea)", StructuredQueryParts(excludedTerms: ["\u{201E}korea\u{201C}"])),
+        ]
+        for spelling in spellings {
+            let counted = FTS5InlineQueryParser.work(parsing: spelling.raw, structured: spelling.structured).query
+            let parsed = FTS5InlineQueryParser.parseDetailed(spelling.raw, structured: spelling.structured)
+            #expect(counted == parsed, "\(spelling.raw)")
+        }
+        // The equality is not vacuous: the first spelling parses to its straight phrase, which a hook reading the marks
+        // unfolded does not produce.
+        #expect(FTS5InlineQueryParser.work(parsing: "\u{201C}cold war\u{201D}").query.expression == "\"cold war\"")
     }
     #endif
 

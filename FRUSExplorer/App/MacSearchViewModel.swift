@@ -77,6 +77,11 @@ import SwiftData
 ///   1.6 — Session 2026-07-04 (macOS UI audit C4): `applyAdvancedFilters` is now
 ///          called live per filter edit (signature observation in the popover host)
 ///          instead of once in the removed sheet's `onDismiss` batch.
+///   1.7 — #1298 follow-up: both checklist re-anchor gates (`performSearch`, `performMeaningSearch`)
+///          decide "same query" through `SearchHistoryWriter.isSameQuery(_:_:)` rather than `!=`, so
+///          re-submitting `“cold war”` as `"cold war"` no longer clears the reviewed marks while the
+///          history writer refreshes one row. The comment claiming the gate mirrors `historyAnchor`
+///          had stopped being true when #1298 folded the writer's comparison.
 @Observable
 @MainActor
 final class MacSearchViewModel {
@@ -407,7 +412,9 @@ final class MacSearchViewModel {
     /// on every filter/scope change (not only on a new query, unlike iOS's `search()`), so the
     /// re-anchor is gated on this changing — otherwise a filter edit mid-session would wipe the
     /// user's reviewed marks. Mirrors ``SearchHistoryWriter/Anchor``'s "one row per distinct query"
-    /// pattern.
+    /// pattern by asking the writer's own ``SearchHistoryWriter/isSameQuery(_:_:)``, so a query
+    /// re-run in other quotation marks (`“cold war”` as `"cold war"`, #1298) keeps its marks exactly
+    /// as it keeps its history row. Held in the spelling that anchored it; the comparison folds.
     private var lastChecklistAnchorQuery: String?
 
     /// A stable reviewed-set key for a `(volume, document)` pair.
@@ -1002,11 +1009,13 @@ final class MacSearchViewModel {
         // `performSearch` also re-runs on every filter/scope change (those bump
         // `parametersVersion`, part of `searchTrigger`), so an unconditional re-anchor would
         // silently wipe the user's reviewed marks whenever they touched a filter mid-session.
-        // Gating on the query (mirrors `historyAnchor`) keeps marks across filter
-        // re-runs of the same query while still clearing them for a genuine new query. Reviewed
-        // identity is document identity, which recurs across searches, so a stale mark must not
-        // leak into an unrelated query.
-        if checklistMode, query != lastChecklistAnchorQuery {
+        // Gating on the query keeps marks across filter re-runs of the same query while still
+        // clearing them for a genuine new query. "The same query" is the history writer's own rule
+        // (`SearchHistoryWriter.isSameQuery`, the test that decides a `historyAnchor` refresh), so the
+        // same query in other quotation marks keeps its marks as it keeps its history row (#1298).
+        // Reviewed identity is document identity, which recurs across searches, so a stale mark
+        // must not leak into an unrelated query.
+        if checklistMode, !SearchHistoryWriter.isSameQuery(lastChecklistAnchorQuery, query) {
             lastChecklistAnchorQuery = query
             checklistEnabledAt = .now
             readSinceEnabledKeys.removeAll()
@@ -1094,7 +1103,9 @@ final class MacSearchViewModel {
         semanticNeedsModel = false
         lastRunWasSemantic = true
         defer { isSearching = false }
-        if checklistMode, query != lastChecklistAnchorQuery {
+        // The same-query rule `performSearch` gates on, and the one the history writer refreshes a
+        // Meaning run's row by, so a respelled Meaning query keeps its marks as it keeps its row.
+        if checklistMode, !SearchHistoryWriter.isSameQuery(lastChecklistAnchorQuery, query) {
             lastChecklistAnchorQuery = query
             checklistEnabledAt = .now
             readSinceEnabledKeys.removeAll()

@@ -185,6 +185,22 @@
 /// `aid -NEAR(military europe, 5)` is the excluded word "near" beside a positive group of
 /// the words, as it always was, so a proximity is excluded only with `NOT NEAR(...)`.
 ///
+/// ## Quotation marks
+/// A phrase may be quoted with U+0022 or with the typographic double quotation marks a keyboard or a paste delivers:
+/// `“cold war”`, `„cold war“`, `«cold war»`, `＂cold war＂`, or a mixed pair such as `“cold war"`. iPadOS Smart
+/// Punctuation and macOS smart quotes type the curly pair, and a phrase pasted from a FRUS volume carries it, so a
+/// grammar that read only U+0022 silently turned the phrase into separate words (#1298). Each mark is folded to U+0022,
+/// one character for one, where the query is read — the typed text at the top of `parsedTree`, the body `parseDetailed`
+/// and the DEBUG `work(parsing:)` hooks share, and each structured field in `structuredParts` — so every scan behind
+/// them sees only U+0022, and a typographic spelling parses to exactly the `ParsedQuery` of its straight one.
+/// `normalizingQuotationMarks(_:)` and `isDoubleQuotationMark(_:)` are the fold and its predicate, shared with the app
+/// so the set is written down once; see `typographicDoubleQuotationMarks` for what is folded and what is deliberately
+/// not, and `normalizingQuotationMarks(_:)` for where the app applies them. The text a researcher typed is never
+/// rewritten. Because every mark is U+0022 to the grammar, a phrase cannot hold quotation marks of its own:
+/// `"the “iron curtain” speech"` reads as four words, as `"the "iron curtain" speech"` always has, where before
+/// the fold the inner curly pair was punctuation inside one phrase (owner decision, 2026-09-17). Leaving the inner
+/// marks out keeps the phrase, and it still matches a document that prints them.
+///
 /// ## What this does *not* attempt
 /// - **Column filters** (`header:cold`) — handled separately via `columnPrefix`,
 ///   applied uniformly from `SearchParameters`'s content-scope toggles.
@@ -495,6 +511,31 @@
 ///          although it would not (1,304 at 6.5), and 16 approximations that match nothing and run while their
 ///          respelling with one marker is refused, since 6.1's refusal still compares rendered operands:
 ///          `"cold." NOT "cold"`.
+///   6.7 — #1298: typographic double quotation marks make a phrase. `normalizingQuotationMarks(_:)` folds U+201C, U+201D,
+///          U+201E, U+201F, U+FF02, U+00AB and U+00BB to U+0022, one character for one, at the top of `parsedTree` —
+///          which `parseDetailed` and the DEBUG `work(parsing:)` hooks share, so the counted parse is the parse — and on
+///          each structured field; `isDoubleQuotationMark(_:)` is its predicate. U+2033 and every single mark are
+///          not folded. RESULTS MOVE only for text holding a folded mark, and each moves to its straight spelling's parse.
+///          On a 15-row `porter unicode61` table: `“cold war”` was `"“cold" AND "war”"` (2 rows) and is `"cold war"`
+///          (1); `“war and peace”` was `"“war" AND "peace”"` (2) and is `"war and peace"` (1);
+///          `blockade -“naval quarantine”` was `"blockade" NOT "“naval" AND "quarantine”"` (1) and is
+///          `"blockade" NOT "naval quarantine"` (3); `NEAR(“military guarantee” Europe, 30)` was
+///          `NEAR("“military" "guarantee”" "europe", 30)` (2) and is `NEAR("military guarantee" "europe", 30)` (1); and
+///          `-“naval quarantine”` alone was `"quarantine”" NOT "“naval"` (1) and is refused, as `-"naval quarantine"`
+///          is. A restored excluded term `„korea“` rendered `"„korea“"`, which the 6.1 refusal did not take for the korea
+///          an approximation anchors on, so `-(war -korea)` beside it ran a search that can match nothing; it is refused.
+///          No text without a folded mark moves: over every sequence of one to four units of an alphabet holding a quote
+///          slot, a phrase, a dash, an `=`, groups, `OR`, a comma and a `NEAR` whose phrase holds a comma (16,104
+///          sequences, 11,424 with a slot), each of the seven marks, and each mixed with U+0022 at alternate slots,
+///          parses to the U+0022 spelling's `ParsedQuery` (79,968 and 128,338 comparisons), and each unfolded mark
+///          parses differently from U+0022 in 788 of the 879 sequences of up to three units with a slot. And against
+///          55464a46 (6.6), over 2,754,462 lines — every `ParsedQuery` of the length-1–4 space-joined sequences of 21
+///          units holding U+0022, U+2033, U+2018, U+2019, U+0027, U+2039 and U+203A but no folded mark, of the
+///          length-1–3 unjoined sequences of those units and a space, and of 60,000 random queries of up to 14 of them,
+///          each beside five structured combinations in both scopes, plus 882 `FTS5Query` renders — the SHA-256 of the
+///          dump is identical
+///          (`c7a85599c8fa133cf418711ea09f5a0821e2d97a68f9394ea759ab0403bf1c9d`), while two typographic queries alone
+///          dump differently. The #1297 suites' printed counts do not move.
 public enum FTS5InlineQueryParser {
 
     // MARK: - Public Interface
@@ -568,7 +609,9 @@ public enum FTS5InlineQueryParser {
     /// exactly the path that ran.
     private static func parsedTree(_ raw: String, columnPrefix: String,
                                    structured: StructuredQueryParts) -> (query: ParsedQuery, root: Node?) {
-        let tokens = tokenize(raw)
+        // Typographic quotation marks read as U+0022 (#1298), folded once here so that every scan below — the tokens,
+        // the `=` unwrap and `NEAR`'s comma — sees only U+0022. `structuredParts` folds the structured fields.
+        let tokens = tokenize(normalizingQuotationMarks(raw))
         // Every pass below recurses once per level of nesting, so the depth is checked first, over the
         // tokens and without recursion: a query nested past the limit is refused before any tree exists.
         guard groupDepth(of: tokens) <= maximumGroupDepth else { return (ParsedQuery(expression: nil, exactTerms: []), nil) }
@@ -894,6 +937,9 @@ public enum FTS5InlineQueryParser {
     /// Sanitised exactly as `FTS5Query` always sanitised them, so a restored saved search
     /// renders the bytes it rendered before: the phrase spans all columns, the prefix carries
     /// the column prefix, and an excluded term carries none.
+    ///
+    /// Each field's typographic quotation marks are folded to U+0022 first, as the typed text's are (#1298), so a
+    /// restored `„korea“` sanitises to the `"korea"` the refusal compares, not to `"„korea“"`.
     private static func structuredParts(
         _ structured: StructuredQueryParts, columnPrefix: String, into harvest: inout Harvest
     ) -> [Node] {
@@ -902,6 +948,10 @@ public enum FTS5InlineQueryParser {
             harvest.operands.append(proto)
             return .leaf(proto.core, operand: harvest.operands.count - 1)
         }
+        let structured = StructuredQueryParts(
+            phrase: structured.phrase.map(normalizingQuotationMarks),
+            prefixWildcard: structured.prefixWildcard.map(normalizingQuotationMarks),
+            excludedTerms: structured.excludedTerms.map(normalizingQuotationMarks))
         if let raw = structured.phrase, let phrase = stemPhrase(raw) {
             parts.append(leaf(ProtoOperand(text: phrase, core: "\"\(phrase)\"", kind: .phrase,
                                            isExact: false, exactTerm: nil, source: .structured)))
@@ -1824,10 +1874,70 @@ public enum FTS5InlineQueryParser {
         return (tokenize(segments.joined(separator: " ")), tail)
     }
 
+    // MARK: - Quotation Marks
+
+    /// The typographic double quotation marks read as U+0022 wherever the query grammar reads query text (#1298) — the
+    /// one statement of the set, which `normalizingQuotationMarks(_:)` folds and `isDoubleQuotationMark(_:)` tests.
+    ///
+    /// Folded, each to U+0022, one character for one:
+    /// - U+201C `“` and U+201D `”` — the pair iPadOS Smart Punctuation and macOS smart quotes type, and the pair a phrase
+    ///   pasted from a FRUS volume carries.
+    /// - U+201E `„` — the low-9 opening mark of German, Czech and Polish, closed by U+201C or U+201D.
+    /// - U+201F `‟` — the reversed high-9 mark, typeset as an opening mark.
+    /// - U+FF02 `＂` — the fullwidth mark East Asian input methods type.
+    /// - U+00AB `«` and U+00BB `»` — guillemets, which macOS offers as a quote style and which open and close in either
+    ///   direction (`«…»` in French, `»…«` in German), so a keyboard is an input path for them and not only a paste.
+    ///
+    /// Not folded:
+    /// - U+2033 `″`, DOUBLE PRIME, a unit mark (`12″ guns`). Folded, one before a word would open a phrase running to
+    ///   the end of the query, and one inside `NEAR(...)` would hide the distance comma, so `NEAR(12″ guns, 5)` would
+    ///   lose its distance.
+    /// - Every single mark — U+0027 `'`, U+2018 `‘`, U+2019 `’`, U+201A `‚`, U+201B `‛`, U+2039 `‹` and U+203A `›`.
+    ///   The grammar gives no single mark a meaning, a right single mark is an apostrophe at least as often as a quote,
+    ///   and the `porter unicode61` tokenizer already splits `don't` and `don’t` alike.
+    ///
+    /// Not a copy of the app's `ExcerptVerifier.normalize`, which verifies document excerpts: it also folds U+2033 and
+    /// turns dashes into `-`, which this grammar reads as negation.
+    private static let typographicDoubleQuotationMarks: Set<Character> = [
+        "\u{201C}", "\u{201D}", "\u{201E}", "\u{201F}", "\u{FF02}", "\u{00AB}", "\u{00BB}",
+    ]
+
+    /// Whether `character` is a double quotation mark the query grammar reads as a quote: U+0022, or one of the
+    /// typographic marks `normalizingQuotationMarks(_:)` folds to it (see `typographicDoubleQuotationMarks`).
+    ///
+    /// For a scan of query text that must treat a mark as a quote without rewriting the text it walks, such as
+    /// `SearchService`'s quote-aware `NEAR` scans. Whole characters are compared, so a mark carrying a combining character
+    /// is not one — just as U+0022 carrying one is not.
+    public static func isDoubleQuotationMark(_ character: Character) -> Bool {
+        character == "\"" || typographicDoubleQuotationMarks.contains(character)
+    }
+
+    /// `text` with each typographic double quotation mark replaced by U+0022, one character for one, and nothing else
+    /// changed (#1298); `text` itself when it holds none.
+    ///
+    /// Applied where query text is READ, and never to the text field a researcher types into: rewriting a bound field
+    /// moves the caret and fights input methods and undo, and a saved search or a hand-off assigns the field without
+    /// typing. Here it runs at the top of `parsedTree` (so under `parseDetailed`, and so under Search, the Query
+    /// Inspector, Corpus Analytics and everything else that parses) and on each structured field, and `FTS5Query`
+    /// applies it to a keyword. In the app it runs at exactly three more places: `SearchService.positiveTerms(from:)`,
+    /// before the highlighter reads the keywords; `SearchHistoryWriter.isSameQuery(_:_:)`, which decides both a history
+    /// re-run and whether the macOS checklist keeps its reviewed marks; and the History pane's search filter
+    /// (`HistoryPaneSnapshot.SearchRow.matches(_:)`), on the row's text and the term. `SearchService`'s two `NEAR` scans
+    /// test `isDoubleQuotationMark(_:)` instead. Every other comparison of query text in the app compares it as typed —
+    /// among them Corpus Analytics' compared-term de-duplication (which ignores only case) and its saved-query match
+    /// (which ignores nothing), where `cold  war` and `cold AND war` were already other queries than `cold war`. See
+    /// `typographicDoubleQuotationMarks` for what is folded and what is deliberately not.
+    public static func normalizingQuotationMarks(_ text: String) -> String {
+        guard text.contains(where: { typographicDoubleQuotationMarks.contains($0) }) else { return text }
+        return String(text.map { typographicDoubleQuotationMarks.contains($0) ? "\"" : $0 })
+    }
+
     // MARK: - Tokenization
 
     /// Splits `raw` on whitespace, treating `"..."` spans (including unterminated ones,
     /// which run to end-of-string) as single tokens so embedded spaces survive intact.
+    ///
+    /// Reads U+0022 only: `parseDetailed` folds the typographic marks before it gets here.
     private static func tokenize(_ raw: String) -> [String] {
         var tokens: [String] = []
         let chars = Array(raw)
