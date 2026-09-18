@@ -57,9 +57,14 @@ gives you at most one of its layout tests.** The suite self-skips on the wrong i
 directions: `testNestedSectionsLoadInTwoPane` needs a pad idiom *and* 820 pt of content width (it
 skips on any iPad below the two-pane gate, naming the width it measured), and
 `testNestedSectionsLoadOnPushPath` — the non-regression control for the `.navigationDestination`
-path — needs a phone. Each reports the other as a **skip**, not a pass. The three round-2 tests
-(the failure row and its Retry, the cold-index kick, the late-pipeline kick) are idiom-agnostic and
-run on whichever destination you give it, so the honest pair is:
+path — needs a phone. Each reports the other as a **skip**, not a pass. **Round 3 adds a THIRD
+iPad-only test**, `testASecondVolumeFromRootSearchLoadsItsOwnStructure`, which walks
+`.volume → .volume` from the corpus root's search; it skips on a phone with the other two-pane one.
+The **four** round-2 tests (the failure row and its Retry, the in-flight spinner, the cold-index
+kick, the late-pipeline kick) are idiom-agnostic and run on whichever destination you give it — the
+in-flight one is the test that kills the pre-load-drawn-as-rows mutant, so a run that reports it
+missing has lost the guard, not a spare. Expect **7 tests with 1 skipped on iPad** and **7 with 2
+skipped on iPhone**, so the honest pair is:
 
 ```bash
 xcodebuild test \

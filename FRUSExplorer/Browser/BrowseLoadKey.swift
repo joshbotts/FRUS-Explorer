@@ -21,12 +21,28 @@ import SwiftUI
 /// breaks the moment a section's `<head>` repeats its parent's.
 ///
 /// Each function here is one level's key, so the claim becomes an ordinary assertion:
-/// `BrowseLoadKeyTests` holds each one to *varying with every component of its payload*. What that
-/// buys is bounded and worth stating plainly: it pins the key's identity, not the call site's use
-/// of it. A view that stopped calling these would not be caught here — for `CompilationView`,
-/// which is the level #1301 was reported against, that hole is closed by
-/// ``SwiftUI/View/compilationDocumentLoad(vm:volumeId:section:)`` below, where the key and the
-/// load it belongs to are welded into one modifier and the call site has no key to get wrong.
+/// `BrowseLoadKeyTests` holds each one to *varying with every component of its payload*.
+///
+/// ## What a key assertion cannot do, and what round 3 did about it
+/// It pins the key's identity, **not** the call site's use of it. Round 2's attack measured that
+/// exactly: reverting `VolumeView`'s, `ClustersBrowseView`'s and `CollectionDetailView`'s keyed
+/// tasks to bare `.task`s at the call site left every suite green while
+/// `volumeKeyVariesWithTheVolume`, `clusterMetadataKeyVariesWithBothComponents` and
+/// `archivalCollectionKeyVariesWithTheRecord` went on passing. A source scan for `.task(id:)` is
+/// not the answer — this repo has MEASURED a scan of that shape to be vacuous
+/// (`VolumeStructure.swift:200`).
+///
+/// So every level this branch keys now loads through a **modifier in this file** that takes the
+/// payload and derives the key itself: there is no key at any call site to get wrong, and a
+/// reviewer checks one line per level rather than an expression. That is a structural gate, not a
+/// test, and the difference is stated rather than blurred — deleting a modifier call still
+/// compiles. Where a self-to-self step is reachable, a walk is the gate instead:
+/// `BrowseNestedSectionTests` steps `.compilation → .compilation` three times (twice into a
+/// section whose head repeats its parent's) and `.volume → .volume` once from the corpus root's
+/// search. For `.clusterDocuments` and `.archivalCollection` no row appends the step, so no walk
+/// can exist; those two are held instead by state that carries its own identity
+/// (``ClusterDrillState``, ``CollectionDetailLoad``), which makes the *harm* of a missing key
+/// smaller and is itself pinned by unit tests.
 ///
 /// ## The registry is the levels this branch keys, and it says which ones it is not
 /// `DocumentView`'s key (`entry.documentId + "/" + entry.volumeId`, Session 68) and
@@ -36,6 +52,9 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
+///   1.1 — #1301 round 3: every keyed level gets a modifier here, so no call site holds a key;
+///          the `.volume` level gains a behavioural walk; and the side-loaded-volume story behind
+///          the deleted manifest guard is replaced by what is measurable about it
 public enum BrowseLoadKey {
 
     /// One compilation section's documents — **also the cache key** the rows are stored under.
@@ -104,11 +123,26 @@ extension View {
     ///     plausibly, and passes every test the branch shipped. Here there is no key at the call
     ///     site to get wrong: the modifier takes the section and derives the key itself.
     ///  2. **A gate on something the load does not need.** The deleted `guard volume != nil` read
-    ///     the *manifest* — a lookup through `allSubseriesGroups` that a side-loaded volume fails
-    ///     while its documents index perfectly well. The gate is now
-    ///     ``CompilationDocumentsPresentation/shouldLoad(isIndexed:)``, whose signature cannot
-    ///     express a manifest input, so reinstating that guard is a compile error rather than a
-    ///     silent regression.
+    ///     the *manifest* — a lookup through `allSubseriesGroups` — and `loadDocuments` reads no
+    ///     manifest at all, so it was dead weight and one more thing to get wrong. The gate is now
+    ///     ``CompilationDocumentsPresentation/shouldLoad(isIndexed:)``, which takes one `Bool`.
+    ///
+    ///     **The honest scope, because round 2 claimed more than this.** Reinstating the lookup
+    ///     *through that function* is a compile error — there is nowhere to put a manifest — but
+    ///     this modifier still holds `vm`, so a separate `guard vm.allSubseriesGroups…` written
+    ///     inside the task body below compiles and no test catches it (measured, round 3: 31 tests
+    ///     in four suites green and the push-path UI test green in 34.35 s). `vm` stays because it
+    ///     is what makes the key and the load read the same two values — the property that killed
+    ///     the `section.title` key — and narrowing the mistake is worth more than the appearance
+    ///     of preventing it.
+    ///
+    ///     What such a guard would cost is also smaller than round 2 said, and that is measurable
+    ///     rather than asserted: `isIndexed(_:)` is a `document_cache` test, so anything passing
+    ///     the gate is on disk, and since #777 `ManifestStore.browsableEntries` is
+    ///     `catalogue + localEntries`, which folds every volume on disk into `allVolumes` and so
+    ///     into `allSubseriesGroups`. A reinstated guard would therefore refuse **no volume a
+    ///     reader can reach** — not "only side-loaded ones", which is what three comments, a test
+    ///     message and the plan used to say about a failure nobody has reproduced.
     ///  3. **Dropping the gate that remains.** `isIndexed` must be checked: `document_cache`
     ///     answers an unindexed volume with an empty set, which records `.loaded` — the one state
     ///     that short-circuits — so every later kick returns early and the reader is left on "No
@@ -129,5 +163,71 @@ extension View {
             else { return }
             await vm.loadDocuments(for: section, volumeId: volumeId)
         }
+    }
+
+    /// Loads a volume's structure, keyed on the volume it loads for (#1301 round 3).
+    ///
+    /// A `.volume → .volume` step **is** reachable — see ``BrowseLoadKey/volume(_:)`` — and
+    /// `loadVolumeStructure(for:)` guards on `volumeStructures[volumeId] == nil`, so a bare
+    /// `.task` leaves the second volume with no structure at all and `VolumeView` holds "Loading
+    /// structure…" for the life of the process. `BrowseNestedSectionTests`'
+    /// `testASecondVolumeFromRootSearchLoadsItsOwnStructure` walks exactly that step on iPad.
+    ///
+    /// - Parameters:
+    ///   - vm: The browser view model that owns `volumeStructures`.
+    ///   - volume: The volume being shown.
+    /// - Returns: The view, with the keyed load attached.
+    @MainActor
+    func volumeStructureLoad(vm: BrowserViewModel, volume: VolumeManifestEntry) -> some View {
+        task(id: BrowseLoadKey.volume(volume.volumeId)) {
+            await vm.loadVolumeStructure(for: volume)
+        }
+    }
+
+    /// Loads one semantic cluster's membership, keyed on the cluster (#1301 round 3).
+    ///
+    /// - Parameters:
+    ///   - clusterId: The cluster being shown.
+    ///   - load: `ClusterDocumentsView.loadMembership()`.
+    /// - Returns: The view, with the keyed load attached.
+    @MainActor
+    func clusterMembershipLoad(clusterId: Int,
+                               load: @escaping @MainActor () async -> Void) -> some View {
+        task(id: BrowseLoadKey.clusterMembership(clusterId: clusterId)) { await load() }
+    }
+
+    /// Loads one cluster's per-volume metadata, keyed on the cluster **and** on the size of the
+    /// reader's index (#1301 round 3).
+    ///
+    /// Both components are arguments here rather than a key at the call site, because the
+    /// count-only form — which drops the cluster — still re-keys when an index pass finishes and
+    /// therefore reads in a diff as the working B-4 idiom.
+    ///
+    /// - Parameters:
+    ///   - clusterId: The cluster being shown.
+    ///   - indexedVolumeCount: `AppState.indexedVolumeIds.count`.
+    ///   - load: `ClusterDocumentsView.loadMetadata()`.
+    /// - Returns: The view, with the keyed load attached.
+    @MainActor
+    func clusterMetadataLoad(clusterId: Int,
+                             indexedVolumeCount: Int,
+                             load: @escaping @MainActor () async -> Void) -> some View {
+        task(id: BrowseLoadKey.clusterMetadata(clusterId: clusterId,
+                                               indexedVolumeCount: indexedVolumeCount)) {
+            await load()
+        }
+    }
+
+    /// Loads one archival collection's local counts, related collections and era timeline, keyed
+    /// on the record (#1301 round 3).
+    ///
+    /// - Parameters:
+    ///   - recordId: `AuthorityCollectionRecord.id`.
+    ///   - load: The three loads, in the order `CollectionDetailView` runs them.
+    /// - Returns: The view, with the keyed load attached.
+    @MainActor
+    func archivalCollectionLoad(recordId: String,
+                                load: @escaping @MainActor () async -> Void) -> some View {
+        task(id: BrowseLoadKey.archivalCollection(recordId: recordId)) { await load() }
     }
 }

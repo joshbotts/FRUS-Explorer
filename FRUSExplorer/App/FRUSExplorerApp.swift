@@ -2232,12 +2232,19 @@ struct FRUSExplorerApp: App {
             let ftsRebuildNeeded = store.didRebuildSchema || pipeline.needsFTSRebuildReindex
             var dateReindexNeeded = pipeline.needsDateReindex
             #if DEBUG
-            // #1301 round 2: both boot passes below index every downloaded volume they find, and
-            // on a freshly erased simulator the date pass ALWAYS runs (no version is recorded
-            // yet) — which is why "Index Required" has never been reachable in a UI run, warm or
-            // cold, and why three suites merely tolerate their Index Now step. They stand down
-            // while the cold seam is armed, so nothing re-indexes the fixture it just removed.
-            if UITestBrowseSeams.coldVolumeRequested { dateReindexNeeded = false }
+            // #1301: both boot passes below index every downloaded volume they find, and on a
+            // freshly erased simulator the date pass ALWAYS runs (no version is recorded yet) —
+            // which is why "Index Required" has never been reachable in a UI run, warm or cold,
+            // and why three suites merely tolerate their Index Now step. They stand down while the
+            // cold seam is armed, so nothing re-indexes the fixture it just removed.
+            //
+            // Round 3: both answers come from ONE function, which has a unit test. Round 2 wrote
+            // them as two independent `if`s, and on a simulator that has run the suite before this
+            // half is inert (`needsDateReindex` is already false), so deleting it left the cold UI
+            // test passing while deleting the other half failed it.
+            if let standDown = UITestBrowseSeams.bootIndexingStandDown {
+                dateReindexNeeded = standDown.dateReindexNeeded
+            }
             #endif
             // The user's person-cluster corrections (Phase 3) are snapshotted AT CALL TIME
             // inside each Task, not once at boot: the migration paths below run after
@@ -2337,9 +2344,11 @@ struct FRUSExplorerApp: App {
             // is queued above, which re-parses everything anyway.
             var reconcileUnindexedDownloads = !dateReindexNeeded
             #if DEBUG
-            // The other half of the cold seam: this pass indexes every downloaded-but-unindexed
-            // volume it finds, the seeded fixture included.
-            if UITestBrowseSeams.coldVolumeRequested { reconcileUnindexedDownloads = false }
+            // The other half of the cold seam, from the same function: this pass indexes every
+            // downloaded-but-unindexed volume it finds, the seeded fixture included.
+            if let standDown = UITestBrowseSeams.bootIndexingStandDown {
+                reconcileUnindexedDownloads = standDown.reconcileUnindexedDownloads
+            }
             #endif
             if reconcileUnindexedDownloads {
                 let indexedIds = (try? pipeline.allIndexedVolumeIds()) ?? []

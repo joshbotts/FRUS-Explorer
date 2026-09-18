@@ -115,15 +115,18 @@ struct VolumeView: View {
         // volume crumb, wasting a ~52pt band above the content. (Corpus root keeps large.)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        // Keyed, under the reuse contract at `BrowserView.levelView` (#1301). Round 1 recorded a
-        // `.volume → .volume` step as unreachable — "every row that appends a volume appends it
-        // from a different level" — and that is wrong, which is worth correcting rather than
-        // deleting: rows append, but `CorpusView`'s root search calls `vm.select(.volume(entry))`,
-        // and `select` ASSIGNS the path. On regular-width iPad that list pane stands beside a
-        // detail pane which may already be showing a volume, so choosing a second one there is a
-        // live self-to-self step, not a latent one. `loadVolumeStructure` no-ops on a cached
-        // structure, so a key that does not change costs a single dictionary read.
-        .task(id: BrowseLoadKey.volume(volume.volumeId)) { await vm.loadVolumeStructure(for: volume) }
+        // Keyed, under the reuse contract at `BrowserView.levelView` (#1301; welded into a
+        // modifier in round 3, so there is no key at this call site to get wrong). Round 1
+        // recorded a `.volume → .volume` step as unreachable — "every row that appends a volume
+        // appends it from a different level" — and that is wrong, which is worth correcting rather
+        // than deleting: rows append, but `CorpusView`'s root search calls
+        // `vm.select(.volume(entry))`, and `select` ASSIGNS the path. On regular-width iPad that
+        // list pane stands beside a detail pane which may already be showing a volume, so choosing
+        // a second one there is a live self-to-self step, not a latent one — and since round 3 it
+        // is walked by `BrowseNestedSectionTests`, which is what makes this key load-bearing
+        // rather than conventional. `loadVolumeStructure` no-ops on a cached structure, so a key
+        // that does not change costs a single dictionary read.
+        .volumeStructureLoad(vm: vm, volume: volume)
         // Download completion: this volume just left the queue. On success the XML is
         // already on disk (`DownloadManager` moves the file into place before firing
         // `onStateChanged`), so the structure loads now; on failure the not-downloaded

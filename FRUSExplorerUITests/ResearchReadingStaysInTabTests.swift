@@ -235,7 +235,9 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
 ///
 /// ## Fixture
 /// `FRUS_UI_TEST_SEED_VOLUME` writes a volume whose first three documents are `d1…d3`, "UI Test Document
-/// One/Two/Three" (#1301 appended a nested `n1`, `n2` pair after them, which leaves that adjacency alone),
+/// One/Two/Three" (#1301 appended a nested branch after them — `n1`, `n2` and then, in round 2, `t1` —
+/// so the fixture now reads `d1, d2, d3, n1, n2, t1` and the `d1 → d2` adjacency this suite turns a page
+/// across is untouched),
 /// and `FRUS_UI_TEST_SEED_NOTE_DOCUMENT=d1` puts the seeded Research note on its first document, so the
 /// row opens a real document with a next page. `UITestFixtureVolumeTests` pins that the fixture reads in
 /// that order.

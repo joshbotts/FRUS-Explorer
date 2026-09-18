@@ -27,12 +27,26 @@ import Foundation
 /// and cannot show that a view still passes the key to `.task(id:)` — a source scan for that shape
 /// is the thing this repo has already MEASURED to be vacuous (`VolumeStructure.swift:200` records
 /// a guard that asserted a literal over raw source and stayed green while a mutant reinstated the
-/// bug in full). For `CompilationView` that half is closed instead by construction: its load goes
-/// through `View.compilationDocumentLoad(vm:volumeId:section:)`, which takes the section and
-/// derives the key itself, so there is no key at the call site to mutate.
+/// bug in full).
+///
+/// ## The other half, and where each level's gate actually is (round 3)
+/// Round 2's attack measured the limit above rather than inferring it: reverting `VolumeView`'s,
+/// `ClustersBrowseView`'s and `CollectionDetailView`'s keyed tasks to bare `.task`s left every
+/// suite green while the three key assertions below went on passing. So every keyed level now
+/// loads through a modifier in `BrowseLoadKey.swift` that derives its own key — no call site holds
+/// one — and the gates are:
+///  - `.compilation` and `.volume`: **walks**, in `BrowseNestedSectionTests`. Both self-to-self
+///    steps are reachable, and a walk fails when the key is gone.
+///  - `.clusterDocuments` and `.archivalCollection`: no row appends either step, so no walk can
+///    exist. The modifier is the structural gate, and the state those two views hold carries its
+///    own identity — the second section here pins that a value loaded for one payload is never
+///    reported for another, which is what makes a missing key a spinner rather than another
+///    collection's figures under this one's name.
 ///
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
+///   1.1 — #1301 round 3: `CollectionDetailLoad` and `ClusterDrillState` — the identity-carrying
+///          state that replaces two resets a mutation could delete with every suite green
 @Suite("Browse load keys vary with their payload")
 @MainActor
 struct BrowseLoadKeyTests {
@@ -127,15 +141,133 @@ struct BrowseLoadKeyTests {
                 != BrowseLoadKey.archivalCollection(recordId: "presidential-libraries/eisenhower"))
     }
 
+    // MARK: - The level state that carries its own identity (#1301 round 3)
+
+    @Test("A collection's loaded values are reported for that collection and no other")
+    func collectionDetailLoadAnswersOnlyItsOwnRecord() {
+        var detail = CollectionDetailLoad(for: "presidential-libraries/truman")
+        detail.record(localStats: IndexingPipeline.CollectionLocalStats(documentCount: 412,
+                                                                        volumeCount: 9),
+                      for: "presidential-libraries/truman")
+        detail.record(related: [], for: "presidential-libraries/truman")
+        detail.record(timeline: [CollectionEraCount(
+            era: CollectionCoverageEra(index: 0, startYear: 1945, endYear: 1952),
+            volumeCount: 9)], for: "presidential-libraries/truman")
+
+        #expect(detail.localStats(for: "presidential-libraries/truman")?.documentCount == 412,
+                "precondition: the record it was loaded for gets its own figures")
+
+        #expect(detail.localStats(for: "presidential-libraries/eisenhower") == nil, """
+            412 documents belong to Truman, and under Eisenhower's name they are a lie with \
+            nothing to say so. This is the screen `CollectionDetailView`'s keyed task used to \
+            prevent with three `@State` resets nobody could hold it to — deleting them left 46 \
+            tests in three suites green. Here the reset is not a statement: a value is reported \
+            only for the record it was loaded for.
+            """)
+        #expect(detail.related(for: "presidential-libraries/eisenhower") == nil, """
+            …and `nil` rather than `[]`, because this view draws `nil` as "still loading" and `[]` \
+            as "nothing related" — a reuse must say the first, never the second.
+            """)
+        #expect(detail.timeline(for: "presidential-libraries/eisenhower").isEmpty, """
+            …and an empty timeline draws no chart at all, which is the right thing to show for a \
+            collection whose buckets are not known yet.
+            """)
+    }
+
+    @Test("A load that lands after the level moved on cannot leave its figures on the new record")
+    func collectionDetailLoadRefusesToMixTwoRecords() {
+        var detail = CollectionDetailLoad(for: "a")
+        detail.record(localStats: IndexingPipeline.CollectionLocalStats(documentCount: 7,
+                                                                        volumeCount: 2),
+                      for: "a")
+        // B's ranking lands — the keyed task has moved on.
+        detail.record(related: [], for: "b")
+
+        #expect(detail.localStats(for: "b") == nil, """
+            A write naming a different record must REPLACE the value, not join it. `loadRelated` \
+            awaits a detached ranking pass and `loadLocalStats` an actor hop, and awaiting a \
+            detached task's `value` is not a cancellation point — so the two can land out of \
+            order across a reuse, and a value that merged them would show A's document count \
+            beside B's related list.
+            """)
+        #expect(detail.related(for: "b") != nil, "and B's own write is kept")
+        #expect(detail.localStats(for: "a") == nil, "…with A's figures gone rather than lingering")
+    }
+
+    @Test("A cluster's loaded membership is reported for that cluster and no other")
+    func clusterDrillStateAnswersOnlyItsOwnCluster() {
+        var drill = ClusterDrillState(for: 17)
+        let cluster = SemanticMapArtifacts.Cluster(id: 17,
+                                                   terms: ["shah", "iran", "iranian", "mosadeq"],
+                                                   documentCount: 2,
+                                                   centreX: 0, centreY: 0,
+                                                   eraCounts: [:])
+        drill.record(cluster: cluster,
+                     keys: ["frus1952-54v10/d1", "frus1952-54v10/d2"],
+                     shownCount: 2,
+                     for: 17)
+
+        #expect(drill.cluster(for: 17)?.id == 17, "precondition")
+        #expect(drill.keys(for: 17).count == 2, "precondition")
+
+        #expect(drill.cluster(for: 18) == nil, """
+            `ClusterDocumentsView`'s body prefers `if let cluster`, so a cluster reported for \
+            another cluster's id renders the PREVIOUS cluster's document list under this one's \
+            title — and keeps rendering it when the new cluster is missing from the artifact, \
+            because that path sets `unavailable` and returns without touching `cluster`.
+            """)
+        #expect(drill.keys(for: 18).isEmpty, "and none of its members either")
+        #expect(drill.shownCount(for: 18) == 0, "nor its paging cursor")
+    }
+
+    @Test("Show more moves the cluster on screen, and nothing else")
+    func clusterDrillStateShowMoreOnlyMovesItsOwnCluster() {
+        var drill = ClusterDrillState(for: 17)
+        drill.record(cluster: SemanticMapArtifacts.Cluster(id: 17, terms: [], documentCount: 3,
+                                                           centreX: 0, centreY: 0, eraCounts: [:]),
+                     keys: ["v/d1", "v/d2", "v/d3"],
+                     shownCount: 1,
+                     for: 17)
+
+        drill.showMore(1, for: 18)
+        #expect(drill.shownCount(for: 17) == 1, """
+            "Show more" is an action on what is displayed, and nothing is displayed for a cluster \
+            whose load has not landed — so a tap attributed to another cluster must move nothing.
+            """)
+
+        drill.showMore(1, for: 17)
+        #expect(drill.shownCount(for: 17) == 2, "and its own tap advances one page")
+
+        drill.showMore(50, for: 17)
+        #expect(drill.shownCount(for: 17) == 3, "…never past the membership it has")
+    }
+
+    @Test("An unavailable reason belongs to the cluster it was resolved for")
+    func clusterDrillStateUnavailableIsPerCluster() {
+        var drill = ClusterDrillState(for: 17)
+        drill.record(unavailable: .noArtifact, for: 17)
+
+        #expect(drill.unavailable(for: 17) == .noArtifact, "precondition")
+        #expect(drill.unavailable(for: 18) == nil, """
+            The empty state is per cluster too: "This cluster's data could not be loaded." under \
+            a cluster whose load is merely still running is a terminal claim about a live one.
+            """)
+    }
+
     // MARK: - The gate the compilation load runs behind
 
     @Test("The load gate reads the index and nothing else")
     func loadGateAdmitsOnlyTheIndexQuestion() {
         #expect(CompilationDocumentsPresentation.shouldLoad(isIndexed: true), """
             An indexed volume loads. This is the whole of the gate: the `guard volume != nil` \
-            #1301 deleted asked the MANIFEST a question the load never needed, and a side-loaded \
-            volume — indexed perfectly well, absent from `allSubseriesGroups` — answered `nil` and \
-            never loaded a single row, with no error and no change of spinner.
+            #1301 deleted asked the MANIFEST a question the load never needed — one more \
+            condition, on a lookup no code path below it reads. Round 2's messages here and in \
+            three comments credited it with stranding a SIDE-LOADED volume; that is not \
+            reachable, and saying so in the message a maintainer reads at 2 a.m. when this fires \
+            would send them looking for a test that does not exist. Since #777 \
+            `ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume on disk is \
+            in `allSubseriesGroups` — and `isIndexed` is a `document_cache` test, so anything \
+            passing this gate is on disk.
             """)
         #expect(CompilationDocumentsPresentation.shouldLoad(isIndexed: false) == false, """
             An unindexed volume does NOT load, and this is the gate's reason for existing: \

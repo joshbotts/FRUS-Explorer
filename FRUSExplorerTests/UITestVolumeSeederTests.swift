@@ -33,8 +33,16 @@ import Foundation
 /// the same function with that one lookup lifted out — the launch-gated wrapper keeps the
 /// environment read, and the part with the logic in it takes an argument.
 ///
+/// ## What round 3 added: the decisions the app makes FROM these signals
+/// `contentChanged` was pinned three ways and its only consumer was not, and the cold seam's two
+/// boot stand-downs were two independent `if`s of which only one is observable from a UI run. Both
+/// are values now — `UITestBrowseSeams.SeedPreparation.plan(cold:contentChanged:)` and
+/// `UITestBrowseSeams.bootIndexingStandDown(coldVolumeRequested:)` — with one assertion per input,
+/// so deleting an arm is a unit failure rather than an environment-dependent UI one.
+///
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
+///   1.1 — #1301 round 3: the seeded-fixture preparation plan and the two boot stand-downs
 @Suite("The UI-test fixture seeder reports whether it changed anything")
 struct UITestVolumeSeederTests {
 
@@ -107,6 +115,54 @@ struct UITestVolumeSeederTests {
             simulator that has never seen this fixture there is nothing indexed to describe it, \
             and the re-index this reports is what makes the FIRST run of a suite behave like \
             every later one.
+            """)
+    }
+
+    // MARK: - What the app DOES with those signals (#1301 round 3)
+
+    @Test("The seeded fixture's preparation plan, over all four inputs")
+    func seedPreparationPlansEveryCombination() {
+        #expect(UITestBrowseSeams.SeedPreparation.plan(cold: false, contentChanged: true)
+                == .reindex, """
+            THE BRANCH ROUND 2 LEFT UNPINNED, and the one that cost #1301 a full red/green cycle. \
+            `contentChanged` is pinned three ways above and its only consumer was not: deleting \
+            `else if seeded.contentChanged { try await pipeline.indexVolume(…) }` left 31 tests in \
+            four suites and every UI suite green, because the run it breaks is the NEXT one, on a \
+            machine where the fixture last changed.
+            """)
+        #expect(UITestBrowseSeams.SeedPreparation.plan(cold: false, contentChanged: false)
+                == .none, "an unchanged fixture on a warm run needs nothing")
+        #expect(UITestBrowseSeams.SeedPreparation.plan(cold: true, contentChanged: false)
+                == .unindex, "and a cold run strips the index rows the seam exists to remove")
+        #expect(UITestBrowseSeams.SeedPreparation.plan(cold: true, contentChanged: true)
+                == .unindex, """
+            COLD WINS OVER CHANGED, and the order is the whole content of this case: a fixture \
+            whose bytes changed on a cold run must NOT be re-indexed, because the cold seam's \
+            purpose is a volume with no index rows and `requireIndexNow` turns a volume that has \
+            them into a failure.
+            """)
+    }
+
+    @Test("Both boot indexing passes stand down together, or neither does")
+    func bothBootPassesStandDownForAColdRun() throws {
+        let armed = try #require(UITestBrowseSeams.bootIndexingStandDown(coldVolumeRequested: true),
+                                 "an armed cold seam must answer for both passes")
+        #expect(armed.dateReindexNeeded == false, """
+            THE ARM NO UI RUN CAN SEE. `FRUSExplorerApp` runs two boot passes that each index every \
+            downloaded volume they find, and both must stand down or the cold seam's \
+            `removeVolume(_:)` is undone before Browse can be walked. They are NOT equally \
+            observable: on a simulator that has run this suite before, a date-index version is \
+            recorded, `needsDateReindex` is already false, and deleting this arm leaves the cold \
+            UI test PASSING (measured: 1 test, 0 failures, 21.5 s, Index Now included) while \
+            deleting the other fails it at :262 in 39.2 s. Which half is pinned depended on the \
+            machine's history until this assertion existed.
+            """)
+        #expect(armed.reconcileUnindexedDownloads == false,
+                "and the reconcile pass beside it, which is the half a UI run does catch")
+        #expect(UITestBrowseSeams.bootIndexingStandDown(coldVolumeRequested: false) == nil, """
+            And with the seam unarmed boot decides for itself — `nil` rather than `(true, true)`, \
+            because this is not a policy about indexing, only a stand-down while a test needs one \
+            volume left alone.
             """)
     }
 }

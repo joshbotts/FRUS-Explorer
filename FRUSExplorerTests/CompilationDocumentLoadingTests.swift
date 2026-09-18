@@ -132,9 +132,13 @@ struct CompilationDocumentLoadingTests {
     /// A view model with **no manifest entries**, deliberately.
     ///
     /// `loadDocuments` never reads the manifest, and before #1301 `CompilationView`'s `.task`
-    /// gated the load on `volume != nil` — a lookup through `allSubseriesGroups` that the load
-    /// does not need and that a side-loaded volume can fail. An empty store here is the standing
-    /// check that the loader has no such dependency.
+    /// gated the load on `volume != nil` — a lookup through `allSubseriesGroups` that the load does
+    /// not need. An empty store here is the standing check that the loader has no such dependency:
+    /// every test in this suite loads rows for a volume no manifest in the process has heard of.
+    ///
+    /// (Round 2 justified that deletion with a side-loaded volume failing the lookup. It cannot:
+    /// since #777 `ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume on
+    /// disk is in `allSubseriesGroups` too. The gate was dead weight, which is reason enough.)
     ///
     /// - Parameter pipeline: The pipeline to attach, or `nil` for the unavailable-index case.
     /// - Returns: A fresh view model.
@@ -411,8 +415,12 @@ struct CompilationDocumentLoadingTests {
         await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId)
 
         let failure = try #require(vm.documentLoadState(forKey: key).failure, """
-            A load with no pipeline must RECORD a failure. It used to `return` silently, which \
-            the view drew as a spinner.
+            A load with no pipeline must RECORD a failure. The model used to `return` here without \
+            recording anything at all, which is the habit #1301 is about: the place a load stops \
+            is the place that has to say so. NO VIEW REACHES THIS — every caller is gated on \
+            `isIndexed(_:)`, which answers `false` without a pipeline, so the reader sees the \
+            "Search Index Unavailable" banner and this branch is reached by the direct call this \
+            test makes.
             """)
         #expect(failure as? BrowserIndexingError == .pipelineUnavailable)
         #expect(vm.compilationDocuments[key] == nil, """

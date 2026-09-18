@@ -40,8 +40,30 @@ import Foundation
 /// times. ``coldVolumeRequested`` makes the cold state explicit instead of incidental, and both
 /// boot passes stand down while it is armed so nothing re-indexes what the seam just removed.
 ///
+/// ## The kick no seam can reach, said once here
+/// Three `.onChange` kicks in `CompilationView` re-ask for a declined section's rows. Kicks 1 and 3
+/// have seams above — a cold volume indexed from the compilation itself, and a pipeline held back
+/// past the first render. **Kick 2 has none and cannot**: it fires when an externally-triggered
+/// bulk index finishes (`AppState.currentIndexingProgress` returning to `nil`) while a compilation
+/// is open, and that index is started from Settings, where the reader is not standing on a
+/// compilation. Gutting it — both guards kept, the `loadDocuments` call removed — leaves every
+/// suite green, measured twice in round 2 and again in round 3.
+///
+/// What IS pinned is its precondition, at the model grain:
+/// `CompilationDocumentLoadingTests.aDeclinedLoadLeavesAKickSomethingToDo` asserts that a declined
+/// load leaves the section not-loaded, which is what every kick stands on — a refactor recording
+/// `.loaded` on a decline would make all three call the loader and all three return immediately.
+/// A test that could see kick 2 itself needs one of two things this round declined to build: a
+/// fourth seam publishing a progress value and dropping it while the compilation is on screen, or
+/// the kick's body extracted to a named function so the CALL is an assertion. Both pin the wiring
+/// of one modifier; neither pins that the modifier is still attached, which is the failure it
+/// would exist for.
+///
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
+///   1.1 — #1301 round 3: the two boot stand-downs and the seeded-fixture repair are values with
+///          unit tests (``bootIndexingStandDown(coldVolumeRequested:)``, ``SeedPreparation``);
+///          both were previously branches whose deletion no suite could see
 enum UITestBrowseSeams {
 
     // MARK: - 1. An injected document-load failure
@@ -117,6 +139,81 @@ enum UITestBrowseSeams {
         ProcessInfo.processInfo.environment[coldVolumeKey] == "1"
     }
 
+    /// What both boot indexing passes must answer while the cold seam is armed, or `nil` when boot
+    /// should decide for itself (#1301 round 3).
+    ///
+    /// ## Why this is a function and not two `if` statements a hundred lines apart
+    /// `FRUSExplorerApp` runs two passes that each index every downloaded volume they find, and
+    /// **both** have to stand down or the seam's `removeVolume(_:)` is undone before Browse can be
+    /// walked. Round 2 wrote them as two separate `if UITestBrowseSeams.coldVolumeRequested`
+    /// lines, and they are not equally load-bearing: deleting the reconcile arm fails the
+    /// cold-volume UI test, while deleting the date-re-index arm leaves it PASSING on any
+    /// simulator that has run the suite before — a date-index version is recorded there, so
+    /// `needsDateReindex` is already `false` and that arm is inert. Which half is pinned therefore
+    /// depended on the machine's history, and a green run on a warm device proved only one of them.
+    ///
+    /// Answering both from one function makes the decision a value with a unit test over its two
+    /// outputs, so deleting either arm is a unit failure rather than an environment-dependent UI
+    /// one. The residue is stated rather than implied: nothing here catches the deletion of a CALL
+    /// SITE in `FRUSExplorerApp`, which is what a cold UI run on a freshly erased device would.
+    ///
+    /// - Parameter coldVolumeRequested: ``coldVolumeRequested``, passed in because a Swift Testing
+    ///   run cannot set its own process environment — the same lift
+    ///   `UITestVolumeSeeder.seed(volumeId:in:)` makes.
+    /// - Returns: `(false, false)` while the seam is armed; `nil` otherwise.
+    static func bootIndexingStandDown(
+        coldVolumeRequested: Bool
+    ) -> (dateReindexNeeded: Bool, reconcileUnindexedDownloads: Bool)? {
+        guard coldVolumeRequested else { return nil }
+        return (dateReindexNeeded: false, reconcileUnindexedDownloads: false)
+    }
+
+    /// ``bootIndexingStandDown(coldVolumeRequested:)`` for this process.
+    static var bootIndexingStandDown: (dateReindexNeeded: Bool,
+                                       reconcileUnindexedDownloads: Bool)? {
+        bootIndexingStandDown(coldVolumeRequested: coldVolumeRequested)
+    }
+
+    // MARK: - 2b. What a seeded fixture needs before the pipeline is published
+
+    /// What ``prepareSeededVolume(_:pipeline:)`` should do to a freshly written fixture
+    /// (#1301 round 3).
+    ///
+    /// A value rather than a branch inside the `do` block, because the branch that matters is
+    /// invisible in every run that would notice it: `reindex` repairs the NEXT launch on a machine
+    /// where the fixture's bytes changed, and deleting it left 31 tests in four suites and every UI
+    /// suite green. `SeedPreparation.plan(cold:contentChanged:)` has one assertion per input pair.
+    ///
+    /// Version history:
+    ///   1.0 — #1301 round 3: initial implementation
+    enum SeedPreparation: Equatable {
+
+        /// Remove the volume's index rows: this run wants it cold.
+        case unindex
+
+        /// Re-index it: the bytes on disk changed, so anything indexed from the old fixture — the
+        /// persisted `volume_structures` row included — describes a file that no longer exists.
+        case reindex
+
+        /// Leave it alone.
+        case none
+
+        /// The plan for one seeded volume.
+        ///
+        /// Cold wins over changed: the cold seam's whole purpose is a volume with no index rows,
+        /// and re-indexing one it was about to strip would defeat it.
+        ///
+        /// - Parameters:
+        ///   - cold: ``UITestBrowseSeams/coldVolumeRequested``.
+        ///   - contentChanged: `UITestVolumeSeeder.SeedResult.contentChanged`.
+        /// - Returns: What to do.
+        static func plan(cold: Bool, contentChanged: Bool) -> SeedPreparation {
+            if cold { return .unindex }
+            if contentChanged { return .reindex }
+            return .none
+        }
+    }
+
     /// Brings the seeded fixture to the state this run asks for, **before** `AppState` publishes
     /// the pipeline — so the first render of any Browse level already sees it.
     ///
@@ -134,12 +231,16 @@ enum UITestBrowseSeams {
                                     pipeline: IndexingPipeline) async {
         guard let seeded else { return }
         do {
-            if coldVolumeRequested {
+            switch SeedPreparation.plan(cold: coldVolumeRequested,
+                                        contentChanged: seeded.contentChanged) {
+            case .unindex:
                 try await pipeline.removeVolume(seeded.volumeId)
                 print("[UITestBrowseSeams] Un-indexed \(seeded.volumeId): this run wants it cold")
-            } else if seeded.contentChanged {
+            case .reindex:
                 try await pipeline.indexVolume(seeded.volumeId)
                 print("[UITestVolumeSeeder] Re-indexed \(seeded.volumeId) after a fixture change")
+            case .none:
+                break
             }
         } catch {
             print("[UITestBrowseSeams] Could not prepare \(seeded.volumeId): \(error)")

@@ -87,9 +87,19 @@ public enum BrowserDocumentLoadState {
 /// `BrowserIndexingError.pipelineUnavailable`'s own message unchanged, which is a real recovery
 /// instruction and better than anything this type could say about it.
 ///
+/// ## This is a message table, not an error
+/// It conformed to `LocalizedError` in round 2 and **nothing could ever reach that conformance**:
+/// `loadDocuments` records either `BrowserIndexingError.pipelineUnavailable` or whatever the
+/// pipeline threw, so no `BrowserDocumentLoadFailure` is ever stored as a failure, and
+/// ``readable(_:)`` returns ``unreadableIndex``'s `message` directly rather than through an
+/// `errorDescription`. A mutation returning `nil` from that property was EQUIVALENT — it changed
+/// nothing, by any route. Dead conformance on a type whose name says "failure" reads as the
+/// mechanism, so it is gone rather than left as documentation.
+///
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
-public enum BrowserDocumentLoadFailure: LocalizedError, Equatable, Sendable {
+///   1.1 — #1301 round 3: the unreachable `LocalizedError` conformance is dropped
+public enum BrowserDocumentLoadFailure: Equatable, Sendable {
 
     /// The section's rows could not be read out of the search index.
     ///
@@ -109,9 +119,6 @@ public enum BrowserDocumentLoadFailure: LocalizedError, Equatable, Sendable {
             )
         }
     }
-
-    /// `LocalizedError` conformance, so this reads correctly wherever an error is shown.
-    public var errorDescription: String? { message }
 
     /// The sentence the failure row shows for a recorded failure.
     ///
@@ -146,16 +153,18 @@ public enum BrowserDocumentLoadFailure: LocalizedError, Equatable, Sendable {
 /// it must, because `document_cache` would answer an unindexed volume with an empty set that then
 /// cached as `loaded` and was never reloaded after indexing — so the state stays ``notStarted``.
 /// That decline is *observable* precisely because the same condition resolves here to
-/// ``indexRequired``, which is a real screen with a real button. `IndexRequiredWinsOverNotStarted`
-/// in `CompilationDocumentLoadingTests` is the pin.
+/// ``indexRequired``, which is a real screen with a real button.
+/// `CompilationDocumentLoadingTests.indexRequiredWinsOverEveryLoadState` is the pin — spelled as
+/// the function is, so a maintainer can find it by grep.
 ///
 /// ## `awaitingLoad` is a separate value from `loading`, and draws the same spinner
 /// The view maps both to one spinner row, because an error row flashed before the first attempt
 /// would be a lie and a blank gap would read as a rendering failure. They are nevertheless
 /// distinct *values*, so the rule can be held to the claim that matters: `loading` is produced
 /// **if and only if** a load is genuinely in flight, and no terminal state is ever drawn as one.
-/// `LoadingIsProducedOnlyByAnInFlightLoad` in `CompilationDocumentLoadingTests` sweeps all four
-/// load states for exactly that.
+/// `CompilationDocumentLoadingTests.loadingIsProducedOnlyByAnInFlightLoad` sweeps all four load
+/// states for exactly that, and `loadingIsObservableWhileTheLoadRuns` is what says the state is
+/// reachable at all.
 ///
 /// What makes `awaitingLoad` safe on screen — and what was missing before #1301 — is that it can
 /// only be reached with the volume indexed and not indexing (the branches above), which is
@@ -173,6 +182,11 @@ public enum BrowserDocumentLoadFailure: LocalizedError, Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1301: initial implementation
+///   1.2 — #1301 round 3: the side-loaded-volume story behind the deleted manifest guard is
+///          replaced by what is measurable about it, and two doc comments here named pins by
+///          names no test has (`IndexRequiredWinsOverNotStarted`,
+///          `LoadingIsProducedOnlyByAnInFlightLoad` — the functions are lower-cased and the
+///          first is `indexRequiredWinsOverEveryLoadState`)
 ///   1.1 — #1301 round 2: ``rowKind`` hoists the presentation → row mapping out of the view's
 ///          `@ViewBuilder`, where a mutation could delete the error row with every test green;
 ///          ``shouldLoad(isIndexed:)`` is the caller's gate, with a signature that cannot express
@@ -275,10 +289,17 @@ public enum CompilationDocumentsPresentation: Equatable {
     /// ## The signature is the point
     /// This takes **one** `Bool` and it is the index question. Before #1301 the caller's gate was
     /// `guard volume != nil else { return }` — a lookup through `allSubseriesGroups`, i.e. the
-    /// *manifest*, which the load never reads. A volume on disk and indexed but absent from the
-    /// catalogue (a side-load) failed that guard and never loaded a single row, with no error and
-    /// no change of spinner. Reinstating it here is not a regression that a test has to catch: it
-    /// is a compile error, because there is nowhere to put a manifest.
+    /// *manifest*, which the load never reads. It refused nothing anyone could observe and was one
+    /// more condition to get wrong; that is the whole case for deleting it, and it is enough.
+    /// Reinstating it **here** is not a regression a test has to catch: it is a compile error,
+    /// because there is nowhere to put a manifest. (Reinstating it inside
+    /// ``SwiftUI/View/compilationDocumentLoad(vm:volumeId:section:)``, which still holds the view
+    /// model, is not — that scope is stated where the modifier is declared.)
+    ///
+    /// Round 2 justified the deletion with a side-loaded volume that "failed that guard and never
+    /// loaded a single row". That is not reachable and was never measured: since #777
+    /// `ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume on disk is in
+    /// `allVolumes` and in `allSubseriesGroups` — which is exactly the set the lookup searched.
     ///
     /// What the gate DOES check cannot be dropped either: `document_cache` answers an unindexed
     /// volume with an empty set, which records `.loaded` — the one state `loadDocuments`
