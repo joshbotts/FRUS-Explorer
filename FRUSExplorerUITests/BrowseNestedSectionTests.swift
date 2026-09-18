@@ -55,6 +55,13 @@ import XCTest
 /// Nothing here switches tabs between the taps and the assertions. That is the whole point: the
 /// tab round-trip is the *workaround*, and a test that used it would pass on the broken build.
 ///
+/// ## The other reused level (round 3)
+/// ``testASecondVolumeFromRootSearchLoadsItsOwnStructure`` is the same mechanism one level up, and
+/// it is iPad-only for the same reason. `CorpusView`'s root search calls `select(_:)`, which
+/// **assigns** the path, so on regular-width iPad — where that search sits in the list pane beside
+/// the detail — choosing a second volume updates the `VolumeView` already on screen. It is the only
+/// keyed level besides the compilation whose self-to-self step a reader can take today.
+///
 /// ## The four states no ordinary run can reach (round 2)
 /// Four further tests run on **either** idiom, because none of them is about two-pane reuse.
 /// Each asks `UITestBrowseSeams` for a state the app cannot otherwise be put in, and each covers a
@@ -84,14 +91,17 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #1301: initial implementation
-///   1.1 — #1301 round 2: assertion 1 also requires the empty-state label to be ABSENT where the
-///          section has documents. Measured: a composite mutant that drew the pre-load state as
-///          the row list, with #1301's bare `.task` reinstated in full, PASSED assertion 2 — so
-///          the oracle "that string is reachable only through a completed load" was a property of
-///          one line in `CompilationView`, not of the app. Assertion 4 steps into a section whose
-///          head repeats its parent's, and four new tests drive the failure row, the in-flight
-///          spinner and two of the three indexing kicks through `UITestBrowseSeams`. The launch
-///          moves out of `setUp`, because those four need different app states to exist at all
+///   1.1 — #1301 round 2: assertion 4 steps into a section whose head repeats its parent's, and
+///          four new tests drive the failure row, the in-flight spinner and two of the three
+///          indexing kicks through `UITestBrowseSeams` — the in-flight one being what catches the
+///          composite mutant that drew the pre-load state as the row list, which PASSED assertion
+///          2 on a build carrying #1301 in full. (Assertion 1 also gained an empty-label check;
+///          round 3 corrected what that check is credited with — see the comment beside it.) The
+///          launch moves out of `setUp`, because those four need different app states to exist
+///   1.2 — #1301 round 3: ``testASecondVolumeFromRootSearchLoadsItsOwnStructure`` walks the other
+///          reachable self-to-self step — `.volume → .volume`, taken from the corpus root's search
+///          on regular-width iPad — so `VolumeView`'s key is pinned by a walk rather than by an
+///          assertion about the key function nothing was checked to call
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs to the main actor, so this file emits the same
 // "main actor-isolated … nonisolated context" warnings the other UI suites do (see the note at
@@ -131,6 +141,19 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// The `sectionId` of the subchapter, named here because the failure seam takes a section id
     /// rather than a title. Must match the `xml:id` in `UITestVolumeSeeder.fixtureXML(volumeId:)`.
     private static let subchapterSectionId = "uitestsubchapter"
+
+    /// A second manifest volume, deliberately **not** downloaded, for the `.volume → .volume` walk
+    /// (#1301 round 3).
+    ///
+    /// It is the volume #1301 was reported against, which is incidental here — what matters is
+    /// that it is in the bundled manifest (so the root search finds it), that nothing has seeded
+    /// it (so `VolumeView` draws "Download Required" and `loadVolumeStructure` no-ops, leaving
+    /// `volumeStructures` with no entry for it), and that both its id and a fragment of its title
+    /// match exactly one of the 553 catalogue entries — measured against `manifest.json`.
+    private static let undownloadedVolumeId = "frus1945Malta"
+
+    /// The label `VolumeView` shows for a volume that is not on disk.
+    private static let downloadRequiredLabel = "Download Required"
 
     /// `CompilationView`'s spinner label — asserted **absent**, never waited on. A spinner that
     /// is merely slow and a spinner that is permanent look identical to a `waitForExistence`.
@@ -286,12 +309,22 @@ final class BrowseNestedSectionTests: XCTestCase {
                 + "control — it crosses a switch branch and builds a new view — so a failure here "
                 + "is the fixture, the seeding or the indexing, not #1301."
         )
-        // The empty-state label is the oracle assertion 2 rests on, and this is what keeps that
-        // oracle honest. The first compilation level HOLDS three documents, so "No documents in
-        // this section." must never appear here — a pre-load state drawn as the row list renders
-        // that string for a section whose rows have simply not arrived yet, which would make
-        // assertion 2 satisfiable with no load at all (measured: a composite mutant that drew the
-        // pre-load state as the row list passed assertion 2 on a build carrying #1301 in full).
+        // WHAT THIS HOLDS, stated as narrowly as it is true (corrected in round 3). A completed
+        // load and the empty-state label must never be on screen together: this section has three
+        // documents, and "No documents in this section." beside its rows would mean the list and
+        // the label disagree about the same cache entry.
+        //
+        // It is NOT the guard on assertion 2's oracle, and round 2's comment here said it was.
+        // This is an immediate `.exists` query sequenced AFTER a `waitForExistence` on the first
+        // row has returned; under the mutant that drew the pre-load state as the row list, the
+        // label is on screen exactly while the cache entry is nil and is replaced by the rows in
+        // the same render pass that makes that wait return — so the window closes before this
+        // line runs. The guard on the oracle is
+        // `testALoadInFlightShowsTheSpinnerAndNotAnEmptyList`, which holds a load open for eight
+        // seconds precisely so the string can be seen, and the unit test
+        // `eachPresentationDrawsItsOwnRow`, which pins the mapping one case at a time. The
+        // measured kill for that mutant is recorded against the in-flight test at its first
+        // assertion, not against this one.
         XCTAssertFalse(
             app.staticTexts[Self.emptyLabel].exists,
             "[\(idiom)] '\(Self.emptyLabel)' is on screen at the FIRST compilation level, which "
@@ -407,6 +440,111 @@ final class BrowseNestedSectionTests: XCTestCase {
 
         navigateToSeededCompilation()
         assertNestedSectionsLoad(idiom: "iPad two-pane")
+    }
+
+    // MARK: - iPad: the OTHER level that is reused in place
+
+    /// A second volume chosen from the corpus root's search loads **its own** structure.
+    ///
+    /// ## Why this walk exists, and why it is the one that had to be a walk
+    /// `VolumeView`'s structure task is keyed on `BrowseLoadKey.volume(_:)`, and until round 3 that
+    /// key had no gate but an assertion that the *function* varies with its argument — which goes
+    /// on passing while nothing calls it. Round 1 recorded `.volume → .volume` as unreachable and
+    /// round 2 corrected that: `CorpusView`'s root search calls `BrowserViewModel.select(_:)`,
+    /// which **assigns** `navigationPath` rather than appending to it, and on regular-width iPad
+    /// that list pane stands beside a detail pane which may already be showing a volume. So this is
+    /// the one keyed level besides the compilation whose self-to-self step a reader can take today,
+    /// and a behavioural test is the only thing that can see the key being used.
+    ///
+    /// ## The oracle, and why the fixture's constant section titles do not spoil it
+    /// The first volume is **not downloaded**, so `loadVolumeStructure` returns at its
+    /// `isVolumeDownloaded` guard and `vm.volumeStructures` gains no entry for it: there is no
+    /// stale structure on screen to be mistaken for the second volume's. The second volume is the
+    /// seeded fixture, and `volumeStructureSection` reads `vm.volumeStructures[volume.volumeId]` —
+    /// keyed by the CURRENT volume — so with a bare `.task` the step leaves that dictionary
+    /// untouched and the pane holds "Loading structure…" for the life of the process. That is
+    /// #1301's screen, one level up from where it was reported.
+    func testASecondVolumeFromRootSearchLoadsItsOwnStructure() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: on iPhone `select(_:)` assigns a path that `stackLayout` PUSHES, which "
+                + "builds a fresh VolumeView, and the root search is no longer on screen to make "
+                + "a second choice from"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        launch()
+
+        guard let destination = TabDestination(rawValue: "Browse") else {
+            XCTFail("'Browse' is not one of MainTabView's five tabs")
+            return
+        }
+        _ = navigator.select(destination).tapped
+
+        // The same layout probe the reproduction uses: below the two-pane gate the list pane is
+        // not on screen beside the detail, so the step this test is about cannot be taken.
+        try XCTSkipUnless(
+            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
+            "Browse is a single column at \(app.windows.firstMatch.frame.width)pt — below the "
+                + "two-pane gate the root search is replaced by the pushed level"
+        )
+
+        let field = app.textFields["browse.root.searchField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 15),
+                      "The Browse root's volume search field (browse.root.searchField) is absent, "
+                          + "so this walk cannot reach a volume at all.")
+
+        // ── 1. A volume that is NOT downloaded ─────────────────────────────────────────────
+        field.tap()
+        field.typeText(Self.undownloadedVolumeId)
+
+        let undownloadedRow = row(containing: "Malta")
+        XCTAssertTrue(undownloadedRow.waitForExistence(timeout: 15),
+                      "No search result for '\(Self.undownloadedVolumeId)'. The field reads "
+                          + "'\(field.value as? String ?? "")' — the root search matches on title "
+                          + "or volume id, and exactly one of the 553 manifest entries matches "
+                          + "this one.")
+        undownloadedRow.tap()
+
+        XCTAssertTrue(
+            app.staticTexts[Self.downloadRequiredLabel].waitForExistence(timeout: 20),
+            "The first volume did not open on its 'Download Required' placeholder, so this run is "
+                + "not standing on a `.volume` level and the step below would prove nothing."
+        )
+
+        // ── 2. …and a second one, chosen WITHOUT leaving that level ────────────────────────
+        // `select(_:)` assigns the path, so the detail pane takes the same `levelView` switch
+        // branch at the same structural position: SwiftUI UPDATES the VolumeView it already has.
+        let clear = app.buttons["Clear volume search"]
+        XCTAssertTrue(clear.waitForExistence(timeout: 10),
+                      "The root search field's clear control is absent, so the second query "
+                          + "cannot be typed.")
+        clear.tap()
+        field.tap()
+        field.typeText(Self.seededVolumeId)
+
+        XCTAssertTrue(volumeRow.waitForExistence(timeout: 15),
+                      "No search result for the seeded volume '\(Self.seededVolumeId)'. The field "
+                          + "reads '\(field.value as? String ?? "")'.")
+        volumeRow.tap()
+
+        let compilationRow = row(containing: Self.compilationTitle)
+        scrollDownUntil(compilationRow, attempts: 8)
+        XCTAssertTrue(
+            compilationRow.waitForExistence(timeout: 60),
+            "#1301: the SECOND volume never rendered its own structure. Its section list comes "
+                + "from `vm.volumeStructures[volume.volumeId]`, which only "
+                + "`loadVolumeStructure(for:)` writes, and the only thing that calls it on this "
+                + "path is `VolumeView`'s structure task. A bare `.task` — one with no `id:` — "
+                + "does not re-run when the detail pane updates this view with a new volume, so "
+                + "the dictionary keeps no entry for this one and the pane holds 'Loading "
+                + "structure…' for ever. 'Download Required' still on screen: "
+                + "\(app.staticTexts[Self.downloadRequiredLabel].exists) (which would mean the "
+                + "second choice never landed at all)."
+        )
     }
 
     // MARK: - The terminal state, on either idiom

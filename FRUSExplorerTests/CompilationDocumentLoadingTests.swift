@@ -54,6 +54,13 @@ import SQLite3
 ///          rows, which is the one state that short-circuits. The closing note on
 ///          `routedSectionKindsOutrankTheLoadState` said those kinds never call `loadDocuments`;
 ///          they do, and the reason the branch order is safe is stated instead
+///   1.2 — #1301 round 3: three things a mutation sweep walked through. `.loading` is pinned as a
+///          state that must NOT short-circuit (a second early return beside the `.loaded` one
+///          compiled and left all 31 tests in four suites green);
+///          `reloadingALoadedSectionIsIdempotent` now OBSERVES the short-circuit by blanking the
+///          cache under a `.loaded` state, where before it pinned only the result and would have
+///          passed with the guard deleted; and `readable(_:)`'s empty-description conjunct has a
+///          fixture. The nil-pipeline message no longer claims a screen that never existed
 @Suite("Compilation document loading — per-section state and the render rule")
 @MainActor
 struct CompilationDocumentLoadingTests {
@@ -251,9 +258,55 @@ struct CompilationDocumentLoadingTests {
 
         #expect(vm.documentLoadState(forKey: key).isLoaded)
         #expect(vm.compilationDocuments[key]?.map(\.documentId) == first, """
-            `.loaded` is the one state that short-circuits, so the three `.onChange` kicks and \
-            the keyed task can all fire for a section already answered without re-querying it.
+            A repeat call leaves the answered rows alone.
             """)
+
+        // THE SHORT-CIRCUIT ITSELF, observed rather than inferred (#1301 round 3). The two
+        // assertions above hold whether or not `loadDocuments` returns early: a second query
+        // against the same fixture returns the same two rows, so they pin the RESULT and nothing
+        // counts the queries. Blanking the cache under a `.loaded` state separates them — a call
+        // that re-queried would refill it, and a call that short-circuits cannot.
+        vm.compilationDocuments[key] = []
+        await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId)
+
+        #expect(vm.compilationDocuments[key]?.isEmpty == true, """
+            `.loaded` is the ONE state that short-circuits, and this is where that is measured \
+            rather than asserted: the three `.onChange` kicks and the keyed task can all fire for \
+            a section already answered without re-querying it. The rows came back, so the guard \
+            `!documentLoadState(forKey: key).isLoaded` did not hold and every kick now re-runs a \
+            full-volume query per section. (Three other tests' narratives rest on this — \
+            `unindexedVolumeCachesAsLoadedAndEmpty`, `aDeclinedLoadLeavesAKickSomethingToDo`, and \
+            `loadDocuments`'s own doc comment.)
+            """)
+        #expect(vm.documentLoadState(forKey: key).isLoaded, "and the state is untouched by it")
+    }
+
+    @Test("A section already marked `.loading` is still loadable — `.loading` must NOT short-circuit")
+    func aLoadingSectionIsStillLoadable() async throws {
+        let fixture = try await makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.dir) }
+        let vm = makeViewModel(pipeline: fixture.pipeline)
+        let key = vm.compilationKey(volumeId: Self.volumeId,
+                                    sectionId: fixture.subchapter.sectionId)
+
+        // The state a load abandoned mid-flight leaves behind. It is reachable in the app today
+        // only through a cancelled load that still completes — which is why
+        // `cancelledLoadStillReachesATerminalState` pins the actor-hop property that makes that
+        // true — but the two are separate claims, and the doc comment on `loadDocuments` argues
+        // this one at length ("returning on it would let a load cancelled mid-flight strand its
+        // section on the spinner forever — that is #1301 in a new costume"). Nothing refused it:
+        // a second short-circuit `if case .loading = … { return }` beside the `.loaded` one
+        // compiled and left every suite green. This is the assertion that refuses it.
+        vm.documentLoadStates[key] = .loading
+
+        await vm.loadDocuments(for: fixture.subchapter, volumeId: Self.volumeId)
+
+        #expect(vm.documentLoadState(forKey: key).isLoaded, """
+            A section already marked `.loading` must still be loadable — re-entering is how a \
+            cancelled or abandoned load heals, and returning early here is #1301 in a new \
+            costume: a spinner nothing will ever replace, with no error row and no retry.
+            """)
+        #expect(vm.compilationDocuments[key]?.count == 2, "and it really did fetch the rows")
     }
 
     @Test("`.loading` is observable WHILE the load runs, not only before and after it")
@@ -497,6 +550,17 @@ struct CompilationDocumentLoadingTests {
             """)
     }
 
+    /// An error whose `errorDescription` is the empty string — the second condition of
+    /// `readable(_:)`'s guard, which had no fixture (#1301 round 3).
+    ///
+    /// Nothing in the tree produces one today, so this is defensive rather than reproductive. It
+    /// exists because the repo's rule is one fixture per condition, and because the failure it
+    /// prevents is silent: the row keeps its headline and its **Retry** and loses its sentence,
+    /// which reads as a rendering fault rather than as an error.
+    private struct SilentFailure: LocalizedError {
+        var errorDescription: String? { "" }
+    }
+
     @Test("An error that already has a reader-facing sentence keeps it")
     func aLocalizedErrorKeepsItsOwnSentence() throws {
         let expected = try #require(BrowserIndexingError.pipelineUnavailable.errorDescription)
@@ -505,6 +569,13 @@ struct CompilationDocumentLoadingTests {
             `pipelineUnavailable` carries a real recovery instruction — relaunch, and reinstall if \
             it comes back — which is better than anything this mapping could say about it. The \
             substitution is for errors with NO description, not for all of them.
+            """)
+        #expect(BrowserDocumentLoadFailure.readable(SilentFailure())
+                == BrowserDocumentLoadFailure.unreadableIndex.message, """
+            …and an error that describes itself with NOTHING must fall back rather than blank the \
+            row. `readable(_:)`'s guard has two conditions — a description exists, and it is not \
+            empty — and the second one had no fixture: dropping `!described.isEmpty` left every \
+            suite green while the failure row lost its only sentence.
             """)
     }
 
