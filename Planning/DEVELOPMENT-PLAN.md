@@ -16226,7 +16226,8 @@ Unavailable' still on screen: false; spinner: true". Kick 1 gutted → the cold-
 `.onChange(of: appState.currentIndexingProgress)` that re-asks when an externally-triggered bulk
 index finishes — gutted, the cold-volume test still passes (21 s, 0 failures), because that test
 drives kick 1. No UI suite can reach kick 2's scenario: it needs a bulk index started from Settings
-to finish while a compilation is on screen, and a reader cannot be in both places. Its model-side
+to finish while a compilation is on screen, and a reader cannot be in both places. (Round 4: false —
+kick 2 also serves the automatic index after every download, and round 4 walks it; see round 4.) Its model-side
 precondition is pinned instead (`aDeclinedLoadLeavesAKickSomethingToDo`), which is what catches the
 refactor that would make all three kicks no-ops — a decline that recorded `.loaded`.
 
@@ -16438,10 +16439,13 @@ exactly the wrong half of the race round 3 set out to close.
 
 Both values now have `open(for:)`, which makes the value the payload's and issues a `Ticket`;
 every load write presents the ticket its load was issued and is dropped when it names another
-payload. The ticket's initialiser is `fileprivate`, so a load cannot skip the opening and still
-write — it would not compile. Opening the value for the payload it already holds KEEPS it: the
-keyed task re-runs on every re-appear, and blanking a drill the reader is returning to would swap
-the list for a spinner and lose their place, which round 3's cluster view never did.
+payload. The ticket's initialiser is `fileprivate`, so DELETING the opening does not compile — but
+each value shares a file with its view, where a ticket can still be minted directly (accepted item
+7). A ticket names only the payload, so a superseded load for the SAME payload is accepted, which is
+harmless because its data is the same. Opening the value for the payload it already holds KEEPS it:
+the keyed task re-runs on every re-appear, and blanking a drill the reader is returning to would swap
+the list for a spinner, which round 3's cluster view never did; the kept list lasts until the
+re-run's scan lands and resets paging.
 (`CollectionDetailView` used to blank on every run; it no longer flashes "loading" on the way back.)
 The four loaders also stop at a cancellation after each await: belt and braces for the two values,
 and the ONLY guard for `ClusterDocumentsView`'s title and date dictionaries, which no ticket covers
@@ -16463,7 +16467,7 @@ fixture that starts where the view starts: `clusterDrillStateReportsItsFirstMemb
 there too.
 
 *A/B, nine mutants, nine kills* (iPhone 17, `-only-testing FRUSExplorerTests/BrowseLoadKeyTests` on
-both sides, 19 tests, on the committed fix `5f32af0e` — line numbers are that commit's, two lower
+both sides, 19 tests, on the committed fix `5f32af0e` — line numbers are that commit's, one lower
 than today's; each mutant applied by a script that refuses unless its text occurs once, reverted
 with `git checkout --` on the ONE file, status clean after each):
  - `ClusterDrillState.open` without its adoption → 13 issues, first at
@@ -16532,11 +16536,16 @@ pipeline. Two SOURCE ranges in §17 moved with kick 2's comment (498–499, 509�
  4. **The two boot stand-down call sites** — unchanged.
  5. **The step-1 empty-label assertion** — unchanged.
  6. **The cancellation checks in the four loaders** — NEW. For the two values they back up the
-    tickets, which are what the tests pin. For `ClusterDocumentsView`'s `headers` and `dates` they
-    are the only guard, and nothing drives them: a stale page is reachable only on a same-cluster
+    tickets against a write for ANOTHER payload, which is what the tests pin; for a superseded load
+    of the SAME payload they are the only guard, and its write carries the same data anyway. For
+    `ClusterDocumentsView`'s `headers` and `dates` they are the only guard, and nothing drives them: a stale page is reachable only on a same-cluster
     re-key racing its predecessor, and the loader is a private view method over the app's stores.
- 7. **`open(for:)` handed the wrong id** — it cannot be skipped, but it can be called with a
-    constant, which is the wrong-key mutation in a new place. Same standing as item 2.
+ 7. **`open(for:)` handed the wrong id, or bypassed** — deleting it does not compile, but it can
+    be called with a constant (the wrong-key mutation in a new place), and inside each value's own
+    file a `Ticket` can be minted directly instead of calling it. Either leaves every write dropped:
+    every collection page on "still loading" and every drill on its spinner, with every suite green,
+    because the unit tests live in another module and must call `open(for:)`, and no UI test opens a
+    drill or a collection. Same standing as item 2.
 
 **No longer accepted: kick 2 (M21)** — walked, above.
 
@@ -16551,8 +16560,10 @@ pipeline. Two SOURCE ranges in §17 moved with kick 2's comment (498–499, 509�
    into a chapter before its automatic index finishes. "Index Required" gives way to the rows by
    itself. Repeat on iPhone.
  - **Clusters, on iPad, iPhone and the macOS Corpus Browser:** a cluster drill leaves its spinner;
-   open a document and come Back — the list is still there (no spinner flash); tap **Index** on a
-   degraded row — titles and dates fill in only after leaving and returning (N10, accepted).
+   tap **Index** on a degraded row and confirm the titles and dates fill in WITHOUT leaving (the B-4
+   idiom; its count component is N10, accepted and untested, so this is its only check). On iPhone,
+   open a document and come Back: the list is still there. (On iPad two-pane the drill is rebuilt on
+   Back, so it shows its spinner briefly; on macOS a document opens in another window.)
  - **Archives → a collection:** local counts, the related list and Cited Over Time all appear; push
    a related collection and come Back — the page does not blank.
  - **The failure row:** VoiceOver reads headline, sentence, Retry; check it at a large Dynamic Type

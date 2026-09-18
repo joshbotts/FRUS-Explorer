@@ -300,8 +300,8 @@ struct BrowseLoadKeyTests {
         #expect(drill.cluster(for: 17) != nil, """
             The membership task re-runs every time the view re-appears — back from an opened \
             document, say — and opens the value again for the same cluster. Emptying it there \
-            would swap the list the reader is returning to for a spinner and lose their place, \
-            which round 3's view did not do.
+            would swap the list the reader is returning to for a spinner until the re-run's scan \
+            lands, which round 3's view did not do.
             """)
     }
 

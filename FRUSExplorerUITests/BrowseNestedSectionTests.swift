@@ -80,7 +80,7 @@ import XCTest
 ///    holding the pipeline back past the compilation's first render.
 ///  - ``testAnIndexStartedElsewhereFillsTheOpenCompilation`` (round 4) — the
 ///    `.onChange(of: appState.currentIndexingProgress)` kick, driven by finishing the cold
-///    fixture's download while its compilation is open. Three rounds called this kick unreachable;
+///    fixture's download while its compilation is open. Rounds 2 and 3 called this kick unreachable;
 ///    it is the only loader on the ordinary download → open → browse path.
 ///
 /// ## Measured
@@ -733,7 +733,7 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// A cold compilation fills its document list when an index started ELSEWHERE finishes — the
     /// automatic index after a download above all — with nothing on screen touched (round 4).
     ///
-    /// This is the `.onChange(of: appState.currentIndexingProgress)` kick. Three rounds accepted it
+    /// This is the `.onChange(of: appState.currentIndexingProgress)` kick. Rounds 2 and 3 accepted it
     /// as unreachable, calling it the kick for a bulk index started from Settings. It is the kick for
     /// every index not started from the compilation: `currentIndexingProgress` goes `nil` on each
     /// pipeline `.complete`, the automatic post-download index included, while `vm.isIndexing` —

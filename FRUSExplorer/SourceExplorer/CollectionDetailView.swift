@@ -36,9 +36,9 @@ import SwiftUI
 ///
 /// So a load now starts by calling ``open(for:)``, which makes this value B's and issues B's
 /// ``Ticket``; every write presents the ticket its load was issued, and a write whose ticket names
-/// another record is **dropped**. A superseded load's late write therefore lands nowhere. The
-/// ticket also makes the opening impossible to leave out: there is no other way to obtain one, so a
-/// load that skipped ``open(for:)`` would not compile.
+/// another record is **dropped**, so a superseded load for ANOTHER record lands nowhere. A ticket
+/// names only the record, so a superseded load for the SAME record is accepted — harmless, as its
+/// data is the same. Deleting the opening does not compile; a ticket can still be minted in this file.
 ///
 /// Version history:
 ///   1.0 — #1301 round 3: initial implementation
@@ -384,9 +384,9 @@ struct CollectionDetailView: View {
         // authority is absent, and `loadLocalStats` swallows its query with `try?` and falls back
         // to a zero count — so there is no failure to record and no error row to draw.
         .archivalCollectionLoad(recordId: record.id) {
-            // OPENED FIRST, and this line cannot be left out (#1301 round 4): `open(for:)` is the
-            // only way to obtain the ticket the three writes below present, so a load that skipped
-            // it would not compile. On a reuse it empties the value, which draws "still loading" and
+            // OPENED FIRST (#1301 round 4): the three writes below present the ticket `open(for:)`
+            // issues, so deleting this line does not compile (a ticket can still be minted directly
+            // in this file — accepted item 7). On a reuse it empties the value, which draws "still loading" and
             // drops the previous record's arrays; it also retires the previous load's ticket, so
             // that load's late write — `loadRelated` awaits a detached pass no cancellation
             // interrupts — is dropped rather than erasing what this one has written. Round 3's
@@ -1177,10 +1177,10 @@ struct CollectionDetailView: View {
             recordGroup: record.recordGroup,
             names: [record.name] + record.aliases
         )) ?? IndexingPipeline.CollectionLocalStats(documentCount: 0, volumeCount: 0)
-        // The two guards `loadRelated` describes. The cancellation check matters more here than
-        // there: a query cancelled mid-flight is swallowed by `try?` into ZERO counts, and a value
-        // re-opened for the same record keeps what it holds — so without it, leaving and returning
-        // to a collection could show "0 documents" until the re-run's count lands.
+        // The two guards `loadRelated` describes. Here the cancellation check only saves a redundant
+        // write: `localCollectionStats` is a synchronous actor method with no cancellation point that
+        // throws only on an SQLite error, so a cancelled task's count is the same count, and a write
+        // for the same record carries the same data.
         guard !Task.isCancelled else { return }
         detail.record(localStats: counted, with: ticket)
     }

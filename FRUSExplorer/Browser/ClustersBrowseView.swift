@@ -407,9 +407,9 @@ struct ClustersIndexView: View {
 ///
 /// So a load now starts with ``open(for:)``, which makes this value the cluster's and issues its
 /// ``Ticket``; a membership write presents the ticket its load was issued and is **dropped** when
-/// the ticket names another cluster. There is no other way to obtain a ticket, so a load cannot
-/// skip the opening and still write, and the opening — the one line the view's path from
-/// ``noCluster`` runs through — is a function the unit tests call from where the view starts.
+/// the ticket names another cluster. Deleting the opening does not compile, though a ticket can
+/// still be minted in this file (accepted item 7); and the opening — the one line the view's path
+/// from ``noCluster`` runs through — is a function the unit tests call from where the view starts.
 ///
 /// The saved-corpus confirmation travels with the rest: "Saved “…”" is a fact about the cluster it
 /// was captured from, and under another cluster's title it would name a set the reader is not
@@ -440,8 +440,8 @@ struct ClusterDrillState {
     /// The right to write a membership load into a ``ClusterDrillState``, issued by
     /// ``open(for:)`` to the load it is starting (#1301 round 4).
     ///
-    /// Only ``open(for:)`` can make one — its initialiser is `fileprivate` — so a load cannot write
-    /// without first opening the value for its own cluster.
+    /// Its initialiser is `fileprivate`, so outside this file only ``open(for:)`` can make one; inside
+    /// it a ticket can still be minted directly, which would bypass the opening (accepted item 7).
     ///
     /// Version history:
     ///   1.0 — #1301 round 4: initial implementation
@@ -468,8 +468,8 @@ struct ClusterDrillState {
     /// **This is the line every real drill runs through**: the view starts at ``noCluster``, so its
     /// first load always replaces the value here. A value holding **another** cluster is replaced by
     /// an empty one; a value already holding `clusterId`'s drill keeps it, because the membership
-    /// task re-runs every time the view re-appears — returning from a document, say — and blanking
-    /// the list the reader is returning to would swap it for a spinner and lose their place.
+    /// task re-runs every time the view re-appears — returning from a document on iPhone, say — and
+    /// blanking it would swap the list for a spinner; the kept list lasts until the re-run's scan lands.
     ///
     /// - Parameter clusterId: The cluster the load is for.
     /// - Returns: The ticket every membership write of that load presents.
@@ -940,8 +940,8 @@ struct ClusterDocumentsView: View {
     private func loadMembership() async {
         let id = clusterId
         // OPENED FIRST (#1301 round 4). The view starts at `ClusterDrillState.noCluster`, so this
-        // is where every real drill becomes this cluster's, and the ticket it issues is the only
-        // way the writes below can land — a load that skipped it would not compile.
+        // is where every real drill becomes this cluster's, and the writes below present the ticket
+        // it issues — deleting this line does not compile (a ticket minted directly would; item 7).
         let ticket = drill.open(for: id)
         for _ in 0..<40 {
             await BundledSemanticMap.prepare()
@@ -950,9 +950,9 @@ struct ClusterDocumentsView: View {
             try? await Task.sleep(nanoseconds: 150_000_000)
         }
         // A cancelled task spins through the loop above — `Task.sleep` throws at once and `try?`
-        // swallows it — and would then record `.pending` as this cluster's reason, which a value
-        // re-opened for the same cluster keeps: "Clusters Unavailable" on the way back to a drill
-        // whose artifact was merely still loading when the reader left it.
+        // swallows it — and would then record `.pending` as this cluster's reason. Unreachable today:
+        // a drill opens only from a loaded map index, which stays loaded, so the loop breaks on its
+        // first pass; the guard costs nothing and keeps that true if the entry point ever changes.
         guard !Task.isCancelled else { return }
         guard let mapIndex = BundledSemanticMap.index,
               let map = BundledSemanticMap.vectors,
