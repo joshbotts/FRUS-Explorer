@@ -32,9 +32,11 @@ import XCTest
 /// | `Button … label: { Label(name, systemImage:) }` | ✅ `name` |
 ///
 /// ## Why this suite needs a seam
-/// The bug is invisible while the item sits in the bar, and no shipping iPad width
-/// collapses the three-item Browse toolbar — measured on iPad Pro 13-inch (M5) and iPad
-/// mini (A17 Pro), portrait, both of which keep all three items visible. A test that only
+/// The bug is invisible while the item sits in the bar, and with no project active no
+/// shipping iPad width collapses the three-item Browse toolbar — measured on iPad Pro 13-inch
+/// (M5) and iPad mini (A17 Pro), portrait, both of which keep all three items visible. WITH a
+/// project active the mini collapses it on its own, which is accepted; see
+/// ``testAnalysisMenuIsReachableByNameWithAProjectActive()``. A test that only
 /// asserted `app.buttons["Analysis Tools"].exists` would therefore have passed against the
 /// defect. `BrowserView.uiTestOverflowFillerItems` (`#if DEBUG`, off unless
 /// `FRUS_UI_TEST_TOOLBAR_OVERFLOW=1`) adds six inert items so the real controls overflow,
@@ -42,6 +44,7 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — Wave R / R-8: initial implementation
+///   1.1 — 2026-09-18: the active-project reachability guard; launches pin Global context
 @MainActor
 final class ToolbarOverflowAccessibilityTests: XCTestCase {
 
@@ -49,6 +52,10 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
     private static let analysisToolsLabel = "Analysis Tools"
     /// The raw SF Symbol the defect leaked in place of that name.
     private static let analysisToolsSymbol = "chart.bar.xaxis"
+    /// A project the UI-test store does not hold. The app still treats it as active for its chrome,
+    /// which is all the width question depends on: the picker is icon-only in the bar, and its glyph
+    /// is `folder` for any active project, real or not.
+    private static let absentProjectId = "11111111-2222-3333-4444-555555555555"
 
     var app: XCUIApplication!
 
@@ -84,6 +91,11 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
                       "FRUS_UI_TEST_TOOLBAR_OVERFLOW did not push the Browse toolbar into an overflow "
                       + "control, so this test cannot observe what it exists to check. Add filler items "
                       + "to BrowserView.uiTestOverflowFillerItems until it does.")
+        // And it must have taken the ANALYSIS MENU, not only fillers: in the bar the menu is named
+        // correctly with or without the defect, so a pass there would measure nothing.
+        XCTAssertFalse(app.navigationBars.buttons[Self.analysisToolsLabel].exists,
+                       "The analysis menu is still in the bar, so the seam did not re-host it. The "
+                       + "fillers must come BEFORE the real items in BrowserView's toolbars.")
         overflow.tap()
 
         let named = app.buttons[Self.analysisToolsLabel].firstMatch
@@ -128,9 +140,41 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
                       "Corpus Analytics should be offered by the analysis menu")
     }
 
+    /// **The active-project guard.** With a project active on iPad mini (744 pt) in portrait, the
+    /// picker's `folder` glyph is a few points wider than `globe`, the three Browse items no longer fit
+    /// beside the floating tab bar, and the analysis menu is re-hosted into the system "…" overflow —
+    /// measured on iPadOS 26.3, 26.5 and 27.0 alike. That is ACCEPTED, not fixed (see
+    /// `BrowserView.uiTestOverflowFillerItems`), so what this pins is the promise that makes it
+    /// acceptable: the menu stays reachable, and by its name. Unlike the seam-forced test above, it
+    /// reaches the overflow the way a reader does, with nothing but an active project.
+    ///
+    /// On a wider iPad the menu stays in the bar and the first branch passes; the suite is run on
+    /// the mini for the second.
+    func testAnalysisMenuIsReachableByNameWithAProjectActive() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad,
+                          "The Browse toolbar only runs out of room beside the iPad floating tab bar.")
+
+        launch(forcingToolbarOverflow: false, activeProjectId: Self.absentProjectId)
+        gotoBrowse()
+        _ = app.buttons["Switch project context"].firstMatch.waitForExistence(timeout: 10)
+
+        if app.navigationBars.buttons[Self.analysisToolsLabel].firstMatch.exists { return }
+
+        let overflow = overflowControl()
+        XCTAssertTrue(overflow.waitForExistence(timeout: 5),
+                      "The analysis menu is neither in the bar nor behind an overflow control. "
+                      + "Buttons on screen: \(visibleButtonLabels())")
+        overflow.tap()
+        XCTAssertTrue(app.buttons[Self.analysisToolsLabel].firstMatch.waitForExistence(timeout: 5),
+                      "The overflow does not offer the analysis menu by name. "
+                      + "Buttons on screen: \(visibleButtonLabels())")
+        XCTAssertFalse(app.buttons[Self.analysisToolsSymbol].exists,
+                       "The overflowed analysis menu exposes its raw SF Symbol name (R-8).")
+    }
+
     // MARK: - Helpers
 
-    private func launch(forcingToolbarOverflow: Bool) {
+    private func launch(forcingToolbarOverflow: Bool, activeProjectId: String = "") {
         continueAfterFailure = false
         // XCUIDevice orientation is process-wide and survives between suites, so a
         // landscape leftover from the rotation tests would silently change this layout.
@@ -140,7 +184,7 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
         if forcingToolbarOverflow {
             app.launchEnvironment["FRUS_UI_TEST_TOOLBAR_OVERFLOW"] = "1"
         }
-        app.launchArguments = UITestLaunch.arguments()
+        app.launchArguments = UITestLaunch.arguments(activeProjectId: activeProjectId)
         app.launch()
     }
 

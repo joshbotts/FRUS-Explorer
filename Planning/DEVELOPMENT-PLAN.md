@@ -16695,3 +16695,58 @@ between them cannot change anything. The note is rewritten, and the two "not the
   .testRotateLandscapeToPortraitIsSafe`, `UIObstructionTests.testSemanticMapIsNotCompactOniPad`.
   Every message is a missing "Analysis Tools" menu or Browse button beside a PAGED tab bar
   ("Next Page") — plausibly iOS 27's layout at the mini's width. Not investigated here.
+
+## Session 2026-09-18 — four iPad mini UI failures: not iOS 27, and a real app behaviour accepted
+
+**The brief** said four UI tests failed on "iPad mini (A17 Pro)" under iOS 27 and on v2 alike
+(`ToolbarOverflowAccessibilityTests` ×2, `AnalyticsRotationTests.testRotateLandscapeToPortraitIsSafe`,
+`UIObstructionTests.testSemanticMapIsNotCompactOniPad`). **The iOS 27 part was wrong, and that error
+is mine from #1315:** the mini "pinned" for that A/B, `C86287B7`, runs **iPadOS 26.3**. This machine
+has one iPad mini per runtime.
+
+**Measured, same v2 build, the toolbar suite on four minis:** 26.3 fail, 26.4 pass, 26.5 fail, 27.0
+pass. An OS change would not alternate. The failing two, and only those two, had `activeProjectId` in
+the app's UserDefaults. `UIObstructionTests.testSidebarCarriesResearcherObjectsOniPad` creates a
+project and saving a new project activates it. The UI-test store does not keep the project, but the
+ID stays in UserDefaults, so every later launch on that simulator started in a dangling project.
+Relaunching the 26.5 mini with `-activeProjectId ""` alone flipped the toolbar back
+(screenshots). Launching the 27.0 mini with a project reproduced the overflow there.
+
+**The app behaviour, which the owner ACCEPTED rather than fixed.** On iPad mini in portrait the
+floating tab bar shares the navigation bar's row, and the three Browse items fit with no room to
+spare. The picker's `folder` glyph (project active) is ~3.5 pt wider than `globe`, the three no
+longer fit, "…" takes a slot, and only the picker plus one ~40 pt item remain. The analysis menu,
+the widest, is re-hosted. It stays reachable and named there (R-8). Two fixes were tried and
+**failed, measured**: iOS 27's `.visibilityPriority(.low)` on the filter had no effect on this bar,
+and ordering the filter last overflowed BOTH the filter and the analysis menu. Keeping the menu in
+the bar needs fewer items or a narrower glyph, and the owner chose neither.
+
+**Shipped:**
+- `UITestLaunch` pins `-activeProjectId ""`, and takes an `activeProjectId:` parameter.
+- `ToolbarOverflowAccessibilityTests.testAnalysisMenuIsReachableByNameWithAProjectActive` (new):
+  with a project active on iPad the menu is in the bar, or behind "…" by its name, never its symbol.
+- The R-8 seam test now asserts the analysis menu is NOT in the bar before it opens the overflow.
+  Before this, a seam that failed to re-host the menu would pass. It holds on iPad Pro 13-inch (27.0).
+- `TabBarNavigator.isSelected` checks `exists` on every arm and reads the sidebar ROW. It read
+  `app.buttons["Browse"].isSelected` unguarded, and in the sidebar representation (persisted per
+  install; that mini shows it in landscape) there is no such button, so the rotation test failed
+  while CONFIRMING its own correct tap.
+- `BrowserView`'s seam doc no longer claims no shipping width collapses the toolbar.
+- CLAUDE.md: a device name does not name an OS, and a simulator carries state.
+
+**Verified.**
+- Whole UI target, iPad mini 26.3 (the leaked device): v2 **58 — 40 pass, 14 skip, 4 fail**;
+  branch **59 — 44 pass, 14 skip, 1 fail** (the rotation test, then fixed).
+- `AnalyticsRotationTests`, same device: before the navigator fix 13 — 10 / 2 skip / 1 fail; after,
+  **13 — 11 / 2 skip / 0 fail**.
+- Toolbar suite: iPad Pro 13-inch (27.0) **4/4**. The new reachability test passed on the 26.3 mini
+  (inside the 59-test run) through the "…" branch. It guards an accepted behaviour, so there is no fix
+  to A/B it against; the discarded in-bar version WAS A/B'd and failed on both sides, which is how
+  the two tried fixes were shown not to work.
+
+**Found, not fixed, handed off:** `KeyboardDismissBarReachTests.testDismissBarRendersInTheYearRangePopover`
+fails on iPhone 17 **iOS 27.0**, on v2 twice and on this branch twice (one run a 5-minute timeout),
+with "Neither element nor any descendant has keyboard focus" typing into `analytics.termField`. It
+passed on iPhone 17 iOS 26.3 on 2026-09-18. This one IS an iOS 27 difference. Also noted: with a
+dangling `activeProjectId` the picker shows the `folder` glyph beside the label "Global". That is
+deliberately left, because the new test uses exactly that state.

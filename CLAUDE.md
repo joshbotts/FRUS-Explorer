@@ -113,6 +113,16 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/ToolbarOverflowAccessibilityTests
 ```
 
+**A device NAME does not name an OS, and a simulator carries state between runs.** This machine
+has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
+`name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime
+(`xcrun simctl list devices`). On 2026-09-18, four iPad mini failures were first read as an iOS
+27 change, but the "pinned" mini was on 26.3. The real variable was per-install state: a UI test
+had left `activeProjectId` in UserDefaults. `UITestLaunch` now pins it, the same way it pins the
+tab. The sidebar representation also persists per install and has no pin; a helper that assumes
+the floating bar will fail on a device that has shown the sidebar. When a failure follows one
+simulator and not another, diff the app's preferences plist before suspecting the OS.
+
 **A UI-test suite that opens a presentation must CLOSE it in `tearDown`, not merely terminate.**
 `XCUIApplication.launch()` already terminates a running app; what the next launch restores is what
 the last one had *open*. On iPad that includes a whole window scene — `BrowserView.presentAnalytics`

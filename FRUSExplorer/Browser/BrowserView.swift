@@ -525,11 +525,19 @@ struct BrowserView: View {
     /// ## Why a seam and not a plain assertion
     /// R-8's defect is observable only once an item has been **re-hosted** into the
     /// overflow: while it sits in the bar, `.controlHelp`'s `accessibilityLabel` is
-    /// present and correct, and the raw-symbol name never appears. No shipping iPad size
-    /// collapses the three-item Browse toolbar — measured on iPad Pro 13-inch (M5) and
-    /// iPad mini (A17 Pro), portrait, both of which keep all three items in the bar — so
-    /// a UI test that merely looked for "Analysis Tools" would pass against the bug. This
-    /// seam creates the state the assertion is actually about.
+    /// present and correct, and the raw-symbol name never appears. With no project active no
+    /// shipping iPad size collapses the three-item Browse toolbar — measured on iPad Pro
+    /// 13-inch (M5) and iPad mini (A17 Pro), portrait — so a UI test that merely looked for
+    /// "Analysis Tools" would pass against the bug. This seam creates the state the assertion
+    /// is actually about.
+    ///
+    /// **With a project active the mini DOES overflow, without the seam** (measured 2026-09-18
+    /// on iPadOS 26.3, 26.5 and 27.0): the picker's `folder` glyph is a few points wider than
+    /// `globe`, the three items no longer fit beside the floating tab bar, and once "…" takes a
+    /// slot only the picker and one other item remain — the analysis menu, being last and the
+    /// widest, is re-hosted. That is accepted rather than fixed: it stays reachable and named
+    /// there (R-8), `ToolbarOverflowAccessibilityTests` guards exactly that, and neither the item
+    /// order nor iOS 27's `visibilityPriority(.low)` on the filter keeps it in the bar (both tried).
     ///
     /// Gated twice over, like `UITestVolumeSeeder`: the whole block is `#if DEBUG` (absent
     /// from AppStore and DirectDistribution builds) and it emits nothing unless
