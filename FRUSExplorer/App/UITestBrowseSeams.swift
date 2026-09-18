@@ -12,8 +12,8 @@ import Foundation
 
 // MARK: - UITestBrowseSeams
 
-/// The three launch seams a UI test needs to stand in a Browse state a normal run cannot produce
-/// (#1301 round 2).
+/// The launch seams a UI test needs to stand in a Browse state a normal run cannot produce
+/// (#1301 round 2; the fifth, a download finishing while a compilation is open, round 4).
 ///
 /// ## Why seams rather than cleverer tests
 /// #1301 shipped four things a UI test could not reach at all, and a mutation sweep found every
@@ -28,7 +28,8 @@ import Foundation
 /// key is set. None of them fakes an outcome — the failure seam **throws** where the real query
 /// would throw and leaves the recording, the rendering and the retry to production code; the cold
 /// seam removes real index rows through `IndexingPipeline.removeVolume(_:)`; the attach seam
-/// delays a real assignment.
+/// delays a real assignment; the finished-download seam hands a volume already on disk to
+/// `DownloadManager`'s real completion router.
 ///
 /// ## The cold seam is why three suites' "Index Now" branch was never entered
 /// `CompilationDocumentsTests`, `TwoPaneDocumentTests` and `BrowseNestedSectionTests` all tolerate
@@ -40,33 +41,39 @@ import Foundation
 /// times. ``coldVolumeRequested`` makes the cold state explicit instead of incidental, and both
 /// boot passes stand down while it is armed so nothing re-indexes what the seam just removed.
 ///
-/// ## The kick no seam can reach, said once here
-/// Three `.onChange` kicks in `CompilationView` re-ask for a declined section's rows. Kicks 1 and 3
-/// have seams above — a cold volume indexed from the compilation itself, and a pipeline held back
-/// past the first render. **Kick 2 has none and cannot**: it fires when an externally-triggered
-/// bulk index finishes (`AppState.currentIndexingProgress` returning to `nil`) while a compilation
-/// is open, and that index is started from Settings, where the reader is not standing on a
-/// compilation. Gutting it — both guards kept, the `loadDocuments` call removed — leaves every
-/// suite green: measured by round 1's mutation attack, and again by round 2's, which ran it twice
-/// against the cold-volume test (the verdict is the second run, 21.7 s and 0 failures — the same
-/// duration as an unmutated cold run; the first died on this suite's launch race). Round 3 did not
-/// re-run it and accepted it in writing instead.
+/// ## The three kicks, and the seam each one needed
+/// Three `.onChange` kicks in `CompilationView` re-ask for a declined section's rows, and each now
+/// has a seam: kick 1 (`vm.isIndexing` falling) a cold volume indexed from the compilation itself;
+/// kick 3 (the pipeline back-filled) a pipeline held back past the first render; and kick 2
+/// (`AppState.currentIndexingProgress` returning to `nil`) a download that finishes while the
+/// compilation is open — ``finishSeededDownload(_:after:in:)``, added in round 4.
 ///
-/// What IS pinned is its precondition, at the model grain:
+/// **Round 3 accepted kick 2 as unreachable, and understated it.** It called kick 2 the kick for a
+/// bulk index started from Settings, "where the reader is not standing on a compilation". But
+/// `currentIndexingProgress` goes `nil` on EVERY pipeline `.complete`, and the automatic index
+/// `onVolumeDownloaded` starts after each download is one of them, while `vm.isIndexing` — kick 1's
+/// trigger — is set only by Index Now. So kick 2 serves every index not started from this view,
+/// above all the automatic index after a download, which makes it the only loader on the ordinary
+/// download → open → browse path; a regression there reproduces #1301's permanent spinner.
+/// Gutting it — both guards kept, the `loadDocuments` call removed — left every suite green each
+/// time it was measured: by round 1's mutation attack, and twice by round 2's.
+/// `BrowseNestedSectionTests.testAnIndexStartedElsewhereFillsTheOpenCompilation` is the walk that
+/// sees it.
+///
+/// Its precondition is pinned at the model grain too:
 /// `CompilationDocumentLoadingTests.aDeclinedLoadLeavesAKickSomethingToDo` asserts that a declined
 /// load leaves the section not-loaded, which is what every kick stands on — a refactor recording
 /// `.loaded` on a decline would make all three call the loader and all three return immediately.
-/// A test that could see kick 2 itself needs one of two things this round declined to build: a
-/// fourth seam publishing a progress value and dropping it while the compilation is on screen, or
-/// the kick's body extracted to a named function so the CALL is an assertion. Both pin the wiring
-/// of one modifier; neither pins that the modifier is still attached, which is the failure it
-/// would exist for.
 ///
 /// Version history:
 ///   1.0 — #1301 round 2: initial implementation
 ///   1.1 — #1301 round 3: the two boot stand-downs and the seeded-fixture repair are values with
 ///          unit tests (``bootIndexingStandDown(coldVolumeRequested:)``, ``SeedPreparation``);
 ///          both were previously branches whose deletion no suite could see
+///   1.2 — #1301 round 4: a fifth seam, ``finishSeededDownload(_:after:in:)``, starts the automatic
+///          post-download index through `DownloadManager`'s own completion router while a
+///          compilation is open — kick 2's scenario, which round 3 accepted as unstageable on a
+///          premise that was false
 enum UITestBrowseSeams {
 
     // MARK: - 1. An injected document-load failure
@@ -283,6 +290,49 @@ enum UITestBrowseSeams {
             try? await Task.sleep(for: .seconds(delay))
             attach()
             print("[UITestBrowseSeams] Pipeline attached after \(delay)s")
+        }
+    }
+
+    // MARK: - 4. A download that finishes while a compilation is open
+
+    /// Launch key for the finished-download seam. Its value is a number of seconds.
+    static let finishSeededDownloadKey = "FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER"
+
+    /// How long boot should wait before finishing the seeded volume's download, or `nil` when the
+    /// seam is not armed.
+    static var seededDownloadFinishDelay: Double? {
+        guard let raw = ProcessInfo.processInfo.environment[finishSeededDownloadKey],
+              let seconds = Double(raw), seconds > 0 else { return nil }
+        return seconds
+    }
+
+    /// Hands the seeded volume to `DownloadManager`'s completion router after `delay` seconds, as
+    /// though its download had just finished (#1301 round 4).
+    ///
+    /// Armed with the cold seam, this is the ordinary download → open → browse path: the fixture is
+    /// on disk and unindexed, the reader opens its compilation and sees "Index Required", and then —
+    /// with nothing touched — the automatic post-download index runs and finishes. Kick 1 cannot
+    /// answer that (`vm.isIndexing` is set only by Index Now), kick 3 cannot (the pipeline already
+    /// exists), and the keyed task's key has not changed, so the progress kick is the only thing
+    /// left that asks for the rows. See the type's doc comment.
+    ///
+    /// The index is the app's own: `DownloadManager.replayFinishedTransferForUITest(volumeId:)` runs
+    /// the `onVolumeDownloaded` closure `FRUSExplorerApp` supplied, and nothing here calls the
+    /// pipeline directly.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The seeded volume, already on disk.
+    ///   - delay: Seconds to wait — long enough for a test to reach the compilation first.
+    ///   - manager: The app's download manager.
+    @MainActor
+    static func finishSeededDownload(_ volumeId: String,
+                                     after delay: Double,
+                                     in manager: DownloadManager) {
+        print("[UITestBrowseSeams] Finishing \(volumeId)'s download in \(delay)s")
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(delay))
+            await manager.replayFinishedTransferForUITest(volumeId: volumeId)
+            print("[UITestBrowseSeams] Finished \(volumeId)'s download: its automatic index runs now")
         }
     }
 }

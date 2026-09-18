@@ -62,8 +62,8 @@ import XCTest
 /// the detail — choosing a second volume updates the `VolumeView` already on screen. It is the only
 /// keyed level besides the compilation whose self-to-self step a reader can take today.
 ///
-/// ## The four states no ordinary run can reach (round 2)
-/// Four further tests run on **either** idiom, because none of them is about two-pane reuse.
+/// ## The states no ordinary run can reach (round 2, and one more in round 4)
+/// Five further tests run on **either** idiom, because none of them is about two-pane reuse.
 /// Each asks `UITestBrowseSeams` for a state the app cannot otherwise be put in, and each covers a
 /// piece of #1301 that a mutation sweep found undefended:
 ///  - ``testFailedSectionShowsAReadableErrorRowAndRetryLoadsIt`` — nothing in the app can be made
@@ -78,6 +78,10 @@ import XCTest
 ///    finishes in milliseconds and the row it draws meanwhile had never been asserted at all.
 ///  - ``testAPipelineArrivingLateFillsTheOpenCompilation`` — R-9's back-fill kick, driven by
 ///    holding the pipeline back past the compilation's first render.
+///  - ``testAnIndexStartedElsewhereFillsTheOpenCompilation`` (round 4) — the
+///    `.onChange(of: appState.currentIndexingProgress)` kick, driven by finishing the cold
+///    fixture's download while its compilation is open. Three rounds called this kick unreachable;
+///    it is the only loader on the ordinary download → open → browse path.
 ///
 /// ## Measured
 /// A/B on one pinned device, `-only-testing` held identical on both sides, iPad Pro 13-inch (M5),
@@ -102,6 +106,10 @@ import XCTest
 ///          reachable self-to-self step — `.volume → .volume`, taken from the corpus root's search
 ///          on regular-width iPad — so `VolumeView`'s key is pinned by a walk rather than by an
 ///          assertion about the key function nothing was checked to call
+///   1.3 — #1301 round 4: ``testAnIndexStartedElsewhereFillsTheOpenCompilation`` drives the third
+///          kick — the one every index not started from the compilation depends on, the automatic
+///          index after a download included — and ``navigateToSeededCompilation(requireIndexNow:tapIndexNow:)``
+///          can require "Index Now" without tapping it
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs to the main actor, so this file emits the same
 // "main actor-isolated … nonisolated context" warnings the other UI suites do (see the note at
@@ -240,11 +248,16 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// Fails with a distinct message at each step: the causes are different and reporting them
     /// as one is how `UIObstructionTests` lost three investigations.
     ///
-    /// - Parameter requireIndexNow: When `true`, the volume MUST arrive unindexed and the "Index
-    ///   Now" button must be there and enabled — the cold-seam tests assert the post-indexing path
-    ///   and would pass vacuously on a volume that was already indexed. `false` tolerates the
-    ///   button's absence, which is what every other run finds.
-    private func navigateToSeededCompilation(requireIndexNow: Bool = false) {
+    /// - Parameters:
+    ///   - requireIndexNow: When `true`, the volume MUST arrive unindexed and the "Index Now" button
+    ///     must be there and enabled — the cold-seam tests assert the post-indexing path and would
+    ///     pass vacuously on a volume that was already indexed. `false` tolerates the button's
+    ///     absence, which is what every other run finds.
+    ///   - tapIndexNow: With `requireIndexNow`, whether to tap the button once it is found. `false`
+    ///     leaves the volume to be indexed from somewhere else, which is the scenario the progress
+    ///     kick exists for (round 4).
+    private func navigateToSeededCompilation(requireIndexNow: Bool = false,
+                                             tapIndexNow: Bool = true) {
         guard let destination = TabDestination(rawValue: "Browse") else {
             XCTFail("'Browse' is not one of MainTabView's five tabs")
             return
@@ -290,7 +303,7 @@ final class BrowseNestedSectionTests: XCTestCase {
             XCTAssertTrue(indexNow.isEnabled,
                           "'Index Now' is disabled, which means the view model has no indexing "
                               + "pipeline — a different state from an unindexed volume.")
-            indexNow.tap()
+            if tapIndexNow { indexNow.tap() }
         } else if indexNow.waitForExistence(timeout: 5), indexNow.isEnabled {
             indexNow.tap()
         }
@@ -662,7 +675,7 @@ final class BrowseNestedSectionTests: XCTestCase {
                        "the rows arrived and the spinner is still beside them")
     }
 
-    // MARK: - The two indexing kicks a test can drive
+    // MARK: - The three indexing kicks, each driven
 
     /// A cold volume, indexed from the compilation itself, fills its document list without
     /// leaving the screen.
@@ -714,6 +727,56 @@ final class BrowseNestedSectionTests: XCTestCase {
                 + "\(app.staticTexts[Self.indexUnavailableLabel].exists); spinner: "
                 + "\(app.staticTexts[Self.loadingLabel].exists)."
         )
+    }
+
+    /// A cold compilation fills its document list when an index started ELSEWHERE finishes — the
+    /// automatic index after a download above all — with nothing on screen touched (round 4).
+    ///
+    /// This is the `.onChange(of: appState.currentIndexingProgress)` kick. Three rounds accepted it
+    /// as unreachable, calling it the kick for a bulk index started from Settings. It is the kick for
+    /// every index not started from the compilation: `currentIndexingProgress` goes `nil` on each
+    /// pipeline `.complete`, the automatic post-download index included, while `vm.isIndexing` —
+    /// kick 1's trigger — is set only by "Index Now". So on the ordinary download → open → browse
+    /// path it is the ONLY loader: the keyed task declined on the unindexed volume and its key will
+    /// not change, and the pipeline already exists, so the back-fill kick cannot fire either.
+    ///
+    /// `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER` hands the cold fixture to `DownloadManager`'s
+    /// completion router while this test stands on the compilation, which runs the app's own
+    /// `onVolumeDownloaded` closure — nothing below that call is simulated. "Index Now" is required
+    /// and then deliberately NOT tapped: tapping it is ``testIndexingFromTheCompilationFillsItsDocumentList``.
+    func testAnIndexStartedElsewhereFillsTheOpenCompilation() throws {
+        // The same closure also fetches the finished volume's semantic shard, which has nothing to
+        // do with this screen; the reader's own "download vectors automatically" switch, off, keeps
+        // the run offline. `<false/>` rather than `NO`: the app reads the key with `as? Bool`, and
+        // the argument domain hands `NO` over as a string. The key must match
+        // `SettingsKeys.autoDownloadSemanticShards` — a UI suite cannot reference app constants.
+        app.launchArguments += ["-frus.semantic.autoDownloadShards", "<false/>"]
+        launch(seams: ["FRUS_UI_TEST_COLD_SEEDED_VOLUME": "1",
+                       "FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER": "30"])
+        navigateToSeededCompilation(requireIndexNow: true, tapIndexNow: false)
+
+        XCTAssertTrue(
+            app.staticTexts[Self.indexRequiredLabel].exists,
+            "The cold compilation is not showing '\(Self.indexRequiredLabel)', so the download "
+                + "finished before this test reached it and everything below would pass whatever "
+                + "the progress kick did. Raise FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER."
+        )
+
+        // Touch nothing. The seam finishes the download, the app's own post-download closure
+        // indexes the volume, and the progress kick is the only thing left that asks for the rows.
+        XCTAssertTrue(
+            row(containing: Self.firstDocumentTitle).waitForExistence(timeout: 120),
+            "An index started elsewhere — here, the automatic one after a download — finished "
+                + "while this compilation was open, and its rows never arrived. That is #1301's "
+                + "permanent spinner on the ordinary download → open → browse path: the keyed task "
+                + "declined and will not re-run, Index Now was never tapped, and the pipeline was "
+                + "already there, so `.onChange(of: appState.currentIndexingProgress)` is the only "
+                + "loader. 'Index Required' still on screen: "
+                + "\(app.staticTexts[Self.indexRequiredLabel].exists); spinner: "
+                + "\(app.staticTexts[Self.loadingLabel].exists)."
+        )
+        XCTAssertFalse(app.staticTexts[Self.indexRequiredLabel].exists,
+                       "the rows are up and the Index Required banner is still above them")
     }
 
     // MARK: - iPhone: the non-regression control

@@ -231,6 +231,10 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          two more DEBUG seams — a cold seeded volume (which also stands the two boot indexing
 ///          passes down, or they would re-index what it removed) and a deliberately late pipeline,
 ///          reproducing R-9's boot race. All three are inert without their own launch keys.
+///   4.13 — #1301 round 4: a fourth DEBUG seam, armed after the download manager is published, hands
+///          the seeded fixture to that manager's completion router after a delay — the automatic
+///          post-download index, started while a compilation is open. Inert without
+///          `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER`.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2564,6 +2568,16 @@ struct FRUSExplorerApp: App {
             }
         )
         appState.downloadManager = dm
+
+        #if DEBUG
+        // #1301 round 4: finish the seeded fixture's "download" after a delay, through the manager's
+        // own completion router, so a UI test can stand on a compilation while the automatic
+        // post-download index runs — the index `CompilationView`'s progress kick is the only loader
+        // for. Inert without FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER.
+        if let seededVolume, let delay = UITestBrowseSeams.seededDownloadFinishDelay {
+            UITestBrowseSeams.finishSeededDownload(seededVolume.volumeId, after: delay, in: dm)
+        }
+        #endif
 
         if appState.isOnline {
             Task { await appState.manifestStore.fetchLiveManifest() }
