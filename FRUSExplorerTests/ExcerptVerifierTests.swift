@@ -194,13 +194,13 @@ struct ExcerptVerificationReportTests {
     }
 
     @Test("A failure leads the summary")
-    func failureLeads() {
+    func failureLeads() throws {
         let report = ExcerptVerificationReport(outcomes: [request("d1"): .notFound,
                                                           request("d2"): .documentNotIndexed])
-        let summary = try? #require(report.summary)
+        let summary = try #require(report.summary)
         #expect(report.hasFailures)
-        #expect(summary?.hasPrefix("One quotation was not found") == true, "got: \(summary ?? "nil")")
-        #expect(summary?.contains("not downloaded") == true,
+        #expect(summary.hasPrefix("One quotation was not found"), "got: \(summary)")
+        #expect(summary.contains("not downloaded"),
                 "the uncheckable ones are stated too, after")
     }
 

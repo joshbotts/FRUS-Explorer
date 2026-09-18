@@ -37,6 +37,7 @@ import XCTest
 ///          UI-test store held no document to page through.
 ///   1.2 — #1273: `ResearchReadingDepthTests`, in this file, turns a page and requires it to survive
 ///          the crossing — the test 1.1 said was missing.
+@MainActor
 final class ResearchReadingStaysInTabTests: XCTestCase {
     /// Resolves tab destinations across every representation, including the floating iPad bar when
     /// it has paged a tab off screen.
@@ -45,7 +46,7 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
 
     private var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
@@ -56,7 +57,7 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         XCUIDevice.shared.orientation = .portrait
         app = nil
     }
@@ -274,6 +275,7 @@ final class ResearchReadingStaysInTabTests: XCTestCase {
 ///
 /// Version history:
 ///   1.0 — #1273: initial implementation
+@MainActor
 final class ResearchReadingDepthTests: XCTestCase {
     /// Resolves tab destinations across every representation, including the floating iPad bar when
     /// it has paged a tab off screen.
@@ -286,7 +288,7 @@ final class ResearchReadingDepthTests: XCTestCase {
     /// there and not at a precondition.
     private static let lostPage = "PAGE-TURN LOST ACROSS THE TWO-PANE SWAP"
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
@@ -301,7 +303,7 @@ final class ResearchReadingDepthTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         XCUIDevice.shared.orientation = .portrait
         app = nil
     }

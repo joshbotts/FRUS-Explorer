@@ -28,11 +28,12 @@ import XCTest
 /// Version history:
 ///   1.0 — Session 01: initial placeholder
 ///   1.1 — Session 52: inject FRUS_UI_TEST_MODE + hasCompletedOnboarding bypass
+@MainActor
 final class FRUSExplorerUITests: XCTestCase {
 
     var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         // Bypass CloudKit (avoids the 30-second SIGTRAP in unsigned UI test builds).
@@ -42,7 +43,7 @@ final class FRUSExplorerUITests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app = nil
     }
 

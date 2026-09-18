@@ -33,6 +33,7 @@ struct SourceOutlineExpansionTests {
     /// The `frus1961-63v25` shape: a repository, a record group under it, a "Lot Files" group
     /// under that, and the lots under that. Four levels — the depth that made the lot files
     /// invisible.
+    @MainActor
     private func tree() -> [SourceTreeNode] {
         VolumeSourcesView.buildTree([
             entry("National Archives and Records Administration", depth: 0),
@@ -47,14 +48,15 @@ struct SourceOutlineExpansionTests {
     }
 
     @Test("Every branch at every depth is expandable, and leaves are not")
-    func expandableIDsCoversEveryBranch() {
+    @MainActor
+    func expandableIDsCoversEveryBranch() throws {
         let nodes = tree()
         let ids = VolumeSourcesView.expandableIDs(nodes)
         // NARA, RG 59, Lot Files, WNRC, RG 306 — five branches; the three lots are leaves.
         #expect(ids.count == 5, "expected 5 expandable branches, got \(ids.count)")
         // Deep branches must be included, or the lots stay hidden behind the last triangle.
-        let nara = try? #require(nodes.first)
-        let rg59 = nara?.children?.first
+        let nara = try #require(nodes.first)
+        let rg59 = nara.children?.first
         let lotFiles = rg59?.children?.first
         #expect(lotFiles.map { ids.contains($0.id) } == true,
                 "the deepest branch — the one directly above the lot files — must expand")
@@ -63,6 +65,7 @@ struct SourceOutlineExpansionTests {
     }
 
     @Test("An outline with no branches yields no expandable ids")
+    @MainActor
     func flatOutlineHasNoBranches() {
         let flat = VolumeSourcesView.buildTree([entry("A", depth: 0), entry("B", depth: 0)])
         #expect(VolumeSourcesView.expandableIDs(flat).isEmpty)

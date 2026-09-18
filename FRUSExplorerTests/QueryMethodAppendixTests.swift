@@ -358,7 +358,7 @@ struct CollectionMethodAppendixTests {
     // MARK: - What the renderers receive
 
     @Test("Each line carries the query, how to read its count, and the scope")
-    func lineShape() {
+    func lineShape() throws {
         let capped = SearchHistoryEntry(queryText: "petroleum", resultCount: 7_500,
                                         projectId: projectA, executedAt: Date(timeIntervalSince1970: 10),
                                         loadedCount: 7_500, fetchLimit: 7_500, indexedVolumeCount: 552,
@@ -368,12 +368,12 @@ struct CollectionMethodAppendixTests {
                                              projectName: nil, researchQuestion: nil,
                                              generatedAt: Date(timeIntervalSince1970: 100))
             .scoped(toProject: projectA).plainTextLines
-        let searchLine = try? #require(lines.last)
-        #expect(searchLine?.contains("petroleum") == true)
-        #expect(searchLine?.contains("at least \(7_500.formatted())") == true,
-                "the floor rule holds in the collection route too: \(searchLine ?? "none")")
-        #expect(searchLine?.contains("552") == true, "the denominator travels with the count")
-        #expect(searchLine?.contains("document text") == true)
+        let searchLine = try #require(lines.last)
+        #expect(searchLine.contains("petroleum"))
+        #expect(searchLine.contains("at least \(7_500.formatted())"),
+                "the floor rule holds in the collection route too: \(searchLine)")
+        #expect(searchLine.contains("552"), "the denominator travels with the count")
+        #expect(searchLine.contains("document text"))
     }
 }
 

@@ -241,13 +241,20 @@ struct FrontMatterJobKeyingTests {
     /// because the failure mode is silent and recurs with every new decimal-era volume.
     @Test("A decimal class carrying a vulgar fraction is recognised")
     func decimalClassWithFractionParses() {
-        let parser = SourceNoteParser()
-        #expect(parser.parse("311.6121½") != nil, """
-            A fraction subdivision still defeats the decimal grammar. Note the trap this rule was \
-            first written into: `\\u{00BC}` is NOT valid NSRegularExpression syntax — the pattern \
-            silently fails to compile, the property is nil, and EVERY decimal note stops matching. \
-            Measured, that moved the residue to 6,292. Use literal characters.
-            """)
+        // `parse` returns a non-optional `ParsedSourceNote`, so the `!= nil` this used to assert
+        // could never fail (Swift 6.4 says so); an unrecognised note comes back as `.unrecognized`.
+        let parsed = SourceNoteParser().parse("311.6121½")
+        guard case .centralFiles(_, let fileId?) = parsed else {
+            Issue.record("""
+                A fraction subdivision still defeats the decimal grammar (got \(parsed)). Note the \
+                trap this rule was first written into: `\\u{00BC}` is NOT valid NSRegularExpression \
+                syntax — the pattern silently fails to compile, the property is nil, and EVERY \
+                decimal note stops matching. Measured, that moved the residue to 6,292. Use literal \
+                characters.
+                """)
+            return
+        }
+        #expect(fileId.contains("½"), "the fraction is part of the class, not noise: got \(fileId)")
     }
 
     // MARK: - #353: OCR corruptions of the Files keyword

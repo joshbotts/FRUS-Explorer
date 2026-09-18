@@ -56,7 +56,7 @@ final class ToolbarOverflowAccessibilityTests: XCTestCase {
     /// inside each test, and a stored reference would leave the navigator driving a dead process.
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // This suite had no teardown at all, and it opens the analysis menu in all three tests
         // (#1279). A menu is not a window, so it is the mildest of the three producers — but the
         // rule is the rule, and this suite is also the one that was VICTIM of it, measuring another

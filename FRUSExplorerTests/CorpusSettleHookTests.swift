@@ -52,7 +52,7 @@ struct CorpusSettleHookTests {
         var out: [String] = []
         for line in lines[(start + 1)...] {
             if line.trimmingCharacters(in: .whitespaces) == "}",
-               line.prefix { $0 == " " }.count == indent { break }
+               line.prefix(while: { $0 == " " }).count == indent { break }
             out.append(line)
         }
         #expect(!out.isEmpty, "\(name) has an empty body — the slice is wrong")

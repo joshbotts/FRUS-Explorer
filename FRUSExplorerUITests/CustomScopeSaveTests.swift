@@ -22,6 +22,7 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #861/#862 reproduction
+@MainActor
 final class CustomScopeSaveTests: XCTestCase {
     /// Resolves tab destinations across every representation, including the floating iPad bar when
     /// it has paged a tab off screen.
@@ -30,7 +31,7 @@ final class CustomScopeSaveTests: XCTestCase {
 
     var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
@@ -38,7 +39,7 @@ final class CustomScopeSaveTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app = nil
     }
 

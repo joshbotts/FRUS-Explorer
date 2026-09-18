@@ -119,6 +119,7 @@ enum TabDestination: String, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
+@MainActor
 final class TabBarNavigator {
 
     /// Read through a closure rather than stored: two suites relaunch `XCUIApplication` mid-test,
@@ -561,6 +562,7 @@ final class TabBarNavigator {
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
 ///   1.1 — #1279: the launch-pin claim corrected; it sets a `@SceneStorage` DEFAULT, not the tab
+@MainActor
 enum UITestLaunch {
 
     /// - Parameters:

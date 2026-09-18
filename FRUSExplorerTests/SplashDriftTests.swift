@@ -156,6 +156,7 @@ struct SplashDriftTests {
     /// `expansion`, `fillFactor` or the tuning that quietly stops carrying words into the zone
     /// fails here instead of going green.
     @Test("No word settles on the identity block — and the sweep really reaches it")
+    @MainActor
     func nothingSettlesOnTheIdentityBlock() {
         let size = phone
         let zone = LaunchSplashView.identityZone(in: size)
@@ -212,6 +213,7 @@ struct SplashDriftTests {
     /// for. If this ever flipped, M-4's whole argument would be gone and the splash would be back
     /// to a clump in an empty expanse.
     @Test("The splash is on the full-bleed side of the fill threshold")
+    @MainActor
     func splashIsFullBleed() {
         #expect(phone.height > WordCloudBackdropView.bandHeight)
         #expect(WordCloudBackdropView.fillFactor(for: phone) > 1)
@@ -226,6 +228,7 @@ struct SplashDriftTests {
     /// This checks the zone against the identity block's own layout constants instead, so a zone
     /// too small to cover the wordmark fails here rather than on a store screenshot.
     @Test("The exclusion zone covers the identity block it protects")
+    @MainActor
     func zoneCoversTheIdentityBlock() {
         for size in [phone, CGSize(width: 1_280, height: 800)] {
             let zone = LaunchSplashView.identityZone(in: size)
@@ -254,6 +257,7 @@ struct SplashDriftTests {
     /// `offset = seed − phaseOrigin`, so this drives the identity the fix rests on across a whole
     /// cycle and a phase origin that is not zero.
     @Test("A seeded surface draws the lens its chip names")
+    @MainActor
     func seededCanvasAgreesWithTheChip() {
         let cadence = FRUSTheme.cloudLensCadence
         let layers = 4
@@ -283,6 +287,7 @@ struct SplashDriftTests {
     /// Measured: replacing the view's whole computation with `return 0` left it green. This drives
     /// `WordCloudBackdropView.driftLensOffset` instead.
     @Test("The backdrop computes the offset the canvas needs")
+    @MainActor
     func backdropComputesTheOffset() {
         // Seeded, origin recorded: the gap the seed opened.
         #expect(WordCloudBackdropView.driftLensOffset(seed: 0, origin: 7, currentPhase: 9) == -7)
@@ -301,6 +306,7 @@ struct SplashDriftTests {
     /// An unseeded surface is untouched — the two shipping drift surfaces must render exactly as
     /// they did, so the fix cannot be blamed for a change nobody asked for.
     @Test("An unseeded surface is byte-identical to the old behaviour")
+    @MainActor
     func unseededCycleIsUnchanged() {
         for step in 0..<20 {
             let t = Double(step) * 1.7
@@ -313,6 +319,7 @@ struct SplashDriftTests {
     /// The seed moves which lens a hold shows, never when the hold begins — so the crossfade is
     /// untouched. A fix that shifted `progress` would make every seeded surface stutter.
     @Test("The offset does not disturb the crossfade")
+    @MainActor
     func offsetLeavesProgressAlone() {
         for step in 0..<40 {
             let t = Double(step) * 0.7
@@ -331,6 +338,7 @@ struct SplashDriftTests {
     /// and top insets — 62 pt vertically on an iPhone 17 in portrait — which leaves the bottom of
     /// the identity block unprotected while the zone wastes its top on empty status-bar space.
     @Test("The zone lands on the identity block in the canvas's own space")
+    @MainActor
     func zoneIsInTheCanvasCoordinateSpace() {
         let safeArea = CGSize(width: 393, height: 790)
         let insets = EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)

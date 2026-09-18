@@ -42,6 +42,7 @@ struct ScopeChipTests {
     /// One test rather than three because it is one claim: the two states differ in the glyph a
     /// sighted reader sees and in the value VoiceOver speaks, and neither of those is a hue.
     @Test("On and off survive the loss of colour")
+    @MainActor
     func stateSurvivesTheLossOfColour() {
         // The shape channel: two states, two glyphs.
         #expect(ScopeChip.glyph(isOn: true) != ScopeChip.glyph(isOn: false),
@@ -69,6 +70,7 @@ struct ScopeChipTests {
     /// circle-based, so the two states have the same metric width and a row of three chips does not
     /// reflow as the pointer toggles one.
     @Test("The glyph is a checkbox: filled when searched, empty when not")
+    @MainActor
     func glyphIsACheckbox() {
         #expect(ScopeChip.glyph(isOn: true) == "checkmark.circle.fill")
         #expect(ScopeChip.glyph(isOn: false) == "circle")
@@ -92,6 +94,7 @@ struct ScopeChipTests {
 
     /// The value says what the control does, not merely that it is on.
     @Test("The spoken value names the searching, not the switch")
+    @MainActor
     func spokenValueNamesTheSearching() {
         #expect(ScopeChip.accessibilityValue(isOn: true) == "Searched")
         #expect(ScopeChip.accessibilityValue(isOn: false) == "Not searched")
@@ -105,6 +108,7 @@ struct ScopeChipTests {
     /// glyph, which is not the fix: a sighted reader scanning the row at a glance reads the wash
     /// first.
     @Test("The tint still distinguishes the two states")
+    @MainActor
     func tintStillMoves() {
         #expect(ScopeChip.foreground(isOn: true) != ScopeChip.foreground(isOn: false))
         #expect(ScopeChip.fill(isOn: true) != ScopeChip.fill(isOn: false))

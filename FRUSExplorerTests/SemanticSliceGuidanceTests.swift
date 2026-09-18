@@ -71,15 +71,15 @@ struct SemanticSliceGuidanceTests {
     // MARK: - The same-volume refusal
 
     @Test("Two poles in one volume are refused, with a reason naming the actual constraint")
-    func sameVolumeIsExplained() {
+    func sameVolumeIsExplained() throws {
         let model = makeModel()
         model.setPole(volumeID: "frus1861", isPositive: false, yearForVolume: noYears)
         #expect(model.axisNotice == nil, "one pole is a normal intermediate state, not a failure")
 
         model.setPole(volumeID: "frus1861", isPositive: true, yearForVolume: noYears)
-        let notice = try? #require(model.axisNotice)
+        let notice = try #require(model.axisNotice)
         #expect(model.slice == nil, "a slice was drawn between a volume and itself")
-        #expect(notice?.contains("same one") == true, """
+        #expect(notice.contains("same one"), """
             The refusal does not tell the reader that both documents are in one volume, which is the \
             actual constraint — an axis runs between volume summaries, not between the two documents \
             tapped. Got: \(model.axisNotice ?? "nothing at all")

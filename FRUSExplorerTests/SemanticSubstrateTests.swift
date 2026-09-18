@@ -135,7 +135,7 @@ struct SemanticSubstrateTests {
             try await store.adoptShard(from: bogus, for: volumeID)
         }
         #expect(!FileManager.default.fileExists(
-            atPath: await store.shardURL(for: volumeID).path))
+            atPath: store.shardURL(for: volumeID).path))
         #expect(await store.volumeIDsOnDisk().isEmpty)
     }
 

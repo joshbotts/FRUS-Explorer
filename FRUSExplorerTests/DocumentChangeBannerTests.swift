@@ -37,11 +37,13 @@ struct DocumentChangeBannerTests {
     private static let hedge = "Some highlights may be misaligned — the document has been updated since they were created."
 
     @Test("No row and no stale highlight: nothing")
+    @MainActor
     func nothingToSay() {
         #expect(DocumentChangeBanner.line(revision: nil, highlightsStale: false) == nil)
     }
 
     @Test("No row but a stale highlight: the pre-P2 hedge, word for word")
+    @MainActor
     func staleWithoutRow() {
         #expect(DocumentChangeBanner.line(revision: nil, highlightsStale: true) == Self.hedge)
     }
@@ -51,6 +53,7 @@ struct DocumentChangeBannerTests {
     /// and leaves `change_kind` must not re-raise the banner. The mutation sweep found the
     /// second necessary: without it, dropping the stamp check from the guard survived.
     @Test("An unstamped row says nothing, stale or not — even when it still carries a kind")
+    @MainActor
     func unstampedRowIsSilent() {
         for first in [row(kind: nil, stamped: false), row(kind: "body", stamped: false)] {
             #expect(DocumentChangeBanner.line(revision: first, highlightsStale: false) == nil)
@@ -59,6 +62,7 @@ struct DocumentChangeBannerTests {
     }
 
     @Test("A reviewed row is silent again — a review must not need a delete")
+    @MainActor
     func reviewedRowIsSilent() {
         let reviewed = row(kind: "body", reviewed: true)
         #expect(DocumentChangeBanner.line(revision: reviewed, highlightsStale: false) == nil)
@@ -66,6 +70,7 @@ struct DocumentChangeBannerTests {
     }
 
     @Test("A body change names the text, and hedges the highlights only when they are stale")
+    @MainActor
     func bodyChange() throws {
         let fresh = try #require(DocumentChangeBanner.line(revision: row(kind: "body"), highlightsStale: false))
         let stale = try #require(DocumentChangeBanner.line(revision: row(kind: "body"), highlightsStale: true))
@@ -78,6 +83,7 @@ struct DocumentChangeBannerTests {
     }
 
     @Test("An apparatus change says the text did NOT change — unless highlights are stale, when it says both")
+    @MainActor
     func apparatusChange() throws {
         let fresh = try #require(DocumentChangeBanner.line(revision: row(kind: "apparatus"), highlightsStale: false))
         let stale = try #require(DocumentChangeBanner.line(revision: row(kind: "apparatus"), highlightsStale: true))
@@ -90,6 +96,7 @@ struct DocumentChangeBannerTests {
     }
 
     @Test("A vanished row says so regardless of highlights")
+    @MainActor
     func vanished() throws {
         let a = try #require(DocumentChangeBanner.line(revision: row(kind: "vanished"), highlightsStale: false))
         let b = try #require(DocumentChangeBanner.line(revision: row(kind: "vanished"), highlightsStale: true))
@@ -98,6 +105,7 @@ struct DocumentChangeBannerTests {
     }
 
     @Test("A change kind this build does not know falls back: hedge if stale, silence if not")
+    @MainActor
     func unknownKind() {
         #expect(DocumentChangeBanner.line(revision: row(kind: "renumbered"), highlightsStale: false) == nil)
         #expect(DocumentChangeBanner.line(revision: row(kind: "renumbered"), highlightsStale: true) == Self.hedge)

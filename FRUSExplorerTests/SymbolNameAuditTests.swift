@@ -175,6 +175,7 @@ struct SymbolNameAuditTests {
     /// which catches drift but stays green if a name and its expectation are changed together to
     /// something plausible that does not exist — the `cloud.slash` defect exactly.
     @Test("Symbol-bearing types resolve at runtime")
+    @MainActor
     func symbolBearingTypesResolve() {
         for name in [SemanticGlyph.feature, SemanticGlyph.clusters, SemanticGlyph.document] {
             #expect(UIImage(systemName: name) != nil, "SemanticGlyph names a missing symbol: \(name)")

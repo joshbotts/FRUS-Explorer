@@ -27,15 +27,16 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #559: initial implementation
+@MainActor
 final class AnalyticsKeyboardTests: XCTestCase {
 
     var app: XCUIApplication!
 
-    /// Read through a closure: `setUpWithError` mints a fresh `XCUIApplication` per test, and a
+    /// Read through a closure: `setUp` mints a fresh `XCUIApplication` per test, and a
     /// stored reference would leave the navigator driving a dead process (#1278).
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
@@ -46,7 +47,7 @@ final class AnalyticsKeyboardTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         XCUIDevice.shared.orientation = .portrait
         // **Close what is open, then terminate (#1279).** Every test here ends with Corpus
         // Analytics open, which on iPad is a second WINDOW scene rather than a sheet — see

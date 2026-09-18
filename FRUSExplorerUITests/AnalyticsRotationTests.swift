@@ -52,6 +52,7 @@ import UIKit
 ///   1.2 — Wave R / R-8: `openCorpusAnalytics` no longer falls back to the raw SF Symbol name
 ///          when the toolbar overflows. That fallback existed because the overflowed item
 ///          announced `chart.bar.xaxis`; it now announces "Analysis Tools".
+@MainActor
 final class AnalyticsRotationTests: XCTestCase {
     /// Resolves tab destinations across every representation, including the floating iPad bar when
     /// it has paged a tab off screen.
@@ -60,7 +61,7 @@ final class AnalyticsRotationTests: XCTestCase {
 
     var app: XCUIApplication!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         // Start every test upright. XCUIDevice orientation is process-wide and survives
         // between tests, so a landscape leftover silently changes the layout under test.
@@ -71,7 +72,7 @@ final class AnalyticsRotationTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // Leave the device upright regardless of how the test ended, or the next test inherits
         // landscape and its own layout assertions become meaningless.
         XCUIDevice.shared.orientation = .portrait

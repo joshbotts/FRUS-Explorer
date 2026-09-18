@@ -66,15 +66,16 @@ import XCTest
 ///   1.2 — order-independence: the Browse scenario's hittability check waits instead of
 ///         sampling once, the two ways it can fail are told apart, and the #1070 gate is
 ///         asserted directly rather than inferred from a hit test that cannot see it
+@MainActor
 final class KeyboardDismissBarReachTests: XCTestCase {
 
     var app: XCUIApplication!
 
-    /// Read through a closure: `setUpWithError` mints a fresh `XCUIApplication` per test, and a
+    /// Read through a closure: `setUp` mints a fresh `XCUIApplication` per test, and a
     /// stored reference would leave the navigator driving a dead process (#1278).
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
@@ -83,7 +84,7 @@ final class KeyboardDismissBarReachTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // Terminate rather than only dropping the reference. The popover scenario ends with the
         // Corpus Analytics sheet AND the year popover still presented; leaving that standing made
         // the next scenario's `launch()` a terminate-and-relaunch of an app frozen mid-presentation

@@ -33,6 +33,7 @@ struct ProvenanceChipTests {
     /// while every tier keeps its own glyph and every source keeps its own label (the meaning is
     /// not).
     @Test("Meaning survives the loss of colour")
+    @MainActor
     func meaningSurvivesTheLossOfColour() {
         let tiers = ProvenanceTier.allCases
         #expect(tiers.count == 3)
@@ -59,6 +60,7 @@ struct ProvenanceChipTests {
     /// There the shape is meaningless until the key is set; here it always carries the tier, so a
     /// swap would be theatre — and, worse, would imply the unswitched chip needed colour.
     @Test("The glyph is unconditional")
+    @MainActor
     func glyphDoesNotDependOnTheEnvironment() {
         // The signature is the assertion: a glyph that varied with the reader's settings could not
         // be produced by a function that never sees them.
@@ -74,6 +76,7 @@ struct ProvenanceChipTests {
 
     /// With no accessibility request in play, each tier keeps its own hue.
     @Test("Each tier has its own tint when colour is available")
+    @MainActor
     func tintsAreDistinct() {
         let tints = ProvenanceTier.allCases.map { ProvenanceChip.tint(for: $0) }
         #expect(tints[0] != tints[1])
@@ -90,6 +93,7 @@ struct ProvenanceChipTests {
     /// A chip that neutralised its text but kept a tinted capsule would still be asking a reader to
     /// read three hues.
     @Test("The environment key reaches the fill and the border")
+    @MainActor
     func fillAndBorderFollowTheKey() {
         for tier in ProvenanceTier.allCases {
             #expect(ProvenanceChip.fill(for: tier, differentiateWithoutColor: true)
@@ -110,6 +114,7 @@ struct ProvenanceChipTests {
 
     /// Every source says something, and no source says nothing.
     @Test("Every source has a spoken sentence")
+    @MainActor
     func everySourceSpeaks() {
         var seen = 0
         for source in ProvenanceSource.allCases {
@@ -125,6 +130,7 @@ struct ProvenanceChipTests {
     /// A joined chip names what it was joined to, because that is the half of the sentence the
     /// reader is about to write.
     @Test("A joined chip names its partner")
+    @MainActor
     func joinedChipsNameThePartner() {
         let joined: [ProvenanceSource] = [.naraCatalog, .ohPeopleRegister, .ohSubjects,
                                           .stateDeptSchedule]
@@ -144,6 +150,7 @@ struct ProvenanceChipTests {
     /// family, so a per-*tier* sentence — which is what the plan specified — would read "computed by
     /// this app" over somebody's own highlight.
     @Test("Your own reading is not called a computation")
+    @MainActor
     func yourReadingIsNotAttributedToTheApp() {
         let mine = ProvenanceChip.accessibilityLabel(for: .yourReading)
         let computed = ProvenanceChip.accessibilityLabel(for: .appModel)
@@ -157,6 +164,7 @@ struct ProvenanceChipTests {
 
     /// The two computed sources share a sentence on purpose: a reader cites both the same way.
     @Test("The two computed sources share one sentence")
+    @MainActor
     func computedSourcesShareASentence() {
         #expect(ProvenanceChip.accessibilityLabel(for: .appWordLists)
                 == ProvenanceChip.accessibilityLabel(for: .appModel))

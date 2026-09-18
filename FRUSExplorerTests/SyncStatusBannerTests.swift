@@ -32,6 +32,7 @@ struct SyncStatusBannerTests {
 
     /// The state that matters most: work done now does not leave this device.
     @Test("Local-only always shows, whatever the sync state says")
+    @MainActor
     func localOnlyAlwaysShows() {
         for state: CloudKitSyncState in [.unknown, .syncing, .succeeded(.now), .failed("x")] {
             #expect(SyncStatusBanner.isWorthShowing(state: state, cloudKitEnabled: false),
@@ -40,6 +41,7 @@ struct SyncStatusBannerTests {
     }
 
     @Test("A failure shows")
+    @MainActor
     func failureShows() {
         #expect(SyncStatusBanner.isWorthShowing(state: .failed("Quota exceeded"),
                                                 cloudKitEnabled: true))
@@ -50,6 +52,7 @@ struct SyncStatusBannerTests {
     /// **The restraint is the feature.** A banner that appears on every import would interrupt
     /// the workspace on exactly the schedule #665 complained about.
     @Test("A healthy or in-flight sync says nothing")
+    @MainActor
     func healthySyncIsSilent() {
         for state: CloudKitSyncState in [.unknown, .syncing, .succeeded(.now)] {
             #expect(!SyncStatusBanner.isWorthShowing(state: state, cloudKitEnabled: true),

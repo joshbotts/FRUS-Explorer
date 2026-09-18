@@ -132,6 +132,7 @@ struct PendingCloudBackdropTests {
     }
 
     @Test("The appearance delay outlasts a fast search but not a real wait")
+    @MainActor
     func appearanceDelayIsInTheRightBand() {
         let delay = PendingCloudBackdrop.appearanceDelay
         #expect(delay > .milliseconds(150),
@@ -196,6 +197,7 @@ struct PendingCloudBackdropTests {
     /// The spinner yields to the cloud rather than sitting on top of it. Both say "still
     /// working"; two indicators competing reads worse than either alone.
     @Test("The hand-over outlasts the cloud's own fade, so they overlap rather than snap")
+    @MainActor
     func handoverOutlastsTheFadeIn() {
         // The cloud fades in over 0.45 s (WordCloudBackdropView's transition). If the spinner
         // vanished faster than that, there would be a moment with neither indicator visible —

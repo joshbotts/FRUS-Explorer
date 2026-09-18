@@ -28,6 +28,7 @@ import Testing
 struct NavTitleParentTests {
 
     @Test("with no parent the label is the bare title")
+    @MainActor
     func noParent() {
         #expect(TwoLineNavTitleView.accessibilityLabel(
             title: "Foreign Relations of the United States, 1969–1976, Volume XX",
@@ -35,6 +36,7 @@ struct NavTitleParentTests {
     }
 
     @Test("an empty parent is treated as absent, not spoken as a dangling 'in'")
+    @MainActor
     func emptyParent() {
         // `distilledVolumeLabel` cannot return empty for a real manifest row, but the property
         // feeding this is optional-chained off a manifest lookup that can miss — and ", in " with
@@ -44,6 +46,7 @@ struct NavTitleParentTests {
     }
 
     @Test("with a parent the ancestor is spoken after the title")
+    @MainActor
     func withParent() {
         #expect(TwoLineNavTitleView.accessibilityLabel(
             title: "Arab-Israeli Dispute",
@@ -51,6 +54,7 @@ struct NavTitleParentTests {
     }
 
     @Test("the title leads, because it is what the screen is")
+    @MainActor
     func orderPutsTitleFirst() {
         let label = TwoLineNavTitleView.accessibilityLabel(title: "TITLE", parent: "PARENT")
         let titleIndex = label.range(of: "TITLE")

@@ -155,11 +155,11 @@ struct HybridSearchModeTests {
     // MARK: - The route signature and the appendix
 
     @Test("The semantic route signature renders as method prose, never as a keyword scope")
-    func semanticSignatureDescribes() {
+    func semanticSignatureDescribes() throws {
         let described = SearchScopeSignature.describe(SearchScopeSignature.semanticRouteSignature)
-        let prose = try? #require(described?.first)
-        #expect(prose?.contains("meaning") == true)
-        #expect(prose?.contains("searched document text") != true)
+        let prose = try #require(described?.first)
+        #expect(prose.contains("meaning"))
+        #expect(!prose.contains("searched document text"))
         // The fails-closed rule stands for anything else route-shaped but unknown.
         #expect(SearchScopeSignature.describe("route=telepathy;engine=none") == nil)
     }

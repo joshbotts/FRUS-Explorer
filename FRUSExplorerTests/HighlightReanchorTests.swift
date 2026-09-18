@@ -286,6 +286,7 @@ struct HighlightReanchorTests {
     /// The gate that decides which outcomes earn a one-tap repair — the single safety-critical
     /// decision in this feature.
     @Test("Only a nearby unique match earns a Move; foundFar never does")
+    @MainActor
     func moveOffer() {
         let m = HighlightReview.Match(start: 10, end: 20, shift: 5)
         #expect(DocumentChangeReviewSheet.offeredMove(.moved(m)) == m)
