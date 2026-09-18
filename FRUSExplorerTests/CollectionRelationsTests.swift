@@ -595,6 +595,10 @@ struct CollectionRelationsTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #762
+///   1.1 — #1301 round 4: the two loader scans match `private func loadRelated(` and
+///          `private func loadTimeline(` up to the parenthesis, because both loaders now take the
+///          ticket `CollectionDetailLoad.open(for:)` issues. The scans' windows and calls are
+///          unchanged
 @Suite("Collection detail wiring — #762")
 struct CollectionDetailWiringTests {
 
@@ -679,8 +683,10 @@ struct CollectionDetailWiringTests {
         // Without this, every other assertion in this suite passes over sections that mount,
         // gate correctly, and are permanently empty because nothing ever fills their state.
         let lines = Self.codeLines(try Self.source())
-        for (loader, call) in [("private func loadRelated()", "CollectionRelations.related("),
-                               ("private func loadTimeline()", "CollectionRelations.citedOverTime(")] {
+        // Matched up to the open parenthesis: since #1301 round 4 both loaders take the ticket
+        // `CollectionDetailLoad.open(for:)` issues, and what this test is about is the call inside.
+        for (loader, call) in [("private func loadRelated(", "CollectionRelations.related("),
+                               ("private func loadTimeline(", "CollectionRelations.citedOverTime(")] {
             guard let start = lines.firstIndex(where: { $0.contains(loader) }) else {
                 Issue.record("\(loader) is gone — its section can never fill")
                 return
@@ -694,7 +700,7 @@ struct CollectionDetailWiringTests {
     @Test("The related-collections scan runs off the main thread")
     func relatedScanIsOffMain() throws {
         let lines = Self.codeLines(try Self.source())
-        guard let start = lines.firstIndex(where: { $0.contains("private func loadRelated()") }) else {
+        guard let start = lines.firstIndex(where: { $0.contains("private func loadRelated(") }) else {
             Issue.record("loadRelated() is gone — the related list has no loader")
             return
         }
