@@ -53,7 +53,7 @@ xcodebuild test \
 ```
 
 **`BrowseNestedSectionTests` (#1301) must run on BOTH an iPad and an iPhone, and one destination
-gives you at most one of its layout tests.** The suite self-skips on the wrong idiom in both
+gives you only one idiom's layout tests.** The suite self-skips on the wrong idiom in both
 directions: `testNestedSectionsLoadInTwoPane` needs a pad idiom *and* 820 pt of content width (it
 skips on any iPad below the two-pane gate, naming the width it measured), and
 `testNestedSectionsLoadOnPushPath` — the non-regression control for the `.navigationDestination`

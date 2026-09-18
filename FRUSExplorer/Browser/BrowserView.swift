@@ -101,6 +101,10 @@ import SwiftUI
 ///   2.12 — #1301: the REUSE CONTRACT is written down at `levelView` — a level view rendered in
 ///          the detail pane may be reused across two values of the same case, so every load task
 ///          in one must be keyed. Doc comment only here; the keys are in the level views
+///   2.13 — #1301 round 3: the contract records WHERE each level's gate is, because the key
+///          assertions round 2 added pin a key's identity and not a view's use of it — a mutant
+///          reverted three call sites to bare `.task`s with every suite green. The two reachable
+///          self-to-self steps are walked; the other two levels hold identity-carrying state
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -874,18 +878,26 @@ struct BrowserView: View {
     /// appear/disappear, not to identity, so on a reuse it never re-runs and the view goes on
     /// showing whatever it loaded for the previous value. So:
     ///
-    ///  - **Every load task in a level view carries `.task(id:)`, keyed on the payload it loads
-    ///    for** — and the key is a function in `BrowseLoadKey`, where `BrowseLoadKeyTests` holds
-    ///    each one to varying with every component of its payload. That gate exists because the
-    ///    prose alone could not be checked: keying `CompilationView`'s task on the section's
-    ///    *title* passed every test #1301 shipped. Every level that carries a payload is keyed
-    ///    whether or not a self-to-self step is reachable today, because a rule with exceptions is
-    ///    a rule nobody can apply. Three payload-carrying levels are keyed at their own call sites
-    ///    and predate that registry — `.document` (Session 68), and `.corpusDocuments`, whose two
+    ///  - **Every load task in a level view is keyed on the payload it loads for**, through a
+    ///    modifier in `BrowseLoadKey.swift` that takes the payload and derives the key itself — so
+    ///    no call site holds a key. That shape exists because the prose alone could not be
+    ///    checked: keying `CompilationView`'s task on the section's *title* passed every test
+    ///    #1301 shipped, and round 2's key assertions went on passing while a mutant reverted
+    ///    three call sites to bare `.task`s. Every level that carries a payload is keyed whether
+    ///    or not a self-to-self step is reachable today, because a rule with exceptions is a rule
+    ///    nobody can apply. Two payload-carrying levels are keyed at their own call sites and
+    ///    predate that registry — `.document` (Session 68) and `.corpusDocuments`, whose two
     ///    composite keys carry the corpus id beside the indexed-volume count and the engagement
-    ///    revision. `.compilation` is keyed by `View.compilationDocumentLoad(vm:volumeId:section:)`,
-    ///    which takes the section and derives the key itself, so that call site has no key to get
-    ///    wrong.
+    ///    revision.
+    ///
+    ///    **Where each level's gate actually is, said plainly**: the modifier is a structural aid,
+    ///    not a test — deleting a call to it still compiles. `.compilation` and `.volume` are the
+    ///    two steps a reader can take today, and both are WALKED by
+    ///    `FRUSExplorerUITests/BrowseNestedSectionTests`. For `.clusterDocuments` and
+    ///    `.archivalCollection` no row appends the step, so no walk can exist; those two hold
+    ///    their loaded values in state that carries its own identity (`ClusterDrillState`,
+    ///    `CollectionDetailLoad`), which is unit-tested and which makes a missing key a spinner
+    ///    rather than another payload's rows under this one's name.
     ///  - **A level whose VIEW takes no varying input needs no key.** `.people`, `.clusters`,
     ///    `.archives` and the rest of the payload-less cases mount views that take only the shared
     ///    view model, so there is nothing for a reuse to leave stale. `.subjects` is the exception
