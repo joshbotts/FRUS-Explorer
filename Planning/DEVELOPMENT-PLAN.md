@@ -16069,9 +16069,11 @@ long-standing `cannot use class 'ModelContext' in a property declaration` note �
 because the version-history block above it grew by three lines; the declaration is byte-identical
 to `75e0fff2`'s.
 
-**Editing surface.** `Docs/EditableContent.md` §14 gains a "Browse — a section's documents could not
-be loaded (#1301)" group with blocks for the two new strings,
-`browser.compilation.loadFailed` and `browser.compilation.loadFailed.retry`. They are the first
+**Editing surface.** `Docs/EditableContent.md` gains its own **§17**, "Browse — when a section's
+documents cannot be loaded (#1301)", with blocks for `browser.compilation.loadFailed`,
+`browser.compilation.loadFailed.detail` (round 2's readable sentence) and
+`browser.compilation.loadFailed.retry`. Round 1 put the group inside §14, whose own intro scopes it
+to the build-42/43 bumps; round 2 moved it out and added the third block. They are the first
 user-facing strings this screen has grown since the plain-language pass, and without blocks the
 owner could not find them to edit.
 
@@ -16114,13 +16116,15 @@ section's cache while the failed one keeps its error row. (M13, M37)
 
 *The caller's gate has a signature that cannot express the manifest.*
 `CompilationDocumentsPresentation.shouldLoad(isIndexed:)` takes one `Bool`. The `guard volume != nil`
-#1301 deleted asked `allSubseriesGroups` a question the load never needed, and a side-loaded volume
-— indexed perfectly well, absent from the catalogue — answered `nil` and never loaded a row. **The
-honest scope**: reinstating that guard *through this function* is a compile error; adding a
-separate guard inside the modifier body is still possible and no test would catch it, because the
-fixture volume is in the bundled manifest and only a side-loaded one would fail. What the change
-buys is that the gate is one named, documented function instead of a line inside a 750-line view.
-(M17)
+#1301 deleted asked `allSubseriesGroups` a question the load never needed. **The honest scope**:
+reinstating that guard *through this function* is a compile error; adding a separate guard inside
+the modifier body is still possible and no test would catch it. What the change buys is that the
+gate is one named, documented function instead of a line inside a 750-line view. (M17)
+*(Round 3 correction: this paragraph, three doc comments and a test message credited that guard
+with stranding a SIDE-LOADED volume — "indexed perfectly well, absent from the catalogue". Not
+reachable. Since #777 `ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume
+on disk is in `allSubseriesGroups`; and `isIndexed` is a `document_cache` test, so anything passing
+the remaining gate is on disk. All six sites now say what is measurable.)*
 
 *The unindexed trap is measured from both ends.* A load for a volume nothing has indexed records
 `.loaded` with no rows — `document_cache` answers it with an empty set — and `.loaded` is the one
@@ -16226,9 +16230,10 @@ refactor that would make all three kicks no-ops — a decline that recorded `.lo
 
 **Two things round 2 did NOT close, stated rather than implied.** The manifest guard is narrowed,
 not eliminated: `shouldLoad(isIndexed:)` cannot express it, but a new guard inside the load modifier
-could, and no test would catch it, because the fixture volume is in the bundled manifest and only a
-side-loaded one fails that lookup. And `BrowseLoadKey` pins each key's identity, not a view's use of
-it; only `CompilationView`'s call site is closed by construction.
+could, and no test would catch it, because the fixture volume is in the bundled manifest. *(Round 3
+correction: and such a guard would refuse no volume a reader can reach at all — see above.)* And
+`BrowseLoadKey` pins each key's identity, not a view's use of it; only `CompilationView`'s call site
+is closed by construction *(round 3 closes the other four the same way)*.
 
 **Verification.** Whole `FRUSExplorerTests` target, iPhone 17 (iOS 26.5): **4,954 tests in 624
 suites passed** — 4,936 in 622 at `43ed3047` plus 18 (+7 `CompilationDocumentLoadingTests`, +8
@@ -16244,3 +16249,160 @@ device**, no more and no fewer.
 One transient: a UI run failed once at "Could not reach the 'Browse' tab" seconds after its build,
 and passed on an unchanged re-run. It is the launch race the other suites see, not a defect in
 this one.
+
+### Round 3 — the closing round: key assertions replaced by gates, state that carries its own identity, and four claims retracted
+
+**The pattern behind most of round 2's survivors.** A second mutation attack applied 43 mutants;
+32 were killed and **11 survived** — nine new ones, plus the two round-1 survivors it re-ran
+(M17b and M21). Three of the nine were one shape: a key pinned as a **value** while nothing checked
+that the view still used it. Reverting `VolumeView`'s, `ClustersBrowseView`'s and
+`CollectionDetailView`'s keyed tasks to bare `.task`s at the call site left every suite green while
+`volumeKeyVariesWithTheVolume`, `clusterMetadataKeyVariesWithBothComponents` and
+`archivalCollectionKeyVariesWithTheRecord` went on passing — which is exactly the limit
+`BrowseLoadKeyTests`' own doc comment states, now measured rather than predicted.
+
+**One answer, applied to every level.** Each keyed level loads through a modifier in
+`BrowseLoadKey.swift` that takes the payload and derives the key itself — `volumeStructureLoad`,
+`clusterMembershipLoad`, `clusterMetadataLoad`, `archivalCollectionLoad`, beside round 2's
+`compilationDocumentLoad`. No call site holds a key, so the `section.title` class of mutation has
+nowhere to be written. **That is a structural aid, not a gate**, and the contract says so: deleting
+a modifier call still compiles. Where a self-to-self step is reachable the gate is a walk instead.
+
+**`.volume → .volume` is now walked, and it is the step that mattered.** Round 2 discovered that
+`CorpusView`'s root search calls `select(_:)`, which ASSIGNS the path, so on regular-width iPad
+choosing a second volume updates the `VolumeView` already on screen — a live self-to-self step with
+no test. `testASecondVolumeFromRootSearchLoadsItsOwnStructure` opens a volume that is **not
+downloaded** (so `loadVolumeStructure` returns at its own guard and leaves no structure behind to be
+mistaken for the next one), then chooses the seeded fixture without leaving the level, and requires
+its compilation row. A/B on iPad Pro 13-inch (M5), iOS 26.3: **green in 18.4 s** with the key,
+**red at :536 in 89.0 s** with a bare `.task` — "the SECOND volume never rendered its own
+structure".
+
+**State that carries its own identity, for the two levels no walk can reach.** The review confirmed
+that `ClusterDocumentsView` was keyed and never cleared: on the reuse its key exists for it would
+render the PREVIOUS cluster's document list under the new cluster's title, and go on rendering it
+when the new cluster is missing from the artifact, because that path sets `unavailable` and returns
+without touching `cluster`. `CollectionDetailView` had the clear and nothing held it to it — the
+three lines deleted, 46 tests in three suites stayed green. Both now keep their loaded values in a
+value that reports them only **for the payload they were loaded for** (`ClusterDrillState`,
+`CollectionDetailLoad`), so the reset is not a statement anyone can delete, and a load that lands
+after the level moved on — both await a detached pass that no cancellation interrupts — cannot leave
+one payload's figures under another's name. Five assertions pin it; five mutants kill them.
+
+**Four claims retracted, each confirmed by a skeptic.**
+ 1. *The side-loaded volume.* Seven sites justified deleting `guard volume != nil` with a volume
+    "indexed perfectly well, absent from the catalogue" that "never loaded a single row". It is not
+    reachable and never was: since #777 `ManifestStore.browsableEntries` is
+    `catalogue + localEntries`, so a volume on disk **is** in `allSubseriesGroups`; and pre-#777 a
+    side-loaded volume had no browse row at all, so its compilation screen could not be opened. The
+    deletion stands on what is true — the gate asked the manifest a question the load never reads —
+    and all seven sites now say that. A stronger fact replaces it: because `isIndexed` is a
+    `document_cache` test, anything passing the remaining gate is on disk, so a reinstated guard
+    would refuse **no volume a reader can reach**.
+ 2. *"Reinstating that guard is a compile error."* True of `shouldLoad(isIndexed:)`, false in the
+    doc comment where it was written unqualified — the modifier still holds `vm`, and round 2's
+    attack reinstated the guard there with 31 tests in four suites and the push-path UI test green.
+    The sentence now carries its scope. **Accepted rather than closed — see below.**
+ 3. *The nil-pipeline message.* "It used to `return` silently, which the view drew as a spinner."
+    The base gated the view task on `isIndexed`, which is false without a pipeline, so the reader
+    saw the "Search Index Unavailable" banner; the spinner came from a different path. The message
+    now says what the branch is (the model recording rather than stopping) and that no view reaches
+    it. Its sibling `retryAfterFailureLoads` is **left alone**: its skeptic refuted that finding and
+    the comment's three claims are each true at HEAD.
+ 4. *Two pins named by names no test has* — `IndexRequiredWinsOverNotStarted` and
+    `LoadingIsProducedOnlyByAnInFlightLoad`. Spelled as the functions are.
+
+**Three more survivors closed, each by making a decision a value.** `SeedPreparation.plan(cold:contentChanged:)`
+— the re-index branch was the defect that cost #1301 a full red/green cycle, re-openable by deleting
+four lines nothing observed. `UITestBrowseSeams.bootIndexingStandDown(coldVolumeRequested:)` — the
+two boot stand-downs were two independent `if`s of which only one is observable from a UI run: on a
+simulator that has run the suite before, `needsDateReindex` is already false and that arm is inert,
+so a green cold run on a warm machine proved only half. And `.loading` is pinned as a state that
+must NOT short-circuit, which `loadDocuments`'s doc comment argued at length and nothing refused.
+
+**Two more, from the review.** `reloadingALoadedSectionIsIdempotent` now observes the short-circuit
+by blanking the cache under a `.loaded` state — both its old assertions held with the guard deleted,
+because a second query returns the same rows. And `BrowserDocumentLoadFailure`'s `LocalizedError`
+conformance was unreachable by every route (the mutation returning `nil` from it was EQUIVALENT), so
+it is dropped rather than left reading as the mechanism.
+
+### What round 3 ACCEPTS rather than closes, and why
+
+ 1. **A manifest guard written inside `compilationDocumentLoad` (M17b).** Closing it structurally
+    means dropping `vm` from the modifier and taking a `load:` closure — which would trade the
+    property that killed the `section.title` mutant (the key and the load read the *same two
+    values*, by construction) for the absence of a lookup nothing performs. The gate itself cannot
+    express it, the doc comment now says exactly how far that goes, and the cost of the mistake is
+    measured: such a guard would refuse no reachable volume.
+ 2. **Kick 2, the Settings-triggered bulk index (M21).** It fires when
+    `AppState.currentIndexingProgress` returns to `nil` while a compilation is open, and a reader
+    cannot be in Settings and on a compilation at once, so **no UI suite can stage it**. What is
+    pinned is its precondition, at the model grain — `aDeclinedLoadLeavesAKickSomethingToDo`, which
+    catches the refactor that would make all three kicks no-ops. A future test needs either a fourth
+    seam that publishes a progress value and drops it while the compilation is on screen, or the
+    kick's body extracted to a named function so the CALL is an assertion — and neither pins that
+    the modifier is still attached, which is the failure it would exist for. Stated in
+    `UITestBrowseSeams`' own doc comment, not only here.
+ 3. **The modifier calls themselves.** `.clusterMembershipLoad`, `.clusterMetadataLoad` and
+    `.archivalCollectionLoad` can be deleted or replaced with a bare `.task` and nothing goes red,
+    because no row appends `.clusterDocuments → .clusterDocuments` or
+    `.archivalCollection → .archivalCollection` and a walk therefore cannot be written. The harm is
+    reduced rather than prevented: with the identity-carrying state those two views show their
+    loading state instead of another payload's rows.
+ 4. **The two boot stand-down CALL SITES in `FRUSExplorerApp`.** The function has a unit test; the
+    two `if let standDown` lines do not. A cold UI run on a *freshly erased* device would catch the
+    date-pass one; on a warm device it is inert, which is the whole finding.
+ 5. **The step-1 empty-label assertion in `assertNestedSectionsLoad`.** Kept, with its comment
+    corrected. It cannot catch the mutant round 2 credited it with — it is an `.exists` query
+    sequenced after the first row's `waitForExistence`, and the mutant's window has closed by then —
+    but what it does hold is true and worth holding: a completed load and the empty label must never
+    be on screen together. The guard on assertion 2's oracle is named where it is:
+    `testALoadInFlightShowsTheSpinnerAndNotAnEmptyList`, plus the unit mapping test.
+
+### Round 3 — A/B and verification, every count read back
+
+**A/B, eleven mutants, eleven kills.** Each applied by a script that refuses unless the old text
+occurs exactly once, reverted with `git checkout --`, `git status --porcelain` empty after every
+one. The fix was COMMITTED first, because `git checkout --` restores to HEAD.
+
+*Unit, iPhone 17 (iOS 26.5), the same four suites on both sides (39 tests in 4 suites green
+unmutated).* The `.loaded` short-circuit deleted → `reloadingALoadedSectionIsIdempotent` at
+`CompilationDocumentLoadingTests.swift:276`, **the new assertion**: its two older ones held, which
+is why the rewrite was needed. A `.loading` short-circuit ADDED → `aLoadingSectionIsStillLoadable`,
+2 issues. `readable(_:)`'s `!described.isEmpty` conjunct dropped →
+`aLocalizedErrorKeepsItsOwnSentence` at :581. `CollectionDetailLoad.localStats(for:)` ignoring the
+record → `collectionDetailLoadAnswersOnlyItsOwnRecord` at `BrowseLoadKeyTests.swift:160`; its
+`record(related:for:)` no longer replacing → `collectionDetailLoadRefusesToMixTwoRecords` at :193
+and :194. `ClusterDrillState.cluster(for:)` ignoring the cluster → :213; `showMore` without its
+guard → :233 and :239; `unavailable(for:)` ignoring the cluster → :251.
+`SeedPreparation.plan`'s re-index branch deleted → `seedPreparationPlansEveryCombination` at
+`UITestVolumeSeederTests.swift:125`. `bootIndexingStandDown` answering `true` for the date pass →
+`bothBootPassesStandDownForAColdRun` at :150.
+
+*Device, iPad Pro 13-inch (M5), iOS 26.3.* `VolumeView`'s `.volumeStructureLoad` reverted to a bare
+`.task` → `testASecondVolumeFromRootSearchLoadsItsOwnStructure` fails at
+`BrowseNestedSectionTests.swift:536` in **89.0 s** (the 60 s wait), against **18.4 s green** on the
+fix. That is the one behavioural gate the `.volume` level has ever had.
+
+**Suites, every count read back.**
+ - iPhone 17 (iOS 26.5), whole `FRUSExplorerTests`: **"Test run with 4962 tests in 624 suites
+   passed"** — 4,954 at `75652e60` plus 8 (+1 `CompilationDocumentLoadingTests`, +5
+   `BrowseLoadKeyTests`, +2 `UITestVolumeSeederTests`); no new suites.
+ - `BrowseNestedSectionTests`: **7 tests, 1 skipped, 0 failures** on iPad Pro 13-inch (156.7 s) and
+   **7 tests, 2 skipped, 0 failures** on iPhone 17 (154.4 s) — the iPad skipping the push-path
+   control, the iPhone skipping BOTH two-pane tests. CLAUDE.md carries those two numbers now, and
+   the count of idiom-agnostic tests it stated (three) was wrong by one: it is four, and the one it
+   omitted is the in-flight spinner test that kills the pre-load-drawn-as-rows mutant.
+ - `UIObstructionTests` on iPad Pro 13-inch: **16 tests, 5 skipped, 0 failures** (261.0 s).
+ - iPad mini (A17 Pro), the keyboard/toolbar trio: **8 tests, 2 failures** —
+   `testAnalysisMenuKeepsItsNameWithoutOverflow` and `testAnalysisMenuStillOpensItsItems`, **exactly
+   the pair already failing on `v2` on that device**, no more and no fewer.
+
+**Clean builds into fresh DerivedData.** `FRUSExplorer` (generic iOS Simulator): **CLEAN SUCCEEDED,
+BUILD SUCCEEDED**, **9** unique source-warning sites. `FRUSExplorerMac`
+(`platform=macOS`, `CODE_SIGNING_ALLOWED=NO`): **CLEAN SUCCEEDED, BUILD SUCCEEDED**,
+**8**. **The same counts and the same sites as round 2 recorded, and none is in a line this round wrote.** One is in a file it touched — `FRUSExplorerApp.swift:1649`, the long-standing `'weak' ownership of capture 'appState'` note — and it sits 600 lines above the two boot stand-down call sites this round changed. Neither `BrowseLoadKey.swift`, `ClustersBrowseView.swift`, `CollectionDetailView.swift`, `UITestBrowseSeams.swift` nor `CompilationDocumentsPresentation.swift` appears in either list.
+
+No `@Model`, no stored property, no parse-output change: **no CloudKit deploy and no index-version
+bump.** `Docs/EditableContent.md` §17's third SOURCE block moves to lines 116–118, because dropping
+the dead `errorDescription` shifted the sentence it points at.

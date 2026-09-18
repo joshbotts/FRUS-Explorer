@@ -7757,7 +7757,7 @@ Could not load this section’s documents.
 <!-- This is shown for every failure the row can reach, including ones carrying no message of their
      own. An error that HAS a reader-facing sentence (the unavailable-index one in §14) keeps its
      own wording instead, so edits here must stand alone rather than continue that one. -->
-<!-- SOURCE: FRUSExplorer/Browser/CompilationDocumentsPresentation.swift | lines: 106–108 | key: browser.compilation.loadFailed.detail -->
+<!-- SOURCE: FRUSExplorer/Browser/CompilationDocumentsPresentation.swift | lines: 116–118 | key: browser.compilation.loadFailed.detail -->
 
 FRUS Explorer could not read this section from its search index. Retry below; if it keeps failing, index this volume again.
 
