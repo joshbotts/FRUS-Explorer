@@ -1556,8 +1556,9 @@ private struct ProjectReachVolumeRow: View {
 
     /// Queues the volume, mirroring `OffIndexVolumeRow.queueDownload`.
     private func queueDownload() {
-        guard let entry = appState.manifestStore.entry(forVolumeId: lead.volumeID) else { return }
-        appState.downloadManager?.enqueueDownload(entry)
+        guard let entry = appState.manifestStore.entry(forVolumeId: lead.volumeID),
+              let downloadManager = appState.downloadManager else { return }
         downloadQueued = true
+        Task { await downloadManager.enqueueDownload(entry) }
     }
 }

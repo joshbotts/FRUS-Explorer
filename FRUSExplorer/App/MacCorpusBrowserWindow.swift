@@ -9,6 +9,7 @@
 #if os(macOS)
 
 import SwiftUI
+import SwiftData
 
 // MARK: - CorpusBrowserWindowView
 

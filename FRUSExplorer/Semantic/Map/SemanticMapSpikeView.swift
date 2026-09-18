@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import SwiftData
 import MetalKit
 import simd
 

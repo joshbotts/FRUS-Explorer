@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 import Charts
 
 // MARK: - SourceProvenanceDashboard

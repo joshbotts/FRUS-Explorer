@@ -9,6 +9,7 @@
 #if os(macOS)
 
 import SwiftUI
+import SwiftData
 import AppKit
 
 /// The root view of the main document window on macOS.
