@@ -112,9 +112,9 @@ import XCTest
 ///          can require "Index Now" without tapping it. The launch helper's count of tests needing
 ///          a seam, stale since round 2 ("three of the five"), now says five of eight
 //
-// Note: the iOS 26 SDK isolates the XCUI APIs to the main actor, so this file emits the same
-// "main actor-isolated … nonisolated context" warnings the other UI suites do (see the note at
-// the head of `UIObstructionTests` for why `@MainActor` on the class is not the fix).
+// Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
+// `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
+@MainActor
 final class BrowseNestedSectionTests: XCTestCase {
 
     /// The manifest volume the fixture is written for — the same one `CompilationDocumentsTests`
@@ -185,7 +185,7 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// it has paged a tab off screen. Shared with every other suite.
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
@@ -210,7 +210,7 @@ final class BrowseNestedSectionTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app = nil
     }
 

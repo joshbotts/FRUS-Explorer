@@ -253,6 +253,7 @@ struct SemanticFeedbackLogTests {
     /// Era labels come from the app's own banding, so feedback is comparable with every other
     /// era-split surface rather than with a second scheme invented for this screen.
     @Test("Stored era values render through the app's own CoverageEra labels")
+    @MainActor
     func eraLabelsUseCoverageEra() {
         #expect(SemanticFeedbackView.eraLabel("0") == CoverageEra.pre1900.label)
         #expect(SemanticFeedbackView.eraLabel("2") == CoverageEra.coldWar.label)

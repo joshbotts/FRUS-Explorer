@@ -195,11 +195,11 @@ struct ManuscriptRepositoryGuidanceTests {
     /// Every destination is an absolute HTTPS URL. A relative or plain-HTTP one would be a
     /// broken or downgraded link on a screen whose whole job is pointing somewhere real.
     @Test("Every destination is an absolute HTTPS URL")
-    func destinationsAreHTTPS() {
+    func destinationsAreHTTPS() throws {
         for entry in ManuscriptRepositoryGuidance.entries {
-            let url = try? #require(entry.url, Comment(rawValue: "\(entry.name) has no destination"))
-            #expect(url?.scheme == "https", Comment(rawValue: "\(entry.name): \(url?.absoluteString ?? "nil")"))
-            #expect(url?.host?.isEmpty == false, Comment(rawValue: "\(entry.name) has no host"))
+            let url = try #require(entry.url, Comment(rawValue: "\(entry.name) has no destination"))
+            #expect(url.scheme == "https", Comment(rawValue: "\(entry.name): \(url.absoluteString)"))
+            #expect(url.host?.isEmpty == false, Comment(rawValue: "\(entry.name) has no host"))
         }
     }
 

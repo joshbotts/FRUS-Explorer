@@ -166,7 +166,7 @@ struct QueryMethodAppendixCoverageTests {
     /// It must also survive the alphabetically-first corpus being the complete one — reading the
     /// caveat off `first` rather than off the first that *has* one is the silent way to lose it.
     @Test("The logging caveat appears exactly once, whichever corpus carries it")
-    func loggingCaveatAppearsOnce() {
+    func loggingCaveatAppearsOnce() throws {
         let subject = appendix([search("suez", corpus: corpusA, project: projectA),
                                 search("abadan", corpus: corpusB, project: projectA, at: 200)],
                                // "Iran captures" sorts FIRST, and is the complete one. That is
@@ -177,8 +177,8 @@ struct QueryMethodAppendixCoverageTests {
                                                    opened: 1, loggingOn: false),
                                           coverage(corpusB, "Iran captures", engaged: 7, total: 80,
                                                    opened: 7, loggingOn: true)])
-        let caveat = try? #require(subject.coverageLines.last)
-        #expect(caveat?.contains("floor") == true, "expected the logging caveat, got: \(caveat ?? "nil")")
+        let caveat = try #require(subject.coverageLines.last)
+        #expect(caveat.contains("floor"), "expected the logging caveat, got: \(caveat)")
         let markdown = subject.markdown
         let occurrences = markdown.components(separatedBy: "research logging is off").count - 1
         #expect(occurrences == 1, "the device-wide caveat was printed \(occurrences) times")

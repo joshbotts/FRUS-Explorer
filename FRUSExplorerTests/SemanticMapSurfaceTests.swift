@@ -746,6 +746,7 @@ struct SemanticMapSurfaceTests {
     /// measurement behind it is in the code. This pins both ends: a thin volume is left uncoloured,
     /// and a volume at the floor is not.
     @Test("The provenance floor excludes thin volumes and keeps the ones at the line")
+    @MainActor
     func provenanceFloorExcludesThinVolumes() {
         let below = VolumeProvenance(volumeId: "frus1898", decade: 1890, totalNotes: 1,
                                      counts: ["unrecognized": 1])
@@ -1322,7 +1323,7 @@ struct SemanticMapSurfaceTests {
         let uniform = SemanticAxis(
             direction: [Float](repeating: 1 / Float(16).squareRoot(), count: 16),
             negativeLabel: "a", positiveLabel: "b")
-        var allSet: [UInt8] = [0xFF, 0xFF]
+        let allSet: [UInt8] = [0xFF, 0xFF]
         var extreme = Float(0)
         allSet.withUnsafeBytes { raw in
             extreme = uniform.project(signBitsAt: raw.baseAddress!, row: 0, bytesPerRow: 2)
@@ -1472,11 +1473,11 @@ struct SemanticMapExportTests {
     /// take a lens LABEL, so the caption was structurally unreachable — a figure or CSV taken on
     /// that lens made a stronger claim than the data supports and said nothing about it.
     @Test("A lens with a caveat carries it into the export; one without adds nothing")
-    func lensCaptionReachesTheExport() {
+    func lensCaptionReachesTheExport() throws {
         let flagged = SemanticMapExport.provenance(
             index: index(), scopeLabel: nil, scopedDocumentCount: nil,
             lens: .provenance, indexedVolumeCount: 1)
-        let caption = try? #require(SemanticMapLens.provenance.caption)
+        let caption = try #require(SemanticMapLens.provenance.caption)
         #expect(flagged.extraCaveats.contains { $0 == caption })
         #expect(flagged.extraCaveats.joined(separator: " ").contains("plurality"))
 

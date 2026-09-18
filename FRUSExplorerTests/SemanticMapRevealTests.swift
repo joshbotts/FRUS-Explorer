@@ -443,6 +443,7 @@ struct SemanticMapRevealTests {
 
     /// The map's neighbour list must ask for exactly ten.
     @Test("The card asks for ten neighbours")
+    @MainActor
     func neighbourCountIsTen() {
         #expect(SemanticMapSpikeView.nearestCount == 10)
     }

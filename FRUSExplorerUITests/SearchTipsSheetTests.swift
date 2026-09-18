@@ -54,7 +54,7 @@ final class SearchTipsSheetTests: XCTestCase {
     /// navigator driving a dead process.
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         UITestPresentation.dismissAnyPresentation(in: app)
         app?.terminate()
         app = nil

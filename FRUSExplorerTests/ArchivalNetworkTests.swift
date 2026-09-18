@@ -484,7 +484,7 @@ struct ArchivalNetworkBuilderTests {
     // MARK: - Layout
 
     @Test("Each custodian gets its own quadrant, and nothing lands on top of the focus")
-    func layoutSeparatesSectors() {
+    func layoutSeparatesSectors() throws {
         let focus = record("f", name: "Focus", repository: "Department of State",
                            volumes: ["v1", "v2", "v3", "v4"])
         let partners = [
@@ -501,8 +501,7 @@ struct ArchivalNetworkBuilderTests {
 
         #expect(layout.positions[focus.id] == layout.center)
         for node in graph.nodes {
-            let position = try? #require(layout.positions[node.id])
-            guard let position else { continue }
+            let position = try #require(layout.positions[node.id])
             let dx = position.x - layout.center.x
             let dy = position.y - layout.center.y
             // Screen y grows downward: State is west-north, lots north-east, libraries

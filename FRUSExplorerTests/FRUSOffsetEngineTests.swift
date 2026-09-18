@@ -641,6 +641,7 @@ struct FloatingSelectionBarGeometryTests {
     private let barSize = CGSize(width: 200, height: 40)   // halfW 100, halfH 20
 
     @Test("Below anchoring centres the bar under the selection")
+    @MainActor
     func belowCentred() {
         let center = FloatingSelectionBar.anchorCenter(
             selection: CGRect(x: 100, y: 200, width: 60, height: 20),   // midX 130, maxY 220
@@ -650,6 +651,7 @@ struct FloatingSelectionBarGeometryTests {
     }
 
     @Test("A selection near the left edge clamps the bar fully on-screen")
+    @MainActor
     func clampsLeft() {
         let center = FloatingSelectionBar.anchorCenter(
             selection: CGRect(x: 0, y: 200, width: 20, height: 20),     // midX 10
@@ -659,6 +661,7 @@ struct FloatingSelectionBarGeometryTests {
     }
 
     @Test("A selection near the right edge clamps the bar fully on-screen")
+    @MainActor
     func clampsRight() {
         let center = FloatingSelectionBar.anchorCenter(
             selection: CGRect(x: 780, y: 200, width: 20, height: 20),   // midX 790
@@ -668,6 +671,7 @@ struct FloatingSelectionBarGeometryTests {
     }
 
     @Test("Below anchoring flips above when it would clip past the container bottom")
+    @MainActor
     func flipsAboveNearBottom() {
         let center = FloatingSelectionBar.anchorCenter(
             selection: CGRect(x: 100, y: 560, width: 60, height: 20),   // maxY 580, minY 560
@@ -677,6 +681,7 @@ struct FloatingSelectionBarGeometryTests {
     }
 
     @Test("Above anchoring (macOS) flips below when it would clip past the container top")
+    @MainActor
     func flipsBelowNearTop() {
         let center = FloatingSelectionBar.anchorCenter(
             selection: CGRect(x: 100, y: 10, width: 60, height: 20),    // minY 10, maxY 30

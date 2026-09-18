@@ -201,6 +201,7 @@ struct DigitizedRangeIndexTests {
     /// The caveat's job is to refuse the claim the link invites. If it stops saying so, the
     /// panel starts implying the scan is of the document.
     @Test("The caveat declines to claim the document")
+    @MainActor
     func caveatDeclinesTheDocument() {
         let caveat = SourceExplorerView.scanCaveat
         #expect(caveat.localizedCaseInsensitiveContains("not of this document"),
@@ -347,6 +348,7 @@ struct FlatOutlineExpandControlTests {
 
     /// The shape #725 produces for the paragraph-encoded volumes: every collection at depth 0.
     @Test("A flat outline has nothing to expand")
+    @MainActor
     func flatOutlineHasNoExpandableNodes() {
         let tree = VolumeSourcesView.buildTree([
             node("CFM Files, Lot M 88", depth: 0),
@@ -361,6 +363,7 @@ struct FlatOutlineExpandControlTests {
     /// A nested outline — what #728 gives frus1952-54Guat, and what the 240 `<item>` volumes
     /// have — must still offer the control.
     @Test("A nested outline has something to expand")
+    @MainActor
     func nestedOutlineHasExpandableNodes() {
         let tree = VolumeSourcesView.buildTree([
             node("Dwight D. Eisenhower Library, Abilene, Kansas", depth: 0),

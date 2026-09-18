@@ -43,6 +43,7 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — #1279: extracted from three copies whose "mirrors" comments formed a chain
+@MainActor
 enum AnalysisToolsMenu {
 
     /// The analysis menu's accessibility label.
@@ -77,7 +78,7 @@ enum AnalysisToolsMenu {
                      file: StaticString = #filePath,
                      line: UInt = #line) throws {
         // `resolveTimeout: 15` for the reason the parameter's own doc gives: every caller reaches
-        // this from a test body moments after `setUpWithError`'s `launch()`, and a cold start can
+        // this from a test body moments after `setUp`'s `launch()`, and a cold start can
         // take longer than five seconds to draw a tab bar at all. Applying that rule at one call
         // site and not the others would be the drift this file exists to end.
         XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15, file: file, line: line).tapped, """
@@ -162,6 +163,7 @@ enum AnalysisToolsMenu {
 ///
 /// Version history:
 ///   1.0 — #1279: initial implementation
+@MainActor
 enum UITestPresentation {
 
     /// The labels that close a presented surface, in the order to try them.

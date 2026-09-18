@@ -179,14 +179,14 @@ struct NamedFileSeriesRoutingTests {
 
     /// Every destination links somewhere, and record-group links are canonical catalog records.
     @Test("Every destination builds a usable link")
-    func destinationsLink() {
+    func destinationsLink() throws {
         for entry in NamedFileSeriesRouting.entries + [NamedFileSeriesRouting.foreignServicePosts] {
-            let url = try? #require(NamedFileSeriesRouting.url(entry),
-                                    Comment(rawValue: "\(NamedFileSeriesRouting.title(entry)) has no link"))
-            #expect(url?.scheme == "https",
-                    Comment(rawValue: "\(NamedFileSeriesRouting.title(entry)): \(url?.absoluteString ?? "nil")"))
+            let url = try #require(NamedFileSeriesRouting.url(entry),
+                                   Comment(rawValue: "\(NamedFileSeriesRouting.title(entry)) has no link"))
+            #expect(url.scheme == "https",
+                    Comment(rawValue: "\(NamedFileSeriesRouting.title(entry)): \(url.absoluteString)"))
             if case .recordGroup(_, let naId, _) = entry.destination {
-                #expect(url?.absoluteString == "https://catalog.archives.gov/id/\(naId)")
+                #expect(url.absoluteString == "https://catalog.archives.gov/id/\(naId)")
             }
         }
     }

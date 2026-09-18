@@ -361,6 +361,7 @@ struct WordCloudDriftFieldTests {
     // MARK: - The lens cycle
 
     @Test("The crossfade runs at the head of each hold and then settles")
+    @MainActor
     func lensCycleCrossfades() {
         let cadence = FRUSTheme.cloudLensCadence
         // Just after a boundary: mid-crossfade.
@@ -374,6 +375,7 @@ struct WordCloudDriftFieldTests {
     }
 
     @Test("Lens indices wrap and never go negative")
+    @MainActor
     func lensCycleWraps() {
         for step in 0..<200 {
             let c = WordCloudDriftCanvas.cycle(at: Double(step) * 0.7, layerCount: 4)
@@ -384,6 +386,7 @@ struct WordCloudDriftFieldTests {
     }
 
     @Test("At t=0 the cycle names the PREVIOUS layer, which is why the clocks are separate")
+    @MainActor
     func cycleAtZeroWrapsBackwards() {
         // Not a hypothetical. Reduce Motion originally pinned one clock for both the drift
         // and the lens cycle, and this is what that produced: at t = 0 `outgoing` wraps to
@@ -398,6 +401,7 @@ struct WordCloudDriftFieldTests {
     }
 
     @Test("A single lens never cross-fades with itself")
+    @MainActor
     func singleLayerDoesNotCrossfade() {
         let c = WordCloudDriftCanvas.cycle(at: 12.3, layerCount: 1)
         #expect(c.incoming == 0 && c.outgoing == 0 && c.progress == 0)

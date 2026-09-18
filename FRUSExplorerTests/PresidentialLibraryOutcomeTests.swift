@@ -190,7 +190,7 @@ struct PresidentialLibraryOutcomeTests {
     /// live. It is fixture-tested rather than deleted because the alternative render (collection
     /// only) would silently drop the fact that exactly two series answer to the cited name.
     @Test("A narrowed candidate set is listed and hedged")
-    func narrowedCandidatesAreListed() {
+    func narrowedCandidatesAreListed() throws {
         let twins = [
             PresidentialLibraryIndex.Series(naId: 1, title: "Country File", inclusiveDates: nil),
             PresidentialLibraryIndex.Series(naId: 2, title: "Country File", inclusiveDates: nil),
@@ -202,8 +202,8 @@ struct PresidentialLibraryOutcomeTests {
         let outcome = PresidentialLibraryOutcome.collection(
             collection, candidates: Array(twins.prefix(2)))
 
-        let listed = try? #require(outcome.candidateSeries)
-        #expect(listed?.count == 2)
+        let listed = try #require(outcome.candidateSeries)
+        #expect(listed.count == 2)
         #expect(outcome.candidateTotal == 2)
         #expect(outcome.caveat != nil, "candidates must be hedged")
         #expect(outcome.resolvedSeries == nil)
@@ -213,7 +213,7 @@ struct PresidentialLibraryOutcomeTests {
     /// The display limit must not drop rows silently — the caveat states the true total whenever
     /// it exceeds what is listed.
     @Test("A candidate set past the display limit says how many there are")
-    func oversizeCandidateSetStatesTheTotal() {
+    func oversizeCandidateSetStatesTheTotal() throws {
         let many = (1...12).map {
             PresidentialLibraryIndex.Series(naId: $0, title: "Country File", inclusiveDates: nil)
         }
@@ -226,8 +226,8 @@ struct PresidentialLibraryOutcomeTests {
 
         #expect(outcome.candidateSeries?.count == PresidentialLibraryOutcome.candidateDisplayLimit)
         #expect(outcome.candidateTotal == 12)
-        let caveat = try? #require(outcome.caveat)
-        #expect(caveat?.contains("12") == true,
+        let caveat = try #require(outcome.caveat)
+        #expect(caveat.contains("12"),
                 "the caveat must state the full count, not only what is shown")
     }
 

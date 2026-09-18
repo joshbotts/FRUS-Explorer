@@ -16645,3 +16645,53 @@ redundant-`Sendable` residue CLAUDE.md already records.
   `try? #require(x)` reported "redundant because never nil"; one is worth reading on its own —
   `CIAJobKeyingTests:245` asserts `parser.parse(…) != nil` on a NON-optional return, so that
   expectation can never fail.
+
+## Session 2026-09-18 — the test targets to zero warnings under Xcode 27, and 13 assertions that stopped asserting
+
+**Why.** #1313 took the app targets to zero and recorded the test targets as out of scope: a clean
+`build-for-testing` on Xcode 27.0 / Swift 6.4 reported **53** unit-test and **1,438** UI-test
+warnings. Now zero; the only warning left in a clean build of either scheme is the
+`GeneratedSummary` `@Model` residue.
+
+**UI tests (1,438 → 0), all 14 files.** The XCUI APIs are main-actor since the iOS 26 SDK. Every
+suite and the four shared helpers (`TabBarNavigator`, `UITestLaunch`, `AnalysisToolsMenu`,
+`UITestPresentation`) are now `@MainActor`, and each suite overrides the ASYNC `setUp()`/`tearDown()`
+instead of `setUpWithError`/`tearDownWithError`. That is the step the old `UIObstructionTests` note
+said was blocked ("sending self"): the SYNC overrides are nonisolated in XCTestCase, so a
+`@MainActor` class still warned inside them — which is exactly what `SearchTipsSheetTests` and
+`ToolbarOverflowAccessibilityTests` showed, 4 warnings each — while an async override takes the
+class's isolation. No suite uses `addTeardownBlock` or mixes the variants, so XCTest's ordering
+between them cannot change anything. The note is rewritten, and the two "not the fix" pointers in
+`CompilationDocumentsTests` / `BrowseNestedSectionTests` with it.
+
+**Unit tests (53 → 0).**
+- **58 functions `@MainActor`**, per test rather than per suite, so nothing else moves onto the main
+  actor: each reads a View's static (View conformance isolates the whole type). Moving those rules
+  off their views is the app-side answer the view-statics memory gives for HELPERS; for a test OF
+  the view's rule, running it on the view's actor is correct.
+- **12 `try? #require(x)` → `try #require(x)` in a `throws` test.** Measured in a scratch package:
+  under Swift 6.4 `try? #require(opt)` binds Swift Testing's NON-OPTIONAL overload, so a nil
+  **passes silently** where `try #require` fails. Eleven were warned ("redundant because … never
+  equals nil"); `HybridSearchModeTests` had the same shape without the warning. Downstream `?.`
+  chains are gone; `ArchivalNetworkTests.layoutSeparatesSectors` also loses a
+  `guard let … else { continue }` that skipped exactly the case the require existed to catch.
+- **`CIAJobKeyingTests.decimalClassWithFractionParses`** (`FrontMatterJobKeyingTests`) asserted
+  `parse(…) != nil` on a non-optional return. It now requires `.centralFiles` with a file identifier
+  that keeps the `½`. A/B by mutation: prose input fails via `Issue.record` (`.unrecognized`), the
+  class without its fraction fails the `½` expectation, the real note passes.
+- Three one-offs: an `await` on the `nonisolated` `shardURL`, a never-mutated `var`, a trailing
+  closure in an `if` condition (`prefix(while:)`).
+
+**Verified.**
+- Clean `build-for-testing` (iOS) + clean `build` (macOS): SUCCEEDED, one warning (the residue).
+- Unit target, iPhone 17: **4,968 tests — 4,937 passed, 23 skipped, 8 failed**, all 8 Keychain
+  `-34018` (`errSecMissingEntitlement`) from an UNSIGNED build; signed, those three suites pass
+  **65/65**.
+- UI target, iPhone 17: **58 — 42 passed, 16 skipped** (every skip an explicit iPad-only guard),
+  0 failed. `UIObstructionTests` on iPad Pro 13-inch: **16 — 11 passed, 5 skipped**, 0 failed.
+- UI target, iPad mini (A17 Pro): **58 — 40 passed, 14 skipped, 4 failed** — and **v2 at
+  `f635cce9` fails the SAME four on the same simulator with the same messages**, so they predate
+  this change: `ToolbarOverflowAccessibilityTests` ×2, `AnalyticsRotationTests
+  .testRotateLandscapeToPortraitIsSafe`, `UIObstructionTests.testSemanticMapIsNotCompactOniPad`.
+  Every message is a missing "Analysis Tools" menu or Browse button beside a PAGED tab bar
+  ("Next Page") — plausibly iOS 27's layout at the mini's width. Not investigated here.

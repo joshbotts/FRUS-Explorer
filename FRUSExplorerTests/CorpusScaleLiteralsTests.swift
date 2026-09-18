@@ -35,6 +35,7 @@ struct CorpusScaleLiteralsTests {
 
     /// The one token, the one substitution, with the reader's grouping separators.
     @Test("The Research Guide token becomes the count, grouped, and nothing else changes")
+    @MainActor
     func educationTokenSubstitution() {
         let prose = "All {{volumes}} volumes are now available as structured digital texts."
         #expect(IndexingEducationView.substituted(prose, volumeCount: 553)

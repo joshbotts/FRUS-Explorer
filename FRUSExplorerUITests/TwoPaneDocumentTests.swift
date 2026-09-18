@@ -44,6 +44,7 @@ import XCTest
 ///
 /// Version history:
 ///   1.0 — F-2 follow-up: the document-into-the-detail-pane interaction
+@MainActor
 final class TwoPaneDocumentTests: XCTestCase {
 
     /// The manifest volume the fixture is written for — the same one `CompilationDocumentsTests`
@@ -66,7 +67,7 @@ final class TwoPaneDocumentTests: XCTestCase {
     /// hand-copied ladders, none of which could page.
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
@@ -77,7 +78,7 @@ final class TwoPaneDocumentTests: XCTestCase {
         app.launch()
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         app = nil
     }
 

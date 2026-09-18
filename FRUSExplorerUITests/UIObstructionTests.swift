@@ -187,12 +187,13 @@ import UIKit
 ///              green on iPhone 17 with the plain tap.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
-// actor, so building this suite under Swift 6 emits `main actor-isolated … nonisolated
-// context` warnings on every UI call throughout the file. These are pre-existing and
-// SDK-driven (they cover the original scenarios 1–3 too); `@MainActor` on the class would
-// silence them but conflicts with the throwing `setUpWithError`/`tearDownWithError`
-// overrides ("sending self"), so they are left as-is. The app-target zero-warning gate
-// (`CodingStandardsAuditTests`) does not cover this UI-test target.
+// actor. Every UI suite is therefore `@MainActor` and overrides the ASYNC `setUp()`/`tearDown()`:
+// XCTestCase declares the synchronous `setUpWithError`/`tearDownWithError` nonisolated, so a
+// `@MainActor` class overriding THOSE still warns on every XCUI call inside them (the "sending
+// self" conflict this note used to cite), while an async override takes the class's isolation.
+// Until 2026-09-17 the suites were left unannotated and emitted ~1,400 warnings between them. No
+// suite uses `addTeardownBlock` or mixes the two variants, so XCTest's ordering between them is moot.
+@MainActor
 final class UIObstructionTests: XCTestCase {
 
     var app: XCUIApplication!
@@ -213,7 +214,7 @@ final class UIObstructionTests: XCTestCase {
     /// The closure keeps it pointed at the CURRENT `app` across the relaunches two scenarios do.
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
@@ -225,7 +226,7 @@ final class UIObstructionTests: XCTestCase {
         baselineSidebarExpanded = navigator.sidebarIsExpanded
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // Restore to the BASELINE, whoever displaced it — a flag cannot say which way the
         // representation moved, and this runs after an `XCTFail` unwind that no flag set around a
         // tap survives. A short poll rather than `timeout: 0`: the toggle is briefly absent while a
@@ -1324,7 +1325,7 @@ final class UIObstructionTests: XCTestCase {
         )
 
         // Relaunch at an accessibility content size. The category is applied at launch, so the
-        // suite's shared `setUpWithError` app cannot be reused.
+        // suite's shared `setUp` app cannot be reused.
         app.terminate()
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
