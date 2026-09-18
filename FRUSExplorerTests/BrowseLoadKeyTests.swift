@@ -47,6 +47,10 @@ import Foundation
 ///   1.0 — #1301 round 2: initial implementation
 ///   1.1 — #1301 round 3: `CollectionDetailLoad` and `ClusterDrillState` — the identity-carrying
 ///          state that replaces two resets a mutation could delete with every suite green
+///   1.2 — #1301 round 4: a superseded load's late write must be DROPPED. Round 3's values adopted
+///          a write naming another payload, so a late write for A, landing after B's task had
+///          recorded, erased B's data — the Cited Over Time chart for good, and a cluster drill
+///          back to its spinner
 @Suite("Browse load keys vary with their payload")
 @MainActor
 struct BrowseLoadKeyTests {
@@ -252,6 +256,69 @@ struct BrowseLoadKeyTests {
             The empty state is per cluster too: "This cluster's data could not be loaded." under \
             a cluster whose load is merely still running is a terminal claim about a live one.
             """)
+    }
+
+    // MARK: - A superseded load's late write (#1301 round 4)
+
+    @Test("A superseded collection load that lands late cannot erase the record on screen")
+    func aStaleCollectionWriteCannotEraseTheCurrentRecord() {
+        // The order the keyed task really writes in across a reuse from A to B, measured by the
+        // round-3 review's probe: B's task records its timeline synchronously before its first
+        // await, then A's superseded task — whose awaits no cancellation interrupts — lands its
+        // related list and its counts, then B's own two arrive.
+        let era = CollectionEraCount(
+            era: CollectionCoverageEra(index: 0, startYear: 1945, endYear: 1952), volumeCount: 9)
+        var detail = CollectionDetailLoad(for: "b")
+        detail.record(timeline: [era], for: "b")
+        detail.record(related: [], for: "a")
+        detail.record(localStats: IndexingPipeline.CollectionLocalStats(documentCount: 7,
+                                                                        volumeCount: 2),
+                      for: "a")
+        detail.record(related: [], for: "b")
+        detail.record(localStats: IndexingPipeline.CollectionLocalStats(documentCount: 3,
+                                                                        volumeCount: 1),
+                      for: "b")
+
+        #expect(detail.timeline(for: "b").count == 1, """
+            A's late write erased B's timeline. B's task wrote it before its first await and never \
+            writes it again, and the Cited Over Time section is drawn only when the timeline is \
+            non-empty — so the chart is gone for as long as the reader stays on B, with nothing to \
+            say it ever existed. A write from a load the level has moved on from must be DROPPED, \
+            not adopted.
+            """)
+        #expect(detail.localStats(for: "b")?.documentCount == 3, "and B's own counts landed")
+        #expect(detail.related(for: "b") != nil, "and B's own related list")
+    }
+
+    @Test("A superseded cluster load that lands late cannot erase the cluster on screen")
+    func aStaleClusterWriteCannotEraseTheCurrentDrill() {
+        var drill = ClusterDrillState(for: 17)
+        drill.record(cluster: SemanticMapArtifacts.Cluster(id: 17, terms: [], documentCount: 2,
+                                                           centreX: 0, centreY: 0, eraCounts: [:]),
+                     keys: ["v/d1", "v/d2"],
+                     shownCount: 2,
+                     for: 17)
+        // Cluster 4's superseded membership scan lands after 17's.
+        drill.record(cluster: SemanticMapArtifacts.Cluster(id: 4, terms: [], documentCount: 1,
+                                                           centreX: 0, centreY: 0, eraCounts: [:]),
+                     keys: ["w/d9"],
+                     shownCount: 1,
+                     for: 4)
+
+        #expect(drill.cluster(for: 17)?.id == 17, """
+            Cluster 4's late write erased cluster 17's drill. With both `cluster(for:)` and \
+            `unavailable(for:)` answering nil the view draws its spinner, and nothing re-runs the \
+            membership task — its key has not changed — so that spinner is #1301's screen on the \
+            Clusters axis, reached by a write that should have been dropped.
+            """)
+        #expect(drill.keys(for: 17).count == 2, "and 17's members survive it")
+
+        // The same for the other write a superseded scan can make.
+        drill.record(unavailable: .noArtifact, for: 4)
+        #expect(drill.cluster(for: 17)?.id == 17, """
+            A superseded load's "unavailable" erased the cluster on screen the same way.
+            """)
+        #expect(drill.unavailable(for: 17) == nil, "and it must not be reported for 17 either")
     }
 
     // MARK: - The gate the compilation load runs behind
