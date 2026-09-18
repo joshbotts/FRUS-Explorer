@@ -54,7 +54,8 @@ import Foundation
 ///          back to its spinner. Every fixture now starts where its view starts (`""`,
 ///          `.noCluster`) and writes with the ticket `open(for:)` issues, because round 3's cluster
 ///          fixtures all started at a real id and so never took the line every real drill runs
-///          through; and re-opening the value for the payload it holds is pinned to keep it
+///          through; and re-opening the value for the payload it holds is pinned to keep it. The
+///          load gate's message names the side-load retraction's seven sites
 @Suite("Browse load keys vary with their payload")
 @MainActor
 struct BrowseLoadKeyTests {
@@ -436,8 +437,9 @@ struct BrowseLoadKeyTests {
         #expect(CompilationDocumentsPresentation.shouldLoad(isIndexed: true), """
             An indexed volume loads. This is the whole of the gate: the `guard volume != nil` \
             #1301 deleted asked the MANIFEST a question the load never needed — one more \
-            condition, on a lookup no code path below it reads. Round 2's messages here and in \
-            three comments credited it with stranding a SIDE-LOADED volume; that is not \
+            condition, on a lookup no code path below it reads. Round 2's message here, three \
+            doc comments and three passages of the plan — seven sites — credited it with \
+            stranding a SIDE-LOADED volume; that is not \
             reachable, and saying so in the message a maintainer reads at 2 a.m. when this fires \
             would send them looking for a test that does not exist. Since #777 \
             `ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume on disk is \

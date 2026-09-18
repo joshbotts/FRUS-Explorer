@@ -182,15 +182,15 @@ public enum BrowserDocumentLoadFailure: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #1301: initial implementation
+///   1.1 — #1301 round 2: ``rowKind`` hoists the presentation → row mapping out of the view's
+///          `@ViewBuilder`, where a mutation could delete the error row with every test green;
+///          ``shouldLoad(isIndexed:)`` is the caller's gate, with a signature that cannot express
+///          the manifest lookup #1301 deleted
 ///   1.2 — #1301 round 3: the side-loaded-volume story behind the deleted manifest guard is
 ///          replaced by what is measurable about it, and two doc comments here named pins by
 ///          names no test has (`IndexRequiredWinsOverNotStarted`,
 ///          `LoadingIsProducedOnlyByAnInFlightLoad` — the functions are lower-cased and the
 ///          first is `indexRequiredWinsOverEveryLoadState`)
-///   1.1 — #1301 round 2: ``rowKind`` hoists the presentation → row mapping out of the view's
-///          `@ViewBuilder`, where a mutation could delete the error row with every test green;
-///          ``shouldLoad(isIndexed:)`` is the caller's gate, with a signature that cannot express
-///          the manifest lookup #1301 deleted
 public enum CompilationDocumentsPresentation: Equatable {
 
     /// A prose-only front-matter leaf — offer "Read [Title]" instead of a document list.

@@ -37,7 +37,7 @@ import SwiftUI
 /// reviewer checks one line per level rather than an expression. That is a structural gate, not a
 /// test, and the difference is stated rather than blurred — deleting a modifier call still
 /// compiles. Where a self-to-self step is reachable, a walk is the gate instead:
-/// `BrowseNestedSectionTests` steps `.compilation → .compilation` three times (twice into a
+/// `BrowseNestedSectionTests` steps `.compilation → .compilation` three times (once into a
 /// section whose head repeats its parent's) and `.volume → .volume` once from the corpus root's
 /// search. For `.clusterDocuments` and `.archivalCollection` no row appends the step, so no walk
 /// can exist; those two are held instead by state that carries its own identity
@@ -55,6 +55,9 @@ import SwiftUI
 ///   1.1 — #1301 round 3: every keyed level gets a modifier here, so no call site holds a key;
 ///          the `.volume` level gains a behavioural walk; and the side-loaded-volume story behind
 ///          the deleted manifest guard is replaced by what is measurable about it
+///   1.2 — #1301 round 4: text only. The walk steps into a same-head section ONCE, not twice; the
+///          side-load retraction names its seven sites; and `clusterMetadataLoad`'s count component
+///          is recorded as accepted rather than gated
 public enum BrowseLoadKey {
 
     /// One compilation section's documents — **also the cache key** the rows are stored under.
@@ -142,8 +145,9 @@ extension View {
     ///     the gate is on disk, and since #777 `ManifestStore.browsableEntries` is
     ///     `catalogue + localEntries`, which folds every volume on disk into `allVolumes` and so
     ///     into `allSubseriesGroups`. A reinstated guard would therefore refuse **no volume a
-    ///     reader can reach** — not "only side-loaded ones", which is what three comments, a test
-    ///     message and the plan used to say about a failure nobody has reproduced.
+    ///     reader can reach** — not "only side-loaded ones", which is what seven sites used to say
+    ///     about a failure nobody has reproduced: three doc comments, a test message, and three
+    ///     passages of the plan.
     ///  3. **Dropping the gate that remains.** `isIndexed` must be checked: `document_cache`
     ///     answers an unindexed volume with an empty set, which records `.loaded` — the one state
     ///     that short-circuits — so every later kick returns early and the reader is left on "No
@@ -203,6 +207,11 @@ extension View {
     /// Both components are arguments here rather than a key at the call site, because the
     /// count-only form — which drops the cluster — still re-keys when an index pass finishes and
     /// therefore reads in a diff as the working B-4 idiom.
+    ///
+    /// **The count is accepted rather than gated (#1301 round 4).** A call passing a constant
+    /// count compiles and leaves every suite green, and its harm needs no self-to-self step: after
+    /// an index pass the drill's rows turn openable but keep a fallback title and no date until the
+    /// reader leaves. `ClusterDocumentsView`'s call site says why no walk can see it today.
     ///
     /// - Parameters:
     ///   - clusterId: The cluster being shown.

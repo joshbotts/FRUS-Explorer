@@ -91,6 +91,10 @@ import SwiftUI
 ///          `error.localizedDescription`, which for the only reachable failure named a Swift type;
 ///          its **Retry** is a `CompilationRetryAction` carrying the key it asks for. Kick 3's
 ///          comment named a state no view can produce.
+///   2.4 — #1301 round 4: kick 2's comment said it served a Settings-triggered batch. It serves
+///          every index not started from this view — the automatic index after a download above
+///          all, which makes it the only loader on the download → open → browse path — and
+///          `BrowseNestedSectionTests` now walks it. Comment only; no behaviour changed.
 struct CompilationView: View {
 
     let vm: BrowserViewModel
@@ -250,9 +254,13 @@ struct CompilationView: View {
                 Task { await vm.loadDocuments(for: section, volumeId: volumeId) }
             }
         }
-        // 2. External (Settings-triggered) bulk indexing: when the pipeline finishes and progress
-        //    drops to nil, re-check whether our volume is now indexed. This prevents the "Index
-        //    Required" banner from persisting after a batch run completes outside the browser.
+        // 2. Any index NOT started from this view: when the pipeline finishes a volume, progress
+        //    drops to nil, so re-check whether ours is now indexed. That includes a Settings batch,
+        //    and — the common case, which round 3 missed — the automatic index `onVolumeDownloaded`
+        //    starts after every download: a reader who opens a chapter of a volume that has just
+        //    downloaded is waiting on this kick alone. `vm.isIndexing` is set only by Index Now, so
+        //    kick 1 never fires for it (#1301 round 4; walked by
+        //    `testAnIndexStartedElsewhereFillsTheOpenCompilation`).
         .onChange(of: appState.currentIndexingProgress) { _, progress in
             guard progress == nil else { return }
             guard !vm.isIndexing else { return }

@@ -617,7 +617,9 @@ struct ClusterDrillState {
 ///   1.4 — #1301 round 4: the membership load opens ``ClusterDrillState`` for its cluster and
 ///          writes with the ticket that issues, so a superseded scan's late write is dropped rather
 ///          than erasing the cluster on screen; and both loads stop at a cancellation, which is the
-///          only guard the title and date dictionaries have
+///          only guard the title and date dictionaries have. The metadata load's indexed-volume
+///          count — round 3 counted it among the closed survivors — is recorded as ACCEPTED at its
+///          call site, with the reason no walk can see it against the UI-test fixture
 struct ClusterDocumentsView: View {
 
     /// The artifact's cluster id — valid only against the loaded generation, which is
@@ -697,6 +699,20 @@ struct ClusterDocumentsView: View {
         // reason above. Both components are arguments to the modifier, which derives the key:
         // the count-only form still re-keys on indexing, so as a key written here it read in a
         // diff as the working idiom.
+        //
+        // THE COUNT COMPONENT IS ACCEPTED, NOT GATED (#1301 round 4; round 3 counted it closed, and
+        // it is not). Passing a constant count here, or loading metadata from the membership key
+        // instead, compiles and leaves every suite green: `clusterMetadataKeyVariesWithBothComponents`
+        // holds the key FUNCTION and cannot see this call. The harm needs no self-to-self step. Tap
+        // **Index** on a degraded row, or finish any index elsewhere, and the rows turn openable —
+        // `rowState` reads `indexedVolumeIds` live — but `headers` and `dates` are never asked for
+        // again, so they keep a fallback title and no date until the reader leaves the drill. That is
+        // mild, and no walk can see it against the UI-test fixture: the seeded volume DOES appear in
+        // cluster drills as degraded rows (cluster 169's first page holds its d15, d43, d98, d115 and
+        // d119, measured from the shipped artifact), but the fixture holds none of those documents —
+        // its d1–d3 are unclustered and n1, n2 and t1 are not in the artifact — so indexing it from a
+        // drill fills no title under this code or under the mutant. A walk needs a fixture document
+        // with a clustered id, which moves every suite that reads the fixture.
         .clusterMetadataLoad(clusterId: clusterId,
                              indexedVolumeCount: appState.indexedVolumeIds.count) {
             await loadMetadata()

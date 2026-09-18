@@ -16120,11 +16120,13 @@ section's cache while the failed one keeps its error row. (M13, M37)
 reinstating that guard *through this function* is a compile error; adding a separate guard inside
 the modifier body is still possible and no test would catch it. What the change buys is that the
 gate is one named, documented function instead of a line inside a 750-line view. (M17)
-*(Round 3 correction: this paragraph, three doc comments and a test message credited that guard
-with stranding a SIDE-LOADED volume — "indexed perfectly well, absent from the catalogue". Not
-reachable. Since #777 `ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume
-on disk is in `allSubseriesGroups`; and `isIndexed` is a `document_cache` test, so anything passing
-the remaining gate is on disk. All six sites now say what is measurable.)*
+*(Round 3 correction: seven sites — this paragraph, two more passages of this entry, three doc
+comments and a test message — credited that guard with stranding a SIDE-LOADED volume — "indexed
+perfectly well, absent from the catalogue". Not reachable. Since #777
+`ManifestStore.browsableEntries` is `catalogue + localEntries`, so a volume on disk is in
+`allSubseriesGroups`; and `isIndexed` is a `document_cache` test, so anything passing the remaining
+gate is on disk. All seven now say what is measurable. The count here read "six" until round 4,
+beside "seven" below and a third count in `BrowseLoadKey.swift`.)*
 
 *The unindexed trap is measured from both ends.* A load for a volume nothing has indexed records
 `.loaded` with no rows — `document_cache` answers it with an empty set — and `.loaded` is the one
@@ -16288,6 +16290,11 @@ value that reports them only **for the payload they were loaded for** (`ClusterD
 `CollectionDetailLoad`), so the reset is not a statement anyone can delete, and a load that lands
 after the level moved on — both await a detached pass that no cancellation interrupts — cannot leave
 one payload's figures under another's name. Five assertions pin it; five mutants kill them.
+*(Round 4 correction: true in that direction and silent about the other. Both values ADOPTED a write
+naming another payload, so the same late write ERASED what the new payload's task had already
+recorded — B's Cited Over Time chart for good, a cluster drill back to its spinner. And no cluster
+fixture started where the view starts, so the adopt line every real drill ran through was unpinned.
+Round 4 drops such writes and pins that path.)*
 
 **Four claims retracted, each confirmed by a skeptic.**
  1. *The side-loaded volume.* Seven sites justified deleting `guard volume != nil` with a volume
@@ -16310,7 +16317,8 @@ one payload's figures under another's name. Five assertions pin it; five mutants
     it. Its sibling `retryAfterFailureLoads` is **left alone**: its skeptic refuted that finding and
     the comment's three claims are each true at HEAD.
  4. *Two pins named by names no test has* — `IndexRequiredWinsOverNotStarted` and
-    `LoadingIsProducedOnlyByAnInFlightLoad`. Spelled as the functions are.
+    `LoadingIsProducedOnlyByAnInFlightLoad`. Spelled as the functions are. *(Round 4: one site,
+    a comment in `CompilationDocumentLoadingTests`, still carried the capital L; fixed.)*
 
 **Three more survivors closed, each by making a decision a value.** `SeedPreparation.plan(cold:contentChanged:)`
 — the re-index branch was the defect that cost #1301 a full red/green cycle, re-openable by deleting
@@ -16334,7 +16342,9 @@ it is dropped rather than left reading as the mechanism.
     values*, by construction) for the absence of a lookup nothing performs. The gate itself cannot
     express it, the doc comment now says exactly how far that goes, and the cost of the mistake is
     measured: such a guard would refuse no reachable volume.
- 2. **Kick 2, the Settings-triggered bulk index (M21).** It fires when
+ 2. **Kick 2, the Settings-triggered bulk index (M21).** *(Round 4: CLOSED, and the premise below
+    was false — kick 2 serves every index not started from the compilation, the automatic index
+    after a download above all, and a seam now stages exactly that. See round 4.)* It fires when
     `AppState.currentIndexingProgress` returns to `nil` while a compilation is open, and a reader
     cannot be in Settings and on a compilation at once, so **no UI suite can stage it**. What is
     pinned is its precondition, at the model grain — `aDeclinedLoadLeavesAKickSomethingToDo`, which
@@ -16343,7 +16353,9 @@ it is dropped rather than left reading as the mechanism.
     kick's body extracted to a named function so the CALL is an assertion — and neither pins that
     the modifier is still attached, which is the failure it would exist for. Stated in
     `UITestBrowseSeams`' own doc comment, not only here.
- 3. **The modifier calls themselves.** `.clusterMembershipLoad`, `.clusterMetadataLoad` and
+ 3. **The modifier calls themselves.** *(Round 4: this reason does not cover `.clusterMetadataLoad`'s
+    indexed-volume COUNT, whose harm needs no self-to-self step; that component is now accepted
+    under its own reason — see round 4.)* `.clusterMembershipLoad`, `.clusterMetadataLoad` and
     `.archivalCollectionLoad` can be deleted or replaced with a bare `.task` and nothing goes red,
     because no row appends `.clusterDocuments → .clusterDocuments` or
     `.archivalCollection → .archivalCollection` and a walk therefore cannot be written. The harm is
@@ -16404,5 +16416,7 @@ BUILD SUCCEEDED**, **9** unique source-warning sites. `FRUSExplorerMac`
 **8**. **The same counts and the same sites as round 2 recorded, and none is in a line this round wrote.** One is in a file it touched — `FRUSExplorerApp.swift:1649`, the long-standing `'weak' ownership of capture 'appState'` note — and it sits 600 lines above the two boot stand-down call sites this round changed. Neither `BrowseLoadKey.swift`, `ClustersBrowseView.swift`, `CollectionDetailView.swift`, `UITestBrowseSeams.swift` nor `CompilationDocumentsPresentation.swift` appears in either list.
 
 No `@Model`, no stored property, no parse-output change: **no CloudKit deploy and no index-version
-bump.** `Docs/EditableContent.md` §17's third SOURCE block moves to lines 116–118, because dropping
-the dead `errorDescription` shifted the sentence it points at.
+bump.** `Docs/EditableContent.md` §17's second SOURCE block (`browser.compilation.loadFailed.detail`)
+moves to lines 116–118, because the doc comment above `message` grew. *(Corrected in round 4: this
+said the third block, and blamed the deleted `errorDescription` — which sat at line 114, below the
+sentence, and could not have moved it.)*

@@ -61,6 +61,10 @@ import SQLite3
 ///          cache under a `.loaded` state, where before it pinned only the result and would have
 ///          passed with the guard deleted; and `readable(_:)`'s empty-description conjunct has a
 ///          fixture. The nil-pipeline message no longer claims a screen that never existed
+///   1.3 — #1301 round 4: two corrections, no test added. The nil-pipeline message's "every caller
+///          is gated on `isIndexed(_:)`" was false of kick 1, which is gated on an `isIndexing`
+///          edge instead — one `indexVolume` cannot produce without a pipeline, so the conclusion
+///          held for a different reason; and one comment still named a pin with a capital L
 @Suite("Compilation document loading — per-section state and the render rule")
 @MainActor
 struct CompilationDocumentLoadingTests {
@@ -321,7 +325,7 @@ struct CompilationDocumentLoadingTests {
         let key = vm.compilationKey(volumeId: Self.volumeId,
                                     sectionId: fixture.subchapter.sectionId)
 
-        // `LoadingIsProducedOnlyByAnInFlightLoad` sweeps the RULE and would stay green if nothing
+        // `loadingIsProducedOnlyByAnInFlightLoad` sweeps the RULE and would stay green if nothing
         // could ever produce `.loading` — it would then be pinning the mapping of a value the app
         // cannot reach, and its headline claim ("if and only if a load is genuinely in flight")
         // would be satisfied from the wrong side. `loadDocuments` holds the ONLY write of
@@ -418,9 +422,10 @@ struct CompilationDocumentLoadingTests {
             A load with no pipeline must RECORD a failure. The model used to `return` here without \
             recording anything at all, which is the habit #1301 is about: the place a load stops \
             is the place that has to say so. NO VIEW REACHES THIS — every caller is gated on \
-            `isIndexed(_:)`, which answers `false` without a pipeline, so the reader sees the \
-            "Search Index Unavailable" banner and this branch is reached by the direct call this \
-            test makes.
+            `isIndexed(_:)`, which answers `false` without a pipeline, or on an `isIndexing` edge \
+            that `indexVolume` cannot produce without one (its pipeline guard returns before it \
+            sets the flag). So the reader sees the "Search Index Unavailable" banner, and this \
+            branch is reached by the direct call this test makes.
             """)
         #expect(failure as? BrowserIndexingError == .pipelineUnavailable)
         #expect(vm.compilationDocuments[key] == nil, """

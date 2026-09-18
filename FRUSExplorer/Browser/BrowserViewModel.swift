@@ -70,6 +70,9 @@ import Observation
 ///          a neighbouring section passed every test); and the nil-pipeline comment no longer
 ///          implies a view can reach that branch — no caller can, and two comments in round 1
 ///          said otherwise
+///   1.8 — #1301 round 4: that comment's reason is corrected for kick 1, which is gated on an
+///          `isIndexing` edge rather than on `isIndexed(_:)`; `indexVolume(_:)` cannot produce the
+///          edge without a pipeline, so the conclusion stands. Comment only
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -555,7 +558,9 @@ public final class BrowserViewModel {
             // Recorded rather than returned silently — but the honest scope of that is narrow, and
             // two comments in this branch's first round overstated it. NO VIEW REACHES THIS. Every
             // caller in `CompilationView` is gated on `isIndexed(_:)`, which answers `false`
-            // without a pipeline, and Retry is drawn only from an already-recorded `.failed`; the
+            // without a pipeline, or — kick 1 — on an `isIndexing` edge that `indexVolume(_:)`
+            // cannot produce without one, because its pipeline guard returns before it sets the
+            // flag; and Retry is drawn only from an already-recorded `.failed`; the
             // pipeline is also monotone nil → non-nil (`attachIndexingPipelineIfNeeded` guards on
             // nil), so no race strands a caller here. It is reached by a direct call — which is
             // what the two unit tests that pin it do — and it exists so the model is not the

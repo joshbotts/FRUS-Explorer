@@ -109,7 +109,8 @@ import XCTest
 ///   1.3 — #1301 round 4: ``testAnIndexStartedElsewhereFillsTheOpenCompilation`` drives the third
 ///          kick — the one every index not started from the compilation depends on, the automatic
 ///          index after a download included — and ``navigateToSeededCompilation(requireIndexNow:tapIndexNow:)``
-///          can require "Index Now" without tapping it
+///          can require "Index Now" without tapping it. The launch helper's count of tests needing
+///          a seam, stale since round 2 ("three of the five"), now says five of eight
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs to the main actor, so this file emits the same
 // "main actor-isolated … nonisolated context" warnings the other UI suites do (see the note at
@@ -198,10 +199,10 @@ final class BrowseNestedSectionTests: XCTestCase {
 
     /// Launches, with any seam this test needs added to the common environment.
     ///
-    /// The launch is per TEST rather than in `setUp` because three of the five tests below need a
-    /// different app state to exist at all — a document load that throws, a volume nothing has
-    /// indexed, a pipeline that arrives late — and each is requested by its own launch key. See
-    /// `UITestBrowseSeams`.
+    /// The launch is per TEST rather than in `setUp` because five of the eight tests below need a
+    /// different app state to exist at all — a document load that throws or is held open, a volume
+    /// nothing has indexed, a pipeline that arrives late, a download that finishes while a
+    /// compilation is open — and each is requested by its own launch key. See `UITestBrowseSeams`.
     ///
     /// - Parameter seams: Extra launch-environment entries.
     private func launch(seams: [String: String] = [:]) {
