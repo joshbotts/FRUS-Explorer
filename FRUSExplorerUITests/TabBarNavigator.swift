@@ -119,6 +119,7 @@ enum TabDestination: String, CaseIterable {
 ///
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
+///   1.1 — 2026-09-18: `isSelected` reads the sidebar ROW when no tab button exists
 @MainActor
 final class TabBarNavigator {
 
@@ -493,10 +494,20 @@ final class TabBarNavigator {
     }
 
     /// Whether the tab item reports itself selected.
+    ///
+    /// **Every arm checks `exists` before it reads a property.** In the sidebar representation the
+    /// tabs are ROWS and no button carries the label, and reading `isSelected` from an element that
+    /// does not exist is not `false` but a hard test failure ("Failed to get matching snapshot").
+    /// Measured 2026-09-18 on an iPad mini (A17 Pro, iPadOS 26.3) whose install had persisted the
+    /// sidebar: in landscape `select(.browse)` tapped the "Browse" row correctly and then failed
+    /// `AnalyticsRotationTests.testRotateLandscapeToPortraitIsSafe` here, confirming its own tap.
     func isSelected(_ destination: TabDestination) -> Bool {
-        tabItem(for: destination).exists
-            ? tabItem(for: destination).isSelected
-            : app.buttons[destination.label].firstMatch.isSelected
+        let item = tabItem(for: destination)
+        if item.exists { return item.isSelected }
+        let button = app.buttons[destination.label].firstMatch
+        if button.exists { return button.isSelected }
+        let row = app.cells[destination.label].firstMatch
+        return row.exists && row.isSelected
     }
 
     /// The OS control that switches the `.sidebarAdaptable` TabView between representations.
@@ -559,9 +570,21 @@ final class TabBarNavigator {
 /// installed: the first passed and left Corpus Analytics open, and the next two relaunched into it
 /// and skipped naming a cause that was not the cause.
 ///
+/// **`-activeProjectId ""` starts every launch in Global context**, and unlike the tab this pin is
+/// complete: `AppState` reads the key once at launch and an empty string parses as no project. The
+/// UI-test store holds no project across launches, but `activeProjectId` lives in UserDefaults and
+/// does. `UIObstructionTests.testSidebarCarriesResearcherObjectsOniPad` creates a project, and saving
+/// a new project activates it, so every later launch on that simulator came up in a project that
+/// no longer existed. On iPad mini that is not harmless: the project picker then shows `folder`
+/// instead of `globe`, which is enough to push the analysis menu into the toolbar overflow. Measured
+/// 2026-09-18: `ToolbarOverflowAccessibilityTests` failed on exactly the minis that had run that
+/// scenario (iPadOS 26.3 and 26.5), passed on the ones that had not (26.4 and 27.0), and flipped
+/// with nothing but this argument. A test that needs a project creates one in its own launch.
+///
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
 ///   1.1 — #1279: the launch-pin claim corrected; it sets a `@SceneStorage` DEFAULT, not the tab
+///   1.2 — 2026-09-18: pins `-activeProjectId ""`; a project leaked across launches on iPad
 @MainActor
 enum UITestLaunch {
 
@@ -569,11 +592,17 @@ enum UITestLaunch {
     ///   - tab: The tab the app should open on.
     ///   - contentSizeCategory: A `UICTContentSizeCategory…` name to force, or `nil` for the
     ///     device's own setting.
+    ///   - activeProjectId: The project to start in. The default, `""`, is Global context. A UUID
+    ///     names a project the UI-test store does not hold, which the app treats as active for its
+    ///     chrome (the picker's `folder` glyph) — the state the toolbar-overflow guard needs.
     /// - Returns: The launch arguments.
     static func arguments(startingOn tab: TabDestination = .browse,
-                          contentSizeCategory: String? = nil) -> [String] {
+                          contentSizeCategory: String? = nil,
+                          activeProjectId: String = "") -> [String] {
         var arguments = ["-hasCompletedOnboarding", "1",
-                         "-frus.activeTab", tab.appTabRawValue]
+                         "-frus.activeTab", tab.appTabRawValue,
+                         // See "`-activeProjectId ""`" in the type's doc.
+                         "-activeProjectId", activeProjectId]
         if let contentSizeCategory {
             arguments += ["-UIPreferredContentSizeCategoryName", contentSizeCategory]
         }
