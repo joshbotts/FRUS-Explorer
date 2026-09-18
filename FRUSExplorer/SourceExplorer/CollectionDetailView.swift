@@ -12,7 +12,7 @@ import SwiftUI
 // MARK: - CollectionDetailLoad
 
 /// The three values ``CollectionDetailView`` loads for one record, carried **with the record they
-/// describe** (#1301 round 3).
+/// describe** (#1301 round 3; writes refused unless the current load issued them, round 4).
 ///
 /// ## Why the identity is in the value rather than in a line of the task
 /// `CollectionDetailView` is the whole body of the `.archivalCollection` level, and on iPad the
@@ -23,19 +23,28 @@ import SwiftUI
 /// every suite green, and the screen it produces is one collection's document count, related list
 /// and era timeline under **another collection's name**, with nothing to say so.
 ///
-/// Here the reset is not a statement anyone can delete. A reader asks for a value *for a record*
-/// and gets one only when the stored values are that record's; a write that names a different
-/// record replaces the whole value rather than adding to it. So the two failures are closed
-/// together: values loaded for A are never reported for B, and a load for A that lands **after**
-/// the view has moved to B — `loadRelated` awaits a detached ranking pass, which no cancellation
-/// interrupts — cannot leave A's numbers where B's belong.
+/// Here a reader asks for a value *for a record* and gets one only when the stored values are that
+/// record's, so values loaded for A are never reported for B.
 ///
-/// The `detail = CollectionDetailLoad(for: record.id)` at the top of the keyed task is therefore a
-/// memory courtesy (it drops the previous record's arrays at once) and **not** the correctness
-/// mechanism. Deleting it changes nothing a reader can see, which is the point.
+/// ## Why a write needs a ticket (round 4)
+/// Round 3 let a write naming a different record **replace** the value, and that closed the wrong
+/// half of the race. `loadRelated` awaits a detached ranking pass, and awaiting a detached task's
+/// `value` is not a cancellation point, so the load for A can land **after** the level has moved to
+/// B and B's task has started writing. Replacing on it erased what B had already recorded — B's
+/// timeline is written once, before B's first await, so the Cited Over Time section vanished for as
+/// long as the reader stayed on B.
+///
+/// So a load now starts by calling ``open(for:)``, which makes this value B's and issues B's
+/// ``Ticket``; every write presents the ticket its load was issued, and a write whose ticket names
+/// another record is **dropped**. A superseded load's late write therefore lands nowhere. The
+/// ticket also makes the opening impossible to leave out: there is no other way to obtain one, so a
+/// load that skipped ``open(for:)`` would not compile.
 ///
 /// Version history:
 ///   1.0 — #1301 round 3: initial implementation
+///   1.1 — #1301 round 4: ``open(for:)`` and ``Ticket``. A write for another record is dropped
+///          rather than adopted, and opening the value for the record already in it keeps what it
+///          holds, so returning to a collection no longer blanks it while it reloads
 struct CollectionDetailLoad {
 
     /// The record these values describe. `""` is the empty value a fresh view starts with — no
@@ -46,6 +55,19 @@ struct CollectionDetailLoad {
     private var relatedCollections: [RelatedCollection]?
     private var eraTimeline: [CollectionEraCount]
 
+    /// The right to write into a ``CollectionDetailLoad``, issued by ``open(for:)`` to the load it
+    /// is starting (#1301 round 4).
+    ///
+    /// Only ``open(for:)`` can make one — its initialiser is `fileprivate` — so a load cannot write
+    /// without first opening the value for its own record.
+    ///
+    /// Version history:
+    ///   1.0 — #1301 round 4: initial implementation
+    struct Ticket: Equatable {
+        /// The record the load was started for.
+        fileprivate let recordId: String
+    }
+
     /// An empty value for `recordId`.
     ///
     /// - Parameter recordId: The record about to be loaded, or `""` before the first load.
@@ -54,6 +76,21 @@ struct CollectionDetailLoad {
         self.stats = nil
         self.relatedCollections = nil
         self.eraTimeline = []
+    }
+
+    /// Makes this value the one for `recordId` and issues the ticket that load's writes must carry.
+    ///
+    /// A value holding **another** record's figures is replaced by an empty one, which is what
+    /// takes a reused view to "still loading" and drops the previous record's arrays at once. A
+    /// value already holding `recordId`'s figures keeps them: the task re-runs every time the view
+    /// re-appears, and blanking a collection the reader is returning to would show "loading" over
+    /// figures that are about to be written back unchanged.
+    ///
+    /// - Parameter recordId: The record the load is for.
+    /// - Returns: The ticket every write of that load presents.
+    mutating func open(for recordId: String) -> Ticket {
+        if self.recordId != recordId { self = CollectionDetailLoad(for: recordId) }
+        return Ticket(recordId: recordId)
     }
 
     /// The S5 local counts, **only** when they were loaded for this record.
@@ -80,37 +117,36 @@ struct CollectionDetailLoad {
         self.recordId == recordId ? eraTimeline : []
     }
 
-    /// Stores the local counts, adopting `recordId` as this value's identity.
-    ///
-    /// A write naming a different record **replaces** the value rather than joining it, so two
-    /// records' figures can never be mixed in one.
+    /// Stores the local counts — **dropped** unless `ticket` was issued for the record this value
+    /// holds.
     ///
     /// - Parameters:
     ///   - localStats: What `IndexingPipeline.localCollectionStats` answered.
-    ///   - recordId: The record it was asked for.
-    mutating func record(localStats: IndexingPipeline.CollectionLocalStats,
-                         for recordId: String) {
-        if self.recordId != recordId { self = CollectionDetailLoad(for: recordId) }
+    ///   - ticket: What ``open(for:)`` issued the load that asked.
+    mutating func record(localStats: IndexingPipeline.CollectionLocalStats, with ticket: Ticket) {
+        guard ticket.recordId == recordId else { return }
         stats = localStats
     }
 
-    /// Stores the related-collection ranking, adopting `recordId` as this value's identity.
+    /// Stores the related-collection ranking — **dropped** unless `ticket` was issued for the record
+    /// this value holds.
     ///
     /// - Parameters:
     ///   - related: What `CollectionRelations.related(to:in:)` answered.
-    ///   - recordId: The record it was asked for.
-    mutating func record(related: [RelatedCollection], for recordId: String) {
-        if self.recordId != recordId { self = CollectionDetailLoad(for: recordId) }
+    ///   - ticket: What ``open(for:)`` issued the load that asked.
+    mutating func record(related: [RelatedCollection], with ticket: Ticket) {
+        guard ticket.recordId == recordId else { return }
         relatedCollections = related
     }
 
-    /// Stores the era timeline, adopting `recordId` as this value's identity.
+    /// Stores the era timeline — **dropped** unless `ticket` was issued for the record this value
+    /// holds.
     ///
     /// - Parameters:
     ///   - timeline: What `CollectionRelations.citedOverTime(volumeMidpoints:)` answered.
-    ///   - recordId: The record it was asked for.
-    mutating func record(timeline: [CollectionEraCount], for recordId: String) {
-        if self.recordId != recordId { self = CollectionDetailLoad(for: recordId) }
+    ///   - ticket: What ``open(for:)`` issued the load that asked.
+    mutating func record(timeline: [CollectionEraCount], with ticket: Ticket) {
+        guard ticket.recordId == recordId else { return }
         eraTimeline = timeline
     }
 }
@@ -170,6 +206,11 @@ struct CollectionDetailLoad {
 ///          reports them only for the record they were loaded for. Round 2's three `@State`
 ///          resets were the only thing standing between a reuse and another collection's figures,
 ///          and deleting them left every suite green (46 tests in 3 suites)
+///   1.6 — #1301 round 4: the task opens ``CollectionDetailLoad`` for its record and every write
+///          carries the ticket that issues, so a superseded load's late write is dropped rather
+///          than adopted — round 3's adoption let a late write for A erase B's Cited Over Time
+///          chart for as long as the reader stayed on B. The two awaiting loaders also stop at a
+///          cancellation
 struct CollectionDetailView: View {
 
     /// The bundled authority record being shown.
@@ -329,7 +370,8 @@ struct CollectionDetailView: View {
         // loaded values kept the PREVIOUS collection's local counts, related collections and era
         // timeline. That is #1301's shape with a worse screen than a spinner — one collection's
         // numbers under another's name, with nothing to say so. `CollectionDetailLoad` is the
-        // other half of the answer, and it is the half that cannot be deleted.
+        // other half of the answer: it reports nothing for a record it was not loaded for, and it
+        // drops a write whose ticket names another record.
         //
         // Latent today (`.archivalCollection` is appended from one site, the Archives index, and
         // the related-collection rows use `NavigationLink`, which builds a fresh view), and keyed
@@ -342,15 +384,18 @@ struct CollectionDetailView: View {
         // authority is absent, and `loadLocalStats` swallows its query with `try?` and falls back
         // to a zero count — so there is no failure to record and no error row to draw.
         .archivalCollectionLoad(recordId: record.id) {
-            // Emptied first as a MEMORY courtesy, not as the correctness mechanism (#1301 round 3):
-            // `CollectionDetailLoad` reports a value only for the record it was loaded for, so a
-            // reuse already draws "still loading" without this line, and a stale completion from
-            // the previous record cannot land on this one's figures. Round 2 shipped three
-            // `@State` resets here instead, and deleting them left every suite green.
-            detail = CollectionDetailLoad(for: record.id)
-            loadTimeline()
-            await loadRelated()
-            await loadLocalStats()
+            // OPENED FIRST, and this line cannot be left out (#1301 round 4): `open(for:)` is the
+            // only way to obtain the ticket the three writes below present, so a load that skipped
+            // it would not compile. On a reuse it empties the value, which draws "still loading" and
+            // drops the previous record's arrays; it also retires the previous load's ticket, so
+            // that load's late write — `loadRelated` awaits a detached pass no cancellation
+            // interrupts — is dropped rather than erasing what this one has written. Round 3's
+            // value ADOPTED such a write, and B's timeline, written once before this task's first
+            // await, went with it.
+            let ticket = detail.open(for: record.id)
+            loadTimeline(with: ticket)
+            await loadRelated(with: ticket)
+            await loadLocalStats(with: ticket)
         }
     }
 
@@ -1083,39 +1128,47 @@ struct CollectionDetailView: View {
     /// Off-main because it intersects this record's volume list against all 4,432 shipped
     /// records; sub-millisecond in practice, but it runs on the same appear as the SQLite
     /// local-stats query and neither should be able to hold a frame.
-    private func loadRelated() async {
+    ///
+    /// - Parameter ticket: What `CollectionDetailLoad.open(for:)` issued this load.
+    private func loadRelated(with ticket: CollectionDetailLoad.Ticket) async {
         let focus = record
         let ranked = await Task.detached(priority: .userInitiated) {
             guard let index = CollectionAuthorityStore.shared else { return [RelatedCollection]() }
             return CollectionRelations.related(to: focus, in: index.collections)
         }.value
-        // Recorded against the record it was ASKED for, never against whatever is on screen now:
-        // `.task(id:)` cancels this task when the level moves to another collection, but awaiting
-        // a detached task's `value` is not a cancellation point, so this line runs either way.
-        detail.record(related: ranked, for: focus.id)
+        // `.task(id:)` cancels this task when the level moves to another collection, but awaiting a
+        // detached task's `value` is not a cancellation point, so execution reaches here either
+        // way. Two guards, and the ticket is the one the tests pin: a cancelled load stops here, and
+        // a write that got past this anyway is dropped by `CollectionDetailLoad` unless its ticket
+        // names the record the value now holds.
+        guard !Task.isCancelled else { return }
+        detail.record(related: ranked, with: ticket)
     }
 
     /// Buckets the citing volumes by coverage era (#762-C).
     ///
     /// Main-thread on purpose: it is one O(1) manifest lookup per citing volume (157 at the
     /// widest record in the corpus), and `ManifestStore` is main-actor isolated.
-    private func loadTimeline() {
+    ///
+    /// - Parameter ticket: What `CollectionDetailLoad.open(for:)` issued this load.
+    private func loadTimeline(with ticket: CollectionDetailLoad.Ticket) {
         let midpoints = record.volumeIds.compactMap { volumeId -> Int? in
             guard let entry = appState.manifestStore.entry(forVolumeId: volumeId) else { return nil }
             return CollectionRelations.midpointYear(earliest: entry.dateRange.earliest,
                                                     latest: entry.dateRange.latest)
         }
         detail.record(timeline: CollectionRelations.citedOverTime(volumeMidpoints: midpoints),
-                      for: record.id)
+                      with: ticket)
     }
 
     /// Loads the S5 local counts from the user's index.
-    private func loadLocalStats() async {
-        let focus = record.id
+    ///
+    /// - Parameter ticket: What `CollectionDetailLoad.open(for:)` issued this load.
+    private func loadLocalStats(with ticket: CollectionDetailLoad.Ticket) async {
         guard let pipeline = appState.indexingPipeline else {
             detail.record(localStats: IndexingPipeline.CollectionLocalStats(documentCount: 0,
                                                                             volumeCount: 0),
-                          for: focus)
+                          with: ticket)
             return
         }
         let counted = (try? await pipeline.localCollectionStats(
@@ -1124,8 +1177,12 @@ struct CollectionDetailView: View {
             recordGroup: record.recordGroup,
             names: [record.name] + record.aliases
         )) ?? IndexingPipeline.CollectionLocalStats(documentCount: 0, volumeCount: 0)
-        // Against the record it was asked for — see `loadRelated`.
-        detail.record(localStats: counted, for: focus)
+        // The two guards `loadRelated` describes. The cancellation check matters more here than
+        // there: a query cancelled mid-flight is swallowed by `try?` into ZERO counts, and a value
+        // re-opened for the same record keeps what it holds — so without it, leaving and returning
+        // to a collection could show "0 documents" until the re-run's count lands.
+        guard !Task.isCancelled else { return }
+        detail.record(localStats: counted, with: ticket)
     }
 
     #if os(iOS)
