@@ -16420,3 +16420,181 @@ bump.** `Docs/EditableContent.md` §17's second SOURCE block (`browser.compilati
 moves to lines 116–118, because the doc comment above `message` grew. *(Corrected in round 4: this
 said the third block, and blamed the deleted `errorDescription` — which sat at line 114, below the
 sentence, and could not have moved it.)*
+
+### Round 4 — superseded writes dropped, the progress kick walked, and N10 moved to accepted
+
+**The input.** The final review judged the branch ready to open and returned eleven findings: five
+minor, all five CONFIRMED by their skeptics, and six nits. Two of the minors were round 3's own
+doing; two corrected what round 3 had accepted or counted closed; one was a count in prose.
+
+**1. A superseded load's late write is DROPPED, not adopted — a regression round 3 introduced.**
+`CollectionDetailLoad` and `ClusterDrillState` replaced themselves when a write named another
+payload, and the superseded task's write still landed, because awaiting a detached task's `value`
+is not a cancellation point. So a late write for A, after B's task had started, erased what B had
+written. In `CollectionDetailView` that is the Cited Over Time chart gone for good — B writes its
+timeline once, before its first await — and in `ClusterDocumentsView` a drill back on its spinner
+with nothing to re-run the membership task. Latent (no row appends either self-to-self step), and
+exactly the wrong half of the race round 3 set out to close.
+
+Both values now have `open(for:)`, which makes the value the payload's and issues a `Ticket`;
+every load write presents the ticket its load was issued and is dropped when it names another
+payload. The ticket's initialiser is `fileprivate`, so a load cannot skip the opening and still
+write — it would not compile. Opening the value for the payload it already holds KEEPS it: the
+keyed task re-runs on every re-appear, and blanking a drill the reader is returning to would swap
+the list for a spinner and lose their place, which round 3's cluster view never did.
+(`CollectionDetailView` used to blank on every run; it no longer flashes "loading" on the way back.)
+The four loaders also stop at a cancellation after each await: belt and braces for the two values,
+and the ONLY guard for `ClusterDocumentsView`'s title and date dictionaries, which no ticket covers
+and which each assignment replaces whole.
+
+**Red on `ecd1e04e`'s code** (the tests commit `12179158`, written in the current API):
+`BrowseLoadKeyTests` **"Test run with 15 tests in 1 suite failed … with 4 issues"** —
+`aStaleCollectionWriteCannotEraseTheCurrentRecord` at the timeline, and
+`aStaleClusterWriteCannotEraseTheCurrentDrill` three times. **Green on the fix: 19 tests in 1 suite
+passed.**
+
+**2. The path every real drill takes is pinned.** `ClusterDocumentsView` starts at
+`ClusterDrillState(for: .noCluster)`, so every drill ran through round 3's adopt line — and every
+fixture started at a real id, so none took it. Deleting that line left every cluster drill on its
+spinner with every suite green. The adoption now lives in `open(for:)`, and each write path has a
+fixture that starts where the view starts: `clusterDrillStateReportsItsFirstMembershipLoad` and
+`clusterDrillStateReportsItsFirstUnavailableReason` from `.noCluster`, and
+`collectionDetailLoadAnswersOnlyItsOwnRecord` from `""`. Every other fixture in the section starts
+there too.
+
+*A/B, nine mutants, nine kills* (iPhone 17, `-only-testing FRUSExplorerTests/BrowseLoadKeyTests` on
+both sides, 19 tests, on the committed fix `5f32af0e` — line numbers are that commit's, two lower
+than today's; each mutant applied by a script that refuses unless its text occurs once, reverted
+with `git checkout --` on the ONE file, status clean after each):
+ - `ClusterDrillState.open` without its adoption → 13 issues, first at
+   `BrowseLoadKeyTests.swift:241` (the first membership load) and `:256` (the first unavailable
+   reason) — **the view's own path from `.noCluster`, red on its own mutant**.
+ - `CollectionDetailLoad.open` without its adoption → 10 issues, first at `:168`.
+ - `record(cluster:…)`'s ticket guard deleted → `:416`, `:422`, `:426`;
+   `record(unavailable:)`'s → `:429`.
+ - `record(localStats:)`'s → `:363` and `:386`; `record(related:)`'s → `:356`;
+   `record(timeline:)`'s → `:392`.
+ - `open` replacing even for the payload it holds → `:299` (cluster) and `:220` (collection).
+
+**3. Kick 2 is walked, through the app's own post-download index.** Round 3 accepted the
+`.onChange(of: appState.currentIndexingProgress)` kick as "Settings only, cannot be staged". The
+premise was false: `currentIndexingProgress` goes nil on every pipeline `.complete`, including the
+automatic index `onVolumeDownloaded` starts after each download, while `vm.isIndexing` is set only
+by Index Now. So kick 2 is the only loader on the ordinary download → open → browse path.
+
+A fifth DEBUG seam, `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER`, hands the seeded fixture to
+`DownloadManager`'s own completion router after a delay — a DEBUG-only
+`replayFinishedTransferForUITest(volumeId:)` that calls `transferDidComplete(volumeId:error:)`, so
+the app's `onVolumeDownloaded` closure runs unchanged and nothing below it is simulated. The walk,
+`testAnIndexStartedElsewhereFillsTheOpenCompilation`, arms it with the cold seam at 30 s, reaches the
+compilation, requires "Index Required" and an enabled "Index Now", touches nothing, and requires
+the rows. It passes the reader's automatic-vectors switch as `<false/>` so the closure's shard fetch
+keeps the run offline — measured: the app reads that key with `as? Bool`, and the argument domain
+hands `NO` over as a string, which falls through to the default ON.
+
+*A/B on iPhone 17, the one test on both sides:* **green on the fix in 35.5 s**; with kick 2 gutted
+(both guards kept, the `loadDocuments` call removed) **red at `BrowseNestedSectionTests.swift:767`
+(at `2f59c1e8`) in 141.9 s**, quoting "'Index Required' still on screen: false; spinner: true" —
+the index ran, the banner went, and #1301's permanent spinner took its place.
+
+**4. N10 is ACCEPTED, not closed.** Round 3 counted the metadata task's indexed-volume count among
+the closed survivors on the strength of the modifier, which by the branch's own account is a
+structural aid, not a gate. Passing a constant count compiles and leaves every suite green, and its
+harm needs no self-to-self step: tap **Index** on a degraded row and the rows turn openable but
+keep a fallback title and no date until the reader leaves. A walk was checked for and cannot be
+written against the fixture. The seeded volume DOES appear in cluster drills as degraded rows —
+measured from the shipped artifact, cluster 169's first page holds `frus1961-63v06`'s d15, d43,
+d98, d115 and d119 at member positions 112–116 — but the fixture holds none of those documents: its
+d1–d3 are unclustered in the shipped map and n1, n2 and t1 are not in the vector index. Indexing it
+from a drill therefore fills no title under the fix or the mutant alike. A walk needs a fixture
+document with a clustered id, which moves every suite that reads the fixture — out of scope for a
+closing round. Stated at the call site and in `BrowseLoadKey.clusterMetadataLoad`'s doc.
+
+**5. The walk count.** `BrowseLoadKey.swift` said the walk steps into a same-head section twice; it
+does once (step 4, into the twin). Corrected.
+
+**6. Six nits.** The side-load retraction now says seven sites everywhere (it said five-then-six,
+seven, and "three comments, a test message and the plan"); one pin name lower-cased; the
+EditableContent note names §17's second block and the real cause; `CompilationDocumentsPresentation`'s
+version history ascends; the stale 38,652 cluster size becomes the shipped artifact's 37,865 in
+`ClusterDrillState`'s doc and in `loadMembership`'s (the iOS manual still says 38,652 — it predates
+this branch and is left for a docs pass); and the nil-pipeline message's "every caller is gated on
+`isIndexed`" now says kick 1 is gated on an `isIndexing` edge `indexVolume` cannot produce without a
+pipeline. Two SOURCE ranges in §17 moved with kick 2's comment (498–499, 509–511).
+
+### What round 4 ACCEPTS rather than closes — the corrected list
+
+ 1. **M17b**, a manifest guard written inside `compilationDocumentLoad` — unchanged from round 3.
+ 2. **The modifier calls for `.clusterDocuments` and `.archivalCollection`** — unchanged: no row
+    appends either self-to-self step, so no walk can be written; with the ticketed state a missing
+    key shows a spinner, never another payload's rows.
+ 3. **N10, the metadata load's indexed-volume count** — NEW here, moved from "closed"; reason above.
+ 4. **The two boot stand-down call sites** — unchanged.
+ 5. **The step-1 empty-label assertion** — unchanged.
+ 6. **The cancellation checks in the four loaders** — NEW. For the two values they back up the
+    tickets, which are what the tests pin. For `ClusterDocumentsView`'s `headers` and `dates` they
+    are the only guard, and nothing drives them: a stale page is reachable only on a same-cluster
+    re-key racing its predecessor, and the loader is a private view method over the app's stores.
+ 7. **`open(for:)` handed the wrong id** — it cannot be skipped, but it can be called with a
+    constant, which is the wrong-key mutation in a new place. Same standing as item 2.
+
+**No longer accepted: kick 2 (M21)** — walked, above.
+
+### Device checklist for the pull request
+
+ - **iPad Pro 13-inch, landscape and portrait at ≥ 820 pt:** Browse → subseries → volume →
+   compilation → chapter → subchapter on a real multi-level volume (`frus1945Malta`'s "8. Minutes…",
+   or any `<head>`-nested volume). Rows arrive with no tab round-trip; Back or a breadcrumb pop
+   returns to a section that still shows its rows.
+ - **Same device, the root search:** open volume A, then volume B without leaving; B's contents load.
+ - **Download → open → browse (kick 2 on a real download):** download a volume, open it and tap
+   into a chapter before its automatic index finishes. "Index Required" gives way to the rows by
+   itself. Repeat on iPhone.
+ - **Clusters, on iPad, iPhone and the macOS Corpus Browser:** a cluster drill leaves its spinner;
+   open a document and come Back — the list is still there (no spinner flash); tap **Index** on a
+   degraded row — titles and dates fill in only after leaving and returning (N10, accepted).
+ - **Archives → a collection:** local counts, the related list and Cited Over Time all appear; push
+   a related collection and come Back — the page does not blank.
+ - **The failure row:** VoiceOver reads headline, sentence, Retry; check it at a large Dynamic Type
+   size.
+ - **Below the two-pane gate:** iPhone and iPad mini portrait push-path sanity.
+
+### Round 4 — verification, every count read back
+
+**Commits.** `12179158` tests (red), `5f32af0e` the fix, `2f59c1e8` the seam and the kick-2 walk,
+`00e078fc` text, `107394c1` two #762 source scans that the fix broke — see the first bullet below.
+
+ - **iPhone 17 (iOS 26.5), whole `FRUSExplorerTests`: "Test run with 4968 tests in 624 suites
+   passed"** — 4,962 at `ecd1e04e` plus 6, all in `BrowseLoadKeyTests` (13 → 19); no new suites.
+   *The first whole-target run, at `00e078fc`, was NOT green:* "4968 tests in 624 suites failed …
+   with 2 issues", both in `CollectionDetailWiringTests`, whose source scans matched
+   `private func loadRelated()` and `private func loadTimeline()` with their empty parentheses and so
+   reported the loaders gone once they took a ticket. The fix commit had been verified on
+   `BrowseLoadKeyTests` alone; the scans now match up to the parenthesis (`107394c1`), and the run
+   above is after that.
+ - **`BrowseNestedSectionTests`, iPhone 17: "Executed 8 tests, with 2 tests skipped and 0 failures"**
+   (187.4 s), the new walk green in 35.9 s. That is the THIRD run of the suite. The first two each
+   failed ONE test about nine seconds after launch, at the first tap of the shared walk, and in
+   different tests: the new walk once (the subseries tile existed but was not hittable — the UI
+   tree shows the indexing-education "while you wait" sheet over the Browse root, which nothing in
+   the test opens), `testALoadInFlightShowsTheSpinnerAndNotAnEmptyList` once ("Could not reach the
+   'Browse' tab" — the launch race round 2 recorded). The new walk passed in both of the other runs
+   (35.3 s, 35.9 s) and in its solo A/B (35.5 s).
+ - **`BrowseNestedSectionTests`, iPad Pro 13-inch (M5, iOS 26.3): "Executed 8 tests, with 1 test
+   skipped and 0 failures"** (194.7 s) — the new walk green in 34.95 s in two-pane, where the
+   compilation is the detail pane.
+ - **`UIObstructionTests`, iPad Pro 13-inch: "Executed 16 tests, with 5 tests skipped and 0
+   failures"** (260.9 s).
+ - **iPad mini (A17 Pro, iOS 26.3), the keyboard/toolbar trio: "Executed 8 tests, with 2 failures"** —
+   `testAnalysisMenuKeepsItsNameWithoutOverflow` and `testAnalysisMenuStillOpensItsItems`, **exactly
+   the pair already failing on `v2` on that device**; `AnalyticsKeyboardTests` 3 of 3,
+   `KeyboardDismissBarReachTests` 2 of 2 and `testAnalysisMenuKeepsItsNameInTheIPadToolbarOverflow`
+   pass.
+ - **Clean builds into fresh DerivedData.** `FRUSExplorer` (generic iOS Simulator): **CLEAN
+   SUCCEEDED, BUILD SUCCEEDED, 9** unique source-warning sites; `FRUSExplorerMac` (`platform=macOS`,
+   `CODE_SIGNING_ALLOWED=NO`): **CLEAN SUCCEEDED, BUILD SUCCEEDED, 8**. The same sites round 3
+   recorded, none in a line round 4 wrote; `FRUSExplorerApp.swift`'s long-standing `'weak' ownership`
+   note moved 1649 → 1653 because version history 4.13 is four lines long.
+
+No `@Model`, no stored property, no parse-output change: **no CloudKit deploy and no index-version
+bump.** The new seam, its `DownloadManager` hook and the call site are all `#if DEBUG`.
