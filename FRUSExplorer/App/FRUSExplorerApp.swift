@@ -223,6 +223,18 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          Q2). On iPadOS it raises the Search tab and asks that tab's `SearchView` for its tips sheet; on macOS it
 ///          fronts the Search window and asks it to open the Tips panel. Both requests are
 ///          `AppState.openSearchTips(from:)` hand-offs, consumed once.
+///   4.11 — #1301: `bootDownloadManager()` keeps `UITestVolumeSeeder.seedIfRequested`'s result and
+///          re-indexes that one volume when the fixture's bytes changed, because the index outlives
+///          the file it was built from and `loadVolumeStructure` prefers the persisted structure.
+///          DEBUG-only and inert unless `FRUS_UI_TEST_SEED_VOLUME` is set; nothing else moved.
+///   4.12 — #1301 round 2: that re-index moves into `UITestBrowseSeams.prepareSeededVolume` beside
+///          two more DEBUG seams — a cold seeded volume (which also stands the two boot indexing
+///          passes down, or they would re-index what it removed) and a deliberately late pipeline,
+///          reproducing R-9's boot race. All three are inert without their own launch keys.
+///   4.13 — #1301 round 4: a fourth DEBUG seam, armed after the download manager is published, hands
+///          the seeded fixture to that manager's completion router after a delay — the automatic
+///          post-download index, started while a compilation is open. Inert without
+///          `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER`.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2034,7 +2046,10 @@ struct FRUSExplorerApp: App {
         // DEBUG-only, and inert unless a UI test names a volume in FRUS_UI_TEST_SEED_VOLUME.
         // Placed before the pipeline is built so the fixture is on disk for the first read.
         #if DEBUG
-        UITestVolumeSeeder.seedIfRequested(in: volumesDir)
+        // #1301: the result is kept because a fixture whose shape changed leaves a
+        // `volume_structures` row describing the PREVIOUS one, and `loadVolumeStructure` prefers
+        // that row over parsing the file. The re-index is issued below, once the pipeline exists.
+        let seededVolume = UITestVolumeSeeder.seedIfRequested(in: volumesDir)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()
@@ -2124,8 +2139,28 @@ struct FRUSExplorerApp: App {
                volumesDirectory: volumesDir,
                stateTracker: stateTracker
            ) {
+            #if DEBUG
+            // #1301 round 2: bring the UI-test fixture to the state this run asks for BEFORE the
+            // pipeline is published, so the first Browse render already sees it — a re-index for a
+            // fixture whose bytes changed (round 1's repair), or, with the cold seam armed, no
+            // index at all so "Index Now" is reachable. Inert without FRUS_UI_TEST_SEED_VOLUME.
+            await UITestBrowseSeams.prepareSeededVolume(seededVolume, pipeline: pipeline)
+            // And publish the pipeline late when a run wants R-9's boot race, which is the only
+            // way a test can stand on a compilation whose keyed task has already declined for want
+            // of one. Nothing else in boot is delayed: the statements below use `pipeline`.
+            if let delay = UITestBrowseSeams.pipelineAttachDelay {
+                UITestBrowseSeams.attachPipeline(after: delay) {
+                    appState.indexingPipeline = pipeline
+                    appState.connectIndexingProgress(pipeline: pipeline)
+                }
+            } else {
+                appState.indexingPipeline = pipeline
+                appState.connectIndexingProgress(pipeline: pipeline)
+            }
+            #else
             appState.indexingPipeline = pipeline
             appState.connectIndexingProgress(pipeline: pipeline)
+            #endif
             // Collapse any CloudKit-sync duplicate tags / projects / collections
             // (SwiftData + CloudKit can't enforce unique `id`s) so they stop
             // appearing twice in lists.
@@ -2199,7 +2234,22 @@ struct FRUSExplorerApp: App {
             //     FTS tables through the document_cache sync triggers, so a pending
             //     FTS rebuild is satisfied by it too).
             let ftsRebuildNeeded = store.didRebuildSchema || pipeline.needsFTSRebuildReindex
-            let dateReindexNeeded = pipeline.needsDateReindex
+            var dateReindexNeeded = pipeline.needsDateReindex
+            #if DEBUG
+            // #1301: both boot passes below index every downloaded volume they find, and on a
+            // freshly erased simulator the date pass ALWAYS runs (no version is recorded yet) —
+            // which is why "Index Required" has never been reachable in a UI run, warm or cold,
+            // and why three suites merely tolerate their Index Now step. They stand down while the
+            // cold seam is armed, so nothing re-indexes the fixture it just removed.
+            //
+            // Round 3: both answers come from ONE function, which has a unit test. Round 2 wrote
+            // them as two independent `if`s, and on a simulator that has run the suite before this
+            // half is inert (`needsDateReindex` is already false), so deleting it left the cold UI
+            // test passing while deleting the other half failed it.
+            if let standDown = UITestBrowseSeams.bootIndexingStandDown {
+                dateReindexNeeded = standDown.dateReindexNeeded
+            }
+            #endif
             // The user's person-cluster corrections (Phase 3) are snapshotted AT CALL TIME
             // inside each Task, not once at boot: the migration paths below run after
             // multi-minute awaits, during which the user can merge/undo in the People
@@ -2296,7 +2346,15 @@ struct FRUSExplorerApp: App {
             // Volumes marked interrupted are excluded (the user resolves those
             // explicitly from the amber badge). Skipped when a full date re-index
             // is queued above, which re-parses everything anyway.
-            if !dateReindexNeeded {
+            var reconcileUnindexedDownloads = !dateReindexNeeded
+            #if DEBUG
+            // The other half of the cold seam, from the same function: this pass indexes every
+            // downloaded-but-unindexed volume it finds, the seeded fixture included.
+            if let standDown = UITestBrowseSeams.bootIndexingStandDown {
+                reconcileUnindexedDownloads = standDown.reconcileUnindexedDownloads
+            }
+            #endif
+            if reconcileUnindexedDownloads {
                 let indexedIds = (try? pipeline.allIndexedVolumeIds()) ?? []
                 let interrupted = appState.interruptedVolumeIds
                 let unindexed = IndexingPipeline
@@ -2510,6 +2568,16 @@ struct FRUSExplorerApp: App {
             }
         )
         appState.downloadManager = dm
+
+        #if DEBUG
+        // #1301 round 4: finish the seeded fixture's "download" after a delay, through the manager's
+        // own completion router, so a UI test can stand on a compilation while the automatic
+        // post-download index runs — the index `CompilationView`'s progress kick is the only loader
+        // for. Inert without FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER.
+        if let seededVolume, let delay = UITestBrowseSeams.seededDownloadFinishDelay {
+            UITestBrowseSeams.finishSeededDownload(seededVolume.volumeId, after: delay, in: dm)
+        }
+        #endif
 
         if appState.isOnline {
             Task { await appState.manifestStore.fetchLiveManifest() }

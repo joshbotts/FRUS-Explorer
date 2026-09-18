@@ -51,6 +51,13 @@ import SwiftUI
 ///   2.6 — #1051 B-1: the metadata header's document count comes from the R-2 accessor
 ///          (`AdministrationProfilesStore.documentCount(forVolumeId:)`); the old gate read
 ///          the manifest's structurally-dead `documentCount` and had never rendered
+///   2.7 — #1301: the structure `.task` is keyed on `volume.volumeId`, under the reuse contract
+///          written at `BrowserView.levelView`. Recorded here as latent — `.volume → .volume`
+///          unreachable from Browse — and **corrected in round 2**: `CorpusView`'s root search
+///          calls `select(_:)`, which assigns the path rather than appending, so on regular-width
+///          iPad (list pane beside detail pane) picking a second volume there is a live
+///          self-to-self step. The key goes through `BrowseLoadKey.volume(_:)`, which a test holds
+///          to varying with the volume
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -108,7 +115,18 @@ struct VolumeView: View {
         // volume crumb, wasting a ~52pt band above the content. (Corpus root keeps large.)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task { await vm.loadVolumeStructure(for: volume) }
+        // Keyed, under the reuse contract at `BrowserView.levelView` (#1301; welded into a
+        // modifier in round 3, so there is no key at this call site to get wrong). Round 1
+        // recorded a `.volume → .volume` step as unreachable — "every row that appends a volume
+        // appends it from a different level" — and that is wrong, which is worth correcting rather
+        // than deleting: rows append, but `CorpusView`'s root search calls
+        // `vm.select(.volume(entry))`, and `select` ASSIGNS the path. On regular-width iPad that
+        // list pane stands beside a detail pane which may already be showing a volume, so choosing
+        // a second one there is a live self-to-self step, not a latent one — and since round 3 it
+        // is walked by `BrowseNestedSectionTests`, which is what makes this key load-bearing
+        // rather than conventional. `loadVolumeStructure` no-ops on a cached structure, so a key
+        // that does not change costs a single dictionary read.
+        .volumeStructureLoad(vm: vm, volume: volume)
         // Download completion: this volume just left the queue. On success the XML is
         // already on disk (`DownloadManager` moves the file into place before firing
         // `onStateChanged`), so the structure loads now; on failure the not-downloaded

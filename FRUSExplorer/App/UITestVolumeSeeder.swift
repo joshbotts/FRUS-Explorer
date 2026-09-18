@@ -37,8 +37,55 @@ import Foundation
 /// memory under `FRUS_UI_TEST_MODE`), so a stale fixture from an older revision would otherwise
 /// persist (already indexed) into a run that expects the current one.
 ///
+/// **Rewriting the XML is only half of that, and #1301 paid for the other half.** The *index*
+/// survives too, and `BrowserViewModel.loadVolumeStructure` prefers the structure persisted in
+/// `volume_structures` at index time over parsing the file. So a warm simulator went on serving
+/// the OLD structure from a NEW fixture: measured on iPhone 17 (iOS 26.5), the nested chapter this
+/// revision added was simply absent from the compilation's Sections list, and the suite failed for
+/// a reason it was not about. ``seedIfRequested(in:)`` therefore compares what it is about to write
+/// against what is there and reports ``SeedResult/contentChanged``; `FRUSExplorerApp` re-indexes
+/// that one volume when it is `true`.
+///
+/// **Re-indexing the one volume, not deleting the index.** A developer's simulator is not a clean
+/// room — the one this was measured on carried a 115 MB index over thirteen real volumes beside the
+/// 2 KB fixture — so deleting the database to refresh a fixture would throw away work that has
+/// nothing to do with the fixture. `indexVolume(_:)` upserts the volume's rows and deletes the ones
+/// that vanished from its TEI, which is exactly and only what a changed fixture needs.
+///
+/// ## The nested branch (#1301)
+/// Since #1301 the compilation also carries a **chapter inside a subchapter**, because the
+/// defect that issue reports is only reachable below the first compilation level. On an iPad
+/// two-pane Browse the detail pane *renders* the deepest path element in place, so stepping
+/// `.compilation → .compilation` reuses one `CompilationView` instance and an unkeyed `.task`
+/// never re-runs. The flat fixture could not express that: `uitestcomp` is reached by a
+/// `.volume → .compilation` step, which crosses `levelView`'s switch branches and therefore
+/// builds a fresh view every time.
+///
+/// The branch mirrors `frus1945Malta`'s real shape, measured from the TEI: `comp3` (0 direct
+/// documents, 2 subsections) → `ch8` (0 direct documents, 7 subsections) → `ch11` (8 documents,
+/// 0 subsections). ``chapterTitle`` is the middle rung and holds **no documents of its own**, so
+/// a completed load renders "No documents in this section." there — the fingerprint that
+/// distinguishes a load that ran and found nothing from a load that never ran at all.
+///
+/// The compilation keeps its three direct documents unchanged, so `CompilationDocumentsTests`
+/// and `TwoPaneDocumentTests` see exactly what they saw before. The nested titles are chosen so
+/// that none of them contains another as a substring: the suites match with
+/// `CONTAINS[c]`, and "UI Test Nested Document One" does not contain "UI Test Document One".
+///
 /// Version history:
 ///   1.0 — Wave R / R-9: initial implementation
+///   1.1 — #1301: the fixture grows a nested chapter → subchapter branch so a UI test can step
+///          `.compilation → .compilation` twice. Adds ``chapterTitle``, ``subchapterTitle`` and
+///          ``nestedDocumentTitles`` (2 documents); the three existing documents and
+///          ``compilationTitle`` are unchanged, so the two suites that already read this fixture
+///          are unaffected. Seeding also reports whether the fixture's bytes changed, because the
+///          persisted `volume_structures` row outlived the file it described.
+///   1.2 — #1301 round 2: a THIRD rung, ``twinSubchapterTitle``, whose `<head>` is byte-identical
+///          to its own parent's under a different `xml:id` — the one shape that distinguishes a
+///          load keyed on the section's cache key from one keyed on its title, which no other
+///          fixture and no volume in the local corpus can. ``seed(volumeId:in:)`` lifts the
+///          environment lookup out of ``seedIfRequested(in:)`` so the change-detection this file
+///          exists to report has tests of its own.
 enum UITestVolumeSeeder {
 
     /// The launch-environment key a UI test sets to request seeding. The value is the volume ID.
@@ -56,34 +103,113 @@ enum UITestVolumeSeeder {
         "UI Test Document Three",
     ]
 
+    /// The `<head>` of the chapter nested inside ``compilationTitle`` (#1301).
+    ///
+    /// Holds **no documents of its own** — only ``subchapterTitle`` — so reaching it and seeing
+    /// "No documents in this section." proves a load completed here rather than never starting.
+    static let chapterTitle = "UI Test Chapter"
+
+    /// The `<head>` of the subchapter nested inside ``chapterTitle`` (#1301). This is the leaf
+    /// that holds ``nestedDocumentTitles``, two compilation levels below the first.
+    static let subchapterTitle = "UI Test Subchapter"
+
+    /// The `<head>` values of the documents inside ``subchapterTitle``, in order (#1301).
+    ///
+    /// Deliberately not substrings of ``documentTitles``: the UI suites match rows with
+    /// `CONTAINS[c]`, and "Nested UI Test Document One" *would* have matched a query for
+    /// "UI Test Document One" while this spelling does not.
+    static let nestedDocumentTitles = [
+        "UI Test Nested Document One",
+        "UI Test Nested Document Two",
+    ]
+
+    /// The `<head>` of the section nested inside ``subchapterTitle`` — **byte-identical to its own
+    /// parent's head**, under a different `xml:id` (#1301 round 2).
+    ///
+    /// This is the one shape that tells a load key from a look-alike. A task keyed on
+    /// `section.title` rather than on the section's cache key passed every test #1301 shipped,
+    /// because no two sections the suite steps between share a title; stepping from a section into
+    /// a child with the SAME head leaves such a key unchanged, so the task never re-runs and the
+    /// child shows the parent's state for ever — #1301 exactly, from a different cause.
+    ///
+    /// Measured against the local corpus before it was written: of 744 TEI volumes, **0** hold a
+    /// section whose `<head>` equals an ancestor's, while **71** hold two sections sharing a head
+    /// elsewhere in the volume. So this fixture pins the contract rather than reproducing a
+    /// shipping defect — the corpus has not yet published the volume that would.
+    static let twinSubchapterTitle = subchapterTitle
+
+    /// The `<head>` of the one document inside ``twinSubchapterTitle`` (#1301 round 2). Not a
+    /// substring of any other fixture title, for the `CONTAINS[c]` reason above.
+    static let twinDocumentTitle = "UI Test Twin Document"
+
+    /// What a seeding run did, so the caller can act on a fixture whose shape changed.
+    ///
+    /// Version history:
+    ///   1.0 — #1301: initial implementation
+    struct SeedResult {
+        /// The volume ID that was seeded.
+        let volumeId: String
+        /// `true` when the bytes written differ from the bytes that were already there — the
+        /// signal that anything indexed from the previous fixture is now stale.
+        let contentChanged: Bool
+    }
+
     /// Seeds the fixture volume into `volumesDirectory` if `FRUS_UI_TEST_SEED_VOLUME` is set.
     ///
     /// Called from `bootDownloadManager()` before the `IndexingPipeline` is constructed, so the
     /// file is on disk by the time anything reads the directory.
     ///
     /// - Parameter volumesDirectory: The app's volumes directory (`…/FRUSExplorer/Volumes`).
-    /// - Returns: The seeded volume ID, or `nil` when no seeding was requested.
+    /// - Returns: The result, or `nil` when no seeding was requested or the write failed.
     @discardableResult
-    static func seedIfRequested(in volumesDirectory: URL) -> String? {
+    static func seedIfRequested(in volumesDirectory: URL) -> SeedResult? {
         guard let volumeId = ProcessInfo.processInfo.environment[environmentKey],
               !volumeId.isEmpty else { return nil }
+        return seed(volumeId: volumeId, in: volumesDirectory)
+    }
 
+    /// Writes the fixture for `volumeId`, reporting whether its bytes changed.
+    ///
+    /// ``seedIfRequested(in:)`` with the one environment lookup lifted out, so the part with the
+    /// logic in it can be called from a test: a Swift Testing run cannot set its own process
+    /// environment, and ``SeedResult/contentChanged`` — the signal `FRUSExplorerApp` re-indexes
+    /// on — had no test at all until #1301 round 2. A mutation that made it always `false` left
+    /// every suite in both targets green, because the run it breaks is the NEXT one, on a machine
+    /// where the fixture last changed.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume ID to seed. Must exist in the bundled manifest to be browsable.
+    ///   - volumesDirectory: Where to write it.
+    /// - Returns: The result, or `nil` when the write failed.
+    @discardableResult
+    static func seed(volumeId: String, in volumesDirectory: URL) -> SeedResult? {
         let url = volumesDirectory.appendingPathComponent("\(volumeId).xml")
+        let fixture = fixtureXML(volumeId: volumeId)
+        // Compared BEFORE the write: `write(to:atomically:)` replaces the file unconditionally, so
+        // afterwards there is nothing left to compare against.
+        let changed = (try? String(contentsOf: url, encoding: .utf8)) != fixture
+
         do {
-            try fixtureXML(volumeId: volumeId).write(to: url, atomically: true, encoding: .utf8)
-            print("[UITestVolumeSeeder] Seeded \(volumeId) at \(url.path)")
-            return volumeId
+            try fixture.write(to: url, atomically: true, encoding: .utf8)
+            print("[UITestVolumeSeeder] Seeded \(volumeId) at \(url.path)"
+                  + (changed ? " — content CHANGED, a re-index is owed" : " — unchanged"))
+            return SeedResult(volumeId: volumeId, contentChanged: changed)
         } catch {
             print("[UITestVolumeSeeder] Failed to seed \(volumeId): \(error)")
             return nil
         }
     }
 
-    /// The fixture's TEI XML — one compilation holding ``documentTitles``.
+    /// The fixture's TEI XML — one compilation holding ``documentTitles`` **and** the #1301
+    /// chapter → subchapter branch holding ``nestedDocumentTitles``.
     ///
     /// Shaped after the minimal volume the `IndexingPipelineTests` helpers write: a `teiHeader`
     /// and a `<div type="compilation">` of `<div type="document">` children, each with a `<head>`
     /// and a `<p>`. That is the whole of what `parseVolumeStructure` and `indexVolume` need.
+    ///
+    /// The chapter is the **last** child of the compilation, after its three documents, because
+    /// that is the order the real corpus uses and `FRUSDocumentParser.popFrame` builds
+    /// `documentIds` (direct children) and `subsections` (nested `<div>`s) independently of it.
     static func fixtureXML(volumeId: String) -> String {
         let docs = documentTitles.enumerated().map { index, title in
             """
@@ -92,6 +218,16 @@ enum UITestVolumeSeeder {
                     <dateline>Washington, January \(index + 1), 1962</dateline>
                     <p>Synthetic UI-test content for \(volumeId), document \(index + 1).</p>
                   </div>
+            """
+        }.joined(separator: "\n")
+
+        let nestedDocs = nestedDocumentTitles.enumerated().map { index, title in
+            """
+                      <div type="document" xml:id="n\(index + 1)">
+                        <head>\(title)</head>
+                        <dateline>Washington, February \(index + 1), 1962</dateline>
+                        <p>Synthetic UI-test content for \(volumeId), nested document \(index + 1).</p>
+                      </div>
             """
         }.joined(separator: "\n")
 
@@ -105,6 +241,21 @@ enum UITestVolumeSeeder {
             <div type="compilation" xml:id="uitestcomp">
               <head>\(compilationTitle)</head>
         \(docs)
+              <div type="chapter" xml:id="uitestchapter">
+                <head>\(chapterTitle)</head>
+                <div type="subchapter" xml:id="uitestsubchapter">
+                  <head>\(subchapterTitle)</head>
+        \(nestedDocs)
+                  <div type="subchapter" xml:id="uitestsubchaptertwin">
+                    <head>\(twinSubchapterTitle)</head>
+                    <div type="document" xml:id="t1">
+                      <head>\(twinDocumentTitle)</head>
+                      <dateline>Washington, March 1, 1962</dateline>
+                      <p>Synthetic UI-test content for \(volumeId), twin document.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </body></text>
         </TEI>

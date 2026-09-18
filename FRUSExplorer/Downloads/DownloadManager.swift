@@ -74,6 +74,10 @@ import Foundation
 ///          volume; added `blobSHA(for:)` / `localVolumeInfo(for:)` /
 ///          `gitBlobSHA1(for:)` for `VolumeUpdateChecker`, with a UserDefaults-backed
 ///          cache invalidated on delete and re-download.
+///   2.2 — #1301 round 4: DEBUG-only `replayFinishedTransferForUITest(volumeId:)` hands a volume
+///          a UI test has already put on disk to the completion router, so the automatic
+///          post-download index can be started while a compilation is on screen. Absent from
+///          AppStore and DirectDistribution builds.
 public actor DownloadManager {
 
     // MARK: - Types
@@ -578,6 +582,24 @@ public actor DownloadManager {
             downloadDidSucceed(volumeId: volumeId)
         }
     }
+
+    #if DEBUG
+    /// Delivers a finished, successful transfer for `volumeId` the way `BackgroundDownloadEngine`
+    /// delivers every one — through `transferDidComplete(volumeId:error:)` — for a volume a UI test
+    /// has already put on disk (#1301 round 4).
+    ///
+    /// Nothing is downloaded and nothing below this call is simulated. The router takes its branch
+    /// for a transfer this instance does not track and runs the `onVolumeDownloaded` closure
+    /// `FRUSExplorerApp` supplied — the same closure a tracked success runs — which is the automatic
+    /// post-download index. `CompilationView`'s progress kick is the only thing that fills a
+    /// compilation opened before that index finishes, and until this existed no test could start
+    /// the index while one was on screen. Called only from `UITestBrowseSeams`.
+    ///
+    /// - Parameter volumeId: A volume whose file is already in ``volumesDirectory``.
+    func replayFinishedTransferForUITest(volumeId: String) {
+        transferDidComplete(volumeId: volumeId, error: nil)
+    }
+    #endif
 
     private func downloadDidSucceed(volumeId: String) {
         activeVolumeIds.remove(volumeId)

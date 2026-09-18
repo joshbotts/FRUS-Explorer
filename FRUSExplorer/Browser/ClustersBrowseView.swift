@@ -377,6 +377,212 @@ struct ClustersIndexView: View {
     }
 }
 
+// MARK: - ClusterDrillState
+
+/// Everything ``ClusterDocumentsView`` holds for **one** cluster, carried with that cluster's own
+/// id (#1301 round 3; writes refused unless the current load issued them, round 4).
+///
+/// ## Why the identity is in the value
+/// Round 2 keyed this view's two load tasks under the reuse contract and stopped there, so the
+/// reuse the key exists for would have had a worse screen than the one it prevents: `cluster`,
+/// `keys`, `shownCount` and `unavailable` all survived the update, and `loadMembership()` assigns
+/// them only after an awaited detached scan over tens of thousands of members (the shipped
+/// artifact's largest cluster holds 37,865) — so the PREVIOUS cluster's document list rendered
+/// under the new cluster's title while that ran. Worse, the two never converged when the new cluster
+/// was missing from the artifact: that path sets `unavailable` and returns without touching
+/// `cluster`, and the body prefers `if let cluster`.
+///
+/// A reset at the top of the keyed task would have fixed it, and would have been one more line
+/// nothing could hold anyone to — the same line whose deletion from `CollectionDetailView` left
+/// every suite green. Here a reader asks for a value *for a cluster* and gets one only when the
+/// stored values are that cluster's.
+///
+/// ## Why a write needs a ticket (round 4)
+/// Round 3 let a write naming another cluster **replace** the value, which had two faults. A
+/// superseded scan's late write — awaiting a detached task's `value` is not a cancellation point —
+/// erased the cluster the view had moved to, and left it on its spinner with nothing to re-run the
+/// membership task. And because the view starts at ``noCluster``, EVERY real drill depended on that
+/// adopt line, which no test ever took: deleting it left every cluster drill spinning with every
+/// suite green.
+///
+/// So a load now starts with ``open(for:)``, which makes this value the cluster's and issues its
+/// ``Ticket``; a membership write presents the ticket its load was issued and is **dropped** when
+/// the ticket names another cluster. Deleting the opening does not compile, though a ticket can
+/// still be minted in this file (accepted item 7); and the opening — the one line the view's path
+/// from ``noCluster`` runs through — is a function the unit tests call from where the view starts.
+///
+/// The saved-corpus confirmation travels with the rest: "Saved “…”" is a fact about the cluster it
+/// was captured from, and under another cluster's title it would name a set the reader is not
+/// looking at. It and "Show more" are actions on what is DISPLAYED, so they are addressed by the
+/// cluster on screen rather than by a ticket, and refused for any other.
+///
+/// Version history:
+///   1.0 — #1301 round 3: initial implementation
+///   1.1 — #1301 round 4: ``open(for:)`` and ``Ticket``. A membership write for another cluster is
+///          dropped rather than adopted, and the adoption itself moves into ``open(for:)``, which
+///          keeps what the value holds when it is opened again for the same cluster
+struct ClusterDrillState {
+
+    /// The id no cluster has, for the value a fresh view starts with. Cluster ids are the
+    /// artifact's own non-negative row numbers.
+    static let noCluster = Int.min
+
+    /// The cluster these values describe.
+    private let clusterId: Int
+
+    private var resolved: SemanticMapArtifacts.Cluster?
+    private var memberKeys: [String]
+    private var shown: Int
+    private var unavailableReason: SemanticUnavailable?
+    private var savedName: String?
+    private var savedResult: SemanticMapPicking.LassoResult?
+
+    /// The right to write a membership load into a ``ClusterDrillState``, issued by
+    /// ``open(for:)`` to the load it is starting (#1301 round 4).
+    ///
+    /// Its initialiser is `fileprivate`, so outside this file only ``open(for:)`` can make one; inside
+    /// it a ticket can still be minted directly, which would bypass the opening (accepted item 7).
+    ///
+    /// Version history:
+    ///   1.0 — #1301 round 4: initial implementation
+    struct Ticket: Equatable {
+        /// The cluster the load was started for.
+        fileprivate let clusterId: Int
+    }
+
+    /// An empty value for `clusterId`.
+    ///
+    /// - Parameter clusterId: The cluster about to be loaded, or ``noCluster``.
+    init(for clusterId: Int) {
+        self.clusterId = clusterId
+        self.resolved = nil
+        self.memberKeys = []
+        self.shown = 0
+        self.unavailableReason = nil
+        self.savedName = nil
+        self.savedResult = nil
+    }
+
+    /// Makes this value the one for `clusterId` and issues the ticket that load's writes must carry.
+    ///
+    /// **This is the line every real drill runs through**: the view starts at ``noCluster``, so its
+    /// first load always replaces the value here. A value holding **another** cluster is replaced by
+    /// an empty one; a value already holding `clusterId`'s drill keeps it, because the membership
+    /// task re-runs every time the view re-appears — returning from a document on iPhone, say — and
+    /// blanking it would swap the list for a spinner; the kept list lasts until the re-run's scan lands.
+    ///
+    /// - Parameter clusterId: The cluster the load is for.
+    /// - Returns: The ticket every membership write of that load presents.
+    mutating func open(for clusterId: Int) -> Ticket {
+        if self.clusterId != clusterId { self = ClusterDrillState(for: clusterId) }
+        return Ticket(clusterId: clusterId)
+    }
+
+    /// The resolved cluster, **only** when it was resolved for this one.
+    ///
+    /// - Parameter clusterId: The cluster on screen now.
+    /// - Returns: The cluster, or `nil` — which this view draws as a spinner.
+    func cluster(for clusterId: Int) -> SemanticMapArtifacts.Cluster? {
+        self.clusterId == clusterId ? resolved : nil
+    }
+
+    /// The member document keys, **only** when they were enumerated for this cluster.
+    ///
+    /// - Parameter clusterId: The cluster on screen now.
+    /// - Returns: The keys, in row (= volume) order, or none.
+    func keys(for clusterId: Int) -> [String] {
+        self.clusterId == clusterId ? memberKeys : []
+    }
+
+    /// How many of ``keys(for:)`` the list currently shows.
+    ///
+    /// - Parameter clusterId: The cluster on screen now.
+    /// - Returns: The paging cursor, `0` for any other cluster.
+    func shownCount(for clusterId: Int) -> Int {
+        self.clusterId == clusterId ? shown : 0
+    }
+
+    /// Why the drill is empty, when it is — **only** for this cluster.
+    ///
+    /// - Parameter clusterId: The cluster on screen now.
+    /// - Returns: The reason, or `nil`.
+    func unavailable(for clusterId: Int) -> SemanticUnavailable? {
+        self.clusterId == clusterId ? unavailableReason : nil
+    }
+
+    /// The name of the working corpus last saved **from this cluster**.
+    ///
+    /// - Parameter clusterId: The cluster on screen now.
+    /// - Returns: The name, or `nil`.
+    func savedCorpusName(for clusterId: Int) -> String? {
+        self.clusterId == clusterId ? savedName : nil
+    }
+
+    /// What that save captured, for the truncation line.
+    ///
+    /// - Parameter clusterId: The cluster on screen now.
+    /// - Returns: The capture, or `nil`.
+    func savedCapture(for clusterId: Int) -> SemanticMapPicking.LassoResult? {
+        self.clusterId == clusterId ? savedResult : nil
+    }
+
+    /// Stores a completed membership load — **dropped** unless `ticket` was issued for the cluster
+    /// this value holds.
+    ///
+    /// - Parameters:
+    ///   - cluster: The cluster the artifact resolved.
+    ///   - keys: Its members' `"volumeId/documentId"` keys, in row order.
+    ///   - shownCount: How many to show first.
+    ///   - ticket: What ``open(for:)`` issued the load that asked.
+    mutating func record(cluster: SemanticMapArtifacts.Cluster,
+                         keys: [String],
+                         shownCount: Int,
+                         with ticket: Ticket) {
+        guard ticket.clusterId == clusterId else { return }
+        resolved = cluster
+        memberKeys = keys
+        shown = shownCount
+    }
+
+    /// Stores the reason this cluster has no drill — **dropped** unless `ticket` was issued for the
+    /// cluster this value holds.
+    ///
+    /// - Parameters:
+    ///   - unavailable: Why.
+    ///   - ticket: What ``open(for:)`` issued the load that asked.
+    mutating func record(unavailable: SemanticUnavailable, with ticket: Ticket) {
+        guard ticket.clusterId == clusterId else { return }
+        unavailableReason = unavailable
+    }
+
+    /// Advances the paging cursor by one page, for the cluster on screen.
+    ///
+    /// Refused for any other cluster: "Show more" is an action on what is displayed, and there is
+    /// nothing displayed for a cluster whose load has not landed.
+    ///
+    /// - Parameters:
+    ///   - pageSize: Documents per page.
+    ///   - clusterId: The cluster on screen now.
+    mutating func showMore(_ pageSize: Int, for clusterId: Int) {
+        guard self.clusterId == clusterId else { return }
+        shown = min(memberKeys.count, shown + pageSize)
+    }
+
+    /// Records the outcome of a Save as Working Corpus, or clears it after a failed save.
+    ///
+    /// - Parameters:
+    ///   - savedCorpusName: The name saved, or `nil`.
+    ///   - capture: What it captured, or `nil`.
+    ///   - clusterId: The cluster it was saved from.
+    mutating func record(savedCorpusName: String?,
+                         capture: SemanticMapPicking.LassoResult?,
+                         for clusterId: Int) {
+        guard self.clusterId == clusterId else { return }
+        savedName = savedCorpusName
+        savedResult = capture
+    }
+}
+
 // MARK: - ClusterDocumentsView
 
 /// One cluster's document drill (#1051 B-7): the R-3 degraded-row list over the
@@ -395,6 +601,25 @@ struct ClustersIndexView: View {
 ///
 /// Version history:
 ///   1.0 — #1051 B-7: initial implementation
+///   1.1 — #1301: both load tasks are keyed on `clusterId`, under the reuse contract at
+///          `BrowserView.levelView`. Latent — no row appends `.clusterDocuments` from a
+///          `.clusterDocuments` — but this is a payload-carrying level view, which is the shape
+///          the contract covers without exceptions
+///   1.2 — #1301 round 2: both keys come from `BrowseLoadKey`, where a test holds each to varying
+///          with every component of its payload. Nothing behavioural can reach these two (the
+///          self-to-self step does not exist yet), so a value assertion is the only gate there is
+///   1.3 — #1301 round 3: both loads go through modifiers that derive their own keys, and the
+///          view's per-cluster state moves into ``ClusterDrillState``. Round 2 keyed this view
+///          and did not clear it, so the reuse the key exists for would have shown the previous
+///          cluster's document list under the new cluster's title — and, when the new cluster is
+///          missing from the artifact, kept showing it, because that path sets `unavailable` and
+///          returns without touching `cluster`
+///   1.4 — #1301 round 4: the membership load opens ``ClusterDrillState`` for its cluster and
+///          writes with the ticket that issues, so a superseded scan's late write is dropped rather
+///          than erasing the cluster on screen; and both loads stop at a cancellation, which is the
+///          only guard the title and date dictionaries have. The metadata load's indexed-volume
+///          count — round 3 counted it among the closed survivors — is recorded as ACCEPTED at its
+///          call site, with the reason no walk can see it against the UI-test fixture
 struct ClusterDocumentsView: View {
 
     /// The artifact's cluster id — valid only against the loaded generation, which is
@@ -411,20 +636,30 @@ struct ClusterDocumentsView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
 
-    /// The cluster's metadata, re-resolved live from the loaded artifact.
-    @State private var cluster: SemanticMapArtifacts.Cluster?
+    /// Everything this view holds for the cluster it is showing, carried with that cluster's id
+    /// (#1301 round 3). The six accessors below read through it; see ``ClusterDrillState``.
+    @State private var drill = ClusterDrillState(for: ClusterDrillState.noCluster)
+
+    /// The cluster's metadata, re-resolved live from the loaded artifact — `nil` until it has been
+    /// resolved **for this cluster**.
+    private var cluster: SemanticMapArtifacts.Cluster? { drill.cluster(for: clusterId) }
     /// Every member's `"volumeId/documentId"` key, in row (= volume) order.
-    @State private var keys: [String] = []
+    private var keys: [String] { drill.keys(for: clusterId) }
     /// How many keys the list currently shows (the paging cursor).
-    @State private var shownCount = 0
+    private var shownCount: Int { drill.shownCount(for: clusterId) }
     /// Why the drill is empty, when it is.
-    @State private var unavailable: SemanticUnavailable?
+    private var unavailable: SemanticUnavailable? { drill.unavailable(for: clusterId) }
+    /// The last save's outcome, for the confirmation + truncation lines.
+    private var savedCorpusName: String? { drill.savedCorpusName(for: clusterId) }
+    private var savedCapture: SemanticMapPicking.LassoResult? { drill.savedCapture(for: clusterId) }
+
     /// Bulk-loaded display metadata, keyed by `"volumeId/documentId"`.
+    ///
+    /// Deliberately NOT part of ``ClusterDrillState``: these are addressed by document key, not by
+    /// cluster, so an entry left over from another cluster is only ever read for the document it
+    /// describes — and `loadMetadata()` replaces the whole dictionary on every page it loads.
     @State private var headers: [String: CrossReferenceStore.DocumentTitleFacts] = [:]
     @State private var dates: [String: String] = [:]
-    /// The last save's outcome, for the confirmation + truncation lines.
-    @State private var savedCorpusName: String?
-    @State private var savedCapture: SemanticMapPicking.LassoResult?
 
     /// Documents added per "Show more".
     private static let pageSize = 500
@@ -450,10 +685,38 @@ struct ClusterDocumentsView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .task { await loadMembership() }
+        // Keyed on the cluster, under the reuse contract at `BrowserView.levelView` (#1301; welded
+        // into a modifier in round 3, so neither call site here holds a key). This is a level view
+        // with a payload, and on iPad the detail pane renders the level in place, so a
+        // `.clusterDocuments → .clusterDocuments` step would reuse this view and a bare `.task`
+        // would never re-run for the new cluster — the #1301 shape exactly. No row appends that
+        // step today, so no walk can gate it; `ClusterDrillState` is what keeps the OTHER half
+        // from mattering, by refusing to report one cluster's rows under another's title and
+        // dropping a superseded load's late write.
+        .clusterMembershipLoad(clusterId: clusterId) { await loadMembership() }
         // Re-keyed on the indexed-volume count so finishing an index pass upgrades the
-        // degraded rows without navigating away (the B-4 idiom).
-        .task(id: appState.indexedVolumeIds.count) { await loadMetadata() }
+        // degraded rows without navigating away (the B-4 idiom), and on the cluster for the
+        // reason above. Both components are arguments to the modifier, which derives the key:
+        // the count-only form still re-keys on indexing, so as a key written here it read in a
+        // diff as the working idiom.
+        //
+        // THE COUNT COMPONENT IS ACCEPTED, NOT GATED (#1301 round 4; round 3 counted it closed, and
+        // it is not). Passing a constant count here, or loading metadata from the membership key
+        // instead, compiles and leaves every suite green: `clusterMetadataKeyVariesWithBothComponents`
+        // holds the key FUNCTION and cannot see this call. The harm needs no self-to-self step. Tap
+        // **Index** on a degraded row, or finish any index elsewhere, and the rows turn openable —
+        // `rowState` reads `indexedVolumeIds` live — but `headers` and `dates` are never asked for
+        // again, so they keep a fallback title and no date until the reader leaves the drill. That is
+        // mild, and no walk can see it against the UI-test fixture: the seeded volume DOES appear in
+        // cluster drills as degraded rows (cluster 169's first page holds its d15, d43, d98, d115 and
+        // d119, measured from the shipped artifact), but the fixture holds none of those documents —
+        // its d1–d3 are unclustered and n1, n2 and t1 are not in the artifact — so indexing it from a
+        // drill fills no title under this code or under the mutant. A walk needs a fixture document
+        // with a clustered id, which moves every suite that reads the fixture.
+        .clusterMetadataLoad(clusterId: clusterId,
+                             indexedVolumeCount: appState.indexedVolumeIds.count) {
+            await loadMetadata()
+        }
     }
 
     @ViewBuilder
@@ -571,7 +834,7 @@ struct ClusterDocumentsView: View {
     private var showMoreSection: some View {
         Section {
             Button {
-                shownCount = min(keys.count, shownCount + Self.pageSize)
+                drill.showMore(Self.pageSize, for: clusterId)
                 Task { await loadMetadata() }
                 #if DEBUG
                 print("[ClusterDocumentsView] Show more → \(shownCount) of \(keys.count)")
@@ -672,29 +935,49 @@ struct ClusterDocumentsView: View {
     /// Loads the artifact, resolves the cluster, and enumerates its membership once.
     ///
     /// The scan and key minting run off the main actor — both readers are `Sendable`
-    /// values over an mmapped file, and the largest cluster mints 38,652 keys.
+    /// values over an mmapped file, and the largest cluster in the shipped artifact mints
+    /// 37,865 keys.
     private func loadMembership() async {
+        let id = clusterId
+        // OPENED FIRST (#1301 round 4). The view starts at `ClusterDrillState.noCluster`, so this
+        // is where every real drill becomes this cluster's, and the writes below present the ticket
+        // it issues — deleting this line does not compile (a ticket minted directly would; item 7).
+        let ticket = drill.open(for: id)
         for _ in 0..<40 {
             await BundledSemanticMap.prepare()
             if BundledSemanticMap.index != nil { break }
             guard BundledSemanticMap.unavailableReason == .pending else { break }
             try? await Task.sleep(nanoseconds: 150_000_000)
         }
+        // A cancelled task spins through the loop above — `Task.sleep` throws at once and `try?`
+        // swallows it — and would then record `.pending` as this cluster's reason. Unreachable today:
+        // a drill opens only from a loaded map index, which stays loaded, so the loop breaks on its
+        // first pass; the guard costs nothing and keeps that true if the entry point ever changes.
+        guard !Task.isCancelled else { return }
         guard let mapIndex = BundledSemanticMap.index,
               let map = BundledSemanticMap.vectors,
               let vectorIndex = BundledSemanticVectors.index,
-              let resolved = mapIndex.clusters.first(where: { $0.id == clusterId }) else {
-            unavailable = BundledSemanticMap.unavailableReason ?? .malformedArtifact("cluster \(clusterId) not in artifact")
+              let resolved = mapIndex.clusters.first(where: { $0.id == id }) else {
+            drill.record(
+                unavailable: BundledSemanticMap.unavailableReason
+                    ?? .malformedArtifact("cluster \(id) not in artifact"),
+                with: ticket)
             return
         }
-        let id = clusterId
         let loadedKeys = await Task.detached(priority: .userInitiated) { () -> [String] in
             let found = ClustersAxis.membershipRows(in: map, clusterId: id)
             return ClustersAxis.documentKeys(rows: found.rows, index: vectorIndex)
         }.value
-        cluster = resolved
-        keys = loadedKeys
-        shownCount = min(loadedKeys.count, Self.pageSize)
+        // `.task(id:)` cancels this task when the level moves to another cluster, but awaiting a
+        // detached task's `value` is not a cancellation point, so execution reaches here either
+        // way. Two guards, and the ticket is the one the tests pin: a cancelled load stops here —
+        // before a metadata load for a cluster it no longer shows — and a write that got past this
+        // anyway is dropped unless its ticket names the cluster the value now holds.
+        guard !Task.isCancelled else { return }
+        drill.record(cluster: resolved,
+                     keys: loadedKeys,
+                     shownCount: min(loadedKeys.count, Self.pageSize),
+                     with: ticket)
         await loadMetadata()
         #if DEBUG
         print("[ClusterDocumentsView] Cluster \(id): \(loadedKeys.count) members enumerated")
@@ -711,12 +994,20 @@ struct ClusterDocumentsView: View {
             guard parts.count == 2 else { return nil }
             return (String(parts[0]), String(parts[1]))
         }
+        // Each write stops at a cancellation (#1301 round 4). These two dictionaries are NOT in
+        // `ClusterDrillState` — they are addressed by document key — so no ticket protects them, and
+        // each assignment REPLACES the whole dictionary: a superseded load landing after the
+        // current one would put back the page it was asked for and take away this one's titles and
+        // dates. The metadata task is re-keyed by every index pass, so the load it supersedes is
+        // usually for the same cluster, and this check is what keeps the newer load's answer.
         if let store = appState.crossReferenceStore,
            let loaded = try? await store.documentTitleFacts(for: pairs) {
+            guard !Task.isCancelled else { return }
             headers = loaded
         }
         if let pipeline = appState.indexingPipeline,
            let loaded = try? await pipeline.datesByDocumentKey(pairs) {
+            guard !Task.isCancelled else { return }
             dates = loaded
         }
     }
@@ -750,11 +1041,9 @@ struct ClusterDocumentsView: View {
         modelContext.insert(corpus)
         do {
             try modelContext.save()
-            savedCorpusName = name
-            savedCapture = capture
+            drill.record(savedCorpusName: name, capture: capture, for: clusterId)
         } catch {
-            savedCorpusName = nil
-            savedCapture = nil
+            drill.record(savedCorpusName: nil, capture: nil, for: clusterId)
             #if DEBUG
             print("[ClusterDocumentsView] corpus save failed: \(error)")
             #endif
