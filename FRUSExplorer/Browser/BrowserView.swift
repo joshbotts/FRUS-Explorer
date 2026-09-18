@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import SwiftUI
+import SwiftData
 
 // BrowserView is iOS-only. macOS uses MainWindowView with a NavigationStack.
 #if os(iOS)

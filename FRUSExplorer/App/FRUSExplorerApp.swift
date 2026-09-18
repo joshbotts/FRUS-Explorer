@@ -1642,6 +1642,10 @@ struct FRUSExplorerApp: App {
                         // The typed-query searcher (V-5 s3), built once everything it composes
                         // exists. The fetch-queue closure hops to the main actor because
                         // `fetchSemanticShardIfNeeded` owns the consent reasoning there.
+                        // The capture is weak because `appState` owns the searcher that owns this
+                        // closure; it is spelled `appState = appState` because this launch task
+                        // holds `appState` strongly, which Swift 6.4 flags on a bare `[weak appState]`
+                        // (#ImplicitStrongCapture). That hold ends with the task; the cycle would not.
                         if let semanticCorpus = BundledSemanticVectors.corpusVectors {
                             let searcherStore = appState.semanticShardStore
                             appState.semanticQuerySearcher = searcherStore.map { shardStore in
@@ -1650,7 +1654,7 @@ struct FRUSExplorerApp: App {
                                     corpus: semanticCorpus,
                                     modelStore: modelStore,
                                     shardStore: shardStore,
-                                    queueShardFetch: { [weak appState] volumeID in
+                                    queueShardFetch: { [weak appState = appState] volumeID in
                                         Task { @MainActor in
                                             appState?.fetchSemanticShardIfNeeded(
                                                 for: volumeID,

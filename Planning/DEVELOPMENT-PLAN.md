@@ -16609,3 +16609,39 @@ pipeline. Two SOURCE ranges in §17 moved with kick 2's comment (498–499, 509�
 
 No `@Model`, no stored property, no parse-output change: **no CloudKit deploy and no index-version
 bump.** The new seam, its `DownloadManager` hook and the call site are all `#if DEBUG`.
+
+## Session 2026-09-17 — Xcode 27 / Swift 6.4: the app targets back to zero source warnings
+
+**Why.** The machine moved to macOS 27 and Xcode 27.0 (27A266a, Swift 6.4). Clean builds of both
+schemes, into a private DerivedData so a concurrent session was untouched, reported ten app-target
+warnings that Xcode 26 had not. Re-measured after fast-forwarding onto `94dca954` (#1312): the same
+set, only line numbers moved.
+
+**The fixes.**
+- **Member-import visibility, 7 files.** Each declares `@Environment(\.modelContext)` while
+  importing only SwiftUI; Swift 6.4 no longer lets a transitive import name `ModelContext`. Added
+  `import SwiftData` — `WordCloudComparisonView`, `MacCorpusBrowserWindow`, `MainWindowView`,
+  `BrowserView`, `CollectionEntryRows`, `SemanticMapSpikeView`, `SourceProvenanceDashboard`.
+- **A real bug, `ProjectHomeView.queueDownload`.** It called `DownloadManager.enqueueDownload` —
+  an `actor` method — synchronously, although its comment said it mirrored
+  `OffIndexVolumeRow.queueDownload`, which does not. It now does: unwrap the manager in the guard,
+  set `downloadQueued`, `Task { await … }` (the same shape as `SemanticSearchSharedViews`).
+- **`#ImplicitStrongCapture`, `FRUSExplorerApp`.** `queueShardFetch`'s `[weak appState]` sits
+  inside the launch task that holds `appState` strongly. Dropping `weak` is the WRONG fix: `appState`
+  owns the searcher that owns the closure, so it would mint a cycle. Spelled
+  `[weak appState = appState]` (the toolchain's own documented silencer), with a comment saying why.
+
+**Verified.** Clean `build-for-testing` of `FRUSExplorer` (iOS Simulator) and clean `build` of
+`FRUSExplorerMac` (the Mac scheme has no test action): `TEST BUILD SUCCEEDED` / `BUILD SUCCEEDED`,
+zero errors, and the only app-target warning left is the `GeneratedSummary` `@Model`
+redundant-`Sendable` residue CLAUDE.md already records.
+
+**Left alone, deliberately — the test targets.** The same test build reports **53** unit-test and
+**1,438** UI-test warnings, and neither was in this change's scope:
+- UI tests (all 14 files): XCUI APIs are main-actor since the iOS 26 SDK, so these PREDATE Xcode 27;
+  `UIObstructionTests`' head note records why class-level `@MainActor` was not taken. Two suites
+  that did take it still warn in `tearDownWithError`, 4 each.
+- Unit tests: ~40 are main-actor-isolated statics read inside `#expect`/`#require`; 11 are
+  `try? #require(x)` reported "redundant because never nil"; one is worth reading on its own —
+  `CIAJobKeyingTests:245` asserts `parser.parse(…) != nil` on a NON-optional return, so that
+  expectation can never fail.
