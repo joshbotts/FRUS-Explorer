@@ -47,7 +47,10 @@ import Foundation
 /// bulk index finishes (`AppState.currentIndexingProgress` returning to `nil`) while a compilation
 /// is open, and that index is started from Settings, where the reader is not standing on a
 /// compilation. Gutting it — both guards kept, the `loadDocuments` call removed — leaves every
-/// suite green, measured twice in round 2 and again in round 3.
+/// suite green: measured by round 1's mutation attack, and again by round 2's, which ran it twice
+/// against the cold-volume test (the verdict is the second run, 21.7 s and 0 failures — the same
+/// duration as an unmutated cold run; the first died on this suite's launch race). Round 3 did not
+/// re-run it and accepted it in writing instead.
 ///
 /// What IS pinned is its precondition, at the model grain:
 /// `CompilationDocumentLoadingTests.aDeclinedLoadLeavesAKickSomethingToDo` asserts that a declined

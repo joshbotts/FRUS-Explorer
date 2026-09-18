@@ -130,8 +130,9 @@ extension View {
     ///     **The honest scope, because round 2 claimed more than this.** Reinstating the lookup
     ///     *through that function* is a compile error — there is nowhere to put a manifest — but
     ///     this modifier still holds `vm`, so a separate `guard vm.allSubseriesGroups…` written
-    ///     inside the task body below compiles and no test catches it (measured, round 3: 31 tests
-    ///     in four suites green and the push-path UI test green in 34.35 s). `vm` stays because it
+    ///     inside the task body below compiles and no test catches it (measured by round 2's
+    ///     mutation attack, which wrote exactly that guard: 31 tests in four suites green — the
+    ///     count before round 3 — and the push-path UI test green in 34.35 s). `vm` stays because it
     ///     is what makes the key and the load read the same two values — the property that killed
     ///     the `section.title` key — and narrowing the mistake is worth more than the appearance
     ///     of preventing it.
