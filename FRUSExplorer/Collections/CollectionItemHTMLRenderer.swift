@@ -790,6 +790,17 @@ struct CollectionItemHTMLRenderer {
     }
     a.doc-ext-link { color: inherit; text-decoration: none; }
     a.doc-ext-link:hover { text-decoration: underline; }
+    /* `<hi rend="strong">` serialises to <strong> (#1323). Pinned for the same reason the
+       reader's template pins it: WebKit's UA `bolder` is relative, so inside a bold heading
+       it climbs. Georgia ships no 900 face, so the visible effect here is smaller than in the
+       reader's -apple-system stack — pinned anyway, because the export is a file the reader
+       keeps and may open in a browser with a different font stack. */
+    strong { font-weight: 700; }
+    section > h2 strong,
+    h2.doc-heading strong,
+    h3.attachment-heading strong,
+    h3.section-heading strong,
+    h4.section-heading strong { font-weight: inherit; }
     .doc-url {
       font-size: 0.8rem;
       color: #1a4c8f;

@@ -1461,7 +1461,7 @@ struct ParseVolumeFullTests {
     func inlineNoteIsTransparent() async throws {
         let url = try makeTEIFixture(body: """
         <div type="document" xml:id="d1">
-          <head><note rend="inline"><hi rend="bold">Attachment</hi></note> Memo</head>
+          <head><note rend="inline"><hi rend="strong">Attachment</hi></note> Memo</head>
         </div>
         """)
         defer { try? FileManager.default.removeItem(at: url) }
@@ -1476,7 +1476,11 @@ struct ParseVolumeFullTests {
         let hasBold = containsCase(in: docs[0].nodes) {
             if case .emphasis(.bold, _) = $0 { return true }; return false
         }
-        #expect(hasBold, "Expected bold .emphasis from <hi rend=\"bold\"> inside inline note")
+        #expect(hasBold, """
+            Expected bold .emphasis from <hi rend="strong"> inside an inline note. This fixture \
+            used rend="bold" until #1323; the corpus writes "strong" 158,100 times and "bold" \
+            never, so the synthetic spelling let the real one render plain for a year.
+            """)
     }
 
     // MARK: - Session 79: <ab> and <titlePage>
@@ -1898,6 +1902,171 @@ struct SpuriousAutolinkTests {
         #expect(ASTToRenderNodeConverter.kVersion == "1.2", """
             kVersion changed. If that was for #659 it is wrong — de-linking moves no characters, \
             and a bump marks every highlight in every indexed volume stale.
+            """)
+    }
+}
+
+// MARK: - #1323: strong is the corpus's bold
+
+/// `<hi rend="strong">` renders bold, through the real parser, converter and serializer.
+///
+/// Session 06 mapped generic TEI `bold`/`b` and not FRUS's `strong`, so every bold run in the
+/// corpus fell to `.unspecified` and rendered as plain text. Nothing caught it because the
+/// fixtures that exercised bold all used `rend="bold"`, a spelling the corpus never uses.
+/// These fixtures therefore copy real markup: `frus1981-88v16/d454`'s attachment label and
+/// `frus1977-80v02/d8`'s signature.
+///
+/// Version history:
+///   1.0 — 2026-09-19: #1323
+@Suite("TEI — strong is the corpus's bold (#1323)")
+struct StrongEmphasisTests {
+
+    /// The real v16 d454 shape: an inline note carrying the label, then the attachment head.
+    private static let attachmentBody = """
+    <div type="document" xml:id="d454">
+      <frus:attachment>
+        <note rend="inline"><hi rend="strong">Tab A</hi></note>
+        <head>Memorandum From Secretary of State Shultz to President Reagan</head>
+        <p>Body text.</p>
+      </frus:attachment>
+    </div>
+    """
+
+    /// The real v02 d8 shape: a signature wrapped in strong inside a persName.
+    private static let signatureBody = """
+    <div type="document" xml:id="d8">
+      <p>Body text.</p>
+      <closer><signed><persName corresp="#p_VCR_1"><hi rend="strong">Vance</hi></persName></signed></closer>
+    </div>
+    """
+
+    private func model(for body: String) async throws -> FRUSDocumentRenderModel {
+        let url = try makeFRUSFixture(body: body)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let documents = try await FRUSDocumentParser().parse(volumeURL: url)
+        var converter = ASTToRenderNodeConverter()
+        return converter.convert(try #require(documents.first))
+    }
+
+    private func containsBold(_ nodes: [FRUSRenderNode]) -> Bool {
+        for node in nodes {
+            if case .boldText = node { return true }
+            if containsBold(Self.children(of: node)) { return true }
+        }
+        return false
+    }
+
+    /// `FRUSRenderNode` is not `Equatable`, so every assertion here walks the tree by pattern
+    /// rather than comparing values.
+    private static func children(of node: FRUSRenderNode) -> [FRUSRenderNode] {
+        switch node {
+        case .heading(let c), .dateline(let c), .letterOpener(let c), .letterCloser(let c),
+             .salutation(let c), .paragraph(let c), .boldText(let c), .italicText(let c),
+             .smallCapsText(let c), .underlineText(let c), .termText(let c),
+             .editorialNoteBlock(let c), .suppliedText(let c), .sicText(let c),
+             .corrText(let c), .titlePageBlock(let c), .attachmentHeading(let c):
+            return c
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _),
+             .attachmentBlock(_, let c), .unknown(_, let c):
+            return c
+        case .crossRefLink(_, _, _, let c):
+            return c
+        case .footnoteBody(_, _, _, _, _, let c):
+            return c
+        case .listBlock(_, let items):
+            return items.flatMap { $0 }
+        default:
+            return []
+        }
+    }
+
+    @Test("The parser reads rend=\"strong\" as bold emphasis")
+    func parserMapsStrongToBold() async throws {
+        let url = try makeFRUSFixture(body: Self.attachmentBody)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let documents = try await FRUSDocumentParser().parse(volumeURL: url)
+        let hasBold = containsCase(in: try #require(documents.first).nodes) {
+            if case .emphasis(.bold, _) = $0 { return true }; return false
+        }
+        #expect(hasBold, """
+            <hi rend="strong"> parsed as something other than .bold. Before #1323 it fell to \
+            .unspecified and the converter spliced its children in unstyled, so "Tab A" printed \
+            as plain text.
+            """)
+    }
+
+    @Test("An attachment label converts to a bold render node")
+    func attachmentLabelIsBold() async throws {
+        #expect(containsBold(try await model(for: Self.attachmentBody).bodyNodes))
+    }
+
+    @Test("A signature inside a persName link stays a link and turns bold")
+    func signatureIsBoldInsideItsLink() async throws {
+        let nodes = try await model(for: Self.signatureBody).bodyNodes
+        var boldInsideLink = false
+        func walk(_ list: [FRUSRenderNode]) {
+            for node in list {
+                if case .persNameLink(_, let children, _) = node, containsBold(children) {
+                    boldInsideLink = true
+                }
+                walk(Self.children(of: node))
+            }
+        }
+        walk(nodes)
+        #expect(boldInsideLink, """
+            The signature lost either its bold or its person link. 34,298 of the corpus's strong \
+            runs are signatures, and they must stay tappable.
+            """)
+    }
+
+    @Test("The HTML serializer emits <strong> for it")
+    func serializerEmitsStrong() async throws {
+        let html = FRUSRenderNodeHTMLSerializer()
+            .serialize(try await model(for: Self.attachmentBody))
+        #expect(html.contains("<strong>Tab A</strong>"), """
+            Expected <strong>Tab A</strong> in the serialized document. Got: \
+            \(html.prefix(400))
+            """)
+    }
+
+    /// The claim that made this a no-bump change, pinned.
+    ///
+    /// Two fixtures identical but for the `rend` value — `strong` (now mapped) against `zzz`
+    /// (unmapped, so spliced children exactly as `strong` used to be) — must produce the same
+    /// `renderingVersion` and the same `bodyHash`, or every stored highlight in every indexed
+    /// volume goes stale. The third assertion stops the test passing vacuously: the two models
+    /// must genuinely differ, which they do not if the mapping is lost.
+    @Test("Bold moves no character: same renderingVersion and bodyHash as an unmapped rend")
+    func boldIsFlatTextInvariant() async throws {
+        let strongURL = try makeFRUSFixture(body: Self.attachmentBody)
+        defer { try? FileManager.default.removeItem(at: strongURL) }
+        let unmappedURL = try makeFRUSFixture(
+            body: Self.attachmentBody.replacingOccurrences(of: "rend=\"strong\"",
+                                                           with: "rend=\"zzz\""))
+        defer { try? FileManager.default.removeItem(at: unmappedURL) }
+
+        let strongAST = try #require(
+            try await FRUSDocumentParser().parse(volumeURL: strongURL).first)
+        let unmappedAST = try #require(
+            try await FRUSDocumentParser().parse(volumeURL: unmappedURL).first)
+        var converterA = ASTToRenderNodeConverter()
+        var converterB = ASTToRenderNodeConverter()
+        let strongModel = converterA.convert(strongAST)
+        let unmappedModel = converterB.convert(unmappedAST)
+
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: strongModel)
+                == ASTToRenderNodeConverter.renderingVersion(for: unmappedModel), """
+            The bold mapping moved the flat text. Every stored highlight in every indexed volume \
+            would go stale, and #1323 would need a kVersion bump it does not otherwise need.
+            """)
+        #expect(IndexingPipeline.bodyHash(for: strongAST)
+                == IndexingPipeline.bodyHash(for: unmappedAST), """
+            body_hash moved, so every document would read as revised and re-index for a change \
+            that added no character.
+            """)
+        #expect(containsBold(strongModel.bodyNodes) && !containsBold(unmappedModel.bodyNodes), """
+            Neither model contains bold, so the two invariance assertions above are comparing \
+            two identical unstyled trees and would pass with the mapping deleted.
             """)
     }
 }
