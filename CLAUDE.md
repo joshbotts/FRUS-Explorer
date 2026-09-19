@@ -128,8 +128,12 @@ tests that open Corpus Analytics**, so a stall ends the run instead of hanging i
 the app's animations to finish before every action, and in some runs that wait never ends: each
 action waits the full 60 s ("App animations complete notification not received"). Measured 4 of 19
 runs on 2026-09-18, on iOS 26.3 and 27, with the app's main thread idle; then 0 of 22 on
-2026-09-19, including 10 runs with every CPU core saturated. The cause is unknown and the stall has
-never been caught live. `tools/ui-test-stall/` holds the watcher that would catch one and the lldb
+2026-09-19, including 10 runs with every CPU core saturated. Later on 2026-09-19 it came back in a
+narrower form: 8 of 192 `YearRangeFieldWidthTests` cases stalled (4.2%), ALL on iOS 27 (iPhone 17,
+17e, iPad mini, iPad Pro), none on 26.3, and every one began at `Tap "Year range"`, i.e. opening the
+year-range popover (one on the v2 app, so it predates that PR). That suite is therefore a
+reproducer at roughly one stall per 25 cases. The cause is unknown and the stall has never been
+caught live. `tools/ui-test-stall/` holds the watcher that would catch one and the lldb
 script that lists the live animations. On iOS 27 even an idle screen carries infinite Liquid Glass
 tab-bar animations that XCTest ignores, so a stall dump means something only against a baseline.
 
