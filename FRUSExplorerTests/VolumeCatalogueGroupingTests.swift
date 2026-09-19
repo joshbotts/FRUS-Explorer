@@ -13,9 +13,9 @@ import Foundation
 // MARK: - VolumeCatalogueGroupingTests
 
 /// Pure-logic tests for the All Volumes catalogue (#1051 B-1): the distinctive-title
-/// extraction that makes an A–Z filing usable at all (409 of 552 titles share one
+/// extraction that makes an A–Z filing usable at all (410 of 553 titles share one
 /// boilerplate prefix), the four sort modes' ordering contracts, and the year parse that
-/// must survive the manifest's two full-ISO `publicationDate`s among 551 bare years.
+/// must survive a full-ISO `publicationDate` among bare years (one of 553 today, `frus1969-76v32`).
 ///
 /// Also pins the B-1 foundations that live beside the catalogue: the R-2 accessor against
 /// the real bundled artifact, `VolumeListSpec`'s axis-key identity, and the Q-5

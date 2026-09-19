@@ -99,8 +99,8 @@ public struct ParsedTEIHeader: Sendable, Equatable {
     ///
     /// This is a *digital publication* date and ``publicationDate`` is the *print* year. They are
     /// not the same fact and must not be merged: over the shipped volumes where both exist the
-    /// years agree in 525 and **differ in 26** (`frus1950v01` prints 1977 and was published
-    /// digitally in 1998).
+    /// years agree in 526 and **differ in 26** (525 until OH printed frus1981-88v16's year at
+    /// corpus cf8abf696; `frus1950v01` prints 1977 and was published digitally in 1998).
     public var publishedWhen: String? = nil
 
     /// Whether the volume's own header says it is only partly out.

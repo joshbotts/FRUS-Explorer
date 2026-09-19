@@ -81,7 +81,8 @@ public struct LocalVolumeCatalog: Sendable {
             // Same two rules the manifest generator applies, so a side-loaded copy of a volume
             // and the catalogued one do not describe themselves differently. The printed year
             // wins where the volume prints one; `revisionDesc`'s publication date fills the gap
-            // where it does not (`frus1981-88v16` prints nothing and states 2026-09-18 there).
+            // where it does not (`frus1981-88v16` did, stating 2026-09-18 there, until OH printed
+            // its year at corpus cf8abf696; no shipped volume needs the fallback today).
             publicationDate: header.publicationDate ?? header.publishedWhen,
             // Was hardcoded `.published` behind a comment saying the TEI header carries no
             // publication status. It does — `revisionDesc/@status` — and `isPartiallyPublished`

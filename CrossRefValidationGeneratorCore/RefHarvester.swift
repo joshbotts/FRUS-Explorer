@@ -24,7 +24,7 @@ public struct HarvestedRef: Equatable, Sendable {
     /// than the document's own text (#764).
     ///
     /// This distinction is the whole reading of a reference-flow matrix: measured over the
-    /// corpus, 74,146 of 77,792 document-to-document references are footnotes and only 3,646 are
+    /// corpus (2026-08-08), 74,146 of 77,792 document-to-document references are footnotes and only 3,646 are
     /// body text, so such a matrix charts *editorial cross-referencing practice*, not a relation
     /// between the documents themselves. Defaulted so existing constructions are unaffected.
     public let isInsideNote: Bool

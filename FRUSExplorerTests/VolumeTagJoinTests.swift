@@ -41,6 +41,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — #1284: initial implementation
+///   1.1 — OH corrected frus1981-88v16's three person slugs (corpus d4d6eecb7, 2026-09-14), so the
+///         allowlist loses them and the volume's pin moves from 15 resolving tags to all 18
 @Suite("Manifest tag slugs resolve in the taxonomy")
 struct VolumeTagJoinTests {
 
@@ -56,17 +58,9 @@ struct VolumeTagJoinTests {
         // The taxonomy artifact is faithful to the publisher; the corpus is not. Four volumes:
         // frus1952-54v01p2, frus1958-60v03mSupp, frus1977-80v28, frus1981-88v41.
         "lgbtq-rights": "retired by the publisher; /tags/lgbtq-rights is 404",
-
-        // A typo in one corpus commit, not a new naming convention (#1284). Corpus commit c95d35451
-        // ("fix: add volume tags", 2026-09-11) un-commented a placeholder in frus1981-88v16.xml that
-        // already used the canonical spellings `reagan-ronald` and `shultz-george-pratt`, and
-        // replaced them with these. Corpus-wide the long forms are used by 7–11 volumes each and
-        // these three by frus1981-88v16 alone; OH's own tag pages 404 on them, so the publisher's
-        // site cannot list the volume under Reagan, Haig or Shultz either. Reported upstream;
-        // delete these three when the TEI is corrected.
-        "haig-alexander-m": "frus1981-88v16 typo for haig-alexander-meigs (c95d35451)",
-        "reagan-ronald-w": "frus1981-88v16 typo for reagan-ronald (c95d35451)",
-        "shultz-george-p": "frus1981-88v16 typo for shultz-george-pratt (c95d35451)",
+        // frus1981-88v16's `haig-alexander-m`, `reagan-ronald-w` and `shultz-george-p` were listed
+        // here from #1284 until OH restored the canonical spellings in corpus commit d4d6eecb7
+        // (2026-09-14) — the stale check below is what reported the fix.
     ]
 
     @MainActor
@@ -119,14 +113,18 @@ struct VolumeTagJoinTests {
         #expect(v16.tags.contains("narcotics"))
         #expect(v16.tags.contains("international-monetary-fund"))
 
-        // Fifteen of the eighteen resolve; the three that do not are the upstream typo above, and
-        // this pins the split so that a silent change in either direction is visible.
+        // All eighteen resolve since OH corrected the three person slugs (corpus d4d6eecb7). Before
+        // that, `haig-alexander-m`, `reagan-ronald-w` and `shultz-george-p` resolved to nothing and
+        // the volume was missing from the Haig, Reagan and Shultz filters while wearing those tags —
+        // so the canonical spellings are pinned by name, not only by count.
+        #expect(v16.tags.contains("haig-alexander-meigs"))
+        #expect(v16.tags.contains("reagan-ronald"))
+        #expect(v16.tags.contains("shultz-george-pratt"))
         let store = VolumeLevelTagStore()
         let resolved = v16.tags.filter { store.resolve(slug: $0) != nil }
-        #expect(resolved.count == 15, """
-            Expected 15 of frus1981-88v16's 18 tags to resolve. If this is now 18, OH has corrected \
-            the three person slugs — delete them from `known` above. If it is fewer than 15, a tag \
-            that used to resolve has stopped.
+        #expect(resolved.count == 18, """
+            Expected all 18 of frus1981-88v16's tags to resolve; \(resolved.count) do. A tag that \
+            used to resolve has stopped, or the manifest was regenerated from an older corpus.
             """)
     }
 }

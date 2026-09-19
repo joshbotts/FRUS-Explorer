@@ -27,6 +27,7 @@ import Foundation
 ///          exact renormalization, composition order)
 ///   1.2 — Session 3 review: the all-zero-decade test asserts explicit zero rows
 ///          (no x-gap) instead of the dropped decade it previously locked in
+///   1.3 — Regenerated after OH's 2026-09-14 correction to frus1981-88v16: 269,248 → 269,242
 struct SourceProvenanceDataTests {
 
     // MARK: Fixtures
@@ -236,7 +237,9 @@ struct SourceProvenanceDataTests {
         // adding the per-volume table was additive: the same scan, one more view of it. They moved
         // at OH PR #460, when FRUS 1981–1988 vol. XVI added 491 source notes across one volume —
         // 268,757 → 269,248 and 522 → 523, which reconciles exactly to that volume's own count.
-        #expect(index.totalSourceNotes == 269248)
+        // Then 269,248 → 269,242 at corpus 1995d4485 (2026-09-14), when OH stopped marking six
+        // attachment classification lines in that volume as `type="source"` (491 → 485 notes).
+        #expect(index.totalSourceNotes == 269242)
         #expect(index.volumesCovered == 523)
         #expect(index.byVolume?.count == 523,
                 "schema 2 must carry one row per covered volume; got \(index.byVolume?.count ?? -1)")
