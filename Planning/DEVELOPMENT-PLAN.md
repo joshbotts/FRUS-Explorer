@@ -17056,3 +17056,55 @@ whichever SwiftData tests are in flight. It reproduces on `v2` (2 of 19 in the s
 same signature), so it predates this change. Every suite whose file or data moved was re-run by
 type name and passed (VolumeTagJoin, ResolvedEdgeIndex, ProvenanceFlowIndex, SourceProvenanceData,
 VolumeCatalogueGrouping, ArchivalFlowsData, ArchivalFlowsUnprintedLayer, CodingStandardsAudit).
+
+## Session 2026-09-19 — 37 volumes listed nobody: a persons list grouped by initial letter parsed to zero
+
+**The question:** #1321, second of the TEI lane. #741 fixed the person depth at a literal `<item>`
+depth of 1. That is right for a back-of-book index, where the depth-1 item names a person and nests
+their page references. It is wrong for the other shape FRUS prints — a list GROUPED BY INITIAL
+LETTER, where the depth-1 item is the letter and the people are one level in.
+
+**What happened to a letter group.** It opened as the "person"; its first nested `<list>` stopped
+text capture; each nested `<persName>` overwrote the id; the first `</persName>` set the name to the
+empty buffer; and at `</item>` the empty name was dropped. Every group yielded nothing, and the
+items inside it were never opened as people at all.
+
+**The rule now:** person depth is RELATIVE to where the last person opened, and an `<item>` that
+reaches its first nested `<list>` without having said anything is demoted to a group — its items are
+the people. In one sentence: *the first item opened while no person is open is a person; one that
+reaches a nested list without saying anything is a group.*
+
+**Measured with the REAL parser over all 553 manifest volumes, both arms** (a temporary in-target
+harness, removed before commit — a new test FILE is not enrolled by xcodegen and reported success
+having executed nothing, which is the trap CLAUDE.md warns about):
+
+| | before | after |
+|---|---|---|
+| total persons-list entries | 53,988 | **63,037** (+9,049) |
+| volumes with at least one entry | 251 | **287** |
+| volumes changed | — | **37** (36 went 0 → n; `frus1977-80v11p1` 78 → 391) |
+| volumes with an identical count | — | **516** |
+| volumes that LOST an entry | — | **0** |
+| `frus1941-43` (the #741 index volume) | 6 | 6 |
+| `frus1873p1v2` (#740 / v51) | 57 | 57 |
+
+This matches the Python emulation the analysis used, to the entry.
+
+**One limit is deliberate and pinned by a test rather than left to be discovered.** The demote
+happens at the nested `<list>`, so an item whose only text arrives AFTER that list closes yields no
+row of its own. No such item exists in the corpus — all 844 group items carry whitespace only, with
+no child element and no attribute before their list — and if one ever appears the decision has to
+move to `</item>`. The plan's "loss-free by construction" claim was wrong and is not repeated: text
+after a nested list IS captured, because `nestedListDepth` returns to 0 when the list closes.
+
+**`currentDateIndexVersion` 51 → 52**, and the regression is already on devices: the `build-47` tag
+carries v51 and the R-1a persons scrub, so any tester who re-indexed has already emptied these lists
+and sees "No Persons Listed". No `currentPersonRollupVersion` bump — the fix only ADDS rows and the
+rollup's drift check rebuilds on the first launch that sees them.
+
+**Figure sweep, assigned to this PR by the cross-issue plan:** both manuals' "268 of 552 volumes"
+becomes "266 of 553", and `552 volumes` becomes `553 volumes` (5 places in the iOS manual, 3 in the
+macOS one). `FrontMatterPersonsView`'s doc comment carried the same figure and says why it moved.
+The dated records in this file and in `Planning/Completed/` are left alone — they were true when
+written. The 89.3% person-crosswalk figure is NOT swept: measured 92.16% today against 88.96% after
+this fix, but the denominator is the live device index and four of its five sites are dated records.

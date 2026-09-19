@@ -36,7 +36,7 @@ This manual is written for a first-time user coming to FRUS Explorer for graduat
 
 FRUS Explorer puts the entire digitized series on your iPad as a fully **offline** research tool, and then builds a research workbench around it. Concretely, it lets you:
 
-- **Download and index** any subset of the corpus — one volume, a publication era, or all 552 volumes — for instant full-text search on your device, with no network connection needed afterward.
+- **Download and index** any subset of the corpus — one volume, a publication era, or all 553 volumes — for instant full-text search on your device, with no network connection needed afterward.
 - **Read** documents rendered from their original TEI encoding, with footnotes, editorial notes, and cross-references intact and tappable.
 - **Annotate** with research notes, colored highlights, and your own tags, all synced across your devices through iCloud.
 - **Organize by project**, so the notes and collections for your dissertation chapter never mix with the ones for the course you're teaching.
@@ -75,7 +75,7 @@ The first launch walks you through a short setup. The backdrop is a **word cloud
 
 | Option | Description |
 |--------|-------------|
-| **Corpus** | All 552 volumes in the bundled catalog (about 3.3 GB; downloading takes a while depending on your connection and free storage) |
+| **Corpus** | All 553 volumes in the bundled catalog (about 3.3 GB; downloading takes a while depending on your connection and free storage) |
 | **Subseries** | One publication era — e.g., *1969–1976* (Nixon/Ford) or *1977–1980* (Carter) |
 | **Volume** | One specific volume, chosen from a grouped picker |
 
@@ -274,7 +274,7 @@ The **Browse** tab navigates the series by its own structure: subseries (publica
 
 ### 6.1 The Browse Root
 
-The root of the Browse tab opens with a **search field** over all 552 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series:
+The root of the Browse tab opens with a **search field** over all 553 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series:
 
 - **Subseries** — the classic era-by-era hierarchy (Section 6.1a).
 - **All Volumes** — one catalog of every volume (Section 6.1b).
@@ -418,7 +418,7 @@ Tap a person for their **detail sheet**:
 
 **Career records.** Where a person is reconciled to the Department's own register of Principal Officers and Chiefs of Mission, the detail sheet gains a **Career** section: the posts they held, where, and the dates — Acheson's runs Assistant Secretary (1941) through Under Secretary to Secretary of State (1949–1953). Dates appear exactly as the register writes them (for early appointments, often a bare year); nothing is rounded or invented, and a note beside a post ("Left Tehran on", "Died at post") is the register's own. The register covers chiefs of mission and Department principals — 1,240 people in this release — so a person known only from a volume's text simply has no Career section.
 
-**Volumes with no persons list.** Roughly half the corpus — 268 of 552 volumes, including every volume from the 1860s and 1880s and most from before 1930 — has no editor-published List of Persons at all. Those volumes say so. The people named in their documents are still found by searching; they simply were never gathered into a front-matter list.
+**Volumes with no persons list.** Roughly half the corpus — 266 of 553 volumes, including every volume from the 1860s and 1880s and most from before 1930 — has no editor-published List of Persons at all. Those volumes say so. The people named in their documents are still found by searching; they simply were never gathered into a front-matter list.
 
 To study *how* these people are mentioned over time — rankings by era, trajectories, co-mention networks — open **Person Analytics** (Section 15.3).
 
@@ -499,7 +499,7 @@ Choose **Facets** from the binoculars menu for a panel that describes your **who
 
 **Archival provenance is descriptive only** — it tells you how the match is sourced, not a filter you can apply. It isn't a dead end, though: **Open archival profile of these results** opens Archival Analytics ranking the collections behind all the volumes your matches sit in (whole volumes, not the matches themselves — Section 15.5).
 
-Each section carries its own sort order and page-size controls. Years, document type, and provenance open showing everything (those lists have natural ceilings); Volumes and People open at the top 25, because a common-term search can span 552 volumes and more than sixteen thousand people — past a hundred rows those two grow a filter field (accents and capitals ignored, so `agustsson` finds Ágústsson). Alphabetical sorting puts most people in last-name order, since FRUS records names as "Last, First."
+Each section carries its own sort order and page-size controls. Years, document type, and provenance open showing everything (those lists have natural ceilings); Volumes and People open at the top 25, because a common-term search can span 553 volumes and more than sixteen thousand people — past a hundred rows those two grow a filter field (accents and capitals ignored, so `agustsson` finds Ágústsson). Alphabetical sorting puts most people in last-name order, since FRUS records names as "Last, First."
 
 ### 7.6 Four Ways to Read a Result Set
 
@@ -1128,7 +1128,7 @@ Semantic Analytics tracks none of the above: it measures how the *language* sits
 
 - **Color by** Regions, Era, Downloaded (what is on this device), or **Provenance** — the last showing each volume's plurality source-note category, with carefully stated caveats: it is a volume-level plurality (for 73 of 522 covered volumes the winner holds under half the notes), 55 volumes are "won" by *Other/Unclassified* (meaning the parser could not classify their notes), and volumes resting on ten notes or fewer take their own gray *Too few source notes* color rather than being folded in.
 - **Tap a point** to see which document it is; open it if its volume is on this device.
-- **Lasso** a region (the toolbar toggle) and keep everything inside it as a **working corpus** to search within (Section 7.9) — the capture card states how much of the selection this device can actually search, because the map draws all 552 volumes and your index holds fewer.
+- **Lasso** a region (the toolbar toggle) and keep everything inside it as a **working corpus** to search within (Section 7.9) — the capture card states how much of the selection this device can actually search, because the map draws all 553 volumes and your index holds fewer.
 - **Pick two poles** — tap a document, *Axis: from here*; tap another, *…to here* — and the plane re-projects onto the axis between those two documents' volumes, with the vertical axis becoming each volume's coverage year: left-to-right for your axis, up-and-down for time.
 - **Scope** (the same chip as everywhere else) does *not* shrink the map: the rest of the corpus stays in gray while the documents in scope keep their color — so what you are reading is where that segment falls in a layout it played no part in producing. A subseries that lands in one place is a different finding from one that scatters. Mind the grain: every scope resolves to **whole volumes**, so scoping to a detected topic lights every document in the volumes carrying that tag, not the documents about the topic — the line under the chip says "every document in N volumes" for exactly this reason.
 - **Export** (the toolbar share menu) delivers the map as a publication **figure** (PNG or PDF) — the dark point layer rendered off-screen at plate resolution through the map's own Metal pipeline, with region labels composited on and the methods caption beneath — or as the **regions CSV**. A figure taken while an axis slice is active carries no region labels (a region's center belongs to the map plane), and its methods statement says so.

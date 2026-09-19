@@ -1475,6 +1475,22 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// reference in the subtree.
     private var nestedListDepth = 0
 
+    /// The `itemDepth` at which the open person's `<item>` began, or `nil` when no person is open
+    /// or the open person is a `<person>` element rather than an item (#1321).
+    ///
+    /// #741 fixed the person depth at a literal 1, which is right for a back-of-book index and
+    /// wrong for the other shape FRUS prints: a list GROUPED BY INITIAL LETTER, where the depth-1
+    /// item is a letter group that says nothing and the people are one level in. Depth is now
+    /// relative to where the last person opened, so both shapes read correctly.
+    private var personItemDepth: Int?
+
+    /// Whether the open person's `<item>` has yielded any non-whitespace character data yet
+    /// (#1321).
+    ///
+    /// This is what tells a letter GROUP from a person with sub-entries, and it has to be a flag
+    /// rather than a look at `textBuffer`, because `</persName>` empties that buffer.
+    private var personHasText = false
+
     /// The `xml:id` values that name a volume's list of persons.
     ///
     /// The two 1873 parts each carry a real 57-entry editor list, headed "List of persons whose
@@ -1518,13 +1534,31 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
         guard inPersonsSection else { return }
 
-        if elementName == "list" && inPersonElement { nestedListDepth += 1 }
+        if elementName == "list" && inPersonElement {
+            // #1321: an `<item>` that reaches its first nested `<list>` without having said
+            // anything is a letter GROUP, not a person. Demote it — the items inside it are the
+            // people. An item that named someone first keeps #741's rule: its nested list holds
+            // that person's page references, and capture stops here.
+            if nestedListDepth == 0, !personHasText, personItemDepth != nil {
+                inPersonElement = false
+                personItemDepth = nil
+                currentId = nil
+                currentName = nil
+                textBuffer = ""
+            } else {
+                nestedListDepth += 1
+            }
+        }
         if elementName == "item" && personsSectionDepth >= 0 { itemDepth += 1 }
 
-        // Depth 1 only (#741): a nested item is a sub-entry of the person above it, not a person.
+        // The first item opened while no person is open is a person (#1321, replacing #741's
+        // literal depth 1). A deeper item is a sub-entry of the person above it — unless that
+        // person was demoted as a group, in which case no person is open and this item is one.
         if elementName == "person" || (elementName == "item" && personsSectionDepth >= 0
-                                       && itemDepth == 1) {
+                                       && !inPersonElement) {
             inPersonElement = true
+            personItemDepth = elementName == "item" ? itemDepth : nil
+            personHasText = false
             nestedListDepth = 0
             // In FRUS TEI the item's xml:id is on the nested <persName>, not the <item>
             // itself. We initialise currentId to nil here and capture it in the
@@ -1548,6 +1582,10 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         // Stop at the first nested list (#741): everything past it is the person's page
         // references, not their name or role.
         guard inPersonElement, nestedListDepth == 0 else { return }
+        // #1321: remember that this item said something, so the `<list>` handler can tell a person
+        // with sub-entries from a letter group. `</persName>` empties `textBuffer`, so the buffer
+        // itself cannot answer that question.
+        if string.contains(where: { !$0.isWhitespace }) { personHasText = true }
         textBuffer += string
     }
 
@@ -1570,9 +1608,12 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
         if elementName == "list" && inPersonElement && nestedListDepth > 0 { nestedListDepth -= 1 }
 
-        // Mirror of the start rule (#741): only the outermost item closes a person.
+        // Mirror of the start rule (#1321): the item that OPENED this person closes it, at
+        // whatever depth that was. A literal depth 1 would never close a person inside a letter
+        // group, and would close the group itself.
         let closesPerson = elementName == "person"
-            || (elementName == "item" && personsSectionDepth >= 0 && itemDepth == 1)
+            || (elementName == "item" && personsSectionDepth >= 0 && inPersonElement
+                && itemDepth == personItemDepth)
         if elementName == "item" && personsSectionDepth >= 0 { itemDepth = max(0, itemDepth - 1) }
         if closesPerson {
             let raw = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1611,6 +1652,8 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 }
             }
             inPersonElement = false
+            personItemDepth = nil
+            personHasText = false
             nestedListDepth = 0
             currentId = nil
             currentName = nil
@@ -1630,6 +1673,12 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             // equivalent mutant.
             itemDepth = 0
             nestedListDepth = 0
+            // #1321: a person left open by a malformed section must not survive into the next
+            // one. `inPersonElement` was already reset here only by accident of the old depth
+            // rule; now that a person can be open at any depth, reset it explicitly.
+            inPersonElement = false
+            personItemDepth = nil
+            personHasText = false
         }
     }
 
