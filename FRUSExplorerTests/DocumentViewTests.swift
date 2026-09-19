@@ -255,7 +255,8 @@ struct SummarizationErrorSurfacingTests {
         ])
         let container = try ModelContainer(
             for: schema,
-            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            configurations: ModelConfiguration(schema: schema, isStoredInMemoryOnly: true,
+                                               cloudKitDatabase: .none)
         )
         let context = ModelContext(container)
 

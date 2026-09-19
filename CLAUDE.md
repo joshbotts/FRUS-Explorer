@@ -382,7 +382,7 @@ All of these except `CrossRefKit` and `GeneratorKit` are ALSO compiled directly 
 
 ## Coding Standards
 
-**Five of these have a mechanical gate, and three of the five are narrow spot-checks rather than tree-wide rules. Check everything else by hand — do not assume a test will catch you.** (The heading used to read "enforced by `CodingStandardsAuditTests`", which was true of half the list and let several stale doc comments ship unnoticed.)
+**Six of these have a mechanical gate, and three of the six are narrow spot-checks rather than tree-wide rules. Check everything else by hand — do not assume a test will catch you.** (The heading used to read "enforced by `CodingStandardsAuditTests`", which was true of half the list and let several stale doc comments ship unnoticed.)
 
 Enforced by `CodingStandardsAuditTests` — these fail the test suite:
 
@@ -390,6 +390,7 @@ Enforced by `CodingStandardsAuditTests` — these fail the test suite:
 - **OpenAPI spec** (`FRUS-API.openapi.yaml`): must remain valid OpenAPI 3.1.0, declare no deprecated `nullable: true`, and define the `/citation-lookup` endpoint + `CitationMatch` schema. Update whenever the API surface changes.
 - **Version history**: required on an **allowlist** of key session-output files (not all files).
 - **Debug logging** (spot-check, not tree-wide): `#if DEBUG` blocks with a `print("[TypeName] ...")` prefix. Three tests pin exactly three files — `CitationParser`, `CitationMatchingEngine`, `PageRangeStore` — each asserting both `#if DEBUG` and that type's own log prefix (`[CitationMatcher]` for `CitationMatchingEngine`, note). Everywhere else is by hand.
+- **Test-container hermeticity** (tree-wide, both test targets): every `ModelConfiguration(` in `FRUSExplorerTests` and `FRUSExplorerUITests` must pass `cloudKitDatabase: .none`. The parameter defaults to `.automatic`, which adopts the **test host app's** iCloud entitlement, so an in-memory test store built without it gets a real `NSCloudKitMirroringDelegate` whose setup runs asynchronously and outlives the test that created it. Measured on `v2` @ `9078fe61` (#1325), nine such calls crashed the host five times with `NSInternalInconsistencyException: 'No eligible connection available'` and the unit target ended `** TEST EXECUTE FAILED **` — while the log's own last line said the run had passed. The scan walks each call's balanced parentheses, so a call split across lines is read whole; it does **not** skip comments or string literals, and `CodingStandardsAuditTests.swift` is excluded BY NAME because it holds the search string itself.
 - **Localization** (spot-check, and a weak one): `keyViewsUseLocalization` opens exactly three views — `CitationLookupView`, `CrossReferenceGraphView`, `AboutView` — and asserts only that each file mentions `localized:` *somewhere*. It cannot see a bare `Text("…")` sitting next to one, and it says nothing about any other view in the tree.
 
 Conventions with **no** automated check — reviewer's responsibility:
