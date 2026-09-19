@@ -16795,3 +16795,49 @@ Unexplained, and independent of this fix.
 **Also noticed, pre-existing on 26.3 and 27:** at default text size the year fields read **"18…" /
 "19…"**. `AnalyticsYearRangeBar` 1.1 says `@ScaledMetric` fixed four-digit clipping; the
 screenshots say otherwise.
+
+## Session 2026-09-18 → 09-19 — the Corpus Analytics idle stall: measured, tooled, not reproduced
+
+**The report (from #1317):** UI tests that open Corpus Analytics sometimes stall. Before every action
+XCTest waits for the app's animations to finish, and in a stall each wait runs its full 60 s ("App
+animations complete notification not received"); three such waits exceed the 5-minute allowance.
+It hit 4 of 19 runs on 2026-09-18, on iOS 27 (3, all at the first tap after the year popover opened)
+and on iOS 26.3 (1, typing a term with no popover open). XCTest's spindump showed the app's main
+thread idle.
+
+**Owner decision: document, do not chase further.** No app change ships. The stall was never caught
+live, so this session cannot say what animates, nor whether users are affected (an unending
+animation would cost battery and CPU).
+
+**What was measured:**
+- **The in-app signal.** XCTest logs each wait as a pair under subsystem `com.apple.dt.xctest` in the
+  APP's process: "Received request to notify when animations are idle", then "Sending animations
+  idle reply". A stall is a request with no reply. Watching for it worked: 211 requests and 211
+  replies over ten runs.
+- **The baseline.** An idle Browse screen on iOS 27 already carries infinite-duration
+  `CAMatchMoveAnimation` / `CAMatchPropertyAnimation` on the Liquid Glass tab bar
+  (`_UILiquidLensView`, `UISDFElementView`), and XCTest treats that screen as idle. The answer, when
+  caught, is whatever a stall dump has that this baseline does not.
+- **Not load.** The stalling test on the pinned iPhone 17 iOS 27 (`80CF0F18`): 0 of 10 runs normally,
+  **0 of 10 with all ten CPU cores saturated**.
+- **Not obviously a fresh device.** Two of the four stalls were the first run on a just-booted
+  simulator, but an erase-boot cycle produced 2 passing runs. A second cycle's runs crashed at
+  launch ("Test crashed with signal kill before establishing connection", the known simulator wedge)
+  and carry no information. Both cycle jobs then sat blocked on something I did not find, and were
+  stopped by hand.
+- **Ruled out by reading:** the bottom-right arc on the iPad screenshots is iPadOS's window-resize
+  handle, not a spinner; the screen's only `ProgressView` shows only while loading; the app has no
+  `repeatForever` anywhere.
+
+**Shipped:**
+- `tools/ui-test-stall/animdump.py` — lists every live Core Animation animation in a running app,
+  from lldb. One small expression per layer through the SB API, because a single recursive block
+  expression fails silently in `--batch` (variadic `appendFormat:`, ambiguous `delegate`/`sublayers`).
+- `tools/ui-test-stall/watch_stall.py` — loops a test, streams the in-app XCTest log, and on a
+  request unanswered for 20 s attaches lldb, dumps, and screenshots. Smoke-tested: one run, 21 idle
+  requests seen, its log stream closed on exit.
+- CLAUDE.md: run Corpus Analytics UI tests with
+  `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300`, and why.
+
+**To finish it:** run the watcher unattended on a pinned simulator until it catches two stalls,
+dump a baseline on a passing run at the same step, and diff.

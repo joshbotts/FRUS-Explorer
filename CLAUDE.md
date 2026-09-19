@@ -123,6 +123,16 @@ tab. The sidebar representation also persists per install and has no pin; a help
 the floating bar will fail on a device that has shown the sidebar. When a failure follows one
 simulator and not another, diff the app's preferences plist before suspecting the OS.
 
+**Pass `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300` when running UI
+tests that open Corpus Analytics**, so a stall ends the run instead of hanging it. XCTest waits for
+the app's animations to finish before every action, and in some runs that wait never ends: each
+action waits the full 60 s ("App animations complete notification not received"). Measured 4 of 19
+runs on 2026-09-18, on iOS 26.3 and 27, with the app's main thread idle; then 0 of 22 on
+2026-09-19, including 10 runs with every CPU core saturated. The cause is unknown and the stall has
+never been caught live. `tools/ui-test-stall/` holds the watcher that would catch one and the lldb
+script that lists the live animations. On iOS 27 even an idle screen carries infinite Liquid Glass
+tab-bar animations that XCTest ignores, so a stall dump means something only against a baseline.
+
 **A UI-test suite that opens a presentation must CLOSE it in `tearDown`, not merely terminate.**
 `XCUIApplication.launch()` already terminates a running app; what the next launch restores is what
 the last one had *open*. On iPad that includes a whole window scene — `BrowserView.presentAnalytics`
