@@ -26,6 +26,7 @@ import os              // Logger — CloudKit sync telemetry (both platforms, #1
 // capture below is guarded by an OSAllocatedUnfairLock so setTaskCompleted runs at most
 // once whichever side wins the race — the framework simply predates Sendable annotation.
 @preconcurrency import BackgroundTasks
+import UIKit           // UIView.setAnimationsEnabled — configureUITestAnimations()
 #endif
 
 /// os.Logger for CloudKit sync events (#188-C.1), shared by the app boot code and `AppState`'s
@@ -235,6 +236,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          the seeded fixture to that manager's completion router after a delay — the automatic
 ///          post-download index, started while a compilation is open. Inert without
 ///          `FRUS_UI_TEST_FINISH_SEEDED_DOWNLOAD_AFTER`.
+///   4.14 — The Corpus Analytics UI-test idle stall: `configureUITestAnimations()` turns UIKit view
+///          animations off for a UI test that sets `FRUS_UI_TEST_DISABLE_ANIMATIONS`, because on
+///          iOS 27 system animations unbalance the counter XCTest waits on. Inert without it.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -356,6 +360,36 @@ struct FRUSExplorerApp: App {
         }
     }
 
+    #if os(iOS)
+    /// Turns UIKit view animations off for a UI test that asks, and for nothing else.
+    ///
+    /// ## Why a UI test asks
+    /// Before every action XCTest waits for "animations idle", and it decides that from ONE
+    /// process-wide counter: +1 in its swizzle of `-[UIViewAnimationState animationDidStart:]`,
+    /// -1 in `animationDidStop:finished:`. iOS 27 unbalances that counter from system code, two
+    /// ways: the new in-process animation engine (AnimationKit's `UIViewInProcessAnimationState`,
+    /// absent on iOS 26.3) reports starts it never stops — opening the Analysis Tools menu on an
+    /// iPhone left exactly 11 behind in every tracked stall there — and Core Animation delivers one
+    /// `CASpringAnimation`'s start twice when a spring is interrupted and retargeted (a keyboard
+    /// coming up or going down, a sheet's Done). The counter then never returns to zero, and every
+    /// later action in that launch waits its full 60 s. None of these animations is the app's. With view animations off, the events XCTest counts fell
+    /// from ~840 to 16–19 per `YearRangeFieldWidthTests` case, all balanced (measured 2026-09-19;
+    /// the CLAUDE.md note on `-test-timeouts-enabled` has the rates, `tools/ui-test-stall/` the
+    /// tools that measured them).
+    ///
+    /// ## Opt-in, not implied by `FRUS_UI_TEST_MODE`
+    /// A suite whose subject is an animated transition has to keep animations to test anything —
+    /// `AnalyticsRotationTests` guards a cycle that lives in the rotation animation (#498). So a
+    /// suite sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1` itself, and only a suite that measures a
+    /// screen at rest should.
+    private static func configureUITestAnimations() {
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["FRUS_UI_TEST_MODE"] == "1",
+              environment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] == "1" else { return }
+        UIView.setAnimationsEnabled(false)
+    }
+    #endif
+
     #if os(macOS)
     /// macOS launch setup: TipKit only (no background-task registration).
     init() {
@@ -430,6 +464,7 @@ struct FRUSExplorerApp: App {
     /// exactly once per process lifetime and @State persists the same instance.
     init() {
         Self.configureTipKit()
+        Self.configureUITestAnimations()
         let state = appState
         let container = modelContainer
         // The launch handler MUST be `@Sendable` (non-isolated). BGTaskScheduler invokes

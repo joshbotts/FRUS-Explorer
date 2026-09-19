@@ -123,19 +123,27 @@ tab. The sidebar representation also persists per install and has no pin; a help
 the floating bar will fail on a device that has shown the sidebar. When a failure follows one
 simulator and not another, diff the app's preferences plist before suspecting the OS.
 
-**Pass `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300` when running UI
-tests that open Corpus Analytics**, so a stall ends the run instead of hanging it. XCTest waits for
-the app's animations to finish before every action, and in some runs that wait never ends: each
-action waits the full 60 s ("App animations complete notification not received"). Measured 4 of 19
-runs on 2026-09-18, on iOS 26.3 and 27, with the app's main thread idle; then 0 of 22 on
-2026-09-19, including 10 runs with every CPU core saturated. Later on 2026-09-19 it came back in a
-narrower form: 8 of 192 `YearRangeFieldWidthTests` cases stalled (4.2%), ALL on iOS 27 (iPhone 17,
-17e, iPad mini, iPad Pro), none on 26.3, and every one began at `Tap "Year range"`, i.e. opening the
-year-range popover (one on the v2 app, so it predates that PR). That suite is therefore a
-reproducer at roughly one stall per 25 cases. The cause is unknown and the stall has never been
-caught live. `tools/ui-test-stall/` holds the watcher that would catch one and the lldb
-script that lists the live animations. On iOS 27 even an idle screen carries infinite Liquid Glass
-tab-bar animations that XCTest ignores, so a stall dump means something only against a baseline.
+**Pass `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300` when running UI tests
+on iOS 27**, so a stall ends the run instead of hanging it. Before every action XCTest waits for
+"animations idle", and in a stall that wait is never answered again for the rest of the launch: each
+action waits the full 60 s ("App animations complete notification not received"). **The cause is
+known (2026-09-19) and it is not the app.** XCTest decides "idle" from one process-wide counter, +1
+in its swizzle of `-[UIViewAnimationState animationDidStart:]` and −1 in
+`animationDidStop:finished:`, and iOS 27's system animations unbalance it two ways: the new
+in-process engine (AnimationKit's `UIViewInProcessAnimationState`, absent on iOS 26.3) leaves
+exactly 11 starts unstopped when the Analysis Tools menu opens on an iPhone, and Core Animation
+delivers one interrupted spring's start twice when a keyboard comes up or goes down or a sheet's
+Done dismisses it. UIKit finishes every animation; only XCTest's count is wrong, and nothing the app
+starts is involved. Measured over `YearRangeFieldWidthTests` on iOS 27 simulators: with animations
+on, 13 of 221 cases stalled (5.9%, mostly iPhones) and a stalled case often ran out its allowance;
+with them off, 0 of 171. **A suite that measures a screen at rest should set
+`FRUS_UI_TEST_DISABLE_ANIMATIONS=1`** (see `FRUSExplorerApp.configureUITestAnimations`):
+`YearRangeFieldWidthTests` does, which took the events XCTest counts from ~840 to 16–19 per case,
+all balanced. It is opt-in because a suite testing an animated transition — `AnalyticsRotationTests`
+(#498) — needs its animations. `tools/ui-test-stall/` catches and explains a stall: `watch_stall.py`
+loops a test and captures each stall, `animdump.py` reads XCTest's counter from a live app (read its
+first line; the layer tree alone showed nothing), and `track_counter.py` logs every move of it. To
+reproduce, run the watcher's default test with `INJECT='(void)[UIView setAnimationsEnabled:YES]'`.
 
 **A UI-test suite that opens a presentation must CLOSE it in `tearDown`, not merely terminate.**
 `XCUIApplication.launch()` already terminates a running app; what the next launch restores is what

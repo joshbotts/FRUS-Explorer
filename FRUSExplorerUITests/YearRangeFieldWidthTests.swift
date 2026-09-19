@@ -36,8 +36,17 @@ import XCTest
 /// popover and the window by a real margin, and that the pair is stacked on iPhone and one row on
 /// a full-screen iPad.
 ///
+/// ## Launched with UIKit view animations OFF
+/// This suite measures a popover at rest, so it launches with `FRUS_UI_TEST_DISABLE_ANIMATIONS`.
+/// It was the best reproducer of the iOS 27 idle stall (`FRUSExplorerApp.configureUITestAnimations`
+/// has the mechanism): XCTest's animation counter was left above zero — by the Analysis Tools
+/// menu on iPhone, by a keyboard coming up or going down on either — and every later action in
+/// the case waited 60 s, often past its 300 s allowance. Measured 2026-09-19 on iOS 27 simulators;
+/// the CLAUDE.md note on `-test-timeouts-enabled` has the rates with animations on and off.
+///
 /// Version history:
 ///   1.0 — 2026-09-19: initial implementation, with the width fix in `AnalyticsYearRangeBar`
+///   1.1 — 2026-09-19: launched with view animations off, which removes the iOS 27 idle stall
 @MainActor
 final class YearRangeFieldWidthTests: XCTestCase {
 
@@ -115,6 +124,9 @@ final class YearRangeFieldWidthTests: XCTestCase {
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        // A screen at rest needs no animation, and with them on, iOS 27 can leave XCTest's idle
+        // counter above zero for the rest of the launch (see the type's doc).
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
         app.launchArguments = UITestLaunch.arguments(contentSizeCategory: contentSizeCategory)
         app.launch()
 
