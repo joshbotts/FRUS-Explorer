@@ -72,8 +72,8 @@ struct ArchivalFlowsView: View {
     @State private var searchText = ""
 
     /// The derivation. Cached in state rather than computed per body pass: the corpus-wide view
-    /// sorts all 4,854 stored flows, and a focused view linear-scans them after a `firstIndex`
-    /// over 1,106 ids — cheap once, wasteful on every frame.
+    /// sorts all 4,864 stored flows, and a focused view linear-scans them after a `firstIndex`
+    /// over 1,108 ids — cheap once, wasteful on every frame.
     @State private var cached: ArchivalFlowsData?
 
     var body: some View {

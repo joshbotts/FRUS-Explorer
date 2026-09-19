@@ -344,3 +344,71 @@ See the decisions below.
    asserts numbers hard-coded at `:39`; `BundledKeynessBaselineTests.swift:46` is in `makeFile`),
    while the strongest real row — `.generatedOverTheWholeCorpus` — is omitted. Worth fixing in the
    plan before the next release.
+
+---
+
+## OH corrected the volume in place: 2026-09-10 → 09-14
+
+Ten commits touched `frus1981-88v16.xml` after `e744e71db`. The corpus-derived artifacts above were
+generated at `13a56f8e5` (v16 identical to `652391159`), and `e744e71db` changed only v16's header —
+its three `<relatedItem>` links are why the ref scan below grows by 87, not by the body's 84. #1284 (2026-09-12) read only the header; the body was first examined on
+2026-09-19 by a five-dimension audit with adversarial verification. Corpus at the end: `550a8c5c5`,
+identical to upstream. **v16 is the only shipped volume that changed** — the other 63 changed files
+are the new frus2001-08 shells and anticipated volumes — so every regeneration delta below is v16's.
+
+| Commit | What | App-visible |
+|---|---|---|
+| `cf8abf696` 09-10 | print year filled (2026); `@from`/`@to` on pending chapters | seen by #1284 |
+| `c95d35451` 09-11 | 18 volume tags, 3 of them non-canonical | seen by #1284 |
+| `358a6ed25` 09-11 | persons-list markup (one `persName` boundary) | no — the persons list parses to nothing anyway (#1321) |
+| `4e9694796` 09-11 | 48 `<ref>`s in 30 documents; one doubled `)` in d395 fn4 | after re-download |
+| `d37c2073b` 09-14 | refs into the unreleased chapters' `document-pending` stubs | after re-download |
+| `1995d4485` 09-14 | 6 attachment headings: "Tab A:" moved into an inline label note; 6 attachment-head notes lost `type="source"` | after re-download |
+| `d4d6eecb7` 09-14 | **the three tag typos corrected** to `haig-alexander-meigs`, `reagan-ronald`, `shultz-george-pratt` | next build |
+| `9f5f50e78` 09-14 | revisionDesc attribute order only (canonical hash identical) | no |
+| `5b6aa8608` 09-14 | document-level `@ana` person/term pointers on all 88 documents; term `t_GOC_1` removed; more refs | `@ana`: never (no parser); term: after re-download |
+| `dc088e9e0` 09-14 | EPUB/MOBI sizes and build stamps (2026-09-15) | no — the parser reads only `publicationStmt` dates |
+
+### Regenerated (2026-09-19)
+
+- **`manifest.json`** (offline overlay): v16's three slugs and `sizeBytes` 1,281,142 → 1,295,512; the
+  other 552 entries byte-identical. All 18 of v16's tags now resolve (15 before), so the Reagan,
+  Shultz and Haig filters list it (11 → 12, 11 → 12, 7 → 8 volumes). `VolumeTagJoinTests` loses its
+  three allowlist entries, exactly as its staleness check was written to demand.
+- **`resolved-edge-index.json`**: +9 cross-volume edges, all v16's (8,628 → 8,637 into 5,747
+  documents from 185 volumes). **`provenance-flow-index.json`**: +58 document edges, all footnotes
+  (volumes with edges 254 → 255). **`source-provenance-index.json`**: v16 491 → 485 notes, total
+  269,248 → 269,242. **`external-citation-index.json`**: the two footnote-coverage counters only.
+
+### Measured unchanged, so not regenerated
+
+- `collection-authority.json`, `volume-sources-index.json`: regenerated to scratch, byte-identical.
+- `collection-usage-index.json`, `administration-profiles-index.json`: run to scratch, unchanged.
+- `broken-refs-index.json`: same 213 records / 652 occurrences, no v16 row. A regeneration would move
+  only `corpusVolumeCount` (694 → 744, the unshipped shells) and the stamp — and a new stamp makes
+  every device re-apply identical flags. Left alone.
+- Cloud vectors / keyness baseline: the word-token sequence of all 88 documents is unchanged.
+
+### Semantic tier: §13's corrected-volume rule WAIVED for this correction, with numbers
+
+The rule is "a corrected volume's shard must be re-published and devices made to re-fetch it", and
+R-1c now makes a re-published shard reach devices. It applies literally: under the harvester's own
+extraction, **42 of 88 documents / 72 of 257 chunks** changed — 5 with content (the attachment
+colons, the doubled `)`), 37 whitespace-only, from spaces the new `<ref>`/`<term>`/`<persName>`
+tags put before punctuation. The measured effect of a re-harvest (re-embedding the ingest text
+through the harvest model reproduced all 257 stored chunk vectors bit-identically, so these are the
+vectors a re-harvest would ship): pooled 512-d cosine against the shipped vectors min **0.999040**
+(d403), mean 0.999936; at most 7 of 512 sign bits flipped; across all 314,571 anchors under the
+shipped Hamming-800 → int8 funnel, **14 of 3,145,710 top-10 slots** change. The shard would change
+its SHA (`ca8219e8…` → `69026b27…`) at the same 45,472 bytes. Re-publishing that costs a push to the
+shards repository and a re-fetch on every device holding v16 for a difference below the funnel's own
+noise (0.851 measured recall ≈ 1.5 imperfect slots per anchor). **Re-harvest v16 at its next
+document-count change** — OH has seven chapters to release — deleting its store entry first (§4.1:
+the harvester skips volumes whose `head.json` exists).
+
+### Found by the audit, pre-existing, filed separately
+
+Neither caused by these commits: **#1321** — a persons list grouped by initial letter parses to zero
+entries since #741 (v16 and ~35 other shipped volumes); **#1322** — the trip packet cites footnote
+numbers one lower than printed; **#1323** — `rend="strong"`, the corpus's only bold, renders plain.
+Also worth reporting to OH: the doubled `)` in d395 fn4 (`4e9694796`).

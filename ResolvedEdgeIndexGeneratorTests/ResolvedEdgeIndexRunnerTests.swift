@@ -103,7 +103,7 @@ struct ResolvedEdgeIndexRunnerTests {
             #expect(index.documents == [["d1"], ["d1"]], """
                 The vocabulary is \(index.documents). Interning every document in every volume \
                 would make this a copy of the corpus rather than an index of its citations — the \
-                corpus has 316,839 documents and 5,740 of them are cited across a volume boundary.
+                corpus has 316,839 documents and 5,747 of them are cited across a volume boundary.
                 """)
         }
     }

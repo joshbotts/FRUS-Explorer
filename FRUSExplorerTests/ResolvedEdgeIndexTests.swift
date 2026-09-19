@@ -22,6 +22,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #262
+///   1.1 — Regenerated after OH's 2026-09-11/14 corrections to frus1981-88v16 (84 in-document refs
+///         where there were none): document edges 77,792 → 77,850, same-volume 69,164 → 69,213
 @Suite("Resolved edge index — artifact")
 struct ResolvedEdgeIndexTests {
 
@@ -59,7 +61,7 @@ struct ResolvedEdgeIndexTests {
 
     @Test("Nothing in the index is a same-volume citation")
     func noSameVolumeEdges() throws {
-        // The whole size argument rests on this: 69,164 of the corpus's 77,792 document-to-document
+        // The whole size argument rests on this: 69,213 of the corpus's 77,850 document-to-document
         // citations are same-volume, and every one of them is already in the reader's local table
         // whenever they can see the document at all. One leaking through would be dead weight and,
         // worse, would be merged as a duplicate of an edge the graph already has.
@@ -82,12 +84,12 @@ struct ResolvedEdgeIndexTests {
         #expect(coverage.sameVolumeEdges < coverage.documentEdges)
         #expect(coverage.storedEdges == coverage.documentEdges - coverage.sameVolumeEdges)
         // The same harvest #764 reports, so the two artifacts cannot disagree about the corpus.
-        #expect(coverage.documentEdges == 77_792, """
-            \(coverage.documentEdges) document edges, not the 77,792 the provenance flow index \
+        #expect(coverage.documentEdges == 77_850, """
+            \(coverage.documentEdges) document edges, not the 77,850 the provenance flow index \
             reports from the same harvester. Two artifacts disagreeing about the corpus means one \
             of them is reading it differently.
             """)
-        #expect(coverage.sameVolumeEdges == 69_164)
+        #expect(coverage.sameVolumeEdges == 69_213)
     }
 
     @Test("Most citations are same-volume, which is why this artifact is small")
@@ -96,7 +98,7 @@ struct ResolvedEdgeIndexTests {
         let share = Double(coverage.sameVolumeEdges) / Double(coverage.documentEdges)
         #expect(share > 0.8, """
             Same-volume citations are \(Int(share * 100))% of the corpus. #262 estimated this \
-            artifact from 2.70M resolved references; it is 281 KB because two filters — \
+            artifact from 2.70M resolved references; it is 282 KB because two filters — \
             document-to-document only, then cross-volume only — remove three orders of magnitude. \
             If that share collapsed, the size design would need revisiting rather than inheriting.
             """)

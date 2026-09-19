@@ -15,15 +15,15 @@ import Foundation
 /// (#764).
 ///
 /// ## Read this before rendering a cell
-/// **95.3% of these references are footnotes.** Measured on the shipped corpus: 74,146 of 77,792
+/// **95.3% of these references are footnotes.** Measured on the shipped corpus: 74,204 of 77,850
 /// document-to-document references sit in an editor's note, and 3,646 in document body text. A
 /// cell therefore says *the editors, annotating material from this collection, pointed the reader
 /// at material from that one* — a real and unmapped thing, but **not** "these two archives cite
 /// each other". Any surface built on this owes that sentence.
 ///
 /// ## The two axes are not equals
-/// - **Collections** (``collectionFlows``): 20,687 references between different collections over
-///   4,341 pairs. The heaviest are legible — Nixon NSC Files → Central Files 1970-73 (459),
+/// - **Collections** (``collectionFlows``): 20,704 references between different collections over
+///   4,349 pairs. The heaviest are legible — Nixon NSC Files → Central Files 1970-73 (459),
 ///   Kennedy National Security File → Central Files (367), the Whitman File and Central Files in
 ///   both directions (288 / 272).
 /// - **Classes** (``classFlows``): 4,672 references between different classes over 2,734 pairs —
@@ -32,7 +32,7 @@ import Foundation
 ///   pairs hold 18.6% of it, against 42.6% on the collection axis.
 ///
 /// The class axis ships as a **measurement, not a feature**. The cause is structural: the `dN`
-/// cross-reference idiom does not exist before 1945 — 299 of 553 volumes contribute no edges at
+/// cross-reference idiom does not exist before 1945 — 298 of 553 volumes contribute no edges at
 /// all — while the decades that do cross-reference heavily cite lot files and libraries rather
 /// than decimal classes. Do not build a class-flow surface on it.
 ///
