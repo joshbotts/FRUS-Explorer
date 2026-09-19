@@ -40,7 +40,7 @@ enum ArchivalFlowDirection: String, CaseIterable, Identifiable, Sendable {
 ///
 /// - ``betweenPrinted`` counts references from one **printed** document to another
 ///   (`provenance-flow-index.json`, #764). Structurally empty before 1945: the `dN` cross-reference
-///   idiom postdates the war, and 299 of 553 volumes contribute no edge at all.
+///   idiom postdates the war, and 298 of 553 volumes contribute no edge at all.
 /// - ``toUnprinted`` counts references to material FRUS **did not print**
 ///   (`external-citation-index.json`, #784) — the third body of archival evidence, and the one
 ///   thing the Flows mode could not previously show.
@@ -91,7 +91,7 @@ struct ArchivalFlowEndpoint: Identifiable, Sendable, Equatable {
 /// The Flows mode's derivation over the bundled `provenance-flow-index.json` (#764).
 ///
 /// ## Read this before rendering a ribbon
-/// **95.3% of these references are footnotes** — 74,146 of 77,792 on the shipped artifact. A
+/// **95.3% of these references are footnotes** — 74,204 of 77,850 on the shipped artifact. A
 /// ribbon therefore says *the editors, annotating material from this collection, sent the reader
 /// to material from that one*. It does **not** say the two archives cite each other. The
 /// percentage is recomputed from the artifact's own `coverage` block rather than written down
@@ -413,7 +413,7 @@ struct ArchivalFlowsData: Sendable, Equatable {
 
     /// Makes block labels unique, for the same reason the Network and the Collections ranking do.
     ///
-    /// Measured over the 1,106 collections that appear in the flow vocabulary: 17 names are
+    /// Measured over the 1,108 collections that appear in the flow vocabulary: 17 names are
     /// carried by more than one record, covering 40 nodes. `White House Central Files` is six
     /// distinct blocks, one per repository.
     static func disambiguate(_ endpoints: [ArchivalFlowEndpoint]) -> [ArchivalFlowEndpoint] {

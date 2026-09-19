@@ -19,10 +19,9 @@ import SwiftUI
 ///   Relations of the United States" and 142 begin "Papers Relating…", so the Title mode
 ///   files by the DISTINCTIVE segment (`distinctiveTitleKey`) — the part after the volume
 ///   designator, or after the boilerplate + year for older forms.
-/// - **`publicationDate` is a free-form string** (551 bare "YYYY" + two full ISO dates —
-/// `frus1969-76v32` and, since it stated its date in `revisionDesc`, `frus1981-88v16`), so
-///   the Published mode parses through `FRUSVolumeMetadata.firstYear(in:)`, never string
-///   sort. And it is the PRINT year — the axis is labelled "publication year", never
+/// - **`publicationDate` is a free-form string** (bare "YYYY" almost everywhere, but not
+///   everywhere — `publicationYear(of:)` keeps the count), so the Published mode parses through
+///   `FRUSVolumeMetadata.firstYear(in:)`, never string sort. And it is the PRINT year — the axis is labelled "publication year", never
 ///   release/declassification semantics.
 ///
 /// Version history:
@@ -135,13 +134,15 @@ enum VolumeCatalogueGrouping {
 
     // MARK: Years
 
-    /// The volume's print year, parsed leniently — 551 entries are bare "YYYY" and **two** are
-    /// full ISO dates, so this goes through `firstYear(in:)`, never string sort.
+    /// The volume's print year, parsed leniently — 552 entries are bare "YYYY" and **one**,
+    /// `frus1969-76v32`, is a full ISO date, so this goes through `firstYear(in:)`, never string
+    /// sort.
     ///
-    /// It read "exactly one" until 2026-09-10 while the type header 116 lines above already said
-    /// two: #1258 added `frus1981-88v16` (2026-09-18, taken from `revisionDesc`) and updated the
-    /// header alone. A file that states the same fact twice will eventually state it two ways,
-    /// which is why the count lives in one sentence here and the header points at it.
+    /// The count has moved twice. #1258 made it two when `frus1981-88v16` arrived with no printed
+    /// year and took 2026-09-18 from `revisionDesc`; #1284 made it one again after OH printed that
+    /// volume's year (corpus cf8abf696). The first move updated the type header and not this
+    /// sentence, and the second updated neither — a file that states the same fact twice will
+    /// eventually state it two ways, which is why the count now lives only here.
     ///
     /// - Parameter entry: The manifest entry.
     /// - Returns: The 4-digit print year, or `nil`.

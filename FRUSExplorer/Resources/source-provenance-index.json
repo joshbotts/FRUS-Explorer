@@ -177,10 +177,10 @@
         "naraCollection" : 135,
         "presidentialLibrary" : 2074,
         "previouslyPublished" : 57,
-        "unrecognized" : 527
+        "unrecognized" : 521
       },
       "decade" : 1980,
-      "totalNotes" : 4898,
+      "totalNotes" : 4892,
       "volumeCount" : 14
     }
   ],
@@ -5942,10 +5942,10 @@
         "intelligence" : 10,
         "lotFile" : 8,
         "presidentialLibrary" : 32,
-        "unrecognized" : 403
+        "unrecognized" : 397
       },
       "decade" : 1980,
-      "totalNotes" : 491,
+      "totalNotes" : 485,
       "volumeId" : "frus1981-88v16"
     },
     {
@@ -6028,8 +6028,8 @@
     "previouslyPublished",
     "unrecognized"
   ],
-  "generated" : "2026-09-09",
+  "generated" : "2026-09-19",
   "schemaVersion" : 2,
-  "totalSourceNotes" : 269248,
+  "totalSourceNotes" : 269242,
   "volumesCovered" : 523
 }

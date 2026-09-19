@@ -25,7 +25,7 @@ import Foundation
 /// big artifact". Two filters cut it by three orders of magnitude, and both are properties of the
 /// question rather than compression tricks:
 ///
-/// 1. **Only document-to-document references count.** Of 2,713,592 references, 181,807 sit inside
+/// 1. **Only document-to-document references count.** Measured 2026-08-09: of 2,713,592 references, 181,807 sit inside
 ///    a document div (so they have a source document at all) and 77,792 resolve to a document div
 ///    in a shippable volume. The rest are page anchors, index entries, and targets outside the
 ///    manifest.

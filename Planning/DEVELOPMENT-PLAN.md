@@ -16995,3 +16995,64 @@ test sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1` (and `FRUS_UI_TEST_MODE`); nothing
   first dumps ran against a running process until it waited for the stop EVENT.
 - Four to six simulators with lldb attached drove the load average past 250; the A/B arms ran side
   by side for that reason.
+
+## Session 2026-09-19 — frus1981-88v16 corrected in place: tags fixed upstream, four artifacts regenerated
+
+**The question:** had OH changed v16's tagging or metadata since #1284 (2026-09-12)? Yes — ten
+commits after the ingest, six of them on 2026-09-14, all to that one file; the local corpus
+(`550a8c5c5`) equals upstream. The full commit-by-commit record, what was regenerated, what was
+measured unchanged and the semantic waiver are in `Planning/Release-frus1981-88v16.md`, section
+"OH corrected the volume in place". The headline: **`d4d6eecb7` restores the three canonical person
+slugs #1284 diagnosed as upstream typos**, so all 18 of v16's tags resolve and the Reagan, Shultz and
+Haig filters list the volume.
+
+**How it was checked:** a five-dimension workflow (header and tags, persons and terms,
+cross-references, structure and text, update propagation), each with an adversarial verifier, a
+completeness critic and four gap fills; the load-bearing claims were then re-checked by hand. Every
+generator ran to scratch first, and both repositories were confirmed untouched afterwards.
+
+**Shipped in this change:**
+- Regenerated `manifest.json` (offline overlay: v16's slugs and size only), `resolved-edge-index.json`
+  (+9 edges), `provenance-flow-index.json` (+58), `source-provenance-index.json` (−6 notes) and
+  `external-citation-index.json` (two coverage counters). Each delta was predicted from scratch runs
+  before the real one and matched exactly.
+- Tests moved with the data: `VolumeTagJoinTests` 1.1 drops the three allowlist entries its stale
+  check was written to catch and pins the canonical slugs by name; `ResolvedEdgeIndexTests` (77,850 /
+  69,213) and `SourceProvenanceDataTests` (269,242).
+- **`ManifestGeneratorRunner` 1.3: `sizeBytes` follows symlinks.** The audit measured a `VOLUMES_DIR`
+  of symlinked volume files writing each link's own 51–65 bytes for 552 volumes with "Parse errors: 0" — which
+  would hide the corpus behind every ≥ 20,000-byte stub filter. `fileSize(at:)` resolves the link;
+  `ManifestOverlayFileSizeTests` pins it, and a mutant that stops resolving fails it.
+- Figures describing the shipped artifacts updated in five doc comments and CLAUDE.md; stale
+  publication-date prose corrected (552 bare years + one ISO date since #1284, not 551 + two).
+
+**Not done, on purpose:** the semantic shard (42 of 88 documents' embedding text moved, mostly by
+whitespace; cosine ≥ 0.999; 14 of 3,145,710 top-10 slots) — waived with the numbers, re-harvest at
+v16's next document-count change; `broken-refs-index.json` (content identical; a new stamp would
+make every device re-apply identical flags). Devices get the body changes only through **Check for
+Corrections → Update**; OH's new document-level `@ana` person/term pointers reach no one, because
+the app has no parser for them.
+
+**Filed, pre-existing:** #1321 (letter-grouped persons lists parse to zero since #741, ~36 shipped
+volumes), #1322 (trip-packet footnote numbers one lower than printed), #1323 (`rend="strong"` renders
+plain).
+
+**Reviewed before it shipped:** four independent reviewers (data, tests, prose, code), every finding
+put to two skeptics; 22 of 23 survived and all were fixed. The sweep had updated the figures it went
+looking for and missed their neighbours: "299 of 553 volumes with no edges" (now 298), the flow
+vocabulary's "1,106" (now 1,108), both user manuals and the Agentic Analysis Guide (8,637 / 5,747 /
+185; 255 of 553; the heaviest flow is 459/320, not the 449/317 the manuals had carried since before
+this change), CLAUDE.md's 57.5% same-unit share (57.4%) and the printed-vs-digital year agreement
+(526/26 now that v16 prints its year). It also caught three real defects in the new code: the first
+test exercised the helper and not the overlay that calls it (a call-site revert stayed green), a
+DANGLING link still reported its own size, and the prose blamed a symlinked directory when only
+symlinked volume FILES trigger the bug. The overlay's "Date-updated" count, which counts any changed
+entry, is now "Changed". Two mutants — the call site reverted, the dangling guard removed — each
+fail exactly one of the five tests.
+
+**Verification:** SPM 1,454 tests / 168 suites, 0 failures. iOS unit suite 4,968 tests: 4,947
+passed, 15 skipped, 6 crashed — one test-host crash (`Runner._applyScopingTraits`) that takes
+whichever SwiftData tests are in flight. It reproduces on `v2` (2 of 19 in the same four suites,
+same signature), so it predates this change. Every suite whose file or data moved was re-run by
+type name and passed (VolumeTagJoin, ResolvedEdgeIndex, ProvenanceFlowIndex, SourceProvenanceData,
+VolumeCatalogueGrouping, ArchivalFlowsData, ArchivalFlowsUnprintedLayer, CodingStandardsAudit).

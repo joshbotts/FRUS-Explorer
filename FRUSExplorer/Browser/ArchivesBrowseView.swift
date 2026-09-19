@@ -27,7 +27,7 @@ import SwiftUI
 /// Everything here counts DOCUMENT SOURCE NOTES from `collection-usage-index.json` —
 /// the note printed under each document — with `volumeNoteCounts` as the per-volume share
 /// denominator. It is NOT `source-provenance-index.json`'s universe (raw `type="source"`
-/// elements; a 4,696-note gap, two questions, neither wrong), and never the corpus's
+/// elements; a 4,690-note gap, two questions, neither wrong), and never the corpus's
 /// 314,571 document divs. The captions say so.
 ///
 /// Version history:

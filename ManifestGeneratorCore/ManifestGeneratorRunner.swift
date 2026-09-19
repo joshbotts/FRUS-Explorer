@@ -48,6 +48,10 @@ import TEIHeaderKit
 ///   1.1 — SA-1a: local overlay mode (VOLUMES_DIR) that re-derives only date fields offline.
 ///   1.2 — #1284: the overlay also re-derives `tags` and `sizeBytes`, the two fields OH's in-place
 ///         edit to frus1981-88v16 moved and this mode could not see.
+///   1.3 — `sizeBytes` follows symlinks (`fileSize(at:)`): a VOLUMES_DIR whose volume files are
+///         symlinks recorded each link's own 51–65 bytes (552 volumes in the run that found it)
+///         while reporting 0 parse errors. The summary's "Date-updated" count, which counts ANY
+///         changed entry, is relabelled "Changed".
 public struct ManifestGeneratorRunner {
 
     /// The publication date to record: the printed year if the volume states one, else the date
@@ -55,7 +59,8 @@ public struct ManifestGeneratorRunner {
     ///
     /// A **fallback, never an override**, and the numbers are why. Over the 553 shipped volumes,
     /// where both a `publicationStmt` print year and a `revisionDesc` published `@when` exist, the
-    /// four-digit years **agree in 525 and differ in 26** — `frus1950v01` prints 1977 and was
+    /// four-digit years **agree in 526 and differ in 26** (525 until OH printed frus1981-88v16's
+    /// year at corpus cf8abf696) — `frus1950v01` prints 1977 and was
     /// published digitally in 1998. They are two different facts, so the printed year keeps the
     /// field whenever the volume prints one, and the digital date is admitted only where there is
     /// nothing else to say.
@@ -213,8 +218,31 @@ public struct ManifestGeneratorRunner {
 
     // MARK: - Local Overlay Mode
 
-    /// Offline pass that overrides ONLY `publicationDate`, `dateRange` and `status` on each existing
-    /// manifest entry from the locally-parsed `<teiHeader>`, preserving all other fields.
+    /// The size of the file at `url` in bytes, following symbolic links; `nil` if it cannot be read.
+    ///
+    /// `FileManager.attributesOfItem(atPath:)` describes a symlink ITSELF, not its target, so
+    /// reading it directly recorded the link's own few bytes for every volume FILE that is a
+    /// symlink — measured, 51–65 bytes for the 552 linked volumes of the run that found it, with
+    /// "Parse errors: 0" because the header parse reads through the link. A symlinked DIRECTORY
+    /// was never affected: only the last path component is not followed. A link whose target is
+    /// missing cannot be resolved and reports `nil`, never the link's own size. Every
+    /// consumer that screens stubs by size (the ≥ 20,000-byte filters) would then hide the corpus.
+    ///
+    /// - Parameter url: A volume file, or a symlink to one.
+    /// - Returns: The target's size in bytes, or `nil`.
+    static func fileSize(at url: URL) -> Int? {
+        // `resolvingSymlinksInPath()` returns a DANGLING link unchanged, and the attributes read
+        // would then describe the link again — the very bug this exists to prevent. Refuse it.
+        let resolved = url.resolvingSymlinksInPath()
+        guard let attributes = try? FileManager.default.attributesOfItem(atPath: resolved.path),
+              attributes[.type] as? FileAttributeType != .typeSymbolicLink else { return nil }
+        return (attributes[.size] as? NSNumber)?.intValue
+    }
+
+    /// Offline pass that re-derives `publicationDate`, `dateRange`, `status`, `tags` and
+    /// `sizeBytes` on each existing manifest entry from the local file — the fields it is
+    /// authoritative for — preserving all other fields. (This said "ONLY publicationDate,
+    /// dateRange and status" until two fields after #1284 made it false.)
     ///
     /// - Parameters:
     ///   - outputPath: Path to the existing manifest, read as the base and rewritten in place.
@@ -299,8 +327,7 @@ public struct ManifestGeneratorRunner {
                 // The local file's own size, which is what the GitHub arm records for its copy.
                 // Cosmetic on screen, but a manifest whose byte count disagrees with the file
                 // beside it is a manifest a reader cannot use to check anything.
-                sizeBytes: (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size])
-                    .flatMap { ($0 as? NSNumber)?.intValue } ?? entry.sizeBytes,
+                sizeBytes: Self.fileSize(at: fileURL) ?? entry.sizeBytes,
                 tags: header.tags
             )
             if newEntry != entry { changed += 1 }
@@ -310,7 +337,7 @@ public struct ManifestGeneratorRunner {
         print("""
         [ManifestGenerator] Overlay results:
           Entries:      \(updated.count)
-          Date-updated: \(changed)
+          Changed:      \(changed)
           Missing file: \(missing)
           Parse errors: \(parseErrors)
         """)

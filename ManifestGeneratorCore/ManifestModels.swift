@@ -40,7 +40,7 @@ public struct VolumeManifestEntry: Codable, Sendable, Equatable {
     public let editors: [String]
     public let generalEditor: String?
     public let documentCount: Int           // 0 when not extractable from teiHeader alone
-    public let sizeBytes: Int               // File size reported by GitHub API
+    public let sizeBytes: Int               // GitHub API size, or the local file's in overlay mode
     public let tags: [String]              // Volume-level tag slugs; [] is valid
 
     public init(

@@ -14,7 +14,7 @@ import Foundation
 /// aggregated to the archival unit each document was drawn from (#764).
 ///
 /// ## What this measures, exactly
-/// **Editorial cross-referencing, not archival relationship.** Measured on the corpus:
+/// **Editorial cross-referencing, not archival relationship.** Measured on the corpus (2026-08-08):
 /// **95.3% of document-to-document references are footnotes** — the editor's annotation on
 /// document A pointing at document B — and only 3,646 of 77,792 sit in document body text. So a
 /// cell does not say "these two archives reference each other"; it says *the editors, annotating
