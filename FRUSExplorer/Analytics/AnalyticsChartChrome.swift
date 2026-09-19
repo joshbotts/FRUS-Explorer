@@ -14,8 +14,9 @@ import SwiftData
 /// Compact year-range filter bar for the Corpus analytics charts.
 ///
 /// Two clamped year-entry fields (each a `Stepper` wrapping an editable `TextField`)
-/// separated by an en-dash, with a "Reset" affordance shown only when the range has
-/// been narrowed away from its defaults. Extracted verbatim from `AnalyticsView` in
+/// separated by an en-dash — stacked, without it, in a compact-width window — with a
+/// "Reset" affordance shown only when the range has been narrowed away from its defaults.
+/// Extracted verbatim from `AnalyticsView` in
 /// Prep-B so the forthcoming Corpus dashboards (CA-5+) can reuse the exact control
 /// without duplicating it; `AnalyticsView` composes it unchanged.
 ///
@@ -26,20 +27,26 @@ import SwiftData
 /// Version history:
 ///   1.0 — Prep-B (analytics CA-track): lifted from `AnalyticsView.yearRangeBar` /
 ///          `yearEntryField` with identical appearance and behavior.
-///   1.1 — Session 3 review / #236: the year fields' width scales with Dynamic Type
-///          via `@ScaledMetric` (the fixed 44pt clipped four digits at AX sizes).
+///   1.1 — Session 3 review / #236: the year fields' width scaled with Dynamic Type via
+///          `@ScaledMetric` (44 pt at the default size), meant to stop four digits clipping at
+///          AX sizes. It did not: 44 pt was the field's OUTER width, `.roundedBorder` insets the
+///          text inside it, and at the DEFAULT size the fields drew "18…" / "19…" (iPhone 17,
+///          iOS 26.3 and 27.0, measured 2026-09-18). At AX sizes the widened row also outgrew an
+///          iPhone popover and cut off the start field's leading edge. Superseded by 1.3.
 ///   1.2 — 2026-09-18: the year text fields carry accessibility identifiers for UI tests.
+///   1.3 — 2026-09-19: each year field is as wide as a hidden twin showing "8888" in the same
+///          font and style (`YearFieldSizer`), so the style's own insets are counted at every text
+///          size; in a compact-width window (every iPhone in portrait) the two fields stack, because whole
+///          years side by side do not fit a narrow iPhone's popover (`YearFieldsLayout`). The
+///          title still truncates ("Year ra…") at AX-XXXL on iPhone, as it did before: letting it
+///          wrap was tried and measured, and the popover, which sizes from the title's one-line
+///          ideal, then cut the stacked End field off its bottom.
 struct AnalyticsYearRangeBar: View {
 
     /// Start year of the range. Clamped on write to `1776...end`.
     @Binding var start: Int
     /// End year of the range. Clamped on write to `start...corpusMaxYear`.
     @Binding var end: Int
-
-    /// The year fields' width: 44pt at the default type size, scaling with the
-    /// `.caption` text style so four digits stay legible at accessibility Dynamic
-    /// Type sizes instead of clipping.
-    @ScaledMetric(relativeTo: .caption) private var yearFieldWidth: CGFloat = 44
 
     /// Most recent corpus year — the upper bound and the reset target for `end`.
     let corpusMaxYear: Int
@@ -61,6 +68,21 @@ struct AnalyticsYearRangeBar: View {
 
     /// Whether the range-picker popover is presented.
     @State private var isRangePopoverPresented = false
+
+    #if os(iOS)
+    /// The PRESENTING bar's width class, read here rather than inside the popover, whose traits are
+    /// its own. Compact (every iPhone in portrait) stacks the year fields; see `YearFieldsLayout`.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    /// Whether the popover's year fields stack rather than share a row (`YearFieldsLayout`).
+    private var stacksYearFields: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
 
 
     var body: some View {
@@ -145,7 +167,7 @@ struct AnalyticsYearRangeBar: View {
                 #endif
             }
 
-            HStack(spacing: 10) {
+            YearFieldsLayout(stacked: stacksYearFields) { stacked in
                 yearEntryField(
                     value: $start,
                     bounds: 1776...end,
@@ -154,9 +176,13 @@ struct AnalyticsYearRangeBar: View {
                     identifier: "analytics.yearRange.startField"
                 )
 
-                Text(verbatim: "–")
-                    .foregroundStyle(.tertiary)
-                    .font(.caption)
+                // Side by side only: alone on a line of its own it would read as a minus sign,
+                // and top-to-bottom order already says start, then end.
+                if !stacked {
+                    Text(verbatim: "–")
+                        .foregroundStyle(.tertiary)
+                        .font(.caption)
+                }
 
                 yearEntryField(
                     value: $end,
@@ -197,6 +223,10 @@ struct AnalyticsYearRangeBar: View {
     /// the popover) FIRST where iOS 26 listed the year fields first, so a "first field with a
     /// value" query tapped the covered term field and typed into nothing
     /// (`KeyboardDismissBarReachTests`, 2026-09-18).
+    ///
+    /// The field's width is NOT a number here. `YearFieldSizer` — the same control in the same
+    /// font and style, showing "8888" — decides it, and the real field is laid over the sizer,
+    /// where it is proposed exactly the sizer's size and takes it (1.3).
     private func yearEntryField(
         value: Binding<Int>,
         bounds: ClosedRange<Int>,
@@ -209,22 +239,137 @@ struct AnalyticsYearRangeBar: View {
             set: { value.wrappedValue = min(max($0, bounds.lowerBound), bounds.upperBound) }
         )
         return Stepper(value: clamped, in: bounds) {
-            TextField(
-                String(localized: "analytics.yearRange.field.placeholder", defaultValue: "Year"),
-                value: clamped,
-                format: .number.grouping(.never)
-            )
+            YearFieldSizer()
+                .overlay {
+                    TextField(
+                        String(localized: "analytics.yearRange.field.placeholder",
+                               defaultValue: "Year"),
+                        value: clamped,
+                        format: YearFieldChrome.format
+                    )
+                    .modifier(YearFieldChrome())
+                    .accessibilityIdentifier(identifier)
+                    #if os(iOS)
+                    .keyboardType(.numberPad)
+                    #endif
+                }
+        }
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
+// MARK: - Year fields
+
+/// The year-range popover's field row: side by side in a regular-width window and on macOS, two
+/// rows — Start above End, each field with its stepper — in a compact-width one (every iPhone in
+/// portrait; Plus and Pro Max iPhones are regular width in landscape and get the row).
+///
+/// **Why compact width always stacks, measured.** A year field is sized never to compress
+/// (`YearFieldSizer`), and the side-by-side row is two fields plus about 232 pt that does not shrink
+/// (two `UIStepper`s, which do not grow with Dynamic Type, the gaps and the dash — 1.2's default
+/// row, 351.7 pt of popover around two 44-pt fields, less 32 pt of padding). At the DEFAULT text
+/// size that is ~349 pt (fields of 58.3 pt), and an iPhone popover offers its window width less
+/// 20 pt, less the popover's own padding: 350 pt on a 402-pt iPhone 17 (one point to spare), 338 on
+/// a 390-pt iPhone 17e, ~323 on a 375-pt phone — and from XL up not even the iPhone 17 has room. So
+/// four whole digits side by side do not fit a narrow iPhone even at the default size. Two earlier versions of 1.3 were measured and rejected: stacking only at
+/// `isAccessibilitySize` left the row overflowing 375–393-pt iPhones from XL (worse than 1.2
+/// there); and `ViewThatFits` stacked at the right widths but not in time — a popover sizes itself
+/// from its content's IDEAL size, which `ViewThatFits` reports as the row's, so the popover kept
+/// the row's height and the stacked End field hung out of its bottom (iPhone 17e, every size).
+///
+/// So the decision is made BEFORE the popover sizes itself, from the PRESENTING bar's horizontal
+/// size class (a popover is a detached hosting environment with traits of its own — see the note
+/// on the popover's Done button). In a regular-width iPad window the row fits at every size,
+/// accessibility sizes included (measured on iPad Pro 13-inch and iPad mini, iOS 27). `AnyLayout`
+/// keeps the fields' identity across a size-class change, so a rotation does not end an edit.
+///
+/// Version history:
+///   1.0 — 2026-09-19: initial implementation (the year fields' width fix, `AnalyticsYearRangeBar` 1.3).
+private struct YearFieldsLayout<Content: View>: View {
+    /// Whether the fields stack: decided by the presenting bar, not here.
+    let stacked: Bool
+    /// The row's contents, told whether they are stacked (the en-dash is drawn only side by side).
+    @ViewBuilder let content: (_ stacked: Bool) -> Content
+
+    var body: some View {
+        let layout = stacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10))
+            : AnyLayout(HStackLayout(spacing: 10))
+        layout {
+            content(stacked)
+        }
+    }
+}
+
+/// The year field's look — hidden label, trailing alignment, font, text-field style and number
+/// format — stated once, so `YearFieldSizer` and the real field in
+/// `AnalyticsYearRangeBar.yearEntryField` cannot drift apart. A sizer in another font or style
+/// would measure a field nobody sees.
+///
+/// Version history:
+///   1.0 — 2026-09-19: initial implementation (the year fields' width fix, `AnalyticsYearRangeBar` 1.3).
+private struct YearFieldChrome: ViewModifier {
+    /// The year's format: no grouping separator, so 1861 never reads "1,861".
+    static let format: IntegerFormatStyle<Int> = .number.grouping(.never)
+
+    func body(content: Content) -> some View {
+        content
             .labelsHidden()
             .multilineTextAlignment(.trailing)
             .font(.caption.monospacedDigit())
-            .frame(width: yearFieldWidth)
             .textFieldStyle(.roundedBorder)
-            .accessibilityIdentifier(identifier)
-            #if os(iOS)
-            .keyboardType(.numberPad)
-            #endif
+    }
+}
+
+/// An invisible, inert year field showing "8888", whose ideal size IS the width a year field
+/// needs.
+///
+/// **Why a real `TextField` and not a `Text`.** The width 1.1 lacked was the STYLE's, not the
+/// digits': `.roundedBorder` insets its text by an amount the platform keeps private, so a
+/// constant, or a constant scaled by `@ScaledMetric`, is a guess about that inset. What the twin
+/// reports is MEASURED — 58.3 pt at the default size on iPhone 17, iOS 26.3 and 27.0 — and it is
+/// more than digits plus the drawn inset: four caption digits are ~30.2 pt, which leaves ~28 pt,
+/// while 1.2's 44-pt field drew "18…" and so drew its inset at no more than ~10 pt a side. How the
+/// field's ideal width spends the difference is not public and is not guessed at here; the point of
+/// measuring the control itself is that nothing has to be.
+///
+/// **No caret allowance, and that was measured too.** A 2-pt trailing allowance, for the insertion
+/// point after the last digit, was tried and deleted: with the caret after the last digit a field
+/// exactly this wide still shows all four digits (`YearRangeFieldWidthTests` step 5), and the test
+/// passed at every size with the allowance and without it. `.fixedSize()`
+/// asks the field for its ideal width, which is its content plus the style's own insets, so this
+/// measures the control that actually renders, at the reader's text size and weight.
+///
+/// **Why "8888" and not the value on show.** With `.monospacedDigit()` every digit shares one
+/// advance, so any four-digit year is exactly as wide as this; and a width that followed the value
+/// would reflow the popover as the reader types (a transient fifth digit before the clamp) and
+/// collapse when a field is cleared.
+///
+/// It is hidden, disabled — never a focus or Tab stop — and hidden from assistive technology: the
+/// `ArchivesReservedLabel` pattern (Browse ▸ Archives). The overlay laid on it from outside is
+/// none of those things, because these modifiers apply inside this view only.
+///
+/// Version history:
+///   1.0 — 2026-09-19: initial implementation (the year fields' width fix, `AnalyticsYearRangeBar` 1.3).
+private struct YearFieldSizer: View {
+    /// 1.1's DEFAULT-size width, as a floor and never as the reason four digits fit: should a
+    /// platform ever report a smaller ideal width, the field is no narrower than 1.1's was at the
+    /// default size. The outer `.fixedSize()` is what makes the MEASURED width binding: without it
+    /// a crowded row could propose anything down to the floor, and 44 pt is exactly the width that
+    /// truncated.
+    private static let minimumWidth: CGFloat = 44
+
+    var body: some View {
+        TextField(value: .constant(8888), format: YearFieldChrome.format, prompt: nil) {
+            EmptyView()
         }
-        .accessibilityLabel(accessibilityLabel)
+        .modifier(YearFieldChrome())
+        .fixedSize()
+        .frame(minWidth: Self.minimumWidth)
+        .fixedSize()
+        .disabled(true)
+        .hidden()
+        .accessibilityHidden(true)
     }
 }
 

@@ -16841,3 +16841,48 @@ animation would cost battery and CPU).
 
 **To finish it:** run the watcher unattended on a pinned simulator until it catches two stalls,
 dump a baseline on a passing run at the same step, and diff.
+
+## Session 2026-09-19 — whole years in the year-range popover, and three designs measured out
+
+**The bug:** the Corpus Analytics year-range popover drew its year fields as "18…" / "19…" at the
+default text size (iPhone 17, iOS 26.3 and 27.0). `AnalyticsYearRangeBar` 1.1's `@ScaledMetric`
+44-pt width was the field's OUTER width, and `.roundedBorder` insets its text inside it.
+
+**The fix (`AnalyticsChartChrome.swift`, `AnalyticsYearRangeBar` 1.3):**
+- **Width from the control itself.** Each field lies over a hidden, disabled, accessibility-hidden
+  twin `TextField` showing "8888" in the same font and style (`YearFieldSizer`, look shared through
+  `YearFieldChrome`); `.fixedSize()` makes the twin's ideal width the field's, with 1.1's 44 pt as a
+  floor. Measured field widths: XS 56.0, L 58.3, XXXL 71.7, AX-M 81.3, AX-XL 107.0, AX-XXXL
+  133.7 pt on iPhone; 44 pt on macOS (the floor binds, checked with an off-screen `NSHostingView`
+  harness over a verbatim copy of the types — Vision read "1861" and "1992").
+- **Stacked on iPhone, decided before the popover sizes itself.** The side-by-side row is two fields
+  plus ~232 pt that does not shrink, ~349 pt at the default size, against 350 pt inside an iPhone 17
+  popover and 338 on a 390-pt iPhone 17e — so the fields stack whenever the PRESENTING bar is compact
+  width (owner decision), and stay one row on a regular-width iPad and on macOS.
+
+**Three designs measured out, in order** (a judge panel of three designers and two adversarial
+judges chose the twin sizer; two adversarial reviews, 76 agents in all, then tested the result):
+1. Stacking at `isAccessibilitySize` only: overflowed 375–393-pt iPhones from XL (worse than 1.2).
+2. `ViewThatFits` row-or-stack inside the popover: a popover sizes from its content's IDEAL size, so
+   it kept the row's height and the stacked End field hung out of its bottom (iPhone 17e, all sizes).
+3. Letting the "Year range:" title wrap: same trap — at AX-XXXL the stacked End field ended ~15 pt
+   below the popover. Reverted; the title truncates to "Year ra…" at AX-XXXL on iPhone, as before
+   (v2 was worse there: the whole popover was pushed off-screen).
+A 2-pt caret allowance was also deleted after a mutation run showed it changed nothing.
+
+**The test (`YearRangeFieldWidthTests`, new):** at six sizes (XS, L, XXXL, AX-M, AX-XL, AX-XXXL) it
+reads each field with Vision (exact match at rest), requires every field and stepper button 8 pt
+inside the popover and the window, checks stacked-on-iPhone / row-on-iPad, checks the "8888" twin
+never reaches accessibility, and reads the Start field while editing with the caret at its end.
+- **A/B:** the v2 app fails 5 of 6 on iPhone 17 (iOS 27 and 26.3) and 6 of 6 on iPhone 17e — Vision
+  reads "1" at XS, "18" at L, "161" at AX-XXXL; fields leave the popover at AX-M and AX-XL.
+- **Final code:** every size passes on iPhone 17 and 17e (iOS 26.3 and 27). On iPad Pro 13-inch and
+  iPad mini (iOS 27) every size passed except three cases lost to the idle stall below (iPad Pro
+  AX-XL; iPad mini XXXL and AX-XXXL), each of which passed on the same iPad in the run before, whose
+  only code difference was the deleted 2-pt caret allowance. `KeyboardDismissBarReachTests` passes on both iPhone 17s and the iPad mini, and
+  the mini's three keyboard/toolbar suites pass. Clean `build-for-testing` (iOS) and clean `build`
+  (macOS): only the `GeneratedSummary` residue.
+- **The idle stall is in it:** 8 of 192 cases today stalled (4.2%), all on iOS 27, all at opening
+  the popover, one on the v2 app. See the CLAUDE.md note; this suite is now its best reproducer.
+- **Not covered:** 375-pt iPhones (none installed; the stack decision does not depend on width, so
+  the arithmetic says they stack and fit), iPhone landscape, Bold Text, VoiceOver.
