@@ -16886,3 +16886,112 @@ never reaches accessibility, and reads the Start field while editing with the ca
   the popover, one on the v2 app. See the CLAUDE.md note; this suite is now its best reproducer.
 - **Not covered:** 375-pt iPhones (none installed; the stack decision does not depend on width, so
   the arithmetic says they stack and fit), iPhone landscape, Bold Text, VoiceOver.
+
+## Session 2026-09-19 — the idle stall, caught: XCTest's animation counter drifts on iOS 27
+
+**The question (from "the Corpus Analytics idle stall" two sessions above):** the stall had never
+been caught live. `YearRangeFieldWidthTests` reproduced it at about one case in 25 on iOS 27 and never
+on 26.3. Catch it, find what XCTest waits on, and decide whether it is the app's bug.
+
+**What XCTest actually waits on — read from `XCTAutomationSupport` (Xcode 27.0), not the layer
+tree.** `XCTAnimationsIdleNotifier` swizzles `-[UIViewAnimationState animationDidStart:]` and
+`animationDidStop:finished:` and keeps ONE process-wide counter, +1 and −1. A "notify when
+animations are idle" request is answered when the counter reaches zero. So the infinite Liquid
+Glass `CAMatchMove`/`CAMatchProperty` animations were never candidates (their delegate is nil),
+and a stall is a counter left above zero. `animdump.py` now decodes the counter's address from
+`+[XCTAnimationsIdleNotifier isAnimationInProgress]` (`adrp; add; ldar`) and prints it first.
+
+**Caught — in 14 untracked cases on five iOS 27 simulators, and more under the tracker — and
+the counter explains every one:**
+- Baseline, popover open on a passing run: counter **0** on iPhone 17, 17e, iPad mini, iPad Pro.
+- Stalls, one dump per stuck process: counter **11** in eleven iPhone stalls and **1–3** in the
+  other five; **1** or **2** in the four readable iPad stalls — while a memory scan of all four
+  `UIViewAnimationState` classes found **0** unstopped states and no counted animation on any
+  layer. UIKit had finished everything; the count had not.
+- **The stall does not begin at the popover.** The eleven iPhone stalls at 11 began at the idle
+  wait after tapping **Analysis Tools** (the menu opens; its "Corpus Analytics" item is then "not
+  found" for the next 60 s). The rest began when a keyboard came up or went down — tapping the term
+  field, `Berlin⏎` — or at a **Done** dismissal. The earlier "every one began at `Tap "Year range"`"
+  was that tap step's PRE-tap wait: its leak had happened in the two seconds after `Berlin⏎` was
+  answered idle, while the keyboard went down.
+
+**The mechanism, from `track_counter.py`** (breakpoints on XCTest's own two swizzle functions and
+on UIKit's `sendDelegateAnimationDidStop:finished:`, logging the counter from memory):
+1. **iPhone — the in-process animation engine.** iOS 27's `AnimationKit`
+   (`UIKit.UIViewInProcessAnimationState`) drives most system animations: 682 of 840 counted starts
+   in one tracked case. Opening the Analysis Tools menu starts a burst; in a stall, six in-process
+   states take 2+2+3+2+1+1 starts that are never stopped — **exactly 11**, the same six origins
+   every time (`CASDFLayer setGaussianRadius:`, `UIViewFloatAnimatableProperty`, layer updates,
+   `+[UIView _setupAnimationWithDuration:…]`), some started on a state UIKit had already finished.
+   `UIViewInProcessAnimationState` does not exist on iOS 26.3 and `AnimationKit` is not loaded
+   there, which is why the in-process leak is iOS 27-only.
+2. **Keyboard and dismissal — Core Animation double-starts an interrupted spring.** A
+   three-`CASpringAnimation` spring is interrupted (`finished=0`) and retargeted by four new ones;
+   ONE of the first three receives `animationDidStart:` twice, both from CA's own
+   `run_animation_callbacks`, and one stop. Tracked on the iPad mini and the iPad Air, identical in
+   shape; the iPhone stalls at 1–3 have the same trigger, untracked. UIKit ignores the duplicate;
+   XCTest counts it. Nothing here is iOS 27-specific in principle, which may be the one 26.3 stall
+   of 2026-09-18 ("typing a term") — not reproduced today.
+
+No app frame appears in any leaked start; the triggers are a system menu, the keyboard and a
+dismissal. **Verdict: an iOS 27 / XCTest interaction, not an app bug** — XCTest assumes each counted
+start is stopped, and iOS 27's system animations break that assumption.
+
+**Battery and CPU — measured, because an unfinished animation would cost users.** `watch_stall.py`
+now takes the app's CPU over 10 s and a 3 s `sample` at each stall BEFORE lldb attaches (a held
+process samples as frozen), and again at +90/+150 s with `LATE_SAMPLES`.
+- Clean control, the Analysis Tools menu held open 150 s then closed (a temporary, uncommitted
+  test): **0.00–0.01 CPU-s per 10 s** at +15/+75/+135 s and after closing, main thread 100% idle, no
+  display link — 12 of 12 runs, none of which leaked.
+- **Keyboard-type stalls (counter 1–3): nothing keeps running.** Five sampled; with two or three
+  simulators running all four read **0.0 CPU-s**, main thread 100% idle, no display link, and the
+  same at +90 and +150 s.
+  One under heavy load read 1.42 s, all of it a background thread in
+  `swift_conformsToProtocolMaybeInstantiateSuperclasses` (Swift runtime start-up), not animation.
+- **Menu-type stalls (counter 11): an AnimationKit display link was still firing** about once a
+  frame (6–11 dispatches in 3 s, ~1% of the main thread) ~30 s after the leak, in 4 of 4 samples,
+  and in no clean or keyboard-type sample. All four happened with five or six simulators running
+  (load average ~80–300); with two or three running, every stall was keyboard-type. None was
+  sampled late, so whether it persists is not measured. It is AnimationKit running the
+  system menu's own animation; the app starts none of it and has no handle to stop it. If it
+  persists on a device it is an Apple bug worth a Feedback, not an app fix.
+
+**The suite avoids it — `YearRangeFieldWidthTests` 1.1 launches with UIKit view animations off.**
+`FRUSExplorerApp.configureUITestAnimations()` calls `UIView.setAnimationsEnabled(false)` when a UI
+test sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1` (and `FRUS_UI_TEST_MODE`); nothing else changes.
+- Mechanism, tracked: counted events per case **840 → 16–19, all balanced, counter 0** (6 of 6
+  cases, the same with the lldb-injected A/B and with the real switch). The residue is Liquid Glass
+  tap feedback, gesture-driven in-process animations that ignore the switch.
+- Rate, `YearRangeFieldWidthTests` on iOS 27 simulators, untracked. Animations on: **13 of 221
+  cases stalled (5.9%)** — iPhones 11 of 154, iPads 2 of 67, about twice as often at the three
+  accessibility sizes as at the three standard ones — and 9 of the 13 then failed or ran out their
+  allowance (the watcher's own dump, holding the app 40–120 s, contributed to some). Animations
+  off: **0 of 171**, 0 failures (69 with the switch injected through lldb, 102 with the real build).
+  Side by side on the real build, same machine, same hour: on 3 of 81, off 0 of 102. At 5.9%, 0 of
+  171 by chance is about 3 in 100,000. iOS 26.3 (iPhone 17): 6 of 6 pass with the switch.
+- Opt-in, not implied by `FRUS_UI_TEST_MODE`: `AnalyticsRotationTests` guards a cycle that lives
+  in the rotation animation (#498), and the keyboard suites test keyboard behaviour; each still
+  opens the menu with animations on. To reproduce from now on, run the watcher's default test,
+  `YearRangeFieldWidthTests`, with `INJECT='(void)[UIView setAnimationsEnabled:YES]'` — measured:
+  1 stall in 30 cases on a simulator that had shown none in 36 default-size menu openings.
+  `AnalyticsKeyboardTests` (default size, menu + Return in every case) ran 28 cases without one.
+
+**Tools (`tools/ui-test-stall/`):**
+- `animdump.py` — the counter first; every animation with its delegate class, marking the four
+  counted classes; an isa scan of writable memory for unstopped states (`_retainedSelf == self`,
+  `_animationDidStopSent == NO`), because lldb's `objc_refs` finds no instance of any class here and
+  `heap(1)` aborts on the AttributeGraph zone.
+- `track_counter.py` — new: logs every move of XCTest's counter with the state, animation and a
+  40-frame backtrace, and serves dumps (one debugger per process).
+- `watch_stall.py` — live xcodebuild streaming (the step each stall began at), baselines at a
+  named step, CPU + `sample` before lldb attaches, one dump per stuck process, `TRACK`, `INJECT`
+  (A/B a mitigation without a rebuild), `LATE_SAMPLES`, and a SIGTERM handler — killing an older
+  watcher orphaned its xcodebuild, which then raced the next watcher for the simulator.
+
+**Measurement traps met:**
+- A case that runs out its allowance ends "exceeded execution time allowance", not failed, and the
+  `Executed N tests, with 0 failures` line still says 0 failures.
+- In async lldb, `process.GetState()` can still read "stopped" after `Continue()`; the tracker's
+  first dumps ran against a running process until it waited for the stop EVENT.
+- Four to six simulators with lldb attached drove the load average past 250; the A/B arms ran side
+  by side for that reason.
