@@ -28,6 +28,7 @@ import SwiftData
 ///          `yearEntryField` with identical appearance and behavior.
 ///   1.1 — Session 3 review / #236: the year fields' width scales with Dynamic Type
 ///          via `@ScaledMetric` (the fixed 44pt clipped four digits at AX sizes).
+///   1.2 — 2026-09-18: the year text fields carry accessibility identifiers for UI tests.
 struct AnalyticsYearRangeBar: View {
 
     /// Start year of the range. Clamped on write to `1776...end`.
@@ -149,7 +150,8 @@ struct AnalyticsYearRangeBar: View {
                     value: $start,
                     bounds: 1776...end,
                     accessibilityLabel: String(localized: "analytics.yearRange.start.a11y",
-                                               defaultValue: "Start year")
+                                               defaultValue: "Start year"),
+                    identifier: "analytics.yearRange.startField"
                 )
 
                 Text(verbatim: "–")
@@ -160,7 +162,8 @@ struct AnalyticsYearRangeBar: View {
                     value: $end,
                     bounds: start...corpusMaxYear,
                     accessibilityLabel: String(localized: "analytics.yearRange.end.a11y",
-                                               defaultValue: "End year")
+                                               defaultValue: "End year"),
+                    identifier: "analytics.yearRange.endField"
                 )
             }
 
@@ -188,10 +191,17 @@ struct AnalyticsYearRangeBar: View {
     /// up/down stepper. Typing commits a value (clamped into `bounds`), letting
     /// the user jump directly to a year instead of stepping one at a time; the
     /// stepper remains for fine adjustment.
+    ///
+    /// `identifier` names the TEXT FIELD for UI tests, which cannot tell it from the term field
+    /// any other way: both are text fields with a value, and iOS 27 lists the term field (behind
+    /// the popover) FIRST where iOS 26 listed the year fields first, so a "first field with a
+    /// value" query tapped the covered term field and typed into nothing
+    /// (`KeyboardDismissBarReachTests`, 2026-09-18).
     private func yearEntryField(
         value: Binding<Int>,
         bounds: ClosedRange<Int>,
-        accessibilityLabel: String
+        accessibilityLabel: String,
+        identifier: String
     ) -> some View {
         // Clamp on write so a typed (or stepped) value can never escape `bounds`.
         let clamped = Binding<Int>(
@@ -209,6 +219,7 @@ struct AnalyticsYearRangeBar: View {
             .font(.caption.monospacedDigit())
             .frame(width: yearFieldWidth)
             .textFieldStyle(.roundedBorder)
+            .accessibilityIdentifier(identifier)
             #if os(iOS)
             .keyboardType(.numberPad)
             #endif

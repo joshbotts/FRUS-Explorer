@@ -16750,3 +16750,48 @@ with "Neither element nor any descendant has keyboard focus" typing into `analyt
 passed on iPhone 17 iOS 26.3 on 2026-09-18. This one IS an iOS 27 difference. Also noted: with a
 dangling `activeProjectId` the picker shows the `folder` glyph beside the label "Global". That is
 deliberately left, because the new test uses exactly that state.
+
+## Session 2026-09-18 — the year-range keyboard test on iOS 27: a reordered element tree, not a focus change
+
+**The report:** `KeyboardDismissBarReachTests.testDismissBarRendersInTheYearRangePopover` failed on
+iPhone 17 iOS 27.0 (`80CF0F18`), on v2 and on #1316's branch, and passed on iOS 26.3. The question
+was whether iOS 27 stopped a year field in the popover from taking focus. A user would hit that as
+typing going nowhere.
+
+**It did not; the test tapped the wrong field.** The test found "the year field" as
+`textFields.matching("value != nil").firstMatch`. A temporary diagnostic test (removed) recorded
+every text field's frame and `hasKeyboardFocus` at each step:
+- **iOS 26.3:** with the popover open, the year fields come FIRST, so the query took 1861, and a tap
+  focused it (`focus=true`, keyboard up).
+- **iOS 27:** the Term field BEHIND the popover comes first, so the query resolved it (frame
+  16,184 w307, `hittable=false`). The tap landed on the popover, nothing took focus, and `typeText`
+  failed. The failure message's `analytics.termField` names the element that HELD focus, not the
+  one being typed into.
+
+The real year field, tapped by identifier on iOS 27, focuses and takes typing (1861 → 18615).
+
+**Shipped:** the two year text fields carry `analytics.yearRange.startField` / `.endField`
+(`AnalyticsChartChrome.yearEntryField`), and the test queries the start field by identifier. No
+visible or spoken change.
+
+**Verified:**
+- `KeyboardDismissBarReachTests`, iPhone 17 iOS 27: v2 **2 — 1 pass / 1 fail**; branch **2 — 2 / 0 /
+  0 skip**, and one more branch run timed out (below).
+- Same suite, iPhone 17 iOS 26.3: **2 — 2 / 0 / 0 skip**.
+- The three keyboard/toolbar suites on iPad mini: 27.0 **9 — 8 / 1** (the stall below) and 26.3
+  **9 — 8 / 1**. The 26.3 failure was `AnalyticsKeyboardTests.testFieldIsRefocusableAfterDismissal`,
+  "Could not reach the 'Browse' tab", with no stall. It did not recur: `AnalyticsKeyboardTests` ×4
+  on the same mini, v2 and branch alternating, passed 3/3 three times. The fourth was the stall.
+
+**Found, not fixed: Corpus Analytics intermittently never goes idle for XCTest.** Every XCUI action
+waits for the app to finish animating; in these runs each wait ran its full 60 s ("App animations
+complete notification not received"), and three of them exceed the 5-minute allowance. Seen in
+**4 of the 19** runs today that opened Corpus Analytics: 3 on iOS 27 (iPhone ×2, iPad mini ×1), all at the first tap after the year
+popover opened, and **1 on iOS 26.3** while typing into the term field with no popover open. The
+XCTest spindump shows the app's main thread IDLE, last run 36.8 s before the sample. The screen's
+only `ProgressView` shows only while loading, and the stalled screen reads "No Results".
+Unexplained, and independent of this fix.
+
+**Also noticed, pre-existing on 26.3 and 27:** at default text size the year fields read **"18…" /
+"19…"**. `AnalyticsYearRangeBar` 1.1 says `@ScaledMetric` fixed four-digit clipping; the
+screenshots say otherwise.

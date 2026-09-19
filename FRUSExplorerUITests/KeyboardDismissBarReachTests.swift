@@ -66,6 +66,7 @@ import XCTest
 ///   1.2 — order-independence: the Browse scenario's hittability check waits instead of
 ///         sampling once, the two ways it can fail are told apart, and the #1070 gate is
 ///         asserted directly rather than inferred from a hit test that cannot see it
+///   1.3 — 2026-09-18: the year field is found by identifier; iOS 27 reordered the tree
 @MainActor
 final class KeyboardDismissBarReachTests: XCTestCase {
 
@@ -128,8 +129,11 @@ final class KeyboardDismissBarReachTests: XCTestCase {
               + (0..<app.buttons.count).map { app.buttons.element(boundBy: $0).label }
                   .filter { !$0.isEmpty }.joined(separator: " | "))
 
-        let field = app.textFields.matching(
-            NSPredicate(format: "value != nil")).firstMatch
+        // By IDENTIFIER. This was `textFields.matching("value != nil").firstMatch`, which relied on
+        // the popover's fields preceding the Term field in the element tree: true on iOS 26, false
+        // on iOS 27, where it resolved the Term field BEHIND the popover (unhittable), the tap hit
+        // the popover, and `typeText` failed for want of focus. Measured 2026-09-18 on iPhone 17.
+        let field = app.textFields["analytics.yearRange.startField"].firstMatch
         guard field.waitForExistence(timeout: 5) else {
             throw XCTSkip("No year field in the popover on this destination")
         }
