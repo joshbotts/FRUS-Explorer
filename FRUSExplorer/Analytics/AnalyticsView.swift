@@ -461,11 +461,13 @@ struct AnalyticsView: View {
     }
 
     /// `dayData` filtered to entries whose year falls within `yearRangeStart`...`yearRangeEnd`.
+    ///
+    /// Compares the year off the stored `yyyy-MM-dd` label, never off `date` (#1327): `date` is an
+    /// instant, and which year an instant falls in depends on the zone reading it.
     private var filteredDayData: [DayFrequency] {
         guard !dayData.isEmpty else { return [] }
-        let cal = Calendar(identifier: .gregorian)
         return dayData.filter { d in
-            let y = cal.component(.year, from: d.date)
+            guard let y = d.year else { return false }
             return y >= yearRangeStart && y <= yearRangeEnd
         }
     }
@@ -587,10 +589,12 @@ struct AnalyticsView: View {
         }
     }
     /// One committed term's By-Day data, filtered to the active year range.
+    ///
+    /// Off the stored label, for the reason `filteredDayData` gives (#1327).
     private func filteredDayData(for term: String) -> [DayFrequency] {
-        let cal = Calendar(identifier: .gregorian)
-        return (dayDataByTerm[term] ?? []).filter {
-            let y = cal.component(.year, from: $0.date); return y >= yearRangeStart && y <= yearRangeEnd
+        (dayDataByTerm[term] ?? []).filter {
+            guard let y = $0.year else { return false }
+            return y >= yearRangeStart && y <= yearRangeEnd
         }
     }
 
@@ -765,7 +769,6 @@ struct AnalyticsView: View {
     /// Built for every committed term, so a D1 comparison exports the same shape as a single term.
     private var exportTable: ChartInspectorData? {
         guard !committedTerms.isEmpty else { return nil }
-        let dayFormat = Date.FormatStyle(date: .numeric, time: .omitted)
         let series: [(term: String, points: [CorpusSeriesPoint])] = committedTerms.map { term in
             let points: [CorpusSeriesPoint]
             switch chartAxis {
@@ -783,7 +786,11 @@ struct AnalyticsView: View {
                 }
             case .byDay:
                 points = filteredDayData(for: term).map {
-                    CorpusSeriesPoint(periodLabel: $0.date.formatted(dayFormat), denominatorKey: nil, count: $0.count)
+                    // #1327: the stored day, which is what the on-screen table prints. This table
+                    // is the CSV and the VoiceOver chart descriptor, and while it formatted the
+                    // point's instant in the device's zone it could name a different day from the
+                    // one on screen for every row, not only across a year boundary.
+                    CorpusSeriesPoint(periodLabel: $0.label, denominatorKey: nil, count: $0.count)
                 }
             case .bySubseries:
                 points = (subseriesDataByTerm[term] ?? []).map {
@@ -2786,7 +2793,7 @@ struct AnalyticsView: View {
 
         case .byDay:
             tableList(rows: filteredDayData,
-                      label: { Self.isoDayFormatter.string(from: $0.date) },
+                      label: { $0.label },
                       countOf: { $0.count })
 
         case .bySubseries:
@@ -2871,15 +2878,6 @@ struct AnalyticsView: View {
         }
         .contentShape(Rectangle())
     }
-
-    /// Shared yyyy-MM-dd formatter for the by-day table.
-    private static let isoDayFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = TimeZone(identifier: "UTC")
-        return f
-    }()
 
     // MARK: - Unavailable Placeholder
 
