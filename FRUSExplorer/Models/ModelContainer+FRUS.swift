@@ -372,7 +372,11 @@ extension ModelContainer {
             print("[SwiftData] Local store failed (\(error)); using in-memory store")
             #endif
             let memSchema = Schema(frusModelTypes)
-            let memConfig = ModelConfiguration(schema: memSchema, isStoredInMemoryOnly: true)
+            // `.none` explicitly: the default `.automatic` would adopt the app's iCloud
+            // entitlement and attach a mirroring delegate to a store that exists only because
+            // the real one failed to open. This branch has never been observed to run.
+            let memConfig = ModelConfiguration(
+                schema: memSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             return try! ModelContainer(for: memSchema, configurations: [memConfig])
         }
     }

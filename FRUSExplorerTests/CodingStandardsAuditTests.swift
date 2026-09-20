@@ -40,6 +40,9 @@ struct CodingStandardsAuditTests {
     private static let testsRoot: URL =
         projectRoot.appendingPathComponent("FRUSExplorerTests")
 
+    private static let uiTestsRoot: URL =
+        projectRoot.appendingPathComponent("FRUSExplorerUITests")
+
     private static let openAPIURL: URL =
         projectRoot.appendingPathComponent("FRUS-API.openapi.yaml")
 
@@ -370,5 +373,98 @@ struct CodingStandardsAuditTests {
         // 31 sessions × ~1 test file = ~31 test files minimum
         #expect(testCount >= 25,
                 "Expected ≥25 test files, found \(testCount)")
+    }
+
+    // MARK: - Test Container Hermeticity
+
+    /// Every `ModelConfiguration` in the two test trees opts out of CloudKit.
+    ///
+    /// `cloudKitDatabase` defaults to `.automatic`, which adopts the *test host app's* iCloud
+    /// entitlement. The host is entitled, so an in-memory test store built without the explicit
+    /// `.none` gets a real `NSCloudKitMirroringDelegate` whose setup runs asynchronously and
+    /// outlives the test that created it. Measured on `v2` @ `9078fe61` (iPhone 17e, iOS 27.0),
+    /// nine such calls crashed the host five times with `NSInternalInconsistencyException:
+    /// 'No eligible connection available'` and the target ended `** TEST EXECUTE FAILED **`,
+    /// while the log's own last line said the run had passed.
+    ///
+    /// The scan walks each call's balanced parentheses, so a call split across lines is read
+    /// whole — `CaptureStateSeederTests.swift:30-31` is one, and it passes. It does NOT skip
+    /// comments or string literals: nothing in either tree defeats it today, and a doc comment
+    /// that quotes `ModelConfiguration(` would go red falsely.
+    ///
+    /// Scoped to the TEST trees on purpose. The app tree holds two calls this rule must not
+    /// touch, for two different reasons: `ModelContainer+FRUS.swift:239` is explicitly
+    /// `.private("iCloud.bottsywattsy.FRUS-Explorer")`, and `:203` is deliberately bare — it
+    /// leans on `.automatic` to yield the mirrored store's `url` and, as its own comment at
+    /// `:200-202` says, never builds a container. This file is skipped BY NAME because it
+    /// necessarily contains the search string itself; renaming it would make it scan itself
+    /// and move `scanned`.
+    ///
+    /// Version history:
+    ///   1.0 — 2026-09-19: #1325, the test-host crash
+    @Test("CodingStandardsAudit: every test ModelConfiguration opts out of CloudKit")
+    func testModelConfigurationsOptOutOfCloudKit() throws {
+        let needle = "ModelConfiguration("
+        let fm = FileManager.default
+
+        func swiftFiles(under root: URL) throws -> [URL] {
+            try fm.subpathsOfDirectory(atPath: root.path)
+                .filter { $0.hasSuffix(".swift") }
+                .filter { ($0 as NSString).lastPathComponent != "CodingStandardsAuditTests.swift" }
+                .map { root.appendingPathComponent($0) }
+        }
+
+        let testURLs = try swiftFiles(under: Self.testsRoot) + swiftFiles(under: Self.uiTestsRoot)
+
+        var scanned = 0
+        var violations: [String] = []
+
+        for url in testURLs {
+            let content = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            var cursor = content.startIndex
+            while let match = content.range(of: needle, range: cursor..<content.endIndex) {
+                // `match.upperBound` is one past the "("; step back onto it and walk to its
+                // partner, so a call broken across lines is read as one call.
+                var depth = 0
+                var index = content.index(before: match.upperBound)
+                var close = content.index(before: content.endIndex)
+                while index < content.endIndex {
+                    if content[index] == "(" {
+                        depth += 1
+                    } else if content[index] == ")" {
+                        depth -= 1
+                        if depth == 0 {
+                            close = index
+                            break
+                        }
+                    }
+                    index = content.index(after: index)
+                }
+
+                scanned += 1
+                if !content[match.lowerBound...close].contains("cloudKitDatabase") {
+                    let line = content[content.startIndex..<match.lowerBound]
+                        .reduce(into: 1) { total, character in
+                            if character == "\n" { total += 1 }
+                        }
+                    violations.append("\(url.lastPathComponent):\(line)")
+                }
+                cursor = content.index(after: close)
+            }
+        }
+
+        // A renamed initialiser, a moved root or a filter typo would make the sweep vacuously
+        // green. The floor sits just under the 39 calls the trees hold today, because the
+        // population this test protects is exactly the one a collapse would hide.
+        #expect(scanned >= 35, """
+            Scanned only \(scanned) ModelConfiguration call(s): the sweep is broken, not the \
+            tree clean.
+            """)
+
+        #expect(violations.isEmpty, """
+            Test ModelConfiguration(s) without cloudKitDatabase: .none — the default .automatic \
+            adopts the test host's iCloud entitlement and crashes the host: \
+            \(violations.sorted().joined(separator: ", "))
+            """)
     }
 }

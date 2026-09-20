@@ -114,7 +114,7 @@ struct ComponentWiringTests {
             GeneratedSummary.self,
             SummarizationPrompt.self,
         ])
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let config = ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         #expect(throws: Never.self) {
             _ = try ModelContainer(for: schema, configurations: config)
         }
@@ -162,7 +162,8 @@ struct WorkflowStructureTests {
             UserTag.self, ReadingHistoryEntry.self, GeneratedSummary.self, SummarizationPrompt.self,
         ])
         let container = try ModelContainer(for: schema,
-                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true,
+                                                                              cloudKitDatabase: .none))
         let ctx = ModelContext(container)
 
         let note = ResearchNote(
@@ -214,7 +215,8 @@ struct WorkflowStructureTests {
     func promptSeederDoesNotCrash() async throws {
         let schema = Schema([SummarizationPrompt.self])
         let container = try ModelContainer(for: schema,
-                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+                                           configurations: ModelConfiguration(isStoredInMemoryOnly: true,
+                                                                              cloudKitDatabase: .none))
         // Should not throw or crash
         await MainActor.run { SummarizationPromptSeeder.seed(in: container) }
         let ctx = ModelContext(container)
