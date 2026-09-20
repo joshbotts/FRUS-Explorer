@@ -251,6 +251,16 @@ struct SearchView: View {
     /// `FRUSTheme.cappedGlyphSize` at the glyph site.
     @ScaledMetric(relativeTo: .largeTitle) private var promptGlyphSize: CGFloat = 48
 
+    /// The actions bar's glyph size, tracking `.title3` and capped at
+    /// `FRUSTheme.barGlyphMaxScale` (#1307).
+    ///
+    /// `.title3` is 20 pt at L, so this renders exactly what shipped up to AX1 and then holds at
+    /// 31 pt. The cap is applied to the resolved value rather than through
+    /// `.dynamicTypeSize(…)` on the HStack: that modifier changes the ENVIRONMENT, which the
+    /// Examine menu's `.popoverTip` and the menus this row presents also read, so it would shrink
+    /// text an accessibility reader chose.
+    @ScaledMetric(relativeTo: .title3) private var actionGlyphSize: CGFloat = 20
+
     @State private var vm: SearchViewModel
     /// Live list of the user's tags, kept current by SwiftData. Fed into
     /// `vm.availableUserTags` so a tag created elsewhere (e.g. the research-note
@@ -1350,14 +1360,24 @@ struct SearchView: View {
 
     private var searchActionsBar: some View {
         HStack(spacing: 20) {
-            filterButton
-            examineMenu
-            checklistButton
-            sortMenu
+            // Identifiers, not labels: iOS 27 reorders the XCUI tree and a label query can match
+            // a covered element, so `SearchActionsBarFitTests` measures these frames by id.
+            // Applied here rather than on the control vars, three of which the macOS toolbar
+            // shares (`SearchView.swift`'s `ToolbarItem`s).
+            filterButton.accessibilityIdentifier("search.actions.filter")
+            examineMenu.accessibilityIdentifier("search.actions.examine")
+            checklistButton.accessibilityIdentifier("search.actions.checklist")
+            sortMenu.accessibilityIdentifier("search.actions.sort")
             Spacer()
-            moreMenu
+            moreMenu.accessibilityIdentifier("search.actions.more")
         }
-        .font(.title3)
+        // #1307: capped rather than `.title3`. The row cannot wrap, scroll or fold, so glyphs that
+        // kept growing pushed it off BOTH screen edges — an over-wide HStack is centred — and at
+        // AX5 on an iPhone 17 the Filter control sat at x = −34.7. Everything up to AX1 renders
+        // exactly as it did; past that the glyphs hold at 31 pt and the Large Content Viewer
+        // carries the magnified name on a long press.
+        .font(.system(size: FRUSTheme.cappedGlyphSize(actionGlyphSize, base: 20,
+                                                      maxScale: FRUSTheme.barGlyphMaxScale)))
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(.bar)
@@ -1383,7 +1403,15 @@ struct SearchView: View {
                 .labelStyle(.iconOnly)
         }
         .disabled(vm.results.isEmpty)
-        .accessibilityLabel(String(localized: "search.sort.a11y", defaultValue: "Sort results"))
+        // #1307: Sort was the one capped control with no Large Content Viewer HUD, which is what
+        // carries the magnified NAME once the glyph stops growing. `controlHelp` supplies the
+        // accessibility label too, so the separate `.accessibilityLabel` would be a duplicate.
+        .controlHelp(
+            String(localized: "search.sort.a11y", defaultValue: "Sort results"),
+            detail: String(localized: "search.sort.help",
+                           defaultValue: "Order results by relevance or by document date"),
+            systemImage: "arrow.up.arrow.down"
+        )
         .accessibilityValue(vm.sortOrder.label)
     }
     #endif

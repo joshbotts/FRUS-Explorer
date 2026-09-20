@@ -476,6 +476,24 @@ enum FRUSTheme {
     /// largest accessibility categories would otherwise produce.
     static let heroGlyphMaxScale: CGFloat = 1.6
 
+    /// Ceiling multiple for the glyphs of a fixed-content CONTROL BAR — a row that cannot wrap,
+    /// scroll or fold, where unbounded growth pushes controls off both screen edges (#1307).
+    ///
+    /// **This widens the convention above, which scoped `cappedGlyphSize` to decorative hero
+    /// glyphs, and the widening is deliberate rather than incidental.** The repo's documented idiom
+    /// for an HStack that overflows at an accessibility size is `ViewThatFits`
+    /// (`UIObstructionTests` states it, and app code has ten sites). The Search actions bar takes
+    /// the cap instead, on Apple's own bar pattern: the system tab bar and the Keywords/Meaning
+    /// segmented control on that same screen do not scale between L and AX5 at all, and a fold
+    /// would move controls into a menu whose rows are already 186–246 pt tall at AX5, under a
+    /// glyph whose width changes with state — the #1271 reflow trap.
+    ///
+    /// `1.55` resolves a 20 pt base to **31 pt**, which is `title3` at AX1: the glyphs grow with
+    /// the reader's setting up to the first accessibility tier and hold there, while the Large
+    /// Content Viewer carries the magnified NAME on a long press. Kept separate from
+    /// `heroGlyphMaxScale` so that retuning a decorative glyph cannot silently move a control bar.
+    static let barGlyphMaxScale: CGFloat = 1.55
+
     /// Clamps a `@ScaledMetric`-resolved hero/empty-state glyph point size to a
     /// proportional ceiling, so decorative glyphs scale with Dynamic Type but do
     /// not grow without bound at the largest accessibility categories.
