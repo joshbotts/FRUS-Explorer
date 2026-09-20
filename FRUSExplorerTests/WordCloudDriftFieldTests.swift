@@ -527,6 +527,102 @@ struct WordCloudDriftFieldTests {
                 "fifty is what the bundled lists hold; asking for more silently gets fewer")
     }
 
+    /// **The iPad indexing banner, which crossed the threshold without anyone deciding it should.**
+    ///
+    /// `IndexingBannerView` mounts `IndexingContextCard` only at regular width, and that card takes
+    /// the banner past `bandHeight`. So on iPad the strip silently took FIELD treatment — bleed
+    /// 0.12, and 35 or 50 words instead of 25 — behind four lines of prose, with words clipped at
+    /// the frame edge on a surface whose own doc says a clipped word "reads as a rendering fault".
+    /// At iPad widths the 250,000 pt² step is reached by a banner only 183 pt tall on a 13-inch in
+    /// landscape, so the fifty-word ceiling is one Dynamic Type notch away on the narrower ones.
+    ///
+    /// Inference is kept for hosts that have no opinion; a host that knows says so.
+    @Test("A declared band stays a band at any size — inference is not enough")
+    @MainActor
+    func declaredBandOutranksTheHeightThreshold() {
+        // Exactly the shape the iPad banner reaches, and by inference it is a field.
+        let iPadBanner = CGSize(width: 1366, height: 200)
+        #expect(WordCloudBackdropView.fillFactor(for: iPadBanner) > 1,
+                "precondition: by size alone this host bleeds")
+        #expect(WordCloudBackdropView.wordCount(for: iPadBanner) == 50,
+                "precondition: by size alone this host is asked for a window's word count")
+
+        #expect(WordCloudBackdropView.fillFactor(for: iPadBanner, composition: .band) <= 1,
+                "a declared band must not be given a bleed allowance")
+        #expect(WordCloudBackdropView.wordCount(for: iPadBanner, composition: .band) == 25,
+                "a declared band keeps a band's word count however tall it grows")
+
+        // And `.automatic` is byte-for-byte what every caller had before the case existed.
+        for size in [CGSize(width: 820, height: 96), CGSize(width: 820, height: 500), iPadBanner] {
+            #expect(WordCloudBackdropView.fillFactor(for: size, composition: .automatic)
+                    == WordCloudBackdropView.fillFactor(for: size))
+            #expect(WordCloudBackdropView.wordCount(for: size, composition: .automatic)
+                    == WordCloudBackdropView.wordCount(for: size))
+        }
+    }
+
+    /// **The stagger was a per-WORD constant and the word count later doubled.**
+    ///
+    /// Both figures shipped in #532 against a twenty-five-word cloud; #551 took a full-bleed
+    /// surface to fifty and nothing re-tuned them, so the incoming tail went from 0.91 s to 1.86 s
+    /// inside an unchanged 4.2 s hold. Holding the TOTAL fixed returns the authored value exactly
+    /// at the reference count — which is the assertion that makes this a fix rather than a retune.
+    @Test("The stagger holds a budget, so fifty words do not take twice as long as twenty-five")
+    @MainActor
+    func staggerBudgetIsHeldConstant() {
+        let perWord = FRUSTheme.cloudStaggerIn
+        let reference = FRUSTheme.cloudStaggerReferenceWordCount
+
+        // At the reference count it is the authored figure, unchanged, for every rank.
+        for rank in [0, 1, 7, reference - 1] {
+            #expect(abs(WordCloudBackdropView.staggerDelay(
+                rank: rank, count: reference, perWord: perWord) - Double(rank) * perWord) < 1e-9,
+                "the authored rhythm must survive at the count it was authored for")
+        }
+
+        // The tail never grows past the reference tail, however many words are drawn.
+        let referenceTail = Double(reference - 1) * perWord
+        for count in [reference, 35, 50, 200] {
+            let tail = WordCloudBackdropView.staggerDelay(
+                rank: count - 1, count: count, perWord: perWord)
+            #expect(tail <= referenceTail + 1e-9,
+                    "\(count) words staggered to \(tail)s against a \(referenceTail)s budget")
+        }
+        // Concretely: fifty words is half the per-word delay, so ~0.93 s rather than 1.86 s.
+        let fifty = WordCloudBackdropView.staggerDelay(rank: 49, count: 50, perWord: perWord)
+        #expect(fifty > 0.9 && fifty < 0.94, "fifty-word tail measured \(fifty)s")
+
+        // Fewer words than the reference keep the authored rhythm rather than smearing the
+        // budget across a handful of terms.
+        #expect(abs(WordCloudBackdropView.staggerDelay(rank: 4, count: 5, perWord: perWord)
+                    - 4 * perWord) < 1e-9)
+        // A degenerate count cannot divide by zero or return a negative delay.
+        #expect(WordCloudBackdropView.staggerDelay(rank: 0, count: 1, perWord: perWord) == 0)
+    }
+
+    /// The payload ships four lists; which of them a surface SHOWS is a different question, and
+    /// until now nobody had asked it. `actions` is twenty-five generic English verbs — *say, take,
+    /// give, see, receive, follow, think, believe, get, seem* — the top of any English corpus,
+    /// which is why it is in neither set. A first-impression surface additionally drops the
+    /// polarity display.
+    @Test("The lens sets are drawn from the payload and neither shows the verb list")
+    @MainActor
+    func lensSetsExcludeTheUninformativeLens() {
+        let payload = Set(WordCloudLens.bundledCloudLenses)
+        for set in [WordCloudBackdropView.firstImpressionLenses,
+                    WordCloudBackdropView.ambientLenses] {
+            #expect(!set.isEmpty, "an empty set would render nothing at all")
+            #expect(Set(set).isSubset(of: payload),
+                    "a lens the bundled artifact does not carry can never resolve")
+            #expect(!set.contains(.actions), "the verb list says nothing about this corpus")
+            #expect(set.first == .concepts, "every surface opens on the lens that reads as FRUS")
+        }
+        #expect(!WordCloudBackdropView.firstImpressionLenses.contains(.sentiment),
+                "a polarity display is a misleading first sentence about a documentary record")
+        #expect(WordCloudBackdropView.ambientLenses.contains(.sentiment),
+                "but a long ambient wait keeps the variety")
+    }
+
     @Test("Bleed lets a word hang off the edge, and zero bleed does not")
     func bleedAllowsOverhang() {
         let size = CGSize(width: 400, height: 300)

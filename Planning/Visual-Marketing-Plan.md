@@ -61,6 +61,22 @@ returns `.indexingBackdrop`, and only then is the fresh-install splash reachable
 download permanently replaces the splash.** Every capture plan here is therefore a two-device-state
 plan and the App Preview is cut from two passes.
 
+**(a2) THE SPLASH HAD NEVER RENDERED ON ANY LAUNCH, AND THAT IS NEW AS OF 2026-09-20.**
+`CloudSurfaceArbiter.resolve` carried `guard inputs.isCoreReady else { return .none }` above every
+branch. `ContentViewWithSplash.resolveSplash()` asks the arbiter ONCE, latched, from a `.task` that
+necessarily runs before `BundledCloudVectors.prepareCore()` can have finished — the root scene's
+`.task` suspends on `bootSearchInfrastructureOnce()` before it reaches the decode — so the splash
+branches could only ever answer no, and the answer was kept. Measured on a fresh install of iPad Pro
+11-inch (M5) / iOS 27.0: **44 frames across a cold and a warm launch, zero splash frames**; the
+sequence is launch screen -> onboarding. Every splash test passed throughout, because
+`CloudSurfaceArbiterTests`' fixture hard-codes `isCoreReady: true` — the defect class §10 already
+catalogues for `relaunchMidDownloadPrefersIndexing`.
+
+The guard now gates **(c) only**, which is where it belongs: the indexing backdrop IS the cloud, so
+with no vectors there is nothing to raise, while the splash is a composition the cloud joins. Every
+row below that rests on the splash — M-5's seeded opening frame, the App Preview's first beat, the
+README hero — was resting on a screen nobody had seen.
+
 **(b) The XCUITest harness cannot see the splash.** The UI-test guard is unconditional, and that mode
 also swaps in an in-memory store. Splash and onboarding frames are **manual, on an erased device, in
 a window that occurs once per install.** Budget no automation for them.
@@ -88,9 +104,17 @@ continuously would silently undo the `isPaused` decision and nothing in the buil
 | Item | Data | Motion | Renderer | Path |
 |---|---|---|---|---|
 | Launch splash cloud + shimmer | pre-bundled | continuous | **Text (static words); the shimmer is the only motion** | `LaunchSplashView.swift:50-51`, `:97` |
-| **Onboarding scope-tracking cloud** — the best 8-second demo in the app | pre-bundled | continuous | **Text (static)** | `OnboardingView.swift:99-112`, `:123`; its doc calls this "the reason the vectors are bundled at all" |
+| **Onboarding scope-tracking cloud** — the best 8-second demo in the app | pre-bundled | continuous | ~~**Text (static)**~~ **Drift (Canvas) since 2026-09-20** | `OnboardingView.swift:99-112`, `:123`; its doc calls this "the reason the vectors are bundled at all" |
 | Indexing drift cloud — the app's **only** continuous particle animation | pre-bundled | continuous, closed-form | **Drift (Canvas)** | `drift: true` appears at exactly two sites: `IndexingCloudStrip.swift:61`, `PendingCloudBackdrop.swift:92` |
 | Live Activity / Dynamic Island | index-fed | system | out of process (ActivityKit) | `FRUSExplorerWidgets/IndexingLiveActivity.swift` |
+
+**Onboarding moved to the particle canvas on 2026-09-20**, which makes this table's Renderer column
+read differently: the static `Text` path now has **no consumer at all** among the shipping cloud
+surfaces. The opt-in's stated reason was blast radius — "the splash and the onboarding dock are
+first-run surfaces whose composition has already been reviewed on device" — and step 14 above
+re-opened the splash on 2026-09-01, leaving the argument protecting exactly one view from a
+treatment its sibling already had. Measured on iPad, the static path's lack of per-axis expansion
+pooled the field into 83% of the width by **23% of the height**; the drift path fills 100% x 57%.
 
 **The Renderer column is load-bearing** *(added 2026-08-31, §10)*. `WordCloudBackdropView.drift`
 defaults to `false` (`WordCloudBackdropView.swift:71`) and is opt-in per surface; only the two sites
@@ -729,7 +753,12 @@ ahead of the capture sessions. Old numbers in brackets.)*
     said they "still stand" for five days after they stopped standing; corrected here.
 12. *(was 9)* **Record the App Preview in two passes and cut (L).**
 13. *(was 11)* **Plate B (S after step 1).**
-14. **Plan §3.2's M-4 — splash drift, with the `push` re-clamp fix.** After capture, deliberately.
+14. ~~**Plan §3.2's M-4 — splash drift, with the `push` re-clamp fix.** After capture,
+    deliberately.~~ **SHIPPED 2026-09-01**, PR #1174 — and *neither this document nor the Plan of
+    Record noticed for nineteen days*. `planOfRecordMatchesTheVisualMarketingPlan` checks the two
+    documents against EACH OTHER, not against the tree, so they went stale together and the gate
+    stayed green. Struck here on 2026-09-20 after reading `LaunchSplashView`, whose `drift: true`
+    cites this very row.
 15. *(was 13)* **Compose hero and captioned frames outside the repo.** No device-frame tooling, no
     fastlane, no metadata directory. Design-tool work, not engineering.
 16. *(was 14)* **Post-launch, follow the design's own §9 order.**
@@ -781,8 +810,37 @@ engineering risk this cycle, promote it. That is an owner call.
    their provenance.
 10. **Do not build bundled entity word clouds for launch** — the most marketable lenses and the most
     expensive. They are already available in-app over an indexed corpus.
-11. **Do not put any image beyond the existing dim tile on the iOS launch storyboard.** It runs no
-    code and its snapshot is cached before the process exists.
+11. ~~**Do not put any image beyond the existing dim tile on the iOS launch storyboard.** It runs no
+    code and its snapshot is cached before the process exists.~~ **OVERTURNED 2026-09-20, owner
+    decision, and the refusal's own reason is why it can be.** "It runs no code and its snapshot is
+    cached" argues against a DYNAMIC launch screen; it says nothing against a better static one.
+    Two things settled it. The splash this refusal deferred to **had never rendered on any launch**
+    (see the note under §2), so the storyboard was not covering a 158 ms gap before the real
+    opening frame — it *was* the opening frame, on every launch, for every user. And it is an
+    88 pt tile in 1210 pt of near-white on iPad, because the composition is authored at
+    `retina6_12` and merely centred on anything larger.
+
+    **What ships is the PLATE and not the wiring, and that is the honest state.** The storyboard
+    image view was built and does not render: measured on iPad Pro 11-inch / iOS 27.0, the view
+    lays out full-bleed (verified with a temporary red background) and draws `LaunchAppTile`
+    normally, the asset compiles into `Assets.car`, and yet `LaunchCloud` resolves to nothing —
+    including in the known-good 88 pt tile view, which is what proves the fault is the lookup and
+    not the layout. Template versus original intent, vector preservation on and off, PDF versus
+    PNG, per-idiom versus universal, 1400 pt versus 200 pt, and a mismatched `<resources>` size
+    were each eliminated by a build-and-capture cycle. `FRUSExplorerTests/LaunchArtworkTests` keeps
+    the generator and its geometry, gated and inert, with the full account in its header.
+
+    What it generates is `LaunchCloud`: a pre-rendered vector plate packed by the app's own
+    `WordCloudLayout` from `cloud-vectors-core.json`, on the `.concepts` lens the splash opens on,
+    generated by `FRUSExplorerTests/LaunchArtworkTests` behind `RENDER_LAUNCH_ARTWORK_DIR`. It is a
+    TEMPLATE image — all weight in alpha, none in colour — tinted by `LaunchCloudInk`, so one asset
+    serves light and dark. It ships **per idiom**, because aspect-fill magnifies a square plate more
+    on a narrow device and the centre it must keep clear for the identity block is correspondingly
+    larger: 720 x 400 plate points for a phone against 460 x 250 for an iPad, each the measured
+    worst case over that idiom's canvases and each pinned by a test that failed on its first run.
+    Its ink is ceilinged at `FRUSTheme.cloudDimIndexingStrip`, the app's one measured figure for a
+    cloud under type. The refusal stays overturned in principle — a better static launch screen is
+    wanted and is not forbidden — and the work is blocked on one unexplained asset lookup.
 12. **Do not randomise the splash lens before 1.0.** Seed it.
 13. **Do not animate the Series charts.** A reviewer cannot cite a frame, and a stacked area shows the
     whole sweep at once — which is the entire point.

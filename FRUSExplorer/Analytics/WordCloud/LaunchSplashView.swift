@@ -32,11 +32,19 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — O-3: initial implementation
+///   1.1 — the backdrop fades in when the vectors arrive instead of popping. This surface is now
+///         reachable BEFORE they have (see `CloudSurfaceArbiter.resolve`, which used to gate every
+///         branch on them and so made this view unreachable entirely), which is the composition the
+///         launch screen hands over: identity only, then the cloud.
 struct LaunchSplashView: View {
 
     /// Why this splash is showing. Governs how long it stays.
     let reason: CloudSurface.SplashReason
 
+    /// Read for `areCloudVectorsReady` only — the observable mirror of the vector store, which is
+    /// static state Observation cannot see. Safe to declare here because this view has exactly one
+    /// host, `ContentViewWithSplash`, which puts `AppState` in the environment.
+    @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -73,9 +81,24 @@ struct LaunchSplashView: View {
                     // App Preview's opening frame, a store screenshot and the README hero at once;
                     // a lens decided by the wall clock makes the beat that most needs reproducing
                     // the one that cannot be.
-                    lensSeed: 0
+                    lensSeed: 0,
+                    // Never the verb list, and never the polarity display: this is the App
+                    // Preview's opening frame and the README hero. See `lensSet`.
+                    lensSet: WordCloudBackdropView.firstImpressionLenses
                 )
                 .ignoresSafeArea()
+                // OPACITY, not a conditional, and animated on arrival.
+                //
+                // The splash can now be raised before the vectors are resident, so the first frames
+                // of it are the identity block alone — which is exactly the launch screen's
+                // composition, and the handover this view's own doc says it exists to make
+                // invisible. What must not happen is the field appearing between one frame and the
+                // next. The backdrop already draws nothing without vectors, so holding it at zero
+                // costs a view that renders nothing anyway, and `areCloudVectorsReady` is what
+                // makes the arrival observable at all.
+                .opacity(appState.areCloudVectorsReady ? 1 : 0)
+                .animation(.easeIn(duration: FRUSTheme.cloudArrivalDuration),
+                           value: appState.areCloudVectorsReady)
 
                 // Under Reduce Transparency the identity block gets an opaque card, so it
                 // never has to be read against moving words.

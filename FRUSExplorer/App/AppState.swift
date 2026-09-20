@@ -360,6 +360,17 @@ final class AppState {
     /// the sync state never reaches `.syncing`. (#377 Phase 5)
     var hasInitialProjectSyncSettled = false
 
+    /// Whether the bundled word-cloud vectors have finished decoding.
+    ///
+    /// An OBSERVABLE mirror of `BundledCloudVectors.isCoreReady`, which is static state on a plain
+    /// `@MainActor enum` and therefore invisible to Observation. Every cloud surface's appearance
+    /// depends on that flag turning true after the first frame, and nothing re-evaluated a `body`
+    /// when it did — so a surface acquired its cloud only when some unrelated change happened to
+    /// re-render its host. `CloudSurfaceArbiter.resolve(appState:)` and `PendingCloudBackdrop` read
+    /// this; the store stays the single source of the DATA and this is the single source of the
+    /// EVENT. Set once, in the root scene's `.task`, immediately after `prepareCore()` returns.
+    var areCloudVectorsReady = false
+
     /// Debounce handle for the settings pull that follows a successful CloudKit event (#665).
     ///
     /// Rescheduled on every success, so the pull runs once a couple of seconds after sync goes

@@ -330,7 +330,7 @@ Both de-risk R-1 without an Office of the Historian publication.
 
 ### 1f. One that reduces the owner's own queue
 
-**§7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11.** Machine-checked against `Visual-Marketing-Plan.md`
+**§7 struck: 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 14.** Machine-checked against `Visual-Marketing-Plan.md`
 itself by `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan`, which exists
 because the two documents once disagreed for a day across fourteen merged PRs and neither was
 implausible to read. The gate moved here on 2026-09-06: it had been reading

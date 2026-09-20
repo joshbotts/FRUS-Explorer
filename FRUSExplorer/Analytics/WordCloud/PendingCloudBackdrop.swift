@@ -49,6 +49,10 @@ import SwiftUI
 ///   1.2 — visual-marketing step 0: the appearance task is keyed on every mutable input, so a
 ///         cloud already up is withdrawn when indexing starts and one suppressed for want of
 ///         vectors can still appear when they arrive
+///   1.3 — that key reads `AppState.areCloudVectorsReady` rather than the store's own static flag.
+///         1.2's second half only ever worked by accident: `BundledCloudVectors.isCoreReady` is
+///         static state on a plain enum, which Observation cannot see, so a body that was not
+///         re-run for some other reason never re-took the decision
 struct PendingCloudBackdrop: ViewModifier {
 
     /// Which scope's vocabulary to show — normally what the user filtered the wait down to.
@@ -98,7 +102,7 @@ struct PendingCloudBackdrop: ViewModifier {
                     .transition(.opacity)
                 }
             }
-            .animation(.easeInOut(duration: 0.45), value: isShowing)
+            .animation(.easeInOut(duration: FRUSTheme.cloudArrivalDuration), value: isShowing)
             // KEYED ON EVERY INPUT THAT CAN CHANGE, not just `isPending`.
             //
             // `canShow` was sampled once, when the pending state flipped, and `isShowing` is
@@ -117,7 +121,7 @@ struct PendingCloudBackdrop: ViewModifier {
             .task(id: PendingCloudRule.Liveness(
                 isPending: isPending,
                 isIndexing: appState.indexingBatch != nil,
-                isCoreReady: BundledCloudVectors.isCoreReady)) {
+                isCoreReady: appState.areCloudVectorsReady)) {
                 guard isPending, canShow else { isShowing = false; return }
                 try? await Task.sleep(for: Self.appearanceDelay)
                 guard !Task.isCancelled else { return }
@@ -128,7 +132,11 @@ struct PendingCloudBackdrop: ViewModifier {
     /// Whether a cloud is appropriate at all right now.
     private var canShow: Bool {
         PendingCloudRule.shouldShow(
-            isCoreReady: BundledCloudVectors.isCoreReady,
+            // The observable mirror, so the task id above is a real dependency: the store's own
+            // flag is static state Observation cannot see, which is why 1.2's "a cloud suppressed
+            // for want of vectors can still appear when they arrive" worked only when something
+            // else re-rendered this modifier's host.
+            isCoreReady: appState.areCloudVectorsReady,
             isUITestMode: ProcessInfo.processInfo.environment["FRUS_UI_TEST_MODE"] == "1",
             isIndexing: appState.indexingBatch != nil)
     }

@@ -42,6 +42,12 @@ import SwiftUI
 ///          showed the strip's height animation re-running the packer inside `body`
 ///   1.2 — P-1: opt-in `drift` renders the same words as particles in a Canvas
 ///          (`WordCloudDriftCanvas`); the static Text path is unchanged
+///   1.3 — three things a surface used to have decided for it. `composition` lets a host declare
+///          itself a band rather than leaving `bandHeight` to infer it from a frame the iPad
+///          indexing banner grows past; `lensSet` makes WHICH lenses a surface cycles a
+///          presentation decision beside `lensSeed`'s WHERE-it-starts; and `staggerDelay` holds a
+///          stagger BUDGET, so the per-word figures authored for twenty-five words (#532) stop
+///          doubling the transition at the fifty a full-bleed surface has asked for since #551
 struct WordCloudBackdropView: View {
 
     /// Which scope's vocabulary to show.
@@ -59,6 +65,21 @@ struct WordCloudBackdropView: View {
 
     /// Reports each lens change, so a host can label a chip it owns.
     var onLensChange: ((WordCloudLens) -> Void)?
+
+    /// Whether this surface is a band with live content over it, or a field to be inside.
+    ///
+    /// **The size is not a reliable proxy, and the indexing banner is the proof.** `wordCount` and
+    /// `fillFactor` both infer the answer from `bandHeight`, which is right on iPhone and wrong on
+    /// iPad: `IndexingBannerView` mounts `IndexingContextCard` only at regular width, and that card
+    /// takes the banner past 160 pt. The strip therefore flipped to FIELD treatment — bleed 0.12
+    /// and 35–50 words instead of 25 contained ones — behind four lines of prose, with words
+    /// clipped at the frame edge where the strip's own doc says a clipped word "reads as a
+    /// rendering fault". At iPad widths the 250,000 pt² step is a banner only 183 pt tall on a
+    /// 13-inch in landscape, so the fifty-word ceiling meant for a whole window is one Dynamic Type
+    /// notch away on the narrower ones too.
+    ///
+    /// A host that knows it is a band says so, rather than leaving a layout accident to decide.
+    var composition: Composition = .automatic
 
     /// Draw the words as drifting particles in a `Canvas` instead of static `Text` views.
     ///
@@ -85,13 +106,47 @@ struct WordCloudBackdropView: View {
     /// first phase this surface saw, so a long-lived seeded surface still cycles, deterministically.
     var lensSeed: Int?
 
+    /// Which lenses this surface cycles through.
+    ///
+    /// **A presentation decision, not a payload one.** `WordCloudLens.bundledCloudLenses` is the
+    /// generator's contract — the four lists `cloud-vectors-core.json` carries — and it stays as it
+    /// is. What a given surface should SHOW out of those four is a different question, and it was
+    /// never asked: one global list on a 4.2 s cadence gave every lens 25% of every surface's time.
+    ///
+    /// Read against the shipped corpus lists, they are not equivalent. `concepts` is *policy, war,
+    /// treaty, interest, security, order, power, authority, negotiation, peace, development, trade,
+    /// aid…* — it reads as FRUS. `topics` is mixed but recognisable (*president, soviet, agreement,
+    /// treaty* beside *time, question, view, matter, case, point*). `actions` is twenty-five
+    /// generic English verbs — *say, take, give, see, receive, follow, think, believe, consider,
+    /// get, seem* — which would be the top of any English corpus and say nothing about this one.
+    /// `sentiment` is a polarity display rather than a vocabulary.
+    ///
+    /// So the sets below are named rather than left implicit, and `lensSeed` already established
+    /// that WHERE a surface starts in the cycle is the surface's business; this is the same
+    /// argument applied to WHICH lenses are in it.
+    var lensSet: [WordCloudLens] = WordCloudBackdropView.ambientLenses
+
+    /// The lenses a first-impression surface shows: the two that describe the corpus.
+    ///
+    /// The launch splash and onboarding are the first thing anyone sees, and one of them is the App
+    /// Preview's opening frame. Neither should be able to open on twenty-five generic verbs, and a
+    /// polarity display is a misleading first sentence about a documentary record.
+    static let firstImpressionLenses: [WordCloudLens] = [.concepts, .topics]
+
+    /// The lenses a long-lived ambient surface cycles: everything but the verbs.
+    ///
+    /// The indexing banner and a pending search run for minutes, where variety is the point —
+    /// but `actions` is uninformative at every duration, so it is out here too. It stays in
+    /// `bundledCloudLenses` because the artifact ships it and a future surface may want it.
+    static let ambientLenses: [WordCloudLens] = [.concepts, .topics, .sentiment]
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var lensIndex = 0
     /// The first cadence phase this surface saw, so a seeded surface can advance relative to it.
     @State private var phaseOrigin: Int?
     @State private var layouts: [LayoutKey: [PlacedWord]] = [:]
 
-    private var lenses: [WordCloudLens] { WordCloudLens.bundledCloudLenses }
+    private var lenses: [WordCloudLens] { lensSet }
 
     /// How far the drift canvas must shift its wall-clock lens index to agree with the chip.
     ///
@@ -154,7 +209,7 @@ struct WordCloudBackdropView: View {
                             .foregroundStyle(color(for: word, resolved: resolved))
                             .rotationEffect(.degrees(word.rotationDegrees))
                             .position(word.center)
-                            .transition(wordTransition(rank: rank))
+                            .transition(wordTransition(rank: rank, count: resolved.words.count))
                     }
                 }
             }
@@ -223,6 +278,10 @@ struct WordCloudBackdropView: View {
         let height: Int
         let lens: WordCloudLens
         let scopeKey: String
+        /// **Load-bearing for the same reason `exclusion` is.** A band and a field at one quantised
+        /// box ask the packer for different word counts, so without this a surface that declared
+        /// itself a band could be handed a field's fifty words out of the cache.
+        let composition: Composition
         /// The exclusion rects, quantised. **Load-bearing, and it was missing.**
         ///
         /// `exclusionZones` is fed straight into the packer but was not part of the cache
@@ -279,7 +338,7 @@ struct WordCloudBackdropView: View {
         // the one being drawn, so a bucket boundary can never push a word outside the frame.
         let box = Self.quantised(size)
         let key = LayoutKey(width: Int(box.width), height: Int(box.height),
-                            lens: lens, scopeKey: scopeKey,
+                            lens: lens, scopeKey: scopeKey, composition: composition,
                             exclusion: Self.exclusionSignature(exclusionZones))
         if let cached = layouts[key] {
             return Resolved(words: cached, provenance: source.provenance, maxCount: maxCount, lens: lens)
@@ -321,7 +380,8 @@ struct WordCloudBackdropView: View {
             let placed = layout(for: candidate, terms: source.terms, box: box)
             let field = WordCloudDriftField(placed: placed, rankCeiling: Self.rankCeiling,
                                             exclusionZones: exclusionZones,
-                                            canvas: box, fill: Self.fillFactor(for: box))
+                                            canvas: box,
+                                            fill: Self.fillFactor(for: box, composition: composition))
             var colors: [String: Color] = [:]
             var sizes: [String: CGFloat] = [:]
             for word in placed {
@@ -350,13 +410,13 @@ struct WordCloudBackdropView: View {
     /// The packer result for one lens at one box, through the same cache the static path uses.
     private func layout(for candidate: WordCloudLens, terms: [TermCount], box: CGSize) -> [PlacedWord] {
         let key = LayoutKey(width: Int(box.width), height: Int(box.height),
-                            lens: candidate, scopeKey: scopeKey,
+                            lens: candidate, scopeKey: scopeKey, composition: composition,
                             exclusion: Self.exclusionSignature(exclusionZones))
         if let cached = layouts[key] { return cached }
         let placed = WordCloudLayout.place(
             terms: terms,
             in: box,
-            maxWords: Self.wordCount(for: box),
+            maxWords: Self.wordCount(for: box, composition: composition),
             minFontSize: 12,
             maxFontSize: min(42, max(28, box.width / 12)),
             exclusionZones: exclusionZones,
@@ -386,7 +446,9 @@ struct WordCloudBackdropView: View {
     /// mid-crossfade, ~2.6 ms per frame in the worst (fully cold) measurement and far less
     /// warm. 200 particles was 6.2 ms — three quarters of a 120 Hz budget — which is why
     /// this stops at fifty rather than scaling indefinitely.
-    static func wordCount(for box: CGSize) -> Int {
+    static func wordCount(for box: CGSize, composition: Composition = .automatic) -> Int {
+        // A declared band is a band at any size — see `composition`.
+        guard composition != .band else { return 25 }
         // Height first, and area only after — the same discriminator `fillFactor` uses, so
         // the two cannot disagree about what a band is. Area alone got this wrong: an
         // 820 x 96 strip is 78,720 pt², indistinguishable by area from a small square, and
@@ -398,13 +460,26 @@ struct WordCloudBackdropView: View {
     /// Below this height a surface is a band, not a window: no extra words, no bleed.
     static let bandHeight: CGFloat = 160
 
+    /// How a host wants its cloud composed.
+    ///
+    /// Only two cases, because only one direction needs forcing: a surface can know it is a band
+    /// with content over it, and nothing needs to claim to be a field it is not big enough to be.
+    enum Composition: Equatable, Sendable {
+        /// Infer from the frame — every surface's behaviour before ``Composition`` existed.
+        case automatic
+        /// A band carrying live content: contained, no bleed, a band's word count, whatever the
+        /// frame grows to.
+        case band
+    }
+
     /// How much of the frame the field should occupy, and whether it may bleed off the edge.
     ///
     /// A short strip stays fully contained — a word clipped by a 96 pt band reads as a
     /// rendering fault, not as depth. A large surface spreads past its own edges, which is
     /// what separates being inside a cloud from looking at a picture of one.
-    static func fillFactor(for box: CGSize) -> CGFloat {
-        box.height < Self.bandHeight ? 0.98 : 1.12
+    static func fillFactor(for box: CGSize, composition: Composition = .automatic) -> CGFloat {
+        guard composition != .band else { return 0.98 }
+        return box.height < Self.bandHeight ? 0.98 : 1.12
     }
 
     /// Snaps a size down to the layout grid.
@@ -461,16 +536,42 @@ struct WordCloudBackdropView: View {
             : .easeInOut(duration: FRUSTheme.cloudTransformDuration)
     }
 
-    private func wordTransition(rank: Int) -> AnyTransition {
+    private func wordTransition(rank: Int, count: Int) -> AnyTransition {
         guard !reduceMotion else { return .opacity }
         return .asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.86))
                 .animation(.easeOut(duration: FRUSTheme.cloudTransformDuration)
-                    .delay(Double(rank) * FRUSTheme.cloudStaggerIn)),
+                    .delay(Self.staggerDelay(rank: rank, count: count,
+                                             perWord: FRUSTheme.cloudStaggerIn))),
             removal: .opacity.combined(with: .scale(scale: 0.86))
                 .animation(.easeIn(duration: FRUSTheme.cloudFadeOutDuration)
-                    .delay(Double(rank) * FRUSTheme.cloudStaggerOut))
+                    .delay(Self.staggerDelay(rank: rank, count: count,
+                                             perWord: FRUSTheme.cloudStaggerOut)))
         )
+    }
+
+    /// How long word `rank` of `count` waits before it joins or leaves, in seconds.
+    ///
+    /// **The stagger is a BUDGET, not a per-word constant, and it was a per-word constant.** Both
+    /// figures in `FRUSTheme` were authored for twenty-five words; a full-bleed surface asks for
+    /// fifty, which doubled a tail nobody re-tuned. Holding the total fixed at whatever the
+    /// reference count implies returns the authored value EXACTLY at twenty-five and halves it at
+    /// fifty, so the rhythm is preserved at the size it was designed for and merely stops growing
+    /// past it. At fifty words the incoming tail goes 1.86 s -> 0.93 s inside a 4.2 s hold.
+    ///
+    /// `min` rather than a plain division, so a cloud with FEWER words than the reference keeps the
+    /// authored rhythm instead of smearing a fixed budget across a handful of terms.
+    ///
+    /// - Parameters:
+    ///   - rank: the word's position, 0 for the largest.
+    ///   - count: how many words this surface is drawing.
+    ///   - perWord: the authored delay — `FRUSTheme.cloudStaggerIn` or `…Out`.
+    /// - Returns: that word's delay.
+    static func staggerDelay(rank: Int, count: Int, perWord: Double) -> Double {
+        let reference = Double(max(2, FRUSTheme.cloudStaggerReferenceWordCount) - 1)
+        let budget = perWord * reference
+        let spread = count > 1 ? min(perWord, budget / Double(count - 1)) : perWord
+        return Double(rank) * spread
     }
 }
 

@@ -1530,6 +1530,26 @@ struct SearchView: View {
 
     // MARK: - Results Section
 
+    /// Names the wait, so the drifting words are never the only thing on a searching screen.
+    ///
+    /// Mode-specific because the two waits are not the same claim: a keyword search is looking for
+    /// the words the reader typed, and a meaning search explicitly is not.
+    private var searchingLabel: some View {
+        Text(vm.searchMode == .meaning
+             ? String(localized: "search.pending.meaning",
+                      defaultValue: "Searching by meaning…",
+                      comment: "Shown while a semantic search runs, over the word-cloud backdrop")
+             : String(localized: "search.pending.keywords",
+                      defaultValue: "Searching…",
+                      comment: "Shown while a keyword search runs, over the word-cloud backdrop"))
+            .font(FRUSTheme.captionFont)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(.regularMaterial, in: Capsule())
+            .accessibilityHidden(true)
+    }
+
     @ViewBuilder
     private var resultsSection: some View {
         if vm.isSearching {
@@ -1544,6 +1564,21 @@ struct SearchView: View {
                                                            manifest: appState.manifestStore),
                     isPending: vm.isSearching
                 )
+                // OUTSIDE the modifier, so it is not the thing that fades.
+                //
+                // `PendingCloudBackdrop` takes its content to opacity 0 once the cloud is up —
+                // rightly, since a spinner turning in front of a drifting field is two indicators
+                // competing. But it leaves a SIGHTED user with no indication that anything is
+                // running, and the Mac never had that problem: `SearchSheet.firstSearchPendingView`
+                // says so directly — "the sort bar's own 'Searching…' indicator stays as it is".
+                // iOS was the odd platform.
+                //
+                // It matters most in Meaning mode, where the modifier's own defence — "with
+                // nothing else on screen there is nothing to misread them against" — is false.
+                // The query is four lines above, under a caveat reading "your exact words may not
+                // appear", and below it sits a page of the corpus's own vocabulary. A reader
+                // going top to bottom is being invited to read the cloud as the answer.
+                .overlay { searchingLabel }
         } else if let err = vm.searchError {
             ContentUnavailableView(
                 String(localized: "search.error.title", defaultValue: "Search Error"),
