@@ -249,6 +249,11 @@ struct AnalyticsView: View {
     /// charts. Stays SINGLE (not per-term): source coloring is dropped while comparing, so this is
     /// fetched only for a single committed term.
     @State private var yearVolumeData: [YearVolumeFrequency] = []
+
+    /// The same breakdown counted in OCCURRENCES, for when the Measure picker is on Occurrences
+    /// (#1305). Held beside the document series rather than replacing it, because the picker can
+    /// be switched without refetching.
+    @State private var occurrenceYearVolumeData: [YearVolumeFrequency] = []
     /// Per-term occurrence series (PR-D). Populated only for By Year / By Decade — the axes
     /// `measureApplies` admits — and only for query shapes with an honest occurrence count.
     @State private var occurrenceYearDataByTerm: [String: [YearFrequency]] = [:]
@@ -1780,8 +1785,7 @@ struct AnalyticsView: View {
                         .lineLimit(1)
                     // Same unit-less raw total as the exported figure's legend — labelled here too,
                     // so the screen and the figure agree.
-                    Text(String(localized: "analytics.figure.legend.docs",
-                                defaultValue: "\(s.total) docs"))
+                    Text(segmentLegendLabel(total: s.total))
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.tertiary)
                     Spacer(minLength: 0)
@@ -2042,8 +2046,7 @@ struct AnalyticsView: View {
                     // the image: they read the legend as the plotted quantity and mis-scale every
                     // claim about which volume drives the trend. Naming the unit is enough; the
                     // number itself is the right one to show (a share per source would not sum).
-                    Text(String(localized: "analytics.figure.legend.docs",
-                                defaultValue: "\(s.total) docs"))
+                    Text(segmentLegendLabel(total: s.total))
                         .font(.system(size: 10).monospacedDigit())
                         .foregroundStyle(Color.black.opacity(0.45))
                     Spacer(minLength: 0)
@@ -2118,12 +2121,34 @@ struct AnalyticsView: View {
 
     // MARK: - Year Chart
 
+    /// A legend entry's total, in the unit the segments are actually counted in (#1305).
+    ///
+    /// The string was a hardcoded "N docs" in both the on-screen legend and the exported figure.
+    /// Under Occurrences that labelled occurrence counts as documents — in the one place a reader
+    /// looks to learn what the colours mean.
+    private func segmentLegendLabel(total: Int) -> String {
+        valueUnit == .occurrences
+            ? String(localized: "analytics.figure.legend.occurrences",
+                     defaultValue: "\(total) mentions")
+            : String(localized: "analytics.figure.legend.docs", defaultValue: "\(total) docs")
+    }
+
+    /// The per-(year, volume) series the bar SEGMENTS are drawn from, following the Measure
+    /// picker (#1305).
+    ///
+    /// Before this, the segments were always document counts: under Occurrences the chart drew
+    /// document counts beneath an axis titled *Occurrences*, with an occurrence fit line over them
+    /// and an occurrence total beneath. Every surface followed the picker except the bars.
+    private var segmentSeries: [YearVolumeFrequency] {
+        valueUnit == .occurrences ? occurrenceYearVolumeData : yearVolumeData
+    }
+
     private var yearChartSection: some View {
         let data = filteredYearData
         let totalAllYears = yearData.reduce(0) { $0 + $1.count }
         let totalFiltered = data.reduce(0) { $0 + $1.count }
         // Per-(year, volume) segments over the same filtered slice the chart renders.
-        let raw = yearVolumeData
+        let raw = segmentSeries
             .filter { $0.year >= yearRangeStart && $0.year <= yearRangeEnd }
             .map { (period: $0.year, volumeId: $0.volumeId, count: $0.count) }
         let coloring = sourceColoring(raw)
@@ -2193,7 +2218,7 @@ struct AnalyticsView: View {
         let totalFiltered = data.reduce(0) { $0 + $1.count }
         // Bucket the per-(year, volume) data into decades, keeping decades that
         // intersect the active year range (matching `filteredDecadeData`).
-        let raw: [(period: Int, volumeId: String, count: Int)] = yearVolumeData.compactMap {
+        let raw: [(period: Int, volumeId: String, count: Int)] = segmentSeries.compactMap {
             let decade = ($0.year / 10) * 10
             guard decade + 9 >= yearRangeStart && decade <= yearRangeEnd else { return nil }
             return (period: decade, volumeId: $0.volumeId, count: $0.count)
@@ -2941,7 +2966,11 @@ struct AnalyticsView: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .disabled(committedTerm.isEmpty || viewMode != .chart)
+                    // #1305: disabled under Occurrences, where it is inert. `isNormalized`
+                    // requires `valueUnit == .documents` — occurrences divided by documents is a
+                    // rate, not a share — so the control was selectable and did nothing.
+                    .disabled(committedTerm.isEmpty || viewMode != .chart
+                              || valueUnit == .occurrences)
                     .help(String(
                         localized: "analytics.normalize.help",
                         defaultValue: "Plot raw matching-document counts, or each period’s matches as a share of all indexed documents in that period — so a rising corpus size doesn’t masquerade as a rising term."
@@ -3155,7 +3184,8 @@ struct AnalyticsView: View {
             } label: {
                 Text(String(localized: "analytics.normalize.picker", defaultValue: "Values"))
             }
-            .disabled(viewMode != .chart)
+            // #1305: inert under Occurrences — see the toolbar picker.
+            .disabled(viewMode != .chart || valueUnit == .occurrences)
         }
 
         if chartAxis.isDateBased && viewMode == .chart && !isComparing {
@@ -3202,7 +3232,8 @@ struct AnalyticsView: View {
             // Nothing committed — clear every result surface.
             yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
             dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
-            yearVolumeData = []; documentTotalsByYear = [:]; documentTotalsByDecade = [:]
+            yearVolumeData = []; occurrenceYearVolumeData = []
+            documentTotalsByYear = [:]; documentTotalsByDecade = [:]
             occurrenceYearDataByTerm = [:]
             occurrenceAvailability = .unavailable(reason: .noPositiveTerm)
             errorMessage = nil   // clear a stale error so removing the last term shows the empty state
@@ -3215,6 +3246,7 @@ struct AnalyticsView: View {
         yearDataByTerm = [:]; decadeDataByTerm = [:]; monthDataByTerm = [:]
         dayDataByTerm = [:]; subseriesDataByTerm = [:]; volumeDataByTerm = [:]
         yearVolumeData = []
+        occurrenceYearVolumeData = []
         documentTotalsByYear = [:]; documentTotalsByDecade = [:]
         occurrenceYearDataByTerm = [:]
         // Restrict every axis to the active volume-ID scope (Word Cloud → Analytics handoff);
@@ -3260,7 +3292,13 @@ struct AnalyticsView: View {
                 // `state` and `the`. `availability` above stays unconditional: it is one tokenizer
                 // probe, and the picker's enabled state and the notice both depend on it whether or
                 // not the series is wanted.
+                var occurrenceYearVolumes: [YearVolumeFrequency] = []
                 if singleTerm, unit == .occurrences, availability.isAvailable {
+                    // The segments first: the service derives the year totals from this very
+                    // series, so the second call is a cache hit and the two cannot disagree
+                    // (#1305).
+                    occurrenceYearVolumes = try await service.termOccurrencesByYearAndVolume(
+                        term: terms[0], volumeIds: scope)
                     occurrenceYears[terms[0]] = try await service.termOccurrencesByYear(
                         term: terms[0], volumeIds: scope)
                 }
@@ -3292,6 +3330,7 @@ struct AnalyticsView: View {
                 documentTotalsByYear = ty
                 documentTotalsByDecade = td
                 occurrenceYearDataByTerm = occurrenceYears
+                occurrenceYearVolumeData = occurrenceYearVolumes
                 occurrenceAvailability = availability
             } catch {
                 guard token == fetchToken else { return }

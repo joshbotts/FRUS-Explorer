@@ -273,4 +273,99 @@ struct OccurrenceCountServiceTests {
             }
         }
     }
+
+    // MARK: - #1305: the population, and the segments the bars are drawn from
+
+    @Test("An exclusion narrows the occurrence population, and does not share a cache entry")
+    func exclusionsNarrowTheOccurrencePopulation() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // d1 holds "cold" three times AND "war"; d2 holds "cold" twice and no war.
+            // `cold -war` must therefore count 2, not 5: the occurrences in the document the
+            // query just excluded are not occurrences in the result.
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>The cold winter. A cold peace. A cold war.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1971-06-01\">June 1, 1971</date></dateline><p>A cold morning and a cold afternoon.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            let plain = try await service.termOccurrencesByYear(term: "cold")
+            let excluded = try await service.termOccurrencesByYear(term: "cold -war")
+            #expect(plain.reduce(0) { $0 + $1.count } == 5, "got \(plain)")
+            #expect(excluded.reduce(0) { $0 + $1.count } == 2, """
+                Occurrences were counted over every document holding the stem, so the excluded \
+                document's mentions were counted anyway: got \(excluded)
+                """)
+        }
+    }
+
+    @Test("The occurrence cache is keyed by the whole term, not by its stem")
+    func occurrenceCacheIsKeyedByTerm() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [
+                    ("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>The cold winter. A cold war.</p>"),
+                    ("d2", "<head>2. Memo</head><dateline><date when=\"1971-06-01\">June 1, 1971</date></dateline><p>A cold morning.</p>"),
+                ]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            // Order matters: the plain term is asked FIRST, so a stem-keyed cache would answer the
+            // excluded query with the plain query's numbers.
+            let plain = try await service.termOccurrencesByYear(term: "cold")
+            let excluded = try await service.termOccurrencesByYear(term: "cold -war")
+            #expect(plain.reduce(0) { $0 + $1.count } == 3)
+            #expect(excluded.reduce(0) { $0 + $1.count } == 1, """
+                `cold -war` was served the cache entry for `cold`: got \(excluded)
+                """)
+        }
+    }
+
+    @Test("The bar segments are occurrences too, and sum to the year totals")
+    func segmentsAreOccurrencesAndReconcile() async throws {
+        try await withAnalyticsTempDir { dir in
+            let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            // Two volumes in one year, so a year really has two segments to add up.
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v01.xml"),
+                volumeId: "frus1969-76v01",
+                documents: [("d1", "<head>1. Memo</head><dateline><date when=\"1971-03-01\">March 1, 1971</date></dateline><p>A treaty, a treaty, a treaty.</p>")]
+            )
+            try writeAnalyticsVolume(
+                to: volDir.appendingPathComponent("frus1969-76v02.xml"),
+                volumeId: "frus1969-76v02",
+                documents: [("d1", "<head>1. Memo</head><dateline><date when=\"1971-04-01\">April 1, 1971</date></dateline><p>A treaty draft.</p>")]
+            )
+            try await pipeline.indexVolume("frus1969-76v01")
+            try await pipeline.indexVolume("frus1969-76v02")
+            let service = CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+
+            let segments = try await service.termOccurrencesByYearAndVolume(term: "treaty")
+            let years = try await service.termOccurrencesByYear(term: "treaty")
+            let documents = try await service.termFrequencyByYearAndVolume(term: "treaty")
+
+            // The defect: the bars were DOCUMENT counts under an Occurrences axis. v01's segment
+            // must be 3, where the document series says 1.
+            #expect(segments.first { $0.volumeId == "frus1969-76v01" }?.count == 3, "\(segments)")
+            #expect(documents.first { $0.volumeId == "frus1969-76v01" }?.count == 1)
+            #expect(segments.first { $0.volumeId == "frus1969-76v02" }?.count == 1)
+
+            // The reconciliation the shared accumulator buys: bar heights and the footnote total
+            // are the same numbers, not two computations that happen to agree.
+            #expect(segments.reduce(0) { $0 + $1.count } == years.reduce(0) { $0 + $1.count })
+            #expect(years.first { $0.year == 1971 }?.count == 4)
+        }
+    }
 }

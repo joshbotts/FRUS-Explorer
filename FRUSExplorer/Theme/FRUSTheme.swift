@@ -228,8 +228,8 @@ extension FeatureInfoButton where Footer == EmptyView {
             items: [
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.metric.title", defaultValue: "What the numbers mean"),
-                    detail: String(localized: "analytics.info.metric.body",
-                                   defaultValue: "Each bar shows the number of indexed FRUS documents that contain your search term in that period. A document that mentions the term ten times is counted once.")),
+                    detail: String(localized: "analytics.info.metric.body.v2",
+                                   defaultValue: "The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions it ten times counts once. Under Occurrences each bar is every mention in those same documents, so that document counts ten. Occurrences is offered for a single word only, and is always a raw count: a share of documents cannot be made from mentions.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
                     detail: String(localized: "analytics.info.multiword.body.v3",

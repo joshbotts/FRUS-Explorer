@@ -17468,3 +17468,45 @@ their own report. **Posting to HistoryAtState is the owner's action**, and the m
 their channel: a GitHub issue on `HistoryAtState/frus`, one per defect class, Markdown body with the
 worst rows inline and the CSV attached — never a PR, which their own maintainers have said they
 cannot accept for volume XML.
+
+## Session 2026-09-20 — under Occurrences the bars were still counting documents
+
+**The question:** #1305 says the "What the numbers mean" help is false under Occurrences. The copy
+fix is a sentence; the reason it could not simply be written is that the chart it describes did not
+do what any honest sentence would say.
+
+**Every surface followed the Measure picker except the bars.** The By-Year and By-Decade bar
+SEGMENTS were built from `yearVolumeData`, a document series, so under Occurrences the chart drew
+document counts beneath an axis titled *Occurrences*, with an occurrence fit line over them, an
+occurrence total in the footnote, an occurrence CSV beside — and VoiceOver announcing each segment
+as "N occurrences" over a document count. The legend said "N docs" in both the on-screen strip and
+the exported figure.
+
+**The fix is one accumulator, not two.** `termOccurrencesByYearAndVolume` keys the existing
+per-document occurrence pass by (year, volume) — the loop already resolved `key.volumeId` and threw
+it away — and `termOccurrencesByYear` is now DERIVED from it by summing. So the bar heights and the
+footnote total are the same numbers rather than two computations that agree by luck; a test pins the
+reconciliation.
+
+**The population was wrong in a second way, and that is what made the new copy honest.** The
+occurrence numerator counted the stem over every document holding it, ignoring the query's own
+exclusions: `cold -war` counted every *cold* in the war documents it had just excluded. It is now
+intersected with the matched document keys — the same population the document series counts — which
+is what the help row has always claimed ("in those same documents"). The scoped cache key carries
+the FULL TERM for the same reason: keyed by stem, `cold -war` and `cold` served each other's
+numbers.
+
+**The Values picker is disabled under Occurrences** (owner's call). It was selectable and inert:
+`isNormalized` requires `valueUnit == .documents`, deliberately — occurrences ÷ documents is a rate
+that runs past 100% and is not a share of anything — so choosing "% of documents" did nothing.
+
+**What did NOT need fixing, stated because it was in the issue's blast radius:** the exported CSV's
+rows and its `countingUnit` already followed the measure. The disagreement was between the figure's
+bars and its own axis, which the segment fix closes.
+
+**Expect the charts to look different under Occurrences.** One volume mentioning a term 400 times
+now outweighs forty volumes mentioning it once. That is the point, and it is worth a look before the
+next build.
+
+**Still owed:** both manuals' §15.1 uses "Article 43" as an occurrence example, and replacing it
+needs a measurement on an indexed library — an owner step, not one I can take.

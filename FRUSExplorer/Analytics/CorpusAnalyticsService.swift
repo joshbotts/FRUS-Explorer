@@ -874,35 +874,77 @@ actor CorpusAnalyticsService {
     ///   occurrence-countable or the index has never seen its stem — callers must distinguish those
     ///   two with `occurrenceAvailability(for:)` rather than reading emptiness as zero.
     func termOccurrencesByYear(term: String, volumeIds: Set<String>? = nil) async throws -> [YearFrequency] {
+        // DERIVED from the per-(year, volume) series rather than counted separately (#1305). The
+        // chart's bar heights come from the segments and its footnote total from this series; two
+        // accumulators could disagree, and one cannot.
+        let segments = try await termOccurrencesByYearAndVolume(term: term, volumeIds: volumeIds)
+        var byYear: [Int: Int] = [:]
+        for segment in segments { byYear[segment.year, default: 0] += segment.count }
+        return byYear.map { YearFrequency(year: $0.key, count: $0.value) }
+            .sorted { $0.year < $1.year }
+    }
+
+    /// Total occurrences of `term`'s stem per (year, volume) — the occurrence twin of
+    /// ``termFrequencyByYearAndVolume(term:volumeIds:)``, and the source of the By-Year and
+    /// By-Decade bar SEGMENTS when the Measure picker is on Occurrences (#1305).
+    ///
+    /// ## Why this exists
+    /// The segments were always document counts. Under Occurrences the chart therefore drew
+    /// document counts beneath an axis titled *Occurrences*, with an occurrence fit line over them,
+    /// an occurrence total beneath, and an occurrence CSV beside — and VoiceOver announced each
+    /// segment as "N occurrences". Every surface followed the Measure picker except the bars.
+    ///
+    /// ## The population, which is the part that was wrong twice
+    /// Occurrences are counted **only in the documents the query matches**, which is what the help
+    /// row has always claimed ("in those same documents"). Counting every document holding the stem
+    /// ignored the query's own exclusions: `cold -war` counted every occurrence of *cold* in the
+    /// war documents it had just excluded. The scoped cache key carries the FULL TERM for the same
+    /// reason — keyed by stem alone, `cold -war` and `cold` shared an entry and returned each
+    /// other's numbers.
+    ///
+    /// The year rule is the document numerator's, byte for byte: `date_iso`'s first four characters,
+    /// or the volume's start year for an undated document. Bucketing in SQL instead would silently
+    /// drop every undated document's occurrences while its *document* stayed in the other series.
+    func termOccurrencesByYearAndVolume(term: String, volumeIds: Set<String>? = nil) async throws
+        -> [YearVolumeFrequency] {
         guard let stem = await occurrenceAvailability(for: term).stem else { return [] }
-        let cacheKey = scopedCacheKey(term: "occ:\(stem)", volumeIds: volumeIds)
-        if let cached = yearFrequencyCache[cacheKey] { return cached }
+        let cacheKey = scopedCacheKey(term: "occ:\(term)", volumeIds: volumeIds)
+        if let cached = yearVolumeFrequencyCache[cacheKey] { return cached }
 
         let perDocument = try await fts5Store.termOccurrencesByDocument(stem: stem)
         guard !perDocument.isEmpty else { return [] }
 
-        let keysByRowid = try await resolvedRowidKeys()
-        let dates = try await resolvedDocumentDates()
+        // The matched population — the same keys the document series counts, so an exclusion,
+        // a volume scope or any other narrowing applies to both.
+        guard let (matchedKeys, dates) = try await matchedDocsAndDates(term: term,
+                                                                       volumeIds: volumeIds)
+        else { return [] }
+        let matched = Set(matchedKeys.map { "\($0.volumeId)/\($0.documentId)" })
 
-        var counts: [Int: Int] = [:]
+        let keysByRowid = try await resolvedRowidKeys()
+        var counts: [String: Int] = [:]
         for entry in perDocument {
             guard let key = keysByRowid[entry.documentRowid] else { continue }
-            if let volumeIds, !volumeIds.contains(key.volumeId) { continue }
-            // Byte-for-byte the numerator's year rule (see `termFrequencyByYear`).
+            let compositeKey = "\(key.volumeId)/\(key.documentId)"
+            guard matched.contains(compositeKey) else { continue }
             let year: Int?
-            if let iso = dates["\(key.volumeId)/\(key.documentId)"] {
+            if let iso = dates[compositeKey] {
                 year = Int(iso.prefix(4))
             } else {
                 year = Self.startYear(fromVolumeId: key.volumeId)
             }
             guard let y = year else { continue }
-            counts[y, default: 0] += entry.occurrences
+            counts["\(y)\u{1}\(key.volumeId)", default: 0] += entry.occurrences
         }
 
-        let result = counts
-            .map { YearFrequency(year: $0.key, count: $0.value) }
-            .sorted { $0.year < $1.year }
-        insertIntoCache(&yearFrequencyCache, key: cacheKey, value: result)
+        let result: [YearVolumeFrequency] = counts.compactMap { pair, count in
+            let parts = pair.split(separator: "\u{1}", maxSplits: 1)
+            guard parts.count == 2, let y = Int(parts[0]) else { return nil }
+            return YearVolumeFrequency(year: y, volumeId: String(parts[1]), count: count)
+        }
+        .sorted { $0.year != $1.year ? $0.year < $1.year : $0.volumeId < $1.volumeId }
+
+        insertIntoCache(&yearVolumeFrequencyCache, key: cacheKey, value: result)
         return result
     }
 
