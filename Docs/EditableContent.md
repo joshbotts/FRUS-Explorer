@@ -1225,13 +1225,13 @@ Words separated by spaces are combined with AND. So national security matches do
 Note: replaces `analytics.info.multiword.body.v2` (#1299), which said a leading - excludes a term wherever it sits; it does not exclude a NEAR(…) — `cold -NEAR(war korea, 5)` does not search `NOT NEAR`, while `cold NOT NEAR(war korea, 5)` does — so the text now says only NOT excludes one, as the Search Tips NEAR row does (§7.13). `.v2` itself replaced `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 reads the mark from each operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does. Reworded in place again for #1297 round 3: parser 6.5 applies a mark on a word marked in every OR alternative (D4), since every match then holds the literal word — `=cold war OR =cold peace` cannot be charted — and "as in one OR alternative" read as though each of those marks were ignored, so the text now names both cases: a word every alternative marks, and one only one alternative marks. Unchanged for #1297 round 4: parser 6.6 compares marks as the exact-word filter reads words, so `=Cold war OR =cold. peace` is a word every alternative marks and cannot be charted, which the text already says.
 
 #### Phrases
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 239–240 | key: analytics.info.phrase.body.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 239–240 | key: analytics.info.phrase.body.v3 | shared: iOS+macOS (single edit point) -->
 
-Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so the counts here match what Search returns.
+Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ: Analytics counts document text only, while Search also reads your own notes and summaries unless you turn them off, and applies whatever filters you have set.
 
-<!-- END SOURCE: analytics.info.phrase.body.v2 -->
+<!-- END SOURCE: analytics.info.phrase.body.v3 -->
 
-Note: replaces `analytics.info.phrase.body` (#1299), which said "quotes" without saying which. Since #1298 straight, curly and guillemet quotation marks all make the same phrase, and a phrase cannot hold marks of its own — `"the “missile crisis” began"` searches four words. The closing sentence, that the counts here match what Search returns, is carried over unchanged and is not verified: Analytics counts document text only, while Search's default scope also reads summaries and notes, and Search applies filters. #1299 left it for separate work.
+Note: replaces `analytics.info.phrase.body.v2` (#1306), whose closing sentence — that the counts here match what Search returns — #1299 had carried over unverified. It is false, in both directions and for two different reasons. Analytics runs a bare `frus_documents MATCH` over the corpus columns; Search unions that with a `user_content MATCH` over the reader's own summaries and notes, both scoped ON by default, so Search can be HIGHER, by an amount that depends on the reader's own data. Search also ANDs every active filter, so Search can be LOWER, structurally. The parsing half of the old sentence survives and is kept, because #1297/#1298 really did make the two read a query identically. `.v2` itself replaced `analytics.info.phrase.body` (#1299), which said "quotes" without saying which; since #1298 straight, curly and guillemet quotation marks all make the same phrase, and a phrase cannot hold marks of its own — `"the “missile crisis” began"` searches four words.
 
 #### Stemming
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 243–244 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
@@ -1241,13 +1241,13 @@ English stemming is applied: searching for “negotiate” also matches “negot
 <!-- END SOURCE: analytics.info.stemming.body -->
 
 #### How dates are determined
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 247–248 | key: analytics.info.dating.body.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 247–248 | key: analytics.info.dating.body.v3 | shared: iOS+macOS (single edit point) -->
 
-Each document sits at the date it was written, as the editors date it, taking the first day when that date is a range, not at the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.
+%s
 
-<!-- END SOURCE: analytics.info.dating.body.v2 -->
+<!-- END SOURCE: analytics.info.dating.body.v3 -->
 
-Note: replaces `analytics.info.dating.body` (#1299), whose "its TEI <date> attribute" was stale: the index prefers the editors' `frus:doc-dateTime-min`, falls back to the dateline's structured date, and stores the start of a range. The last two sentences, on documents with no month or no day, are carried over unchanged and are not measured — the index pads a year-only date to its first day — and #1299 left them for separate work. The export methods caveat (`analytics.export.caveat.dating`) still says "TEI <date>".
+Note: replaces `analytics.info.dating.body.v2` (#1306), whose last two sentences — a document with no month left out of By Month, one with no day left out of By Day — #1299 had carried over unmeasured. Measured over the 553 manifest volumes at corpus `550a8c5c5`: all 314,571 `<div type="document">` carry a full `frus:doc-dateTime-min`, so every stored date is exactly ten characters and the two charts' length guards can never fire. Nothing is left out for want of a month or a day. What IS left out of those two charts, and had never been mentioned, is a document with no stored date at all — about 2,152 promoted front-matter sections — which By Year and By Decade keep through the volume-start-year fallback. The row also now gives the range rule's scale: 11,030 documents, 3.5%, sit at a range's first day, and 7,126 of those ranges run for more than a year. #1306 deliberately changed no chart: the skew its own issue predicted does not exist — 1 January holds 793 documents and ranks 324th of the 366 month-days, behind 31 December's 1,226 — because #1326 had already taken each day from the editors' own date. `.v2` itself replaced `analytics.info.dating.body` (#1299), whose "its TEI <date> attribute" was stale.
 
 ### Corpus Analytics — Normalization Caption
 
@@ -1386,11 +1386,13 @@ Foreign Relations of the United States corpus published by the Office of the His
 
 #### Dating rule
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 137–138 | key: analytics.export.caveat.dating | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsProvenance.swift | AnalyticsProvenance.datingCaveat | lines: 137–138 | key: analytics.export.caveat.dating.v2 | shared: iOS+macOS (single edit point) -->
 
-Dating: each document sits at its TEI <date>, the date it was written. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.
+Dating: each document sits at the date it was written, as the editors date it, not at the volume’s publication date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
 
-<!-- END SOURCE: analytics.export.caveat.dating -->
+<!-- END SOURCE: analytics.export.caveat.dating.v2 -->
+
+Note: replaces `analytics.export.caveat.dating` (#1306) — the first time this string has moved, and it had drifted twice. It still named the `TEI <date>` the in-app row dropped at #1299, and it carried the same no-month/no-day exclusion that #1306 measured and refuted. It is the worse of the two surfaces to leave wrong: it is printed into every exported CSV preamble and figure caption, so it travels to a reader who cannot check it against the chart. The two surfaces state the same rule again.
 
 #### Corpus-coverage caveat
 
