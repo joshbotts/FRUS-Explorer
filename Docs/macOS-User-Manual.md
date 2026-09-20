@@ -750,6 +750,8 @@ It warns; it never blocks, and it distinguishes three ways of not being able to 
 
 FRUS Explorer integrates with Apple Intelligence to generate document summaries **on-device** — no document content is sent to any server. Summaries are stored locally and indexed for search. Treat them as what they are: a reading aid and a triage tool, never a substitute for the document, and the app labels them accordingly wherever they appear in something you export.
 
+**What a summary can and cannot tell you about people.** The prompts the app ships ask for names, titles and offices **as the document states them**, and the three that return a participant field say so in the field itself. They ask that because nothing on your device can check the alternative: 266 of the 553 volumes publish no List of Persons (Section 6.3), so on those documents a name or an office the model supplies from its own training has nothing to be corroborated against — and a summary is indexed, so a later search can match it. Read a name in a summary as a pointer back into the document, never as a citation.
+
 > **Requirement:** an Apple Silicon Mac with Apple Intelligence enabled in System Settings → Apple Intelligence & Siri.
 
 ### 13.1 Summarizing a Document
@@ -758,7 +760,7 @@ Open the Research rail (⌘⇧R), expand **Summary**, and click **Summarize this
 
 ### 13.2 Prompts
 
-**Standard prompts** ship with the app: *Standard Summary* (a two-to-four-sentence overview of who is involved, what the document concerns, and its principal content or outcome), plus seven structured prompts returning named fields — *Meeting Record*, *Policy Decision*, *Analytical Report*, *Diplomatic Exchange*, *Crisis Event*, *Individual Role Trace*, and *Relevance Assessment*. The last is worth singling out for research triage: a prompt that assesses a document against a question.
+**Standard prompts** ship with the app: *Standard Summary* (a two-to-four-sentence overview of who is involved, what the document concerns, and its principal content or outcome), plus seven structured prompts returning named fields — *Meeting Record*, *Policy Decision*, *Analytical Report*, *Diplomatic Exchange*, *Crisis Event*, *Individual Role Trace*, and *Relevance Assessment*. The last is worth singling out for research triage: a prompt that assesses a document against a question. The four that ask about people — *Standard Summary*, *Meeting Record*, *Diplomatic Exchange* and *Individual Role Trace* — ask for names and offices only as the document states them, and *Individual Role Trace* is told to say when the document states no capacity rather than supply one.
 
 **Your own prompts** are created in **Settings → Research → Summarization**: name it, choose **General** (free text) or **Structured** (define fields by name and type), write the instructions, save. The seven structured standards are offered as templates; **Start from Scratch** gives a plain prose prompt.
 

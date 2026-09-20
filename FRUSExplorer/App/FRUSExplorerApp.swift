@@ -2734,6 +2734,13 @@ struct FRUSExplorerApp: App {
                                 // settled store, not a partial one mid-sync.
                                 SummarizationPromptSeeder.collapseDuplicates(
                                     context: modelContainer.mainContext)
+                                // #1329: same debounce, same reason, one layer along. A standard
+                                // prompt's TEXT is refreshed against its template at boot too, but
+                                // the rows a second device has to refresh are the ones this import
+                                // just delivered — seeded on the first device under older wording,
+                                // and not present when boot's pass ran.
+                                SummarizationPromptSeeder.refreshStandardPrompts(
+                                    context: modelContainer.mainContext)
                                 // R-5 P3b-2: same debounce, same reason — a review that arrived
                                 // in this import reaches the local index here rather than at the
                                 // next cold launch. This is the app's only reaction to a remote

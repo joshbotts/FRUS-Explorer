@@ -49,6 +49,14 @@ struct PromptTemplate: Identifiable, Sendable {
 /// standard prompts that share a name (keeping the oldest by `createdAt`). This
 /// repairs any duplicates that were created before this fix was deployed.
 ///
+/// ## Name idempotency is not text idempotency (#1329)
+/// The name check above decides whether a row is CREATED. It says nothing about what the row
+/// says, so for four years of releases a template's wording was reachable only by a fresh
+/// install: editing a literal in this file left every existing device on the text it was seeded
+/// with, because generation reads the stored row. `refreshStandardPrompts(context:)` closes that
+/// — it rewrites `promptText`, `responseFormat` and `schema` on a standard row whose text has
+/// fallen behind its template — and `seed(in:)` runs it after the collapse.
+///
 /// ## Log prefix
 /// `[SummarizationPromptSeeder]`
 ///
@@ -57,6 +65,10 @@ struct PromptTemplate: Identifiable, Sendable {
 ///   1.1 — Session 75: per-name idempotency check + deduplication pass to fix
 ///          CloudKit sync race that produced duplicate standard prompts when both
 ///          Mac and iOS seeded before the first batch had synced.
+///   1.2 — #1329: the four templates that ask about people now ask for names, titles and
+///          offices AS THE DOCUMENT STATES THEM, and `refreshStandardPrompts(context:)`
+///          carries a reworded template onto rows that were seeded before it. Without the
+///          refresh the reword would have reached only fresh installs.
 enum SummarizationPromptSeeder {
 
     // MARK: - Standard Templates (public for prompt editor use)
@@ -110,8 +122,12 @@ enum SummarizationPromptSeeder {
         }
 
         let deleteCount = collapseDuplicates(context: context)
+        // #1329: after the collapse, so it never rewrites a row that is about to be deleted.
+        // It saves its own work, so a refresh-only run is durable even though the guard below
+        // returns early on it.
+        let refreshCount = refreshStandardPrompts(context: context)
 
-        guard insertCount > 0 || deleteCount > 0 else {
+        guard insertCount > 0 || deleteCount > 0 || refreshCount > 0 else {
             #if DEBUG
             print("[SummarizationPromptSeeder] All standard prompts present — nothing to do")
             #endif
@@ -245,6 +261,96 @@ enum SummarizationPromptSeeder {
         }
     }
 
+    // MARK: - Standard-prompt refresh (#1329)
+
+    /// Rewrites a standard prompt whose stored text no longer matches the template it was seeded
+    /// from.
+    ///
+    /// ## Why this has to exist at all
+    /// `seed(in:)` skips a template whose NAME is already present and never looks at what the row
+    /// says. So editing a template literal in this file changes what a *fresh* install gets and
+    /// nothing else: every device that has already launched keeps the wording it was seeded with
+    /// for the life of the install, because generation reads the stored row and not the literal.
+    /// #1329 is the case that made it matter — three templates asked the model for a person's
+    /// OFFICE, and on the 266 volumes that publish no list of persons nothing on the device can
+    /// corroborate one — but the gap is general: before this, a shipped prompt was unreachable
+    /// after first launch.
+    ///
+    /// ## Why it compares three fields and not one
+    /// `promptText`, `responseFormat` AND `schema`. The office ask lived in the structured field
+    /// DESCRIPTIONS as much as in the prose, and those descriptions are stored on the row — twice,
+    /// since `schema` mirrors the schema inside `responseFormat` — and reach the model verbatim
+    /// through `AppleIntelligenceProvider`. A pass comparing only `promptText` would have shipped
+    /// the reworded prose beside a schema still asking for an official capacity.
+    ///
+    /// ## The join key is the NAME, and three passes now share it
+    /// `PromptTemplate.id` is never persisted — `SummarizationPrompt.init` mints its own — so the
+    /// name is the only key on the row, exactly as it already is for `seed`'s skip and for
+    /// `collapseDuplicates`'s grouping. The names are `String(localized:)`, so all three would
+    /// break together if a translation for `prompt.template.*.name` were ever shipped: this pass
+    /// would silently stop matching while `seed` minted a second row under the new name. The app
+    /// ships no localization today — no `.lproj`, no string catalog, `knownRegions = (Base, en)` —
+    /// so every one of those keys resolves to its `defaultValue` on every device.
+    ///
+    /// ## Why it stamps `lastModified` by hand
+    /// `SummarizationPrompt`'s five `didSet { lastModified = .now }` observers never fire: the
+    /// `@Model` macro rewrites a stored property into a computed pair and discards the observer,
+    /// which `ModelModificationStamper` documents and `ModelLastModifiedTests` measures. The type
+    /// is also not a `LastModifiedStamping` conformer, and `seed` works on its own `ModelContext`
+    /// rather than the one the stamper observes, so nothing else would move it. Left frozen at
+    /// creation, a device still running the old wording wins the CloudKit merge and puts the stale
+    /// text back — the fix would arrive and then quietly leave again. The stamp differs per device
+    /// for the same logical change, which is harmless precisely because both sides converge on the
+    /// same text.
+    ///
+    /// Only `isStandard == true` rows. A reader's own prompt may legitimately share a name with a
+    /// standard one, and it is theirs.
+    ///
+    /// Labelled `context:` and saving its own work, for the reasons `collapseDuplicates` gives.
+    ///
+    /// - Parameter context: the context to refresh in.
+    /// - Returns: how many standard prompts were rewritten.
+    @MainActor
+    @discardableResult
+    static func refreshStandardPrompts(context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<SummarizationPrompt>(
+            predicate: #Predicate { $0.isStandard == true }
+        )
+        guard let standard = try? context.fetch(descriptor) else { return 0 }
+
+        var templatesByName: [String: PromptTemplate] = [:]
+        for template in standardTemplates { templatesByName[template.name] = template }
+
+        var refreshed = 0
+        for prompt in standard {
+            guard let template = templatesByName[prompt.name] else { continue }
+            guard prompt.promptText != template.promptText
+                    || prompt.responseFormat != template.responseFormat
+                    || prompt.schema != template.schema
+            else { continue }
+
+            prompt.promptText = template.promptText
+            prompt.responseFormat = template.responseFormat
+            prompt.schema = template.schema
+            prompt.lastModified = .now
+            refreshed += 1
+        }
+        guard refreshed > 0 else { return 0 }
+
+        do {
+            try context.save()
+        } catch {
+            // A failed save leaves the old wording in place, which is the right failure: the next
+            // import's debounce, or the next cold boot, retries.
+            print("[SummarizationPromptSeeder] Refresh save failed: \(error)")
+            return 0
+        }
+        // Deliberately NOT `#if DEBUG`, for the reason the collapse gives: this write propagates
+        // to every device through CloudKit.
+        print("[SummarizationPromptSeeder] Refreshed \(refreshed) standard prompt(s)")
+        return refreshed
+    }
+
     // MARK: - Template Definitions
 
     private static let generalTemplate = PromptTemplate(
@@ -253,8 +359,9 @@ enum SummarizationPromptSeeder {
                      defaultValue: "Standard Summary"),
         promptText: """
             Summarize the following document in two to four sentences. Identify who is \
-            involved, what the document concerns, and what its principal content or \
-            outcome is. Do not speculate beyond what is stated.
+            involved, naming them as the document names them, what the document concerns, \
+            and what its principal content or outcome is. Do not supply a name, title, or \
+            office the document does not state, and do not speculate beyond what is stated.
 
             {{DOCUMENT}}
             """,
@@ -267,14 +374,16 @@ enum SummarizationPromptSeeder {
                      defaultValue: "Meeting Record"),
         promptText: """
             Summarize the following meeting record. Identify the key participants and \
-            their roles, the main topics discussed, any agreements reached, and any \
-            significant points of disagreement or unresolved tension.
+            the roles the document gives them, the main topics discussed, any agreements \
+            reached, and any significant points of disagreement or unresolved tension. \
+            Name people and roles only as the document states them; do not supply a title \
+            or office it does not give.
 
             {{DOCUMENT}}
             """,
         fields: [
             .init(name: "KeyParticipants",
-                  description: "Principal speakers and their official capacity"),
+                  description: "Principal speakers, with the official capacity the document states for them"),
             .init(name: "Topics",
                   description: "Main subjects discussed"),
             .init(name: "Agreements",
@@ -337,14 +446,15 @@ enum SummarizationPromptSeeder {
                      defaultValue: "Diplomatic Exchange"),
         promptText: """
             Summarize the following diplomatic document. Identify the parties \
-            communicating, the subject of the exchange, the key substance conveyed, \
-            and the diplomatic register or tone.
+            communicating as the document names them, the subject of the exchange, the \
+            key substance conveyed, and the diplomatic register or tone. Do not supply a \
+            name, title, government, or office the document does not state.
 
             {{DOCUMENT}}
             """,
         fields: [
             .init(name: "Parties",
-                  description: "Sending and receiving parties, including their governments and positions"),
+                  description: "Sending and receiving parties, with the governments and positions the document states"),
             .init(name: "Subject",
                   description: "The matter being communicated"),
             .init(name: "Substance",
@@ -384,15 +494,16 @@ enum SummarizationPromptSeeder {
                      defaultValue: "Individual Role Trace"),
         promptText: """
             Summarize the role of [name of individual] in the following document. \
-            Describe the capacity in which they appear, what they said or did, the \
-            positions they expressed or represented, and why their involvement is \
-            significant.
+            Describe the capacity in which the document presents them, what they said or \
+            did, the positions they expressed or represented, and why their involvement \
+            is significant. Give the capacity only as the document states it; if the \
+            document states none, say so rather than supplying one.
 
             {{DOCUMENT}}
             """,
         fields: [
             .init(name: "Role",
-                  description: "The individual's role or official capacity in this document"),
+                  description: "The role or official capacity this document states for the individual, or that it states none"),
             .init(name: "Actions",
                   description: "What they said, proposed, decided, or did"),
             .init(name: "Positions",
