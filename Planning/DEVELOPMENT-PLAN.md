@@ -17607,3 +17607,63 @@ person filter, the People facet and Person Analytics read only `persons` / `pers
 Changing that default, or badging a summary match, is a behaviour change the manual currently
 promises against ("indexed for full-text search — so a later search can match text that appears only
 in a summary"), and it is the owner's call.
+
+## Session 2026-09-20 — Two analytics help claims nobody had measured, and a third surface nobody had counted
+
+**The question:** #1306. Two sentences in Corpus Analytics' info popover asserted things no one had
+checked, and #1299 had re-keyed both rows while deliberately carrying the unverified claims over.
+
+**The measurement refuted the issue's own premise as well as the app's.** #1306 reasoned that
+`normalizeToFullDate` pads `1982` to `1982-01-01`, so year-only documents pile into January and skew
+the first bucket. Measured over the 553 manifest volumes at corpus `550a8c5c5`: all **314,571**
+`<div type="document">` carry a full `frus:doc-dateTime-min`, so every stored `date_iso` is exactly
+ten characters and `termFrequencyByMonth`'s `count >= 7` and `termFrequencyByDay`'s `count == 10`
+are **tautologies** — nothing is ever dropped for lacking a month or a day. Only **48** front-matter
+rows are still padded by that function, 0.015% of the index. And there is no pile-up: **1 January
+holds 793 documents and ranks 324th of the 366 month-days**, behind 31 December's 1,226; December is
+a larger month than January. #1326 had already removed the mechanism, by taking each day from the
+editors' own `<date>` wherever it names the same instant.
+
+**So the chart rule is unchanged, by owner decision, and the text now says what is true.** Four
+options were put up: leave the charts alone and fix the copy; exclude partial-precision dates (46
+documents from By Month, 260 from By Day — a sentence about 0.08% of the corpus, and one that
+`date_precision` cannot express, since 8,294 documents have no `<date>` node at all and store
+`day`); exclude span-dated documents (**11,030**, 3.5%, of which 7,126 span more than a year — the
+rule that would actually move the picture); or plot a span across its whole span, which changes what
+the axis counts. The owner chose the first.
+
+**What the rows say now.** The dating row drops the month/day exclusion, names the exclusion that is
+real and had never been mentioned — a document with **no stored date at all**, some 2,152 promoted
+front-matter sections, which By Year and By Decade keep through the volume-start-year fallback and
+the two sub-year charts do not — and states the range rule's scale. The phrases row keeps the
+parsing half of its claim, which #1297/#1298 really did make true, and drops the counting half:
+Analytics runs a bare `frus_documents MATCH` while Search unions `user_content` (the reader's own
+summaries and notes, both scoped ON by default) and ANDs every active filter, so it can be higher by
+an amount that depends on the reader's own data and lower by one that is structural.
+
+**The third surface had drifted for a release and nobody had counted it.**
+`AnalyticsProvenance.datingCaveat` prints the same two false sentences — plus the `TEI <date>` that
+#1299 removed from the in-app row — into **every exported CSV preamble and every figure caption**.
+It is the worse of the two to leave wrong, because it travels to a reader who cannot check it
+against the chart. Re-keyed to `analytics.export.caveat.dating.v2`, its first move ever.
+
+**Both in-app rows go to `.v3` rather than being reworded in place**, because the `.v2` keys shipped:
+`build-47` is an annotated tag on a commit descended from #1299's, and `git show
+build-47:…/FRUSTheme.swift` carries both sentences verbatim.
+
+**The marker the export tests used was itself the drift.** Three assertions read `"TEI <date>"` as
+"the default dating rule is present" — a phrase the caveat had kept only because it had fallen
+behind. They now read `"as the editors date it"`, and a new test pins the two surfaces against each
+other claim by claim, which is what would have caught #1299's drift at the time.
+
+No code change to any chart, no index bump, no schema gate.
+
+**Process note, recorded because it made a verification vacuous.** The first A/B ran with
+`-only-testing FRUSExplorerTests/AnalyticsExportTests` — a FILE name, not a type name; that file's
+suites are `AnalyticsProvenanceTests`, `AnalyticsChartTablesTests` and four others. The two mutants
+aimed at the exported caveat reported PASS because the suite holding their guards never ran, and the
+earlier "18 tests in 3 suites passed" that was supposed to verify the change had never exercised it
+either. Re-run against `AnalyticsProvenanceTests` and `AnalyticsWordCloudExportTests`, the baseline
+was RED: a FOURTH `"TEI <date>"` assertion (`datingKeepsDateClaims`) had been missed by a truncated
+grep. The rule is in the repo's own memory — a `-only-testing` miss runs zero tests and "passes" —
+and the only defence is to read the suite COUNT back, which is what caught it.

@@ -126,6 +126,17 @@ struct FeatureInfoItem: Identifiable {
 ///         phrase, and `"the “missile crisis” began"` renders four operands. How dates are determined
 ///         (`analytics.info.dating.body.v2`) drops "its TEI <date> attribute": the index prefers the editors'
 ///         `frus:doc-dateTime-min`, falls back to the dateline's structured date, and stores the start of a range.
+///   1.9 — #1306: the two rows #1299 re-keyed without measuring are re-keyed again, to
+///         `analytics.info.phrase.body.v3` and `analytics.info.dating.body.v3`, because the measurement
+///         refuted both. Phrases no longer claims the counts match Search: Analytics runs a bare
+///         `frus_documents MATCH` while Search also unions `user_content` (summaries and notes, both on by
+///         default) and ANDs every active filter. How dates are determined no longer says a document with no
+///         month or no day is left out: measured over the 553 manifest volumes at corpus `550a8c5c5`, all
+///         314,571 document divs carry a full `frus:doc-dateTime-min`, every stored `date_iso` is exactly ten
+///         characters, and the charts’ `count >= 7` / `count == 10` guards therefore never fire. What they do
+///         drop — a document with no stored date at all, some 2,152 front-matter sections that By Year and By
+///         Decade keep through the volume-start-year fallback — the row had never mentioned. The row now also
+///         states the range rule’s scale (11,030 documents, 3.5%, plotted at a range’s first day).
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -215,11 +226,13 @@ extension FeatureInfoButton where Footer == EmptyView {
     /// is typed with wherever it sits, and to `.v3` when #1299 added that a leading - does not exclude a
     /// NEAR(…). That text also discloses what this surface cannot show: Search
     /// reports a left-out exclusion-only alternative in its Query Inspector, and Corpus Analytics charts
-    /// the narrower query with no such row (#1297 round 1, D3). Phrases (`analytics.info.phrase.body.v2`)
-    /// and How dates are determined (`analytics.info.dating.body.v2`) were re-keyed for #1299; the claims
-    /// #1299 left for separate work — the metric row's "counted once" beside the Occurrences measure, the
-    /// phrase row's "the counts here match what Search returns", and the dating row's no-month and no-day
-    /// sentences — are carried over unchanged and remain unmeasured.
+    /// the narrower query with no such row (#1297 round 1, D3). Phrases and How dates are determined were
+    /// re-keyed again for #1329’s sibling #1306, to `.v3`, because the two claims #1299 had carried over
+    /// unmeasured were measured and were false: the counts do NOT match what Search returns (Search also
+    /// reads the reader’s notes and summaries by default, and applies filters), and nothing is left out
+    /// for want of a month or a day (every stored date is a full ten characters, so both charts’ length
+    /// guards are tautologies). The metric row’s "counted once" is the one claim #1299 named that #1306
+    /// did not cover; #1305 settled it from the other side by making Occurrences count mentions.
     static var corpusAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
@@ -236,16 +249,16 @@ extension FeatureInfoButton where Footer == EmptyView {
                                    defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
-                    detail: String(localized: "analytics.info.phrase.body.v2",
-                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so the counts here match what Search returns.")),
+                    detail: String(localized: "analytics.info.phrase.body.v3",
+                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ: Analytics counts document text only, while Search also reads your own notes and summaries unless you turn them off, and applies whatever filters you have set.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
                     detail: String(localized: "analytics.info.stemming.body",
                                    defaultValue: "English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.dating.title", defaultValue: "How dates are determined"),
-                    detail: String(localized: "analytics.info.dating.body.v2",
-                                   defaultValue: "Each document sits at the date it was written, as the editors date it, taking the first day when that date is a range, not at the volume’s publication date. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")),
+                    detail: String(localized: "analytics.info.dating.body.v3",
+                                   defaultValue: "Each document sits at the date it was written, as the editors date it, not at the volume’s publication date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Every stored date is a full day, so nothing is left out of By Month or By Day for want of a month or a day. What those two charts do leave out is a document with no stored date at all, chiefly front matter: By Year and By Decade keep it by falling back to the start year of its volume, in both the counts and the % denominator, and the sub-year charts have no such fallback.")),
             ]
         )
     }

@@ -37,13 +37,13 @@ struct AnalyticsProvenanceOverrideTests {
     @Test("A surface can state its own dating rule instead of the corpus-analytics one")
     func datingRuleOverrides() {
         let standard = base().csvPreambleLines.joined(separator: "\n")
-        #expect(standard.contains("TEI <date>"), "the default rule still ships for its own views")
+        #expect(standard.contains("as the editors date it"), "the default rule still ships for its own views")
 
         var custom = base(dating: false)
         custom.datingRule = "Dating: no document date is read."
         let text = custom.csvPreambleLines.joined(separator: "\n")
         #expect(text.contains("no document date is read"))
-        #expect(!text.contains("TEI <date>"), """
+        #expect(!text.contains("as the editors date it"), """
             The corpus-analytics dating sentence reached a surface that never reads a document \
             date. That sentence names a volume-start-year fallback and By Month / By Day charts, \
             none of which exist on the About-the-Series dashboards.

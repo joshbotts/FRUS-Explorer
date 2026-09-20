@@ -608,4 +608,39 @@ struct CorpusAnalyticsSyntaxRowsTests {
         let text = try detail(titled: "How dates are determined")
         #expect(!text.contains("TEI <date>"), "the row names the attribute #1299 removed: \(text)")
     }
+
+    // MARK: - #1306: the two claims #1299 carried over unmeasured
+
+    /// #1299 re-keyed this row and left its last two sentences alone, unmeasured. They were false:
+    /// every stored `date_iso` is exactly ten characters, so `termFrequencyByMonth`'s `count >= 7`
+    /// and `termFrequencyByDay`'s `count == 10` are tautologies and nothing is ever dropped for
+    /// lacking a month or a day. The row must not say otherwise again.
+    @Test("How dates are determined: nothing is left out for want of a month or a day")
+    func datingRowDoesNotClaimAMonthDayExclusion() throws {
+        let text = try detail(titled: "How dates are determined")
+        for retired in ["no month is left out", "no day is left out"] {
+            #expect(!text.contains(retired), """
+                The row has gone back to claiming a month/day exclusion the index cannot express: \(retired)
+                """)
+        }
+        #expect(text.contains("no stored date"), """
+            The row no longer names the exclusion that IS real — a document with no stored date at all, \
+            which By Year and By Decade keep and the two sub-year charts do not.
+            """)
+    }
+
+    /// The other claim #1299 carried over. Analytics runs a bare `frus_documents MATCH`; Search
+    /// unions `user_content` (summaries and notes, both on by default) and ANDs every active
+    /// filter, so the two counts agree only by coincidence.
+    @Test("Phrases: the row no longer promises the counts match Search")
+    func phraseRowDoesNotPromiseSearchParity() throws {
+        let text = try detail(titled: "Phrases")
+        #expect(!text.contains("match what Search returns"), """
+            The row promises a parity that does not hold: \(text)
+            """)
+        #expect(text.contains("notes") && text.contains("summaries"), """
+            The row no longer says why the counts can differ — Search reads the reader's own notes and \
+            summaries by default and Analytics does not.
+            """)
+    }
 }

@@ -35,21 +35,23 @@ import Foundation
 /// fallback for undated documents (see `CorpusAnalyticsService.termFrequencyByYear` and
 /// `documentTotalsByYear`, which apply that fallback to numerator and denominator alike). The
 /// in-app `analytics.info.dating.body` copy was worded to match, so the app and its exports disclosed
-/// the same method. They no longer match word for word: #1299 re-keyed the in-app row to
-/// `analytics.info.dating.body.v2`, dropping "its TEI <date> attribute" — the index prefers the editors'
-/// `frus:doc-dateTime-min` and stores the start of a range — while this caveat still says "TEI <date>",
-/// which the export tests (`AnalyticsExportTests.swift`, `SeriesAnalyticsExportTests.swift`) read as the default rule's marker. Rewording
-/// it is separate work.
+/// the same method. **They match again since #1306**, which re-keyed this caveat to
+/// `analytics.export.caveat.dating.v2` and the in-app row to `analytics.info.dating.body.v3`. Both
+/// now state the same three facts: the editors’ date rather than the volume’s publication date, a
+/// range plotted at its first day, and — the one the old copy got backwards — that nothing is left
+/// out for want of a month or a day, while a document with no stored date at all is kept by By Year
+/// and By Decade and dropped by By Month and By Day.
 ///
-/// #1326 adds a second thing this caveat does not say: `frus:doc-dateTime-min` is an INSTANT the
-/// corpus normalises to −05:00, not a calendar day. The index now takes the day from the document's
-/// own dateline wherever the two name the same instant, which moved 11,847 documents — 11,726 of
-/// them a day forward — across 480 volumes. Exports carrying this caveat describe the rule at one
-/// remove until it is reworded; the administration export's own `datingRule` states it in full.
+/// The export tests read `"as the editors date it"` as the default rule’s marker. They used to read
+/// `"TEI <date>"`, which is the phrase this caveat had kept after #1299 removed it from the in-app
+/// row — so the marker was a drift artefact standing in for a rule.
 ///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
 ///   1.1 — #1299 (docs only): says the in-app dating row and `datingCaveat` no longer match word for word
+///   1.2 — #1306: `datingCaveat` re-keyed to `analytics.export.caveat.dating.v2`. Its first move: it had
+///         kept "TEI <date>" a release after the in-app row dropped it, and carried the no-month/no-day
+///         exclusion that measurement refuted. The two surfaces state the same rule again.
 struct AnalyticsProvenance: Sendable, Equatable {
 
     /// The figure's own title, e.g. `"sovereignty", "independence" — by Year`.
@@ -186,11 +188,17 @@ struct AnalyticsProvenance: Sendable, Equatable {
     }
 
     /// The dating rule as implemented — the surface's own where it supplied one, else the
-    /// corpus-analytics rule with its volume-start-year fallback and month/day exclusion.
+    /// corpus-analytics rule with its volume-start-year fallback.
+    ///
+    /// Re-keyed to `.v2` at #1306, which is the first time this string has moved. It had drifted
+    /// twice: it still named the `TEI <date>` the in-app row dropped at #1299, and it carried the
+    /// no-month/no-day exclusion that #1306 measured and refuted. It is the worse of the two
+    /// surfaces to leave wrong, because it travels — a CSV preamble or a figure caption is read
+    /// outside the app, by someone who cannot check it against the chart.
     var datingCaveat: String {
         if let datingRule { return datingRule }
-        return String(localized: "analytics.export.caveat.dating",
-               defaultValue: "Dating: each document sits at its TEI <date>, the date it was written. A document with no stored date falls back to the start year of its volume, in both the counts and the % denominator. A document with no month is left out of the By Month chart. One with no day is left out of By Day.")
+        return String(localized: "analytics.export.caveat.dating.v2",
+               defaultValue: "Dating: each document sits at the date it was written, as the editors date it, not at the volume’s publication date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.")
     }
 
     /// What corpus the figure covers — the surface's own statement where it supplied one, else

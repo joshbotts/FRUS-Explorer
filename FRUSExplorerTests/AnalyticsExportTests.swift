@@ -34,12 +34,49 @@ struct AnalyticsProvenanceTests {
 
     /// The dating caveat states the rule the service actually implements — including the
     /// volume-start-year fallback, which the pre-D3 on-screen copy omitted.
+    ///
+    /// The marker moved at #1306. It used to be `"TEI <date>"`, a phrase this caveat had kept for a
+    /// release after #1299 removed it from the in-app row — so the marker for "the default dating
+    /// rule is present" was itself the drift.
     @Test("Dating caveat discloses the volume-start-year fallback")
     func datingCaveatDisclosesFallback() {
         let text = sample().datingCaveat
-        #expect(text.contains("TEI <date>"))
+        #expect(text.contains("as the editors date it"))
         #expect(text.lowercased().contains("falls back to the start year of its volume"))
         #expect(text.lowercased().contains("denominator"))
+    }
+
+    /// #1306: the caveat travels — into every CSV preamble and every figure caption — so it must not
+    /// carry the month/day exclusion the measurement refuted, nor the `TEI <date>` the in-app row
+    /// dropped a release earlier.
+    @Test("Dating caveat claims no month/day exclusion and names no TEI attribute")
+    func datingCaveatDropsTheRetiredClaims() {
+        let text = sample().datingCaveat
+        for retired in ["TEI <date>", "no month is left out", "no day is left out"] {
+            #expect(!text.contains(retired), """
+                The exported methods statement carries a claim #1306 retired: \(retired)
+                \(text)
+                """)
+        }
+    }
+
+    /// The test that would have caught the #1299 drift. The exported caveat and the on-screen row
+    /// describe one rule, and for a release they did not: the row dropped `TEI <date>` and the
+    /// caveat kept it. Pin the CLAIMS rather than the wording — the two are deliberately phrased
+    /// differently, one as a sentence in a popover and one as a methods line.
+    @Test("The exported caveat and the on-screen row state the same rule")
+    @MainActor
+    func exportCaveatAgreesWithTheOnScreenRow() throws {
+        let caveat = sample().datingCaveat
+        let row = try #require(FeatureInfoButton.corpusAnalytics.items
+            .first { $0.title == "How dates are determined" }?.detail)
+        for claim in ["as the editors date it", "first day", "no stored date", "denominator"] {
+            #expect(caveat.contains(claim) && row.contains(claim), """
+                Only one of the two dating surfaces states: \(claim)
+                export: \(caveat)
+                screen: \(row)
+                """)
+        }
     }
 
     /// The selective-corpus caveat names the actual indexed count and is emitted in raw mode too —
@@ -437,7 +474,7 @@ struct AnalyticsWordCloudExportTests {
     @Test("A non-dating export omits the dating rule and the year-range line")
     func nonDatingOmitsDateClaims() {
         let lines = cloudProvenance().csvPreambleLines
-        #expect(!lines.contains { $0.contains("TEI <date>") })
+        #expect(!lines.contains { $0.contains("as the editors date it") })
         #expect(!lines.contains { $0.contains("Year range") })
         // Everything not about dating still has to be there.
         #expect(lines.contains { $0.contains("552") })
@@ -451,7 +488,7 @@ struct AnalyticsWordCloudExportTests {
         dated.appliesDocumentDating = true
         dated.yearRange = 1945...1949
         let lines = dated.csvPreambleLines
-        #expect(lines.contains { $0.contains("TEI <date>") })
+        #expect(lines.contains { $0.contains("as the editors date it") })
         #expect(lines.contains { $0.contains("Year range") && $0.contains("1945") })
     }
 
