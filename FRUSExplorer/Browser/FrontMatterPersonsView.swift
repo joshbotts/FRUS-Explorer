@@ -25,11 +25,16 @@ import SwiftUI
 /// will show an empty list with a prompt to index the volume.
 ///
 /// ## Two different empty states (#736)
-/// "Index this volume to load its persons list" is only true of an *unindexed* volume. **268 of
-/// the 552 volumes have no editor-published person list at all** — every volume from the 1860s
+/// "Index this volume to load its persons list" is only true of an *unindexed* volume. **266 of
+/// the 553 volumes have no editor-published person list at all** — every volume from the 1860s
 /// and 1880s, 42 of 58 from the 1900s, 67 of 72 from the 1920s — and telling their reader to
 /// index a volume they have already indexed sends them to do something that will change nothing.
 /// The two cases are distinguished through `AppState.indexedVolumeIds`.
+///
+/// The count moved at #1321 (2026-09-19) and not because OH published anything: 36 volumes whose
+/// lists are grouped by initial letter parsed to zero entries and showed this empty state, so the
+/// figure read 268 of 552 while the true one was 266 of 553. Measured with the real parser over
+/// the whole corpus, volumes with at least one row go 251 -> 287.
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-08: initial implementation

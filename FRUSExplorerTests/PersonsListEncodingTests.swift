@@ -127,6 +127,113 @@ struct PersonsListEncodingTests {
         #expect(try await FRUSDocumentParser().parsePersons(volumeURL: url).isEmpty)
     }
 
+    // MARK: - #1321: a list grouped by initial letter
+
+    /// Real shape from `frus1981-88v16`: the outer `<item>` is a letter GROUP that says nothing,
+    /// and the people are one level in. Copied from the volume, whitespace normalised.
+    private let letterGroupedList = """
+        <div type="section" subtype="index" xml:id="persons">
+          <head>Persons</head>
+          <list>
+            <item><list>
+                <item><hi rend="strong"><persName xml:id="p_AE_1">Abrams, Elliott</persName>,</hi>
+                      Assistant Secretary of State for International Organization Affairs</item>
+                <item><hi rend="strong"><persName xml:id="p_AR_1">Alfonsín, Raúl</persName>,</hi>
+                      President of Argentina, from 1983 until July 8, 1989</item>
+              </list></item>
+            <item><list>
+                <item><hi rend="strong"><persName xml:id="p_BG_1">Bush, George H. W.</persName>,</hi>
+                      Vice President of the United States</item>
+              </list></item>
+          </list>
+        </div>
+        """
+
+    @Test("The people inside a letter group are read, and the group is not one (#1321)")
+    func letterGroupsYieldTheirPeople() async throws {
+        // #741 fixed the person depth at a literal 1, so every group opened as the "person", its
+        // first nested <list> stopped text capture, and the empty name was dropped — the whole
+        // list yielded nothing. Measured over the 553 manifest volumes: 37 volumes, 9,127 entries,
+        // of which the shipped parser finds 78.
+        let url = try makeVolume(front: letterGroupedList)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        let refs = persons.map(\.ref).sorted()
+        #expect(refs == ["p_AE_1", "p_AR_1", "p_BG_1"], """
+            Expected the three people inside the two letter groups; got \(refs). Zero means the \
+            #741 depth rule is back and 37 volumes list nobody.
+            """)
+        let abrams = try #require(persons.first { $0.ref == "p_AE_1" })
+        #expect(abrams.name == "Abrams, Elliott")
+        #expect(abrams.description?.contains("International Organization Affairs") == true, """
+            The role text after </persName> was lost: \(abrams.description ?? "nil")
+            """)
+        #expect(persons.allSatisfy { !$0.name.isEmpty })
+    }
+
+    @Test("A person nested inside a letter group still stops at their own sub-entries (#1321)")
+    func groupedPersonStillStopsAtSubEntries() async throws {
+        // The two shapes compose: a letter group whose people carry #741-style page-reference
+        // sub-entries. The group must demote, and the person inside it must still keep its
+        // description clear of the subtree.
+        let url = try makeVolume(front: """
+            <div type="section" subtype="index" xml:id="persons">
+              <head>Index of Persons</head>
+              <list>
+                <item><list>
+                    <item><persName xml:id="p_AH1">Arnold, Henry H.</persName>, Chief of the Army
+                          Air Forces:
+                      <list>
+                        <item>Meetings: Casablanca Conference, 536, 546</item>
+                        <item>Correspondence with, 88, 91</item>
+                      </list>
+                    </item>
+                  </list></item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        #expect(persons.count == 1, "got \(persons.map(\.name))")
+        let arnold = try #require(persons.first)
+        #expect(arnold.ref == "p_AH1")
+        let text = arnold.name + " " + (arnold.description ?? "")
+        #expect(!text.contains("Casablanca"), "the subtree leaked into the row: \(text)")
+        #expect(!text.contains("536"), "page references leaked into the row: \(text)")
+    }
+
+    @Test("An item that says nothing before its list contributes no row of its own (#1321)")
+    func anItemThatSpeaksOnlyAfterItsListIsStillAGroup() async throws {
+        // A DELIBERATE LIMIT, pinned so it is a decision rather than a surprise. The demote
+        // happens at the nested <list>, so an item whose only text arrives AFTER that list closes
+        // is read as a group and yields no row — its children still do. Measured over the 553
+        // manifest volumes, no such item exists: all 844 group items carry whitespace only, with
+        // no child element and no attribute before their list. If the corpus ever grows one, the
+        // rule has to move its decision to </item> instead of to <list>.
+        let url = try makeVolume(front: """
+            <div type="section" subtype="index" xml:id="persons">
+              <head>Persons</head>
+              <list>
+                <item>
+                  <list>
+                    <item><persName xml:id="p_XY1">Yardley, Herbert O.</persName>, cryptologist</item>
+                  </list>
+                  Smith, John: Secretary
+                </item>
+              </list>
+            </div>
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let persons = try await FRUSDocumentParser().parsePersons(volumeURL: url)
+        #expect(persons.map(\.ref) == ["p_XY1"], """
+            Expected only the nested person; got \(persons.map { "\($0.ref)=\($0.name)" }). \
+            The outer item's trailing "Smith, John" is knowingly given up.
+            """)
+    }
+
     // MARK: - #741: nested index sub-entries are not people
 
     /// Real shape from `frus1941-43`'s "Index of Persons": one person, whose page references are

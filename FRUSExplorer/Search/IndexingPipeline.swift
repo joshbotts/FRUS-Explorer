@@ -821,7 +821,23 @@ public actor IndexingPipeline {
     ///   table and copies the entries it mentions from its sibling (`resolveBorrowedPersonLists`).
     ///   No `currentPersonRollupVersion` bump: both fixes only ADD `persons` rows, and the rollup's
     ///   members-versus-persons drift check rebuilds on the first launch that sees them.
-    public static let currentDateIndexVersion: Int = 51
+    /// - v51→52 — #1321: a persons list GROUPED BY INITIAL LETTER parsed to zero entries. #741 fixed
+    ///   the person depth at a literal `<item>` depth of 1, which is right for a back-of-book index
+    ///   (the depth-1 item names a person and nests their page references) and wrong for a letter
+    ///   group, where the depth-1 item is the letter and the people are one level in. Every group
+    ///   opened as the "person", its first nested `<list>` stopped text capture, and the empty name
+    ///   was dropped — so the whole list yielded nothing. Measured over the 553 manifest volumes:
+    ///   **37 volumes affected, 9,127 entries, of which the shipped parser finds 78** (35 lists are
+    ///   strictly grouped and parse to 0; `frus1977-80v11p1` mixes 78 flat items with 25 groups and
+    ///   keeps only the flat ones). Person depth is now relative to where the last person opened,
+    ///   and an `<item>` that reaches its first nested list without saying anything is demoted to a
+    ///   group. Emulated over the whole corpus, the new rule reproduces the pre-#741 parse for all
+    ///   37 and leaves the other 516 volumes byte-identical, `frus1941-43`'s index included.
+    ///   THE REGRESSION IS ALREADY ON DEVICES: the `build-47` tag carries v51 and the R-1a scrub,
+    ///   so any device that re-indexed has already emptied these lists and shows "No Persons
+    ///   Listed". No `currentPersonRollupVersion` bump — the fix only ADDS `persons` rows, and the
+    ///   rollup's members-versus-persons drift check rebuilds on the first launch that sees them.
+    public static let currentDateIndexVersion: Int = 52
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
