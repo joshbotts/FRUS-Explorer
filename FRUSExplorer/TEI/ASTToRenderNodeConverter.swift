@@ -60,6 +60,18 @@ import Foundation
 ///          **`kVersion` is deliberately NOT bumped**: `flatText` skips `.footnoteMarker`
 ///          entirely (the `default: break` arm), so no marker label has ever contributed a
 ///          character to the highlight coordinate space and no stored highlight goes stale.
+///   1.8 — #1323: `<hi rend="strong">` now reaches this converter as `.emphasis(.bold, …)`
+///          rather than `.emphasis(.unspecified, …)`, so it emits `.boldText(children)` where it
+///          used to splice the children in unstyled. **`kVersion` is deliberately NOT bumped.**
+///          `flatText` recurses `.boldText` exactly as it concatenates spliced children, so the
+///          flat text is byte-identical — but that alone is not the whole argument, because
+///          `FRUSRenderNode.appendFlatTextBlocks` treats `.boldText` as INLINE (no flush) while
+///          a spliced block child would have flushed. The measurement is what closes it: over
+///          158,059 `strong` elements in the 553 manifest volumes NOT ONE has a direct block
+///          child — the only element children are `<note>` (350, which convert to an inline
+///          `.footnoteMarker` plus a separately collected body), `<lb/>` (74) and 2 `<p>`s
+///          nested inside one of those notes. So no excerpt loses a paragraph break and no
+///          DOCX/PDF run changes block-vs-inline routing, and no stored highlight goes stale.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
