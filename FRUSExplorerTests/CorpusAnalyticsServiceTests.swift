@@ -641,3 +641,166 @@ struct CorpusAnalyticsServiceTests {
         }
     }
 }
+// MARK: - ByDayTimeZoneTests (#1327)
+
+/// The By-Day series' dates read back as the day they were stored (#1327).
+///
+/// `date_iso` is a calendar day with no time and no zone. The series used to turn it into an
+/// instant at UTC midnight while every consumer — the year-range filter, the totals footnote, the
+/// "View N documents" hand-off — read that instant back through a calendar in the DEVICE's zone.
+/// West of UTC every 1 January point then reported the previous year, while the table beside it
+/// printed the true day. 793 documents in the corpus sit on a 1 January.
+///
+/// **These tests pin a non-UTC zone deliberately.** On a UTC machine the defect is invisible, so a
+/// test that used the ambient zone would have passed on the bug half the time.
+///
+/// Version history:
+///   1.0 — 2026-09-20: #1327
+@Suite("Corpus analytics — By Day is zone-consistent (#1327)")
+struct ByDayTimeZoneTests {
+
+    /// Runs `body` with the process time zone pinned, then restores it.
+    private func withTimeZone(_ identifier: String, _ body: () async throws -> Void) async throws {
+        let original = getenv("TZ").map { String(cString: $0) }
+        setenv("TZ", identifier, 1)
+        NSTimeZone.resetSystemTimeZone()
+        defer {
+            if let original { setenv("TZ", original, 1) } else { unsetenv("TZ") }
+            NSTimeZone.resetSystemTimeZone()
+        }
+        try await body()
+    }
+
+    /// Indexes one document dated `day` (a `yyyy-MM-dd` string) and returns a service over it.
+    private func indexDocument(dated day: String, in dir: URL) async throws -> CorpusAnalyticsService {
+        let (pipeline, store) = try await makeAnalyticsPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeAnalyticsVolume(
+            to: volDir.appendingPathComponent("frus1935v03.xml"),
+            volumeId: "frus1935v03",
+            documents: [("d1", "<head>1. Telegram</head><dateline><date when=\"\(day)\">\(day)</date></dateline><p>A mandate question.</p>")]
+        )
+        try await pipeline.indexVolume("frus1935v03")
+        return CorpusAnalyticsService(fts5Store: store, pipeline: pipeline)
+    }
+
+    @Test("West of UTC, a 1 January document stays in its own day and year")
+    func januaryFirstStaysInItsYearWestOfUTC() async throws {
+        try await withTimeZone("America/New_York") {
+            try await withAnalyticsTempDir { dir in
+                let service = try await self.indexDocument(dated: "1935-01-01", in: dir)
+                let days = try await service.termFrequencyByDay(term: "mandate")
+                let day = try #require(days.first)
+
+                // What the year-range filter, the totals footnote and the "View N documents"
+                // hand-off all read (#1327).
+                #expect(day.label == "1935-01-01", """
+                    The row is labelled \(day.label). The stored day is what every consumer reads; \
+                    a label derived from an instant moves west of UTC.
+                    """)
+                // `DayFrequency.year` is what both year-range filters call.
+                #expect(day.year == 1935, """
+                    The row reports year \(day.year.map(String.init) ?? "nil"). A year read off the \
+                    plotting instant is the year in whichever zone reads it.
+                    """)
+
+                // What Swift Charts plots, against the domain the chart builds the same way.
+                let plottedYear = Calendar(identifier: .gregorian).component(.year, from: day.date)
+                #expect(plottedYear == 1935, """
+                    The plotting date reports \(plottedYear) in this zone. Built at UTC midnight and \
+                    read back in a western zone, 1 January falls into the previous year — and the \
+                    chart domain is built in the device's calendar.
+                    """)
+            }
+        }
+    }
+
+    @Test("East of UTC, the same document does not move either")
+    func januaryFirstStaysInItsYearEastOfUTC() async throws {
+        try await withTimeZone("Asia/Tokyo") {
+            try await withAnalyticsTempDir { dir in
+                let service = try await self.indexDocument(dated: "1935-01-01", in: dir)
+                let days = try await service.termFrequencyByDay(term: "mandate")
+                let day = try #require(days.first)
+                #expect(day.label == "1935-01-01")
+                // Asserted in an EASTERN zone on purpose: a `year` re-derived from the plotting
+                // instant — in UTC, say — survives every western check and fails only here.
+                #expect(day.year == 1935, """
+                    The row reports year \(day.year.map(String.init) ?? "nil") east of UTC.
+                    """)
+                let calendar = Calendar(identifier: .gregorian)
+                #expect(calendar.component(.year, from: day.date) == 1935)
+                #expect(calendar.component(.month, from: day.date) == 1)
+                #expect(calendar.component(.day, from: day.date) == 1)
+            }
+        }
+    }
+
+    @Test("A 31 December point falls inside the chart domain for its own year")
+    func lastDayOfTheYearIsInsideTheDomain() async throws {
+        // East of UTC is the half that broke in the other direction: a domain whose upper bound is
+        // local midnight on 31 December sits BEFORE a point built at UTC midnight that same day, so
+        // the row was counted and not plotted. 1,226 corpus documents sit on a 31 December.
+        for zone in ["Asia/Tokyo", "Europe/Berlin", "America/New_York"] {
+            try await withTimeZone(zone) {
+                try await withAnalyticsTempDir { dir in
+                    let service = try await self.indexDocument(dated: "1935-12-31", in: dir)
+                    let days = try await service.termFrequencyByDay(term: "mandate")
+                    let day = try #require(days.first)
+
+                    // The expression `dayChartSection` uses for `chartXScale(domain:)`, and
+                    // `exportDateDomain` for the exported figure.
+                    let cal = Calendar(identifier: .gregorian)
+                    let start = try #require(cal.date(from: DateComponents(year: 1935, month: 1, day: 1)))
+                    let end = try #require(cal.date(from: DateComponents(year: 1935, month: 12, day: 31)))
+                    #expect(day.date >= start && day.date <= end, """
+                        In \(zone) the 1935-12-31 point sits outside the 1935 domain, so it is \
+                        counted in the totals and not drawn.
+                        """)
+                }
+            }
+        }
+    }
+
+    @Test("The plotting date names the label's own day in the device's zone")
+    func plottingDateAgreesWithTheLabel() async throws {
+        // The invariant that keeps the two halves joined: whatever builds `date` must build it in
+        // the same calendar the chart domain and the axis ticks are read in.
+        for zone in ["America/Los_Angeles", "GMT", "Asia/Tokyo"] {
+            try await withTimeZone(zone) {
+                try await withAnalyticsTempDir { dir in
+                    let service = try await self.indexDocument(dated: "1944-06-06", in: dir)
+                    let days = try await service.termFrequencyByDay(term: "mandate")
+                    let day = try #require(days.first)
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd"
+                    formatter.locale = Locale(identifier: "en_US_POSIX")
+                    let rendered = formatter.string(from: day.date)
+                    #expect(rendered == day.label, """
+                        In \(zone) the plotting date renders as \(rendered) beside a label of \
+                        \(day.label).
+                        """)
+                }
+            }
+        }
+    }
+
+    @Test("The day series and the month series agree about which year a date is in")
+    func dayAndMonthAxesAgree() async throws {
+        try await withTimeZone("America/New_York") {
+            try await withAnalyticsTempDir { dir in
+                let service = try await self.indexDocument(dated: "1935-01-01", in: dir)
+                let calendar = Calendar(identifier: .gregorian)
+                let days = try await service.termFrequencyByDay(term: "mandate")
+                let months = try await service.termFrequencyByMonth(term: "mandate")
+                let firstDay = try #require(days.first)
+                let dayYear = try #require(firstDay.year)
+                let monthYear = calendar.component(.year, from: try #require(months.first).date)
+                #expect(dayYear == monthYear, """
+                    The two date axes disagree about the same document: By Day says \(dayYear), \
+                    By Month says \(monthYear). They share the year-range filter.
+                    """)
+            }
+        }
+    }
+}

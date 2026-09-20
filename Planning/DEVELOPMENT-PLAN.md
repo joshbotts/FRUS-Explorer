@@ -17510,3 +17510,41 @@ next build.
 
 **Still owed:** both manuals' §15.1 uses "Article 43" as an occurrence example, and replacing it
 needs a measurement on an indexed library — an owner step, not one I can take.
+
+## Session 2026-09-20 — By Day stored a day in UTC and read it back locally
+
+**The question:** #1327, found while measuring #1306 and filed rather than folded in.
+
+`date_iso` is a calendar day — no time, no zone. `termFrequencyByDay` turned it into an instant at
+**UTC midnight**, and every consumer read that instant back through `Calendar(identifier:
+.gregorian)`, which uses the device's zone. West of UTC each 1 January point therefore reported the
+PREVIOUS year to the year-range filter, the totals footnote and the "View N documents" hand-off,
+while the table beside them printed the true day from its own UTC formatter. **793 documents in the
+corpus sit on a 1 January.** East of UTC the mismatch runs the other way: the last day of a selected
+range falls outside the chart's domain.
+
+**The fix carries the day rather than re-deriving it.** Both sides of the junction were
+individually defensible, so pinning either zone would only have moved which consumer was wrong:
+`DayFrequency` now carries `label`, the stored `yyyy-MM-dd`, exactly as `MonthFrequency` already
+carries one, and is identified by it. The year-range filter reads `DayFrequency.year` off that
+label, the on-screen table prints it, and so do the CSV and the VoiceOver chart descriptor — so
+`isoDayFormatter` and `dayFormat` are **deleted**, not re-pinned, and the four consumers of that one
+`Date` can no longer disagree. `date` survives only as a plotting coordinate and is built in the
+device's calendar, mirroring the month axis, because the chart domain and `exportDateDomain` are
+built in the device's calendar.
+
+One user-visible consequence, deliberate: the exported CSV's By-Day rows now read `1944-06-06`
+rather than the locale's `6/6/1944`, which is what the on-screen table has always printed and what
+By Month already exports.
+
+**The tests pin a non-UTC zone deliberately** (`setenv("TZ", …)` + `NSTimeZone.resetSystemTimeZone()`),
+because on a UTC machine this defect is invisible and an ambient-zone test would have passed on the
+bug. Five tests, and each half of the junction has one: the label and the year survive a western
+zone, a 31 December point stays inside its own year's domain in three zones (the eastern failure,
+where the row was counted and not drawn), and the plotting date renders as its own label in three
+zones — the invariant that keeps `date` from drifting back to UTC. A/B against the pre-fix code: the
+west-of-UTC case and the day-vs-month agreement case both fail, and the east-of-UTC case passes,
+which is correct and is why the east case guards the other direction.
+
+**Process note, recorded because it cost time:** the A/B was run before committing, so the
+`git checkout --` that restored the mutant also discarded the fix. Commit first — the rule exists.

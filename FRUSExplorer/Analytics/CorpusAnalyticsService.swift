@@ -109,10 +109,29 @@ struct MonthFrequency: Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 121: initial implementation
+///   1.1 — #1327: carries `label`, the stored calendar day, and is identified by it.
+///         `date` is now ONLY a plotting coordinate. Every consumer that wants to know
+///         which day — or which year — a row belongs to reads the label, so no time zone
+///         is consulted and none can disagree with another.
 struct DayFrequency: Sendable, Identifiable {
+    /// The day, used for Swift Charts date-axis positioning. Built in the device's
+    /// calendar so that it matches the chart domain, which is built the same way.
+    ///
+    /// **Do not read a year or a day back out of this.** It is an instant, and which
+    /// calendar day an instant falls on depends on the zone reading it. Use `label`.
     let date: Date
+    /// Display label in `yyyy-MM-dd` form (e.g. `"1944-06-06"`): the day as `date_iso`
+    /// stores it, carried through verbatim.
+    let label: String
     let count: Int
-    var id: Date { date }
+    var id: String { label }
+
+    /// The calendar year this row belongs to, read off the stored day.
+    ///
+    /// The year-range filter reads this rather than `date` (#1327). A year taken from an instant
+    /// is the year in whichever zone does the reading, which is how 793 corpus documents dated
+    /// 1 January came to be filtered as the previous year's.
+    var year: Int? { Int(label.prefix(4)) }
 }
 
 /// Snapshot of an `AnalyticsView` query, used to hand a term and date window
@@ -659,24 +678,40 @@ actor CorpusAnalyticsService {
 
         guard let (keys, dates) = try await matchedDocsAndDates(term: term, volumeIds: volumeIds) else { return [] }
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(identifier: "UTC")
+        // #1327: counted BY THE STORED DAY, and the plotting instant built afterwards in the
+        // DEVICE's calendar — exactly as the By-Month series above builds its own dates.
+        //
+        // `date_iso` is a calendar day with no time and no zone. This used to turn it into an
+        // instant at UTC midnight, and every consumer then read that instant back through
+        // `Calendar(identifier: .gregorian)`, which uses the current time zone. The two disagreed
+        // across a day boundary: west of UTC every 1 January point reported the PREVIOUS year to
+        // the year-range filter, the totals footnote and the "View N documents" hand-off, while
+        // the table beside them printed the true day from a UTC formatter of its own. Measured,
+        // 793 documents in the corpus sit on a 1 January. East of UTC the same mismatch dropped
+        // the last day of a selected range outside the chart's domain instead.
+        //
+        // Carrying the day as a label leaves nothing for a zone to move: the filter and every
+        // label now read it directly. `date` survives only as a plotting coordinate, and is built
+        // in the device's calendar because the chart domain is built in the device's calendar.
+        let calendar = Calendar(identifier: .gregorian)
 
-        var counts: [Date: Int] = [:]
+        var counts: [String: Int] = [:]
         for key in keys {
             let compositeKey = "\(key.volumeId)/\(key.documentId)"
-            guard let iso = dates[compositeKey],
-                  iso.count == 10,
-                  let date = formatter.date(from: iso)
-            else { continue }
-            counts[date, default: 0] += 1
+            guard let iso = dates[compositeKey], iso.count == 10 else { continue }
+            counts[iso, default: 0] += 1
         }
 
-        let result = counts
-            .map { DayFrequency(date: $0.key, count: $0.value) }
-            .sorted { $0.date < $1.date }
+        let result: [DayFrequency] = counts
+            .sorted { $0.key < $1.key }
+            .compactMap { iso, count in
+                let parts = iso.split(separator: "-")
+                guard parts.count == 3, let year = Int(parts[0]), let month = Int(parts[1]),
+                      let day = Int(parts[2]),
+                      let date = calendar.date(from: DateComponents(year: year, month: month, day: day))
+                else { return nil }
+                return DayFrequency(date: date, label: iso, count: count)
+            }
 
         insertIntoCache(&dayFrequencyCache, key: cacheKey, value: result)
         return result
