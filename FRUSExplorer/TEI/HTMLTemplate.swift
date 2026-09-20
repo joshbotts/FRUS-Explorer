@@ -181,6 +181,16 @@ enum HTMLTemplate {
       line-height: 1.3;
     }
 
+    /* ─── Emphasis ──────────────────────────────────────────────────────────── */
+    /* `<hi rend="strong">` reaches here as <strong> (#1323). Pin the weight: WebKit's UA
+       default is `bolder`, which is RELATIVE, so inside the 600-weight headings above it
+       resolves to 900 — and OH wraps 1,004 whole attachment heads in `strong` (820
+       documents), which would then print visibly heavier than the same head in a volume
+       that does not wrap it. 700 everywhere, inherited inside a heading. */
+    strong { font-weight: 700; }
+    h2.doc-heading strong,
+    h3.attachment-heading strong { font-weight: inherit; }
+
     /* ─── Title page ────────────────────────────────────────────────────────── */
     .title-page {
       text-align: center;

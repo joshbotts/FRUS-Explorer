@@ -2492,11 +2492,25 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
 private extension EmphasisStyle {
     /// Maps the TEI `<hi rend="...">` attribute to an `EmphasisStyle`.
-    /// FRUS uses `"italic"`, `"bold"`, `"smallcaps"`, `"underline"`.
+    ///
+    /// **`strong` is this corpus's bold, and `bold` does not occur in it.** Measured over the 553
+    /// manifest volumes: `strong` 158,100, `bold` 0, `b` 0 — against `italic` 1,744,652,
+    /// `smallcaps` 884,717 and `underline` 16,339. Session 06 wrote this map against generic TEI
+    /// vocabulary, so every bold run in FRUS fell to `.unspecified` and rendered as plain text
+    /// (#1323) — attachment labels, terms-list headwords and 34,298 signatures. The `bold`/`b`
+    /// spellings are kept as aliases: they cost nothing and the corpus could start using them.
+    /// The parser already knew the convention elsewhere — the Sources delegate reads
+    /// `rend="strong"` as a collection heading.
+    ///
+    /// `roman`, `superscript` and `sub` stay unmapped **deliberately**. `roman` needs nothing:
+    /// 4,796 of its 5,194 uses sit inside `<p rend="sectiontitleital">`, whose `rend` this parser
+    /// ignores, so its host is already upright. `superscript` (3,456) and `sub` (381) would each
+    /// need a new `FRUSRenderNode` case across every exhaustive switch and CSS that must not
+    /// collide with the footnote-marker superscript — separate work, not a one-line map entry.
     static func from(rend: String?) -> EmphasisStyle {
         switch rend?.lowercased() {
         case "italic", "i": return .italic
-        case "bold", "b": return .bold
+        case "strong", "bold", "b": return .bold
         case "smallcaps", "sc": return .smallCaps
         case "underline", "u": return .underline
         default: return .unspecified
