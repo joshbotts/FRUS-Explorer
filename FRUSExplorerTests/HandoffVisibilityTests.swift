@@ -143,6 +143,54 @@ struct HandoffVisibilityTests {
         #expect(kept.first?.text == "dismiss()")
     }
 
+    // MARK: - 0. The analytics hand-off narrows the scope it promises (#1306 follow-up)
+
+    /// The emitting half of the scope fix. Corpus Analytics is the one surface that invites a
+    /// reader to compare its own count against Search's — its link literally says "View N
+    /// documents" — and Search's default scope unions the reader's own summaries and notes while
+    /// Analytics runs a bare `frus_documents MATCH`. Both hand-offs must send the two flags OFF.
+    ///
+    /// Scoped to each member's own body rather than to the file, because the file mentions
+    /// `SearchParameters` in a dozen places and a file-wide `contains` would pass on any one of
+    /// them. The receiving half — that `applyParameters` applies what it is sent — is a runtime
+    /// test in `SearchViewTests`, on both platforms.
+    @Test("Both Corpus Analytics hand-offs open Search over document text only")
+    func analyticsHandoffsNarrowTheScope() throws {
+        let source = try Self.source("Analytics/AnalyticsView.swift")
+        for member in ["private func openMatchingDocumentsInSearch(",
+                       "private func openScopedDocumentsInSearch("] {
+            let body = try Self.memberBody(member, in: source)
+            #expect(body.contains("includeSummaries: false"), """
+                \(member) opens Search at its default scope, which reads the reader's own summaries. \
+                The chart's count cannot match the result count it sends them to.
+                """)
+            #expect(body.contains("includeNotes: false"), """
+                \(member) opens Search at its default scope, which reads the reader's own notes.
+                """)
+        }
+    }
+
+    /// The macOS receiving half, read from source rather than run.
+    ///
+    /// `FRUSExplorerTests` is an iOS-only target (`project.yml`: `platform: iOS`), so every
+    /// `#if os(macOS)` body in it — including the `MacSearchViewModelTests` twin added beside this
+    /// — is neither compiled nor executed on the only platform the suite runs on. The macOS view
+    /// model applies the scope through its `scopeNotes`/`scopeSummaries` didSets rather than by
+    /// direct assignment, so one receiver could apply the hand-off's scope and the other not. This
+    /// reads the assignment instead of asserting it, which is weaker and is the coverage available.
+    @Test("The Mac search view model applies the scope it is handed")
+    func macApplyParametersAppliesScope() throws {
+        let source = try Self.source("App/MacSearchViewModel.swift")
+        let body = try Self.memberBody("func applyParameters(", in: source)
+        #expect(body.contains("scopeNotes") && body.contains("params.includeNotes"), """
+            MacSearchViewModel.applyParameters no longer takes its notes scope from the parameters, \
+            so the Corpus Analytics hand-off's narrowed scope would be ignored on macOS.
+            """)
+        #expect(body.contains("scopeSummaries") && body.contains("params.includeSummaries"), """
+            MacSearchViewModel.applyParameters no longer takes its summaries scope from the parameters.
+            """)
+    }
+
     // MARK: - 1. The search hand-off pops the stack (H-4, M-29)
 
     @Test("consumePendingSearch pops the Search tab's stack before applying parameters")

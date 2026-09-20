@@ -137,6 +137,11 @@ struct FeatureInfoItem: Identifiable {
 ///         drop — a document with no stored date at all, some 2,152 front-matter sections that By Year and By
 ///         Decade keep through the volume-start-year fallback — the row had never mentioned. The row now also
 ///         states the range rule’s scale (11,030 documents, 3.5%, plotted at a range’s first day).
+///   1.10 — #1306 follow-up: `analytics.info.phrase.body.v3`, still unshipped, reworded in place. The
+///         "View N documents" link now opens Search with notes and summaries OFF, so the row says the
+///         counts agree on that journey and names the filters that can still part them. The tooltip
+///         beside the link is re-keyed to `analytics.handoff.help.v2` for the same reason — it had
+///         shipped, so it could not be reworded in place.
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -233,6 +238,9 @@ extension FeatureInfoButton where Footer == EmptyView {
     /// for want of a month or a day (every stored date is a full ten characters, so both charts’ length
     /// guards are tautologies). The metric row’s "counted once" is the one claim #1299 named that #1306
     /// did not cover; #1305 settled it from the other side by making Occurrences count mentions.
+    /// The Phrases row was then reworded IN PLACE on `.v3`, still unshipped, once #1306’s follow-up
+    /// made the "View N documents" link open Search with notes and summaries off — the row had
+    /// described a journey the app no longer sends the reader on.
     static var corpusAnalytics: FeatureInfoButton {
         FeatureInfoButton(
             heading: String(localized: "analytics.info.heading", defaultValue: "About these results"),
@@ -250,7 +258,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body.v3",
-                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ: Analytics counts document text only, while Search also reads your own notes and summaries unless you turn them off, and applies whatever filters you have set.")),
+                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason, so with no filter set the two agree.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
                     detail: String(localized: "analytics.info.stemming.body",
