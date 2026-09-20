@@ -113,6 +113,23 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/ToolbarOverflowAccessibilityTests
 ```
 
+**`SearchActionsBarFitTests` (#1307) is iPhone-only and wants two widths.** It measures the Search
+actions bar's frames at five text sizes; at iPad width the row fits either way, so it self-skips
+there. Run it on an iPhone 17 (402 pt) and on an **iPhone SE 3rd generation (375 pt, iOS 27)**,
+which is the narrowest device type iOS 27 supports — create one if the machine has none. The
+suite's own guard is worth knowing: an unrecognised `UICTContentSizeCategory…` name renders at the
+DEFAULT size while every fit assertion passes, so each accessibility case proves its category took
+effect. The tiers are spelled `M`, `L`, `XL`, `XXL`, `XXXL` — `…AccessibilityMedium` is not a name,
+and a launch carrying it measured pixel-identical to L.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime

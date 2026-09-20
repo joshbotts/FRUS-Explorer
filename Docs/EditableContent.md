@@ -3917,6 +3917,16 @@ This query has nothing it can search for: for example, it only excludes words, o
 
 <!-- END SOURCE: search.error.refusedQuery -->
 
+#### The Sort control's Large Content Viewer detail
+
+*The line shown when a reader touches and holds the Search actions bar's Sort control at an accessibility text size (#1307). Sort was the one control in that bar with no Large Content Viewer entry, which matters more now that the bar's glyphs stop growing: the magnified NAME is what replaces the magnified glyph.*
+
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | sortMenu's controlHelp | key: search.sort.help | shared: iOS only -->
+
+Order results by relevance or by document date
+
+<!-- END SOURCE: search.sort.help -->
+
 #### A NEAR that cannot be searched as written
 
 *Shown when a submitted keyword search puts a boolean, a minus sign, a nested group or an unparseable distance inside a `NEAR(…)` — `NEAR(military OR europe, 5)`, `NEAR(military -europe, 5)`, `NEAR(military europe, 3.5)`. Until #1304 the app DEGRADED these: it dropped the NEAR keyword and searched the parentheses as an ordinary boolean group, so the distance was looked for as a word and a minus sign became a corpus-wide exclusion — a plausible count for a search nobody typed. The `%@` is the NEAR as the reader typed it, quoted back so they can see which one. Keep the sentence saying nothing was searched: the reader's next question is whether a partial search ran, and it did not.*

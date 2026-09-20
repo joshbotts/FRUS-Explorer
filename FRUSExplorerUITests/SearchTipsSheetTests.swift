@@ -113,10 +113,10 @@ final class SearchTipsSheetTests: XCTestCase {
     ///
     /// **What AX5 does to the route, measured on iPhone 17 (402 pt) at #1299**, so a later failure here can be read
     /// against it:
-    /// - The actions bar overflows BOTH edges — Filter's frame starts at x = −34.7 and More search actions runs from
-    ///   x = 372.3 to 436.6, its centre off screen. That overflow predates #1299 and is outside it (the owner's scope
-    ///   decision); XCUITest still activates the control through its on-screen part, as a finger can, so it is asserted
-    ///   reachable rather than wholly on screen.
+    /// - The actions bar USED to overflow both edges — Filter's frame started at x = −34.7 and More ran
+    ///   from x = 372.3 to 436.6, its centre off screen. #1307 capped the bar's glyphs, so both now sit
+    ///   inside the window and this scenario asserts containment. `SearchActionsBarFitTests` below measures
+    ///   the bar itself at five text sizes on two widths.
     /// - The More menu becomes a scrolling list of 186–246 pt rows, so Search Tips — the sixth — is not in the element
     ///   tree until the menu is scrolled. A query that does not scroll reports the item missing on a correct build.
     /// - The pre-search link is checked by its own scenario below, because the tab shell's Local Only banner covers it.
@@ -132,8 +132,11 @@ final class SearchTipsSheetTests: XCTestCase {
         let more = app.buttons["More search actions"].firstMatch
         XCTAssertTrue(more.waitForExistence(timeout: 10), "More search actions was not found")
         let window = app.windows.firstMatch.frame
-        XCTAssertTrue(more.isHittable && window.intersects(more.frame),
-                      "More search actions cannot be reached at AX5: frame \(more.frame) in \(window)")
+        // `contains`, not `intersects` (#1307): with the old uncapped glyphs this control ran
+        // from x = 372.3 to 436.6 on a 402 pt screen — more than half of it off screen — and an
+        // intersects test passed anyway, so it could not see the defect it sat beside.
+        XCTAssertTrue(more.isHittable && window.contains(more.frame),
+                      "More search actions is not wholly on screen at AX5: \(more.frame) in \(window)")
         more.tap()
         let item = app.buttons[Self.moreItem].firstMatch
         XCTAssertTrue(scrollMenu(until: item), "The More menu offers no Search Tips item at AX5, even scrolled")
@@ -291,5 +294,184 @@ final class SearchTipsSheetTests: XCTestCase {
             .map(\.label)
             .filter { !$0.isEmpty }
             .joined(separator: " | ")
+    }
+}
+
+// MARK: - SearchActionsBarFitTests (#1307)
+
+/// The Search actions bar stays on screen at every text size, and its glyphs stop growing.
+///
+/// The row — Filter · Examine · Checklist · Sort · More — cannot wrap, scroll or fold, so at
+/// accessibility sizes its `.title3` glyphs pushed it off BOTH edges: an over-wide `HStack` is
+/// centred, and at AX5 on an iPhone 17 (402 pt) Filter's frame started at **x = −34.7** while More
+/// ran to 436.6, its centre off screen. #1307 caps the glyphs at `FRUSTheme.barGlyphMaxScale`
+/// (31 pt, which is `title3` at AX1) and leaves the Large Content Viewer to carry the magnified
+/// name on a long press.
+///
+/// **Frames are read by accessibility identifier**, because iOS 27 reorders the XCUI tree and a
+/// label query can match a covered element (`search.actions.filter` … `.more`).
+///
+/// **The assertion is the bar's own padding, not an arbitrary inset.** When the row fits, the
+/// leading control sits at exactly the 16 pt horizontal padding and the trailing one ends 16 pt
+/// from the right edge. Asserting containment in a window inset by 8 pt would discriminate by
+/// about 2.7 pt at AX3, where the pre-fix frame sits at ~5.3; asserting against the padding
+/// discriminates by ten.
+///
+/// **iPhone-only**, like its neighbour above: at iPad widths the row fits either way, so a green
+/// iPad run is not evidence. Animations are off (`FRUS_UI_TEST_DISABLE_ANIMATIONS=1`) because this
+/// suite measures a screen at rest — see CLAUDE.md on the iOS 27 idle stall.
+///
+/// Version history:
+///   1.0 — 2026-09-20: #1307
+@MainActor
+final class SearchActionsBarFitTests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// Every control of the bar, in the order the row lays them out.
+    private static let identifiers = ["search.actions.filter", "search.actions.examine",
+                                      "search.actions.checklist", "search.actions.sort",
+                                      "search.actions.more"]
+
+    /// Filter's frame width at the device's default text size, measured once per run.
+    ///
+    /// **An invalid category name renders at the default size and says nothing.**
+    /// `UICTContentSizeCategory…` spells its tiers `M`, `L`, `XL`, `XXL`, `XXXL` — measured
+    /// here, `…AccessibilityMedium` and `…AccessibilityExtraLarge` are not names, and a launch
+    /// carrying one came up pixel-identical to L while its test passed. A fit assertion over a
+    /// default-size bar is no evidence about accessibility sizes, so every accessibility case
+    /// proves its own category took effect against this.
+    private static var defaultGlyphWidth: CGFloat = 0
+
+    /// The bar's horizontal padding, which is what a fitting row's outermost frames sit at.
+    private static let barPadding: CGFloat = 16
+
+    override func setUp() async throws {
+        try await super.setUp()
+        continueAfterFailure = false
+    }
+
+    override func tearDown() async throws {
+        if let app { UITestPresentation.dismissAnyPresentation(in: app) }
+        app = nil
+        try await super.tearDown()
+    }
+
+    func testBarFitsAtStandardSize() throws {
+        try assertBarFits(at: nil, named: "L")
+    }
+
+    func testBarFitsAtLargestStandardSize() throws {
+        try assertBarFits(at: "UICTContentSizeCategoryXXXL", named: "XXXL")
+    }
+
+    func testBarFitsAtFirstAccessibilitySize() throws {
+        try assertBarFits(at: "UICTContentSizeCategoryAccessibilityM", named: "AX1")
+    }
+
+    /// AX3 is the first size that clipped on a 402 pt iPhone before the cap.
+    func testBarFitsAtMiddleAccessibilitySize() throws {
+        try assertBarFits(at: "UICTContentSizeCategoryAccessibilityXL", named: "AX3")
+    }
+
+    func testBarFitsAtLargestAccessibilitySize() throws {
+        try assertBarFits(at: "UICTContentSizeCategoryAccessibilityXXXL", named: "AX5")
+    }
+
+    /// The glyphs still grow with the reader's setting up to the cap, and hold there.
+    ///
+    /// Without this a later change could freeze them at their default size and every fit test
+    /// above would still pass — the bar would fit because it had stopped responding to Dynamic
+    /// Type at all, which is the opposite of what #1307 is for.
+    func testGlyphsGrowUpToTheCapAndThenHold() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
+        let atL = try width(of: "search.actions.more", at: nil)
+        let atAX1 = try width(of: "search.actions.more", at: "UICTContentSizeCategoryAccessibilityM")
+        let atAX5 = try width(of: "search.actions.more", at: "UICTContentSizeCategoryAccessibilityXXXL")
+        XCTAssertGreaterThan(atAX1, atL * 1.3,
+                             "the glyphs stopped tracking Dynamic Type: L \(atL), AX1 \(atAX1)")
+        XCTAssertEqual(atAX5, atAX1, accuracy: 2,
+                       "the cap is not holding: AX1 \(atAX1), AX5 \(atAX5)")
+    }
+
+    // MARK: - Helpers
+
+    private static let phoneOnlyReason =
+        "iPhone-only: at iPad width the row fits either way, so a pass there is not evidence"
+
+    private func assertBarFits(at category: String?, named size: String) throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, Self.phoneOnlyReason)
+        if Self.defaultGlyphWidth == 0 {
+            Self.defaultGlyphWidth = try width(of: "search.actions.filter", at: nil)
+        }
+        launch(contentSizeCategory: category)
+
+        let window = app.windows.firstMatch.frame
+        var frames: [(id: String, frame: CGRect)] = []
+        for identifier in Self.identifiers {
+            let element = app.descendants(matching: .any)[identifier].firstMatch
+            XCTAssertTrue(element.waitForExistence(timeout: 10),
+                          "\(identifier) is not in the tree at \(size)")
+            frames.append((identifier, element.frame))
+        }
+        // The measurement record, printed whether or not the assertions hold.
+        print("[#1307] \(size) window \(window.width): "
+              + frames.map { "\($0.id.replacingOccurrences(of: "search.actions.", with: "")) "
+                  + "\(Int($0.frame.minX))–\(Int($0.frame.maxX))" }.joined(separator: ", "))
+
+        for (identifier, frame) in frames {
+            XCTAssertGreaterThanOrEqual(frame.minX, 0,
+                                        "\(identifier) runs off the leading edge at \(size): \(frame)")
+            XCTAssertLessThanOrEqual(frame.maxX, window.maxX,
+                                     "\(identifier) runs off the trailing edge at \(size): \(frame)")
+        }
+        // The outermost controls sit at the bar's own padding when the row fits. A tolerance of 2
+        // absorbs the glyph's side bearing without admitting the pre-fix overflow, which is tens
+        // of points.
+        let leading = try XCTUnwrap(frames.first)
+        let trailing = try XCTUnwrap(frames.last)
+        XCTAssertEqual(leading.frame.minX, Self.barPadding, accuracy: 2,
+                       "the row is wider than the screen at \(size): \(leading.frame)")
+        XCTAssertEqual(trailing.frame.maxX, window.maxX - Self.barPadding, accuracy: 2,
+                       "the row is wider than the screen at \(size): \(trailing.frame)")
+
+        // Order and separation: a squeeze that overlapped two controls, or a reorder, fails here.
+        for (earlier, later) in zip(frames, frames.dropFirst()) {
+            XCTAssertLessThan(earlier.frame.maxX, later.frame.minX,
+                              "\(earlier.id) and \(later.id) overlap at \(size)")
+        }
+
+        // The category really applied. Without this an unrecognised name renders at the
+        // default size and everything above passes while measuring nothing.
+        if let category, category.contains("Accessibility") {
+            let width = try XCTUnwrap(frames.first).frame.width
+            XCTAssertGreaterThan(width, Self.defaultGlyphWidth + 1,
+                                 "\(size) rendered at the default glyph width "
+                                 + "(\(width) vs \(Self.defaultGlyphWidth)): the content-size "
+                                 + "category did not take effect, so this run says nothing")
+        }
+    }
+
+    private func width(of identifier: String, at category: String?) throws -> CGFloat {
+        launch(contentSizeCategory: category)
+        let element = app.descendants(matching: .any)[identifier].firstMatch
+        XCTAssertTrue(element.waitForExistence(timeout: 10), "\(identifier) is not in the tree")
+        return element.frame.width
+    }
+
+    private func launch(contentSizeCategory: String?) {
+        XCUIDevice.shared.orientation = .portrait
+        if let app { UITestPresentation.dismissAnyPresentation(in: app) }
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        // A screen at rest: XCTest's idle counter drifts on iOS 27 and each action then waits its
+        // full 60 s (CLAUDE.md, #1320).
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments(startingOn: .search,
+                                                     contentSizeCategory: contentSizeCategory)
+        app.launch()
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "Could not open the Search tab, so this suite would read another screen")
     }
 }

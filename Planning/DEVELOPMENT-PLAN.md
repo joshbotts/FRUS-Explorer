@@ -17363,3 +17363,47 @@ rules are aligned.
 path needs no `SearchService`, two host source-scans scoped to the `SearchFilterView(` call), plus
 `R1FollowUpFixTests.failedCountClearsState` migrated to `.match(params)`; 56 across the five
 affected suites.
+
+## Session 2026-09-20 — the Search actions bar ran off both screen edges
+
+**The question:** #1307, last of the search lane. Filter · Examine · Checklist · Sort · More is a
+fixed-content `HStack` that cannot wrap, scroll or fold, and its `.title3` glyphs grew without
+limit. An over-wide HStack is CENTRED, which is why it overflowed both sides at once.
+
+**Owner decision: cap the glyphs** (`FRUSTheme.barGlyphMaxScale`, 1.55 → 31 pt, which is `title3`
+at AX1), with the Large Content Viewer carrying the magnified name — **and the 20 pt spacing left
+alone**, which was the other half of the offered choice. This departs from the repo's documented
+idiom for an overflowing row (`ViewThatFits`, ten sites) and the note above `cappedGlyphSize`, which
+scoped it to decorative hero glyphs; both are now widened deliberately rather than by accident. The
+reasons against folding are measured: the More menu is already a scrolling list of 186–246 pt rows
+at AX5, Sort's glyph changes with state so choosing Date order can flip the branch under the
+reader's finger (#1271), and the fold point would differ by device.
+
+**Measured A/B on iPhone 17 (402 pt, iOS 27), identifiers present in both arms so only the cap
+differs:**
+
+| size | before (Filter frame) | after |
+|---|---|---|
+| L | 16–39 ✓ | 16–39 ✓ |
+| XXXL | 16–46 ✓ | 16–46 ✓ |
+| AX1 | 16–52 ✓ | 16–51 ✓ |
+| AX3 | **5–55 ✗** | 16–52 ✓ |
+| AX5 | **−34–29 ✗** | 16–52 ✓ |
+
+Three of six failed before and all six pass after. The AX5 figure reproduces the issue's own
+XCUITest measurement (−34.7) and AX3's reproduces the reviewer's prediction (~5.3).
+
+**The 375 pt SE 3rd generation passes all six too** — the narrowest device type iOS 27 supports.
+From its AX5 frames the capped bar's natural width is **337 pt** (16 + 36 + 20 + 47 + 20 + 42 + 20 +
+44 + 40 + 36 + 16). So on a **320 pt Display Zoom canvas** it still clips nothing — the padding
+absorbs the 17 pt of overflow — but the outer glyphs would sit about 7–8 pt from the edge rather
+than 16. That is arithmetic from measured frames, not a measured run: no 320 pt simulator exists.
+Shrinking the spacing would have bought it back; the owner chose not to.
+
+**The suite found a trap worth keeping.** `UICTContentSizeCategory…` spells its tiers `M`, `L`,
+`XL`, `XXL`, `XXXL`. `…AccessibilityMedium` and `…AccessibilityExtraLarge` are NOT names: a launch
+carrying one renders at the DEFAULT size, and the first pre-fix run passed AX1 and AX3 with frames
+pixel-identical to L. Every accessibility case now proves its own category took effect.
+
+**Also:** `SearchTipsSheetTests`' AX5 guard used `window.intersects(more.frame)` and passed with
+More running from x = 372.3 to 436.6 — more than half off screen. It asserts `contains` now.
