@@ -363,7 +363,7 @@ Click **Filters** to expand the controls:
 | **My Volume Scopes** | Your named volume sets (Section 7.9). Applying one fills the volume picker with its **indexed** members and shows an honest "N of M volumes indexed" count; a scope with nothing indexed warns and applies nothing — it never silently falls through to a whole-corpus search |
 | **By Subject · Detected Topics** | *Experimental.* A category → sub-category picker over the automatically detected volume topics, filling the volume picker with the indexed volumes where the topic is among the volume's most characteristic subjects |
 | **Date Range** | Documents dated within a span (note the interaction with facet years — 7.5) |
-| **My Tags** | Documents you have tagged. The list refreshes live as tags are created, renamed, or deleted anywhere — including syncs from another device |
+| **My Tags** | Documents you have tagged. The list refreshes live as tags are created, renamed, or deleted anywhere — including syncs from another device. Each tag carries a count of how many of the current results hold it, recomputed when a search runs: after a keyword search that is every document the search matched, and after a search by meaning it is how many of the closest matches carry the tag |
 | **Summaries** | *All*, *specific prompt*, or *none* (documents with no generated summary) |
 | **Research Notes** | All documents, or documents with notes only |
 | **Document Type** | Include or exclude editorial notes |

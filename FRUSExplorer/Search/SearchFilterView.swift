@@ -62,7 +62,18 @@ struct SearchFilterView: View {
     ///
     /// Supplied by the host because on macOS `vm` is the filter sheet's own view model and
     /// does not carry the search's keywords — see `SearchViewModel.loadUserTagCounts`.
-    var tagCountParameters: SearchParameters? = nil
+    /// Which set the My Tags counts describe, or `nil` for none (#1310).
+    ///
+    /// Frozen by the host when its search completed. The panel neither derives it nor reads the
+    /// live query: deriving it here is how the counts came to describe a keyword AND of a question
+    /// the reader asked the semantic route.
+    var tagCountScope: UserTagCountScope? = nil
+
+    /// The host's `executedSearchVersion`, so the counts recount when a SEARCH runs (#1310).
+    ///
+    /// Keyed into the task beside the tag count: the Mac's popover stays open across a new search,
+    /// and without this it kept the previous query's numbers.
+    var tagCountVersion: Int = 0
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
 
@@ -555,10 +566,7 @@ struct SearchFilterView: View {
             .userTags,
             title: String(localized: "search.section.usertags", defaultValue: "My Tags"),
             summary: selectionSummary(vm.selectedUserTagIds.count),
-            footer: vm.hasUserTagCounts
-                ? Text(String(localized: "search.usertags.countFooter",
-                              defaultValue: "Counts are documents in your current results carrying that tag."))
-                : Text("")
+            footer: vm.hasUserTagCounts ? Text(countFooterText) : Text("")
         ) {
             ForEach(vm.availableUserTags) { tag in
                 Toggle(
@@ -581,12 +589,18 @@ struct SearchFilterView: View {
         }
         // On demand, when the sheet opens — never eagerly. One SQL pass over the match set,
         // measured at parity with a facet section and flat in tag count.
-        .task(id: vm.availableUserTags.count) {
-            guard let tagCountParameters else { return }
+        .task(id: TagCountKey(tags: vm.availableUserTags.count, version: tagCountVersion)) {
+            guard let tagCountScope else { return }
             await vm.loadUserTagCounts(
-                matching: tagCountParameters, tags: vm.availableUserTags,
+                scope: tagCountScope, tags: vm.availableUserTags,
                 service: appState.searchService, pipeline: appState.indexingPipeline)
         }
+    }
+
+    /// What makes the tag counts recount: the tag list changing, or a search running (#1310).
+    private struct TagCountKey: Equatable {
+        let tags: Int
+        let version: Int
     }
 
     /// The trailing count for one tag, or a placeholder while counting.
@@ -603,10 +617,29 @@ struct SearchFilterView: View {
         }
     }
 
+    /// What the counts describe, worded for the route that produced them (#1310).
+    ///
+    /// The keyword wording stays as it shipped. A meaning search's counts describe the results on
+    /// screen — deliberately NOT "what turning this tag on returns": the model's top hits can
+    /// change between runs as shards arrive, and on iPhone a toggle takes effect at the next
+    /// submit, so the honest claim is about the list the reader is looking at.
+    private var countFooterText: String {
+        if case .resultKeys = tagCountScope {
+            return String(localized: "search.usertags.countFooter.meaning",
+                          defaultValue: "Counts are how many of your closest matches carry that tag.")
+        }
+        return String(localized: "search.usertags.countFooter",
+                      defaultValue: "Counts are documents in your current results carrying that tag.")
+    }
+
     /// The whole fact, for VoiceOver, rather than a name and an unexplained number.
     private func tagAccessibilityLabel(for tag: UserTag) -> String {
         guard vm.hasUserTagCounts else { return tag.name }
         let count = vm.userTagCounts[tag.id.uuidString] ?? 0
+        if case .resultKeys = tagCountScope {
+            return String(localized: "search.usertags.a11y.meaning",
+                          defaultValue: "\(tag.name): \(count) of your closest matches")
+        }
         return String(localized: "search.usertags.a11y",
                       defaultValue: "\(tag.name): \(count) documents in your current results")
     }

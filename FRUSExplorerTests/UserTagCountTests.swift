@@ -78,6 +78,106 @@ struct UserTagCountTests {
 
     private func cleanUp(_ dir: URL) { try? FileManager.default.removeItem(at: dir) }
 
+    // MARK: - #1310: both hosts pass the frozen scope
+
+    /// Both twins hand the panel the SCOPE their search froze, and the version, and neither
+    /// hands it a parameter set.
+    ///
+    /// Scoped to each `SearchFilterView(` call rather than a text window: a window would pass on
+    /// a mention anywhere in the file, and the defect being guarded is precisely that a host
+    /// reached for the live parameters at this call site.
+    @Test("Both hosts pass the frozen tag-count scope, not a parameter set")
+    func hostsPassTheFrozenScope() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        var checked = 0
+        for path in ["FRUSExplorer/Search/SearchView.swift", "FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+            guard let start = source.range(of: "SearchFilterView(") else {
+                Issue.record("no SearchFilterView( call in \(path)")
+                continue
+            }
+            // The call, to its closing paren: enough to hold the arguments and nothing else.
+            let tail = source[start.upperBound...]
+            let call = String(tail.prefix(400))
+            #expect(call.contains("tagCountScope:"), "\(path) does not pass tagCountScope")
+            #expect(call.contains("tagCountVersion:"), "\(path) does not pass tagCountVersion")
+            #expect(!call.contains("tagCountParameters"), """
+                \(path) still passes parameters to the tag counts — the route the panel cannot \
+                know about is exactly what #1310 removed.
+                """)
+            checked += 1
+        }
+        #expect(checked == 2, "scanned \(checked) hosts, expected both")
+    }
+
+    /// The panel recounts when a SEARCH runs, not only when the tag list changes.
+    @Test("The tag-count task is keyed on the executed-search version")
+    func tagCountTaskIsKeyedOnTheVersion() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appending(path: "FRUSExplorer/Search/SearchFilterView.swift"),
+            encoding: .utf8)
+        guard let task = source.range(of: ".task(id: TagCountKey(") else {
+            Issue.record("the tag-count task is no longer keyed on a TagCountKey")
+            return
+        }
+        let call = String(source[task.upperBound...].prefix(120))
+        #expect(call.contains("version: tagCountVersion"), """
+            Without the version the Mac's popover, which stays open across a new search, keeps \
+            the previous query's numbers: \(call)
+            """)
+    }
+
+    // MARK: - #1310: a key set is counted as itself
+
+    @Test("Counting over result keys counts those documents, not everything that matches")
+    func keySetCountsOnlyItsKeys() async throws {
+        let (dir, _, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let tags = [tagA, tagB]
+
+        // Every document in the fixture matches "containment", so the keyword route reports the
+        // whole corpus's tallies. The point of #1310 is that a meaning search's 100 results are
+        // a SUBSET, and counting the match instead described a set that was never on screen.
+        let wholeMatch = try await pipeline.userTagCounts(
+            corpusMatch: "\"containment\"", userContentMatch: nil,
+            filters: SearchSQLFilters(), tagIds: tags)
+        let subset = try await pipeline.userTagCounts(
+            corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(), tagIds: tags,
+            documentKeys: [(volumeId: "vol1", documentId: "d1")])
+        #expect(wholeMatch[tagA] == 3, "fixture changed: got \(wholeMatch)")
+        #expect(subset[tagA] == 1, "got \(subset)")
+        #expect(subset[tagB] == 1, "got \(subset)")
+    }
+
+    @Test("A repeated tag id on one document still counts once through the key path")
+    func repeatedIdCountsOnceThroughKeys() async throws {
+        let (dir, _, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        // d2 carries tag A three times (the COUNT(DISTINCT) case #574 fixed for the match path).
+        let counts = try await pipeline.userTagCounts(
+            corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(),
+            tagIds: [tagA], documentKeys: [(volumeId: "vol1", documentId: "d2")])
+        #expect(counts[tagA] == 1, "got \(counts)")
+    }
+
+    @Test("No keys and unknown keys count nothing, rather than counting everything")
+    func emptyAndUnknownKeysCountNothing() async throws {
+        let (dir, _, pipeline) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let empty = try await pipeline.userTagCounts(
+            corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(),
+            tagIds: [tagA], documentKeys: [])
+        let unknown = try await pipeline.userTagCounts(
+            corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(),
+            tagIds: [tagA], documentKeys: [(volumeId: "nope", documentId: "d9")])
+        #expect(empty.isEmpty, "got \(empty)")
+        #expect(unknown.isEmpty, "got \(unknown)")
+    }
+
+
     private func counts(
         _ pipeline: IndexingPipeline, _ service: SearchService,
         query: String, tags: [String],
@@ -414,10 +514,31 @@ struct R1FollowUpFixTests {
         params.includeSummaries = false
         params.includeNotes = false
 
-        await vm.loadUserTagCounts(matching: params, tags: [tag],
+        await vm.loadUserTagCounts(scope: .match(params), tags: [tag],
                                    service: vm.searchServiceForTesting, pipeline: pipeline)
         #expect(!vm.hasUserTagCounts, "stale numbers beside a failed count would be a lie")
         #expect(vm.userTagCounts.isEmpty)
         #expect(!vm.isCountingUserTags, "a stuck flag would spin forever")
+    }
+
+    // MARK: - #1310: counting over the results a meaning search returned
+
+    @Test("A key-set count needs no SearchService, because it consults no expression")
+    func keySetCountNeedsNoService() async throws {
+        let (dir, pipeline, vm) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let tag = UserTag(name: "stockpiling")
+        vm.availableUserTags = [tag]
+        try await pipeline.updateUserTagIds(volumeId: "vol1", documentId: "d1",
+                                            userTagIds: tag.id.uuidString)
+
+        // `service: nil` is the structural assertion: asking for a match expression is how the
+        // Meaning counts came to describe a keyword AND of the typed question (#1310). If the
+        // guard ever moves back to the top of the loader, this counts nothing.
+        await vm.loadUserTagCounts(
+            scope: .resultKeys([.init(volumeId: "vol1", documentId: "d1")]),
+            tags: [tag], service: nil, pipeline: pipeline)
+        #expect(vm.hasUserTagCounts)
+        #expect(vm.userTagCounts[tag.id.uuidString] == 1, "got \(vm.userTagCounts)")
     }
 }

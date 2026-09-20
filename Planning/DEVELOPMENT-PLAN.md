@@ -17322,3 +17322,44 @@ cannot measure stack depth. `(…NEAR(…)…)` still carries a valid NEAR throu
 **Verified:** SPM parser suite 209 tests; app target 4,994 tests in 626 suites. Copy lives in two
 new EditableContent blocks — `EditableContentKeyTests` failed until they existed, which is the gate
 doing its job.
+
+## Session 2026-09-20 — the My Tags counts described a set that was never on screen
+
+**The question:** #1310, second of the search lane. The counts beside Filters ▸ My Tags come from a
+keyword match rebuilt from the typed text, under a caption reading "documents in your current
+results". In Meaning mode the results come from the semantic route, so the numbers described a
+third set: not the results, not the corpus, and shaped by any `=`, `-` or phrase mark in a question
+the reader wrote for the model rather than for FTS5.
+
+**The fix is one branch, the same one `resultSetFacets` took at #1193.** `userTagCounts` gains a
+`documentKeys:` parameter and materialises `temp.facet_mset` from the keys instead of from a match.
+The counting SQL below is untouched — it reads rowids and does not care how they were chosen — so
+the two routes cannot drift into two counting rules.
+
+**The scope is frozen when a search COMPLETES, and that correction matters.** The analysis proposed
+deriving it from `lastRunWasSemantic` and `hasSearched`; its adversarial review found that **both
+are written before the await**, along with the params snapshot taken at the top of `search()`. A
+panel opened while a search was in flight would have combined the new run's route with the old run's
+results. `userTagCountScope` is therefore stored beside every `executedSearchVersion` bump —
+`.match(params)` on the keyword path, `.resultKeys(results)` on the meaning path — and set to nil
+wherever results are cleared or a run fails, including the view-side clear in `SearchView` and
+`clearAll()`.
+
+**The Mac popover now recounts on a new search**: the panel's task is keyed on
+`TagCountKey(tags:version:)` and the hosts pass `executedSearchVersion`. It stays open across a
+search, and without the version it kept the previous query's numbers.
+
+**What the copy may claim.** The Meaning footer says the counts are "how many of your closest
+matches carry that tag" — deliberately NOT what toggling returns. The model's top hits can change
+between runs as shards arrive, and on iPhone a toggle takes effect only at the next submit. The
+honest claim is about the list on screen.
+
+**Known, and left as it stands:** the route rule here is the frozen scope, while the facets and the
+results header key on the `searchMode` picker. On iOS a mode flip with empty text does not re-run
+the search, so the header and this footer can describe different routes on one screen until those
+rules are aligned.
+
+**Verified:** 15 tests in `UserTagCountTests` (three at the pipeline, one VM case proving the key
+path needs no `SearchService`, two host source-scans scoped to the `SearchFilterView(` call), plus
+`R1FollowUpFixTests.failedCountClearsState` migrated to `.match(params)`; 56 across the five
+affected suites.

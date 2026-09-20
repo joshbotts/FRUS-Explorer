@@ -3154,12 +3154,24 @@ public actor IndexingPipeline {
         userContentMatch: String?,
         filters: SearchSQLFilters,
         tagIds: [String],
-        joinedMaterializationForParity: Bool = false
+        joinedMaterializationForParity: Bool = false,
+        documentKeys: [(volumeId: String, documentId: String)]? = nil
     ) throws -> [String: Int] {
         guard !tagIds.isEmpty else { return [:] }
-        let matchCount = try materializeMatchSet(
-            corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
-            joinedMaterializationForParity: joinedMaterializationForParity)
+        // #1310, the same one branch `resultSetFacets` took at #1193: the counting below reads
+        // `temp.facet_mset`, a table of rowids, and does not care how they were chosen. A meaning
+        // search has no FTS match to materialise, so it supplies its ranked result keys and is
+        // counted by the SAME emitter. Before this, the loader rebuilt a keyword AND from the
+        // typed question and counted tags over it — a third set, neither the results on screen
+        // nor the corpus, under a caption that said "documents in your current results".
+        //
+        // The keys arrive ALREADY FILTERED: the semantic backend intersects its top hits with
+        // `filterKeySet` before they become results, so `filters` is deliberately not applied
+        // again on this path.
+        let matchCount = try documentKeys.map { try materializeKeySet($0) }
+            ?? materializeMatchSet(
+                corpusMatch: corpusMatch, userContentMatch: userContentMatch, filters: filters,
+                joinedMaterializationForParity: joinedMaterializationForParity)
         defer { try? auxExec("DROP TABLE IF EXISTS temp.facet_mset") }
         guard matchCount > 0 else { return [:] }
 

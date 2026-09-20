@@ -1198,6 +1198,31 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
 ///   1.1 — #1299 follow-up: `everyScopeOff`, so every scope off reads as a message rather than "FTS5Error error 5".
 ///         Corrected in place by #1299 round 2: its message named "every search scope", but Filters ▸ Search Scope also
 ///         holds Include front matter, on by default and not read by `readable`, so it names the three toggles instead
+/// Which set the Filters ▸ My Tags counts describe (#1310).
+///
+/// The counts caption says "documents in your current results", and until this existed that was
+/// false in Meaning mode: the loader rebuilt a keyword AND from the typed question and counted
+/// tags over it, so any `=`, `-` or phrase mark took its keyword effect and the numbers described
+/// a third set — neither the results on screen nor the corpus.
+///
+/// **A host must freeze this when a search COMPLETES, never derive it when the panel opens.**
+/// `lastRunWasSemantic` and `hasSearched` are both written before the await, so a panel opened
+/// while a search is in flight would combine the new run's route with the old run's results.
+enum UserTagCountScope: Sendable {
+    /// Count over the FTS match the executed keyword search ran — the parameters that RAN, never
+    /// the live field.
+    case match(SearchParameters)
+    /// Count over these result keys, as the semantic route produces them. They are already
+    /// intersected with the filters by the backend, so the loader applies none.
+    case resultKeys([DocumentKey])
+
+    /// One result's identity, as the counts need it.
+    struct DocumentKey: Sendable, Equatable {
+        let volumeId: String
+        let documentId: String
+    }
+}
+
 enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
     /// The query's parse rendered no expression, so there is nothing to search for.
     case nothingToSearch
