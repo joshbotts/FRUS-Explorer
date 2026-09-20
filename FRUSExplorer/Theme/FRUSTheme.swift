@@ -720,7 +720,15 @@ enum FRUSTheme {
     /// Quieter than every other surface: this one sits directly behind live progress text
     /// in a short band, and a backdrop that makes a progress read harder has failed at
     /// being a backdrop.
-    static let cloudDimIndexingStrip: Double = 0.42
+    ///
+    /// **0.42 was not quiet enough, and the arithmetic says why.** The words it sits under are
+    /// `FRUSTheme.captionSmallFont` at `.tertiary` — the quietest type in the app, around 0.26
+    /// alpha — while a NEAR-depth particle draws at `Tuning.nearOpacity` 1.0, so the loudest word
+    /// rendered at 0.42 against text at 0.26 and won. Photographed on device, `receive` and `give`
+    /// sat on top of a persons/links/documents count. At 0.24 the loudest word is just under the
+    /// quietest text and the far ones (x `Tuning.farOpacity` 0.55) land at 0.13, which is the
+    /// texture this was always described as.
+    static let cloudDimIndexingStrip: Double = 0.24
 
     /// Word opacity behind an empty surface that is waiting — the search pending state.
     ///
@@ -732,6 +740,15 @@ enum FRUSTheme {
 
     /// Words above this normalised weight take the lens accent; the rest take ink.
     static let cloudAccentThreshold: Double = 0.66
+
+    /// How long a cloud takes to fade IN when its vectors arrive, in seconds.
+    ///
+    /// A different event from a lens change, so refusal 17 does not apply: nothing is being
+    /// replaced, a decoration is arriving on a surface that has been drawing without it. The value
+    /// is not new either — it is the figure `PendingCloudBackdrop` has always used inline for
+    /// exactly this, now named so the launch splash can use the same one rather than invent a
+    /// second.
+    static let cloudArrivalDuration: Double = 0.45
 
     /// Crossfade timings, in seconds (hand-off §"Lens cycle").
     static let cloudFadeOutDuration: Double = 0.95
@@ -754,6 +771,21 @@ enum FRUSTheme {
     static let cloudStaggerOut: Double = 0.014
     /// Per-word delay multiplier for incoming words.
     static let cloudStaggerIn: Double = 0.038
+
+    /// The word count the two staggers above were authored for.
+    ///
+    /// **They are per-WORD delays and the word count later doubled.** Both shipped in #532 with a
+    /// twenty-five-word cloud; #551 (*"The cloud fills its frame, instead of clumping in the middle
+    /// of one"*) made a full-bleed surface ask for fifty, and nothing re-tuned them. At fifty the
+    /// incoming tail is 49 x 0.038 = 1.86 s before a 1.15 s settle, so the last word lands 3.01 s
+    /// into a 4.2 s hold, and the outgoing one runs to 1.64 s — which is why a full-screen static
+    /// cloud spends about two frames in five showing two lens lists at once, packed by the same
+    /// spiral into the same box so their head terms land on each other.
+    ///
+    /// This is not a second timing figure: it is the count the existing figures assume, so that
+    /// ``WordCloudBackdropView/staggerDelay(rank:count:perWord:)`` can hold the TOTAL constant and
+    /// return exactly `cloudStaggerIn`/`cloudStaggerOut` at twenty-five words.
+    static let cloudStaggerReferenceWordCount = 25
 
     /// The accent colour for a lens, used by the backdrop's chip and its loudest words.
     ///

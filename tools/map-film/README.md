@@ -1,7 +1,7 @@
 # The semantic-map film — finishing stage
 
 Visual-marketing plan §7 **step 11**, plan-of-record row **F-1**. The capture harness
-(`FRUSExplorerTests/SemanticMapFrameSequenceTests`) renders 553 frames; this turns them into a
+(`FRUSExplorerTests/SemanticMapFrameSequenceTests`) renders 554 frames; this turns them into a
 publishable film. **No re-render** — the frames are the expensive part and they are already correct.
 
 ```bash
@@ -10,18 +10,26 @@ tools/map-film/build_film.sh              # defaults: ~/Desktop/frus-map-film, 1
 
 | | |
 |---|---|
-| in | `frame-0000.png` … `frame-0552.png` (1920×1080), `frames.csv`, `provenance.txt` |
-| out | `map-film.mp4` (1440×1080, 46.08 s, 1.94 MB), `caption-band.png`, `map-subtitles{,-years}.{srt,vtt}` |
+| in | `frame-0000.png` … `frame-0553.png` (1920×1080), `frames.csv`, `provenance.txt` |
+| out | `map-film.mp4` (1440×1080, 46.17 s, 1.93 MB), `caption-band.png`, `map-subtitles{,-years}.{srt,vtt}` |
 
 ## What was measured, and why the crop is what it is
 
-The drawn content occupies **x 418..1501 (1084 px) and y 109..970 (862 px)** of the 1920×1080 frame.
+The drawn content occupies **x 418..1501 (1084 px) and y 58..1021 (964 px)** of the 1920×1080 frame.
 So **836 px — 43.5% of the width — is empty ground**, which is the plan's "~44% dead width", measured
-rather than estimated. The crop takes 1440, reclaiming 480 px and leaving ~178 px of margin a side,
-with the 109 px band above the map carrying the grain sentence.
+rather than estimated. The crop takes 1440, reclaiming 480 px and leaving ~178 px of margin a side.
+
+**The caption band is RESERVED, not borrowed, and that changed here.** It used to be `BAND_H=$Y0` —
+whatever empty sky the map happened to leave above itself — which made a mandatory disclosure's
+survival a property of the clustering. Re-rendering against the 2026-09-09 artifact (171 regions
+where the 2026-08-16 one had 179) moved the content's top edge from y=109 to y=58; the band halved
+and `render_caption.swift` refused, correctly, with *"107 of 198 characters fit a 1440x58 band at
+26.0pt"*. The band is now a constant 110 px and the MAP is fitted into the remaining 970 px,
+centred on the measured content. The published frame is still 1440×1080, and a map too tall for the
+remainder is a refusal rather than a silent clip.
 
 **The box is identical on the first frame and the last**, because out-of-scope documents are
-*ghosted* rather than removed — every frame draws all 314,483 points. `build_film.sh` re-checks that
+*ghosted* rather than removed — every frame draws all 314,571 points. `build_film.sh` re-checks that
 before it encodes, since a harness that stopped drawing the ghosts would make the extent grow through
 the film and one crop would clip the later frames with no error anywhere.
 
@@ -42,10 +50,9 @@ the film follows rather than asserting the old wording.
 
 ## The subtitle tracks, and why there are two
 
-553 frames at 12 fps is **83 ms a frame**. Nothing is readable at that rate and no cue design changes
-that — so the per-frame track (553 cues) is a **scrubbing aid**: pause anywhere and it names the
-volume that just landed. The `--group-by-year` track (154 cues, 0.30 s mean, 1.0 s on 1996's twelve
-volumes) is the one that reads at speed. Both are muxed; the viewer picks. The sentence a viewer is
+554 frames at 12 fps is **83 ms a frame**. Nothing is readable at that rate and no cue design changes
+that — so the per-frame track (554 cues) is a **scrubbing aid**: pause anywhere and it names the
+volume that just landed. The `--group-by-year` track (155 cues) is the one that reads at speed. Both are muxed; the viewer picks. The sentence a viewer is
 meant to *read* is burned into the frame, where it does not move.
 
 **Each cue carries the `volume_id`**, and that is not decoration: for the 19th-century volumes the
@@ -54,9 +61,9 @@ characters** and the part that distinguishes it — the Lincoln assassination co
 character 300, so every truncation loses it. The id is eleven characters, unique, and is the path
 component in `history.state.gov/historicaldocuments/{volumeId}/{documentId}`.
 
-Verified: both tracks were muxed, extracted back out and compared cue for cue — **553/553 and 154/154
-identical**. (`ffprobe` reports `nb_frames` 554 and 155 for them; that is a container-level count, not
-an extra cue.)
+Verified on the 2026-09-20 build: both tracks were muxed, extracted back out and compared cue for
+cue — **554/554 and 155/155 identical**. (`ffprobe` reports `nb_frames` 555 and 156 for them; that is
+a container-level count, not an extra cue.)
 
 ## Reproducible
 

@@ -128,6 +128,69 @@ struct WordCloudDriftRenderTests {
         return (Double(inked) / Double(width * height), image)
     }
 
+    /// The strongest alpha any pixel of a rendered frame reaches, 0...1.
+    ///
+    /// The peak, not the mean: a backdrop fails legibility at its LOUDEST word, and a mean over a
+    /// mostly-empty canvas is dominated by ground.
+    private func peakAlpha(dim: Double) throws -> Double {
+        let view = WordCloudDriftCanvasFrame(snapshot: makeSnapshot(), dim: dim,
+                                             reduceMotion: false,
+                                             date: Date(timeIntervalSinceReferenceDate: 102.5))
+            .frame(width: size.width, height: size.height)
+        return try maximumAlpha(of: view)
+    }
+
+    /// Renders any view off-screen and returns its strongest alpha, 0...1.
+    private func maximumAlpha(of view: some View) throws -> Double {
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 2
+        let image = try #require(renderer.cgImage, "ImageRenderer produced no image at all")
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let context = try #require(CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var peak: UInt8 = 0
+        for index in stride(from: 3, to: pixels.count, by: 4) where pixels[index] > peak {
+            peak = pixels[index]
+        }
+        return Double(peak) / 255
+    }
+
+    // MARK: - Legibility
+
+    /// **The indexing strip must stay under the text it sits behind, and it did not.**
+    ///
+    /// `IndexingCloudStrip`'s own doc says "a backdrop that makes a progress read harder has failed
+    /// at being a backdrop", and the banner's status line is `FRUSTheme.captionSmallFont` at
+    /// `.tertiary` — the quietest type in the app. A NEAR-depth particle draws at
+    /// `Tuning.nearOpacity` 1.0, so the surface dim IS the peak, and at 0.42 the loudest word beat
+    /// the text. Photographed on an iPhone during a real index, `receive` and `give` sat on top of
+    /// a persons/links/documents count.
+    ///
+    /// The ceiling is MEASURED rather than asserted: `.tertiary` is a system style whose alpha is
+    /// not ours to hard-code, so it is resolved through the same renderer in the same pass. And the
+    /// old value is checked too — a legibility test that cannot fail on the value that caused the
+    /// defect is not a test.
+    @Test("The indexing strip's loudest word stays quieter than the caption text over it")
+    func stripCloudStaysUnderItsCaption() throws {
+        let tertiary = try maximumAlpha(of: Rectangle().fill(.tertiary)
+            .frame(width: 40, height: 20))
+        #expect(tertiary > 0.05 && tertiary < 0.6,
+                "precondition: `.tertiary` resolved to \(tertiary), which is not a plausible alpha")
+
+        let shipped = try peakAlpha(dim: FRUSTheme.cloudDimIndexingStrip)
+        #expect(shipped < tertiary,
+                "the strip's loudest word measured \(shipped) against caption text at \(tertiary)")
+
+        // The value that caused the defect must fail this, or the assertion proves nothing.
+        let previous = try peakAlpha(dim: 0.42)
+        #expect(previous >= tertiary,
+                "0.42 measured \(previous) against \(tertiary) — if this passes, the ceiling moved and the test stopped discriminating")
+    }
+
     // MARK: - Tests
 
     @Test("The canvas draws words — a symbol-key mismatch would render nothing at all")

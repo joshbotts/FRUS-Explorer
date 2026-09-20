@@ -48,6 +48,11 @@ import SwiftData
 ///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
 ///         unchanged but for the now-deterministic subseries tiebreak, which is
 ///         documented at `OnboardingScopeResolver.subseries`.
+///   4.1 — the backdrop moved to the particle canvas and to the two-lens first-impression set.
+///         It was the last surface on the static `Text` renderer, which gets no per-axis
+///         expansion (measured on iPad: the field pooled into 83% of the width by 23% of the
+///         height) and crossfades by staggering fifty views in and out, so two lens lists
+///         overprinted for the first 1.64 s of every 4.2 s hold.
 ///   4.0 — O-4: rebuilt around the word-cloud backdrop per the design hand-off's
 ///         4a/4b/4c. The three steps now float in one docked glass panel over a
 ///         full-bleed `WordCloudBackdropView`; `StepDot` became page dots and
@@ -123,6 +128,26 @@ struct OnboardingView: View {
                 WordCloudBackdropView(
                     scope: backdropScope,
                     dim: backdropDim,
+                    // THE PARTICLE FIELD, and this was the last surface still on the static `Text`
+                    // renderer. The opt-in's stated reason was blast radius — "the splash and the
+                    // onboarding dock are first-run surfaces whose composition has already been
+                    // reviewed on device" — and M-4 re-opened the splash on 2026-09-01, so the
+                    // argument now protects only this one view from a treatment its sibling has.
+                    //
+                    // It costs three things at once. The static path gets NO per-axis expansion, so
+                    // on iPad the field pooled into a 694 x 275 pt band of an 834 x 1210 pt canvas
+                    // — 83% of the width, 23% of the height, with ~450 pt of empty sky above it,
+                    // which is exactly the "wide-and-short field floating in a tall frame" that
+                    // `WordCloudDriftField.expansion` exists to answer. It crossfades by
+                    // transitioning fifty `Text` views in and out with per-rank delays, so two lens
+                    // lists — packed by the same deterministic spiral into the same box, head terms
+                    // landing on each other — were both substantially on screen for the first
+                    // 1.64 s of every 4.2 s hold. And the chip finishes naming the incoming lens
+                    // around 1.03 s, while the outgoing one is still the dominant layer.
+                    //
+                    // The drift canvas has none of that: its crossfade is complementary
+                    // (`1 - progress` and `progress`, summing to exactly one), saturates in 1.15 s,
+                    // and carries no stagger at all.
                     // Keep words out from under the dock — measured, not estimated.
                     //
                     // This was a hardcoded height guess, which O-5 caught at an
@@ -130,7 +155,15 @@ struct OnboardingView: View {
                     // guess does not, and words were being placed where the dock had since
                     // expanded to. There is no feedback loop to fear here — the dock's
                     // height depends on its text, never on the backdrop.
-                    exclusionZones: [dockExclusionZone(in: proxy.size)]
+                    //
+                    // It matters more now that the words MOVE: `WordCloudLayout.place` honours a
+                    // zone as a placement rejection and nothing consults it afterwards, so the
+                    // live half is `WordCloudDriftField.push` — the path M-4's bleed re-clamp fix
+                    // exists for, which until now only the splash exercised.
+                    exclusionZones: [dockExclusionZone(in: proxy.size)],
+                    drift: true,
+                    // The same set the splash uses; this flows straight out of it.
+                    lensSet: WordCloudBackdropView.firstImpressionLenses
                 )
                 .ignoresSafeArea()
 

@@ -33,6 +33,11 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — O-3b: initial implementation
+///   1.1 — declares itself a BAND rather than leaving `bandHeight` to guess. On iPad
+///         `IndexingBannerView` mounts `IndexingContextCard`, which pushes the banner past 160 pt,
+///         so the strip silently took field treatment — bleed and up to fifty words — behind four
+///         lines of prose, with words clipped at the frame edge. See
+///         ``WordCloudBackdropView/Composition``.
 struct IndexingCloudStrip: ViewModifier {
 
     /// The scope currently landing.
@@ -58,6 +63,10 @@ struct IndexingCloudStrip: ViewModifier {
                             scope: scope,
                             dim: FRUSTheme.cloudDimIndexingStrip,
                             showsChip: false,
+                            // This surface knows what it is. Left to `bandHeight` the answer is
+                            // right on iPhone and wrong on iPad, where the context card grows the
+                            // banner past the threshold.
+                            composition: .band,
                             drift: true
                         )
                         .allowsHitTesting(false)

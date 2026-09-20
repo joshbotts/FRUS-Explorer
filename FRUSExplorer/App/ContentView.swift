@@ -138,6 +138,13 @@ enum AppRootRouter {
 ///
 /// Version history:
 ///   1.0 — O-3: initial implementation
+///   1.1 — the once-and-latched resolve is now CORRECT rather than merely cheap. It was always
+///         asked before `BundledCloudVectors.prepareCore()` could have finished — the root scene's
+///         `.task` suspends on `bootSearchInfrastructureOnce()` first — and the arbiter's
+///         top-level vector guard turned that into a permanent `.none`, so no splash had ever been
+///         seen on any launch. The guard moved to the branch it belongs to; see
+///         `CloudSurfaceArbiter.resolve`. Nothing here changed, which is the point: the decision
+///         is a rule's to make, and the rule was the thing that was wrong.
 struct ContentViewWithSplash: View {
 
     @Environment(AppState.self) private var appState
@@ -161,6 +168,12 @@ struct ContentViewWithSplash: View {
     }
 
     /// Asks the arbiter once, after the first frame, and honours the reason's own dismissal.
+    ///
+    /// **Once is right, and it is why the arbiter may not gate a splash on the word-cloud vectors.**
+    /// This runs before they can possibly be resident, so any rule that required them could only
+    /// ever answer "no" here — and the answer is kept. A late splash would be worse than none:
+    /// `ContentView` is already on screen underneath, so raising one a second in would fade a
+    /// launch screen over a running app.
     private func resolveSplash() async {
         guard !hasResolvedOnce else { return }
         hasResolvedOnce = true

@@ -17762,3 +17762,79 @@ the only record of why the hand-stamp must remain. The post-import call site, wh
 **One deliberate frozen stamp survives untouched**: `OrphanedTagRepair` sets a `UserTag`'s
 `lastModified` to a deterministic `placeholder.createdAt` rather than `Date.now`. It is an INSERT,
 and `ModelModificationStamper.stamp` skips inserts by design — pinned by `insertsAreNotStamped`.
+
+## Session 2026-09-20 — The launch splash had never rendered, and four other clouds were composed by accident
+
+An adversarial visual review of the four word-cloud surfaces, from three owner screenshots plus a
+fresh-install capture on iPad Pro 11-inch (M5) / iOS 27.0. Seven changes, and one of them is the
+reason the other six were invisible.
+
+**The splash had never appeared on any launch.** `CloudSurfaceArbiter.resolve` carried
+`guard inputs.isCoreReady else { return .none }` above every branch.
+`ContentViewWithSplash.resolveSplash()` asks the arbiter **once**, latched, from a `.task` that
+necessarily runs before `BundledCloudVectors.prepareCore()` can have finished — the root scene's
+`.task` suspends on `bootSearchInfrastructureOnce()` before it reaches the decode — so the splash
+branches could only ever answer no, and the answer was kept. **44 frames over a cold and a warm
+launch, zero splash frames.** Every splash test passed throughout, because
+`CloudSurfaceArbiterTests`' fixture hard-codes `isCoreReady: true` — the defect class the
+visual-marketing plan's §10 already catalogues. The guard now gates the indexing backdrop only,
+which is where it belongs: **(c) IS a cloud and (d) is not.** `splashVerdictIsIndependentOfTheVectors`
+is the regression test, and it asserts a different SHAPE — not "this input yields a splash", which
+was always true, but "the splash verdict does not depend on that input".
+
+**Nothing observed the vectors arriving.** `BundledCloudVectors.isCoreReady` is static state on a
+plain `@MainActor enum`, so every surface that waits on it acquired its cloud only when some
+unrelated change happened to re-render its host. `AppState.areCloudVectorsReady` is the observable
+mirror; the arbiter and `PendingCloudBackdrop` read it. `prepareCore()` also gained an in-flight
+task, so a second window's `.task` awaits the first decode instead of starting another.
+
+**Onboarding was the last surface on the static renderer**, and the opt-in's stated reason — don't
+re-open first-run surfaces already reviewed on device — had expired when M-4 re-opened the splash on
+2026-09-01. The static path gets no per-axis expansion: measured on iPad the field pooled into 83%
+of the width by **23% of the height**; on the drift canvas it fills **100% x 57%**. It also
+crossfades by staggering fifty `Text` views in and out, so two lens lists — packed by the same
+spiral into the same box, head terms landing on each other — were both substantially on screen for
+the first 1.64 s of every 4.2 s hold.
+
+**The stagger was a per-word constant and the word count had doubled under it.** Both figures
+shipped in #532 for twenty-five words; #551 took a full-bleed surface to fifty and nothing re-tuned
+them. `staggerDelay` holds a budget instead: the authored value exactly at twenty-five, half of it
+at fifty.
+
+**The iPad indexing banner had crossed a threshold nobody decided.** `IndexingBannerView` mounts
+`IndexingContextCard` only at regular width, and that card takes the banner past `bandHeight`, so
+the strip silently took field treatment — bleed and up to fifty words — behind four lines of prose.
+`WordCloudBackdropView.Composition` lets a host say what it is. Two more legibility fixes ride with
+it: the card's `Color.secondary.opacity(0.08)` became a material (the cloud read straight through a
+volume's full title), and `cloudDimIndexingStrip` went 0.42 → 0.24, which is **measured** rather
+than chosen — `stripCloudStaysUnderItsCaption` resolves `.tertiary` through the same renderer and
+checks the old value fails the same ceiling.
+
+**One lens in four says nothing about this corpus.** `actions` is *say, take, give, see, receive,
+follow, think, believe, get, seem* — the top of any English corpus. `lensSet` makes lens membership
+a per-surface decision beside `lensSeed`'s starting point: first-impression surfaces show concepts
+and topics, ambient ones add sentiment, and the payload keeps all four.
+
+**iOS lost its searching indicator and macOS never did.** `PendingCloudBackdrop` takes its content
+to opacity 0 once the cloud is up; `SearchSheet.firstSearchPendingView` says outright that the Mac's
+sort bar keeps saying "Searching…". iOS now carries a label outside the modifier, mode-specific,
+because a meaning search explicitly is not looking for the words the reader typed — which is where
+the modifier's own "nothing else on screen to misread them against" defence is weakest.
+
+**The map film was re-rendered against the current artifact** (2026-09-09: 314,571 documents, 171
+regions, against the film's 2026-08-16 314,483 / 179). 554 frames, 46.17 s, 1.93 MB. The re-render
+found a defect in the finishing stage: `BAND_H=$Y0` made the caption band the map's own top margin,
+so a mandatory disclosure's survival was a property of the clustering. The new layout moved the
+content's top edge from y=109 to y=58, the band halved, and `render_caption.swift` refused —
+correctly. The band is now a reserved constant and the map is fitted into what remains.
+
+**The launch screen's cloud plate is generated and NOT wired, deliberately.**
+`FRUSExplorerTests/LaunchArtworkTests` packs it through the app's own `WordCloudLayout` from
+`cloud-vectors-core.json`, per idiom and per appearance, with its geometry pinned by tests that
+caught a hole 66 plate points too narrow for an iPhone SE. The storyboard image view was built and
+**does not render**: the view lays out full-bleed, draws `LaunchAppTile` normally, and the asset
+compiles into `Assets.car` — but `LaunchCloud` resolves to nothing, including in the known-good tile
+view. Template versus original intent, vector preservation, PDF versus PNG, idiom versus universal,
+1400 pt versus 200 pt, and a mismatched `<resources>` size were each eliminated by a
+build-and-capture cycle. Shipping an asset nobody can account for is worse than shipping none, so
+the wiring is reverted and the account is in the suite's header.

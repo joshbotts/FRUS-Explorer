@@ -60,7 +60,11 @@ struct IndexingContextCard: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        // A MATERIAL, not an 8% tint. This card is mounted only inside the indexing banner, whose
+        // background is the drifting word cloud, and at 0.08 the cloud read straight through four
+        // lines of prose — the volume's full title crossed by `war`, `respect` and `hope`. The
+        // card is a surface over something else, which is what a material is for.
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - Sections

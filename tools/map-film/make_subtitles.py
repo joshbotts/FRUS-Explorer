@@ -6,7 +6,7 @@ subtitle track's" fields — a frame index, the volume that lands on it, its pub
 running totals. This turns those rows into SubRip and WebVTT.
 
 WHAT THE TRACK IS FOR, because the arithmetic decides it and the answer is not "reading".
-    553 frames at 12 fps is 83 ms a frame. Nothing is readable at that rate, and no cue design
+    554 frames at 12 fps is 83 ms a frame. Nothing is readable at that rate, and no cue design
     changes that — it is a property of the film's pace, not of the text. So the per-frame track is a
     SCRUBBING AID: pause anywhere and the cue names the volume that just landed, exactly. It is the
     film's provenance made addressable, and the sentence a viewer is meant to READ is burned into

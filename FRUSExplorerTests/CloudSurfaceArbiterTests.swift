@@ -120,17 +120,49 @@ struct CloudSurfaceArbiterTests {
         }
     }
 
-    @Test("No vectors means no surface, whatever else is true")
-    func unloadedVectorsSuppressEverything() {
-        // The core file decodes after the first frame. Until then there is nothing to draw,
-        // and a placeholder would be worse than nothing.
-        for (work, onboarded, importing) in [(true, true, false), (false, false, false), (false, true, true)] {
+    @Test("No vectors suppresses the indexing backdrop — which is ALL the backdrop is")
+    func unloadedVectorsSuppressTheIndexingBackdrop() {
+        // (c) is nothing but the word field, so with no vectors there is nothing to raise. The
+        // verdict is `.none` and NOT a fall-through to a splash: O-0-1's precedence survives the
+        // guard's move into this branch.
+        for (onboarded, importing) in [(true, false), (false, false), (true, true), (false, true)] {
             var inputs = quiet
             inputs.isCoreReady = false
-            inputs.hasPendingCorpusWork = work
+            inputs.hasPendingCorpusWork = true
             inputs.hasCompletedOnboarding = onboarded
             inputs.isCloudKitImporting = importing
             #expect(CloudSurfaceArbiter.resolve(inputs) == .none)
+        }
+    }
+
+    /// **The regression test for the defect that made the splash unreachable for its whole life.**
+    ///
+    /// `guard inputs.isCoreReady else { return .none }` used to sit above every branch.
+    /// `ContentViewWithSplash.resolveSplash()` asks this question ONCE, latched, from a `.task`
+    /// that necessarily runs before `BundledCloudVectors.prepareCore()` can have finished — the
+    /// root scene's `.task` suspends on `bootSearchInfrastructureOnce()` before it reaches the
+    /// decode. So the only answer the splash branches could ever give was no. Measured on a fresh
+    /// install of iPad Pro 11-inch (M5) / iOS 27.0: 44 frames across a cold and a warm launch,
+    /// zero splash frames.
+    ///
+    /// Every splash test in this suite passed throughout, because `quiet` hard-codes
+    /// `isCoreReady: true`. So the fix needs an assertion of a different SHAPE — not "this input
+    /// set yields a splash", which was always true, but "the splash verdict does not depend on
+    /// that input at all". Deleting the guard's move makes this fail and nothing else.
+    @Test("A splash verdict never depends on the vectors, because the splash is not just a cloud")
+    func splashVerdictIsIndependentOfTheVectors() {
+        for onboarded in [true, false] {
+            for importing in [true, false] {
+                var loaded = quiet
+                loaded.hasPendingCorpusWork = false
+                loaded.hasCompletedOnboarding = onboarded
+                loaded.isCloudKitImporting = importing
+                var unloaded = loaded
+                unloaded.isCoreReady = false
+                #expect(CloudSurfaceArbiter.resolve(loaded)
+                        == CloudSurfaceArbiter.resolve(unloaded),
+                        "isCoreReady moved a verdict with no pending corpus work")
+            }
         }
     }
 
@@ -157,6 +189,12 @@ struct CloudSurfaceArbiterTests {
                             // enum, so "both" is unrepresentable. Assert the weaker, real
                             // property: pending work always yields the backdrop.
                             if a && !e && b { #expect(surface == .indexingBackdrop) }
+                            // Pending work with no vectors is `.none`, never a splash: the
+                            // vector guard gates (c) and must not open a door to (d).
+                            if !a && !e && b { #expect(surface == .none) }
+                            // And a fresh install with nothing queued is a splash whether or
+                            // not the vectors have landed — the whole of this change.
+                            if !e && !b && !c { #expect(surface == .splash(.freshInstall)) }
                         }
                     }
                 }

@@ -77,18 +77,43 @@ enum CloudSurfaceArbiter {
     /// 1. **UI test mode wins over everything.** A splash fading in over `ContentView`
     ///    would race every existing UI test's first element lookup — the same bypass
     ///    `ContentView` already applies.
-    /// 2. **No vectors, no cloud.** The core file is decoded after the first frame; until
-    ///    then there is nothing to draw and a placeholder would be worse than nothing.
-    /// 3. **(c) beats (d).** Pending download or index work means the indexing backdrop owns
+    /// 2. **(c) beats (d).** Pending download or index work means the indexing backdrop owns
     ///    the screen and no splash appears. This is the precedence rule from O-0-1, and it
     ///    is why the two surfaces cannot both claim the screen: they are branches of one
     ///    `switch`, not two views each testing their own condition.
+    /// 3. **No vectors, no cloud — but that gates (c) ONLY.**
     /// 4. Then the (d) occasions, fresh install first.
     /// 5. Otherwise nothing — which is every ordinary warm start.
+    ///
+    /// ## Why the vector guard moved, and why the splash had never been seen
+    ///
+    /// `guard inputs.isCoreReady else { return .none }` used to sit above everything, and it made
+    /// the splash **unreachable**. `ContentViewWithSplash.resolveSplash()` asks this question once,
+    /// latched, from its own `.task`; `isCoreReady` turns true only inside the app's ROOT `.task`,
+    /// behind `await bootSearchInfrastructureOnce()`. The root task therefore suspends before it
+    /// reaches the decode, the child task runs the whole of `resolveSplash()` against a `false`, and
+    /// the answer — `.none` — is kept forever. Measured on a fresh install of iPad Pro 11-inch
+    /// (M5) / iOS 27.0: **44 frames over a cold and a warm launch, zero splash frames.** The
+    /// sequence is launch screen -> onboarding.
+    ///
+    /// `CloudSurfaceArbiterTests.freshInstallSplash` passed throughout, because its fixture hard-codes
+    /// `isCoreReady: true`. The rule was right; the question was asked at a moment when the rule
+    /// could only say no. That is the defect class the visual-marketing plan's §10 already
+    /// catalogues for `relaunchMidDownloadPrefersIndexing` — asserting the arbiter's value rather
+    /// than what renders.
+    ///
+    /// The guard belongs to (c) alone because **(c) IS a cloud and (d) is not.** The indexing
+    /// backdrop's whole content is the word field, so with no vectors there is nothing to raise.
+    /// The splash is a composition — background, app tile, wordmark, caption, shimmer — that the
+    /// cloud joins; `WordCloudBackdropView` already renders nothing until the vectors land, by its
+    /// own contract, so a splash raised early is exactly the launch screen's composition, which is
+    /// what `LaunchSplashView`'s own doc says it exists to continue.
     static func resolve(_ inputs: Inputs) -> CloudSurface {
         guard !inputs.isUITestMode else { return .none }
-        guard inputs.isCoreReady else { return .none }
-        if inputs.hasPendingCorpusWork { return .indexingBackdrop }
+        // (c) first, and it is the only branch the vectors gate: with none resident there is
+        // nothing for an all-cloud surface to draw, and `.none` here does NOT fall through to a
+        // splash — the precedence from O-0-1 survives the move.
+        if inputs.hasPendingCorpusWork { return inputs.isCoreReady ? .indexingBackdrop : .none }
         if !inputs.hasCompletedOnboarding { return .splash(.freshInstall) }
         if inputs.isCloudKitImporting { return .splash(.cloudKitImport) }
         return .none
@@ -97,7 +122,13 @@ enum CloudSurfaceArbiter {
     /// Reads the live app state.
     static func resolve(appState: AppState) -> CloudSurface {
         resolve(Inputs(
-            isCoreReady: BundledCloudVectors.isCoreReady,
+            // `AppState`'s mirror, NOT `BundledCloudVectors.isCoreReady`. The store is a plain
+            // `@MainActor enum` with static state, so nothing observes it: a caller evaluating this
+            // inside a `body` — `IndexingBannerView` and `IndexingQueueBannerView` both do — was
+            // never re-run when the vectors landed, and the strip's cloud appeared only if some
+            // unrelated change happened to re-render the host. Reading the observable mirror makes
+            // arrival a real dependency at every call site at once.
+            isCoreReady: appState.areCloudVectorsReady,
             // The QUEUE, not the volume. `currentIndexingProgress` goes nil between
             // volumes, so this used to blink false once per volume and take the cloud
             // down with it — the strip appeared "for a second or two" and vanished,

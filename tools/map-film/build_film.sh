@@ -3,19 +3,19 @@
 # Finish the semantic-map film: crop the dead width, burn the grain sentence into the reclaimed
 # margin, and mux the subtitle tracks. (Visual-marketing plan §7 step 11 / plan-of-record F-1.)
 #
-# NO RE-RENDER. It consumes the 553 PNGs the capture harness already wrote; the frames are the
+# NO RE-RENDER. It consumes the PNGs the capture harness already wrote; the frames are the
 # expensive part and they are correct. This stage is assembly.
 #
 # THE GEOMETRY IS MEASURED, NOT ASSUMED, and that is the point of the preflight below. Measured on
 # the shipped 1920x1080 frames the drawn content occupies x 418..1501 (1084 px) and y 109..970
 # (862 px) — so 836 px, 43.5% of the width, is empty ground, which is the "~44% dead width" the plan
-# names. Cropping to 1440 removes 480 of it and leaves ~178 px of margin a side, plus the 109 px band
+# names. Cropping to 1440 removes 480 of it and leaves ~178 px of margin a side, plus a reserved band
 # above the map that the grain sentence goes into.
 #
 # TWO INVARIANTS ARE CHECKED BEFORE ANYTHING IS ENCODED, because both fail silently otherwise:
 #
 #   1. THE BOUNDING BOX MUST BE THE SAME ON THE FIRST FRAME AS ON THE LAST. It is, today, because
-#      out-of-scope documents are GHOSTED rather than removed, so every frame draws all 314,483
+#      out-of-scope documents are GHOSTED rather than removed, so every frame draws all 314,571
 #      points and the extent never moves. If a future harness stopped drawing the ghosts, the box
 #      would grow through the film and a single crop would clip the later frames — with no error.
 #   2. THE CROP MUST NOT CLIP THE CONTENT. A width chosen for composition can be narrower than the
@@ -106,8 +106,30 @@ if (( OFFSET > X0 || OFFSET + WIDTH <= X1 )); then
   echo "refusing: a centred ${WIDTH}px crop at x=${OFFSET} would clip content spanning ${X0}..${X1}" >&2
   exit 1
 fi
-BAND_H=$Y0
-echo "   crop ${WIDTH}x${FH}+${OFFSET}+0, reclaiming $(( FW - WIDTH )) px; caption band ${WIDTH}x${BAND_H}"
+# Invariant 3: THE CAPTION BAND IS RESERVED, NOT BORROWED.
+#
+# This was `BAND_H=$Y0` — the map's own top margin — which makes a MANDATORY disclosure's survival
+# a property of the clustering. Re-rendering against the 2026-09-09 artifact (171 regions where the
+# 2026-08-16 one had 179) moved the drawn content's top edge from y=109 to y=58; the band halved and
+# `render_caption.swift` refused with "107 of 198 characters fit a 1440x58 band at 26.0pt". It
+# refused CORRECTLY — a half-printed disclosure is the one failure that matters — but the film could
+# not be built at all, and a future layout leaving 40 px would make a legible caption impossible for
+# a reason no reader could see. The plan's own rule is that caveats travel in the pixels; that rule
+# cannot be hostage to how much empty sky a UMAP projection happens to leave.
+#
+# So the band is a CONSTANT and the map is fitted into what remains. The published frame stays
+# 1440x1080, the vertical crop is centred on the drawn content, and a map too tall for the remainder
+# is a refusal rather than a silent clip.
+BAND_H=110
+MAP_H=$(( FH - BAND_H ))
+if (( MAP_H < CONTENT_H )); then
+  echo "refusing: a ${BAND_H}px caption band leaves ${MAP_H}px for content ${CONTENT_H}px tall" >&2
+  exit 1
+fi
+Y_OFFSET=$(( Y0 - (MAP_H - CONTENT_H) / 2 ))
+(( Y_OFFSET < 0 )) && Y_OFFSET=0
+(( Y_OFFSET > FH - MAP_H )) && Y_OFFSET=$(( FH - MAP_H ))
+echo "   crop ${WIDTH}x${MAP_H}+${OFFSET}+${Y_OFFSET}, reclaiming $(( FW - WIDTH )) px; caption band ${WIDTH}x${BAND_H} (reserved)"
 
 echo "== caption =="
 # The sentence comes from the harness's own sidecar, never a literal here: if the harness rewords
@@ -125,7 +147,7 @@ python3 "$HERE/make_subtitles.py" --fps "$FPS" --group-by-year
 echo "== encode =="
 ffmpeg -hide_banner -v warning -y \
   -framerate "$FPS" -i frame-%04d.png -i caption-band.png \
-  -filter_complex "[0:v]crop=${WIDTH}:${FH}:${OFFSET}:0[c];[c][1:v]overlay=0:0,format=yuv420p" \
+  -filter_complex "[0:v]crop=${WIDTH}:${MAP_H}:${OFFSET}:${Y_OFFSET},pad=${WIDTH}:${FH}:0:${BAND_H}:color=0x0F1217[c];[c][1:v]overlay=0:0,format=yuv420p" \
   -c:v libx264 -crf "$CRF" -preset slow -movflags +faststart map-film-silent.mp4
 
 echo "== mux the tracks =="

@@ -46,6 +46,16 @@ enum BundledCloudVectors {
     private static var volumes: CloudVectorsFile?
     private static var volumesLoadStarted = false
 
+    /// The in-flight core decode, so concurrent callers await ONE of them.
+    ///
+    /// The doc below says `prepareCore()` is "safe to call from every scene", and it was — in the
+    /// sense that it could not corrupt anything. It was not free: `guard core == nil` is false for
+    /// every caller that arrives while a decode is running, so a second window's `.task` started a
+    /// second detached decode of the same 1.4 MB file. `prepareVolumes` already guards this with
+    /// `volumesLoadStarted`; a stored task does the same thing and additionally lets a late caller
+    /// *await* the result instead of racing past it, which is what the splash decision needs.
+    private static var coreLoad: Task<CloudVectorsFile?, Never>?
+
     /// `true` once the core file is resident. Views may render a backdrop from this point.
     static var isCoreReady: Bool { core != nil }
 
@@ -55,8 +65,15 @@ enum BundledCloudVectors {
     ///
     /// Call from a `.task`, never from a view body or an initialiser.
     static func prepareCore() async {
-        guard core == nil else { return }
-        core = await decode(resource: "cloud-vectors-core")
+        if core != nil { return }
+        if let inFlight = coreLoad {
+            core = await inFlight.value
+            return
+        }
+        let load = Task { await decode(resource: "cloud-vectors-core") }
+        coreLoad = load
+        core = await load.value
+        coreLoad = nil
     }
 
     /// Decodes the volumes file off the main actor, once.
@@ -180,6 +197,10 @@ enum BundledCloudVectors {
     #if DEBUG
     /// Test seam: injects decoded files without touching the bundle.
     static func injectForTesting(core: CloudVectorsFile?, volumes: CloudVectorsFile?) {
+        // The in-flight decode is cleared too. Without it an injected `nil` leaves a task whose
+        // value a later `prepareCore()` would adopt, so the seam would not actually reset the type.
+        self.coreLoad?.cancel()
+        self.coreLoad = nil
         self.core = core
         self.volumes = volumes
         self.volumesLoadStarted = volumes != nil

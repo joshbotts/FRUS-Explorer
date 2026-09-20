@@ -1595,6 +1595,9 @@ struct FRUSExplorerApp: App {
                     // the launch this backdrop exists to decorate measurably worse. Until
                     // it resolves, `WordCloudBackdropView` renders nothing.
                     await BundledCloudVectors.prepareCore()
+                    // Publish arrival. `isCoreReady` is static state nothing observes, so without
+                    // this line the surfaces that wait on it are re-rendered only by accident.
+                    appState.areCloudVectorsReady = BundledCloudVectors.isCoreReady
                     // Same schedule, same reason: the keyness reference is ~1.2 MB and nothing on
                     // the launch path needs it. Without this call every keyness read returns
                     // `.unavailable(.noArtifact)` — a failure indistinguishable from a missing
