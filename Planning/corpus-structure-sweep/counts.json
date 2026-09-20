@@ -1,0 +1,30 @@
+{
+  "candidatesByRule" : {
+    "R1-rank" : 8,
+    "R1b-mistyped-container" : 1,
+    "R2-day-in-day" : 5,
+    "R3-session-in-session" : 9,
+    "R4-chapter-in-historical-document" : 4,
+    "R5-apparatus" : 3,
+    "R6-id-level" : 25,
+    "R7-expelled" : 6,
+    "R8-document-in-editorial-note" : 1
+  },
+  "confirmed" : 5,
+  "corpusCommit" : "550a8c5c5",
+  "divsScanned" : 339389,
+  "duplicateDocumentNumbers" : 0,
+  "duplicateXmlIds" : 0,
+  "filesScanned" : 744,
+  "findings" : 23,
+  "findingsByAdjudication" : {
+    "BASE-RATE" : 9,
+    "INTRA-VOLUME-CONVENTION" : 7,
+    "NO-TOC-UNADJUDICATED" : 5,
+    "TOC-CONTRADICTS" : 2
+  },
+  "generated" : "2026-09-20",
+  "pleaseVerify" : 18,
+  "volumesAffected" : 18,
+  "volumesWithMachineReadableContents" : 473
+}

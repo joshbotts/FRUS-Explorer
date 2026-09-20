@@ -880,6 +880,39 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
 
+        // MARK: - CorpusStructureSweepGenerator
+
+        /// Sweeps the local FRUS corpus for STRUCTURAL encoding defects — a `</div>` in the wrong
+        /// place — and writes a report the Office of the Historian can act on (#1309). Byte-scans
+        /// every file's div tree for the offsets a correction has to name, cross-checks that scan
+        /// against an element tree, adjudicates each candidate against the volume's OWN printed
+        /// table of contents, and simulates every asserted repair before it ships. Entirely
+        /// offline, deterministic, and read-only on the corpus; touches no app file and no bundled
+        /// resource, so it needs no `xcodegen` and no index-version bump.
+        .target(
+            name: "CorpusStructureSweepGeneratorCore",
+            dependencies: [.target(name: "GeneratorKit")],
+            path: "CorpusStructureSweepGeneratorCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Thin entry point — calls StructureSweepRunner.run() and exits.
+        .executableTarget(
+            name: "CorpusStructureSweepGenerator",
+            dependencies: [.target(name: "CorpusStructureSweepGeneratorCore")],
+            path: "CorpusStructureSweepGenerator",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
+        /// Fixture tests for the sweep: the scanner's offsets, each structural rule and the
+        /// exclusions that keep it precise, the contents adjudicator, and the repair simulator.
+        .testTarget(
+            name: "CorpusStructureSweepGeneratorTests",
+            dependencies: [.target(name: "CorpusStructureSweepGeneratorCore")],
+            path: "CorpusStructureSweepGeneratorTests",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+
         // MARK: - CrossRefValidationGenerator
 
         /// Validates every `<ref target>` across the local FRUS corpus (issue #240): a byte-scan

@@ -17407,3 +17407,64 @@ pixel-identical to L. Every accessibility case now proves its own category took 
 
 **Also:** `SearchTipsSheetTests`' AX5 guard used `window.intersects(more.frame)` and passed with
 More running from x = 372.3 to 436.6 — more than half off screen. It asserts `contains` now.
+
+## Session 2026-09-20 — the series-wide TEI structure sweep, and what it can honestly claim
+
+**The question:** #1309's owner decision was "defer action until a series-wide sweep can be
+completed, then prepare a comprehensive report for HistoryAtState". So the deliverable is a sweep
+and a report, not an app workaround.
+
+**The measurement came first**, across six detection dimensions with an adversarial verifier each.
+Its central result decides the whole design: **the obvious detector does not work.** #1309's own
+evidence line — that the absorbed div and its parent "close together" — holds for **16,757 of
+16,813** structural parent/child-suffix pairs corpus-wide, because it is the shape of every
+well-formed last child. The second obvious detector is worse: a displaced tag does **not** carry
+stale indentation, since the corpus is pretty-printed to the structure it asserts. Malta's ch8/ch9
+closes ladder 24 → 20 → 16 → 12 spaces perfectly.
+
+So every rule is a **level test** — an independent statement that a div belongs beside its parent:
+the volume's own printed contents, its own `xml:id` grammar, or a corpus base rate.
+
+**The defect is a DISPLACED tag, never a missing one.** Every file is well-formed and every
+`</div>` count balances, which is why no validator, schema or ODD has ever caught this, and why
+every correction the report states is a *move* with the tag count unchanged.
+
+**Measured at corpus `550a8c5c5`: 23 fix sites in 18 volumes**, 5 confirmed and 18 offered as
+questions, over 744 files and 339,389 divs.
+
+**Three things the tool decides by testing rather than by reasoning:**
+1. **The cascade.** `frus1945Malta` produces six symptoms — a session in a session, four days in
+   one day, three chapters in one chapter. The tool applies each candidate move to a scratch copy
+   and keeps the one that takes the whole volume to zero violations: **one move, line 94240 →
+   71605**. That corrects #1309's own text, which says the file is "short one `</div>` at each of
+   three chapter boundaries".
+2. **Every asserted repair.** Nothing ships as `confirmed` unless the edit has been applied in
+   memory, the file re-parsed and the rule re-run silent. A wrong correction is worse than a missed
+   defect, because an editor who trusted us would apply it.
+3. **The report's own numbers**, including its one clean negative (0 duplicate `xml:id`, 0 duplicate
+   document `@n`), which this run measures rather than inheriting from the analysis. A generated
+   report may not assert what its own run did not check.
+
+**The exclusions are the product.** Without them the naive "no div may have a same-type ancestor"
+rule fires 937 times at 97.7% noise — and that is precisely the rule an outsider would send. Each
+exclusion has a fixture: `subchapter`-in-`subchapter` (915 legitimate pairs), `compilation`-in-
+`section`, `section[@subtype="appendix"]` holding chapters (36% → 100% precision), a nested
+`historical-document` that is not an editorial note holding a document.
+
+**The parity check earned itself twice in one session.** The byte scan is cross-checked against a
+real parse on every file: it caught an attribute reader matching `type=` inside `subtype=` and `n=`
+inside `frus:doc-dateTime-min=` on **554 of 744 files**, and it is what excludes the XHTML
+video-player `<div>`s the four PubDip volumes embed.
+
+**One volume is reported as a RETYPE, not a move.** `frus1868p1`'s root div is typed `chapter`
+while its own `xml:id` says `comp1` and it holds ten chapters. The nesting is correct and the live
+site renders it correctly, so reporting its ten children as misplaced would send an editor to a
+location where nothing is wrong.
+
+**Still owed, and deliberately out of this PR:** the pointer/identity and transcription-residue
+classes the measurement also found (the `frus1981-88v16` doubled `)` is one instance of a 21-strong
+class across 13 volumes, not a v16 problem). Those are a different audience inside OH and belong in
+their own report. **Posting to HistoryAtState is the owner's action**, and the measurement found
+their channel: a GitHub issue on `HistoryAtState/frus`, one per defect class, Markdown body with the
+worst rows inline and the CSV attached — never a PR, which their own maintainers have said they
+cannot accept for volume XML.
