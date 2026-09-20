@@ -262,7 +262,7 @@ struct TripPacketModelTests {
     func channelsMergeUnderOneKey() {
         let seeding = TripPacketModel.RefSeeding(
             volumeId: "v9", documentId: "d9", citation: "FRUS 1950 I, Document 9",
-            footnoteNumber: 2, rawText: "Not printed. (Lot 62 D 1, CF 1)", inherited: false)
+            footnoteLabel: "2", rawText: "Not printed. (Lot 62 D 1, CF 1)", inherited: false)
         let model = TripPacketModel.build(
             groups: [group("lot|62D1", category: .lotFile, repository: nil, naId: "123",
                            count: 3, lotAsPrinted: "62 D 1")],
@@ -284,7 +284,7 @@ struct TripPacketModelTests {
     func pointedAtOnlyMintsTarget() {
         let seeding = TripPacketModel.RefSeeding(
             volumeId: "v9", documentId: "d9", citation: "FRUS 1950 I, Document 9",
-            footnoteNumber: 1, rawText: "Truman Library, PSF, not printed.", inherited: false)
+            footnoteLabel: "1", rawText: "Truman Library, PSF, not printed.", inherited: false)
         let model = TripPacketModel.build(
             groups: [], documentYears: [], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
             researchQuestion: nil, facts: { _ in nil },

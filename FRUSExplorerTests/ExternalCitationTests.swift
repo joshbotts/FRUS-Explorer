@@ -185,6 +185,193 @@ struct ExternalCitationTests {
         }
     }
 
+    // MARK: - #1322: the label the volume printed
+
+    /// A document shaped like a real post-1945 one: the source note is printed as footnote 1
+    /// INSIDE `<head>`, so the harvest's ordinals and the printed numbers differ by one from the
+    /// start — and then differ by more, because an empty note is skipped.
+    ///
+    /// Notes: head `n="1"` (source, skipped) · `n="2"` · `n="3"` · `n="4"` blank (skipped) ·
+    /// `n="5"` · `n="6"` citing a lot. The citing note is at ORDINAL 3 and prints **6**.
+    private func labelledVolumeXML() -> String {
+        """
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+          <div type="document" xml:id="d1" n="1">
+            <head>A memorandum<note n="1" type="source" xml:id="d1fn1">Source: Lot 99 Z 9.</note></head>
+            <p>Body.<note n="2" xml:id="d1fn2">A plain note.</note>\
+        <note n="3" xml:id="d1fn3">Another plain note.</note>\
+        <note n="4" xml:id="d1fn4"> </note>\
+        <note n="5" xml:id="d1fn5">A third plain note.</note>\
+        <note n="6" xml:id="d1fn6">Not printed. (Department of State, Lot 63 D 351, CF 1)</note></p>
+          </div>
+        </body></text></TEI>
+        """
+    }
+
+    @Test("The stored citation carries the label the volume printed, not its ordinal (#1322)")
+    func storesThePrintedLabel() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-label-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let pipeline = try await index(labelledVolumeXML(), in: dir)
+
+        let citations = try await pipeline.externalCitations(
+            volumeId: "frus1952-54v01", documentId: "d1")
+        let citation = try #require(citations.first)
+        #expect(citations.count == 1)
+        #expect(citation.noteOrdinal == 3, """
+            The harvest skips the head source note and the blank note, so the citing note is the \
+            fourth it keeps. Got ordinal \(citation.noteOrdinal).
+            """)
+        #expect(citation.noteLabel == "6", """
+            Expected the printed label "6"; got \(citation.noteLabel ?? "nil"). `noteOrdinal + 1` \
+            would give "4" and `+ 2` "5" — the reason this column exists.
+            """)
+    }
+
+    /// One fixture per label shape, because a fixture that violated two rules would test neither.
+    @Test("A printed label is stored as printed, trimmed, and never invented (#1322)",
+          arguments: [("*", "*"), (" 7", "7"), ("", nil), (nil, nil)] as [(String?, String?)])
+    func labelShapes(printed: String?, expected: String?) async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-shape-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let attribute = printed.map { " n=\"\($0)\"" } ?? ""
+        let xml = """
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+          <div type="document" xml:id="d1" n="1">
+            <note type="source">Source: Lot 99 Z 9.</note>
+            <head>A memorandum</head>
+            <p>Body.<note\(attribute) xml:id="d1fn1">Not printed. (Department of State, Lot 63 D 351, CF 1)</note></p>
+          </div>
+        </body></text></TEI>
+        """
+        let pipeline = try await index(xml, in: dir)
+        let citation = try #require(try await pipeline.externalCitations(
+            volumeId: "frus1952-54v01", documentId: "d1").first)
+        #expect(citation.noteLabel == expected, """
+            n=\(printed.map { "\"\($0)\"" } ?? "absent") stored as \
+            \(citation.noteLabel.map { "\"\($0)\"" } ?? "nil"), expected \
+            \(expected.map { "\"\($0)\"" } ?? "nil"). A raw store keeps " 7" and "", and a \
+            synthesised one invents a digit where the volume printed none.
+            """)
+    }
+
+    @Test("The stored label is the one the reader draws (#1322)")
+    func storedLabelMatchesTheReader() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-parity-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let xml = labelledVolumeXML()
+        let pipeline = try await index(xml, in: dir)
+        let stored = try #require(try await pipeline.externalCitations(
+            volumeId: "frus1952-54v01", documentId: "d1").first).noteLabel
+
+        // The reader's own path: real parser, real converter, the marker's displayLabel.
+        let volumeURL = dir.appendingPathComponent("volumes/frus1952-54v01.xml")
+        let ast = try #require(try await FRUSDocumentParser().parse(volumeURL: volumeURL).first)
+        var converter = ASTToRenderNodeConverter()
+        let model = converter.convert(ast)
+        var labels: [String?] = []
+        func walk(_ nodes: [FRUSRenderNode]) {
+            for node in nodes {
+                if case .footnoteBody(_, let type, _, _, let displayLabel, _) = node,
+                   type != .source {
+                    labels.append(displayLabel)
+                }
+                if case .paragraph(let c) = node { walk(c) }
+            }
+        }
+        walk(model.bodyNodes); walk(model.footnotes)
+        #expect(labels.contains(stored), """
+            The packet stored \(stored ?? "nil") while the reader shows \(labels). The two \
+            normalise `@n` through one function for exactly this reason.
+            """)
+    }
+
+    @Test("The exported packet prints the volume's own footnote number (#1322)")
+    func exportedPacketPrintsThePrintedLabel() async throws {
+        // End to end through the REAL emitter: pipeline -> TripPacketDataSource -> builder ->
+        // exporter text. A mirrored stub would have kept passing while the shipped path printed
+        // the ordinal.
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-packet-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let pipeline = try await index(labelledVolumeXML(), in: dir)
+
+        let dataSource = await TripPacketDataSource(pipeline: pipeline, manifestMap: [:])
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1952-54v01", "d1")], researchQuestion: nil, dataSource: dataSource)
+        let text = await TripPacketExporter(model: model, projectName: "Test").export()
+
+        #expect(text.contains(", footnote 6"), """
+            The packet does not cite the printed number. Text was:
+            \(text.prefix(1200))
+            """)
+        #expect(!text.contains(", footnote 4"), """
+            The packet printed the ordinal + 1 — the defect #1322 is about.
+            """)
+    }
+
+    @Test("A database written before v53 gains the column and still stores rows (#1322)")
+    func legacyTableGainsTheLabelColumn() async throws {
+        // The v40 defect class: a column added to the CREATE but not ALTERed makes every insert
+        // throw, and because a volume's rows are DELETED before the insert, the table empties
+        // while the build stays green. This is the guard.
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("extcit-migrate-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        try Data(labelledVolumeXML().utf8)
+            .write(to: volumes.appendingPathComponent("frus1952-54v01.xml"))
+        let dbURL = dir.appendingPathComponent("legacy.sqlite")
+
+        // The 13-column table exactly as it shipped before this change.
+        var legacy: OpaquePointer?
+        #expect(sqlite3_open(dbURL.path, &legacy) == SQLITE_OK)
+        #expect(sqlite3_exec(legacy, """
+            CREATE TABLE external_citations (
+                volume_id TEXT NOT NULL, document_id TEXT NOT NULL,
+                note_ordinal INTEGER NOT NULL, citation_index INTEGER NOT NULL,
+                anchor TEXT NOT NULL, repository TEXT, collection TEXT, lot_file TEXT,
+                lot_file_norm TEXT, file_id TEXT, inherited INTEGER NOT NULL DEFAULT 0,
+                raw_text TEXT NOT NULL, decimal_class TEXT,
+                PRIMARY KEY (volume_id, document_id, note_ordinal, citation_index))
+            """, nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(legacy)
+
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                            volumesDirectory: volumes, concurrencyLimit: 1)
+        try await pipeline.indexVolume("frus1952-54v01")
+
+        var db: OpaquePointer?
+        #expect(sqlite3_open(dbURL.path, &db) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        var columns: [String] = []
+        var stmt: OpaquePointer?
+        if sqlite3_prepare_v2(db, "PRAGMA table_info(external_citations)", -1, &stmt, nil) == SQLITE_OK {
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let name = sqlite3_column_text(stmt, 1) { columns.append(String(cString: name)) }
+            }
+        }
+        sqlite3_finalize(stmt)
+        #expect(columns.contains("note_label"), """
+            The legacy table did not gain note_label: \(columns). Without the ALTER every insert \
+            names a missing column, throws, and leaves the table EMPTY after the delete.
+            """)
+
+        let citations = try await pipeline.externalCitations(
+            volumeId: "frus1952-54v01", documentId: "d1")
+        #expect(citations.count == 1, "the migrated table stored nothing")
+        #expect(citations.first?.noteLabel == "6")
+        #expect(IndexingPipeline.currentDateIndexVersion >= 53, """
+            A new parse output needs its own index version, or no installed index re-parses.
+            """)
+    }
+
     // MARK: - Fixtures
 
     /// A volume whose one document carries a source note and the given body footnotes.

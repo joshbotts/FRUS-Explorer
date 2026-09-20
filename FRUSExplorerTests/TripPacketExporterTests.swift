@@ -132,11 +132,11 @@ struct TripPacketExporterTests {
                  repository: "Department of State", lotAsPrinted: "64 D 199",
                  seedings: [
                     .init(volumeId: "frus1948v02", documentId: "d40",
-                          citation: "FRUS 1948 II, Document 40", footnoteNumber: 3,
+                          citation: "FRUS 1948 II, Document 40", footnoteLabel: "3",
                           rawText: "Not printed. (Department of State, Lot 64 D 199, CF 1)",
                           inherited: false),
                     .init(volumeId: "frus1948v02", documentId: "d41",
-                          citation: "FRUS 1948 II, Document 41", footnoteNumber: 2,
+                          citation: "FRUS 1948 II, Document 41", footnoteLabel: "2",
                           rawText: "Ibid., CF 2, not printed.",
                           inherited: true),
                  ]),
@@ -145,7 +145,7 @@ struct TripPacketExporterTests {
                  repository: "Department of State", lotAsPrinted: "99 Z 999",
                  seedings: [
                     .init(volumeId: "frus1948v02", documentId: "d42",
-                          citation: "FRUS 1948 II, Document 42", footnoteNumber: 5,
+                          citation: "FRUS 1948 II, Document 42", footnoteLabel: "5",
                           rawText: "Memorandum of conversation, in Department of State, "
                               + "Lot 99 Z 999, Box 4; not printed.",
                           inherited: false),
@@ -275,6 +275,33 @@ struct TripPacketExporterTests {
             The inherited row must say the unit came from the previous note — a reader \
             checking the printed page will not find these words in footnote 2.
             """)
+    }
+
+    /// A footnote the volume never numbered says so, and a symbol label survives verbatim.
+    ///
+    /// `footnoteLabel` is nil in two situations a reader cannot tell apart — the volume printed
+    /// no `@n`, or the row was harvested before index v53 — so the line must be true of both and
+    /// must not invent a digit (#1322). 11,125 notes corpus-wide print a symbol rather than a
+    /// number, and the packet quotes what the page shows.
+    @Test("A footnote with no printed number claims none, and a symbol prints as printed")
+    func unnumberedAndSymbolFootnotes() {
+        let unnumbered = TripPacketModel.RefSeeding(
+            volumeId: "frus1948v02", documentId: "d43",
+            citation: "FRUS 1948 II, Document 43", footnoteLabel: nil,
+            rawText: "Lot 99 Z 999, Box 5; not printed.", inherited: false)
+        let symbol = TripPacketModel.RefSeeding(
+            volumeId: "frus1948v02", documentId: "d44",
+            citation: "FRUS 1948 II, Document 44", footnoteLabel: "*",
+            rawText: "Lot 99 Z 999, Box 6; not printed.", inherited: false)
+
+        let unnumberedLine = TripPacketExporter.footnoteLine(for: unnumbered)
+        #expect(unnumberedLine == "FRUS 1948 II, Document 43, footnote (no printed number recorded)",
+                "got \(unnumberedLine)")
+        #expect(!unnumberedLine.contains(where: \.isNumber) || unnumberedLine.contains("1948"), """
+            A nil label must not become a digit: \(unnumberedLine)
+            """)
+        #expect(TripPacketExporter.footnoteLine(for: symbol)
+                == "FRUS 1948 II, Document 44, footnote *")
     }
 
     /// A seeding list past 8 rows discloses its exact remainder — the packet's truncation

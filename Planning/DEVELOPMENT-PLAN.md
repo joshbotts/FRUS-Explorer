@@ -17190,3 +17190,48 @@ macOS one). `FrontMatterPersonsView`'s doc comment carried the same figure and s
 The dated records in this file and in `Planning/Completed/` are left alone — they were true when
 written. The 89.3% person-crosswalk figure is NOT swept: measured 92.16% today against 88.96% after
 this fix, but the denominator is the live device index and four of its five sites are dated records.
+
+## Session 2026-09-19 — the trip packet cited a footnote number the page does not print
+
+**The question:** #1322, last of the TEI lane. `TripPacketBuilder` printed `noteOrdinal + 1` under a
+comment saying "readers count from one". Two different numbering systems were being treated as one.
+
+**Why no arithmetic can work.** `note_ordinal` is a reading POSITION among the notes
+`collectBodyFootnotes` keeps, and that walk deliberately drops the document's own provenance notes —
+including the source note, which post-1945 volumes print as footnote 1. So the packet was reliably
+one low there, and arbitrarily wrong elsewhere. Measured over the corpus: `ordinal + 1` equals the
+printed label for **92,275 of 469,188** body notes; 386 volumes number chapter-continuously or
+restart inside an attachment; **11,125** notes print a symbol rather than a digit; 55 print nothing.
+A pull slip naming the wrong footnote sends a reader to the wrong page.
+
+**The fix stores what the page shows.** A nullable `note_label` column, harvested in the SAME walk
+over the SAME parse as the ordinal, so the two cannot drift. The alternative — re-reading `@n` from
+the AST at packet-build time — was rejected for a reason worth keeping: `DocumentASTCache` is a
+24-document in-memory LRU filled only by the reader, so it would mean re-parsing volume XML on every
+editor revision, and it would re-derive the ordinal→note mapping over whatever XML is on disk NOW
+while the ordinal was written by an earlier parse. When OH corrects a volume in place — #1324 is
+exactly that — the two drift and the packet prints a plausible wrong number with no error.
+
+**One rule, two readers.** #985's normalisation moved into
+`ASTToRenderNodeConverter.printedLabel(from:)`, called by the converter and by the harvest, because
+`n=" 1"` and `n=""` both occur and a second copy of the rule is a second answer. A test drives the
+real parser and the real converter over one fixture and asserts the stored label is the one the
+reader draws.
+
+**`currentDateIndexVersion` 52 → 53**, with the additive `ALTER` beside `decimal_class`'s — the v40
+defect class, where a column added to the CREATE but not ALTERed makes every insert throw and the
+delete-then-insert leaves the table EMPTY while the build stays green. `decimal_class` never got a
+migration test; `note_label` has one, which creates the legacy 13-column table verbatim and checks
+`PRAGMA table_info` after indexing.
+
+**Two things the wording must not claim.** NULL means either that the volume printed no number or
+that the row predates v53, so both surfaces say "footnote (no printed number recorded)" rather than
+"unnumbered footnote". And the label is NOT unique within a document — 6,912 documents repeat one,
+because numbering restarts inside attachments — so the manuals and the agentic guide describe it as
+what the page prints, never as something that identifies a note.
+
+**Verified:** 75 tests across `ExternalCitationTests`, `TripPacketBuilderTests`,
+`TripPacketExporterTests` and `TripPacketModelTests`, including an END-TO-END case that runs the real
+pipeline through `TripPacketDataSource` → `TripPacketBuilder` → `TripPacketExporter` and asserts the
+exported text contains ", footnote 6" and not ", footnote 4" — a mirrored stub would have kept
+passing while the shipped path printed the ordinal.

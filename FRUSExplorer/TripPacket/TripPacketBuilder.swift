@@ -212,9 +212,11 @@ enum TripPacketBuilder {
                     documentId: document.documentId,
                     citation: dataSource.citation(volumeId: document.volumeId,
                                                   documentId: document.documentId),
-                    // The stored ordinal counts body footnotes from zero; readers count
-                    // from one, and the printed marker is what they will look for.
-                    footnoteNumber: citation.noteOrdinal + 1,
+                    // The label the volume printed, stored beside the ordinal at harvest
+                    // (#1322). Never `noteOrdinal + 1`: the ordinal skips the document's own
+                    // source note, so that arithmetic was reliably one low in post-1945
+                    // documents and arbitrarily wrong elsewhere.
+                    footnoteLabel: citation.noteLabel,
                     rawText: citation.rawText,
                     inherited: citation.inherited))
             }

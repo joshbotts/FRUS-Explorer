@@ -837,7 +837,20 @@ public actor IndexingPipeline {
     ///   so any device that re-indexed has already emptied these lists and shows "No Persons
     ///   Listed". No `currentPersonRollupVersion` bump — the fix only ADDS `persons` rows, and the
     ///   rollup's members-versus-persons drift check rebuilds on the first launch that sees them.
-    public static let currentDateIndexVersion: Int = 52
+    /// - v52→53 — #1322: `external_citations.note_label`, the number the VOLUME printed for the
+    ///   citing footnote. The table stored only `note_ordinal`, a reading position among the notes
+    ///   `collectBodyFootnotes` keeps — and that walk deliberately drops the document's own source
+    ///   note, which post-1945 volumes print as note 1. A trip packet rebuilt the printed number as
+    ///   `note_ordinal + 1`, which is reliably one low in those volumes and arbitrarily wrong
+    ///   elsewhere: measured over the corpus, the arithmetic matches for 92,275 of 469,188 body
+    ///   notes, 386 volumes number chapter-continuously or restart inside attachments, 11,125 notes
+    ///   carry a symbol rather than a digit and 55 carry nothing at all. A pull slip naming the
+    ///   wrong footnote sends a reader to the wrong page, so the label is now harvested beside the
+    ///   ordinal, in the SAME walk over the SAME parse, and normalised through the rule the reader
+    ///   draws (`ASTToRenderNodeConverter.printedLabel(from:)`). Additive `ALTER` beside the
+    ///   `decimal_class` one, for the same v40 reason. NULL means either that the volume printed no
+    ///   number or that the row predates this version; both surfaces word it so neither is claimed.
+    public static let currentDateIndexVersion: Int = 53
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -4343,11 +4356,18 @@ public actor IndexingPipeline {
             if !astDoc.isFrontMatter {
                 footnoteScanner.beginDocument()
                 ibidWalker.beginDocument()
-                for (ordinal, note) in Self.collectBodyFootnoteTexts(from: astDoc.nodes).enumerated() {
+                for (ordinal, footnote) in Self.collectBodyFootnotes(from: astDoc.nodes)
+                    .enumerated() {
+                    // `ordinal` is a reading POSITION among the notes this walk keeps; `label` is
+                    // what the volume printed. Every citation in the note carries both, because no
+                    // arithmetic converts one into the other (#1322).
+                    let note = footnote.text
+                    let noteLabel = footnote.label
                     var position = 0
                     for citation in footnoteScanner.scan(note: note) {
                         externalCitationRows.append(Self.externalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
+                            noteLabel: noteLabel,
                             citationIndex: position, citation: citation))
                         position += 1
                     }
@@ -4365,6 +4385,7 @@ public actor IndexingPipeline {
                         && (classSchedule?.composes(candidate.classKey) ?? false) {
                         externalCitationRows.append(ExternalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
+                            noteLabel: noteLabel,
                             citationIndex: position,
                             anchor: "centralFileClass",
                             repository: "Department of State",
@@ -4383,6 +4404,7 @@ public actor IndexingPipeline {
                         else { continue }
                         externalCitationRows.append(ExternalCitationRow(
                             volumeId: volumeId, documentId: did, noteOrdinal: ordinal,
+                            noteLabel: noteLabel,
                             citationIndex: position,
                             anchor: "centralFileClass",
                             repository: "Department of State",
@@ -4545,8 +4567,8 @@ public actor IndexingPipeline {
     /// flow with one lookup. Only the two anchors #784 admits reach here; anything else is a
     /// programming error rather than a data condition, and stores nothing.
     nonisolated private static func externalCitationRow(
-        volumeId: String, documentId: String, noteOrdinal: Int, citationIndex: Int,
-        citation: FootnoteArchivalCitation
+        volumeId: String, documentId: String, noteOrdinal: Int, noteLabel: String?,
+        citationIndex: Int, citation: FootnoteArchivalCitation
     ) -> ExternalCitationRow {
         var repository: String?
         var collection: String?
@@ -4568,7 +4590,7 @@ public actor IndexingPipeline {
         }
         return ExternalCitationRow(
             volumeId: volumeId, documentId: documentId,
-            noteOrdinal: noteOrdinal, citationIndex: citationIndex,
+            noteOrdinal: noteOrdinal, noteLabel: noteLabel, citationIndex: citationIndex,
             anchor: citation.anchor.rawValue,
             repository: repository, collection: collection,
             lotFile: lotFile,
@@ -5027,33 +5049,58 @@ public actor IndexingPipeline {
     ///    the two sides.
     /// 2. A note nested inside another note is never captured separately — the outer note's
     ///    `plainText` already contains it, and capturing both would count one citation twice.
-    nonisolated static func collectBodyFootnoteTexts(from nodes: [FRUSASTNode]) -> [String] {
+    /// 3. A citation inside a NESTED note is filed under the OUTER note's label, because the
+    ///    inner note is never captured separately (detail 2 above). Measured: 3 outer notes carry
+    ///    a nested one corpus-wide, and in `frus1950v01/d1` the outer note has no `@n` while the
+    ///    inner prints "2" — so that citation stores a nil label where the reader shows 2. Named
+    ///    here because it is the one case where the packet and the page can legitimately differ.
+    nonisolated static func collectBodyFootnotes(from nodes: [FRUSASTNode]) -> [BodyFootnote] {
         var top = nodes
         if top.count == 1, case .editorialNote(let inner) = top[0] { top = inner }
-        var texts: [String] = []
+        var notes: [BodyFootnote] = []
         for node in top {
             if case .head(let headChildren) = node {
                 for child in headChildren {
                     if case .footnote = child { continue }
-                    collectBodyFootnoteTexts(from: child, into: &texts)
+                    collectBodyFootnotes(from: child, into: &notes)
                 }
                 continue
             }
-            collectBodyFootnoteTexts(from: node, into: &texts)
+            collectBodyFootnotes(from: node, into: &notes)
         }
-        return texts
+        return notes
     }
 
-    /// Depth-first half of ``collectBodyFootnoteTexts(from:)``.
-    nonisolated private static func collectBodyFootnoteTexts(from node: FRUSASTNode,
-                                                             into texts: inout [String]) {
-        if case .footnote(_, let type, _, let children) = node {
+    /// One harvested body footnote: its text, and the label the volume PRINTED for it.
+    ///
+    /// The two travel together because they are read in one walk over one parse (#1322). The
+    /// ordinal a caller derives by enumerating this array is a reading POSITION among the notes
+    /// this walk keeps; `label` is what the page shows. They are different numbering systems and
+    /// no arithmetic converts one into the other — measured over the corpus, `ordinal + 1` equals
+    /// the printed label for 92,275 of 469,188 body notes, because numbering runs chapter-
+    /// continuously in pre-1950 volumes, restarts inside attachments, and is sometimes a symbol.
+    nonisolated struct BodyFootnote: Sendable {
+        /// The note's normalised plain text — unchanged by #1322.
+        let text: String
+        /// The trimmed printed `@n`, or `nil` when the volume printed none. Normalised through
+        /// `ASTToRenderNodeConverter.printedLabel(from:)`, the same rule the reader draws.
+        let label: String?
+    }
+
+    /// Depth-first half of ``collectBodyFootnotes(from:)``.
+    nonisolated private static func collectBodyFootnotes(from node: FRUSASTNode,
+                                                         into notes: inout [BodyFootnote]) {
+        if case .footnote(_, let type, let printedNumber, let children) = node {
             guard type != .source, segSourceText(inAnyDescendantOf: children) == nil else { return }
             let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
-            if !text.isEmpty { texts.append(text) }
+            if !text.isEmpty {
+                notes.append(BodyFootnote(
+                    text: text,
+                    label: ASTToRenderNodeConverter.printedLabel(from: printedNumber)))
+            }
             return
         }
-        for child in node.children { collectBodyFootnoteTexts(from: child, into: &texts) }
+        for child in node.children { collectBodyFootnotes(from: child, into: &notes) }
     }
 
     /// The text of the first `<seg type="source">` anywhere beneath `nodes`, or `nil`.
@@ -6187,6 +6234,7 @@ public actor IndexingPipeline {
                 volume_id     TEXT NOT NULL,
                 document_id   TEXT NOT NULL,
                 note_ordinal  INTEGER NOT NULL,
+                note_label    TEXT,
                 citation_index INTEGER NOT NULL,
                 anchor        TEXT NOT NULL,
                 repository    TEXT,
@@ -6213,6 +6261,15 @@ public actor IndexingPipeline {
         // class keys per (note_ordinal, citation_index) would have forced the drop-and-recreate
         // guard instead.
         try? exec("ALTER TABLE external_citations ADD COLUMN decimal_class TEXT")
+        // #1322, and the same argument applies word for word: the CREATE above is a no-op on an
+        // existing database, so without this ALTER every insert would name a column the table
+        // lacks and `storeIndexData`'s delete-then-insert would EMPTY the table. `note_label` is
+        // additive and outside the primary key — it describes the citing note, it does not
+        // identify it — so ADD COLUMN is viable here too. NULL in an existing row means the row
+        // was written before v53 and will be filled by the automatic re-parse; NULL in a fresh row
+        // means the volume printed no `@n`. `ExternalCitationsMigrationTests` pins that a legacy
+        // 13-column table gains the column and still stores rows.
+        try? exec("ALTER TABLE external_citations ADD COLUMN note_label TEXT")
         // "Which documents point at this central-file class?" — the class-axis twin of the lot and
         // repository indexes below.
         try exec("CREATE INDEX IF NOT EXISTS idx_ext_cit_class ON external_citations(decimal_class)")
@@ -7168,9 +7225,9 @@ public actor IndexingPipeline {
         guard !rows.isEmpty else { return }
         let sql = """
             INSERT OR REPLACE INTO external_citations
-            (volume_id, document_id, note_ordinal, citation_index, anchor, repository,
+            (volume_id, document_id, note_ordinal, note_label, citation_index, anchor, repository,
              collection, lot_file, lot_file_norm, file_id, inherited, raw_text, decimal_class)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
@@ -7179,16 +7236,17 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(stmt, 1, row.volumeId,   -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_text(stmt, 2, row.documentId, -1, SQLITE_TRANSIENT_IP)
                 sqlite3_bind_int(stmt, 3, Int32(row.noteOrdinal))
-                sqlite3_bind_int(stmt, 4, Int32(row.citationIndex))
-                sqlite3_bind_text(stmt, 5, row.anchor, -1, SQLITE_TRANSIENT_IP)
-                auxBindOptional(stmt, 6, row.repository)
-                auxBindOptional(stmt, 7, row.collection)
-                auxBindOptional(stmt, 8, row.lotFile)
-                auxBindOptional(stmt, 9, row.lotFileNorm)
-                auxBindOptional(stmt, 10, row.fileId)
-                sqlite3_bind_int(stmt, 11, row.inherited ? 1 : 0)
-                sqlite3_bind_text(stmt, 12, row.rawText, -1, SQLITE_TRANSIENT_IP)
-                auxBindOptional(stmt, 13, row.decimalClass)
+                auxBindOptional(stmt, 4, row.noteLabel)
+                sqlite3_bind_int(stmt, 5, Int32(row.citationIndex))
+                sqlite3_bind_text(stmt, 6, row.anchor, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 7, row.repository)
+                auxBindOptional(stmt, 8, row.collection)
+                auxBindOptional(stmt, 9, row.lotFile)
+                auxBindOptional(stmt, 10, row.lotFileNorm)
+                auxBindOptional(stmt, 11, row.fileId)
+                sqlite3_bind_int(stmt, 12, row.inherited ? 1 : 0)
+                sqlite3_bind_text(stmt, 13, row.rawText, -1, SQLITE_TRANSIENT_IP)
+                auxBindOptional(stmt, 14, row.decimalClass)
                 try auxStep(stmt)
                 sqlite3_reset(stmt)
             }
@@ -7212,7 +7270,7 @@ public actor IndexingPipeline {
                                   documentId: String) throws -> [ExternalCitation] {
         let sql = """
             SELECT anchor, repository, collection, lot_file, lot_file_norm, file_id,
-                   inherited, raw_text, note_ordinal, decimal_class
+                   inherited, raw_text, note_ordinal, decimal_class, note_label
             FROM external_citations
             WHERE volume_id = ? AND document_id = ?
             ORDER BY note_ordinal, citation_index
@@ -7235,7 +7293,8 @@ public actor IndexingPipeline {
                 inherited: sqlite3_column_int(stmt, 6) != 0,
                 rawText: rawText,
                 noteOrdinal: Int(sqlite3_column_int(stmt, 8)),
-                decimalClass: auxColumnString(stmt, 9)))
+                decimalClass: auxColumnString(stmt, 9),
+                noteLabel: auxColumnString(stmt, 10)))
         }
         return results
     }
@@ -7260,7 +7319,7 @@ public actor IndexingPipeline {
             let sql = """
                 SELECT volume_id || '/' || document_id,
                        anchor, repository, collection, lot_file, lot_file_norm, file_id,
-                       inherited, raw_text, note_ordinal, decimal_class
+                       inherited, raw_text, note_ordinal, decimal_class, note_label
                 FROM external_citations
                 WHERE volume_id || '/' || document_id IN (\(placeholders))
                 ORDER BY volume_id, document_id, note_ordinal, citation_index
@@ -7284,7 +7343,8 @@ public actor IndexingPipeline {
                     inherited: sqlite3_column_int(stmt, 7) != 0,
                     rawText: rawText,
                     noteOrdinal: Int(sqlite3_column_int(stmt, 9)),
-                    decimalClass: auxColumnString(stmt, 10)))
+                    decimalClass: auxColumnString(stmt, 10),
+                    noteLabel: auxColumnString(stmt, 11)))
             }
         }
         return result
@@ -10886,9 +10946,23 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// The clause the citation was read from.
     public let rawText: String
     /// Which body footnote of the document carried it, from zero.
+    ///
+    /// A reading POSITION among the notes the harvest keeps, which is not the number the volume
+    /// printed — see `noteLabel`.
     public let noteOrdinal: Int
     /// The central-file class named, for a `centralFileClass` citation (#834) — `763.72`.
     public let decimalClass: String?
+    /// The label the VOLUME printed for the citing note — the trimmed `@n`, `nil` when the volume
+    /// printed none (#1322).
+    ///
+    /// Three things a caller must know. It is **not** derivable from `noteOrdinal`: measured over
+    /// the corpus, `noteOrdinal + 1` equals the printed label for 92,275 of 469,188 body notes,
+    /// because numbering runs chapter-continuously in pre-1950 volumes, restarts inside
+    /// attachments, and is sometimes a symbol (`*`, `†`). It is **not unique** within a document —
+    /// 6,912 documents repeat a label among their body notes — so it says what the page shows,
+    /// never which note. And `nil` carries two meanings: the volume printed no number, or the row
+    /// was written before index v53 and has not been re-parsed.
+    public let noteLabel: String?
 
     /// Stable within one document's list.
     ///
@@ -10914,7 +10988,7 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// Creates a citation.
     public init(anchor: String, repository: String?, collection: String?, lotFile: String?,
                 lotFileNorm: String?, fileId: String?, inherited: Bool, rawText: String,
-                noteOrdinal: Int, decimalClass: String? = nil) {
+                noteOrdinal: Int, decimalClass: String? = nil, noteLabel: String? = nil) {
         self.anchor = anchor
         self.repository = repository
         self.collection = collection
@@ -10925,6 +10999,7 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
         self.rawText = rawText
         self.noteOrdinal = noteOrdinal
         self.decimalClass = decimalClass
+        self.noteLabel = noteLabel
     }
 }
 
@@ -10938,6 +11013,11 @@ private struct ExternalCitationRow: Sendable {
     let documentId: String
     /// Position of the citing note among the document's body footnotes, from zero.
     let noteOrdinal: Int
+    /// The label the VOLUME printed for that note, or `nil` when it printed none (#1322).
+    ///
+    /// Not derivable from `noteOrdinal`: the two are different numbering systems, and the
+    /// difference between them varies by volume, by document and within a document.
+    let noteLabel: String?
     /// Position of this citation within that note, from zero — a note may name several units.
     let citationIndex: Int
     /// `FootnoteArchivalCitation.Anchor.rawValue`.
