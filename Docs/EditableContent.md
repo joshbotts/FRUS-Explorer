@@ -5459,11 +5459,11 @@ Re-based: %@ are hidden, and every share in this table is a share of the categor
 
 #### Administration profiles — dating rule
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 192–193 | key: series.export.dating.administration -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesAnalyticsExport.swift | lines: 203–204 | key: series.export.dating.administration.v2 -->
 
-Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. A TEI <date> is not used, and there is no fallback to the volume’s start year. An undated document is attributed to no administration and drops out.
+Dating: each document is placed by its own editorial date bounds, the frus:doc-dateTime-min and -max attributes on the document element. Those attributes are instants normalised to −05:00, so where the document’s own dateline names the same instant its day is taken from the dateline instead — otherwise the day at −05:00 stands. There is no fallback to the volume’s start year. An undated document is attributed to no administration and drops out.
 
-<!-- END SOURCE: series.export.dating.administration -->
+<!-- END SOURCE: series.export.dating.administration.v2 -->
 
 ---
 

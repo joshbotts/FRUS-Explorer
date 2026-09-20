@@ -44,6 +44,10 @@ public enum DocumentDate: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — SA-2a (Session 2026-07-05): initial implementation
+///   1.1 — 2026-09-19 / #1326: reads each document's `<dateline>` `<date>` and takes the day from
+///          it when the two name the same instant. The attribute alone put 11,847 documents on the
+///          wrong day, two of which changed presidential administration in this very artifact —
+///          `frus1923v02/d954` (Harding → Coolidge) and `frus1945v07/d55` (Roosevelt → Truman).
 public final class DocumentDateExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// Extracts one `DocumentDate` per document div, in document order.
@@ -60,20 +64,83 @@ public final class DocumentDateExtractor: NSObject, XMLParserDelegate, @unchecke
 
     private var dates: [DocumentDate] = []
 
+    /// The open document's raw attributes, held until its dateline has been seen (#1326).
+    private var pendingMin: String?
+    private var pendingMax: String?
+    /// Whether a document div is open at all — a `<dateline>` outside one is not its.
+    private var inDocument = false
+    /// Depth inside the open document's `<dateline>`, so a `<date>` elsewhere is ignored.
+    private var datelineDepth = 0
+    /// The winning `<date>` attributes for the open document, in the app's own priority.
+    private var datelineWhen: String?
+    private var datelineFrom: String?
+    private var datelineNotBefore: String?
+    private var datelineTo: String?
+    private var datelineNotAfter: String?
+    private var anyWhen: String?
+
     public func parser(_ parser: XMLParser,
                        didStartElement elementName: String,
                        namespaceURI: String?,
                        qualifiedName qName: String?,
                        attributes attributeDict: [String: String] = [:]) {
+        let name = localName(elementName, qName)
+
         // A FRUS document is `<div type="document">`. The `qName` carries the raw element
         // name; `type` is unprefixed, `frus:doc-dateTime-*` is prefixed. `XMLParser` with
         // namespace processing off (the default) reports keys verbatim as written.
-        guard localName(elementName, qName) == "div",
-              attributeDict["type"] == "document" else { return }
+        if name == "div", attributeDict["type"] == "document" {
+            flushPendingDocument()
+            inDocument = true
+            pendingMin = attributeDict["frus:doc-dateTime-min"]
+            pendingMax = attributeDict["frus:doc-dateTime-max"]
+            return
+        }
 
+        guard inDocument else { return }
+        if name == "dateline" { datelineDepth += 1; return }
+        guard name == "date" else { return }
+        if datelineDepth > 0 {
+            if datelineWhen == nil { datelineWhen = attributeDict["when"] }
+            if datelineFrom == nil { datelineFrom = attributeDict["from"] }
+            if datelineNotBefore == nil { datelineNotBefore = attributeDict["notBefore"] }
+            if datelineTo == nil { datelineTo = attributeDict["to"] }
+            if datelineNotAfter == nil { datelineNotAfter = attributeDict["notAfter"] }
+        }
+        if anyWhen == nil { anyWhen = attributeDict["when"] }
+    }
+
+    public func parser(_ parser: XMLParser,
+                       didEndElement elementName: String,
+                       namespaceURI: String?,
+                       qualifiedName qName: String?) {
+        guard inDocument, localName(elementName, qName) == "dateline", datelineDepth > 0 else {
+            return
+        }
+        datelineDepth -= 1
+    }
+
+    public func parserDidEndDocument(_ parser: XMLParser) {
+        flushPendingDocument()
+    }
+
+    /// Closes the open document, classifying it once its dateline has been read (#1326).
+    ///
+    /// Deferred to the NEXT document's start (or end of file) rather than done at
+    /// `didStartElement`, because the `<date>` that decides the day sits INSIDE the div and has
+    /// not been parsed yet when the div opens. Documents do not nest, so the next document's
+    /// start is the current one's end for this purpose.
+    private func flushPendingDocument() {
+        guard inDocument else { return }
         dates.append(Self.classify(
-            min: attributeDict["frus:doc-dateTime-min"],
-            max: attributeDict["frus:doc-dateTime-max"]))
+            min: pendingMin, max: pendingMax,
+            minAttribute: datelineWhen ?? datelineFrom ?? datelineNotBefore ?? anyWhen,
+            maxAttribute: datelineTo ?? datelineNotAfter ?? datelineWhen ?? anyWhen))
+        inDocument = false
+        pendingMin = nil; pendingMax = nil
+        datelineDepth = 0
+        datelineWhen = nil; datelineFrom = nil; datelineNotBefore = nil
+        datelineTo = nil; datelineNotAfter = nil; anyWhen = nil
     }
 
     /// Classifies a document's raw `doc-dateTime-min`/`-max` attribute values into a
@@ -87,9 +154,16 @@ public final class DocumentDateExtractor: NSObject, XMLParserDelegate, @unchecke
     ///   - min: The raw `frus:doc-dateTime-min` value (e.g. `1945-04-12T00:00:00-05:00`).
     ///   - max: The raw `frus:doc-dateTime-max` value.
     /// - Returns: The classified `DocumentDate`.
-    static func classify(min: String?, max: String?) -> DocumentDate {
-        let minDay = day(from: min)
-        let maxDay = day(from: max)
+    static func classify(min: String?, max: String?,
+                         minAttribute: String? = nil, maxAttribute: String? = nil) -> DocumentDate {
+        // #1326: `frus:doc-dateTime-*` is an INSTANT the corpus normalises to −05:00, so its
+        // first ten characters are not the day the document is dated. Where the editors' own
+        // `<date>` names the SAME INSTANT, its local rendering is the day they meant. This is the
+        // rule `IndexingPipeline.sameInstantDay` applies, mirrored rather than shared because the
+        // app target is not linkable from this package — the app's own tests pin the app side, and
+        // `DocumentDateExtractorTests` pins this one against the same fixtures.
+        let minDay = Self.sameInstantDay(instant: min, attribute: minAttribute) ?? day(from: min)
+        let maxDay = Self.sameInstantDay(instant: max, attribute: maxAttribute) ?? day(from: max)
         switch (minDay, maxDay) {
         case let (m?, x?):
             return m == x ? .point(m) : .range(start: Swift.min(m, x), end: Swift.max(m, x))
@@ -100,6 +174,28 @@ public final class DocumentDateExtractor: NSObject, XMLParserDelegate, @unchecke
         case (nil, nil):
             return .undated
         }
+    }
+
+    /// The day an editors' `<date>` states, when it denotes the SAME INSTANT as the corpus's
+    /// `frus:doc-dateTime-*` attribute — otherwise `nil` (#1326).
+    ///
+    /// Mirror of `IndexingPipeline.sameInstantDay`. Strict about the offset for the same reason:
+    /// a value with no offset has no instant to compare, and reading it as UTC would make two
+    /// different moments compare equal and move a day that must not move.
+    static func sameInstantDay(instant: String?, attribute: String?) -> String? {
+        guard let instant, let attribute,
+              let a = isoInstant(instant), let b = isoInstant(attribute), a == b else { return nil }
+        return day(from: attribute)
+    }
+
+    /// Parses an `xs:dateTime` carrying an explicit offset into an absolute instant, or `nil`.
+    static func isoInstant(_ raw: String) -> Date? {
+        guard raw.contains("T") else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: raw) { return date }
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: raw)
     }
 
     /// Extracts the `yyyy-MM-dd` prefix of an ISO timestamp, or `nil` when the string does

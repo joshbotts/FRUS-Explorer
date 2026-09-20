@@ -158,6 +158,66 @@ struct AdministrationProfilesIndexGeneratorTests {
         #expect(dates == [.point("1945-04-12"), .range(start: "1967-07-29", end: "1972-11-04")])
     }
 
+    /// The attribute is an instant at −05:00, not a day (#1326).
+    ///
+    /// This generator read `prefix(10)` off it with no `<date>` fallback, so the shipped artifact
+    /// carried the same shift as the app's index — including two documents attributed to the wrong
+    /// presidential administration, both across a half-open boundary where one day is enough:
+    /// `frus1923v02/d954` (Harding → Coolidge) and `frus1945v07/d55` (Roosevelt → Truman).
+    @Test func sameInstantDatelineDecidesTheDay() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"
+             xmlns:frus="http://history.state.gov/frus/ns/1.0">
+          <text><body>
+            <div frus:doc-dateTime-min="1945-04-11T21:00:00-05:00"
+                 frus:doc-dateTime-max="1945-04-11T21:00:00-05:00"
+                 type="document" xml:id="d55">
+              <dateline><date when="1945-04-12T09:00:00+07:00">Chungking, April 12, 1945</date></dateline>
+              <p>x</p>
+            </div>
+            <div frus:doc-dateTime-min="1971-06-30T15:15:00-04:00"
+                 frus:doc-dateTime-max="1971-06-30T15:15:00-04:00"
+                 type="document" xml:id="d170">
+              <dateline><date when="1971-06-28">June 28, 1971</date></dateline>
+              <p>y</p>
+            </div>
+            <div frus:doc-dateTime-min="1962-10-21T23:17:00-05:00"
+                 frus:doc-dateTime-max="1962-10-21T23:17:00-05:00"
+                 type="document" xml:id="d7"><p>no dateline</p></div>
+          </body></text>
+        </TEI>
+        """
+        let dates = DocumentDateExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(dates == [.point("1945-04-12"),   // same instant: the dateline's day wins
+                          .point("1971-06-30"),   // different instant: the attribute still wins
+                          .point("1962-10-21")],  // no dateline: unchanged
+                "got \(dates)")
+    }
+
+    /// A `<date>` outside the document's own dateline must not decide its day.
+    @Test func aDateInAnotherDocumentDoesNotLeak() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0"
+             xmlns:frus="http://history.state.gov/frus/ns/1.0">
+          <text><body>
+            <div frus:doc-dateTime-min="1945-04-11T21:00:00-05:00" type="document" xml:id="d1">
+              <dateline><date when="1945-04-12T09:00:00+07:00">April 12</date></dateline><p>x</p>
+            </div>
+            <div frus:doc-dateTime-min="1950-01-01T23:00:00-05:00" type="document" xml:id="d2">
+              <p>No dateline of its own.</p>
+            </div>
+          </body></text>
+        </TEI>
+        """
+        let dates = DocumentDateExtractor.extract(fromXML: Data(xml.utf8))
+        #expect(dates == [.point("1945-04-12"), .point("1950-01-01")], """
+            The second document has no dateline; if the first one's date leaked it would read \
+            1945-04-12. Got \(dates).
+            """)
+    }
+
     // MARK: - Aggregation
 
     /// Two synthetic volumes exercising point/range/undated, per-(admin,volume) tallies,

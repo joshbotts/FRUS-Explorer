@@ -850,7 +850,24 @@ public actor IndexingPipeline {
     ///   draws (`ASTToRenderNodeConverter.printedLabel(from:)`). Additive `ALTER` beside the
     ///   `decimal_class` one, for the same v40 reason. NULL means either that the volume printed no
     ///   number or that the row predates this version; both surfaces word it so neither is claimed.
-    public static let currentDateIndexVersion: Int = 53
+    /// - v53→54 — #1326: `frus:doc-dateTime-min`/`-max` is an INSTANT, which the corpus's own
+    ///   `update-frus-doc-dates.xsl` normalises to −05:00 through `adjust-dateTime-to-timezone` —
+    ///   a function that preserves the moment and rewrites the local fields. The pipeline read its
+    ///   first ten characters as the calendar day, so any document whose own offset is east of
+    ///   −05:00 and whose local time falls before 05:00 was indexed a day early. That includes
+    ///   Washington for half the year, because the stylesheet uses EST all year round: the
+    ///   telegram the 1962 volume prints as *Washington, October 22, 1962, 12:17 a.m.*, filed by
+    ///   the Department under `737.00/10-2262`, was stored as 21 October — and marked
+    ///   `precision: day, certainty: exact`, because those come from the `<date>` the value was
+    ///   not taken from. Measured with this code over the 553 manifest volumes: **11,847 documents
+    ///   move, every one by exactly a day** (11,726 forward, 121 back), across 480 volumes; 10,371
+    ///   of them had an interval that did not contain their own day at all, so a date filter for
+    ///   that day did not return them. Document 1 of the 1935 volume was stored in 1934. The rule
+    ///   is `sameInstantDay`: where the editors' own `<date>` names the same instant, its local
+    ///   rendering is the day they meant. Where it names a different instant the attribute still
+    ///   wins — 50 of those 51 rows are the app and the stylesheet choosing different `<date>`
+    ///   NODES, a separate and smaller divergence this deliberately does not touch.
+    public static let currentDateIndexVersion: Int = 54
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -5613,16 +5630,27 @@ public actor IndexingPipeline {
         dateTimeMin: String? = nil,
         dateTimeMax: String? = nil
     ) -> (min: String?, max: String?) {
+        // #1326: `frus:doc-dateTime-*` is an INSTANT, which the corpus's own build normalises to
+        // -05:00, so its first ten characters are not the day the document is dated. When the
+        // editors' own `<date>` names the SAME INSTANT, its local rendering is the day they meant
+        // and this takes it instead. Nothing else changes: a `<date>` naming a different instant,
+        // or none at all, leaves the attribute's own day exactly where it was.
+        let dateNodes = collectDateNodes(nodes, inDateline: false)
+
         let min: String?
         if let dtMin = dateTimeMin {
-            min = normalizeToFullDate(dtMin)
+            min = sameInstantDay(instant: dtMin,
+                                 attribute: winningMinDateAttribute(from: dateNodes)?.raw)
+                ?? normalizeToFullDate(dtMin)
         } else {
             min = extractStructuredDate(from: nodes)
         }
 
         let max: String?
         if let dtMax = dateTimeMax {
-            max = normalizeToEndDate(dtMax)
+            max = sameInstantDay(instant: dtMax,
+                                 attribute: winningMaxDateAttribute(from: dateNodes))
+                ?? normalizeToEndDate(dtMax)
         } else {
             // Derive max from the date nodes, then fall back to expanding min to end-of-period
             // so that a year-only min of "1969-01-01" also produces a max of "1969-12-31".
@@ -5693,6 +5721,70 @@ public actor IndexingPipeline {
             return (v, .exact)
         }
         return nil
+    }
+
+    /// The `<date>` attribute that decides the document's END day, in the same priority
+    /// `extractStructuredDateMax` uses (#1326).
+    ///
+    /// Its min-side twin `winningMinDateAttribute` has existed since the precision work; the max
+    /// side only ever had `extractStructuredDateMax`, which normalises as it selects, so the raw
+    /// attribute was unavailable to compare against `frus:doc-dateTime-max`.
+    nonisolated private static func winningMaxDateAttribute(
+        from dateNodes: [DateNodeInfo]
+    ) -> String? {
+        if let n = dateNodes.first(where: { $0.inDateline && $0.to != nil }), let v = n.to {
+            return v
+        }
+        if let n = dateNodes.first(where: { $0.inDateline && $0.notAfter != nil }),
+           let v = n.notAfter { return v }
+        if let n = dateNodes.first(where: { $0.inDateline && $0.when != nil }), let v = n.when {
+            return v
+        }
+        if let n = dateNodes.first(where: { $0.when != nil }), let v = n.when { return v }
+        return nil
+    }
+
+    /// The day an editors' `<date>` states, when it denotes the SAME INSTANT as the corpus's
+    /// `frus:doc-dateTime-*` attribute — otherwise `nil`, leaving the caller's own rule alone
+    /// (#1326).
+    ///
+    /// `update-frus-doc-dates.xsl` writes the attribute through `adjust-dateTime-to-timezone` at
+    /// `-PT5H`, which PRESERVES the instant and rewrites the local fields. It is therefore "this
+    /// moment, expressed at -05:00", and was never meant to be read as a calendar day. Reading its
+    /// first ten characters put 11,888 documents on the wrong day — 11,757 of them a day early —
+    /// across 482 of 553 volumes: any document whose own offset is east of -05:00 and whose local
+    /// time falls before 05:00 moves back a day, which includes Washington itself for half the
+    /// year, because the stylesheet uses EST all year round. `frus1961-63v11/d39`, a telegram the
+    /// volume prints as *Washington, October 22, 1962, 12:17 a.m.* and the Department filed under
+    /// `737.00/10-2262`, was indexed as 21 October 1962.
+    ///
+    /// The equality is the whole guard. Where the two name the same moment, the `<date>`'s own
+    /// rendering is the editors' day and the attribute's is an artifact of the normalisation; where
+    /// they name different moments the corpus is asserting something the dateline does not, and
+    /// this returns `nil` rather than choosing between them. Measured over the 553 manifest
+    /// volumes, that moves 11,846 rows and leaves 93 — including 50 where the app and the
+    /// stylesheet pick different `<date>` NODES, a separate and smaller divergence.
+    nonisolated static func sameInstantDay(instant: String?, attribute: String?) -> String? {
+        guard let instant, let attribute,
+              let instantMoment = isoInstant(instant),
+              let attributeMoment = isoInstant(attribute),
+              instantMoment == attributeMoment else { return nil }
+        // The attribute's own local day, which is what the volume prints.
+        return normalizeToFullDate(attribute)
+    }
+
+    /// Parses an `xs:dateTime` carrying an explicit offset into an absolute instant, or `nil`.
+    ///
+    /// Deliberately strict (#1326): a value with no offset, or one that is only a date, has no
+    /// instant to compare and must NOT be guessed at — a missing offset read as UTC would make
+    /// two different moments compare equal and move a day that should not move.
+    nonisolated private static func isoInstant(_ raw: String) -> Date? {
+        guard raw.contains("T") else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        if let date = formatter.date(from: raw) { return date }
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: raw)
     }
 
     /// Derives `DatePrecision` from the component count of a raw ISO date string

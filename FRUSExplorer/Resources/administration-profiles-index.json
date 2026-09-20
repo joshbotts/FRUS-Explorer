@@ -7,9 +7,9 @@
       "id" : "lincoln",
       "number" : 16,
       "party" : "Republican",
-      "pointDocCount" : 5248,
+      "pointDocCount" : 5249,
       "president" : "Abraham Lincoln",
-      "rangeDocCount" : 130,
+      "rangeDocCount" : 26,
       "start" : "1861-03-04",
       "volumeCount" : 21,
       "volumeCountPointOnly" : 19,
@@ -70,8 +70,8 @@
           "volumeId" : "frus1865p1"
         },
         {
-          "pointDocs" : 46,
-          "rangeDocs" : 3,
+          "pointDocs" : 47,
+          "rangeDocs" : 2,
           "volumeId" : "frus1872p2v2"
         },
         {
@@ -96,7 +96,7 @@
         },
         {
           "pointDocs" : 1,
-          "rangeDocs" : 105,
+          "rangeDocs" : 2,
           "volumeId" : "frus1865p4"
         },
         {
@@ -1104,9 +1104,9 @@
       "id" : "wilson",
       "number" : 28,
       "party" : "Democratic",
-      "pointDocCount" : 28451,
+      "pointDocCount" : 28483,
       "president" : "Woodrow Wilson",
-      "rangeDocCount" : 374,
+      "rangeDocCount" : 342,
       "start" : "1913-03-04",
       "volumeCount" : 50,
       "volumeCountPointOnly" : 50,
@@ -1132,6 +1132,11 @@
           "volumeId" : "frus1917"
         },
         {
+          "pointDocs" : 1331,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1914Supp"
+        },
+        {
           "pointDocs" : 1322,
           "rangeDocs" : 3,
           "volumeId" : "frus1916"
@@ -1140,11 +1145,6 @@
           "pointDocs" : 1311,
           "rangeDocs" : 5,
           "volumeId" : "frus1916Supp"
-        },
-        {
-          "pointDocs" : 1298,
-          "rangeDocs" : 46,
-          "volumeId" : "frus1914Supp"
         },
         {
           "pointDocs" : 1014,
@@ -1202,8 +1202,8 @@
           "volumeId" : "frus1919v02"
         },
         {
-          "pointDocs" : 796,
-          "rangeDocs" : 3,
+          "pointDocs" : 795,
+          "rangeDocs" : 4,
           "volumeId" : "frus1920v02"
         },
         {
@@ -1372,7 +1372,7 @@
       "party" : "Republican",
       "pointDocCount" : 4333,
       "president" : "Warren G. Harding",
-      "rangeDocCount" : 14,
+      "rangeDocCount" : 13,
       "start" : "1921-03-04",
       "volumeCount" : 19,
       "volumeCountPointOnly" : 18,
@@ -1388,8 +1388,8 @@
           "volumeId" : "frus1922v01"
         },
         {
-          "pointDocs" : 718,
-          "rangeDocs" : 1,
+          "pointDocs" : 719,
+          "rangeDocs" : 0,
           "volumeId" : "frus1921v02"
         },
         {
@@ -1398,7 +1398,7 @@
           "volumeId" : "frus1921v01"
         },
         {
-          "pointDocs" : 646,
+          "pointDocs" : 645,
           "rangeDocs" : 1,
           "volumeId" : "frus1923v02"
         },
@@ -1481,7 +1481,7 @@
       "id" : "coolidge",
       "number" : 30,
       "party" : "Republican",
-      "pointDocCount" : 9920,
+      "pointDocCount" : 9921,
       "president" : "Calvin Coolidge",
       "rangeDocCount" : 36,
       "start" : "1923-08-02",
@@ -1549,7 +1549,7 @@
           "volumeId" : "frus1927v01"
         },
         {
-          "pointDocs" : 372,
+          "pointDocs" : 373,
           "rangeDocs" : 4,
           "volumeId" : "frus1923v02"
         },
@@ -1622,9 +1622,9 @@
       "id" : "hoover",
       "number" : 31,
       "party" : "Republican",
-      "pointDocCount" : 12467,
+      "pointDocCount" : 12468,
       "president" : "Herbert Hoover",
-      "rangeDocCount" : 24,
+      "rangeDocCount" : 23,
       "start" : "1929-03-04",
       "volumeCount" : 29,
       "volumeCountPointOnly" : 29,
@@ -1640,8 +1640,8 @@
           "volumeId" : "frus1931v03"
         },
         {
-          "pointDocs" : 939,
-          "rangeDocs" : 6,
+          "pointDocs" : 940,
+          "rangeDocs" : 5,
           "volumeId" : "frus1932v05"
         },
         {
@@ -1785,7 +1785,7 @@
       "party" : "Democratic",
       "pointDocCount" : 65358,
       "president" : "Franklin D. Roosevelt",
-      "rangeDocCount" : 617,
+      "rangeDocCount" : 616,
       "start" : "1933-03-04",
       "volumeCount" : 88,
       "volumeCountPointOnly" : 87,
@@ -1801,8 +1801,8 @@
           "volumeId" : "frus1944v04"
         },
         {
-          "pointDocs" : 1317,
-          "rangeDocs" : 4,
+          "pointDocs" : 1318,
+          "rangeDocs" : 3,
           "volumeId" : "frus1944v03"
         },
         {
@@ -2046,8 +2046,8 @@
           "volumeId" : "frus1939v05"
         },
         {
-          "pointDocs" : 735,
-          "rangeDocs" : 2,
+          "pointDocs" : 736,
+          "rangeDocs" : 1,
           "volumeId" : "frus1933v01"
         },
         {
@@ -2056,8 +2056,8 @@
           "volumeId" : "frus1934v03"
         },
         {
-          "pointDocs" : 726,
-          "rangeDocs" : 1,
+          "pointDocs" : 725,
+          "rangeDocs" : 2,
           "volumeId" : "frus1942v03"
         },
         {
@@ -2101,8 +2101,8 @@
           "volumeId" : "frus1934v05"
         },
         {
-          "pointDocs" : 619,
-          "rangeDocs" : 7,
+          "pointDocs" : 618,
+          "rangeDocs" : 8,
           "volumeId" : "frus1941v06"
         },
         {
@@ -2141,8 +2141,8 @@
           "volumeId" : "frus1943CairoTehran"
         },
         {
-          "pointDocs" : 507,
-          "rangeDocs" : 5,
+          "pointDocs" : 508,
+          "rangeDocs" : 4,
           "volumeId" : "frus1933v04"
         },
         {
@@ -2176,7 +2176,7 @@
           "volumeId" : "frus1944Quebec"
         },
         {
-          "pointDocs" : 236,
+          "pointDocs" : 235,
           "rangeDocs" : 0,
           "volumeId" : "frus1945v07"
         },
@@ -2239,9 +2239,9 @@
       "id" : "truman",
       "number" : 33,
       "party" : "Democratic",
-      "pointDocCount" : 52995,
+      "pointDocCount" : 53000,
       "president" : "Harry S. Truman",
-      "rangeDocCount" : 3568,
+      "rangeDocCount" : 3564,
       "start" : "1945-04-12",
       "volumeCount" : 103,
       "volumeCountPointOnly" : 103,
@@ -2257,8 +2257,8 @@
           "volumeId" : "frus1949v09"
         },
         {
-          "pointDocs" : 1158,
-          "rangeDocs" : 6,
+          "pointDocs" : 1159,
+          "rangeDocs" : 5,
           "volumeId" : "frus1947v07"
         },
         {
@@ -2282,8 +2282,8 @@
           "volumeId" : "frus1945v08"
         },
         {
-          "pointDocs" : 1014,
-          "rangeDocs" : 89,
+          "pointDocs" : 1016,
+          "rangeDocs" : 87,
           "volumeId" : "frus1950v07"
         },
         {
@@ -2307,7 +2307,7 @@
           "volumeId" : "frus1950v05"
         },
         {
-          "pointDocs" : 917,
+          "pointDocs" : 918,
           "rangeDocs" : 2,
           "volumeId" : "frus1945v07"
         },
@@ -2327,8 +2327,8 @@
           "volumeId" : "frus1945v06"
         },
         {
-          "pointDocs" : 889,
-          "rangeDocs" : 5,
+          "pointDocs" : 890,
+          "rangeDocs" : 4,
           "volumeId" : "frus1948v08"
         },
         {
@@ -2337,8 +2337,8 @@
           "volumeId" : "frus1951v07p1"
         },
         {
-          "pointDocs" : 858,
-          "rangeDocs" : 22,
+          "pointDocs" : 859,
+          "rangeDocs" : 21,
           "volumeId" : "frus1946v08"
         },
         {
@@ -2357,8 +2357,8 @@
           "volumeId" : "frus1951v02"
         },
         {
-          "pointDocs" : 802,
-          "rangeDocs" : 136,
+          "pointDocs" : 801,
+          "rangeDocs" : 137,
           "volumeId" : "frus1945Berlinv02"
         },
         {
@@ -2770,16 +2770,16 @@
       "id" : "eisenhower",
       "number" : 34,
       "party" : "Republican",
-      "pointDocCount" : 29449,
+      "pointDocCount" : 29453,
       "president" : "Dwight D. Eisenhower",
-      "rangeDocCount" : 4322,
+      "rangeDocCount" : 4318,
       "start" : "1953-01-20",
       "volumeCount" : 108,
       "volumeCountPointOnly" : 107,
       "volumes" : [
         {
-          "pointDocs" : 1015,
-          "rangeDocs" : 41,
+          "pointDocs" : 1016,
+          "rangeDocs" : 40,
           "volumeId" : "frus1952-54v16"
         },
         {
@@ -2803,8 +2803,8 @@
           "volumeId" : "frus1952-54v09p1"
         },
         {
-          "pointDocs" : 599,
-          "rangeDocs" : 72,
+          "pointDocs" : 598,
+          "rangeDocs" : 73,
           "volumeId" : "frus1955-57v16"
         },
         {
@@ -2813,8 +2813,8 @@
           "volumeId" : "frus1952-54v13p1"
         },
         {
-          "pointDocs" : 589,
-          "rangeDocs" : 31,
+          "pointDocs" : 590,
+          "rangeDocs" : 30,
           "volumeId" : "frus1952-54v13p2"
         },
         {
@@ -2868,8 +2868,8 @@
           "volumeId" : "frus1958-60v08"
         },
         {
-          "pointDocs" : 453,
-          "rangeDocs" : 20,
+          "pointDocs" : 454,
+          "rangeDocs" : 19,
           "volumeId" : "frus1955-57v14"
         },
         {
@@ -2888,8 +2888,8 @@
           "volumeId" : "frus1955-57v12"
         },
         {
-          "pointDocs" : 392,
-          "rangeDocs" : 19,
+          "pointDocs" : 393,
+          "rangeDocs" : 18,
           "volumeId" : "frus1955-57v01"
         },
         {
@@ -3068,6 +3068,11 @@
           "volumeId" : "frus1952-54v06p2"
         },
         {
+          "pointDocs" : 261,
+          "rangeDocs" : 13,
+          "volumeId" : "frus1958-60v01"
+        },
+        {
           "pointDocs" : 260,
           "rangeDocs" : 46,
           "volumeId" : "frus1952-54v02p2"
@@ -3076,11 +3081,6 @@
           "pointDocs" : 260,
           "rangeDocs" : 36,
           "volumeId" : "frus1958-60v17"
-        },
-        {
-          "pointDocs" : 260,
-          "rangeDocs" : 14,
-          "volumeId" : "frus1958-60v01"
         },
         {
           "pointDocs" : 259,
@@ -3326,16 +3326,16 @@
       "id" : "kennedy",
       "number" : 35,
       "party" : "Democratic",
-      "pointDocCount" : 9426,
+      "pointDocCount" : 9428,
       "president" : "John F. Kennedy",
-      "rangeDocCount" : 948,
+      "rangeDocCount" : 946,
       "start" : "1961-01-20",
       "volumeCount" : 31,
       "volumeCountPointOnly" : 29,
       "volumes" : [
         {
-          "pointDocs" : 704,
-          "rangeDocs" : 20,
+          "pointDocs" : 706,
+          "rangeDocs" : 18,
           "volumeId" : "frus1961-63v10-12mSupp"
         },
         {
@@ -3497,9 +3497,9 @@
       "id" : "l-johnson",
       "number" : 36,
       "party" : "Democratic",
-      "pointDocCount" : 13070,
+      "pointDocCount" : 13068,
       "president" : "Lyndon B. Johnson",
-      "rangeDocCount" : 1904,
+      "rangeDocCount" : 1906,
       "start" : "1963-11-22",
       "volumeCount" : 77,
       "volumeCountPointOnly" : 74,
@@ -3560,8 +3560,8 @@
           "volumeId" : "frus1964-68v33"
         },
         {
-          "pointDocs" : 394,
-          "rangeDocs" : 13,
+          "pointDocs" : 395,
+          "rangeDocs" : 12,
           "volumeId" : "frus1964-68v27"
         },
         {
@@ -3605,8 +3605,8 @@
           "volumeId" : "frus1964-68v30"
         },
         {
-          "pointDocs" : 331,
-          "rangeDocs" : 18,
+          "pointDocs" : 330,
+          "rangeDocs" : 19,
           "volumeId" : "frus1964-68v12"
         },
         {
@@ -3640,8 +3640,8 @@
           "volumeId" : "frus1964-68v06"
         },
         {
-          "pointDocs" : 298,
-          "rangeDocs" : 3,
+          "pointDocs" : 296,
+          "rangeDocs" : 5,
           "volumeId" : "frus1964-68v15"
         },
         {
@@ -3898,9 +3898,9 @@
       "id" : "nixon",
       "number" : 37,
       "party" : "Republican",
-      "pointDocCount" : 13611,
+      "pointDocCount" : 13609,
       "president" : "Richard M. Nixon",
-      "rangeDocCount" : 1386,
+      "rangeDocCount" : 1388,
       "start" : "1969-01-20",
       "volumeCount" : 68,
       "volumeCountPointOnly" : 67,
@@ -3921,8 +3921,8 @@
           "volumeId" : "frus1969-76ve01"
         },
         {
-          "pointDocs" : 430,
-          "rangeDocs" : 7,
+          "pointDocs" : 429,
+          "rangeDocs" : 8,
           "volumeId" : "frus1969-76ve07"
         },
         {
@@ -3931,8 +3931,8 @@
           "volumeId" : "frus1969-76v29"
         },
         {
-          "pointDocs" : 407,
-          "rangeDocs" : 17,
+          "pointDocs" : 404,
+          "rangeDocs" : 20,
           "volumeId" : "frus1969-76v25"
         },
         {
@@ -3956,8 +3956,8 @@
           "volumeId" : "frus1969-76v36"
         },
         {
-          "pointDocs" : 331,
-          "rangeDocs" : 10,
+          "pointDocs" : 329,
+          "rangeDocs" : 12,
           "volumeId" : "frus1969-76v09"
         },
         {
@@ -3986,8 +3986,8 @@
           "volumeId" : "frus1969-76v24"
         },
         {
-          "pointDocs" : 314,
-          "rangeDocs" : 71,
+          "pointDocs" : 315,
+          "rangeDocs" : 70,
           "volumeId" : "frus1969-76v40"
         },
         {
@@ -3996,8 +3996,8 @@
           "volumeId" : "frus1969-76v13"
         },
         {
-          "pointDocs" : 313,
-          "rangeDocs" : 17,
+          "pointDocs" : 314,
+          "rangeDocs" : 16,
           "volumeId" : "frus1969-76v20"
         },
         {
@@ -4006,8 +4006,8 @@
           "volumeId" : "frus1969-76v06"
         },
         {
-          "pointDocs" : 305,
-          "rangeDocs" : 38,
+          "pointDocs" : 304,
+          "rangeDocs" : 39,
           "volumeId" : "frus1969-76v32"
         },
         {
@@ -4026,8 +4026,8 @@
           "volumeId" : "frus1969-76v07"
         },
         {
-          "pointDocs" : 257,
-          "rangeDocs" : 27,
+          "pointDocs" : 258,
+          "rangeDocs" : 26,
           "volumeId" : "frus1969-76v08"
         },
         {
@@ -4036,8 +4036,8 @@
           "volumeId" : "frus1969-76v17"
         },
         {
-          "pointDocs" : 239,
-          "rangeDocs" : 63,
+          "pointDocs" : 238,
+          "rangeDocs" : 64,
           "volumeId" : "frus1969-76v14"
         },
         {
@@ -4051,13 +4051,13 @@
           "volumeId" : "frus1969-76v34"
         },
         {
-          "pointDocs" : 192,
-          "rangeDocs" : 82,
+          "pointDocs" : 193,
+          "rangeDocs" : 81,
           "volumeId" : "frus1969-76v39"
         },
         {
-          "pointDocs" : 185,
-          "rangeDocs" : 23,
+          "pointDocs" : 184,
+          "rangeDocs" : 24,
           "volumeId" : "frus1969-76v15"
         },
         {
@@ -4076,8 +4076,8 @@
           "volumeId" : "frus1969-76v19p1"
         },
         {
-          "pointDocs" : 163,
-          "rangeDocs" : 12,
+          "pointDocs" : 164,
+          "rangeDocs" : 11,
           "volumeId" : "frus1969-76ve13"
         },
         {
@@ -4116,8 +4116,8 @@
           "volumeId" : "frus1969-76ve11p2"
         },
         {
-          "pointDocs" : 131,
-          "rangeDocs" : 4,
+          "pointDocs" : 132,
+          "rangeDocs" : 3,
           "volumeId" : "frus1969-76v10"
         },
         {
@@ -4141,8 +4141,8 @@
           "volumeId" : "frus1969-76v27"
         },
         {
-          "pointDocs" : 98,
-          "rangeDocs" : 6,
+          "pointDocs" : 99,
+          "rangeDocs" : 5,
           "volumeId" : "frus1969-76ve06"
         },
         {
@@ -4151,8 +4151,8 @@
           "volumeId" : "frus1969-76ve09p2"
         },
         {
-          "pointDocs" : 91,
-          "rangeDocs" : 4,
+          "pointDocs" : 90,
+          "rangeDocs" : 5,
           "volumeId" : "frus1969-76v26"
         },
         {
@@ -4161,8 +4161,8 @@
           "volumeId" : "frus1969-76v28"
         },
         {
-          "pointDocs" : 81,
-          "rangeDocs" : 9,
+          "pointDocs" : 79,
+          "rangeDocs" : 11,
           "volumeId" : "frus1969-76v18"
         },
         {
@@ -4181,6 +4181,11 @@
           "volumeId" : "frus1969-76v01"
         },
         {
+          "pointDocs" : 68,
+          "rangeDocs" : 3,
+          "volumeId" : "frus1969-76v42"
+        },
+        {
           "pointDocs" : 67,
           "rangeDocs" : 15,
           "volumeId" : "frus1969-76v33"
@@ -4189,11 +4194,6 @@
           "pointDocs" : 66,
           "rangeDocs" : 18,
           "volumeId" : "frus1969-76v38p2"
-        },
-        {
-          "pointDocs" : 65,
-          "rangeDocs" : 6,
-          "volumeId" : "frus1969-76v42"
         },
         {
           "pointDocs" : 63,
@@ -4254,9 +4254,9 @@
       "id" : "ford",
       "number" : 38,
       "party" : "Republican",
-      "pointDocCount" : 4333,
+      "pointDocCount" : 4336,
       "president" : "Gerald R. Ford",
-      "rangeDocCount" : 532,
+      "rangeDocCount" : 529,
       "start" : "1974-08-09",
       "volumeCount" : 46,
       "volumeCountPointOnly" : 42,
@@ -4267,8 +4267,8 @@
           "volumeId" : "frus1969-76ve11p1"
         },
         {
-          "pointDocs" : 292,
-          "rangeDocs" : 5,
+          "pointDocs" : 291,
+          "rangeDocs" : 6,
           "volumeId" : "frus1969-76v16"
         },
         {
@@ -4282,8 +4282,8 @@
           "volumeId" : "frus1969-76ve12"
         },
         {
-          "pointDocs" : 211,
-          "rangeDocs" : 17,
+          "pointDocs" : 217,
+          "rangeDocs" : 11,
           "volumeId" : "frus1969-76ve15p2Ed2"
         },
         {
@@ -4292,14 +4292,14 @@
           "volumeId" : "frus1969-76ve06"
         },
         {
-          "pointDocs" : 190,
-          "rangeDocs" : 18,
-          "volumeId" : "frus1969-76v27"
+          "pointDocs" : 191,
+          "rangeDocs" : 10,
+          "volumeId" : "frus1969-76v26"
         },
         {
           "pointDocs" : 190,
-          "rangeDocs" : 11,
-          "volumeId" : "frus1969-76v26"
+          "rangeDocs" : 18,
+          "volumeId" : "frus1969-76v27"
         },
         {
           "pointDocs" : 187,
@@ -4312,8 +4312,8 @@
           "volumeId" : "frus1969-76ve03"
         },
         {
-          "pointDocs" : 164,
-          "rangeDocs" : 5,
+          "pointDocs" : 163,
+          "rangeDocs" : 6,
           "volumeId" : "frus1969-76v10"
         },
         {
@@ -4367,8 +4367,8 @@
           "volumeId" : "frus1969-76v37"
         },
         {
-          "pointDocs" : 95,
-          "rangeDocs" : 77,
+          "pointDocs" : 94,
+          "rangeDocs" : 78,
           "volumeId" : "frus1969-76v39"
         },
         {
@@ -4387,8 +4387,8 @@
           "volumeId" : "frus1969-76v33"
         },
         {
-          "pointDocs" : 67,
-          "rangeDocs" : 10,
+          "pointDocs" : 66,
+          "rangeDocs" : 11,
           "volumeId" : "frus1969-76v18"
         },
         {
@@ -4513,8 +4513,8 @@
           "volumeId" : "frus1977-80v26"
         },
         {
-          "pointDocs" : 470,
-          "rangeDocs" : 12,
+          "pointDocs" : 471,
+          "rangeDocs" : 11,
           "volumeId" : "frus1977-80v19"
         },
         {
@@ -4553,8 +4553,8 @@
           "volumeId" : "frus1977-80v02"
         },
         {
-          "pointDocs" : 322,
-          "rangeDocs" : 37,
+          "pointDocs" : 321,
+          "rangeDocs" : 38,
           "volumeId" : "frus1977-80v11p1"
         },
         {
@@ -4568,8 +4568,8 @@
           "volumeId" : "frus1977-80v12"
         },
         {
-          "pointDocs" : 304,
-          "rangeDocs" : 22,
+          "pointDocs" : 305,
+          "rangeDocs" : 21,
           "volumeId" : "frus1977-80v13"
         },
         {
@@ -4583,8 +4583,8 @@
           "volumeId" : "frus1977-80v18"
         },
         {
-          "pointDocs" : 279,
-          "rangeDocs" : 10,
+          "pointDocs" : 278,
+          "rangeDocs" : 11,
           "volumeId" : "frus1977-80v08"
         },
         {
@@ -4701,9 +4701,9 @@
       "id" : "reagan",
       "number" : 40,
       "party" : "Republican",
-      "pointDocCount" : 4063,
+      "pointDocCount" : 4060,
       "president" : "Ronald Reagan",
-      "rangeDocCount" : 301,
+      "rangeDocCount" : 304,
       "start" : "1981-01-20",
       "volumeCount" : 17,
       "volumeCountPointOnly" : 17,
@@ -4714,8 +4714,8 @@
           "volumeId" : "frus1981-88v24"
         },
         {
-          "pointDocs" : 436,
-          "rangeDocs" : 14,
+          "pointDocs" : 434,
+          "rangeDocs" : 16,
           "volumeId" : "frus1981-88v13"
         },
         {
@@ -4739,13 +4739,13 @@
           "volumeId" : "frus1981-88v41"
         },
         {
-          "pointDocs" : 303,
-          "rangeDocs" : 34,
+          "pointDocs" : 304,
+          "rangeDocs" : 33,
           "volumeId" : "frus1981-88v11"
         },
         {
-          "pointDocs" : 300,
-          "rangeDocs" : 12,
+          "pointDocs" : 299,
+          "rangeDocs" : 13,
           "volumeId" : "frus1981-88v05"
         },
         {
@@ -4764,8 +4764,8 @@
           "volumeId" : "frus1981-88v03"
         },
         {
-          "pointDocs" : 173,
-          "rangeDocs" : 10,
+          "pointDocs" : 172,
+          "rangeDocs" : 11,
           "volumeId" : "frus1981-88v06"
         },
         {
@@ -4802,16 +4802,16 @@
       "id" : "ghw-bush",
       "number" : 41,
       "party" : "Republican",
-      "pointDocCount" : 226,
+      "pointDocCount" : 229,
       "president" : "George H. W. Bush",
-      "rangeDocCount" : 17,
+      "rangeDocCount" : 14,
       "start" : "1989-01-20",
       "volumeCount" : 1,
       "volumeCountPointOnly" : 1,
       "volumes" : [
         {
-          "pointDocs" : 226,
-          "rangeDocs" : 17,
+          "pointDocs" : 229,
+          "rangeDocs" : 14,
           "volumeId" : "frus1989-92v31"
         }
       ]
@@ -4906,10 +4906,10 @@
       ]
     }
   ],
-  "generated" : "2026-09-09",
+  "generated" : "2026-09-19",
   "schemaVersion" : 1,
-  "totalDocumentsPointDated" : 303359,
-  "totalDocumentsRangeDated" : 11212,
+  "totalDocumentsPointDated" : 303404,
+  "totalDocumentsRangeDated" : 11167,
   "totalDocumentsUndated" : 0,
   "volumeTotals" : {
     "frus1861" : {
@@ -5028,8 +5028,8 @@
       "undatedDocs" : 0
     },
     "frus1872p2v2" : {
-      "pointDocs" : 241,
-      "rangeDocs" : 31,
+      "pointDocs" : 242,
+      "rangeDocs" : 30,
       "undatedDocs" : 0
     },
     "frus1872p2v3" : {
@@ -5338,8 +5338,8 @@
       "undatedDocs" : 0
     },
     "frus1914Supp" : {
-      "pointDocs" : 1300,
-      "rangeDocs" : 46,
+      "pointDocs" : 1333,
+      "rangeDocs" : 13,
       "undatedDocs" : 0
     },
     "frus1915" : {
@@ -5523,8 +5523,8 @@
       "undatedDocs" : 0
     },
     "frus1920v02" : {
-      "pointDocs" : 800,
-      "rangeDocs" : 3,
+      "pointDocs" : 799,
+      "rangeDocs" : 4,
       "undatedDocs" : 0
     },
     "frus1920v03" : {
@@ -5538,8 +5538,8 @@
       "undatedDocs" : 0
     },
     "frus1921v02" : {
-      "pointDocs" : 906,
-      "rangeDocs" : 3,
+      "pointDocs" : 907,
+      "rangeDocs" : 2,
       "undatedDocs" : 0
     },
     "frus1922v01" : {
@@ -5698,8 +5698,8 @@
       "undatedDocs" : 0
     },
     "frus1932v05" : {
-      "pointDocs" : 939,
-      "rangeDocs" : 6,
+      "pointDocs" : 940,
+      "rangeDocs" : 5,
       "undatedDocs" : 0
     },
     "frus1933-39" : {
@@ -5708,8 +5708,8 @@
       "undatedDocs" : 0
     },
     "frus1933v01" : {
-      "pointDocs" : 811,
-      "rangeDocs" : 4,
+      "pointDocs" : 812,
+      "rangeDocs" : 3,
       "undatedDocs" : 0
     },
     "frus1933v02" : {
@@ -5723,8 +5723,8 @@
       "undatedDocs" : 0
     },
     "frus1933v04" : {
-      "pointDocs" : 787,
-      "rangeDocs" : 5,
+      "pointDocs" : 788,
+      "rangeDocs" : 4,
       "undatedDocs" : 0
     },
     "frus1933v05" : {
@@ -5933,8 +5933,8 @@
       "undatedDocs" : 0
     },
     "frus1941v06" : {
-      "pointDocs" : 619,
-      "rangeDocs" : 7,
+      "pointDocs" : 618,
+      "rangeDocs" : 8,
       "undatedDocs" : 0
     },
     "frus1941v07" : {
@@ -5958,8 +5958,8 @@
       "undatedDocs" : 0
     },
     "frus1942v03" : {
-      "pointDocs" : 726,
-      "rangeDocs" : 1,
+      "pointDocs" : 725,
+      "rangeDocs" : 2,
       "undatedDocs" : 0
     },
     "frus1942v04" : {
@@ -6038,8 +6038,8 @@
       "undatedDocs" : 0
     },
     "frus1944v03" : {
-      "pointDocs" : 1317,
-      "rangeDocs" : 4,
+      "pointDocs" : 1318,
+      "rangeDocs" : 3,
       "undatedDocs" : 0
     },
     "frus1944v04" : {
@@ -6073,8 +6073,8 @@
       "undatedDocs" : 0
     },
     "frus1945Berlinv02" : {
-      "pointDocs" : 805,
-      "rangeDocs" : 136,
+      "pointDocs" : 804,
+      "rangeDocs" : 137,
       "undatedDocs" : 0
     },
     "frus1945Malta" : {
@@ -6163,8 +6163,8 @@
       "undatedDocs" : 0
     },
     "frus1946v08" : {
-      "pointDocs" : 858,
-      "rangeDocs" : 22,
+      "pointDocs" : 859,
+      "rangeDocs" : 21,
       "undatedDocs" : 0
     },
     "frus1946v09" : {
@@ -6213,8 +6213,8 @@
       "undatedDocs" : 0
     },
     "frus1947v07" : {
-      "pointDocs" : 1158,
-      "rangeDocs" : 6,
+      "pointDocs" : 1159,
+      "rangeDocs" : 5,
       "undatedDocs" : 0
     },
     "frus1947v08" : {
@@ -6268,8 +6268,8 @@
       "undatedDocs" : 0
     },
     "frus1948v08" : {
-      "pointDocs" : 889,
-      "rangeDocs" : 5,
+      "pointDocs" : 890,
+      "rangeDocs" : 4,
       "undatedDocs" : 0
     },
     "frus1948v09" : {
@@ -6363,8 +6363,8 @@
       "undatedDocs" : 0
     },
     "frus1950v07" : {
-      "pointDocs" : 1014,
-      "rangeDocs" : 89,
+      "pointDocs" : 1016,
+      "rangeDocs" : 87,
       "undatedDocs" : 0
     },
     "frus1951-54Iran" : {
@@ -6543,8 +6543,8 @@
       "undatedDocs" : 0
     },
     "frus1952-54v13p2" : {
-      "pointDocs" : 589,
-      "rangeDocs" : 31,
+      "pointDocs" : 590,
+      "rangeDocs" : 30,
       "undatedDocs" : 0
     },
     "frus1952-54v14p1" : {
@@ -6568,13 +6568,13 @@
       "undatedDocs" : 0
     },
     "frus1952-54v16" : {
-      "pointDocs" : 1015,
-      "rangeDocs" : 41,
+      "pointDocs" : 1016,
+      "rangeDocs" : 40,
       "undatedDocs" : 0
     },
     "frus1955-57v01" : {
-      "pointDocs" : 392,
-      "rangeDocs" : 19,
+      "pointDocs" : 393,
+      "rangeDocs" : 18,
       "undatedDocs" : 0
     },
     "frus1955-57v02" : {
@@ -6643,8 +6643,8 @@
       "undatedDocs" : 0
     },
     "frus1955-57v14" : {
-      "pointDocs" : 453,
-      "rangeDocs" : 20,
+      "pointDocs" : 454,
+      "rangeDocs" : 19,
       "undatedDocs" : 0
     },
     "frus1955-57v15" : {
@@ -6653,8 +6653,8 @@
       "undatedDocs" : 0
     },
     "frus1955-57v16" : {
-      "pointDocs" : 599,
-      "rangeDocs" : 72,
+      "pointDocs" : 598,
+      "rangeDocs" : 73,
       "undatedDocs" : 0
     },
     "frus1955-57v17" : {
@@ -6718,8 +6718,8 @@
       "undatedDocs" : 0
     },
     "frus1958-60v01" : {
-      "pointDocs" : 260,
-      "rangeDocs" : 14,
+      "pointDocs" : 261,
+      "rangeDocs" : 13,
       "undatedDocs" : 0
     },
     "frus1958-60v02" : {
@@ -6888,8 +6888,8 @@
       "undatedDocs" : 0
     },
     "frus1961-63v10-12mSupp" : {
-      "pointDocs" : 726,
-      "rangeDocs" : 20,
+      "pointDocs" : 728,
+      "rangeDocs" : 18,
       "undatedDocs" : 0
     },
     "frus1961-63v11" : {
@@ -7023,8 +7023,8 @@
       "undatedDocs" : 0
     },
     "frus1964-68v12" : {
-      "pointDocs" : 331,
-      "rangeDocs" : 18,
+      "pointDocs" : 330,
+      "rangeDocs" : 19,
       "undatedDocs" : 0
     },
     "frus1964-68v13" : {
@@ -7038,8 +7038,8 @@
       "undatedDocs" : 0
     },
     "frus1964-68v15" : {
-      "pointDocs" : 298,
-      "rangeDocs" : 3,
+      "pointDocs" : 296,
+      "rangeDocs" : 5,
       "undatedDocs" : 0
     },
     "frus1964-68v16" : {
@@ -7098,8 +7098,8 @@
       "undatedDocs" : 0
     },
     "frus1964-68v27" : {
-      "pointDocs" : 394,
-      "rangeDocs" : 13,
+      "pointDocs" : 395,
+      "rangeDocs" : 12,
       "undatedDocs" : 0
     },
     "frus1964-68v28" : {
@@ -7178,13 +7178,13 @@
       "undatedDocs" : 0
     },
     "frus1969-76v08" : {
-      "pointDocs" : 257,
-      "rangeDocs" : 27,
+      "pointDocs" : 258,
+      "rangeDocs" : 26,
       "undatedDocs" : 0
     },
     "frus1969-76v09" : {
-      "pointDocs" : 331,
-      "rangeDocs" : 10,
+      "pointDocs" : 329,
+      "rangeDocs" : 12,
       "undatedDocs" : 0
     },
     "frus1969-76v10" : {
@@ -7208,18 +7208,18 @@
       "undatedDocs" : 0
     },
     "frus1969-76v14" : {
-      "pointDocs" : 239,
-      "rangeDocs" : 63,
+      "pointDocs" : 238,
+      "rangeDocs" : 64,
       "undatedDocs" : 0
     },
     "frus1969-76v15" : {
-      "pointDocs" : 185,
-      "rangeDocs" : 23,
+      "pointDocs" : 184,
+      "rangeDocs" : 24,
       "undatedDocs" : 0
     },
     "frus1969-76v16" : {
-      "pointDocs" : 293,
-      "rangeDocs" : 5,
+      "pointDocs" : 292,
+      "rangeDocs" : 6,
       "undatedDocs" : 0
     },
     "frus1969-76v17" : {
@@ -7228,8 +7228,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76v18" : {
-      "pointDocs" : 148,
-      "rangeDocs" : 11,
+      "pointDocs" : 145,
+      "rangeDocs" : 14,
       "undatedDocs" : 0
     },
     "frus1969-76v19p1" : {
@@ -7243,8 +7243,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76v20" : {
-      "pointDocs" : 315,
-      "rangeDocs" : 17,
+      "pointDocs" : 316,
+      "rangeDocs" : 16,
       "undatedDocs" : 0
     },
     "frus1969-76v21" : {
@@ -7268,8 +7268,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76v25" : {
-      "pointDocs" : 408,
-      "rangeDocs" : 17,
+      "pointDocs" : 405,
+      "rangeDocs" : 20,
       "undatedDocs" : 0
     },
     "frus1969-76v26" : {
@@ -7303,8 +7303,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76v32" : {
-      "pointDocs" : 305,
-      "rangeDocs" : 38,
+      "pointDocs" : 304,
+      "rangeDocs" : 39,
       "undatedDocs" : 0
     },
     "frus1969-76v33" : {
@@ -7348,8 +7348,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76v40" : {
-      "pointDocs" : 317,
-      "rangeDocs" : 71,
+      "pointDocs" : 318,
+      "rangeDocs" : 70,
       "undatedDocs" : 0
     },
     "frus1969-76v41" : {
@@ -7358,8 +7358,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76v42" : {
-      "pointDocs" : 65,
-      "rangeDocs" : 6,
+      "pointDocs" : 68,
+      "rangeDocs" : 3,
       "undatedDocs" : 0
     },
     "frus1969-76ve01" : {
@@ -7393,13 +7393,13 @@
       "undatedDocs" : 0
     },
     "frus1969-76ve06" : {
-      "pointDocs" : 297,
-      "rangeDocs" : 9,
+      "pointDocs" : 298,
+      "rangeDocs" : 8,
       "undatedDocs" : 0
     },
     "frus1969-76ve07" : {
-      "pointDocs" : 430,
-      "rangeDocs" : 7,
+      "pointDocs" : 429,
+      "rangeDocs" : 8,
       "undatedDocs" : 0
     },
     "frus1969-76ve08" : {
@@ -7438,8 +7438,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76ve13" : {
-      "pointDocs" : 163,
-      "rangeDocs" : 12,
+      "pointDocs" : 164,
+      "rangeDocs" : 11,
       "undatedDocs" : 0
     },
     "frus1969-76ve14p1" : {
@@ -7463,8 +7463,8 @@
       "undatedDocs" : 0
     },
     "frus1969-76ve15p2Ed2" : {
-      "pointDocs" : 353,
-      "rangeDocs" : 29,
+      "pointDocs" : 359,
+      "rangeDocs" : 23,
       "undatedDocs" : 0
     },
     "frus1969-76ve16" : {
@@ -7498,8 +7498,8 @@
       "undatedDocs" : 0
     },
     "frus1977-80v08" : {
-      "pointDocs" : 279,
-      "rangeDocs" : 10,
+      "pointDocs" : 278,
+      "rangeDocs" : 11,
       "undatedDocs" : 0
     },
     "frus1977-80v09Ed2" : {
@@ -7508,8 +7508,8 @@
       "undatedDocs" : 0
     },
     "frus1977-80v11p1" : {
-      "pointDocs" : 322,
-      "rangeDocs" : 37,
+      "pointDocs" : 321,
+      "rangeDocs" : 38,
       "undatedDocs" : 0
     },
     "frus1977-80v12" : {
@@ -7518,8 +7518,8 @@
       "undatedDocs" : 0
     },
     "frus1977-80v13" : {
-      "pointDocs" : 306,
-      "rangeDocs" : 22,
+      "pointDocs" : 307,
+      "rangeDocs" : 21,
       "undatedDocs" : 0
     },
     "frus1977-80v15" : {
@@ -7553,8 +7553,8 @@
       "undatedDocs" : 0
     },
     "frus1977-80v19" : {
-      "pointDocs" : 473,
-      "rangeDocs" : 12,
+      "pointDocs" : 474,
+      "rangeDocs" : 11,
       "undatedDocs" : 0
     },
     "frus1977-80v20" : {
@@ -7623,13 +7623,13 @@
       "undatedDocs" : 0
     },
     "frus1981-88v05" : {
-      "pointDocs" : 300,
-      "rangeDocs" : 12,
+      "pointDocs" : 299,
+      "rangeDocs" : 13,
       "undatedDocs" : 0
     },
     "frus1981-88v06" : {
-      "pointDocs" : 173,
-      "rangeDocs" : 10,
+      "pointDocs" : 172,
+      "rangeDocs" : 11,
       "undatedDocs" : 0
     },
     "frus1981-88v10" : {
@@ -7638,13 +7638,13 @@
       "undatedDocs" : 0
     },
     "frus1981-88v11" : {
-      "pointDocs" : 303,
-      "rangeDocs" : 34,
+      "pointDocs" : 304,
+      "rangeDocs" : 33,
       "undatedDocs" : 0
     },
     "frus1981-88v13" : {
-      "pointDocs" : 438,
-      "rangeDocs" : 14,
+      "pointDocs" : 436,
+      "rangeDocs" : 16,
       "undatedDocs" : 0
     },
     "frus1981-88v16" : {
@@ -7673,8 +7673,8 @@
       "undatedDocs" : 0
     },
     "frus1989-92v31" : {
-      "pointDocs" : 230,
-      "rangeDocs" : 17,
+      "pointDocs" : 233,
+      "rangeDocs" : 14,
       "undatedDocs" : 0
     }
   },

@@ -3516,6 +3516,172 @@ struct IndexIntegrityTests {
     }
 }
 
+// MARK: - DateTimeZoneDayTests (#1326)
+
+/// Writes a volume whose documents carry the corpus's own `frus:doc-dateTime-*` attributes.
+///
+/// The shared `writeTEIVolume` helper above declares no `frus` namespace and puts no attributes on
+/// the document `<div>`, which is exactly the shape that let #1326 go unnoticed: every date fixture
+/// in this file tested the `<date>` path while the shipped corpus takes the attribute path on 100%
+/// of its documents.
+private func writeDatedTEIVolume(
+    to url: URL, volumeId: String,
+    documents: [(id: String, min: String?, max: String?, xml: String)]
+) throws {
+    let docBlocks = documents.map { doc in
+        let attributes = [doc.min.map { " frus:doc-dateTime-min=\"\($0)\"" },
+                          doc.max.map { " frus:doc-dateTime-max=\"\($0)\"" }]
+            .compactMap { $0 }.joined()
+        return "<div type=\"document\" xml:id=\"\(doc.id)\"\(attributes)>\(doc.xml)</div>"
+    }.joined(separator: "\n")
+    let xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0"
+         xmlns:frus="http://history.state.gov/frus/ns/1.0">
+      <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+      <publicationStmt><date>2003</date></publicationStmt>
+      <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+      <text><body>
+        <div type="compilation" xml:id="comp1">
+          \(docBlocks)
+        </div>
+      </body></text>
+    </TEI>
+    """
+    try xml.data(using: .utf8)!.write(to: url)
+}
+
+/// `frus:doc-dateTime-*` is an INSTANT at −05:00, not a calendar day (#1326).
+///
+/// The corpus's own build writes the attribute through `adjust-dateTime-to-timezone` at `-PT5H`,
+/// which preserves the instant and rewrites the local fields. Reading its first ten characters put
+/// 11,888 documents on the wrong day across 482 of 553 volumes — 11,757 of them a day early.
+///
+/// Version history:
+///   1.0 — 2026-09-19: #1326
+@Suite("Date index — the attribute is an instant, not a day (#1326)")
+struct DateTimeZoneDayTests {
+
+    private func index(_ documents: [(id: String, min: String?, max: String?, xml: String)],
+                       in dir: URL) async throws -> [String: DocumentDateMetadata] {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        try writeDatedTEIVolume(
+            to: dir.appendingPathComponent("volumes/frus1961-63v11.xml"),
+            volumeId: "frus1961-63v11", documents: documents)
+        try await pipeline.indexVolume("frus1961-63v11")
+        return try await pipeline.dateMetadataByDocumentKey(
+            documents.map { (volumeId: "frus1961-63v11", documentId: $0.id) })
+    }
+
+    @Test("A document east of −05:00 keeps the day its dateline prints")
+    func eastOfEasternKeepsItsPrintedDay() async throws {
+        try await withTempDir { dir in
+            // frus1961-63v11/d39 verbatim: a Department telegram the volume prints as
+            // "Washington, October 22, 1962, 12:17 a.m." and the Department filed under
+            // 737.00/10-2262. Washington's own daylight time, expressed as EST, moves it back a day.
+            let meta = try await index([(
+                id: "d39",
+                min: "1962-10-21T23:17:00-05:00",
+                max: "1962-10-21T23:17:00-05:00",
+                xml: "<dateline><date when=\"1962-10-22T00:17:00-04:00\">Washington, October 22, "
+                    + "1962, 12:17 a.m.</date></dateline><head>39. Telegram</head><p>Body.</p>"
+            )], in: dir)
+            let d39 = try #require(meta["frus1961-63v11/d39"])
+            #expect(d39.dateISO == "1962-10-22", """
+                Stored \(d39.dateISO ?? "nil"). The attribute's own rendering is 1962-10-21, which \
+                is the same MOMENT expressed at −05:00 — not the day the volume prints.
+                """)
+            #expect(d39.dateISOMax == "1962-10-22", """
+                The max shifted with the min, so the stored interval does not contain the \
+                editors' day at all — 10,371 documents are in that state.
+                """)
+        }
+    }
+
+    @Test("A document west of −05:00 moves the other way, to the day it prints")
+    func westOfEasternAlsoTakesItsPrintedDay() async throws {
+        try await withTempDir { dir in
+            // frus1952-54v13p1/d105: Hawaii, printed 6 August, stored 7 August — the mirror case,
+            // and the reason the rule is "same instant" rather than "subtract a day".
+            let meta = try await index([(
+                id: "d105",
+                min: "1952-08-07T03:00:00-05:00",
+                max: "1952-08-07T03:00:00-05:00",
+                xml: "<dateline><date when=\"1952-08-06T22:00:00-10:00\">Kaneohe, Hawaii, August "
+                    + "6, 1952—10 p.m.</date></dateline><head>105. Memo</head><p>Body.</p>"
+            )], in: dir)
+            #expect(try #require(meta["frus1961-63v11/d105"]).dateISO == "1952-08-06")
+        }
+    }
+
+    @Test("A <date> naming a different instant is not allowed to move the day")
+    func aDifferentInstantLeavesTheAttributeAlone() async throws {
+        try await withTempDir { dir in
+            // The corpus is asserting something the dateline does not. The rule refuses to choose
+            // between them: 50 of the 51 such rows are the app and the stylesheet picking
+            // different <date> NODES, which is a separate defect and not this one's to fix.
+            let meta = try await index([(
+                id: "d170",
+                min: "1971-06-30T15:15:00-04:00",
+                max: "1971-06-30T15:15:00-04:00",
+                xml: "<dateline><date when=\"1971-06-28\">June 28, 1971</date></dateline>"
+                    + "<head>170. Memo</head><p>Body.</p>"
+            )], in: dir)
+            #expect(try #require(meta["frus1961-63v11/d170"]).dateISO == "1971-06-30", """
+                The attribute must still win when the two name different moments.
+                """)
+        }
+    }
+
+    @Test("A document with no <date> keeps the attribute's own day")
+    func noDateAttributeLeavesTheAttributeAlone() async throws {
+        try await withTempDir { dir in
+            let meta = try await index([(
+                id: "d7", min: "1962-10-21T23:17:00-05:00", max: "1962-10-21T23:17:00-05:00",
+                xml: "<head>7. Memo</head><p>Body with no dateline.</p>"
+            )], in: dir)
+            #expect(try #require(meta["frus1961-63v11/d7"]).dateISO == "1962-10-21")
+        }
+    }
+
+    @Test("The end of a range is corrected against its own attribute, not the start's")
+    func theMaxSideUsesTheMaxAttribute() async throws {
+        try await withTempDir { dir in
+            let meta = try await index([(
+                id: "d9",
+                min: "1962-10-21T23:17:00-05:00",
+                // 23:30 at −05:00 and 00:30 at −04:00 are the same moment on either side of
+                // midnight, which is the whole point: the attribute's own rendering says the 24th.
+                max: "1962-10-24T23:30:00-05:00",
+                xml: "<dateline><date from=\"1962-10-22T00:17:00-04:00\" "
+                    + "to=\"1962-10-25T00:30:00-04:00\">October 22–25, 1962</date></dateline>"
+                    + "<head>9. Meeting</head><p>Body.</p>"
+            )], in: dir)
+            let d9 = try #require(meta["frus1961-63v11/d9"])
+            #expect(d9.dateISO == "1962-10-22")
+            #expect(d9.dateISOMax == "1962-10-25", """
+                Stored \(d9.dateISOMax ?? "nil"). The max side needed a selector of its own: \
+                `extractStructuredDateMax` normalises as it selects, so the raw @to was never \
+                available to compare against the attribute.
+                """)
+        }
+    }
+
+    @Test("A date with no offset is never treated as an instant")
+    func anOffsetlessDateCannotMoveTheDay() async throws {
+        try await withTempDir { dir in
+            // Reading a missing offset as UTC would make two different moments compare equal and
+            // move a day that must not move. The guard is strict on purpose.
+            let meta = try await index([(
+                id: "d11", min: "1962-10-21T23:17:00-05:00", max: "1962-10-21T23:17:00-05:00",
+                xml: "<dateline><date when=\"1962-10-22T04:17:00\">October 22, 1962</date>"
+                    + "</dateline><head>11. Memo</head><p>Body.</p>"
+            )], in: dir)
+            #expect(try #require(meta["frus1961-63v11/d11"]).dateISO == "1962-10-21")
+        }
+    }
+}
+
 // MARK: - DateMetadataIndexingTests
 
 /// Verifies that `extractDateMetadata` persists the original date precision and
@@ -6056,4 +6222,3 @@ struct UITestFixtureVolumeTests {
     }
 }
 #endif
-
