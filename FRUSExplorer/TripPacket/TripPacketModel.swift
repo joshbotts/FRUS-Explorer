@@ -175,8 +175,17 @@ struct TripPacketModel: Equatable, Sendable {
         let documentId: String
         /// The history.state.gov-style citation, formatted at build.
         let citation: String
-        /// Which footnote carries the reference (the note's ordinal in the document).
-        let footnoteNumber: Int
+        /// The label the VOLUME printed for the footnote carrying the reference, or `nil` when
+        /// it printed none (#1322).
+        ///
+        /// This used to be `noteOrdinal + 1`, a synthesised number that matched the printed one in
+        /// about a fifth of notes: the stored ordinal is a reading position among the notes the
+        /// harvest keeps, and it skips the document's own source note, so in a post-1945 document
+        /// the packet was reliably one low. A pull slip that names the wrong footnote sends a
+        /// reader to the wrong page, so the label is now stored beside the ordinal at harvest and
+        /// never derived. It is NOT unique within a document — numbering restarts inside
+        /// attachments — so it says what the page prints, never which note.
+        let footnoteLabel: String?
         /// The footnote citation as printed — quoted verbatim, the packet's discipline.
         let rawText: String
         /// Whether an `Ibid.` supplied the unit — disclosed on the rendered line, because an

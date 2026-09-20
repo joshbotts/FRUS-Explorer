@@ -298,7 +298,7 @@ struct TripPacketExporter {
                        + "without publishing from it:")
             let shown = target.pointedAt.prefix(Self.seedingRowLimit)
             for seeding in shown {
-                out.append("  - \(seeding.citation), footnote \(seeding.footnoteNumber)")
+                out.append("  - " + Self.footnoteLine(for: seeding))
                 out.append("    Cited as: \(seeding.rawText)")
                 if seeding.inherited {
                     // An inherited citation is the PREVIOUS footnote's assertion of the
@@ -429,7 +429,7 @@ struct TripPacketExporter {
                 for target in unresolvedPointed {
                     out.append("  - \(target.label) (\(Self.claimCounts(target)))")
                     for seeding in target.pointedAt.prefix(Self.unresolvedNoteLimit) {
-                        out.append("      \(seeding.citation), footnote \(seeding.footnoteNumber)")
+                        out.append("      " + Self.footnoteLine(for: seeding))
                         out.append("      Cited as: \(seeding.rawText)")
                     }
                     if target.pointedAt.count > Self.unresolvedNoteLimit {
@@ -846,6 +846,24 @@ struct TripPacketExporter {
     /// The claim-separated counts line — "drawn from 3 documents · cited by 2 footnotes",
     /// NEVER "5" (§3d: counts do not sum across claims, because a document published from a
     /// file and a footnote citing one are different assertions).
+    /// One "Pointed at" line: the citation, then the footnote the volume PRINTED (#1322).
+    ///
+    /// Two branches, because `footnoteLabel` is nil in two different situations that a reader
+    /// cannot tell apart and the packet must not pretend to: the volume printed no number for
+    /// that note, or the row was harvested before index v53 and has not been re-parsed. The
+    /// wording is therefore true of both, and claims no number rather than inventing one — a pull
+    /// slip naming the wrong footnote sends the reader to the wrong page.
+    static func footnoteLine(for seeding: TripPacketModel.RefSeeding) -> String {
+        guard let label = seeding.footnoteLabel else {
+            return String(format: String(
+                localized: "archiveVisit.seeding.footnote.unrecorded %@",
+                defaultValue: "%@, footnote (no printed number recorded)"), seeding.citation)
+        }
+        return String(format: String(
+            localized: "archiveVisit.seeding.footnote.printed %@ %@",
+            defaultValue: "%@, footnote %@"), seeding.citation, label)
+    }
+
     static func claimCounts(_ target: TripPacketModel.Target) -> String {
         var parts: [String] = []
         if !target.drawnFrom.isEmpty {

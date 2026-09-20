@@ -890,10 +890,10 @@ struct ArchiveVisitEditorView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     // Format first, then parse: the wrapper adds no Markdown of its own,
                     // and parsing the whole line renders the citation's italics.
-                    Text(AttributedString(markdownBody: String(format: String(
-                        localized: "archiveVisit.seeding.footnote %@ %lld",
-                        defaultValue: "%@, footnote %lld"),
-                        seeding.citation, Int64(seeding.footnoteNumber))))
+                    // One rule for the editor and the exported packet (#1322): the number the
+                    // volume printed, or a line that claims none.
+                    Text(AttributedString(
+                        markdownBody: TripPacketExporter.footnoteLine(for: seeding)))
                         .font(.caption)
                     Text(quotedExcerpt(seeding.rawText))
                         .font(.caption2)

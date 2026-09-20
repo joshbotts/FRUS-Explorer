@@ -225,12 +225,12 @@ struct TripPacketBuilderTests {
         let lotCitation = ExternalCitation(
             anchor: "lotFile", repository: "Department of State", collection: nil,
             lotFile: "64 D 199", lotFileNorm: "64D199", fileId: "CF 1", inherited: false,
-            rawText: "Not printed. (Lot 64 D 199, CF 1)", noteOrdinal: 2)
+            rawText: "Not printed. (Lot 64 D 199, CF 1)", noteOrdinal: 2, noteLabel: "6")
         let classCitation = ExternalCitation(
             anchor: "centralFileClass", repository: "Department of State", collection: nil,
             lotFile: nil, lotFileNorm: nil, fileId: nil, inherited: false,
             rawText: "740.00119 Control (Germany)/6-2447", noteOrdinal: 3,
-            decimalClass: "740.00119")
+            decimalClass: "740.00119", noteLabel: "7")
         let stub = Stub(
             sources: [record("v1", "d1", era: "lot_file", lot: "64D199")],
             citations: ["v1/d1": [lotCitation],
@@ -245,8 +245,11 @@ struct TripPacketBuilderTests {
         #expect(model.targets[0].drawnFrom.count == 1)
         #expect(model.targets[0].pointedAt.count == 1)
         #expect(model.targets[0].pointedAt[0].rawText == "Not printed. (Lot 64 D 199, CF 1)")
-        #expect(model.targets[0].pointedAt[0].footnoteNumber == 3,
-                "the stored ordinal counts from zero; the printed marker from one")
+        #expect(model.targets[0].pointedAt[0].footnoteLabel == "6", """
+            The packet must cite the number the VOLUME printed, stored beside the ordinal at \
+            harvest (#1322). This stub's note sits at ordinal 2 and prints "6", so the old \
+            `noteOrdinal + 1` gives 3 and `+ 2` gives 4 — both wrong, and both plausible.
+            """)
         // d2's only reference was a class citation — filtered, so it does NOT count as a
         // document with references; both documents were scanned.
         #expect(model.referenceCoverage.documentsWithReferences == 1)

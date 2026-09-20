@@ -363,6 +363,16 @@ libraries, and CIA Job citations alike. Never group by it and label the axis "er
 **`external_citations`** — **many rows per document**, keyed
 `(volume_id, document_id, note_ordinal, citation_index)`: archival material the editors *cited in a
 footnote*, largely things FRUS did not print.
+**`note_ordinal` is not the footnote number on the page, and `note_label` is** (#1322, index v53).
+The ordinal is a reading position among the notes the harvest keeps, counted from zero, and that
+walk drops the document's own source note — which post-1945 volumes print as footnote 1 — so
+`note_ordinal + 1` is reliably one low there. Measured over the corpus it equals the printed number
+for 92,275 of 469,188 body notes: 386 volumes number chapter-continuously or restart inside an
+attachment, 11,125 notes print a symbol (`*`, `†`) rather than a digit, and 55 print nothing. Quote
+`note_label` when citing a footnote, and treat it as what the page shows rather than as an
+identifier — 6,912 documents repeat a label among their own body notes, so it does not identify a
+note. `note_label` is NULL when the volume printed no number, and also in any row written before
+v53 and not yet re-parsed.
 Three structural facts, measured on the 2026-08-31 build. **The table begins at 1910-12-06**: it has
 no row on any document dated earlier, so for the 43,156 non-apparatus documents dated 1860–1909
 (13.7% of the 315,827 documents outside front matter) the pointed-at channel is empty by

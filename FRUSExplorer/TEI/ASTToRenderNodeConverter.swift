@@ -79,6 +79,27 @@ public struct ASTToRenderNodeConverter {
     /// Used as part of `DocumentHighlight.renderingVersion`.
     public static let kVersion = "1.2"
 
+    /// The label a volume PRINTED for a footnote, or `nil` when it printed none (#985).
+    ///
+    /// `@n` is taken verbatim from the TEI, so present-but-blank must be treated as absent: one
+    /// note corpus-wide carries `n=""` (`frus1969-76v25 d146`) and six carry a leading space
+    /// (`n=" 1"`). A bare `printedNumber != nil` test admits both, and the empty one reintroduces
+    /// exactly the defect #985 removed — an unlabelled marker keyed on an empty string.
+    ///
+    /// **One rule, two callers (#1322).** The reader draws this label, and
+    /// `IndexingPipeline.collectBodyFootnoteTexts` stores it beside each harvested citation so a
+    /// trip packet can cite the number the volume printed. They must normalise `@n` identically or
+    /// the packet and the page disagree about the same note, so the rule lives here rather than
+    /// being written twice.
+    ///
+    /// The label is NOT unique within a document: measured over the corpus, 6,912 documents
+    /// (22,601 notes) repeat one, because numbering restarts inside attachments. It identifies
+    /// what the volume printed, never which note.
+    public static func printedLabel(from printedNumber: String?) -> String? {
+        let trimmed = printedNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmed?.isEmpty == false) ? trimmed : nil
+    }
+
     // MARK: - Rendering Version
 
     /// Computes the 16-character hex `renderingVersion` for a render model.
@@ -287,8 +308,7 @@ public struct ASTToRenderNodeConverter {
             // reintroduces exactly the defect this change removes — an unlabelled marker keyed on
             // an empty string. The counter still advances for every note, so the DOM key below is
             // dense and stable regardless.
-            let trimmedPrintedNumber = printedNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let displayLabel: String? = (trimmedPrintedNumber?.isEmpty == false) ? trimmedPrintedNumber : nil
+            let displayLabel = Self.printedLabel(from: printedNumber)
             let convertedChildren = convertNodes(children)
             // When a footnote contains only inline nodes (no <p> wrapper in the source TEI),
             // wrap them in a single .paragraph so the renderer treats them as continuous prose
