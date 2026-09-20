@@ -17548,3 +17548,62 @@ which is correct and is why the east case guards the other direction.
 
 **Process note, recorded because it cost time:** the A/B was run before committing, so the
 `git checkout --` that restored the mutant also discarded the fix. Commit first — the rule exists.
+
+## Session 2026-09-20 — The summary prompts asked for an office nothing on the device could check
+
+**The question:** #1329, R14 of the #234 reframe assessment, severed from that program by the
+2026-09-19 open-issues plan as a live defect needing no research decision.
+
+Three of the eight seeded templates asked the on-device model to identify the people in a document
+and three asked for their **offices**; only one of the four carried a no-speculation clause. On the
+**266 of 553 volumes that publish no List of Persons — 197,082 of 314,571 documents** — the app
+holds no `persons` rows, so a name or a title the document does not print can only come from the
+model's training data. The text is then stored in a CloudKit-mirrored `@Model`, indexed into FTS,
+and **searched by default**, where a summary-only match renders the header fallback snippet and
+looks exactly like a corpus hit.
+
+**The half that decided the shape of the fix is that rewording the literal reaches nobody.**
+`seed(in:)` skips a template whose NAME is already present and never reads the row; generation runs
+the stored row, not the literal. So for four years a shipped prompt has been unreachable after first
+launch. `refreshStandardPrompts(context:)` closes it, and runs at **both** call sites for the reason
+`collapseDuplicates` already documents: boot's pass cannot see the rows a second device's CloudKit
+import is about to deliver.
+
+**Three things the refresh has to do that a first reading of the issue would miss.** It compares
+`schema` and `responseFormat`, not only `promptText` — three of the seven office asks were
+structured FIELD DESCRIPTIONS, which are stored on the row (twice) and reach the model verbatim, so
+a prose-only refresh would have shipped the reworded prompt beside a schema still asking for an
+official capacity. It stamps `lastModified` by hand, because `SummarizationPrompt`'s five
+`didSet { lastModified = .now }` observers never fire (the `@Model` macro discards them —
+`ModelModificationStamper` documents it and `ModelLastModifiedTests` measures it) and the type is not
+a `LastModifiedStamping` conformer, so a device still on the old wording would win the merge and put
+the stale text back. And it touches only `isStandard == true` rows, because a reader's own prompt may
+share a name with a standard one.
+
+**The join key stays the localized name, and that is a measured decision rather than an omission.**
+The app ships no localization — no `.lproj`, no string catalog, `knownRegions = (Base, en)`, and the
+one vestigial `Localizable.strings` holds two keys, neither a prompt key — so every
+`String(localized:…, defaultValue:)` resolves to its default on every device, and `seed`'s skip, the
+collapse's grouping and the refresh's join already key on the same string. Adding a translation for
+`prompt.template.*.name` would break all three together, which is stated in the doc comment rather
+than worked around with a stably-keyed `templateKey` that would have cost a CloudKit Production
+deploy for a wording fix.
+
+**No index bump and no CloudKit gate.** Prompt text is not parse output, and all seven
+`CD_SummarizationPrompt` fields are already in `installedIdentifiers`.
+
+**Eleven tests, and the two that matter are the ones a mechanism-only reading would not have written:**
+a stale SCHEMA refreshed while the prose already matches (the test that kills a `promptText`-only
+implementation), and two content tests over `standardTemplates` — every people-facing template must
+tie its answer to the document, and none may carry any of the five retired phrasings — because every
+other test in the suite would pass just as well on the wording the issue was filed about. A/B against
+pre-fix code and against three mutants is recorded in the PR.
+
+**Left open, and named rather than folded in:** R14's third limb, "exclude generated names from name
+search". The structured person surfaces are already clean — the People browser, autocomplete, the
+person filter, the People facet and Person Analytics read only `persons` / `person_mentions` /
+`person_rollup*`, all TEI-derived — so the residual is exactly one path, the free-text query, where
+`SearchDefaults.scopeSummaries` defaults true and `SearchResult` carries no matched-column field.
+Changing that default, or badging a summary match, is a behaviour change the manual currently
+promises against ("indexed for full-text search — so a later search can match text that appears only
+in a summary"), and it is the owner's call.
