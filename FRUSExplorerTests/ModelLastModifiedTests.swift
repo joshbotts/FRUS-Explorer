@@ -26,7 +26,10 @@ import Testing
 /// a device holding an old copy wins every merge — restoring entries the researcher deleted and
 /// reverting edits — and nothing on screen says so.
 ///
-/// Four models kept it current with `didSet` observers — 73 of them — and **none has ever fired**.
+/// Seven models kept it current with `didSet` observers — **78** of them — and **none has ever
+/// fired**. (That read "four models … 73" until 2026-09-20; the five it was short by were
+/// `SummarizationPrompt`'s, and the undercount is why three of the seven spent a year outside the
+/// conformer list.)
 /// The `@Model` macro rewrites a stored property into a computed pair backed by the managed store,
 /// and a computed property cannot carry a property observer, so the bodies are discarded silently.
 ///
@@ -37,6 +40,9 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — M-1 follow-up: initial implementation
+///   1.1 — 2026-09-20: the observer census corrected to seven models / 78 observers, and
+///         `ModelModificationStamperTests` gains the three conformers the original sweep missed
+///         plus a guard that generalises past them.
 @Suite("Model didSet observers do not fire")
 @MainActor
 struct ModelLastModifiedTests {
@@ -120,7 +126,7 @@ struct ModelLastModifiedTests {
 
 // MARK: - ModelModificationStamperTests
 
-/// The save-time stamp that replaces 73 observers which never fired.
+/// The save-time stamp that replaces 78 observers which never fired.
 ///
 /// Every case asks whether the stamp reaches the **persisted** row, not merely the in-memory
 /// object: a stamp applied during `willSave` but excluded from that save would lag by one write,
@@ -131,8 +137,91 @@ struct ModelModificationStamperTests {
 
     private func container() throws -> ModelContainer {
         try ModelContainer(
-            for: Project.self, Collection.self, ResearchNote.self, WorkingCorpus.self,
+            for: Project.self, Collection.self, CollectionEntry.self, ResearchNote.self,
+            WorkingCorpus.self, SummarizationPrompt.self, UserTag.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none))
+    }
+
+    /// The three types the original sweep counted and then left out of the conformer list.
+    ///
+    /// Each is CloudKit-mirrored, each carries a `lastModified` that is already in the deployed
+    /// schema, and each carried `didSet` stamps that never fire — so before the conformance every
+    /// one of them lost every merge to whichever device had written first, silently.
+    @Test("The stamp reaches the three conformers the first sweep missed")
+    func stampsTheThreeTypesTheSweepMissed() throws {
+        let container = try container()
+        let context = container.mainContext
+        let stamper = ModelModificationStamper()
+        stamper.start(observing: context)
+        defer { stamper.stop() }
+        let epoch = Date(timeIntervalSince1970: 0)
+
+        let prompt = SummarizationPrompt(name: "Standard", promptText: "one",
+                                         responseFormat: .general, isStandard: true)
+        let tag = UserTag(name: "Berlin")
+        let collection = Collection(name: "Potsdam")
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1",
+                                    volumeId: "v1", sortOrder: 0)
+        context.insert(prompt)
+        context.insert(tag)
+        context.insert(collection)
+        context.insert(entry)
+        try context.save()
+
+        prompt.lastModified = epoch
+        tag.lastModified = epoch
+        entry.lastModified = epoch
+        try context.save()
+
+        prompt.promptText = "two"
+        tag.name = "Berlin 1948"
+        entry.text = "read this first"
+        try context.save()
+
+        for (label, stamped) in [("SummarizationPrompt", prompt.lastModified),
+                                 ("UserTag", tag.lastModified),
+                                 ("CollectionEntry", entry.lastModified)] {
+            let stamp = try #require(stamped, "\(label) has no lastModified at all")
+            #expect(stamp > epoch, """
+                \(label) was edited and saved and its stamp did not move, so a device holding an \
+                older copy wins the merge.
+                """)
+        }
+    }
+
+    /// The guard that generalises past the three, and the one that would have caught them.
+    ///
+    /// The conformer list is hand-maintained prose beside a protocol, and it was built from a
+    /// census that had undercounted. Nothing connected "this model carries `lastModified`" to
+    /// "this model is stamped" — so this walks the mirrored schema and asserts the join.
+    @Test("Every mirrored model that carries lastModified is a stamping conformer")
+    func everyModelCarryingTheFieldIsAConformer() throws {
+        let schema = Schema(ModelContainer.frusModelTypes)
+        let carriers = Set(
+            schema.entities
+                .filter { $0.properties.contains { $0.name == "lastModified" } }
+                .map(\.name)
+        )
+        // A walk that matched nothing would make this vacuously green.
+        #expect(carriers.count >= 10, """
+            the schema walk found only \(carriers.count) model(s) carrying lastModified; the walk \
+            is not reading the schema
+            """)
+
+        let conformers = Set(
+            ModelContainer.frusModelTypes
+                .filter { $0 is any LastModifiedStamping.Type }
+                .map { String(describing: $0) }
+        )
+        let missing = carriers.subtracting(conformers).sorted()
+        #expect(missing.isEmpty, """
+            \(missing.count) mirrored model(s) carry `lastModified` and are not \
+            `LastModifiedStamping`, so nothing advances the field CloudKit resolves merges on. \
+            Add a conformance in ModelModificationStamper.swift — it costs no stored property and \
+            no schema deploy.
+
+            \(missing.joined(separator: "\n"))
+            """)
     }
 
     @Test("An edit followed by a save advances lastModified in the SAVED row")
