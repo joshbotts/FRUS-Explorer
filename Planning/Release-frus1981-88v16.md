@@ -410,5 +410,5 @@ the harvester skips volumes whose `head.json` exists).
 
 Neither caused by these commits: **#1321** — a persons list grouped by initial letter parses to zero
 entries since #741 (v16 and ~35 other shipped volumes); **#1322** — the trip packet cites footnote
-numbers one lower than printed; **#1323** — `rend="strong"`, the corpus's only bold, renders plain.
+numbers one lower than printed; **#1323** — `rend="strong"`, the corpus's only bold, renders plain (**fixed**; v16 d454's "Tab A" is one of its visual-review cases).
 Also worth reporting to OH: the doubled `)` in d395 fn4 (`4e9694796`).

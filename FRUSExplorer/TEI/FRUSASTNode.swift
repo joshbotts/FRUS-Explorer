@@ -386,6 +386,7 @@ public enum FootnoteType: String, Sendable, Codable {
 /// Visual style for `<hi>` elements, derived from the `rend` attribute.
 public enum EmphasisStyle: String, Sendable, Codable {
     case italic
+    /// `rend="strong"` in this corpus, which never writes `rend="bold"` (#1323).
     case bold
     case smallCaps  // rend="smallcaps"
     case underline

@@ -17056,3 +17056,42 @@ whichever SwiftData tests are in flight. It reproduces on `v2` (2 of 19 in the s
 same signature), so it predates this change. Every suite whose file or data moved was re-run by
 type name and passed (VolumeTagJoin, ResolvedEdgeIndex, ProvenanceFlowIndex, SourceProvenanceData,
 VolumeCatalogueGrouping, ArchivalFlowsData, ArchivalFlowsUnprintedLayer, CodingStandardsAudit).
+
+## Session 2026-09-19 — the corpus's bold has never rendered: rend="strong" was never mapped
+
+**The question:** #1323, first of the TEI lane in the open-issue resolution plan. `<hi rend="strong">`
+is the only bold FRUS writes — 158,100 uses against 0 for `bold` and `b` — and Session 06 mapped the
+generic TEI spellings instead, so every bold run in the corpus has rendered as plain text.
+
+**Why nothing caught it.** Both tests that exercised bold used a synthetic `rend="bold"`, a spelling
+the corpus never contains — `inlineNoteIsTransparent` even modelled an attachment label with it. The
+fixture asserted the mapping worked on markup FRUS does not write. That test now uses the corpus's
+own spelling, and `parseEmphasisBold` stays as the alias guard.
+
+**What turns bold, and it is more than the issue says.** 34,298 of the 41,951 in-document `strong`
+occurrences are SIGNATURES, in 33,477 documents — by far the dominant visible change, and the issue
+never mentions them. Accepted rather than special-cased, because history.state.gov renders them bold
+(`hsg-shell transform/frus.css:18`) and a context-sensitive rule would be a divergence from the
+source this app does not otherwise take. Also: terms-list headwords, and attachment labels such as
+"Tab A" and "Attachment" in 1,673 documents.
+
+**The CSS pin is not cosmetic.** WebKit's UA weight for `<strong>` is `bolder`, which is RELATIVE, so
+inside the reader's 600-weight headings it resolves to 900 — and OH wraps 1,004 whole attachment
+heads in `strong` (820 documents), which would then print heavier than the same head in a volume that
+does not. Pinned to 700 with `inherit` inside headings, in BOTH stylesheets: the reader's
+`HTMLTemplate` and `CollectionItemHTMLRenderer.collectionExportCSS`, which embeds the same serializer
+output and had no `strong` rule either.
+
+**No index bump, no kVersion bump, and the second one needed a measurement rather than an argument.**
+`flatText` recursing `.boldText` covers `renderingVersion`/`body_hash`, but NOT
+`FRUSRenderNode.appendFlatTextBlocks`, which treats `.boldText` as inline while a spliced block child
+would have flushed. The measurement closes it: over 158,059 `strong` elements not one has a direct
+block child — only `<note>` (350), `<lb/>` (74) and 2 `<p>`s nested inside such a note. A test pins
+both hashes against an unmapped-`rend` twin, with a third assertion that the two models genuinely
+differ so it cannot pass once the mapping is deleted.
+
+**Verified:** 134 tests in 5 suites (`StrongEmphasisTests`, `TEIParserTests`, `ParseVolumeFullTests`,
+`FRUSRenderNodeHTMLSerializerTests`, `FRUSOffsetEngineTests`), each with a non-zero executed count —
+the plan's first draft named two `-only-testing` arguments that are not types and would have run
+zero. Mutation check after committing: deleting `"strong"` from the map takes the new suite and the
+changed guard red.
