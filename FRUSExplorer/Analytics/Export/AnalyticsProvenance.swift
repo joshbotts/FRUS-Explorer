@@ -41,6 +41,12 @@ import Foundation
 /// which the export tests (`AnalyticsExportTests.swift`, `SeriesAnalyticsExportTests.swift`) read as the default rule's marker. Rewording
 /// it is separate work.
 ///
+/// #1326 adds a second thing this caveat does not say: `frus:doc-dateTime-min` is an INSTANT the
+/// corpus normalises to −05:00, not a calendar day. The index now takes the day from the document's
+/// own dateline wherever the two name the same instant, which moved 11,847 documents — 11,726 of
+/// them a day forward — across 480 volumes. Exports carrying this caveat describe the rule at one
+/// remove until it is reworded; the administration export's own `datingRule` states it in full.
+///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
 ///   1.1 — #1299 (docs only): says the in-app dating row and `datingCaveat` no longer match word for word

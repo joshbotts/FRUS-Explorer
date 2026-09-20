@@ -17235,3 +17235,56 @@ what the page prints, never as something that identifies a note.
 pipeline through `TripPacketDataSource` → `TripPacketBuilder` → `TripPacketExporter` and asserts the
 exported text contains ", footnote 6" and not ", footnote 4" — a mirrored stub would have kept
 passing while the shipped path printed the ordinal.
+
+## Session 2026-09-19 — the date index read an instant as a calendar day
+
+**The question:** #1326, found while re-measuring a figure during the open-issue review.
+`frus:doc-dateTime-min` is an INSTANT — the corpus's own `update-frus-doc-dates.xsl` writes it
+through `adjust-dateTime-to-timezone` at `-PT5H`, a function that preserves the moment and rewrites
+the local fields. The pipeline took its first ten characters as the day.
+
+**Upstream is not wrong; the reading was.** The convention is nearly a decade old (the offset became
+−05:00 at corpus `9f3c2d57c`, 2017-12-06) and 338,054 of 338,654 occurrences carry it. Any document
+whose own offset is east of −05:00 and whose local time falls before 05:00 moved back a day — which
+includes **Washington itself for half the year**, because the stylesheet uses EST all year round. The
+telegram the 1962 volume prints as *Washington, October 22, 1962, 12:17 a.m.*, filed by the
+Department under `737.00/10-2262`, was stored as 21 October and marked `precision: day, certainty:
+exact`, because those come from the `<date>` the value was not taken from.
+
+**Measured with this code over all 553 manifest volumes, both arms** (a temporary in-target harness
+over 315,915 documents, removed before commit):
+
+| | before → after |
+|---|---|
+| documents whose stored day moves | **11,847** |
+| shift distribution | **±1 day only** — 11,726 forward, 121 back |
+| volumes touched | **480** |
+| max day moves | 10,581 |
+| all six of the issue's acceptance cases | land on their printed day |
+
+The six include document 1 of the 1935 volume, which was stored in **1934** and therefore did not
+appear in a search scoped to its own volume's year.
+
+**The rule is `sameInstantDay`, and the equality is the whole guard.** Where the editors' `<date>`
+names the same moment, its local rendering is the day they meant; where it names a different moment
+the corpus is asserting something the dateline does not, and the attribute still wins. That leaves
+the 51 more-than-a-day rows alone — 50 of which are the app and the stylesheet choosing different
+`<date>` NODES, a second and smaller divergence that is not this issue's to fix. Parsing is strict
+about the offset: a `<date>` with none has no instant to compare, and reading it as UTC would make
+two different moments compare equal and move a day that must not move.
+
+**The max side needed a selector of its own.** `winningMinDateAttribute` existed; the max side only
+had `extractStructuredDateMax`, which normalises as it selects, so the raw `@to` was never available
+to compare.
+
+**The bundled artifact shared the defect and is regenerated.**
+`AdministrationProfilesIndexGeneratorCore.DocumentDateExtractor` took the same `prefix(10)` with no
+`<date>` fallback — stated as a design choice — so `administration-profiles-index.json` carried the
+same shift. It now reads each document's dateline and applies the same rule (mirrored, not shared:
+the app target is not linkable from the package, so both sides carry their own fixtures). Effect:
+**45 documents stop being "ranges"** — their min and max straddled midnight only in the −05:00
+rendering — so point 303,359 → 303,404 and range 11,212 → 11,167, with 12 administrations' counts
+moving. Nixon 13,611 → 13,609 and Ford 4,333 → 4,336, both pinned by an artifact test.
+
+**`currentDateIndexVersion` 53 → 54.** Three parse-output changes now sit unbuilt on `v2` (#1321's
+52, #1322's 53, this 54), so **build 48 should be cut once** and pay the re-parse once.

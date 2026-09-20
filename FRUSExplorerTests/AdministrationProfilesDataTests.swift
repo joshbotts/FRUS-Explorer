@@ -424,8 +424,13 @@ struct AdministrationProfilesDataTests {
         // Nixon and Ford are DISTINCT administrations with distinct point counts.
         let nixon = index.administrations.first { $0.id == "nixon" }
         let ford = index.administrations.first { $0.id == "ford" }
-        #expect(nixon?.pointDocCount == 13611)
-        #expect(ford?.pointDocCount == 4333)
+        // #1326 moved both, and the direction is the point: `frus:doc-dateTime-*` is an instant
+        // at −05:00, so a document whose dateline names the same moment east of that offset was
+        // filed a day early. Nixon 13,611 → 13,609 and Ford 4,333 → 4,336 — and across the whole
+        // artifact 45 documents stop being "ranges" at all, because their min and max straddled
+        // midnight only in the −05:00 rendering (point 303,359 → 303,404, range 11,212 → 11,167).
+        #expect(nixon?.pointDocCount == 13609)
+        #expect(ford?.pointDocCount == 4336)
         #expect(nixon?.president == "Richard M. Nixon")
         #expect(ford?.president == "Gerald R. Ford")
 
