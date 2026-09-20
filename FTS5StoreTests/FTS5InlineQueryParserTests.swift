@@ -520,31 +520,45 @@ struct FTS5InlineQueryParserTests {
 
     // MARK: - NEAR degradation
 
-    @Test("Booleans inside NEAR degrade to an ordinary group — never invalid FTS5")
-    func nearRejectsBooleans() {
-        // FTS5 rejects `NEAR(a OR b, 5)` outright. The contract is to keep searching the
-        // user's words rather than to fail: the NEAR keyword is dropped and the
-        // parenthesised contents render as a boolean group.
-        //
-        // Note the `"europe,"` operand. The degraded path is the *ordinary* token path,
-        // and `sanitizeBareToken` has never stripped commas, so the comma rides along
-        // into the quoted term. That is harmless rather than sloppy: inside FTS5 double
-        // quotes `unicode61` treats a comma as a token separator, so `"europe,"` matches
-        // exactly what `"europe"` matches. `degradedNearsStillExecute` proves it runs.
-        #expect(FTS5InlineQueryParser.parse("NEAR(military OR europe, 5)")
-                == "(\"military\" OR \"europe,\" AND \"5\")")
-        #expect(FTS5InlineQueryParser.parse("NEAR(military NOT europe, 5)")
-                == "(\"military\" NOT \"europe,\" AND \"5\")")
+    @Test("A boolean inside NEAR refuses the query rather than becoming one (#1304)")
+    func nearRefusesBooleans() {
+        // THIS TEST REPLACES THE DEGRADATION CONTRACT IT USED TO PIN. Until #1304 the NEAR
+        // keyword was dropped and the parentheses rendered as an ordinary boolean group, so
+        // `NEAR(military OR europe, 5)` searched `("military" OR "europe," AND "5")` — an OR
+        // where a proximity search was asked for, AND the DISTANCE searched as a word. The
+        // reader got a plausible count for a query nobody wrote and no way to tell.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military OR europe, 5)") == nil)
+        #expect(FTS5InlineQueryParser.parse("NEAR(military NOT europe, 5)") == nil)
+        #expect(FTS5InlineQueryParser.parse("NEAR(military AND europe, 5)") == nil)
+        // The reason travels with the refusal, so a surface can say which NEAR and why.
+        let parsed = FTS5InlineQueryParser.parseDetailed("NEAR(military OR europe, 5)")
+        #expect(parsed.malformedProximity == .operatorInside(text: "NEAR( military OR europe, 5 )"),
+                "got \(String(describing: parsed.malformedProximity))")
     }
 
-    @Test("Negation and nested groups inside NEAR degrade the same way")
-    func nearRejectsNegationAndNesting() {
-        #expect(FTS5InlineQueryParser.parse("NEAR(military -europe, 5)")
-                == "(\"military\" NOT \"europe,\" AND \"5\")")
-        // A nested group keeps its own parentheses, so the comma lands on the token
-        // *after* the inner close paren and never reaches an operand here.
-        #expect(FTS5InlineQueryParser.parse("NEAR((military europe), 5)")
-                == "((\"military\" AND \"europe\") AND \"5\")")
+    @Test("A negation or a nested group inside NEAR refuses the same way (#1304)")
+    func nearRefusesNegationAndNesting() {
+        // The negation case was the worst of them: `"military" NOT "europe,"` excluded every
+        // document holding europe ANYWHERE, which is the opposite of proximity.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military -europe, 5)") == nil)
+        #expect(FTS5InlineQueryParser.parse("NEAR((military europe), 5)") == nil)
+        #expect(FTS5InlineQueryParser.parse("NEAR(NEAR(cold war, 5) europe, 5)") == nil)
+        for query in ["NEAR(military -europe, 5)", "NEAR((military europe), 5)"] {
+            #expect(FTS5InlineQueryParser.parseDetailed(query).malformedProximity != nil, "\(query)")
+        }
+    }
+
+    @Test("A NEAR the parser accepts is unaffected by the refusal (#1304)")
+    func wellFormedNearStillRenders() {
+        // The guard against over-refusing: these are the forms the refusal must not touch.
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe, 5)")
+                == "NEAR(\"military\" \"europe\", 5)")
+        #expect(FTS5InlineQueryParser.parse("NEAR(military europe)")
+                == "NEAR(\"military\" \"europe\", 10)")
+        #expect(FTS5InlineQueryParser.parse("NEAR/5(military europe)")
+                == "NEAR(\"military\" \"europe\", 5)")
+        #expect(FTS5InlineQueryParser.parseDetailed("NEAR(military europe, 5)")
+                .malformedProximity == nil)
     }
 
     @Test("A degraded NEAR's comma-bearing operand matches the same documents as the bare word")
@@ -649,18 +663,22 @@ struct FTS5InlineQueryParserTests {
         #expect(try execute(expr, corpus: Self.nearCorpus) == 4)
     }
 
-    @Test("Every degraded NEAR is still valid FTS5, not merely non-NEAR")
-    func degradedNearsStillExecute() throws {
-        let c = Self.nearCorpus
-        // The degradation contract is worthless if the fallback is itself a syntax error.
-        _ = try runMatch("NEAR(military OR europe, 5)", corpus: c)
-        _ = try runMatch("NEAR(military NOT europe, 5)", corpus: c)
-        _ = try runMatch("NEAR(military -europe, 5)", corpus: c)
-        _ = try runMatch("NEAR((military europe), 5)", corpus: c)
-        _ = try runMatch("NEAR(military europe, -1)", corpus: c)
-        _ = try runMatch("NEAR(military europe, 3.5)", corpus: c)
-        _ = try runMatch("NEAR(military europe, x)", corpus: c)
-        _ = try runMatch("NEAR/5(military europe, 30)", corpus: c)
+    @Test("A malformed NEAR renders nothing at all — never invalid FTS5, never a different search")
+    func malformedNearsRefuseRatherThanRender() throws {
+        // The old contract was "always render something executable", and these eight queries
+        // proved the fallback was not itself a syntax error. #1304 replaces the contract: the
+        // right answer is to render NOTHING and say why. The property that survives is the one
+        // that mattered — the parser never emits invalid FTS5 — so each is checked to be nil,
+        // and the `= nil` is what makes that unambiguous rather than untested.
+        for query in ["NEAR(military OR europe, 5)", "NEAR(military NOT europe, 5)",
+                      "NEAR(military -europe, 5)", "NEAR((military europe), 5)",
+                      "NEAR(military europe, -1)", "NEAR(military europe, 3.5)",
+                      "NEAR(military europe, x)", "NEAR/5(military europe, 30)"] {
+            #expect(FTS5InlineQueryParser.parse(query) == nil, "\(query) should be refused")
+            #expect(FTS5InlineQueryParser.parseDetailed(query).malformedProximity != nil, "\(query)")
+        }
+        // And the well-formed neighbour still executes against a real FTS5 table.
+        #expect(try runMatch("NEAR(military europe, 30)", corpus: Self.nearCorpus) == 4)
     }
 }
 

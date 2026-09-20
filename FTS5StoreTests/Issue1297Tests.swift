@@ -804,7 +804,12 @@ struct Issue1297DepthTests {
         Issue1297NestingPattern(name: "(a OR …)", open: "(a OR ", inner: "cold", innerLevels: 0),
         Issue1297NestingPattern(name: "war NOT (…)", open: "war NOT (", inner: "cold", innerLevels: 0),
         Issue1297NestingPattern(name: "(…NEAR(…)…)", open: "(", inner: "NEAR(cold war, 5)", innerLevels: 1),
-        Issue1297NestingPattern(name: "NEAR(NEAR(…))", open: "NEAR(", inner: "cold war", innerLevels: 0),
+        // `NEAR(NEAR(…))` was here until #1304, when a nested group inside a NEAR stopped
+        // degrading into an ordinary boolean group and started REFUSING the query. It nests
+        // nothing now — the parse stops at the first NEAR — so it cannot measure depth, and
+        // `Issue1304Tests.nestedProximityIsRefusedAtAnyDepth` pins the refusal instead. The
+        // `(…NEAR(…)…)` pattern above still carries a valid NEAR through every level.
+
         Issue1297NestingPattern(name: "-(a OR -b …)", open: "-(a OR -b ", inner: "cold", innerLevels: 0),
         // The same nesting around an exclusion leaves every level a complement to push inward (round-2 P3).
         Issue1297NestingPattern(name: "-(a OR -b … -korea)", open: "-(a OR -b ", inner: "-korea", innerLevels: 0),

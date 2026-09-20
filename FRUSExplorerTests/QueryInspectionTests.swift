@@ -1548,4 +1548,34 @@ struct QueryInspectionTests {
         #expect(inspection.indexedVolumeCount == 37,
                 "the denominator is per-device, never the manifest's 552")
     }
+
+    // MARK: - #1304: the refused-NEAR line
+
+    @Test("A malformed NEAR is refused, and the inspection names it")
+    func malformedNearIsNamedInTheInspection() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let inspection = await inspector.inspect(
+            parameters: SearchParameters(keywords: "cold NEAR(military -europe, 5)"),
+            indexedVolumeCount: 1)
+        #expect(inspection.expression == nil, """
+            The whole query is refused, not just the NEAR — running the rest would answer a \
+            question the reader did not ask and give them no way to tell.
+            """)
+        #expect(inspection.isRefused)
+        let named = try? #require(inspection.malformedProximity)
+        #expect(named?.contains("europe") == true, "got \(named ?? "nil")")
+    }
+
+    @Test("An ordinary refusal carries no proximity reason")
+    func ordinaryRefusalCarriesNoProximityReason() async throws {
+        let (dir, inspector) = try await makeFixture()
+        defer { cleanUp(dir) }
+        let inspection = await inspector.inspect(
+            parameters: SearchParameters(keywords: "-korea"), indexedVolumeCount: 1)
+        #expect(inspection.isRefused)
+        #expect(inspection.malformedProximity == nil, """
+            The proximity line would send a reader looking for a NEAR that is not there.
+            """)
+    }
 }

@@ -621,6 +621,12 @@ public enum FTS5InlineQueryParser {
             parts.append(typed)
         }
         parts += structuredParts(structured, columnPrefix: columnPrefix, into: &harvest)
+        // #1304: a malformed `NEAR(…)` refuses the WHOLE query, even when the rest of it would
+        // render. Running the remainder would answer a question the reader did not ask and give
+        // them no way to tell — which is the defect, not a lesser form of it.
+        if let reason = harvest.malformedProximity {
+            return (ParsedQuery(expression: nil, exactTerms: [], malformedProximity: reason), nil)
+        }
         guard !parts.isEmpty else { return (ParsedQuery(expression: nil, exactTerms: []), nil) }
         let root = Node.parts(parts)
         var dropped = Set<Int>()
@@ -774,6 +780,11 @@ public enum FTS5InlineQueryParser {
     private struct Harvest {
         /// Every operand the query rendered, in the order typed.
         var operands: [ProtoOperand] = []
+        /// The FIRST malformed `NEAR(…)` the parse met, or `nil` (#1304).
+        ///
+        /// First rather than all of them: the reader is told what is wrong with the query, and a
+        /// list of every proximity fault in one query is a worse message than the earliest one.
+        var malformedProximity: MalformedProximity?
     }
 
     // MARK: - Boolean Tree
@@ -1029,24 +1040,27 @@ public enum FTS5InlineQueryParser {
                index + 1 < tokens.count, tokens[index + 1] == "(",
                let close = partners[index + 1] {
                 let inner = Array(tokens[(index + 2)..<close])
-                if let rendered = renderNear(inner: inner,
-                                             aliasDistance: near.aliasDistance,
-                                             columnPrefix: columnPrefix) {
+                switch renderNear(inner: inner,
+                                  aliasDistance: near.aliasDistance,
+                                  columnPrefix: columnPrefix) {
+                case .rendered(let rendered):
                     harvest.operands.append(ProtoOperand(
                         text: (["NEAR("] + inner + [")"]).joined(separator: " "),
                         core: rendered, kind: .proximity, isExact: false, exactTerm: nil))
                     items.append(.node(.leaf(rendered, operand: harvest.operands.count - 1)))
-                    index = close + 1
-                    continue
+                case .empty:
+                    // Nothing searchable and nothing forbidden: skip the whole span. The rest of
+                    // the query still runs, so `cold NEAR(, 5)` searches for cold.
+                    break
+                case .malformed(let reason):
+                    // #1304: the query is REFUSED, not degraded. Degrading ran a different
+                    // search and said nothing: `NEAR(military europe, 5)` with a bad distance
+                    // searched for the digit as a word, and `NEAR(military -europe, 5)` ran
+                    // `"military" NOT "europe"`, excluding every Europe document in the corpus.
+                    // Both returned plausible numbers for a search nobody asked for.
+                    if harvest.malformedProximity == nil { harvest.malformedProximity = reason }
                 }
-                // Malformed NEAR — an operand FTS5 forbids inside one (a boolean, a
-                // negation, a nested group), or a distance that is not a bare
-                // non-negative integer. Drop *only* the `NEAR` keyword and let the very
-                // next iteration render `(...)` as an ordinary boolean group, so the
-                // words the user typed are still searched. This is the established
-                // graceful-degradation contract: never emit invalid FTS5, never silently
-                // return nothing.
-                index += 1
+                index = close + 1
                 continue
             }
 
@@ -1798,40 +1812,76 @@ public enum FTS5InlineQueryParser {
     /// the user asked for.
     private static func renderNear(
         inner: [String], aliasDistance: String?, columnPrefix: String
-    ) -> String? {
+    ) -> NearRendering {
+        // #1304: FORBIDDEN CONTENT IS CHECKED FIRST, before the distance and before
+        // emptiness, because it is the reason the reader most needs named and because the
+        // other two can mask it — `NEAR(a OR b)` has no distance position at all, and
+        // `NEAR(-a, 5)` renders nothing once the negation is dropped.
+        let nearText = (["NEAR("] + inner + [")"]).joined(separator: " ")
+        for token in inner {
+            // A paren surviving into the operand list means a nested group, which FTS5
+            // rejects inside NEAR; `-(` is the attached-dash form of the same thing.
+            if token == "(" || token == ")" || token == attachedDashGroup {
+                return .malformed(.operatorInside(text: nearText))
+            }
+            guard let classified = classify(token) else { continue }
+            switch classified {
+            case .op:
+                // An operator keyword inside NEAR is a syntax error, not a search word.
+                return .malformed(.operatorInside(text: nearText))
+            case .operand(let operand):
+                // A negated operand is the `-word` form of the same error. Left to
+                // degrade, it used to render `"a" NOT "b"` — excluding every document
+                // holding b anywhere, which is the opposite of a proximity search.
+                if operand.negated { return .malformed(.operatorInside(text: nearText)) }
+            }
+        }
+
         let operandTokens: [String]
         let distance: String
-
         if let aliasDistance {
             // `NEAR/N(...)` — a comma inside would then be a second, conflicting
-            // distance. Reject rather than silently preferring one.
-            guard !inner.contains(where: { $0.contains(",") }) else { return nil }
+            // distance. Refuse rather than silently preferring one.
+            guard !inner.contains(where: { $0.contains(",") }) else {
+                return .malformed(.invalidDistance(text: nearText))
+            }
             operandTokens = inner
             distance = aliasDistance
         } else {
-            guard let split = splitTrailingDistance(inner) else { return nil }
+            guard let split = splitTrailingDistance(inner) else {
+                return .malformed(.invalidDistance(text: nearText))
+            }
             operandTokens = split.operands
             distance = split.distance ?? String(defaultNearDistance)
         }
 
         var rendered: [String] = []
         for token in operandTokens {
-            // A paren surviving into the operand list means a nested group, which FTS5
-            // rejects inside NEAR.
-            guard token != "(", token != ")" else { return nil }
             guard let classified = classify(token) else { continue }
-            // An operator keyword inside NEAR is a syntax error, not a search word:
-            // rejecting sends the whole thing down the degradation path, where the
-            // user's words are still searched as an ordinary boolean group.
-            guard case .operand(let operand) = classified else { return nil }
-            guard !operand.negated else { return nil }
+            guard case .operand(let operand) = classified else { continue }
             // Column prefix is applied to the whole NEAR below, never per operand.
             guard let piece = render(operand, columnPrefix: "") else { continue }
             rendered.append(piece)
         }
-        guard !rendered.isEmpty else { return nil }
+        // Nothing to search for and nothing forbidden either — `NEAR()`, `NEAR(, 5)`,
+        // `NEAR(?, 5)`. The span contributes nothing, and the rest of the query still runs.
+        guard !rendered.isEmpty else { return .empty }
 
-        return "\(columnPrefix)NEAR(\(rendered.joined(separator: " ")), \(distance))"
+        return .rendered("\(columnPrefix)NEAR(\(rendered.joined(separator: " ")), \(distance))")
+    }
+
+    /// What ``renderNear(inner:aliasDistance:columnPrefix:)`` made of one `NEAR(…)` span.
+    ///
+    /// Three outcomes rather than `String?`, because "rendered nothing" and "the reader wrote
+    /// something FTS5 forbids" were the same answer before #1304, and the second must refuse the
+    /// query rather than quietly become a different search.
+    private enum NearRendering {
+        /// A valid `NEAR(…)` expression.
+        case rendered(String)
+        /// Nothing searchable inside, and nothing forbidden: the span is skipped.
+        case empty
+        /// Something FTS5 will not accept inside a `NEAR`. The query is refused.
+        case malformed(MalformedProximity)
     }
 
     /// Splits `NEAR`'s inner tokens at its trailing `, N`, returning the operand tokens
@@ -2289,7 +2339,41 @@ public struct StructuredQueryParts: Sendable, Equatable {
 ///   1.6 — #1297 round-4 parser fixes: `exactTerms` is de-duplicated by index word (`ExactWordMatcher.word(_:)`),
 ///          keeping the first spelling applied, so `=Soviet =soviet` reports `["Soviet"]` where it reported both
 ///          spellings
+/// Why a `NEAR(…)` cannot be searched as written (#1304).
+///
+/// FTS5 accepts only plain terms and phrases inside a `NEAR`, with an optional trailing
+/// non-negative integer distance. Anything else used to DEGRADE: the parser dropped the `NEAR`
+/// keyword and rendered the parentheses as an ordinary boolean group, so
+/// `NEAR(military europe, 5)` with a bad distance searched for the digit as a word, and
+/// `NEAR(military -europe, 5)` ran `"military" NOT "europe"` — excluding every document holding
+/// *europe* anywhere, which is the opposite of what proximity means. The reader saw a plausible
+/// count and nothing else.
+///
+/// `text` is the span as the inspector already spells a proximity operand, so a message can quote
+/// the reader's own words back.
+public enum MalformedProximity: Sendable, Equatable {
+    /// A boolean keyword, a `-` exclusion, or a nested group inside the `NEAR(…)`.
+    case operatorInside(text: String)
+    /// A distance FTS5 will not parse — negative, fractional, signed, non-numeric, or a second
+    /// distance conflicting with a `NEAR/N` alias.
+    case invalidDistance(text: String)
+
+    /// The span as typed, for quoting back to the reader.
+    public var text: String {
+        switch self {
+        case .operatorInside(let text), .invalidDistance(let text): return text
+        }
+    }
+}
+
 public struct ParsedQuery: Sendable, Equatable {
+
+    /// Why a `NEAR(…)` in the query was refused, or `nil` (#1304).
+    ///
+    /// Set only when `expression` is `nil`, and it is the reason to SHOW: "this query has nothing
+    /// it can search for" is true of a malformed proximity search but tells the reader nothing
+    /// about what to change.
+    public let malformedProximity: MalformedProximity?
 
     /// The MATCH expression, or `nil` when the query is refused: it holds no term that is
     /// positive after its negations; it is approximated and its operands prove the
@@ -2346,12 +2430,14 @@ public struct ParsedQuery: Sendable, Equatable {
 
     /// Creates a parsed query.
     public init(expression: String?, exactTerms: [String], operands: [ParsedOperand] = [],
-                droppedOperands: [ParsedOperand] = [], isApproximate: Bool = false) {
+                droppedOperands: [ParsedOperand] = [], isApproximate: Bool = false,
+                malformedProximity: MalformedProximity? = nil) {
         self.expression = expression
         self.exactTerms = exactTerms
         self.operands = operands
         self.droppedOperands = droppedOperands
         self.isApproximate = isApproximate
+        self.malformedProximity = malformedProximity
     }
 }
 

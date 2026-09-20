@@ -194,6 +194,15 @@ struct QueryInspectorStrip: View {
                         defaultValue: "No text search — this query is filters only, so there is no expression to show."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        } else if let proximity = inspection.malformedProximity {
+            // #1304: name the NEAR rather than the generic refusal. "Nothing left to search for"
+            // is true here and useless — the reader cannot tell which part to change.
+            Text(String(format: String(
+                localized: "search.inspector.refused.near %@",
+                defaultValue: "No expression — %@ holds something a NEAR cannot: a boolean, a minus sign, a nested group, or a distance that is not a whole number. The query was refused rather than run as an ordinary boolean search."),
+                proximity))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         } else if inspection.isRefused {
             Text(String(localized: "search.inspector.refused",
                         defaultValue: "No expression — this query cannot run: nothing is left to search for once its exclusions apply, or its parentheses nest more than \(FTS5InlineQueryParser.maximumGroupDepth) deep."))
