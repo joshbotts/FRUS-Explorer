@@ -17288,3 +17288,37 @@ moving. Nixon 13,611 → 13,609 and Ford 4,333 → 4,336, both pinned by an arti
 
 **`currentDateIndexVersion` 53 → 54.** Three parse-output changes now sit unbuilt on `v2` (#1321's
 52, #1322's 53, this 54), so **build 48 should be cut once** and pay the re-parse once.
+
+## Session 2026-09-19 — a NEAR the parser could not run became a different search
+
+**The question:** #1304, first of the search lane. A boolean, a minus sign or a nested group inside
+`NEAR(…)` was DEGRADED: the parser dropped the NEAR keyword and rendered the parentheses as an
+ordinary boolean group. The reader got a plausible count for a query nobody typed.
+
+**What the degradation actually did**, measured rather than described:
+- `NEAR(military OR europe, 5)` → `("military" OR "europe," AND "5")` — an OR where proximity was
+  asked for, **and the distance searched as a word**.
+- `NEAR(military -europe, 5)` → `"military" NOT "europe,"` — excluding every document holding
+  *europe* anywhere in the corpus, which is the opposite of proximity.
+
+**Owner decision: refuse** (the issue's option 3), extended to the whole defect class rather than
+the three forms the issue tabulates. `renderNear` now answers `.rendered` / `.empty` /
+`.malformed`, and the reason travels with the refusal so a surface can name the NEAR instead of
+saying "this query has nothing it can search for" — which is true of it and tells the reader
+nothing. Forbidden content is checked BEFORE the distance and before emptiness, because the other
+two mask it: `NEAR(a OR b)` has no distance position at all, and `NEAR(-a, 5)` renders nothing once
+the negation is dropped. A bare `AND` inside is refused too, for one uniform rule.
+
+**`NEAR()` and `NEAR(, 5)` are NOT refused.** Nothing searchable and nothing forbidden: the span is
+skipped and the rest of the query runs, so `cold NEAR(, 5)` still searches for cold.
+
+**Three tests changed sides, and that is the honest record of it.**
+`nearRejectsBooleans`, `nearRejectsNegationAndNesting` and `degradedNearsStillExecute` pinned the
+degradation as the intended contract, comments and all. They now pin the refusal, and a fourth,
+`wellFormedNearStillRenders`, guards against over-refusing. The #1297 depth suite lost its
+`NEAR(NEAR(…))` pattern: it nests nothing now, because the parse stops at the first NEAR, so it
+cannot measure stack depth. `(…NEAR(…)…)` still carries a valid NEAR through every level.
+
+**Verified:** SPM parser suite 209 tests; app target 4,994 tests in 626 suites. Copy lives in two
+new EditableContent blocks — `EditableContentKeyTests` failed until they existed, which is the gate
+doing its job.

@@ -185,4 +185,41 @@ struct SearchRefusalMessageTests {
         #expect(!meaningGuard.contains("isSearching = true"), "the guard slice ran past its else block")
         #expect(meaningGuard.contains("searchError = nil"), "a meaning search with an empty query keeps the last error")
     }
+
+    // MARK: - #1304: a malformed NEAR
+
+    @Test("A malformed NEAR reads as its own message, quoting the NEAR")
+    func malformedNearHasItsOwnMessage() {
+        // The generic refusal is TRUE of this query — it has no expression — and tells the reader
+        // nothing about what to change, which is why the specific reason is checked first.
+        var parameters = SearchParameters()
+        parameters.keywords = "NEAR(military OR europe, 5)"
+        let error = SearchQueryRefusal.readable(FTS5Error.emptyQuery, for: parameters)
+        guard case SearchQueryRefusal.malformedProximity(let text) = error else {
+            Issue.record("expected .malformedProximity, got \(error)")
+            return
+        }
+        #expect(text.contains("NEAR("))
+        let message = try? #require((error as? LocalizedError)?.errorDescription)
+        #expect(message?.contains("OR, NOT, AND") == true, "got \(message ?? "nil")")
+        #expect(message?.contains("Nothing was searched") == true, """
+            The reader's next question is whether a partial search ran. It did not, and the \
+            message must say so: \(message ?? "nil")
+            """)
+    }
+
+    @Test("A query with no NEAR still gets the general refusal")
+    func anOrdinaryRefusalIsUnchanged() {
+        var parameters = SearchParameters()
+        parameters.keywords = "-korea"
+        let error = SearchQueryRefusal.readable(FTS5Error.emptyQuery, for: parameters)
+        #expect(error as? SearchQueryRefusal == .nothingToSearch, "got \(error)")
+    }
+
+    @Test("A well-formed NEAR is not refused")
+    func wellFormedNearIsNotRefused() {
+        var parameters = SearchParameters()
+        parameters.keywords = "NEAR(military europe, 5)"
+        #expect(SearchService.parsedQuery(for: parameters).malformedProximity == nil)
+    }
 }

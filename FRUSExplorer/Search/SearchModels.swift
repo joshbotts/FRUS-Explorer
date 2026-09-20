@@ -1075,7 +1075,7 @@ struct SearchTip: Identifiable, Sendable, Equatable {
             spokenExample = String(localized: "search.tips.near.spoken",
                                    defaultValue: "NEAR, open parenthesis, military europe, comma, 5, close parenthesis")
             detail = String(localized: "search.tips.near.detail",
-                            defaultValue: "Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes, but OR, NOT and parentheses cannot go inside. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.")
+                            defaultValue: "Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes. OR, NOT, AND, a minus sign and parentheses cannot go inside one, and a search that puts them there is refused rather than run as something else. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.")
         case .exactWord:
             example = "=containment"
             spokenExample = String(localized: "search.tips.exactWord.spoken", defaultValue: "equals sign, containment")
@@ -1201,6 +1201,10 @@ enum SearchTipNote: String, CaseIterable, Identifiable, Sendable {
 enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
     /// The query's parse rendered no expression, so there is nothing to search for.
     case nothingToSearch
+    /// A `NEAR(…)` in the query holds something FTS5 forbids — a boolean, a `-` exclusion, a nested group — or a
+    /// distance it will not parse (#1304). Refused rather than degraded, because the degraded search was a DIFFERENT
+    /// search: the distance was looked for as a word, and a `-` inside became a corpus-wide exclusion.
+    case malformedProximity(text: String)
     /// The query parses, but every content scope — document text, summaries and research notes — is off, so there is
     /// nowhere to search. The wording names those three toggles rather than "every scope", because iOS's Filters ▸ Search
     /// Scope also holds Include front matter, which is not somewhere to search and may still be on; macOS answers with
@@ -1216,6 +1220,11 @@ enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
         case .everyScopeOff:
             return String(localized: "search.error.emptyScope.ios",
                           defaultValue: "Document text, summaries and research notes are all turned off, so there is nothing to search. Turn one on in Filters ▸ Search Scope.")
+        case .malformedProximity(let text):
+            return String(format: String(
+                localized: "search.error.malformedNear %@",
+                defaultValue: "%@ cannot be searched as written: a NEAR(…) holds only words, phrases and prefixes, with an optional distance. OR, NOT, AND, a minus sign and parentheses cannot go inside one. Nothing was searched, because dropping the NEAR would run a different search."),
+                text)
         }
     }
 
@@ -1230,7 +1239,13 @@ enum SearchQueryRefusal: LocalizedError, Equatable, Sendable {
     /// - Returns: The error to store and show.
     static func readable(_ error: any Error, for parameters: SearchParameters) -> any Error {
         guard case FTS5Error.emptyQuery = error else { return error }
-        if SearchService.parsedQuery(for: parameters).expression == nil {
+        let parsed = SearchService.parsedQuery(for: parameters)
+        // #1304 first: "nothing it can search for" is TRUE of a malformed proximity search and
+        // tells the reader nothing about what to change, so the specific reason wins.
+        if let reason = parsed.malformedProximity {
+            return SearchQueryRefusal.malformedProximity(text: reason.text)
+        }
+        if parsed.expression == nil {
             return SearchQueryRefusal.nothingToSearch
         }
         guard !parameters.includeDocumentText, !parameters.includeSummaries, !parameters.includeNotes else {

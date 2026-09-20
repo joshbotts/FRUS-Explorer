@@ -115,6 +115,15 @@ struct QueryInspection: Sendable, Equatable {
     /// A `var` with a default for the same reason as ``notApplied``.
     var isRefused: Bool = false
 
+    /// The `NEAR(…)` that refused this query, as typed, or `nil` (#1304).
+    ///
+    /// Set only when ``isRefused`` is set, and it is what the line SAYS: the generic reasons —
+    /// nothing left after the exclusions, groups nested too deep — are both false of a malformed
+    /// proximity search, so showing them would send the reader looking in the wrong place.
+    ///
+    /// A `var` with a default for the same reason as ``notApplied``.
+    var malformedProximity: String?
+
     /// Whether a host shows the strip at all: there is an expression, or a line saying why there is none.
     ///
     /// Both hosts read this rather than spelling the condition out, so a new reason for an empty expression is
@@ -158,7 +167,8 @@ struct QueryInspection: Sendable, Equatable {
     func replacingOperands(_ operands: [InspectedOperand]) -> QueryInspection {
         QueryInspection(expression: expression, operands: operands,
                         indexedVolumeCount: indexedVolumeCount, isFilterOnly: isFilterOnly,
-                        notApplied: notApplied, isApproximate: isApproximate, isRefused: isRefused)
+                        notApplied: notApplied, isApproximate: isApproximate, isRefused: isRefused,
+                        malformedProximity: malformedProximity)
     }
 }
 
@@ -421,7 +431,11 @@ struct QueryInspector: Sendable {
             // content scope is off, and "cannot run because of what was typed" would be false for it. And something
             // searchable in it: a lone `(` typed on the way to a query is refused too, and neither reason is true of it.
             isRefused: expression == nil && parameters.hasTextTerms && parsed?.expression == nil
-                && Self.refusesSomethingSearchable(parameters)
+                && Self.refusesSomethingSearchable(parameters),
+            // #1304: a malformed NEAR is refused whatever else the query holds, and unlike the
+            // reasons above it does not need `refusesSomethingSearchable` — the reader typed a
+            // proximity search, which is unambiguously something searchable.
+            malformedProximity: parsed?.malformedProximity?.text
         )
     }
 

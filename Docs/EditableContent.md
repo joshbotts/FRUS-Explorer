@@ -3825,7 +3825,7 @@ negoti, star
 #### 11. Words near each other — `NEAR(military europe, 5)`
 <!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .near | lines: 1077–1078 | key: search.tips.near.detail | shared: iOS+macOS (single edit point) -->
 
-Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes, but OR, NOT and parentheses cannot go inside. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.
+Finds the words within 5 words of each other, in either order, or within 10 when you leave out the number. The words may be phrases or prefixes. OR, NOT, AND, a minus sign and parentheses cannot go inside one, and a search that puts them there is refused rather than run as something else. Only NOT NEAR(…) excludes a NEAR; a minus sign before it does not.
 
 <!-- END SOURCE: search.tips.near.detail -->
 
@@ -3916,6 +3916,26 @@ Why it is true: a meaning search hands your words to the model as typed, and onl
 This query has nothing it can search for: for example, it only excludes words, or its groups are nested too deeply. See Search Tips for what a search needs.
 
 <!-- END SOURCE: search.error.refusedQuery -->
+
+#### A NEAR that cannot be searched as written
+
+*Shown when a submitted keyword search puts a boolean, a minus sign, a nested group or an unparseable distance inside a `NEAR(…)` — `NEAR(military OR europe, 5)`, `NEAR(military -europe, 5)`, `NEAR(military europe, 3.5)`. Until #1304 the app DEGRADED these: it dropped the NEAR keyword and searched the parentheses as an ordinary boolean group, so the distance was looked for as a word and a minus sign became a corpus-wide exclusion — a plausible count for a search nobody typed. The `%@` is the NEAR as the reader typed it, quoted back so they can see which one. Keep the sentence saying nothing was searched: the reader's next question is whether a partial search ran, and it did not.*
+
+<!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchQueryRefusal.errorDescription | lines: 1222–1225 | key: search.error.malformedNear %@ | shared: iOS+macOS (single edit point) -->
+
+%@ cannot be searched as written: a NEAR(…) holds only words, phrases and prefixes, with an optional distance. OR, NOT, AND, a minus sign and parentheses cannot go inside one. Nothing was searched, because dropping the NEAR would run a different search.
+
+<!-- END SOURCE: search.error.malformedNear %@ -->
+
+#### The Query Inspector's line for a refused NEAR
+
+*The Query Inspector strip's "no expression" line, when the reason is a malformed `NEAR(…)` (#1304). The generic refused line — nothing left after the exclusions, or groups nested too deep — is true of this query and useless to the reader, who cannot tell from it which part to change. The `%@` is the NEAR as typed.*
+
+<!-- SOURCE: FRUSExplorer/Search/QueryInspectorView.swift | the refused branch | key: search.inspector.refused.near %@ | shared: iOS+macOS (single edit point) -->
+
+No expression — %@ holds something a NEAR cannot: a boolean, a minus sign, a nested group, or a distance that is not a whole number. The query was refused rather than run as an ordinary boolean search.
+
+<!-- END SOURCE: search.inspector.refused.near %@ -->
 
 #### A search with nowhere to search (iOS)
 
