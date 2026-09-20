@@ -259,6 +259,13 @@ final class MacSearchViewModel {
     /// query on screen. That is the worst kind of stale for a view whose output gets quoted.
     private(set) var executedSearchVersion: Int = 0
 
+    /// Which set the My Tags counts describe, frozen when a search COMPLETES (#1310).
+    ///
+    /// The macOS twin of `SearchViewModel.userTagCountScope`, and set at the same points for the
+    /// same reason: the route flag is written before the await, so deriving this when the popover
+    /// opens would describe a run that has not produced results yet.
+    private(set) var userTagCountScope: UserTagCountScope?
+
     var totalPages: Int {
         max(1, Int(ceil(Double(displayedResults.count) / Double(pageSize))))
     }
@@ -1055,6 +1062,9 @@ final class MacSearchViewModel {
             semanticNeedsModel = false
             lastRenderedExpression = await expressionTask
             executedSearchVersion &+= 1
+            // #1310: the parameters that RAN. Filter edits re-run the search here, so these are
+            // the executed ones by the time the popover reads them.
+            userTagCountScope = .match(submittedSearchParameters)
             // Deliberately NOT `?? fetched.count`. An unavailable count is unknown, not
             // equal to what happened to be fetched — see `totalMatchCount`.
             if let total = try? await countTask {
@@ -1137,6 +1147,10 @@ final class MacSearchViewModel {
                 "route=semantic; model=text-embedding-embeddinggemma-300m-qat; "
                 + "top=\(SemanticSearchBackend.hitLimit)"
             executedSearchVersion &+= 1
+            // #1310: counted over the results themselves — the meaning route has no FTS match.
+            userTagCountScope = .resultKeys(results.map {
+                UserTagCountScope.DocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
+            })
             if currentPage >= totalPages { currentPage = max(0, totalPages - 1) }
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             results = []
@@ -1146,6 +1160,7 @@ final class MacSearchViewModel {
             lastRenderedExpression = nil
             semanticNeedsModel = true
             executedSearchVersion &+= 1
+            userTagCountScope = nil
         } catch {
             guard !(error is CancellationError) else { return }
             results = []
@@ -1154,6 +1169,7 @@ final class MacSearchViewModel {
             totalMatchCount = nil
             lastRenderedExpression = nil
             executedSearchVersion &+= 1
+            userTagCountScope = nil
             searchError = (error as? SemanticQuerySearcher.SearchUnavailable) == .queryTooLong
                 ? SemanticModeError.tooLong : SemanticModeError.failed
         }

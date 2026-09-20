@@ -1535,7 +1535,8 @@ struct MacSearchWindowView: View {
                 // `phrase` but not `keywords`, so counting against its own parameters
                 // would describe a different result set than the one behind the sheet.
                 SearchFilterView(vm: filterVM,
-                                 tagCountParameters: searchVM.submittedSearchParameters)
+                                 tagCountScope: searchVM.userTagCountScope,
+                                 tagCountVersion: searchVM.executedSearchVersion)
                     .frame(width: 480, height: 560)
                     .onChange(of: filterVM.advancedFilterSignature) { _, _ in
                         searchVM.applyAdvancedFilters()

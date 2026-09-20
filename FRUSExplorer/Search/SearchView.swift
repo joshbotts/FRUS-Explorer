@@ -494,6 +494,11 @@ struct SearchView: View {
                         vm.results    = []
                         vm.hasSearched = false
                         vm.searchError = nil
+                        // #1310: the tag counts describe a result set that is now empty. This
+                        // clear does not bump `executedSearchVersion`, so the panel's task does
+                        // not re-run — but a nil scope shows no counts rather than the last
+                        // query's.
+                        vm.userTagCountScope = nil
                     }
                 }
                 // Active volume scope (e.g. the post-indexing "Search this volume"
@@ -624,7 +629,8 @@ struct SearchView: View {
                 .sheet(isPresented: $vm.showFilterPanel) {
                     // iOS's filter sheet shares this view model, so its parameters ARE the
                     // search's — but pass them explicitly anyway, because macOS's do not.
-                    SearchFilterView(vm: vm, tagCountParameters: vm.searchParameters)
+                    SearchFilterView(vm: vm, tagCountScope: vm.userTagCountScope,
+                                     tagCountVersion: vm.executedSearchVersion)
                         .environment(appState)
                         .modelContainer(modelContext.container)
                 }

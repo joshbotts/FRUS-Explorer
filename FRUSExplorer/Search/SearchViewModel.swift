@@ -381,6 +381,14 @@ final class SearchViewModel {
     /// must recompute when a search *runs*, not when its text changes.
     var executedSearchVersion: Int = 0
 
+    /// Which set the Filters ▸ My Tags counts describe, frozen when a search COMPLETES (#1310).
+    ///
+    /// Set beside every `executedSearchVersion` bump and cleared wherever results are cleared,
+    /// rather than derived when the panel opens. `lastRunWasSemantic` and `hasSearched` are both
+    /// written BEFORE the await, so a panel opened mid-search would combine the new run's route
+    /// with the old run's results and count a set that was never on screen.
+    var userTagCountScope: UserTagCountScope?
+
     // MARK: - Sorting (#305)
 
     /// Result ordering. `relevance` = FTS5 BM25 (as returned); the date orders use `dateISO`.
@@ -694,6 +702,8 @@ final class SearchViewModel {
             // rescue and settled on a confident ranking of the wrong documents. Matches
             // `MacSearchViewModel.performSearch`, which has always ordered these correctly.
             executedSearchVersion &+= 1
+            // #1310: the parameters that RAN, frozen here. The live field may already have moved.
+            userTagCountScope = .match(params)
             currentPage = 0
             // A new query is a fresh checklist (#189-D): re-anchor "reviewed since" to now and
             // clear prior marks, so results reviewed under a *previous* query aren't silently
@@ -718,6 +728,7 @@ final class SearchViewModel {
             // Bumped here too: a failed search is a completed one for every consumer keyed on the
             // version, and leaving it unchanged would strand them on the previous query's answer.
             executedSearchVersion &+= 1
+            userTagCountScope = nil
             // A query the parse refused reads as a message pointing at Search Tips rather than as
             // "FTS5Error error 5"; every other failure keeps its own description (#1299).
             searchError = SearchQueryRefusal.readable(error, for: params).localizedDescription
@@ -770,6 +781,11 @@ final class SearchViewModel {
                 "route=semantic; model=text-embedding-embeddinggemma-300m-qat; "
                 + "top=\(SemanticSearchBackend.hitLimit)"
             executedSearchVersion &+= 1
+            // #1310: the meaning route counts over the results themselves — there is no FTS match
+            // to rebuild, and rebuilding one from the typed question is what this fixes.
+            userTagCountScope = .resultKeys(results.map {
+                UserTagCountScope.DocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
+            })
             currentPage = 0
             if checklistMode {
                 checklistEnabledAt = .now
@@ -784,6 +800,7 @@ final class SearchViewModel {
             lastRenderedExpression = nil
             semanticNeedsModel = true
             executedSearchVersion &+= 1
+            userTagCountScope = nil
         } catch SemanticQuerySearcher.SearchUnavailable.queryTooLong {
             results = []
             beyondLibraryHits = []
@@ -791,6 +808,7 @@ final class SearchViewModel {
             totalMatchCount = nil
             lastRenderedExpression = nil
             executedSearchVersion &+= 1
+            userTagCountScope = nil
             searchError = String(
                 localized: "search.semantic.error.tooLong",
                 defaultValue: "This search is too long for the model. Try a shorter phrasing.")
@@ -801,6 +819,7 @@ final class SearchViewModel {
             totalMatchCount = nil
             lastRenderedExpression = nil
             executedSearchVersion &+= 1
+            userTagCountScope = nil
             searchError = String(
                 localized: "search.semantic.error.failed",
                 defaultValue: "Semantic search could not run. Try again.")
@@ -913,6 +932,8 @@ final class SearchViewModel {
         lastRenderedExpression = nil
         hasSearched = false
         searchError = nil
+        // #1310: the counts describe a result set that no longer exists.
+        userTagCountScope = nil
     }
 
     // MARK: - Computed Properties
@@ -1120,20 +1141,35 @@ final class SearchViewModel {
     ///   Counting against `self.searchParameters` there would silently describe a different
     ///   result set than the one on screen.
     func loadUserTagCounts(
-        matching matchParameters: SearchParameters,
+        scope: UserTagCountScope,
         tags: [UserTag],
         service: SearchService?,
         pipeline: IndexingPipeline?
     ) async {
-        guard let service, let pipeline, !tags.isEmpty else { return }
+        guard let pipeline, !tags.isEmpty else { return }
         isCountingUserTags = true
         defer { isCountingUserTags = false }
         do {
-            let expressions = try await service.matchExpressions(for: matchParameters)
-            let filters = await service.filtersForTesting(matchParameters)
-            let counts = try await pipeline.userTagCounts(
-                corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
-                filters: filters, tagIds: tags.map(\.id.uuidString))
+            let counts: [String: Int]
+            switch scope {
+            case .match(let matchParameters):
+                // The keyword route, unchanged: rebuild the executed match and count over it.
+                // `service` is needed only here — a key-set count consults no expression, which
+                // is exactly how the Meaning leak happened (#1310).
+                guard let service else { return }
+                let expressions = try await service.matchExpressions(for: matchParameters)
+                let filters = await service.filtersForTesting(matchParameters)
+                counts = try await pipeline.userTagCounts(
+                    corpusMatch: expressions.corpus, userContentMatch: expressions.userContent,
+                    filters: filters, tagIds: tags.map(\.id.uuidString))
+            case .resultKeys(let keys):
+                // The keys are already filtered by the backend, so no filters are applied and no
+                // expression is asked for.
+                counts = try await pipeline.userTagCounts(
+                    corpusMatch: nil, userContentMatch: nil, filters: SearchSQLFilters(),
+                    tagIds: tags.map(\.id.uuidString),
+                    documentKeys: keys.map { (volumeId: $0.volumeId, documentId: $0.documentId) })
+            }
             guard !Task.isCancelled else { return }
             userTagCounts = counts
             hasUserTagCounts = true
