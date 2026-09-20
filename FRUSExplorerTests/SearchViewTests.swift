@@ -580,6 +580,7 @@ struct PersonFilterTests {
         #expect(vm.searchParameters.volumeIds == ["frus1969-76v01"])
     }
 
+
     // MARK: - VolumeScopeTest
 
     /// Verifies the "Search this volume" handoff round-trips through the view model:
@@ -888,6 +889,23 @@ struct MacSearchViewModelTests {
                 "searchTrigger must change after submitSearch() so .task(id:) fires a search")
     }
 
+    /// The macOS half of #1306's follow-up. This view model applies the scope through its
+    /// `scopeNotes`/`scopeSummaries` didSets rather than by direct assignment, so the two flags
+    /// have to be checked here as well as on iOS — one receiver could apply them and the other not.
+    @Test("applyParameters carries a narrowed search scope onto the Mac view model")
+    func applyParametersCarriesScopeOnMac() {
+        let vm = MacSearchViewModel()
+        vm.scopeSummaries = true
+        vm.scopeNotes = true
+        vm.applyParameters(SearchParameters(keywords: "d\u{00E9}tente",
+                                            includeSummaries: false, includeNotes: false))
+        #expect(vm.scopeSummaries == false, """
+            The hand-off's narrowed scope did not reach the Mac view model, so Search still reads \
+            the reader's own summaries and the chart's count cannot match it.
+            """)
+        #expect(vm.scopeNotes == false)
+    }
+
     @Test("SubmitOnlyTest: submittedQuery is still empty after typing but before submit")
     func submittedQueryRemainsEmptyBeforeSubmit() {
         let vm = MacSearchViewModel()
@@ -1123,6 +1141,36 @@ struct SearchDefaultsWiringTests {
             concurrencyLimit: 1
         )
         return SearchService(fts5Store: store, pipeline: pipeline)
+    }
+
+    /// #1306 follow-up: the Corpus Analytics hand-off is the one place the app invites a reader to
+    /// compare a chart's count against Search's, so it sends the two scope flags OFF. This is the
+    /// receiving half — that `applyParameters` APPLIES them rather than keeping the view model's
+    /// own scope, which is what makes two added arguments at the emitting end sufficient.
+    ///
+    /// It lives here rather than beside `applyParametersPopulatesFields` because that one sits in
+    /// `PersonFilterTests`, and a scope guard buried in a person-filter suite is a guard nobody
+    /// runs when they change scope.
+    @Test("applyParameters carries a narrowed search scope onto the view model")
+    func applyParametersCarriesScope() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSSearchScope-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let vm = SearchViewModel(searchService: try makeService(dir: dir))
+        vm.includeSummaries = true
+        vm.includeNotes = true
+        vm.applyParameters(SearchParameters(keywords: "d\u{00E9}tente",
+                                            includeSummaries: false, includeNotes: false))
+
+        #expect(vm.includeSummaries == false, """
+            The hand-off's narrowed scope did not reach the view model, so Search still reads the \
+            reader's own summaries and the chart's count cannot match it.
+            """)
+        #expect(vm.includeNotes == false)
+        #expect(vm.searchParameters.includeSummaries == false)
+        #expect(vm.searchParameters.includeNotes == false)
     }
 
     @Test("SearchViewModel seeds scope and type filter from SearchDefaults and resets to them")
