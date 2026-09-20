@@ -17095,3 +17095,46 @@ differ so it cannot pass once the mapping is deleted.
 the plan's first draft named two `-only-testing` arguments that are not types and would have run
 zero. Mutation check after committing: deleting `"strong"` from the map takes the new suite and the
 changed guard red.
+
+## Session 2026-09-19 — the unit target was red on v2: nine test containers kept SwiftData's CloudKit default
+
+**The question:** an open-issue review found the full `FRUSExplorerTests` target crashing its host,
+on `v2` as well as on feature branches, and the crash had never been filed. What is it, and can any
+test result in the current wave be trusted until it is fixed?
+
+**What it is.** `ModelConfiguration`'s `cloudKitDatabase` parameter defaults to `.automatic`, which
+adopts the **test host app's** iCloud entitlement. **9 of the 39 `ModelConfiguration(` calls in
+`FRUSExplorerTests` omitted the explicit `.none`**, so those in-memory stores got a real
+`NSCloudKitMirroringDelegate`. Measured on unmodified `v2` @ `9078fe61` (iPhone 17e, iOS 27.0): the
+target ends `** TEST EXECUTE FAILED **` with **4,948 passed, 5 failed, 15 skipped in 733 s**, and
+every one of the five failures is `Crash: FRUS Explorer`. The exception is
+`NSInternalInconsistencyException: 'No eligible connection available'` raised through CoreData
+inside a SwiftData fetch — an ObjC exception, so `try?` does not catch it and the host aborts.
+Mirroring setup is asynchronous and outlives the test that started it, which is why the crash set
+moves between runs and why four of the nine bare sites did not crash in that particular run.
+
+**`Runner._applyScopingTraits` is not the signature.** It appears in 23 of the 25 `FRUS Explorer*.ips`
+reports on this machine, including two `EXC_BREAKPOINT` crashes with unrelated causes. It names
+swift-testing's harness, not the fault — the previous session's note that called it the signature was
+reading the harness frame.
+
+**PR #145 argued the other way and had to be answered.** Its body says "Root cause was container
+lifetime, not CloudKit". The control that separates the two: `CaptureStateSeederTests` drops its
+container *and* passes `.none` — it passed; `PersonClustererTests` drops its container *and* was
+bare — it crashed. Dropping the container is a real defect (#145's) and it is not this one.
+
+**The fix.** One argument at each of the nine sites, plus the app-side in-memory *fallback*
+(`ModelContainer+FRUS.swift:375`), which was bare for the same reason and has never been observed to
+run. The two deliberately-bare app sites at `:203`/`:239` are untouched and the new gate is scoped to
+the test trees so it cannot reach them.
+
+**The gate.** `CodingStandardsAuditTests.testModelConfigurationsOptOutOfCloudKit` walks each call's
+balanced parentheses across both test targets, so a call split over two lines is read whole —
+`CaptureStateSeederTests.swift:30-31` is one and passes, and deleting its `.none` makes it fail, so
+the multi-line tolerance is real rather than accidental. A/B on the day: before the fix it named
+exactly the nine sites; after, 18 tests in the suite pass. The `scanned >= 35` floor exists because a
+renamed initialiser or a moved root would otherwise make the sweep vacuously green over the very
+population it protects.
+
+**Filed as #1325**, and it blocks a clean full-target run for #1326, #1327, #1328 and #1329, all
+filed the same day out of the same review. CLAUDE.md's enforced-gate list goes from five to six.
