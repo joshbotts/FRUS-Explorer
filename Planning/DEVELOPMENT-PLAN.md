@@ -17667,3 +17667,60 @@ either. Re-run against `AnalyticsProvenanceTests` and `AnalyticsWordCloudExportT
 was RED: a FOURTH `"TEI <date>"` assertion (`datingKeepsDateClaims`) had been missed by a truncated
 grep. The rule is in the repo's own memory — a `-only-testing` miss runs zero tests and "passes" —
 and the only defence is to read the suite COUNT back, which is what caught it.
+
+## Session 2026-09-20 — The chart invited a comparison and then opened Search too wide
+
+**The question:** the #1306 follow-up the owner asked for. Corpus Analytics' info row used to promise
+"the counts here match what Search returns"; #1306 measured that false and reworded it. The
+affordance that invites the comparison was still arranging to break it.
+
+`openMatchingDocumentsInSearch` built its `SearchParameters` with three fields and let the rest
+default, and `includeSummaries`/`includeNotes` default to **true**. So the link labelled *View N
+documents ↗* opened a Search that unions `user_content` — the reader's own summaries and notes —
+against a chart that runs a bare `frus_documents MATCH`. Both are now sent `false`.
+
+**It was four lines, not two, and the second pair is the point.** `openScopedDocumentsInSearch` makes
+the same offer from a tapped By-Subseries or By-Volume bar (four call sites), and a reader compares
+that bar's own number against the result count exactly as they compare the header link's. Fixing
+only the header would have left the defect where the numbers are smaller and the mismatch more
+visible.
+
+**The scope narrows and STAYS narrowed for the session, and that is deliberate.** Both view models
+are long-lived `@State`, so a later hand-typed search in the same session runs documents-only until
+the reader re-toggles it or taps Clear Filters. That is exactly what the date range and the volume
+scope on the same two lines already do — this hand-off has always narrowed persistently — and both
+platforms disclose it: macOS unfills its two "Search in" chips, iOS lights the filter glyph
+(`hasActiveFilters` is true when any scope flag is off) and shows the toggles off under Filters ▸
+Search Scope. Engineering around it would mean a receiver that restores scope after running, which
+neither is shaped for, for a smaller problem than the one being fixed.
+
+**The saved preference is NOT touched.** `SearchDefaults.scopeNotesKey` / `scopeSummariesKey` are
+written only by `SearchDefaultsView`'s `@AppStorage`; both view models read them once at init and
+never write back, so the next launch is as broad as the reader set it.
+
+**Two copy changes, keyed differently for the same reason.** `analytics.info.phrase.body.v3` is
+reworded IN PLACE — `.v3` shipped nowhere, build 47 predates #1306 — because it had gone on
+describing a journey the app no longer sends the reader on. The tooltip beside the link HAS shipped,
+so it is re-keyed to `analytics.handoff.help.v2` and now says the link opens Search over document
+text only. Filters are named separately in both, because the hand-off does not touch them: a reader
+with a document-type filter or an applied working corpus can still see the two counts part.
+
+**Three tests, and the middle one is honest about what it cannot do.** The iOS receiving half is a
+runtime test — `applyParameters` applies the flags rather than keeping the view model's own scope,
+which is what makes two arguments sufficient. The macOS receiving half is a runtime test too, but
+`FRUSExplorerTests` is `platform: iOS` in `project.yml`, so every `#if os(macOS)` body in it —
+including the `MacSearchViewModelTests` it sits beside — is neither compiled nor run here; it is
+backed by a source pin on `MacSearchViewModel.applyParameters` instead, which is weaker and is the
+coverage available. The emitting half has no runtime seam (a SwiftUI Button action on a private
+method), so it is pinned with `HandoffVisibilityTests`'s own `memberBody`, scoped to each function's
+body rather than the file — the file names `SearchParameters` a dozen times.
+
+**Process note — the same rule bit twice in one day, differently.** The iOS test was first written
+beside `applyParametersPopulatesFields`, which turns out to live in `PersonFilterTests`, and the A/B
+ran `-only-testing FRUSExplorerTests/SearchViewTests` — a suite that really does exist in that file
+and really does have 11 tests, none of them the new one. So the mutant "survived" without ever being
+challenged, and the run that was supposed to verify the change was vacuous in the same way. A file
+here holds several suites, and a suite name that RESOLVES is not the same as the suite you meant:
+the only defence is to read the TEST NAME back out of the run, not the test count and not the exit
+code. The test now lives in `SearchDefaultsWiringTests`, which is where a scope guard belongs anyway
+— one buried in a person-filter suite is a guard nobody runs when they change scope.

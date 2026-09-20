@@ -1146,8 +1146,16 @@ struct AnalyticsView: View {
             : nil
         // Carry the active volume scope through to Search so a Word Cloud → Analytics
         // → Search chain lands on the same documents the (scoped) chart visualised.
+        //
+        // #1306: notes and summaries OFF. This link is the one place the app invites a reader to
+        // compare a chart's count against Search's, and Search's default scope unions
+        // `user_content` — the reader's own summaries and notes — while Analytics runs a bare
+        // `frus_documents MATCH`. Left at the defaults the app arranged the comparison and then
+        // broke it. The scope narrows for this search and stays narrowed, exactly as the date
+        // range and the volume scope on the same two lines already do.
         appState.openSearch(SearchParameters(
-            keywords: committedTerm, dateRange: range, volumeIds: scopeVolumeIds
+            keywords: committedTerm, dateRange: range, volumeIds: scopeVolumeIds,
+            includeSummaries: false, includeNotes: false
         ), from: sceneID)
         #if DEBUG
         print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range)), scopeVolumes: \(scopeVolumeIds?.count ?? 0)")
@@ -1163,7 +1171,12 @@ struct AnalyticsView: View {
     /// date-based.
     private func openScopedDocumentsInSearch(volumeIds: [String]) {
         guard !volumeIds.isEmpty else { return }
-        appState.openSearch(SearchParameters(keywords: committedTerm, volumeIds: volumeIds), from: sceneID)
+        // #1306: notes and summaries OFF, for the reason `openMatchingDocumentsInSearch` gives. A
+        // tapped bar makes the same offer its header link does — this subseries has N matches, go
+        // and see them — so it owes the same arithmetic.
+        appState.openSearch(SearchParameters(keywords: committedTerm, volumeIds: volumeIds,
+                                             includeSummaries: false, includeNotes: false),
+                            from: sceneID)
         #if DEBUG
         print("[AnalyticsView] Scoped handoff to Search — term: \"\(committedTerm)\", volumes: \(volumeIds.count)")
         #endif
@@ -1281,8 +1294,8 @@ struct AnalyticsView: View {
             }
             .buttonStyle(.borderless)
             .help(String(
-                localized: "analytics.handoff.help",
-                defaultValue: "Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents"
+                localized: "analytics.handoff.help.v2",
+                defaultValue: "Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents. Search opens over document text only, the way the chart counts, with your own notes and summaries left out."
             ))
 
             // Dispersion belongs here, beside the query's own document count, and NOT under a
