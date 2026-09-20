@@ -21,6 +21,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — M-1 follow-up: initial implementation
+///   1.1 — 2026-09-20: `SummarizationPrompt`, `UserTag` and `CollectionEntry` join. All three
+///         carried dead `didSet` stamps and a mirrored `lastModified`, and none was stamped by
+///         anything; the sweep's own observer census had undercounted by exactly the five
+///         observers of the file it never opened.
 protocol LastModifiedStamping: AnyObject {
     /// When the record last changed. `nil` on rows written before the field existed.
     var lastModified: Date? { get set }
@@ -41,14 +45,31 @@ extension ArchiveVisitTarget: LastModifiedStamping {}
 // CloudKit merge fell to `createdAt`: frozen at save time, letting a stale copy win. The field
 // exists now (a schema deploy, R-7) and every mutation — a rename, a freshness stamp — bumps it.
 extension SavedSearch: LastModifiedStamping {}
+// The three the original sweep missed. Its own census — "four models … 73 of them" — is 5 short of
+// the 78 observers the tree holds, and 5 is exactly `SummarizationPrompt`'s count: the walk read the
+// models folder and never opened `Summarization/`. `UserTag` and `CollectionEntry` were counted and
+// then left out of the conformer list, `CollectionEntry` being the largest of the seven by observer
+// count. All three are CloudKit-mirrored with a `lastModified` already in the deployed schema, so
+// all three were losing every merge to whichever device wrote first. A conformance adds no stored
+// property and needs no deploy.
+extension SummarizationPrompt: LastModifiedStamping {}
+extension UserTag: LastModifiedStamping {}
+extension CollectionEntry: LastModifiedStamping {}
 
 // MARK: - ModelModificationStamper
 
 /// Keeps `lastModified` current on every synced model, at save time.
 ///
 /// ## The defect this exists to fix
-/// Four models kept `lastModified` current with `didSet` observers — 73 of them. **None of them
-/// ever fired.** The `@Model` macro rewrites a stored property into a computed pair backed by the
+/// Seven models kept `lastModified` current with `didSet` observers — **78** of them
+/// (`Collection` 22, `CollectionEntry` 26, `GeneratedSummary` 9, `Project` 8, `ResearchNote` 7,
+/// `SummarizationPrompt` 5, `UserTag` 1). **None of them ever fired.**
+///
+/// That census read "four models … 73" until 2026-09-20, and the 5 it was short by were exactly
+/// `SummarizationPrompt`'s — a file in `Summarization/` rather than `Models/`. The miscount is how
+/// three of the seven came to be left out of the conformer list below for a year: the code was
+/// right about the mechanism and the prose was wrong about the scope, and the list was built from
+/// the prose. The `@Model` macro rewrites a stored property into a computed pair backed by the
 /// managed store, and a computed property cannot carry a property observer, so the bodies are
 /// silently discarded. `ModelLastModifiedTests` measures this on all four, with a control case
 /// proving the harness can see a stamp when one really happens.

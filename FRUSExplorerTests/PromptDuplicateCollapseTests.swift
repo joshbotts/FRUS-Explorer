@@ -327,9 +327,10 @@ struct StandardPromptRefreshTests {
     // MARK: - lastModified
 
     /// `SummarizationPrompt`'s five `didSet { lastModified = .now }` observers never fire — the
-    /// `@Model` macro discards them — and the type is not a `LastModifiedStamping` conformer, so
-    /// nothing else moves the field. Left frozen, a device still running the old wording wins the
-    /// merge and the refresh silently undoes itself.
+    /// `@Model` macro discards them. The type joined `LastModifiedStamping` on 2026-09-20, but the
+    /// stamper observes only `mainContext` and `seed` builds its own, so on the BOOT path nothing
+    /// else moves the field. Left frozen, a device still running the old wording wins the merge and
+    /// the refresh silently undoes itself.
     @Test("The refresh stamps lastModified, because nothing else will")
     func refreshStampsLastModified() throws {
         let container = try container()

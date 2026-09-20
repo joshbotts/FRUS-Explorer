@@ -17667,3 +17667,41 @@ either. Re-run against `AnalyticsProvenanceTests` and `AnalyticsWordCloudExportT
 was RED: a FOURTH `"TEI <date>"` assertion (`datingKeepsDateClaims`) had been missed by a truncated
 grep. The rule is in the repo's own memory — a `-only-testing` miss runs zero tests and "passes" —
 and the only defence is to read the suite COUNT back, which is what caught it.
+
+## Session 2026-09-20 — Three mirrored models were losing every merge, and the census is why
+
+**The question:** the task chip filed while fixing #1329 — `SummarizationPrompt` is CloudKit-mirrored,
+carries five `didSet { lastModified = .now }` observers the `@Model` macro discards, and is not a
+`LastModifiedStamping` conformer, so nothing advances the field CloudKit resolves merges on.
+
+**It was three types, not one, and the arithmetic says why.** `ModelModificationStamper`'s own
+doc comment — and `ModelLastModifiedTests`' — said "Four models kept `lastModified` current with
+`didSet` observers — 73 of them." Measured: **78**, across **seven** types (Collection 22,
+CollectionEntry 26, GeneratedSummary 9, Project 8, ResearchNote 7, SummarizationPrompt 5, UserTag 1).
+78 − 73 = 5 = exactly `SummarizationPrompt`'s count, and that file sits in `Summarization/` rather
+than `Models/`: the census walked one folder. `UserTag` and `CollectionEntry` were counted and then
+left out of the conformer list anyway — `CollectionEntry` being the largest of the seven. **The code
+was right about the mechanism and the prose was wrong about the scope, and the list was built from
+the prose.** All three are now conformers, and both figures are corrected.
+
+**Cost: none.** A protocol conformance is not a stored property, so `CloudKitSchemaInventoryTests`
+cannot move; `CD_SummarizationPrompt.CD_lastModified`, `CD_UserTag.CD_lastModified` and
+`CD_CollectionEntry.CD_lastModified` have all been in `installedIdentifiers` since before this work.
+No deploy, no index bump.
+
+**The guard that generalises is the point of the change.** Nothing connected "this model carries
+`lastModified`" to "this model is stamped" — the conformer list is hand-maintained prose beside a
+protocol. `everyModelCarryingTheFieldIsAConformer` walks the mirrored `Schema` for the property and
+asserts the join, with a floor so a walk that matched nothing cannot read as green. It would have
+caught all three on the day the sweep shipped.
+
+**Two rationales narrowed rather than deleted.** `refreshStandardPrompts` (PR #1342) stamps
+`lastModified` by hand, and its stated reason had two clauses: the type is not a conformer, and
+`seed` works on its own `ModelContext`. The first is now false; the second is still true and is the
+whole justification for keeping that line, so the comment says so — deleting it would have stripped
+the only record of why the hand-stamp must remain. The post-import call site, which passes
+`mainContext`, is now stamped twice, harmlessly.
+
+**One deliberate frozen stamp survives untouched**: `OrphanedTagRepair` sets a `UserTag`'s
+`lastModified` to a deterministic `placeholder.createdAt` rather than `Date.now`. It is an INSERT,
+and `ModelModificationStamper.stamp` skips inserts by design — pinned by `insertsAreNotStamped`.

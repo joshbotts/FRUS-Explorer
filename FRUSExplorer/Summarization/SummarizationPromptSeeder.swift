@@ -296,8 +296,10 @@ enum SummarizationPromptSeeder {
     /// `SummarizationPrompt`'s five `didSet { lastModified = .now }` observers never fire: the
     /// `@Model` macro rewrites a stored property into a computed pair and discards the observer,
     /// which `ModelModificationStamper` documents and `ModelLastModifiedTests` measures. The type
-    /// is also not a `LastModifiedStamping` conformer, and `seed` works on its own `ModelContext`
-    /// rather than the one the stamper observes, so nothing else would move it. Left frozen at
+    /// joined `LastModifiedStamping` on 2026-09-20, but `seed` works on its own `ModelContext`
+    /// rather than the one the stamper observes — so on the BOOT path nothing else would move it,
+    /// and this hand-stamp stays load-bearing. (The post-import call site passes `mainContext` and
+    /// is now stamped twice, harmlessly: both writes are the same instant and the stamper wins.) Left frozen at
     /// creation, a device still running the old wording wins the CloudKit merge and puts the stale
     /// text back — the fix would arrive and then quietly leave again. The stamp differs per device
     /// for the same logical change, which is harmless precisely because both sides converge on the
