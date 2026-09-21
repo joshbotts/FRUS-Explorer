@@ -49,3 +49,52 @@ enum OnboardingDockMetrics {
         #endif
     }
 }
+
+// MARK: - OnboardingIdentityPlacement
+
+/// Whether onboarding's welcome step draws the launch identity block, and the rule is measured
+/// against the dock rather than assumed from the step.
+///
+/// ## Why the step alone is not the rule
+/// The block sits where the splash left it — centred in the safe area, in the rect
+/// `LaunchSplashView.identityZone` names — and the dock rises from the bottom to a height that
+/// depends on the reader's type size. At the default size the two are 60–100 pt apart on every
+/// supported phone; at the accessibility sizes the dock grows past the block's bottom edge, and a
+/// block that stayed put would be a wordmark read through a glass panel. O-5 already records the
+/// same lesson for the dock's exclusion zone: a hardcoded guess was fine at the size it was
+/// authored at and wrong at the sizes nobody re-tests. So the block is shown only when the
+/// *measured* dock leaves it a clear gap, and hides itself otherwise — the dock carries the
+/// wordmark's meaning in its own title, so nothing is lost but a picture.
+///
+/// ## Both rects in ONE space
+/// `identityZone` is in the backdrop's full-bleed space (it adds the safe-area insets so it can
+/// be handed straight to the packer). The dock zone `OnboardingView` builds is in the safe-area
+/// box. Callers pass the dock rect already translated by the top inset; this function only
+/// compares. A test pins the arithmetic of the comparison, not the coordinate conversion.
+///
+/// Version history:
+///   1.0 — the app icon in the launch → splash → onboarding handover
+enum OnboardingIdentityPlacement {
+
+    /// The least vertical clearance between the block's rect and the dock's top edge.
+    ///
+    /// The block's rect is already generous — `identityZone` is 260 pt tall against a laid-out
+    /// block of roughly 200 — so this only has to keep the *rect* off the glass, not the glyphs.
+    static let minimumGap: CGFloat = 12
+
+    /// Whether the identity block is drawn.
+    ///
+    /// - Parameters:
+    ///   - isWelcomeStep: Only the welcome step carries the block; later steps are the reader's,
+    ///     not the app's.
+    ///   - identityZone: The block's rect (`LaunchSplashView.identityZone`), in the same space
+    ///     as `dockZone`.
+    ///   - dockZone: The dock's rect, translated into `identityZone`'s space.
+    /// - Returns: `true` when the block clears the dock by at least ``minimumGap``.
+    static func showsIdentity(isWelcomeStep: Bool,
+                              identityZone: CGRect,
+                              dockZone: CGRect) -> Bool {
+        guard isWelcomeStep else { return false }
+        return identityZone.maxY + minimumGap <= dockZone.minY
+    }
+}

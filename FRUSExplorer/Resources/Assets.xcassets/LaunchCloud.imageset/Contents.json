@@ -1,0 +1,14 @@
+{
+  "images" : [
+    { "filename" : "LaunchCloud-iphone-light@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "LaunchCloud-iphone-light@3x.png", "idiom" : "universal", "scale" : "3x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "LaunchCloud-iphone-dark@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "LaunchCloud-iphone-dark@3x.png", "idiom" : "universal", "scale" : "3x" },
+    { "filename" : "LaunchCloud-ipad-light@1x.png", "idiom" : "ipad", "scale" : "1x" },
+    { "filename" : "LaunchCloud-ipad-light@2x.png", "idiom" : "ipad", "scale" : "2x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "LaunchCloud-ipad-dark@1x.png", "idiom" : "ipad", "scale" : "1x" },
+    { "appearances" : [ { "appearance" : "luminosity", "value" : "dark" } ], "filename" : "LaunchCloud-ipad-dark@2x.png", "idiom" : "ipad", "scale" : "2x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 },
+  "properties" : { "template-rendering-intent" : "original" }
+}

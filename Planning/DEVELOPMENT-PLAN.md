@@ -17907,3 +17907,104 @@ caption band, the badge, both `.srt` files, the TSV and all 554 caption PNGs.
 sentence, which is the visual-marketing plan §5's mandated caveat for a scoped-map animation. It is
 still line 1 of `provenance.txt`, and `--caption "$(head -1 provenance.txt | sed 's/^# *//')"` burns
 it in instead.
+
+## Session 2026-09-20 — The launch-screen "lookup failure" was the device, and the tile is now the icon
+
+Two questions from the owner: read #1346's account of the launch-storyboard failure and
+investigate it, and carry the app icon through launch screen → splash → onboarding.
+
+**The failure reproduced, then stopped reproducing for a reason none of #1346's six cycles could
+have seen.** One build put SEVEN new assets on the launch screen side by side, each in an image
+view over a yellow swatch so a non-rendering asset would show as a bare square: the plate as PDF and
+as PNG, a byte-identical copy of `LaunchAppTile` under the name `ProbeTileCopy`, a 400 pt PDF whose
+five words were embedded-font text, the same five words as glyph outlines, a 300 pt PNG crop, and the
+app icon at 1x/2x/3x. On the iPad Pro 11-inch (M5) / iOS 27.0 that #1346 measured on, after
+uninstall + reinstall, **all seven were bare swatches and `LaunchAppTile` drew in the same frame.**
+So content, format, fonts, size, scale set and idiom were exonerated in one capture — a copy of the
+working asset failed, and only its NAME differed. After `simctl shutdown` + `boot` + uninstall +
+reinstall on that iPad, and on a freshly created iPhone 17 that had never had the app, **all seven
+drew** — the original plate with its fifty embedded New York subsets included. The launch-screen
+renderer keeps the app's asset catalog in memory per bundle identifier, and reinstalling does not
+evict it: a name present at the first launch of that boot resolves to the OLD content, a name that
+was not resolves to nothing. Every explanation #1346 "eliminated" was a property of the device.
+
+The first reboot test was itself confounded and is worth recording: reboot alone, without a
+reinstall, still showed blank swatches — because the app container's `Library/SplashBoard`
+snapshot, rendered before the reboot, survives it. The clean sequence is reboot THEN reinstall.
+
+**So the plate ships**, wired exactly as #1346 built and reverted it (`img-cloud-aaa`, full-bleed,
+aspect-filled behind the identity block, two idioms x two appearances) — **but as PNG renditions,
+not the PDF, because the first wired build drew a BLACK launch screen on both devices.** The
+previous session's imageset had dropped `preserves-vector-representation`, so `actool` rasterised
+the 1400 pt plate at 4200 x 4200 for 3x, and a launch screen carrying that rendition drew nothing
+at all: no background colour, no labels, no tile, and no snapshot written to the app container's
+`Library/SplashBoard`. A/B on the next build: the iPhone with 2400 px PNGs drew everything, and
+the iPad with the PDF kept as a vector (rasterised at 2800 px beside it) drew everything. The
+ceiling is therefore between 2800 and 4200 px on an edge; every shipped rendition stays at or under
+2400 (iPhone 1600@2x / 2400@3x, iPad 1200@1x / 2400@2x), PNG for both idioms so there is one
+proven mechanism, and `LaunchArtworkTests`' gated generator now writes those PNGs itself beside the
+PDFs — the catalog's eight files are its output, not a script's. The suite header carries the
+explanation instead of the mystery, and `shippedPlateResolves` guards that the catalog carries
+what the storyboard names. `LaunchPlateAppearance`'s claim that a template
+image "does not work in a launch screen" is retracted to *unproven*: it was measured on the stale
+device too. The ink stays baked because that route is verified and costs one PDF.
+
+**The tile is the app icon.** `LaunchAppTile` was a generic blue document-and-magnifier tile that
+appeared nowhere else in the product, so the first frame after tapping the icon was not the icon.
+It is now the 1024 pt icon artwork clipped to the home screen's continuous corner
+(`RoundedRectangle(cornerRadius: 0.2237 * edge, style: .continuous)`) at 1x/2x/3x, with a `mac`
+idiom carrying the macOS icon's own shape for the splash on that platform. The name is kept on
+purpose: against a stale catalog an old name degrades to the old tile, where a new name degrades
+to nothing.
+
+**The block is one type, drawn three times.** `LaunchIdentityBlock` (icon, wordmark, caption,
+shimmer) is what `LaunchSplashView` draws and what `OnboardingView` now draws on the welcome step —
+`showsShimmer: false` lays the shimmer out as a clear placeholder so the icon does not move by half
+a shimmer at the handover. The welcome step also hands the block's rect
+(`LaunchSplashView.identityZone`, safe-area insets applied) to the cloud as a second exclusion
+zone. Whether the block is drawn is **measured against the dock**, not assumed from the step:
+`OnboardingIdentityPlacement.showsIdentity` requires the measured dock to clear the block's rect
+by 12 pt, because at accessibility type sizes the dock reaches it — O-5's lesson about the dock
+zone, applied to the thing above the dock. Four tests pin the rule, two of them at real iPhone 17
+geometry with a 230 pt default-size dock (shown) and a 430 pt AX5 dock (hidden). **The dock rect
+it compares against is the dock's REAL rect, not `dockExclusionZone`'s**: that rect adds the 28 pt
+bottom inset to a measured height that already contains it, and measured on device the padded
+version showed the block on an iPhone 17 by one point and hid it on an iPhone 17e.
+
+**The glass backplate, owner request.** The icon sits on a `.glassEffect` rounded square that
+reaches 8 pt past its edge, concentric with the icon's own corner. It is drawn as a BACKGROUND so
+the block's laid-out height is unchanged — the iPhone plate's identity hole is at its measured
+worst case (374 of 400 plate points on a 375 pt iPhone SE), and sixteen more points of block would
+have meant re-packing and re-shipping the plate. The launch screen shows no backplate: glass is a
+live effect over whatever is behind it, and the storyboard is a static snapshot, so faking it in
+the PNG would be a picture of glass over nothing. Under Reduce Transparency the icon sits bare, as
+before. The true translucent tile — the red field as tinted glass with the paper and lens on top —
+needs the icon's layered source and an Icon Composer `.icon`, which the repo does not have.
+
+**The cloud now reaches the glass, owner request.** One centred 340 x 260 pt rect used to keep
+words off the whole block, and because the block is a narrow tile over a wide caption that left the
+sides of the tile and the band above it empty — a third of a phone's middle with no words on a
+surface whose point is the words. `LaunchSplashView.identityZones` is two rects built from the
+block's own layout constants: the glass plate's square and the wordmark-and-caption strip, each
+with an 8 pt clearance and a stated 8 pt line-height allowance for the floor `identityBlockMinimumHeight`
+under-states. The packer and the drift field already took an array. `identityZone` is the union,
+kept for the dock rule (which needs one bottom edge) and the coverage tests. **The launch plate's
+holes are now DERIVED from the same function**, mapped through each canvas's aspect-fill crop with
+the canvas's safe-area insets, and unioned per idiom — so the storyboard's holes and the splash's
+zones are one rule seen through the crop, and the by-eye constants the first version authored (and
+its own test caught 66 plate points short) are gone. The plates were regenerated and re-shipped.
+
+**The iPad tile is 176 pt, owner request.** 88 pt was 22% of an iPhone 17's width and 10.5% of an
+iPad Pro 11-inch's, and on the iPad's canvas the icon read as a thumbnail among words larger than
+itself. `LaunchIdentityMetrics` carries the block's sizes per idiom — phone 88/22/13, pad
+176/28/15, mac 76/20/12 — and is what `LaunchIdentityBlock`, `identityZones` and the plate
+generator all read, the generator by idiom rather than by host device. The storyboard carries the
+iPad numbers as regular-width, regular-height size-class variations, which is iPad and nothing
+else. `LaunchAppTile` gained `ipad` renditions at 176 pt (176/352 px) so the iPad is not upscaling
+the phone's 264 px. The iPad plates were regenerated for the larger holes; the stack's spacing in
+the storyboard went 16 → 14 to match the splash, a 2 pt drift the handover had carried since #529.
+
+**Not changed, and worth knowing.** The dock's own exclusion zone is still handed to the packer in
+safe-area coordinates while the packer's box is full-bleed, so it sits one top inset above the real
+dock and over-protects it. Pre-existing, on the safe side, and documented at the call rather than
+fixed in a change about the launch screen.

@@ -38,67 +38,141 @@ private let launchArtworkOutputDirectory: URL? =
 /// a static on it is too, and `LaunchPlateIdiom` below is an ordinary nonisolated type.
 let launchPlateEdge: CGFloat = 1400
 
-    /// The two plates, because ONE cannot serve both idioms and the measurement says so.
+/// The two plates, because ONE cannot serve both idioms and the measurement says so.
 ///
 /// Aspect-fill magnifies a square plate by `max(w, h) / edge`, so the *narrower* the device the
-/// more magnified the plate and the LARGER the identity block is in plate coordinates. On a
-/// 375 pt iPhone SE the block needs a 686 x 374 hole; on an 834 pt iPad it needs 394 x 206.
-/// A single hole big enough for the phone leaves an iPad with 75% of its visible width empty,
-/// and one sized for the iPad puts words under the wordmark on the phone.
+/// more magnified the plate and the LARGER the identity block is in plate coordinates — on a
+/// 375 pt iPhone SE about 1.8x what an 834 pt iPad needs. A single hole big enough for the phone
+/// leaves an iPad with most of its visible width empty, and one sized for the iPad puts words
+/// under the wordmark on the phone.
 ///
 /// An asset catalog already solves this: two images under one name, keyed by idiom, chosen by
 /// the device with no code. So the plate is generated twice.
 enum LaunchPlateIdiom: String, CaseIterable {
     case iphone, ipad
 
-    /// The asset-catalog filename for this idiom's plate in one appearance.
+    /// The asset-catalog filename for this idiom's plate in one appearance — the VECTOR, which is
+    /// the source of the rasters below and is what ships for review, not what the catalog carries.
     func filename(_ appearance: LaunchPlateAppearance) -> String {
         "LaunchCloud-\(rawValue)-\(appearance.rawValue).pdf"
     }
 
-    /// The centred rect the words are kept out of, in plate coordinates.
+    /// The PNG renditions that ship, as (catalog scale, pixel edge).
     ///
-    /// Each is the worst case over that idiom's canvases in ``LaunchPlateIdiom/canvases``,
-    /// rounded up — `identityHoleSurvivesEveryCrop` is what holds them to it.
-    var identityHole: CGRect {
-        let size: CGSize = switch self {
-        case .iphone: CGSize(width: 720, height: 400)
-        case .ipad:   CGSize(width: 460, height: 250)
+    /// **The catalog carries PNGs and not the PDF, and the reason is a measured ceiling.** Left as
+    /// a PDF, `actool` rasterises a 1400 pt plate at 4200 x 4200 for 3x — and a launch screen
+    /// carrying that rendition drew BLACK on iPad Pro 11-inch and iPhone 17 (iOS 27.0): no
+    /// background colour, no labels, no tile, and no snapshot written to the app container's
+    /// `Library/SplashBoard`. The same storyboard with a 2400 x 2400 PNG drew everything on the
+    /// iPhone, and the PDF kept as a vector for the `ipad` idiom (which `actool` rasterises at
+    /// 2800 x 2800 for 2x beside the vector) drew everything on the iPad. So the ceiling lies
+    /// between 2800 and 4200 pixels on an edge, and every rendition here stays at or under 2400,
+    /// the smaller of the two edges that are known to render — at the cost of a mild upscale on
+    /// the tallest canvases: an iPhone 17 Pro Max draws the 2400 px rendition at 2868 px (1.2x),
+    /// a 13-inch iPad the 2400 px one at 2732 px (1.14x). The words are at most 24% alpha and
+    /// serif; the upscale is not visible at arm's length and the alternative was a black launch
+    /// screen. PNG for both idioms rather than a vector for one, because one proven mechanism is
+    /// easier to keep true than two.
+    var rasterRenditions: [(scale: Int, pixels: Int)] {
+        switch self {
+        case .iphone: [(2, 1600), (3, 2400)]
+        case .ipad:   [(1, 1200), (2, 2400)]
         }
-        return CGRect(x: (launchPlateEdge - size.width) / 2, y: (launchPlateEdge - size.height) / 2,
-                      width: size.width, height: size.height)
     }
 
-    /// The canvases this idiom's plate must survive, in points.
+    /// The catalog filename of one raster rendition.
+    func rasterFilename(_ appearance: LaunchPlateAppearance, scale: Int) -> String {
+        "LaunchCloud-\(rawValue)-\(appearance.rawValue)@\(scale)x.png"
+    }
+
+    /// The rects the words are kept out of, in plate coordinates — the glass tile's square and
+    /// the wordmark-and-caption strip, each the union over this idiom's canvases of
+    /// `LaunchSplashView.identityZones` mapped through that canvas's aspect-fill crop.
+    ///
+    /// Derived, not authored, so the launch screen's holes and the splash's zones are the same
+    /// rule seen through the crop: a change to the block's layout moves both or neither. The
+    /// first version of this suite authored one hole per idiom by eye and its own test caught it
+    /// 66 plate points too narrow for an iPhone SE; deriving it removes that class of mistake, and
+    /// `identityHoleSurvivesEveryCrop` now checks the derivation against each canvas rather than a
+    /// hand-picked constant.
+    var identityHoles: [CGRect] {
+        var holes = [CGRect.null, CGRect.null]
+        for canvas in canvases {
+            for (index, zone) in mappedZones(on: canvas).enumerated() {
+                holes[index] = holes[index].union(zone)
+            }
+        }
+        return holes
+    }
+
+    /// The block's sizes on this idiom — asked for explicitly, because the generator runs on
+    /// whichever simulator hosts the tests and `LaunchIdentityMetrics.current` would answer for it.
+    var metrics: LaunchIdentityMetrics {
+        switch self {
+        case .iphone: .phone
+        case .ipad:   .pad
+        }
+    }
+
+    /// One canvas's identity zones, in plate coordinates.
+    ///
+    /// `scaleAspectFill` scales the square plate by `max(w, h) / edge` and centres it on the
+    /// SCREEN; the block is centred in the SAFE AREA. So a canvas point maps to the plate as
+    /// `centre + (point - screenCentre) / scale`, and the zones are asked for in the safe box
+    /// with the canvas's insets so the safe-area offset is carried across.
+    func mappedZones(on canvas: LaunchPlateCanvas) -> [CGRect] {
+        let scale = max(canvas.size.width / launchPlateEdge, canvas.size.height / launchPlateEdge)
+        let safe = CGSize(width: canvas.size.width - canvas.insets.leading - canvas.insets.trailing,
+                          height: canvas.size.height - canvas.insets.top - canvas.insets.bottom)
+        return LaunchSplashView.identityZones(in: safe, safeAreaInsets: canvas.insets,
+                                              metrics: metrics).map { zone in
+            CGRect(x: launchPlateEdge / 2 + (zone.minX - canvas.size.width / 2) / scale,
+                   y: launchPlateEdge / 2 + (zone.minY - canvas.size.height / 2) / scale,
+                   width: zone.width / scale, height: zone.height / scale)
+        }
+    }
+
+    /// The canvases this idiom's plate must survive, in points, with their safe-area insets.
     ///
     /// Portrait and landscape both, because a launch screen is drawn in whatever orientation the
-    /// device is held in and the crop differs between them.
-    var canvases: [CGSize] {
+    /// device is held in and the crop differs between them. The insets matter now that the holes
+    /// are derived: the block is centred in the safe area, which on a Dynamic Island phone sits
+    /// 12.5 pt above the screen's centre.
+    var canvases: [LaunchPlateCanvas] {
         switch self {
         case .iphone:
-            [CGSize(width: 375, height: 667),    // iPhone SE — the narrowest, and the worst case
-             CGSize(width: 393, height: 852),    // iPhone 17
-             CGSize(width: 440, height: 956),    // iPhone 17 Pro Max
-             CGSize(width: 852, height: 393)]    // …and on its side
+            [.init(375, 667, top: 20, bottom: 0),             // iPhone SE — the narrowest, and the worst case
+             .init(393, 852, top: 59, bottom: 34),            // iPhone 17
+             .init(440, 956, top: 59, bottom: 34),            // iPhone 17 Pro Max
+             .init(852, 393, top: 0, bottom: 21, sides: 59)]  // …and on its side
         case .ipad:
-            [CGSize(width: 744, height: 1133),   // iPad mini — the narrowest iPad
-             CGSize(width: 834, height: 1210),   // iPad Pro 11"
-             CGSize(width: 1366, height: 1024),  // iPad Pro 13" landscape
-             CGSize(width: 1024, height: 1366)]  // …and on its end
+            [.init(744, 1133, top: 24, bottom: 20),           // iPad mini — the narrowest iPad
+             .init(834, 1210, top: 24, bottom: 20),           // iPad Pro 11"
+             .init(1366, 1024, top: 24, bottom: 20),          // iPad Pro 13" landscape
+             .init(1024, 1366, top: 24, bottom: 20)]          // …and on its end
         }
+    }
+}
+
+/// A screen the plate must survive: its size in points and its safe-area insets.
+struct LaunchPlateCanvas {
+    let size: CGSize
+    let insets: EdgeInsets
+    init(_ width: CGFloat, _ height: CGFloat, top: CGFloat, bottom: CGFloat, sides: CGFloat = 0) {
+        size = CGSize(width: width, height: height)
+        insets = EdgeInsets(top: top, leading: sides, bottom: bottom, trailing: sides)
     }
 }
 
 /// The appearance a plate is baked for.
 ///
-/// **The ink is BAKED, and a template image is what this replaces.** A template asset would have
-/// carried weight in alpha and taken its colour from the image view's `tintColor`, which is how one
-/// asset could have served both appearances. It does not work in a launch screen: measured on iPad
-/// Pro 11-inch / iOS 27.0 with the image view given a temporary red background, the view laid out
-/// full-bleed and drew **nothing at all** — while `LaunchAppTile`, a PDF in the same catalog with
-/// `template-rendering-intent: original`, drew normally in the same frame. So the plate follows the
-/// tile: original intent, colour baked, and the two appearances shipped as asset-catalog variants
-/// exactly as `LaunchBackground`, `LaunchTitle` and `LaunchCaption` already are.
+/// **The ink is BAKED.** A template asset would have carried weight in alpha and taken its colour
+/// from the image view's `tintColor`, which is how one asset could have served both appearances.
+/// #1346 tried that first and saw nothing drawn — but it saw nothing drawn for EVERY new asset,
+/// because the device held a stale catalog (see the suite header), so the template route is
+/// UNPROVEN either way rather than ruled out. Baked ink is verified on a clean device, costs one
+/// more 130 KB PDF, and matches how `LaunchBackground`, `LaunchTitle` and `LaunchCaption` already
+/// ship their two appearances; there is nothing to gain by re-testing the alternative.
 enum LaunchPlateAppearance: String, CaseIterable {
     case light, dark
 
@@ -123,8 +197,8 @@ enum LaunchPlateAppearance: String, CaseIterable {
 ///
 /// ## Three properties the plate must have, and each is asserted rather than assumed
 /// 1. **Its weight lives in ALPHA.** Every word is drawn in one ink at a varying alpha, so the two
-///    appearance variants differ only in that ink — see ``LaunchPlateAppearance``, which also
-///    records why a template asset (one image, tinted) does not work in a launch screen.
+///    appearance variants differ only in that ink — see ``LaunchPlateAppearance`` for why the
+///    ink is baked rather than tinted at runtime.
 /// 2. **It is SQUARE, with a hole in the middle.** The storyboard scales it `scaleAspectFill`,
 ///    which crops the long edge and always keeps the centre — so a centred exclusion zone is the
 ///    one region guaranteed to survive on every device from a 375 pt phone to a 1366 pt iPad, and
@@ -137,32 +211,32 @@ enum LaunchPlateAppearance: String, CaseIterable {
 ///     TEST_RUNNER_RENDER_LAUNCH_ARTWORK_DIR=/tmp/launch-art xcodebuild test … \
 ///       -only-testing FRUSExplorerTests/LaunchArtworkTests
 ///
-/// ## NOTHING CONSUMES THE PLATE YET, AND THE REASON IS A PLATFORM FACT THIS SUITE RECORDS
+/// ## THE PLATE SHIPS, and the lookup failure that held it back for one PR is explained
 ///
-/// The intended consumer is a full-bleed `UIImageView` behind the identity block in
-/// `LaunchScreen.storyboard`. It was built and **it does not render**, for a reason none of the
-/// obvious explanations covers. Measured on iPad Pro 11-inch (M5) / iOS 27.0, fresh install each
-/// time, `simctl` screenshots of the settled launch screen:
+/// PR #1346 generated this plate and reverted its wiring: a full-bleed image view in
+/// `LaunchScreen.storyboard` laid out correctly, drew `LaunchAppTile` when pointed at it, and drew
+/// nothing when pointed at `LaunchCloud` — including in the known-good 88 pt tile view — while
+/// `assetutil` found the asset in `Assets.car`. Template versus original intent, vector
+/// preservation, PDF versus PNG, idiom versus universal, 1400 pt versus 200 pt and a mismatched
+/// `<resources>` size were each "eliminated" by a build-and-capture cycle.
 ///
-/// - The image view is laid out correctly. Given a temporary red background it filled the screen.
-/// - The image view renders images. Pointed at `LaunchAppTile` it drew that, full-bleed.
-/// - The asset compiles. `assetutil --info` finds `LaunchCloud` in the built `Assets.car` in every
-///   configuration tried.
-/// - **`LaunchCloud` never resolves at runtime.** Placed in the *known-good* 88 pt tile image view,
-///   in place of `LaunchAppTile`, it drew nothing there either — so the fault is the asset lookup
-///   and not the view.
+/// **Every one of those cycles ran on a device holding a stale copy of the catalog.** Measured
+/// 2026-09-20 on the same iPad Pro 11-inch (M5) / iOS 27.0: a launch screen carrying SEVEN new
+/// assets — this plate as PDF and as PNG, a byte-identical copy of `LaunchAppTile` under a new
+/// name, a 400 pt PDF with embedded fonts, the same PDF with the text as outlines, a 300 pt PNG
+/// crop and the app icon at 1x/2x/3x — drew none of them after uninstall + reinstall and drew
+/// `LaunchAppTile` in the same frame. After `simctl shutdown` + `boot` + reinstall, and on a
+/// simulator that had never had the app, all seven drew. The launch-screen renderer keeps the
+/// app's asset catalog in memory per bundle identifier, and reinstalling does not evict it: a
+/// name that existed at the first launch of that boot resolves (to the OLD content), and a name
+/// that did not resolves to nothing. Every "eliminated" explanation was a property of the device,
+/// not of the asset. **Reboot the simulator after changing a launch-screen image.**
 ///
-/// Ruled out, each by its own build-and-capture cycle: template versus original rendering intent;
-/// `preserves-vector-representation` on and off; PDF versus PNG; per-idiom keying versus
-/// `universal`; a 1400 pt plate versus a 200 pt one; and a `<resources>` declaration whose stated
-/// size disagreed with the asset's. The launch screen renders the storyboard's own views and the
-/// catalog's colours, and draws `LaunchAppTile`, so the boundary is narrower than "launch screens
-/// cannot use the catalog" — but what puts `LaunchCloud` on the wrong side of it is not yet known.
-///
-/// **So the plate ships as a measurement, not a feature.** The composition and its geometry are the
-/// expensive, reusable half and they are verified below; the wiring is one image view whenever the
-/// lookup is explained. Owner decision 2026-09-20: do not ship a launch screen asset nobody can
-/// account for.
+/// The wiring is the storyboard's `img-cloud-aaa`, full-bleed and aspect-filled behind the
+/// identity block, exactly as #1346 built it — but the catalog carries PNG RENDITIONS of the plate
+/// and not the PDF, because the first wired build drew a black launch screen on both devices: see
+/// ``LaunchPlateIdiom/rasterRenditions`` for the measured ceiling. `shippedPlateResolves` below is
+/// the guard that the catalog still carries what the storyboard names.
 ///
 /// Version history:
 ///   1.0 — the launch screen's cloud plate
@@ -189,7 +263,7 @@ struct LaunchArtworkTests {
             maxWords: 50,
             minFontSize: 22,
             maxFontSize: 96,
-            exclusionZones: [idiom.identityHole],
+            exclusionZones: idiom.identityHoles,
             // NO vertical squash. `FRUSTheme.cloudYCompression` makes the field elliptical so it
             // fills a wide screen; this plate is square and is then cropped to the screen, so a
             // squashed source would leave bands of nothing on the axis the crop keeps.
@@ -243,32 +317,31 @@ struct LaunchArtworkTests {
                 "weight must still be legible as weight")
     }
 
-    /// The hole is what makes a square plate work on a device it was not composed for, so its
-    /// geometry is pinned rather than left to look right on the machine it was made on.
-    ///
-    /// **This test failed on its first run and that is why the plate is per-idiom.** A single
-    /// 620 x 340 hole, sized by eye from a 393 pt phone, was 66 plate points too narrow and 34 too
-    /// short for a 375 pt iPhone SE — where aspect-fill magnifies the plate most and the identity
-    /// block is therefore largest in plate coordinates.
-    @Test("The identity hole survives an aspect-fill crop on every canvas of its idiom",
+    /// The holes are what make a square plate work on a device it was not composed for, so they
+    /// are checked against every canvas rather than left to look right on the machine they were
+    /// made on. Derived holes cover their canvases by construction; what this pins is that the
+    /// derivation is SANE — a hole that had swallowed the plate would also "cover" everything.
+    @Test("The identity holes cover every canvas of their idiom and no more than they must",
           arguments: LaunchPlateIdiom.allCases)
     func identityHoleSurvivesEveryCrop(idiom: LaunchPlateIdiom) {
-        // `LaunchSplashView`'s block, whose composition the storyboard mirrors. The 48 is the
-        // storyboard's own 2 x 24 pt horizontal inset, which bounds the block on a narrow device.
-        let blockWidth: CGFloat = 340
-        let blockHeight = LaunchSplashView.identityBlockMinimumHeight
-
+        let holes = idiom.identityHoles
+        #expect(holes.count == 2)
         for canvas in idiom.canvases {
-            // scaleAspectFill: the plate is scaled so BOTH axes are covered, then centre-cropped.
-            let scale = max(canvas.width / launchPlateEdge, canvas.height / launchPlateEdge)
-            // The identity block, expressed in plate points at that scale.
-            let neededWidth = min(blockWidth, canvas.width - 48) / scale
-            let neededHeight = blockHeight / scale
-            #expect(idiom.identityHole.width >= neededWidth,
-                    "\(idiom) on \(Int(canvas.width))x\(Int(canvas.height)): the block needs \(neededWidth) plate pt of width")
-            #expect(idiom.identityHole.height >= neededHeight,
-                    "\(idiom) on \(Int(canvas.width))x\(Int(canvas.height)): the block needs \(neededHeight) plate pt of height")
+            for (index, zone) in idiom.mappedZones(on: canvas).enumerated() {
+                #expect(holes[index].contains(zone),
+                        "\(idiom) on \(Int(canvas.size.width))x\(Int(canvas.size.height)): zone \(index) escapes its hole")
+            }
         }
+        // The tile hole is a near-square around the glass plate (104 pt on a phone, 192 on an
+        // iPad); the text strip is wider than it is tall. Neither may approach the plate's own
+        // edge, or there is no cloud left to show.
+        let tile = holes[0], text = holes[1]
+        #expect(tile.width < launchPlateEdge / 2.5 && tile.height < launchPlateEdge / 2.5,
+                "\(idiom): tile hole \(Int(tile.width))x\(Int(tile.height)) — the derivation has run away")
+        #expect(text.width > text.height, "\(idiom): the text hole should be a strip")
+        #expect(text.width < launchPlateEdge * 0.7,
+                "\(idiom): text hole \(Int(text.width)) wide — the derivation has run away")
+        #expect(text.minY > tile.midY, "\(idiom): the text strip must sit below the tile's centre")
     }
 
     @Test("Each plate is packed from the bundled artifact and clears the identity block",
@@ -283,9 +356,29 @@ struct LaunchArtworkTests {
                 term: word.term, fontSize: word.fontSize, rotated: word.rotationDegrees != 0)
             let box = CGRect(x: word.center.x - half.width, y: word.center.y - half.height,
                              width: half.width * 2, height: half.height * 2)
-            #expect(!box.intersects(idiom.identityHole),
-                    "\(idiom): '\(word.term)' was placed over the identity block")
+            for hole in idiom.identityHoles {
+                #expect(!box.intersects(hole),
+                        "\(idiom): '\(word.term)' was placed over the identity block")
+            }
         }
+    }
+
+    // MARK: - What ships
+
+    /// The two images the launch storyboard names resolve from the catalog the app carries.
+    ///
+    /// Cheap, and worth having: a launch screen cannot say when an image fails to load, so the
+    /// only other guard is a screenshot. `LaunchAppTile` is also the app icon the splash and
+    /// onboarding draw, so a missing rendition there is three surfaces, not one.
+    @Test("The launch storyboard's images resolve", arguments: ["LaunchCloud", "LaunchAppTile"])
+    func shippedPlateResolves(name: String) throws {
+        #if canImport(UIKit)
+        let image = try #require(UIImage(named: name), "\(name) is missing from the catalog")
+        #expect(image.size.width > 0 && image.size.height > 0)
+        #else
+        let image = try #require(NSImage(named: name), "\(name) is missing from the catalog")
+        #expect(image.size.width > 0 && image.size.height > 0)
+        #endif
     }
 
     // MARK: - The generator
@@ -316,14 +409,20 @@ struct LaunchArtworkTests {
         }
         try (data as Data).write(to: url)
 
-        // A PNG beside it, for looking at. Never shipped — the asset is the vector.
-        if let image = renderer.cgImage {
-            let preview = directory.appending(path: "LaunchCloud-\(idiom.rawValue)-\(appearance.rawValue)-preview.png")
-            if let destination = CGImageDestinationCreateWithURL(
-                preview as CFURL, UTType.png.identifier as CFString, 1, nil) {
-                CGImageDestinationAddImage(destination, image, nil)
-                _ = CGImageDestinationFinalize(destination)
-            }
+        // The rasters that ship — see `rasterRenditions` for why the catalog carries these and
+        // not the PDF. Rendered from the same view at a scale that yields exactly the pixel edge.
+        for rendition in idiom.rasterRenditions {
+            let raster = ImageRenderer(content: plate(words, ink: appearance.ink))
+            raster.proposedSize = ProposedViewSize(width: launchPlateEdge, height: launchPlateEdge)
+            raster.scale = CGFloat(rendition.pixels) / launchPlateEdge
+            let image = try #require(raster.cgImage, "no raster at \(rendition.pixels) px")
+            #expect(image.width == rendition.pixels && image.height == rendition.pixels,
+                    "\(idiom.rawValue)@\(rendition.scale)x rendered \(image.width) px, not \(rendition.pixels)")
+            let pngURL = directory.appending(path: idiom.rasterFilename(appearance, scale: rendition.scale))
+            let destination = try #require(CGImageDestinationCreateWithURL(
+                pngURL as CFURL, UTType.png.identifier as CFString, 1, nil))
+            CGImageDestinationAddImage(destination, image, nil)
+            #expect(CGImageDestinationFinalize(destination), "could not write \(pngURL.lastPathComponent)")
         }
 
         print("[LaunchArtwork] \(idiom.rawValue)/\(appearance.rawValue): \(words.count) words -> \(url.path) (\((data as Data).count) bytes)")

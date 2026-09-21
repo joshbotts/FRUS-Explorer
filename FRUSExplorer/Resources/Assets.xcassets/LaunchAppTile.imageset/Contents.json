@@ -1,16 +1,13 @@
 {
   "images" : [
-    {
-      "filename" : "LaunchAppTile.pdf",
-      "idiom" : "universal"
-    }
+    { "filename" : "LaunchAppTile@1x.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "LaunchAppTile@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "LaunchAppTile@3x.png", "idiom" : "universal", "scale" : "3x" },
+    { "filename" : "LaunchAppTile-pad@1x.png", "idiom" : "ipad", "scale" : "1x" },
+    { "filename" : "LaunchAppTile-pad@2x.png", "idiom" : "ipad", "scale" : "2x" },
+    { "filename" : "LaunchAppTile-mac@1x.png", "idiom" : "mac", "scale" : "1x" },
+    { "filename" : "LaunchAppTile-mac@2x.png", "idiom" : "mac", "scale" : "2x" }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
-  },
-  "properties" : {
-    "preserves-vector-representation" : true,
-    "template-rendering-intent" : "original"
-  }
+  "info" : { "author" : "xcode", "version" : 1 },
+  "properties" : { "template-rendering-intent" : "original" }
 }
