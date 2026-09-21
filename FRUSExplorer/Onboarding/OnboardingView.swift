@@ -48,6 +48,10 @@ import SwiftData
 ///         private `ScopeChoice` became `OnboardingScopeChoice`. Behaviour is
 ///         unchanged but for the now-deterministic subseries tiebreak, which is
 ///         documented at `OnboardingScopeResolver.subseries`.
+///   4.2 — the welcome step draws `LaunchIdentityBlock` where the splash left it, so the app
+///         icon stays put through launch screen → splash → onboarding, and the cloud keeps out
+///         from under it. Shown by measurement against the dock (`OnboardingIdentityPlacement`),
+///         because at accessibility type sizes the dock reaches the block.
 ///   4.1 — the backdrop moved to the particle canvas and to the two-lens first-impression set.
 ///         It was the last surface on the static `Text` renderer, which gets no per-axis
 ///         expansion (measured on iPad: the field pooled into 83% of the width by 23% of the
@@ -160,12 +164,22 @@ struct OnboardingView: View {
                     // zone as a placement rejection and nothing consults it afterwards, so the
                     // live half is `WordCloudDriftField.push` — the path M-4's bleed re-clamp fix
                     // exists for, which until now only the splash exercised.
-                    exclusionZones: [dockExclusionZone(in: proxy.size)],
+                    exclusionZones: exclusionZones(in: proxy),
                     drift: true,
                     // The same set the splash uses; this flows straight out of it.
                     lensSet: WordCloudBackdropView.firstImpressionLenses
                 )
                 .ignoresSafeArea()
+
+                // The launch identity, exactly where the splash left it: same block, same centring
+                // in the same safe-area box, minus the shimmer (laid out, not drawn — see
+                // `LaunchIdentityBlock`). Decorative here; the dock's own title names the app.
+                if showsIdentity(in: proxy) {
+                    LaunchIdentityBlock(showsShimmer: false)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityHidden(true)
+                        .transition(.opacity)
+                }
 
                 VStack(spacing: FRUSTheme.onboardingSheetGap) {
                     if !appState.isOnline { offlineBanner }
@@ -234,6 +248,50 @@ struct OnboardingView: View {
                       y: max(0, size.height - height),
                       width: width,
                       height: height)
+    }
+
+    /// The dock's REAL rect, translated into the backdrop's full-bleed space, where the identity
+    /// zone already lives — `LaunchSplashView.identityZone` adds the insets itself.
+    ///
+    /// Not `dockExclusionZone`, on purpose. That rect adds `dockBottomInset` to a measured height
+    /// that already includes it (the preference is read outside the `.padding(.bottom:)`), so it
+    /// over-protects the dock by 28 pt — harmless for keeping words out, but the identity rule is
+    /// a comparison of edges, and 28 pt is the whole margin on a 390 pt phone. Measured: with the
+    /// padded rect, an iPhone 17 showed the block by ONE point and an iPhone 17e hid it.
+    private func dockZoneInBackdropSpace(_ proxy: GeometryProxy) -> CGRect {
+        let height = measuredDockHeight > 0
+            ? measuredDockHeight
+            : (step == .addVolumes ? 170 : 130) + dockBottomInset
+        let width = OnboardingDockMetrics.dockWidth(forContainerWidth: proxy.size.width)
+        return CGRect(x: proxy.safeAreaInsets.leading + (proxy.size.width - width) / 2,
+                      y: proxy.safeAreaInsets.top + max(0, proxy.size.height - height),
+                      width: width, height: height)
+    }
+
+    /// Whether the welcome step's identity block is drawn — measured against the dock.
+    private func showsIdentity(in proxy: GeometryProxy) -> Bool {
+        OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: step == .welcome,
+            identityZone: LaunchSplashView.identityZone(in: proxy.size,
+                                                        safeAreaInsets: proxy.safeAreaInsets),
+            dockZone: dockZoneInBackdropSpace(proxy))
+    }
+
+    /// What the cloud keeps out from under: the dock always, the identity block while it is drawn.
+    ///
+    /// The dock rect is handed over UNtranslated, as it always was. The packer's box is the
+    /// full-bleed canvas and `dockExclusionZone` is built in the safe-area box, so in the canvas
+    /// the zone sits one top inset ABOVE the dock — over-protecting it by that much and leaving the
+    /// bottom inset to `dockBottomInset`'s 28 pt. That is pre-existing, errs on the safe side, and
+    /// is left alone here; the identity zone carries its own insets (`identityZone` adds them),
+    /// which is why the two are not built the same way.
+    private func exclusionZones(in proxy: GeometryProxy) -> [CGRect] {
+        var zones = [dockExclusionZone(in: proxy.size)]
+        if showsIdentity(in: proxy) {
+            zones += LaunchSplashView.identityZones(in: proxy.size,
+                                                    safeAreaInsets: proxy.safeAreaInsets)
+        }
+        return zones
     }
 
     // MARK: - Dock

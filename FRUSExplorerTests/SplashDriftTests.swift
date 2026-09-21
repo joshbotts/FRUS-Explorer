@@ -159,23 +159,57 @@ struct SplashDriftTests {
     @MainActor
     func nothingSettlesOnTheIdentityBlock() {
         let size = phone
+        let zones = LaunchSplashView.identityZones(in: size)
         let zone = LaunchSplashView.identityZone(in: size)
         let fill = WordCloudBackdropView.fillFactor(for: size)
         #expect(fill > 1, "the splash must be a full-bleed surface for this test to mean anything")
 
-        // **Packed centres, not final positions.** The expansion moves each of these outward from
-        // the canvas centre; these values were chosen so that AFTER it they sit a few points
-        // outside the zone's edges — where the packer would actually leave them — and drift then
-        // carries them in. `entered` below is what keeps that true.
-        let placed = [
-            word("diplomacy", at: CGPoint(x: size.width / 2, y: 392), rank: 0),
-            word("telegram", at: CGPoint(x: size.width / 3, y: 460), rank: 8),
-            word("memorandum", at: CGPoint(x: size.width * 2 / 3, y: 388), rank: 20),
-            word("aide", at: CGPoint(x: size.width / 2, y: 464), rank: 40),
+        // **Derived from the zones, not tuned by hand.** The first version placed four words at
+        // numbers "chosen so that AFTER the expansion they sit a few points outside the zone's
+        // edges", and the moment the zones tightened (1.4: two rects instead of one 340 x 260)
+        // the drift no longer reached them and `entered` fell to zero — the guard did its job,
+        // and the fixture had to stop encoding a geometry it did not name. So: four far ANCHORS
+        // fix the expansion factor (they dominate the field's reach), and each PROBE is placed by
+        // inverting that factor so that its expanded home sits `gap` points outside one edge of
+        // one zone — left and right of the tile's square, above it, and below the text strip —
+        // where the sine drift's excursion (±28 pt near, ±12 vertically) must carry it in.
+        let gap: CGFloat = 4
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        let anchors = [
+            word("north", at: CGPoint(x: center.x, y: 6), rank: 40),
+            word("south", at: CGPoint(x: center.x, y: size.height - 6), rank: 40),
+            word("west", at: CGPoint(x: 6, y: center.y), rank: 40),
+            word("east", at: CGPoint(x: size.width - 6, y: center.y), rank: 40),
         ]
+        let factor = WordCloudDriftField.expansion(for: anchors, canvas: size, fill: fill)
+        let tile = zones[0], text = zones[1]
+        // A near probe is drawn at `nearScale`; its box is that much wider than the estimate.
+        func probe(_ term: String, outside target: (CGSize) -> CGPoint) -> PlacedWord {
+            let half = WordCloudDriftField.estimatedHalfSize(term: term, fontSize: 20, rotated: false)
+            let scaled = CGSize(width: half.width * 1.12, height: half.height * 1.12)
+            let expanded = target(scaled)
+            // Invert the expansion so that the HOME lands on `expanded`.
+            let packed = CGPoint(x: center.x + (expanded.x - center.x) / factor.width,
+                                 y: center.y + (expanded.y - center.y) / factor.height)
+            return word(term, at: packed, rank: 0)
+        }
+        let probes = [
+            probe("diplomacy") { CGPoint(x: tile.minX - $0.width - gap, y: tile.midY) },
+            probe("telegram") { CGPoint(x: tile.maxX + $0.width + gap, y: tile.midY) },
+            probe("memorandum") { CGPoint(x: center.x, y: tile.minY - $0.height - gap) },
+            probe("aide") { CGPoint(x: center.x, y: text.maxY + $0.height + gap) },
+        ]
+        let placed = anchors + probes
+        #expect(WordCloudDriftField.expansion(for: placed, canvas: size, fill: fill) == factor,
+                "the probes must sit inside the anchors' reach, or the inversion is wrong")
         let field = WordCloudDriftField(placed: placed,
                                         rankCeiling: WordCloudBackdropView.rankCeiling,
-                                        exclusionZones: [zone], canvas: size, fill: fill)
+                                        exclusionZones: zones, canvas: size, fill: fill)
+        // The inversion landed: every probe's home is outside its zone by less than the drift.
+        for particle in field.particles where particle.depth == 0 {
+            #expect(!zones.contains { $0.contains(particle.home) },
+                    "\(particle.term)'s home is inside a zone")
+        }
         #expect(field.bleed > 0, "fill > 1 must produce a bleed for the push path to matter")
 
         func box(_ state: WordCloudDriftField.State,
@@ -193,15 +227,15 @@ struct SplashDriftTests {
                 // No zones = the position before any push, since `push` returns early on `[]`.
                 let free = WordCloudDriftField.state(of: particle, at: t, in: size,
                                                      avoiding: [], bleed: field.bleed)
-                if box(free, particle).intersects(zone) { entered += 1 }
+                if zones.contains(where: { box(free, particle).intersects($0) }) { entered += 1 }
 
                 let pushed = WordCloudDriftField.state(of: particle, at: t, in: size,
                                                        avoiding: field.exclusionZones,
                                                        bleed: field.bleed)
                 let settled = box(pushed, particle)
-                #expect(!settled.intersects(zone),
-                        "\(particle.term) settled on the identity block at step \(step)")
-                if settled.intersects(zone) { return }
+                let hit = zones.contains { settled.intersects($0) }
+                #expect(!hit, "\(particle.term) settled on the identity block at step \(step)")
+                if hit { return }
             }
         }
         #expect(entered > 0,
@@ -236,10 +270,48 @@ struct SplashDriftTests {
                     "the zone is \(zone.height) tall at \(size), and the block needs \(LaunchSplashView.identityBlockMinimumHeight)")
             #expect(zone.width >= LaunchSplashView.tileSize,
                     "the zone is narrower than the app tile at \(size)")
-            // Centred on the block, which is centred in the frame.
+            // The glass backplate is drawn OUTSIDE the block's layout (see `LaunchIdentityBlock`),
+            // reaching `backplateInset` above the icon; the zone's slack must absorb it, or the
+            // plate's rim would sit over words the zone was meant to clear.
+            #expect(zone.height >= LaunchSplashView.identityBlockMinimumHeight
+                        + 2 * LaunchIdentityBlock.backplateInset,
+                    "the zone has no room for the backplate at \(size)")
+            // Centred on the block, which is centred in the frame — to within the line-height
+            // allowance the zones carry at the block's foot.
             #expect(abs(zone.midX - size.width / 2) < 0.001)
-            #expect(abs(zone.midY - size.height / 2) < 0.001)
+            #expect(abs(zone.midY - size.height / 2) <= LaunchSplashView.zoneLineHeightAllowance)
         }
+    }
+
+    /// The two zones hug the block: the tile's square is centred on the tile and just wider than
+    /// the glass plate, and the text strip starts below the tile — which is what lets words reach
+    /// the plate's rim instead of stopping at a rect around the whole block.
+    @Test("The tile zone is a square around the glass, and the text zone sits below it")
+    @MainActor
+    func zonesHugTheBlock() throws {
+        let zones = LaunchSplashView.identityZones(in: phone)
+        try #require(zones.count == 2)
+        let tile = zones[0], text = zones[1]
+        let plate = LaunchSplashView.tileSize + 2 * LaunchIdentityBlock.backplateInset
+        #expect(abs(tile.width - tile.height) < 0.001, "the tile zone is a square")
+        #expect(tile.width == plate + 2 * LaunchSplashView.zoneMargin)
+        #expect(abs(tile.midX - phone.width / 2) < 0.001)
+        #expect(text.minY > tile.midY, "the text strip must not reach up past the tile's centre")
+        #expect(text.minY < tile.maxY, "…but must start inside the tile's clearance, leaving no gap")
+        #expect(text.width > tile.width, "the caption is wider than the tile")
+        // Together they cover less than the old 340 x 260 rect did — that is the point.
+        let union = LaunchSplashView.identityZone(in: phone)
+        #expect(union.height < 260)
+    }
+
+    @Test("The glass backplate stops short of the wordmark")
+    @MainActor
+    func backplateStaysInTheGap() {
+        // Drawn as a background, the plate borrows from the gap below the icon. It must leave some
+        // of that gap, or the wordmark would sit on the plate's rim.
+        #expect(LaunchIdentityBlock.backplateInset < LaunchSplashView.blockSpacing,
+                "the plate reaches \(LaunchIdentityBlock.backplateInset) pt into a \(LaunchSplashView.blockSpacing) pt gap")
+        #expect(LaunchIdentityBlock.backplateInset > 0)
     }
 
     // MARK: - The chip and the words must agree
@@ -342,19 +414,21 @@ struct SplashDriftTests {
     func zoneIsInTheCanvasCoordinateSpace() {
         let safeArea = CGSize(width: 393, height: 790)
         let insets = EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)
+        // The block is centred in the SAFE-AREA box, which sits `insets.top` down the canvas, so
+        // every zone is the inset-free zone shifted by exactly (leading, top).
+        let bare = LaunchSplashView.identityZones(in: safeArea)
+        let shifted = LaunchSplashView.identityZones(in: safeArea, safeAreaInsets: insets)
+        for (a, b) in zip(bare, shifted) {
+            #expect(b == a.offsetBy(dx: insets.leading, dy: insets.top),
+                    "zone \(b) is not \(a) moved by the insets")
+        }
         let zone = LaunchSplashView.identityZone(in: safeArea, safeAreaInsets: insets)
-        // The block is centred in the SAFE-AREA box, which sits `insets.top` down the canvas.
-        #expect(abs(zone.midY - (insets.top + safeArea.height / 2)) < 0.001,
-                "zone midY \(zone.midY) vs block \(insets.top + safeArea.height / 2)")
         #expect(abs(zone.midX - (insets.leading + safeArea.width / 2)) < 0.001)
         // Landscape: the insets are horizontal, and the same rule has to carry it.
         let landscape = CGSize(width: 750, height: 382)
         let sideInsets = EdgeInsets(top: 0, leading: 62, bottom: 20, trailing: 62)
         let rotated = LaunchSplashView.identityZone(in: landscape, safeAreaInsets: sideInsets)
         #expect(abs(rotated.midX - (62 + landscape.width / 2)) < 0.001)
-        // With no insets it is exactly what it always was.
-        let bare = LaunchSplashView.identityZone(in: safeArea)
-        #expect(abs(bare.midY - safeArea.height / 2) < 0.001)
     }
 
     // MARK: - Wiring

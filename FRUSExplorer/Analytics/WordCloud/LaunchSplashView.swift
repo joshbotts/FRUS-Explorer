@@ -36,6 +36,14 @@ import SwiftUI
 ///         reachable BEFORE they have (see `CloudSurfaceArbiter.resolve`, which used to gate every
 ///         branch on them and so made this view unreachable entirely), which is the composition the
 ///         launch screen hands over: identity only, then the cloud.
+///   1.5 — `LaunchIdentityMetrics`: the block's sizes are per idiom, and the iPad tile is 176 pt.
+///   1.4 — `identityZones`: the tile's square and the text strip are protected separately, so
+///         the cloud reaches the glass instead of stopping at a 340 x 260 rect around the block.
+///   1.3 — the icon sits on a layout-neutral Liquid Glass backplate (`LaunchIdentityBlock` 1.1).
+///   1.2 — the identity block is `LaunchIdentityBlock`, shared with onboarding's welcome step, and
+///         the tile it draws is the app icon. Launch screen → splash → onboarding now keep one
+///         icon in one place; before, the launch screen and splash drew a generic blue tile that
+///         appeared nowhere else, and onboarding drew no identity at all.
 struct LaunchSplashView: View {
 
     /// Why this splash is showing. Governs how long it stays.
@@ -45,7 +53,6 @@ struct LaunchSplashView: View {
     /// static state Observation cannot see. Safe to declare here because this view has exactly one
     /// host, `ContentViewWithSplash`, which puts `AppState` in the environment.
     @Environment(AppState.self) private var appState
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
@@ -58,8 +65,8 @@ struct LaunchSplashView: View {
                 WordCloudBackdropView(
                     scope: .corpus,
                     dim: FRUSTheme.cloudDimSplash,
-                    exclusionZones: [Self.identityZone(in: proxy.size,
-                                                      safeAreaInsets: proxy.safeAreaInsets)],
+                    exclusionZones: Self.identityZones(in: proxy.size,
+                                                       safeAreaInsets: proxy.safeAreaInsets),
                     showsChip: true,
                     // The particle field, on the one surface composed for it (visual-marketing
                     // plan §3.2, M-4). The static renderer gets no expansion and no bleed, so
@@ -119,20 +126,279 @@ struct LaunchSplashView: View {
     /// The centre block the cloud is kept out from under — matching the launch screen's
     /// composition so the hand-off between them is invisible.
     private var identityBlock: some View {
-        VStack(spacing: Self.blockSpacing) {
+        LaunchIdentityBlock(showsShimmer: true)
+    }
+
+    /// The rects the cloud is kept out from under, **in the backdrop's coordinate space**: the
+    /// glass plate's square, and the wordmark-and-caption strip below it.
+    ///
+    /// ## Two rects, not one, so the cloud reaches the glass
+    /// One centred 340 x 260 rect used to protect the whole block. The block is a narrow tile over
+    /// a wide caption, so that rect left the sides of the tile and the band above it empty — on a
+    /// phone, roughly a third of the screen's middle with no words in it, on a surface whose point
+    /// is the words. The tile's square is now protected on its own and the text on its own, and
+    /// the packer and the drift field take the array, so words flow beside the glass and stop at
+    /// its rim. ``identityZone`` is the union, for callers that need one edge (the onboarding dock
+    /// rule needs the bottom) and for the tests that pin the coverage.
+    ///
+    /// ## Two spaces, and the zones have to be in the second one
+    /// This view is an `.overlay` on `ContentView`, so its `GeometryReader` reports the
+    /// SAFE-AREA-inset box, and the identity block is centred in that. The backdrop beneath it
+    /// carries `.ignoresSafeArea()`, so it packs and drifts in the FULL-BLEED box. Handing the
+    /// zone across unchanged puts it off by exactly the leading/top inset — measured at 62 pt
+    /// vertically on an iPhone 17 in portrait, which leaves the shimmer bar and the gap above it
+    /// outside the protected rect, and in landscape leaves the caption's right-hand end outside.
+    ///
+    /// ## Modelled from the layout constants, with the slack stated
+    /// The block is centred as a whole, so its top is derived from ``identityBlockMinimumHeight``,
+    /// which is a FLOOR: the two `Text`s lay out at roughly 1.2x their point size, so the real
+    /// block is about 7 pt taller and its top about 4 pt higher. ``zoneLineHeightAllowance``
+    /// carries that, and ``zoneMargin`` is the clearance between a word and the block on top of
+    /// it. A word that touched the caption would fail on a store screenshot, not in a test, so the
+    /// numbers err toward the block.
+    ///
+    /// - Parameters:
+    ///   - size: the safe-area box the identity block is laid out in.
+    ///   - safeAreaInsets: that box's insets, which locate it inside the full-bleed canvas.
+    ///   - metrics: the block's sizes — this device's by default; the plate generator passes the
+    ///     idiom it is packing for, since it runs on whichever simulator hosts the tests.
+    /// - Returns: `[tileZone, textZone]`, in full-bleed coordinates.
+    static func identityZones(in size: CGSize,
+                              safeAreaInsets: EdgeInsets = EdgeInsets(),
+                              metrics: LaunchIdentityMetrics = .current) -> [CGRect] {
+        let centerX = safeAreaInsets.leading + size.width / 2
+        let blockHeight = metrics.identityBlockMinimumHeight
+        // The block's top, from its centring — see the doc for why the allowance is here.
+        let blockTop = safeAreaInsets.top + (size.height - blockHeight) / 2
+            - zoneLineHeightAllowance / 2
+        let plateEdge = metrics.tileSize + 2 * LaunchIdentityBlock.backplateInset
+        let tileEdge = plateEdge + 2 * zoneMargin
+        let tile = CGRect(x: centerX - tileEdge / 2,
+                          y: blockTop + metrics.tileSize / 2 - tileEdge / 2,
+                          width: tileEdge, height: tileEdge)
+        let textTop = blockTop + metrics.tileSize + metrics.blockSpacing - zoneMargin
+        let textBottom = blockTop + blockHeight + zoneLineHeightAllowance + zoneMargin
+        let textWidth: CGFloat = min(340, size.width - 48)
+        let text = CGRect(x: centerX - textWidth / 2, y: textTop,
+                          width: textWidth, height: textBottom - textTop)
+        return [tile, text]
+    }
+
+    /// The union of ``identityZones(in:safeAreaInsets:)`` — one rect covering the whole block.
+    static func identityZone(in size: CGSize,
+                             safeAreaInsets: EdgeInsets = EdgeInsets(),
+                             metrics: LaunchIdentityMetrics = .current) -> CGRect {
+        identityZones(in: size, safeAreaInsets: safeAreaInsets, metrics: metrics)
+            .reduce(CGRect.null) { $0.union($1) }
+    }
+
+    /// Clearance between a word and the block, on every side of both zones.
+    static let zoneMargin: CGFloat = 8
+
+    /// How much taller the laid-out block is than ``identityBlockMinimumHeight``'s floor — the
+    /// two `Text`s' line heights over their point sizes. Split across the block's centring.
+    static let zoneLineHeightAllowance: CGFloat = 8
+
+    // MARK: - Copy
+
+    static let wordmark = String(localized: "splash.wordmark", defaultValue: "FRUS Explorer")
+    static let caption = String(localized: "splash.caption",
+        defaultValue: "Foreign Relations of the United States · since 1861")
+    static let accessibilityLabel = String(localized: "splash.accessibility",
+        defaultValue: "FRUS Explorer is opening your library.",
+        comment: "Spoken description of the launch splash")
+
+    // MARK: - Metrics
+
+    /// The gap between the identity block's stacked elements. See ``LaunchIdentityMetrics``.
+    static var blockSpacing: CGFloat { LaunchIdentityMetrics.current.blockSpacing }
+    /// The app icon's edge length on this device. See ``LaunchIdentityMetrics``.
+    static var tileSize: CGFloat { LaunchIdentityMetrics.current.tileSize }
+    /// The wordmark's point size on this device. See ``LaunchIdentityMetrics``.
+    static var wordmarkSize: CGFloat { LaunchIdentityMetrics.current.wordmarkSize }
+    /// The caption's point size on this device. See ``LaunchIdentityMetrics``.
+    static var captionSize: CGFloat { LaunchIdentityMetrics.current.captionSize }
+
+    /// The shimmer bar's height. See ``LaunchIdentityMetrics/shimmerHeight``.
+    static var shimmerHeight: CGFloat { LaunchIdentityMetrics.shimmerHeight }
+    /// The gap above the shimmer bar. See ``LaunchIdentityMetrics/shimmerTopPadding``.
+    static var shimmerTopPadding: CGFloat { LaunchIdentityMetrics.shimmerTopPadding }
+
+    /// The least vertical space the identity block can occupy: its three type elements, the
+    /// shimmer bar, and every gap between them. ``identityZone`` must cover it.
+    ///
+    /// A floor, not the laid-out height — the two `Text` elements render at roughly 1.2x their
+    /// point size, so the real block is a little taller. Under-stating is the safe direction for
+    /// a guard; over-stating would fail on a zone that is in fact adequate.
+    static var identityBlockMinimumHeight: CGFloat {
+        LaunchIdentityMetrics.current.identityBlockMinimumHeight
+    }
+}
+
+// MARK: - LaunchIdentityMetrics
+
+/// The identity block's sizes, per idiom — because 88 pt is a quarter of a phone and a tenth of
+/// an iPad.
+///
+/// The block shipped at one size on every iOS device: an 88 pt tile is 22% of an iPhone 17's
+/// width and 10.5% of an iPad Pro 11-inch's, and on an iPad's canvas it read as a thumbnail lost
+/// among words larger than itself. The iPad tile is doubled to 176 pt (21% of the same iPad, 24%
+/// of an iPad mini — proportionately what the phone has), with the wordmark and caption scaled
+/// more gently so the block stays one composition rather than a poster over a footnote. The
+/// launch storyboard carries the same three numbers as regular-width, regular-height size-class
+/// variations, which is iPad and nothing else, so the handover still lands on the same pixels.
+///
+/// A value type rather than statics on the view, so the plate generator can ask for the iPad's
+/// geometry while running on an iPhone simulator; ``current`` is what every live surface reads.
+///
+/// Version history:
+///   1.0 — the iPad tile at 176 pt
+struct LaunchIdentityMetrics: Equatable, Sendable {
+    /// The app icon's edge length.
+    let tileSize: CGFloat
+    /// The wordmark's point size.
+    let wordmarkSize: CGFloat
+    /// The caption's point size.
+    let captionSize: CGFloat
+    /// The gap between the block's stacked elements.
+    let blockSpacing: CGFloat
+
+    /// iPhone: the hand-off's numbers, unchanged since #529.
+    static let phone = LaunchIdentityMetrics(tileSize: 88, wordmarkSize: 22, captionSize: 13, blockSpacing: 14)
+    /// iPad: the tile doubled, the type scaled by roughly a quarter.
+    static let pad = LaunchIdentityMetrics(tileSize: 176, wordmarkSize: 28, captionSize: 15, blockSpacing: 14)
+    /// macOS: the Dock-shaped icon at 76 pt in a 560 x 540 window.
+    static let mac = LaunchIdentityMetrics(tileSize: 76, wordmarkSize: 20, captionSize: 12, blockSpacing: 14)
+
+    /// The shimmer bar's height, the same on every idiom.
+    ///
+    /// Included in the floor below rather than left out as "chrome": it is the LOWEST element of
+    /// the block, so it is the first thing an under-sized or mis-placed zone stops protecting —
+    /// which is exactly what the safe-area offset did before `identityZone` took the insets.
+    /// Lives here rather than on the view because a `View`'s statics are main-actor-isolated and
+    /// ``identityBlockMinimumHeight`` is not.
+    static let shimmerHeight: CGFloat = 3
+    /// The gap above the shimmer bar, beyond the stack's own spacing.
+    static let shimmerTopPadding: CGFloat = 10
+
+    /// This device's metrics.
+    @MainActor static var current: LaunchIdentityMetrics {
+        #if os(macOS)
+        .mac
+        #else
+        UIDevice.current.userInterfaceIdiom == .pad ? .pad : .phone
+        #endif
+    }
+
+    /// The least vertical space the identity block can occupy at these metrics: its three type
+    /// elements, the shimmer bar, and every gap between them. ``LaunchSplashView/identityZones``
+    /// must cover it.
+    ///
+    /// A floor, not the laid-out height — the two `Text` elements render at roughly 1.2x their
+    /// point size, so the real block is a little taller. Under-stating is the safe direction for
+    /// a guard; over-stating would fail on a zone that is in fact adequate.
+    var identityBlockMinimumHeight: CGFloat {
+        tileSize + wordmarkSize + captionSize + Self.shimmerHeight
+            + blockSpacing * 3 + Self.shimmerTopPadding
+    }
+}
+
+// MARK: - LaunchIdentityBlock
+
+/// The app icon, wordmark and caption, in the one composition three surfaces share.
+///
+/// ## One block, three surfaces
+/// The launch storyboard draws it with no code (an `88 x 88` image view over two labels,
+/// centred in the safe area); `LaunchSplashView` draws it here once SwiftUI is running; and
+/// `OnboardingView` draws it on the welcome step, so the fresh-install sequence
+/// **launch screen → splash → onboarding** keeps the icon at one point on screen while the cloud
+/// arrives under it, the shimmer goes, and the dock rises. Any of the three moving the block is
+/// the "screen replaced by a different screen" the storyboard's own header rules out — which is
+/// why the layout is one type rather than three copies.
+///
+/// ## The tile IS the icon
+/// `LaunchAppTile` is the app icon: the 1024 pt artwork the home screen shows, clipped to the
+/// home screen's continuous corner and rasterised at 1x/2x/3x, with a `mac` idiom carrying the
+/// macOS icon's own shape. It replaced a generic blue document-and-magnifier tile that appeared
+/// nowhere else in the product, so the first frame a reader saw after tapping the icon was not
+/// the icon they had tapped.
+///
+/// ## `showsShimmer: false` keeps the geometry, not just the look
+/// Onboarding has nothing to wait for, so it draws no shimmer — but the shimmer's height and the
+/// gap above it are still laid out, as a clear placeholder. The block is centred as a whole, so
+/// dropping the shimmer would move the icon up by half its height at exactly the moment the
+/// splash fades into onboarding. A shift of seven points is small and it is also the entire
+/// difference between a handover and a cut.
+///
+/// ## The glass backplate is LAYOUT-NEUTRAL, and the iPhone SE is why
+/// The icon sits on a Liquid Glass plate that reaches ``backplateInset`` past its edge, drawn as a
+/// background so the block's laid-out height does not change. It could not: the launch plate's
+/// identity hole is sized to `LaunchSplashView.identityBlockMinimumHeight` at the worst case
+/// (`LaunchArtworkTests.identityHoleSurvivesEveryCrop`, a 375 pt iPhone SE at 374 of 400 plate
+/// points), so sixteen more points of block would mean re-packing and re-shipping the plate. The
+/// glass instead borrows from the empty space above the icon and from the gap below it, which is
+/// what glass over a cloud is for — the onboarding dock already floats over the words the same
+/// way. The launch screen shows NO backplate: glass is a live effect over whatever is behind it,
+/// and the storyboard is a static snapshot, so the plate appears as the splash does, with the
+/// cloud. Under Reduce Transparency there is no glass to draw and the icon sits bare, as before.
+///
+/// Version history:
+///   1.0 — extracted from `LaunchSplashView.identityBlock` for onboarding's welcome step
+///   1.1 — the glass backplate
+struct LaunchIdentityBlock: View {
+
+    /// Whether the indeterminate bar under the caption is drawn (the splash) or merely laid out
+    /// (onboarding).
+    let showsShimmer: Bool
+
+    /// How far the glass plate reaches past the icon's edge, on each side.
+    ///
+    /// Eight leaves 6 pt of the 14 pt gap between plate and wordmark, and is well inside the
+    /// identity zone's own slack (`SplashDriftTests.zoneCoversTheIdentityBlock` pins that).
+    static let backplateInset: CGFloat = 8
+
+    /// The icon's home-screen corner, as a share of its edge — the continuous-corner ratio iOS
+    /// masks app icons with, which is also what `LaunchAppTile` was clipped to. The plate takes
+    /// the same ratio at its own larger edge, so the two corners run concentric.
+    static let cornerRatio: CGFloat = 0.2237
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        let metrics = LaunchIdentityMetrics.current
+        VStack(spacing: metrics.blockSpacing) {
             // Compile-checked symbol, not a string — a typo here used to be a blank tile
             // at runtime. Enabled by ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS.
+            // The catalog carries `ipad` renditions at 176 pt, so the iPad draws its double-size
+            // tile from 352 px rather than upscaling the phone's 264.
             Image(.launchAppTile)
                 .resizable()
-                .frame(width: Self.tileSize, height: Self.tileSize)
-            Text(Self.wordmark)
-                .font(.system(size: Self.wordmarkSize, weight: .semibold))
-            Text(Self.caption)
-                .font(.system(size: Self.captionSize))
+                .frame(width: metrics.tileSize, height: metrics.tileSize)
+                .background {
+                    if !reduceTransparency {
+                        let edge = metrics.tileSize + 2 * Self.backplateInset
+                        Color.clear
+                            .frame(width: edge, height: edge)
+                            .glassEffect(.regular, in: .rect(cornerRadius: edge * Self.cornerRatio,
+                                                             style: .continuous))
+                    }
+                }
+                .accessibilityHidden(true)
+            Text(LaunchSplashView.wordmark)
+                .font(.system(size: metrics.wordmarkSize, weight: .semibold))
+            Text(LaunchSplashView.caption)
+                .font(.system(size: metrics.captionSize))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            shimmerBar
-                .padding(.top, Self.shimmerTopPadding)
+            Group {
+                if showsShimmer {
+                    shimmerBar
+                } else {
+                    Color.clear.frame(width: 140, height: LaunchSplashView.shimmerHeight)
+                }
+            }
+            .padding(.top, LaunchSplashView.shimmerTopPadding)
         }
         .padding(.horizontal, 32)
     }
@@ -164,91 +430,9 @@ struct LaunchSplashView: View {
                     .frame(width: 46)
                     .offset(x: (140 - 46) * phase)
             }
-            .frame(width: 140, height: Self.shimmerHeight)
+            .frame(width: 140, height: LaunchSplashView.shimmerHeight)
         }
         .accessibilityHidden(true)
-    }
-
-    /// The rect the cloud is kept out from under, **in the backdrop's coordinate space**.
-    ///
-    /// ## Two spaces, and the zone has to be in the second one
-    /// This view is an `.overlay` on `ContentView`, so its `GeometryReader` reports the
-    /// SAFE-AREA-inset box, and the identity block is centred in that. The backdrop beneath it
-    /// carries `.ignoresSafeArea()`, so it packs and drifts in the FULL-BLEED box. Handing the
-    /// zone across unchanged puts it off by exactly the leading/top inset — measured at 62 pt
-    /// vertically on an iPhone 17 in portrait, which leaves the shimmer bar and the gap above it
-    /// outside the protected rect, and in landscape leaves the caption's right-hand end outside.
-    ///
-    /// The offset makes the zone name the same rectangle the block occupies on screen. It matters
-    /// more since M-4: before, a word that reached that strip sat still under it; now it drifts.
-    ///
-    /// - Parameters:
-    ///   - size: the safe-area box the identity block is laid out in.
-    ///   - safeAreaInsets: that box's insets, which locate it inside the full-bleed canvas.
-    /// - Returns: the zone in full-bleed coordinates.
-    static func identityZone(in size: CGSize,
-                             safeAreaInsets: EdgeInsets = EdgeInsets()) -> CGRect {
-        let width: CGFloat = min(340, size.width - 48)
-        let height: CGFloat = 260
-        return CGRect(x: safeAreaInsets.leading + (size.width - width) / 2,
-                      y: safeAreaInsets.top + (size.height - height) / 2,
-                      width: width, height: height)
-    }
-
-    // MARK: - Copy
-
-    static let wordmark = String(localized: "splash.wordmark", defaultValue: "FRUS Explorer")
-    static let caption = String(localized: "splash.caption",
-        defaultValue: "Foreign Relations of the United States · since 1861")
-    static let accessibilityLabel = String(localized: "splash.accessibility",
-        defaultValue: "FRUS Explorer is opening your library.",
-        comment: "Spoken description of the launch splash")
-
-    // MARK: - Metrics
-
-    /// The gap between the identity block's stacked elements.
-    ///
-    /// `static` alongside the three sizes below so ``identityZone`` can be checked against the
-    /// block it exists to cover. Without them a test can only compare the zone with a copy of its
-    /// own numbers, which passes for any zone at all — including one too small to cover anything.
-    /// Measured: shrinking the zone to 40 pt tall left the composition sweep green, because that
-    /// sweep places its words relative to the zone and therefore moves with it.
-    static let blockSpacing: CGFloat = 14
-
-    #if os(macOS)
-    /// The app tile's edge length.
-    static let tileSize: CGFloat = 76
-    /// The wordmark's point size.
-    static let wordmarkSize: CGFloat = 20
-    /// The caption's point size.
-    static let captionSize: CGFloat = 12
-    #else
-    /// The app tile's edge length.
-    static let tileSize: CGFloat = 88
-    /// The wordmark's point size.
-    static let wordmarkSize: CGFloat = 22
-    /// The caption's point size.
-    static let captionSize: CGFloat = 13
-    #endif
-
-    /// The shimmer bar's height, and the extra padding above it.
-    ///
-    /// Included in the floor below rather than left out as "chrome": it is the LOWEST element of
-    /// the block, so it is the first thing an under-sized or mis-placed zone stops protecting —
-    /// which is exactly what the safe-area offset did before ``identityZone`` took the insets.
-    static let shimmerHeight: CGFloat = 3
-    /// The gap above the shimmer bar, beyond the stack's own spacing.
-    static let shimmerTopPadding: CGFloat = 10
-
-    /// The least vertical space the identity block can occupy: its three type elements, the
-    /// shimmer bar, and every gap between them. ``identityZone`` must cover it.
-    ///
-    /// A floor, not the laid-out height — the two `Text` elements render at roughly 1.2x their
-    /// point size, so the real block is a little taller. Under-stating is the safe direction for
-    /// a guard; over-stating would fail on a zone that is in fact adequate.
-    static var identityBlockMinimumHeight: CGFloat {
-        tileSize + wordmarkSize + captionSize + shimmerHeight
-            + blockSpacing * 3 + shimmerTopPadding
     }
 }
 

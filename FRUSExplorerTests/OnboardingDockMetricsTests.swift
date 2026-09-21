@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import CoreGraphics
+import SwiftUI
 import Testing
 @testable import FRUSExplorer
 
@@ -66,5 +67,68 @@ struct OnboardingDockMetricsTests {
             #expect(resolved <= max(0, width),
                     "dock resolved to \(resolved) inside \(width)")
         }
+    }
+}
+
+// MARK: - OnboardingIdentityPlacement
+
+/// The identity block on the welcome step is shown by MEASUREMENT against the dock, not by step.
+///
+/// The fixtures below are real geometries: `LaunchSplashView.identityZone` at an iPhone 17's
+/// safe-area box, against a dock of the height the welcome step measures at the default size and
+/// one of the height it reaches at the largest accessibility size. The rule must answer
+/// differently to the two, or it is a step check wearing a measurement's clothes.
+///
+/// Version history:
+///   1.0 — the app icon in the launch → splash → onboarding handover
+@Suite("Onboarding identity placement")
+@MainActor
+struct OnboardingIdentityPlacementTests {
+
+    /// iPhone 17's safe-area box in portrait, and its insets.
+    private let phone = CGSize(width: 402, height: 874 - 62 - 34)
+    private let insets = EdgeInsets(top: 62, leading: 0, bottom: 34, trailing: 0)
+
+    /// The dock rect as `OnboardingView.dockExclusionZone` builds it, translated by the top inset
+    /// into the identity zone's full-bleed space.
+    private func dock(height: CGFloat) -> CGRect {
+        CGRect(x: 0, y: insets.top + phone.height - height, width: phone.width, height: height)
+    }
+
+    @Test("At the default type size the welcome dock clears the block and the block is shown")
+    func defaultSizeShowsTheBlock() {
+        let zone = LaunchSplashView.identityZone(in: phone, safeAreaInsets: insets)
+        // Measured: page dots + title + two-line body + a large button + 28 pt bottom inset.
+        #expect(OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: true, identityZone: zone, dockZone: dock(height: 230)))
+    }
+
+    @Test("At an accessibility size the dock reaches the block and the block hides")
+    func accessibilitySizeHidesTheBlock() {
+        let zone = LaunchSplashView.identityZone(in: phone, safeAreaInsets: insets)
+        // At AX5 the body wraps to six lines and the button doubles; the dock runs to ~430 pt.
+        #expect(!OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: true, identityZone: zone, dockZone: dock(height: 430)))
+    }
+
+    @Test("The gap is a floor, exactly")
+    func gapIsExact() {
+        let zone = CGRect(x: 0, y: 100, width: 300, height: 200)
+        let gap = OnboardingIdentityPlacement.minimumGap
+        func dockAt(_ top: CGFloat) -> CGRect { CGRect(x: 0, y: top, width: 300, height: 100) }
+        #expect(OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: true, identityZone: zone, dockZone: dockAt(zone.maxY + gap)))
+        #expect(!OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: true, identityZone: zone, dockZone: dockAt(zone.maxY + gap - 1)))
+    }
+
+    @Test("Only the welcome step carries the block, however much room there is")
+    func laterStepsNeverShowIt() {
+        let zone = CGRect(x: 0, y: 100, width: 300, height: 200)
+        let farDock = CGRect(x: 0, y: 900, width: 300, height: 100)
+        #expect(OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: true, identityZone: zone, dockZone: farDock))
+        #expect(!OnboardingIdentityPlacement.showsIdentity(
+            isWelcomeStep: false, identityZone: zone, dockZone: farDock))
     }
 }
