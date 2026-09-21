@@ -46,7 +46,8 @@ settings:
     # adopting rather than taken on Xcode's word:
     #   - ENABLE_USER_SCRIPT_SANDBOXING is the one that can break a build, by denying a
     #     run-script phase access to files outside its declared inputs/outputs. This project
-    #     has ZERO shell-script build phases, so there is nothing to deny.
+    #     has exactly ONE shell-script phase, the archive-only "Embed llama dSYM" on both app
+    #     targets (see the iOS target's postBuildScripts), and it declares what it reads.
     #   - STRING_CATALOG_GENERATE_SYMBOLS is a no-op today (no `.xcstrings` ships) and is
     #     adopted for whenever one does.
     #   - ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS turns
@@ -236,6 +237,41 @@ targets:
       # slices are deliberately built unsigned).
       - framework: Vendor/llama.xcframework
         embed: true
+    postBuildScripts:
+      # Archive-only: copy the embedded llama.framework slice's dSYM into the archive, so the
+      # TestFlight / App Store upload stops warning that the archive "did not include a dSYM
+      # for llama.framework". The committed xcframework carries none (76–153 MB each, past
+      # GitHub's limit); `Scripts/fetch-llama-dsyms.sh` caches them from the release asset,
+      # and the phase FAILS the archive when the cache is missing or its UUIDs do not match
+      # the binary — shipping unsymbolicated is the state this phase exists to end.
+      - name: Embed llama dSYM
+        # `script:` invoking the file, not `path:` — XcodeGen would inline the file's text
+        # into project.pbxproj at generation time, leaving two copies to drift.
+        script: '"$SRCROOT/Scripts/embed-llama-dsyms.sh"'
+        shell: /bin/bash
+        runOnlyWhenInstalling: true
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        # Declared for ENABLE_USER_SCRIPT_SANDBOXING: every FILE the script reads under
+        # SRCROOT, including the gitignored cache fetch-llama-dsyms.sh fills. A directory
+        # grants nothing beneath it (measured), which is why the cache path carries no
+        # commit hash and why each dSYM is listed by its two files.
+        inputFiles:
+          - $(SRCROOT)/Scripts/embed-llama-dsyms.sh
+          - $(SRCROOT)/Scripts/build-llama-xcframework.sh
+          - $(SRCROOT)/Vendor/llama.xcframework/ios-arm64/llama.framework/llama
+          - $(SRCROOT)/Vendor/llama.xcframework/ios-arm64_x86_64-simulator/llama.framework/llama
+          - $(SRCROOT)/Vendor/llama.xcframework/macos-arm64_x86_64/llama.framework/Versions/A/llama
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Info.plist
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Info.plist
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Info.plist
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama
+        outputFiles:
+          - $(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM
+          - $(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Info.plist
+          - $(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Resources/DWARF/llama
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"
@@ -356,6 +392,37 @@ targets:
       # llama.cpp as a binary xcframework (V-5 s2) — see the iOS target's entry.
       - framework: Vendor/llama.xcframework
         embed: true
+    postBuildScripts:
+      # Archive-only llama.framework dSYM — see the iOS target's entry. Same phase, same
+      # script; PLATFORM_NAME selects the macOS slice.
+      - name: Embed llama dSYM
+        # `script:` invoking the file, not `path:` — XcodeGen would inline the file's text
+        # into project.pbxproj at generation time, leaving two copies to drift.
+        script: '"$SRCROOT/Scripts/embed-llama-dsyms.sh"'
+        shell: /bin/bash
+        runOnlyWhenInstalling: true
+        basedOnDependencyAnalysis: false
+        showEnvVars: false
+        # Declared for ENABLE_USER_SCRIPT_SANDBOXING: every FILE the script reads under
+        # SRCROOT, including the gitignored cache fetch-llama-dsyms.sh fills. A directory
+        # grants nothing beneath it (measured), which is why the cache path carries no
+        # commit hash and why each dSYM is listed by its two files.
+        inputFiles:
+          - $(SRCROOT)/Scripts/embed-llama-dsyms.sh
+          - $(SRCROOT)/Scripts/build-llama-xcframework.sh
+          - $(SRCROOT)/Vendor/llama.xcframework/ios-arm64/llama.framework/llama
+          - $(SRCROOT)/Vendor/llama.xcframework/ios-arm64_x86_64-simulator/llama.framework/llama
+          - $(SRCROOT)/Vendor/llama.xcframework/macos-arm64_x86_64/llama.framework/Versions/A/llama
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Info.plist
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Info.plist
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Info.plist
+          - $(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama
+        outputFiles:
+          - $(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM
+          - $(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Info.plist
+          - $(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Resources/DWARF/llama
     settings:
       base:
         PRODUCT_NAME: "FRUS Explorer"

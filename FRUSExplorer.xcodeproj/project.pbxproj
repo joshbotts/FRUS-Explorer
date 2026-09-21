@@ -3907,6 +3907,7 @@
 				3F4609E74E15B8347E9C3B4E /* Frameworks */,
 				3476CD03254ED4C4884D7BD1 /* Embed Foundation Extensions */,
 				33FAEE92DB21F76B65105B7C /* Embed Frameworks */,
+				E200B63F987638B814AED525 /* Embed llama dSYM */,
 			);
 			buildRules = (
 			);
@@ -3928,6 +3929,7 @@
 				AF95BAA9FFD6BE962E659C6E /* Resources */,
 				728DE2A4556FE4DE4A01DD9F /* Frameworks */,
 				C541295AC2E5C9C76A1C979B /* Embed Frameworks */,
+				4C7B70BE8432288A87933455 /* Embed llama dSYM */,
 			);
 			buildRules = (
 			);
@@ -4109,6 +4111,77 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4C7B70BE8432288A87933455 /* Embed llama dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/embed-llama-dsyms.sh",
+				"$(SRCROOT)/Scripts/build-llama-xcframework.sh",
+				"$(SRCROOT)/Vendor/llama.xcframework/ios-arm64/llama.framework/llama",
+				"$(SRCROOT)/Vendor/llama.xcframework/ios-arm64_x86_64-simulator/llama.framework/llama",
+				"$(SRCROOT)/Vendor/llama.xcframework/macos-arm64_x86_64/llama.framework/Versions/A/llama",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Info.plist",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Info.plist",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Info.plist",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama",
+			);
+			name = "Embed llama dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM",
+				"$(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Info.plist",
+				"$(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Resources/DWARF/llama",
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/bash;
+			shellScript = "\"$SRCROOT/Scripts/embed-llama-dsyms.sh\"";
+			showEnvVarsInLog = 0;
+		};
+		E200B63F987638B814AED525 /* Embed llama dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/embed-llama-dsyms.sh",
+				"$(SRCROOT)/Scripts/build-llama-xcframework.sh",
+				"$(SRCROOT)/Vendor/llama.xcframework/ios-arm64/llama.framework/llama",
+				"$(SRCROOT)/Vendor/llama.xcframework/ios-arm64_x86_64-simulator/llama.framework/llama",
+				"$(SRCROOT)/Vendor/llama.xcframework/macos-arm64_x86_64/llama.framework/Versions/A/llama",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Info.plist",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Info.plist",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/ios-arm64_x86_64-simulator/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Info.plist",
+				"$(SRCROOT)/.cache/llama-dSYMs/llama.xcframework/macos-arm64_x86_64/dSYMs/llama.dSYM/Contents/Resources/DWARF/llama",
+			);
+			name = "Embed llama dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM",
+				"$(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Info.plist",
+				"$(DWARF_DSYM_FOLDER_PATH)/llama.framework.dSYM/Contents/Resources/DWARF/llama",
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/bash;
+			shellScript = "\"$SRCROOT/Scripts/embed-llama-dsyms.sh\"";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		051D680A326C8C05309DAB90 /* Sources */ = {

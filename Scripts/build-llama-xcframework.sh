@@ -14,8 +14,14 @@
 # V5-Step4-Spike-2026-08-28.md) — trimmed to the three slices this app ships (iOS device,
 # iOS simulator, macOS) and with the embedded dSYMs stripped: the DWARF files are 78–156 MB
 # each, past GitHub's 100 MB hard limit, and are archived instead as a release asset on
-# frus-semantic-vectors (llama-xcframework-dSYMs-<commit>.zip) for symbolication. The
+# frus-semantic-vectors (llama-xcframework-dSYMs-<commit7>.zip) for symbolication. The
 # upstream script itself is run UNMODIFIED, so "what did we build" has a one-line answer.
+#
+# AFTER A REBUILD, PUBLISH BOTH HALVES TOGETHER: commit the new Vendor/llama.xcframework and
+# upload the zip this writes to the release Scripts/fetch-llama-dsyms.sh reads from (its
+# DSYM_RELEASE, `encoder-1` today). The archive-only "Embed llama dSYM" build phase refuses
+# to archive without a cached dSYM whose UUIDs match the committed binary, so a rebuild that
+# forgets the upload fails the next archive rather than shipping unsymbolicated.
 #
 # Needs: Xcode with iOS + macOS SDKs, cmake (brew install cmake), ~15 minutes.
 
@@ -36,7 +42,9 @@ echo "Building (ios-sim ios-device macos)..."
 ./build-xcframework.sh ios-sim ios-device macos
 
 echo "Stripping dSYMs (archived separately, not committed)..."
-zip -rq "$REPO_ROOT/llama-xcframework-dSYMs.zip" build-apple/llama.xcframework/*/dSYMs
+DSYM_ZIP="$REPO_ROOT/llama-xcframework-dSYMs-${LLAMA_COMMIT:0:7}.zip"
+rm -f "$DSYM_ZIP"
+zip -rq "$DSYM_ZIP" build-apple/llama.xcframework/*/dSYMs
 rm -rf build-apple/llama.xcframework/*/dSYMs
 for i in 0 1 2; do
     plutil -remove "AvailableLibraries.$i.DebugSymbolsPath" \
@@ -49,4 +57,6 @@ rm -rf "$REPO_ROOT/Vendor/llama.xcframework"
 mkdir -p "$REPO_ROOT/Vendor"
 cp -R build-apple/llama.xcframework "$REPO_ROOT/Vendor/"
 
-echo "Done. dSYM archive at $REPO_ROOT/llama-xcframework-dSYMs.zip (do not commit)."
+echo "Done. dSYM archive at $DSYM_ZIP (do not commit)."
+echo "Next: upload it to the frus-semantic-vectors release, then refresh the local cache with"
+echo "      DSYM_ZIP=$DSYM_ZIP ./Scripts/fetch-llama-dsyms.sh"
