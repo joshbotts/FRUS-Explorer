@@ -18008,3 +18008,75 @@ the storyboard went 16 → 14 to match the splash, a 2 pt drift the handover had
 safe-area coordinates while the packer's box is full-bleed, so it sits one top inset above the real
 dock and over-protects it. Pre-existing, on the safe side, and documented at the call rather than
 fixed in a change about the launch screen.
+
+## Session 2026-09-21 — Every TestFlight upload warned the query encoder had no debug symbols, and now the archive refuses to ship without them
+
+The owner's ask: the last several TestFlight submissions warned that the archive "did not include
+a dSYM for llama.framework" — the on-device query encoder's llama.cpp runtime — and it should stop
+before the next one.
+
+**The cause is a decision from V-5 s2, and the decision still holds.** `Vendor/llama.xcframework`
+was committed with its dSYMs stripped and the three `DebugSymbolsPath` plist keys removed, because
+the DWARF files are 76 / 152 / 153 MB (device, simulator, macOS) — past GitHub's 100 MB hard limit
+— and were published instead as `llama-xcframework-dSYMs-8663224.zip` (126 MB) on the
+`encoder-1` release of `frus-semantic-vectors`. Xcode copies an xcframework's dSYMs into the
+archive ONLY through `DebugSymbolsPath`, so with the keys gone every archive shipped the framework
+unsymbolicated and App Store Connect said so. The asset was re-downloaded and every slice's UUIDs
+checked against the committed binaries before anything was built on it: device
+`00E32349…`, simulator `6CE63FBD…`/`939EACF8…`, macOS `62441300…`/`1F1C9FCB…`, all six matching
+— so the published symbols ARE the committed build's, and the fix is plumbing, not a rebuild.
+
+**Kept out of git, cached locally, copied at archive time.** Two scripts and one build phase.
+`Scripts/fetch-llama-dsyms.sh` reads the pinned llama.cpp commit from the build script (one source
+of truth for "which build"), downloads the release asset into the gitignored
+`.cache/llama-dSYMs/` (371 MB — two files per slice, Info.plist and the DWARF; upstream's
+Relocations YAML is dsymutil's relink input, not symbolication data), and REFUSES to keep it
+unless every slice's UUID set equals the committed binary's — App Store Connect matches symbols by UUID, never by name, so a stale dSYM
+uploads cleanly and symbolicates nothing. It is idempotent (a verifying cache is a no-op, offline)
+and takes `DSYM_ZIP=` to install the zip a rebuild just wrote before it has been uploaded.
+`Scripts/embed-llama-dsyms.sh` is the body of an archive-only phase ("Embed llama dSYM",
+`runOnlyWhenInstalling`, both app targets — the first shell-script phase in this project's
+history, so the `ENABLE_USER_SCRIPT_SANDBOXING` comment that said there were none was corrected
+and the phase declares what it reads): it picks the slice by `PLATFORM_NAME`, re-checks the UUIDs
+against the vendored binary, and copies `llama.framework.dSYM` into `DWARF_DSYM_FOLDER_PATH`, the
+same folder Xcode gathers the app's own symbols from. **It FAILS the archive** when the cache is
+missing or stale, with the command to run — shipping unsymbolicated is the state the phase exists
+to end, so it must not happen quietly. Its six branches were driven directly against a scratch
+source root: not archiving → exit 0 and nothing written; cache missing → refused; the macOS dSYM
+planted under the device slice → refused naming both UUID sets; a DWARF that exists but cannot be
+read → refused naming the file and the sandbox; the right cache → copied, UUIDs verified on the
+copy; an unknown platform → refused.
+
+**The script sandbox denied the first archive, and the script blamed the wrong thing.** Under
+`ENABLE_USER_SCRIPT_SANDBOXING` the phase read the vendored binary (declared as a file) and was
+refused the dSYM's DWARF, which sat under a DECLARED DIRECTORY — a declared directory grants
+nothing beneath it. Worse, `dwarfdump` failing inside a `$(...)` substitution produced an empty
+UUID list and the script reported "does not match" with a blank right-hand side. Three changes:
+the cache path carries no commit hash so that every file it holds can be listed by name in
+project.yml (six inputs, three outputs), the copy is file by file rather than `cp -R` so no
+directory listing is needed, and an unreadable file is reported as unreadable with the fix named
+(the declaration, not the fetch). The measurement that a directory input grants nothing is now
+in three comments — the phase's, the fetch script's and the embed script's — because the next
+person to add a script phase here will reach for a directory first.
+
+**One XcodeGen trap, found by reading the generated pbxproj.** `path:` on a script phase does
+not reference the file — it INLINES its text into `project.pbxproj` at generation time, under
+`/bin/sh`, leaving two copies of a bash script to drift. The phase uses `script:` invoking the
+file under `/bin/bash` instead, and the file stays the only copy.
+
+**Also:** `build-llama-xcframework.sh` now names its zip `llama-xcframework-dSYMs-<commit7>.zip`
+(what the release asset is actually called, and what the fetch script looks for) and prints the
+two follow-up steps; `notarize.sh` runs the fetch before its archive; `.gitignore` covers the zip;
+CLAUDE.md carries the one-line prerequisite. Nothing in the app changed, so no build bump and no
+index bump.
+
+**Measured on real archives, unsigned, into scratch.** iOS (`generic/platform=iOS`, AppStore
+config): the phase ran after Embed Frameworks, `ARCHIVE SUCCEEDED`, and the archive's `dSYMs/`
+holds three bundles — the app's (96 MB), the widget's (1.3 MB) and **`llama.framework.dSYM`
+(74 MB), UUID `00E32349…` equal to the embedded `Frameworks/llama.framework/llama`**. macOS
+(`FRUSExplorerMac`, AppStore config, the notarize path's shape): `ARCHIVE SUCCEEDED` with
+`llama.framework.dSYM` (148 MB) carrying both `62441300…` (x86_64) and `1F1C9FCB…` (arm64),
+equal to the embedded `Versions/A/llama`. A plain simulator `build` of the same configuration
+compiled to `BUILD SUCCEEDED` with the phase never executing (zero `PhaseScriptExecution` lines),
+so tests and development builds are untouched. What this session could not measure is the
+upload itself: the next TestFlight submission is the test that the warning is gone.

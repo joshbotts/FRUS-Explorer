@@ -89,6 +89,12 @@ run() {
 # ---------------------------------------------------------------------------
 # Step 1: Archive
 # ---------------------------------------------------------------------------
+# The archive's "Embed llama dSYM" phase refuses to run without the query encoder's debug
+# symbols cached locally (Scripts/embed-llama-dsyms.sh); fetching is idempotent and offline
+# once the cache verifies.
+log "Ensuring the llama.framework dSYMs are cached..."
+run "$PROJECT_ROOT/Scripts/fetch-llama-dsyms.sh"
+
 log "Archiving $SCHEME ($CONFIGURATION)..."
 mkdir -p "$BUILD_DIR"
 

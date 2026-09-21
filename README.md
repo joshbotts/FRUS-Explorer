@@ -135,6 +135,12 @@ macOS Direct Distribution builds are archived, notarized, stapled, and packaged 
 [`Scripts/notarize.sh`](Scripts/notarize.sh). Run it with `--dry-run` first; the script's header
 documents its prerequisites and options.
 
+Every archive — TestFlight, App Store, or that DMG — needs the query encoder's debug symbols cached
+locally first: run [`Scripts/fetch-llama-dsyms.sh`](Scripts/fetch-llama-dsyms.sh) once after cloning
+(and after any rebuild of `Vendor/llama.xcframework`). The dSYMs are too large for the repository, so
+an archive-only build phase copies them from that cache and refuses to archive without them; the
+`CLAUDE.md` entry explains why.
+
 ## Data and credits
 
 - The **FRUS series** is published by the [Office of the Historian](https://history.state.gov),
