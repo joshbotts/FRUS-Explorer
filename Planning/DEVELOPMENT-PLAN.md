@@ -17838,3 +17838,72 @@ view. Template versus original intent, vector preservation, PDF versus PNG, idio
 1400 pt versus 200 pt, and a mismatched `<resources>` size were each eliminated by a
 build-and-capture cycle. Shipping an asset nobody can account for is worse than shipping none, so
 the wiring is reverted and the account is in the suite's header.
+
+## Session 2026-09-20 — The map film's captions were laid out by the player, not by the film
+
+Owner tweaks to the semantic-map film: a new title above the map, and the per-volume caption moved
+off the map. Tooling only — `tools/map-film/`, no app code, no bundled resource.
+
+**The per-volume caption was a soft subtitle track, and that is why it sat on the map.** It was
+muxed `disposition:default=1`, so every player displayed it, and a player draws a subtitle where it
+chooses — over the bottom of the picture, three lines tall (year · id · totals, then two lines of
+title). **Padding the frame cannot fix that, because the placement belongs to the player.** So the
+caption is burned in, into a band below the map, by `render_frame_captions.swift`.
+
+**The frame is now a measured stack**, and the frame is sized to the stack rather than the other way
+round: the title band comes from its own text via `render_caption.swift --fit-height` (46 px), the
+volume band from the font's metrics (68 px), the map from its rows (802), and the frame is their sum
+(916). There is no leftover to distribute, so no arrangement can put a caption further from the map
+than a band's own margin. That replaces the constant 110 px band, which in turn replaced
+`BAND_H=$Y0` — the map's own top margin, whose height was a property of the clustering.
+
+**The top trim is the one place the film stops drawing what the harness drew.** Checking the padding
+on the encoded frames showed the nominal figure was misleading: the title stood 9 px off the map's
+EXTENT and **248 px off anything that reads as the map**, because the bounding box's top edge is a
+single blob of 19 ink pixels with 157 empty rows under it, while the bottom edge is dense to its last
+row. Owner decision: crop past it. `top_trim` drops a leading island only when it is both negligible
+(within 0.1% of the map's ink) and detached (a gap of 40+ rows), repeats, and stops at the first real
+cluster — here cutting once at source row 220 for **19 of 296,745 ink pixels, 0.0064%, and 162 rows**.
+The run prints that line whatever it decides. Measured alternatives, for anyone re-tuning: the first
+row carrying 20 px costs 430 px (0.145%), the first carrying 100 px costs 1,271 (0.428%).
+`--keep-full-extent` frames the whole box as before, at 1440×1078.
+
+**Two rules the renderer needs and the old track did not.** Titles are cut by GLYPH WIDTH
+(`CTLineCreateTruncatedLine`), not by column count, because only the renderer knows how wide a line
+of HelveticaNeue-Light is: 7 of 554 are cut, and `frus1865p4`'s 498-character title still keeps the
+Lincoln assassination correspondence that distinguishes it. And both lines sit on FIXED BASELINES
+taken from the font rather than from the string, because at 83 ms a frame any geometry that followed
+the text would make the band twitch.
+
+**NO SUBTITLE TRACK IS MUXED NOW, and the second half of that is a platform fact worth keeping.**
+The per-frame track would draw a second copy of the caption over the first. The year track was to
+have stayed, switched off — but built with `-disposition:s:0 0` it came back `default=1`: **ffmpeg's
+MP4 muxer enables the first subtitle track of a file when none is marked default.** Enabled, its cue
+would land on the new volume band, and it would say nothing the band's first line does not. Both
+`.srt`/`.vtt` pairs are still written as sidecars, since text in pixels can be neither searched nor
+copied.
+
+**One formatter, two consumers.** `make_subtitles.py` gained `--captions-tsv`, and `cue_text` was
+split so the burned-in caption and the `.srt` cue come from one function. All four sidecars are
+byte-identical across the refactor, which is the check that the split moved nothing.
+
+**A corner badge, from the app's own icon.** `render_badge.swift` reads
+`AppIcon.appiconset/AppIcon-1024.png` — never a copy, which would go stale silently — masks it to the
+platform's corner radius (the 1024 artwork is the unmasked square iOS masks at draw time) and sets
+the wordmark beside it in the film's own face. It is placed inside the MAP region rather than a
+caption band, because a long volume title reaches to within 70 px of either edge. Corner chosen by
+measurement: both bottom corners are empty, and the right has more clearance (the map's nearest ink
+is row 570 there against 693 on the left). **What is under it is a property of the projection**, so
+the build converts the rect back to source coordinates, measures the ink under it and refuses above
+the trim's cap — 0 px today, and a deliberately over-long wordmark was used to confirm the guard
+fires (5,771 px against a cap of 296).
+
+**Measured:** 1440×916, 554 frames, 46.17 s, 3.08 MB (1.93 MB before — a caption that changes every
+frame is detail the encoder cannot carry forward). On the encoded film the title clears the map by
+8 px and the volume caption by 12. Two consecutive runs are byte-identical across the film, the
+caption band, the badge, both `.srt` files, the TSV and all 554 caption PNGs.
+
+**One disclosure left the pixels, by owner decision.** The title replaced the harness's grain
+sentence, which is the visual-marketing plan §5's mandated caveat for a scoped-map animation. It is
+still line 1 of `provenance.txt`, and `--caption "$(head -1 provenance.txt | sed 's/^# *//')"` burns
+it in instead.
