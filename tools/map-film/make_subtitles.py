@@ -94,6 +94,28 @@ def timestamp(seconds: float, comma: bool) -> str:
     return f"{h:02d}:{m:02d}:{s:02d}{',' if comma else '.'}{ms:03d}"
 
 
+def cue_parts(row: dict):
+    """A frame's caption as `(header, title)`: the identifying line, and the title unwrapped.
+
+    ONE formatter for both places a frame's volume is named — the `.srt`/`.vtt` sidecars and the
+    caption burned in below the map (`render_frame_captions.swift`, via `--captions-tsv`). Two
+    formatters would be two answers to "what does frame 300 say", and the first to drift would do
+    it silently. The title comes back UNWRAPPED because the burned-in renderer truncates by glyph
+    width, which a column count cannot know; `cue_text` wraps it for the sidecar.
+
+    The closing frame has no year and no volume of its own, so its title is empty.
+    """
+    volumes = int(row["cumulative_volumes"])
+    documents = int(row["cumulative_documents"])
+    published = row["published"].strip()
+    counts = (f"{volumes:,} volume{'' if volumes == 1 else 's'} · "
+              f"{documents:,} document{'' if documents == 1 else 's'}")
+    if not published:
+        return f"{row['volume_title']} · {counts}", ""
+    return (f"{published} · {row['volume_id']} · {counts}",
+            strip_series_prefix(row["volume_title"]))
+
+
 def cue_text(row: dict, width: int, max_lines: int) -> str:
     """One cue: the identifying line, then as much of the title as fits.
 
@@ -104,16 +126,9 @@ def cue_text(row: dict, width: int, max_lines: int) -> str:
     eleven characters, unique, and is the key the reader would actually use: it is the path
     component in `history.state.gov/historicaldocuments/{volumeId}/{documentId}`.
     """
-    volumes = int(row["cumulative_volumes"])
-    documents = int(row["cumulative_documents"])
-    published = row["published"].strip()
-    counts = (f"{volumes:,} volume{'' if volumes == 1 else 's'} · "
-              f"{documents:,} document{'' if documents == 1 else 's'}")
+    header, title = cue_parts(row)
     # The closing frame has no year and no volume of its own; it is the whole series at rest.
-    if not published:
-        return f"{row['volume_title']} · {counts}"
-    return (f"{published} · {row['volume_id']} · {counts}\n"
-            f"{wrap(strip_series_prefix(row['volume_title']), width, max_lines)}")
+    return f"{header}\n{wrap(title, width, max_lines)}" if title else header
 
 
 def year_cue_text(published: str, rows: list, volumes: int, documents: int) -> str:
@@ -160,6 +175,20 @@ def build_cues(rows, fps, width, max_lines, group_by_year):
     return [(s / fps, e / fps, t) for s, e, t in merged]
 
 
+def write_captions_tsv(rows, path):
+    """One row per frame — `frame`, `header`, `title` — for `render_frame_captions.swift`.
+
+    Tab-separated because titles carry commas and semicolons and never a tab; a tab that did occur
+    is folded to a space rather than trusted to a quoting convention the Swift side would have to
+    reimplement.
+    """
+    with open(path, "w", encoding="utf-8") as handle:
+        for row in rows:
+            header, title = cue_parts(row)
+            clean = [field.replace("\t", " ").replace("\n", " ") for field in (header, title)]
+            handle.write(f"{row['frame']}\t{clean[0]}\t{clean[1]}\n")
+
+
 def write_srt(cues, path):
     with open(path, "w", encoding="utf-8") as handle:
         for index, (start, end, text) in enumerate(cues, start=1):
@@ -182,6 +211,8 @@ def main() -> int:
     parser.add_argument("--max-lines", type=int, default=2, help="title lines before truncation")
     parser.add_argument("--group-by-year", action="store_true")
     parser.add_argument("--stem", default=None)
+    parser.add_argument("--captions-tsv", default=None,
+                        help="also write one frame/header/title row per frame, for the burned-in caption")
     args = parser.parse_args()
 
     with open(args.csv, encoding="utf-8") as handle:
@@ -195,6 +226,10 @@ def main() -> int:
         # A hole here means the film and the track would drift apart from that frame on, silently.
         print(f"frame column is not 0..{len(rows) - 1} with no gaps; refusing", file=sys.stderr)
         return 1
+
+    if args.captions_tsv:
+        write_captions_tsv(rows, args.captions_tsv)
+        print(f"{len(rows)} rows -> {args.captions_tsv}")
 
     cues = build_cues(rows, args.fps, args.width, args.max_lines, args.group_by_year)
     stem = args.stem or ("map-subtitles-years" if args.group_by_year else "map-subtitles")

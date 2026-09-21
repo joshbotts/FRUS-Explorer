@@ -20,9 +20,17 @@
 // matters. `CTFrameGetVisibleStringRange` is what makes the clip detectable, and a short frame exits
 // non-zero rather than writing.
 //
+// `--fit-height` SIZES THE BAND TO THE TEXT instead of taking `--height`: the band is the text's own
+// measured height plus `--margin-y` above and below, rounded up to an even number for h264. It exists
+// because the band's height used to be whatever empty sky the map happened to leave above itself —
+// a disclosure whose room was decided by the clustering — and the layout now works the other way
+// round: the captions are measured first and the map is fitted between them.
+//
 // Usage:
 //   swift render_caption.swift --out band.png --width 1440 --height 109 \
 //        --font-size 22 --margin-x 60 --margin-y 14 --text "…"
+//   swift render_caption.swift --out band.png --width 1440 --fit-height \
+//        --font-size 26 --margin-x 70 --margin-y 8 --text "…"
 
 import CoreGraphics
 import CoreText
@@ -37,11 +45,12 @@ func argument(_ name: String, default fallback: String? = nil) -> String? {
 }
 
 guard let outPath = argument("out"), let text = argument("text") else {
-    FileHandle.standardError.write(Data("usage: --out <png> --text <string> [--width --height --font-size --margin-x --margin-y --opacity --align]\n".utf8))
+    FileHandle.standardError.write(Data("usage: --out <png> --text <string> [--width --height | --fit-height --font-size --margin-x --margin-y --opacity --align]\n".utf8))
     exit(2)
 }
 let width = Int(argument("width", default: "1440")!)!
-let height = Int(argument("height", default: "109")!)!
+let fitHeight = CommandLine.arguments.contains("--fit-height")
+let requestedHeight = Int(argument("height", default: "109")!)!
 let fontSize = CGFloat(Double(argument("font-size", default: "22")!)!)
 let marginX = CGFloat(Double(argument("margin-x", default: "60")!)!)
 let marginY = CGFloat(Double(argument("margin-y", default: "14")!)!)
@@ -70,10 +79,22 @@ let attributed = NSAttributedString(string: text, attributes: [
     NSAttributedString.Key(kCTKernAttributeName as String): fontSize * 0.02,
 ])
 
-let textRect = CGRect(x: marginX, y: marginY,
-                      width: CGFloat(width) - 2 * marginX,
-                      height: CGFloat(height) - 2 * marginY)
 let framesetter = CTFramesetterCreateWithAttributedString(attributed)
+let textWidth = CGFloat(width) - 2 * marginX
+
+// The natural height the text wants at this width — which `--fit-height` turns into the band.
+let suggested = CTFramesetterSuggestFrameSizeWithConstraints(
+    framesetter, CFRangeMake(0, 0), nil, CGSize(width: textWidth, height: .greatestFiniteMagnitude), nil)
+let height: Int = {
+    guard fitHeight else { return requestedHeight }
+    // Half a point of headroom, so a suggestion that rounds a hair short cannot trip the clip check.
+    let fitted = Int((suggested.height + 0.5).rounded(.up) + 2 * marginY)
+    return fitted + fitted % 2
+}()
+
+let textRect = CGRect(x: marginX, y: marginY,
+                      width: textWidth,
+                      height: CGFloat(height) - 2 * marginY)
 let path = CGPath(rect: textRect, transform: nil)
 let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil)
 
@@ -85,9 +106,6 @@ guard visible.length == attributed.length else {
     exit(1)
 }
 
-// The natural height the text actually wants, so the caller can size the band from a measurement.
-let suggested = CTFramesetterSuggestFrameSizeWithConstraints(
-    framesetter, CFRangeMake(0, 0), nil, CGSize(width: textRect.width, height: .greatestFiniteMagnitude), nil)
 let lines = (CTFrameGetLines(frame) as! [CTLine]).count
 
 guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
