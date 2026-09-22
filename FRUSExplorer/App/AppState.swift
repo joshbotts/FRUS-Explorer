@@ -2554,11 +2554,45 @@ final class AppState {
 /// macOS document-open routing keeps its own, already-correct `DocumentHostID` / `RoutedBrowse`
 /// provenance (its tool targets are singleton windows that can't fan out) and does not go through
 /// `SceneID`.
+///
+/// ## Borrowed identities (#1351)
+/// An iPad auxiliary window has no tab shell of its own, so ``AuxWindowOriginModifier`` publishes the
+/// *launching* window's identity for producers that present into that window (the word cloud, the
+/// analytics sheets). A view there can therefore name a real, live scene while standing in a
+/// different window — and a hand-off that also switches a TAB then changes a window the reader is
+/// not looking at, because nothing in the app brings a window forward. ``isBorrowed`` is how such a
+/// view can tell. It rides on the value itself rather than on an environment key of its own, so
+/// every one of the app's explicit `\.sceneID` re-injections into sheets carries it for free.
+///
+/// **Equality and hashing read `raw` alone, deliberately.** A borrowed identity must still address
+/// the launcher: `Handoff.target == sceneID` is how the launcher consumes what it is sent, and
+/// `liveSceneIDs` membership is how an origin is judged alive. Only ``isBorrowed`` itself, read
+/// directly, tells the two apart.
 struct SceneID: Hashable, Sendable {
     /// Opaque per-scene token — a `UUID` string on iPad.
     let raw: String
+    /// True when this identity was republished by an auxiliary window on behalf of the window that
+    /// launched it (see "Borrowed identities" above). Excluded from `==` and `hash(into:)`.
+    let isBorrowed: Bool
     /// Wraps a raw per-scene token.
-    init(_ raw: String) { self.raw = raw }
+    init(_ raw: String) {
+        self.raw = raw
+        self.isBorrowed = false
+    }
+
+    private init(raw: String, isBorrowed: Bool) {
+        self.raw = raw
+        self.isBorrowed = isBorrowed
+    }
+
+    /// The same identity, marked as republished by an auxiliary window. Still `==` to `self`.
+    func borrowed() -> SceneID { SceneID(raw: raw, isBorrowed: true) }
+
+    /// Compares by token only — see "Borrowed identities" for why ``isBorrowed`` is excluded.
+    static func == (lhs: SceneID, rhs: SceneID) -> Bool { lhs.raw == rhs.raw }
+
+    /// Hashes the token only, matching `==`.
+    func hash(into hasher: inout Hasher) { hasher.combine(raw) }
 
     /// Fixed identity of the macOS singleton **word-cloud** window (`frus.wordcloud`, #338 step 2).
     /// macOS word-cloud hand-offs address this; iPad producers address their own minted per-scene id.
@@ -2731,6 +2765,13 @@ extension AppState {
         guard let rawSceneID else { return .anyWindow }
         let candidate = SceneID(rawSceneID)
         return liveSceneIDs.contains(candidate) ? candidate : .anyWindow
+    }
+
+    /// The `\.sceneID` an auxiliary window publishes: ``resolveOriginScene(_:)``, marked
+    /// ``SceneID/borrowed()`` so a view inside the window can tell it names another window (#1351).
+    /// `AuxWindowOriginModifier` publishes exactly this; it is a function so the mark can be tested.
+    func auxWindowSceneID(forOrigin rawSceneID: String?) -> SceneID {
+        resolveOriginScene(rawSceneID).borrowed()
     }
 
     /// Opens a value-based auxiliary window, recording the launching window's scene as its origin so a
@@ -2984,13 +3025,17 @@ extension EnvironmentValues {
 /// accepted trade — the alternative, re-capturing on every appear, would let a background window's
 /// stale launch overwrite a foreground one's — and since #752/L-40 it is the behaviour
 /// `SourceExplorerWindowContent` inherits, so it is worth knowing before reading that code.
+///
+/// The published identity is marked borrowed (#1351, ``AppState/auxWindowSceneID(forOrigin:)``):
+/// it still addresses the launcher, and it tells a view here that the launcher is not the window
+/// it is standing in.
 struct AuxWindowOriginModifier: ViewModifier {
     let appState: AppState
     @State private var originRaw: String? = nil
     @State private var didCapture = false
     func body(content: Content) -> some View {
         content
-            .environment(\.sceneID, appState.resolveOriginScene(originRaw))
+            .environment(\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw))
             .onAppear {
                 guard !didCapture else { return }
                 didCapture = true
@@ -3003,5 +3048,45 @@ struct AuxWindowOriginModifier: ViewModifier {
 extension View {
     /// Applies ``AuxWindowOriginModifier`` — see it for the origin-propagation contract.
     func auxWindowOrigin(_ appState: AppState) -> some View { modifier(AuxWindowOriginModifier(appState: appState)) }
+}
+
+extension SceneID {
+    /// Whether a hand-off that switches this window's TAB — the Topic index (`openSubjectExplorer` +
+    /// `openTab(.browse)`), "Find all mentions" (`openSearch` + `openTab(.search)`) — lands in front
+    /// of the reader, on iOS (#1274, #1351).
+    ///
+    /// It does only in a main window's tab shell. Everywhere else the pair splits, or is delivered to
+    /// a window other than the reader's, so the door is withheld — the house answer to a door into a
+    /// context that cannot receive it:
+    /// - **nil** — the window publishes no scene (the semantic map, Chronology and the analytics
+    ///   windows). The request goes to a target no view consumes, or to `.anyWindow`, while `openTab`
+    ///   falls back to `.anyWindow` and switches some other window.
+    /// - **`.anyWindow`** — the wildcard. A consumer that accepts it is first-observer-wins, so the
+    ///   request lands in whichever window looks first; the Topic index's is strict
+    ///   (`pendingSubjectExplorer`), so that one lands nowhere.
+    /// - **borrowed** — a popped-out document window, and the Related Documents, Archival Neighbors,
+    ///   cross-reference graph, Source Explorer and word-cloud windows, republish their LAUNCHER's
+    ///   identity while it is open (a borrowed `.anyWindow` once it has closed, or for a restored
+    ///   window). The pair is delivered, but to that window: measured on an iPad mini (iOS 26.4), a
+    ///   topic tapped in a popped-out document's rail replaced the launcher's Browse history with the
+    ///   Topic index while the document window in front showed no change. Nothing brings a window
+    ///   forward (`WindowTargetingTests` pins that), and #752's rule is that an action in a window
+    ///   happens in that window.
+    ///
+    /// **Gated on it:** the rail's topic chips, the Find all mentions button on a document's person
+    /// sheet, and the analytics and series scope bars' Topic-index doors. The other Topic-index doors
+    /// (the Search facets panel, the subject pivot sheet, the index's own group doors) are presented
+    /// only from a main window's Browse and Search tabs, and would need this gate before being
+    /// presented anywhere else.
+    ///
+    /// **A scene-level test, and it cannot see sheets.** A view in a sheet over a main window carries
+    /// that window's own identity and passes. The tab then switches beneath the sheet unless the door
+    /// closes it first — the rail does close its own iPhone sheet, but a reader pushed inside another
+    /// sheet (the iPhone Related Documents or cross-reference graph sheet, Project Home) still opens
+    /// the index beneath that sheet. That predates #1351 and is not addressed by this predicate.
+    static func tabHandoffOpensInFront(from sceneID: SceneID?) -> Bool {
+        guard let sceneID, sceneID != .anyWindow else { return false }
+        return !sceneID.isBorrowed
+    }
 }
 #endif

@@ -33,6 +33,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #752 F-2 (audit M-25, L-40, L-43)
+///   1.1 — #1351: borrowed identities — an aux window's republished launcher scene is marked, still
+///         addresses the launcher, and withholds the Topic-index doors
 @Suite("Scene addressing (#752 F-2)")
 struct SceneAddressingTests {
 
@@ -366,6 +368,132 @@ struct SceneAddressingTests {
             SettingsView must no longer present the guide, or both presenters fire and the second \
             one's sheet is the one that shows.
             """)
+    }
+
+    // MARK: - #1351: borrowed identities
+
+    /// The mark must not change what a borrowed identity ADDRESSES. The word cloud and the analytics
+    /// sheets in an aux window present into the launcher by naming it; if marking changed equality,
+    /// every one of them would stop being consumed.
+    @Test("A borrowed identity still equals, hashes and addresses as the launcher's")
+    @MainActor
+    func borrowedIdentityStillAddressesTheLauncher() throws {
+        let launcher = SceneID("launcher-token")
+        let borrowed = launcher.borrowed()
+        #expect(borrowed.isBorrowed)
+        #expect(!launcher.isBorrowed)
+        #expect(borrowed == launcher)
+        #expect(Set([launcher]).contains(borrowed))
+        #expect(borrowed.hashValue == launcher.hashValue)
+
+        // Through the real producer and the real strict consumer: a request sent from inside an aux
+        // window reaches the launcher's Browse, exactly as it did before the mark existed.
+        let state = AppState()
+        state.openSubjectExplorer(.all, from: borrowed)
+        #expect(state.consumeHandoff(\.pendingSubjectExplorer, for: launcher) == .all,
+                "a hand-off addressed from a borrowed identity must still be consumed by the launcher")
+    }
+
+    @Test("An aux window publishes its origin marked as borrowed, live or not")
+    @MainActor
+    func auxWindowSceneIsBorrowed() {
+        let state = AppState()
+        state.registerScene(SceneID("live-launcher"))
+
+        let live = state.auxWindowSceneID(forOrigin: "live-launcher")
+        #expect(live == SceneID("live-launcher"), "a live origin is still the delivery target")
+        #expect(live.isBorrowed, "and it is marked, so a view inside the aux window can tell")
+
+        let none = state.auxWindowSceneID(forOrigin: nil)
+        #expect(none == .anyWindow)
+        #expect(none.isBorrowed)
+
+        let gone = state.auxWindowSceneID(forOrigin: "closed-launcher")
+        #expect(gone == .anyWindow, "a launcher that has closed degrades to the wildcard, as before")
+        #expect(gone.isBorrowed)
+    }
+
+    @Test("A tab hand-off lands in front only for a main window's own identity")
+    func tabHandoffOpensOnlyInFront() {
+        #expect(SceneID.tabHandoffOpensInFront(from: SceneID("main-window")))
+        #expect(!SceneID.tabHandoffOpensInFront(from: nil),
+                "a window that publishes no scene sends the request to nobody, or to some other window")
+        #expect(!SceneID.tabHandoffOpensInFront(from: .anyWindow),
+                "the wildcard lands in whichever window looks first — or, for the Topic index, nowhere")
+        #expect(!SceneID.tabHandoffOpensInFront(from: SceneID("main-window").borrowed()),
+                "a borrowed scene delivers both halves to a window the reader is not in")
+        #expect(!SceneID.tabHandoffOpensInFront(from: SceneID.anyWindow.borrowed()))
+    }
+
+    /// The two halves nothing above reaches: the modifier must publish the MARKED identity, and the
+    /// rail must gate its chips on the predicate. Both are view code a unit test cannot render.
+    @Test("The aux-window modifier publishes the marked identity, and the rail's chips obey it")
+    func borrowedIdentityIsPublishedAndObeyed() throws {
+        let appState = Self.codeLines(try Self.source("App/AppState.swift")).map(\.text)
+        #expect(appState.contains(".environment(\\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw))"), """
+            AuxWindowOriginModifier must publish `auxWindowSceneID(forOrigin:)`. Publishing the bare \
+            `resolveOriginScene(_:)` drops the mark, and every Topic-index door in a popped-out \
+            window reopens onto the launcher behind it.
+            """)
+        #expect(!appState.contains { $0.contains(".environment(\\.sceneID, appState.resolveOriginScene(") })
+
+        let rail = Self.codeLines(try Self.source("DocumentView/ResearchRailView.swift")).map(\.text)
+        let chips = try #require(rail.firstIndex(of: "private func subjectChips(_ topics: [VolumeSubjectProfiles.ResolvedSubject]) -> some View {"),
+                                 "subjectChips moved or was renamed")
+        let predicate = try #require(rail.firstIndex(of: "private var topicChipsOpenTheIndex: Bool {"),
+                                     "topicChipsOpenTheIndex moved or was renamed")
+        let gate = try #require(rail[chips...].firstIndex(of: "if topicChipsOpenTheIndex {"),
+                                "the rail's topic chips are no longer gated")
+        let otherwise = try #require(rail[gate...].firstIndex(of: "} else {"))
+        let tap = try #require(rail[gate..<otherwise].firstIndex(of: "openTopic(topic)"),
+                               "the chip's tap must sit inside the gated branch")
+        #expect(tap > gate)
+
+        // The withheld branch: the topic, and nothing that can be tapped.
+        let elseEnd = try #require(rail[(otherwise + 1)...].firstIndex(of: "}"),
+                                   "the withheld branch lost its closing brace")
+        let withheld = rail[(otherwise + 1)..<elseEnd]
+        #expect(withheld.contains("FRUSTagChip(label: topic.name, style: .system)"),
+                "the withheld branch must still show the topic")
+        #expect(!withheld.contains { line in
+            ["openTopic(", "onOpenTool(", "Button", "onTapGesture", "TapGesture", "NavigationLink"]
+                .contains { line.contains($0) }
+        }, "the withheld chip must carry no tap — in a borrowed scene it would reach the launcher (#1351)")
+
+        // The gate is the only route from a chip to the Topic index.
+        let routes = rail[chips..<predicate].filter { $0.contains("openTopic(") || $0.contains("onOpenTool(") }
+        #expect(routes == ["openTopic(topic)"], "found another route from a chip: \(routes)")
+
+        // Each arm of the predicate, by name: macOS always opens (the index is its own window);
+        // iOS asks the shared predicate.
+        let body = Array(rail[predicate...].prefix(8))
+        let ifMac = try #require(body.firstIndex(of: "#if os(macOS)"), "topicChipsOpenTheIndex lost its platform split")
+        let elseAt = try #require(body[ifMac...].firstIndex(of: "#else"), "a macOS arm and no iOS arm")
+        let endAt = try #require(body[elseAt...].firstIndex(of: "#endif"))
+        #expect(Array(body[(ifMac + 1)..<elseAt]) == ["true"],
+                "on macOS the Topic index is a window of its own, so every rail chip opens it")
+        #expect(Array(body[(elseAt + 1)..<endAt]) == ["SceneID.tabHandoffOpensInFront(from: sceneID)"],
+                "the iOS arm must ask the shared predicate the scope bars and the person sheet use")
+    }
+
+    /// Find all mentions opens in a Search TAB, so it has the topic chip's defect exactly: from a
+    /// popped-out window it switched the launcher's tab out of sight. The sheet must be handed no
+    /// action there, and must render the button only when it has one.
+    @Test("The person sheet offers Find all mentions only where the Search tab opens in front")
+    func findAllMentionsIsGated() throws {
+        let view = Self.codeLines(try Self.source("DocumentView/DocumentView.swift")).map(\.text)
+        #expect(view.contains("onFindAllMentions: !SceneID.tabHandoffOpensInFront(from: sceneID) ? nil : {"), """
+            DocumentView must hand PersonDetailSheet no search action where a tab hand-off cannot \
+            land in front of the reader — in a popped-out window it switched the launcher's tab.
+            """)
+        #expect(view.contains("let onFindAllMentions: (() -> Void)?"),
+                "the sheet's action must be optional, so there can be none")
+        let guardAt = try #require(view.firstIndex(of: "if let onFindAllMentions {"),
+                                   "PersonDetailSheet must render the button only when it has an action")
+        let buttonAt = try #require(view[guardAt...].firstIndex(of: "Button {"))
+        #expect(buttonAt == guardAt + 1, "the Find all mentions button must be the guarded branch itself")
+        #expect(view.filter { $0 == "onFindAllMentions()" }.count == 1,
+                "the action must have one call site, inside the guard")
     }
 }
 
