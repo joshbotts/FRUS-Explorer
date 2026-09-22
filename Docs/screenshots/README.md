@@ -31,7 +31,7 @@ Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new sho
 
 | Shot | For | What it must show |
 |------|-----|-------------------|
-| 🆕 `ipad/research-rail.png` | iOS §4.2 placeholder | Document open on iPad (landscape) with the Research rail as the trailing inspector: RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Sources · Graph · Related · Share), and the Summary/Notes/Tags/Collections accordions beside the text |
+| 🆕 `ipad/research-rail.png` | iOS §4.2 placeholder | Document open on iPad (landscape) with the Research rail as the trailing inspector: RESEARCH header, the three-column grid of seven tiles (Cite · Word Cloud · Sources · Graph · Related · On the Map · Share), and the Topics/Summary/Notes/Tags/Collections accordions beside the text. Pick a document with detected topics — the Topics accordion is hidden on documents that have none |
 | 🆕 `ipad/stage-manager.png` | iOS §4.5 placeholder | Stage Manager: a document window beside a Related Documents (or Archival Neighbors) window, main window behind |
 | 🔄 `macos/toolbar.png` | macOS §4.1 | The current trailing five: Search, Browse, **Analytics ▾**, **My Research ▾**, Research-rail toggle, with the centered `volumeId/documentId` title. (The older note below about separate Person/Cross-Reference Analytics *buttons* predates the menu consolidation — they now live inside Analytics ▾) |
 | 🔄 `macos/research-strip.png` | macOS §4.2 | The Research rail beside a document — tile grid + accordions (filename kept for continuity) |

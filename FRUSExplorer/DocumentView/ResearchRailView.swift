@@ -17,7 +17,7 @@ import SwiftData
 /// no `openWindow`, and the target presentations (citation sheet, Source Explorer, cross-reference
 /// graph, Related list, the word-cloud hand-off, the summarize prompt picker) are owned by
 /// `DocumentView` — so the rail signals intent through `onOpenTool` and the host presents. `share`
-/// is deliberately absent: it is a `Menu` and stays self-owned in the rail on both platforms.
+/// is deliberately absent: it stays self-owned in the rail (a popover on macOS, a `Menu` on iOS).
 enum ResearchRailTool {
     /// Cite this document (iOS: the `.citation` sheet).
     case cite
@@ -44,8 +44,8 @@ enum ResearchRailTool {
 
 /// The trailing **Research rail** — the shared document research surface introduced by the
 /// Research-rail redesign (Phase C1). It replaces the macOS research strip + bottom accordion with
-/// one panel: a `RESEARCH` header, a 3×2 grid of document-scoped action tiles, and a stack of
-/// expandable accordions (Summary · Notes · Tags · Collections).
+/// one panel: a `RESEARCH` header, a three-column grid of document-scoped action tiles, and a stack
+/// of expandable accordions (Topics · Summary · Notes · Tags · Collections).
 ///
 /// ## Ownership
 /// The rail is largely self-contained — it owns its tile actions (macOS windows/popovers), its tag
@@ -55,13 +55,13 @@ enum ResearchRailTool {
 /// ⌘⇧N Document-menu command.
 ///
 /// ## Platform status
-/// C1 mounts the rail on **macOS only** (inside `MacDocumentView.webKitDocumentView`); the grid
-/// tiles + expanded Summary are wired under `#if os(macOS)`. The chrome (header, accordion headers,
-/// note/tag/collection rows) is platform-neutral; iOS adoption (filling the `#if os(iOS)` seams and
-/// mounting in `DocumentView`) is Phase D.
+/// C1 mounted the rail on macOS (inside `MacDocumentView.webKitDocumentView`), where the tiles open
+/// their own windows and popovers. Phase D mounted it on iOS through `DocumentView.researchRail(vm:)`
+/// — the iPad `.inspector` and the iPhone sheet — where the tiles route through `onOpenTool`. Both
+/// grids show the same seven tiles; the chrome (header, accordion headers, rows) is shared.
 ///
-/// The Subjects accordion that shipped in the old panels is deliberately retired here (owner
-/// decision D1); `VolumeSubjectsChips` survives on its volume-browser / People surfaces.
+/// Owner decision D1 retired the old panels' Subjects accordion; #308 restored it at document level
+/// as Topics (`subjectsAccordion`). `VolumeSubjectsChips` still serves the volume pages.
 struct ResearchRailView: View {
 
     /// The document whose research surface this rail shows.
@@ -242,7 +242,7 @@ struct ResearchRailView: View {
                 .textCase(.uppercase)
                 .foregroundStyle(.tertiary)
             Spacer()
-            // UI review F-9. The six tile captions are `.caption2`, and the sentence explaining
+            // UI review F-9. The tile captions are `.caption2`, and the sentence explaining
             // each one reached only a Mac pointer: `.help` renders a tooltip on macOS alone. It is
             // not inert on iOS — the SDK documents it as setting the accessibility hint, so
             // VoiceOver has always spoken these — but a *sighted* iPad reader had no way to get
@@ -429,20 +429,28 @@ struct ResearchRailView: View {
     }
 
     /// The chips themselves, cut at five unless expanded.
+    ///
+    /// A chip opens the Topic index only where ``topicChipsOpenTheIndex`` allows; elsewhere it is
+    /// the same chip without the tap, because the topics are still worth reading when the door is
+    /// not there (#1351).
     @ViewBuilder
     private func subjectChips(_ topics: [VolumeSubjectProfiles.ResolvedSubject]) -> some View {
         let cut = 5
         let shown = showAllSubjects ? topics : Array(topics.prefix(cut))
         FlowLayout(spacing: 6) {
             ForEach(shown) { topic in
-                Button {
-                    openTopic(topic)
-                } label: {
+                if topicChipsOpenTheIndex {
+                    Button {
+                        openTopic(topic)
+                    } label: {
+                        FRUSTagChip(label: topic.name, style: .system)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(String(localized: "panel.subjects.chip.hint",
+                                              defaultValue: "Opens this topic in the topic index"))
+                } else {
                     FRUSTagChip(label: topic.name, style: .system)
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint(String(localized: "panel.subjects.chip.hint",
-                                          defaultValue: "Opens this topic in the topic index"))
             }
             if topics.count > cut && !showAllSubjects {
                 Button {
@@ -466,6 +474,20 @@ struct ResearchRailView: View {
         guard let index = DocumentSubjectStore.shared else { return [] }
         return index.subjects(forDocument: DocumentKey(volumeId: entry.volumeId,
                                                        documentId: entry.documentId))
+    }
+
+    /// Whether a topic chip opens the Topic index (#1351). Always on macOS, where the index is a
+    /// window of its own that the tap brings forward. On iOS only where
+    /// ``SceneID/tabHandoffOpensInFront(from:)`` says a tab hand-off lands in front of the reader —
+    /// not in a popped-out document window, nor a reader inside a tool window, which have no Browse
+    /// tab. It is a scene-level test: a reader pushed inside a sheet over a main window passes it,
+    /// and there the index still opens beneath that sheet (see the predicate).
+    private var topicChipsOpenTheIndex: Bool {
+        #if os(macOS)
+        true
+        #else
+        SceneID.tabHandoffOpensInFront(from: sceneID)
+        #endif
     }
 
     /// Opens the Topic index at this topic — the same hand-off the volume pivot sheet uses (#1023).
@@ -1002,7 +1024,7 @@ struct ResearchRailView: View {
 
 // MARK: - RailTileCopy
 
-/// The six document tools' names and explanations, defined once.
+/// The seven document tools' names and explanations, defined once.
 ///
 /// **This exists because the strings had two copies and F-9 needed a third.** Each
 /// `railTile` call spelled its caption and sentence inline, and the macOS and
@@ -1015,14 +1037,22 @@ struct ResearchRailView: View {
 ///
 /// Version history:
 ///   1.0 — CW-6b (UI review F-9): extracted from the tile call sites
+///   1.1 — #1351: `infoItems` lists On the Map, a tile both grids have shown since #941 and the
+///         popover never explained
 enum RailTileCopy {
 
     /// One tool's caption and its one-sentence explanation.
     struct Entry {
-        /// The tile's visible caption, also its VoiceOver name.
+        /// The tile's visible caption — also its VoiceOver name, its iOS Large Content Viewer title
+        /// and the title of its row in the header's info popover.
         let title: String
         /// The sentence explaining what the tool does — the macOS tooltip, the iOS VoiceOver
-        /// hint and Large Content Viewer detail, and a row in the header's info popover.
+        /// hint, and the text of its row in the header's info popover.
+        ///
+        /// One exception to both: on iOS the Share tile is a `DocumentShareMenu`, whose VoiceOver
+        /// name, hint and Large Content Viewer title come from `document.toolbar.share` and
+        /// `document.toolbar.share.help`. There `share.title` is only the visible caption and its
+        /// popover row's title, and `share.detail` only the popover row.
         let detail: String
     }
 
@@ -1077,11 +1107,18 @@ enum RailTileCopy {
 
     /// Every tool, in tile order — the rows of the header's info popover.
     ///
-    /// Share is included even though it is the one tile that never needed this fix (it is a
+    /// Share is included even though on iOS it is the one tile that never needed this fix (it is a
     /// `Menu`, not a `railTile`, and already carries `.controlHelp` from `DocumentShareMenu`):
-    /// a popover that explained five of the six tiles on screen would read as an omission.
+    /// a popover that explained all but one of the tiles on screen would read as an omission.
+    ///
+    /// That is exactly how this list shipped from #941 to #1351: On the Map joined both tile grids
+    /// and never joined this array, so the popover explained six of seven. The grid cannot be
+    /// read at runtime, so `ResearchRailInfoItemsTests` reads each platform's block of `tileGrid`
+    /// and requires the tiles it builds with `railTile` or `tileLabel`, in order, to be these rows:
+    /// add such a tile and the suite fails until it is added here too. A tile built from neither
+    /// helper, or moved out of `tileGrid`, is invisible to it — see the suite's own limits.
     static var infoItems: [FeatureInfoItem] {
-        [cite, wordCloud, sources, graph, related, share]
+        [cite, wordCloud, sources, graph, related, semanticMap, share]
             .map { FeatureInfoItem(title: $0.title, detail: $0.detail) }
     }
 }

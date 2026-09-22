@@ -142,6 +142,8 @@ struct FeatureInfoItem: Identifiable {
 ///         counts agree on that journey and names the filters that can still part them. The tooltip
 ///         beside the link is re-keyed to `analytics.handoff.help.v2` for the same reason — it had
 ///         shipped, so it could not be reworded in place.
+///   1.11 — #1351: on iOS the content scrolls when the popover or sheet is shorter than it. The
+///         Research rail's seventh row clipped the heading off an iPhone's medium detent otherwise.
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -164,6 +166,18 @@ struct FeatureInfoButton<Footer: View>: View {
         self.footer = footer()
     }
 
+    /// On iOS the popover's content scrolls when, and only when, the space it is given is shorter
+    /// than the stack.
+    ///
+    /// An unscrollable stack taller than its container is clipped with no way to reach what was
+    /// cut, and the heading goes first. #1351's seventh row is what made that visible: on an
+    /// iPhone 17 at the default text size, where the popover adapts to a sheet, the Research rail's
+    /// popover opened at its medium detent with "Document tools" cut off, where six rows had fit
+    /// with nothing to spare (both builds, same device). A size-class gate would not do: a
+    /// regular-width popover is capped too — Corpus Analytics' outgrows an iPad mini at the XXXL
+    /// text size — so the test is the one `ViewThatFits` makes. The plain stack comes FIRST: asked
+    /// for its ideal size, a popover gets the stack and hugs it, and only a capped height falls
+    /// through to the scroll view. macOS keeps the plain stack; nothing there has been measured.
     var body: some View {
         Button {
             isPresented.toggle()
@@ -173,24 +187,37 @@ struct FeatureInfoButton<Footer: View>: View {
         }
         .help(helpText ?? heading)
         .popover(isPresented: $isPresented, arrowEdge: .top) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(heading).font(.headline)
-                ForEach(items) { item in
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.title)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.primary)
-                        Text(item.detail)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                footer
+            #if os(iOS)
+            ViewThatFits(in: .vertical) {
+                explanation
+                ScrollView { explanation }
+                    .scrollBounceBehavior(.basedOnSize)
             }
-            .padding(16)
-            .frame(width: 360)
+            #else
+            explanation
+            #endif
         }
+    }
+
+    /// The heading, the rows and the footer — the popover's whole content.
+    private var explanation: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(heading).font(.headline)
+            ForEach(items) { item in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    Text(item.detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            footer
+        }
+        .padding(16)
+        .frame(width: 360)
     }
 
 }

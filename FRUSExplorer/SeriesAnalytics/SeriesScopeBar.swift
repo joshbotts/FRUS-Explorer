@@ -260,6 +260,11 @@ struct SeriesScopeBar: View {
     /// own comments elsewhere say is unreliable. The guard is what makes a future presenter that
     /// really has no scene withhold the door instead of half-firing it.
     ///
+    /// The test is `SceneID.tabHandoffOpensInFront(from:)`, which the rail's topic chips and the
+    /// person sheet's Find all mentions are gated on too; since #1351 it also refuses a BORROWED
+    /// scene, the launcher's identity an aux window republishes, which delivers both halves to a
+    /// window the reader is not in.
+    ///
     /// No withhold on macOS: `openSubjectExplorer` self-addresses the Topics window there and never
     /// reads the scene.
     @ViewBuilder
@@ -268,7 +273,7 @@ struct SeriesScopeBar: View {
         Divider()
         topicIndexButton
         #else
-        if let sceneID, sceneID != .anyWindow {
+        if SceneID.tabHandoffOpensInFront(from: sceneID) {
             Divider()
             topicIndexButton
         }

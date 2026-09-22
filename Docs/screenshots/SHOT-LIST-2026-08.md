@@ -22,7 +22,7 @@ Setup once: full 552-volume corpus, index settled, a project active. Capture via
 
 | # | Shot | For | Route + what must show |
 |---|------|-----|------------------------|
-| A1 | 🆕 `ipad/research-rail.png` | iOS §4.2 placeholder | Open any document (landscape) → rail is the trailing inspector. Must show: RESEARCH header, the 3×2 tile grid (Cite · Word Cloud · Sources · Graph · Related · Share), and the Summary/Notes/Tags/Collections accordions beside the document text. |
+| A1 | 🆕 `ipad/research-rail.png` | iOS §4.2 placeholder | Open a document with detected topics (landscape) → rail is the trailing inspector. Must show: RESEARCH header, the three-column grid of seven tiles (Cite · Word Cloud · Sources · Graph · Related · On the Map · Share), and the Topics/Summary/Notes/Tags/Collections accordions beside the document text. The Topics accordion is hidden on documents with none. |
 | A2 | 🆕 `ipad/browse-root.png` | iOS §6 placeholder | Browse tab root: the volume search field, the People and Topics rows, and the "Browse by" tiles. |
 | A3 | 🆕 `ipad/all-volumes.png` | iOS §6.1b placeholder | Browse ▸ All Volumes: the segmented Title/Published/Era/Length control, with decade headers visible in **Published** order. |
 | A4 | 🆕 `ipad/administrations.png` | iOS §6.1c placeholder | Browse ▸ Administrations: the index with dimmed post-corpus presidencies, then the **Truman** drill with per-volume shares. (Two frames if one cannot show both.) |

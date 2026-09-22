@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -1248,21 +1248,21 @@ The document list is capped at 5,000, but the chart still reflects the whole ran
 <!-- Shared static FeatureInfoButton.sourceExplorer in FRUSTheme; consumed by both SourceExplorerView (iOS) and MacSourceExplorerView (macOS). Edit once in FRUSTheme.swift to change both. -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 213–214 | key: source.explorer.info.shows.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 240–241 | key: source.explorer.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
 A structured breakdown of one document’s source note — the State Department editors’ record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.
 
 <!-- END SOURCE: source.explorer.info.shows.detail -->
 
 #### Why it matters
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 217–218 | key: source.explorer.info.why.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 244–245 | key: source.explorer.info.why.detail | shared: iOS+macOS (single edit point) -->
 
 Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and understand its provenance at a glance.
 
 <!-- END SOURCE: source.explorer.info.why.detail -->
 
 #### Links to the National Archives
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 221–222 | key: source.explorer.info.catalog.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 248–249 | key: source.explorer.info.catalog.detail | shared: iOS+macOS (single edit point) -->
 
 Whenever a source note or footnote resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.
 
@@ -1274,14 +1274,14 @@ Whenever a source note or footnote resolves to a NARA series or file unit, the e
 <!-- Shared static FeatureInfoButton.corpusAnalytics in FRUSTheme (moved out of AnalyticsView in Wave C, Win 7); the `analytics.info.*` keys and copy are unchanged, except Multiple words, re-keyed to `analytics.info.multiword.body.v2` for #1297, reworded in place, before shipping, for #1297 round 1, and re-keyed to `.v3` for #1299; and Phrases and How dates are determined, re-keyed to `.v2` for #1299. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What the numbers mean
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 252–253 | key: analytics.info.metric.body.v2 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 279–280 | key: analytics.info.metric.body.v2 | shared: iOS+macOS (single edit point) -->
 
 The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions your term ten times only counts once. Under Occurrences each bar is every mention in those same documents, so that same document contributes ten instances of the term. Occurrences is offered for a single word only, and is always a raw count rather than a relative measure.
 
 <!-- END SOURCE: analytics.info.metric.body.v2 -->
 
 #### Multiple words
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 256–257 | key: analytics.info.multiword.body.v3 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 283–284 | key: analytics.info.multiword.body.v3 | shared: iOS+macOS (single edit point) -->
 
 Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem. If you're confused, try entering the same query in Search. Since a Corpus Analytics query is read exactly as the Search box reads it, you can use the Query Inspector to understand what was actually applied against your index.
 
@@ -1290,7 +1290,7 @@ Words separated by spaces are combined with AND. So national security matches do
 Note: replaces `analytics.info.multiword.body.v2` (#1299), which said a leading - excludes a term wherever it sits; it does not exclude a NEAR(…) — `cold -NEAR(war korea, 5)` does not search `NOT NEAR`, while `cold NOT NEAR(war korea, 5)` does — so the text now says only NOT excludes one, as the Search Tips NEAR row does (§7.13). `.v2` itself replaced `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 reads the mark from each operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does. Reworded in place again for #1297 round 3: parser 6.5 applies a mark on a word marked in every OR alternative (D4), since every match then holds the literal word — `=cold war OR =cold peace` cannot be charted — and "as in one OR alternative" read as though each of those marks were ignored, so the text now names both cases: a word every alternative marks, and one only one alternative marks. Unchanged for #1297 round 4: parser 6.6 compares marks as the exact-word filter reads words, so `=Cold war OR =cold. peace` is a word every alternative marks and cannot be charted, which the text already says.
 
 #### Phrases
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 260–261 | key: analytics.info.phrase.body.v3 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 287–288 | key: analytics.info.phrase.body.v3 | shared: iOS+macOS (single edit point) -->
 
 Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason.
 
@@ -1299,14 +1299,14 @@ Wrap words in quotation marks, straight or curly, for an ordered phrase. “miss
 Note: replaces `analytics.info.phrase.body.v2` (#1306), whose closing sentence — that the counts here match what Search returns — #1299 had carried over unverified. It is false, in both directions and for two different reasons. Analytics runs a bare `frus_documents MATCH` over the corpus columns; Search unions that with a `user_content MATCH` over the reader's own summaries and notes, both scoped ON by default, so Search can be HIGHER, by an amount that depends on the reader's own data. Search also ANDs every active filter, so Search can be LOWER, structurally. The parsing half of the old sentence survives and is kept, because #1297/#1298 really did make the two read a query identically. Reworded in place (still unshipped) by #1306's follow-up, which made the "View N documents ↗" link open Search with notes and summaries OFF: the row had gone on describing a journey the app no longer sends the reader on. Filters are named separately because the link does not touch them — a reader with a document-type filter or an applied working corpus can still see the two counts part. `.v2` itself replaced `analytics.info.phrase.body` (#1299), which said "quotes" without saying which; since #1298 straight, curly and guillemet quotation marks all make the same phrase, and a phrase cannot hold marks of its own — `"the “missile crisis” began"` searches four words.
 
 #### Stemming
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 264–265 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 291–292 | key: analytics.info.stemming.body | shared: iOS+macOS (single edit point) -->
 
 English stemming is applied: searching for “negotiate” also matches “negotiating”, “negotiated”, and “negotiations”.
 
 <!-- END SOURCE: analytics.info.stemming.body -->
 
 #### How dates are determined
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 268–269 | key: analytics.info.dating.body.v3 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 295–296 | key: analytics.info.dating.body.v3 | shared: iOS+macOS (single edit point) -->
 
 Each document sits at the date it was written, as the editors date it, not at the volume’s publication date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Every stored date is a full day, so nothing is left out of By Month or By Day for want of a month or a day. What those two charts do leave out is a document with no stored date at all, chiefly front matter: By Year and By Decade keep it by falling back to the start year of its volume, in both the counts and the % denominator, and the sub-year charts have no such fallback.
 
@@ -1351,21 +1351,21 @@ Exact-Word Charting Isn’t Available
 <!-- Shared static FeatureInfoButton.personAnalytics in FRUSTheme (added in Wave C, Win 7). Source doc comment notes this copy was drafted in Wave C and is pending owner review. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 282–283 | key: personAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 309–310 | key: personAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
 Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is tagged across FRUS documents over time. Network maps who is tagged alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.
 
 <!-- END SOURCE: personAnalytics.info.shows.detail -->
 
 #### How people are counted
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 286–287 | key: personAnalytics.info.counting.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 313–314 | key: personAnalytics.info.counting.detail | shared: iOS+macOS (single edit point) -->
 
 Counts are mentions of a person across the documents you have indexed. The app’s person authority groups them, so spelling variants, honorifics, and different name forms for one individual merge into a single identity instead of splitting into several.
 
 <!-- END SOURCE: personAnalytics.info.counting.detail -->
 
 #### Comparing people
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 290–291 | key: personAnalytics.info.compare.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 317–318 | key: personAnalytics.info.compare.detail | shared: iOS+macOS (single edit point) -->
 
 Tap a ranking bar, or use “Add a person to compare”, to plot several people’s mention trajectories on one chart — each colored line is one person. Remove a person with the ✕ on its chip.
 
@@ -1375,21 +1375,21 @@ Tap a ranking bar, or use “Add a person to compare”, to plot several people�
 <!-- Shared static FeatureInfoButton.crossReferenceAnalytics in FRUSTheme (added in Wave C, Win 7). Source doc comment notes this copy was drafted in Wave C and is pending owner review. Edit once in FRUSTheme.swift to change both platforms. -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 380–381 | key: crossRefAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 407–408 | key: crossRefAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
 How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. Always remember that FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than broader scopes that mix several editorial practices.
 
 <!-- END SOURCE: crossRefAnalytics.info.shows.detail -->
 
 #### Reading the heat matrix
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 384–385 | key: crossRefAnalytics.info.matrix.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 411–412 | key: crossRefAnalytics.info.matrix.detail | shared: iOS+macOS (single edit point) -->
 
 Rows cite columns. A darker cell means the row’s volume cites the column’s volume more often. Column labels are a short code of the volume’s years and number, such as ’55–57 II. Hover over a label, or use VoiceOver, for the full title on either axis.
 
 <!-- END SOURCE: crossRefAnalytics.info.matrix.detail -->
 
 #### About the influence score
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 388–389 | key: crossRefAnalytics.info.influence.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 415–416 | key: crossRefAnalytics.info.influence.detail | shared: iOS+macOS (single edit point) -->
 
 Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is an editorial measurement, not a claim of historical importance.
 
@@ -2191,6 +2191,127 @@ Done
 
 <!-- END SOURCE: document.review.other.plan.done -->
 
+### Research rail — the Document tools popover (#1351)
+
+The rail header's ⓘ button opens a **Document tools** popover: a heading, then one row per tile in
+the order the tiles appear, then the classification section below. Each tile's two strings are
+written once, in `RailTileCopy`, and each is shown in more than one place: the caption is the tile's
+label, its VoiceOver name, its iOS Large Content Viewer title and the bold title of its row in this
+popover; the sentence is the tile's macOS tooltip, its iOS VoiceOver hint and the text of that row.
+An edit here changes every one of those — except the **Share** tile on iOS, which is a menu with its
+own VoiceOver name and hint (`document.toolbar.share` and `document.toolbar.share.help`). There the
+Share caption below is only the visible label and the popover row's title, and the Share sentence
+only the popover row, so renaming it without editing those two — the last two blocks in this section
+— leaves VoiceOver saying something else.
+The heading is also the ⓘ button's VoiceOver name and its macOS tooltip. The **On the Map** tile's caption and sentence are in §13.4 ("Research-rail tile" and
+"Research-rail tile help"); this section does not repeat them, because two blocks for one key would
+be two places to edit one string.
+
+#### The popover's heading
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.toolsInfoHeading | lines: 343–343 | key: researchRail.tools.info.heading | shared: iOS+macOS (single edit point) -->
+
+Document tools
+
+<!-- END SOURCE: researchRail.tools.info.heading -->
+
+#### Cite — the tile's caption
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1068–1068 | key: researchRail.tile.cite | shared: iOS+macOS (single edit point) -->
+
+Cite
+
+<!-- END SOURCE: researchRail.tile.cite -->
+
+#### Cite — what the tile does
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.cite | lines: 1069–1070 | key: researchRail.tile.cite.help | shared: iOS+macOS (single edit point) -->
+
+Cite this document — copy a formatted citation or export BibTeX/RIS
+
+<!-- END SOURCE: researchRail.tile.cite.help -->
+
+#### Word Cloud — the tile's caption
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1075–1075 | key: researchRail.tile.wordCloud | shared: iOS+macOS (single edit point) -->
+
+Word Cloud
+
+<!-- END SOURCE: researchRail.tile.wordCloud -->
+
+#### Word Cloud — what the tile does
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.wordCloud | lines: 1076–1077 | key: researchRail.tile.wordCloud.help | shared: iOS+macOS (single edit point) -->
+
+Show a word cloud of this document’s most frequent terms
+
+<!-- END SOURCE: researchRail.tile.wordCloud.help -->
+
+#### Sources — the tile's caption
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1082–1082 | key: researchRail.tile.sources | shared: iOS+macOS (single edit point) -->
+
+Sources
+
+<!-- END SOURCE: researchRail.tile.sources -->
+
+#### Sources — what the tile does
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.sources | lines: 1083–1084 | key: researchRail.tile.sources.help | shared: iOS+macOS (single edit point) -->
+
+Resolve this document’s source note in the NARA Catalog or RG-59 records
+
+<!-- END SOURCE: researchRail.tile.sources.help -->
+
+#### Graph — the tile's caption
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1089–1089 | key: researchRail.tile.graph | shared: iOS+macOS (single edit point) -->
+
+Graph
+
+<!-- END SOURCE: researchRail.tile.graph -->
+
+#### Graph — what the tile does
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.graph | lines: 1090–1091 | key: researchRail.tile.graph.help | shared: iOS+macOS (single edit point) -->
+
+Show this document’s cross-reference graph
+
+<!-- END SOURCE: researchRail.tile.graph.help -->
+
+#### Related — the tile's caption
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1096–1096 | key: researchRail.tile.related | shared: iOS+macOS (single edit point) -->
+
+Related
+
+<!-- END SOURCE: researchRail.tile.related -->
+
+#### Related — what the tile does
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.related | lines: 1097–1098 | key: researchRail.tile.related.help | shared: iOS+macOS (single edit point) -->
+
+Find related documents by archival provenance, cross-references, date, and shared people
+
+<!-- END SOURCE: researchRail.tile.related.help -->
+
+#### Share — the tile's caption
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1103–1103 | key: researchRail.tile.share | shared: iOS+macOS (single edit point) -->
+
+Share
+
+<!-- END SOURCE: researchRail.tile.share -->
+
+#### Share — what the tile does
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | RailTileCopy.share | lines: 1104–1105 | key: researchRail.tile.share.help | shared: iOS+macOS (single edit point) -->
+
+Share or export this document
+
+<!-- END SOURCE: researchRail.tile.share.help -->
+
+#### Share (iOS) — the menu's VoiceOver name
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2240–2240 | key: document.toolbar.share | shared: iOS only -->
+
+Share
+
+<!-- END SOURCE: document.toolbar.share -->
+
+#### Share (iOS) — the menu's VoiceOver hint
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2241–2242 | key: document.toolbar.share.help | shared: iOS only -->
+
+Send this document to your Zotero library, export a Zotero file, or share its citation
+
+<!-- END SOURCE: document.toolbar.share.help -->
+
 ### Research rail — the classification disagreement (R-5 P3b-5)
 
 The one sentence the rail prints when a reader has reclassified a document. It was never mirrored
@@ -2200,28 +2321,28 @@ mistag the app went on quoting the old reading — and the Undo beside it put th
 into the index. Both now read FRUS's parse as it stands.
 
 #### When FRUS adopts the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1149–1150 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1186–1187 | key: panel.classification.overrideNowRedundant | shared: iOS+macOS (single edit point) -->
 
 FRUS now tags this the same way, so your correction no longer changes anything. You can restore FRUS’s classification.
 
 <!-- END SOURCE: panel.classification.overrideNowRedundant -->
 
 #### FRUS's own tagging, beside the reader's correction
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1152–1153 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1189–1190 | key: panel.classification.overridden %@ | shared: iOS+macOS (single edit point) -->
 
 FRUS tags this as %@ — reclassified by you.
 
 <!-- END SOURCE: panel.classification.overridden %@ -->
 
 #### The inline noun for an editorial note
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1155–1156 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1192–1193 | key: panel.classification.note.inline | shared: iOS+macOS (single edit point) -->
 
 an editorial note
 
 <!-- END SOURCE: panel.classification.note.inline -->
 
 #### The inline noun for a document
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1157–1158 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1194–1195 | key: panel.classification.document.inline | shared: iOS+macOS (single edit point) -->
 
 a document
 
@@ -2356,7 +2477,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2543–2544 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2546–2547 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -4416,7 +4537,7 @@ Measured here
 
 *Moved off the page into **About These Figures** by #838, and unchanged in substance: it is what stops the two counts, the era asymmetry and the name-clustering from being read as defects. The disclosures that change with the controls — what the Central Files filter withheld, and a failed artifact load — stayed on the page and have their own blocks above.*
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 312–313 | key: archival.info.method.detail -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 339–340 | key: archival.info.method.detail -->
 
 Archival locations are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, where central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, where the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under nearby names.
 
@@ -5080,7 +5201,7 @@ Download and index a volume and this page will show where its documents came fro
 
 #### What you're seeing — title
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 306–306 | key: archival.info.shows.title -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 333–333 | key: archival.info.shows.title -->
 
 What you’re seeing
 
@@ -5090,7 +5211,7 @@ What you’re seeing
 
 #### What you're seeing — detail
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 307–308 | key: archival.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 334–335 | key: archival.info.shows.detail.v2 -->
 
 Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era’s volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor’s cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.
 
@@ -5100,7 +5221,7 @@ Where the editors of Foreign Relations of the United States found the documents 
 
 #### The three counts — title
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 315–315 | key: archival.info.weights.title.v2 -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 342–342 | key: archival.info.weights.title.v2 -->
 
 The three counts measure different things
 
@@ -5110,7 +5231,7 @@ The three counts measure different things
 
 #### The three counts — detail
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 316–317 | key: archival.info.weights.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 343–344 | key: archival.info.weights.detail.v2 -->
 
 Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and a hundred and eighty-one collections appear only under pointers, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.
 
@@ -5120,7 +5241,7 @@ Documents counts how many published documents came out of a collection. Volumes 
 
 #### Why Central Files is hidden — title
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 319–319 | key: archival.info.umbrella.title -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 346–346 | key: archival.info.umbrella.title -->
 
 Why Central Files is hidden
 
@@ -5130,7 +5251,7 @@ Why Central Files is hidden
 
 #### Why Central Files is hidden — detail
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 320–321 | key: archival.info.umbrella.detail -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 347–348 | key: archival.info.umbrella.detail -->
 
 The State Department’s Central Files are cited by 157 volumes and supply more than seventeen thousand documents. That is over twice the next-largest collection, and its bar would flatten every other one. So it is hidden by default, and the chart states what it withheld. Turn the chip off to see it. The era-specific Central Files records are never hidden.
 
@@ -5140,7 +5261,7 @@ The State Department’s Central Files are cited by 157 volumes and supply more 
 
 #### A flow is an editor's footnote — title
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 323–323 | key: archival.info.flows.title -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 350–350 | key: archival.info.flows.title -->
 
 A flow is an editor’s footnote, not an archive’s
 
@@ -5150,7 +5271,7 @@ A flow is an editor’s footnote, not an archive’s
 
 #### A flow is an editor's footnote — detail
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 329–330 | key: archival.info.flows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 356–357 | key: archival.info.flows.detail.v2 -->
 
 About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding: the cross-reference style these come from postdates 1945, so most volumes carry none, and the chart states how many do.
 
@@ -5183,7 +5304,7 @@ Only documents whose editors recorded where the original was found appear in You
 
 #### Collections and classes — title
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 365–365 | key: archival.info.units.title -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 392–392 | key: archival.info.units.title -->
 
 Collections and classes are different things
 
@@ -5193,7 +5314,7 @@ Collections and classes are different things
 
 #### Collections and classes — detail
 
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 366–367 | key: archival.info.units.detail -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 393–394 | key: archival.info.units.detail -->
 
 A named collection is a body of records with a custodian. A central-file class is a subject heading inside one filing system — 763.72 for the European War, POL 27 VIET S for the war in South Vietnam. The two are never mixed in one ranking. Classes are ranked at one depth: a decimal file number stands for itself, while subject-numeric designators are grouped to their category and number, and a grouped row opens to the exact designators underneath it. Before 1948 the series cites classes far more than collections. After 1976 it barely cites classes at all.
 
@@ -6647,14 +6768,14 @@ Up and down is the volume’s coverage midpoint, not each document’s own date.
 
 
 #### Research-rail tile
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1031–1031 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1061–1061 | key: researchRail.tile.semanticMap | shared: iOS+macOS (single edit point) -->
 
 On the Map
 
 <!-- END SOURCE: researchRail.tile.semanticMap -->
 
 #### Research-rail tile help
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1032–1033 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | lines: 1062–1063 | key: researchRail.tile.semanticMap.help | shared: iOS+macOS (single edit point) -->
 
 Show where this document sits on the semantic map, among the documents whose language is most like it
 
@@ -7088,14 +7209,14 @@ The three weights count different things. A document counts only when its own so
 <!-- END SOURCE: archival.export.caveat.weight.v2 -->
 
 #### Documents counts how many published documents came out of…
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 316–317 | key: archival.info.weights.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 343–344 | key: archival.info.weights.detail.v2 -->
 
 Documents counts how many published documents came out of a collection. Volumes counts how many volumes drew on it at all. Unprinted pointers counts something else entirely: footnotes pointing at material there that FRUS did not print. The first two measure where documents were drawn from; the third measures where readers were sent. They are never added together. Switching the count changes the order and, especially for unprinted pointers, changes which collections appear at all — a thousand collections that supplied documents have no pointers, and a hundred and eighty-one collections appear only under pointers, having supplied no printed document. A collection named only in a volume’s front matter has volumes but no documents.
 
 <!-- END SOURCE: archival.info.weights.detail.v2 -->
 
 #### The three counts measure different things
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 315–315 | key: archival.info.weights.title.v2 -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 342–342 | key: archival.info.weights.title.v2 -->
 
 The three counts measure different things
 
@@ -7379,7 +7500,7 @@ Some footnotes cross between the two filing systems — a document filed in a lo
      sentence is the honest claim — the app follows the editor's back-reference "the way a reader
      would, but it is a reading, not a quotation" — and the last sentence delegates the size of
      the effect to the chart rather than fixing a number in prose. Both must survive editing. -->
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 345–346 | key: archival.info.flows.ibid.detail -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 372–373 | key: archival.info.flows.ibid.detail -->
 
 Some of these citations come from an “Ibid.” — the editor wrote the archive out once and then referred back to it. The app follows that back the way a reader would, but it is a reading, not a quotation. The share it accounts for is stated on the chart.
 
@@ -7437,7 +7558,7 @@ corpus). Softening the "cannot see this change" sentence would turn a disclosed 
 silent inconsistency.*
 
 #### The override confirmation warning
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1187–1188 | key: classification.override.warning.v2 -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | reclassify confirmation | lines: 1224–1225 | key: classification.override.warning.v2 -->
 
 The document’s body styling, badges, search filters, counts, and exports will follow the new classification on all your devices. Bundled series-analytics dashboards are computed from the published corpus and cannot see this change, and other open windows reflect it when reopened. You can restore FRUS’s own classification at any time from here or from Settings ▸ Search.
 
@@ -8170,7 +8291,7 @@ Showing all \(vm.partners.count) co-mentioned people, sized by shared documents.
 <!-- END SOURCE: personCoMention.cap.all -->
 
 #### What do the numbers mean? Multi-word handling, phrases…
-<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics | lines: 247–248 | key: analytics.info.help -->
+<!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics | lines: 274–275 | key: analytics.info.help -->
 
 What do the numbers mean? Multi-word handling, phrases, stemming, and how dates are determined.
 
@@ -9171,7 +9292,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 <!-- END SOURCE: document.crossref.download.message %@ -->
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1431–1432 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1434–1435 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
@@ -9192,7 +9313,7 @@ Detected automatically from the text, not editorial subject headings — so some
 <!-- END SOURCE: panel.subjects.caveat -->
 
 #### Apple Intelligence is not available on this device, so new…
-<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.summaryAccordion | lines: 536–537 | key: panel.summary.unavailable | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/ResearchRailView.swift | ResearchRailView.summaryAccordion | lines: 558–559 | key: panel.summary.unavailable | shared: iOS only -->
 
 Apple Intelligence is not available on this device, so new summaries cannot be generated. Summaries from your other devices still appear here via iCloud.
 

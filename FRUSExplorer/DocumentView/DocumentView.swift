@@ -843,7 +843,10 @@ struct DocumentView: View {
                 PersonDetailSheet(
                     person: person,
                     mentionCount: vm.selectedPersonMentionCount,
-                    onFindAllMentions: {
+                    // #1351: the search opens in a Search TAB, so it is offered only where a tab
+                    // hand-off lands in front of the reader — not in a popped-out document window,
+                    // whose borrowed scene would switch the launcher's tab behind it.
+                    onFindAllMentions: !SceneID.tabHandoffOpensInFront(from: sceneID) ? nil : {
                         activeSheet = nil
                         // Search the resolved cross-corpus rollup identity — the same identity
                         // whose count the sheet displays. The raw per-volume `ref` is shared by
@@ -2827,7 +2830,9 @@ private struct CrossProjectNoteRow: View {
 private struct PersonDetailSheet: View {
     let person: PersonEntry
     let mentionCount: Int
-    let onFindAllMentions: () -> Void
+    /// Runs the corpus-wide search for this person, or nil where it cannot open in front of the
+    /// reader (#1351) — the sheet then states the count without offering the button.
+    let onFindAllMentions: (() -> Void)?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -2852,20 +2857,22 @@ private struct PersonDetailSheet: View {
                         .foregroundStyle(.secondary)
                         .font(.subheadline)
 
-                        Button {
-                            dismiss()
-                            onFindAllMentions()
-                        } label: {
-                            Label(
-                                String(localized: "document.persons.findAll",
-                                       defaultValue: "Find all mentions"),
-                                systemImage: "magnifyingglass"
+                        if let onFindAllMentions {
+                            Button {
+                                dismiss()
+                                onFindAllMentions()
+                            } label: {
+                                Label(
+                                    String(localized: "document.persons.findAll",
+                                           defaultValue: "Find all mentions"),
+                                    systemImage: "magnifyingglass"
+                                )
+                            }
+                            .accessibilityLabel(
+                                String(localized: "document.persons.findAll.a11y",
+                                       defaultValue: "Find all documents mentioning this person")
                             )
                         }
-                        .accessibilityLabel(
-                            String(localized: "document.persons.findAll.a11y",
-                                   defaultValue: "Find all documents mentioning this person")
-                        )
                     } else {
                         Text(String(localized: "document.persons.noMentions",
                                     defaultValue: "Not found in indexed documents"))

@@ -896,12 +896,13 @@ struct HandoffVisibilityTests {
         // sentinel no Browse view can consume while the tab switch goes to ANY window, leaving a
         // window the reader is not in sitting on an empty Browse tab.
         let gate = try Self.platformArms(of: "private var topicIndexDoor", in: source)
-        #expect(gate.iOS.contains("if let sceneID, sceneID != .anyWindow"), """
-            \(bar) offers its Topic-index door on iOS where the hand-off cannot be delivered. This \
-            is the one hand-off consumed STRICTLY, so a nil scene AND `.anyWindow` are both \
-            undeliverable to it — while `openTab` accepts `.anyWindow` and falls back to it when \
-            the scene is nil. Either way the pair leaves a background window switching to an empty \
-            Browse tab, which is worse than the no-op it replaced.
+        #expect(gate.iOS.contains("if SceneID.tabHandoffOpensInFront(from: sceneID)"), """
+            \(bar) offers its Topic-index door on iOS where the hand-off cannot be delivered in \
+            front of the reader. This is the one hand-off consumed STRICTLY, so a nil scene AND \
+            `.anyWindow` are both undeliverable to it — while `openTab` accepts `.anyWindow` and \
+            falls back to it when the scene is nil — and a BORROWED scene (#1351) delivers both \
+            halves to a window the reader is not in. The shared predicate refuses all three; the \
+            rail's topic chips and the person sheet's Find all mentions are gated on the same one.
             """)
         #expect(gate.mac.contains("topicIndexButton"), """
             \(bar) must keep offering the door unconditionally on macOS, where \

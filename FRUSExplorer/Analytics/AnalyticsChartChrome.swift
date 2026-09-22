@@ -588,6 +588,11 @@ struct AnalyticsScopeBar: View {
     /// a probe sheet presented from `MainTabView` with no injection at all read the tab shell's own
     /// scene id, so a sheet inherits `\.sceneID` and the guard only ever closes a door in a window.
     ///
+    /// The test is `SceneID.tabHandoffOpensInFront(from:)`, which the rail's topic chips and the
+    /// person sheet's Find all mentions are gated on too; since #1351 it also refuses a BORROWED
+    /// scene, the launcher's identity an aux window republishes, which delivers both halves to a
+    /// window the reader is not in.
+    ///
     /// No withhold on macOS: `openSubjectExplorer` self-addresses the Topics window there and
     /// never reads the scene.
     @ViewBuilder
@@ -596,7 +601,7 @@ struct AnalyticsScopeBar: View {
         Divider()
         topicIndexButton
         #else
-        if let sceneID, sceneID != .anyWindow {
+        if SceneID.tabHandoffOpensInFront(from: sceneID) {
             Divider()
             topicIndexButton
         }
