@@ -17,12 +17,12 @@ Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has
 > embeds the `ipad/` captures) also wired in `macos/person-analytics-trends` and `macos/research`,
 > which were previously captured but unused.
 
-## Capture ledger — the iPad sweep, builds 47–48 (2026-09-13 → 2026-09-23)
+## Capture ledger — the #1081 sweep, builds 47–48 (2026-09-13 → 2026-09-23)
 
-A screenshot is evidence about a build, so every `ipad/` file is accounted for here. **This sweep
-closes every iOS-manual item on #1081** (§1's eleven placeholders, §4's seven re-captures, the
-`ipad/` half of §5, the README's third hero, and §7's deletions). What #1081 still lists is the
-macOS sitting (§2, §3, the `macos/` half of §5, and the two macOS README heroes).
+A screenshot is evidence about a build, so every `ipad/` and `macos/` file is accounted for here.
+**This sweep closes #1081 except for three frames**: the macOS Archives Visit packet with its
+Options menu and Share buttons, which build 48 does not draw on the Mac (#1377); and the two
+known-hard shots the issue always listed, the Chronology hover magnifier and the Live Activity.
 
 - **Owner, physical iPad, build 47, 2026-09-13** (3180×2384; `cross-reference-graph` is a
   2852×2139 window capture): `research-rail`, `stage-manager`, `browse-root`,
@@ -53,6 +53,27 @@ macOS sitting (§2, §3, the `macos/` half of §5, and the two macOS README hero
   - Paired frames where one screen cannot hold the contract: `browse-archives-collection-detail`
     + `-citing` (the detail runs about four screens), `people-detail` + `-records` (a ~660 pt
     form sheet), and `trip-packet` + `-options` (the open Options menu covers the Share buttons).
+- **macOS, build 48, 2026-09-23** — every `macos/` file. An **isolated copy** of the Mac app built
+  from the branch: bundle id `bottsywattsy.FRUS-Explorer.screenshots`, `AppStore` configuration,
+  ad-hoc signed, no sandbox and no iCloud entitlements, launched with
+  `open -n … --env CFFIXED_USER_HOME=<folder>` so that everything it stores lands in that folder and
+  nothing touches the owner's library or iCloud. Its corpus index and demo data were copied from an
+  iPad simulator's container (the store renamed `FRUSExplorerLocal.store`), so the Mac shots show
+  the same project, scopes, corpora, collection and Archives Visit as the iPad ones, plus a note, a
+  highlight, a "Containment" tag and three saved searches made on the Mac. `series-production` came
+  from a second, empty folder. Windows captured one at a time with `screencapture -o -l <window id>`
+  while the app was frontmost, so the chrome is active and no screen overlay can appear.
+  - **Two local-only patches, never committed**, both under the same launch argument: the status
+    bar shows the healthy "iCloud Sync" chip instead of "Local Only", and the store skips CloudKit
+    altogether — without the iCloud entitlement, SwiftData's CloudKit setup halts the process at
+    launch (SIGTRAP inside CloudKit).
+  - Choices a reader might wonder about: `document` is frus1948v02/d399, because the first
+    candidate drew its footnote classification chip misaligned (#1386); `cross-reference-graph` is
+    frus1952-54v02p1/d16, where no date label collides with a node; `crossref-analytics` shows
+    only the heat matrix, because both rankings carried fallback labels (#1372);
+    `person-analytics-trends` is 1072 pt tall so the ranking and the start of the trajectories fit;
+    `analytics-table` has no Copy CSV because Corpus Analytics has none (#1081 asked for one).
+  - `trip-packet` shows both claim lists but not the Options menu or Share buttons — see #1377.
 - **Replaced**: the committed `ipad/document.png`, `ipad/search-results.png` and
   `ipad/sidebar-landscape.png`; and the owner's build-47 `ipad/semantic-map.png`, which came
   from a DEBUG build with its frame-rate overlay showing.

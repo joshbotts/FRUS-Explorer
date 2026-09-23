@@ -127,7 +127,7 @@ The Mac app is built around one **main window** (the document reader) surrounded
 | **My Research ▾** | — | **Research** (⌘⌥R — every annotated document), **Collections** (⇧⌘K), **Archives Visits** (Section 14.8), and **Complete History…** (Section 16.2) |
 | **Research rail** | ⌘⇧R | Show or hide the per-document Research rail (4.2); dimmed until a document is open |
 
-![The macOS main-window toolbar — the centered document title and the trailing tools.](screenshots/macos/toolbar.png) <!-- TODO Phase E: re-capture for Research rail -->
+![The macOS main-window toolbar — the centered volumeId/documentId title and the trailing Search, Browse, Analytics, My Research and Research-panel controls.](screenshots/macos/toolbar.png)
 
 ### 4.1a The Menu Bar
 
@@ -164,13 +164,13 @@ The rail header's **ⓘ** button opens a **Document tools** popover describing e
 
 **Highlighting is not a rail button.** To highlight, **select text in the document body**: the **floating selection bar** (a dark pill) appears at the selection with four color dots — click one to save the highlight — plus **Excerpt** (freeze the passage into a collection, Section 12.3), **Look Up** (hand the text to Source Explorer, Section 14.2), and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available. The same bar, with the same behavior, appears on iPad and iPhone.
 
-![The Research rail beside an open document — the tile grid and the Summary / Notes / Tags / Collections accordions.](screenshots/macos/research-strip.png) <!-- TODO Phase E: re-capture for Research rail -->
+![The Research panel beside the Long Telegram — the tile grid and the Topics, Summary, Notes, Tags and Collections accordions, here holding a note and a "Containment" tag.](screenshots/macos/research-strip.png)
 
 ### 4.3 The Document View
 
 The central area displays the open document ("Select a document to begin" when none is). As you navigate — search results, cross-references, the browser — the window builds a navigation stack; the toolbar's back button steps back through it. **⌥⌘↑** / **⌥⌘↓** (or the margin chevrons) move through the volume in reading order. **⌘F** opens a compact find bar pinned to the top of the document; **⌘G** and **⌘⇧G** step through the matches, and **Done** closes it.
 
-![A rendered FRUS document filling the main window — heading, dateline, body with linked names and footnote markers, and the footnotes section.](screenshots/macos/document.png) <!-- TODO Phase E: re-capture for Research rail -->
+![A rendered FRUS document filling the main window — heading, dateline, body with linked names and footnote markers, and the footnotes section.](screenshots/macos/document.png)
 
 ### 4.4 The Status Bar
 
@@ -269,13 +269,13 @@ Beneath it, **Natural-Language Search** manages the optional 229 MB on-device mo
 
 Open the **Corpus Browser** with **⇧⌘B** (or **Find ▸ Corpus Browser…**) to navigate the series as a hierarchy — or through the sidebar's **Browse** section, by other ways in.
 
-![Corpus Browser — the subseries list with downloaded counts in the sidebar, the People toolbar button, and the detail pane.](screenshots/macos/browser.png)
+![The Corpus Browser — the sidebar's Browse, Your sets and Subseries sections, and a volume's page with its Top subjects, front matter and contents.](screenshots/macos/browser.png)
 
 ### 6.1 The Sidebar and Navigation Levels
 
 The sidebar has two sections. **Browse** holds the cross-cutting doors: **All Volumes** — one catalog of every volume, searchable, with a control arranging it by **Title** (A–Z on each volume's distinctive title segment, since almost every full title begins with the same series boilerplate; early annuals file under **#**), **Published** (print year, newest first, in decade groups — the year from the title page, not a declassification date), **Era**, or **Length** (document count, largest first); **Administrations** — every presidency from Lincoln on with its reach, drilling to the volumes whose documents *cover* the term (dated to it, never by publication; a volume spanning two administrations appears under both, and post-corpus presidencies stay visible but dimmed); **Editors** — the volume editors by surname, each drilling to their volumes in publication order (spelling variants merge into one entry; the printed forms and citations are never altered); and **Archives** — the series by its printed source notes, in three side-by-side lenses: ten *provenance-type* doors (Central Decimal File, presidential libraries, lot files…) drilling to volume lists with per-volume shares; the Source Explorer's own *collection* index, grouped by **repository**, National Archives **record group**, or not at all, whose records now push their full detail in this window — citing-volume rows stay in your stack instead of jumping the sidebar; and the central-file *classes*, divided by the filing schedule in force, since the same number means different things under different schedules. The last two have a **Sort** menu — **document count** or name (a class number in the file's own order, so *711.11* before *711.2*), **ascending or descending**, remembered on this Mac, with every group and era collapsible from its header or all at once with **Collapse All** / **Expand All** — and collections whose citations name no record group, nearly every presidential-library collection among them, are listed together at the end; and **Clusters** — the corpus's 171 computed language groups, the same grouping the semantic map (Section 15.6) draws as regions, listed largest first with each cluster's four-term sampled label, document count, and era histogram. A cluster drills to its documents grouped by volume — paged, since the largest holds nearly 38,000 — with the usual coverage line and Download/Index rows, plus **See on the semantic map** (opens the map zoomed to the cluster, region card ready) and **Save as Working Corpus** (capped at 7,500, truncation stated). The screen states its own limits: labels are sampled terms, not subject headings; about 28% of the corpus (89,449 documents) belongs to no cluster and cannot be reached here; era bars reflect volume coverage, not document dates. A **Your sets** section holds **Working Corpora** — your captured document sets, each opening as one always-rendering list grouped by volume, with a coverage line up top ("N of M documents indexed on this device"), real headings for indexed volumes, and gray identifier rows with **Download**/**Index** buttons for volumes this Mac doesn't hold (capture stays in Search results and the map's lasso; there is nothing to create here) — and **My Scopes** — your custom volume scopes, openable and now *editable and creatable* right here: a pushed editor renames a scope, removes members, and adds volumes through the catalog in picker mode; right-clicking any volume row anywhere in the browser offers *Add to Scope…* and *New Scope from Volume…*; and every volume list's toolbar has **Save as Scope…** to capture the whole slice (an administration's volumes, an editor's volumes) with the name pre-filled. **My Scopes** also has a **New Scope** button for an empty scope you fill from the catalog, and each scope offers **Browse Within This Scope**, which narrows the whole browser to that scope's volumes behind a *Browsing within* banner until you choose **Stop Browsing Within**. **Subseries** below it is the classic era list, and every volume list carries a **Search volumes…** field matching on title or volume number.
 
-[SCREENSHOT: Corpus Browser — the sidebar's Browse section with All Volumes selected and the catalog in the detail column.]
+![The Corpus Browser with Browse ▸ All Volumes selected — the catalog in Published order, each volume with its print year, document count and download status.](screenshots/macos/browse-all-volumes.png)
 
 - **Subseries view** — the volumes a subseries contains: title, volume number, publication date, **document count**, and whether each is downloaded and indexed (the same row the iPhone and iPad lists use, so the two browsers can no longer drift apart). Each row also carries two glyph buttons — a **Word Cloud** of that volume and its **Cross-Reference Graph** — and right-clicking a row offers **Add to Scope…**, **New Scope from Volume…**, and **Word Cloud**; a subseries row's context menu offers a word cloud of the whole subseries.
 - **Volume view** — front matter, chapters, and appendices, each chapter with its document count. A **Top subjects** section lists the subjects most characteristic of the volume — automatically detected topics (not editorial subject headings, so an occasional mistag is possible), grouped by category, and shown even before the volume is downloaded, so you can size up an unfamiliar volume before committing to it. Click a subject to see every other FRUS volume covering it across the corpus and jump straight to any of them; the sheet also offers **Archival profile of these volumes**, opening Archival Analytics on the collections those volumes draw on (Section 15.5). Once indexed, the volume page adds a summary strip — persons in its List of Persons, cross-references, how many documents are dated, editorial notes, and the date span its documents cover; while indexing runs, the page reports the stage (*Reading…*, *Storing batch N of M…*, *Finalizing index…*).
@@ -295,7 +295,7 @@ The same person often appears across many volumes under different name forms ("K
 
 Click a person for their detail panel:
 
-![The person detail sheet for "Kissinger, Henry A." — the reconciled-identity seal, a mention count of 13,174 documents, active years, Find all mentions, and the underlying volume records with Separate actions.](screenshots/macos/people-detail.png)
+![The person detail sheet for "Kissinger, Henry A.", scrolled to its VIAF and Wikidata links and its Career section — Secretary of State, 1973–1977, from the Department's Principal Officers and Chiefs of Mission register.](screenshots/macos/people-detail.png)
 
 - **Find all mentions** runs a person-scoped search returning every document that references this identity.
 - **Records in This Identity** lists each underlying `(volume, ref)` record folded into the person; click **Separate** on any record that is actually a different person. Corrections sync via iCloud and are reapplied whenever the index is rebuilt.
@@ -318,6 +318,8 @@ The **Topics** window (beside People in the Window menu) lists every detected to
 
 Each row shows the topic, its `Category · Sub-category`, and its reach in documents and volumes.
 
+![The Topics window narrowed to the Cold War area (its chip reads "Topic area: Cold War — 6 topics"), with Berlin crisis open: its documents and volumes in the series and on this Mac, and its covering volumes.](screenshots/macos/topic-index.png)
+
 **Those figures describe the whole series, not your library.** A topic can reach 4,000 documents and return 60 here, because a search only reaches the volumes you have indexed. A topic's page shows both, labeled: *Documents in the series*, *Volumes in the series*, and *Indexed on this device* — and if that last one cannot be worked out it says **Not counted** rather than showing a zero, which would claim you have nothing on a topic your library may be full of.
 
 The topic's page also lists its **Covering volumes** — complete membership across the series, including volumes you have not downloaded. Long lists preview the first few, with **Show all N volumes** to disclose the rest; click any volume to open it in the Corpus Browser.
@@ -334,7 +336,7 @@ It opens as its own window, so the index stays available beside whatever you are
 
 Press **⌥⌘F** (or choose **Find ▸ Search…**) for the Search window — the caret lands in the query field even if the window was already open behind something else, so you can start typing immediately. Search is full-text across every volume you've indexed, ranked by relevance (BM25) with English stemming, so *negotiate* also matches *negotiated* and *negotiating*. For a researcher the important properties are less the ranking than the accountability: the app shows you the exact query it ran, describes the whole result set rather than just the visible page, and — while **Log Research Sessions** is on (Section 17.4) — records every search as evidence of your method.
 
-![The Search window — the keyword field, filter controls, total count, sort options, and a ranked results list with highlighted snippets, citations, and dates.](screenshots/macos/search.png)
+![The Search window — "Berlin blockade" in Keywords mode, the ranked results with highlighted snippets, citations and dates, and the Facets panel open on its Subjects section.](screenshots/macos/search.png)
 
 ### 7.1 Running a Search
 
@@ -352,7 +354,7 @@ Type and press Return. The search itself runs on Return — at this corpus size 
 
 **Tips.** The **Tips** button beside the query field opens a short reference to this syntax under the results — the same tips the iPhone and iPad app shows — followed by what the date filter does and where the **Search in** defaults are set. **Find → Search Tips…** opens the Search window with the tips showing. In Meaning mode the panel shows no syntax: it says instead that a meaning search reads your words as a whole, so none of these marks has a special effect. The words reach the model as you typed them, and only the filters you set narrow a meaning search, so an `=` there narrows nothing.
 
-[SCREENSHOT: macOS — the Search window with the Tips panel open under the results]
+![The Search window with the Tips panel open under the results.](screenshots/macos/search-tips.png)
 
 | Syntax | Example | Effect |
 |--------|---------|--------|
@@ -527,7 +529,7 @@ Below the ranked list, **Beyond your library** counts the documents in volumes y
 
 FRUS documents constantly reference one another — a memo responds to a cable; a meeting record cites an earlier policy paper. The app indexes these relationships and draws them as an interactive network in the **Cross-Reference Graph** window, opened from the rail's **Graph** tile.
 
-![The cross-reference graph — the focus document and its references arranged left-to-right along a date axis, with the reference list panel on the right.](screenshots/macos/cross-reference-graph.png)
+![The cross-reference graph — the focus document and its references along a date axis, teal nodes for the archival material its footnotes cite, and the reference list panel.](screenshots/macos/cross-reference-graph.png)
 
 - **Reading it.** Nodes are documents positioned left-to-right by date; arrows point from the citing document to the cited one; larger nodes are more connected; line weight and labels convey link strength; color encodes direction — **blue** nodes cite the focus, **orange** nodes are cited by it, **gray** nodes are two or three hops out, and **teal** nodes are unprinted archival citations (below). A legend and info popover explain every channel, so meaning never depends on color alone; a reset-viewport button re-frames; animations respect Reduce Motion.
 - **The reference list.** A toggled side panel shows the same connections as a synchronized, scrollable list — the non-visual companion to the canvas. Selecting a node or edge folds its details (titles, dates, the shared footnote context) into the panel.
@@ -666,6 +668,8 @@ The window has no permanent sidebar; you switch collections from the **collectio
 | **Document inspector** | Show or hide the trailing inspector for the selected document (12.5) |
 
 **Which collections the window lists.** Every collection across all your projects, by default; with a project active, a banner offers **Scope to "\<project\>"**, and **Show All** brings the rest back (a per-session choice). A collection you create, import, or snapshot while a project is active is attached to that project automatically.
+
+![The Collections window — the toolbar collection picker, the Contents outline, the live preview, and the document inspector.](screenshots/macos/collections.png)
 
 ### 12.2 Adding Documents
 
@@ -821,7 +825,7 @@ If your research will ever take you to College Park or a presidential library, t
 
 Click the **source note at the top of any open document** (or the rail's **Sources** tile) to open the Source Explorer window. **Learn About Source Notes** — the info button beside the note — explains how to read an archival source note; worth a first read if archival citation forms are new to you.
 
-![Source Explorer resolving an RG-59 source — the parsed note and provenance on the left; the NARA query, the matched catalog entry, and Archival Neighbors on the right.](screenshots/macos/source-explorer.png)
+![Source Explorer resolving a lot-file source — the parsed note, provenance and collection on the left; the NARA query, the matched catalog record with its HMS/MLR entry, and Archival Neighbors on the right.](screenshots/macos/source-explorer.png)
 
 ### 14.1 What Resolves, and How
 
@@ -925,7 +929,7 @@ Two honesty rules run through every section: an institutional fact nobody has ve
 
 Most of the plan's controls sit on the targets themselves: right-click a target to **Set tier**, **Edit Note…**, or **Include in Packet** / **Exclude from Packet**, and orphaned rows collect under **Stored targets**, where **Remove Stored State** is the only way to drop one. The **Filter** menu narrows by repository, tier, claim (**Drawn from** / **Pointed at**), or included-only; **About research targets** explains the two claims and notes that unprinted-reference footnotes sit on about 4% of documents, so a thin pointed-at list is sparse data, not a failed scan. The ⋯ menu also holds **Priority Tiers…**, **Duplicate**, **Re-seed from Project**, **Delete**, and **Export packet** — deleting a plan removes it from your other devices too, after sync. The packet's **Options ▸ What to Include** toggles — **Repository visit-planning links**, **Target list**, **Inquiry email drafts** — persist with the plan, and the **Inquiry topic sentence** field, seeded from the project's research question, is what the drafts send. Long claim lists print their first eight seedings and then say how many more the app holds. Because targets derive from indexed volumes, the plan and the packet both state how many seeding documents this Mac has indexed. The window has no keyboard shortcut.
 
-[SCREENSHOT: the Archives Visits window with a plan's packet open from ⋯ ▸ Export packet — a target's two claim lists visible, the Options menu open showing the repository scope, and the Share buttons.]
+![The Archives Visits window with a plan's packet open from Export packet — a research target's two claim lists, documents published from the file and footnotes that cite it.](screenshots/macos/trip-packet.png)
 
 ---
 
@@ -949,7 +953,7 @@ All open from the main window's **Analytics ▾** menu, each in its own window y
 
 Corpus Analytics charts how often terms appear across your indexed corpus — the fastest way to see when a topic rose or fell in official attention, or to compare two terms. Open it from Analytics ▾, by clicking any word in a word cloud, or via a search's **Visualize in Corpus Analytics** banner.
 
-![Corpus Analytics — a term-frequency chart for "Berlin" by year, each bar color-coded by source volume with a legend.](screenshots/macos/analytics.png)
+![Corpus Analytics — a term-frequency chart for "Berlin" by year, 1944–1975, each bar color-coded by source volume with a legend.](screenshots/macos/analytics.png)
 
 Type a term (the full search syntax applies, including quoted phrases) and configure:
 
@@ -979,6 +983,8 @@ Where Analytics charts one term over time, a **word cloud** shows the most frequ
 
 A corpus-wide cloud reads every indexed document, which on a full library takes several minutes — the window says so, and you can leave and come back; counts are cached after computation, so returning to a cloud you have already built is usually fast.
 
+![A scope's Word Cloud in Distinctive mode — the Concepts lens for a Soviet Union 1945-1950 scope, with the eligibility line beneath the controls.](screenshots/macos/word-cloud.png)
+
 ### 15.3 Person Analytics
 
 Person Analytics turns the People browser's reconciled identities (Section 6.3) into data: who is written about, when, and alongside whom. Open it from Analytics ▾; a segmented control switches its two modes, and the shared **Scope** and **year-range** bars narrow every figure.
@@ -1005,6 +1011,8 @@ Where the per-document graph (Section 8.5) shows one document's neighborhood, Cr
 - **Volume Citation Heat Matrix** — the most-connected volumes as a grid, each cell shaded by how many cross-references run from one volume to another — which compilations lean on which.
 - **Landmark Documents (Influence)** — an offline **PageRank** ranking, weighting a citation more heavily when it comes from a document that is itself well-cited. The very highest-influence landmarks are frequently in volumes you *haven't* downloaded; the list names them from the manifest ("Document N — *volume title*") with a download hint rather than an opaque key.
 
+![Cross-Reference Analytics — the Volume Citation Heat Matrix for 1961–1963, each cell shaded by the cross-references running from one volume to another.](screenshots/macos/crossref-analytics.png)
+
 A **Scope** bar, **year-range** bar, and **Administration** preset narrow the analysis. The figures are **source-anchored**: a citation is counted and filtered by its *citing* document's volume and date, with the cited target unrestricted — so a heavily-cited foundational document stays visible in the rankings even when it sits outside your slice (the heat matrix is the exception, filtering on both endpoints). The document-level figures include same-volume citations; page-number references count alongside document-number ones; references confirmed unresolvable are excluded, with a caption disclosing how many — so the counts you see are built from references that actually lead somewhere.
 
 ### 15.5 Archival Analytics
@@ -1018,6 +1026,8 @@ Corpus Analytics tracks terms and Person Analytics tracks people; **Archival Ana
 - **Show** — **Named collections** (a body of records with a custodian, like the Johnson Library's National Security File) or **Central-file classes** (a subject heading inside State's filing system, like `763.72` for the European War or `POL 27 VIET S`). Different kinds of thing, never mixed in one chart. Classes rank at one depth — decimal numbers stand for themselves, subject-numeric designators group to category and number (`POL 27`), with **Inside these families** opening any grouped row to the exact designators a pull slip needs. Where the bundled schedules cover the era — the decimal file from 1910 to 1963, in three tables because the Department renumbered its classes in 1950, and the subject-numeric file from 1963 — a class reads in words: `793.94` as *China and Japan*, `POL 27 VIET S` as *Vietnam, South — Military Operations*, with the number kept because the number is what a pull slip needs. An era straddling a renumbering, or a class neither table names, stays bare, deliberately: a confident wrong gloss on an archival citation is worse than a plain number you can look up. A decimal country number often named several places — `11g` is three Virgin Islands — so a gloss may end **and N others**; click it for the list.
 - **Count by** — **Documents** (published documents drawn from a unit), **Volumes** (volumes that drew on it at all), or **Unprinted pointers** (editorial footnotes pointing at material FRUS did *not* print). All three are correct and give different answers — one lot file supplies 1,063 documents to five volumes, another 624 to ninety-eight. Unprinted pointers is a genuinely different body of evidence, never added to the other two: roughly a thousand collections that supplied documents have no pointers, and about a hundred and eighty appear *only* under pointers. On the classes lens the same count carries a stated caveat — most central-file citations name the file the citing document itself came from, about three in five, so they are counted but are not movement between archives.
 - The **Central Files umbrella** chip: the State Department's central files are cited by 157 volumes and supply over seventeen thousand documents — more than twice the next-largest collection — so its bar would flatten every other one. It is hidden by default, the chart states how many it withheld in the era you're viewing, and one click shows it.
+
+![Archival Analytics in Collections mode — the 1948–1960 ranking of named collections by documents, with the Central Files umbrella chip in the control bar.](screenshots/macos/archival-analytics.png)
 
 Above the chart, a line gives the era's own denominator — how many source notes its volumes carry, and how much of that the drawn rows account for (often a small share, and that asymmetry between eras is a finding about the series, not a gap in the app). Bars are colored by **who holds the records** — Department of State, State lot files, presidential libraries, other institutions — and read across the eras a real historical change appears: State's own files lead the 1950s, the Kennedy and Johnson national security files overtake them in the 1960s, and by the 1970s Nixon's NSC Files supply more than three times what the State central files of the same years do. The documentary record of American foreign relations moves out of the Department and into the White House. Bars are live: a collection opens its full record (Section 14.5), a file number opens Archival Neighbors for that class, and **Show all N units in this era** opens the **Every Unit** sheet, which lifts the twelve-row cap and states whether the Central Files umbrella is still withheld, so it and the chart count the same population. The toolbar's **About Archival Sourcing** opens the Research Guide's Archival Sourcing dashboard beside it.
 
@@ -1041,6 +1051,8 @@ Semantic Analytics tracks none of the above: it measures how the *language* sits
 - **Scope** (the same control as everywhere else) does *not* shrink the map: the rest of the corpus stays in gray while the documents in scope keep their color — so what you are reading is where that segment falls in a layout it played no part in producing. A subseries that lands in one place is a different finding from one that scatters. Mind the grain: every scope resolves to **whole volumes**, so scoping to a detected topic lights every document in the volumes carrying that tag, not the documents about the topic — the line under the chip says "every document in N volumes" for exactly this reason.
 - **Export** (the toolbar share menu) delivers the map as a publication **figure** (PNG or PDF) — the dark point layer rendered off-screen at plate resolution through the map's own Metal pipeline, with region labels composited on and the methods caption beneath — or as the **regions CSV**. A figure taken while an axis slice is active carries no region labels (a region's center belongs to the map plane), and its methods statement says so.
 - **Two cautions, stated in the window itself**: the plane preserves *local* similarity only — neighboring points are meaningfully alike, but distance and direction between far-apart regions mean nothing — and the model was not measured on nineteenth-century prose, so placements in the earliest volumes are a declared unknown.
+
+![The semantic map colored by Regions — region labels, the explainer above, and the caveat line beneath the map.](screenshots/macos/semantic-map.png)
 
 ### 15.7 Chronology
 
