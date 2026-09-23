@@ -16,12 +16,14 @@ import CloudKit
 /// ## Why this exists
 /// `AppState` tracks iCloud through four independent properties — whether the container came up
 /// with CloudKit at all, the most recent sync *event*, the account status, and whether the private
-/// zone was found — and both surfaces that show them (the iOS Settings root's iCloud Sync section
-/// and the macOS status bar) used to render each one on its own. A device that was simply not
-/// signed in to iCloud therefore showed three rows, each titled "Status", that contradicted one
-/// another: **Sync Error** (the account check writes its own description into the sync-event
-/// channel), **Private Zone Missing** (a private database cannot be listed without an account, and
-/// the failed listing read as "missing"), and **Account Issue**. Only the last was the cause.
+/// zone was found — and the surfaces that show them (the iOS Settings root's iCloud Sync section,
+/// the macOS status bar, and the iOS workspace banner) used to render them on their own. A device
+/// that was simply not signed in to iCloud therefore showed three Settings rows, each titled
+/// "Status", that contradicted one another: **Sync Error** (the account check wrote its own
+/// description into the sync-event channel), **Private Zone Missing** (a private database cannot
+/// be listed without an account, and the failed listing read as "missing"), and **Account Issue**.
+/// Only the last was the cause — and the banner, reading the event channel raw, called it
+/// "iCloud Sync Failed".
 ///
 /// ## Precedence
 /// Most fundamental first; each later fact is, in practice, a consequence of an earlier one:
@@ -41,6 +43,7 @@ import CloudKit
 ///
 /// Version history:
 ///   1.0 — one status row for a signed-out device, where the iOS Settings root showed three
+///   1.1 — `SyncStatusBanner` reads it too, so all three surfaces show the same one status
 enum ICloudStatusSummary: Equatable, Sendable {
     /// The container fell back to a local store; `diagnostic` is `AppState.cloudKitInitError`.
     case localOnly(diagnostic: String?)
@@ -60,7 +63,8 @@ enum ICloudStatusSummary: Equatable, Sendable {
     /// Resolves the single status to show from `AppState`'s four iCloud facts.
     ///
     /// Pure, so the precedence can be tested without a CloudKit container. Every view that shows
-    /// iCloud status reads it through `AppState.iCloudStatusSummary`, which calls this.
+    /// iCloud status — the Settings row, the macOS status chip, the iOS workspace banner — reads it
+    /// through `AppState.iCloudStatusSummary`, which calls this.
     ///
     /// - Parameters:
     ///   - cloudKitEnabled: `AppState.cloudKitSyncEnabled` — `false` when the container fell back
