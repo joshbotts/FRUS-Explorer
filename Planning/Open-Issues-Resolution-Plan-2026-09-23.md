@@ -21,6 +21,14 @@ live one; `CodingStandardsAuditTests.planOfRecordMatchesTheVisualMarketingPlan` 
 `Open-Issues-Resolution-Plan-2026-09-19.md`, is discharged: every issue it planned has shipped
 except the two excluded here.
 
+**§4's decisions were resolved on 2026-09-23 (amendment below).** Before they were put to the owner,
+every premise the recommendations rest on was re-checked against this tree and the issue threads
+(no thread records an owner preference). Seven recommendations changed and the rest were refined;
+§3's lane designs are amended to match, and the places the check found this plan wrong are
+corrected in place and listed in §8. Two changes reach beyond a single lane: **build 48 has not
+shipped, so nothing goes to TestFlight until every lane has merged** (one release, one re-index),
+and #1370's life years move to the person sheet instead of the rollup.
+
 **Sizes:** XS under an hour · S half a day · M one to two days · L three days or more, tests
 included. "Bump" means the PR must move `currentDateIndexVersion` (parse output changed) and/or
 `currentPersonRollupVersion` (rollup output changed) in the same commit.
@@ -29,31 +37,31 @@ included. "Bump" means the PR must move `currentDateIndexVersion` (parse output 
 
 ## 1. Where the 37 issues stand
 
-| # | Title (short) | Lane | Size | Bump | Owner gate | Checked here |
+| # | Title (short) | Lane | Size | Bump | Decision | Checked here |
 |---|---|---|---|---|---|---|
 | 1352 | NARA Lookup guide deep-link names a dead page id | S | XS | no | — | issue only |
 | 1356 | Removed volume stays on screen, still "indexed" | K | M | no | — | dialog site ✔ |
 | 1357 | iPad remove-confirmation popover anchored to the list | K | S | no | — | dialog site ✔ |
 | 1358 | Collections list counts headings/prose as documents | K | S | no | — | all 9 `documentEntries?.count` sites ✔ |
-| 1359 | Collection editor never titled by name | K | S | no | **editable title?** | issue only |
-| 1360 | Prose row is a fixed-height scrolling editor | K | M | no | **self-size or preview** | issue only |
+| 1359 | Collection editor never titled by name | K | S | no | live title + follow renames (§4.5) | issue only |
+| 1360 | Prose row is a fixed-height scrolling editor | K | M | no | capped editor (§4.10) | issue only |
 | 1361 | History records the opener's label, never names the document | K | M | no | — | writer site ✔ |
 | 1362 | Research two-pane: open category not marked | B | S | no | — | `isTwoPane` branch ✔ |
 | 1363 | Browse two-pane: no level title; Back rebuilds the level | B | L | no | title story (measured) | `twoPaneLayout` ✔ |
 | 1364 | Browse Within This Scope changes nothing on screen | B | S/M | no | — | menu site ✔; Mac manual claim ✔ |
 | 1365 | Topic index door keeps the earlier search | B | S | no | — | `apply` cases ✔ |
-| 1366 | Inquiry drafts print the topic placeholder (3 of 4 paths) | V | M | no | **rule: creation or render** | 3 bare inits ✔; D8 ✔ |
-| 1367 | "Working on:" subtitle runs 224 pt into the detail pane | B | M | no | **question in pane or on bar** | `CorpusView` chrome ✔ |
-| 1368 | iPad aux-window Done drops to the Home Screen | W | M/L | no | **reverse the no-activation pin** | marker needle ✔; 6 origin adopters ✔ |
+| 1366 | Inquiry drafts print the topic placeholder (3 of 4 paths) | V | M | no | creation + refresh (§4.1) | 3 bare inits ✔; D8 ✔ |
+| 1367 | "Working on:" subtitle runs 224 pt into the detail pane | B | M | no | bar subtitle (§4.8) | `CorpusView` chrome ✔ |
+| 1368 | iPad aux-window Done drops to the Home Screen | W | M/L | no | reverse, W1 widened (§4.9) | marker needle ✔; 6 origin adopters ✔ |
 | 1369 | `n="0"` source notes show a "0" marker (9,985 documents) | T | S | **index** | — | `printedLabel` ✔ |
-| 1370 | People: lifespans as "Active", 235 reversed ranges, 5,217 debris roles | T | L | **index + rollup** | **birth/death home; row seal** | rollup v9 ✔; Kissinger pin ✔; manual claims ✔ |
-| 1371 | Reader drops list heads and labels (79,788 documents) | R | M/L | **no under data-skip** | **data-skip or flatText** | `kVersion` 1.2 ✔ |
+| 1370 | People: lifespans as "Active", 235 reversed ranges, 5,217 debris roles | T | L | **index + rollup** | sheet read; manuals fixed (§4.3–4) | rollup v9 ✔; Kissinger pin ✔; manual claims ✔ |
+| 1371 | Reader drops list heads and labels (79,788 documents) | R | M/L | **no under data-skip** | data-skip, hardened (§4.2) | `kVersion` 1.2 ✔ |
 | 1372 | Editorial-note heads never indexed (8,467) | T | S | **index** | — | `extractHeader` ✔ |
 | 1373 | Topics cloud reads 0 terms on iOS 27 (NLTagger first-scheme) | K | M | no | physical device | gate ✔; no warm-up call ✔ |
-| 1374 | "1 volumes"; ungrouped `String(format:)` counts | C | M | no | scan baseline | `HubCopy` ✔ |
+| 1374 | "1 volumes"; ungrouped `String(format:)` counts | C | M | no | shrink-only baseline (§4.16) | `HubCopy` ✔ |
 | 1375 | Stored titles/datelines gain a space at every markup boundary | T | M | **index** | — | `extractHeader` ✔ |
 | 1377 | Mac packet sheet shows only Done | V | M | no | — | toolbar placements ✔ |
-| 1378 | Archives Visits window 900×640 overflows; manual names ⋯ menu | V | S | no | **button or menu** | manual lines ✔ |
+| 1378 | Archives Visits window 900×640 overflows; manual names ⋯ menu | V | S | no | button + Mac ⋯ item (§4.7) | manual lines ✔ |
 | 1379 | Heat matrix hides rows in a 480 pt box; head-cut labels | A | M | no | — | `volumeTag` ✔ |
 | 1380 | Mac windows say "tap" | C | M | no | — | issue only |
 | 1381 | Word Cloud segments read "Mostly Cloudy" to VoiceOver | A | XS+scan | no | — | issue only |
@@ -67,7 +75,7 @@ included. "Bump" means the PR must move `currentDateIndexVersion` (parse output 
 | 1389 | Section title built from every `<head>` (176 sections) | T | S | **index** | — | issue only |
 | 1390 | Unprinted Material rows indistinguishable | S | M | no | — | issue only |
 | 1391 | Archival Neighbors prints the number twice | S | S | no | — | issue only |
-| 1392 | "Document 41., footnote 3" | V | S | no | **locator or strip** | keys in EditableContent ✔ |
+| 1392 | "Document 41., footnote 3" | V | S | no | shared strip helper (§4.6) | keys in EditableContent ✔ |
 
 Lanes: **T** TEI/index · **R** reader render · **B** Browse/Research two-pane · **W** iPad windows ·
 **A** analytics and chronology · **C** copy and counts · **V** Archives Visit · **S** Source
@@ -81,10 +89,11 @@ Explorer · **K** Collections, storage, history, word cloud.
    them once.** #1369, #1372, #1375, #1389 and #1370 each move `currentDateIndexVersion`; #1370
    also moves `currentPersonRollupVersion`. The rule is a bump in the same commit as the parse
    change (each PR takes the next number, v55…v58, rollup v10), and the cost lands on the
-   developer's own device between PRs. What matters for testers is that **build 49 is cut only
+   developer's own device between PRs. What matters for testers is that **the release is cut only
    after the whole T lane has merged**, so the TestFlight note owns exactly one full re-index —
-   the lesson the 2026-09-19 plan recorded for v52/v53. The build bump edits `README.md` too
-   (`readmeStatesCurrentBuild` pins `Current build: **48** (version 0.2)`).
+   the lesson the 2026-09-19 plan recorded for v52/v53. *(Resolved, §4 item 11: build 48 never
+   shipped, so the release waits for every lane, not lane T alone.)* The build bump edits
+   `README.md` too (`readmeStatesCurrentBuild` pins `Current build: **48** (version 0.2)`).
 2. **`IndexingPipeline.extractHeader` is claimed by two issues and read by two more.** #1372
    unwraps the editorial-note wrapper; #1375 replaces the space join. #1391's number-strip and
    #1361's stored title both read its output. One PR owns the function (T1 below), and #1391's
@@ -92,18 +101,24 @@ Explorer · **K** Collections, storage, history, word cloud.
    case.
 3. **#1371 need not join the bump cluster, and should not.** `ASTToRenderNodeConverter.kVersion`
    is `"1.2"` and its own history records three occasions (#659, #985, #1323) where it was
-   deliberately *not* bumped by rendering the new text with `data-skip="1"` and leaving
-   `flatText` byte-identical. The same route here keeps `body_hash` — the highlight coordinate
-   space — unchanged for the 79,788 documents that gain headings and labels. The flatText route
-   would stale every existing highlight in them. Recommend data-skip; it is the only thing that
-   keeps #1371 out of lane T.
+   deliberately *not* bumped because `flatText` stayed byte-identical. *(Corrected: none of the
+   three rendered new visible text under `data-skip`; they justify "no bump when flatText is
+   unchanged". The precedents for visible `data-skip` text are the serializer's footnote-marker
+   label, broken-ref dagger and classification chip. And `flatText` stays unchanged because the
+   Swift walkers ignore the new fields — `data-skip` is read only by the JS offset engine and the
+   export highlighter.)* The same route here keeps `body_hash` — the highlight coordinate space —
+   unchanged for the 79,788 documents that gain headings and labels. The flatText route would
+   stale every existing highlight in them. Data-skip, hardened, was chosen (§4 item 2); it is the
+   only thing that keeps #1371 out of lane T.
 4. **#1363 and #1367 are one fault, and their proposed title fixes conflict.** Both come from
    `twoPaneLayout` putting both panes under one `NavigationStack` while the list pane's
    `CorpusView` sets the bar's title, display mode and subtitle. #1367 wants `CorpusView` to stop
    writing chrome in the two-pane so the detail level's `navigationTitle` lands on the bar (the
    F-2 design's stated intent, §7.3); #1363 wants a header drawn inside the detail pane (the F-2
    design's stated *fallback*). Neither issue measured which title wins once `CorpusView` stops.
-   A one-hour device probe decides it before either PR is written (B0 below). The state half of
+   A one-hour device probe decides it before either PR is written (B0 below). *(Resolved, §4 item
+   8: the research question is a bar subtitle whichever title wins, so B0 now decides only the
+   title mechanism and where the subtitle attaches.)* The state half of
    #1363 — a per-level memory on `BrowserViewModel` — is independent of the title story and can
    proceed in parallel.
 5. **Eight issues propose a source-scan test, and two of the scans have opposite rules for the
@@ -155,8 +170,8 @@ Explorer · **K** Collections, storage, history, word cloud.
 13. **#1370's generator half is owner-machine work.** Cutting the register role at a word
     boundary means re-running `PersonAuthorityIndexGenerator`, whose inputs (`PEOPLE_DATA_DIR`,
     `PERSONS_COMPLETE`, `MERGE_AUDIT_CSV`) are local repositories, and CLAUDE.md records that a
-    regeneration moves rollup outcomes and needs a rollup bump. T5 already bumps the rollup, so
-    the regeneration should ride T5 if the owner can run it that week; otherwise it waits for the
+    regeneration moves rollup outcomes and needs a rollup bump. T4 already bumps the rollup, so
+    the regeneration should ride T4 if the owner can run it that week; otherwise it waits for the
     next rollup bump rather than costing one of its own.
 
 ---
@@ -164,8 +179,8 @@ Explorer · **K** Collections, storage, history, word cloud.
 ## 3. Lanes and sequence
 
 ```
-T (index):   T1 #1375+#1372 (v55) → T2 #1389 (v56) → T3 #1369 (v57) → T4 #1370 (v58, rollup v10) → cut build 49
-R (reader):  R1 #1386 harness → R2 #1371
+T (index):   T1 #1375+#1372 (v55) → T2 #1389 (v56) → T3 #1369 (v57) → T4 #1370 (v58, rollup v10)
+R (reader):  R1 #1386 ; R2 #1371                                (independent)
 B (browse):  B0 probe → B1 #1367+#1363-title → B2 #1363-state ; B3 #1362 ; B4 #1364 ; B5 #1365
 W (windows): W1 #1368
 A (charts):  A1 #1388 → A2 #1379 → A3 #1387 ; A4 #1383+#1385 → A5 #1384 ; A6 #1381
@@ -176,9 +191,10 @@ K (misc):    K1 #1358 ; K2 #1359 ; K3 #1360 ; K4 #1356+#1357 ; K5 #1361 (after T
 ```
 
 Lanes are independent of each other except where marked. Within a lane the order is by shared
-files. Build 49 waits for lane T only; everything else ships in whichever build is next.
+files. **The release waits for every lane** (§4 item 11: build 48 never shipped), so lane T is the
+critical path only because its four PRs are serial — each takes the next index version.
 
-### Lane T — TEI and index (the critical path for build 49)
+### Lane T — TEI and index (the serial critical path)
 
 **T1 — #1375 and #1372 in one PR, v55.** One punctuation-aware join used by `extractHeader`,
 `extractDateline` and `plainTextExcludingFootnotes` (concatenate when either piece carries a
@@ -210,24 +226,41 @@ owed because the shared rule moves `external_citations.note_label` for four body
 `frus1961-63v24`.
 
 **T4 — #1370, v58 and rollup v10.** The largest PR in the wave, and the one with two owner
-decisions (§4 items 3 and 4). Six parts: (1) life years leave `start_year`/`end_year` — either
-their own rollup columns or a display-time read of the authority/POCOM entry — and
-`IndexingPipelineTests.swift:4455` is rewritten to assert an authority-covered start year is *not*
-the birth year; (2) the mention-era query joins `document_cache` and excludes front matter; (3)
+decisions (§4 items 3 and 4, both resolved). Six parts: (1) life years leave
+`start_year`/`end_year` — `IndexingPipeline.swift:1059–1060` stops taking `auth?.b`/`auth?.d` —
+and move to the **person sheet, read at display time**: one testable function takes the
+authority's year first and fills a gap from the POCOM career (Kissinger's death year, 2023, is
+only in POCOM; the two sources disagree on exactly two people, Byrnes and Deming, and the
+authority wins), and its line replaces or promotes the Career footer's `lifespanText`
+(`PersonIndexView.swift:600`) so the sheet shows one lifespan, not two. The 18 people with
+authority years and no POCOM career — 13 of them presidents — gain a lifespan they have no line
+for today. No rollup column, no row change; `ProvenanceMountTests.swift:255–268`'s rule that
+`roleEraSubtitle` reads no authority or POCOM data becomes true again rather than being broken
+on purpose. `IndexingPipelineTests.swift:4455` is rewritten to assert an authority-covered start
+year is *not* the birth year; (2) the mention-era query joins `document_cache` and excludes front matter; (3)
 `extractRoleAndYears` reads the cue word ("until/to/through/till" end, "from/after/since" start),
 parses `Month D, YYYY–Month D, YYYY`, and removes a year span from the role only when it is a
 trailing `, YYYY(–YYYY)` or ` (YYYY–YYYY)` clause; (4) a member's span is min/max over every year
-it carries, so it cannot invert; (5) both manuals' seal sentence and active-years sentence are
-corrected or the seal is added to `PersonIndexRow`; (6) the register-role cut in the generator.
+it carries, so it cannot invert; (5) **the manuals are corrected, not the row**: the
+reconciled-identity seal moves from the People-list paragraph (`iOS-User-Manual.md:427`,
+`macOS-User-Manual.md:292`) into the sheet paragraph, where the iOS caption at `:433` already
+puts it, and the active-years sentence says where active years come from; the row stays
+unbadged, as `ProvenanceMountTests.swift:241–268` records was deliberate, and any row marker is
+left to #234's planned "Derived" marker; (6) the register-role cut in the generator.
 Tests: a `TEIParserTests` table of real persons-list shapes asserting no role ends on a month,
 day or preposition, contains `, ;`, ` ;` or `, –`, or loses a parenthesis; and a rollup property
 test over the pipeline test database (no `start_year > end_year`, no authority birth year as a
 start unless a list or mention says so). Interaction with #234: this PR resets the `persons`
 table's parse; whatever #234 decides builds on the corrected table, not the current one.
 
-**Cut build 49** after T4 merges: bump `project.yml` and `project.pbxproj` by hand (never
-`xcodegen`), edit `README.md`, and write the TestFlight note to say every device re-indexes once
-and why (titles, datelines, section titles, source-note markers, people).
+**The release** is cut after every lane has merged (§4 item 11), not after T4. Build 48 was never
+shipped; whether the release goes out as 48 or bumps to 49 depends on whether 48 was ever uploaded
+to App Store Connect. If it bumps: `project.yml` and `project.pbxproj` by hand (never `xcodegen`)
+and `README.md`. Either way: run `./Scripts/fetch-llama-dsyms.sh` before archiving (the #1350
+gate fails an archive without the cache), and rewrite **both** TestFlight files —
+`Docs/TestFlight-Instructions-ios.md` and `-mac.md` still say "What's New Since Build 46" — to
+say every device re-indexes once and why (titles, datelines, section titles, source-note markers,
+people), and to carry the three fixes already on `v2` since build 48 (#1354, #1376, #1393).
 
 ### Lane R — reader render (no bump)
 
@@ -239,21 +272,42 @@ descendant of `.fn-list-item` computes `text-indent: 0px` (visiting more than ze
 including the chip and a list item) and that the chip's text starts inside its border box. Run it
 on `v2` first; it must fail there.
 
-**R2 — #1371, data-skip route (§4 item 2).** `.listBlock` gains an optional heading and per-item
-labels (or a dedicated heading node emitted before the block, on the `.attachmentHeading`
-precedent — never `.heading`, which serialises as the document `<h2>`). The converter walks
+**R2 — #1371, data-skip route, hardened (§4 item 2).** `.listBlock` gains an optional heading and
+per-item labels (or a dedicated heading node emitted before the block — never `.heading`, which
+serialises as the document `<h2>`, and never `.attachmentHeading`, whose text the converter's
+`flatText` includes at `:196`). The converter walks
 `.list` children in document order: `.head` becomes the heading, a `.unknown("label")` is held
 and attached to the next `.listItem` (exact for 449,657 of 449,659 labels by the issue's count),
 and `.pageBreak`, `.lineBreak`, `.footnote` and the rest are kept beside the neighbouring item —
 the two d93 footnotes come back with their bodies. The serializer prints the heading above the
 list and the label where the bullet goes with `data-skip="1"`, so `flatText` and `kVersion` are
-untouched; PDF and DOCX print the label instead of `"• "`. Update the four other `.listBlock`
-switches the issue lists and the doc comment at `FRUSASTNode.swift:247`. Tests: d84's real shapes
+untouched; PDF and DOCX print the label instead of `"• "`. **Hardening, the decision's point:** a
+selection that starts *or ends* inside a skipped node maps to −1 (`frus-selection.js:50–56`), so
+both twins fall to `atFootnote: true` and disable Highlight and Excerpt — and a drag from the left
+edge of a numbered item commonly starts on its label. Give the heading and label
+`user-select: none` (CSS only, scoped to the new classes) or snap such an endpoint to the nearest
+mapped character in `frus-selection.js` and its `kSelectionJS` twin (parity test at
+`FRUSOffsetEngineTests.swift:491`); measure which one yields a highlightable selection for a drag
+that starts on "(1)" and ship that one. Snapping is global to every skipped node, including the
+footnote marker, so prefer the CSS if it measures clean. Highlight and excerpt passages still omit
+the numbering (`CollectionExcerpts.swift:22–25`); the label stays findable, copyable and spoken,
+since nothing hides `data-skip` text from WebKit find, the pasteboard or VoiceOver. Walk all
+**eight** `.listBlock` sites — converter `:189`, `FRUSRenderNode` `:331` and `:486`,
+`FRUSURLSchemeHandler` `:324`, `CollectionContentResolver` `:1635`, serializer `:647`, PDF
+`:1001`, DOCX `:953` — and note that the `default: break` arms (`FRUSRenderNode` `:350`, `:521`;
+URL scheme handler `:329`) will silently swallow a new node the compiler does not force. Update the
+doc comment at `FRUSASTNode.swift:247`. **94 documents** put `lb`/`closer`/`salute`/`gap`
+directly inside a list (measured at corpus `550a8c5c5`: 77 `lb`, 8 closers and 4 salutes with
+text); restoring those as ordinary text moves their `body_hash`, so they are emitted under
+`data-skip` too or the 94 are named in the PR as the stale set. Tests: d84's real shapes
 (`<list type="subject"><head>SUBJECT</head>`, and the labelled list with a `<pb/>` between items)
-reach the HTML in order and `renderingVersion` does not change; and the class test — one `<list>`
-containing every direct-child element the corpus uses (item, label, head, pb, lb, closer, gap,
-salute, note, figure) loses no text and no footnote. Uses R1's harness for a rendered assertion if
-one is wanted, which is why R1 goes first.
+reach the HTML in order and `renderingVersion` does not change; **a Swift/JS parity case in
+`FRUSOffsetEngineTests` on those shapes** — `renderingVersion` hashes only the converter's
+`flatText`, so stray DOM text outside the skip span would misalign highlights while it stays
+unchanged, and only the parity harness sees that (it lives in the same file, so this needs no R1
+lift); a drag starting on a label yields offsets; and the class test — one `<list>` containing
+every direct-child element the corpus uses (item, label, head, pb, lb, closer, gap, salute, note,
+figure) loses no text and no footnote.
 
 ### Lane B — Browse and Research two-pane (iPad)
 
@@ -262,17 +316,29 @@ one is wanted, which is why R1 goes first.
 two-pane is active, and record (a) which title the bar shows at each depth — the level's, or the
 outer container's inline "FRUS Explorer" — and (b) what the People/Topics/Collections
 `.searchable` fields do to the bar's title and subtitle after activate-and-cancel (#1367's
-"observed but not explained" paragraph). Half a day, written up as a comment on #1367.
+"observed but not explained" paragraph), (c) whether the bar subtitle attaches best on the level
+or on the two-pane's `HStack`/empty-path placeholder, and (d) whether a long (~98-character)
+research question truncates acceptably in an inline bar carrying the three persistent toolbar
+items plus the level's own. The repository already predicts (a) — an inner `navigationTitle`
+beats the outer one (the Browse root reads "FRUS Corpus" under an outer "FRUS Explorer",
+`TabBarNavigator.swift:77`), and in the Research two-pane the list sibling's title beats the
+detail's (`ResearchReadingStaysInTabTests.swift:260–261`) — but nothing measures a silent
+`CorpusView`, so the probe still runs. People sets `.large` (`PersonIndexView.swift:132`), so its
+title may again start at the list pane's leading edge. Half a day, written up as a comment on #1367.
 
-**B1 — #1367 with #1363's title half.** If the probe shows the level's title landing on the bar,
-ship that: `CorpusView` stops writing chrome in the two-pane (`showsNavigationChrome`, the flag
-F-2 §7.3 names), and the research question is applied once as the full-width bar's subtitle (drop
-the `!listPaneShown` gate) *or* drawn as a `List` header inside the 340 pt pane (§4 item 8). If
-the probe shows the outer title winning, ship F-2's fallback instead: the detail pane's Back row
+**B1 — #1367 with #1363's title half.** The research question is **the full-width bar's
+subtitle** (§4 item 8, resolved): applied once, the `!listPaneShown` gate dropped, attached where
+B0(c) says. That is the house idiom on regular-width iPad already (Search, the in-place reader,
+the stack path — `ProjectPickerMenu.swift:145–148`), it needs no second path when a document under
+1100 pt drops the list pane, and it does not move when the width crosses 820 pt. For the title: if
+the probe shows the level's title landing on the bar, `CorpusView` stops writing chrome in the
+two-pane (a new `showsNavigationChrome` flag; F-2 §7.3 names that flag, but as a toolbar-overflow
+fallback passed to the levels, so this reuses the name for another purpose). If the probe shows
+the outer title winning, ship F-2's fallback instead: the detail pane's Back row
 becomes a header carrying `breadcrumbLabel` with the header trait, shown at every depth. Either
 way, correct the comments at `CorpusView.swift:72` and `BrowserView.swift:754–760`, and add an iPad
 scenario to `UIObstructionTests` (skips below the 820 pt gate) asserting the `Working on:` element
-lies inside the pane or bar the fix chose, and that the bar's title is the level's, not "FRUS
+lies inside the navigation bar, and that the bar's title is the level's, not "FRUS
 Corpus". A third assertion covers the search variant: after activating and cancelling the People
 search, the title element still exists with an unchanged frame.
 
@@ -309,19 +375,32 @@ when a search narrows the area further. Shared with the Mac Topics window.
 **W1 — #1368.** One shared close action for iOS aux windows, injected as an environment value
 from the scene declarations in `FRUSExplorerApp.swift` (where "this is a window" is known) and
 read by every Done that today calls a bare `dismiss()`; absent, Done falls back to `dismiss()`, so
-sheet presentations are unchanged. The action resolves the launching window (falling back to any
-live main window), asks iPadOS to activate its scene session
-(`UIApplication.shared.activateSceneSession(for:)`), then dismisses. Three enablers: `MainTabView`
-registers its `UISceneSession` beside the `SceneID` it already registers (a small
-`UIViewRepresentable` reading `window?.windowScene?.session`); the six analytics scenes apply
-`.auxWindowOrigin` (six scenes carry it today — document, Source Explorer, graph, word cloud,
-Related Documents, Archival Neighbors — and none of the analytics scenes does); and the nine Done buttons
-plus the `CollectionDetailView` citing-volume path adopt the action. Invert
-`noSceneActivationYet` into a pin that activation exists at exactly one site (widen its needle to
-`activateSceneSession`). The UI test — for each Analysis Tools surface: open, tap Done, assert
-`.runningForeground` and the main tab bar exist — is run against `v2` on one pinned iPad UDID first
-and must fail there; record that simulator's windowing mode (the defect was seen in Full Screen
-Apps mode; Stage Manager was not tested). Owner gate: §4 item 9.
+sheet presentations are unchanged. The action resolves the launching window against
+`UIApplication.shared.openSessions` (not `liveSceneIDs`, which `onDisappear` may clear while the
+session survives), falling back to any live main window and, **when none is left** (closed in
+Stage Manager), requesting a new main scene rather than dropping to the Home Screen; it asks
+iPadOS to activate that session (`UIApplication.shared.activateSceneSession(for:)`), then
+dismisses. Enablers: `MainTabView` registers its `UISceneSession` beside the `SceneID` it already
+registers (a small `UIViewRepresentable` reading `window?.windowScene?.session`); the six
+analytics scenes record their launcher in a **close-only environment key**, *not* by applying
+`.auxWindowOrigin` — that modifier republishes the launcher's borrowed `\.sceneID`, and
+`ArchivalAnalyticsView.swift:530` (`handoff.target == (sceneID ?? .anyWindow)`) would then claim
+scope hand-offs addressed to the launcher, racing `MainTabView.consumePendingArchivalScope`; it
+would also retarget a dozen analytics producers from `nil` to the launcher, a routing change this
+PR does not own. Adopters (§4 item 9, widened): the nine Done buttons, the `CollectionDetailView`
+citing-volume path, **and the six hand-off-then-dismiss exits** that close the window and hand
+content to a backgrounded launcher — `SourceExplorerView.swift:2381`, `ChronologyView.swift:204`
+and `:1206`, `AnalyticsView.swift:1200`, `WordCloudView.swift:1463`/`:1592`/`:1625` — which front
+the hand-off's target before dismissing. Invert `noSceneActivationYet` into a pin that activation
+exists at exactly one site (widen its needle to `activateSceneSession`; the current needle does not
+match it and would keep passing). Correct the stale comments at `AppState.swift:2617` and
+`:3126–3127` and `FRUSExplorerApp.swift:4285`/`:4340–4341`. The UI test — for each Analysis Tools
+surface: open, tap Done, assert `.runningForeground` and the main tab bar exist, plus one hand-off
+exit (Chronology ▸ Search in this range) — is run against `v2` on one pinned iPad UDID first and
+must fail there; record that simulator's windowing mode (the defect was seen in Full Screen Apps
+mode; Stage Manager was not tested). Unverified at runtime and owed to the device run: activation
+being asynchronous against an immediate dismiss (a possible Home Screen flash), and whether a
+session the system disconnected can be activated.
 
 ### Lane A — analytics and chronology
 
@@ -388,12 +467,20 @@ names "All Research Documents". Years: wrap the bounds in `String(_:)` at
 already-string `startYear` sites so the year scan needs no allowlist; move the caption off the
 view into a `nonisolated static` with a test that keeps `lifespanHasNoGroupingSeparator`'s guard
 (proves the platform still groups). Two scans designed together: a `defaultValue:` literal placing
-`%lld`/`%N$lld`/`\(…)` — and a bare `Text("\(…) noun")` interpolation — directly before a countable
-noun fails unless it is one half of a `.one`/`.many` pair, against a **baseline allowlist that may
-only shrink** (the issue counts 131 candidate lines in 94 files); and a `defaultValue:`
-interpolating a bare identifier ending `year`/`Year`, `lowerBound` or `upperBound` fails unless
-wrapped or formatted. Unit-test the helper at 0, 1, 2 and 12,067. Amend every touched block in
-`EditableContent.md`.
+`%lld`/`%N$lld`/`\(…)` — and a bare `Text("\(…) noun")` interpolation, including a ternary inside
+`Text` (the Mac subseries row, `MacCorpusBrowserWindow.swift:419–421`) — directly before a
+countable noun fails unless it goes through `CountCopy` (the `.one`/`.many` exemption is
+restricted to the `%@` + `.formatted()` form, since a paired `%lld` still prints "1000 volumes"
+ungrouped), against a **shrink-only baseline** (§4 item 16, resolved). Size it honestly: the
+issue's "131" counts `%lld` lines only (the "94 files" belongs to its 332 `%lld` lines, not to the
+131), and this scan also matches `\(…)` and bare `Text`, so the baseline is **about 190–270 lines
+in about 85–95 files** depending on the noun list — fix the sites the issues name, list the rest.
+Entries are keyed by **file plus string key** (never line number), a stale entry (listed but no
+longer flagged) fails, and a pinned entry-count ceiling stops a PR adding one; a new count string
+is refused outright. The second scan: a `defaultValue:` interpolating a bare identifier ending
+`year`/`Year`, `lowerBound` or `upperBound` fails unless wrapped or formatted (measured to find
+exactly the five sites above, so it needs no allowlist). Unit-test the helper at 0, 1, 2 and
+12,067. Amend every touched block in `EditableContent.md`.
 
 **C2 — #1380.** The two Mac-only strings say "click" (and `SupportingViews.swift:2126` is checked
 against where Sources actually is on the Mac — a Research rail tile, not a toolbar item). Shared
@@ -408,26 +495,56 @@ literals, fails on `\btap(s|ped|ping)?\b` in Mac-compiled text unless the litera
 
 ### Lane V — Archives Visit
 
-**V1 — #1392.** Recommend the packet-side rule (§4 item 6): strip one trailing period from
-`seeding.citation` before appending anything, then end the line with the packet's own period —
-one rule for the footnote line, the unnumbered branch, the no-plain-number branch and the
-drawn-from " — file" line. The test builds a packet through `TripPacketDataSource` with a real
-manifest entry for the fixture volume, so `citation` comes from `HistoryAtStateCitationFormatter`,
-and asserts no line contains `"., "` or `". —"` and the footnote line ends in the house form.
-Amend the two `archiveVisit.seeding.footnote.*` blocks in `EditableContent.md`.
+**V1 — #1392, a shared strip helper (§4 item 6, resolved).** One helper beside the citation
+formatter returns a citation without its terminal period, so each caller adds its own
+punctuation. The packet uses it for the footnote line, the unnumbered branch, the
+no-plain-number branch and the drawn-from " — file" line (`TripPacketExporter.swift:264–265`,
+`:858–864`), each line ending in the packet's own period. **Collections "See also:" uses it
+too**: it joins formatter citations with `"; "` and prints "…Document 3.; …Document 7." today
+(`PDFCollectionExporter.swift:737`, `DocxCollectionExporter.swift:651`,
+`CollectionItemHTMLRenderer.swift:333–335`), and its contract fixture passes one hand-written
+citation (`CollectionTests.swift:1786`), so nothing sees it. Stripping is safe: History at State
+output always ends in "Document N." or ")." and the `volumeId/documentId` fallback has no period.
+The reason this beats a formatter locator is the " — file" line (a file designation is not a
+locator, so it would still need the strip) and the snapshot rule at `TripPacketModel.swift:102–103`
+— not `CitationFormatterTests`' pinned period, which an optional locator would leave intact. The
+test builds a packet through `TripPacketDataSource` with a real manifest entry for the fixture
+volume, so `citation` comes from `HistoryAtStateCitationFormatter` (it spells "Washington, D.C.",
+not the issue's "Washington"; the fixture id `frus1952-54v01` is not a manifest id — use `p1`),
+and asserts on the **join**: no `"., footnote"`, no `". — file"`, no `".; "`, and the footnote
+line ends in the house form. A bare `!contains("., ")` fails on real data: five manifest volumes
+print "Sanford, Jr., and" in their editor list. A See-also case drives two real formatter
+citations through each exporter. Amend the two `archiveVisit.seeding.footnote.*` blocks in
+`EditableContent.md`. Out of scope, filed separately: document ids that are not `d`+integer (949
+of 314,570, e.g. `d373a`) lose their number from the citation entirely, in both
+`TripPacketBuilder.swift:424–426` and `CollectionContentResolver.swift:977–979`/`:1220–1222`.
 
-**V2 — #1366, after the rule is chosen (§4 item 1).** Under the recommended render-time rule:
-`projectResearchQuestionSeed` reads the research question of the plan's project and reaches the
-builder as the *seed*, `inquiryText` stays the *edit*, and `TripPacketSheet` gets the same seed so
-its "Seeded from your project's research question" caption can be true. All four creation sites
-go through one factory, `ArchiveVisitPlan.make(name:activeProject:)`, which attaches `projectIds`
-as collections and notes already do — picker-created plans carry none today, so the seed join
-would find nothing without it. The factory should *not* copy the question into `inquiryText`
-(Project Home does today), or that one path's draft stops following the project while the other
-three follow it. Correct whichever comment states the losing rule. Tests: derive a factory-made
-plan with an active project and assert `topicSentence.forExport` equals the question, not the
-placeholder; a second fixture sets the question after creation and expects the export to follow;
-remove the three bare `ArchiveVisitPlan(name:)` calls so no site can bypass the factory.
+**V2 — #1366, seeded at creation with an explicit refresh (§4 item 1, resolved).** The rule is
+the editor's own — "an explicit re-seed, never a live mirror" (`ArchiveVisitEditorView.swift:422`,
+`:1305`). All four creation sites go through one factory, `ArchiveVisitPlan.make(name:activeProject:)`,
+which attaches `projectIds` as collections and notes already do **and copies the project's
+research question into `inquiryText`**, as Project Home does today — so the field shows exactly
+what exports, and the draft survives the project's deletion or merge. Remove the three bare
+`ArchiveVisitPlan(name:)` calls (`ArchiveVisitListView.swift:82`,
+`MacArchiveVisitManagerView.swift:136`, `PlanPickerSheet.swift:275`) so no site can bypass it;
+`duplicate()` keeps its own init because it copies both fields. **Re-seed from Project**
+(`ArchiveVisitEditorView.swift:421`, `plan.projectIds.first`) also offers the project's *current*
+question, so a question written after the plan is one explicit tap away; it asks before replacing
+a draft the reader has edited. The sheet's "Seeded from your project's research question" caption
+(`TripPacketSheet.swift:353–355`) is unreachable today — the only construction passes
+`researchQuestion: nil` (`ArchiveVisitEditorView.swift:209`) — so pass the plan's project question
+and show the caption only while `inquiryText` still equals it. Rewrite **both** comments that state
+a rule: the model's (`ArchiveVisitPlan.swift:74–75`, "falls back to the active project's research
+question at render time", which no code does) and the derivation's
+(`ArchiveVisitDerivation.swift:169–173`), and retire the always-nil `projectResearchQuestionSeed`
+or document it as the creation-time copy. **Side effect to state in the PR:** Project Home's Plan a
+Visit is create-or-open on the most recently modified plan whose `projectIds` contain the project
+(`ProjectHomeView.swift:137`, `:398–400`); once picker-created plans carry the active project, it
+may open one of them instead of creating a plan seeded from the project's engaged documents, and
+Re-seed from Project appears on those plans. Tests: a factory-made plan with an active project
+exports the question, not the placeholder; with no active project it exports the placeholder and
+carries no `projectIds`; Re-seed after the question changes offers the new question and does not
+overwrite an edited draft without confirmation.
 
 **V3 — #1377.** A `#if os(macOS)` body for `TripPacketSheet` in the house idiom
 (`ArchiveVisitTierSheet` is the model): header row with the title and the existing `optionsMenu`,
@@ -443,8 +560,16 @@ including `TripPacketSheet`. It will also flag `ChartDataInspectorView` and
 **V4 — #1378.** Measure the width at which every toolbar item shows with a long plan name, set
 `defaultSize` at or above it (the Collections window this one copies opens at 1180 × 760), cap the
 plan-picker label with `.lineLimit(1)` and tail truncation, and record the measured width in the
-PR. Manual: `Docs/macOS-User-Manual.md:926` and the screenshot slot at `:928` name Export packet
-as its own toolbar button (§4 item 7). Owner captures the `:928` slot once V3 and V4 are in.
+PR. The window's `minWidth` stays 640 (`MacArchiveVisitManagerView.swift:76`) and a saved frame
+may not take a new `defaultSize`, so the toolbar can still overflow; hence §4 item 7, resolved:
+**keep the Export packet button and add a macOS-only Export packet item to the ⋯ menu**
+(`moreMenuItems`, `ArchiveVisitEditorView.swift:396–439`, behind `#if os(macOS)` on the Rename
+precedent at `:397–407` — ungated it would appear twice on iPhone, whose consolidated menu already
+lists Export first). The button is icon-only and has no tooltip; give it `.help`, as Collections'
+Export… has (`MacCollectionManagerView.swift:1381`). The manual sentence at
+`Docs/macOS-User-Manual.md:930` then becomes true as written and needs no edit; the screenshot at
+`:932` was filled by #1355 and its caption is already correct. The owner recaptures
+`screenshots/macos/trip-packet.png` once V3 and V4 are in.
 
 ### Lane S — Source Explorer
 
@@ -483,18 +608,38 @@ directories. The three non-display sites (`Collection.swift:881` debug print,
 `DuplicateRecordCleanup.swift:158–159`) are outside the scan's directories and legitimately count
 all entries.
 
-**K2 — #1359.** `iOSContent` titles from the trimmed live `collectionName`, else the localized
-"New Collection"/"Untitled Collection". Then either `navigationTitle(_: Binding<String>)` or a
-corrected comment at `:806` (§4 item 5). UI test on iPad and iPhone: create, name via the
-settings sheet or drill-in, return, assert `app.navigationBars[<name>]`; back out, reopen from
-the list, assert again.
+**K2 — #1359, a live title that follows renames (§4 item 5, resolved).** `iOSContent` titles
+from the saved `collection.name` (trimmed), else the localized "New Collection"/"Untitled
+Collection" — the precedent is `CollectionEntryInspector.swift:207–214`. The editor also
+**follows a rename made elsewhere**: add `collection.name` to `FrontMatterModelSync`
+(`CollectionEditorView.swift:2021–2038`, three flags today) the way the Mac does
+(`MacCollectionManagerView.swift:719–726`); without it, a rename arriving by CloudKit or from a
+second iPad scene is overwritten by the next `saveLive()`, which any edit to the name, note,
+subtitle, author or flags triggers. Delete the `:806` parenthetical ("The canvas also edits the
+name via the toolbar title"): it records a Composer v2 prototype intent that was never built, and
+the PR says so. On the Mac, localize and trim the `:710` title. UI test on iPad and iPhone:
+create, name via the settings sheet or drill-in, return, assert `app.navigationBars[<name>]`;
+back out, reopen from the list, assert again. Unit test: a model-side rename reaches the editor's
+field state.
 
-**K3 — #1360.** Under the recommended preview route (§4 item 4): the resting row shows a
-line-limited `Text` of the block's plain text, which ends in an ellipsis; editing happens in the
-focused row or the entry inspector; any scrolling editor that remains (the macOS `NSTextView`)
-resets to the top in `textDidEndEditing`. UI test: add a prose block, type a paragraph longer than
-the old cap, dismiss the keyboard, assert the row's static text begins with the paragraph's first
-words — at the default size and at a large accessibility size.
+**K3 — #1360, a height-capped editor (§4 item 10, resolved).** Keep the same text view. At rest it
+turns scrolling off, sizes to its content and caps at *N* lines with a trailing ellipsis
+(`isScrollEnabled = false` + `sizeThatFits`, `textContainer.maximumNumberOfLines` +
+`.byTruncatingTail`; `NSTextContainer` has the same two properties on the Mac); the cap lifts when
+editing begins and returns when it ends. A tap goes straight to the caret, formatting stays
+visible, and no new edit surface or focus plumbing is needed — the plan's earlier "edit in the
+entry inspector" did not exist (`CollectionEntryInspector` has document and heading variants only,
+and the Mac excludes prose on purpose, `MacCollectionManagerView.swift:1391–1397`). Make it an
+opt-in flag on the shared `RichTextEditor`, which also backs both Introductions and research notes
+(`CollectionEditorView.swift:1090–1094`, `MacCollectionManagerView.swift:934–938`,
+`ResearchNoteEditorView.swift:219–225`); decide in the PR whether the Introductions adopt it,
+since they have the same clipping. **Spike first (under an hour):** tail truncation in an
+*editable* TextKit 2 view is unmeasured, and touching `layoutManager` falls back to TextKit 1; if
+the spike fails, fall back to a line-limited preview on the `CollectionExcerptRow` precedent
+(`CollectionEntryRows.swift:485–486`, with a full-text `accessibilityLabel`) plus tap-to-edit.
+Either way the scrolling editor resets to the top when editing ends. UI test: add a prose block,
+type a paragraph longer than the old cap, dismiss the keyboard, assert the row's text begins with
+the paragraph's first words — at the default size and at a large accessibility size.
 
 **K4 — #1356 and #1357 in one PR.** `DownloadedVolumesListView` owns a `removingVolumeIds` set
 (inserted when Remove fires, the row drawn with "Removing…" or dropped from `filtered`, cleared
@@ -534,52 +679,67 @@ on a physical iOS 27 device, which the issue could not measure.
 
 ---
 
-## 4. Owner decisions
+## 4. Owner decisions — resolved 2026-09-23
 
-**Blocking a PR that is otherwise ready**
+Every blocking decision was put to the owner after its premises were re-checked against this tree
+and the issue threads (none of the threads records a preference). The owner took the recommended
+option on eleven of the twelve; on release timing the owner set the rule instead (item 11). Seven
+positions changed from the ones this section first carried; the change and its reason are noted
+beside each. §3's lane designs are amended to match.
 
-1. **#1366 — which documented rule.** *Recommend render-time* (option 2): it is what D8 in
-   `Research-Trip-Packet-Scope.md` says ("seeded from the project's research question and
-   editable, and the exporter reads the edited value"), what both manuals say, and what
-   `TripPacketTopicSentence` already models; a reader's edit still wins, so the only draft a later
-   project edit can change is one that never said anything of its own. Creation-time seeding
-   (option 1) keeps the rule the Derivation comment states, but leaves a question written after
-   the plan unreachable and the sheet caption permanently false.
-2. **#1371 — data-skip or flatText.** *Recommend data-skip*: no bump, no stale highlights, the
-   converter's own three precedents. Cost: a highlight cannot begin on "SUBJECT" or "(1)".
-3. **#1370 — where birth and death years live.** Own rollup columns (one more rollup shape, shown
-   as "1923–2023" on its own line) or a display-time read of the authority/POCOM entry (no
-   schema, one more lookup per row). *Recommend the columns*: the rollup is rebuilt anyway at
-   v10, and the People list draws thousands of rows.
-4. **#1370 — the seal.** Add it to `PersonIndexRow` (`PersonIndexEntry` already carries
-   `authorityId`) or remove the claim from both manuals. *Recommend the row*: the manuals have
-   promised it since the seal shipped on the sheet, and the row is where a reader scans.
-5. **#1359 — editable title or corrected comment.** *Recommend the corrected comment* and a
-   live title only: the name already has one editing surface, and a second in the bar is a
-   second place for the two to disagree.
-6. **#1392 — locator in the formatter or strip in the packet.** *Recommend the packet-side
-   strip*: one rule covers all four line shapes, and `CitationFormatterTests`' pinned terminal
-   period stays true for standalone citations.
-7. **#1378 — Export packet stays a toolbar button (fix the manual) or joins the ⋯ menu (make
-   the manual true).** *Recommend the button and the manual fix*: V4's size and label cap end the
-   overflow, and the button is the discoverable form.
-8. **#1367 — the research question as a full-width bar subtitle, or a header inside the 340 pt
-   list pane.** Decide after B0's probe; the bar form is only right if the bar carries the
-   detail level's title, which is what the probe measures.
-9. **#1368 — reverse the "no scene activation" pin.** `noSceneActivationYet` was written as a
-   deliberate marker. #1368 argues, with the Home Screen drop, that the marker recorded a gap
-   rather than a rule. Confirm before W1 starts.
-10. **#1360 — self-sizing editor or preview at rest.** *Recommend preview*: the outline is a
-    table of contents, and a self-sizing row makes a long block dominate it.
-11. **Build 49 timing.** Cut after lane T alone, or hold for lanes A and V as well. The T lane is
-    the only one whose cost (one full re-index) argues for shipping together; the rest can follow
-    in build 50 without cost.
+**Decided**
 
-**Not blocking, but owner-only**
+1. **#1366 — seeded at creation, with an explicit refresh.** *Changed from render-time.* D8 and
+   both manuals are timing-neutral, and the manuals' one timed sentence (iOS `:786`, Mac `:603`)
+   describes creation; the editor's own rule is "an explicit re-seed, never a live mirror"
+   (`ArchiveVisitEditorView.swift:422`). Render-time would have left the field blank while the
+   export printed the question, left existing Project Home plans frozen, and printed the
+   placeholder once a project was merged or deleted. V2 carries the design.
+2. **#1371 — data-skip, hardened.** *Refined.* The stated cost was understated: a selection that
+   starts *or ends* on a label maps to −1 and loses Highlight and Excerpt, and quoted passages
+   omit the numbering. R2 adds `user-select: none` or endpoint snapping (measured), and a Swift/JS
+   parity test, because "`renderingVersion` unchanged" cannot see DOM drift.
+3. **#1370 — life years on the person sheet, read at display time.** *Changed from rollup
+   columns.* The list is lazy, the authority lookup is a hash the sheet already makes, the code
+   chose a display-time read over rollup columns once before (`PersonIndexView.swift:461–465`),
+   and authority-only columns would miss POCOM's 76 gap-fills (Kissinger would read "born 1923").
+   T4 carries the design.
+4. **#1370 — the seal: fix the manuals, not the row.** *Changed from the row.* A row seal would
+   mark ~71% of rows, and `ProvenanceMountTests` records the row as deliberately unbadged. The
+   claim moves to the sheet paragraph; a row marker is left to #234.
+5. **#1359 — a live title that follows renames.** *Refined.* The stated reason ("a second place
+   for the two to disagree") was wrong — a Binding to the same `@State` cannot diverge. The real
+   divergence is an existing bug: the iOS editor overwrites a rename made elsewhere. K2 fixes it.
+6. **#1392 — a shared strip helper.** *Refined from a packet-only strip.* Collections "See also:"
+   has the same bug ("Document 3.; …"). V1 carries the design.
+7. **#1378 — keep the button and add a macOS-only ⋯ item.** *Changed from button + manual fix.*
+   `minWidth` 640 is below the fit width, so the button can still overflow; the ⋯ item keeps it
+   reachable and makes the manual at `:930` true as written. V4 carries the design.
+8. **#1367 — the research question is the full-width bar's subtitle, decided now.** *Changed from
+   "after B0".* It works whichever title wins, it is the house idiom on regular-width iPad, and a
+   list-pane header would move across the 820 pt gate and need a second path when a document
+   drops the list pane. B0 still decides the title mechanism and the attach point.
+9. **#1368 — reverse the pin, and widen W1.** *Refined.* The pin calls itself "a marker, not an
+   endorsement". W1 as first designed missed six hand-off-then-dismiss exits, and its
+   `.auxWindowOrigin` enabler would have raced Archival Analytics against the main window; it now
+   uses a close-only key and requests a new main scene when none is left.
+10. **#1360 — a height-capped editor at rest.** *Changed from a preview.* The preview's edit path
+    did not exist: no inspector edits prose (the Mac excludes it on purpose) and the app has no
+    focus plumbing. A one-hour spike proves the cap first; the preview is the fallback.
+11. **Release timing — after every lane.** *Changed.* Build 48 has not shipped; the owner will
+    finish this plan before releasing on TestFlight. One release, one re-index. (The check had
+    proposed cutting a build now for the three fixes already on `v2`; moot.)
+16. **C1 allowlist — shrink-only.** *Clarified.* The baseline is about 190–270 lines, not 131;
+    entries keyed by file plus string key, stale entries fail, a count ceiling stops additions,
+    and new count strings are refused. C1 carries the design.
+
+**Owner-only, not decisions**
 
 12. Screenshot recaptures: both manuals' chronology captures (after A1 + A3); the macOS packet
-    sheet slot at `macOS-User-Manual.md:928` (after V3 + V4); the people-detail captures if the
-    seal or the active-years line moves (after T4).
+    sheet, `screenshots/macos/trip-packet.png` at `macOS-User-Manual.md:932` (after V3 + V4); the
+    people-detail captures **and both `people-list.png` captures** (iPad and Mac) after T4 — the
+    list captures show text T4 removes ("President of Ghana until July 5", "until August 29, ;
+    thereafter", "Acheson … 1893–1971"), so they need redoing whatever the seal decision.
 13. `PersonAuthorityIndexGenerator` re-run for #1370's role cut (local inputs), ideally in T4's
     week so it rides the v10 rollup bump.
 14. Mac-by-eye checks no test target can make: #1377's sheet, #1378's toolbar at the measured
@@ -587,8 +747,6 @@ on a physical iOS 27 device, which the issue could not measure.
     scan will flag.
 15. #1373 on a physical iOS 27 device; #1368 on an iPad in Stage Manager as well as Full Screen
     Apps mode.
-16. The C1 allowlist policy: whether the baseline of ~131 count sites may only shrink, or
-    whether new count strings are refused outright.
 
 ---
 
@@ -596,7 +754,7 @@ on a physical iOS 27 device, which the issue could not measure.
 
 | Work | Destinations | Why |
 |---|---|---|
-| Lane T | iPhone 17 unit runs per PR; one full re-index on a pinned iOS 27 UDID after T4; iPad + Mac by eye for titles, datelines, People rows | only a re-indexed device shows stored strings; the People list is where T4's six changes meet |
+| Lane T | iPhone 17 unit runs per PR; one full re-index on a pinned iOS 27 UDID after T4 (and again before the release); iPad + Mac by eye for titles, datelines, People rows | only a re-indexed device shows stored strings; the People list is where T4's six changes meet |
 | R1, R2 | iPhone 17 (WKWebView harness) + Mac reader by eye | the CSS and the list markup are shared, but the Mac renders in its own `WKWebView` |
 | B0–B2 | iPad Pro 13-inch (M5), landscape, ≥ 820 pt; iPhone 17 as the control | two-pane only; the control proves the stack path is untouched |
 | B3 | iPad Pro 13-inch, both sidebar and floating-tab-bar representations | the representation persists per install and has no pin |
@@ -623,19 +781,23 @@ scan that is meant to catch a class is run on `v2` first, where it must fail.
 
 Each PR carries its own docs; the wave ends with one sweep. Specifically:
 
-- **Manuals.** `macOS-User-Manual.md:276` (#1364, no Browse Within on the Mac), `:926` and `:928`
-  (#1378, Export packet is a button), both manuals' People paragraphs (#1370, the seal and where
-  active years come from). #1369's and #1372's manual sentences are already right once the fixes
-  land and need no edit.
+- **Manuals.** `macOS-User-Manual.md:276` (#1364, no Browse Within on the Mac); both manuals'
+  People paragraphs (#1370: the seal moves from the list paragraph, `iOS :427` / `macOS :292`, to
+  the sheet paragraph, and the active-years sentence says where active years come from); the
+  prose-row sentences if K3 falls back to the preview (`iOS :860`, `macOS :692`). #1378 needs **no**
+  manual edit: the ⋯ item makes `macOS-User-Manual.md:930` true as written. #1369's and #1372's
+  manual sentences are already right once the fixes land and need no edit.
 - **`Docs/EditableContent.md`.** Every `defaultValue:` this wave rewrites amends its block —
   C1, C2, A4 (#1385), V1, A3 (#1387) at least — in the amendment style PR #1349 set.
 - **Screenshots.** Owner recaptures per §4 item 12; the plan changes no `[SCREENSHOT]` slot text
   except where the manual sentence beside it changes.
 - **`Planning/DEVELOPMENT-PLAN.md`.** One `## Session 2026-09-DD — <title>` entry per PR, in the
   shape the September entries use.
-- **Build 49.** `project.yml` and `project.pbxproj` by hand, `README.md`'s
-  `Current build: **49** (version 0.2)`, and a TestFlight note that owns the single re-index and
-  names what changes on screen because of it.
+- **The release** (after every lane, §4 item 11). If the build number moves, `project.yml` and
+  `project.pbxproj` by hand and `README.md`'s `Current build:` line; `./Scripts/fetch-llama-dsyms.sh`
+  before any archive; and **both** TestFlight files rewritten (they still say "What's New Since
+  Build 46") to own the single re-index, name what changes on screen because of it, and carry
+  #1354, #1376 and #1393, which are already on `v2`.
 
 ---
 
@@ -646,14 +808,55 @@ Each PR carries its own docs; the wave ends with one sweep. Specifically:
   2026-09-23 comment raised.
 - **#1385:** the literal and doc-comment fix ride A4 (same file, same graph); only the scan goes
   to C1. The issue proposes a standalone `CodingStandardsAuditTests` change.
-- **#1366:** the issue offers two rules and asks for a choice; this plan recommends one (render-
-  time) and adds that the factory should stop copying the question into `inquiryText` on the
-  Project Home path, which neither option in the issue states.
+- **#1366:** the issue offers two rules and asks for a choice; the owner chose a third —
+  creation-time seeding on every path (the issue's option 1) plus an explicit refresh through Re-seed
+  from Project, which the issue does not offer.
+- **#1392:** the issue offers a packet strip or a formatter locator; this plan ships the strip as a
+  shared helper so Collections "See also:" is fixed by the same rule.
+- **#1368:** the issue names the Done buttons and one Collections path; this plan adds six
+  hand-off-then-dismiss exits and replaces the `.auxWindowOrigin` enabler with a close-only key.
+- **#1360:** the issue offers a self-sizing editor or a preview; this plan ships a height-capped
+  editor, with the preview as the fallback if the spike fails.
+- **#1378:** the issue says "pick one" of button-plus-manual or ⋯ menu; this plan ships both the
+  button and a macOS-only ⋯ item.
 - **#1373:** the issue puts the warm-up "at launch"; this plan adds why (thirteen tagging files,
   first-scheme failure) and moves the canary into `WordCloudKit` so the generator and the
   Distinctive measure share it.
 - **#1363 / #1367:** the issues propose two title mechanisms; this plan makes a device probe
-  choose between them before either PR is written, and splits #1363's state memory into its own
-  PR because it does not depend on the choice.
+  choose between them before either PR is written, fixes the research question as the bar
+  subtitle regardless, and splits #1363's state memory into its own PR because it does not depend
+  on the choice.
 - **#1370:** the issue lists six fixes as one; this plan keeps them in one PR (they share the two
-  bumps) but marks the generator half as owner-machine work that may lag without costing a bump.
+  bumps) but marks the generator half as owner-machine work that may lag without costing a bump,
+  reads life years on the sheet rather than from the rollup, and fixes the manuals rather than the
+  row.
+
+---
+
+## 8. What the 2026-09-23 check found wrong in this plan
+
+Corrected in place above; listed here so a reader of the first version knows what moved.
+
+- **Stale line numbers.** The Mac manual's Export sentence is at `:930`, not `:926`; the `:928`
+  screenshot slot was filled by #1355 (now an image at `:932` whose caption is already correct).
+  §1's "manual lines ✔" was checked against the tree before `b5175801`.
+- **Cross-references.** K3 cited "§4 item 4" (the seal) for #1360, which is item 10; §2 item 13
+  said "T5", which does not exist (the rollup bump is T4).
+- **Screenshots.** §4 item 12 missed both `people-list.png` captures.
+- **Counts.** C1's "131 candidate lines in 94 files" joined two of the issue's figures; the scan's
+  real baseline is ~190–270 lines.
+- **R2.** The three converter precedents never rendered visible text under `data-skip`; the "four
+  other `.listBlock` switches" are seven; the proposed "`renderingVersion` unchanged" guard cannot
+  see DOM drift; the R1 harness lift is not needed for R2's guard; 94 documents put `lb`, closers
+  and salutes directly in a list and would change hash if restored as ordinary text.
+- **W1.** Missed six window-closing exits; the `.auxWindowOrigin` enabler would have created an
+  Archival scope race; the existing needle would not have caught `activateSceneSession`.
+- **K3.** "Edit in the entry inspector" named a surface that does not exist for prose.
+- **V1.** The proposed `!contains("., ")` guard fails on real manifest text; the stated reason for
+  the strip (the pinned period) did not distinguish the options.
+- **V2.** Both options silently change Project Home's Plan a Visit create-or-open; the sheet
+  caption was unreachable rather than false; both rule-stating comments need rewriting, not one.
+- **T4 / #1370.** The pipeline never reads POCOM, so the "1923–2023" line the first version
+  promised could not have come from rollup columns filled the way the rollup is filled today.
+- **The release steps** named one TestFlight note (there are two, both stale since build 46) and
+  omitted the `fetch-llama-dsyms.sh` gate #1350 added.
