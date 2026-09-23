@@ -145,6 +145,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.12 — `checkCloudKitHealth()` skips the private-zone check when the account is not `.available`
 ///          (`zoneCheckApplies(afterAccountStatus:)`), leaving `cloudKitZoneVerified` `nil`: a signed-out
 ///          device read as "zone missing". The four iCloud facts are shown through `iCloudStatusSummary`
+///   4.13 — `checkCloudKitHealth()` no longer writes an unavailable account into `cloudKitSyncState` (it
+///          titled the iOS banner "iCloud Sync Failed" and went stale after sign-in), and a FAILED zone
+///          listing records `nil` rather than `false` (`zoneVerification(listedZoneNames:)`)
 
 // MARK: - CloudKitSyncState
 
@@ -395,8 +398,9 @@ final class AppState {
 
     /// Whether the iCloud private zone required for CloudKit sync exists on the server.
     ///
-    /// `nil` = not yet verified, or unknowable because the account is not `.available` (a
-    /// private database cannot be listed without one); `true` = zone found and sync should work;
+    /// `nil` = not yet verified, or unknowable — the account is not `.available` (a private
+    /// database cannot be listed without one) or the listing itself failed; `true` = zone found
+    /// and sync should work;
     /// `false` = zone missing — records cannot be uploaded or downloaded until
     /// NSPersistentCloudKitContainer recreates it (typically on next cold launch).
     ///
@@ -418,12 +422,16 @@ final class AppState {
     private static let ckZoneName = "com.apple.coredata.cloudkit.zone"
 
     /// Checks iCloud account status and private zone existence, then updates
-    /// `cloudKitAccountStatus`, `cloudKitZoneVerified`, and (on failure) `cloudKitSyncState`.
+    /// `cloudKitAccountStatus` and `cloudKitZoneVerified`.
     ///
-    /// An unavailable account is written into `cloudKitSyncState` as `.failed` too, which the
-    /// iOS workspace banner reads — so the account and the event channel say the same thing, and
-    /// a view must show them through `iCloudStatusSummary` or it shows that thing twice. The zone
-    /// is checked only when `zoneCheckApplies(afterAccountStatus:)` says the account can answer.
+    /// It does NOT touch `cloudKitSyncState`, which is the sync-EVENT channel. It used to write an
+    /// unavailable account's description there as `.failed`, so the account problem reached the
+    /// iOS banner titled "iCloud Sync Failed" and outlived the problem: once the user signed in,
+    /// the stale text stayed until the next sync event, and Settings showed "Sync Error — Not
+    /// signed in" to a signed-in user. Every surface now reads the account through
+    /// `iCloudStatusSummary`, so the write carried nothing the surfaces lacked. The zone is checked
+    /// only when `zoneCheckApplies(afterAccountStatus:)` says the account can answer, and its result
+    /// is read through `zoneVerification(listedZoneNames:)`.
     ///
     /// Safe to call repeatedly — idempotent apart from logging. Call at launch
     /// (from `FRUSExplorerApp.bootApp()`) and on every foreground transition so
@@ -443,7 +451,6 @@ final class AppState {
                 let status = try await container.accountStatus()
                 cloudKitAccountStatus = status
                 if status != .available {
-                    cloudKitSyncState = .failed(Self.accountStatusDescription(status))
                     cloudKitLog.notice("account status not available: \(status.rawValue, privacy: .public)")
                     Task { await SyncDiagnosticsLog.shared.record(
                         phase: "account", startDate: nil, endDate: Date.now, succeeded: false,
@@ -478,7 +485,8 @@ final class AppState {
             }
             do {
                 let zones = try await container.privateCloudDatabase.allRecordZones()
-                cloudKitZoneVerified = zones.contains { $0.zoneID.zoneName == Self.ckZoneName }
+                cloudKitZoneVerified = Self.zoneVerification(
+                    listedZoneNames: zones.map { $0.zoneID.zoneName })
                 if cloudKitZoneVerified == false {
                     cloudKitLog.notice("private zone not found — records will not sync until recreated")
                     Task { await SyncDiagnosticsLog.shared.record(
@@ -488,7 +496,11 @@ final class AppState {
                         phase: "zone", startDate: nil, endDate: Date.now, succeeded: true) }
                 }
             } catch {
-                cloudKitZoneVerified = false
+                // A listing that FAILED says nothing about the zone. This used to record `false`,
+                // so a transient network error at launch read as a deleted zone — a red status row
+                // on both platforms, and, now that the workspace banner announces a missing zone,
+                // a red banner too. The failure still reaches Sync Diagnostics just below.
+                cloudKitZoneVerified = Self.zoneVerification(listedZoneNames: nil)
                 let ns = error as NSError
                 cloudKitLog.error("zone verification failed: \(ns.domain, privacy: .public) code=\(ns.code, privacy: .public)")
                 let inspection = CloudKitErrorInspector.inspect(ns)   // Wave R-6; see above.
@@ -515,6 +527,17 @@ final class AppState {
     static func zoneCheckApplies(afterAccountStatus status: CKAccountStatus?) -> Bool {
         guard let status else { return true }
         return status == .available
+    }
+
+    /// What a private-zone listing establishes about the sync zone.
+    ///
+    /// `nil` when the listing failed (`listedZoneNames == nil`): a failed listing is not evidence
+    /// of absence, and a missing zone is only ever a listing that SUCCEEDED without it. Otherwise
+    /// whether the listing names `com.apple.coredata.cloudkit.zone`. Internal so
+    /// `ICloudStatusSummaryTests` can pin it; `checkCloudKitHealth()` calls it on both paths.
+    static func zoneVerification(listedZoneNames: [String]?) -> Bool? {
+        guard let listedZoneNames else { return nil }
+        return listedZoneNames.contains(ckZoneName)
     }
 
     /// Human-readable description of a `CKAccountStatus` value for display and logging.

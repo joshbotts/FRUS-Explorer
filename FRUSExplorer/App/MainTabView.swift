@@ -464,9 +464,7 @@ struct MainTabView: View {
             hasBatch: appState.indexingBatch != nil,
             hasCompletedMetadata: appState.completedIndexingMetadata != nil,
             downloadQueueIsEmpty: appState.downloadQueue.isEmpty,
-            syncIsWorthShowing: SyncStatusBanner.isWorthShowing(
-                state: appState.cloudKitSyncState,
-                cloudKitEnabled: appState.cloudKitSyncEnabled)
+            syncIsWorthShowing: SyncStatusBanner.isWorthShowing(appState.iCloudStatusSummary)
         ) {
         case .hidden:
             // #1070: nothing in this inset renders while the keyboard is up — the inset floats
@@ -477,8 +475,7 @@ struct MainTabView: View {
         // the banner frees up.
         case .sync:
             SyncStatusBanner(
-                state: appState.cloudKitSyncState,
-                cloudKitEnabled: appState.cloudKitSyncEnabled,
+                summary: appState.iCloudStatusSummary,
                 onOpenSettings: {
                     appState.openTab(.settings, from: SceneID(sceneIDToken))
                 }

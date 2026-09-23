@@ -22,8 +22,9 @@ import CloudKit
 /// **Account Issue** — because the view rendered each of `AppState`'s iCloud facts on its own.
 /// All three were true at once, and each is a real state of `AppState` on that device:
 ///
-/// - `checkCloudKitHealth()` writes the account description into `cloudKitSyncState` as `.failed`,
-///   so the event channel said "Sync Error" with the account's own words;
+/// - `checkCloudKitHealth()` wrote the account description into `cloudKitSyncState` as `.failed`,
+///   so the event channel said "Sync Error" with the account's own words (it no longer does, but
+///   an event can still fail for the same underlying reason, so the fixtures keep the combination);
 /// - the zone check listed a private database that cannot be listed without an account, and the
 ///   failed listing read as "zone missing";
 /// - and the account status itself said `.noAccount`, which was the only cause.
@@ -36,12 +37,14 @@ import CloudKit
 ///
 /// Version history:
 ///   1.0 — one status row for a signed-out device
+///   1.1 — the zone-listing rule (a failed listing is unknown, not missing) and the three
+///          `checkCloudKitHealth()` wirings a unit test cannot drive, pinned by source
 @Suite("iCloud status summary")
 @MainActor
 struct ICloudStatusSummaryTests {
 
-    /// The redacted text the health check writes into the event channel for a signed-out device —
-    /// taken from the real function, so the fixture is the state the device was actually in.
+    /// The redacted text the health check used to write into the event channel for a signed-out
+    /// device — taken from the real function, so the fixture is the state the device was actually in.
     private var signedOutMessage: String { AppState.accountStatusDescription(.noAccount) }
 
     // MARK: - The reported screen
@@ -189,6 +192,42 @@ struct ICloudStatusSummaryTests {
             #expect(!AppState.zoneCheckApplies(afterAccountStatus: status),
                     Comment(rawValue: "the zone check ran for account status \(status.rawValue)"))
         }
+    }
+
+    /// A missing zone is a listing that SUCCEEDED without it. A listing that failed — offline at
+    /// launch, a rate limit — establishes nothing, and used to be recorded as missing: a red row,
+    /// and now that the workspace banner announces a missing zone, a red banner too.
+    @Test("A failed zone listing is unknown; only a successful one can find the zone missing")
+    func failedListingIsNotAMissingZone() {
+        #expect(AppState.zoneVerification(listedZoneNames: nil) == nil,
+                "a failed listing was recorded as a verdict")
+        #expect(AppState.zoneVerification(listedZoneNames: []) == false)
+        #expect(AppState.zoneVerification(listedZoneNames: ["some.other.zone"]) == false)
+        #expect(AppState.zoneVerification(
+            listedZoneNames: ["some.other.zone", "com.apple.coredata.cloudkit.zone"]) == true)
+    }
+
+    /// `checkCloudKitHealth()` and the CloudKit event observer need a live `CKContainer`, so the
+    /// three rules they apply are pinned by the lines that apply them — each the exact call, so a
+    /// comment explaining the rule cannot satisfy it:
+    ///
+    /// - the account check no longer writes into the sync-EVENT state (it titled the iOS banner
+    ///   "iCloud Sync Failed" and outlived a sign-in);
+    /// - the zone listing's failure path goes through `zoneVerification(listedZoneNames:)`;
+    /// - a successful `setup` event re-runs the health check, so a zone that setup was still
+    ///   creating at launch is not left recorded as missing.
+    @Test("The health check's CloudKit-bound wiring applies the tested rules")
+    func healthCheckWiring() throws {
+        let appState = try appSource("FRUSExplorer/App/AppState.swift")
+        #expect(!appState.contains("cloudKitSyncState = .failed(Self.accountStatusDescription"),
+                "the account check writes into the sync-event state again")
+        #expect(appState.contains("cloudKitZoneVerified = Self.zoneVerification(listedZoneNames: nil)"),
+                "the failed-listing path no longer goes through zoneVerification(listedZoneNames:)")
+        #expect(!appState.contains("cloudKitZoneVerified = false"),
+                "a hard-coded missing-zone verdict is back")
+        let app = try appSource("FRUSExplorer/App/FRUSExplorerApp.swift")
+        #expect(app.contains(#"if phase == "setup" { appState.checkCloudKitHealth() }"#),
+                "a successful setup event no longer re-runs the health check")
     }
 
     // MARK: - The views read the summary, not the facts

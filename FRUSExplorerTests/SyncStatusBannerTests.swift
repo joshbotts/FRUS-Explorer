@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import CloudKit
 @testable import FRUSExplorer
 
 // MARK: - SyncStatusBannerTests
@@ -19,45 +20,116 @@ import Foundation
 /// only `SettingsView`, three taps from the workspace. A state whose entire purpose is "your
 /// data is silently not moving" was living where nobody would look.
 ///
-/// The banner is deliberately **quiet**. It speaks for local-only and for failure — the two
-/// states a researcher can act on — and says nothing while sync is healthy or merely in flight.
-/// A spinner on every import would be its own churn, which is the thing #665 was filed about.
+/// The banner is deliberately **quiet**. It speaks for local-only, an account problem, a missing
+/// sync zone and a failure — the states a researcher can act on — and says nothing while sync is
+/// healthy or merely in flight. A spinner on every import would be its own churn, which is the
+/// thing #665 was filed about.
+///
+/// ## Why it reads the summary
+/// It used to read the raw event state, and the account check wrote an unavailable account into
+/// that state as a failure — so a researcher who had never signed in to iCloud was shown
+/// **iCloud Sync Failed**. The banner now reads `ICloudStatusSummary`, the one status the Settings
+/// row and the macOS status bar show, and the wording tests below drive `content(for:)` — the
+/// function the view renders — rather than a copy of it.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #665
+///   1.1 — the banner reads `ICloudStatusSummary`: an account problem is titled as one, and a missing
+///          sync zone is announced
 @Suite("iCloud workspace indicator")
+@MainActor
 struct SyncStatusBannerTests {
+
+    /// The failure title, taken from the function under test so no assertion restates the string.
+    private var failedTitle: String? {
+        SyncStatusBanner.content(for: .failed(message: "x"))?.title
+    }
 
     // MARK: - What it speaks for
 
     /// The state that matters most: work done now does not leave this device.
-    @Test("Local-only always shows, whatever the sync state says")
-    @MainActor
-    func localOnlyAlwaysShows() {
-        for state: CloudKitSyncState in [.unknown, .syncing, .succeeded(.now), .failed("x")] {
-            #expect(SyncStatusBanner.isWorthShowing(state: state, cloudKitEnabled: false),
-                    Comment(rawValue: "local-only was silent for \(state)"))
+    @Test("Local-only shows, with or without a diagnostic")
+    func localOnlyShows() throws {
+        for diagnostic: String? in [nil, "CKErrorDomain serverRejectedRequest"] {
+            let content = try #require(SyncStatusBanner.content(for: .localOnly(diagnostic: diagnostic)))
+            #expect(content.title == "Local Only")
+            #expect(content.systemImage == "icloud.slash")
         }
     }
 
-    @Test("A failure shows")
-    @MainActor
-    func failureShows() {
-        #expect(SyncStatusBanner.isWorthShowing(state: .failed("Quota exceeded"),
-                                                cloudKitEnabled: true))
+    /// **The defect this version fixes.** An account that is not available is an account problem,
+    /// and the banner must say so in the account's own words — never "iCloud Sync Failed", which is
+    /// what a signed-out researcher was told while the banner read the raw event state.
+    @Test("An unavailable account is titled as one, not as a failed sync",
+          arguments: [CKAccountStatus.noAccount, .restricted, .couldNotDetermine,
+                      .temporarilyUnavailable])
+    func accountProblemIsNotASyncFailure(status: CKAccountStatus) throws {
+        let content = try #require(SyncStatusBanner.content(for: .accountUnavailable(status)))
+        #expect(content.title == "iCloud Account Issue")
+        #expect(content.title != failedTitle,
+                "an account problem was announced as a failed sync")
+        #expect(content.detail == AppState.accountStatusDescription(status),
+                "the detail must be the account's own explanation, the words the Settings row shows")
+    }
+
+    /// A missing zone means nothing uploads or downloads — the silent failure the zone check
+    /// exists for. It is announced now that a failed LISTING records "unknown", not "missing".
+    @Test("A missing sync zone shows")
+    func zoneMissingShows() throws {
+        let content = try #require(SyncStatusBanner.content(for: .zoneMissing))
+        #expect(content.title == "iCloud Sync Zone Missing")
+        #expect(content.systemImage == "exclamationmark.icloud.fill")
+    }
+
+    @Test("A failure shows, with the observer's message as its detail")
+    func failureShows() throws {
+        let content = try #require(SyncStatusBanner.content(for: .failed(message: "Quota exceeded")))
+        #expect(content.title == "iCloud Sync Failed")
+        #expect(content.detail == "Quota exceeded")
     }
 
     // MARK: - What it stays quiet about
 
     /// **The restraint is the feature.** A banner that appears on every import would interrupt
     /// the workspace on exactly the schedule #665 complained about.
-    @Test("A healthy or in-flight sync says nothing")
-    @MainActor
+    @Test("A healthy, in-flight or idle sync says nothing")
     func healthySyncIsSilent() {
-        for state: CloudKitSyncState in [.unknown, .syncing, .succeeded(.now)] {
-            #expect(!SyncStatusBanner.isWorthShowing(state: state, cloudKitEnabled: true),
-                    Comment(rawValue: "the banner interrupted for \(state)"))
+        for summary: ICloudStatusSummary in [.syncing, .succeeded(.now), .idle] {
+            #expect(SyncStatusBanner.content(for: summary) == nil,
+                    Comment(rawValue: "the banner spoke for \(summary)"))
+            #expect(!SyncStatusBanner.isWorthShowing(summary),
+                    Comment(rawValue: "the banner interrupted for \(summary)"))
         }
+    }
+
+    /// `isWorthShowing` is what reserves the inset, and `content(for:)` is what draws in it. If the
+    /// two disagreed the host would reserve space for a banner that renders nothing, or the reverse.
+    @Test("isWorthShowing agrees with what the banner would draw")
+    func visibilityAgreesWithContent() {
+        let every: [ICloudStatusSummary] = [
+            .localOnly(diagnostic: nil), .accountUnavailable(.noAccount), .zoneMissing,
+            .failed(message: "x"), .syncing, .succeeded(.now), .idle,
+        ]
+        for summary in every {
+            #expect(SyncStatusBanner.isWorthShowing(summary)
+                        == (SyncStatusBanner.content(for: summary) != nil),
+                    Comment(rawValue: "visibility and content disagree for \(summary)"))
+        }
+    }
+
+    /// The reported device, end to end: a live `AppState` that is signed out AND has a failed sync
+    /// event (the container's own setup fails for the same reason) must reach the banner as the
+    /// account problem. Read through the same property `MainTabView` passes the banner.
+    @Test("A signed-out device with a failed event is shown the account, not the failure")
+    func signedOutAppStateReachesTheBannerAsTheAccount() throws {
+        let appState = AppState()
+        appState.cloudKitSyncEnabled = true
+        appState.cloudKitSyncState = .failed("CKErrorDomain notAuthenticated")
+        appState.cloudKitAccountStatus = .noAccount
+        appState.cloudKitZoneVerified = nil
+        let content = try #require(SyncStatusBanner.content(for: appState.iCloudStatusSummary))
+        #expect(content.title == "iCloud Account Issue")
+        #expect(content.detail == AppState.accountStatusDescription(.noAccount))
     }
 
     // MARK: - Wiring

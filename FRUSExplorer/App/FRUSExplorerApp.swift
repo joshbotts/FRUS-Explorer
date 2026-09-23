@@ -239,6 +239,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.14 — The Corpus Analytics UI-test idle stall: `configureUITestAnimations()` turns UIKit view
 ///          animations off for a UI test that sets `FRUS_UI_TEST_DISABLE_ANIMATIONS`, because on
 ///          iOS 27 system animations unbalance the counter XCTest waits on. Inert without it.
+///   4.15 — A successful CloudKit `setup` event re-runs `checkCloudKitHealth()`, so the launch
+///          zone check cannot leave a zone that setup was still creating recorded as missing.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2691,6 +2693,13 @@ struct FRUSExplorerApp: App {
                         appState.cloudKitSyncState = .syncing
                     } else if succeeded {
                         appState.cloudKitSyncState = .succeeded(endDate)
+                        // A completed SETUP has just created or confirmed the private sync zone.
+                        // The launch health check (end of `bootApp()`) races it: on an iCloud
+                        // account that has never held this app's zone, a listing taken before
+                        // setup finishes finds no zone and records it MISSING — which the iOS
+                        // workspace banner announces in red. Re-checking here takes that verdict
+                        // against the zone setup made, once per launch (and per account change).
+                        if phase == "setup" { appState.checkCloudKitHealth() }
                         // A completed import may have brought down updated settings; pull them
                         // into UserDefaults if this device syncs settings — **debounced**
                         // (#665).
