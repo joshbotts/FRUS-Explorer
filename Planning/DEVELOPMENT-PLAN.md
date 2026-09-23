@@ -18136,3 +18136,59 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
+
+## Session 2026-09-23 — A source note's classification chip is drawn whole again, and a list inside a footnote stops hanging into the number column
+
+**The question:** lane R's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1386, found while capturing the #1081 Mac screenshots: in the reader's Footnotes list,
+`frus1961-63v14/d201`'s source note carries a *Top Secret; Niact* chip whose first word is drawn
+outside the capsule's left border.
+
+**The cause is #985's hanging indent, inherited.** #985 hung each printed footnote number in the
+margin with `padding-left: 2.2em; text-indent: -2.2em` on `li.fn-list-item`. `text-indent` is
+inherited and applies to the first line of every block container, and an inline-block is one;
+#985 reset its own label and nothing else. The chip is an inline-block appended to the same `li`,
+so its one line was indented −24.2 px at Medium (−2.2 × the 11 px footnote size) while its border
+and padding stayed put and its shrink-to-fit width lost the same amount. A `.frus-list` inside a
+note inherited the same value, pulling each item's first line into the number column — not seen in
+the app, but #1386's scan counts 518 such notes in 173 volumes.
+
+**The fix is one rule, `.fn-list-item > * { text-indent: 0; }`** (`HTMLTemplate.swift:415`). The
+item's own first line still hangs, because that indent is the `li`'s own value; every direct child
+— the label, the inline `p.body`, the chip, a list — computes 0 and passes 0 down. The rule rides
+`HTMLTemplate.documentCSS`, so it also reaches the HTML collection export
+(`CollectionItemHTMLRenderer.swift:723`), where only the list half applied: exports emit no chip.
+
+**The test is the first in the unit suite that loads the stylesheet.**
+`ClassificationChipSerializationTests` pinned the chip's markup, and the markup was right.
+`FootnoteListIndentRenderTests` (`FRUSRenderNodeHTMLSerializerTests.swift:756`) builds the page
+through `HTMLTemplate.build` — the call both reader representables make — for that suite's own
+`sourceWithMarking` fixture (now `static`, so the chip measured is the chip pinned) and a note
+holding a simple `.listBlock`, loads it into `OffsetEngineTestHarness` (internal rather than
+private now, with an `evaluateString` for JSON-returning scripts), and reads computed style and
+layout. The sweep asserts that every descendant of `li.fn-list-item` whose computed `display` is
+not `inline` computes `text-indent: 0px`, and guards itself: both notes must render as items,
+each item must still compute a NEGATIVE indent (#985's hang intact — and a sweep of zeroes under
+an item that no longer hangs would prove nothing), and the elements visited must include the chip
+and an item of the note's list. The second test asserts, at all four text sizes, that the chip's
+text starts no earlier than its padding edge and ends inside its border.
+
+**A/B on iPhone Air, iOS 26.3 (`60AB3371`).** On `v2`'s stylesheet: `✘ Test run with 2 tests in
+1 suite failed … with 9 issues` — the sweep named 4 of 6 non-inline descendants at `-24.200001px`
+(the chip, the `ul`, both list items), and the chip's text started 10.8 / 15.2 / 19.6 / 24.0 px
+left of its border at Small / Medium / Large / Extra Large. **The issue's rejected fix was run as
+a mutant** — `text-indent: 0` on `.classification-chip` alone: the chip test passed and the sweep
+still failed, naming 3 of 6 (the `ul` and both items), so a chip-only reset cannot pass this
+suite. With the fix: `✔ Test run with 107 tests in 5 suites passed` — the new suite plus the
+serializer, highlight-injection, chip-serialization and offset-engine suites, the last two being
+the fixture's and the harness's other users.
+
+**The Mac reader shares the stylesheet and was measured, not assumed.** `_FRUSDocumentWebViewMac`
+builds its page with the same `HTMLTemplate.build` (`FRUSDocumentWebView.swift:658`; iOS at
+`:769`). The unit target is iOS-only, so a scratch script loaded the stylesheet — read verbatim
+out of `HTMLTemplate.swift` — with the serializer's footnote markup into a macOS `WKWebView` on
+macOS 27.0 (26A428): before the rule, the chip's text began 15.2 px left of its border in a
+56.6 px box and the list item's first line 24.2 px left of its box; after it, the text begins
+9 px inside (1 px border + 8 px padding) an 80.8 px box and the list item starts at its box edge.
+The owner's look at d201 in the Mac reader itself is still owed. Render-only: no index bump (the
+Footnotes section sits outside the offset engine's root) and no build bump.
