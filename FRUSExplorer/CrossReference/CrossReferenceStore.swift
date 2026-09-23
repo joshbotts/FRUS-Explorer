@@ -345,12 +345,19 @@ public actor CrossReferenceStore {
     /// on a full index: 8,474 of 316,839 documents (2.7%), almost all editorial notes.
     /// `CollectionEntryInspector` was the only site that had hand-written `!header.isEmpty`.
     ///
+    /// **That population measured the parser, not the corpus** (#1372). Every one of the 8,467
+    /// editorial notes prints a `<head>`; the parser wraps a note's children in one
+    /// `.editorialNote` node and `extractHeader` did not read through it. From index v55 it does,
+    /// and **7 documents in the corpus are headerless** — none of them notes. The omission below
+    /// still matters for those seven and for any index not yet rebuilt.
+    ///
     /// Omitting is the right shape rather than a convenience: this method answers *what is this
     /// document called*, and a headerless document has no answer. **Membership is a different
-    /// question and has its own method** — ``indexedDocumentKeys(for:)`` — which no caller may now
-    /// substitute this one for. Verified before the change: not one call site read `.keys` or
-    /// `.contains` on this dictionary; all seven look up by key. `CrossReferenceAnalyticsView`
-    /// already asks both questions separately, which is what made the split safe.
+    /// question and has its own answers** — ``indexedDocumentKeys(for:)``, or key presence in
+    /// ``documentTitleFacts(for:)`` — which no caller may now substitute this one for. Verified
+    /// before the change: not one call site read `.keys` or `.contains` on this dictionary; all
+    /// seven look up by key. `CrossReferenceAnalyticsView` asked both questions separately, which
+    /// is what made the split safe; since #1372 it asks both of `documentTitleFacts` in one query.
     /// **Batched, one query per (volume, chunk) rather than one per key.** The per-key loop this
     /// replaces cost N round-trips and N `LEFT JOIN`s onto `document_dates` for a column it never
     /// read — `fetchMetadata` selects five columns and joins; a header lookup needs one column and
@@ -395,7 +402,10 @@ public actor CrossReferenceStore {
     /// document indexed?" signal, distinct from a citation into an un-downloaded volume (#278).
     /// Keyed `"volumeId/documentId"`.
     ///
-    /// **This is now the only method that answers membership, and the distinction is real.** An
+    /// **It answers membership, and the distinction from ``documentHeaders(for:)`` is real.** Key
+    /// presence in ``documentTitleFacts(for:)`` is the same signal, and since #1372 that is what
+    /// Cross-Reference Analytics reads, so this method has no production caller; it stays as the
+    /// membership primitive its tests pin, for a caller that needs membership and nothing else. An
     /// earlier comment here claimed a headerless editorial note "has a nil header", implying
     /// `documentHeaders` already omitted it; it did not — `extractHeader` returns `""`, the column
     /// is `TEXT NOT NULL`, and `sqlite3_column_text` returns non-NULL for a zero-length value, so
@@ -451,7 +461,15 @@ public actor CrossReferenceStore {
     /// useful, since `d304` names the record rather than describing it. Every one of those notes
     /// carries a `document_number`, so a caller can render *Editorial Note 304* instead.
     ///
-    /// Keys with no row are omitted, as everywhere else in this file.
+    /// **Those notes were headerless only in the index** (#1372): all 8,467 print a head, and
+    /// from index v55 `extractHeader` stores it — *245. Editorial Note*, or one of 825 real titles
+    /// such as *Memorandum by Prime Minister Churchill*. On a current index `header` is therefore
+    /// non-nil for every note. It is not always a name: about 2,676 notes print only *Editorial
+    /// Note* or a variant, which `DocumentDisplayTitle` still numbers.
+    ///
+    /// Keys with no row are omitted, as everywhere else in this file — so **a key's presence is
+    /// the membership signal**: present exactly when the document is in `document_cache`, whatever
+    /// its header. Cross-Reference Analytics relies on that (#1372).
     public func documentTitleFacts(
         for keys: [(volumeId: String, documentId: String)]
     ) throws -> [String: DocumentTitleFacts] {

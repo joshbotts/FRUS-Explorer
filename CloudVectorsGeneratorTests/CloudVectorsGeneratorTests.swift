@@ -55,8 +55,8 @@ struct TEIBodyTextExtractorTests {
     @Test("Footnote text is INCLUDED — the app's plainText includes footnote subtrees")
     func includesFootnotes() {
         // Not an oversight: `FRUSASTNode.plainText` returns footnote children, and
-        // `extractBodyText` uses it. `plainTextExcludingFootnotes` exists separately and is
-        // used only for headers. Excluding them here would diverge from what the app counts.
+        // `extractBodyText` uses it. `printedText(excludingFootnotes: true)` exists separately and
+        // is used only for headers. Excluding them here would diverge from what the app counts.
         let xml = #"<div type="document" xml:id="d1"><p>Treaty signed<note n="1"><p>Telegram 42.</p></note> in Geneva.</p></div>"#
         let docs = TEIBodyTextExtractor.documents(in: xml)
         #expect(docs[0].bodyText.contains("Telegram 42."))

@@ -522,15 +522,29 @@ public final class DocumentViewModel {
             // header — measured over all 316,839 rows of the live index — was already clean.
             // One definition: `extractHeader` excludes footnote subtrees at any depth, and a
             // title here is now the same string the index would store.
-            let extracted = IndexingPipeline.extractHeader(from: ast.nodes)
-            if !extracted.isEmpty { documentTitle = extracted }
-
+            //
             // Resolve the canonical document number from the parsed document (the div's
             // `@n` — the history.state.gov number — with the head-text heuristic as
             // fallback) so the citation carries it regardless of how this document was
             // opened (a cross-reference tap, say, builds the entry without it).
             resolvedDocumentNumber = ast.printedNumber
                 ?? IndexingPipeline.extractDocumentNumber(from: ast.nodes)
+            // Named by the same rule as every list (#1372): an editorial note whose printed head
+            // only says *Editorial Note* — 2,560 of them — is titled *Editorial Note 2*, so the
+            // title agrees with the row the reader tapped. Anything else keeps its printed head,
+            // and a document with no head keeps the title it was opened with.
+            let extracted = IndexingPipeline.extractHeader(from: ast.nodes)
+            let isEditorialNote: Bool = {
+                if case .editorialNote? = ast.nodes.first { return true }
+                return false
+            }()
+            if !extracted.isEmpty || isEditorialNote {
+                documentTitle = DocumentDisplayTitle.text(
+                    .init(header: extracted.isEmpty ? nil : extracted,
+                          documentNumber: resolvedDocumentNumber,
+                          isEditorialNote: isEditorialNote),
+                    documentId: entry.documentId)
+            }
 
             // Store plain text for summarization before converting to render model
             documentPlainText = SummarizationService.documentText(from: ast.nodes)

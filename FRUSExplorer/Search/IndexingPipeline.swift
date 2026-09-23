@@ -305,6 +305,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         serial in one seek, stepped through `auxStep`) replaces `despatchSerial(volumeId:documentId:)`;
 ///         `cachedVolumeStructure` steps through `auxStep` too, so a read fault throws rather than
 ///         reading as no structure
+///  4.15 — 2026-09-23 (#1375, #1372): stored titles and datelines join their pieces the way the
+///         page prints them (`FRUSASTNode.joinPrinted`) instead of with a space at every markup
+///         boundary, and `extractHeader` reads an editorial note's head through its wrapper.
+///         `currentDateIndexVersion` → 55 (see the v55 note there).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -867,7 +871,34 @@ public actor IndexingPipeline {
     ///   rendering is the day they meant. Where it names a different instant the attribute still
     ///   wins — 50 of those 51 rows are the app and the stylesheet choosing different `<date>`
     ///   NODES, a separate and smaller divergence this deliberately does not touch.
-    public static let currentDateIndexVersion: Int = 54
+    /// - v54→55 — #1375 and #1372, two defects in the one function every list reads a title
+    ///   from. (1) `extractHeader` and `extractDateline` joined a node's children with a space.
+    ///   The parser already keeps the one space the XML had at a text/element boundary and drops
+    ///   whitespace-only runs, so the join was redundant wherever the XML had a space and invented
+    ///   one wherever it had none — inside parentheses and before punctuation, which is how the
+    ///   corpus writes a name (`(<persName>Kennan</persName>)`) and a closing stop. Measured over
+    ///   the 553 manifest volumes on a full index: **214,223 of 306,097 stored titles (70.0%) and
+    ///   290,968 of 300,758 stored datelines (96.7%)** differed from the XML, every one only in
+    ///   whitespace ("…Union ( Kennan ) to the Secretary", "Washington , October 1, 1962 .").
+    ///   `FRUSASTNode.joinPrinted` concatenates where either piece carries its own boundary space,
+    ///   after an opening bracket or quote, and before closing punctuation, and inserts one space
+    ///   otherwise — which a plain concatenation cannot do, because a pretty-printed head
+    ///   (`frus1915Supp` d1120) has no other separator and would read "TheLake Torpedo Boat
+    ///   Companyto the…" (1,419 titles in 187 volumes). Replicated over the whole corpus, the rule
+    ///   makes **199,368 more titles and 215,945 more datelines** identical to the XML's own
+    ///   character data, and leaves 727 and 4,903 differing from the parser's normalisation of it —
+    ///   the issue's figures, many of them the XML's own spacing. Every output differs from the old
+    ///   one only by removed spaces. `plainText`, which builds `body_text`, is untouched, so the body column of the
+    ///   search index and the snippets drawn from it keep their spacing; the header and dateline
+    ///   columns change with the stored strings.
+    ///   (2) The parser wraps an editorial note's children in one `.editorialNote` node, and
+    ///   `extractHeader` looked for `.head` only at the top level, so **all 8,467 editorial notes
+    ///   were stored with an empty header** although every one prints a head — 825 of them a real
+    ///   title (*Memorandum by Prime Minister Churchill*). It now reads through the wrapper, the
+    ///   same unwrapping `isEditorialNote` does. After this version 7 documents are headerless,
+    ///   not 8,474. `content_hash` moves for most rows; the re-run is a `.rebaseline` pass, so no
+    ///   document is reported as corrected.
+    public static let currentDateIndexVersion: Int = 55
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -2124,7 +2155,8 @@ public actor IndexingPipeline {
         let items = data.documentCache.map { doc in
             Self.makeSearchableItem(
                 volumeId: data.volumeId, documentId: doc.documentId,
-                header: doc.header, bodyText: doc.bodyText
+                header: doc.header, bodyText: doc.bodyText,
+                documentNumber: doc.documentNumber, isEditorialNote: doc.isEditorialNote
             )
         }
         CSSearchableIndex.default().indexSearchableItems(items) { _ in }
@@ -2143,11 +2175,21 @@ public actor IndexingPipeline {
     /// own chunk size** (`provenance.chunkChars`): the unit the semantic program already
     /// treats as one span of meaning, and a ceiling that keeps a full-corpus donation's text
     /// volume around a gigabyte rather than five.
+    ///
+    /// ## The title is the lists' title (#1372)
+    /// It goes through `DocumentDisplayTitle`, so a Spotlight result names a document exactly as
+    /// every in-app list does — in particular an editorial note whose printed head only says
+    /// *Editorial Note* is *Editorial Note 2*, not one of 2,560 identical results.
     static func makeSearchableItem(
-        volumeId: String, documentId: String, header: String, bodyText: String
+        volumeId: String, documentId: String, header: String, bodyText: String,
+        documentNumber: String? = nil, isEditorialNote: Bool = false
     ) -> CSSearchableItem {
         let attrs = CSSearchableItemAttributeSet(contentType: .text)
-        attrs.title = header.isEmpty ? documentId : header
+        attrs.title = DocumentDisplayTitle.text(
+            .init(header: header.isEmpty ? nil : header,
+                  documentNumber: (documentNumber?.isEmpty == false) ? documentNumber : nil,
+                  isEditorialNote: isEditorialNote),
+            documentId: documentId)
         attrs.contentDescription = String(bodyText.prefix(300))
         attrs.keywords = [volumeId, documentId]
         attrs.textContent = String(bodyText.prefix(3_200))
@@ -2164,7 +2206,12 @@ public actor IndexingPipeline {
     ///
     ///   1 — title / contentDescription / keywords (the original donation)
     ///   2 — + `textContent` (W-9 step 1)
-    static let currentSpotlightSchemaVersion = 2
+    ///   3 — #1375 / #1372: re-donate after the index-v55 rebuild, whose titles lose the stray
+    ///       markup-boundary spaces and whose editorial notes gain their heads. The v55 re-index
+    ///       runs `indexAllVolumes()`, which never donates, so without this bump Spotlight would
+    ///       keep "( Kennan )" and titles of the form "d245" until each volume was re-downloaded.
+    ///       The title now also goes through `DocumentDisplayTitle`.
+    static let currentSpotlightSchemaVersion = 3
 
     /// UserDefaults key holding the last donated schema version.
     static let spotlightSchemaVersionKey = "spotlightSchemaVersionApplied"
@@ -2204,7 +2251,8 @@ public actor IndexingPipeline {
             var batch: [CSSearchableItem] = []
             do {
                 let sql = """
-                    SELECT rowid, volume_id, document_id, header, body_text
+                    SELECT rowid, volume_id, document_id, header, body_text,
+                           document_number, is_editorial_note
                     FROM document_cache WHERE rowid > ? ORDER BY rowid LIMIT 500
                     """
                 let stmt = try auxPrepare(sql)
@@ -2216,7 +2264,9 @@ public actor IndexingPipeline {
                         volumeId: auxColumnString(stmt, 1) ?? "",
                         documentId: auxColumnString(stmt, 2) ?? "",
                         header: auxColumnString(stmt, 3) ?? "",
-                        bodyText: auxColumnString(stmt, 4) ?? ""
+                        bodyText: auxColumnString(stmt, 4) ?? "",
+                        documentNumber: auxColumnString(stmt, 5),
+                        isEditorialNote: sqlite3_column_int(stmt, 6) != 0
                     ))
                 }
             }
@@ -4838,11 +4888,23 @@ public actor IndexingPipeline {
     /// the clean printed title everywhere `document_cache.header` surfaces (search
     /// results, browser rows, citations). Deliberate side effect of the Source Explorer
     /// Phase 1 extraction fix; repopulated by the version-15 reindex.
+    ///
+    /// **The pieces are joined as the page prints them** (`FRUSASTNode.joinPrinted`, #1375), not
+    /// with a space at every markup boundary — that separator put a space inside the parentheses
+    /// of 167,215 stored titles.
+    ///
+    /// **An editorial note's head is read through its wrapper** (#1372). The parser hands an
+    /// editorial note back as one `.editorialNote` node holding the note's children, so a
+    /// top-level-only search found no `.head` and stored every one of the 8,467 notes with an
+    /// empty title, although all of them print one. The unwrap is the same test
+    /// `isEditorialNote` makes: the wrapper is the document's first node.
     nonisolated static func extractHeader(from nodes: [FRUSASTNode]) -> String {
+        if case .editorialNote(let children)? = nodes.first {
+            return extractHeader(from: children)
+        }
         for node in nodes {
-            if case .head(let c) = node {
-                return c.map(\.plainTextExcludingFootnotes)
-                    .joined(separator: " ").normalizedWhitespace
+            if case .head = node {
+                return node.printedText(excludingFootnotes: true).normalizedWhitespace
             }
         }
         return ""
@@ -4868,11 +4930,18 @@ public actor IndexingPipeline {
         return ASTToRenderNodeConverter.renderingVersion(for: converter.convert(document))
     }
 
+    /// The document's printed dateline — the first `<dateline>`, at the top level or inside an
+    /// `<opener>` — or nil when it prints none.
+    ///
+    /// Joined as the page prints it (#1375): a dateline is encoded
+    /// `<placeName>Washington</placeName>, <date>October 1, 1962</date>.`, and the space join this
+    /// replaced stored it as "Washington , October 1, 1962 ." for 96.7% of the corpus's datelines.
+    /// Footnotes stay in, as they always have; only the separator changed.
     nonisolated static func extractDateline(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             switch node {
-            case .dateline(let c):
-                let t = c.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            case .dateline:
+                let t = node.printedText(excludingFootnotes: false).normalizedWhitespace
                 return t.isEmpty ? nil : t
             case .opener(let c):
                 if let dl = extractDateline(from: c) { return dl }
@@ -5237,7 +5306,14 @@ public actor IndexingPipeline {
     ///
     /// Used only when the authoritative `@n` (`FRUSDocumentAST.printedNumber`, the canonical
     /// history.state.gov document number) is absent. Callers should prefer `@n`.
+    ///
+    /// Reads an editorial note's head through its wrapper, as `extractHeader` does (#1372) — its
+    /// own example above is a note's head. Every shipped document carries `@n`, so this changes
+    /// no stored value; it keeps the two extractors from disagreeing about the same wrapper.
     nonisolated static func extractDocumentNumber(from nodes: [FRUSASTNode]) -> String? {
+        if case .editorialNote(let children)? = nodes.first {
+            return extractDocumentNumber(from: children)
+        }
         for node in nodes {
             if case .head(let c) = node {
                 let text = c.map(\.plainText).joined(separator: " ").trimmingCharacters(in: .whitespaces)
@@ -11504,20 +11580,79 @@ extension FRUSASTNode {
         }
     }
 
-    /// Like `plainText`, but with every `.footnote` subtree excluded — at any depth,
-    /// not just among direct children. Used by `IndexingPipeline.extractHeader` so
-    /// footnotes nested inside `<hi>`/`<persName>`/`<p>` markup within `<head>` cannot
-    /// leak into the stored document title.
-    var plainTextExcludingFootnotes: String {
+    /// The node's text as the page prints it: `plainText`'s content, joined by
+    /// ``joinPrinted(_:)`` rather than by a space at every markup boundary (#1375).
+    ///
+    /// Used for the two strings a reader sees as a line of print — the stored title
+    /// (`IndexingPipeline.extractHeader`) and dateline (`extractDateline`). **Not (yet) a
+    /// replacement for `plainText`**, which builds `body_text`. The search index only tokenises
+    /// that column, where a stray space costs nothing, but it is also SHOWN — as the snippet in
+    /// Related Documents rows and Project Home when a document has no summary — so it carries the
+    /// same "( Kennan )" spacing. Applying this join there is its own parse change, left out of
+    /// #1375's so that one PR does not move every body the index holds.
+    ///
+    /// - Parameter excludingFootnotes: when `true`, every `.footnote` subtree is dropped at any
+    ///   depth, not just among direct children — the title's rule, because 1955+ volumes nest the
+    ///   source note inside `<head>` and 68 documents nest a footnote inside `<hi>`/`<persName>`/`<p>`
+    ///   within it. The dateline keeps its notes, as it always has.
+    func printedText(excludingFootnotes: Bool) -> String {
         switch self {
-        case .footnote:
+        case .footnote where excludingFootnotes:
             return ""
         case .text, .formula, .lineBreak, .pageBreak, .document:
             return plainText
         default:
-            return children.map(\.plainTextExcludingFootnotes).joined(separator: " ")
+            return Self.joinPrinted(children.map { $0.printedText(excludingFootnotes: excludingFootnotes) })
         }
     }
+
+    /// Joins sibling text runs the way the printed line reads (#1375).
+    ///
+    /// **Why not a space, and why not nothing.** The parser keeps a single space at a text/element
+    /// boundary wherever the XML had whitespace there, and discards whitespace-only runs
+    /// (`FRUSDocumentParser.normalizedText`). A space separator is therefore redundant wherever the
+    /// XML had one and *invents* one wherever it had none — which is how the corpus writes a name in
+    /// parentheses (`(<persName>Kennan</persName>)`) and a closing stop (`…Adams</persName></hi>.`).
+    /// Joining with nothing fails the other way: a pretty-printed head puts each phrase in its own
+    /// element with only whitespace-only runs between them (`frus1915Supp` d1120), and those runs
+    /// are gone, so a plain concatenation reads "TheLake Torpedo Boat Companyto the…".
+    ///
+    /// The rule, applied between the text so far and the next non-empty piece:
+    /// - concatenate when either side already carries a boundary space;
+    /// - concatenate after an opening bracket or quote: `( [ { “ ‘`;
+    /// - concatenate before closing punctuation: `) ] } . , ; : ! ? ” ’`;
+    /// - otherwise insert one space.
+    ///
+    /// These are the sets the issue measured. Over the whole corpus they leave 727 titles and
+    /// 4,903 datelines differing from the parser's normalisation of the XML — ordinals split by
+    /// markup ("11 th"), dash compounds, drop caps — every one of which the old join spaced the
+    /// same way. They are deliberately not widened to the ambiguous ASCII quote and apostrophe,
+    /// which open as often as they close. Callers normalise whitespace afterwards.
+    static func joinPrinted(_ pieces: [String]) -> String {
+        var result = ""
+        for piece in pieces where !piece.isEmpty {
+            guard let last = result.last, let first = piece.first else {
+                result = piece
+                continue
+            }
+            if last.isWhitespace || first.isWhitespace
+                || printedOpeners.contains(last) || printedClosers.contains(first) {
+                result += piece
+            } else {
+                result += " " + piece
+            }
+        }
+        return result
+    }
+
+    /// Characters after which the next run follows with no space: opening brackets and curly quotes.
+    private static let printedOpeners: Set<Character> = ["(", "[", "{", "\u{201C}", "\u{2018}"]
+
+    /// Characters before which the previous run ends with no space: closing brackets, curly quotes
+    /// and the punctuation that closes a phrase or sentence.
+    private static let printedClosers: Set<Character> = [
+        ")", "]", "}", ".", ",", ";", ":", "!", "?", "\u{201D}", "\u{2019}",
+    ]
 
     /// Direct and indirect child nodes (used for recursive cross-reference and page-range extraction).
     var children: [FRUSASTNode] {
