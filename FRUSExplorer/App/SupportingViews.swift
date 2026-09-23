@@ -357,6 +357,8 @@ struct SummaryBlockView: View {
 ///          user was doing. The "Learn" button (and the queue panel's) now opens the
 ///          existing frus.researchGuide window instead; nothing auto-presents. iOS
 ///          keeps its banner-driven education sheet (`IndexingQueueBannerView`).
+///   1.3 — the iCloud chip is ONE label resolved by `ICloudStatusSummary`; a signed-out Mac
+///          showed "Sync Error", "Zone Missing" and "Not Signed In" side by side
 struct StatusBarView: View {
     @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
@@ -405,9 +407,8 @@ struct StatusBarView: View {
 
             Spacer()
 
-            // Right: iCloud sync state.
-            // Layer 1 — container init: shows "Local Only" if CloudKit init failed.
-            // Layer 2 — live events: reflects the most recent import/export event.
+            // Right: iCloud sync state — one chip, the most fundamental problem first (container
+            // init, then account, then zone, then the most recent import/export event).
             cloudKitStatusChip
         }
         .padding(.horizontal, 14)
@@ -588,15 +589,21 @@ struct StatusBarView: View {
 
     // MARK: - CloudKit Status Chip
 
-    /// Renders a compact sync-state label for the right side of the status bar.
+    /// Renders ONE compact sync-state label for the right side of the status bar.
     ///
-    /// Shows "Local Only" when CloudKit init failed, a spinning indicator while a
-    /// sync event is in flight, and the error message (with tooltip) when the most
-    /// recent event failed.  Falls back to the plain "iCloud Sync" label when no
-    /// events have fired yet (i.e. all is well and quiet).
+    /// Shows "Local Only" when CloudKit init failed, "Not Signed In" for an unavailable account,
+    /// "Zone Missing" when the private zone is gone, the failure (a button opening its detail)
+    /// when the most recent event failed, a spinning indicator while a sync event is in flight,
+    /// and the plain "iCloud Sync" label when no events have fired yet (all is well and quiet).
+    ///
+    /// Which one is `ICloudStatusSummary`'s decision, not this view's. The chip used to add a
+    /// "Zone Missing" and a "Not Signed In" label of its own after the event state, so a
+    /// signed-out Mac showed "Sync Error", "Zone Missing" and "Not Signed In" side by side — the
+    /// same three-way contradiction the iOS Settings root had, for the same reason.
     @ViewBuilder
     private var cloudKitStatusChip: some View {
-        if !appState.cloudKitSyncEnabled {
+        switch appState.iCloudStatusSummary {
+        case .localOnly(let diagnostic):
             // Container fell back to local SQLite — CloudKit init failed at launch.
             // Append the actual diagnostic (CloudKit error domain + code name +
             // description) to the tooltip when AppState has one, so the failure's
@@ -613,8 +620,8 @@ struct StatusBarView: View {
             // to 'View'". Wrapping the assignment in a closure keeps it a normal
             // expression the builder evaluates once, outside the View-producing chain.
             let help: String = {
-                guard let initError = appState.cloudKitInitError else { return guidance }
-                return "\(guidance)\n\n\(String(localized: "statusBar.sync.disabled.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
+                guard let diagnostic else { return guidance }
+                return "\(guidance)\n\n\(String(localized: "statusBar.sync.disabled.diagnostic.label", defaultValue: "Diagnostic")): \(diagnostic)"
             }()
             Label(
                 String(localized: "statusBar.sync.disabled", defaultValue: "Local Only"),
@@ -623,108 +630,104 @@ struct StatusBarView: View {
             .font(.subheadline)
             .foregroundStyle(.orange)
             .help(help)
-        } else {
-            switch appState.cloudKitSyncState {
-            case .unknown:
-                // Waiting for the first event; assume OK until proven otherwise.
-                Label(
-                    String(localized: "statusBar.sync.enabled", defaultValue: "iCloud Sync"),
-                    systemImage: "checkmark.icloud"
-                )
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-                .help(String(localized: "statusBar.sync.enabled.help",
-                             defaultValue: "User data syncs via iCloud across your devices"))
 
-            case .syncing:
-                HStack(spacing: 4) {
-                    ProgressView().scaleEffect(0.55, anchor: .center).frame(width: 11, height: 11)
-                    Text(String(localized: "statusBar.sync.syncing", defaultValue: "Syncing…"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .help(String(localized: "statusBar.sync.syncing.help",
-                             defaultValue: "iCloud is syncing your notes, collections, and tags"))
+        case .accountUnavailable(let status):
+            // Account warning — the health check found a non-available status. It outranks the
+            // zone and the event state because both are its consequences on a signed-out Mac.
+            Label(
+                String(localized: "statusBar.sync.accountIssue", defaultValue: "Not Signed In"),
+                systemImage: "person.crop.circle.badge.exclamationmark"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.orange)
+            .help(AppState.accountStatusDescription(status))
 
-            case .succeeded:
-                Label(
-                    String(localized: "statusBar.sync.synced", defaultValue: "Synced"),
-                    systemImage: "checkmark.icloud"
-                )
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-                .help(String(localized: "statusBar.sync.synced.help",
-                             defaultValue: "iCloud sync completed successfully"))
+        case .zoneMissing:
+            // Zone deletion is a silent failure the event system never reports, which is why it
+            // outranks the event state rather than sitting beside it.
+            Label(
+                String(localized: "statusBar.sync.zoneMissing", defaultValue: "Zone Missing"),
+                systemImage: "exclamationmark.icloud.fill"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.red)
+            // "Settings → Danger Zone" has never existed on this platform; the recovery
+            // ladder lives in Data & Recovery since S-4b. Same destination as the iOS cell.
+            .help(String(localized: "statusBar.sync.zoneMissing.help",
+                         defaultValue: "The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or use Settings → Data & Recovery → Fix iCloud Sync."))
 
-            case .failed(let message):
-                // A BUTTON, not a passive label (UI review M-11): the failure state's only detail
-                // was a hover tooltip, on the one place a sync failure is announced — while the app
-                // ships a whole diagnostics surface the label never connected to. The popover shows
-                // the message in selectable text and links the pipeline that explains it.
-                Button {
-                    showsSyncErrorDetail = true
-                } label: {
-                    Label(
-                        String(localized: "statusBar.sync.error", defaultValue: "Sync Error"),
-                        systemImage: "exclamationmark.icloud"
-                    )
+        case .idle:
+            // Waiting for the first event; assume OK until proven otherwise.
+            Label(
+                String(localized: "statusBar.sync.enabled", defaultValue: "iCloud Sync"),
+                systemImage: "checkmark.icloud"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.tertiary)
+            .help(String(localized: "statusBar.sync.enabled.help",
+                         defaultValue: "User data syncs via iCloud across your devices"))
+
+        case .syncing:
+            HStack(spacing: 4) {
+                ProgressView().scaleEffect(0.55, anchor: .center).frame(width: 11, height: 11)
+                Text(String(localized: "statusBar.sync.syncing", defaultValue: "Syncing…"))
                     .font(.subheadline)
-                    .foregroundStyle(.orange)
-                }
-                .buttonStyle(.plain)
-                .help(message)
-                .popover(isPresented: $showsSyncErrorDetail, arrowEdge: .bottom) {
-                    NavigationStack {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label(String(localized: "statusBar.sync.error.title",
-                                     defaultValue: "iCloud Sync Failed"),
-                              systemImage: "exclamationmark.icloud")
-                            .font(.headline)
-                        Text(verbatim: message)
-                            .font(.callout)
-                            .textSelection(.enabled)
-                            .fixedSize(horizontal: false, vertical: true)
-                        NavigationLink {
-                            SyncDiagnosticsView()
-                                .environment(appState)
-                        } label: {
-                            Label(String(localized: "statusBar.sync.error.diagnostics",
-                                         defaultValue: "Open Sync Diagnostics"),
-                                  systemImage: "stethoscope")
-                        }
-                    }
-                    .padding()
-                    }
-                    .frame(minWidth: 280, maxWidth: 360, minHeight: 160)
-                    .presentationCompactAdaptation(.popover)
-                }
+                    .foregroundStyle(.secondary)
             }
+            .help(String(localized: "statusBar.sync.syncing.help",
+                         defaultValue: "iCloud is syncing your notes, collections, and tags"))
 
-            // Zone-missing warning — overlaid when zone verification has completed
-            // and the private zone is absent. This is separate from sync-event failures
-            // because zone deletion is a silent failure the event system never reports.
-            if appState.cloudKitZoneVerified == false {
-                Label(
-                    String(localized: "statusBar.sync.zoneMissing", defaultValue: "Zone Missing"),
-                    systemImage: "exclamationmark.icloud.fill"
-                )
-                .font(.subheadline)
-                .foregroundStyle(.red)
-                // "Settings → Danger Zone" has never existed on this platform; the recovery
-                // ladder lives in Data & Recovery since S-4b. Same destination as the iOS cell.
-                .help(String(localized: "statusBar.sync.zoneMissing.help",
-                             defaultValue: "The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or use Settings → Data & Recovery → Fix iCloud Sync."))
-            }
+        case .succeeded:
+            Label(
+                String(localized: "statusBar.sync.synced", defaultValue: "Synced"),
+                systemImage: "checkmark.icloud"
+            )
+            .font(.subheadline)
+            .foregroundStyle(.tertiary)
+            .help(String(localized: "statusBar.sync.synced.help",
+                         defaultValue: "iCloud sync completed successfully"))
 
-            // Account warning — shown when health check detected a non-available status
-            if let status = appState.cloudKitAccountStatus, status != .available {
+        case .failed(let message):
+            // A BUTTON, not a passive label (UI review M-11): the failure state's only detail
+            // was a hover tooltip, on the one place a sync failure is announced — while the app
+            // ships a whole diagnostics surface the label never connected to. The popover shows
+            // the message in selectable text and links the pipeline that explains it.
+            Button {
+                showsSyncErrorDetail = true
+            } label: {
                 Label(
-                    String(localized: "statusBar.sync.accountIssue", defaultValue: "Not Signed In"),
-                    systemImage: "person.crop.circle.badge.exclamationmark"
+                    String(localized: "statusBar.sync.error", defaultValue: "Sync Error"),
+                    systemImage: "exclamationmark.icloud"
                 )
                 .font(.subheadline)
                 .foregroundStyle(.orange)
-                .help(AppState.accountStatusDescription(status))
+            }
+            .buttonStyle(.plain)
+            .help(message)
+            .popover(isPresented: $showsSyncErrorDetail, arrowEdge: .bottom) {
+                NavigationStack {
+                VStack(alignment: .leading, spacing: 10) {
+                    Label(String(localized: "statusBar.sync.error.title",
+                                 defaultValue: "iCloud Sync Failed"),
+                          systemImage: "exclamationmark.icloud")
+                        .font(.headline)
+                    Text(verbatim: message)
+                        .font(.callout)
+                        .textSelection(.enabled)
+                        .fixedSize(horizontal: false, vertical: true)
+                    NavigationLink {
+                        SyncDiagnosticsView()
+                            .environment(appState)
+                    } label: {
+                        Label(String(localized: "statusBar.sync.error.diagnostics",
+                                     defaultValue: "Open Sync Diagnostics"),
+                              systemImage: "stethoscope")
+                    }
+                }
+                .padding()
+                }
+                .frame(minWidth: 280, maxWidth: 360, minHeight: 160)
+                .presentationCompactAdaptation(.popover)
             }
         }
     }

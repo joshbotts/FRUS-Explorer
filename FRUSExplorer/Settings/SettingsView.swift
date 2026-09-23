@@ -71,6 +71,10 @@ import UniformTypeIdentifiers
 ///   2.7 — Wave R-1: removed the orphaned `researchSessionLoggingEnabled` `@AppStorage`
 ///          property — the switch itself has lived in `ResearchSessionsView` since S-1 and
 ///          nothing in this file read the value
+///   2.8 — the iCloud Sync section shows ONE status row, resolved by `ICloudStatusSummary` (a
+///          signed-out device showed three contradictory ones: Sync Error, Private Zone Missing,
+///          Account Issue); every status `Label` sets `.titleAndIcon`, without which iOS 27 drew
+///          the row with ~180 pt of blank space under it, signed in or out
 struct SettingsView: View {
 
     #if !os(iOS)
@@ -214,13 +218,17 @@ struct SettingsView: View {
 
     // MARK: - iCloud Sync Status Row
     //
-    // Each status case collapses the indicator + detail into a single Form row
-    // (VStack inside one cell) to avoid the tall multi-row layout that appeared
-    // when the status label and its explanation text occupied separate cells.
+    // ONE row, whatever the state. This used to switch on the sync-event state and then add a
+    // row of its own for a missing zone and another for an account problem, so a device that was
+    // simply not signed in showed three "Status" rows that contradicted each other — the account
+    // check writes its description into the event channel, and a private zone cannot be listed
+    // without an account. `ICloudStatusSummary` owns the precedence and has the tests; this only
+    // draws what it resolves.
 
     @ViewBuilder
     private var iCloudSyncStatusRow: some View {
-        if !appState.cloudKitSyncEnabled {
+        switch appState.iCloudStatusSummary {
+        case .localOnly(let diagnostic):
             // Append the actual CloudKit diagnostic (domain + error code name +
             // description, e.g. "CKErrorDomain serverRejectedRequest: …") below the
             // general guidance whenever `AppState.cloudKitInitError` has one — so
@@ -236,8 +244,8 @@ struct SettingsView: View {
             // cannot conform to 'View'". The closure keeps it a normal expression the
             // builder evaluates once, outside the View-producing chain.
             let detail: String = {
-                guard let initError = appState.cloudKitInitError else { return guidance }
-                return "\(guidance)\n\n\(String(localized: "settings.icloud.localOnly.diagnostic.label", defaultValue: "Diagnostic")): \(initError)"
+                guard let diagnostic else { return guidance }
+                return "\(guidance)\n\n\(String(localized: "settings.icloud.localOnly.diagnostic.label", defaultValue: "Diagnostic")): \(diagnostic)"
             }()
             iCloudStatusCell(
                 label: String(localized: "settings.icloud.localOnly", defaultValue: "Local Only"),
@@ -245,82 +253,91 @@ struct SettingsView: View {
                 color: .orange,
                 detail: detail
             )
-        } else {
-            switch appState.cloudKitSyncState {
-            case .unknown:
-                LabeledContent(
-                    String(localized: "settings.icloud.status", defaultValue: "Status")
-                ) {
+
+        case .accountUnavailable(let status):
+            iCloudStatusCell(
+                label: String(localized: "settings.icloud.accountIssue", defaultValue: "Account Issue"),
+                systemImage: "person.crop.circle.badge.exclamationmark",
+                color: .orange,
+                detail: AppState.accountStatusDescription(status)
+            )
+
+        case .zoneMissing:
+            // A silent failure — never reported by sync events, which is why it outranks them.
+            iCloudStatusCell(
+                label: String(localized: "settings.icloud.zoneMissing", defaultValue: "Private Zone Missing"),
+                systemImage: "exclamationmark.icloud.fill",
+                color: .red,
+                // "Reset iCloud Sync below" named a control that no longer exists — the
+                // recovery ladder moved into Data & Recovery in S-4b and the rung is called
+                // "Fix iCloud Sync". Both platforms now name the one true path.
+                detail: String(localized: "settings.icloud.zoneMissing.detail",
+                               defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.")
+            )
+
+        case .failed(let message):
+            iCloudStatusCell(
+                label: String(localized: "settings.icloud.error", defaultValue: "Sync Error"),
+                systemImage: "exclamationmark.icloud",
+                color: .orange,
+                detail: message
+            )
+
+        case .syncing:
+            LabeledContent(
+                String(localized: "settings.icloud.status", defaultValue: "Status")
+            ) {
+                HStack(spacing: 6) {
+                    ProgressView().scaleEffect(0.75, anchor: .center)
+                    Text(String(localized: "settings.icloud.syncing", defaultValue: "Syncing…"))
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+        case .succeeded(let date):
+            LabeledContent(
+                String(localized: "settings.icloud.status", defaultValue: "Status")
+            ) {
+                VStack(alignment: .trailing, spacing: 2) {
                     Label(
-                        String(localized: "settings.icloud.enabled", defaultValue: "iCloud Sync Enabled"),
+                        String(localized: "settings.icloud.synced", defaultValue: "Synced"),
                         systemImage: "checkmark.icloud"
                     )
-                    .foregroundStyle(.secondary)
+                    .labelStyle(.titleAndIcon)   // see `iCloudStatusCell` — not optional
+                    .foregroundStyle(.green)
+                    Text(date, style: .relative)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
-
-            case .syncing:
-                LabeledContent(
-                    String(localized: "settings.icloud.status", defaultValue: "Status")
-                ) {
-                    HStack(spacing: 6) {
-                        ProgressView().scaleEffect(0.75, anchor: .center)
-                        Text(String(localized: "settings.icloud.syncing", defaultValue: "Syncing…"))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-            case .succeeded(let date):
-                LabeledContent(
-                    String(localized: "settings.icloud.status", defaultValue: "Status")
-                ) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Label(
-                            String(localized: "settings.icloud.synced", defaultValue: "Synced"),
-                            systemImage: "checkmark.icloud"
-                        )
-                        .foregroundStyle(.green)
-                        Text(date, style: .relative)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-            case .failed(let message):
-                iCloudStatusCell(
-                    label: String(localized: "settings.icloud.error", defaultValue: "Sync Error"),
-                    systemImage: "exclamationmark.icloud",
-                    color: .orange,
-                    detail: message
-                )
             }
 
-            // Zone-missing warning (silent failure — never reported by sync events)
-            if appState.cloudKitZoneVerified == false {
-                iCloudStatusCell(
-                    label: String(localized: "settings.icloud.zoneMissing", defaultValue: "Private Zone Missing"),
-                    systemImage: "exclamationmark.icloud.fill",
-                    color: .red,
-                    // "Reset iCloud Sync below" named a control that no longer exists — the
-                    // recovery ladder moved into Data & Recovery in S-4b and the rung is called
-                    // "Fix iCloud Sync". Both platforms now name the one true path.
-                    detail: String(localized: "settings.icloud.zoneMissing.detail",
-                                   defaultValue: "The iCloud sync zone is missing. Data cannot upload or download until it is recreated. Force-quit and relaunch the app, or use Settings → Data & Recovery → Fix iCloud Sync.")
+        case .idle:
+            LabeledContent(
+                String(localized: "settings.icloud.status", defaultValue: "Status")
+            ) {
+                Label(
+                    String(localized: "settings.icloud.enabled", defaultValue: "iCloud Sync Enabled"),
+                    systemImage: "checkmark.icloud"
                 )
-            }
-
-            // Account status issues
-            if let status = appState.cloudKitAccountStatus, status != .available {
-                iCloudStatusCell(
-                    label: String(localized: "settings.icloud.accountIssue", defaultValue: "Account Issue"),
-                    systemImage: "person.crop.circle.badge.exclamationmark",
-                    color: .orange,
-                    detail: AppState.accountStatusDescription(status)
-                )
+                .labelStyle(.titleAndIcon)   // see `iCloudStatusCell` — not optional
+                .foregroundStyle(.secondary)
             }
         }
     }
 
     /// Compact single-row iCloud status indicator with a status label and inline detail text.
+    ///
+    /// **The `.labelStyle(.titleAndIcon)` is the fix for a blank row, not a style choice.** Inside
+    /// a `LabeledContent` value in this `Form`, a `Label` left at the automatic style drew its title
+    /// and icon on one line but sized its row about 180 pt too tall — measured on an iPad Pro
+    /// 13-inch on iOS 27.0, where a signed-out device's "Account Issue" row was mostly empty space.
+    /// A controlled comparison in the same `Form` isolated it: a bare `LabeledContent { Label }`
+    /// was tall; the same `Label` outside `LabeledContent`, a `LabeledContent` holding plain `Text`,
+    /// and a `LabeledContent { Label }` with an explicit `.titleAndIcon` style were all one line
+    /// high. The detail text played no part. The signed-in states' labels (Synced, iCloud Sync
+    /// Enabled) carry the same style for the same reason: their exact construction, probed in the
+    /// same `Form`, had the same gap.
+    /// `ICloudStatusSummaryTests` fails if a `Label` in this section is added without it.
     private func iCloudStatusCell(
         label: String,
         systemImage: String,
@@ -332,6 +349,7 @@ struct SettingsView: View {
         ) {
             VStack(alignment: .trailing, spacing: 2) {
                 Label(label, systemImage: systemImage)
+                    .labelStyle(.titleAndIcon)
                     .foregroundStyle(color)
                 Text(detail)
                     .font(.footnote)
