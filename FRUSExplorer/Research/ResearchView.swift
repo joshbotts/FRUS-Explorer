@@ -1541,7 +1541,8 @@ enum ResearchDocumentAggregation {
     /// disagreed with it would disagree more visibly.
     ///
     /// **It deliberately differs from the Collections feature's own per-collection counts**
-    /// (`CollectionPickerSheet`, `CollectionEditorView`, `CollectionExportSheet`,
+    /// (`Collection.documentCount`, read by the Collections list, `CollectionPickerSheet` and the
+    /// macOS manager since #1358; and `CollectionEditorView`, `CollectionExportSheet`,
     /// `CollectionPreviewView`), which count `.document` ENTRIES. Those answer *how many documents
     /// does this collection contain*, which is a fact about its composition. This one labels a row
     /// that opens a list of the reader's annotated documents, so it answers *how many documents

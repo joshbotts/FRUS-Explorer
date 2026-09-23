@@ -183,6 +183,52 @@ struct CollectionTests {
         #expect(doc.entryKind == .document)
     }
 
+    // MARK: - DocumentCountTest (#1358)
+
+    /// `documentCount` counts `.document` entries and nothing else.
+    ///
+    /// The fixture carries one entry of EVERY authorable kind (iterated from
+    /// `CollectionEntryKind.allCases`, so a kind added later joins it without an edit), a second
+    /// `.document`, and a `kind` raw value no build knows — what a newer app version syncs in. Any
+    /// rule wider than `.document` reads more than 2; the rule the Collections list row used,
+    /// `documentEntries?.count`, reads 7 — the fault #1358 photographed as "9 documents" over six.
+    @Test("DocumentCount: counts .document entries only — not headings, prose, excerpts, generated or unknown kinds")
+    func documentCountCountsDocumentEntriesOnly() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+
+        let collection = Collection(name: "Berlin Crisis")
+        context.insert(collection)
+
+        var order = 0
+        func add(_ configure: (CollectionEntry) -> Void) {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: "d\(order)",
+                                        volumeId: "frus1961-63v14", sortOrder: order)
+            configure(entry)
+            entry.collection = collection
+            context.insert(entry)
+            order += 1
+        }
+        for kind in CollectionEntryKind.allCases {
+            add { $0.entryKind = kind }
+        }
+        add { $0.entryKind = .document }            // the second document
+        add { $0.kind = "marginalia" }              // a newer build's kind: reads .unrecognized
+        try context.save()
+
+        // The fixture is what it claims: every authorable kind, twice .document, one unknown.
+        let entries = try #require(collection.documentEntries)
+        #expect(entries.count == CollectionEntryKind.allCases.count + 2)
+        #expect(Set(entries.map(\.entryKind)) == Set(CollectionEntryKind.allCases + [.unrecognized]))
+
+        #expect(collection.documentCount == 2)
+
+        // A collection with no entries yet reads zero, not a crash or a nil.
+        let empty = Collection(name: "Empty")
+        context.insert(empty)
+        #expect(empty.documentCount == 0)
+    }
+
     // MARK: - ExportItemsTest
 
     @Test("ExportItems: .documents extracts document payloads in order, dropping headings/prose")

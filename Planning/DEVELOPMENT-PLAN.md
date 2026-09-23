@@ -18136,3 +18136,53 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
+
+## Session 2026-09-23 — A collection's size counts its documents, not its headings and prose blocks
+
+**The question:** lane K's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1358. On the Collections tab a collection of six documents under two section headings and one
+prose block was listed as **9 documents**, while the Research sidebar's By Collection row and the
+Add to Collection picker both said 6.
+
+**One property, and every size label reads it.** `Collection.documentEntries` holds all six entry
+kinds, and the list row printed its `count`. The picker had the right rule inline (`.document`
+entries only); the macOS manager printed the raw count at three sites — the toolbar picker's menu
+items, the picker's label, and the Manage Collections rows — whose own doc comments call it the
+document count. `Collection.documentCount` (a computed property in an extension, so no schema
+change and no CloudKit deploy) counts `.document` entries; the list row, the picker (replacing its
+inline filter) and the three Mac sites read it. The Research sidebar's number stays separate on
+purpose — it counts DISTINCT documents including those reached only by an excerpt, because it must
+equal the list its row opens — and its helper's doc comment now names `documentCount` as the other
+rule. The count is of entries, so a document added twice counts twice, as the editor, export sheet
+and preview already count.
+
+**`GlobalContextView`'s two sites were fixed, not deleted.** The view is never constructed (its
+only construction site, `ProjectContextView`, was deleted as dead code), but its own header records
+that it is kept for a future re-entry point and `GlobalContextViewModel` is still tested. Deleting
+it is a dead-code decision beyond this issue; routing its row and accessibility label through the
+same property is the same one-token change as the live sites, and keeps a re-entry from bringing
+the wrong count back.
+
+**Two guards.** `CollectionTests.documentCountCountsDocumentEntriesOnly` builds a collection with
+one entry of every authorable kind (iterated from `CollectionEntryKind.allCases`), a second
+`.document`, and an unknown `kind` raw value — the fixture asserts its own shape (seven entries,
+all six decoded kinds) before asserting `documentCount == 2`, and an empty collection reads 0.
+`CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses a raw entry count under
+`FRUSExplorer/Collections/` and `FRUSExplorer/ProjectContext/` in both spellings —
+`documentEntries?.count` and `(… documentEntries ?? []).count`, across a line break — while
+letting a filtered `.count { … }` or `.count(where:)` through, and asserts it read at least ten
+files in each directory (25 and 16 today). The regex was first checked in Python against the tree
+and six sample spellings. The three raw counts outside those directories (a debug print in
+`Collection.duplicate`, the entry-count tie-break in `DuplicateRecordCleanup`) count entries on
+purpose and are named in the test's doc comment.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`),** running `CollectionTests` and
+`CodingStandardsAuditTests`. With `documentCount` returning the list row's expression and no site
+routed: 153 tests in 2 suites, 2 issues — `documentCount` read **7**, and the scan named exactly
+the six sites the issue lists (`CollectionListView.swift:436`, `MacCollectionManagerView.swift:182`,
+`:208`, `:561`, `GlobalContextView.swift:303`, `:377`). With the rule fixed and every site routed,
+adding `GlobalContextTests`: 160 tests in 3 suites pass. The macOS scheme builds.
+
+**Docs.** No `defaultValue` changed (the list row keeps `collections.row.count`; the Mac sites are
+`Text(verbatim:)`), so `Docs/EditableContent.md` needs no amendment, and the macOS manual's
+"every collection with its document count" (`:660`) is now true as written.

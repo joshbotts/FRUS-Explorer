@@ -798,6 +798,29 @@ extension Collection {
     }
 }
 
+// MARK: - Document count (#1358)
+
+extension Collection {
+    /// How many documents this collection contains: its `.document` entries.
+    ///
+    /// `documentEntries` holds every entry of every kind — document, section heading, prose
+    /// block, excerpt, generated apparatus block and a newer build's unrecognised kind — so its
+    /// `count` is not a document count. The Collections list read it as one, and a collection of
+    /// six documents under two headings with one prose block was listed as "9 documents" (#1358);
+    /// the macOS manager's picker, picker label and Manage Collections rows printed the same
+    /// number. Every surface that labels a collection with its size reads this instead, and
+    /// `CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses
+    /// `documentEntries?.count` under `Collections/` and `ProjectContext/`.
+    ///
+    /// It counts ENTRIES, so a document added twice counts twice — the composition as authored,
+    /// which is what the editor, export sheet and preview also count. The Research sidebar's
+    /// per-collection number deliberately answers a different question (the distinct documents a
+    /// row opens, excerpts included) and stays `ResearchDocumentAggregation.distinctDocumentKeys`.
+    var documentCount: Int {
+        (documentEntries ?? []).count { $0.entryKind == .document }
+    }
+}
+
 // MARK: - Duplication (#300)
 
 extension Collection {
