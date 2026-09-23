@@ -142,6 +142,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.11 — #1299: `pendingSearchTips` and `openSearchTips(from:)` — the Find menu's Search Tips request, a
 ///          one-shot hand-off addressed as `openSearch(_:from:)` addresses a query (the iPadOS Search tab's sheet,
 ///          the macOS Search window's panel)
+///   4.12 — `checkCloudKitHealth()` skips the private-zone check when the account is not `.available`
+///          (`zoneCheckApplies(afterAccountStatus:)`), leaving `cloudKitZoneVerified` `nil`: a signed-out
+///          device read as "zone missing". The four iCloud facts are shown through `iCloudStatusSummary`
 
 // MARK: - CloudKitSyncState
 
@@ -392,9 +395,12 @@ final class AppState {
 
     /// Whether the iCloud private zone required for CloudKit sync exists on the server.
     ///
-    /// `nil` = not yet verified; `true` = zone found and sync should work;
+    /// `nil` = not yet verified, or unknowable because the account is not `.available` (a
+    /// private database cannot be listed without one); `true` = zone found and sync should work;
     /// `false` = zone missing — records cannot be uploaded or downloaded until
     /// NSPersistentCloudKitContainer recreates it (typically on next cold launch).
+    ///
+    /// Views read it through `iCloudStatusSummary`, never directly.
     ///
     /// Set by `checkCloudKitHealth()`, called at launch and on every foreground transition.
     var cloudKitZoneVerified: Bool? = nil
@@ -413,6 +419,11 @@ final class AppState {
 
     /// Checks iCloud account status and private zone existence, then updates
     /// `cloudKitAccountStatus`, `cloudKitZoneVerified`, and (on failure) `cloudKitSyncState`.
+    ///
+    /// An unavailable account is written into `cloudKitSyncState` as `.failed` too, which the
+    /// iOS workspace banner reads — so the account and the event channel say the same thing, and
+    /// a view must show them through `iCloudStatusSummary` or it shows that thing twice. The zone
+    /// is checked only when `zoneCheckApplies(afterAccountStatus:)` says the account can answer.
     ///
     /// Safe to call repeatedly — idempotent apart from logging. Call at launch
     /// (from `FRUSExplorerApp.bootApp()`) and on every foreground transition so
@@ -457,6 +468,14 @@ final class AppState {
             }
 
             // ── Private zone verification ────────────────────────────────────────
+            // Only when the account can answer it. A signed-out device has no private database to
+            // list, so the listing throws and the catch below used to record the zone as MISSING —
+            // a second, red status row (and a failed "zone" telemetry row) for what was only ever
+            // the account. Unknowable is `nil`, not `false`.
+            guard Self.zoneCheckApplies(afterAccountStatus: cloudKitAccountStatus) else {
+                cloudKitZoneVerified = nil
+                return
+            }
             do {
                 let zones = try await container.privateCloudDatabase.allRecordZones()
                 cloudKitZoneVerified = zones.contains { $0.zoneID.zoneName == Self.ckZoneName }
@@ -484,6 +503,18 @@ final class AppState {
                     chainTruncated: inspection.chainTruncated) }
             }
         }
+    }
+
+    /// Whether the private-zone check can say anything, given the account status just read.
+    ///
+    /// `false` for every status but `.available`: without a usable account the private database
+    /// cannot be listed, and a failed listing is not evidence that the zone is missing. `nil` —
+    /// the account check itself threw — still runs the zone check, as it always has, because an
+    /// unknown account is not evidence either way. Internal so `ICloudStatusSummaryTests` can pin
+    /// it; `checkCloudKitHealth()` is its only caller.
+    static func zoneCheckApplies(afterAccountStatus status: CKAccountStatus?) -> Bool {
+        guard let status else { return true }
+        return status == .available
     }
 
     /// Human-readable description of a `CKAccountStatus` value for display and logging.
