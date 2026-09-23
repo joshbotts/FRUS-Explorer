@@ -160,8 +160,9 @@ No image exists on that platform today; each gets wired in on arrival.
   device-screen PNGs). Three things changed with **Xcode 27**: Simulator.app is now **Device Hub**,
   whose toolbar has the rotate button (`simctl` has no orientation command); `simctl io … screenshot`
   of a landscape device is already upright, so do not rotate it; and a simulator with no iCloud
-  account shows "iCloud Sync Failed" along the bottom of every screen — sign the simulator in, or
-  note in the ledger how the banner was kept out of frame.
+  account shows an iCloud banner along the bottom of every screen (build 48 worded it "iCloud Sync
+  Failed"; #1393 later made it name the account) — sign the simulator in, or note in the ledger how
+  the banner was kept out of frame.
   Set an Apple-style status bar first:
   `xcrun simctl status_bar <device> override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi`
   - **Series Analytics (offline) exception** — the four Series Analytics dashboards (Production &
