@@ -16,9 +16,9 @@ an official product of the Office of the Historian or the U.S. Department of Sta
 
 ## Screenshots
 
-| Search (macOS) | Cross-reference graph (macOS) | Reading (iPhone) |
+| Search (macOS) | Cross-reference graph (macOS) | Reading (iPad) |
 |---|---|---|
-| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Document view](Docs/screenshots/ios/document-view.png) |
+| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Document view](Docs/screenshots/ipad/document.png) |
 
 More in [`Docs/screenshots/`](Docs/screenshots).
 
