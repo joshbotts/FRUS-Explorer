@@ -34,7 +34,12 @@ import Foundation
 /// …", so printing it here would fill the strip with boilerplate — the exact problem #237 built
 /// the iOS two-line title to see past. `ChronologyViewModel.distilledVolumeLabel` is the app's
 /// existing short form, already rendered by Chronology, Cross-Reference Analytics, and the
-/// compilation parent line, and its tag half is globally unique so two windows never read alike.
+/// compilation parent line, and its tag half tells every bundled volume apart, so windows on two
+/// different volumes never read alike. That was claimed here before it was true: until #1388, 11
+/// tags were shared by 29 volumes (`frus1961-63v10-12mSupp`, a microfiche supplement, read
+/// `1961-63 v10`, Volume X's own tag), and only the topic half — cut at 40 characters — kept those
+/// labels apart. `CorpusAnalyticsServiceTests.distilledLabelUniqueAcrossBundledCorpus` now pins the
+/// tag half over the whole bundled manifest.
 ///
 /// Version history:
 ///   1.0 — CW-10 (UI review M-8)
