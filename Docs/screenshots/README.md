@@ -17,6 +17,50 @@ Manuals still carry `` `[SCREENSHOT: …]` `` placeholders wherever an image has
 > embeds the `ipad/` captures) also wired in `macos/person-analytics-trends` and `macos/research`,
 > which were previously captured but unused.
 
+## Capture ledger — the iPad sweep, builds 47–48 (2026-09-13 → 2026-09-23)
+
+A screenshot is evidence about a build, so every `ipad/` file is accounted for here. **This sweep
+closes every iOS-manual item on #1081** (§1's eleven placeholders, §4's seven re-captures, the
+`ipad/` half of §5, the README's third hero, and §7's deletions). What #1081 still lists is the
+macOS sitting (§2, §3, the `macos/` half of §5, and the two macOS README heroes).
+
+- **Owner, physical iPad, build 47, 2026-09-13** (3180×2384; `cross-reference-graph` is a
+  2852×2139 window capture): `research-rail`, `stage-manager`, `browse-root`,
+  `browse-all-volumes`, `browse-administrations`, `browse-editors`, `browse-working-corpora`,
+  `browse-archives` (the Classes lens), `browse-clusters`, `browse-clusters-detail`,
+  `search-results`, `semantic-search`, `analytics`, `chronology`, `cross-reference-graph`,
+  `related-documents`.
+  - On disk but **not embedded**: `research-rail-portrait` (a portrait variant), and
+    `semantic-search-loading`, `indexing-banner-portrait` and `ios/indexing-banner`, which show
+    the build-47 waiting cloud. Build 48 changed that cloud (#1346 retired the Actions lens from
+    it and added a "searching" label on iOS), so re-shoot those three before embedding them.
+- **Simulator, build 48, 2026-09-22/23** — every other `ipad/` file. iPad Pro 13-inch (M5),
+  iOS 27.0, landscape, 2752×2064, the `AppStore` configuration built for the simulator, the full
+  553-volume corpus indexed on the device, demo status bar.
+  - **One local-only patch, never committed**: `SyncStatusBanner.isWorthShowing` returned false
+    under a launch argument. A simulator with no iCloud account otherwise shows "iCloud Sync
+    Failed" at the foot of every screen, which no reader of the manual would see.
+  - `onboarding-volumes` and `series-production` came from a second, **empty** simulator — the
+    offline convention below.
+  - Demo data, made through the app's own UI: the project "Early Cold War"; the scopes "Berlin
+    Crises 1958-1963", "Cuba 1958-1963" and "Soviet Union 1945-1950"; working corpora from
+    Keyword searches for "Berlin airlift" and `"long telegram"`; the collection "The Long
+    Telegram and Its Readers"; and an Archives Visit seeded from that collection **plus**
+    frus1952-54v02p1/d41 and frus1955-57v19/d81. Those two are printed from S/S–NSC Files,
+    Lot 63 D 351 *and* cite it in their footnotes, which is what gives `trip-packet` both of its
+    claim lists — no 1946 document does. `browse-corpus-drill` shows one gray row because
+    frus1948v01p2 was removed from that device on purpose.
+  - Paired frames where one screen cannot hold the contract: `browse-archives-collection-detail`
+    + `-citing` (the detail runs about four screens), `people-detail` + `-records` (a ~660 pt
+    form sheet), and `trip-packet` + `-options` (the open Options menu covers the Share buttons).
+- **Replaced**: the committed `ipad/document.png`, `ipad/search-results.png` and
+  `ipad/sidebar-landscape.png`; and the owner's build-47 `ipad/semantic-map.png`, which came
+  from a DEBUG build with its frame-rate overlay showing.
+- **Deleted** (#1081 §7): `ios/browse-corpus`, `ios/search-results`, `ios/settings`,
+  `ipad/browse`, `macos/collections-ribbon`, the four `ios/` stand-ins (`people-list`,
+  `people-detail`, `analytics`, `chronology`), and `ios/document-view`, whose README hero slot is
+  now `ipad/document.png`.
+
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
 Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new shot · 🔄 re-capture
@@ -90,8 +134,13 @@ No image exists on that platform today; each gets wired in on arrival.
 
 ## Capture conventions
 
-- **iOS / iPadOS** — captured from the iPhone 17 and iPad Pro 11″ simulators running the app against
-  the full 552-volume corpus, via `xcrun simctl io <device> screenshot` (clean device-screen PNGs).
+- **iOS / iPadOS** — captured from the iPhone 17 and iPad Pro simulators (13-inch since the build-48
+  sweep) running the app against the full corpus, via `xcrun simctl io <device> screenshot` (clean
+  device-screen PNGs). Three things changed with **Xcode 27**: Simulator.app is now **Device Hub**,
+  whose toolbar has the rotate button (`simctl` has no orientation command); `simctl io … screenshot`
+  of a landscape device is already upright, so do not rotate it; and a simulator with no iCloud
+  account shows "iCloud Sync Failed" along the bottom of every screen — sign the simulator in, or
+  note in the ledger how the banner was kept out of frame.
   Set an Apple-style status bar first:
   `xcrun simctl status_bar <device> override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3 --dataNetwork wifi`
   - **Series Analytics (offline) exception** — the four Series Analytics dashboards (Production &
