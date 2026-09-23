@@ -18136,3 +18136,52 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
+
+## Session 2026-09-23 — Learn About NARA Lookup opens the page that describes the lookup, and a dead guide link fails a test
+
+**The question:** lane S's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1352. Both **Learn About NARA Lookup** links in `NARACatalogLookupView` (the macOS title row and
+the iOS sheet's toolbar) named `"app-features"`, a page id retired in Session 163 (`d4e9e96a`,
+2026-06-16). `IndexingEducationView` falls back to page 0 on an unknown id, so for three months
+the link opened *The Official Record of American Foreign Policy*.
+
+**The plan's target was wrong, and reading the page is what showed it.** The issue and the plan
+both proposed `"finding-documents"`, the page that replaced `"app-features"`, with the condition
+"after checking that page's sections carry the NARA Lookup guidance". They do not: since the
+build-43 content revision (guide v1.20) pages 5–7 are contracts that leave the controls to the
+User Manual, and page 5's five sections never mention NARA, the National Archives or the lookup
+(the word "archival" appears three times, naming a results facet and a similarity signal). Across all
+eleven pages the only text naming the tool is page 4's *Editorial Notes as a Finding Aid* ("the
+free-text NARA Lookup tool to find the relevant finding aids"), on `"research-practices"` (*Using
+FRUS for Research*), which also carries *Think of FRUS as a Map of the Archives*. Both links now
+open that page. Page 3, `"understanding-documents"`, was the runner-up — its *Reading a Source
+Note* explains the record group, series and file a lookup query is made of — but it never names
+the lookup and is already the Source Explorer button's target.
+
+**The guard reads the source, and it checks two things.** `ResearchGuideDeepLinkTests` (a second
+type in `EducationDashboardTests.swift`, so no new file) walks every `ResearchGuideLinkButton(…)`
+and `IndexingEducationView(…)` call under `FRUSExplorer/` by balanced parentheses, extracts the
+`pageId:`/`initialPageId:` literal, and resolves it through `EducationPage.index(ofDeepLink:)` —
+a new one-line function the view's `init` now calls, so the test and the guide use one lookup. A
+button whose `pageId:` is not a string literal fails too, because nothing could check it. The
+scan asserts it read more than 400 files (479 today) and found at least five links (five today).
+A second test requires the NARA Lookup links' page to mention "NARA Lookup" in its sections,
+because resolving is not enough — `"finding-documents"` resolves.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`).** On the unfixed literals: 7 tests in 2 suites, 3
+issues — `everyNamedGuidePageExists` naming `NARACatalogLookupView.swift:116 → "app-features";
+NARACatalogLookupView.swift:220 → "app-features"`, and the content test failing at both sites.
+With the plan's `"finding-documents"` (a deliberate intermediate, re-edited away): the resolve test
+passes and the content test fails at both sites, "opens a page whose sections never mention NARA
+Lookup". With `"research-practices"`: both pass; run beside the guide's neighbouring suites
+(`EducationDashboardTests`, `EditableContentKeyTests`, `EmbeddedMarkdownLinkTests`,
+`ResearchGuideCoverageTests`), 18 tests in 5 suites with one issue —
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the "subjects facet" failure the previous
+entry records as red on `v2` since #1353 (neither of its two terms occurs in `origin/v2`'s
+`Docs/EditableContent.md`). The macOS scheme builds.
+
+**Also:** `ResearchGuideLinkButton`'s doc comment named `"app-features"` as the NARA Lookup target
+and now names the three real ones; `Docs/EditableContent.md`'s eleven advisory `lines:` ranges for
+the guide pages moved by the sixteen lines the new function and its history added. No
+`defaultValue` changed, no manual sentence names the target page, and nothing here touches the
+index.

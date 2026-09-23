@@ -120,20 +120,27 @@ struct NewProjectWindowID: Codable, Hashable {}
 /// pre-scrolled to a specific `EducationPage`.
 ///
 /// Several screens reference concepts the Research Guide explains in more
-/// depth — the Source Explorer's source-note breakdown and NARA Catalog
-/// Lookup both relate to "Understanding What You're Reading"
-/// (`EducationPage.page3`, id `"understanding-documents"`), and the App
-/// Feature Walkthrough page documents Source Explorer and NARA Lookup
-/// directly (`EducationPage.page5`, id `"app-features"`). Rather than
-/// duplicating "set the deep-link target, then present the guide" at each
-/// call site, this button centralizes it:
+/// depth — Source Explorer's source-note breakdown opens "Understanding What
+/// You're Reading" (`EducationPage.page3`, id `"understanding-documents"`),
+/// NARA Lookup opens "Using FRUS for Research" (`EducationPage.page4`, id
+/// `"research-practices"`, whose *Editorial Notes as a Finding Aid* is the
+/// guide's account of the lookup), and Archival Analytics opens the
+/// `"series-sourcing"` dashboard. Rather than duplicating "set the deep-link
+/// target, then present the guide" at each call site, this button centralizes it:
 ///  - sets `AppState.researchGuideInitialPageId` to `pageId`
 ///  - **macOS**: opens the dedicated `Window` scene (`id: "frus.researchGuide"`)
 ///  - **iOS/iPadOS**: presents `ResearchGuideView` as a local sheet
 ///
+/// An unknown `pageId` opens the guide at its first page without complaint, so
+/// pass a string LITERAL naming an `EducationPage.all` id:
+/// `ResearchGuideDeepLinkTests` reads every call's literal and fails on one that
+/// names no page, and on one it cannot read (#1352).
+///
 /// Version history:
 ///   1.0 — Session 2026-06-06: introduced for contextual deep-links from
 ///         Source Explorer, NARA Catalog Lookup, and document source notes
+///   1.1 — 2026-09-23: #1352 — the doc named `"app-features"`, retired in Session
+///         163, as the NARA Lookup target; the call sites and this comment now agree
 struct ResearchGuideLinkButton: View {
 
     /// The `EducationPage.id` to open the guide to.
