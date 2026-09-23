@@ -18136,3 +18136,42 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
+
+## Session 2026-09-23 — A section's title is its own heading, not every heading inside it
+
+**The question:** lane T's second PR, #1389 — the Corpus Browser's first Front Matter row of
+frus1946v06 read "PrefacePrinciples for the Compilation and Editing of “Foreign Relations”". Index
+**v56**.
+
+**Every `<head>` inside a section was part of its title.** `VolumeStructureParserDelegate` started a
+capture at any `<head>` while a structural frame was open. `<frus:attachment>` and `<list>` push no
+frame, so their headings landed in the enclosing section's `headParts`, joined on pop with no
+separator. The issue's replica of the delegate over the 553 manifest volumes counted **176 sections
+in 88 volumes** carrying a second heading — 73 prefaces with the attached "Principles" statement, 90
+meeting sections in frus1952-54v05 trailed by their participants list ("…London Present United
+States United Kingdom"), frus1977-80v11p1's Persons list running through five subheadings — and 23
+of them glued together. The title is persisted in `volume_structures` and read before any re-parse
+by both Browse paths, so the fix needs the bump.
+
+**The rule: the innermost section's first `<head>`, nothing else.** A `titleCaptured` flag on the
+frame is set when a capture starts, and no later head starts one. In all 176 sections the first head
+is a direct child of the section's div and none has a second direct-child head, so a first-head rule
+and a direct-child rule give the same titles.
+
+**The review found a bigger defect of the same kind, and it rides the same bump.** The capture also
+took the text of a footnote inside the section's OWN head, which document titles have excluded since
+index v15: frus1919Parisv12's chapter read "The Greene Mission to the Baltic ProvincesAdditional
+information regarding conditions…". A `<note>` inside the captured head is now skipped unless it is
+inline text (`rend="inline"` and not a source note — the document parser's rule; no section head in
+the corpus carries one). No issue had been filed; it is fixed here because it is the same capture
+and the same v56 re-index, and a later PR would have cost another bump. **Replayed with a Python copy
+of the delegate over all 25,113 sections: 4,091 titles in 309 volumes change** — 176 from the
+first-head rule, 3,918 from the footnotes, 3 from both — no head consists only of a note, and no
+title falls back to its generic name.
+
+**Verification.** Fixtures on the three measured shapes, heads verbatim — frus1946v06's preface with
+its attachment; frus1952-54v05p1's `sec-Feb13-mtg1` with its participants list, nested under a titled
+compilation and chapter as it really sits, so a rule that consulted the wrong frame fails; and
+frus1919Parisv12's `ch4` with its head footnote — each asserted through `parseVolumeStructure` AND
+`parseVolumeFull(...).structureSections`, the path the index persists. A mirror-gated suite asserts
+all three on the real volumes, and the full parse on one.
