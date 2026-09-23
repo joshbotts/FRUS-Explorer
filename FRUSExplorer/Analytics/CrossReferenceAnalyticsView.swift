@@ -11,41 +11,91 @@ import Charts
 
 // MARK: - Row models
 
-/// One most-referenced document row: its node, inbound citation count, and header.
+/// What a Cross-Reference Analytics row calls the document it names (#1372).
+///
+/// **Membership decides the form, not the header.** An indexed document is named the way every
+/// other list names it — `DocumentDisplayTitle`, its printed head first. Only a document the
+/// reader has *not* downloaded gets the manifest form, "Document 245 — <volume title>", which is
+/// the one case both manuals describe. The rule this replaces keyed on an empty header instead,
+/// so an indexed editorial note — stored with an empty header until index v55 — was named as if
+/// its volume were missing, beside a row from the same volume that showed its head.
+///
+/// The row stores the result once, so the list, both CSVs and the header `openDocument` titles the
+/// reader with are the same string, and the chart axis and its VoiceOver label start from it (they
+/// append the document id only when two rows would otherwise read alike).
+///
+/// Version history:
+///   1.0 — #1372: extracted from the view's `targetLabel`, keyed on membership
+enum CrossReferenceTargetLabel {
+
+    /// The label for one target.
+    ///
+    /// - Parameters:
+    ///   - facts: What the index holds for this document, or `nil` when it is not indexed.
+    ///   - documentId: The document's id (`d245`), whose number the manifest form prints.
+    ///   - volumeTitle: The volume's title from the manifest, for the manifest form.
+    /// - Returns: A non-empty label.
+    static func text(facts: CrossReferenceStore.DocumentTitleFacts?,
+                     documentId: String, volumeTitle: String) -> String {
+        if let facts { return DocumentDisplayTitle.text(facts, documentId: documentId) }
+        let number = documentId.hasPrefix("d") ? String(documentId.dropFirst()) : documentId
+        let prefix = String(localized: "crossRefAnalytics.row.documentPrefix", defaultValue: "Document")
+        return "\(prefix) \(number) — \(volumeTitle)"
+    }
+
+    /// A row's label and membership, looked up in one batch of title facts — the whole of what
+    /// the ranking and the landmarks each ask of the store, so neither view site spells the key,
+    /// the membership test or the label rule itself.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The target's volume.
+    ///   - documentId: The target's document.
+    ///   - facts: `CrossReferenceStore.documentTitleFacts(for:)`'s result, keyed `volume/document`;
+    ///     a key is present exactly when the document is indexed.
+    ///   - volumeTitle: The volume's manifest title, for the not-downloaded form.
+    /// - Returns: The label, and whether the document is indexed locally.
+    static func resolve(volumeId: String, documentId: String,
+                        in facts: [String: CrossReferenceStore.DocumentTitleFacts],
+                        volumeTitle: String) -> (label: String, isIndexed: Bool) {
+        let found = facts["\(volumeId)/\(documentId)"]
+        return (text(facts: found, documentId: documentId, volumeTitle: volumeTitle), found != nil)
+    }
+}
+
+/// One most-referenced document row: its node, inbound citation count, and label.
 ///
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
+///   1.1 — #1372: carries its `CrossReferenceTargetLabel` rather than a raw header
 private struct InDegreeRow: Identifiable, Equatable {
     let volumeId: String
     let documentId: String
     let inDegree: Int
-    let header: String?
+    /// What the row, the chart axis, the CSV and the opened reader call this document.
+    let label: String
     /// Whether the target is indexed locally (present in `document_cache`), independent of whether
-    /// it has a `<head>` — editorial notes are indexed but headerless (#278).
+    /// it has a `<head>` (#278).
     let isIndexed: Bool
 
     var id: String { "\(volumeId)/\(documentId)" }
-
-    /// Display label — the header if indexed, else the volume/document key.
-    var displayLabel: String { header ?? "\(volumeId) · \(documentId)" }
 }
 
-/// One PageRank landmark row: its node, score, and header.
+/// One PageRank landmark row: its node, score, and label.
 ///
 /// Version history:
 ///   1.0 — CA-6 (analytics CA-track): initial implementation
+///   1.1 — #1372: carries its `CrossReferenceTargetLabel` rather than a raw header
 private struct LandmarkRow: Identifiable, Equatable {
     let volumeId: String
     let documentId: String
     let score: Double
-    let header: String?
+    /// What the row, the CSV and the opened reader call this document.
+    let label: String
     /// Whether the target is indexed locally (present in `document_cache`), independent of whether
-    /// it has a `<head>` — editorial notes are indexed but headerless (#278).
+    /// it has a `<head>` (#278).
     let isIndexed: Bool
 
     var id: String { "\(volumeId)/\(documentId)" }
-
-    var displayLabel: String { header ?? "\(volumeId) · \(documentId)" }
 }
 
 /// One cell of the volume heat matrix: source volume, target volume, ref count.
@@ -113,6 +163,9 @@ private struct HeatCell: Identifiable, Equatable {
 ///          bar by Swift Charts' categorical aggregation; (b) reloads on
 ///          `readOnlyStoresGeneration` so a dashboard on screen when a reindex finishes
 ///          refreshes against the reopened store instead of showing stale-connection emptiness
+///   1.4 — #1372: rows are labelled by membership (`CrossReferenceTargetLabel`), so an indexed
+///          editorial note is no longer named as if its volume were missing, and both CSVs write
+///          the label the screen shows
 /// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
 ///
 /// ## An empty marker, deliberately — and the assessment that chose it
@@ -555,7 +608,7 @@ struct CrossReferenceAnalyticsView: View {
             title: String(localized: "crossRefAnalytics.ranking.heading",
                           defaultValue: "Most-Referenced Documents"),
             rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId,
-                                 label: $0.displayLabel, inDegree: $0.inDegree) })
+                                 label: $0.label, inDegree: $0.inDegree) })
     }
 
     private func exportRankingCSV() {
@@ -738,7 +791,7 @@ struct CrossReferenceAnalyticsView: View {
         let table = AnalyticsChartTables.crossRefLandmarkTable(
             title: title,
             rows: landmarks.map { (volumeId: $0.volumeId, documentId: $0.documentId,
-                                   label: $0.displayLabel, score: $0.score) })
+                                   label: $0.label, score: $0.score) })
         deliver(table, crossRefProvenance(
             figureTitle: title,
             axisLabel: String(localized: "crossRefAnalytics.export.axis.pageRank",
@@ -818,7 +871,7 @@ struct CrossReferenceAnalyticsView: View {
         let axisLabels = disambiguatedRankingLabels(
             ranking.map { row in
                 (id: row.id,
-                 name: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header),
+                 name: row.label,
                  shortSuffix: row.documentId)
             }
         )
@@ -837,7 +890,7 @@ struct CrossReferenceAnalyticsView: View {
             }
             // The bar is keyed on the opaque id for correct geometry, so restore a meaningful
             // VoiceOver announcement: the human document label + its inbound-citation count.
-            .accessibilityLabel(Text(axisLabels[row.id] ?? row.displayLabel))
+            .accessibilityLabel(Text(axisLabels[row.id] ?? row.label))
             .accessibilityValue(Text(String(localized: "crossRefAnalytics.axis.inDegreeValue",
                                              defaultValue: "\(row.inDegree) inbound citations")))
         }
@@ -867,8 +920,7 @@ struct CrossReferenceAnalyticsView: View {
         VStack(spacing: 0) {
             ForEach(Array(ranking.enumerated()), id: \.element.id) { index, row in
                 Button {
-                    openDocument(volumeId: row.volumeId, documentId: row.documentId,
-                                 header: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                    openDocument(volumeId: row.volumeId, documentId: row.documentId, header: row.label)
                 } label: {
                     HStack {
                         Text("\(index + 1).")
@@ -876,7 +928,7 @@ struct CrossReferenceAnalyticsView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 28, alignment: .trailing)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                            Text(row.label)
                                 .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
                                 .font(.caption2).foregroundStyle(.secondary)
@@ -1205,8 +1257,7 @@ struct CrossReferenceAnalyticsView: View {
         VStack(spacing: 0) {
             ForEach(Array(landmarks.enumerated()), id: \.element.id) { index, row in
                 Button {
-                    openDocument(volumeId: row.volumeId, documentId: row.documentId,
-                                 header: targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                    openDocument(volumeId: row.volumeId, documentId: row.documentId, header: row.label)
                 } label: {
                     HStack(alignment: .top, spacing: 12) {
                         // Rank chip (design Win 9) — the ordinal position, replacing the plain "1."
@@ -1220,7 +1271,7 @@ struct CrossReferenceAnalyticsView: View {
                                                       ? Color.accentColor
                                                       : Color.accentColor.opacity(0.15)))
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(targetLabel(volumeId: row.volumeId, documentId: row.documentId, header: row.header))
+                            Text(row.label)
                                 .font(.body).lineLimit(2)
                             Text(verbatim: "\(row.volumeId) · \(row.documentId)")
                                 .font(.caption2).foregroundStyle(.secondary)
@@ -1268,18 +1319,6 @@ struct CrossReferenceAnalyticsView: View {
 
     private func sectionSubtitle(_ text: String) -> some View {
         Text(text).font(.caption).foregroundStyle(.secondary).padding(.horizontal)
-    }
-
-    /// Primary label for a cross-reference target row (#209). An indexed target shows its document
-    /// header; a legitimate citation into a not-yet-downloaded volume (no cached header) falls back
-    /// to a manifest-derived "Document N — <volume title>" instead of the raw "volumeId · documentId"
-    /// key — so the highest-influence landmarks, which are frequently in un-downloaded volumes, read
-    /// as real documents rather than opaque keys.
-    private func targetLabel(volumeId: String, documentId: String, header: String?) -> String {
-        if let header, !header.isEmpty { return header }
-        let number = documentId.hasPrefix("d") ? String(documentId.dropFirst()) : documentId
-        let prefix = String(localized: "crossRefAnalytics.row.documentPrefix", defaultValue: "Document")
-        return "\(prefix) \(number) — \(volumeTitle(volumeId))"
     }
 
     private var loadingRow: some View {
@@ -1388,12 +1427,17 @@ struct CrossReferenceAnalyticsView: View {
 
         // In-degree ranking.
         let topDocs = (try? await store.topDocumentsByInDegree(limit: Self.rankingLimit, yearRange: range, volumeIds: scope)) ?? []
-        let rankingIndexed = (try? await store.indexedDocumentKeys(
-            for: topDocs.map { (volumeId: $0.volumeId, documentId: $0.documentId) })) ?? []
+        // One query answers both questions a row asks — is it indexed, and what is it called
+        // (#1372): a key is present exactly when the document is in `document_cache`.
+        let rankingFacts = (try? await store.documentTitleFacts(
+            for: topDocs.map { (volumeId: $0.volumeId, documentId: $0.documentId) })) ?? [:]
         ranking = topDocs.map {
-            InDegreeRow(volumeId: $0.volumeId, documentId: $0.documentId,
-                        inDegree: $0.inDegree, header: $0.header,
-                        isIndexed: rankingIndexed.contains("\($0.volumeId)/\($0.documentId)"))
+            let target = CrossReferenceTargetLabel.resolve(
+                volumeId: $0.volumeId, documentId: $0.documentId, in: rankingFacts,
+                volumeTitle: volumeTitle($0.volumeId))
+            return InDegreeRow(volumeId: $0.volumeId, documentId: $0.documentId,
+                               inDegree: $0.inDegree, label: target.label,
+                               isIndexed: target.isIndexed)
         }
 
         // Degree distributions.
@@ -1419,15 +1463,16 @@ struct CrossReferenceAnalyticsView: View {
             PageRank.compute(edges: citationEdges)
         }.value
         let topScored = Array(scored.prefix(Self.landmarkLimit))
-        // Join headers for the landmark set.
-        let headerKeys = topScored.map { (volumeId: $0.key.volumeId, documentId: $0.key.documentId) }
-        let headers = (try? await store.documentHeaders(for: headerKeys)) ?? [:]
-        let landmarkIndexed = (try? await store.indexedDocumentKeys(for: headerKeys)) ?? []
+        // Title facts for the landmark set — membership and name in one query, as for the ranking.
+        let landmarkKeys = topScored.map { (volumeId: $0.key.volumeId, documentId: $0.key.documentId) }
+        let landmarkFacts = (try? await store.documentTitleFacts(for: landmarkKeys)) ?? [:]
         landmarks = topScored.map {
-            LandmarkRow(volumeId: $0.key.volumeId, documentId: $0.key.documentId,
-                        score: $0.score,
-                        header: headers["\($0.key.volumeId)/\($0.key.documentId)"],
-                        isIndexed: landmarkIndexed.contains("\($0.key.volumeId)/\($0.key.documentId)"))
+            let target = CrossReferenceTargetLabel.resolve(
+                volumeId: $0.key.volumeId, documentId: $0.key.documentId, in: landmarkFacts,
+                volumeTitle: volumeTitle($0.key.volumeId))
+            return LandmarkRow(volumeId: $0.key.volumeId, documentId: $0.key.documentId,
+                               score: $0.score, label: target.label,
+                               isIndexed: target.isIndexed)
         }
 
         isLoading = false

@@ -1204,6 +1204,283 @@ struct TextExtractionTests {
         let note = IndexingPipeline.extractSourceNote(from: nodes)
         #expect(note?.contains("National Archives") == true)
     }
+
+    // MARK: #1375 — the printed join, one fixture per rule
+
+    /// Each branch of `joinPrinted` gets a fixture of its own, so a mutation that drops a branch
+    /// fails at least the test named for it rather than hiding behind a fixture built for another.
+    @Test("joinPrinted concatenates when the left piece ends in its own space")
+    func joinKeepsLeftBoundarySpace() {
+        #expect(FRUSASTNode.joinPrinted(["Secretary ", "Kissinger"]) == "Secretary Kissinger")
+    }
+
+    @Test("joinPrinted concatenates when the right piece begins with its own space")
+    func joinKeepsRightBoundarySpace() {
+        #expect(FRUSASTNode.joinPrinted(["Kissinger", " said"]) == "Kissinger said")
+    }
+
+    @Test("joinPrinted adds no space after an opening bracket or quote")
+    func joinNoSpaceAfterOpener() {
+        #expect(FRUSASTNode.joinPrinted(["Union (", "Kennan"]) == "Union (Kennan")
+        #expect(FRUSASTNode.joinPrinted(["the \u{201C}", "Hinge"]) == "the \u{201C}Hinge")
+    }
+
+    @Test("joinPrinted adds no space before closing punctuation")
+    func joinNoSpaceBeforeCloser() {
+        #expect(FRUSASTNode.joinPrinted(["Kennan", ")"]) == "Kennan)")
+        #expect(FRUSASTNode.joinPrinted(["Mr. Adams", "."]) == "Mr. Adams.")
+        #expect(FRUSASTNode.joinPrinted(["Washington", ","]) == "Washington,")
+        #expect(FRUSASTNode.joinPrinted(["Rusk", "\u{2019}s"]) == "Rusk\u{2019}s")
+    }
+
+    /// The pretty-printed case a plain concatenation breaks: no piece carries a space.
+    @Test("joinPrinted inserts one space where neither side carries one")
+    func joinInsertsSpaceOtherwise() {
+        #expect(FRUSASTNode.joinPrinted(["The", "Lake Torpedo Boat Company", "to the"])
+                == "The Lake Torpedo Boat Company to the")
+    }
+
+    /// An excluded footnote or a page break flattens to `""`; it must not become a separator.
+    @Test("joinPrinted skips empty pieces")
+    func joinSkipsEmptyPieces() {
+        #expect(FRUSASTNode.joinPrinted(["", "Kennan", "", ")", ""]) == "Kennan)")
+        #expect(FRUSASTNode.joinPrinted([]) == "")
+    }
+
+    // MARK: #1375 — parser-driven titles and datelines, on the corpus's own shapes
+
+    /// Parses one document out of `xml` through the real parser, the call chain
+    /// `DocumentViewModel` and the index both make.
+    private func parsedNodes(_ body: String, documentId: String,
+                             attributes: String = "") async throws -> [FRUSASTNode] {
+        try await withTempDir { dir in
+            let xml = """
+            <TEI><text><body>
+              <div type="document" xml:id="\(documentId)" \(attributes)>\(body)</div>
+            </body></text></TEI>
+            """
+            let url = dir.appendingPathComponent("fixture.xml")
+            try Data(xml.utf8).write(to: url)
+            let ast = try await FRUSDocumentParser().parseDocument(documentId: documentId,
+                                                                   volumeURL: url)
+            return try #require(ast?.nodes)
+        }
+    }
+
+    /// frus1946v06 d2, verbatim: a `persName` inside parentheses, with no whitespace at either
+    /// bracket. The space join stored "The Chargé in the Soviet Union ( Kennan ) to the
+    /// Secretary of State".
+    @Test("A parenthesised name in the head gains no space inside the brackets (frus1946v06 d2)")
+    func parsedHeadParenthesisedName() async throws {
+        let nodes = try await parsedNodes("""
+            <note rend="inline" type="source">711.75/2–146: Telegram</note>
+            <head><hi rend="italic">The Chargé in the Soviet Union</hi> (<persName
+                    type="from"><hi rend="italic">Kennan</hi></persName>) <hi
+                    rend="italic">to the <gloss type="to">Secretary of
+                    State</gloss></hi></head>
+            <p>Body.</p>
+            """, documentId: "d2")
+        #expect(IndexingPipeline.extractHeader(from: nodes)
+                == "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+    }
+
+    /// frus1861 d69, verbatim: the closing full stop follows `</hi>` directly.
+    @Test("A closing full stop after markup gains no space before it (frus1861 d69)")
+    func parsedHeadClosingStop() async throws {
+        let nodes = try await parsedNodes("""
+            <head><hi rend="italic">Mr. <persName type="from">Seward</persName> to Mr.
+                        <persName type="to">Adams</persName></hi>.</head>
+            <p>Body.</p>
+            """, documentId: "d69")
+        #expect(IndexingPipeline.extractHeader(from: nodes) == "Mr. Seward to Mr. Adams.")
+    }
+
+    /// frus1915Supp d1120, verbatim: each phrase in its own element, separated only by
+    /// whitespace-only runs the parser drops. A plain concatenation would glue it into
+    /// "TheLake Torpedo Boat Companyto theSecretary of State".
+    @Test("A pretty-printed head does not glue its phrases together (frus1915Supp d1120)")
+    func parsedHeadPrettyPrinted() async throws {
+        let nodes = try await parsedNodes("""
+            <note rend="inline" type="source">File No. 763.72111/1679</note>
+            <head>
+                <hi rend="italic">The</hi>
+                <gloss type="from">
+                    <hi rend="italic">Lake Torpedo Boat Company</hi>
+                </gloss>
+                <hi rend="italic">to the</hi>
+                <gloss type="to">
+                    <hi rend="italic">Secretary of State</hi>
+                </gloss>
+            </head>
+            <p>Body.</p>
+            """, documentId: "d1120")
+        #expect(IndexingPipeline.extractHeader(from: nodes)
+                == "The Lake Torpedo Boat Company to the Secretary of State")
+    }
+
+    /// frus1961-63v11 d1, verbatim: `<placeName>` then ", " then `<date>` then ".". The space join
+    /// stored "Washington , October 1, 1962 .".
+    @Test("A dateline gains no space before its comma or closing stop (frus1961-63v11 d1)")
+    func parsedDateline() async throws {
+        let nodes = try await parsedNodes("""
+            <head>1. Briefing Paper</head>
+            <opener><dateline rendition="#right"><placeName>Washington</placeName>, <date
+                        calendar="gregorian" when="1962-10-01">October 1,
+                    1962</date>.</dateline></opener>
+            <p>Body.</p>
+            """, documentId: "d1")
+        #expect(IndexingPipeline.extractDateline(from: nodes) == "Washington, October 1, 1962.")
+    }
+
+    /// frus1947v05 d360, verbatim: a dateline carrying the editors' footnote. The title drops its
+    /// notes; the dateline has always kept them, and only its separator changed — so flipping
+    /// `extractDateline`'s `excludingFootnotes` would silently move every such stored dateline.
+    @Test("A dateline keeps its footnote text (frus1947v05 d360)")
+    func parsedDatelineKeepsFootnote() async throws {
+        let nodes = try await parsedNodes("""
+            <head>Editorial heading</head>
+            <opener><dateline rendition="#right"> <placeName> <hi rend="smallcaps">Athens</hi></placeName>, <date calendar="gregorian" when="1947-12-08">December 8, 1947</date>.<note n="1" xml:id="d360fn1">Received December 15.</note> </dateline></opener>
+            <p>Body.</p>
+            """, documentId: "d360")
+        #expect(IndexingPipeline.extractDateline(from: nodes)
+                == "Athens, December 8, 1947. Received December 15.")
+    }
+
+    /// The v55 bump is what makes an already-indexed device re-parse and store these titles and
+    /// datelines; the code alone changes nothing on a device that never re-indexes.
+    @Test("The index version is at least 55, the printed-titles rebuild")
+    func indexVersionCoversPrintedTitles() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 55)
+    }
+
+    // MARK: #1372 — an editorial note's head is read through its wrapper
+
+    /// The parser wraps an editorial note in one `.editorialNote` node; the extractor used to look
+    /// for `.head` only at the top level and stored `""` for all 8,467 notes. frus1964-68v02 d245.
+    @Test("An editorial note's printed head is the stored title (frus1964-68v02 d245)")
+    func parsedEditorialNoteHead() async throws {
+        let nodes = try await parsedNodes("""
+            <head>245. Editorial Note</head>
+            <p>On April 7 President Johnson delivered an address.</p>
+            """, documentId: "d245", attributes: #"n="245" subtype="editorial-note""#)
+        // The fixture really is the wrapped shape; without this the test could pass vacuously.
+        guard case .editorialNote? = nodes.first else {
+            Issue.record("the parser no longer wraps an editorial note; this fixture tests nothing")
+            return
+        }
+        #expect(IndexingPipeline.extractHeader(from: nodes) == "245. Editorial Note")
+    }
+
+    /// frus1941-43 d291: a note whose head is a real title, preceded by an inline source note and
+    /// carrying a footnote of its own — both must stay out of the title.
+    @Test("An editorial note with a real title keeps it and drops its notes (frus1941-43 d291)")
+    func parsedEditorialNoteRealTitle() async throws {
+        let nodes = try await parsedNodes("""
+            <note rend="inline" type="source">Department of Defense Files</note>
+            <head>
+                <hi rend="italic">Memorandum by Prime Minister Churchill</hi><note n="2"
+                    xml:id="d291fn2">According to Churchill, <hi rend="italic">Hinge of
+                    Fate</hi>, p. 353, this was written in June.</note>
+            </head>
+            <p>Body.</p>
+            """, documentId: "d291", attributes: #"n="291" subtype="editorial-note""#)
+        #expect(IndexingPipeline.extractHeader(from: nodes) == "Memorandum by Prime Minister Churchill")
+    }
+
+    /// End to end through the index, and on to the label Cross-Reference Analytics shows and
+    /// hands `openDocument` (#1372's 2026-09-23 comment): an indexed note is named by its head.
+    @Test("An indexed editorial note is stored, faceted and labelled by its printed head")
+    func indexedEditorialNoteIsLabelledByItsHead() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>frus1964-68v02</title></titleStmt>
+              <publicationStmt><date>1996</date></publicationStmt>
+              <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+              <text><body><div type="compilation" xml:id="comp1">
+                <div type="document" subtype="editorial-note" n="245" xml:id="d245">
+                  <head>245. Editorial Note</head>
+                  <p>On April 7 President Johnson delivered an address.</p>
+                </div>
+              </div></body></text>
+            </TEI>
+            """
+            try Data(xml.utf8).write(to: volDir.appendingPathComponent("frus1964-68v02.xml"))
+            try await pipeline.indexVolume("frus1964-68v02")
+
+            let store = try CrossReferenceStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let facts = try await store.documentTitleFacts(
+                for: [(volumeId: "frus1964-68v02", documentId: "d245"),
+                      (volumeId: "frus1964-68v03", documentId: "d9")])
+            let note = try #require(facts["frus1964-68v02/d245"])
+            #expect(note.isEditorialNote)
+            #expect(note.header == "245. Editorial Note")
+
+            // The same function both view sites call, over the store's own keys: an indexed note
+            // is named by its head, and a document in a volume not downloaded takes the manifest
+            // form — the only case the manuals describe.
+            let indexed = CrossReferenceTargetLabel.resolve(
+                volumeId: "frus1964-68v02", documentId: "d245", in: facts,
+                volumeTitle: "Vietnam, January–June 1965")
+            #expect(indexed.label == "245. Editorial Note")
+            #expect(indexed.isIndexed)
+            let absent = CrossReferenceTargetLabel.resolve(
+                volumeId: "frus1964-68v03", documentId: "d9", in: facts,
+                volumeTitle: "Vietnam, July–December 1965")
+            #expect(absent.label == "Document 9 — Vietnam, July–December 1965")
+            #expect(!absent.isIndexed)
+        }
+    }
+}
+
+// MARK: - RealTEIPrintedTitleTests
+
+/// #1375 and #1372 against the **real published volumes**, when a local corpus mirror is present.
+///
+/// The fixtures in `TextExtractionTests` copy the head or dateline under test verbatim (their
+/// bodies and unrelated notes are condensed); this suite reads
+/// the volumes themselves, so an edit to the TEI that changes a shape is caught here rather than
+/// silently leaving the fixtures describing a corpus that no longer exists. Skipped unless
+/// `FRUS_TEI_MIRROR` points at the corpus `volumes/` directory (run
+/// `TEST_RUNNER_FRUS_TEI_MIRROR=/path/to/frus/volumes xcodebuild test …`).
+///
+/// Version history:
+///   1.0 — #1375 / #1372: initial implementation
+@Suite("IndexingPipeline — real-TEI printed titles and datelines (#1375, #1372)",
+       .enabled(if: RealTEICorpus.hasVolumes(["frus1946v06", "frus1861", "frus1915Supp",
+                                              "frus1961-63v11", "frus1964-68v02", "frus1941-43"]),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEIPrintedTitleTests {
+
+    private func nodes(_ volumeId: String, _ documentId: String) async throws -> [FRUSASTNode] {
+        let dir = try #require(RealTEICorpus.volumesDirectory)
+        let ast = try await FRUSDocumentParser().parseDocument(
+            documentId: documentId, volumeURL: dir.appendingPathComponent("\(volumeId).xml"))
+        return try #require(ast?.nodes)
+    }
+
+    @Test("The issues' three real titles and one dateline read as printed")
+    func realTitlesAndDateline() async throws {
+        #expect(IndexingPipeline.extractHeader(from: try await nodes("frus1946v06", "d2"))
+                == "The Chargé in the Soviet Union (Kennan) to the Secretary of State")
+        #expect(IndexingPipeline.extractHeader(from: try await nodes("frus1861", "d69"))
+                == "Mr. Seward to Mr. Adams.")
+        #expect(IndexingPipeline.extractHeader(from: try await nodes("frus1915Supp", "d1120"))
+                == "The Lake Torpedo Boat Company to the Secretary of State")
+        #expect(IndexingPipeline.extractDateline(from: try await nodes("frus1961-63v11", "d1"))
+                == "Washington, October 1, 1962.")
+    }
+
+    @Test("Real editorial notes are titled by their printed heads")
+    func realEditorialNoteHeads() async throws {
+        #expect(IndexingPipeline.extractHeader(from: try await nodes("frus1964-68v02", "d245"))
+                == "245. Editorial Note")
+        #expect(IndexingPipeline.extractHeader(from: try await nodes("frus1941-43", "d291"))
+                == "Memorandum by Prime Minister Churchill")
+    }
 }
 
 // MARK: - ArchivalNeighborsTests
@@ -1310,11 +1587,31 @@ struct SpotlightDonationTests {
         #expect(item.attributeSet.title == "d9")
     }
 
-    @Test("The schema version stamps the textContent era")
+    @Test("The schema version stamps the post-v55 title era")
     func schemaVersionBumped() {
-        // v1 was the pre-textContent shape; a regression to 1 would stop the boot-time
-        // re-donation from ever running for existing users.
-        #expect(IndexingPipeline.currentSpotlightSchemaVersion == 2)
+        // v1 was the pre-textContent shape and v2 the textContent one; v3 re-donates after the
+        // index-v55 rebuild (#1375/#1372), whose `indexAllVolumes()` never donates. A regression
+        // would leave upgraded devices' Spotlight on the old spaced titles.
+        #expect(IndexingPipeline.currentSpotlightSchemaVersion == 3)
+    }
+
+    /// #1372: 2,560 notes print only *Editorial Note*; donated as-is they would be 2,560
+    /// identical Spotlight results. The title is the lists' title.
+    @Test("A note whose head only says Editorial Note is donated with its number")
+    func genericNoteHeadIsNumbered() {
+        let item = IndexingPipeline.makeSearchableItem(
+            volumeId: "frus1949v06", documentId: "d2", header: "Editorial Note",
+            bodyText: "text", documentNumber: "2", isEditorialNote: true)
+        #expect(item.attributeSet.title == "Editorial Note 2")
+    }
+
+    @Test("A note whose head is a real title is donated by it")
+    func realNoteTitleIsKept() {
+        let item = IndexingPipeline.makeSearchableItem(
+            volumeId: "frus1941-43", documentId: "d291",
+            header: "Memorandum by Prime Minister Churchill", bodyText: "text",
+            documentNumber: "291", isEditorialNote: true)
+        #expect(item.attributeSet.title == "Memorandum by Prime Minister Churchill")
     }
 }
 

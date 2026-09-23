@@ -22,7 +22,7 @@ import Foundation
 /// `extractBodyText(from: astDoc.nodes)` — every top-level child of a
 /// `<div type="document">`, rendered through `FRUSASTNode.plainText` and
 /// whitespace-normalised. `plainText` **includes footnote subtrees** (there is a separate
-/// `plainTextExcludingFootnotes`, used only for headers), so the faithful rule is simply:
+/// `printedText(excludingFootnotes:)`, used only for titles and datelines), so the faithful rule is simply:
 /// *all character data inside the document div*. That is what this extracts.
 ///
 /// It is a **deliberate approximation, not a reimplementation of the parser.** Matching the

@@ -18080,3 +18080,59 @@ equal to the embedded `Versions/A/llama`. A plain simulator `build` of the same 
 compiled to `BUILD SUCCEEDED` with the phase never executing (zero `PhaseScriptExecution` lines),
 so tests and development builds are untouched. What this session could not measure is the
 upload itself: the next TestFlight submission is the test that the warning is gone.
+
+## Session 2026-09-23 — Titles are stored as the page prints them, and 8,467 editorial notes get their heads back
+
+**The question:** lane T's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1375 (a space at every markup boundary in stored titles and datelines) and #1372 (every editorial
+note stored with an empty title), which claim the same function, `IndexingPipeline.extractHeader`.
+Index **v55**.
+
+**The join was redundant and invented at once.** The parser already keeps the one space the XML had
+at a text/element boundary, so joining children with a space added nothing where the XML had one
+and invented one where it had none — inside parentheses and before a stop, which is how the corpus
+writes a name and a closing full stop. `FRUSASTNode.joinPrinted` concatenates where either side
+carries its own space, after `( [ { “ ‘` and before `) ] } . , ; : ! ? ” ’`, and inserts one space
+otherwise, because a pretty-printed head (`frus1915Supp` d1120) has no other separator. **Measured
+by a Python replication of the parser over all 553 volumes, validated against 10,758 real stored
+headers (all equal):** 199,368 more titles and 215,945 more datelines now equal the XML, the issue's
+residue of 727 and 4,903 remains (ordinals split by markup, dash compounds, drop caps, all spaced
+identically by the old join), and in every one of 614,000+ rows the new string is the old one with
+spaces removed. The 543 rows that "regressed" against the XML's own character data are all
+pretty-print whitespace inside a bracket (`frus1951v04p1`'s "( Porter )") where the new string is
+the printed form. `plainText` and `body_text` are untouched — and **`body_text` does reach the
+screen** (Related Documents and Project Home snippets), which the first draft of this change denied
+in a comment; applying the join there is its own parse change and is left for a separate lane-T PR,
+which costs testers nothing extra because the whole lane ships in one release.
+
+**The empty note titles measured the parser, not the corpus.** All 8,467 notes print a `<head>`;
+the parser wraps a note in one `.editorialNote` node and the extractor never looked inside. It does
+now, which makes the "8,474 headerless documents" figure in three comments a record of the bug —
+seven documents in the corpus have no head. **But 2,676 notes print a head that names only their
+kind** (*Editorial Note* ×2,560, *Editor's Note* ×97, *[Untitled]*…), up to 99 in one volume, so
+storing the head would have turned lists that read *Editorial Note 2, 7, 24* into identical rows.
+`DocumentDisplayTitle` treats a note's generic head as no head — an exact list measured from the
+corpus, not a pattern, so *The World War: Editorial note* stays a title — and the reader's title and
+the Spotlight title now go through the same rule.
+
+**Cross-Reference Analytics labels by membership.** `CrossReferenceTargetLabel.resolve`, over one
+`documentTitleFacts` query, replaces a header lookup plus a membership lookup: an indexed note is no
+longer "Document 245 — <volume title>", the form the manuals reserve for a volume not downloaded, and
+both CSVs write what the screen shows. `indexedDocumentKeys` keeps its tests and loses its last
+production caller.
+
+**Spotlight schema 3.** The version-bump re-index runs `indexAllVolumes()`, which never donates, so
+without it every upgraded device would keep "( Kennan )" in Spotlight. The bump makes the existing
+post-reindex call re-donate.
+
+**Verification.** Build-for-testing on iPhone 17 (iOS 26.3, pinned `B5ED82DB`); 93 targeted tests
+pass, including a suite that parses the real volumes (`FRUS_TEI_MIRROR`). A six-mutation sweep —
+note unwrap removed, join reverted to a space, label keyed on an empty header, generic-head rule
+off, dateline footnotes dropped, Spotlight version reverted — was each killed by the tests named for
+it, every file restored byte-for-byte after. The full unit target (5,101 tests, mirror set) has two
+failures, and **both fail identically on `v2`** in a separate `origin/v2` worktree on the same
+simulator with the same selection: `RealTEIFootnoteParityTests` (the app stores "Department of
+State" library citations the generator does not; mirror-gated, so ordinary runs skip it) and
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
+been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
+their own tasks.

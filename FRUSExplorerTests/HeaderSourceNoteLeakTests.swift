@@ -24,8 +24,8 @@ import Foundation
 ///
 /// **The index-time repair already exists** — it shipped with index version 14, whose note in
 /// `IndexingPipeline` records it: "`extractHeader` excludes footnote children of `<head>` (headers
-/// no longer embed the full source-note or head-footnote text)". `plainTextExcludingFootnotes`
-/// returns `""` for a `.footnote` node, and a `<note type="source">` becomes one — the parser's
+/// no longer embed the full source-note or head-footnote text)". `printedText(excludingFootnotes:
+/// true)` returns `""` for a `.footnote` node, and a `<note type="source">` becomes one — the parser's
 /// `isTransparent` refuses to inline a `type="source"` note even when it carries `rend="inline"`.
 ///
 /// What did not exist is anything holding that in place. These tests drive the **real** chain
