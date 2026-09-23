@@ -18159,9 +18159,11 @@ item's own first line still hangs, because that indent is the `li`'s own value; 
 `HTMLTemplate.documentCSS`, so it also reaches the HTML collection export
 (`CollectionItemHTMLRenderer.swift:723`), where only the list half applied: exports emit no chip.
 
-**The test is the first in the unit suite that loads the stylesheet.**
-`ClassificationChipSerializationTests` pinned the chip's markup, and the markup was right.
-`FootnoteListIndentRenderTests` (`FRUSRenderNodeHTMLSerializerTests.swift:756`) builds the page
+**The test is the first in the unit suite that measures computed style or layout.** The
+offset-engine suite has long loaded `HTMLTemplate.build` pages, stylesheet included, into the same
+harness, but only to read text back; `ClassificationChipSerializationTests` pinned the chip's
+markup, and the markup was right — no string assertion could see an inherited indent.
+`FootnoteListIndentRenderTests` (`FRUSRenderNodeHTMLSerializerTests.swift:760`) builds the page
 through `HTMLTemplate.build` — the call both reader representables make — for that suite's own
 `sourceWithMarking` fixture (now `static`, so the chip measured is the chip pinned) and a note
 holding a simple `.listBlock`, loads it into `OffsetEngineTestHarness` (internal rather than
