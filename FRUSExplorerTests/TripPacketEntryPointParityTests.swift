@@ -561,7 +561,7 @@ struct TripPacketEntryPointParityTests {
 
     /// **The packet sheet opens a plan's topic from the plan alone** (#1366 review, round 2). The
     /// editor hands the sheet the project's question for its caption, so only this scan stops the
-    /// `.plan` rebuild from filling an empty field with it: the round-1 review's mutant, reading
+    /// `.plan` rebuild from filling an empty field with it: the round-1 check's mutant, reading
     /// `plan.inquiryText ?? researchQuestion`, passed every test. The rule is
     /// `TripPacketTopicSentence.openPlanDraft`, driven at runtime by
     /// `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic`. This pins that the rebuild
