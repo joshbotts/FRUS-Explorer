@@ -25,6 +25,8 @@ import SwiftData
 ///          so the cloud's existing "no indexed text in this scope yet" empty state
 ///          is the honest `.noIndexedMembers` rendering, never an inversion);
 ///          a dangling id keeps the generic-title + empty-keys pattern
+///   1.2 — #1359 review: a collection scope titles an unnamed collection through
+///          `CollectionEditorNaming.listName` ("Untitled Collection"), not a blank string
 @MainActor
 struct WordCloudScopeResolver {
 
@@ -88,8 +90,10 @@ struct WordCloudScopeResolver {
             var descriptor = FetchDescriptor<Collection>(predicate: #Predicate { $0.id == id })
             descriptor.fetchLimit = 1
             let collection = try modelContext.fetch(descriptor).first
-            let title = collection?.name ?? String(localized: "wordcloud.scope.collection",
-                                                   defaultValue: "Collection")
+            // An unnamed collection (a new one whose editor waits in the background Collections tab) reads
+            // "Untitled Collection", the same label the picker and the rail give it — never a blank heading.
+            let title = collection.map { CollectionEditorNaming.listName(savedName: $0.name) }
+                ?? String(localized: "wordcloud.scope.collection", defaultValue: "Collection")
             let keys = (collection?.documentEntries ?? []).map {
                 WordCloudDocumentKey(volumeId: $0.volumeId, documentId: $0.documentId)
             }

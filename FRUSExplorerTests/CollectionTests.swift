@@ -5714,3 +5714,971 @@ struct CollectionAttachmentTests {
         #expect(second.sortOrder == 1)
     }
 }
+
+// MARK: - CollectionEditorNamingTests (#1359)
+
+/// The collection editor's title reads the collection's name, and the editor's name field follows a rename made
+/// somewhere else instead of writing the old name back over it (#1359).
+///
+/// ## Three layers
+/// - **The rules**, `CollectionEditorNaming`, are called directly: what the navigation bar says for a saved name, and
+///   when the name field and the saved name agree.
+/// - **The modifier**, `FrontMatterModelSync`, is HOSTED on its own: put in a real window over bindings into an
+///   `@Observable` stand-in for the editor's `@State`, so a write to the model reaches it through SwiftUI's own
+///   observation and `onChange`, the mechanism the editor relies on. That is where the whitespace rule is pinned,
+///   because only the stand-in can count saves and set the field to a pasted name. It builds its OWN call to the
+///   modifier, so it cannot see how the editor calls it.
+/// - **The editor**, `CollectionEditorView` itself, is hosted too, with a real `AppState` and container, and watched
+///   only through the model: a rename made elsewhere must survive the editor's next save, and following it must write
+///   nothing back. Those two catch what the stand-in cannot — the editor passing the modifier a binding it cannot
+///   write, or the body saving on every change to the name field again (the `.onChange` #1359 removed).
+///
+/// **A negative assertion needs a positive signal.** "The field was not rewritten" and "no save was asked for" are
+/// only evidence once an update pass that could have done it has demonstrably run. So each such test waits for
+/// something the same pass carries: a front-matter flag followed by the same modifier, or, in the real editor, the
+/// navigation bar showing a later rename.
+///
+/// `CollectionEditorTitleTests` (UI) drives the real title on iPhone and iPad; this suite is where the follow is
+/// tested, because nothing in the app's own UI can rename a collection while its editor is open on iOS in the same
+/// window — the writers are another iPad window and iCloud.
+///
+/// Version history:
+///   1.0 — #1359: initial implementation
+///   1.1 — #1359 review: the real editor hosted; the new-collection session; the macOS pane's call sites; a real name
+///         edit saves exactly once
+///   1.2 — #1359 review, round 2: the session judges "untouched" from the model; a list row's name (`listName`), and
+///         the Add to Collection picker's and the Research rail's rows read
+@Suite("Collection editor naming — #1359", .serialized)
+@MainActor
+struct CollectionEditorNamingTests {
+
+    // MARK: - The title
+
+    @Test("The title is the saved name, trimmed")
+    func titleReadsTheSavedName() {
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "Cuban Missile Crisis", isNewCollection: false)
+                == "Cuban Missile Crisis")
+        // A collection this editor created reads its name as soon as it has one, not "New Collection".
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "Cuban Missile Crisis", isNewCollection: true)
+                == "Cuban Missile Crisis")
+        // A name written untrimmed by another writer is shown the way this editor would have saved it.
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "  Berlin Crisis \n", isNewCollection: false)
+                == "Berlin Crisis")
+    }
+
+    /// Each fallback branch has its own expectation: the collection this editor created, one it opened, and a name
+    /// that is only whitespace, which is no name.
+    @Test("With no name, the title says how the editor was opened")
+    func titleFallsBackByHowTheEditorWasOpened() {
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "", isNewCollection: true) == "New Collection")
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "", isNewCollection: false)
+                == "Untitled Collection")
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "   ", isNewCollection: false)
+                == "Untitled Collection")
+    }
+
+    /// What a list row prints. The fallback is the case the rule exists for: a new collection is in the store, with no
+    /// name, for as long as its editor waits in the Collections tab.
+    @Test("A list row prints the saved name, trimmed, or \"Untitled Collection\"")
+    func listNameFallsBackToUntitled() {
+        #expect(CollectionEditorNaming.listName(savedName: "Cuban Missile Crisis") == "Cuban Missile Crisis")
+        #expect(CollectionEditorNaming.listName(savedName: "  Berlin Crisis \n") == "Berlin Crisis")
+        #expect(CollectionEditorNaming.listName(savedName: "") == "Untitled Collection")
+        #expect(CollectionEditorNaming.listName(savedName: "   ") == "Untitled Collection")
+    }
+
+    @Test("A word cloud of an unnamed collection is titled \"Untitled Collection\", not blank")
+    func wordCloudTitlesAnUnnamedCollection() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "  ")
+        context.insert(collection)
+        let resolver = WordCloudScopeResolver(manifestStore: ManifestStore(bundledEntries: []), pipeline: nil,
+                                              searchService: nil, modelContext: context)
+        let resolved = try await resolver.resolve(.collection(id: collection.id))
+        #expect(resolved.title == CollectionEditorNaming.listName(savedName: ""))
+        #expect(!resolved.title.trimmingCharacters(in: .whitespaces).isEmpty)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: - Agreement
+
+    /// Agreement is the test both directions of the sync turn on. Whitespace is the conjunct worth a fixture each way:
+    /// the editor trims before it saves, so a field holding a space the user has just typed says the same thing as
+    /// the saved name — and treating it as a disagreement would save for nothing on the save side, and on the follow
+    /// side delete the whitespace of a pasted name under the user's cursor.
+    @Test("The field agrees with the saved name once both are trimmed")
+    func fieldAgreesWithTheSavedNameOnceTrimmed() {
+        #expect(CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: "Cuban Missile Crisis"))
+        #expect(CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis ", withSavedName: "Cuban Missile Crisis"))
+        #expect(CollectionEditorNaming.fieldAgrees(" Cuban Missile Crisis", withSavedName: "Cuban Missile Crisis"))
+        #expect(CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: "Cuban Missile Crisis  "))
+        #expect(CollectionEditorNaming.fieldAgrees("   ", withSavedName: ""))
+        #expect(!CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: "Berlin Crisis"))
+        #expect(!CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: ""))
+        #expect(!CollectionEditorNaming.fieldAgrees("", withSavedName: "Cuban Missile Crisis"))
+    }
+
+    // MARK: - The macOS collection window
+
+    /// No test target runs macOS code, so the macOS collection window's two call sites are pinned by reading them:
+    /// its title and its name follow must go through the same rules the iOS editor uses. Scoped to
+    /// `CollectionDetailPane`, and to the calls themselves — each must be the only one of its kind there, spelled
+    /// exactly — so prose about them, or the right call somewhere else, cannot satisfy it.
+    @Test("The macOS collection window titles and follows its name through the same rules")
+    func macWindowUsesTheSharedNamingRules() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "// MARK: - CollectionDetailPane"),
+                                 "CollectionDetailPane's MARK is gone — moved or renamed?")
+        let end = try #require(source.range(of: "// MARK: - MacEntryRow", range: start.upperBound..<source.endIndex),
+                               "The MARK after CollectionDetailPane is gone, so the pane's extent is unknown")
+        let code = source[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") }
+
+        let titles = code.filter { $0.hasPrefix(".navigationTitle(") }
+        #expect(titles == [".navigationTitle(CollectionEditorNaming.navigationTitle(savedName: name, isNewCollection: false))"],
+                "CollectionDetailPane's title is not the shared rule for a collection it opened: \(titles)")
+
+        let follow = try #require(code.firstIndex(of: ".onChange(of: collection.name) { _, newValue in"),
+                                  "CollectionDetailPane no longer follows collection.name")
+        #expect(code.filter { $0.hasPrefix(".onChange(of: collection.name)") }.count == 1,
+                "CollectionDetailPane follows collection.name more than once")
+        #expect(code[follow + 1] == "if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }",
+                "CollectionDetailPane's name follow does not compare through fieldAgrees: \(code[follow + 1])")
+    }
+
+    /// The blank row (#1359 review, round 2). While a new collection's editor waits in the Collections tab, the
+    /// collection is in the store with no name, and a document's Add to Collection picker lists it; printed bare, it
+    /// was a blank row reading "0 documents". The row's one name-printing call is pinned by reading `collectionRow`:
+    /// it must print through `listName`, and nothing there may print the name another way. Hosting the real picker
+    /// was tried first and read nothing — in the test host's window it exposed no accessibility label at all, not
+    /// even its navigation bar's — so this reads the source, and `listNameFallsBackToUntitled` pins what it prints.
+    @Test("The Add to Collection picker's row prints a collection's name through listName")
+    func pickerRowUsesListName() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionPickerSheet.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "private func collectionRow(_ collection: Collection) -> some View {"),
+                                 "CollectionPickerSheet.collectionRow is gone — moved or renamed?")
+        let end = try #require(source.range(of: "// MARK: - macOS Body", range: start.upperBound..<source.endIndex),
+                               "The MARK after collectionRow is gone, so its extent is unknown")
+        let names = source[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") && $0.contains("collection.name") }
+        #expect(names == ["Text(CollectionEditorNaming.listName(savedName: collection.name))"],
+                "The picker's row prints a collection's name some other way: \(names)")
+    }
+
+    /// The Research rail's Collections section lists the collections a document is in, so a document added from the
+    /// rail's own Add to Collection to a new collection whose editor waits in the Collections tab is listed under a
+    /// collection with no name. Nothing hosts the rail here, so its one name-printing call is pinned by reading
+    /// `collectionsAccordion`: it must print through `listName`, and nothing there may print the name another way.
+    @Test("The Research rail's Collections section prints a collection's name through listName")
+    func railCollectionsSectionUsesListName() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/DocumentView/ResearchRailView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "private var collectionsAccordion: some View {"),
+                                 "ResearchRailView.collectionsAccordion is gone — moved or renamed?")
+        let end = try #require(source.range(of: "// MARK: - Classification", range: start.upperBound..<source.endIndex),
+                               "The MARK after collectionsAccordion is gone, so its extent is unknown")
+        let names = source[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") && $0.contains("collection.name") }
+        #expect(names == ["Text(CollectionEditorNaming.listName(savedName: collection.name))"],
+                "The rail's Collections section prints a collection's name some other way: \(names)")
+    }
+
+    #if os(iOS)
+    // MARK: - The wiring, hosted
+
+    /// The acceptance case: another writer renames the collection, and the editor's name field says so. Without it
+    /// the field keeps the old name, and the editor's next save — any edit to the name, note, subtitle, author line
+    /// or a flag — writes that old name back over the rename.
+    @Test("A rename made elsewhere reaches the editor's name field")
+    func aRenameMadeElsewhereReachesTheNameField() async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            collection.name = "Berlin Crisis"
+            let followed = await Self.settle { editor.name == "Berlin Crisis" }
+            #expect(followed, "The name field still reads \"\(editor.name)\" after the model was renamed")
+        }
+    }
+
+    /// Following a rename must not itself save. The editor's save writes EVERY field it holds, so a follow that saved
+    /// would write this editor's copy of the note, subtitle and author line over whatever the same writer had just
+    /// changed there — and tag the collection into this device's active project with no edit made here.
+    @Test("Following a rename does not save it again")
+    func followingARenameDoesNotSaveItAgain() async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.name == "Berlin Crisis" },
+                         "The field never followed the rename, so there is no echo to check")
+            // The marker: the field's own change has been rendered once the modifier has carried a later flag change.
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no later update pass is known to have run")
+            #expect(editor.saves == 0, "Following the rename asked the editor to save \(editor.saves) time(s)")
+        }
+    }
+
+    /// The other half of the guard: a keystroke that changes only whitespace does not save, and one that changes the
+    /// name does. The whitespace edit is made alongside the marker flag so the pass that could have saved it is known
+    /// to have run before the count is read.
+    @Test("A name edit saves only when it changes the saved name")
+    func aNameEditSavesOnlyWhenItChangesTheSavedName() async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            editor.name = "Cuban Missile Crisis "
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no pass is known to have seen the edit")
+            #expect(editor.saves == 0, "Typing a trailing space asked the editor to save \(editor.saves) time(s)")
+
+            editor.name = "Cuban Missile Crisis, 1962"
+            try #require(await Self.settle { editor.saves >= 1 }, "Changing the name never asked for a save")
+            // Counted only once a later pass has run, so a second save for the same edit is seen too.
+            collection.includeProjectProvenance = true
+            try #require(await Self.settle { editor.includeProjectProvenance },
+                         "The modifier never carried the second marker flag, so no later pass is known to have run")
+            #expect(editor.saves == 1, "Changing the name asked for \(editor.saves) saves, not one")
+        }
+    }
+
+    /// The editor's own save, seen from the follow side: the user has pasted a name ending in a space, the editor has
+    /// saved it trimmed, and the model's change comes back through `onChange`. The field must keep its space — a
+    /// follow that compared untrimmed text would delete it under the cursor, and the next word would run into this one.
+    ///
+    /// Ordinary typing never builds this state (a typed trailing space does not change the trimmed name, so nothing
+    /// comes back), which is why `CollectionEditorTitleTests` passes against an untrimmed rule and this fixture does
+    /// not. It passes on the pre-#1359 editor too, which followed nothing; the untrimmed-rule mutant is what it kills.
+    @Test("The editor's own trimmed save does not rewrite the field")
+    func theEditorsOwnTrimmedSaveDoesNotRewriteTheField() async throws {
+        try await Self.withHostedEditor(named: "Cuban") { collection, editor in
+            // The field as the user left it; the model as the editor's save leaves it.
+            editor.name = "Cuban Missile Crisis "
+            try #require(await Self.settle { editor.saves == 1 }, "The edit that sets up the fixture never saved")
+
+            collection.name = "Cuban Missile Crisis"
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no pass is known to have seen the save")
+            #expect(editor.name == "Cuban Missile Crisis ",
+                    "The field was rewritten to \"\(editor.name)\"; the trailing space the user typed is gone")
+        }
+    }
+
+    // MARK: - The real editor, hosted
+
+    /// The acceptance case one layer up: the rename reaches the REAL editor's name field, so the editor's next save —
+    /// here the one a Section-defaults flag change triggers — writes the rename, not the name the editor opened with.
+    /// Fails if the editor passes the modifier a binding it cannot write (`.constant(collectionName)`), or follows
+    /// nothing.
+    @Test("A rename made elsewhere survives the real editor's next save")
+    func aRenameMadeElsewhereSurvivesTheEditorsNextSave() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis") { collection, editor, activeProject in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so no pass is known to have seen it")
+
+            // The flag is followed into the editor and saved, and the save writes every field — the name included.
+            collection.includeColophon = true
+            try #require(await Self.settle { collection.projectIds.contains(activeProject) },
+                         "The editor never saved after the flag changed, so the name its save writes was not tested")
+            #expect(collection.name == "Berlin Crisis",
+                    "The editor's next save wrote \"\(collection.name)\" over the rename")
+        }
+    }
+
+    /// Following a rename in the REAL editor writes nothing: the other writer's note survives, and the editor does not
+    /// tag the collection into this device's active project. Fails if the editor's body saves on every change to its
+    /// name field again — the `.onChange(of: collectionName) { saveLive() }` #1359 removed, which the modifier-only
+    /// tests above cannot see because they build their own call.
+    @Test("Following a rename in the real editor writes nothing back")
+    func followingARenameInTheEditorWritesNothingBack() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "The editor's note") {
+            collection, editor, activeProject in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            // Another writer changes the name and the note together, as one iCloud import would.
+            collection.name = "Berlin Crisis"
+            collection.note = "Their note"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so it was never followed")
+            // The marker: the bar shows a SECOND rename, so the pass after the first follow — the one an echo save
+            // would run in — has run.
+            collection.name = "Berlin Crisis, 1961"
+            try #require(await Self.settle { editor.title == "Berlin Crisis, 1961" },
+                         "The editor's title never read the second rename, so no later pass is known to have run")
+            #expect(collection.note == "Their note",
+                    "Following the rename wrote the editor's note back: the note reads \"\(collection.note ?? "nil")\"")
+            #expect(!collection.projectIds.contains(activeProject),
+                    "Following the rename saved, tagging the collection into this device's active project")
+        }
+    }
+
+    // MARK: - The new-collection session
+
+    /// The rule `NewCollectionSession` applies when the editor is dismissed, and its two guards: nothing happens
+    /// before the editor has inserted the collection (the copies its repeated `init` builds and throws away), and
+    /// nothing happens twice (Back reports itself through `onChange` AND `onDisappear`).
+    @Test("A new collection's session ends once, and only after it begins")
+    func aNewCollectionSessionEndsOnceAndOnlyAfterItBegins() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let stray = Collection(name: "")
+        stray.note = "A note, so the collection would be kept and named"
+        let straySession = NewCollectionSession(collection: stray)
+        straySession.end()
+        #expect(stray.name.isEmpty, "A session the editor never began named its collection \"\(stray.name)\"")
+
+        let untouched = Collection(name: "")
+        context.insert(untouched)
+        let untouchedSession = NewCollectionSession(collection: untouched)
+        untouchedSession.begin(in: context)
+        untouchedSession.end()
+        #expect(try !context.fetch(FetchDescriptor<Collection>()).contains { $0.id == untouched.id },
+                "An untouched new collection outlived its editor")
+
+        let kept = Collection(name: "")
+        context.insert(kept)
+        let keptSession = NewCollectionSession(collection: kept)
+        keptSession.begin(in: context)
+        kept.subtitle = "A subtitle"
+        keptSession.end()
+        #expect(kept.name == "Untitled Collection", "A kept, unnamed collection was named \"\(kept.name)\"")
+        kept.name = ""
+        keptSession.end()
+        #expect(kept.name.isEmpty, "The session ended twice: the second end named the collection again")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The backstop: a pushed editor taken off the stack while a screen it pushed covers it gets no view event, and
+    /// its session ends when the editor's state lets it go. `CollectionEditorTitleTests` drives that route on an
+    /// iPhone; this pins the mechanism.
+    @Test("A session the editor never ended ends when it is released")
+    func aSessionNeverEndedEndsWhenReleased() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let kept = Collection(name: "")
+        context.insert(kept)
+        do {
+            let session = NewCollectionSession(collection: kept)
+            session.begin(in: context)
+            kept.subtitle = "A subtitle"
+        }
+        #expect(await Self.settle { kept.name == "Untitled Collection" },
+                "Releasing a session the editor never ended left its collection named \"\(kept.name)\"")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The tab switch (#1359 review, round 2). A tab switch does not end the session, so while the editor waits in the
+    /// Collections tab the collection can gain an entry somewhere else — a document's Add to Collection picker lists
+    /// it — and the editor's own outline, loaded once, never hears of it. "Untouched" must be read from the model:
+    /// judged from the editor's outline, this collection was deleted at Back and its new entry left pointing at nothing.
+    /// The entry is added through `CollectionDocumentDiscovery.appendToCollection`, the call the picker makes.
+    @Test("A new collection that gained an entry somewhere else is kept, and named")
+    func aNewCollectionThatGainedAnEntryElsewhereIsKept() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "")
+        context.insert(collection)
+        let session = NewCollectionSession(collection: collection)
+        session.begin(in: context)
+
+        let entry = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d164", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
+        session.end()
+
+        #expect(try context.fetch(FetchDescriptor<Collection>()).contains { $0.id == collection.id }, """
+            A new collection that gained a document from another tab was discarded as untouched when its editor was \
+            dismissed: the rule read the editor's outline, not the model.
+            """)
+        #expect(collection.name == "Untitled Collection",
+                "The kept, unnamed collection was named \"\(collection.name)\"")
+        #expect(entry.collection?.id == collection.id, "The entry added from another tab lost its collection")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The other side of reading the model: an entry the context has deleted is not content. Added and removed again
+    /// before the editor goes, it leaves the collection as untouched as the editor's outline says it is. Measured: until
+    /// the context saves, `documentEntries` still lists the deleted entry, so a rule that asked only whether it was
+    /// empty kept this collection.
+    @Test("An entry added and removed again leaves a new collection untouched")
+    func anEntryAddedAndRemovedAgainLeavesItUntouched() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "")
+        context.insert(collection)
+        let session = NewCollectionSession(collection: collection)
+        session.begin(in: context)
+
+        let entry = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d164", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
+        context.delete(entry)
+        // The rule's `isDeleted` filter exists because, until the context saves, the relationship still lists the
+        // deleted entry. Pin that precondition: if SwiftData ever drops it at `delete`, this test would otherwise
+        // pass against the plain-`isEmpty` rule without saying so.
+        #expect(collection.documentEntries?.contains { $0.id == entry.id } == true,
+                "the deleted entry has left documentEntries before a save, so this fixture no longer tests the isDeleted filter")
+        session.end()
+
+        #expect(try !context.fetch(FetchDescriptor<Collection>()).contains { $0.id == collection.id }, """
+            A new collection whose only entry was removed again outlived its editor, named "\(collection.name)": \
+            the rule counted an entry the context had deleted.
+            """)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: - Fixtures
+
+    /// Containers whose host outlived its window. Kept for the life of the process, because releasing one resets its
+    /// context and destroys its models, and a surviving view that then read `collection.name` would stop the test
+    /// host with "This model instance was destroyed by calling ModelContext.reset" — which is how the first run of
+    /// this suite ended, and why teardown is ordered below.
+    private static var parkedContainers: [ModelContainer] = []
+
+    /// Hosts the modifier over a saved collection named `name` — the state an open editor's collection is in — runs
+    /// `body`, then takes the host down BEFORE the container goes, and waits for it to deallocate so no view is left
+    /// observing a model the container's release is about to destroy.
+    private static func withHostedEditor(
+        named name: String,
+        _ body: @MainActor (Collection, EditorFieldsHost) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let collection = Collection(name: name)
+        container.mainContext.insert(collection)
+        try container.mainContext.save()
+        let editor = try EditorFieldsHost(collection: collection)
+
+        var failure: (any Error)?
+        do { try await body(collection, editor) } catch { failure = error }
+        if !(await editor.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted view outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+
+    /// Hosts the REAL `CollectionEditorView` over a saved collection named `name`, with a fresh `AppState` whose
+    /// active project is a marker: the editor's save adds the active project to the collection, so the marker
+    /// appearing in `projectIds` is the positive signal that the editor saved. Takes the host down before the
+    /// container goes, and restores the active project the test host had.
+    private static func withRealEditor(
+        named name: String,
+        note: String? = nil,
+        _ body: @MainActor (Collection, RealEditorHost, UUID) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let collection = Collection(name: name)
+        collection.note = note
+        container.mainContext.insert(collection)
+        try container.mainContext.save()
+        let appState = AppState()
+        let previousProject = appState.activeProjectId
+        let activeProject = UUID()
+        appState.activeProjectId = activeProject
+        let editor = try RealEditorHost(collection: collection, container: container, appState: appState)
+
+        var failure: (any Error)?
+        do { try await body(collection, editor, activeProject) } catch { failure = error }
+        if !(await editor.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        }
+        appState.activeProjectId = previousProject
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+
+    /// Pumps the main run loop until `condition` holds or `timeout` passes, and reports whether it held.
+    private static func settle(timeout: Duration = .seconds(5), until condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+    #endif
+}
+
+#if os(iOS)
+/// Stands in for `CollectionEditorView`'s `@State` fields and hosts `FrontMatterModelSync` — the modifier the editor
+/// applies — over bindings into them, in a window of the test host's own scene. `@Observable`, so a change to a field
+/// re-renders the host the way a change to the editor's `@State` re-renders the editor.
+@MainActor
+@Observable
+private final class EditorFieldsHost {
+    /// The name field.
+    var name: String
+    /// The colophon toggle — the marker the tests use as a positive signal.
+    var includeColophon: Bool
+    /// The project-provenance toggle.
+    var includeProjectProvenance: Bool
+    /// The method-appendix toggle.
+    var includeMethodAppendix: Bool
+    /// How many times the modifier asked the editor to save.
+    var saves = 0
+    /// The window hosting the modifier; `nil` once closed.
+    @ObservationIgnored private var window: UIWindow?
+
+    /// Seeds the fields from `collection`, as the editor's `init` does, and hosts the modifier in a visible window.
+    init(collection: Collection) throws {
+        name = collection.name
+        includeColophon = collection.includeColophon
+        includeProjectProvenance = collection.includeProjectProvenance
+        includeMethodAppendix = collection.includeMethodAppendix
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the modifier in")
+        let sync = FrontMatterModelSync(
+            collectionName: Binding(get: { self.name }, set: { self.name = $0 }),
+            includeColophon: Binding(get: { self.includeColophon }, set: { self.includeColophon = $0 }),
+            includeProjectProvenance: Binding(get: { self.includeProjectProvenance },
+                                              set: { self.includeProjectProvenance = $0 }),
+            includeMethodAppendix: Binding(get: { self.includeMethodAppendix },
+                                           set: { self.includeMethodAppendix = $0 }),
+            collection: collection,
+            saveName: { self.saves += 1 })
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: Color.clear.modifier(sync))
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
+    }
+
+    /// Takes the window down and waits for the hosting controller to deallocate, so one test's view cannot answer
+    /// another's model writes or outlive its container. Returns whether it went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+
+/// Hosts the REAL `CollectionEditorView` — in its sheet presentation, which brings its own navigation stack — in a
+/// window of the test host's scene, with a real `AppState` and the collection's container.
+@MainActor
+private final class RealEditorHost {
+    /// The window hosting the editor; `nil` once closed.
+    private var window: UIWindow?
+
+    /// Hosts the editor over `collection`, which `container` holds.
+    init(collection: Collection, container: ModelContainer, appState: AppState) throws {
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the editor in")
+        let editor = CollectionEditorView(collection: collection)
+            .environment(appState)
+            .modelContainer(container)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: editor)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
+    }
+
+    /// The editor's navigation-bar title, as UIKit shows it.
+    var title: String? {
+        window.flatMap { Self.navigationBarTitle(in: $0) }
+    }
+
+    private static func navigationBarTitle(in view: UIView) -> String? {
+        if let bar = view as? UINavigationBar, let title = bar.topItem?.title { return title }
+        for subview in view.subviews {
+            if let title = navigationBarTitle(in: subview) { return title }
+        }
+        return nil
+    }
+
+    /// Takes the window down and waits for the hosting controller to deallocate. Returns whether it went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+#endif
+
+// MARK: - ListExportTests (#1371)
+
+/// The DOCX and PDF exporters read the same `.listBlock` the reader does, and both hard-coded a
+/// `"• "` where the volume printed `(1)`, `2.` or `a.` (#1371). They now print the label, the
+/// list's heading, and the other children of `<list>` the converter keeps — without letting any
+/// of that text advance the highlight tracker, which counts only the flat text.
+///
+/// The DOCX package is written stored (uncompressed), so `word/document.xml` is searchable in
+/// the archive bytes; the PDF is read back through PDFKit.
+@Suite("List heads and labels in DOCX and PDF exports (#1371)")
+struct ListExportTests {
+
+    /// Exports `model` as one collection document and returns the DOCX package bytes as text.
+    private func docxText(_ model: FRUSDocumentRenderModel,
+                          highlights: [ExportHighlight] = []) async throws -> String {
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1961-63v05", sortOrder: 1,
+            title: "Memorandum of Conversation", bodyText: "", renderModel: model,
+            highlights: highlights)
+        var options = CollectionExportOptions()
+        options.applyHighlights = !highlights.isEmpty
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Lists", note: nil),
+            items: [.document(doc)], options: options)
+        return String(decoding: try Data(contentsOf: url), as: UTF8.self)
+    }
+
+    /// Exports `model` as one collection document and returns the PDF's page text.
+    private func pdfText(_ model: FRUSDocumentRenderModel) async throws -> String {
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1961-63v05", sortOrder: 1,
+            title: "Memorandum of Conversation", bodyText: "", renderModel: model)
+        let url = try await PDFCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Lists", note: nil), items: [.document(doc)])
+        let pdf = try #require(PDFDocument(data: try Data(contentsOf: url)))
+        return (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+    }
+
+    /// The `<w:p>…</w:p>` paragraph of `xml` that contains `needle`.
+    private func paragraph(containing needle: String, in xml: String) throws -> String {
+        let hit = try #require(xml.range(of: needle), "\"\(needle)\" is not in document.xml")
+        let open = try #require(xml.range(of: "<w:p>", options: .backwards,
+                                           range: xml.startIndex..<hit.lowerBound))
+        let close = try #require(xml.range(of: "</w:p>", range: hit.upperBound..<xml.endIndex))
+        return String(xml[open.lowerBound..<close.upperBound])
+    }
+
+    /// d84's labelled list sits inside a `<p>`, which Word cannot hold; the exporter splits the
+    /// paragraph around it (`paragraphsDocx`), so its six labels print too. `everyChild`'s list
+    /// is a direct child of the document; d84's two headed lists are direct children too.
+    @Test("DOCX prints each printed label where the bullet was, and the list's heading")
+    func docxPrintsLabelsAndHeadings() async throws {
+        let d84 = try await docxText(try await ListShapeFixtures.renderModel(ListShapeFixtures.d84))
+        #expect(d84.contains("SUBJECT"))
+        #expect(d84.contains("PARTICIPANTS:"))
+        // The two unlabelled items (SUBJECT's and PARTICIPANTS') keep their bullet.
+        let subject = try paragraph(containing: "Vienna Meeting Between", in: d84)
+        #expect(subject.contains("•"))
+        // The labelled list inside the paragraph: the paragraph's own words, then each item.
+        let lead = try paragraph(containing: "During lunch the conversation", in: d84)
+        #expect(!lead.contains("During the discussion"), "the list must not print as runs of the paragraph: \(lead)")
+        for (label, words) in [("(1)", "During the discussion"), ("(2)", "In discussing agricultural"),
+                               ("(3)", "With reference to Gagarin"), ("(6)", "In response to the toast")] {
+            let para = try paragraph(containing: words, in: d84)
+            let labelAt = try #require(para.range(of: ">\(label)<"), "\(label) is not in the paragraph of \"\(words)\"")
+            let wordsAt = try #require(para.range(of: words))
+            #expect(labelAt.lowerBound < wordsAt.lowerBound, "\(label) must precede its item")
+        }
+
+        let xml = try await docxText(try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild))
+        #expect(xml.contains("Recommendations:"))
+        for (label, words) in [("a.", "First item text."), ("b.", "Second item text."),
+                               ("c", "Third item text.")] {
+            let para = try paragraph(containing: words, in: xml)
+            let labelAt = try #require(para.range(of: ">\(label)<"), "\(label) is not in the paragraph of \"\(words)\"")
+            let wordsAt = try #require(para.range(of: words))
+            #expect(labelAt.lowerBound < wordsAt.lowerBound, "\(label) must precede its item")
+            #expect(!para.contains("•"), "a labelled item must not also carry a bullet: \(para)")
+        }
+    }
+
+    @Test("PDF prints each printed label before its item, and the list's heading")
+    func pdfPrintsLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.d84)
+        let text = try await pdfText(model)
+        for printed in ["SUBJECT", "PARTICIPANTS:", "(1) During the discussion",
+                        "(2) In discussing agricultural", "(6) In response to the toast"] {
+            #expect(text.contains(printed), "the PDF does not print \"\(printed)\"")
+        }
+        #expect(!text.contains("• (1)") && !text.contains("•(1)"))
+    }
+
+    @Test("Every other list child prints in DOCX and PDF, and a page break between items does not split the list in Word")
+    func everyListChildPrints() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let xml = try await docxText(model)
+        for printed in ["Recommendations:", "By desire and on behalf of the meeting:",
+                        ">a.<", ">b.<", "Henry A. Kissinger", "[Figure: figure_0732]"] {
+            #expect(xml.contains(printed), "DOCX does not print \(printed)")
+        }
+        // Two <pb/>s sit between items b. and c. A page break inside an item has always been
+        // silent in Word; one between items stays silent too rather than breaking a numbered
+        // list. (The package has page breaks of its own — after the cover — so the check is
+        // scoped to the list.)
+        let second = try #require(xml.range(of: "Second item text."))
+        let third = try #require(xml.range(of: "Third item text."))
+        #expect(second.upperBound < third.lowerBound)
+        let between = xml[second.upperBound..<third.lowerBound]
+        #expect(between.contains("[Figure: figure_0732]"), "the figure between the page breaks must print")
+        #expect(!between.contains("<w:br w:type=\"page\"/>"), "a <pb/> between two items broke the page: \(between)")
+        let text = try await pdfText(model)
+        for printed in ["Recommendations:", "By desire and on behalf of the meeting:",
+                        "Henry A. Kissinger", "First item text."] {
+            #expect(text.contains(printed), "the PDF does not print \"\(printed)\"")
+        }
+    }
+
+    /// Before "Second item text." the list draws a heading, a salute, two labels, a line break and
+    /// two footnote markers, none of it flat text; if any of it advanced the tracker the painted
+    /// run would start early.
+    @Test("A highlight over a labelled item paints exactly that item's words in DOCX")
+    func docxHighlightIgnoresLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let flat = buildFlatText(from: model)
+        let target = "Second item text."
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        let xml = try await docxText(model, highlights: [
+            ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow)
+        ])
+        let runs = xml.matches(of: /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/)
+        let painted = runs.map { String($0.output.1) }.joined()
+        #expect(painted == target,
+                "the tracker counted text outside the flat text: painted \"\(painted)\"")
+    }
+
+    /// PDFKit reads a page's text back but not the rectangles drawn behind it, so this reads the
+    /// shading from `bodyAttributedString` — the step the export itself calls.
+    @Test("A highlight over a labelled item shades exactly that item's words in PDF")
+    @MainActor
+    func pdfHighlightIgnoresLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let flat = buildFlatText(from: model)
+        let target = "Second item text."
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        let body = PDFCollectionExporter().bodyAttributedString(
+            for: model,
+            highlights: [ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow)],
+            includeFootnotes: false)
+        var painted = ""
+        body.enumerateAttribute(PDFCollectionExporter.highlightAttrKey,
+                                in: NSRange(location: 0, length: body.length)) { value, range, _ in
+            if value != nil { painted += (body.string as NSString).substring(with: range) }
+        }
+        #expect(painted == target,
+                "the tracker counted text outside the flat text: shaded \"\(painted)\"")
+        // The body still prints what the tracker skipped. (Label a. carries a footnote marker,
+        // so it prints as "a.2 ".)
+        for printed in ["Recommendations:", "b. ", "c. ", "Henry A. Kissinger"] {
+            #expect(body.string.contains(printed), "the PDF body does not print \"\(printed)\"")
+        }
+    }
+
+    /// After the last item come a gap and a closer, drawn but not flat text. A highlight on the
+    /// paragraph after the list is the one they could drag onto themselves.
+    @Test("A highlight after a list's closing children shades exactly its own words in PDF")
+    @MainActor
+    func pdfHighlightAfterTheListIgnoresItsTrailingChildren() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let flat = buildFlatText(from: model)
+        let target = "Closing paragraph."
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        let body = PDFCollectionExporter().bodyAttributedString(
+            for: model,
+            highlights: [ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow)],
+            includeFootnotes: false)
+        #expect(body.string.contains("Henry A. Kissinger"), "the closer after the last item must print")
+        var painted = ""
+        body.enumerateAttribute(PDFCollectionExporter.highlightAttrKey,
+                                in: NSRange(location: 0, length: body.length)) { value, range, _ in
+            if value != nil { painted += (body.string as NSString).substring(with: range) }
+        }
+        #expect(painted == target, "the tracker counted the list's closing children: shaded \"\(painted)\"")
+    }
+
+    /// The text each Word highlight colour shades, in document order.
+    private func docxPainted(_ xml: String) -> [String: String] {
+        var painted: [String: String] = [:]
+        for match in xml.matches(of: /<w:highlight w:val="([a-z]+)"\/><\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/) {
+            painted[String(match.output.1), default: ""] += String(match.output.2)
+        }
+        return painted
+    }
+
+    /// Exports `model` with one highlight per `(text, colour)` over that text's flat-text range.
+    private func docxText(_ model: FRUSDocumentRenderModel,
+                          marking marks: [(String, DocumentHighlight.Color)]) async throws -> String {
+        let flat = buildFlatText(from: model)
+        let highlights = try marks.map { text, color in
+            let range = try #require(flat.range(of: text), "\"\(text)\" is not in the flat text")
+            let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+            return ExportHighlight(startOffset: start, endOffset: start + text.utf16.count, color: color)
+        }
+        return try await docxText(model, highlights: highlights)
+    }
+
+    /// Outside footnote bodies, 33,572 `<p>`s and 38,372 lists sit directly in an `<item>` in the
+    /// corpus. Word printed an item through runs, whose block arm printed nothing and left the
+    /// highlight tracker behind, so such an item printed as its bare label and every highlight
+    /// after it moved. (A footnote body still prints as one paragraph of runs, and the list
+    /// holding such an item prints nothing there: #1414.)
+    @Test("An item's own paragraphs and a list nested in an item print in Word, and a highlight after them keeps its words")
+    func docxPrintsAnItemsParagraphsAndNestedList() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <p>Opening paragraph.</p>
+          <list>
+            <label>(1)</label>
+            <item>First point.</item>
+            <label>(2)</label>
+            <item><p>Second point, first paragraph.</p><p>Second point, second paragraph.</p></item>
+            <label>(3)</label>
+            <item>Third point:<list><label>(a)</label><item>Nested point.</item></list></item>
+          </list>
+          <p>Closing paragraph.</p>
+        </div>
+        """)
+        let xml = try await docxText(model, marking: [("Second point, second paragraph.", .yellow),
+                                                      ("Nested point.", .green),
+                                                      ("Closing paragraph.", .blue)])
+        // The label opens the item's first paragraph; the item's second paragraph is its own,
+        // indented as the item is; the nested list is indented a step further.
+        let first = try paragraph(containing: "Second point, first paragraph.", in: xml)
+        #expect(first.contains(">(2)<") && first.contains("<w:ind w:left=\"360\"/>"), "\(first)")
+        let second = try paragraph(containing: "Second point, second paragraph.", in: xml)
+        #expect(!second.contains("(2)") && second.contains("<w:ind w:left=\"360\"/>"), "\(second)")
+        #expect(try paragraph(containing: "Third point:", in: xml).contains(">(3)<"))
+        let nested = try paragraph(containing: "Nested point.", in: xml)
+        #expect(nested.contains(">(a)<") && nested.contains("<w:ind w:left=\"720\"/>"), "\(nested)")
+        #expect(docxPainted(xml) == ["yellow": "Second point, second paragraph.",
+                                     "green": "Nested point.", "cyan": "Closing paragraph."],
+                "a highlight shaded the wrong words: \(docxPainted(xml))")
+    }
+
+    /// Outside footnote bodies, 53,759 lists sit directly in a `<p>` and 91,332 `<p>`s in a
+    /// `<quote>` inside one. Word cannot put either inside a paragraph, so a body paragraph is
+    /// split around them — and the words after them, in the same `<p>` and after it, keep their
+    /// highlights. A footnote body is not split: it still prints as one paragraph of runs, so a
+    /// list inside it, or a paragraph quoted inside the note's own `<p>`, prints nothing (#1414).
+    /// (A paragraph quoted directly in the note, with no `<p>` of the note's around it, prints,
+    /// run into the note's one paragraph.)
+    @Test("A list or quoted paragraphs inside a paragraph print in Word, and highlights after them keep their words")
+    func docxPrintsBlocksInsideAParagraph() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <p>The points were these: <list>
+              <label>(1)</label><item>First point.</item>
+              <label>(2)</label><item>Second point.</item>
+            </list> and nothing more.</p>
+          <p>He wrote: <quote><p>Quoted first.</p><p>Quoted second.</p></quote></p>
+          <p>Before a bare figure <figure/> and after it.</p>
+          <p>Closing paragraph.</p>
+        </div>
+        """)
+        let xml = try await docxText(model, marking: [("Second point.", .yellow), ("nothing more.", .green),
+                                                      ("Quoted second.", .blue), ("Closing paragraph.", .pink)])
+        let opening = try paragraph(containing: "The points were these:", in: xml)
+        #expect(!opening.contains("First point."), "the list must be split out of the paragraph: \(opening)")
+        for (label, words) in [("(1)", "First point."), ("(2)", "Second point.")] {
+            #expect(try paragraph(containing: words, in: xml).contains(">\(label)<"), "\(label) is not beside \(words)")
+        }
+        let after = try paragraph(containing: "nothing more.", in: xml)
+        #expect(!after.contains("Second point."), "the words after the list must open a paragraph of their own: \(after)")
+        #expect(!(try paragraph(containing: "Quoted second.", in: xml)).contains("Quoted first."),
+                "each quoted paragraph is a paragraph")
+        // A figure with no graphic prints nothing, so it must not split its paragraph in two.
+        #expect(try paragraph(containing: "Before a bare figure", in: xml).contains("and after it."),
+                "a block that prints nothing split its paragraph")
+        #expect(docxPainted(xml) == ["yellow": "Second point.", "green": "nothing more.",
+                                     "cyan": "Quoted second.", "magenta": "Closing paragraph."],
+                "a highlight shaded the wrong words: \(docxPainted(xml))")
+    }
+
+    /// A paragraph a split opens begins with its words (#1371 review, round 2). Whitespace
+    /// normalisation keeps one space where the TEI had whitespace before a text node, so the words
+    /// after a list or a quote in a `<p>` begin with it (" thereafter", " then"); opening a Word
+    /// paragraph of their own, it printed as a visible indent. The exporter trims it from the
+    /// paragraph's first run only, after the tracker has counted it: a highlight on the first word
+    /// after the block, or one that starts on the trimmed space itself, shades exactly its words,
+    /// and the highlight after both still keeps its own.
+    @Test("The words after a block that splits a paragraph open their Word paragraph without a leading space, and their highlights keep their words")
+    func docxTrimsTheSpaceThatOpensASplitParagraph() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <p>The points were these: <list>
+              <label>(1)</label><item>First point.</item>
+            </list> thereafter nothing more.</p>
+          <p>He wrote: <quote><p>Quoted words.</p></quote> then stopped short.</p>
+          <p>Closing paragraph.</p>
+        </div>
+        """)
+        // "thereafter" is the first word after the list; " then" starts on the space itself.
+        let xml = try await docxText(model, marking: [("thereafter", .yellow), (" then", .green),
+                                                      ("Closing paragraph.", .blue)])
+        // Checked first: a tracker out of step splits the words the lookups below search for.
+        #expect(docxPainted(xml) == ["yellow": "thereafter", "green": "then", "cyan": "Closing paragraph."],
+                "a highlight shaded the wrong words: \(docxPainted(xml))")
+        func printed(_ para: String) -> String {
+            para.matches(of: /<w:t(?: xml:space="preserve")?>([^<]*)<\/w:t>/).map { String($0.output.1) }.joined()
+        }
+        let afterList = printed(try paragraph(containing: "nothing more.", in: xml))
+        #expect(afterList == "thereafter nothing more.", "the paragraph after the list prints \"\(afterList)\"")
+        let afterQuote = printed(try paragraph(containing: "stopped short.", in: xml))
+        #expect(afterQuote == "then stopped short.", "the paragraph after the quote prints \"\(afterQuote)\"")
+        // Only a split paragraph's opening space goes: the paragraph before the block keeps the
+        // space it ends on, and the spaces between words stay. That paragraph opens on a word in
+        // this fixture, so nothing here would see a trim of a leading space of its own.
+        let before = printed(try paragraph(containing: "The points were these:", in: xml))
+        #expect(before == "The points were these: ", "the paragraph before the list prints \"\(before)\"")
+        #expect(!xml.contains("<w:t xml:space=\"preserve\"></w:t>"), "a run that held only the space printed empty")
+    }
+
+    /// Outside footnote bodies, a table cell directly holds a `<p>`, a list or a table 1,136 times
+    /// in the corpus. A Word cell may hold several paragraphs and a table, but must end in a paragraph.
+    @Test("A cell's paragraphs, list and nested table print in Word, and a highlight after the table keeps its words")
+    func docxPrintsBlocksInsideATableCell() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <table><row><cell>Plain cell</cell><cell><p>Cell paragraph.</p><list><item>Cell item.</item></list></cell><cell><table><row><cell>Inner cell</cell></row></table></cell></row></table>
+          <p>Closing paragraph.</p>
+        </div>
+        """)
+        let xml = try await docxText(model, marking: [("Cell item.", .yellow), ("Closing paragraph.", .green)])
+        for printed in ["Plain cell", "Cell paragraph.", "Cell item.", "Inner cell"] {
+            #expect(xml.contains(printed), "the table does not print \(printed)")
+        }
+        #expect(xml.contains("</w:tbl>\n<w:p/></w:tc>"), "a cell ending in a table must still end in a paragraph")
+        #expect(docxPainted(xml) == ["yellow": "Cell item.", "green": "Closing paragraph."],
+                "a highlight shaded the wrong words: \(docxPainted(xml))")
+    }
+
+    @Test("A label with no item after it prints in DOCX, in a paragraph after the list")
+    func docxPrintsATrailingLabel() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <list><label>1.</label><item>One.</item><label>2.</label></list>
+        </div>
+        """)
+        let xml = try await docxText(model)
+        let para = try paragraph(containing: ">2.<", in: xml)
+        #expect(!para.contains("One."), "the dangling label must print in a paragraph of its own: \(para)")
+    }
+}
