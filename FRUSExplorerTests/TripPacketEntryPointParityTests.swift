@@ -358,4 +358,228 @@ struct TripPacketEntryPointParityTests {
         #expect(!editor.contains("archiveVisit.info.sparsity.measured %lld"),
                 "the old ungrouped %lld sparsity key came back")
     }
+
+    // MARK: - #1366: one creation path, and the topic's explicit refresh
+
+    /// The four places the app creates a plan (#1366 counted them).
+    private static let creationSites = [
+        "FRUSExplorer/TripPacket/ArchiveVisitListView.swift",
+        "FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift",
+        "FRUSExplorer/TripPacket/PlanPickerSheet.swift",
+        "FRUSExplorer/ProjectContext/ProjectHomeView.swift",
+    ]
+
+    /// **No creation site bypasses the factory.** Three of #1366's four sites built a plan with a
+    /// bare `ArchiveVisitPlan(name:)`, which attached no project and copied no research question,
+    /// so every inquiry draft they led to printed the placeholder. `ArchiveVisitTopicSeedingTests`
+    /// pins what the factory does; this pins that nothing else creates a plan.
+    ///
+    /// It walks every Swift file under `FRUSExplorer/`, comments removed, and fails on any
+    /// `ArchiveVisitPlan(` / `ArchiveVisitPlan.init(` / `: ArchiveVisitPlan = .init(` outside the
+    /// two bodies allowed one: the factory itself and `duplicate(in:)`, which copies a plan's
+    /// topic and projects rather than seeding them. A construction spelled any other way — a
+    /// `Self(…)` inside the model, say — is out of its reach; none exists.
+    @Test("Every Archives Visit is created through ArchiveVisitPlan.make (#1366)")
+    func everyPlanIsCreatedThroughTheFactory() throws {
+        let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        #expect(paths.count > 100,
+                "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
+
+        let construction = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])ArchiveVisitPlan(\.init)?\(|:\s*ArchiveVisitPlan\s*=\s*\.init\("#)
+        let model = "FRUSExplorer/Models/ArchiveVisitPlan.swift"
+        var permitted: [String] = []
+        var bypasses: [String] = []
+        for path in paths {
+            let relative = "FRUSExplorer/\(path)"
+            let code = Self.strippingComments(try Self.source(relative))
+            var allowed: [(name: String, body: Range<String.Index>)] = []
+            if relative == model {
+                for (name, signature) in [
+                    ("make", "static func make(name: String, activeProject: Project?) -> ArchiveVisitPlan"),
+                    ("duplicate", "func duplicate(in context: ModelContext) -> ArchiveVisitPlan"),
+                ] {
+                    guard let body = Self.body(after: signature, in: code) else {
+                        Issue.record("\(model) no longer declares `\(signature)` — the one construction it may hold is gone or renamed")
+                        continue
+                    }
+                    allowed.append((name, body))
+                }
+            }
+            for match in construction.matches(in: code, range: NSRange(code.startIndex..., in: code)) {
+                guard let range = Range(match.range, in: code) else {
+                    Issue.record("\(relative): a match did not map back to the source")
+                    continue
+                }
+                let line = code[..<range.lowerBound].components(separatedBy: "\n").count
+                if let owner = allowed.first(where: { $0.body.contains(range.lowerBound) }) {
+                    permitted.append("\(owner.name) (\(relative):\(line))")
+                } else {
+                    bypasses.append("\(relative):\(line) — \(code[range])…")
+                }
+            }
+        }
+
+        #expect(bypasses.isEmpty, """
+            \(bypasses.count) place(s) construct an ArchiveVisitPlan without the factory:
+            \(bypasses.joined(separator: "\n"))
+            Create through `ArchiveVisitPlan.make(name:activeProjectId:in:)` (or \
+            `make(name:activeProject:)` when you hold the Project), or the plan is born with no \
+            project and exports the topic placeholder (#1366).
+            """)
+        #expect(permitted.count == 2, """
+            Expected exactly one construction in the factory and one in duplicate(in:), found \
+            \(permitted.count): \(permitted). Zero means the scan stopped reading the model — the \
+            regex or the comment stripping broke — and the bypass check above is vacuous.
+            """)
+        for site in Self.creationSites {
+            let code = Self.strippingComments(try Self.source(site))
+            #expect(code.contains("ArchiveVisitPlan.make("), """
+                \(site) no longer creates its plan through the factory. It is one of the four \
+                creation sites #1366 routed through `ArchiveVisitPlan.make`.
+                """)
+        }
+    }
+
+    /// **The sheet is told the plan's question, and captions by the field.** The editor built the
+    /// packet sheet with `researchQuestion: nil`, so its "Seeded from your project's research
+    /// question" caption could never appear (#1366). The rule itself is pinned at runtime by
+    /// `ArchiveVisitTopicSeedingTests.seededCaptionFollowsTheField`; this pins that the two
+    /// views reach it.
+    @Test("The packet sheet gets the plan's project question and captions by the field (#1366)")
+    func packetSheetCaptionIsWired() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let presentations = Self.calls(of: "TripPacketSheet", in: editor)
+        #expect(presentations.count == 1,
+                "expected the editor's one packet-sheet construction, found \(presentations.count)")
+        for call in presentations {
+            #expect(call.contains("researchQuestion: plan.owningProject(in: modelContext)?.researchQuestion"),
+                    "the editor must pass the plan's project question, found: \(call)")
+        }
+
+        let sheet = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
+        let captions = Self.calls(of: "Text", in: sheet)
+            .filter { $0.contains("packet.topic.caption.seeded") }
+        #expect(captions.count == 1, "expected one caption Text, found \(captions.count)")
+        for caption in captions {
+            #expect(caption.contains(
+                "TripPacketTopicSentence.showsSeededCaption(draft: topicDraft,"), """
+                The caption must branch on the field as it stands, not on the question alone — \
+                found: \(caption)
+                """)
+        }
+    }
+
+    /// **Re-seed from Project reaches the topic, and asks before it replaces one.** The decision is
+    /// pinned at runtime by `ArchiveVisitTopicSeedingTests`; this pins the editor's two halves of
+    /// it — the menu action runs the plan's own re-seed and turns a `.needsConfirmation` into the
+    /// dialog, and only the dialog's Replace writes the question.
+    @Test("Re-seed from Project runs through the plan and confirms before replacing (#1366)")
+    func reseedIsWiredThroughThePlan() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let reseed = try #require(
+            Self.body(after: "private func reseed(fromProject projectId: UUID) async", in: editor),
+            "the editor's reseed(fromProject:) is gone — re-derive this test")
+        let reseedBody = editor[reseed]
+        #expect(reseedBody.contains("plan.reseed(fromProject: projectId, in: modelContext)"),
+                "Re-seed must run the plan's own reseed — a view-side copy is untested")
+        #expect(reseedBody.contains("pendingTopicReplacement = (question: question, current: current)"),
+                "a .needsConfirmation outcome must raise the dialog")
+        #expect(!reseedBody.contains("replaceInquiryTopic"),
+                "Re-seed itself must never replace the topic — only the dialog's Replace may")
+
+        let replaceKey = try #require(editor.range(of: "\"archiveVisit.reseed.topic.replace\""),
+                                      "the dialog's Replace button is gone")
+        let action = try #require(Self.body(from: replaceKey.upperBound, in: editor),
+                                  "the Replace button has no action")
+        #expect(editor[action].contains("plan.replaceInquiryTopic(with: pending.question)"),
+                "the Replace button must write the offered question through the model")
+        #expect(editor.components(separatedBy: "replaceInquiryTopic(").count - 1 == 1,
+                "the topic must be replaced in exactly one place — the dialog's Replace")
+    }
+
+    // MARK: - Scan helpers
+
+    /// `text` with `//` and `/* */` comments removed, line count preserved so a reported line is
+    /// the line an editor opens. String literals are not parsed: nothing these scans match sits in
+    /// one, and a comment-aware scanner that also tracked quoting would be a second parser.
+    private static func strippingComments(_ text: String) -> String {
+        var out: [String] = []
+        var inBlock = false
+        for var line in text.components(separatedBy: "\n") {
+            if inBlock {
+                guard let end = line.range(of: "*/") else { out.append(""); continue }
+                line = String(line[end.upperBound...])
+                inBlock = false
+            }
+            while let start = line.range(of: "/*") {
+                if let end = line.range(of: "*/", range: start.upperBound..<line.endIndex) {
+                    line = String(line[..<start.lowerBound]) + String(line[end.upperBound...])
+                } else {
+                    line = String(line[..<start.lowerBound])
+                    inBlock = true
+                    break
+                }
+            }
+            if let slashes = line.range(of: "//") { line = String(line[..<slashes.lowerBound]) }
+            out.append(line)
+        }
+        return out.joined(separator: "\n")
+    }
+
+    /// The braces-inclusive body of the first declaration or block that `header` opens.
+    private static func body(after header: String, in code: String) -> Range<String.Index>? {
+        guard let range = code.range(of: header) else { return nil }
+        return body(from: range.upperBound, in: code)
+    }
+
+    /// From the first `{` at or after `index` to the `}` that closes it.
+    private static func body(from index: String.Index, in code: String) -> Range<String.Index>? {
+        guard let open = code[index...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var cursor = open
+        while cursor < code.endIndex {
+            if code[cursor] == "{" { depth += 1 }
+            if code[cursor] == "}" {
+                depth -= 1
+                if depth == 0 { return open..<code.index(after: cursor) }
+            }
+            cursor = code.index(after: cursor)
+        }
+        return nil
+    }
+
+    /// The argument list of every call of `name` in `code` — from its `(` to the `)` that closes
+    /// it. `name` must not be the tail of a longer identifier, so `RichText(` is not a `Text(`.
+    private static func calls(of name: String, in code: String) -> [String] {
+        var found: [String] = []
+        var searchStart = code.startIndex
+        while let range = code.range(of: name + "(", range: searchStart..<code.endIndex) {
+            searchStart = range.upperBound
+            if range.lowerBound > code.startIndex {
+                let before = code[code.index(before: range.lowerBound)]
+                if before.isLetter || before.isNumber || before == "_" { continue }
+            }
+            var depth = 0
+            var cursor = code.index(before: range.upperBound)
+            while cursor < code.endIndex {
+                if code[cursor] == "(" { depth += 1 }
+                if code[cursor] == ")" {
+                    depth -= 1
+                    if depth == 0 {
+                        found.append(String(code[code.index(before: range.upperBound)...cursor]))
+                        break
+                    }
+                }
+                cursor = code.index(after: cursor)
+            }
+        }
+        return found
+    }
 }

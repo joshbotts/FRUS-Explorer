@@ -54,6 +54,43 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     static func seeded(from researchQuestion: String?) -> TripPacketTopicSentence {
         TripPacketTopicSentence(seed: researchQuestion, edited: nil)
     }
+
+    // MARK: - Comparing topic texts (#1366)
+
+    /// `text` as written when it has any non-whitespace content, else `nil`.
+    ///
+    /// What an Archives Visit copies from a project's research question, at creation
+    /// (`ArchiveVisitPlan.make`) and on Re-seed from Project: a blank question would export as the
+    /// placeholder anyway, and storing it would make an empty field look like a written topic.
+    static func written(_ text: String?) -> String? {
+        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    /// Whether two topic texts say the same thing — equal once surrounding whitespace is set
+    /// aside, and both written (two blanks are not a match: neither says anything).
+    ///
+    /// The one comparison behind both halves of #1366's refresh rule: Re-seed from Project
+    /// leaves a topic that already reads the question alone, and the packet sheet's seeded
+    /// caption shows only while the field still reads it.
+    static func sameText(_ first: String?, _ second: String?) -> Bool {
+        guard let first = written(first), let second = written(second) else { return false }
+        return first.trimmingCharacters(in: .whitespacesAndNewlines)
+            == second.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Whether the packet sheet's topic field may say it was "Seeded from your project’s
+    /// research question": only while `draft` — the field as it stands — still reads the
+    /// project's current `researchQuestion` (#1366).
+    ///
+    /// Before #1366 the caption branched on the question alone, which the one construction of the
+    /// sheet passed as `nil`, so it could never appear; branching on the question alone would now
+    /// be false the other way, captioning a topic the reader has rewritten as the project's.
+    static func showsSeededCaption(draft: String, researchQuestion: String?) -> Bool {
+        sameText(draft, researchQuestion)
+    }
 }
 
 // MARK: - TripPacketModel

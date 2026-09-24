@@ -35,6 +35,8 @@ import SwiftData
 ///   1.0 — Archive Visits Phase 3: initial implementation
 ///   1.1 — UI pass: iOS-only (the Mac window moved to `MacArchiveVisitManagerView`);
 ///         counts through `.formatted()`.
+///   1.2 — #1366: New Archives Visit creates through `ArchiveVisitPlan.make`, so the plan
+///         belongs to the active project and carries its research question as the topic.
 struct ArchiveVisitListView: View {
 
     @Environment(AppState.self) private var appState
@@ -79,7 +81,10 @@ struct ArchiveVisitListView: View {
             Section {
                 SettingsNewItemRow(label: String(localized: "archiveVisit.new",
                                                  defaultValue: "New Archives Visit")) {
-                    let plan = ArchiveVisitPlan(name: "")
+                    // #1366: under the active project, with its research question as the topic.
+                    let plan = ArchiveVisitPlan.make(name: "",
+                                                     activeProjectId: appState.activeProjectId,
+                                                     in: modelContext)
                     modelContext.insert(plan)
                     try? modelContext.save()
                     opened = plan

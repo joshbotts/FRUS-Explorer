@@ -45,6 +45,9 @@ import SwiftData
 ///         render their Markdown italics instead of literal underscores, counts go through
 ///         `.formatted()`, seed/tier rows gain context menus and `.onDelete`, stale filters
 ///         reset after derivation, and destructive orphan-state removal confirms first.
+///   1.2 — #1366: Re-seed from Project also offers the project's current research question to
+///         the inquiry topic (filled when empty, confirmed before it replaces other text), and
+///         the packet sheet is handed that question so its seeded caption can appear.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -110,8 +113,13 @@ struct ArchiveVisitEditorView: View {
     @State private var showRenameAlert = false
     #endif
     /// Transient confirmation after Duplicate (the Collections editor's toast pattern) —
-    /// without it the copy is created invisibly.
-    @State private var duplicateToast: String?
+    /// without it the copy is created invisibly — and after a Re-seed from Project that wrote the
+    /// project's question into an empty topic, which lives in the packet sheet, not on this screen.
+    @State private var toast: String?
+    /// The project's research question waiting on the reader's say-so before it replaces an
+    /// inquiry topic that says something else (#1366): Re-seed from Project never overwrites a
+    /// written topic silently.
+    @State private var pendingTopicReplacement: (question: String, current: String)?
     /// The orphan key whose stored state is pending removal — destructive (it deletes the
     /// user's tier and hand-typed note), so it confirms first.
     @State private var removingStoredKey: String?
@@ -153,7 +161,7 @@ struct ArchiveVisitEditorView: View {
         .inPlaceReader($readingChain)
         #endif
         .toolbar { editorToolbar }
-        .transientToast($duplicateToast)
+        .transientToast($toast)
         .task(id: revision) { await derive() }
         // Recovery for an editor opened before the search index boots: the boot placeholder
         // stays up (derive() returns with `isDeriving` still true) and this re-derives the
@@ -206,8 +214,33 @@ struct ArchiveVisitEditorView: View {
             ArchiveVisitTierSheet(plan: plan)
         }
         .sheet(isPresented: $showShare) {
-            TripPacketSheet(seed: .plan(plan), title: plan.displayName, researchQuestion: nil)
+            // The plan's project's CURRENT question — not a seed (the topic is the plan's own
+            // `inquiryText`), only what the sheet's caption compares the field against (#1366).
+            TripPacketSheet(seed: .plan(plan), title: plan.displayName,
+                            researchQuestion: plan.owningProject(in: modelContext)?.researchQuestion)
                 .environment(appState)
+        }
+        .confirmationDialog(
+            String(localized: "archiveVisit.reseed.topic.title",
+                   defaultValue: "Replace the inquiry topic?"),
+            isPresented: Binding(get: { pendingTopicReplacement != nil },
+                                 set: { if !$0 { pendingTopicReplacement = nil } }),
+            titleVisibility: .visible,
+            presenting: pendingTopicReplacement
+        ) { pending in
+            Button(String(localized: "archiveVisit.reseed.topic.replace",
+                          defaultValue: "Replace Topic")) {
+                plan.replaceInquiryTopic(with: pending.question)
+                try? modelContext.save()
+                pendingTopicReplacement = nil
+            }
+            Button(String(localized: "archiveVisit.reseed.topic.keep",
+                          defaultValue: "Keep My Topic"), role: .cancel) {
+                pendingTopicReplacement = nil
+            }
+        } message: { pending in
+            Text(String(localized: "archiveVisit.reseed.topic.message",
+                        defaultValue: "The project’s research question now reads “\(pending.question)”. This plan’s inquiry drafts send “\(pending.current)”. Replace it with the question?"))
         }
         .alert(String(localized: "archiveVisit.note.title", defaultValue: "Target Note"),
                isPresented: Binding(get: { noteEditingKey != nil },
@@ -420,7 +453,8 @@ struct ArchiveVisitEditorView: View {
         }
         if let projectId = plan.projectIds.first {
             // 1e: an explicit re-seed, never a live mirror — the plan is the
-            // researcher's edit surface, and only this button moves seeds again.
+            // researcher's edit surface, and only this button moves seeds, or offers the
+            // project's research question to the topic, again (#1366).
             Button {
                 Task { await reseed(fromProject: projectId) }
             } label: {
@@ -442,8 +476,8 @@ struct ArchiveVisitEditorView: View {
     private func duplicatePlan() {
         let copy = plan.duplicate(in: modelContext)
         try? modelContext.save()
-        duplicateToast = String(localized: "archiveVisit.duplicate.toast",
-                                defaultValue: "Duplicated as “\(copy.displayName)”")
+        toast = String(localized: "archiveVisit.duplicate.toast",
+                       defaultValue: "Duplicated as “\(copy.displayName)”")
     }
 
     #if os(macOS)
@@ -1301,15 +1335,23 @@ struct ArchiveVisitEditorView: View {
         bump()
     }
 
-    /// 1e's explicit re-seed: adds the project's CURRENT leads union as new seeds (both
-    /// contributions on), never removing anything — a mirror would silently erase choices.
+    /// 1e's explicit re-seed, through the plan's own ``ArchiveVisitPlan/reseed(fromProject:in:)``:
+    /// the project's CURRENT leads union as new seeds (never removing anything — a mirror would
+    /// silently erase choices), then its current research question offered to the topic (#1366)
+    /// — written into an empty topic with a toast, since the topic lives in the packet sheet, and
+    /// asked about before it replaces a topic that says something else.
     private func reseed(fromProject projectId: UUID) async {
-        let keys = await ProjectLeadsService.gatherSeed(
-            forProject: projectId, container: modelContext.container).seedKeys
-        let documents = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
-        plan.addSeeds(documents, includeSource: true, includeExternalRefs: true,
-                      in: modelContext)
+        let topic = await plan.reseed(fromProject: projectId, in: modelContext)
         try? modelContext.save()
+        switch topic {
+        case .unchanged:
+            break
+        case .filled:
+            toast = String(localized: "archiveVisit.reseed.topic.filled",
+                           defaultValue: "The inquiry topic now reads the project’s research question.")
+        case .needsConfirmation(let question, let current):
+            pendingTopicReplacement = (question: question, current: current)
+        }
         bump()
     }
 

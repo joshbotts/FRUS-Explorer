@@ -57,6 +57,9 @@ import AppKit
 ///   1.4 — Archive Visits Phase 3: the `.plan` seed — derivation through the editor's own
 ///          path, topic edits persisting to `plan.inquiryText`, and the 1f deliverables
 ///          section writing the plan's stored toggles rather than sheet-local state
+///   1.5 — #1366: the seeded caption shows while the topic field still reads the project's
+///          research question, which the plan editor now passes (it passed `nil`, so the
+///          caption could never appear)
 
 /// What a packet is built over (Phase 0).
 ///
@@ -119,7 +122,10 @@ struct TripPacketSheet: View {
     let seed: TripPacketSeed
     /// Names the packet, and seeds nothing else.
     let title: String
-    /// Seeds the inquiry's topic sentence (D8); `nil` yields the placeholder.
+    /// The project's research question. For a document or collection seed it seeds the inquiry's
+    /// topic sentence (D8; `nil` yields the placeholder). For a `.plan` seed it seeds nothing —
+    /// the plan's own `inquiryText` is the topic (#1366) — and only decides the caption, which
+    /// says "Seeded from your project’s research question" while the field still reads it.
     let researchQuestion: String?
 
     @Environment(AppState.self) private var appState
@@ -350,7 +356,11 @@ struct TripPacketSheet: View {
                 .lineLimit(2...5)
                 .onChange(of: topicDraft) { _, _ in scheduleTopicRender() }
                 .onSubmit { applyTopicEdit() }
-            Text(researchQuestion?.isEmpty == false
+            // #1366: seeded only while the field still reads the question — the old test of the
+            // question alone was never true (the one construction passed `nil`), and would now
+            // caption a rewritten topic as the project's.
+            Text(TripPacketTopicSentence.showsSeededCaption(draft: topicDraft,
+                                                            researchQuestion: researchQuestion)
                  ? String(localized: "packet.topic.caption.seeded",
                           defaultValue: "Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.")
                  : String(localized: "packet.topic.caption.unseeded",

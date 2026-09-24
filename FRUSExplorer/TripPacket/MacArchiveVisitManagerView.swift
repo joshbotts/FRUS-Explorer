@@ -34,6 +34,7 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Archive Visits UI pass: initial implementation
+///   1.1 — #1366: New creates through `ArchiveVisitPlan.make`, under the active project
 struct MacArchiveVisitManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -130,10 +131,12 @@ struct MacArchiveVisitManagerView: View {
         }
     }
 
-    /// Creates and selects an empty plan — the same starting state the iOS list's New row
-    /// produces.
+    /// Creates and selects a plan with no seeds — the same starting state the iOS list's New row
+    /// produces: under the active project when there is one, with its research question as the
+    /// inquiry topic (#1366).
     private func createPlan() {
-        let plan = ArchiveVisitPlan(name: "")
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: appState.activeProjectId,
+                                         in: modelContext)
         modelContext.insert(plan)
         try? modelContext.save()
         selectedId = plan.id
