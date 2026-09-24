@@ -46,7 +46,21 @@ struct DocumentTimelineView: View {
 
     // MARK: - Display Mode
 
-    enum DisplayMode { case chart, list }
+    /// The two presentations the mode picker switches between.
+    enum DisplayMode {
+        /// Bar chart of documents per year.
+        case chart
+        /// Year-sectioned list of the documents.
+        case list
+
+        /// Localised name of the mode: its segment's title, and the segment's accessibility label.
+        var label: String {
+            switch self {
+            case .chart: return String(localized: "timeline.mode.chart", defaultValue: "Chart")
+            case .list: return String(localized: "timeline.mode.list", defaultValue: "List")
+            }
+        }
+    }
 
     // MARK: - Internal Year Grouping
 
@@ -103,10 +117,14 @@ struct DocumentTimelineView: View {
             // Mode picker
             Picker(String(localized: "timeline.modePicker", defaultValue: "View mode"),
                    selection: $displayMode) {
-                Label(String(localized: "timeline.mode.chart", defaultValue: "Chart"),
-                      systemImage: "chart.bar").tag(DisplayMode.chart)
-                Label(String(localized: "timeline.mode.list", defaultValue: "List"),
-                      systemImage: "list.bullet").tag(DisplayMode.list)
+                // Each segment carries its name as its accessibility label (#1381). The Mac named the
+                // Word Cloud's unlabelled segments by their symbols' descriptions; these were not read.
+                Label(DisplayMode.chart.label, systemImage: "chart.bar")
+                    .tag(DisplayMode.chart)
+                    .accessibilityLabel(DisplayMode.chart.label)
+                Label(DisplayMode.list.label, systemImage: "list.bullet")
+                    .tag(DisplayMode.list)
+                    .accessibilityLabel(DisplayMode.list.label)
             }
             .pickerStyle(.segmented)
             .labelsHidden()

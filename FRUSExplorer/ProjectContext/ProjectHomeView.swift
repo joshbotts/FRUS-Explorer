@@ -402,15 +402,20 @@ struct ProjectHomeView: View {
     /// Create-or-open (Phase 3, §4a/1h): open the project's existing plan, or create one —
     /// auto-named from the project, inquiry seeded from its research question, seeds from
     /// the leads union with both contributions on.
+    ///
+    /// "Existing" is the most recently modified plan belonging to the project, however it was
+    /// created. Since #1366 that includes plans made from the Research tab, the Mac window or the
+    /// Add to Archives Visit picker while this project was active — they carry its id too — so
+    /// this may open one of those rather than create a plan seeded from the engaged documents.
     private func planVisit(_ project: Project) async {
         if let existing = projectPlan {
             editingPlan = existing
             return
         }
         await refreshEngagedPacketDocuments()
-        let plan = ArchiveVisitPlan(name: project.name,
-                                    inquiryText: project.researchQuestion,
-                                    projectIds: [projectId])
+        // The one creation path every site shares (#1366) — the same project and question
+        // Project Home always seeded, now also what every other creation site seeds.
+        let plan = ArchiveVisitPlan.make(name: project.name, activeProject: project)
         modelContext.insert(plan)
         plan.addSeeds(engagedPacketDocuments, includeSource: true,
                       includeExternalRefs: true, in: modelContext)

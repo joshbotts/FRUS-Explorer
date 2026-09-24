@@ -39,6 +39,9 @@ import Testing
 ///         sweep holds only until the next edit reintroduces one
 ///   1.2 — 2026-09-13: `CentralFilesClassifier.swift` joins `sources`, because the pre-1906 section's
 ///         state sentences and serial captions moved there out of the two Source Explorer views
+///   1.3 — 2026-09-24: `ChronologyViewModel.swift` joins `sources`, because #1387 moved the
+///         Chronology overflow chip's headline, breakdown and VoiceOver label there out of
+///         `ChronologyView.swift`
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -81,6 +84,8 @@ struct ArchivalCopyRulesTests {
         "Analytics/PersonAnalyticsView.swift",
         "Analytics/PersonCoMentionGraphView.swift",
         "Chronology/ChronologyView.swift",
+        // #1387: the overflow chip's copy moved here out of ChronologyView.swift.
+        "Chronology/ChronologyViewModel.swift",
         // W-13: the coverage statement's prose. It ships in exported Markdown, CSV, and a
         // collection PDF, which is the copy least likely to be re-read and the most likely to be
         // quoted — and until it was listed here nothing checked its spelling at all. Both files

@@ -43,6 +43,7 @@ struct PlanPickerRequest: Identifiable {
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 3: initial implementation
+///   1.1 — #1366: the New row creates through `ArchiveVisitPlan.make`, under the active project
 struct PlanPickerSheet: View {
 
     /// Builds the picker from a presentation request.
@@ -79,6 +80,10 @@ struct PlanPickerSheet: View {
     /// Called after a successful add, with the receiving plan — lets a host offer "open".
     var onAdded: ((ArchiveVisitPlan) -> Void)? = nil
 
+    /// Read for the active project a plan created here belongs to (#1366). Every presenter is a
+    /// SwiftUI `.sheet` inside a scene that injects it (`SceneEnvironmentAuditTests`), and a
+    /// sheet inherits its presenter's environment.
+    @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \ArchiveVisitPlan.lastModified, order: .reverse)
@@ -271,8 +276,12 @@ struct PlanPickerSheet: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { dismiss() }
     }
 
+    /// The New row: a plan auto-named from the seed (§4a), created under the active project with
+    /// its research question as the inquiry topic (#1366), then seeded like any other row.
     private func createAndAdd() {
-        let plan = ArchiveVisitPlan(name: suggestedName ?? "")
+        let plan = ArchiveVisitPlan.make(name: suggestedName ?? "",
+                                         activeProjectId: appState.activeProjectId,
+                                         in: modelContext)
         modelContext.insert(plan)
         add(to: plan)
     }
