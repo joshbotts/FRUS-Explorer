@@ -54,6 +54,63 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     static func seeded(from researchQuestion: String?) -> TripPacketTopicSentence {
         TripPacketTopicSentence(seed: researchQuestion, edited: nil)
     }
+
+    // MARK: - Comparing topic texts (#1366)
+
+    /// `text` as written when it has any non-whitespace content, else `nil`.
+    ///
+    /// What an Archives Visit copies from a project's research question, at creation
+    /// (`ArchiveVisitPlan.make`) and on Re-seed from Project: a blank question would export as the
+    /// placeholder anyway, and storing it would make an empty field look like a written topic.
+    static func written(_ text: String?) -> String? {
+        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    /// Whether two topic texts say the same thing — equal once surrounding whitespace is set
+    /// aside, and both written (two blanks are not a match: neither says anything).
+    ///
+    /// The one comparison behind both halves of #1366's refresh rule: Re-seed from Project
+    /// leaves a topic that already reads the question alone, and the packet sheet's seeded
+    /// caption shows only while the field still reads it.
+    static func sameText(_ first: String?, _ second: String?) -> Bool {
+        guard let first = written(first), let second = written(second) else { return false }
+        return first.trimmingCharacters(in: .whitespacesAndNewlines)
+            == second.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Whether the packet sheet's topic field may say it was "Seeded from your project’s
+    /// research question": only while `draft` — the field as it stands — still reads the
+    /// project's current `researchQuestion` (#1366).
+    ///
+    /// Before #1366 the caption branched on the question alone, which the one construction of the
+    /// sheet passed as `nil`, so it could never appear; branching on the question alone would now
+    /// be false the other way, captioning a topic the reader has rewritten as the project's.
+    static func showsSeededCaption(draft: String, researchQuestion: String?) -> Bool {
+        sameText(draft, researchQuestion)
+    }
+
+    /// Opens a `.plan` packet's topic on a rebuild and returns what the sheet's topic field shows
+    /// — the packet sheet's rule, kept here so a test can drive it (#1366 review, round 2).
+    ///
+    /// A live `draft` the reader has not yet committed wins: it becomes the ``edited`` sentence
+    /// the drafts send, and the field keeps it. With no live draft the field mirrors the plan's
+    /// `stored` topic, which ``ArchiveVisitDerivation`` has already made the edited sentence.
+    ///
+    /// The project's research question is deliberately **not** a parameter. A plan's topic is
+    /// copied from it only when the plan is created and on Re-seed from Project, never at render
+    /// time (#1366, §4 item 1). So an empty stored topic opens an empty field while the drafts
+    /// print the placeholder, and the field and the export agree.
+    mutating func openPlanDraft(draft: String, stored: String?) -> String {
+        if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            edited = draft
+            return draft
+        }
+        if draft.isEmpty, let stored, !stored.isEmpty { return stored }
+        return draft
+    }
 }
 
 // MARK: - TripPacketModel
@@ -91,6 +148,9 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///          restriction line (123 divided lots ship; a single-NAID answer would print one
 ///          claimant's status as the lot's). The checklist and advance-notice flags leave the
 ///          model with their chapters (owner: ch1/ch7 dropped).
+///   2.1 — #1366: `TripPacketTopicSentence` gains `written`, `sameText` and `showsSeededCaption`,
+///          and (review round 2) `openPlanDraft`, the packet sheet's `.plan` topic rule, lifted
+///          out of the view so the no-render-time-seed rule can fail on the sheet's path too
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
