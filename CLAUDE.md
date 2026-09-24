@@ -82,6 +82,38 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
 ```
 
+**`TopicIndexArrivalTests` (#1365) must run on an iPad two-pane AND an iPhone. It never skips, so
+either destination alone reports green.** Its guard for the iPad's Back,
+`testBackFromAVolumeKeepsTheAreaAndTheSearch`, works only in Browse's two-pane. There a covering
+volume opened from a topic's sheet replaces the Topic index, and Back mounts a new one. A phone's
+navigation stack keeps the index alive under the volume, so on an iPhone the test is a control that
+passes with or without the fix. Measured: round 1's view-held state failed it on the iPad Pro
+13-inch and passed it on an iPhone 17e. `testTopicsRowAfterAHandOffOpensTheWholeIndex` also has a
+two-pane-only step (the Topics row tapped beside the narrowed index). The suite chooses its path from
+the screen (no Back in the bar at the index means two panes). It does not skip and does not say which
+path it took, so an iPad under Browse's 820 pt gate (an iPad mini, in the portrait the suite forces)
+silently runs the phone path. Use the iPad Pro 13-inch, and confirm the two-pane in the activity log:
+Back from the volume taps the detail pane's own "Back", not the bar's. No unit test stands in for it.
+`SubjectIndexGroupingTests.aDeliveryLandsOnceAndAReMountRestores` drives `HostState` alone and cannot
+see an index view that keeps its own state instead of the host's. Expect **3 tests, 3 passed, on
+each** (measured on the iPad Pro 13-inch (M5) on iOS 27.0 and an iPhone 17e on iOS 26.3):
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/TopicIndexArrivalTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/TopicIndexArrivalTests
+```
+
 **`CollectionEditorTitleTests` (#1359) must run on an iPhone AND an iPad, and only the iPhone guards the
 push-over.** On a compact width Collection settings is PUSHED over the editor; on a regular width it is a sheet, which
 covers nothing and fires no `onDisappear`. So the push-over test (`testContentAloneDoesNotNameANewCollection`) can fail
@@ -103,8 +135,8 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
 ```
 
-**`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The command above is scoped to
-`UIObstructionTests`, so it never runs this suite. #1273's test turns a page and rotates across Research's
+**`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The iPad command for
+`UIObstructionTests` further up is scoped to that suite, so it never runs this one. #1273's test turns a page and rotates across Research's
 820 pt two-pane gate, which needs an iPad whose PORTRAIT canvas is under the gate: iPad mini (744 pt). On
 iPad Pro 13-inch portrait is already two-pane, so the suite takes its `XCTSkipUnless` — reported as a skip
 naming the required device, not as a pass.
