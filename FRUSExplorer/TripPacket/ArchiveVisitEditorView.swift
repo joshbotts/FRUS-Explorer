@@ -53,6 +53,8 @@ import SwiftData
 ///         is an alert, which iPad centres, not a confirmation dialog, which iPad drew as a
 ///         popover pointing at the whole editor (#1357's class); its cancel button reads
 ///         "Keep Current Topic", since the topic may be the project's old question, not the reader's.
+///   1.4 — #1366 review, round 2: the replace-the-topic message sets each quoted text in a
+///         paragraph of its own, so a question's own "?" is never followed by a full stop.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -253,8 +255,10 @@ struct ArchiveVisitEditorView: View {
                 pendingTopicReplacement = nil
             }
         } message: { pending in
+            // Each quoted text ends its own paragraph (#1366 review, round 2). A research question
+            // ends in "?", and the one-line form went on after it with a full stop: `…target?”. This`.
             Text(String(localized: "archiveVisit.reseed.topic.message",
-                        defaultValue: "The project’s research question now reads “\(pending.question)”. This plan’s inquiry drafts send “\(pending.current)”. Replace it with the question?"))
+                        defaultValue: "The project’s research question now reads:\n\n“\(pending.question)”\n\nThis plan’s inquiry drafts send:\n\n“\(pending.current)”\n\nReplace the topic with the question?"))
         }
         .alert(String(localized: "archiveVisit.note.title", defaultValue: "Target Note"),
                isPresented: Binding(get: { noteEditingKey != nil },

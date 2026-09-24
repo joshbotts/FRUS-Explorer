@@ -91,6 +91,26 @@ struct TripPacketTopicSentence: Equatable, Sendable {
     static func showsSeededCaption(draft: String, researchQuestion: String?) -> Bool {
         sameText(draft, researchQuestion)
     }
+
+    /// Opens a `.plan` packet's topic on a rebuild and returns what the sheet's topic field shows
+    /// — the packet sheet's rule, kept here so a test can drive it (#1366 review, round 2).
+    ///
+    /// A live `draft` the reader has not yet committed wins: it becomes the ``edited`` sentence
+    /// the drafts send, and the field keeps it. With no live draft the field mirrors the plan's
+    /// `stored` topic, which ``ArchiveVisitDerivation`` has already made the edited sentence.
+    ///
+    /// The project's research question is deliberately **not** a parameter. A plan's topic is
+    /// copied from it only when the plan is created and on Re-seed from Project, never at render
+    /// time (#1366, §4 item 1). So an empty stored topic opens an empty field while the drafts
+    /// print the placeholder, and the field and the export agree.
+    mutating func openPlanDraft(draft: String, stored: String?) -> String {
+        if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            edited = draft
+            return draft
+        }
+        if draft.isEmpty, let stored, !stored.isEmpty { return stored }
+        return draft
+    }
 }
 
 // MARK: - TripPacketModel
@@ -128,6 +148,9 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///          restriction line (123 divided lots ship; a single-NAID answer would print one
 ///          claimant's status as the lot's). The checklist and advance-notice flags leave the
 ///          model with their chapters (owner: ch1/ch7 dropped).
+///   2.1 — #1366: `TripPacketTopicSentence` gains `written`, `sameText` and `showsSeededCaption`,
+///          and (review round 2) `openPlanDraft`, the packet sheet's `.plan` topic rule, lifted
+///          out of the view so the no-render-time-seed rule can fail on the sheet's path too
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.

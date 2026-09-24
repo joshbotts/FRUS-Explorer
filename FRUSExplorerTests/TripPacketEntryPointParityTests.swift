@@ -48,6 +48,9 @@ import Foundation
 ///          the comment stripper cuts at whichever of `//` and `/*` comes first, and reports a
 ///          file it leaves inside a block comment (it had blanked CrossReferenceStore.swift's
 ///          last 338 lines from `//… (`*://*`)`)
+///   2.3 — #1366 review, round 2: the packet sheet opens a plan's topic from the plan alone and
+///          names the project's question in exactly three places; the replace question's quoted
+///          texts each end a paragraph; the Re-seed messages say "alert", as the code now is
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -556,10 +559,116 @@ struct TripPacketEntryPointParityTests {
         }
     }
 
+    /// **The packet sheet opens a plan's topic from the plan alone** (#1366 review, round 2). The
+    /// editor hands the sheet the project's question for its caption, so only this scan stops the
+    /// `.plan` rebuild from filling an empty field with it: the round-1 review's mutant, reading
+    /// `plan.inquiryText ?? researchQuestion`, passed every test. The rule is
+    /// `TripPacketTopicSentence.openPlanDraft`, driven at runtime by
+    /// `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic`. This pins that the rebuild
+    /// calls it with the plan's stored topic and sets the field only from what it returns, and that
+    /// the sheet names `researchQuestion` in exactly three places — its declaration, the caption's
+    /// comparison and the ephemeral builder's seed — so no other path can read the question.
+    @Test("The packet sheet opens a plan's topic from the plan alone (#1366)")
+    func packetSheetOpensThePlansOwnTopic() throws {
+        let sheet = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
+        let rebuild = try #require(Self.body(after: "private func rebuild() async", in: sheet),
+                                   "the sheet's rebuild() is gone — re-derive this test")
+        let header = try #require(sheet.range(of: "if let plan = seededPlan", range: rebuild),
+                                  "rebuild() no longer branches on a plan seed")
+        let planBranch = String(sheet[try #require(Self.body(from: header.upperBound, in: sheet))])
+        #expect(!planBranch.contains("researchQuestion"), """
+            The `.plan` branch of rebuild() names the project's question — it must open the topic \
+            from the plan alone (#1366, §4 item 1): \(planBranch)
+            """)
+        let opens = Self.calls(of: "planModel.topicSentence.openPlanDraft", in: planBranch)
+        #expect(opens.count == 1, "expected the plan branch's one openPlanDraft call, found \(opens.count)")
+        for call in opens {
+            #expect(Self.argument("draft", in: call) == "topicDraft")
+            #expect(Self.argument("stored", in: call) == "plan.inquiryText", """
+                The field must open from the plan's stored topic and nothing else — found \
+                `stored: \(Self.argument("stored", in: call) ?? "<absent>")`.
+                """)
+        }
+        #expect(planBranch.contains("let opened = planModel.topicSentence.openPlanDraft("))
+        let assignment = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])topicDraft\s*=(?!=)\s*([A-Za-z0-9_.]*)"#)
+        let sources = assignment.matches(in: planBranch,
+                                         range: NSRange(planBranch.startIndex..., in: planBranch))
+            .compactMap { Range($0.range(at: 1), in: planBranch).map { String(planBranch[$0]) } }
+        #expect(sources == ["opened"], """
+            The plan branch must set the topic field once, from openPlanDraft's result — it set \
+            it from \(sources).
+            """)
+
+        var rest = sheet
+        let captions = Self.calls(of: "TripPacketTopicSentence.showsSeededCaption", in: sheet)
+        let builds = Self.calls(of: "TripPacketBuilder.build", in: sheet)
+        #expect(captions.count == 1 && builds.count == 1, """
+            Expected one caption comparison and one ephemeral build, found \(captions.count) and \
+            \(builds.count).
+            """)
+        for call in captions + builds {
+            #expect(Self.argument("researchQuestion", in: call) == "researchQuestion")
+        }
+        for permitted in ["let researchQuestion: String?"] + captions + builds {
+            guard let range = rest.range(of: permitted) else {
+                Issue.record("`\(permitted)` is not in the sheet — re-derive this test")
+                continue
+            }
+            rest.replaceSubrange(range, with: String(rest[range].map { $0 == "\n" ? "\n" : " " }))
+        }
+        let token = try NSRegularExpression(pattern: #"(?<![A-Za-z0-9_])researchQuestion(?![A-Za-z0-9_])"#)
+        let stray = token.matches(in: rest, range: NSRange(rest.startIndex..., in: rest))
+            .compactMap { Range($0.range, in: rest) }
+            .map { rest[..<$0.lowerBound].components(separatedBy: "\n").count }
+        #expect(stray.isEmpty, """
+            TripPacketSheet.swift names `researchQuestion` outside its declaration, the caption and \
+            the ephemeral build, at line(s) \(stray) — a path that could seed a plan's topic from \
+            the project's question at render time (#1366).
+            """)
+    }
+
+    /// **The replace question puts no punctuation after a quoted text** (#1366 review, round 2).
+    /// It quotes the project's research question, which almost always ends in "?", and the
+    /// one-line form went on after each quotation with a full stop — `…winter target?”. This
+    /// plan’s…` — the class of error #1392 fixed in "Document 41., footnote 3". The app ships no
+    /// localization, so the `defaultValue:` read here is the text the alert shows.
+    @Test("The replace question's quoted texts each end a paragraph (#1366)")
+    func replaceQuestionPutsNoPunctuationAfterAQuotation() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let key = try #require(editor.range(of: "\"archiveVisit.reseed.topic.message\""),
+                               "the replace question's message is gone — re-derive this test")
+        let start = try #require(editor.range(of: "defaultValue: \"",
+                                              range: key.upperBound..<editor.endIndex))
+        var template = ""
+        var escaped = false
+        for character in editor[start.upperBound...] {
+            if character == "\"" && !escaped { break }
+            escaped = character == "\\" && !escaped
+            template.append(character)
+        }
+        for placeholder in ["\\(pending.question)", "\\(pending.current)"] {
+            #expect(template.contains("“\(placeholder)”"),
+                    "the message must quote \(placeholder) — found: \(template)")
+        }
+        let closings = template.indices.filter { template[$0] == "”" }
+        #expect(closings.count == 2, "expected the two quotations' closing marks, found \(closings.count)")
+        for closing in closings {
+            let after = template[template.index(after: closing)...]
+            #expect(after.isEmpty || after.hasPrefix("\\n"), """
+                A quotation in the message is followed by `\(after.prefix(3))`: a question ending \
+                in "?" would print `?”\(after.prefix(1))`. End its paragraph there instead — \
+                found: \(template)
+                """)
+        }
+    }
+
     /// **Re-seed from Project reaches the topic, and asks before it replaces one.** The decision is
     /// pinned at runtime by `ArchiveVisitTopicSeedingTests`; this pins the editor's two halves of
     /// it — the menu action runs the plan's own re-seed and turns a `.needsConfirmation` into the
-    /// dialog, and only the dialog's Replace writes the question.
+    /// alert, and only the alert's Replace writes the question.
     @Test("Re-seed from Project runs through the plan and confirms before replacing (#1366)")
     func reseedIsWiredThroughThePlan() throws {
         let editor = Self.strippingComments(
@@ -571,9 +680,9 @@ struct TripPacketEntryPointParityTests {
         #expect(reseedBody.contains("plan.reseed(fromProject: projectId, in: modelContext)"),
                 "Re-seed must run the plan's own reseed — a view-side copy is untested")
         #expect(reseedBody.contains("pendingTopicReplacement = (question: question, current: current)"),
-                "a .needsConfirmation outcome must raise the dialog")
+                "a .needsConfirmation outcome must raise the alert")
         #expect(!reseedBody.contains("replaceInquiryTopic"),
-                "Re-seed itself must never replace the topic — only the dialog's Replace may")
+                "Re-seed itself must never replace the topic — only the alert's Replace may")
         // #1366 review: the fill is announced. The topic lives in the packet sheet, not on the
         // editor's screen, so a silent fill would change what the drafts send with nothing to say so.
         let filled = try #require(reseedBody.range(of: "case .filled"),
@@ -587,13 +696,13 @@ struct TripPacketEntryPointParityTests {
             """)
 
         let replaceKey = try #require(editor.range(of: "\"archiveVisit.reseed.topic.replace\""),
-                                      "the dialog's Replace button is gone")
+                                      "the alert's Replace button is gone")
         let action = try #require(Self.body(from: replaceKey.upperBound, in: editor),
                                   "the Replace button has no action")
         #expect(editor[action].contains("plan.replaceInquiryTopic(with: pending.question)"),
                 "the Replace button must write the offered question through the model")
         #expect(editor.components(separatedBy: "replaceInquiryTopic(").count - 1 == 1,
-                "the topic must be replaced in exactly one place — the dialog's Replace")
+                "the topic must be replaced in exactly one place — the alert's Replace")
     }
 
     /// **Re-seed from Project is offered only while the plan's project exists** (#1366 review). The

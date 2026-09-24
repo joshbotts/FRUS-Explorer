@@ -60,6 +60,9 @@ import AppKit
 ///   1.5 — #1366: the seeded caption shows while the topic field still reads the project's
 ///          research question, which the plan editor now passes (it passed `nil`, so the
 ///          caption could never appear)
+///   1.6 — #1366 review, round 2: a `.plan` rebuild opens its topic field through
+///          `TripPacketTopicSentence.openPlanDraft`, from the plan's stored topic alone, so the
+///          no-render-time-seed rule is driven by a test rather than living in the view
 
 /// What a packet is built over (Phase 0).
 ///
@@ -490,13 +493,12 @@ struct TripPacketSheet: View {
                             indexed: derived.indexedDocumentCount)
             var planModel = derived.model
             // A live sheet edit wins over the stored text until committed (the rebuild-
-            // preserves-the-edit rule below); with no live edit, mirror the stored text.
-            let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
-                planModel.topicSentence.edited = topicDraft
-            } else if topicDraft.isEmpty, let stored = plan.inquiryText, !stored.isEmpty {
-                topicDraft = stored
-            }
+            // preserves-the-edit rule below); with no live edit, mirror the stored text — and
+            // only that: `researchQuestion` is not a seed here (#1366). The rule is the
+            // model's, so a test can drive it.
+            let opened = planModel.topicSentence.openPlanDraft(draft: topicDraft,
+                                                               stored: plan.inquiryText)
+            if opened != topicDraft { topicDraft = opened }
             model = planModel
             if let scope = facilityScope, !facilities.contains(scope) { facilityScope = nil }
             render(planModel)

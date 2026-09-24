@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -7642,7 +7642,7 @@ Choose a plan from the picker in the toolbar, or create a new one. Plans can als
      sites, one string each — a change to the defaultValue must be made in all three). The message
      draws the sync boundary: the plan's own data goes, from every device; documents and volumes
      are untouched. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 282–283 | key: archiveVisit.delete.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 286–287 | key: archiveVisit.delete.message -->
 
 This deletes the plan, its priority tiers, and its per-target notes — from your other devices too, after sync. Documents and volumes are untouched.
 
@@ -7652,7 +7652,7 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 
 #### The summary line
 <!-- Placeholder note: keep `\(targets.formatted())` and `\(repositories.formatted())` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 655–656 | key: archiveVisit.editor.summary.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 659–660 | key: archiveVisit.editor.summary.v2 -->
 
 \(targets.formatted()) targets across \(repositories.formatted()) repositories.
 
@@ -7662,27 +7662,27 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 <!-- Phase 4's honesty line: targets derive from the search index, so unindexed seeding documents
      can silently contribute nothing. Placeholder note: keep both `\(…formatted())` interpolations
      intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 660–661 | key: archiveVisit.editor.coverage.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 664–665 | key: archiveVisit.editor.coverage.v2 -->
 
 \(derived.indexedDocumentCount.formatted()) of \(derived.seededDocumentCount.formatted()) seeding documents indexed on this device — targets from unindexed documents may be missing below.
 
 <!-- END SOURCE: archiveVisit.editor.coverage.v2 -->
 
 #### Deriving
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 339–340 | key: archiveVisit.editor.deriving -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 343–344 | key: archiveVisit.editor.deriving -->
 
 Deriving research targets from the plan’s documents…
 
 <!-- END SOURCE: archiveVisit.editor.deriving -->
 
 #### No documents seeded
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 628–629 | key: archiveVisit.editor.noSeeds.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 632–633 | key: archiveVisit.editor.noSeeds.title -->
 
 No documents seeded
 
 <!-- END SOURCE: archiveVisit.editor.noSeeds.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 632–633 | key: archiveVisit.editor.noSeeds.detail -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 636–637 | key: archiveVisit.editor.noSeeds.detail -->
 
 Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archives Visit.
 
@@ -7692,13 +7692,13 @@ Seed this plan from Source Explorer, Archival Neighbors, a collection, or a proj
 <!-- Two different empty states, and the difference is the diagnosis: `noTargets` means derivation
      ran and found nothing placeable; `allOff` means the reader switched every contribution off.
      Neither may be blurred into a generic "nothing here". -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1132–1133 | key: archiveVisit.editor.noTargets -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1136–1137 | key: archiveVisit.editor.noTargets -->
 
 No targets derive from these documents on this device — their volumes may not be indexed yet, or their source notes name nothing the app can place.
 
 <!-- END SOURCE: archiveVisit.editor.noTargets -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1129–1130 | key: archiveVisit.editor.allOff -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1133–1134 | key: archiveVisit.editor.allOff -->
 
 Every document’s contributions are switched off — turn a document’s archival source or unprinted references back on under Documents.
 
@@ -7707,7 +7707,7 @@ Every document’s contributions are switched off — turn a document’s archiv
 ### 15.3 The info popover ("About research targets")
 
 #### Title
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 558–559 | key: archiveVisit.info.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 562–563 | key: archiveVisit.info.title -->
 
 About research targets
 
@@ -7718,7 +7718,7 @@ About research targets
      different questions" is owner decision 1b's rule stated to the reader; the last sentence
      explains why a plan stays correct as volumes index (stored rows are only the reader's own
      tiers/notes/exclusions — everything else re-derives). Both must survive editing. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 561–562 | key: archiveVisit.info.body -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 565–566 | key: archiveVisit.info.body -->
 
 A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index.
 
@@ -7728,7 +7728,7 @@ A target is one archival unit under one claim. Drawn from: the document was publ
 <!-- The corpus-wide number is literal in the string (13,750 of 316,839, measured over the full
      index) — if the index is ever rebuilt over a different corpus it must be re-measured, not
      assumed. "Sparse data, not a failed scan" is the sentence doing the work. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 564–565 | key: archiveVisit.info.sparsity -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 568–569 | key: archiveVisit.info.sparsity -->
 
 Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan.
 
@@ -7738,7 +7738,7 @@ Footnote references to unprinted material exist on only about 4% of documents co
 <!-- Phase 4's device-local companion: beside the corpus claim, never replacing it — the two
      describe different populations. Placeholder note: keep both `\(sparsity.…formatted())`
      interpolations intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1176–1177 | key: archiveVisit.info.sparsity.measured.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1180–1181 | key: archiveVisit.info.sparsity.measured.v2 -->
 
 On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.formatted()) indexed documents carry such references.
 
@@ -7747,7 +7747,7 @@ On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.for
 ### 15.4 Targets — tiers, orphans, substitution
 
 #### Tiers footer
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1562–1563 | key: archiveVisit.tiers.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1566–1567 | key: archiveVisit.tiers.footer -->
 
 Targets without a tier stay in Unprioritized, always listed last. An unlabeled tier reads “Priority 1”.
 
@@ -7756,14 +7756,14 @@ Targets without a tier stay in Unprioritized, always listed last. An unlabeled t
 #### An orphaned stored target
 <!-- A stored row whose target no longer derives from the current seeds. "It never deletes itself"
      is the promise: the reader's tier and note survive reseeding until they remove them. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1101–1102 | key: archiveVisit.orphan.caption -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1105–1106 | key: archiveVisit.orphan.caption -->
 
 Stored target — no longer derives from this plan’s current seeds. Kept with your tier and notes; it never deletes itself.
 
 <!-- END SOURCE: archiveVisit.orphan.caption -->
 
 #### Removing an orphan
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 220–221 | key: archiveVisit.orphan.remove.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 222–223 | key: archiveVisit.orphan.remove.message -->
 
 Its tier and note are deleted — from your other devices too, after sync. Nothing else in the plan changes.
 
@@ -7772,7 +7772,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### The digitized-substitute hint
 <!-- Shown when part of the target's record group is digitized or microfilmed: read it that way
      instead of pulling boxes. Keep the leading ⇄ glyph — it is the row's badge. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 874–875 | key: archiveVisit.target.substitute -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 878–879 | key: archiveVisit.target.substitute -->
 
 ⇄ Part of this record is digitized or filmed — read it that way instead of pulling.
 
@@ -7781,7 +7781,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### An inherited (Ibid.) seeding
 <!-- The W-1b rule surfacing in the seeding detail: the citation was inherited from the preceding
      footnote's citation, and the row says so rather than presenting the reading as a quotation. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 954–955 | key: archiveVisit.seeding.inherited -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 958–959 | key: archiveVisit.seeding.inherited -->
 
 Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 
@@ -7790,7 +7790,7 @@ Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 ### 15.5 The Documents tab
 
 #### Footer — the two switches
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1154–1155 | key: archiveVisit.documents.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1158–1159 | key: archiveVisit.documents.footer -->
 
 Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch.
 
@@ -7804,33 +7804,33 @@ no engaged documents, no search index yet, a smart collection whose saved search
 and an edit must not collapse them into one generic message.*
 
 #### Empty — no documents to plan over
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 215–216 | key: packet.empty.noDocuments.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 218–219 | key: packet.empty.noDocuments.message -->
 
 There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.
 
 <!-- END SOURCE: packet.empty.noDocuments.message -->
 
 #### Empty — the index is not ready
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 196–197 | key: packet.empty.noIndex.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 199–200 | key: packet.empty.noIndex.title -->
 
 The search index isn’t ready
 
 <!-- END SOURCE: packet.empty.noIndex.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 200–201 | key: packet.empty.noIndex.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 203–204 | key: packet.empty.noIndex.message -->
 
 The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.
 
 <!-- END SOURCE: packet.empty.noIndex.message -->
 
 #### Empty — a smart collection's search cannot run
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 204–205 | key: packet.empty.smart.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 207–208 | key: packet.empty.smart.title -->
 
 This collection’s search can’t run yet
 
 <!-- END SOURCE: packet.empty.smart.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 208–209 | key: packet.empty.smart.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 211–212 | key: packet.empty.smart.message -->
 
 This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.
 
@@ -7842,13 +7842,13 @@ This collection’s documents come from its saved search, and search isn’t ava
      Since #1366 the seeded form shows only while the field still reads the plan's project's
      research question (a plan copies it when it is created); before, the sheet was never told
      the question and this form could not appear. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 364–365 | key: packet.topic.caption.seeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 367–368 | key: packet.topic.caption.seeded -->
 
 Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.
 
 <!-- END SOURCE: packet.topic.caption.seeded -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 366–367 | key: packet.topic.caption.unseeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 369–370 | key: packet.topic.caption.unseeded -->
 
 The inquiry drafts send what you write here.
 
@@ -7862,24 +7862,36 @@ The inquiry drafts send what you write here.
      with the message below before replacing a topic that says something else. It asks even when
      that topic is only the project's old question: the plan keeps no record of what it was seeded
      with, so the question must not claim the reader wrote it — neither the message nor the cancel
-     button below. It is an alert, centred on every platform, and the menu offers Re-seed from
-     Project only while the plan's project exists. Placeholder note: keep `\(pending.question)`
-     and `\(pending.current)` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 256–257 | key: archiveVisit.reseed.topic.message -->
+     button below. It is an alert rather than a confirmation dialog, which iPad drew as a popover
+     pointing at the whole editor; iPad centres the alert (checked on screen), and the Mac shows an
+     alert as a sheet on the editor's window (not checked on screen). The menu offers Re-seed from
+     Project only while the plan's project exists. Each quoted text ends a paragraph of its own:
+     a research question ends in "?", and a sentence that went on after the quotation printed a
+     full stop after it (#1366 review, round 2) — keep each closing ” at the end of its paragraph.
+     Placeholder note: keep `\(pending.question)` and `\(pending.current)` intact. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 260–261 | key: archiveVisit.reseed.topic.message -->
 
-The project’s research question now reads “\(pending.question)”. This plan’s inquiry drafts send “\(pending.current)”. Replace it with the question?
+The project’s research question now reads:
+
+“\(pending.question)”
+
+This plan’s inquiry drafts send:
+
+“\(pending.current)”
+
+Replace the topic with the question?
 
 <!-- END SOURCE: archiveVisit.reseed.topic.message -->
 
 <!-- The question's cancel button. It read "Keep My Topic" until the #1366 review: the topic it
      keeps may be the project's old question, which the reader never wrote. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 251–252 | key: archiveVisit.reseed.topic.keep -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 253–254 | key: archiveVisit.reseed.topic.keep -->
 
 Keep Current Topic
 
 <!-- END SOURCE: archiveVisit.reseed.topic.keep -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1367–1368 | key: archiveVisit.reseed.topic.filled -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1371–1372 | key: archiveVisit.reseed.topic.filled -->
 
 The inquiry topic now reads the project’s research question.
 
