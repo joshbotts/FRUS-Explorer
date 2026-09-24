@@ -4095,12 +4095,13 @@ private struct SubjectExplorerWindowContent: View {
     /// Shared app state.
     let appState: AppState
 
-    /// What this window was opened at; `.all` until a hand-off says otherwise.
-    @State private var request: SubjectExplorerRequest = .all
+    /// This window's Topic-index state: the hand-off waiting to land and the reader's search, chip
+    /// and sheet (#1365). A new value, the whole index, until the first hand-off.
+    @State private var topics = SubjectIndexGrouping.HostState()
 
     var body: some View {
         NavigationStack {
-            SubjectIndexView(request: request)
+            SubjectIndexView(host: $topics)
         }
         .task { consume() }
         .onChange(of: appState.pendingSubjectExplorer) { _, _ in consume() }
@@ -4110,7 +4111,7 @@ private struct SubjectExplorerWindowContent: View {
     private func consume() {
         guard let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
                                                     for: .macSubjects) else { return }
-        request = payload
+        topics.post(payload)
     }
 }
 
