@@ -64,7 +64,8 @@ public struct AuthorityEntry: Codable, Sendable, Equatable {
     public let s: String?
     /// Wikidata QID (schema v2), e.g. `Q58156`.
     public let q: String?
-    /// Short role text (schema v2), truncated. Display only.
+    /// Short role text (schema v2), cut to `ROLE_CHAR_LIMIT` at a word boundary and marked with an
+    /// ellipsis when it did not fit (`truncatedRole(_:limit:)`, #1370). Display only.
     public let r: String?
 
     public init(n: String, b: Int?, d: Int?, v: String?,
@@ -87,7 +88,36 @@ public struct AuthorityEntry: Codable, Sendable, Equatable {
                         roleLimit: Int) -> AuthorityEntry {
         AuthorityEntry(n: n, b: b, d: d,
                        v: v ?? viaf, s: s, q: q ?? wikidata,
-                       r: r ?? role.map { String($0.prefix(roleLimit)) })
+                       r: r ?? role.map { Self.truncatedRole($0, limit: roleLimit) })
+    }
+
+    /// `role`, cut to at most `limit` characters at the last word that fits and marked with an
+    /// ellipsis; `role` unchanged when it already fits (#1370).
+    ///
+    /// The ellipsis counts toward `limit`, so `ROLE_CHAR_LIMIT` stays the bundle-size budget it was.
+    /// The kept prefix ends on a word when the character after it is not a letter or digit;
+    /// otherwise the cut moves back to the last whitespace, and the separators that would then end
+    /// the line (", ", "; ", "–") go with it. A single word longer than the budget is still cut
+    /// hard, since there is no boundary to move back to.
+    ///
+    /// The old cut was `prefix(limit)`: 1,949 of the 12,811 shipped roles were exactly 120
+    /// characters and ended mid-word with nothing to say so — "…Prime Minister and Minister of
+    /// Defense, Apr".
+    public static func truncatedRole(_ role: String, limit: Int) -> String {
+        guard role.count > limit else { return role }
+        guard limit > 1 else { return "…" }
+        let head = role.prefix(limit - 1)
+        let next = role[head.endIndex]
+        var kept = Substring(head)
+        if next.isLetter || next.isNumber,
+           let lastSpace = head.lastIndex(where: { $0.isWhitespace }) {
+            kept = head[..<lastSpace]
+        }
+        let trailing: Set<Character> = [",", ";", ":", "–", "—", "-", "(", "["]
+        while let last = kept.last, last.isWhitespace || trailing.contains(last) {
+            kept.removeLast()
+        }
+        return (kept.isEmpty ? Substring(head) : kept) + "…"
     }
 }
 
