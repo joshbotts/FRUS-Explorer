@@ -301,7 +301,9 @@ struct SegmentedPickerAccessibilityAuditTests {
         // Anti-vacuity, here rather than in a sibling test, because this assertion passes on its
         // own when it reads nothing. A missing source root is not the risk (listing it throws, which
         // fails every tree test); a masker, scanner or `#if` evaluator that stops finding pickers on
-        // one platform is, and it would leave this test green on that platform.
+        // one platform is, and it would leave this test green on that platform. The floors are
+        // loose (`> 20`, not the measured count), so they catch a platform that reads almost
+        // nothing, not one that loses a few pickers.
         #expect(files.count > 100, "Scanned only \(files.count) Swift files under \(Self.sourceRoot.path)")
         for platform in Platform.allCases {
             let scans = files.compactMap { $0.scans.first { $0.platform == platform } }
@@ -389,12 +391,13 @@ struct SegmentedPickerAccessibilityAuditTests {
 
     /// The five files that held a segmented picker with icon segments when #1381 was fixed, each
     /// read the way it is built. `AnalyticsChartChrome` and `CrossReferenceGraphView` are the
-    /// `Image` + `.accessibilityLabel` shape; `CrossReferenceGraphView`'s is the compact iPhone
-    /// graph's switch, inside `#if os(iOS)`. Of the five, only `SearchSheet`'s reading switch is
-    /// named by `.labelStyle(.titleAndIcon)`, which makes it the tree's witness for that branch, and
-    /// the whole file is `#if os(macOS)`. `WordCloudView` and `DocumentTimelineView` are #1381's two
-    /// sites. A new file with an icon picker is not added here automatically;
-    /// ``everyIconSegmentNamesItself()`` still reads it.
+    /// `Image` + `.accessibilityLabel` shape; `CrossReferenceGraphView`'s is the graph's
+    /// compact-width switch, inside `#if os(iOS)` and drawn only when the horizontal size class is
+    /// compact, so an iPad at a compact width shows it as well as an iPhone. Of the five, only
+    /// `SearchSheet`'s reading switch is named by `.labelStyle(.titleAndIcon)`, which makes it the
+    /// tree's witness for that branch, and the whole file is `#if os(macOS)`. `WordCloudView` and
+    /// `DocumentTimelineView` are #1381's two sites. A new file with an icon picker is not added
+    /// here automatically; ``everyIconSegmentNamesItself()`` still reads it.
     static let knownIconPickers: [KnownIconPicker] = [
         KnownIconPicker(file: "AnalyticsChartChrome.swift", kind: .image, segments: 2, namedByTitleAndIcon: false,
                         platforms: [.iOS, .macOS]),

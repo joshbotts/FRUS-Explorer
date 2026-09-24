@@ -20339,8 +20339,9 @@ FRUSExplorerTests/SegmentedPickerAccessibilityAuditTests`.
   11. One labelled segment credited to the others.
   12. A raw string's `\(` read as an interpolation.
   13. A Picker with no trailing closure passed silently.
-- *Full unit target, same device:* **5,197 tests in 640 suites, 1 issue** — the known
-  `ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The `FRUSExplorerMac` scheme builds.
+- *Full unit target, same device, before the review fixes and the merge:* **5,197 tests in 640
+  suites, 1 issue** — the known `ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The
+  `FRUSExplorerMac` scheme builds. The run after the merge is recorded at the end of this entry.
 
 **Not verified: what a segment announces.** No test target can read that. The Mac has no UI-test
 target, and this session opened neither control on any device. A scratch macOS app reproducing the
@@ -20363,8 +20364,9 @@ Inspector:**
 
 ### Review fixes (2026-09-24)
 
-Two review lenses read the branch. Three findings were confirmed and three nits were taken; one
-finding was refuted and needed nothing.
+Two review lenses read the branch. Three findings were confirmed, two of them the same defect seen
+by both lenses. Four nits were taken, one of them in part. One finding was refuted and needed
+nothing.
 
 - **correctness#0 / tests-claims#0 (confirmed): the scan credited a platform-gated name to every
   platform.** `skipTrivia` stepped over every `#if` / `#else` / `#endif` line and read all branches as
@@ -20404,13 +20406,17 @@ finding was refuted and needed nothing.
 - **correctness#2 (nit, taken): the `DocumentTimelineView` comment stated an unmeasured effect.**
   It now says what the code does, and that the Mac's reading was of the Word Cloud's segments, not
   these.
-- **tests-claims#4 (nit, taken): the anti-vacuity floor lived in a sibling test, for a wrong
-  reason.** `everyIconSegmentNamesItself` now asserts its own floor: more than 100 files, and for each
-  platform more than 20 pickers and at least one icon segment. `everySegmentedStyleReachesItsPicker`
-  asserts more than 20 styles per platform. The comment's reason is corrected: a missing source root
-  throws (measured: `NSCocoaErrorDomain` 260 fails every tree test), but a root that lists nothing
-  does not. Measured, a symlinked root lists zero files without throwing. So does a masker, scanner
-  or evaluator that stops finding pickers on one platform.
+- **tests-claims#4 (nit, taken in part): the anti-vacuity floor lived in a sibling test, for a
+  wrong reason.** `everyIconSegmentNamesItself` now asserts its own floor: more than 100 files, and
+  for each platform more than 20 pickers and at least one icon segment.
+  `everySegmentedStyleReachesItsPicker` asserts more than 20 styles per platform. The comment's
+  reason is corrected: a missing source root throws (measured: `NSCocoaErrorDomain` 260 fails every
+  tree test), but a root that lists nothing does not. Measured, a symlinked root lists zero files
+  without throwing. So does a masker, scanner or evaluator that stops finding pickers on one
+  platform. *Not taken:* the reviewer also asked to pin the measured counts. The floors stay at
+  `> 20` against the measured 32 (iOS) and 34 (macOS), so they catch a platform that reads almost
+  nothing, but a masking error that drops a few pickers from one file still passes. The test's
+  comment now says so.
 - **tests-claims#3 (nit, taken): the owed Mac checklist never read the `.titleAndIcon` witness.**
   Owed item 3 now says what its `Image`-built control cannot settle for the `Label` sites. A new item
   4 reads the Search window's Reading switch.
@@ -20450,3 +20456,16 @@ finding was refuted and needed nothing.
   the file restored: `SegmentedPickerAccessibilityAuditTests` + `ToolbarAccessibilityAuditTests`,
   **24 tests in 2 suites, passed**. With `EditableContentKeyTests` and `CodingStandardsAuditTests`
   as well, **45 tests in 4 suites, passed**.
+
+**Merge and full run.** `origin/v2` at `b0b759e4` was merged (`009704a4`). Both conflicts were in
+appended text. `Docs/EditableContent.md`'s header line keeps v2's line whole, with this branch's
+clause for #1381 added at the end; this file keeps v2's entries first, with this one after them.
+Then, at `009704a4`:
+- `build-for-testing` on the same iPhone 17e, iOS 26.4 (`2E021065`): TEST BUILD SUCCEEDED.
+- `test-without-building -only-testing FRUSExplorerTests`, same device: **5,289 tests in 647
+  suites, passed**, 0 issues, TEST EXECUTE SUCCEEDED. `SegmentedPickerAccessibilityAuditTests`
+  passed inside it. `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the one issue in the first
+  full run above, passes too, because v2's #1365 round (`c665ad2a`) closed #1403.
+- `FRUSExplorerMac` for macOS: BUILD SUCCEEDED, with no warnings in `WordCloudView.swift` or
+  `DocumentTimelineView.swift`. The only warnings are the known `GeneratedSummary` `Sendable` and
+  `appintentsmetadataprocessor` residues.
