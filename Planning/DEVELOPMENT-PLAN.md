@@ -20284,8 +20284,9 @@ documents extend beyond this range (26 before · 24 after)". The macOS manual's
 (`Docs/screenshots/macos/chronology.png`, the build-48 capture #1355 put in place of the 2026-06-18
 one, Oct 14 – Nov 20, 1962) reads "24 documents extend beyond this range (24 before · 24 after)".
 The issue described the macOS file as it was before #1355, when it showed the same Sep 1 – Nov 30
-range and 26 / 26 / 24 reading as the iPad one. The view counted "before" and "after" with two independent counters, so a row that begins before the range
-*and* ends after it was counted on both sides, and the breakdown did not add up to the headline.
+range and 26 / 26 / 24 reading as the iPad one. The view counted "before" and "after" with two
+independent counters, so a row that begins before the range *and* ends after it was counted on
+both sides, and the breakdown did not add up to the headline.
 
 **What was measured.** The session's iPhone 17 simulator (iOS 26.5, `A9FCCA50`) holds 14 indexed
 volumes, not the corpus. A script over a copy of its `frus.db` took every row the Chronology would
@@ -20313,10 +20314,10 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
   `displayedOverflowRows.count`. The two are equal, because `splitOverflow` and the chip classify
   with the same `loadedStartISO`/`loadedEndISO`, so every listed row lands in exactly one part.
 - Every count is grouped and singular at one. Each phrase is a `.one`/`.many` key pair with the
-  number through `formatted()` in the counts' locale, the `HubCopy` pattern plus #1374's grouping. The chip therefore reads
-  "1 document extends beyond this range" and "12,072 documents …", where it used to read "1
-  documents" and "12072". Ten keys replace four (`chronology.overflow.chip %lld`, `.chip.a11y %lld`,
-  `.before %lld`, `.after %lld`).
+  number through `formatted()` in the counts' locale, the `HubCopy` pattern plus #1374's
+  grouping. The chip therefore reads "1 document extends beyond this range" and "12,072
+  documents …", where it used to read "1 documents" and "12072". Ten keys replace four
+  (`chronology.overflow.chip %lld`, `.chip.a11y %lld`, `.before %lld`, `.after %lld`).
 - **Wording, a decision the plan did not settle.** The third part reads "reach past both ends", not
   the issue's example "span the whole range". The chip directly above this one reads "… span this
   whole period", for a different set of documents (the wide-span ones `partition` sets aside). The
@@ -20355,10 +20356,11 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
   with 26 issues"**: all 8 new tests failed and the 6 existing aggregation tests passed. The three
   fixtures `overflowDirections` builds counted 2 / 2 / 0, a total of 4 for 3 rows. Fed 2
   begin-before rows and 24 enclosing rows, the ported loop printed **"(26 before · 24 after)"**, the
-  iOS capture's string exactly. (Its headline printed 50, the ported sum. The shipped headline used the
-  row count and printed 26.) The scan found no `overflowCounts` call in the view, and one direction
-  call outside the row label (the view's own counter). With the fix, the same two suites plus `ArchivalCopyRulesTests` and
-  `EditableContentKeyTests` gave **"Test run with 23 tests in 4 suites passed"**. The new ✔ lines:
+  iOS capture's string exactly. (Its headline printed 50, the ported sum. The shipped headline
+  used the row count and printed 26.) The scan found no `overflowCounts` call in the view, and one
+  direction call outside the row label (the view's own counter). With the fix, the same two suites
+  plus `ArchivalCopyRulesTests` and `EditableContentKeyTests` gave **"Test run with 23 tests in 4
+  suites passed"**. The new ✔ lines:
   *Each overflow row is counted once…*, *A row inside the range adds to no part*, *The captured
   shape — 2 begin before, 24 enclose — reads as 26 split into 2 and 24*, *A part of one is
   singular*, *Plural parts and the total are grouped*, *A part that is zero is left out, each on its
@@ -20378,14 +20380,14 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
   Chronology window's view, so this compiles the chip for macOS. The Mac window was not opened.
 - **By eye**, on the same iPhone, launched with `-hasCompletedOnboarding 1`. The launch
   re-indexed first; the banner named `frus1894app2` and `frus1949v06`. Browse ▸ Analysis
-  Tools ▸ Chronology, range May 1 – May 31, 1893, then Show. The chip read "6 documents extend beyond
-  this range" over "(2 begin before · 1 ends after · 3 reach past both ends)". That is the script's
-  split, which was read from the index before the re-index. The breakdown sits on its own line. By
-  itself it spans about 285 of the phone's 402 points, so it could not have sat beside the 220-point
-  headline. Opened, the section lists the rows under their existing labels: "begins 1893 · before
-  range · ends 1893 · after range" on the enclosing rows, and "ends 1893 · after range" on the row
-  that ends after only. Not seen: an accessibility text size, VoiceOver reading the label, and the
-  Mac window.
+  Tools ▸ Chronology, range May 1 – May 31, 1893, then Show. The chip read "6 documents extend
+  beyond this range" over "(2 begin before · 1 ends after · 3 reach past both ends)". That is the
+  script's split, which was read from the index before the re-index. The breakdown sits on its own
+  line. By itself it spans about 285 of the phone's 402 points, so it could not have sat beside the
+  220-point headline. Opened, the section lists the rows under their existing labels: "begins
+  1893 · before range · ends 1893 · after range" on the enclosing rows, and "ends 1893 · after
+  range" on the row that ends after only. Not seen: an accessibility text size, VoiceOver reading
+  the label, and the Mac window.
 - The first test launch on this UDID hung in destination allocation, and xcodebuild fell into
   `simctl diagnose` without starting the host. A shutdown and boot of the same simulator cleared it.
   This was the environment; no code changed.
@@ -20481,20 +20483,22 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
 low-severity items; two are fixed here, and the third, the branch standing behind `origin/v2`, is
 the merge that follows this commit.
 
-- **The shift figures in *What changed* described a superseded state.** The `Docs/EditableContent.md`
-  bullet still gave the first pass's shift ("+2 lines above the chip, −25 below") and its check
-  ("12 of 12"). The review's spanning-chip rewrite had moved the same blocks again (+3 above the
-  spanning chip, −4 from its footer down) and added two blocks in `ChronologyViewModel.swift`, and
-  the *Review fixes* section never said so. The bullet now gives the net against v2: **+5** for the
-  four blocks above the spanning chip, **−2** for the spanning footer and **−29** for the seven
-  below the overflow chip, over a check of **14 of 14** keys. The spanning-chip bullet under
-  *Review fixes* now says it moved them. The ranges themselves were already right. The first
-  bullet under *What changed* now names the signature with `locale:`, and the locale bullet under
-  *Review fixes* points here.
+- **The shift figures in *What changed* described a superseded state.** The
+  `Docs/EditableContent.md` bullet still gave the first pass's shift ("+2 lines above the chip,
+  −25 below") and its check ("12 of 12"). The review's spanning-chip rewrite had moved the same
+  blocks again (+3 above the spanning chip, −4 from its footer down) and added two blocks in
+  `ChronologyViewModel.swift`, and the *Review fixes* section never said so. The bullet now gives
+  the net against v2: **+5** for the four blocks above the spanning chip, **−2** for the spanning
+  footer and **−29** for the seven below the overflow chip, over a check of **14 of 14** keys. The
+  spanning-chip bullet under *Review fixes* now says it moved them. The ranges themselves were
+  already right. The first bullet under *What changed* now names the signature with `locale:`, and
+  the locale bullet under *Review fixes* points here.
 - **`ChronologyOverflowCounts` compared its locale.** The synthesized `==` read `locale` as well as
-  the three parts. `Locale.autoupdatingCurrent` is unequal to every pinned locale, `en_US`
-  included, whatever region the host is in, so the view's counts were unequal to the same split
-  built in the tests' `en_US`. Nothing in production compares two counts, and every test built
+  the three parts, so the view's counts, built in the reader's `Locale.autoupdatingCurrent`, could
+  compare unequal to the same split built in the tests' `en_US`. On the one host this ran on
+  (`A9FCCA50`) they did: the A side below failed the default-locale pair. That the same holds in
+  every region rests on how Foundation compares an autoupdating locale with a fixed one, not on a
+  run in more than one region. Nothing in production compares two counts, and every test built
   both sides in `en_US`, so it had no effect yet. `==` now compares the three parts and nothing
   else, and the struct's version history gains 1.2. Two tests pin it:
   - `equalityIgnoresTheLocale` compares an `en_US` count with a `de_DE` one, and `overflowCounts`
@@ -20535,3 +20539,16 @@ the merge that follows this commit.
   - The other two single-part cases have M4's shape and were not mutated separately.
 - A script re-read every Chronology block's `lines:` range against the final code: each key sits
   on its range's first line, **14 of 14**.
+
+**Post-merge verification.** Everything above ran before the branch took `origin/v2`. The merge,
+`33be346e`, has parents `4e19b4fe` (the round-2 fix) and `b0b759e4` (`origin/v2` as last fetched).
+It brought in #1383's `CodingStandardsAuditTests.hoverClosuresNeverWriteASelection`, which reads
+every Swift file under `FRUSExplorer/`, this branch's two Chronology files included. On the merge,
+iPhone 17, iOS 26.5 (`A9FCCA50`):
+- `build-for-testing` gave **"TEST BUILD SUCCEEDED"**.
+- `test-without-building -only-testing FRUSExplorerTests` gave **"Test run with 5281 tests in 648
+  suites passed after 115.672 seconds"** and **"TEST EXECUTE SUCCEEDED"**. The log has no ✘ line
+  and no host restart. The hover scan's ✔ line is *CodingStandardsAudit: no hover closure writes a
+  selection*. (Round 1's full run had one failure, #1403's `mirrorMatchesTheGuide`; this run has
+  none.)
+- `FRUSExplorerMac` (`platform=macOS`) gave **"BUILD SUCCEEDED"**. The Mac window was not opened.
