@@ -47,6 +47,18 @@ private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
     return try await body(dir)
 }
 
+/// Answers `true` exactly once: a test hook that must act on the first of several calls only.
+private actor FirstCall {
+    /// Whether `claim()` has answered `true`.
+    private(set) var claimed = false
+
+    /// `true` on the first call, `false` on every later one.
+    func claim() -> Bool {
+        defer { claimed = true }
+        return !claimed
+    }
+}
+
 /// Builds a minimal pipeline + store pair backed by a temp database.
 func makeTestPipeline(
     dir: URL,
@@ -5233,6 +5245,54 @@ struct PersonRollupConsolidationTests {
             let doe = try #require(try await store.allPersonsSortedByName().first)
             #expect(doe.entry.role == "Consul General at Shanghai",
                     "the correction rebuilt from the cache of the table before the re-index")
+        }
+    }
+
+    /// The per-volume drop, which the test above cannot see: its cache was built BEFORE the run, so
+    /// the drop at the start of `indexAllVolumes` alone passes it. A correction made while the batch
+    /// is suspended between two volumes builds its cache AFTER that drop, from a table with the first
+    /// volume re-parsed and the second not, and only the drop after the second volume's store
+    /// discards it. The test hook runs the correction at exactly that point — after the first volume
+    /// the batch stores — so the check does not depend on scheduling.
+    @Test("indexAllVolumes drops a cache a correction built between two volumes (#1370 review)")
+    func indexAllVolumesDropsACacheBuiltMidBatch() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let a = volDir.appendingPathComponent("volCA.xml")
+            let b = volDir.appendingPathComponent("volCB.xml")
+            try writeVolume(to: a, volumeId: "volCA", year: "1970",
+                            documents: [("d1", "p_d", "Doe")],
+                            persons: [("p_d", "Doe, John: Consul at Hankow")])
+            try writeVolume(to: b, volumeId: "volCB", year: "1970",
+                            documents: [("d1", "p_r", "Roe")],
+                            persons: [("p_r", "Roe, Richard: Minister to Siam")])
+            try await pipeline.indexVolume("volCA")
+            try await pipeline.indexVolume("volCB")
+            try await pipeline.consolidatePersonRollup()
+
+            // Both volumes are re-published, and a correction lands between them in the re-index.
+            try writeVolume(to: a, volumeId: "volCA", year: "1970",
+                            documents: [("d1", "p_d", "Doe")],
+                            persons: [("p_d", "Doe, John: Consul General at Shanghai")])
+            try writeVolume(to: b, volumeId: "volCB", year: "1970",
+                            documents: [("d1", "p_r", "Roe")],
+                            persons: [("p_r", "Roe, Richard: Minister to Persia")])
+            let firstStore = FirstCall()
+            await pipeline.setVolumeStoredTestHook { [pipeline] _ in
+                guard await firstStore.claim() else { return }
+                try? await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+            }
+            try await pipeline.indexAllVolumes()
+            await pipeline.setVolumeStoredTestHook(nil)
+            #expect(await firstStore.claimed, "the correction never ran between the two volumes")
+
+            // A later correction reuses the cache, if there is one.
+            try await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let roles = Set(try await store.allPersonsSortedByName().compactMap(\.entry.role))
+            #expect(roles == ["Consul General at Shanghai", "Minister to Persia"],
+                    "a correction rebuilt from the cache the mid-batch correction built")
         }
     }
 

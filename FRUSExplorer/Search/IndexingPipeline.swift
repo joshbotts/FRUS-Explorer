@@ -945,10 +945,11 @@ public actor IndexingPipeline {
     ///   cite archival sources, so `external_citations.note_label` moves from "0" to NULL and a trip
     ///   packet stops citing "footnote 0".
     /// - v57→58 — #1370: the `persons` table's `role`, `start_year` and `end_year` were wrong for most
-    ///   entries that name a year, because `FRUSDocumentParser.extractRoleAndYears` took the first
-    ///   bare year as a START wherever it sat and deleted it from the middle of the sentence, and
+    ///   entries that name a year, because `FRUSDocumentParser.extractRoleAndYears` took the first bare
+    ///   year as a START wherever it sat and deleted it from the middle of the sentence, and
     ///   `cleanTrailingText` then trimmed separators — parentheses included — from the two ends only.
-    ///   Measured by re-parsing every manifest volume's persons list with the old and new code
+    ///   Measured by re-parsing every manifest volume's persons list with the old and new code, each
+    ///   fed the text as the parser hands it over — the volume's line breaks and indentation included
     ///   (63,037 entries in 287 volumes; the three borrowed lists copy these): all **34,410 entries
     ///   naming a year** had it cut out of the role, and **23,320 roles in 284 volumes** came out with
     ///   debris their description did not have — 10,597 orphaned ", ;" / " ;" / ", –", 6,573 ending
@@ -960,20 +961,23 @@ public actor IndexingPipeline {
     ///   a day ("July 5–15, 1914", "from April 21 until 28, 1975") — so **1,864 roles** differ from
     ///   their description (1,834 comma runs, 29 parenthesised, one whose volume prints an unmatched
     ///   parenthesis) and, by the same detector, **none** carries debris its description lacks. The
-    ///   years are read by the words before them, and **24,563 entries in 282 volumes** change them:
-    ///   **8,084** single years move from start to END ("until", "to", "through", "till", "before",
-    ///   "prior to", "until his death on" — the year Abourezk LEFT the Senate is no longer the year he
-    ///   began); **14,226** single-year entries become ranges — 4,517 dated or numeric ranges the
-    ///   digits-only pattern missed ("January 31, 1956–June 11, 1957"), 6,517 "from 1916 until 1921" in
-    ///   one clause, 3,192 across two or more clauses; **1,743** carry one year as both ends ("from
-    ///   January 31 until August 25, 1961", or two posts that changed in one year); 420 existing
-    ///   ranges move; **75** lose their only year because the list gives it as a death ("(died
-    ///   1896)"), and 15 gain a year. A span runs from the earliest to the latest year the description
-    ///   names as a post, so no entry's span runs backwards, before or after, and none ends before a
-    ///   later post it names. `cleanTrailingText` now strips a bracket only when it is unpaired, which
-    ///   restores a parenthesis or bracket to **1,889 descriptions**. The persons list is re-parsed
-    ///   only on a re-index, so without this bump an installed index would keep every one of them;
-    ///   the rollup built from it moves to v10 in the same change (see `currentPersonRollupVersion`).
+    ///   years are read by the words before them, in the description with its line breaks collapsed,
+    ///   and **24,616 entries in 282 volumes** change them: **8,129** single years move from start to
+    ///   END ("until", "to", "through", "till", "before", "prior to", "until summer", "until the end
+    ///   of", "until his death on", "until his assassination on" — the year Abourezk LEFT the Senate is
+    ///   no longer the year he began), so 8,130 entries in 270 volumes now name only an end, which
+    ///   `PersonEntry.eraText` prints as "until 1953"; **14,226** single-year entries become ranges —
+    ///   4,517 dated or numeric ranges the digits-only pattern missed ("January 31, 1956–June 11,
+    ///   1957"), 6,517 "from 1916 until 1921" in one clause, 3,192 across two or more clauses;
+    ///   **1,751** carry one year as both ends ("from January 31 until August 25, 1961", or two posts
+    ///   that changed in one year); 420 existing ranges move; **75** lose their only year because the
+    ///   list gives it as a death ("(died 1896)"), and 15 gain a year. A span runs from the earliest to
+    ///   the latest year the description names as a post, so no entry's span runs backwards, before or
+    ///   after, and none ends before a later post it names. `cleanTrailingText` now strips a bracket
+    ///   only when it is unpaired, which restores a parenthesis or bracket to **1,889 descriptions**.
+    ///   The persons list is re-parsed only on a re-index, so without this bump an installed index
+    ///   would keep every one of them; the rollup built from it moves to v10 in the same change (see
+    ///   `currentPersonRollupVersion`).
     public static let currentDateIndexVersion: Int = 58
 
     /// UserDefaults key under which the installed date-index version is persisted.
@@ -1049,11 +1053,12 @@ public actor IndexingPipeline {
     /// names any and the mention years only without them (`eraStartYear`), each end over the same
     /// years. Reading the union there merged Tsar Alexander II ("1855–1881", mentioned in a 1945
     /// document) into King Alexander of the Hellenes (mentioned in 1917). **Clustering churn**, the
-    /// v9 clusterer against v10 re-run in a verified port over one full 553-volume index (62,931
-    /// records; the port reproduces 17,960 of its 17,961 stored v9 rollups): **0 records change
+    /// v9 clusterer against v10 re-run in a verified port over one full 553-volume index and the
+    /// final v58 parse (62,931 records; the port reproduces 17,960 of its 17,961 stored v9 rollups):
+    /// **0 records change
     /// cluster** and the 165 candidate pairs are identical, where the union moved 2 records — that
     /// one false merge.
-    /// The v58 re-parse of `persons` feeds all three (8,084 list years become end years). Because it
+    /// The v58 re-parse of `persons` feeds all three (8,129 list years become end years). Because it
     /// re-parses in place — the version is the code's and the member count holds — the rollup also
     /// stamps the date-index version it was built against (`personRollupDateIndexVersionKey`), so a
     /// consolidation that runs between two volumes of the re-index is rebuilt after it. The
@@ -1490,6 +1495,20 @@ public actor IndexingPipeline {
     /// otherwise cache a half re-parsed table for every correction after it).
     private var cachedClusterInputs: [PersonClusterInput]?
 
+    /// Test hook: awaited by `indexAllVolumes` after each volume it stores — after that volume's
+    /// cluster-input cache drop — with the volume's id. `nil` in the app.
+    ///
+    /// It exists so a test can run a consolidation BETWEEN two volumes of a batch, the one moment
+    /// the per-volume cache drop is for: the batch is suspended here, so a consolidation the hook
+    /// awaits runs on this actor before the next volume is stored, deterministically. Nothing else
+    /// can place a call there — a progress-stream consumer races the next volume's store.
+    private var volumeStoredTestHook: (@Sendable (String) async -> Void)?
+
+    /// Test hook: installs `volumeStoredTestHook`.
+    func setVolumeStoredTestHook(_ hook: (@Sendable (String) async -> Void)?) {
+        volumeStoredTestHook = hook
+    }
+
     /// The bundled person-authority crosswalk (Phase 5), loaded lazily on first consolidation. The
     /// double optional distinguishes "not yet loaded" (`nil`) from "loaded, absent" (`.some(nil)`),
     /// so a missing bundle resource is only looked up once. Injectable for tests.
@@ -1814,8 +1833,12 @@ public actor IndexingPipeline {
                         // R-5 P3: a whole-index pass follows no file change — write the hashes, stamp nothing.
                         try await storeIndexData(data, revisions: .rebaseline)
                         // This volume's persons rows just changed; a consolidation that ran while
-                        // the batch was suspended may have cached the table as it was.
+                        // the batch was suspended may have cached the table as it was. The drop at
+                        // the start of the run cannot cover that: such a consolidation runs AFTER it,
+                        // between two volumes (#1370 review; pinned by
+                        // `indexAllVolumesDropsACacheBuiltMidBatch`).
                         cachedClusterInputs = nil
+                        if let hook = volumeStoredTestHook { await hook(data.volumeId) }
                         let storeElapsed = Date().timeIntervalSince(storeStart)
                         volumeIndexingStartTime = nil
                         volumeDocumentsProcessed = 0

@@ -18907,30 +18907,36 @@ prefaces thank Kissinger; the issue counted 26 rollups whose end year came only 
 removes a year span from the role only as a trailing `, 1943–1963` / `, 1922–24, 1926–27` run or a
 ` (1961–1966)` clause — never after a date that has lost its year, a month (`until January 3, 1979`)
 or a day (`July 5–15, 1914`, `until 28, 1975`) — and `yearSpan(in:)` reads every year by the words
-before it (`until`/`till`/`to`/`through`/`thru`/`before`, so "prior to" and "until his death on"
-too, mark an END; `from`/`after`/`since` or no cue a start; a year a life event introduces with no
-cue, `(died 1896)`, is no active year), parses dated ranges ("January 31, 1956–June 11, 1957"),
-gives one clause's "from January 31 until August 25, 1961" as both ends, and spans from the earliest
-to the latest year the description names as a post, so no entry can run backwards or stop before a
-later post it names. `cleanTrailingText` strips a bracket only when it is unpaired. **Measured by
-re-parsing every manifest volume's persons list with the old and the new code** (a temporary
-env-gated harness over `FRUSDocumentParser.parsePersons`, not committed; the review-fix figures
-below by compiling the parser's role/year section verbatim over the same 63,037 descriptions, which
-reproduces the harness's output exactly): 63,037 entries in 287 volumes. Before, all 34,410 entries
-naming a year had it cut out of the role and **23,320 roles in 284 volumes** carried debris their
-description did not (10,597 orphaned `, ;`/` ;`/`, –`, 6,573 ending on a month, 4,391 on a day — any
-trailing one- or two-digit number —, 1,738 on a preposition, 22 an unbalanced parenthesis); after,
-by the same detector, **none**, and 1,864 roles differ from their description, every one by a
-trailing year clause (1,834 comma runs, 29 parenthesised, one whose volume prints an unmatched
-parenthesis). 24,563 entries in 282 volumes change their years: 8,084 single years move from start
-to end, 14,226 become ranges (4,517 dated or numeric ranges the digits-only pattern missed, 6,517
-"from X until Y" in one clause, 3,192 across two or more clauses), 1,743 carry one year as both
-ends, 420 ranges move, 75 lose a year the list gives only as a death, 15 gain a year. 1,889
-descriptions get back a bracket the old trim took. The issue's own figures (26,668 debris rows of
-63,667, 5,217 list rows) count the three borrowed lists' copies and use a different detector; the
-direction is the same. *(These figures are the final rule's, re-measured after the review fixes
-below; the first version of this entry said 23,293 / 1,911 / 23,446 and "none" by a day detector
-that could not see `July 5–15`.)*
+before it (`until`/`till`/`to`/`through`/`thru`/`before`, so "prior to", "until summer", "until the
+end of", "until his death on" and "until his assassination on" too, mark an END;
+`from`/`after`/`since` or no cue a start; a year a life event introduces with no cue, `(died 1896)`,
+is no active year), reads them in the description with its line breaks collapsed, parses dated
+ranges ("January 31, 1956–June 11, 1957"), gives one clause's "from January 31 until August 25,
+1961" as both ends, and spans from the earliest to the latest year the description names as a post,
+so no entry can run backwards or stop before a later post it names. `cleanTrailingText` strips a
+bracket only when it is unpaired. **Measured by re-parsing every manifest volume's persons list with
+the old and the new code** (first with a temporary env-gated harness over
+`FRUSDocumentParser.parsePersons`, not committed; since round 2 of the review by compiling the
+parser's role/year section verbatim and feeding it each entry's text as the persons delegate hands
+it over, line breaks and indentation included — that harness reproduces the app's own dumps of v2
+and of this PR's first build for 63,037 of 63,037 entries, role, years and description): 63,037
+entries in 287 volumes. Before, all 34,410 entries naming a year had it cut out of the role and
+**23,320 roles in 284 volumes** carried debris their description did not (10,597 orphaned
+`, ;`/` ;`/`, –`, 6,573 ending on a month, 4,391 on a day — any trailing one- or two-digit number —, 1,738
+on a preposition, 22 an unbalanced parenthesis); after, by the same detector, **none**, and 1,864
+roles differ from their description, every one by a trailing year clause (1,834 comma runs, 29
+parenthesised, one whose volume prints an unmatched parenthesis). 24,616 entries in 282 volumes
+change their years: 8,129 single years move from start to end (8,130 entries in 270 volumes now name
+only an end, printed "until 1953"), 14,226 become ranges (4,517 dated or numeric ranges the
+digits-only pattern missed, 6,517 "from X until Y" in one clause, 3,192 across two or more clauses),
+1,751 carry one year as both ends, 420 ranges move, 75 lose a year the list gives only as a death,
+15 gain a year. 1,889 descriptions get back a bracket the old trim took. The issue's own figures
+(26,668 debris rows of 63,667, 5,217 list rows) count the three borrowed lists' copies and use a
+different detector; the direction is the same. *(These figures are the final rule's, re-measured
+after both rounds of review fixes below; the first version of this entry said 23,293 / 1,911 /
+23,446 and "none" by a day detector that could not see `July 5–15`, and round 1 said 24,563 /
+8,084 / 1,743, read off the stored, whitespace-collapsed descriptions rather than the text the parser is
+given.)*
 
 **4. A member's span cannot invert.** `PersonClusterInput.effectiveStartYear`/`EndYear` were
 `listStartYear ?? mentionStartYear` and `listEndYear ?? mentionEndYear ?? start`, two ends from two
@@ -18982,29 +18988,32 @@ pre-fix measurements, not a post-fix census; lane T's plan owes one full re-inde
 UDID after this PR.
 
 **Review fixes (13 confirmed findings).** Each measured with the parser's role/year section
-compiled verbatim into a scratch harness over the 63,037 descriptions (it reproduces the reviewed
-build's dump for 63,037 of 63,037), switching one rule off at a time in the final code:
+compiled verbatim into a scratch harness, switching one rule off at a time in the final code. The
+figures are round 2's re-measurement, with the harness fed the raw text the parser is given (see
+item 3); round 1 fed it the stored, collapsed descriptions, which hid three entries and moved the
+death-rule counts by a few:
 
 - **The span runs from the earliest to the latest year named as a post.** Taking the earliest start
   and the latest END dropped a later post (Vance, "from 1964 until 1967; Secretary of
   State-designate from December 3, 1976", read 1964–1967; the review counted 593 such entries) and
   every start after the first in an entry with no end. The rule now takes the minimum and maximum
   whenever an entry names two or more distinct years, which subsumes the inversion fallback; a
-  single year keeps its cue's end. It moves **1,971 entries in 234 volumes** against the reviewed
-  rule: 768 naming both kinds of cue (569 ends widen to a later post, 191 starts widen, 8 both),
-  938 with several starts that now gain an end, 265 with several ends that gain a start. No entry
-  now names a later post than its span; the 102 that name any later year give it as a death.
+  single year keeps its cue's end. It moves **1,955 entries in 233 volumes** against the reviewed
+  rule: 764 naming both kinds of cue (564 ends widen to a later post, 192 starts widen, 8 both),
+  923 with several starts that now gain an end, 268 with several ends that gain a start. No entry
+  now names a later post than its span; the 103 that name any later year give it as a death.
 - **One clause, one year, both cues.** "from January 31 until August 25, 1961" filed the year as an
   end and lost the start: **156 entries in 65 volumes** go from (none, 1961) to (1961, 1961). The
   review's broader pattern matched 161 entries stored as (none, Y); all 161 now carry a start (153
   as one year, 8 as ranges — `frus1969-76ve14p2`'s Walters reads 1973–1976 again).
 - **A death is not a post.** "until his (her) death (on|in) <date>", "until assassinated", "until he
-  was kidnapped and assassinated" are END cues and "after the death of" a start: **57 entries in 45
-  volumes** (Kennedy 1961–1963, Humphrey 1965–1978, Palme 1979–1986). A year that died / killed /
+  was kidnapped and assassinated" are END cues and "after the death of" a start: switched off, that
+  rule moves **89 entries in 57 volumes** (Kennedy 1961–1963, Humphrey 1965–1978, Palme 1979–1986;
+  11 of them are round 2's "until his assassination on", below). A year that died / killed /
   assassinated / murdered / executed / death / shot / hanged / suicide introduces with no cue is left
-  out of the span: **104 entries in 45 volumes**, 75 of which lose their only year (Nobel's "(died
-  1896)" no longer opens a 1945 identity). Every one of the 104 was read by hand; two are "sentenced
-  to death in absentia", which is not a post either. Together **161 entries in 78 volumes**.
+  out of the span: **105 entries in 45 volumes**, 75 of which lose their only year (Nobel's "(died
+  1896)" no longer opens a 1945 identity). Every one of the 105 was read by hand; two are "sentenced
+  to death in absentia", which is not a post either. Together **173 entries in 83 volumes**.
 - **A trailing ", YYYY" after a day is the date's own.** The cut now also refuses when the text
   before it ends in a one- or two-digit number: **47 roles in 29 volumes** keep their year — the 39
   day-debris roles the review found (`July 5–15`, `until 28`, `Ocobter 1`) and 8 "Committee of 24,
@@ -19023,8 +19032,8 @@ build's dump for 63,037 of 63,037), switching one rule off at a time in the fina
   (mentioned in 1917). `eraStartYear`/`eraEndYear` are the list's years when it names any, else the
   mention years; the rollup span stays the union. **Clustering churn**, re-run in the verified
   rollup port over a full-index copy (62,931 records; it reproduces 17,960 of the 17,961 stored v9
-  rollups): v9 → v10 moves **0 records**, and the 165 candidate pairs are identical; the union moved
-  2 records, that one false merge.
+  rollups), re-run on round 2's parse: v9 → v10 moves **0 records**, and the 165 candidate pairs are
+  identical; the union moved 2 records, that one false merge.
 - **Tests.** Pins `currentDateIndexVersion >= 58` and `currentPersonRollupVersion >= 10`; 15 real
   rows and two fixtures in `realShapes` (no persons list prints "till" or "thru"); the debris test's
   day detector is any trailing one- or two-digit number; `oneLifespanOnTheSheet` is case-folded,
@@ -19046,8 +19055,79 @@ build's dump for 63,037 of 63,037), switching one rule off at a time in the fina
   and the name authority's life years never are — the old "never a birth or death year" was false
   for Nobel and Harriman. `EditableContent.md` §18's header counts the three #1370 blocks.
 
-**Left open (review nits).** A (nil, end) entry still shows no era on the per-volume list and
-list-entry sheet (`eraText` needs a start; 8,084 rows); "until the summer of", "until the end of"
-still read as starts; `truncatedRole` can end inside an abbreviation or compound (5 of 1,901 cuts);
-the authority artifact keeps `generated` 2026-08-07; the front-matter LEFT JOIN is not a covering
-read; `is_front_matter` also flags 10 in-period historical-document quasi-documents.
+**Review fixes, round 2 (6 findings).** An independent re-measurement found that round 1's harness
+had fed the role/year rule the STORED description, whose whitespace `PersonEntry.init` collapses,
+while the app feeds it the text the persons delegate hands over — the volume's line breaks and
+indentation included. The corrected harness (the parser's role/year section compiled verbatim, each
+entry's raw text in, `PersonEntry`'s collapse applied after) reproduces the app's own dumps of v2 and
+of this PR's first build for 63,037 of 63,037 entries, and every figure in the v58 and v10 notes and
+in this entry is now its measurement. Round 2 moves the years of **58 entries in 40 volumes** and
+no role:
+
+- **The rule reads the text with its line breaks collapsed.** `extractRoleAndYears` collapses
+  whitespace before it reads a year or cuts the role, so a wrapped line's indentation no longer counts
+  against the life-event rule's 60 characters: **3 entries in 3 volumes** — Vann
+  (`frus1969-76v42/p_VJP_1`, "died in⏎<32 spaces>helicopter accident during the 1972") 1962–1972 →
+  1962–1971, and `frus1977-80v11p1/p_TAA_1` and `frus1977-80v15/p_PG_1` lose the assassination year
+  they showed as a start. The stored role and description are unchanged for all 63,037 entries,
+  measured.
+- **An entry that names only its end reads "until 1953".** `PersonEntry.eraText` needed a start, and
+  **8,130 entries in 270 volumes** now carry only an end, where v2 showed a (wrong) year. It prints
+  `until 1953` — a new key, `people.era.until`, grouping off — and a start-only entry the year alone,
+  as before. Every consumer goes through `eraText` or `roleEraSubtitle`: the People row, the sheet's
+  **Active** row, a volume's front-matter persons list and the corrections merge picker. A rollup
+  never has the shape (its span is the least and greatest year its members carry), so it reaches a
+  volume's own list and the sheet opened from one of its entries. §18.8 of `EditableContent.md`
+  gains the block (§18 now 302 blocks), and both manuals a paragraph on a volume's own list.
+- **A season or "the end of" between an end cue and its year**, and **a date printed without its
+  space**. "until summer 1954", "through spring 1959", "to spring 1957", "until the winter of 1959",
+  "until autumn of 1957" and "until the end of 1953" are ends: **47 entries in 27 volumes** print
+  one, and **36 in 21 volumes** change. "the" alone is refused, because it made "to" a cue in
+  "Delegation to the 1980 United Nations World Conference" (3 entries in 2 volumes would have read
+  the conference year as the year they left). "until June1959" and "until April 17,1956" carry their
+  cue: **7 entries in 6 volumes**, the review's six and `frus1969-76v11/p_GVV1` ("until May 3,1969").
+- **Death nouns.** "until his assassination / murder / execution" end a post as "until his death"
+  does: **24 entries in 20 volumes**, **11** of which change — among them Faisal II, Abdulillah, Nuri
+  el-Said, Verwoerd, Ambassadors Meloy and Davies, and Kennedy in the three volumes that give him one
+  year. "followed by execution on" is
+  a death with no cue: Zinovyev (`frus1933-39/p_ZGE1`) 1934–1936 → 1934–1935. Only "execution"
+  joins the no-cue rule; there "murder" names someone else's death — "indicted for the murder of
+  Orlando Letelier in August 1978" would cost two Chilean officers a year of their own record — and
+  "assassination" could do the same.
+- **Tests.** 18 rows in `realShapes` (49 now): the three wrapped deaths, kept at the volume's own
+  indentation because its length is what the old rule counted; six seasons; the "to the 1980"
+  refusal; the two unspaced dates; two assassinations; the execution; the Letelier refusal; and
+  Humphrey (`frus1917-72PubDipv07/p_HHH_1`, "until 1964; … from January 1965"), whose earliest year
+  is an end with a later start — the only row of the 49 that fails under the mutant
+  `(starts.min() ?? first, last)`, which moves 693 entries in 173 volumes; plus a fixture, "until the
+  end of 1956", because the only lists that print it name a later post after it. `eraText` is
+  pinned over five shapes, on a parsed end-only row, and by a scan that the three views read years
+  only through `eraText`/`roleEraSubtitle`. The per-volume cache drop in `indexAllVolumes` is
+  **pinned, not removed**: the drop at the start of the run cannot cover a correction that runs after
+  it, between two volumes, which builds its cache from a half re-parsed table. A test hook
+  (`setVolumeStoredTestHook`, awaited after each volume's store and drop) runs a correction at
+  exactly that point, so the test does not race the next volume. `realShapeRoleCarriesNoDebris`
+  now uses the measurement's detector word for word (a preposition includes "thru", "in" and "on";
+  orphaned punctuation ", —").
+- **A/B.** Against the pre-fix code (the round-1 parser and `eraText`, the per-volume drop removed,
+  and a front-matter row reading `startYear` itself): 15 of the 18 new rows fail, the end-only
+  `eraText` case and the parsed end-only row fail, the consumer scan fails twice, the EditableContent
+  key test fails on `people.era.until`, and the mid-batch cache test fails while the existing
+  start-of-run cache test passes — so the new test is the only guard on the per-volume drop. The
+  three rows that pass there fail under their own mutants: "to the 1980" under a qualifier that
+  allows a bare "the", Letelier under "murder" in the no-cue rule, Humphrey under the starts-first
+  span. Under a mutant that cuts a trailing date whole, the debris test fails on 17 rows, and on 7 of
+  them ("…until his assassination on", "…Letelier in", "…until his death on") only the widened
+  detector can see it. Full unit target on iPhone 17 (B5ED82DB, iOS 27): **5,178 tests in 639
+  suites, 1 issue** — the known `ResearchGuideCoverageTests.mirrorMatchesTheGuide`. The
+  `FRUSExplorerMac` scheme builds.
+
+**Left open (review nits).** `truncatedRole` can end inside an abbreviation or compound (5 of 1,901
+cuts); the authority artifact keeps `generated` 2026-08-07; the front-matter LEFT JOIN is not a
+covering read; `is_front_matter` also flags 10 in-period historical-document quasi-documents. And a
+shape round 2 found and did not take, because it is broader than the review asked: **29 entries**
+put another event between "until" and a dated year — "until his resignation on" (5), "until his
+defection in" (4), "until country renamed in" (4), "until purged in" (3), "until abdication on",
+"until he was deposed on", "until his retirement in", "until overthrown on" and others — and still
+read that year as a start. (Round 1's other two nits, the end-only row and "until the summer of" /
+"until the end of", are round 2's fixes above.)

@@ -445,6 +445,8 @@ Tap a person for their **detail sheet**. A **reconciled-identity seal** there ma
 
 **Career records.** Where a person is reconciled to the Department's own register of Principal Officers and Chiefs of Mission, the detail sheet gains a **Career** section: the posts they held, where, and the dates — Acheson's runs Assistant Secretary (1941) through Under Secretary to Secretary of State (1949–1953). Dates appear exactly as the register writes them (for early appointments, often a bare year); nothing is rounded or invented, and a note beside a post ("Left Tehran on", "Died at post") is the register's own. The register covers chiefs of mission and Department principals — 1,240 people in this release — so a person known only from a volume's text simply has no Career section.
 
+**A volume's own list.** A volume's List of Persons, opened from its front matter, shows each entry's role and the years that entry prints, read the same way. An entry that names only the year someone left a post (*until June 5, 1953*) shows *until 1953*, and one that names only the year they began shows the year alone.
+
 **Volumes with no persons list.** Roughly half the corpus — 266 of 553 volumes, including every volume from the 1860s and 1880s and most from before 1930 — has no editor-published List of Persons at all. Those volumes say so. The people named in their documents are still found by searching; they simply were never gathered into a front-matter list.
 
 To study *how* these people are mentioned over time — rankings by era, trajectories, co-mention networks — open **Person Analytics** (Section 15.3).
