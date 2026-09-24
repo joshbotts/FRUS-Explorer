@@ -132,7 +132,7 @@ struct HistoryRowID: Hashable, Sendable {
 
 // MARK: - ReadingHistoryTitle
 
-/// What a recorded document visit is called on screen (#1361).
+/// What a recorded document visit is called on screen, and what the writer may store (#1361).
 ///
 /// ## Why a stored title is not always the document's
 /// Until #1361 the writer stored whatever label the opener put in the entry. A `frusexplorer://`
@@ -145,6 +145,22 @@ struct HistoryRowID: Hashable, Sendable {
 /// for a repair that can be made where the title is read. So a stored title that IS its volume's
 /// manifest title names the volume, not the document, and is treated as absent.
 ///
+/// ## The identifier pair is not a title either
+/// A row with no title of its own draws ``identifier(volumeId:documentId:)``, and the History list
+/// reopens a visit with the line it drew as the header. When that reopen produced no parsed title
+/// — a document with no head, or on macOS any failed load — the writer used to store the pair, and
+/// the row then drew it twice, as its title and again as its caption. So a stored title equal to
+/// the visit's own pair is treated as absent too, which repairs a row already written that way.
+///
+/// ## One rule, read and write
+/// ``documentTitle(stored:volumeTitle:volumeId:documentId:)`` is what every surface below reads
+/// through AND what the writer's header fallback passes through
+/// (`DocumentViewModel.readingHistoryTitle`), so a label the reader refuses is never written. The
+/// writer needs it because it does not only run after a successful load: `MacDocumentView`
+/// records a visit whatever the load's outcome, and a deep link, a Handoff or a History reopen into
+/// a volume that is not on the Mac leaves no parsed title, so the header — the volume's title, for
+/// a link — was the only candidate.
+///
 /// ## Why equality and not a looser match
 /// The stored strings equal the manifest entry's `title` exactly: the manifest collapses its
 /// whitespace on decode and the handler passed that value through unchanged. A prefix or fuzzy
@@ -153,11 +169,13 @@ struct HistoryRowID: Hashable, Sendable {
 /// ## Where it applies
 /// Of the surfaces that read `displayTitle`: the History list on both platforms
 /// (``HistoryPaneSnapshot/DocumentRow``), the macOS History menu, and Project Home's Recently
-/// Read. Not Browse's Continue Reading, whose fallback is the bare document id and whose row names
-/// the volume nowhere else, so a stored volume title is the only volume context it has; not the
-/// Session Log, whose row view is handed a derived activity and no manifest to compare against;
-/// and not the research-data export, which carries the stored value as data. The writer's fix
-/// reaches all of them for every visit recorded from now on.
+/// Read — each to what it draws AND to the header it reopens a visit with, so the three reopen one
+/// row alike. Each call site is pinned by `HistoryPaneSnapshotTests`. Not Browse's Continue
+/// Reading, the Session Log or the research-data export: #1361 named the History surfaces, and
+/// those three read the stored value as it is — Continue Reading shows only the newest indexed
+/// visit, so an old volume-titled row leaves it at the next visit, and the export carries the
+/// stored value as data. Every visit recorded from now on reaches all of them without a volume's
+/// title or the identifier pair, because the writer applies the rule too.
 enum ReadingHistoryTitle {
 
     /// `"volumeId · documentId"` — the identifier pair a visit is always known by.
@@ -169,25 +187,31 @@ enum ReadingHistoryTitle {
         "\(volumeId) · \(documentId)"
     }
 
-    /// The document's own title from a stored visit title.
+    /// The document's own title from a stored visit title — or, at write time, from the opener's
+    /// header.
     ///
     /// - Parameters:
-    ///   - stored: `ReadingHistoryEntry.displayTitle`, as stored.
+    ///   - stored: `ReadingHistoryEntry.displayTitle` as stored, or the header the writer is
+    ///     about to store.
     ///   - volumeTitle: The visit's volume title in the manifest, or `nil` when it lists none —
     ///     in which case there is nothing to compare against and the stored title stands.
-    /// - Returns: The stored title, or `nil` when none was stored, it is empty, or it is exactly
-    ///   the volume's title.
-    static func documentTitle(stored: String?, volumeTitle: String?) -> String? {
+    ///   - volumeId: The visit's volume identifier.
+    ///   - documentId: The visit's document identifier.
+    /// - Returns: The stored title, or `nil` when none was stored, it is empty, it is exactly the
+    ///   volume's title, or it is exactly the visit's own identifier pair.
+    static func documentTitle(stored: String?, volumeTitle: String?,
+                              volumeId: String, documentId: String) -> String? {
         guard let stored, !stored.isEmpty else { return nil }
         if let volumeTitle, stored == volumeTitle { return nil }
+        if stored == identifier(volumeId: volumeId, documentId: documentId) { return nil }
         return stored
     }
 
     /// A recorded visit's one-line label: its document title, else its identifier pair.
     ///
     /// For the surfaces that draw a visit on a single line from the entry itself — the macOS
-    /// History menu and Project Home's Recently Read. The History list draws two lines and reads
-    /// ``HistoryPaneSnapshot/DocumentRow`` instead.
+    /// History menu and Project Home's Recently Read, which also reopen the visit with it. The
+    /// History list draws two lines and reads ``HistoryPaneSnapshot/DocumentRow`` instead.
     ///
     /// - Parameters:
     ///   - visit: The recorded visit.
@@ -195,7 +219,8 @@ enum ReadingHistoryTitle {
     @MainActor
     static func label(for visit: ReadingHistoryEntry, in manifest: ManifestStore) -> String {
         documentTitle(stored: visit.displayTitle,
-                      volumeTitle: manifest.entry(forVolumeId: visit.volumeId)?.title)
+                      volumeTitle: manifest.entry(forVolumeId: visit.volumeId)?.title,
+                      volumeId: visit.volumeId, documentId: visit.documentId)
             ?? identifier(volumeId: visit.volumeId, documentId: visit.documentId)
     }
 }
@@ -246,7 +271,9 @@ enum ReadingHistoryTitle {
 ///          term, so the one row a curly and a straight run refresh is found by a filter typed in either spelling
 ///   1.3 — #1361: a document row's caption names the document (`volumeId · documentId`), and a
 ///          stored title that is only its volume's manifest title reads as no title
-///          (``ReadingHistoryTitle``); `fetch` takes the manifest lookup that rule needs
+///          (``ReadingHistoryTitle``); `fetch` takes the manifest that rule needs. Review fixes: a
+///          stored title that is only the row's identifier pair reads as no title too, and the
+///          writer's header fallback passes through the same rule
 struct HistoryPaneSnapshot: Equatable, Sendable {
 
     // MARK: - Rows
@@ -275,15 +302,17 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
         /// written and is never retroactively re-pointed by switching projects.
         let projectId: UUID?
 
-        /// The document's own title, when the row has one: the stored title, unless it is empty
-        /// or is only its volume's title (``ReadingHistoryTitle/documentTitle(stored:volumeTitle:)``).
+        /// The document's own title, when the row has one: the stored title, unless it is empty,
+        /// is only its volume's title, or is only this row's identifier pair
+        /// (``ReadingHistoryTitle/documentTitle(stored:volumeTitle:volumeId:documentId:)``).
         var documentTitle: String? {
-            ReadingHistoryTitle.documentTitle(stored: displayTitle, volumeTitle: volumeTitle)
+            ReadingHistoryTitle.documentTitle(stored: displayTitle, volumeTitle: volumeTitle,
+                                              volumeId: volumeId, documentId: documentId)
         }
 
         /// The row's primary line: the document's own title, else `"volumeId · documentId"` — the
         /// same fallback the macOS window has always drawn for pre-1.1 entries, and since #1361 for
-        /// a row whose stored title is only its volume's.
+        /// a row whose stored title is only its volume's or only that pair.
         var title: String {
             documentTitle ?? ReadingHistoryTitle.identifier(volumeId: volumeId, documentId: documentId)
         }
@@ -497,16 +526,19 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
     ///   - context: The SwiftData context to read.
     ///   - scope: Which slice of the trail to load.
     ///   - limit: Maximum rows per section. Defaults to ``defaultPageLimit``.
-    ///   - volumeTitle: A volume's manifest title, or `nil` when the manifest does not list it —
-    ///     how a row recognises a stored title that only names its volume (#1361). Required, not
-    ///     defaulted, so no caller can forget it and draw volume titles as document titles.
+    ///   - manifest: The manifest whose volume titles the rows are read against — how a row
+    ///     recognises a stored title that only names its volume (#1361). Required, not defaulted,
+    ///     so no caller can forget it and draw volume titles as document titles; and a
+    ///     `ManifestStore` rather than a lookup closure, so no caller can hand in a lookup that
+    ///     answers nothing (`{ _ in nil }` does not type-check here) — the lookup is this
+    ///     function's own, and `HistoryPaneSnapshotTests` drives it against the bundled manifest.
     /// - Returns: The snapshot. Fetch failures degrade to empty sections rather than throwing;
     ///   a History surface that cannot read is a surface that shows nothing, not one that crashes.
     @MainActor
     static func fetch(from context: ModelContext,
                       scope: HistoryScope = .all,
                       limit: Int = defaultPageLimit,
-                      volumeTitle: (String) -> String?) -> HistoryPaneSnapshot {
+                      manifest: ManifestStore) -> HistoryPaneSnapshot {
         let readingPredicate = scope.readingPredicate
         let searchPredicate = scope.searchPredicate
         let exportPredicate = scope.exportPredicate
@@ -550,7 +582,7 @@ struct HistoryPaneSnapshot: Equatable, Sendable {
                             volumeId: $0.volumeId,
                             documentId: $0.documentId,
                             displayTitle: $0.displayTitle,
-                            volumeTitle: volumeTitle($0.volumeId),
+                            volumeTitle: manifest.entry(forVolumeId: $0.volumeId)?.title,
                             accessedAt: $0.accessedAt,
                             projectId: $0.projectId)
             },

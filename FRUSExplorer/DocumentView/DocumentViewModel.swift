@@ -59,7 +59,9 @@ import SwiftData
 ///   Session 09: subject-tag loading removed with the document-level taxonomy
 ///         (`subjectTags` property and the `subjectTagStore` init dependency are gone).
 ///   1.8 — #1361: a visit is recorded under the parsed title (`readingHistoryTitle`), not the
-///          opener's header, which a `frusexplorer://` link sets to the volume's title
+///          opener's header, which a `frusexplorer://` link sets to the volume's title; the
+///          header fallback refuses the volume's title and the identifier pair (a failed macOS
+///          load records too)
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -601,15 +603,30 @@ public final class DocumentViewModel {
     /// a note whose printed head only says *Editorial Note* is titled *Editorial Note N*.
     ///
     /// The header remains the fallback for a document the parse gives no title — seven in the
-    /// corpus have neither a head nor the note flag — and for a view model that has not loaded.
+    /// corpus have neither a head nor the note flag — and for a load that failed or never ran.
+    ///
+    /// **The fallback passes through the display rule** (``ReadingHistoryTitle``), so a header
+    /// that only names the volume (`volumeEntry`'s manifest title) or only the visit's own
+    /// `volumeId · documentId` pair is not stored, and the visit reads by its identifiers. Both
+    /// reach this line in practice. `MacDocumentView` records a visit whatever the load's outcome,
+    /// so a `frusexplorer://` link, a Handoff or a History reopen into a volume that is not on the
+    /// Mac arrives with no parsed title and — for a link — the volume's title as its header. And
+    /// the History list reopens an untitled visit with the identifier pair it drew as its header,
+    /// which a headless document (either platform) or a failed Mac load would otherwise store as
+    /// a title that the row then draws twice.
     var readingHistoryTitle: String? {
         if let documentTitle, !documentTitle.isEmpty { return documentTitle }
-        return entry.header.isEmpty ? nil : entry.header
+        return ReadingHistoryTitle.documentTitle(stored: entry.header,
+                                                 volumeTitle: volumeEntry?.title,
+                                                 volumeId: entry.volumeId,
+                                                 documentId: entry.documentId)
     }
 
     /// Inserts a `ReadingHistoryEntry` into the SwiftData context.
-    /// Call this once after a successful load, passing the active project ID. The entry's
-    /// `displayTitle` is ``readingHistoryTitle`` — the parsed title, not the opener's header (#1361).
+    /// Call this once after the load, passing the active project ID — iOS calls it only after a
+    /// successful one, macOS after every attempt. The entry's `displayTitle` is
+    /// ``readingHistoryTitle`` — the parsed title, not the opener's header (#1361), and never a
+    /// header that only names the volume or the identifier pair.
     ///
     /// **Honours the research-logging preference.** Until Wave R-1 this writer had no gate of
     /// any kind, so "Log Research Sessions" stopped the `SessionEvent` recorder that only the

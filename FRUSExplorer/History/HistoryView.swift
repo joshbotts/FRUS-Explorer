@@ -46,7 +46,8 @@ import SwiftData
 ///   1.1 — Wave R-2a review fixes: a third section for `ExportHistoryEntry`, with the same
 ///          per-row delete; the deletes key on `entryID` rather than the row's display identity
 ///   1.2 — #1361: a visited document's caption names it (`volumeId · documentId`), and the
-///          snapshot is read with the manifest so a stored volume title reads as no title
+///          snapshot is read with the manifest so a stored volume title reads as no title (the
+///          manifest itself is passed since the review fixes, not a lookup closure)
 struct HistoryView: View {
 
     @Environment(AppState.self) private var appState
@@ -470,6 +471,11 @@ struct HistoryView: View {
 
     /// Re-opens the document: on macOS in this window's provenance host; on iOS inside the hosting
     /// tab when it passes `onOpenDocument`, and otherwise as a scene-addressed hand-off to Browse.
+    ///
+    /// The header is the line the row drew — the document's title, else its identifier pair — the
+    /// same header the macOS History menu and Project Home reopen a visit with (#1361). The writer
+    /// refuses the pair as a title (`DocumentViewModel.readingHistoryTitle`), so a reopen that
+    /// produces no parsed title does not store it.
     private func openDocument(_ row: HistoryPaneSnapshot.DocumentRow) {
         let entry = DocumentBrowserEntry(
             documentId: row.documentId,
@@ -526,9 +532,10 @@ struct HistoryView: View {
     // MARK: - State
 
     private func refresh() {
-        snapshot = HistoryPaneSnapshot.fetch(
-            from: modelContext, scope: scope, limit: pageLimit,
-            volumeTitle: { appState.manifestStore.entry(forVolumeId: $0)?.title })
+        // #1361: read against the manifest, so a visit stored under its volume's title reads by
+        // its identifiers. Pinned by `HistoryPaneSnapshotTests.historyListReadsAgainstTheManifest`.
+        snapshot = HistoryPaneSnapshot.fetch(from: modelContext, scope: scope, limit: pageLimit,
+                                             manifest: appState.manifestStore)
         // A scope can disappear from under the picker — a project deleted in another window, or
         // a CloudKit import that removed it. Fall back to the global scope rather than showing an
         // empty list under a selection whose menu item no longer exists.

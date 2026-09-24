@@ -457,13 +457,17 @@ final class ResearchReadingDepthTests: XCTestCase {
 /// after the real link path, and it is the one place the caption's drawing is checked.
 ///
 /// ## Oracles
-/// - The History row is a `Button` whose accessibility label joins its texts, so the row is found by
-///   the caption it must now carry, `frus1961-63v06 · d1`, and its label is read whole.
+/// - The History row is a `Button` whose accessibility label joins its texts. It is found by
+///   EITHER the bare volume id OR the document's head — deliberately broader than the caption it must
+///   now carry, `frus1961-63v06 · d1`, so the row is found before the fix as well as after, and a
+///   missing caption fails as the caption assertion rather than as "no visit". Its label is then read
+///   whole.
 /// - With the fix the title line is the document's head, so the identifier pair can only have come
 ///   from the caption; before it, the label held the volume's title and the bare volume id.
 ///
 /// Version history:
 ///   1.0 — #1361: initial implementation
+///   1.1 — #1361 review fixes: the oracle says how the row is really found
 @MainActor
 final class HistoryVisitTitleTests: XCTestCase {
     /// Resolves tab destinations across every representation.
@@ -517,7 +521,8 @@ final class HistoryVisitTitleTests: XCTestCase {
         let visit = app.buttons.matching(
             NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", Self.volumeId,
                         "UI Test Document One")).firstMatch
-        XCTAssertTrue(visit.waitForExistence(timeout: 10), "no visit to \(identifiers) in History")
+        XCTAssertTrue(visit.waitForExistence(timeout: 10),
+                      "no History row naming \(Self.volumeId) or the document's head")
 
         // What History drew, kept for the reviewer: the row's two lines are the thing under test.
         let shot = XCTAttachment(screenshot: app.screenshot())

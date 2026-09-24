@@ -49,11 +49,12 @@ import SwiftData
     /// Human-readable document title captured when the entry is created.
     ///
     /// Sourced from `DocumentViewModel.readingHistoryTitle` — the parsed title, falling back to
-    /// the opener's `DocumentBrowserEntry.header` only when the parse produced none (#1361).
-    /// Entries written before #1361 stored the header whatever it was, which for a document
-    /// opened from a `frusexplorer://` link is the VOLUME's title; the History list, the macOS
-    /// History menu and Project Home's Recently Read read those as absent through
-    /// `ReadingHistoryTitle` rather than rewriting them. Optional for CloudKit
+    /// the opener's `DocumentBrowserEntry.header` only when the parse produced none, and never a
+    /// header that is only the volume's manifest title or the visit's `volumeId · documentId`
+    /// (#1361). Entries written before #1361 stored the header whatever it was, which for a
+    /// document opened from a `frusexplorer://` link is the VOLUME's title; the History list, the
+    /// macOS History menu and Project Home's Recently Read read those, and a stored identifier
+    /// pair, as absent through `ReadingHistoryTitle` rather than rewriting them. Optional for CloudKit
     /// schema compatibility and backward compatibility with pre-1.1 entries, which fall
     /// back to displaying `volumeId · documentId`.
     var displayTitle: String?

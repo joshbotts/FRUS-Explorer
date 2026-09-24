@@ -9299,7 +9299,7 @@ Read mode also enables edge-tap navigation to the previous and next document in 
 <!-- END SOURCE: document.toolbar.panelMode.hint -->
 
 #### This volume was side-loaded, not downloaded from the…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 258–259 | key: citation.sideloaded.note -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 260–261 | key: citation.sideloaded.note -->
 
 This volume was side-loaded, not downloaded from the published catalogue. The app cannot confirm it is published, so no history.state.gov link is included — check the citation before using it.
 
@@ -9352,7 +9352,7 @@ At least %1$lld documents in %2$lld volumes you have not downloaded read as clos
 *The Research tab's empty states, Project Home's captions and footers, the project editor, and the history and session-log states.*
 
 #### Research logging is off, so new activity is not being…
-<!-- SOURCE: FRUSExplorer/History/HistoryView.swift | HistoryView.loggingFooter | lines: 308–309 | key: history.logging.off -->
+<!-- SOURCE: FRUSExplorer/History/HistoryView.swift | HistoryView.loggingFooter | lines: 309–310 | key: history.logging.off -->
 
 Research logging is off, so new activity is not being recorded. Turn it back on in Settings under Research Sessions.
 
@@ -9408,21 +9408,21 @@ No activity in this project yet. Read documents, take notes, or build a collecti
 <!-- END SOURCE: project.home.recent.empty -->
 
 #### Footer — A collection can belong to more than one project. Attaching…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1277–1278 | key: project.collections.manage.footer -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1280–1281 | key: project.collections.manage.footer -->
 
 A collection can belong to more than one project. Attaching it here doesn’t remove it from any others.
 
 <!-- END SOURCE: project.collections.manage.footer -->
 
 #### Empty state — Tag documents while you research, then choose which tags…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1427–1428 | key: project.focusTags.empty.detail -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1430–1431 | key: project.focusTags.empty.detail -->
 
 Tag documents while you research, then choose which tags focus this project’s suggestions here.
 
 <!-- END SOURCE: project.focusTags.empty.detail -->
 
 #### %lld documents · reached from %lld of yours
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1533–1534 | key: project.reach.volumeDetail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1536–1537 | key: project.reach.volumeDetail %lld %lld -->
 
 %lld documents · reached from %lld of yours
 

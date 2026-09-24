@@ -1113,6 +1113,9 @@ struct MacDocumentView: View {
         // than a false "no document". This matches `openSources()`'s own `entry.sourceNote ?? ""`.
         appState.currentSourceNote = vm.sourceNote ?? entry.sourceNote ?? ""
 
+        // Recorded whatever the load's outcome, unlike iOS: a link or History reopen into a volume
+        // not on this Mac leaves no parsed title, and the writer then refuses a header that only
+        // names the volume or the identifier pair (`readingHistoryTitle`, #1361).
         vm.recordReadingHistory(projectId: appState.activeProjectId, in: modelContext)
         vm.loadSummaries(context: modelContext)
         vm.refreshCrossProjectNoteCount(
