@@ -309,6 +309,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         page prints them (`FRUSASTNode.joinPrinted`) instead of with a space at every markup
 ///         boundary, and `extractHeader` reads an editorial note's head through its wrapper.
 ///         `currentDateIndexVersion` → 55 (see the v55 note there).
+///  4.16 — 2026-09-23 (#1389): `currentDateIndexVersion` → 56 — a section's stored structure
+///         title is its own first `<head>`, without other headings inside it or the footnote
+///         inside that head (see the v56 note).
+///  4.17 — 2026-09-23 (#1369): `currentDateIndexVersion` → 57 — `n="0"` is no printed label,
+///         which moves `external_citations.note_label` for four notes (see the v57 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -898,7 +903,32 @@ public actor IndexingPipeline {
     ///   same unwrapping `isEditorialNote` does. After this version 7 documents are headerless,
     ///   not 8,474. `content_hash` moves for most rows; the re-run is a `.rebaseline` pass, so no
     ///   document is reported as corrected.
-    public static let currentDateIndexVersion: Int = 55
+    /// - v55→56 — #1389: `volume_structures` stored a section's title built from EVERY `<head>`
+    ///   inside it, not only its own. `<frus:attachment>` and `<list>` push no structural frame,
+    ///   so their headings were captured into the enclosing section's title and joined with no
+    ///   separator: frus1946v06's preface row read "PrefacePrinciples for the Compilation and
+    ///   Editing of “Foreign Relations”", and a frus1952-54v05p1 meeting "…Eden’s Residence,
+    ///   London Present United States United Kingdom". Measured by the issue over the 553
+    ///   manifest volumes: **176 sections in 88 volumes** carried a second heading, 23 of them run
+    ///   together. `VolumeStructureParserDelegate` now captures only the innermost section's first
+    ///   `<head>`; in every one of the 176 that is a direct child of the section's div, and no
+    ///   section has a second direct-child head. The same capture also took the text of a
+    ///   footnote inside the section's own head — "The Greene Mission to the Baltic
+    ///   ProvincesAdditional information regarding…" — which document titles already exclude;
+    ///   it now skips a `<note>` unless the note is inline text, the document parser's rule.
+    ///   Replayed over all 25,113 sections: **4,091 titles in 309 volumes change** (176 from the
+    ///   first-head rule, 3,918 from the footnotes, 3 from both), no head consists only of a
+    ///   note, and no title falls back to its generic name. Both Browse paths read the stored
+    ///   structure before parsing, so without this bump an installed index would keep serving
+    ///   the joined titles.
+    /// - v56→57 — #1369: `ASTToRenderNodeConverter.printedLabel(from:)` treats `n="0"` as no
+    ///   printed number, the encoding 34 volumes use for a document's unnumbered source note
+    ///   (9,985 notes). The reader is not index-dependent, but the rule is shared with the #1322
+    ///   harvest, which stores each citing footnote's printed label: four untyped body notes in
+    ///   `frus1961-63v24` (`d240fn3`, `d313fn3`, `d378fn2`, `d459fn7`) carry `n="0"`, and two of them
+    ///   cite archival sources, so `external_citations.note_label` moves from "0" to NULL and a trip
+    ///   packet stops citing "footnote 0".
+    public static let currentDateIndexVersion: Int = 57
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

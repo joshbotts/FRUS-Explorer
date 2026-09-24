@@ -404,6 +404,16 @@ enum HTMLTemplate {
       text-indent: -2.2em;
     }
 
+    /* #1386: the hang belongs to the ITEM's first line and to nothing inside it. `text-indent`
+       is inherited and applies to the first line of every block container — an inline-block is
+       one — so each child drew its own first line 2.2em left of its box. The classification chip
+       ran its text out past its left border ("Top" outside the capsule in frus1961-63v14/d201),
+       and a list inside a note pulled every item's first line into the number column; #1386's
+       scan counts 518 notes in 173 volumes that hold one. #985 reset its label alone (below).
+       Resetting every direct child stops the inheritance one level down, so a list passes 0 to
+       its items. FootnoteListIndentRenderTests measures this in a web view. */
+    .fn-list-item > * { text-indent: 0; }
+
     .fn-list-label {
       /* #985: the number as PRINTED IN THE VOLUME — the number a citation names. */
       display: inline-block;

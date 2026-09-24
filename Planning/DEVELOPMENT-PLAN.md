@@ -18137,6 +18137,133 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
 
+## Session 2026-09-23 — A source note's classification chip is drawn whole again, and a list inside a footnote stops hanging into the number column
+
+**The question:** lane R's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1386, found while capturing the #1081 Mac screenshots: in the reader's Footnotes list,
+`frus1961-63v14/d201`'s source note carries a *Top Secret; Niact* chip whose first word is drawn
+outside the capsule's left border.
+
+**The cause is #985's hanging indent, inherited.** #985 hung each printed footnote number in the
+margin with `padding-left: 2.2em; text-indent: -2.2em` on `li.fn-list-item`. `text-indent` is
+inherited and applies to the first line of every block container, and an inline-block is one;
+#985 reset its own label and nothing else. The chip is an inline-block appended to the same `li`,
+so its one line was indented −24.2 px at Medium (−2.2 × the 11 px footnote size) while its border
+and padding stayed put and its shrink-to-fit width lost the same amount. A `.frus-list` inside a
+note inherited the same value, pulling each item's first line into the number column — not seen in
+the app, but #1386's scan counts 518 such notes in 173 volumes.
+
+**The fix is one rule, `.fn-list-item > * { text-indent: 0; }`** (`HTMLTemplate.swift:415`). The
+item's own first line still hangs, because that indent is the `li`'s own value; every direct child
+— the label, the inline `p.body`, the chip, a list — computes 0 and passes 0 down. The rule rides
+`HTMLTemplate.documentCSS`, so it also reaches the HTML collection export
+(`CollectionItemHTMLRenderer.swift:723`), where only the list half applied: exports emit no chip.
+
+**The test is the first in the unit suite that measures computed style or layout.** The
+offset-engine suite has long loaded `HTMLTemplate.build` pages, stylesheet included, into the same
+harness, but only to read text back; `ClassificationChipSerializationTests` pinned the chip's
+markup, and the markup was right — no string assertion could see an inherited indent.
+`FootnoteListIndentRenderTests` (`FRUSRenderNodeHTMLSerializerTests.swift:760`) builds the page
+through `HTMLTemplate.build` — the call both reader representables make — for that suite's own
+`sourceWithMarking` fixture (now `static`, so the chip measured is the chip pinned) and a note
+holding a simple `.listBlock`, loads it into `OffsetEngineTestHarness` (internal rather than
+private now, with an `evaluateString` for JSON-returning scripts), and reads computed style and
+layout. The sweep asserts that every descendant of `li.fn-list-item` whose computed `display` is
+not `inline` computes `text-indent: 0px`, and guards itself: both notes must render as items,
+each item must still compute a NEGATIVE indent (#985's hang intact — and a sweep of zeroes under
+an item that no longer hangs would prove nothing), and the elements visited must include the chip
+and an item of the note's list. The second test asserts, at all four text sizes, that the chip's
+text starts no earlier than its padding edge and ends inside its border.
+
+**A/B on iPhone Air, iOS 26.3 (`60AB3371`).** On `v2`'s stylesheet: `✘ Test run with 2 tests in
+1 suite failed … with 9 issues` — the sweep named 4 of 6 non-inline descendants at `-24.200001px`
+(the chip, the `ul`, both list items), and the chip's text started 10.8 / 15.2 / 19.6 / 24.0 px
+left of its border at Small / Medium / Large / Extra Large. **The issue's rejected fix was run as
+a mutant** — `text-indent: 0` on `.classification-chip` alone: the chip test passed and the sweep
+still failed, naming 3 of 6 (the `ul` and both items), so a chip-only reset cannot pass this
+suite. With the fix: `✔ Test run with 107 tests in 5 suites passed` — the new suite plus the
+serializer, highlight-injection, chip-serialization and offset-engine suites, the last two being
+the fixture's and the harness's other users.
+
+**The Mac reader shares the stylesheet and was measured, not assumed.** `_FRUSDocumentWebViewMac`
+builds its page with the same `HTMLTemplate.build` (`FRUSDocumentWebView.swift:658`; iOS at
+`:769`). The unit target is iOS-only, so a scratch script loaded the stylesheet — read verbatim
+out of `HTMLTemplate.swift` — with the serializer's footnote markup into a macOS `WKWebView` on
+macOS 27.0 (26A428): before the rule, the chip's text began 15.2 px left of its border in a
+56.6 px box and the list item's first line 24.2 px left of its box; after it, the text begins
+9 px inside (1 px border + 8 px padding) an 80.8 px box and the list item starts at its box edge.
+The owner's look at d201 in the Mac reader itself is still owed. Render-only: no index bump (the
+Footnotes section sits outside the offset engine's root) and no build bump.
+
+## Session 2026-09-23 — A section's title is its own heading, not every heading inside it
+
+**The question:** lane T's second PR, #1389 — the Corpus Browser's first Front Matter row of
+frus1946v06 read "PrefacePrinciples for the Compilation and Editing of “Foreign Relations”". Index
+**v56**.
+
+**Every `<head>` inside a section was part of its title.** `VolumeStructureParserDelegate` started a
+capture at any `<head>` while a structural frame was open. `<frus:attachment>` and `<list>` push no
+frame, so their headings landed in the enclosing section's `headParts`, joined on pop with no
+separator. The issue's replica of the delegate over the 553 manifest volumes counted **176 sections
+in 88 volumes** carrying a second heading — 73 prefaces with the attached "Principles" statement, 90
+meeting sections in frus1952-54v05 trailed by their participants list ("…London Present United
+States United Kingdom"), frus1977-80v11p1's Persons list running through five subheadings — and 23
+of them glued together. The title is persisted in `volume_structures` and read before any re-parse
+by both Browse paths, so the fix needs the bump.
+
+**The rule: the innermost section's first `<head>`, nothing else.** A `titleCaptured` flag on the
+frame is set when a capture starts, and no later head starts one. In all 176 sections the first head
+is a direct child of the section's div and none has a second direct-child head, so a first-head rule
+and a direct-child rule give the same titles.
+
+**The review found a bigger defect of the same kind, and it rides the same bump.** The capture also
+took the text of a footnote inside the section's OWN head, which document titles have excluded since
+index v15: frus1919Parisv12's chapter read "The Greene Mission to the Baltic ProvincesAdditional
+information regarding conditions…". A `<note>` inside the captured head is now skipped unless it is
+inline text (`rend="inline"` and not a source note — the document parser's rule; no section head in
+the corpus carries one). No issue had been filed; it is fixed here because it is the same capture
+and the same v56 re-index, and a later PR would have cost another bump. **Replayed with a Python copy
+of the delegate over all 25,113 sections: 4,091 titles in 309 volumes change** — 176 from the
+first-head rule, 3,918 from the footnotes, 3 from both — no head consists only of a note, and no
+title falls back to its generic name.
+
+**Verification.** Fixtures on the three measured shapes, heads verbatim — frus1946v06's preface with
+its attachment; frus1952-54v05p1's `sec-Feb13-mtg1` with its participants list, nested under a titled
+compilation and chapter as it really sits, so a rule that consulted the wrong frame fails; and
+frus1919Parisv12's `ch4` with its head footnote — each asserted through `parseVolumeStructure` AND
+`parseVolumeFull(...).structureSections`, the path the index persists. A mirror-gated suite asserts
+all three on the real volumes, and the full parse on one.
+
+## Session 2026-09-23 — A source note encoded `n="0"` reads as the archival mark, not a footnote 0
+
+**The question:** lane T's third PR, #1369 — `frus1961-63v11/d21` showed a blue superscript **0**
+after its heading, where both manuals promise the archive-box mark for an unnumbered source note.
+Index **v57**.
+
+**`0` is the corpus's other spelling of "unnumbered".** 34 volumes encode a document's source note
+as `<note n="0" type="source">` rather than leaving `@n` out — 9,985 notes, all head-nested, one per
+document, all in the shippable manifest (the issue's scan over the 744-file checkout). No FRUS
+volume prints a footnote 0: 29 of those volumes' prefaces describe the source note as unnumbered,
+and in 8,807 of the 8,824 documents that also carry a body footnote the first one is `n="1"`.
+#985's `printedLabel(from:)` counted only a missing or blank `@n` as unnumbered, so `"0"` became a
+label and every consumer took the numbered branch: the marker and the Footnotes list printed 0,
+VoiceOver said "Footnote 0", and the collection exporter's plain-text header appended `[0]` to the
+title it carries into Zotero JSON.
+
+**The fix is the shared rule, not a serializer special case.** `printedLabel` now returns nil for
+`"0"`; every consumer already does the right thing with nil. The rule is shared with #1322's
+citation harvest on purpose, which is why this needs a bump: four untyped body notes in
+`frus1961-63v24` also carry `n="0"`, two of them citing archival sources, so their stored
+`external_citations.note_label` moves from "0" to NULL and a trip packet stops citing "footnote 0".
+`kVersion` is not bumped — `flatText` skips every footnote marker, so no highlight moves.
+
+**Verification.** `FootnoteLabelTests` drives the real parser → converter → serializer over the
+head-nested shape in all four encodings the corpus uses (no `@n`, `n=""`, blank, `n="0"`), asserting
+a nil label, the unnumbered marker with the archival glyph, "Source note" for VoiceOver, no 0 in
+the marker or the Footnotes list, and a nil label on the heading's marker (what keeps `[0]` out of
+an exported title); plus the v24 body-note shape (neutral bullet) and the rule directly. The `n="0"`
+cases fail on the unfixed rule and pass with it.
+
 ## Session 2026-09-23 — Every volume's short tag is its own, and a microfiche supplement no longer reads as the volume it supplements
 
 **The question:** lane A's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` — #1388.
