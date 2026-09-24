@@ -1059,14 +1059,15 @@ final class DocxCollectionExporter: CollectionExporter {
     /// `550a8c5c5` over the 553 manifest volumes, in documents and outside footnote bodies:
     /// 91,332 `<p>`s sit in a `<quote>` inside a `<p>`; 53,759 lists sit directly in a `<p>` and
     /// 1,693 more in a `<quote>` there; 38,372 lists and 33,572 `<p>`s sit directly in an
-    /// `<item>`; 3,223 tables sit in a `<p>`; and a table cell holds a `<p>`, a table or a list
-    /// 1,136 times — 68,944 documents in all. The run path printed each of them through
+    /// `<item>`, and 3,960 more `<p>`s in a `<quote>` there; 3,223 tables sit directly in a `<p>`;
+    /// and a table cell directly holds a `<p>`, a table or a list 1,136 times. 68,897 documents
+    /// hold at least one of these. The run path printed each of them through
     /// `inlineNodeRunXML`, whose block arm prints nothing and does not advance the highlight
     /// tracker, so each vanished from Word AND every highlight after it in the document shaded
-    /// the wrong words. Another 2,653 such blocks, in 1,315 documents, sit inside a footnote body,
-    /// which never reaches this function: `singleParaFootnoteXML` still prints a note as one
-    /// paragraph of runs, so they still print nothing (#1414). No highlight moves for them, since
-    /// footnote bodies are outside the flat text.
+    /// the wrong words. Another 2,647 blocks of these shapes, in 1,314 documents, sit inside a
+    /// footnote body, which never reaches this function: `singleParaFootnoteXML` still prints a
+    /// note as one paragraph of runs, so they still print nothing (#1414). No highlight moves for
+    /// them, since footnote bodies are outside the flat text.
     ///
     /// Runs gather into a paragraph. A `<p>` in the context ends it and starts another, styled the
     /// same way — an item's second paragraph is the item's; any other block (a list, a table, a

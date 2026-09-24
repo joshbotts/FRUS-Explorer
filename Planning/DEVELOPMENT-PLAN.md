@@ -18992,10 +18992,10 @@ footnote bodies**, each element under its nearest run context:
 | `<list>` | directly in an `<item>` | 38,372 |
 | `<p>` | directly in an `<item>` | 33,572 |
 | `<p>` | in a `<quote>` in an `<item>` | 3,960 |
-| `<table>` | in a `<p>` | 3,223 |
+| `<table>` | directly in a `<p>` | 3,223 |
 | `<p>`, `<table>` or `<list>` | directly in a table cell | 1,136 |
 
-In all, **68,944 documents** hold at least one. The entry above disclosed only the lists in a
+In all, **68,897 documents** hold at least one. The entry above disclosed only the lists in a
 `<p>`: 54,151 (it first said 54,152, one list too many; below), a figure that counts the 392
 inside footnote bodies.
 
@@ -19004,11 +19004,20 @@ inside footnote bodies.
 each block only to its nearest run context and tested for a `<note>` on the way, so a note
 enclosing that context — a footnote's own `<p>` — was never seen. Round 2's recount tests every
 ancestor up to the document div, and splitting the first figures by it reproduces both columns
-exactly. **The 2,653 blocks it moves, in 1,315 documents, are ones this fix does not print**: every
+exactly. **The 2,647 blocks it moves, in 1,314 documents, are ones this fix does not print**: every
 one sits in a real footnote rather than a `rend="inline"` note the parser hoists into the text,
 and a footnote body still goes through `singleParaFootnoteXML`, one paragraph of runs, which drops
 them — 2,060 quoted `<p>`s, 464 lists in a `<p>` or a quote there, 51 lists and 42 `<p>`s in an
-item, 26 tables, 6 figures and 4 `<p>`s in a cell. #1414 has the footnote side.)
+item, 26 tables and 4 `<p>`s in a cell. Six figures in a `<p>` inside a note, all in one more
+document, are dropped the same way but were never a row of this table; with them the recount
+finds 2,653 blocks under a run context in a note, in 1,315 documents. #1414 has the footnote
+side.)
+
+(Both document totals this table has printed, 69,683 and then 68,944, counted a document holding
+any block the recount classifies, not only one of the rows above: they also took in the 123
+tables inside a `<quote>` or other inline element in a `<p>`, the 168 lists inside one in an
+`<item>`, 25 tables in an `<item>`, figures, and a cell's nested blocks. Over the rows above the
+two totals are 69,635 and 68,897. Corrected in review round 3.)
 
 **The fix is one mechanism, not four patches.** `paragraphsDocx` prints the content of a
 paragraph, heading, dateline, salute, attachment heading, table cell or list item as one or more
@@ -19034,9 +19043,14 @@ same layout. Where a paragraph did hold a block, its tail now opens a new Word p
 the one visible layout change, and Word has no other way to print it; since round 2 (below) that
 paragraph opens on its first word rather than on the space whitespace normalisation left before
 it. The `inlineNodeRunXML` block arm keeps printing nothing. What still reaches it is a block
-inside a list's heading or label, or inside a footnote body — the 2,653 above — and none of that
-is flat text or handed the tracker. The PDF
-exporter needed nothing, since its inline path already falls through to the block renderer.
+inside a list's heading or label, or inside a footnote body, and none of that is flat text or
+handed the tracker. The in-note blocks counted above are not the set that reaches it. A `<p>` or
+list inside an item or a cell (the 51 lists and 42 `<p>`s in an item, the 4 `<p>`s in a cell)
+never reaches the arm itself; its enclosing list or table does. And the 103 lists and 35 tables
+that sit directly in a note, outside any run context, reach it through `inlineOrBlockRuns`'s
+default without being counted above. Counted once at the outermost in each note, footnote bodies
+hold 566 lists and 61 tables (the "Not done here" paragraph below). The PDF exporter needed
+nothing, since its inline path already falls through to the block renderer.
 
 **The other findings.**
 - **HTML-export highlighter.** `injectHighlights` now has a test over the list parts. A label
@@ -19166,3 +19180,22 @@ The whole unit target on this tree ran 5,192 tests in 642 suites, with 5 issues 
 same four as above (`OnboardingIdentityPlacementTests`' welcome-dock case, two `SplashDriftTests`
 geometry cases, #1412, and `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403). The count
 is the 5,191 above plus the one test added here. The macOS scheme builds.
+
+**Review round 3 (comments and this entry only; no code changed, nothing built or run).** The
+check of the round-2 commit found no code regression and five imprecise claims, all corrected in
+place against its recount at `550a8c5c5`:
+- **The document totals counted more than the rows they follow.** 68,944 counted a document
+  holding any block the recount classifies; over the table's rows it is 68,897. The table's note
+  and `paragraphsDocx`'s doc comment now give 68,897, and that comment lists the 3,960 `<p>`s
+  quoted in an `<item>` it had left out, so its shapes are the table's.
+- **The in-note total took in six figures no row names.** The table's rows move 2,647 blocks in
+  1,314 documents; the six figures make the 2,653 in 1,315. The table's note and
+  `paragraphsDocx`'s doc comment now give 2,647.
+- **"What still reaches" the block arm is not the in-note count.** The paragraph after "Content
+  holding no block" now says why, and gives the outermost-per-note 566 lists and 61 tables.
+- **A footnote does not drop every quoted paragraph.** One quoted directly in a note prints, run
+  into the note's one paragraph; one inside the note's own `<p>` prints nothing. The doc of
+  `docxPrintsBlocksInsideAParagraph` now says so.
+- **The trim test's comment claimed more than its assertion.** The fixture's first paragraph opens
+  on a word, so the `before` assertion guards only the space that paragraph ends on; the comment
+  now says that.

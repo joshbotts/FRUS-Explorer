@@ -5964,8 +5964,10 @@ struct ListExportTests {
     /// Outside footnote bodies, 53,759 lists sit directly in a `<p>` and 91,332 `<p>`s in a
     /// `<quote>` inside one. Word cannot put either inside a paragraph, so a body paragraph is
     /// split around them — and the words after them, in the same `<p>` and after it, keep their
-    /// highlights. A footnote body is not split: it still prints as one paragraph of runs, and a
-    /// list or quoted paragraph inside it prints nothing (#1414).
+    /// highlights. A footnote body is not split: it still prints as one paragraph of runs, so a
+    /// list inside it, or a paragraph quoted inside the note's own `<p>`, prints nothing (#1414).
+    /// (A paragraph quoted directly in the note, with no `<p>` of the note's around it, prints,
+    /// run into the note's one paragraph.)
     @Test("A list or quoted paragraphs inside a paragraph print in Word, and highlights after them keep their words")
     func docxPrintsBlocksInsideAParagraph() async throws {
         let model = try await ListShapeFixtures.renderModel("""
@@ -6029,15 +6031,16 @@ struct ListExportTests {
         #expect(afterList == "thereafter nothing more.", "the paragraph after the list prints \"\(afterList)\"")
         let afterQuote = printed(try paragraph(containing: "stopped short.", in: xml))
         #expect(afterQuote == "then stopped short.", "the paragraph after the quote prints \"\(afterQuote)\"")
-        // Only a split paragraph's opening space goes: the paragraph before the block, and the
-        // spaces between words, print as they always have.
+        // Only a split paragraph's opening space goes: the paragraph before the block keeps the
+        // space it ends on, and the spaces between words stay. That paragraph opens on a word in
+        // this fixture, so nothing here would see a trim of a leading space of its own.
         let before = printed(try paragraph(containing: "The points were these:", in: xml))
         #expect(before == "The points were these: ", "the paragraph before the list prints \"\(before)\"")
         #expect(!xml.contains("<w:t xml:space=\"preserve\"></w:t>"), "a run that held only the space printed empty")
     }
 
-    /// Outside footnote bodies, a table cell holds a `<p>`, a list or a table 1,136 times in the
-    /// corpus. A Word cell may hold several paragraphs and a table, but must end in a paragraph.
+    /// Outside footnote bodies, a table cell directly holds a `<p>`, a list or a table 1,136 times
+    /// in the corpus. A Word cell may hold several paragraphs and a table, but must end in a paragraph.
     @Test("A cell's paragraphs, list and nested table print in Word, and a highlight after the table keeps its words")
     func docxPrintsBlocksInsideATableCell() async throws {
         let model = try await ListShapeFixtures.renderModel("""
