@@ -240,6 +240,13 @@ struct DocumentHeaderDisplayTests {
             == [.readsStoredField("documentNumber")])
         #expect(try problems(Self.rowFixture(extra: "Text(node.metadata?.header ?? node.id)"))
             == [.readsStoredField("header")])
+        // …and through a chained member, which a Unicode word boundary does not end at.
+        #expect(try problems(Self.rowFixture(extra: #"Text(node.metadata?.header.uppercased() ?? "")"#))
+            == [.readsStoredField("header")])
+        #expect(try problems(Self.rowFixture(extra: ".help(doc.header.trimmingCharacters(in: .whitespaces))"))
+            == [.readsStoredField("header")])
+        // A harmless rewrite of the drawn title is not a false alarm.
+        #expect(try problems(Self.rowFixture(title: "Text(row.title.capitalized)")) == [])
         // The rule given the wrong field, its output never bound, or never called at all.
         #expect(try problems(Self.rowFixture(
             call: "let row = DocumentHeaderDisplay.numberedRow(header: doc.volumeId, number: doc.documentNumber)"))
@@ -330,7 +337,7 @@ struct DocumentHeaderDisplayTests {
         if !arguments.contains("number: \(number)") { problems.append(.numberNotPassed(number)) }
         let outside = declaration.replacingOccurrences(of: arguments, with: "()")
         for field in storedFields {
-            if try Regex(#"\.\s*"# + field + #"\b"#).firstMatch(in: outside) != nil {
+            if try Self.wordRegex(#"\.\s*"# + field + #"\b"#).firstMatch(in: outside) != nil {
                 problems.append(.readsStoredField(field))
             }
         }
@@ -353,7 +360,7 @@ struct DocumentHeaderDisplayTests {
     /// `if let <name> = <binding>.number` block holds a `Text` that reads `<name>`.
     private static func drawsNumber(of binding: String, texts: [String], in scope: String) throws -> Bool {
         if try texts.contains(where: { try refers($0, to: binding, member: "number") }) { return true }
-        for match in scope.matches(of: try Regex(#"if\s+let\s+(\w+)\s*=\s*"# + binding + #"\.number\b"#)) {
+        for match in scope.matches(of: try Self.wordRegex(#"if\s+let\s+(\w+)\s*=\s*"# + binding + #"\.number\b"#)) {
             guard let name = match.output[1].substring,
                   let brace = scope[match.range.upperBound...].firstIndex(of: "{"),
                   let block = balanced(from: brace, open: "{", close: "}", in: scope) else { continue }
@@ -367,7 +374,17 @@ struct DocumentHeaderDisplayTests {
     /// Whether `text` reads the identifier `name` (or its `member`) as a whole word.
     private static func refers(_ text: String, to name: String, member: String? = nil) throws -> Bool {
         let pattern = #"\b"# + name + (member.map { #"\."# + $0 } ?? "") + #"\b"#
-        return try Regex(pattern).firstMatch(in: text) != nil
+        return try Self.wordRegex(pattern).firstMatch(in: text) != nil
+    }
+
+    /// A regex whose `\b` is the SIMPLE word boundary (a word character beside a non-word one).
+    ///
+    /// Swift's default is Unicode (UAX #29) boundaries, which put NO break between a letter, a `.`
+    /// and another letter — so `\.header\b` does not match `doc.header.uppercased()`, and a row
+    /// reading a stored field through a chained member passed the scan while the doc claimed
+    /// "by any spelling". Simple boundaries treat `.` as the non-word character it is here.
+    private static func wordRegex(_ pattern: String) throws -> Regex<AnyRegexOutput> {
+        try Regex(pattern).wordBoundaryKind(.simple)
     }
 
     /// The first capture group of `pattern` in `text`, or `nil` when it does not match.

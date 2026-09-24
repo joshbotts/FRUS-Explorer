@@ -18645,3 +18645,11 @@ already indexed on it):
 
 **Still owed:** the two macOS-only rows (the Mac twin and the graph window's picker) and the Mac
 reference list have not been seen on screen. Only the `FRUSExplorerMac` build covers them.
+
+**Review round 2.** The stored-field check's `\b` was Swift's Unicode (UAX #29) word boundary, which
+puts no break between a letter, a `.` and another letter, so `doc.header.uppercased()` and
+`.help(doc.header.trimmingCharacters(…))` passed while this entry claimed "by any spelling". The
+scan's regexes now use the simple boundary (`wordBoundaryKind(.simple)`), and the self-test gains
+both chained shapes plus `Text(row.title.capitalized)` as a no-false-alarm control. With the
+default boundary the three new expectations fail; with the fix the suite's 12 tests pass,
+including the scan of the four real rows.
