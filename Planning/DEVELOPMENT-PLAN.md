@@ -18564,7 +18564,7 @@ succeeds (the review fixes below close the failed-load case). Since #1372
 note's visit is named that way rather than after the link. The row's caption is now
 `volumeId · documentId` under a document title, and omitted when the title line already is that
 pair. Rows already written keep their volume titles; rather than migrate a CloudKit-mirrored table,
-`ReadingHistoryTitle.documentTitle(stored:volumeTitle:)` treats a stored title that is EXACTLY its
+`ReadingHistoryTitle.documentTitle(stored:volumeTitle:volumeId:documentId:)` treats a stored title that is EXACTLY its
 volume's manifest title as absent (equality, so a heading that merely begins like its volume's is
 kept). The History list (both platforms, via `HistoryPaneSnapshot.fetch`, which now requires the
 manifest so no caller can omit it), the macOS History menu and Project Home's Recently Read
