@@ -1398,7 +1398,7 @@ Landmark documents are ranked by PageRank, computed on this device over the cita
 ### Cross-Reference Analytics — Captions
 
 #### Scope-of-figures caveat
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 773–774 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 826–827 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
 
 The most-referenced, degree, and PageRank charts count same-volume references, including resolved page references, toward the document’s own volume. Set a year range or scope and they count citations made by documents in that era or scope. The heat matrix counts only connections between different volumes, so it leaves same-volume citations out.
 
@@ -1408,14 +1408,14 @@ The most-referenced, degree, and PageRank charts count same-volume references, i
 
 <!-- Placeholder note: the leading count is a Swift string interpolation, not a %lld token — keep `\(excludedBrokenCount)` intact exactly as written. -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 778–779 | key: crossRefAnalytics.excludedBrokenCaption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 831–832 | key: crossRefAnalytics.excludedBrokenCaption | shared: iOS+macOS (single edit point) -->
 
 \(excludedBrokenCount) unresolvable references are excluded from this analysis — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus.
 
 <!-- END SOURCE: crossRefAnalytics.excludedBrokenCaption -->
 
 #### Landmark Documents (Influence) — PageRank hedge subtitle
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 1190–1191 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 1246–1247 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
 
 Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader who follows citations would keep returning to. The score measures position in the citation network, not historical importance. Tap to open.
 
@@ -1427,7 +1427,7 @@ Ranked by a PageRank score computed on this device over the citations the app re
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | lines: 983–984 | key: crossRefAnalytics.matrix.subtitle -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | lines: 1035–1036 | key: crossRefAnalytics.matrix.subtitle -->
 
 Citations between the \(Self.matrixVolumeLimit) volumes with the most references in and out. Rows cite columns. Darker cells mean more references. Tap a volume label to open it.
 
@@ -1539,7 +1539,7 @@ Decade shares: the share plotted for a decade is the average of the yearly share
 
 #### Unresolvable references
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 516–517 | key: crossRefAnalytics.export.caveat.excluded %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 569–570 | key: crossRefAnalytics.export.caveat.excluded %lld | shared: iOS+macOS (single edit point) -->
 
 Unresolvable references: %lld cross-reference(s) are excluded from this analysis — references in the printed volumes that point to a document, page, or volume not present in this corpus.
 
@@ -1547,7 +1547,7 @@ Unresolvable references: %lld cross-reference(s) are excluded from this analysis
 
 #### Same-volume attribution
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 520–521 | key: crossRefAnalytics.export.caveat.sameVolume | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 573–574 | key: crossRefAnalytics.export.caveat.sameVolume | shared: iOS+macOS (single edit point) -->
 
 Attribution: the document-level figures count same-volume references, including resolved page references, toward the document’s own volume. The volume heat matrix counts only citations between different volumes, so it leaves same-volume references out.
 
@@ -1555,7 +1555,7 @@ Attribution: the document-level figures count same-volume references, including 
 
 #### Heat matrix — which volumes it covers
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 690–691 | key: crossRefAnalytics.export.caveat.matrixLimit %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 743–744 | key: crossRefAnalytics.export.caveat.matrixLimit %lld | shared: iOS+macOS (single edit point) -->
 
 Selection: the matrix covers the %lld volumes with the most references in and out. The CSV lists only pairs with at least one reference between them. The figure draws the whole grid and leaves the rest of the cells blank.
 
@@ -1563,7 +1563,7 @@ Selection: the matrix covers the %lld volumes with the most references in and ou
 
 #### Heat matrix — axes and labels
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 693–694 | key: crossRefAnalytics.export.caveat.matrixAxes | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 746–747 | key: crossRefAnalytics.export.caveat.matrixAxes | shared: iOS+macOS (single edit point) -->
 
 Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes’ full titles appear in this CSV.
 
@@ -1571,7 +1571,7 @@ Axes: rows cite columns. In the figure the column headings are abbreviated volum
 
 #### Landmark Documents — what the score is
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.exportLandmarkCSV | lines: 746–747 | key: crossRefAnalytics.export.caveat.pageRank | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.exportLandmarkCSV | lines: 799–800 | key: crossRefAnalytics.export.caveat.pageRank | shared: iOS+macOS (single edit point) -->
 
 Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.
 
@@ -8165,35 +8165,35 @@ Plot raw matching-document counts, or each period’s matches as a share of all 
 <!-- END SOURCE: analytics.normalize.help -->
 
 #### Tooltip — Overlay the out-degree distribution (how many citations…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionControls | lines: 761–762 | key: crossRefAnalytics.outDegree.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionControls | lines: 814–815 | key: crossRefAnalytics.outDegree.help -->
 
 Overlay the out-degree distribution (how many citations documents make) on the in-degree histogram.
 
 <!-- END SOURCE: crossRefAnalytics.outDegree.help -->
 
 #### No resolved cross-references are indexed yet. Index more…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.rankingSection | lines: 798–799 | key: crossRefAnalytics.ranking.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.rankingSection | lines: 851–852 | key: crossRefAnalytics.ranking.empty -->
 
 No resolved cross-references are indexed yet. Index more volumes to build the citation network.
 
 <!-- END SOURCE: crossRefAnalytics.ranking.empty -->
 
 #### How many documents have each inbound-citation count — a few…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionSection | lines: 909–910 | key: crossRefAnalytics.distribution.subtitle -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionSection | lines: 961–962 | key: crossRefAnalytics.distribution.subtitle -->
 
 How many documents have each inbound-citation count — a few landmark documents and a long tail. Toggle the out-degree overlay to compare how many citations documents make.
 
 <!-- END SOURCE: crossRefAnalytics.distribution.subtitle -->
 
 #### Not enough cross-volume references are indexed to build a…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixSection | lines: 989–990 | key: crossRefAnalytics.matrix.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixSection | lines: 1041–1042 | key: crossRefAnalytics.matrix.empty -->
 
 Not enough cross-volume references are indexed to build a heat matrix. Index more volumes.
 
 <!-- END SOURCE: crossRefAnalytics.matrix.empty -->
 
 #### Empty state — The search index is not available. Index at least one…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.unavailablePlaceholder | lines: 1304–1305 | key: crossRefAnalytics.unavailable.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.unavailablePlaceholder | lines: 1347–1348 | key: crossRefAnalytics.unavailable.detail -->
 
 The search index is not available. Index at least one volume to build the citation network.
 

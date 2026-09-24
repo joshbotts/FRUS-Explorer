@@ -651,7 +651,7 @@ final class ChronologyViewModel {
     nonisolated static let volumeTopicMaxLength = 40
 
     /// A concise, distinct, descriptive label for a volume, distilled from its full FRUS
-    /// title for the chronology chart legend and hover magnifier — where the raw title (e.g.
+    /// title for the chronology chart legend and filter banner — where the raw title (e.g.
     /// "Foreign Relations of the United States, 1969–1976, Volume XX, Southeast Asia,
     /// 1969–1972") is far too long and repetitive to tell volumes apart.
     ///

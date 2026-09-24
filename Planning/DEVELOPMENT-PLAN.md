@@ -18187,7 +18187,7 @@ no owner. `ChronologyViewModel.distilledVolumeLabelParts` now returns the label'
 string short) and the tag — and `distilledVolumeLabel` is built from it, so the two cannot drift.
 The magnifier's per-volume row renders them as a topic `Text` truncated at the tail beside a tag
 `Text` that never truncates (`fixedSize`), so in its 210 pt card a long topic gives way and the tag
-stays whole. **A2 reuses the same function** for the matrix's row labels (its plan text asks for
+stays whole. **A2 is planned to reuse the same function** for the matrix's row labels (its plan text asks for
 this sibling; it now exists). Only the magnifier and the matrix keep the tag when they cut. The
 Chronology legend and filter banner, the Corpus Analytics legend and the iPad compilation parent
 line render the joined label on one tail-truncated line, so they drop the tag first when too
