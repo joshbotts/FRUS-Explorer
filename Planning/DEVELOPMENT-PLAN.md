@@ -18137,6 +18137,233 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
 
+## Session 2026-09-23 — A source note's classification chip is drawn whole again, and a list inside a footnote stops hanging into the number column
+
+**The question:** lane R's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1386, found while capturing the #1081 Mac screenshots: in the reader's Footnotes list,
+`frus1961-63v14/d201`'s source note carries a *Top Secret; Niact* chip whose first word is drawn
+outside the capsule's left border.
+
+**The cause is #985's hanging indent, inherited.** #985 hung each printed footnote number in the
+margin with `padding-left: 2.2em; text-indent: -2.2em` on `li.fn-list-item`. `text-indent` is
+inherited and applies to the first line of every block container, and an inline-block is one;
+#985 reset its own label and nothing else. The chip is an inline-block appended to the same `li`,
+so its one line was indented −24.2 px at Medium (−2.2 × the 11 px footnote size) while its border
+and padding stayed put and its shrink-to-fit width lost the same amount. A `.frus-list` inside a
+note inherited the same value, pulling each item's first line into the number column — not seen in
+the app, but #1386's scan counts 518 such notes in 173 volumes.
+
+**The fix is one rule, `.fn-list-item > * { text-indent: 0; }`** (`HTMLTemplate.swift:415`). The
+item's own first line still hangs, because that indent is the `li`'s own value; every direct child
+— the label, the inline `p.body`, the chip, a list — computes 0 and passes 0 down. The rule rides
+`HTMLTemplate.documentCSS`, so it also reaches the HTML collection export
+(`CollectionItemHTMLRenderer.swift:723`), where only the list half applied: exports emit no chip.
+
+**The test is the first in the unit suite that measures computed style or layout.** The
+offset-engine suite has long loaded `HTMLTemplate.build` pages, stylesheet included, into the same
+harness, but only to read text back; `ClassificationChipSerializationTests` pinned the chip's
+markup, and the markup was right — no string assertion could see an inherited indent.
+`FootnoteListIndentRenderTests` (`FRUSRenderNodeHTMLSerializerTests.swift:760`) builds the page
+through `HTMLTemplate.build` — the call both reader representables make — for that suite's own
+`sourceWithMarking` fixture (now `static`, so the chip measured is the chip pinned) and a note
+holding a simple `.listBlock`, loads it into `OffsetEngineTestHarness` (internal rather than
+private now, with an `evaluateString` for JSON-returning scripts), and reads computed style and
+layout. The sweep asserts that every descendant of `li.fn-list-item` whose computed `display` is
+not `inline` computes `text-indent: 0px`, and guards itself: both notes must render as items,
+each item must still compute a NEGATIVE indent (#985's hang intact — and a sweep of zeroes under
+an item that no longer hangs would prove nothing), and the elements visited must include the chip
+and an item of the note's list. The second test asserts, at all four text sizes, that the chip's
+text starts no earlier than its padding edge and ends inside its border.
+
+**A/B on iPhone Air, iOS 26.3 (`60AB3371`).** On `v2`'s stylesheet: `✘ Test run with 2 tests in
+1 suite failed … with 9 issues` — the sweep named 4 of 6 non-inline descendants at `-24.200001px`
+(the chip, the `ul`, both list items), and the chip's text started 10.8 / 15.2 / 19.6 / 24.0 px
+left of its border at Small / Medium / Large / Extra Large. **The issue's rejected fix was run as
+a mutant** — `text-indent: 0` on `.classification-chip` alone: the chip test passed and the sweep
+still failed, naming 3 of 6 (the `ul` and both items), so a chip-only reset cannot pass this
+suite. With the fix: `✔ Test run with 107 tests in 5 suites passed` — the new suite plus the
+serializer, highlight-injection, chip-serialization and offset-engine suites, the last two being
+the fixture's and the harness's other users.
+
+**The Mac reader shares the stylesheet and was measured, not assumed.** `_FRUSDocumentWebViewMac`
+builds its page with the same `HTMLTemplate.build` (`FRUSDocumentWebView.swift:658`; iOS at
+`:769`). The unit target is iOS-only, so a scratch script loaded the stylesheet — read verbatim
+out of `HTMLTemplate.swift` — with the serializer's footnote markup into a macOS `WKWebView` on
+macOS 27.0 (26A428): before the rule, the chip's text began 15.2 px left of its border in a
+56.6 px box and the list item's first line 24.2 px left of its box; after it, the text begins
+9 px inside (1 px border + 8 px padding) an 80.8 px box and the list item starts at its box edge.
+The owner's look at d201 in the Mac reader itself is still owed. Render-only: no index bump (the
+Footnotes section sits outside the offset engine's root) and no build bump.
+
+## Session 2026-09-23 — A section's title is its own heading, not every heading inside it
+
+**The question:** lane T's second PR, #1389 — the Corpus Browser's first Front Matter row of
+frus1946v06 read "PrefacePrinciples for the Compilation and Editing of “Foreign Relations”". Index
+**v56**.
+
+**Every `<head>` inside a section was part of its title.** `VolumeStructureParserDelegate` started a
+capture at any `<head>` while a structural frame was open. `<frus:attachment>` and `<list>` push no
+frame, so their headings landed in the enclosing section's `headParts`, joined on pop with no
+separator. The issue's replica of the delegate over the 553 manifest volumes counted **176 sections
+in 88 volumes** carrying a second heading — 73 prefaces with the attached "Principles" statement, 90
+meeting sections in frus1952-54v05 trailed by their participants list ("…London Present United
+States United Kingdom"), frus1977-80v11p1's Persons list running through five subheadings — and 23
+of them glued together. The title is persisted in `volume_structures` and read before any re-parse
+by both Browse paths, so the fix needs the bump.
+
+**The rule: the innermost section's first `<head>`, nothing else.** A `titleCaptured` flag on the
+frame is set when a capture starts, and no later head starts one. In all 176 sections the first head
+is a direct child of the section's div and none has a second direct-child head, so a first-head rule
+and a direct-child rule give the same titles.
+
+**The review found a bigger defect of the same kind, and it rides the same bump.** The capture also
+took the text of a footnote inside the section's OWN head, which document titles have excluded since
+index v15: frus1919Parisv12's chapter read "The Greene Mission to the Baltic ProvincesAdditional
+information regarding conditions…". A `<note>` inside the captured head is now skipped unless it is
+inline text (`rend="inline"` and not a source note — the document parser's rule; no section head in
+the corpus carries one). No issue had been filed; it is fixed here because it is the same capture
+and the same v56 re-index, and a later PR would have cost another bump. **Replayed with a Python copy
+of the delegate over all 25,113 sections: 4,091 titles in 309 volumes change** — 176 from the
+first-head rule, 3,918 from the footnotes, 3 from both — no head consists only of a note, and no
+title falls back to its generic name.
+
+**Verification.** Fixtures on the three measured shapes, heads verbatim — frus1946v06's preface with
+its attachment; frus1952-54v05p1's `sec-Feb13-mtg1` with its participants list, nested under a titled
+compilation and chapter as it really sits, so a rule that consulted the wrong frame fails; and
+frus1919Parisv12's `ch4` with its head footnote — each asserted through `parseVolumeStructure` AND
+`parseVolumeFull(...).structureSections`, the path the index persists. A mirror-gated suite asserts
+all three on the real volumes, and the full parse on one.
+
+## Session 2026-09-23 — A source note encoded `n="0"` reads as the archival mark, not a footnote 0
+
+**The question:** lane T's third PR, #1369 — `frus1961-63v11/d21` showed a blue superscript **0**
+after its heading, where both manuals promise the archive-box mark for an unnumbered source note.
+Index **v57**.
+
+**`0` is the corpus's other spelling of "unnumbered".** 34 volumes encode a document's source note
+as `<note n="0" type="source">` rather than leaving `@n` out — 9,985 notes, all head-nested, one per
+document, all in the shippable manifest (the issue's scan over the 744-file checkout). No FRUS
+volume prints a footnote 0: 29 of those volumes' prefaces describe the source note as unnumbered,
+and in 8,807 of the 8,824 documents that also carry a body footnote the first one is `n="1"`.
+#985's `printedLabel(from:)` counted only a missing or blank `@n` as unnumbered, so `"0"` became a
+label and every consumer took the numbered branch: the marker and the Footnotes list printed 0,
+VoiceOver said "Footnote 0", and the collection exporter's plain-text header appended `[0]` to the
+title it carries into Zotero JSON.
+
+**The fix is the shared rule, not a serializer special case.** `printedLabel` now returns nil for
+`"0"`; every consumer already does the right thing with nil. The rule is shared with #1322's
+citation harvest on purpose, which is why this needs a bump: four untyped body notes in
+`frus1961-63v24` also carry `n="0"`, two of them citing archival sources, so their stored
+`external_citations.note_label` moves from "0" to NULL and a trip packet stops citing "footnote 0".
+`kVersion` is not bumped — `flatText` skips every footnote marker, so no highlight moves.
+
+**Verification.** `FootnoteLabelTests` drives the real parser → converter → serializer over the
+head-nested shape in all four encodings the corpus uses (no `@n`, `n=""`, blank, `n="0"`), asserting
+a nil label, the unnumbered marker with the archival glyph, "Source note" for VoiceOver, no 0 in
+the marker or the Footnotes list, and a nil label on the heading's marker (what keeps `[0]` out of
+an exported title); plus the v24 body-note shape (neutral bullet) and the rule directly. The `n="0"`
+cases fail on the unfixed rule and pass with it.
+
+## Session 2026-09-23 — Every volume's short tag is its own, and a microfiche supplement no longer reads as the volume it supplements
+
+**The question:** lane A's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` — #1388.
+Chronology's legend showed two volumes as `v10`: *Microfiche Supplement, American… · 1961-63 v10*
+beside *Cuba · 1961-63 v10*. `ChronologyViewModel.distilledVolumeLabel` joins a topic to a
+period + volume tag, and its doc comment said the tag alone was globally unique. Six surfaces
+render that label: the Chronology legend and its Mac hover magnifier, the Cross-Reference matrix's
+row labels (head-truncated to keep the tag), the Corpus Analytics series legend, the iPad
+compilation parent line and the Mac document window's centre label. The issue also names one
+on-screen loss of the tag: the Mac magnifier cut the supplement's label to *Microfiche Supplement,
+American… ·…*, with no tag left at all.
+
+**The claim was false, and the whole-corpus test could not see it.** `volumeTag` took the first
+`v<digits>` and the first `p<digits>` anywhere in the id and kept the rest of the id only when
+neither matched, so whenever one matched it dropped whatever told two volumes apart. Measured by
+compiling the `origin/v2` function unchanged into a scratch script over the bundled manifest (553
+volumes): **535 distinct tags, 11 shared by 29 volumes** — five microfiche supplements against their
+base volumes (`v10-12mSupp` read `v10`), the Paris and Berlin conference volumes against the annuals
+of 1919 and 1945, and the ten parts of five E-volumes, which had no volume number at all because
+the `(E-)?` branch never matched the ids' lower-case `ve05`. It also misread ten volumes outright,
+since `p<digits>` matched inside `Supp01` and `app1`: `frus1917Supp01v01` was `1917 v1 pt.1`,
+`frus1894app1` (Appendix I) was `1894 pt.1`. `distilledLabelUniqueAcrossBundledCorpus` passed
+throughout because it checked whole labels, where the topic did the separating — and the topic is
+what the 40-character cut removes, and what the matrix's head truncation removes to keep the tag.
+
+**The tag now reads the whole suffix after `frus<subseries>`, in id order**, which is usually the
+order the volume's own title prints it (*Part II, Volume I* is `pt.2 v1`; the Public Diplomacy
+volumes are the exception — the title prints *Volume VI, Public Diplomacy* and the tag, following
+the id, reads `PubDip v6`): `v07` → `v7`, `ve05` → `vE-5`, `v10-12` → `v10–12`, `p2` → `pt.2`,
+`mSupp` → `fiche`, `Supp02` → `Supp.2`, `app1` → `app.1`, `Ed2` → `ed.2`, and a capitalised name
+(`Paris`, `Berlin`, `PubDip`, `CairoTehran`) verbatim. A shape the grammar does not know is kept
+verbatim rather than dropped. The supplement reads *Microfiche
+Supplement, American… · 1961-63 v10–12 fiche*; `frus1961-63v07-09mSupp`, whose title never says
+"Microfiche Supplement", reads `1961-63 v7–9 fiche`, the only place that can say so. Over the same
+manifest: **553 distinct tags, none shared**. 20 of the 29 changed (the nine base volumes keep
+theirs), 48 more changed — 8 Part-then-Volume reorders, 10 Supp/app misreadings corrected, 11
+standalone E-volumes (`ve01` → `vE-1`), the other 11 Paris volumes, 3 Russia, 3 PubDip and 2
+editions — and **485 of 553 are byte-identical**. The now-dead `captureGroups` helper is removed.
+The three comments that stated the claim (`ChronologyViewModel`, the matrix's head-truncation note
+in `CrossReferenceAnalyticsView`, `MacDocumentTitle`) now say it was false until this change and
+name the test that pins it.
+
+**A unique tag protects only a surface that keeps it when it cuts, so the magnifier is fixed here
+too (owner decision, review round).** The first cut of this PR left the magnifier alone and called
+it "owed to A2"; review found A2 (#1379) scoped to the matrix alone, so the symptom #1388 names had
+no owner. `ChronologyViewModel.distilledVolumeLabelParts` now returns the label's halves apart as a
+`VolumeLabelParts` — the topic UNCUT (no 40-character pre-cut, which exists only to keep the joined
+string short) and the tag — and `distilledVolumeLabel` is built from it, so the two cannot drift.
+The magnifier's per-volume row renders them as a topic `Text` truncated at the tail beside a tag
+`Text` that never truncates (`fixedSize`), so in its 210 pt card a long topic gives way and the tag
+stays whole. **A2 is planned to reuse the same function** for the matrix's row labels (its plan text asks for
+this sibling; it now exists). Only the magnifier and the matrix keep the tag when they cut. The
+Chronology legend and filter banner, the Corpus Analytics legend and the iPad compilation parent
+line render the joined label on one tail-truncated line, so they drop the tag first when too
+narrow; the Mac document window's centre label ends in `" · Doc N"` and truncates in the middle,
+where the tag then sits. #1388 names none of these as losing the tag and nobody has measured a
+width at which they do; the comments now say so rather than claiming otherwise, and they stay
+open items.
+
+**Tests.** `distilledLabelUniqueAcrossBundledCorpus` asserts the TAG half — the text after the last
+`" · "` — is unique, and records every shared tag with its volumes. `ChronologyVolumeLabelTests`
+gains the issue's two pairs (`v10-12mSupp` against `v10`, `ve15p2` against `ve15p2Ed2`, plus the
+Volume VII supplement) and a table pinning one real volume per id-suffix SHAPE the manifest uses —
+31 shapes — which fails naming any shape a new volume brings. That pins the grammar, which
+uniqueness cannot: `1917 v1 pt.1` was unique and wrong. The review round adds two: the label's
+halves come apart with the supplement's whole topic and whole tag (and a topic-less annual's empty
+topic), and an id shape the grammar does not know is kept verbatim — no bundled id reaches that
+fallback, but the app's `entry?.subseries ?? ""` path does. The stale `longTopicTruncated` fixture,
+which paired Appendix I's title with the non-existent `frus1894p1` and pinned `1894 pt.1`, now uses
+`frus1894app1` and pins `1894 app.1`.
+
+**Verification.** iPhone 17 (iOS 26.4, `3E028774`), build-for-testing then test-without-building.
+**Before the fix** (tests only): `ChronologyVolumeLabelTests` + `CorpusAnalyticsServiceTests`, 21
+tests, 4 failed with 36 issues — the uniqueness test named exactly the issue's 11 tags / 29 volumes,
+and the shape table failed on the 15 shapes whose reading changes. **After**, same selection: 21
+tests passed. With `ChronologyAggregationTests`, `MacChromeHonestyTests` and `NavTitleParentTests`
+added (the other callers' pins, all on ordinary `v20`-shaped ids that must not move): 38 tests in 5
+suites passed.
+`FRUSExplorerMac` builds (`BUILD SUCCEEDED`, unsigned), and neither platform's build warns in
+the three edited app files.
+**Review round** (same device and derived data). Both new tests were run against two re-edited
+mutants first — the verbatim fallback replaced by a bare `break`, and `distilledVolumeLabelParts`
+returning the joined label's pre-cut topic: 23 tests in 2 suites, **2 failed with 5 issues**, all
+three fallback assertions and the parts test's two topic assertions, every other test passing. With
+the mutants re-edited out: 23 tests in 2 suites passed; with `ChronologyAggregationTests`,
+`MacChromeHonestyTests`, `NavTitleParentTests` and `EditableContentKeyTests` added, 42 tests in 6
+suites passed. `FRUSExplorerMac` builds (`BUILD SUCCEEDED`, unsigned; `ChronologyView.swift`
+recompiled), and neither build warns in an edited file — the Mac build's one warning is the known
+`GeneratedSummary` macro residue. The magnifier's new layout is macOS-only and was not seen on
+screen: the unit test pins the split it renders, not the pixels.
+**Still open.** The Chronology legend and filter banner, the Corpus Analytics legend and the iPad
+compilation parent line tail-truncate the joined label, and the Mac document window's centre label
+middle-truncates it; none was measured at a width that cuts the tag, and #1388 names none of them as
+losing it. Two review NITs are left as they were and are assigned nowhere: the 22 E-volume topics
+still begin "Volume E–N", which the tag now repeats, and the matrix's column codes
+(`RankingChartLabels.firstVolumeNumeral`) still cannot read `Volume E–5`, so an E-volume column is
+coded from the topic word "Volume" or the raw id — both change the labels of the matrix A2 is about
+to rework, so they are worth settling there. The Chronology screenshots in both manuals still show the `v10` legend and are
+recaptured after A1 and A3 (owner).
+
 ## Session 2026-09-23 — Learn About NARA Lookup opens the page that describes the lookup, and a dead guide link fails a test
 
 **The question:** lane S's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —

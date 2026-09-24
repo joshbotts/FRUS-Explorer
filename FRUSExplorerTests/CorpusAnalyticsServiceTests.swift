@@ -80,6 +80,8 @@ func makeAnalyticsPipeline(dir: URL) async throws -> (pipeline: IndexingPipeline
 ///   1.2 — #1297 round 4: a word is named once however its marks are spelled (parser 6.6 compares them as the filter
 ///         reads words), in the spelling of its first applied mark, and a word marked in every alternative in two
 ///         spellings refuses
+///   1.3 — #1388: the whole-corpus label test asserts the TAG half is unique, not the whole label, and names
+///         every shared tag with its volumes
 @Suite("CorpusAnalyticsService — By Volume")
 struct CorpusAnalyticsServiceTests {
 
@@ -151,31 +153,58 @@ struct CorpusAnalyticsServiceTests {
         #expect(annual != supp)
 
         // Regression guard: boilerplate-titled appendix / edition ids must NOT be mangled into a
-        // stray area fragment. frus1894app1 renders the clean "1894 pt.1" (not "1894 ap pt.1"); the
-        // 1951-54 Iran edition stays distinct from the base volume via its full id suffix.
+        // stray area fragment. frus1894app1 renders the clean "1894 app.1" (not "1894 ap pt.1" —
+        // and, since #1388, not "1894 pt.1" either, since it is Appendix I and not a Part). The
+        // 1951-54 Iran edition's "1951-54 Iran ed.2" is pinned by ChronologyVolumeLabelTests'
+        // shape table.
         let appendix = ChronologyViewModel.distilledVolumeLabel(
             volumeId: "frus1894app1", subseries: "1894",
             title: "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I")
         #expect(!appendix.contains(" ap "))
         #expect(!appendix.contains("Sup "))
+        #expect(appendix.hasSuffix("· 1894 app.1"))
     }
 
     /// Label collisions are a whole-corpus property, so an empty manifest cannot show one. This
     /// guarded with `return` and passed on nothing; see `subseriesMatchesBundledManifest` for why
     /// that is the worse half of the pair — a uniqueness proof over zero labels is trivially true.
-    @Test("distilledVolumeLabel is unique across the whole bundled corpus (#208)")
+    ///
+    /// **It asserts the TAG half, not the whole label (#1388).** It used to check whole labels,
+    /// which were all distinct — while 11 tags were shared by 29 volumes, because the topic half
+    /// was doing the disambiguating. A surface that has to cut cannot rely on that: the topic is
+    /// cut at 40 characters, the Cross-Reference matrix head-truncates its row labels to keep the
+    /// tag, and the Mac hover magnifier truncates the topic beside a tag that never truncates
+    /// (`distilledVolumeLabelParts`). So the tag must separate every volume on its own. "The tag"
+    /// is the text after the label's last `" · "`. (The surfaces that render the joined label on
+    /// one tail-truncated line — the legends, the iPad parent line — drop the tag first when they
+    /// cut, so a unique tag does not protect them; that is a layout question, not this test's.)
+    @Test("distilledVolumeLabel's tag half is unique across the whole bundled corpus (#208, #1388)")
     @MainActor
     func distilledLabelUniqueAcrossBundledCorpus() throws {
         let entries = ManifestStore().bundledEntries
         try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
-        var seen: [String: String] = [:]
+        var volumesByTag: [String: [String]] = [:]
+        var fullLabels = Set<String>()
         for entry in entries {
             let label = ChronologyViewModel.distilledVolumeLabel(
                 volumeId: entry.volumeId, subseries: entry.subseries, title: entry.title)
-            #expect(seen[label] == nil,
-                    "Chronology label collision: '\(label)' for both \(seen[label] ?? "") and \(entry.volumeId)")
-            seen[label] = entry.volumeId
+            fullLabels.insert(label)
+            let tag = label.components(separatedBy: " · ").last ?? label
+            #expect(!tag.isEmpty, "\(entry.volumeId): empty tag in '\(label)'")
+            volumesByTag[tag, default: []].append(entry.volumeId)
         }
+        let shared = volumesByTag.filter { $0.value.count > 1 }.sorted { $0.key < $1.key }
+        for (tag, volumeIds) in shared {
+            Issue.record("Volume tag '\(tag)' is shared by \(volumeIds.count) volumes: \(volumeIds.joined(separator: ", "))")
+        }
+        #expect(shared.isEmpty,
+                "\(shared.count) tags are shared by \(shared.reduce(0) { $0 + $1.value.count }) volumes")
+        #expect(volumesByTag.count == entries.count)
+        // Unique tags imply unique labels (every label ends in its tag); pinned anyway, since a
+        // reader tells legend entries apart by the whole label. Nothing KEYS by it — the charts,
+        // the legends and the Chronology filter all key by volume id — so a collision here would
+        // make two entries read alike, not merge their series.
+        #expect(fullLabels.count == entries.count)
     }
 
     /// A term that appears in two of three indexed volumes must yield exactly those
