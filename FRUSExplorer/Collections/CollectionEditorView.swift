@@ -131,6 +131,9 @@ import UIKit
 ///          gains a `withinSections` parameter (default false = the original global sort)
 ///   2026-09-11 — iOS: a document opened from a collection reads inside the collection's own
 ///          stack (`readingChain`), so Back returns to the editor instead of Browse's history
+///   2026-09-23 — #1359: the iOS title is the collection's saved name (`CollectionEditorNaming`),
+///          not "New Collection" / "Edit Collection"; the name field follows a rename made elsewhere
+///          and saves only when an edit changes the saved name (`FrontMatterModelSync`)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -313,7 +316,7 @@ struct CollectionEditorView: View {
         }
         // All-live autosave (A1): every field edit lands on the model immediately, the
         // same semantics as the macOS manager (and what CloudKit sync implies anyway).
-        .onChange(of: collectionName) { _, _ in saveLive() }
+        // The name saves through `FrontMatterModelSync` below, and only when an edit changes the saved name (#1359).
         .onChange(of: collectionNote) { _, _ in saveLive() }
         .onChange(of: linkedSavedSearchId) { _, _ in saveLive() }
         .onChange(of: collectionSubtitle) { _, _ in saveLive() }
@@ -321,17 +324,20 @@ struct CollectionEditorView: View {
         .onChange(of: includeColophon) { _, _ in saveLive() }
         .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
         .onChange(of: includeMethodAppendix) { _, _ in saveLive() }
-        // Follow the model when a heading row's "Section defaults" inspector (`CollectionAttributesRows`)
-        // toggles these front-matter flags directly on `$collection`, a second writer besides this
-        // view's one-time `@State` snapshots. Without this resync the next `saveLive()` would clobber
-        // the inspector's change back to the stale snapshot — for `includeProjectProvenance` that could
-        // silently re-enable stamping the research question after the user turned it off to share.
-        // (A `ViewModifier` so the two `.onChange`s don't overflow the body's type-checker.)
+        // Follow the model when a second writer changes what this view holds as one-time `@State`
+        // snapshots: a heading row's "Section defaults" inspector (`CollectionAttributesRows`) toggling
+        // these front-matter flags directly on `$collection`, and another iPad window or iCloud renaming
+        // the collection (#1359). Without this resync the next `saveLive()` would clobber the change back
+        // to the stale snapshot — for `includeProjectProvenance` that could silently re-enable stamping the
+        // research question after the user turned it off to share; for the name, it undid the rename.
+        // (A `ViewModifier` so its `.onChange`s don't overflow the body's type-checker.)
         .modifier(FrontMatterModelSync(
+            collectionName: $collectionName,
             includeColophon: $includeColophon,
             includeProjectProvenance: $includeProjectProvenance,
             includeMethodAppendix: $includeMethodAppendix,
-            collection: collection))
+            collection: collection,
+            saveName: { saveLive() }))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row.
@@ -544,9 +550,9 @@ struct CollectionEditorView: View {
             iPhoneCollectionLayout
             #endif
         }
-        .navigationTitle(isNewCollection
-            ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
-            : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
+        // #1359: the collection's name, read from the model so a rename made elsewhere retitles it too.
+        .navigationTitle(CollectionEditorNaming.navigationTitle(savedName: collection.name,
+                                                                isNewCollection: isNewCollection))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         // Declared on `iOSContent`, which both presentation branches render, so the pushed editor
@@ -722,6 +728,8 @@ struct CollectionEditorView: View {
                     Image(systemName: "gearshape")
                 }
             }
+            // `CollectionEditorTitleTests` (#1359): the iPhone route to the name field.
+            .accessibilityIdentifier("collection.editor.settings.row")
         }
     }
 
@@ -803,7 +811,6 @@ struct CollectionEditorView: View {
             Form {
                 // #309: mirror the macOS manager's order — collection name + metadata first, then
                 // the default-template presets + the three composition groups, then the smart link.
-                // (The canvas also edits the name via the toolbar title; the sheet now leads with it.)
                 nameSection
                 noteSection
                 frontMatterSection
@@ -1007,6 +1014,8 @@ struct CollectionEditorView: View {
         )
         .accessibilityLabel(String(localized: "collection.editor.name.accessibility",
                                    defaultValue: "Collection name"))
+        // `CollectionEditorTitleTests` (#1359) types the name here on both idioms.
+        .accessibilityIdentifier("collection.editor.name.field")
     }
 
     private var nameSection: some View {
@@ -1253,6 +1262,8 @@ struct CollectionEditorView: View {
                     Label(String(localized: "collection.editor.settings.button", defaultValue: "Collection"),
                           systemImage: "gearshape")
                 }
+                // `CollectionEditorTitleTests` (#1359): the iPad route to the name field.
+                .accessibilityIdentifier("collection.editor.settings.button")
             }
             ToolbarItem(placement: .primaryAction) {
                 iPadAddMenu
@@ -1987,7 +1998,8 @@ struct CollectionEditorView: View {
     }
 
     /// Writes the editor's field state onto the model. Called from `onChange` for every
-    /// name/note/smart-link edit (all-live autosave, A1) — the export sheet and every
+    /// note/smart-link/front-matter edit, and through `FrontMatterModelSync` for every name edit
+    /// that changes the saved name (all-live autosave, A1) — the export sheet and every
     /// other consumer always see the current state, with no separate Save step.
     private func saveLive() {
         collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2012,20 +2024,52 @@ struct CollectionEditorView: View {
 
 // MARK: - FrontMatterModelSync
 
-/// Keeps `CollectionEditorView`'s one-time front-matter `@State` snapshots in sync with the model
-/// when another surface (a heading row's "Section defaults" inspector, via `CollectionAttributesRows`)
-/// writes `collection.includeColophon` / `collection.includeProjectProvenance` directly on the model.
-/// Without it, the editor's next `saveLive()` clobbers the inspector's change back to the stale
-/// snapshot. Extracted as a `ViewModifier` so its two `.onChange`s are type-checked apart from the
-/// (long) editor body. The `!=` guard stops a feedback loop when `saveLive()` rewrites the same value.
-private struct FrontMatterModelSync: ViewModifier {
+/// Keeps `CollectionEditorView`'s one-time `@State` snapshots of the collection's NAME and its three front-matter
+/// flags in step with the model when something else writes them.
+///
+/// - **The flags:** a heading row's "Section defaults" inspector (`CollectionAttributesRows`) writes
+///   `collection.includeColophon` / `includeProjectProvenance` / `includeMethodAppendix` directly on the model.
+/// - **The name (#1359):** another iPad window editing the same collection, or iCloud bringing a rename from another
+///   device. Nothing on iOS renames a collection while its editor is open in the same window.
+///
+/// Without the follow, the editor's next `saveLive()` — which any edit to the note, subtitle, author line or a flag
+/// triggers, and any edit that changes the name — writes the stale snapshot back over the change.
+///
+/// The name's SAVE also lives here, and both directions of it pass through `CollectionEditorNaming.fieldAgrees`: a
+/// name edit saves only when it changes what is saved, and a change to the saved name is followed only when the field
+/// says something else. So following a rename does not save again. That matters because `saveLive()` writes every
+/// field the editor holds: an echo would write this editor's copy of the note and subtitle over whatever the other
+/// writer had just changed there, and add this device's active project to the collection with no edit made here. The
+/// flags keep their `!=` guard, which stops a feedback loop when `saveLive()` rewrites the same value.
+///
+/// A `ViewModifier` so its `.onChange`s are type-checked apart from the (long) editor body; `internal` rather than
+/// `private` so `CollectionEditorNamingTests` can host it in a window and drive it through SwiftUI's own `onChange`.
+struct FrontMatterModelSync: ViewModifier {
+    /// The editor's name field.
+    @Binding var collectionName: String
+    /// The editor's colophon toggle.
     @Binding var includeColophon: Bool
+    /// The editor's project-provenance toggle.
     @Binding var includeProjectProvenance: Bool
+    /// The editor's method-appendix toggle.
     @Binding var includeMethodAppendix: Bool
+    /// The collection the editor writes.
     let collection: Collection
+    /// The editor's `saveLive()`, called for a name edit that changes the saved name.
+    let saveName: () -> Void
 
     func body(content: Content) -> some View {
         content
+            // #1359: a name edit saves only when it changes the saved name — see the type's doc.
+            .onChange(of: collectionName) { _, newValue in
+                if !CollectionEditorNaming.fieldAgrees(newValue, withSavedName: collection.name) { saveName() }
+            }
+            // #1359: follow a rename made elsewhere, unless the field already says it.
+            .onChange(of: collection.name) { _, newValue in
+                if !CollectionEditorNaming.fieldAgrees(collectionName, withSavedName: newValue) {
+                    collectionName = newValue
+                }
+            }
             .onChange(of: collection.includeColophon) { _, newValue in
                 if newValue != includeColophon { includeColophon = newValue }
             }
@@ -2035,5 +2079,48 @@ private struct FrontMatterModelSync: ViewModifier {
             .onChange(of: collection.includeProjectProvenance) { _, newValue in
                 if newValue != includeProjectProvenance { includeProjectProvenance = newValue }
             }
+    }
+}
+
+// MARK: - CollectionEditorNaming
+
+/// The collection editor's two rules about its collection's NAME (#1359): what the navigation bar reads, and when the
+/// editor's name field and the saved name say the same thing.
+///
+/// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the views call. The iOS editor's
+/// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
+/// `FrontMatterModelSync` applies `fieldAgrees` in both directions.
+///
+/// Version history:
+///   1.0 — #1359: initial implementation
+enum CollectionEditorNaming {
+
+    /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
+    /// otherwise "New Collection" for a collection the editor created and "Untitled Collection" for one it opened.
+    ///
+    /// The iOS editor passes the SAVED name, `collection.name`, not its name field, so a rename made elsewhere —
+    /// another iPad window, another device through iCloud — retitles it as soon as the model changes. Otherwise the two
+    /// differ only in whitespace, because a name edit is saved as it is typed. The macOS collection window passes its
+    /// own name field, which follows the model on its own, with `isNewCollection: false`.
+    static func navigationTitle(savedName: String, isNewCollection: Bool) -> String {
+        let trimmed = savedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        return isNewCollection
+            ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
+            : String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
+    }
+
+    /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way
+    /// `saveLive()` trims the field before it writes.
+    ///
+    /// Whitespace is the reason this is a function: the editor saves the name trimmed, so a field and a saved name that
+    /// differ only in surrounding whitespace say the same thing. Compared untrimmed, a keystroke that adds only a space
+    /// would save for nothing, and a save made while the field ends in whitespace — a pasted name, or an edit earlier in
+    /// a name that ends in a space — would come back through `onChange` and delete that whitespace under the cursor.
+    /// (Ordinary typing never reaches that second case: a trailing space does not change the trimmed name, so no save
+    /// comes back while the field ends in one.)
+    static func fieldAgrees(_ fieldText: String, withSavedName savedName: String) -> Bool {
+        fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
+            == savedName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

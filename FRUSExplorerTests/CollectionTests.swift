@@ -5714,3 +5714,253 @@ struct CollectionAttachmentTests {
         #expect(second.sortOrder == 1)
     }
 }
+
+// MARK: - CollectionEditorNamingTests (#1359)
+
+/// The collection editor's title reads the collection's name, and the editor's name field follows a rename made
+/// somewhere else instead of writing the old name back over it (#1359).
+///
+/// ## The two halves
+/// - **The rules**, `CollectionEditorNaming`, are called directly: what the navigation bar says for a saved name, and
+///   when the name field and the saved name agree.
+/// - **The wiring**, `FrontMatterModelSync` — the modifier `CollectionEditorView` applies — is HOSTED: put in a real
+///   window over bindings into an `@Observable` stand-in for the editor's `@State`, so a write to the model reaches it
+///   through SwiftUI's own observation and `onChange`, exactly as in the editor. A test that called the rule and
+///   trusted the modifier to call it would pass with the `onChange` deleted.
+///
+/// **A negative assertion needs a positive signal.** "The field was not rewritten" and "no save was asked for" are
+/// only evidence once an update pass that could have done it has demonstrably run. So each such test changes a
+/// front-matter flag on the model in the same step and waits for the modifier to carry THAT across first — the flags
+/// are followed by the same modifier in the same pass.
+///
+/// `CollectionEditorTitleTests` (UI) drives the real title on iPhone and iPad; this suite is where the follow is
+/// tested, because nothing in the app's own UI can rename a collection while its editor is open on iOS — the writers
+/// are another iPad window and iCloud.
+///
+/// Version history:
+///   1.0 — #1359: initial implementation
+@Suite("Collection editor naming — #1359", .serialized)
+@MainActor
+struct CollectionEditorNamingTests {
+
+    // MARK: - The title
+
+    @Test("The title is the saved name, trimmed")
+    func titleReadsTheSavedName() {
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "Cuban Missile Crisis", isNewCollection: false)
+                == "Cuban Missile Crisis")
+        // A collection this editor created reads its name as soon as it has one, not "New Collection".
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "Cuban Missile Crisis", isNewCollection: true)
+                == "Cuban Missile Crisis")
+        // A name written untrimmed by another writer is shown the way this editor would have saved it.
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "  Berlin Crisis \n", isNewCollection: false)
+                == "Berlin Crisis")
+    }
+
+    /// Each fallback branch has its own expectation: the collection this editor created, one it opened, and a name
+    /// that is only whitespace, which is no name.
+    @Test("With no name, the title says how the editor was opened")
+    func titleFallsBackByHowTheEditorWasOpened() {
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "", isNewCollection: true) == "New Collection")
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "", isNewCollection: false)
+                == "Untitled Collection")
+        #expect(CollectionEditorNaming.navigationTitle(savedName: "   ", isNewCollection: false)
+                == "Untitled Collection")
+    }
+
+    // MARK: - Agreement
+
+    /// Agreement is the test both directions of the sync turn on. Whitespace is the conjunct worth a fixture each way:
+    /// the editor trims before it saves, so a field holding a space the user has just typed says the same thing as
+    /// the saved name — and treating it as a disagreement would save for nothing on the save side, and on the follow
+    /// side delete the whitespace of a pasted name under the user's cursor.
+    @Test("The field agrees with the saved name once both are trimmed")
+    func fieldAgreesWithTheSavedNameOnceTrimmed() {
+        #expect(CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: "Cuban Missile Crisis"))
+        #expect(CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis ", withSavedName: "Cuban Missile Crisis"))
+        #expect(CollectionEditorNaming.fieldAgrees(" Cuban Missile Crisis", withSavedName: "Cuban Missile Crisis"))
+        #expect(CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: "Cuban Missile Crisis  "))
+        #expect(CollectionEditorNaming.fieldAgrees("   ", withSavedName: ""))
+        #expect(!CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: "Berlin Crisis"))
+        #expect(!CollectionEditorNaming.fieldAgrees("Cuban Missile Crisis", withSavedName: ""))
+        #expect(!CollectionEditorNaming.fieldAgrees("", withSavedName: "Cuban Missile Crisis"))
+    }
+
+    #if os(iOS)
+    // MARK: - The wiring, hosted
+
+    /// The acceptance case: another writer renames the collection, and the editor's name field says so. Without it
+    /// the field keeps the old name, and the editor's next save — any edit to the name, note, subtitle, author line
+    /// or a flag — writes that old name back over the rename.
+    @Test("A rename made elsewhere reaches the editor's name field")
+    func aRenameMadeElsewhereReachesTheNameField() async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            collection.name = "Berlin Crisis"
+            let followed = await Self.settle { editor.name == "Berlin Crisis" }
+            #expect(followed, "The name field still reads \"\(editor.name)\" after the model was renamed")
+        }
+    }
+
+    /// Following a rename must not itself save. The editor's save writes EVERY field it holds, so a follow that saved
+    /// would write this editor's copy of the note, subtitle and author line over whatever the same writer had just
+    /// changed there — and tag the collection into this device's active project with no edit made here.
+    @Test("Following a rename does not save it again")
+    func followingARenameDoesNotSaveItAgain() async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.name == "Berlin Crisis" },
+                         "The field never followed the rename, so there is no echo to check")
+            // The marker: the field's own change has been rendered once the modifier has carried a later flag change.
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no later update pass is known to have run")
+            #expect(editor.saves == 0, "Following the rename asked the editor to save \(editor.saves) time(s)")
+        }
+    }
+
+    /// The other half of the guard: a keystroke that changes only whitespace does not save, and one that changes the
+    /// name does. The whitespace edit is made alongside the marker flag so the pass that could have saved it is known
+    /// to have run before the count is read.
+    @Test("A name edit saves only when it changes the saved name")
+    func aNameEditSavesOnlyWhenItChangesTheSavedName() async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            editor.name = "Cuban Missile Crisis "
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no pass is known to have seen the edit")
+            #expect(editor.saves == 0, "Typing a trailing space asked the editor to save \(editor.saves) time(s)")
+
+            editor.name = "Cuban Missile Crisis, 1962"
+            #expect(await Self.settle { editor.saves == 1 },
+                    "Changing the name asked for \(editor.saves) save(s), not one")
+        }
+    }
+
+    /// The editor's own save, seen from the follow side: the user has pasted a name ending in a space, the editor has
+    /// saved it trimmed, and the model's change comes back through `onChange`. The field must keep its space — a
+    /// follow that compared untrimmed text would delete it under the cursor, and the next word would run into this one.
+    ///
+    /// Ordinary typing never builds this state (a typed trailing space does not change the trimmed name, so nothing
+    /// comes back), which is why `CollectionEditorTitleTests` passes against an untrimmed rule and this fixture does
+    /// not. It passes on the pre-#1359 editor too, which followed nothing; the untrimmed-rule mutant is what it kills.
+    @Test("The editor's own trimmed save does not rewrite the field")
+    func theEditorsOwnTrimmedSaveDoesNotRewriteTheField() async throws {
+        try await Self.withHostedEditor(named: "Cuban") { collection, editor in
+            // The field as the user left it; the model as the editor's save leaves it.
+            editor.name = "Cuban Missile Crisis "
+            try #require(await Self.settle { editor.saves == 1 }, "The edit that sets up the fixture never saved")
+
+            collection.name = "Cuban Missile Crisis"
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no pass is known to have seen the save")
+            #expect(editor.name == "Cuban Missile Crisis ",
+                    "The field was rewritten to \"\(editor.name)\"; the trailing space the user typed is gone")
+        }
+    }
+
+    // MARK: - Fixtures
+
+    /// Containers whose host outlived its window. Kept for the life of the process, because releasing one resets its
+    /// context and destroys its models, and a surviving view that then read `collection.name` would stop the test
+    /// host with "This model instance was destroyed by calling ModelContext.reset" — which is how the first run of
+    /// this suite ended, and why teardown is ordered below.
+    private static var parkedContainers: [ModelContainer] = []
+
+    /// Hosts the modifier over a saved collection named `name` — the state an open editor's collection is in — runs
+    /// `body`, then takes the host down BEFORE the container goes, and waits for it to deallocate so no view is left
+    /// observing a model the container's release is about to destroy.
+    private static func withHostedEditor(
+        named name: String,
+        _ body: @MainActor (Collection, EditorFieldsHost) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let collection = Collection(name: name)
+        container.mainContext.insert(collection)
+        try container.mainContext.save()
+        let editor = try EditorFieldsHost(collection: collection)
+
+        var failure: (any Error)?
+        do { try await body(collection, editor) } catch { failure = error }
+        if !(await editor.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted view outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+
+    /// Pumps the main run loop until `condition` holds or `timeout` passes, and reports whether it held.
+    private static func settle(timeout: Duration = .seconds(5), until condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+    #endif
+}
+
+#if os(iOS)
+/// Stands in for `CollectionEditorView`'s `@State` fields and hosts `FrontMatterModelSync` — the modifier the editor
+/// applies — over bindings into them, in a window of the test host's own scene. `@Observable`, so a change to a field
+/// re-renders the host the way a change to the editor's `@State` re-renders the editor.
+@MainActor
+@Observable
+private final class EditorFieldsHost {
+    /// The name field.
+    var name: String
+    /// The colophon toggle — the marker the tests use as a positive signal.
+    var includeColophon: Bool
+    /// The project-provenance toggle.
+    var includeProjectProvenance: Bool
+    /// The method-appendix toggle.
+    var includeMethodAppendix: Bool
+    /// How many times the modifier asked the editor to save.
+    var saves = 0
+    /// The window hosting the modifier; `nil` once closed.
+    @ObservationIgnored private var window: UIWindow?
+
+    /// Seeds the fields from `collection`, as the editor's `init` does, and hosts the modifier in a visible window.
+    init(collection: Collection) throws {
+        name = collection.name
+        includeColophon = collection.includeColophon
+        includeProjectProvenance = collection.includeProjectProvenance
+        includeMethodAppendix = collection.includeMethodAppendix
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the modifier in")
+        let sync = FrontMatterModelSync(
+            collectionName: Binding(get: { self.name }, set: { self.name = $0 }),
+            includeColophon: Binding(get: { self.includeColophon }, set: { self.includeColophon = $0 }),
+            includeProjectProvenance: Binding(get: { self.includeProjectProvenance },
+                                              set: { self.includeProjectProvenance = $0 }),
+            includeMethodAppendix: Binding(get: { self.includeMethodAppendix },
+                                           set: { self.includeMethodAppendix = $0 }),
+            collection: collection,
+            saveName: { self.saves += 1 })
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: Color.clear.modifier(sync))
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
+    }
+
+    /// Takes the window down and waits for the hosting controller to deallocate, so one test's view cannot answer
+    /// another's model writes or outlive its container. Returns whether it went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+#endif

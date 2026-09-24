@@ -18880,3 +18880,116 @@ scan's regexes now use the simple boundary (`wordBoundaryKind(.simple)`), and th
 both chained shapes plus `Text(row.title.capitalized)` as a no-false-alarm control. With the
 default boundary the three new expectations fail; with the fix the suite's 12 tests pass,
 including the scan of the four real rows.
+
+## Session 2026-09-23 — The collection editor is titled with the collection's name, and keeps a rename made in another window
+
+**The question:** lane K's second PR in the open-issues plan — #1359, as the owner decided (§4 item 5):
+a live, read-only title that follows renames, with no editable toolbar title. On iPhone and iPad
+the editor's bar read **New Collection** for as long as a new collection's editor stayed open,
+however it was named, and **Edit Collection** for every existing one. The title came from
+`isNewCollection`, a `let` set once in `init`, and never read the name.
+
+**Two defects, one visible.** The title is the visible one. The other is why the owner refined the
+decision: the editor copies `collection.name` into `@State` once, and `saveLive()` writes every
+field it holds on any edit to the name, note, subtitle, author line or a flag. So a rename made in
+another iPad window or brought by iCloud was written back over at the editor's next edit.
+`FrontMatterModelSync` already followed the three front-matter flags this way. It did not follow
+the name.
+
+**What changed.**
+- **The title.** `iOSContent` titles through `CollectionEditorNaming.navigationTitle`. It reads the
+  SAVED name, `collection.name`, trimmed, so a rename made elsewhere retitles the editor as soon as
+  the model changes. With no name, a collection this editor created reads "New Collection" and one
+  it opened reads "Untitled Collection" (`collection.untitled.name`, the key the Mac manager and
+  `Collection.duplicate` already use). The pushed editor and the sheet both render `iOSContent`.
+- **The Mac window.** `CollectionDetailPane`'s title goes through the same function. It had been
+  the raw literal "Untitled Collection", untrimmed.
+- **The follow.** `FrontMatterModelSync` now follows `collection.name` into the name field, and the
+  name's save moved into it from the editor body. Both directions pass through
+  `CollectionEditorNaming.fieldAgrees`, which treats the field and the saved name as equal once
+  both are trimmed, because the editor saves trimmed. A name edit saves only when it changes the
+  saved name, and a saved-name change is followed only when the field says something else.
+- **Why following must not save.** `saveLive()` writes every field, so a follow that saved again
+  would write this editor's stale note and subtitle over whatever the other writer had just
+  changed. It would also add this device's active project to the collection with no edit made
+  here. The flags keep their old `!=` guard, and they still echo a save; that is older than this
+  change and is left alone.
+- **The comment.** The iPad settings sheet's parenthetical ("The canvas also edits the name via the
+  toolbar title") is deleted. It recorded a Composer v2 prototype intent that was never built: no
+  `navigationTitle` in `Collections/` takes a binding.
+- **Test hooks.** Three accessibility identifiers for the UI test: the name field, the iPhone
+  Collection settings row and the iPad ⚙ Collection button.
+- **Not changed:** the Mac creation sheet's header (`macBody`) still reads "New Collection" /
+  "Edit Collection". The issue records it as reached only as a creation sheet, with the name
+  field as its first row. No `defaultValue:` changed. The edits above moved seven
+  `Docs/EditableContent.md` `lines:` ranges (four in `CollectionEditorView.swift`, three in
+  `MacCollectionManagerView.swift`); all seven were re-pointed, and a script checked that each key
+  sits inside its range (7 of 7). The iOS manual's Collections paragraph now says what the editor
+  is titled.
+
+**Tests.** `CollectionEditorNamingTests` (7, in `CollectionTests.swift`). Three call the rules:
+the named title, trimmed; the three fallbacks, one expectation each; and agreement, with fixtures
+for trailing, leading and saved-side whitespace. Four HOST the real `FrontMatterModelSync` in a
+window of the test host's scene, over bindings into an `@Observable` stand-in for the editor's
+`@State`, so a model write reaches it through SwiftUI's own `onChange`:
+- a rename reaches the field;
+- following it does not save;
+- a whitespace-only edit does not save and a real one does;
+- a pasted name ending in a space keeps its space when the trimmed save comes back.
+
+Each "did not happen" assertion waits first for a front-matter flag, changed in the same step, to
+be carried across by the same modifier. The first run crashed the test host with "This model
+instance was destroyed by calling ModelContext.reset": a hosted view outlived its test's container.
+The harness now takes the window down, waits for the hosting controller to deallocate, and only
+then releases the container.
+
+`CollectionEditorTitleTests` (UI, new file, one xcodegen) creates a collection from the
+Collections tab and names it "Cuban Missile Crisis". On iPad it goes through the ⚙ Collection
+sheet and its Done; on iPhone, through the pushed Collection settings screen and Back. It asserts
+`app.navigationBars["Cuban Missile Crisis"]`, backs out, reopens the row from the list and asserts
+again. It sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1` and closes any presentation in `tearDown`.
+
+**A/B**, on iPhone 17 (`A9FCCA50`) and iPad Pro 13-inch (M5) (`9F3D84A4`), both iOS 26.5, one
+derived-data path. **State A** had the new seams carrying the old behaviour: the old title, no
+follow, every name edit saving, and untrimmed agreement.
+- The unit suite ran **7 tests with 6 failing (12 issues)**. The seventh, the pasted-name fixture,
+  passed, as it must on an editor that follows nothing.
+- The UI test failed on **both** devices at the same line: *After naming it, the editor is not
+  titled "Cuban Missile Crisis". Bars: New Collection*. The iPad got there through the settings
+  button and Done, the iPhone through the settings row and Back.
+
+**State B** (the fix): **7 of 7** unit tests pass, and the UI test passes on both devices (1 test,
+0 failures each).
+
+Two mutations were run from the committed checkpoint, each restored by re-editing, with `git
+status` clean after each:
+- **M1**, `fieldAgrees` compared untrimmed: 3 of 7 unit tests failed (6 issues), including the
+  pasted-name fixture that state A could not reach. **The UI test passed under M1.** Typing sends
+  one character at a time, and a trailing space does not change the trimmed name, so no save comes
+  back while the field ends in one. The UI test's doc said the opposite when first written; it now
+  says what was measured.
+- **M2**, the name save made unconditional again: 2 of 7 failed, the echo test on its own
+  `saves == 0` assertion and the whitespace-edit test.
+
+**Final run, at the finished tree.** On iPhone 17 (`A9FCCA50`): **233 tests in 11 suites**
+(`CollectionEditorNamingTests`, `CollectionTests`, `CollectionAttachmentTests`,
+`CollectionExportParityTests`, `CollectionExportToggleParityTests`,
+`TripPacketEntryPointParityTests`, `CollectionsReaderRouteTests`, `HandoffVisibilityTests`,
+`CodingStandardsAuditTests`, `EditableContentKeyTests`, `ResearchGuideCoverageTests`). All pass
+except `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which fails the same way on `v2`:
+neither "subjects facet" nor "topic area" occurs in `origin/v2`'s `Docs/EditableContent.md`, and
+this change touches only that file's header and seven `lines:` fields. `CollectionEditorTitleTests`
+passes on iPhone 17 and on iPad Pro 13-inch (M5). `FRUSExplorerMac` **BUILD SUCCEEDED**, compiling
+`MacCollectionManagerView`. No build warning in a touched file. No index, build or CloudKit-schema
+change: no stored property moved.
+
+**Not verified:** a rename arriving from a real second iPad window or from iCloud. The hosted tests
+drive the same `onChange` a model write reaches, but no run here had two scenes or two devices on
+one collection. The Mac window's title was not seen on screen; only the Mac build covers it.
+**Left alone, and worth its own issue:** by reading the code, the note, subtitle and author line —
+which `CollectionAttributesRows` in a heading's Section defaults sheet writes directly — are written
+back over by the editor's next save, because `saveLive()` writes every field from its snapshot.
+Following them the way the name is now followed would not be enough while their saves stay
+unconditional: the echo save would trim away a space typed live in that sheet, which writes
+untrimmed. It wants the name's pattern (a save gated on agreement) for each field, or per-field
+saves. The macOS pane's own name follow still compares untrimmed.

@@ -106,6 +106,8 @@ import UniformTypeIdentifiers
 ///   1.17 — 2026-09-23: #1358 — the collection picker's menu items, its label and the
 ///          Manage Collections rows print `Collection.documentCount`; all three counted every
 ///          entry, so a section heading or a prose block added one to the number
+///   1.18 — 2026-09-23: #1359 — the detail pane's title goes through the iOS editor's
+///          `CollectionEditorNaming.navigationTitle`: trimmed, and "Untitled Collection" localized
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -710,7 +712,7 @@ private struct CollectionDetailPane: View {
                     .frame(maxWidth: .infinity)
             }
         }
-        .navigationTitle(name.isEmpty ? "Untitled Collection" : name)
+        .navigationTitle(CollectionEditorNaming.navigationTitle(savedName: name, isNewCollection: false))
         .toolbar { toolbarContent }
         .onChange(of: name) { _, _ in saveMetadata() }
         .onChange(of: note) { _, _ in saveMetadata() }
