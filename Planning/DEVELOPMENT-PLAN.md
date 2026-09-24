@@ -20275,6 +20275,201 @@ place against its recount at `550a8c5c5`:
   on a word, so the `before` assertion guards only the space that paragraph ends on; the comment
   now says that.
 
+## Session 2026-09-24 — The Word Cloud's Cloud and List segments, and the timeline's Chart and List segments, carry their names for VoiceOver
+
+**The question:** lane A's sixth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1381. On the Mac (build 48, macOS 27) the Word Cloud window's two toolbar segments were named
+"Mostly Cloudy" and "Numbered List" in the window's accessibility tree: the SF Symbols' own
+descriptions of `cloud` and `list.number`. Each segment was `Label(mode.label, systemImage:
+mode.systemImage).tag(mode)` with no accessibility label. The issue asked for a fix and for a source
+scan that would stop the class.
+
+**What the scan reads.** `SegmentedPickerAccessibilityAuditTests` is a second type in
+`ToolbarAccessibilityAuditTests.swift`, so there is no new file and no xcodegen. It first blanks
+comments and string literals, keeping newlines; this covers raw, multi-line and interpolated
+strings. It then walks every `Picker(` call by its balanced parentheses and braces. It reads the
+segments from the first unlabelled trailing closure, and the style from the trailing modifier chain.
+Since the review fixes below, each file is read once as iOS compiles it and once as macOS does, with
+the `#if` branches that platform does not take blanked first; as first written, the chain was read
+across `#if` / `#else` lines with every branch kept. A segment built from `Label(…, systemImage:)`,
+from a `Label` whose closures draw `Image(systemName:)`, or from `Image(systemName:)` must carry
+`.accessibilityLabel` in its own chain. A `Label` segment also passes when the Picker's chain forces
+`.labelStyle(.titleAndIcon)`. A label on the Picker itself does not count, and the style does not
+name an `Image` segment. Measured over the 479 Swift files under `FRUSExplorer/`: code holds 38
+`.pickerStyle(.segmented)` modifiers, and each is traced to its Picker. 37 are on the Picker's own
+chain. The last is `ArchivalAnalyticsView`'s `modePicker.pickerStyle(.segmented)`, traced through
+the `var modePicker: some View` that declares the Picker. A style the scan cannot trace fails the
+suite, so its segments are never silently left unread. Five of the 38 pickers draw segments from
+symbols:
+- `AnalyticsChartChrome` and `CrossReferenceGraphView`: two `Image` segments each, all labelled.
+- `SearchSheet`'s reading switch: one `Label` in a `ForEach`, named by `.labelStyle(.titleAndIcon)`.
+- `WordCloudView` and `DocumentTimelineView`: the two sites the issue named.
+
+**What changed.** `WordCloudView`'s segment is now `Label(…).tag(mode).accessibilityLabel(mode.label)`.
+`DocumentTimelineView`'s two segments carry the same modifier. Their titles moved into a new
+`DisplayMode.label`, so each string is written once, with the same keys and the same `defaultValue`s.
+The segments still draw icons only; the issue's optional `.labelStyle(.titleAndIcon)` was not taken,
+because nobody has checked that the Word Cloud's `.principal` slot fits the words. No `defaultValue:`
+changed. The four lines added to `WordCloudView.swift` moved eight `Docs/EditableContent.md`
+`lines:` ranges by four. A script then checked each of that file's 30 keys against its range (30 of
+30). The manuals say nothing about these segments' names, so neither needs an edit.
+
+**A/B.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
+FRUSExplorerTests/SegmentedPickerAccessibilityAuditTests`.
+- *Unfixed:* **19 tests in 1 suite, 5 issues.** `everyIconSegmentNamesItself` named
+  `WordCloudView.swift:1088` (the Picker at `:1085`) and `DocumentTimelineView.swift:106` and `:108`
+  (the Picker at `:104`). `knownIconPickerIsReadAsBuilt` failed for the same two files, two issues
+  each.
+- *Fixed:* 19 of 19 pass. Run with `ToolbarAccessibilityAuditTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **42 tests in 4 suites** pass.
+- *The scanner's fixtures* read fixture sources, not the app, so they pass on both sides by
+  construction. They were checked by mutation instead. Thirteen mutants of the scanner as first
+  written ran over a copy of the file in a scratch Swift package, and each was killed by the fixture
+  written for its rule (the review fixes below replaced mutant 4's rule and re-ran the harness):
+  1. `.labelStyle(.titleAndIcon)` ignored.
+  2. That style credited to an `Image` segment.
+  3. A Picker-level label credited to its segments.
+  4. `#if` lines not skipped.
+  5. No masking.
+  6. A `Label`'s own icon counted as a second segment.
+  7. References not followed.
+  8. An untraceable style skipped.
+  9. The `label:` closure read as segments.
+  10. Non-segmented pickers read.
+  11. One labelled segment credited to the others.
+  12. A raw string's `\(` read as an interpolation.
+  13. A Picker with no trailing closure passed silently.
+- *Full unit target, same device, before the review fixes and the merge:* **5,197 tests in 640
+  suites, 1 issue** — the known `ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The
+  `FRUSExplorerMac` scheme builds. The run after the merge is recorded at the end of this entry.
+
+**Not verified: what a segment announces.** No test target can read that. The Mac has no UI-test
+target, and this session opened neither control on any device. A scratch macOS app reproducing the
+segment was built, but this session's accessibility client read every element in it as the
+application itself, so the probe measured nothing. **Owed before merge, on a Mac in Accessibility
+Inspector:**
+1. The Word Cloud window's centre segments should read "Cloud" and "List".
+2. The Search window's Timeline reading, and a collection's Timeline sheet, should show Chart and
+   List segments that read "Chart" and "List".
+3. The Corpus Analytics chart/table switch is the control: it should read "Chart" and "Table". If it
+   also reads symbol names, then `.accessibilityLabel` on a segment does not take on macOS, and the
+   fix is `.labelStyle(.titleAndIcon)` instead. The control is built from `Image` segments and both
+   fixed sites from `Label` segments, so it cannot settle the `Label` case alone: if it reads
+   "Chart" and "Table" while the Word Cloud still reads "Mostly Cloudy", then the label does not
+   take on a `Label` segment, and the fix is again `.labelStyle(.titleAndIcon)`.
+4. The Search window's Reading switch should read its words. Its `Label` segments carry no
+   accessibility label and are named only by `.labelStyle(.titleAndIcon)` on the Picker, so it is the
+   scan's only witness that this style names a `Label` segment. If it reads a symbol name, the scan's
+   `.titleAndIcon` rule is wrong and that switch is a third #1381 site.
+
+### Review fixes (2026-09-24)
+
+Two review lenses read the branch. Three findings were confirmed, two of them the same defect seen
+by both lenses. Four nits were taken, one of them in part. One finding was refuted and needed
+nothing.
+
+- **correctness#0 / tests-claims#0 (confirmed): the scan credited a platform-gated name to every
+  platform.** `skipTrivia` stepped over every `#if` / `#else` / `#endif` line and read all branches as
+  one chain, so a `.accessibilityLabel` or a `.labelStyle(.titleAndIcon)` compiled only on iOS named
+  the Mac's segments. That is the platform #1381 was seen on. *Fix:* `MaskedSwift.compiled(for:)`
+  now reads each file once as iOS compiles it and once as macOS does. It blanks the branches the
+  platform does not take, and every directive line, before anything is matched, so `skipTrivia` is
+  gone. It decides `os(…)`, `canImport(UIKit)`, `canImport(AppKit)`,
+  `targetEnvironment(macCatalyst)`, `true` and `false`, combined with `!`, `&&`, `||` and
+  parentheses. Anything else (`DEBUG`, `targetEnvironment(simulator)`) can ship either way, so all of
+  its branches are kept. When such a `#if` sits inside a segmented Picker's call or its trailing
+  chain, the Picker is reported as untraced rather than judged. The rule holds on every platform that
+  compiles a Picker as segmented. So a name only iOS compiles is reported for macOS, as the lane asked.
+  A name only macOS compiles is fine on macOS but is reported for iOS. That second half keeps coverage
+  the scan already had: `CrossReferenceGraphView`'s icon switch is inside `#if os(iOS)`, so a
+  Mac-only rule would have stopped checking it, and iOS remains unmeasured rather than known to be
+  safe. Measured over the tree: iOS compiles **32** segmented styles, 32 pickers and 7 icon segments;
+  macOS compiles **34**, 34 and 6. Every style either platform compiles is traced (0 untraced on each).
+  `knownIconPickers` now records each picker's platforms: `SearchSheet` is macOS only,
+  `CrossReferenceGraphView` iOS only, and the other three both. The old fixture
+  `theChainIsReadAcrossCompilerDirectives` was right only by coincidence, since its style was also
+  non-macOS. It became `theChainIsReadAsEachPlatformCompilesIt`, and a parameterised test covers
+  seven placements of a gated name: a segment label on iOS only (reported for macOS), on macOS only
+  (reported for iOS), in both branches (fine), `.titleAndIcon` on iOS only, `.titleAndIcon` under an
+  `#elseif` after a branch iOS takes, and two nested shapes. A further test covers the undecidable
+  `#if DEBUG`, both inside a Picker and around one.
+- **tests-claims#1 (confirmed): `Label(title:icon:)` written with parentheses was skipped silently.**
+  *Fix:* a `Label` is now a symbol segment when it passes `systemImage:` or when anything in its
+  extent (argument-list closures or trailing ones) holds `Image(systemName:)`. A fixture covers the
+  argument form, the mixed `Label(title: { … }) { Image(…) }` form, and an asset icon that stays out.
+  The test doc's "Not in scope" list now names every form that is still skipped: asset images in six
+  spellings, a style passed as a value, `.palette`, and a helper segment beside a readable one.
+- **correctness#1 (nit, taken): a traced segmented Picker whose segments come from a helper was
+  neither read nor reported.** *Fix:* a segmented Picker whose content holds no `Text`, `Label` or
+  `Image` call is reported as untraced. A new `untraceableShapes` case, "segments drawn by a
+  helper", covers it. No picker in the tree trips it on either platform (0 untraced).
+- **correctness#2 (nit, taken): the `DocumentTimelineView` comment stated an unmeasured effect.**
+  It now says what the code does, and that the Mac's reading was of the Word Cloud's segments, not
+  these.
+- **tests-claims#4 (nit, taken in part): the anti-vacuity floor lived in a sibling test, for a
+  wrong reason.** `everyIconSegmentNamesItself` now asserts its own floor: more than 100 files, and
+  for each platform more than 20 pickers and at least one icon segment.
+  `everySegmentedStyleReachesItsPicker` asserts more than 20 styles per platform. The comment's
+  reason is corrected: a missing source root throws (measured: `NSCocoaErrorDomain` 260 fails every
+  tree test), but a root that lists nothing does not. Measured, a symlinked root lists zero files
+  without throwing. So does a masker, scanner or evaluator that stops finding pickers on one
+  platform. *Not taken:* the reviewer also asked to pin the measured counts. The floors stay at
+  `> 20` against the measured 32 (iOS) and 34 (macOS), so they catch a platform that reads almost
+  nothing, but a masking error that drops a few pickers from one file still passes. The test's
+  comment now says so.
+- **tests-claims#3 (nit, taken): the owed Mac checklist never read the `.titleAndIcon` witness.**
+  Owed item 3 now says what its `Image`-built control cannot settle for the `Label` sites. A new item
+  4 reads the Search window's Reading switch.
+- **tests-claims#2 (refuted):** the test doc's "heard" follows the issue's own inference and is marked
+  as a consequence of the accessibility-tree reading. No change.
+
+**A/B.** Every new or changed test was shown to fail first.
+- *Scanner mutants.* The file was copied into the scratch Swift package, and each mutant was run over
+  a copy of the fixed tree (24 tests in 2 suites; the baseline passes). Every mutant was killed:
+  - M1, the finding itself: keep every branch. This fails the chain fixture, six of the seven gated
+    placements (all but "both branches"), the undecidable test's gated half, and the
+    `SearchSheet` / `CrossReferenceGraphView` pins.
+  - M2, an undecidable `#if` not reported: fails the undecidable test.
+  - M3, `Label` read the old way: fails the `Label(title:icon:)` fixture.
+  - M4, helper segments not reported: fails the helper case.
+  - M5, `!` ignored: fails both nested placements.
+  - M6, `||` read as `&&`: fails the `#elseif` placement.
+  - M7, `#elseif` ignoring an earlier taken branch: fails the `#elseif` placement and the chain
+    fixture.
+  - M8, `canImport` never decided: fails the `#elseif` placement and the nested macOS-label one.
+  - M9, a macOS evaluator that blanks the whole file: fails the new floors, among 84 issues.
+  - M10, `DEBUG` decided true: fails the undecidable test.
+- *Tree mutants, scanner before these fixes against after.*
+  - The Word Cloud's `.accessibilityLabel` behind `#if os(iOS)`: before, 21 tests pass; after, it
+    fails `everyIconSegmentNamesItself` and the Word Cloud pin.
+  - `SearchSheet`'s `.labelStyle(.titleAndIcon)` behind `#if os(iOS)`: before, all pass; after, it
+    fails the same two tests for `SearchSheet`.
+  - The Word Cloud segment as an unlabelled `Label(title:icon:)`: before, only the per-file pin
+    fails; after, `everyIconSegmentNamesItself` fails too.
+  - The segment drawn by a helper: before, only the pin fails; after,
+    `everySegmentedStyleReachesItsPicker` fails too.
+  - Over the app code before #1381's fix, the new scan fails with 9 issues: the tree test, and the
+    Word Cloud and Timeline pins on both platforms.
+- *Real harness,* iPhone 17e, iOS 26.4 (`2E021065`), with the Word Cloud's label moved behind
+  `#if os(iOS)` in the worktree: **22 tests in 1 suite, 3 issues**. The one tree violation reads
+  "`WordCloudView.swift:1090` … unnamed on macOS", and the two others are the Word Cloud pin. With
+  the file restored: `SegmentedPickerAccessibilityAuditTests` + `ToolbarAccessibilityAuditTests`,
+  **24 tests in 2 suites, passed**. With `EditableContentKeyTests` and `CodingStandardsAuditTests`
+  as well, **45 tests in 4 suites, passed**.
+
+**Merge and full run.** `origin/v2` at `b0b759e4` was merged (`009704a4`). Both conflicts were in
+appended text. `Docs/EditableContent.md`'s header line keeps v2's line whole, with this branch's
+clause for #1381 added at the end; this file keeps v2's entries first, with this one after them.
+Then, at `009704a4`:
+- `build-for-testing` on the same iPhone 17e, iOS 26.4 (`2E021065`): TEST BUILD SUCCEEDED.
+- `test-without-building -only-testing FRUSExplorerTests`, same device: **5,289 tests in 647
+  suites, passed**, 0 issues, TEST EXECUTE SUCCEEDED. `SegmentedPickerAccessibilityAuditTests`
+  passed inside it. `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the one issue in the first
+  full run above, passes too, because v2's #1365 round (`c665ad2a`) closed #1403.
+- `FRUSExplorerMac` for macOS: BUILD SUCCEEDED, with no warnings in `WordCloudView.swift` or
+  `DocumentTimelineView.swift`. The only warnings are the known `GeneratedSummary` `Sendable` and
+  `appintentsmetadataprocessor` residues.
+
 ## Session 2026-09-24 — Chronology's "extend beyond this range" chip adds up: a document that reaches past both ends is counted once
 
 **The question:** lane A's third PR in the open-issues plan — #1387. Under the chart, Chronology
