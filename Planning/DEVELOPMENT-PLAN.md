@@ -18136,3 +18136,52 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
+
+## Session 2026-09-23 — An Archival Neighbors row no longer prints its document number twice
+
+**The question:** lane S's second PR in the open-issues plan — #1391. Source Explorer's Archival
+Neighbors box on the Mac showed `256   256. Department of State Briefing Memorandum`: a number
+column (`RelatedDocument.documentNumber`, from `@n`) beside the stored header, which in that volume
+opens with the same number. The issue names three more rows built the same way: the iOS twin, the
+macOS graph window's document picker and the graph's shared reference list, which both print
+`"\(num)."` before the header and so read "256. 256. …".
+
+**Why the title gives way and not the column.** A Python scan of the 553 manifest volumes, reading
+each document's `<head>` without its notes as `extractHeader` does: **79,479 of 314,571 documents,
+in 231 volumes, have a head that opens with their own `@n` and a full stop**. (The issue's own scan
+counted 79,482; the three-document difference was not chased.) The rest print the number only in
+`@n`, so for them the column is the only place it appears. Browse dropped its number in Session 68
+and search rows withhold their chip (`headerRepeatsNumber`), but a fixed-width column that came and
+went would misalign the list, so these rows keep the number and strip it from the title.
+
+**The rule is the document's own number and a full stop, and the same scan settled each part.**
+Three heads have no whitespace at all after the stop (`frus1882` d61, `frus1961-63v14` d44,
+`frus1964-68v26` d247), so the strip requires none and does not depend on #1375's join. 15 heads in
+6 volumes open with a number that is not their own (`frus1873p2v3` d17, `@n` 17, prints *1. Sir
+Edward Thornton to Mr. Fish.*), and they are left whole. No head opens with its number and a space
+and no stop, so the rule does not take `headerRepeatsNumber`'s wider shape. No head is only its
+number either, but the guard that keeps such a head whole stays, so a row can never lose its title.
+
+**What changed.** `DocumentHeaderDisplay.numberedRow(header:number:)` returns the number unchanged
+and the title less its own "N." prefix. It sits beside `headerRepeatsNumber` in the existing file,
+so no new file and no xcodegen. The four rows compute it once and draw only its output. The Source
+Explorer twins call the same function, so a fix to one cannot no-op on the other. The stored header
+is untouched, so there is no index bump, and search, citations and the reader still read the head as
+printed. The version-history lines this added to three annotated view files moved 35
+`Docs/EditableContent.md` `lines:` ranges by two. All 35 were re-pointed, and a script then checked
+that each key sits inside its range (35 of 35). No `defaultValue:` changed.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`), `-only-testing
+FRUSExplorerTests/DocumentHeaderDisplayTests`. **A/B:** against a stub returning the header
+unchanged (what the rows drew) and the rows unrouted, the suite ran **9 tests with 4 failing** (9
+issues): the strip, the no-space case, the leading-whitespace guard, and the source scan, which
+named all four rows. With the fix, **9 of 9 pass**, and 29 of 29 with `EditableContentKeyTests` and
+`CodingStandardsAuditTests`. Six mutations were each killed by the fixture written for them, and
+each was restored by re-editing: the empty-number guard dropped, the leading-whitespace skip
+dropped, the empty-title guard dropped, a space accepted in place of the stop, the iOS twin drawing
+`doc.header` again, and the reference list reading `documentNumber` outside the rule. The scan
+asserts it read all four declarations. The `FRUSExplorerMac` scheme builds (`BUILD SUCCEEDED`,
+compiling `MacSourceExplorerView`, `CrossReferenceGraphWindowView`, `ReferenceListPanel` and
+`DocumentHeaderDisplay`), which the iOS test target cannot do for the two `#if os(macOS)` rows.
+Not verified on screen: this session opened none of the four rows on a device or on the Mac, so the
+plan's by-eye check (Mac + iPad) is still owed.

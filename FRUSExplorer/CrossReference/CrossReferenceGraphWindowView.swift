@@ -53,6 +53,8 @@ import SwiftUI
 ///          requiring a prior document-level navigation
 ///   1.2 — Session 2026-07-04 (macOS UI audit B6): consumes the `pendingVolumeGraph`
 ///          hand-off, replacing the Corpus Browser's `VolumeConnectionGraphView` sheet
+///   1.3 — #1391: the document picker's rows draw `DocumentHeaderDisplay.numberedRow`, so a head
+///          that prints its own number no longer reads "256. 256. …"
 struct CrossReferenceGraphWindowView: View {
 
     /// The document this window was opened for, when it was opened with one (UI review M-2).
@@ -361,14 +363,18 @@ struct CrossReferenceGraphWindowView: View {
                             appState.currentGraphEntry = doc
                             // Transitioning to targeted mode is handled by body's if-let above.
                         } label: {
+                            // #1391: without the split, a head that prints its own number
+                            // reads "256. 256. Department of State…".
+                            let row = DocumentHeaderDisplay.numberedRow(
+                                header: doc.header, number: doc.documentNumber)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                    if let num = doc.documentNumber {
+                                    if let num = row.number {
                                         Text("\(num).")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
-                                    Text(doc.header)
+                                    Text(row.title)
                                         .font(.body)
                                         .foregroundStyle(.primary)
                                         .lineLimit(2)

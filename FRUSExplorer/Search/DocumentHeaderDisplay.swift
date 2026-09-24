@@ -32,9 +32,14 @@ import Foundation
 /// whose index predates the v15 fix and has not re-indexed — a real population until the next
 /// forced bump — and for any stored header reaching a title without a re-parse.
 ///
+/// #1391 added the split for rows that keep the number in a column of their own
+/// (``numberedRow(header:number:)``): the Source Explorer twins' Archival Neighbors rows and the
+/// Cross-Reference Graph's document picker and reference list.
+///
 /// Version history:
 ///   1.0 — UI review wave 1 (CW-2): initial implementation
 ///   1.1 — #888: charter corrected — extraction was already clean; this is the stale-index belt
+///   1.2 — #1391: `numberedRow(header:number:)`, the number column's split
 enum DocumentHeaderDisplay {
 
     /// Whether the header already begins with this document number, making a separate chip a
@@ -54,6 +59,56 @@ enum DocumentHeaderDisplay {
         let tail = trimmed.dropFirst(number.count)
         guard let next = tail.first else { return true }
         return next == "." || next == " "
+    }
+
+    /// The two columns of a row that prints the document number beside its title (#1391).
+    struct NumberedRow: Equatable, Sendable {
+        /// The row's number column: the document number exactly as the caller passed it.
+        let number: String?
+        /// What to draw beside the number: the stored header, less the number it already prints.
+        let title: String
+    }
+
+    /// What a row with a number column of its own draws: the number, and the header without the
+    /// number the head already prints (#1391).
+    ///
+    /// **Why the title gives way and not the column.** Measured over the 553 manifest volumes'
+    /// TEI, each `<head>` read without its notes as `IndexingPipeline.extractHeader` reads it:
+    /// **79,479 of 314,571 documents, in 231 volumes, have a head that opens with their own `@n`
+    /// and a full stop** (`256. Department of State Briefing Memorandum`), so a row that draws the
+    /// number beside the stored header reads "256  256. Department…". The rest print the number
+    /// only in `@n`, and for them the column is the only place it appears. Browse, whose rows have
+    /// no column, dropped the number instead (`DocumentRowLabel`); a search row withholds its chip
+    /// (``headerRepeatsNumber(_:number:)``). A fixed-width column cannot come and go without
+    /// misaligning the list, so here the column stays and the title loses its prefix.
+    ///
+    /// **The rule is the document's own number and a full stop, and nothing looser**, each part
+    /// measured over the same scan:
+    /// - No space is required after the stop. `frus1882` d61 is encoded `61.<lb/>Mr. Trescot…`,
+    ///   and three heads in the corpus have no whitespace there at all, so the row reads the same
+    ///   whatever the stored header's join makes of the line break.
+    /// - The number must be the document's own. 15 heads in 6 volumes open with a different number
+    ///   (`frus1873p2v3` d17, `@n` 17, prints *1. Sir Edward Thornton to Mr. Fish.*), and there the
+    ///   number is part of the title.
+    /// - The number and a space, with no stop, is not stripped. No head in the corpus has that
+    ///   shape; ``headerRepeatsNumber(_:number:)`` accepts it, and answers a different question.
+    /// - A head that is only its number keeps it, so the row never loses its title (no head in the
+    ///   corpus is only a number).
+    ///
+    /// The stored header is not changed: search, citations and the reader all read it as printed.
+    ///
+    /// - Parameters:
+    ///   - header: The stored header, as `document_cache` holds it.
+    ///   - number: The document number (`@n`), when the row has one.
+    /// - Returns: The number unchanged, and the header without its leading "number." when it opens
+    ///   with one; otherwise the number and the header both unchanged.
+    static func numberedRow(header: String, number: String?) -> NumberedRow {
+        guard let number, !number.isEmpty else { return NumberedRow(number: number, title: header) }
+        let opening = header.drop(while: \.isWhitespace)
+        guard opening.hasPrefix(number + ".") else { return NumberedRow(number: number, title: header) }
+        let title = opening.dropFirst(number.count + 1).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return NumberedRow(number: number, title: header) }
+        return NumberedRow(number: number, title: title)
     }
 
     /// The header with a leaked source-note tail removed.
