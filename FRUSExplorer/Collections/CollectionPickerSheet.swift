@@ -41,6 +41,9 @@ import SwiftData
 ///   1.5 — 2026-09-23: #1358 — the row's count reads `Collection.documentCount`, the same
 ///          `.document`-entries rule it applied inline, now shared with the Collections list
 ///          and the macOS manager, which had never applied it
+///   1.6 — 2026-09-24: #1359 review, round 2 — the row prints `CollectionEditorNaming.listName`,
+///          so a new collection whose editor waits in the Collections tab reads "Untitled
+///          Collection" rather than a blank row
 struct CollectionPickerSheet: View {
 
     /// The document being added (its `volumeId`/`documentId` provenance).
@@ -91,7 +94,7 @@ struct CollectionPickerSheet: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(collection.name)
+                    Text(CollectionEditorNaming.listName(savedName: collection.name))
                         .font(.body)
                         .foregroundStyle(.primary)
                     let count = collection.documentCount

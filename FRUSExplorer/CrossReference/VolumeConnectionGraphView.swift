@@ -28,9 +28,17 @@ import SwiftUI
 /// - Outbound-only: green (this volume references the other)
 /// - Bidirectional: indigo (mutual references in both directions)
 ///
+/// ## Hover and selection (#1383)
+/// A click or tap pins a partner (`selectedPartnerId`, written only by `toggleSelection(_:)`
+/// and `load`); on macOS the pointer previews one (`hoveredPartnerId`, written by
+/// `hoverChanged(_:hovering:)`). The info panel and the node emphasis read
+/// `displayedPartnerId` — the same rules as `PersonCoMentionGraphViewModel`.
+///
 /// Version history:
 ///   1.0 — Corpus-wide free-layout graph
 ///   2.0 — Redesigned as per-volume ego graph with pinned centre and navigation history
+///   2.1 — #1383: hover (`hoveredPartnerId`) separated from the clicked selection, which only
+///          `toggleSelection(_:)` writes; `displayedPartnerId` and `isPreviewingHover`
 @Observable
 @MainActor
 final class VolumeConnectionGraphViewModel {
@@ -49,7 +57,50 @@ final class VolumeConnectionGraphViewModel {
 
     // MARK: - Interaction
 
-    var selectedPartnerId: String? = nil
+    /// The partner volume the reader pinned by clicking (macOS) or tapping (iOS) its node. Only
+    /// `toggleSelection(_:)` and `load` write it — never the pointer (#1383).
+    private(set) var selectedPartnerId: String? = nil
+
+    /// The partner node under the pointer (macOS hover; never set on iOS). Transient:
+    /// `hoverChanged(_:hovering:)` sets and clears it, and a click and a reload drop it.
+    private(set) var hoveredPartnerId: String? = nil
+
+    /// The partner the info panel and the node emphasis show: the hovered one while the pointer
+    /// is over a node, otherwise the pinned one (#1383). The precedence, and why a click is never
+    /// masked by it, are `PersonCoMentionGraphViewModel.displayedPartnerId`'s.
+    var displayedPartnerId: String? { hoveredPartnerId ?? selectedPartnerId }
+
+    /// Whether the info panel shows a hover preview rather than the pinned volume (#1383).
+    ///
+    /// This graph's panel floats over the canvas, unlike the co-mention graph's dock, so a preview
+    /// can appear over the very node being hovered. The view stops a previewing panel from taking
+    /// the pointer, so it cannot come between the pointer and that node — which, if SwiftUI then
+    /// reported the node's exit, would close the preview and reopen it as the pointer re-entered.
+    /// A pinned panel still takes the pointer, or its Explore button could not be clicked.
+    var isPreviewingHover: Bool { hoveredPartnerId != nil && hoveredPartnerId != selectedPartnerId }
+
+    /// The pointer entered (`hovering`) or left a partner node's hit area (#1383). Entry previews
+    /// the node; exit clears the preview only while it still names this node, so an exit that
+    /// arrives after an overlapping neighbour's entry keeps the neighbour's preview. Never writes
+    /// the selection.
+    /// - Parameters:
+    ///   - volumeId: The partner volume whose hit area the pointer entered or left.
+    ///   - hovering: `true` on entry, `false` on exit.
+    func hoverChanged(_ volumeId: String, hovering: Bool) {
+        if hovering {
+            hoveredPartnerId = volumeId
+        } else if hoveredPartnerId == volumeId {
+            hoveredPartnerId = nil
+        }
+    }
+
+    /// A click or tap on a partner node: pins it, or unpins it when it is the pinned one (#1383).
+    /// It also drops the hover preview, so the panel shows what the click did at once.
+    /// - Parameter volumeId: The partner volume clicked.
+    func toggleSelection(_ volumeId: String) {
+        selectedPartnerId = (selectedPartnerId == volumeId) ? nil : volumeId
+        hoveredPartnerId = nil
+    }
 
     /// Pinch-to-zoom magnification applied to the canvas; `1.0` is neutral.
     /// Holds `steadyScale × gestureValue` during a pinch (see `magnificationChanged(_:)`).
@@ -164,6 +215,9 @@ final class VolumeConnectionGraphViewModel {
         outboundEdges = []
         nodePositions = [:]
         selectedPartnerId = nil
+        // The hit areas are rebuilt for the new centre, and a removed one is not guaranteed to
+        // report the pointer's exit, so a hover would otherwise outlive its node.
+        hoveredPartnerId = nil
         // A stale pinch/pan transform from the previous volume would otherwise be
         // applied on top of the freshly built layout.
         resetViewport(animated: false)
@@ -344,6 +398,9 @@ final class VolumeConnectionGraphViewModel {
 /// Version history:
 ///   1.0 — Corpus-wide free-layout graph
 ///   2.0 — Per-volume ego graph with pinned centre and navigation history
+///   2.1 — #1383: a hit area's click calls `toggleSelection(_:)` and its hover
+///          `hoverChanged(_:hovering:)`; the panel and node emphasis read `displayedPartnerId`,
+///          and a previewing panel does not take the pointer (`isPreviewingHover`)
 struct VolumeConnectionGraphView: View {
 
     @State private var vm: VolumeConnectionGraphViewModel
@@ -444,8 +501,9 @@ struct VolumeConnectionGraphView: View {
             let bidir = vm.bidirectionalVolumeIds
             for id in vm.partnerVolumeIds {
                 guard let pos = vm.nodePositions[id] else { continue }
-                let isSelected = vm.selectedPartnerId == id
-                let r: CGFloat = isSelected ? 22 : 18
+                // The panel's volume — hovered or pinned (#1383) — is the one emphasised.
+                let isEmphasized = vm.displayedPartnerId == id
+                let r: CGFloat = isEmphasized ? 22 : 18
                 let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
                 let nodeColor: Color
@@ -458,8 +516,8 @@ struct VolumeConnectionGraphView: View {
                 }
 
                 context.fill(Path(ellipseIn: rect),
-                             with: .color(isSelected ? nodeColor : nodeColor.opacity(0.6)))
-                if isSelected {
+                             with: .color(isEmphasized ? nodeColor : nodeColor.opacity(0.6)))
+                if isEmphasized {
                     context.stroke(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)),
                                    with: .color(.white), lineWidth: 1.5)
                 }
@@ -512,15 +570,16 @@ struct VolumeConnectionGraphView: View {
         ForEach(vm.partnerVolumeIds, id: \.self) { id in
             if let pos = vm.nodePositions[id] {
                 Button {
-                    vm.selectedPartnerId = (vm.selectedPartnerId == id) ? nil : id
+                    vm.toggleSelection(id)
                 } label: {
                     Circle().fill(Color.clear).frame(width: 48, height: 48).contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .position(pos)
                 #if os(macOS)
+                // Hover previews and never pins (#1383): only the click above selects.
                 .onHover { hovering in
-                    if hovering { vm.selectedPartnerId = id }
+                    vm.hoverChanged(id, hovering: hovering)
                 }
                 #endif
                 .accessibilityLabel(id)
@@ -575,13 +634,15 @@ struct VolumeConnectionGraphView: View {
                 .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .topLeading)))
             }
 
-            if let sel = vm.selectedPartnerId {
+            if let sel = vm.displayedPartnerId {
                 infoPanel(for: sel)
+                    // A hover preview floats over the canvas without taking the pointer (#1383).
+                    .allowsHitTesting(!vm.isPreviewingHover)
                     .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)))
             }
         }
         .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.canNavigateBack)
-        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.selectedPartnerId)
+        .animation(.spring(response: 0.25, dampingFraction: 0.85), value: vm.displayedPartnerId)
     }
 
     @ViewBuilder

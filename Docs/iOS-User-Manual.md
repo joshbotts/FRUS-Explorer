@@ -166,7 +166,7 @@ Select any passage in the document body and a dark pill appears just below it wi
 - **Look Up** — run a NARA Catalog lookup on the selected text (Section 14.2).
 - **Note** — attach a research note (Section 9.2).
 
-For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available.
+For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available. A list's own heading and the numbers the volume printed beside its items — **SUBJECT**, **PARTICIPANTS:**, **(1)**, **a.** — are drawn on the page but are not part of the text a highlight is anchored to: a selection that starts on one begins at the item's first word, one that ends on one stops just before that item, and a highlight or excerpt of numbered paragraphs keeps their words without the numbers.
 
 ### 4.4 Read Mode and Research Mode
 
@@ -831,7 +831,7 @@ Collections work in two halves, and the split keeps you honest about where decis
 
 ### 12.1 The Manager on iPad
 
-Open the **Collections** tab and tap **New Collection**. The editor is its own screen, and every edit **saves as you go** — there is no Save button; navigate back when done. (Backing out of a brand-new collection you never touched discards it.)
+Open the **Collections** tab and tap **New Collection**. The editor is its own screen, titled with the collection's name (**New Collection** until you give it one), and every edit **saves as you go** — there is no Save button; navigate back when done. (Backing out of a brand-new collection you never touched discards it.)
 
 On iPad the manager keeps **two permanent columns** — the **Contents** outline and the **live preview** — with settings summoned on demand: the **⚙ Collection** toolbar button opens the **Collection settings** sheet (name, private working note, title-page front matter, composition presets and settings, and the smart-collection link), and each document row's **⚙ Configure** pill opens *that document's* settings (12.6). On iPhone, a segmented control switches between **Outline** and **Preview**, with a **Collection settings** row at the top of the outline opening the same settings on its own screen.
 

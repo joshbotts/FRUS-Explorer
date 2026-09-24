@@ -114,6 +114,27 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/TopicIndexArrivalTests
 ```
 
+**`CollectionEditorTitleTests` (#1359) must run on an iPhone AND an iPad, and only the iPhone guards the
+push-over.** On a compact width Collection settings is PUSHED over the editor; on a regular width it is a sheet, which
+covers nothing and fires no `onDisappear`. So the push-over test (`testContentAloneDoesNotNameANewCollection`) can fail
+on an iPhone and cannot fail on an iPad, and the tab-tap test needs the pushed screen and skips on the sheet route.
+Expect **3 tests with 0 skipped on iPhone 17** and **3 with 1 skipped on iPad Pro 13-inch (M5)**; it also passes on an
+iOS 27.0 iPhone 17 (pass the iOS 27 timeout flags below).
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -only-testing FRUSExplorerUITests/CollectionEditorTitleTests
+```
+
 **`ResearchReadingDepthTests` needs its own, NARROWER iPad.** The iPad command for
 `UIObstructionTests` further up is scoped to that suite, so it never runs this one. #1273's test turns a page and rotates across Research's
 820 pt two-pane gate, which needs an iPad whose PORTRAIT canvas is under the gate: iPad mini (744 pt). On
