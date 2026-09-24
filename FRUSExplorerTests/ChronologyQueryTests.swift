@@ -58,6 +58,146 @@ private func makeChronPipeline(dir: URL) async throws -> (pipeline: IndexingPipe
     return (pipeline, store)
 }
 
+/// The four intervals `ChronologyAggregationTests.overflowDirections` classifies against its
+/// summer range: one that begins before the range and ends inside it, one that begins inside and
+/// ends after, one that encloses the whole range (the January–December interval a year-only date
+/// is stored with, though the row itself is built at day precision, which the direction rule never
+/// reads), and one squarely inside. `ChronologyOverflowChipTests` counts the same four, so the
+/// direction rule and the chip's counts are pinned on one set of fixtures (#1387).
+private enum ChronOverflowFixtures {
+    /// Inclusive start of the picked range.
+    static let startISO = "1962-06-01"
+    /// Inclusive end of the picked range.
+    static let endISO = "1962-08-31"
+    /// Begins before the range, ends inside it.
+    static let leading = row("a", iso: "1962-05-20", isoMax: "1962-07-10")
+    /// Begins inside the range, ends after it.
+    static let trailing = row("b", iso: "1962-07-01", isoMax: "1962-09-15")
+    /// Begins before the range and ends after it.
+    static let both = row("c", iso: "1962-01-01", isoMax: "1962-12-31")
+    /// Wholly inside the range — not an overflow row at all.
+    static let inside = row("d", iso: "1962-07-01", isoMax: "1962-07-31")
+
+    /// A day-precision row with the given interval, in volume `v` unless another is named.
+    static func row(
+        _ doc: String, iso: String, isoMax: String,
+        certainty: DateCertainty = .exact, volume: String = "v", editorialNote: Bool = false
+    ) -> ChronologyRow {
+        ChronologyRow(
+            volumeId: volume, documentId: doc, header: "Header", dateline: nil, summary: nil,
+            dateISO: iso, dateISOMax: isoMax,
+            precision: .day, certainty: certainty,
+            isEditorialNote: editorialNote, isFrontMatter: false, documentNumber: nil
+        )
+    }
+}
+
+/// A whole Chronology load — every row the date query returned for one range — and what the
+/// overflow chip must say about it. `ChronologyOverflowChipTests.headlineStatesTheListedRows`
+/// runs each through `partition` and then `splitOverflow`, the order `ChronologyViewModel.reload()`
+/// uses, and counts what `splitOverflow` hands the chip (#1387's review).
+struct ChronologyOverflowLoad: Sendable, CustomTestStringConvertible {
+    /// Which load this is, for the test report.
+    let name: String
+    /// Inclusive start of the picked range.
+    let startISO: String
+    /// Inclusive end of the picked range.
+    let endISO: String
+    /// Every row the query returned: the in-range, overflow and wide-span ones alike.
+    let rows: [ChronologyRow]
+    /// Begins before only, ends after only, reaches past both ends.
+    let parts: [Int]
+    /// The breakdown the chip must print.
+    let breakdown: String
+
+    /// The load's name, which the test report prints for each case.
+    var testDescription: String { name }
+
+    /// The Chronology's load for May 1–31, 1893 on the iPhone 17 simulator (iOS 26.5, `A9FCCA50`,
+    /// 14 indexed volumes): every row `documentsInDateRange` returned, all of them `frus1894app2`,
+    /// read from that device's `frus.db` in the query's order. Six reach past the range — two begin
+    /// before it only (d310, d368), one ends after it only (d324) and three reach past both ends
+    /// (d300, d388, d389) — so every part is non-zero and no two are equal: a part dropped or
+    /// counted twice changes the total, and two parts swapped change the split. d270 and d274 are
+    /// two-day ranges inside it, so a rule added to `splitOverflow` alone that listed any
+    /// multi-day row would hand the chip rows that no part counts. The old chip read
+    /// "(5 before · 4 after)" over these six.
+    static let may1893 = ChronologyOverflowLoad(
+        name: "the index's May 1893 load (2 / 1 / 3)",
+        startISO: "1893-05-01", endISO: "1893-05-31",
+        rows: ([
+            ("d310", "1893-04-03", "1893-05-16", .approximate), ("d300", "1893-04-15", "1893-06-26", .approximate),
+            ("d368", "1893-04-25", "1893-05-02", .approximate), ("d388", "1893-04-25", "1893-12-31", .approximate),
+            ("d389", "1893-04-25", "1893-12-31", .approximate), ("d313", "1893-05-01", nil, .exact),
+            ("d366", "1893-05-01", nil, .exact), ("d324", "1893-05-02", "1893-07-15", .approximate),
+            ("d325", "1893-05-02", nil, .exact), ("d338", "1893-05-02", nil, .exact),
+            ("d367", "1893-05-02", nil, .exact), ("d270", "1893-05-03", "1893-05-04", .range),
+            ("d274", "1893-05-03", "1893-05-04", .range), ("d297", "1893-05-03", nil, .exact),
+            ("d335", "1893-05-03", nil, .exact), ("d226", "1893-05-04", nil, .exact),
+            ("d255", "1893-05-04", nil, .exact), ("d281", "1893-05-04", nil, .exact),
+            ("d304", "1893-05-05", nil, .exact), ("d256", "1893-05-06", nil, .exact),
+            ("d273", "1893-05-06", nil, .exact), ("d276", "1893-05-06", nil, .exact),
+            ("d279", "1893-05-06", nil, .exact), ("d282", "1893-05-06", nil, .exact),
+            ("d278", "1893-05-08", nil, .exact), ("d306", "1893-05-08", nil, .exact),
+            ("d257", "1893-05-09", nil, .exact), ("d283", "1893-05-09", nil, .exact),
+            ("d294", "1893-05-09", nil, .exact), ("d320", "1893-05-09", nil, .exact),
+            ("d370", "1893-05-11", nil, .exact), ("d292", "1893-05-12", nil, .exact),
+            ("d307", "1893-05-12", nil, .exact), ("d305", "1893-05-13", nil, .exact),
+            ("d339", "1893-05-15", nil, .exact), ("d344", "1893-05-15", nil, .exact),
+            ("d347", "1893-05-15", nil, .exact), ("d371", "1893-05-15", nil, .exact),
+            ("d311", "1893-05-16", nil, .exact), ("d337", "1893-05-16", nil, .exact),
+            ("d227", "1893-05-18", nil, .exact), ("d275", "1893-05-18", nil, .exact),
+            ("d443", "1893-05-22", nil, .exact), ("d444", "1893-05-22", nil, .exact),
+            ("d228", "1893-05-24", nil, .exact), ("d229", "1893-05-24", nil, .exact),
+            ("d258", "1893-05-24", nil, .exact), ("d230", "1893-05-29", nil, .exact),
+        ] as [(String, String, String?, DateCertainty)]).map { doc, iso, isoMax, certainty in
+            // The index stores a single day's end as its start, never as NULL.
+            ChronOverflowFixtures.row(doc, iso: iso, isoMax: isoMax ?? iso,
+                                      certainty: certainty, volume: "frus1894app2")
+        },
+        parts: [2, 1, 3],
+        breakdown: "(2 begin before · 1 ends after · 3 reach past both ends)")
+
+    /// The shape of the iOS manual's Chronology capture (`Docs/screenshots/ipad/chronology.png`),
+    /// Sep 1 – Nov 30, 1962, which read "26 documents extend beyond this range (26 before · 24
+    /// after)". This device does not hold those volumes, so the rows are built to the capture's
+    /// own numbers: 26 in total and 26 before leaves none that ends after only, so 24 enclose the
+    /// range and 2 only begin before it. A three-year editorial note, which `partition` sets aside
+    /// for the spanning chip, and three documents inside the range complete the load.
+    static let iPadCapture = ChronologyOverflowLoad(
+        name: "the iOS manual's capture, Sep 1 – Nov 30, 1962 (2 / 0 / 24)",
+        startISO: "1962-09-01", endISO: "1962-11-30",
+        rows: [ChronOverflowFixtures.row("note", iso: "1961-01-20", isoMax: "1963-11-22",
+                                         certainty: .approximate, editorialNote: true)]
+            + (0..<2).map { ChronOverflowFixtures.row("l\($0)", iso: "1962-08-15", isoMax: "1962-09-15",
+                                                      certainty: .approximate) }
+            + (0..<24).map { ChronOverflowFixtures.row("y\($0)", iso: "1962-01-01", isoMax: "1962-12-31",
+                                                       certainty: .approximate) }
+            + ["1962-09-01", "1962-10-22", "1962-11-30"].map {
+                ChronOverflowFixtures.row("in\($0)", iso: $0, isoMax: $0) },
+        parts: [2, 0, 24],
+        breakdown: "(2 begin before · 24 reach past both ends)")
+
+    /// The shape of the macOS manual's Chronology capture (`Docs/screenshots/macos/chronology.png`,
+    /// the build-48 capture #1355 committed), Oct 14 – Nov 20, 1962, which read "24 documents
+    /// extend beyond this range (24 before · 24 after)": 24 before and 24 after out of 24 means
+    /// every one of them encloses the range.
+    static let macCapture = ChronologyOverflowLoad(
+        name: "the macOS manual's capture, Oct 14 – Nov 20, 1962 (0 / 0 / 24)",
+        startISO: "1962-10-14", endISO: "1962-11-20",
+        rows: [ChronOverflowFixtures.row("note", iso: "1961-01-20", isoMax: "1963-11-22",
+                                         certainty: .approximate, editorialNote: true)]
+            + (0..<24).map { ChronOverflowFixtures.row("y\($0)", iso: "1962-01-01", isoMax: "1962-12-31",
+                                                       certainty: .approximate) }
+            + ["1962-10-14", "1962-10-28", "1962-11-20"].map {
+                ChronOverflowFixtures.row("in\($0)", iso: $0, isoMax: $0) },
+        parts: [0, 0, 24],
+        breakdown: "(24 reach past both ends)")
+
+    /// All three loads, for the parameterised test.
+    static let all = [may1893, iPadCapture, macCapture]
+}
+
 // MARK: - ChronologyQueryTests
 
 /// Verifies the corpus-wide date-range queries that back the Chronology browser.
@@ -231,11 +371,11 @@ struct ChronologyAggregationTests {
 
     @Test("overflowDirection flags leading, trailing, enclosing, and contained intervals")
     func overflowDirections() {
-        let s = "1962-06-01", e = "1962-08-31"
-        let leading = row("v", "a", iso: "1962-05-20", isoMax: "1962-07-10")
-        let trailing = row("v", "b", iso: "1962-07-01", isoMax: "1962-09-15")
-        let both = row("v", "c", iso: "1962-01-01", isoMax: "1962-12-31")
-        let inside = row("v", "d", iso: "1962-07-01", isoMax: "1962-07-31")
+        let s = ChronOverflowFixtures.startISO, e = ChronOverflowFixtures.endISO
+        let leading = ChronOverflowFixtures.leading
+        let trailing = ChronOverflowFixtures.trailing
+        let both = ChronOverflowFixtures.both
+        let inside = ChronOverflowFixtures.inside
 
         let l = ChronologyViewModel.overflowDirection(leading, startISO: s, endISO: e)
         #expect(l.leading && !l.trailing)
@@ -296,6 +436,263 @@ struct ChronologyAggregationTests {
         #expect(byDay["1972-03-04"]?.map(\.label) == ["vB", "vA"])
         #expect(byDay["1972-03-04"]?.map(\.count) == [5, 2])
         #expect(byDay["1972-03-04"]?.map(\.seriesKey) == ["vB", "vA"])
+    }
+}
+
+// MARK: - ChronologyOverflowChipTests
+
+/// #1387: the "extend beyond this range" chip's breakdown must be a split of its headline.
+///
+/// Before the fix the view counted "before" and "after" separately, so a row that encloses the
+/// whole range (a year-only date around a season) was counted on both sides, and the iOS manual's
+/// capture read "26 documents extend beyond this range (26 before · 24 after)". These tests drive
+/// `ChronologyViewModel.overflowCounts` and the copy on `ChronologyOverflowCounts`, which the
+/// view draws; `headlineStatesTheListedRows` runs whole loads through `splitOverflow` first, and
+/// the last test pins that the view draws what they check. None depends on the idiom — the chip is
+/// shared SwiftUI — so they fail on any destination when the rule regresses. Every count is
+/// written in a pinned `en_US`, so the expected "12,067" does not depend on the host's region.
+@Suite("ChronologyOverflowChipTests")
+struct ChronologyOverflowChipTests {
+
+    private typealias F = ChronOverflowFixtures
+
+    /// The locale every expected count below is written in.
+    fileprivate static let enUS = Locale(identifier: "en_US")
+
+    private func counts(_ rows: [ChronologyRow]) -> ChronologyOverflowCounts {
+        ChronologyViewModel.overflowCounts(rows, startISO: F.startISO, endISO: F.endISO, locale: Self.enUS)
+    }
+
+    private func counts(_ before: Int, _ after: Int, _ both: Int) -> ChronologyOverflowCounts {
+        ChronologyOverflowCounts(beginsBeforeOnly: before, endsAfterOnly: after, spansWholeRange: both,
+                                 locale: Self.enUS)
+    }
+
+    @Test("Each overflow row is counted once: one begins before, one ends after, one reaches past both ends")
+    func threeFixturesCountOnceEach() {
+        let c = counts([F.leading, F.trailing, F.both])
+        #expect(c.beginsBeforeOnly == 1)
+        #expect(c.endsAfterOnly == 1)
+        #expect(c.spansWholeRange == 1)
+        #expect(c.total == 3, "the three parts add up to the three rows")
+    }
+
+    @Test("A row inside the range adds to no part")
+    func insideRowAddsNothing() {
+        // Mixed with one leading and one enclosing row, so a mutation that files the inside row
+        // under ANY of the three parts changes the result.
+        let c = counts([F.leading, F.inside, F.both])
+        #expect(c == counts(1, 0, 1))
+        #expect(c.total == 2)
+    }
+
+    @Test("The captured shape — 2 begin before, 24 enclose — reads as 26 split into 2 and 24")
+    func capturedShapeAddsUp() {
+        // The iOS manual's Chronology capture (`Docs/screenshots/ipad/chronology.png`, Sep 1 –
+        // Nov 30, 1962) printed "26 documents extend beyond this range (26 before · 24 after)".
+        let leadingOnly = (0..<2).map { F.row("l\($0)", iso: "1962-05-20", isoMax: "1962-07-10") }
+        let enclosing = (0..<24).map { F.row("e\($0)", iso: "1962-01-01", isoMax: "1962-12-31") }
+        let c = counts(leadingOnly + enclosing)
+        #expect(c == counts(2, 0, 24))
+        #expect(c.chipTitle == "26 documents extend beyond this range")
+        #expect(c.chipBreakdown == "(2 begin before · 24 reach past both ends)")
+        #expect(c.chipAccessibilityLabel
+                == "26 documents have uncertain dates that extend beyond this range: 2 begin before, 24 reach past both ends. Toggle to show them.")
+    }
+
+    @Test("The headline states the rows the section lists, over whole loads", arguments: ChronologyOverflowLoad.all)
+    func headlineStatesTheListedRows(_ load: ChronologyOverflowLoad) {
+        // As `reload()` does: set the wide-span rows aside, then split the rest at the range. The
+        // chip counts exactly what `splitOverflow` hands it, so its parts must add up to that list.
+        let placed = ChronologyViewModel.partition(load.rows).placed
+        let overflow = ChronologyViewModel.splitOverflow(
+            placed, startISO: load.startISO, endISO: load.endISO).overflow
+        let c = ChronologyViewModel.overflowCounts(
+            overflow, startISO: load.startISO, endISO: load.endISO, locale: Self.enUS)
+
+        #expect(overflow.count == load.parts.reduce(0, +),
+                "splitOverflow listed \(overflow.count) rows where the load has \(load.parts.reduce(0, +))")
+        #expect(c.total == overflow.count,
+                "the parts add up to \(c.total), but the section lists \(overflow.count) rows")
+        #expect(c.chipTitle == "\(overflow.count) documents extend beyond this range")
+        #expect([c.beginsBeforeOnly, c.endsAfterOnly, c.spansWholeRange] == load.parts)
+        #expect(c.chipBreakdown == load.breakdown)
+    }
+
+    @Test("A part of one is singular")
+    func singularParts() {
+        let c = counts(1, 1, 1)
+        #expect(c.chipBreakdown == "(1 begins before · 1 ends after · 1 reaches past both ends)")
+        #expect(c.chipTitle == "3 documents extend beyond this range")
+    }
+
+    @Test("Plural parts and the total are grouped, in the locale the counts carry")
+    func pluralPartsAreGrouped() {
+        let c = counts(2, 3, 12_067)
+        #expect(c.chipBreakdown == "(2 begin before · 3 end after · 12,067 reach past both ends)")
+        #expect(c.chipTitle == "12,072 documents extend beyond this range")
+        #expect(c.chipAccessibilityLabel
+                == "12,072 documents have uncertain dates that extend beyond this range: 2 begin before, 3 end after, 12,067 reach past both ends. Toggle to show them.")
+
+        // The locale is the one the counts carry, not the host's: German groups with a period.
+        let german = ChronologyOverflowCounts(beginsBeforeOnly: 2, endsAfterOnly: 3, spansWholeRange: 12_067,
+                                              locale: Locale(identifier: "de_DE"))
+        #expect(german.chipTitle == "12.072 documents extend beyond this range")
+        #expect(german.chipBreakdown == "(2 begin before · 3 end after · 12.067 reach past both ends)")
+    }
+
+    @Test("A part that is zero is left out, each on its own")
+    func zeroPartsAreLeftOut() {
+        #expect(counts(0, 3, 4).chipBreakdown == "(3 end after · 4 reach past both ends)")
+        #expect(counts(5, 0, 6).chipBreakdown == "(5 begin before · 6 reach past both ends)")
+        #expect(counts(2, 3, 0).chipBreakdown == "(2 begin before · 3 end after)")
+        #expect(counts(0, 0, 0).chipBreakdown == "")
+    }
+
+    @Test("One document reads in the singular, on screen and to VoiceOver")
+    func oneDocumentIsSingular() {
+        let c = counts([F.both])
+        #expect(c == counts(0, 0, 1))
+        #expect(c.chipTitle == "1 document extends beyond this range")
+        #expect(c.chipBreakdown == "(1 reaches past both ends)")
+        #expect(c.chipAccessibilityLabel
+                == "1 document has an uncertain date that extends beyond this range: 1 reaches past both ends. Toggle to show it.")
+    }
+
+    @Test("Counts with the same parts are equal, whatever locale each is written in")
+    func equalityIgnoresTheLocale() {
+        // The locale decides how a count is written, not what was counted. The view's counts carry
+        // the reader's `.autoupdatingCurrent`, which is unequal to every pinned locale — `en_US`
+        // included — so an `==` that compared it made the same split unequal to itself.
+        let german = ChronologyOverflowCounts(beginsBeforeOnly: 2, endsAfterOnly: 3, spansWholeRange: 4,
+                                              locale: Locale(identifier: "de_DE"))
+        #expect(counts(2, 3, 4) == german)
+        let readers = ChronologyViewModel.overflowCounts(
+            [F.leading, F.trailing, F.both], startISO: F.startISO, endISO: F.endISO)
+        #expect(readers == counts(1, 1, 1))
+    }
+
+    /// One pair per part, differing in that part alone, so an `==` that skipped any one part is
+    /// caught by that part's case; and one pair that moves a row between parts with the total
+    /// unchanged, so an `==` that compared totals is caught too.
+    @Test("Counts that differ in their parts are unequal", arguments: zip(
+        [[2, 3, 4], [2, 3, 4], [2, 3, 4], [2, 3, 4]],
+        [[5, 3, 4], [2, 5, 4], [2, 3, 5], [3, 2, 4]]))
+    func differingPartsAreUnequal(_ lhs: [Int], _ rhs: [Int]) {
+        #expect(counts(lhs[0], lhs[1], lhs[2]) != counts(rhs[0], rhs[1], rhs[2]))
+    }
+
+    // MARK: The view draws these, and counts nowhere else
+
+    /// `ChronologyView.swift`, read from the repository.
+    fileprivate static func viewSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Chronology/ChronologyView.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The body of the declaration that starts with `header`, from its first `{` to the `}` that
+    /// balances it — the function's own text, never a window that runs into the next one.
+    fileprivate static func body(of header: String, in source: String) -> String? {
+        guard let start = source.range(of: header),
+              let open = source[start.upperBound...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var cursor = open
+        while cursor < source.endIndex {
+            if source[cursor] == "{" { depth += 1 }
+            if source[cursor] == "}" {
+                depth -= 1
+                if depth == 0 { return String(source[start.lowerBound...cursor]) }
+            }
+            cursor = source.index(after: cursor)
+        }
+        return nil
+    }
+
+    /// Occurrences of `pattern` (a regular expression) in `text`.
+    fileprivate static func matches(_ pattern: String, in text: String) throws -> Int {
+        try NSRegularExpression(pattern: pattern).numberOfMatches(
+            in: text, range: NSRange(text.startIndex..., in: text))
+    }
+
+    @Test("The chip draws the shared counts' sentences, and the view counts directions nowhere else")
+    func chipDrawsTheSharedCounts() throws {
+        let source = try Self.viewSource()
+        let chip = try #require(Self.body(of: "private func overflowChip(", in: source),
+                                "ChronologyView.overflowChip not found — the scan would read nothing")
+        let label = try #require(Self.body(of: "private func overflowDirectionLabel(", in: source),
+                                 "ChronologyView.overflowDirectionLabel not found")
+
+        // Counted once, over the rows the section lists, against the range that loaded them.
+        #expect(try Self.matches(#"let counts = ChronologyViewModel\.overflowCounts\(\s*displayedOverflowRows,\s*startISO: vm\.loadedStartISO,\s*endISO: vm\.loadedEndISO\s*\)"#, in: chip) == 1,
+                "overflowChip must count through ChronologyViewModel.overflowCounts over displayedOverflowRows")
+        #expect(try Self.matches(#"Text\(\s*verbatim:\s*counts\.chipTitle\s*\)"#, in: chip) == 1,
+                "overflowChip must draw counts.chipTitle")
+        #expect(try Self.matches(#"Text\(\s*verbatim:\s*counts\.chipBreakdown\s*\)"#, in: chip) == 1,
+                "overflowChip must draw counts.chipBreakdown")
+        #expect(try Self.matches(#"\.accessibilityLabel\(\s*Text\(\s*verbatim:\s*counts\.chipAccessibilityLabel\s*\)\s*\)"#, in: chip) == 1,
+                "overflowChip must hand counts.chipAccessibilityLabel to VoiceOver")
+        #expect(!chip.contains("displayedOverflowRows.count"),
+                "the headline's number must be the parts' total, not a second count")
+
+        // A second counter anywhere in the view is how the double count shipped: every direction
+        // test left in the file belongs to the per-row label.
+        let callsInFile = try Self.matches(#"ChronologyViewModel\.overflowDirection\("#, in: source)
+        let callsInLabel = try Self.matches(#"ChronologyViewModel\.overflowDirection\("#, in: label)
+        #expect(callsInLabel == 1, "the row label must still read the direction rule")
+        #expect(callsInFile == callsInLabel,
+                "ChronologyView calls overflowDirection \(callsInFile - callsInLabel) time(s) outside overflowDirectionLabel")
+    }
+}
+
+// MARK: - ChronologySpanningChipTests
+
+/// #1387's review: the spanning chip drawn directly above the overflow chip counts the way its
+/// neighbour now does — singular at one and grouped — where it printed "1 editorial notes" and
+/// "12067" through a `%lld`. These drive `ChronologyViewModel.spanningChipTitle` and
+/// `spanningChipAccessibilityLabel`; the last test pins that the view draws them.
+@Suite("ChronologySpanningChipTests")
+struct ChronologySpanningChipTests {
+
+    private typealias Scan = ChronologyOverflowChipTests
+
+    /// The locale every expected count below is written in.
+    private static let enUS = ChronologyOverflowChipTests.enUS
+
+    @Test("One editorial note reads in the singular, on screen and to VoiceOver")
+    func oneNoteIsSingular() {
+        #expect(ChronologyViewModel.spanningChipTitle(1, locale: Self.enUS)
+                == "1 editorial note spans this whole period")
+        #expect(ChronologyViewModel.spanningChipAccessibilityLabel(1, locale: Self.enUS)
+                == "1 editorial note spans the whole period. Toggle to show it.")
+    }
+
+    @Test("Several editorial notes read in the plural, grouped in the locale passed")
+    func manyNotesAreGrouped() {
+        // 714 is the iOS manual's capture; 12,067 is past the first thousands separator.
+        #expect(ChronologyViewModel.spanningChipTitle(714, locale: Self.enUS)
+                == "714 editorial notes span this whole period")
+        #expect(ChronologyViewModel.spanningChipTitle(12_067, locale: Self.enUS)
+                == "12,067 editorial notes span this whole period")
+        #expect(ChronologyViewModel.spanningChipAccessibilityLabel(12_067, locale: Self.enUS)
+                == "12,067 editorial notes span the whole period. Toggle to show them.")
+        #expect(ChronologyViewModel.spanningChipTitle(12_067, locale: Locale(identifier: "de_DE"))
+                == "12.067 editorial notes span this whole period")
+    }
+
+    @Test("The spanning chip draws those sentences and formats no count of its own")
+    func chipDrawsTheSharedSentences() throws {
+        let source = try Scan.viewSource()
+        let chip = try #require(Scan.body(of: "private func spanningChip(", in: source),
+                                "ChronologyView.spanningChip not found — the scan would read nothing")
+
+        #expect(try Scan.matches(#"Text\(\s*verbatim:\s*ChronologyViewModel\.spanningChipTitle\(\s*displayedSpanningRows\.count\s*\)\s*\)"#, in: chip) == 1,
+                "spanningChip must draw ChronologyViewModel.spanningChipTitle over displayedSpanningRows")
+        #expect(try Scan.matches(#"\.accessibilityLabel\(\s*Text\(\s*verbatim:\s*ChronologyViewModel\.spanningChipAccessibilityLabel\(\s*displayedSpanningRows\.count\s*\)\s*\)\s*\)"#, in: chip) == 1,
+                "spanningChip must hand ChronologyViewModel.spanningChipAccessibilityLabel to VoiceOver")
+        #expect(try Scan.matches(#"String\(\s*format:"#, in: chip) == 0,
+                "spanningChip must not format a count of its own")
     }
 }
 
