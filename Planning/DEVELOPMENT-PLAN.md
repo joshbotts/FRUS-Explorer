@@ -19195,7 +19195,7 @@ nothing downloaded, because the index and the door read the bundled subject arti
   `CodingStandardsAuditTests` passed together, 79 tests in 6 suites. The macOS scheme builds.
 
 **Docs.** Both manuals' door paragraphs now say the door clears a typed search and that the chip
-reads *1 of 6 topics* while a search hides part of the area (iOS `:411`, macOS `:329`).
+reads *1 of 6 topics* while a search hides part of the area (iOS `:411`, macOS `:331`).
 `Docs/EditableContent.md` gains the four chip blocks and a header amendment. Its `lines:` ranges
 for `SubjectIndexView.swift` and `BrowserView.swift` are recomputed (again at review, below).
 
