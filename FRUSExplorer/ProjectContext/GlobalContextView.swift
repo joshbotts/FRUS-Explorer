@@ -38,6 +38,10 @@ import SwiftData
 ///   1.0 — Session 25: initial implementation
 ///   1.1 — Session 44: Done button guarded to non-iOS (GlobalContextView is a NavigationLink
 ///          destination on iOS, a sheet on macOS)
+///   1.2 — 2026-09-23: #1358 — the collection row and its accessibility label read
+///          `Collection.documentCount` rather than counting every entry as a document. Fixed,
+///          not deleted: the view is kept on purpose for a future re-entry point (above), and a
+///          re-entry should not bring the wrong count back with it
 struct GlobalContextView: View {
 
     @Environment(AppState.self) private var appState
@@ -300,7 +304,7 @@ struct GlobalContextView: View {
     }
 
     private func collectionAccessibilityLabel(_ collection: Collection) -> String {
-        let count = collection.documentEntries?.count ?? 0
+        let count = collection.documentCount
         return String(localized: "global.context.collection.a11y",
                       defaultValue: "\(collection.name), \(count) document\(count == 1 ? "" : "s")")
     }
@@ -374,7 +378,7 @@ private struct CollectionRowView: View {
                 .foregroundStyle(.primary)
 
             HStack(spacing: 6) {
-                let count = collection.documentEntries?.count ?? 0
+                let count = collection.documentCount
                 Text(String(localized: "global.context.collection.count",
                             defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
                     .font(.caption)

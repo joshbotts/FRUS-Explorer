@@ -372,12 +372,17 @@ struct FRUSOffsetEngineTests {
 ///
 /// Creates a WKWebView with the full production configuration (URL scheme handler
 /// + offset-engine user script) so the injection path is identical to production.
+///
+/// Internal rather than private since #1386: `FootnoteListIndentRenderTests` loads the
+/// reader's real stylesheet through it and measures computed style and layout, which no
+/// string assertion on the serializer's markup can see.
 @MainActor
-private final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
+final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
 
     private let webView: WKWebView
     private var loadContinuation: CheckedContinuation<Void, Error>?
 
+    /// Builds an 800×600 web view on the production configuration, delegating to `self`.
     override init() {
         // The test harness doesn't need real selection callbacks;
         // a no-op coordinator satisfies the messageHandler requirement.
@@ -437,6 +442,18 @@ private final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
         return (result as? String) ?? ""
     }
 
+    /// Evaluates `script` in the loaded page and returns its result as a string.
+    ///
+    /// The script must evaluate to a string — typically `JSON.stringify(...)` of whatever
+    /// the caller measured — because the async `evaluateJavaScript` bridge cannot carry
+    /// `undefined` or a DOM object back to Swift. A non-string result returns `nil`, so a
+    /// caller that `#require`s it fails naming the script rather than decoding an empty
+    /// string.
+    func evaluateString(_ script: String) async throws -> String? {
+        let result = try await webView.evaluateJavaScript(script)
+        return result as? String
+    }
+
     /// Returns `true` if `window.FRUSOffsets` was set by the injected WKUserScript.
     func userScriptInjected() async throws -> Bool {
         let result = try await webView.evaluateJavaScript(
@@ -447,11 +464,13 @@ private final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
 
     // MARK: WKNavigationDelegate
 
+    /// Resumes a pending `load(_:)` once the page has finished loading.
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         loadContinuation?.resume(returning: ())
         loadContinuation = nil
     }
 
+    /// Fails a pending `load(_:)` with the navigation's error.
     func webView(
         _ webView: WKWebView,
         didFail navigation: WKNavigation!,
@@ -461,6 +480,7 @@ private final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
         loadContinuation = nil
     }
 
+    /// Fails a pending `load(_:)` when the navigation fails before it commits.
     func webView(
         _ webView: WKWebView,
         didFailProvisionalNavigation navigation: WKNavigation!,

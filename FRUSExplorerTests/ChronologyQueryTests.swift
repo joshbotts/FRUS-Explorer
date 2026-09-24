@@ -352,12 +352,176 @@ struct ChronologyVolumeLabelTests {
         #expect(a != b)
     }
 
+    /// The real Appendix I volume. This fixture used to pair that title with `frus1894p1`, an id
+    /// the manifest does not have, and pin "· 1894 pt.1" — the Appendix-as-Part misreading #1388
+    /// corrected — so it now carries the real id and the reading the tag gives it.
     @Test("Long topics are truncated but the distinct tag is preserved")
     func longTopicTruncated() {
-        let result = label("frus1894p1", "1894",
-                           "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I, Chinese-Japanese War, Enforcement of Regulation Respective to Fur Seals, Mosquito Territory, Affairs at Bluefields")
-        #expect(result.hasSuffix("· 1894 pt.1"))
+        let result = label("frus1894app1", "1894",
+                           "Foreign Relations of the United States, 1894, Appendix I, Chinese-Japanese War, Enforcement of Regulation Respective to Fur Seals, Mosquito Territory, Affairs at Bluefields, Claim of Antonio Maximo Mora, Import Duties on Certain Products of Colombia, Haiti, and Venezuela, Affairs in the Samoan Islands")
+        #expect(result.hasSuffix("· 1894 app.1"))
         #expect(result.contains("…"))
         #expect(result.count < 60)
+    }
+
+    // MARK: The tag reads the whole id suffix (#1388)
+
+    /// The label's tag half: the text after its last `" · "`. It is the half a unique tag makes
+    /// sufficient on its own — which only matters on a surface that KEEPS it when it cuts: the
+    /// Cross-Reference matrix head-truncates, and the Mac hover magnifier renders the halves apart
+    /// (`distilledVolumeLabelParts`). The one-line surfaces that tail-truncate the joined label
+    /// drop this half first.
+    private func tag(_ label: String) -> String {
+        label.components(separatedBy: " · ").last ?? label
+    }
+
+    @Test("A microfiche supplement's tag keeps its volume range and says fiche (#1388)")
+    func microficheSupplementTag() {
+        let volumeX = label("frus1961-63v10", "1961-63",
+                            "Foreign Relations of the United States, 1961–1963, Volume X, Cuba, January 1961–September 1962")
+        let supplement = label("frus1961-63v10-12mSupp", "1961-63",
+                               "Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath")
+        // Both TAGS read "1961-63 v10" before #1388: the tag kept the first v-number and dropped
+        // "-12mSupp". The labels still differed — "Cuba · …" against "Microfiche Supplement,
+        // American… · …" — but only in the topic half, which a tail-truncating surface cuts
+        // first; the 40-character cut had already removed "Republics; Cuba 1961–1962; …".
+        #expect(volumeX == "Cuba · 1961-63 v10")
+        #expect(supplement == "Microfiche Supplement, American… · 1961-63 v10–12 fiche")
+        #expect(tag(volumeX) != tag(supplement))
+        // This supplement's title never says "Microfiche Supplement", so only its tag can: before
+        // #1388 it read "… · 1961-63 v7", beside Volume VII's own "… · 1961-63 v7".
+        let armsSupplement = label("frus1961-63v07-09mSupp", "1961-63",
+                                   "Foreign Relations of the United States, 1961–1963, Volumes VII, VIII, IX, Arms Control; National Security Policy; Foreign Economic Policy")
+        let volumeVII = label("frus1961-63v07", "1961-63",
+                              "Foreign Relations of the United States, 1961–1963, Volume VII, Arms Control and Disarmament")
+        #expect(tag(armsSupplement) == "1961-63 v7–9 fiche")
+        #expect(tag(volumeVII) == "1961-63 v7")
+    }
+
+    @Test("An E-volume's tag keeps its E, and a second edition says so (#1388)")
+    func eVolumeAndEditionTags() {
+        let first = label("frus1969-76ve15p2", "1969-76",
+                          "Foreign Relations of the United States, 1969–1976, Volume E–15, Part 2, Documents on Western Europe, 1973–1976")
+        let second = label("frus1969-76ve15p2Ed2", "1969-76",
+                           "Foreign Relations of the United States, 1969–1976, Volume E–15, Part 2, Documents on Western Europe, 1973–1976, Second, Revised Edition")
+        // Before #1388 both tags were "1969-76 pt.2" — the `(E-)?` branch never matched the ids'
+        // lower-case `ve15` — and the two labels differed only in where the topic cut fell.
+        #expect(tag(first) == "1969-76 vE-15 pt.2")
+        #expect(tag(second) == "1969-76 vE-15 pt.2 ed.2")
+        #expect(tag(first) != tag(second))
+        // …and every E-volume's first part read "1969-76 pt.1".
+        #expect(tag(label("frus1969-76ve05p1", "1969-76", "")) == "1969-76 vE-5 pt.1")
+        #expect(tag(label("frus1969-76ve14p1", "1969-76", "")) == "1969-76 vE-14 pt.1")
+    }
+
+    /// The shape table below reads only bundled ids, whose subseries always prefixes the id, so
+    /// no row of it reaches `volumeTag`'s verbatim fallback. The app does: ChronologyView and the
+    /// Cross-Reference matrix pass `entry?.subseries ?? ""` for a volume the manifest lacks.
+    /// Measured: a `break` in place of the fallback passed every earlier test in this suite and in
+    /// `CorpusAnalyticsServiceTests`, and failed all three assertions here — the first label came
+    /// back empty and the `x` was dropped from the second.
+    @Test("An id shape the grammar does not know is kept verbatim, not dropped (#1388)")
+    func unknownSuffixKeptVerbatim() {
+        // No subseries: nothing after `frus` is a token the grammar reads, so all of it is kept.
+        #expect(label("frus1969-76v20", "", "") == "1969-76v20")
+        // An unknown token after a known one ends the scan and is kept as it stands.
+        #expect(label("frus1969-76v20x", "1969-76", "") == "1969-76 v20 x")
+        // A subseries that does not prefix the id still drops `frus`; the rest is kept verbatim.
+        #expect(label("frus1969-76v20", "1970", "") == "1970 1969-76v20")
+    }
+
+    /// `distilledVolumeLabelParts` is what lets a surface truncate the topic and never the tag —
+    /// the Mac hover magnifier, which #1388 found cutting the supplement's label to "Microfiche
+    /// Supplement, American… ·…", and A2's matrix rows. The topic must come back WHOLE: a surface
+    /// fitting it to its own width has no use for the joined label's 40-character pre-cut, and a
+    /// topic that arrives already ending in "…" would show two ellipses once the surface cuts it.
+    @Test("The label's halves come apart: the whole topic, and the whole tag (#1388)")
+    func labelPartsKeepWholeTopicAndTag() {
+        let title = "Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath"
+        let parts = ChronologyViewModel.distilledVolumeLabelParts(
+            volumeId: "frus1961-63v10-12mSupp", subseries: "1961-63", title: title)
+        #expect(parts.tag == "1961-63 v10–12 fiche")
+        #expect(parts.topic == "Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath")
+        #expect(!parts.topic.contains("…"))
+        // The joined label is the same two halves, with only the topic cut.
+        let joined = label("frus1961-63v10-12mSupp", "1961-63", title)
+        #expect(joined == "Microfiche Supplement, American… · 1961-63 v10–12 fiche")
+        #expect(tag(joined) == parts.tag)
+        #expect(parts.topic.hasPrefix(String(joined.prefix { $0 != "…" })))
+        // A topic-less early annual has an empty topic and its whole tag, as the joined label does.
+        let annual = ChronologyViewModel.distilledVolumeLabelParts(
+            volumeId: "frus1864p1", subseries: "1864",
+            title: "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the Second Session Thirty-eighth Congress, Part I")
+        #expect(annual == VolumeLabelParts(topic: "", tag: "1864 pt.1"))
+    }
+
+    /// One real volume per id-suffix SHAPE the bundled manifest uses (the suffix after
+    /// `frus<subseries>`, digit runs written `N`), with the tag it must read as. An empty title
+    /// yields no topic, so the label IS the tag.
+    private static let pinnedTags: [(volumeId: String, subseries: String, tag: String)] = [
+        ("frus1969-76v20", "1969-76", "1969-76 v20"),                  // vN
+        ("frus1952-54v02p1", "1952-54", "1952-54 v2 pt.1"),            // vNpN
+        ("frus1870", "1870", "1870"),                                  // (none)
+        ("frus1864p1", "1864", "1864 pt.1"),                           // pN
+        ("frus1919Parisv01", "1919", "1919 Paris v1"),                 // ParisvN — was "1919 v1", the 1919 annual's tag
+        ("frus1969-76ve01", "1969-76", "1969-76 vE-1"),                // veN — was "1969-76 ve01"
+        ("frus1969-76ve05p1", "1969-76", "1969-76 vE-5 pt.1"),         // veNpN — was "1969-76 pt.1"
+        ("frus1872p2v1", "1872", "1872 pt.2 v1"),                      // pNvN — printed "Part II, Volume I"
+        ("frus1917Supp01v01", "1917", "1917 Supp.1 v1"),               // SuppNvN — was "1917 v1 pt.1"
+        ("frus1894app1", "1894", "1894 app.1"),                        // appN — Appendix I, was "1894 pt.1"
+        ("frus1901China", "1901", "1901 China"),                       // China
+        ("frus1914Supp", "1914", "1914 Supp"),                         // Supp
+        ("frus1917-72PubDipv06", "1917-72", "1917-72 PubDip v6"),      // PubDipvN
+        ("frus1918Russiav01", "1918", "1918 Russia v1"),               // RussiavN
+        ("frus1955-57v03mSupp", "1955-57", "1955-57 v3 fiche"),        // vNmSupp — was "1955-57 v3", Volume III's tag
+        ("frus1945-50Intel", "1945-50", "1945-50 Intel"),              // Intel
+        ("frus1945Berlinv01", "1945", "1945 Berlin v1"),               // BerlinvN — was "1945 v1", the 1945 annual's tag
+        ("frus1961-63v07-09mSupp", "1961-63", "1961-63 v7–9 fiche"),   // vN-NmSupp
+        ("frus1877app", "1877", "1877 app"),                           // app
+        ("frus1894Nicaragua", "1894", "1894 Nicaragua"),               // Nicaragua
+        ("frus1917-72PubDip", "1917-72", "1917-72 PubDip"),            // PubDip
+        ("frus1918Supp02", "1918", "1918 Supp.2"),                     // SuppN — was "1918 pt.2"
+        ("frus1919Russia", "1919", "1919 Russia"),                     // Russia
+        ("frus1943CairoTehran", "1943", "1943 CairoTehran"),           // CairoTehran
+        ("frus1944Quebec", "1944", "1944 Quebec"),                     // Quebec
+        ("frus1945Malta", "1945", "1945 Malta"),                       // Malta
+        ("frus1951-54Iran", "1951-54", "1951-54 Iran"),                // Iran
+        ("frus1951-54IranEd2", "1951-54", "1951-54 Iran ed.2"),        // IranEdN
+        ("frus1952-54Guat", "1952-54", "1952-54 Guat"),                // Guat
+        ("frus1969-76ve15p2Ed2", "1969-76", "1969-76 vE-15 pt.2 ed.2"), // veNpNEdN
+        ("frus1977-80v09Ed2", "1977-80", "1977-80 v9 ed.2"),           // vNEdN — was "1977-80 v9"
+    ]
+
+    /// A volume id's suffix shape: what follows `frus<subseries>`, with every digit run as `N`.
+    private static func suffixShape(volumeId: String, subseries: String) -> String {
+        let prefix = "frus" + subseries
+        let suffix = volumeId.hasPrefix(prefix) ? String(volumeId.dropFirst(prefix.count)) : "!" + volumeId
+        return suffix.replacingOccurrences(of: "[0-9]+", with: "N", options: .regularExpression)
+    }
+
+    /// Pins the tag GRAMMAR, which the corpus uniqueness test cannot: a tag can be unique and
+    /// still misread its volume (`frus1917Supp01v01` was "1917 v1 pt.1" — the `Supp01` read as a
+    /// Part). And it fails naming any suffix shape a new volume brings that nobody has pinned,
+    /// which is how a volume-id shape broke the analytics subseries derivation once (#208).
+    @Test("Every id-suffix shape in the bundled manifest reads as its pinned tag (#1388)")
+    @MainActor
+    func everySuffixShapeReadsAsItsPinnedTag() throws {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        let manifestIds = Set(entries.map(\.volumeId))
+        let pinnedShapes = Set(Self.pinnedTags.map { Self.suffixShape(volumeId: $0.volumeId, subseries: $0.subseries) })
+        #expect(pinnedShapes.count == Self.pinnedTags.count, "each pinned row must stand for a different shape")
+        for row in Self.pinnedTags {
+            #expect(manifestIds.contains(row.volumeId), "\(row.volumeId) is not a bundled volume")
+            #expect(label(row.volumeId, row.subseries, "") == row.tag, "\(row.volumeId)")
+        }
+        var unpinned: [String: [String]] = [:]
+        for entry in entries {
+            let shape = Self.suffixShape(volumeId: entry.volumeId, subseries: entry.subseries)
+            if !pinnedShapes.contains(shape) { unpinned[shape, default: []].append(entry.volumeId) }
+        }
+        for (shape, volumeIds) in unpinned.sorted(by: { $0.key < $1.key }) {
+            Issue.record("Id-suffix shape '\(shape)' has no pinned tag: \(volumeIds.joined(separator: ", "))")
+        }
     }
 }

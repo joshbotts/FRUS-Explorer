@@ -28,12 +28,14 @@ import SwiftUI
 /// - **iOS/iPadOS**: presented as a sheet from **Settings ▸ About**, off `AboutView`'s own
 ///   `showsResearchGuide` state. It used to hang off an `AppState` flag, which every open iPad
 ///   window's Settings tab was bound to at once (#752 / L-43).
-/// - **macOS**: a dedicated `Window` scene (`id: "frus.researchGuide"`)
-///   reachable from the Help menu
+/// - **macOS**: a value-based `WindowGroup(for: ResearchGuideWindowID.self)` (#363 #7 — the
+///   singleton `Window(id: "frus.researchGuide")` it replaced is gone), reachable from the Help menu
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-06: introduced alongside the standalone
 ///         `IndexingEducationView.PresentationContext`
+///   1.1 — 2026-09-23: #1352 review — the macOS entry point is the value-based window group,
+///         not the `Window(id:)` scene #363 #7 retired
 struct ResearchGuideView: View {
 
     @Environment(AppState.self) private var appState
@@ -120,20 +122,29 @@ struct NewProjectWindowID: Codable, Hashable {}
 /// pre-scrolled to a specific `EducationPage`.
 ///
 /// Several screens reference concepts the Research Guide explains in more
-/// depth — the Source Explorer's source-note breakdown and NARA Catalog
-/// Lookup both relate to "Understanding What You're Reading"
-/// (`EducationPage.page3`, id `"understanding-documents"`), and the App
-/// Feature Walkthrough page documents Source Explorer and NARA Lookup
-/// directly (`EducationPage.page5`, id `"app-features"`). Rather than
-/// duplicating "set the deep-link target, then present the guide" at each
-/// call site, this button centralizes it:
+/// depth — Source Explorer's source-note breakdown opens "Understanding What
+/// You're Reading" (`EducationPage.page3`, id `"understanding-documents"`),
+/// NARA Lookup opens "Using FRUS for Research" (`EducationPage.page4`, id
+/// `"research-practices"`, whose *Editorial Notes as a Finding Aid* is the
+/// guide's account of the lookup), and Archival Analytics opens the
+/// `"series-sourcing"` dashboard. Rather than duplicating "set the deep-link
+/// target, then present the guide" at each call site, this button centralizes it:
 ///  - sets `AppState.researchGuideInitialPageId` to `pageId`
-///  - **macOS**: opens the dedicated `Window` scene (`id: "frus.researchGuide"`)
+///  - **macOS**: opens the guide window with `openWindow(value: ResearchGuideWindowID())` —
+///    the value-based window group #363 #7 put in place of the old `Window(id:)` scene
 ///  - **iOS/iPadOS**: presents `ResearchGuideView` as a local sheet
+///
+/// An unknown `pageId` opens the guide at its first page without complaint, so
+/// pass a string LITERAL naming an `EducationPage.all` id:
+/// `ResearchGuideDeepLinkTests` reads every call's literal and fails on one that
+/// names no page, and on one it cannot read (#1352).
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-06: introduced for contextual deep-links from
 ///         Source Explorer, NARA Catalog Lookup, and document source notes
+///   1.1 — 2026-09-23: #1352 — the doc named `"app-features"`, retired in Session
+///         163, as the NARA Lookup target, and a `Window(id:)` scene #363 #7 replaced
+///         as the macOS window; the call sites, the body and this comment now agree
 struct ResearchGuideLinkButton: View {
 
     /// The `EducationPage.id` to open the guide to.
