@@ -467,4 +467,77 @@ struct CodingStandardsAuditTests {
             \(violations.sorted().joined(separator: ", "))
             """)
     }
+
+    // MARK: - Collection Document Counts
+
+    /// No Collections or Project surface counts a collection's entries as its documents.
+    ///
+    /// `Collection.documentEntries` holds every entry of every kind — headings, prose blocks,
+    /// excerpts, generated apparatus blocks and unknown kinds as well as documents — so its
+    /// `count` labelled a collection of six documents under two headings and one prose block
+    /// "9 documents" on the Collections tab, and printed the same wrong number at three sites in
+    /// the macOS manager (#1358). `Collection.documentCount` is the rule; this refuses the raw
+    /// count in both spellings, `documentEntries?.count` and `(… documentEntries ?? []).count`.
+    ///
+    /// Any `(` or `{` after `.count` is taken for a FILTERED count (`.count(where:)`,
+    /// `.count { … }`) and let through, which is coarser than it sounds in both directions. A raw
+    /// count heading an `if let` or `switch` body (`switch c.documentEntries?.count {`) passes; a
+    /// call that WRAPS the array and has its result counted
+    /// (`distinctDocumentKeys(in: c.documentEntries ?? []).count`) is refused. Neither shape occurs
+    /// in these two directories today. And a filtered count passes whatever it filters for:
+    /// Project Home's collections sheet (`ProjectCollectionsEditor.collectionInfo`, in
+    /// `ProjectContext/`) counts DISTINCT `.document` keys on purpose, to match what seeds the
+    /// project's leads, so it reads one less than `documentCount` for a document added twice.
+    ///
+    /// Scoped to the two directories #1358 names. Widened to the whole tree it would find four
+    /// more matches, none a size label: three raw counts that count entries on purpose (a debug
+    /// print in `Collection.duplicate`, and the entry-count tie-break in `DuplicateRecordCleanup`
+    /// that keeps the richer of two duplicate records) and the Research sidebar's wrapped call
+    /// above, its deliberate distinct-document rule. The scan does not skip comments, so a comment
+    /// in these directories must not spell the pattern either.
+    ///
+    /// Version history:
+    ///   1.0 — 2026-09-23: #1358
+    ///   1.1 — 2026-09-23: #1358 review — the doc states what the pattern actually lets through
+    ///         and refuses, and names Project Home's distinct count as a filtered count it passes
+    @Test("CodingStandardsAudit: Collections and ProjectContext count documents, not entries")
+    func collectionCountsReadDocumentCount() throws {
+        let raw = try NSRegularExpression(pattern: #"""
+            documentEntries\s*\?\s*\.count\b(?!\s*[({])|documentEntries\s*\?\?\s*\[\]\s*\)\s*\.count\b(?!\s*[({])
+            """#)
+        let fm = FileManager.default
+        var violations: [String] = []
+
+        for directory in ["Collections", "ProjectContext"] {
+            let root = Self.sourceRoot.appendingPathComponent(directory)
+            let paths = try fm.subpathsOfDirectory(atPath: root.path).filter { $0.hasSuffix(".swift") }
+            // A moved or renamed directory would make the scan vacuously green. Today the two
+            // hold 25 and 16 Swift files.
+            #expect(paths.count >= 10, """
+                Read only \(paths.count) Swift file(s) under FRUSExplorer/\(directory): the scan is \
+                broken, not the tree clean.
+                """)
+            for path in paths {
+                // The whole file, not line by line: `\s` spans newlines, so
+                // `(c.documentEntries ?? [])` with `.count` on the next line is still one match.
+                let content = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+                for match in raw.matches(in: content, range: NSRange(content.startIndex..., in: content)) {
+                    guard let range = Range(match.range, in: content) else {
+                        Issue.record("Unmappable match range in \(directory)/\(path)")
+                        continue
+                    }
+                    let line = content[..<range.lowerBound].reduce(into: 1) { total, character in
+                        if character == "\n" { total += 1 }
+                    }
+                    violations.append("\(directory)/\(path):\(line)")
+                }
+            }
+        }
+
+        #expect(violations.isEmpty, """
+            A collection's raw entry count shown as its size — it counts headings, prose, excerpts \
+            and generated blocks as documents; read Collection.documentCount: \
+            \(violations.sorted().joined(separator: ", "))
+            """)
+    }
 }
