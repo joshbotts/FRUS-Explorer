@@ -20274,3 +20274,129 @@ place against its recount at `550a8c5c5`:
 - **The trim test's comment claimed more than its assertion.** The fixture's first paragraph opens
   on a word, so the `before` assertion guards only the space that paragraph ends on; the comment
   now says that.
+
+## Session 2026-09-24 — Closing an iPad analysis, Source Explorer, graph or word-cloud window brings a main window forward instead of the Home Screen (#1368)
+
+**The question:** lane W of the open-issues plan, W1 as the owner widened it (§4 item 9). On iPad
+the analysis surfaces, Source Explorer, the cross-reference graph and the rail's word cloud open as
+`WindowGroup` scenes of their own and fill the screen. Their Done buttons were written for the
+sheets they used to be, so each called `dismiss()`, which at a window's root closes the scene. The
+app activated no scene anywhere (`noSceneActivationYet` pinned the absence), so after the only
+foreground scene closed iPadOS could show the Home Screen. The same `dismiss()` ends the hand-offs
+that give content to a main window and then close.
+
+**What was measured first, and what the plan had wrong.**
+- **The mode.** The plan and #1368 say the drop was seen in Full Screen Apps mode. The pinned iPad
+  Pro 13-inch (M5), iPadOS 26.5 (`9F3D84A4`), was in **Windowed Apps**, and so is a fresh iOS 27.0
+  simulator: it is the default. The windows still fill the screen there, which is presumably what
+  "full screen" described.
+- **The drop reproduces in one configuration, not everywhere.** With the new UI suite against `v2`
+  (the app built from a `git archive` of `origin/v2` plus the suite):
+  - **iOS 27.0, Windowed Apps** (`B394A140`, created for this lane): Archival Analytics' Done,
+    Semantic Analytics' Done and the citing-volume hand-off failed with the app in the background
+    (`XCUIApplicationState` 3), in all three runs, **7 tests, 3 failures** each time. Chronology,
+    Corpus, Person and Cross-Reference Analytics returned to the main window even on `v2`.
+  - **iPadOS 26.5, Windowed Apps** (`9F3D84A4`): the hand-off failed in the first run (**7 tests,
+    1 failure**) and nothing failed in the second (7 tests, 0 failures).
+  - **iOS 27.0, Full Screen Apps:** 7 tests, 1 failure, and not a Home Screen one. After
+    Cross-Reference Analytics' Done its window was still on screen (one run).
+  - **iOS 27.0, Stage Manager:** 7 tests, 0 failures.
+  The simulator could switch to Stage Manager (Settings ▸ Multitasking & Gestures), so it was run.
+- **Six exits were seven.** `WordCloudView` has three (Analyze, Search, View in Chronology),
+  `ChronologyView` two, and `SourceExplorerView` and `AnalyticsView` one each. The plan's six named
+  those seven lines and called them six.
+- **One of them was broken on `v2` in a way #1368 did not mention (by reading, not measured).** In
+  the Chronology window `\.sceneID` is nil. So Word Cloud for this range sent the cloud to
+  `frus.sceneID.unreached`, which no window consumes, and then closed the window.
+
+**What changed.**
+- **One close action, read through one property wrapper.** `AuxWindowOriginModifier` now publishes
+  an `AuxWindowClosing` payload (`\.auxWindowClosing`) from every iOS aux scene. The four
+  document-anchored scenes keep `.auxWindowOrigin`. The six analytics scenes take
+  `.auxWindowCloseOnly`, which drains the same launcher slot but does not republish the launcher's
+  `\.sceneID`, for the plan's reason: `ArchivalAnalyticsView` claims scope hand-offs addressed to
+  `sceneID ?? .anyWindow`. A view reads the payload through `@AuxWindowClose`, which also reads the
+  view's `\.dismiss` and `\.isPresented`. Absent, or when the view is presented (a sheet inside an
+  aux window), the action is the plain `dismiss()`. At a window's root it fronts, then dismisses.
+  That is how iPhone, the `MainTabView` word-cloud sheet and every macOS window stay exactly as
+  they were.
+- **Where it goes.** `AuxWindowDestination.resolve` tries, in order: the hand-off's own target, then
+  the launcher, then any open main window (on screen before off screen before unattached, then
+  newest registration, then token), then a new main window. "Open" means present in
+  `UIApplication.openSessions`, not in `liveSceneIDs`. `MainTabView` registers its `UISceneSession`
+  beside its token through a zero-size `SceneSessionReader`, and the entry is never removed.
+- **The one activation site.** `AppState.front(_:)` calls `activateSceneSession(for:)`. If that
+  session has gone, or iPadOS refuses it, the next step asks for a new main window.
+- **Adopters.** Nine Done buttons (Semantic, Source Explorer, graph, Cross-Reference, Corpus,
+  Chronology, Person, Archival, word cloud). The seven exits, plus Archival Analytics' collection
+  citing-volume path. Each exit takes `closeWindow.handOffTarget(from: sceneID)` and addresses its
+  hand-off there, then calls `closeWindow(frontingHandOffTo:)`, so the content and the window
+  brought forward are the same one. Where a sheet presents the view, the target is the view's own
+  `sceneID`, unchanged. `SourceExplorerWindowContent` addresses its related-document hand-off the
+  same way.
+- **Stale comments corrected:** `AppState`'s two "nothing brings a window forward" passages,
+  `FRUSExplorerApp`'s two `requestSceneSessionActivation` passages and its scene table, the
+  "iOS sheet only" Done comments, and `pendingAuxWindowOriginRaw`'s doc. That doc called
+  `openAuxWindow` the only iOS opener of the aux scenes; `DocumentView`'s Open in New Window calls
+  `openWindow(value:)` directly, and the doc now says so.
+
+**Decisions the plan did not settle.**
+- **The analytics windows' exits now address the window they front.** Before, they addressed
+  `.anyWindow` or, for the word cloud, no window at all. The plan kept the analytics windows off the
+  launcher's `\.sceneID` to avoid a routing change. This changes routing only for the exits that
+  close their own window, which is the only way "front the hand-off's target" means one window.
+- **`isPresented` gates the payload.** Without it, a Done in a sheet inside an aux window — the
+  Research Guide from Source Explorer's toolbar can present Archival Analytics — would front the
+  launcher while closing only the sheet. The runs above show `isPresented` is false at a window's
+  root: Archival's and Semantic's Done stopped dropping to the Home Screen on iOS 27.0, which needs
+  the close to front. That it reads true in a sheet inside an aux window is pinned only through the
+  pure action, not driven on screen.
+- **The Archival citing-volume path still sends the volume to `.anyWindow`**, because it runs inside
+  the collection sheet, whose injected scene is `.anyWindow`. With one main window that is the
+  window brought forward. With several, the first-wins consumer may be another one.
+- **The UI suite's hand-off case is Archival's citing volume, not Chronology ▸ Search in this
+  range.** That link needs indexed, dated documents in the range, and the UI-test fixture's
+  documents have datelines but no `<date>`, so Chronology shows none.
+
+**Verification.** Build-for-testing on `9F3D84A4`. Every A/B uses the same `-only-testing`.
+- **Unit, against the unfixed code:** the new types as stubs with wrong behaviour and no view wired
+  up. `WindowTargetingTests` ran **40 tests in 1 suite, failed with 37 issues**. 23 tests failed:
+  every destination-rule, registry, activation and close-action test, the one-activation-site pin
+  (0 sites found), and the four scans. The scans named all 9 Done buttons and all 8 exits, all 6
+  analytics scenes missing `.auxWindowCloseOnly`, and the modifier and `MainTabView` wiring. Four new
+  tests passed there, as they should: the sheet control, the document-anchored control, and the
+  scan helpers' own two tests. That control first failed because its anchor matched the file's
+  version history. The anchor now carries the opening brace.
+- **Unit, with the fix:** `WindowTargetingTests` + `SceneAddressingTests`, **58 tests in 2 suites
+  passed**. New ✔ include "Scene activation exists at exactly one site, in AppState", "A live
+  launcher is the window a Done brings forward", "With no main window left, the close asks for a new
+  one rather than the Home Screen", "A Done in a sheet inside an aux window closes only the sheet",
+  "Every aux window's Done goes through the close action, never a bare dismiss()" and "Every exit
+  that hands off and then closes fronts the hand-off's window first".
+- **The one UIKit read, by mutation.** `openSessionStates()` reads `UIApplication.openSessions`, which
+  no fixture can stand in for, so its test ("The host app's own window is reported open and on
+  screen") reads the unit-test host's own window. Built with the function returning `[:]`,
+  `WindowTargetingTests` ran **41 tests, 1 failed with 2 issues**, that one. Restored by re-editing.
+- **Unit, final tree:** `WindowTargetingTests`, `SceneAddressingTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **83 tests in 4 suites passed**.
+- **UI, with the fix, `AuxWindowCloseTests`:** **7 tests, 0 failures** in every configuration: iOS
+  27.0 Windowed Apps (three times, the last on the final tree), Full Screen Apps and Stage Manager,
+  and iPadOS 26.5 Windowed Apps.
+  The suite waits for the aux window's Done to be hittable, then after Done for the main window's
+  Analysis Tools button to be hittable. `exists` alone would not do: that button existed behind the
+  aux window in all seven cases of the first runs.
+- The full unit target (`-only-testing FRUSExplorerTests`) on `9F3D84A4`, final tree: **5,294 tests
+  in 646 suites, failed with 4 issues in 3 tests** (5,293 before the host-window test was added, with
+  the same three failures). All three are #1412's known iPad-host geometry cases:
+  `OnboardingDockMetricsTests`' welcome-dock case and two `SplashDriftTests` cases. No host crashed.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED** on the final tree. The first build failed, and it was the
+  only check that could. The six analytics scene declarations compile on macOS, where
+  `.auxWindowCloseOnly` does not exist, so the modifier is now inside `#if os(iOS)` there.
+
+**Not verified, and owed to a device.** Activation is asynchronous and the dismiss is immediate. No
+simulator run showed the Home Screen between them, but a device could flash it. Nothing here
+activated a session iPadOS had disconnected (`unattached`), and no run requested a new main window,
+because the suite never closes the launcher first. So no test reaches the two UIKit branches inside
+`front(_:)`: a session gone by the time it runs, and iPadOS's error handler. The runner they feed
+is tested with a fake. Also unmeasured: Stage Manager with the launcher
+visible beside the aux window. The owner's §4 item 15 device check covers these.

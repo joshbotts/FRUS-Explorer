@@ -97,6 +97,9 @@ import SwiftData
 ///          measured at AX5 on iPhone 17, the Local Only banner covered the pre-search Search tips
 ///          link (y 707–770) from y = 551, and the prompt's scroll view had nothing to scroll.
 ///          `SearchView` reads the value to give its pre-search content room to scroll clear.
+///   1.17 — #1368: each window registers its `UISceneSession` beside its scene token
+///          (`SceneSessionReader`), so closing an aux window can bring this one forward rather
+///          than leaving the reader on the Home Screen.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -330,6 +333,12 @@ struct MainTabView: View {
         // If a stale token is ever observed on-device (an aux-window open black-holing after its
         // launcher closed), add a UIWindowScene `willDisconnect` belt-and-braces here. (#338 review.)
         .onDisappear { appState.unregisterScene(SceneID(sceneIDToken)) }
+        // #1368: register this window's UIKit session beside its token, so an aux window launched
+        // from here can ask iPadOS to bring THIS window forward when it closes. Never unregistered:
+        // the session, not this view's `onDisappear`, decides whether the window is still there.
+        .background {
+            SceneSessionReader { appState.registerSceneSession($0, for: SceneID(sceneIDToken)) }
+        }
         // Word Cloud hand-off (#338 step 2): present the sheet only when the hand-off is addressed to
         // THIS window's scene, so a word cloud opened in one iPad window no longer fans out to every
         // open window. `Handoff` is `Identifiable`; the guarded binding yields it only for a matching
@@ -644,6 +653,51 @@ extension EnvironmentValues {
     /// room, as `SearchView`'s pre-search screen does. Published only by the Search tab; `0` everywhere else and while
     /// the banner renders nothing.
     @Entry var tabShellBottomOverlay: CGFloat = 0
+}
+
+// MARK: - Scene session reader (#1368)
+
+/// Reports the `persistentIdentifier` of the `UISceneSession` its window belongs to (#1368).
+///
+/// A SwiftUI view cannot see its own scene session, and an aux window's Done needs one to ask
+/// iPadOS to bring the launching main window forward — `activateSceneSession` takes a session, not
+/// the app's own `SceneID` token. So `MainTabView` hosts this zero-size UIKit view in its
+/// background, and the view reads `window?.windowScene?.session` once UIKit has placed it in a
+/// window.
+///
+/// It reports from `didMoveToWindow`, never from `makeUIView`: a representable that writes state
+/// while SwiftUI is building it is the trap that once blanked the semantic map. The one write it
+/// causes lands in `AppState.mainWindowSessions`, which is `@ObservationIgnored` and read by no
+/// view, so making it inside UIKit's window-attach pass invalidates nothing.
+struct SceneSessionReader: UIViewRepresentable {
+    /// Called with the session's `persistentIdentifier` each time the view joins a window.
+    let onSession: @MainActor (String) -> Void
+
+    /// Builds the reporting view. It draws nothing and takes no touches.
+    func makeUIView(context: Context) -> ReportingView {
+        let view = ReportingView()
+        view.isUserInteractionEnabled = false
+        view.onSession = onSession
+        return view
+    }
+
+    /// Keeps the callback current; the report itself comes from the view's window changes.
+    func updateUIView(_ uiView: ReportingView, context: Context) {
+        uiView.onSession = onSession
+    }
+
+    /// The UIKit view whose window is read.
+    final class ReportingView: UIView {
+        /// Where the session identifier is sent.
+        var onSession: (@MainActor (String) -> Void)?
+
+        /// Reports the session of the window the view has just joined, if it has joined one.
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            guard let sessionID = window?.windowScene?.session.persistentIdentifier else { return }
+            onSession?(sessionID)
+        }
+    }
 }
 
 #endif

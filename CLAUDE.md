@@ -183,6 +183,27 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
 ```
 
+**`AuxWindowCloseTests` (#1368) is iPad-only, and it guards only on iOS 27.0 in Windowed Apps
+mode.** It opens each Analysis Tools window, taps Done, and requires the app to still be in the
+foreground with the main window's Browse screen hittable; one case closes Archival Analytics through a
+collection's citing-volume hand-off. It self-skips on an iPhone, where these surfaces are sheets. On
+`v2` the Home Screen drop reproduced in exactly one configuration: an iPad Pro 13-inch (M5) on
+**iOS 27.0 in Windowed Apps** — the default of a fresh iPadOS 26/27 simulator, set in Settings ▸
+Multitasking & Gestures — where Archival Analytics' Done, Semantic Analytics' Done and the hand-off
+failed in all three runs. On iPadOS 26.5 in the same mode the hand-off failed in one run of two, and
+on iOS 27.0 in Full Screen Apps or Stage Manager nothing dropped to the Home Screen. Elsewhere the
+suite is a control. The mode is a simulator setting that persists per install and no launch argument
+sets it, so check it before reading a green run as a guard.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/AuxWindowCloseTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime

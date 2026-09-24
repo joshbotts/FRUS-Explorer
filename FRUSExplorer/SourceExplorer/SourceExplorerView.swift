@@ -70,6 +70,10 @@ import SwiftUI
 ///          availability joins the load key. Mirrors MacSourceExplorerView 1.7.
 ///   1.8 — #1391: an Archival Neighbors row draws `DocumentHeaderDisplay.numberedRow`, so a head
 ///          that prints its own number is not shown twice. Mirrors MacSourceExplorerView 1.8.
+///   1.9 — #1368: Done and the Archival Neighbors row close through `AuxWindowClose`, so on iPad,
+///          where this view is a window's root, closing brings a main window forward instead of
+///          leaving the reader on the Home Screen. No macOS twin change: no macOS window publishes
+///          the close payload, so there the action is the plain dismissal it replaced.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -143,7 +147,13 @@ struct SourceExplorerView: View {
     /// each paired with the authority record it resolves to when it resolves to one.
     @State private var unprintedPointers: [UnprintedPointer] = []
 
-    @Environment(\.dismiss) private var dismiss
+    /// Done's close, and the related-document row's: the presenting sheet's dismissal, or — at the
+    /// root of the iPad Source Explorer window — the window's close, which brings a main window
+    /// forward first (#1368).
+    @AuxWindowClose private var closeWindow
+    /// The scene the related-document row's hand-off is addressed from (the launcher's, borrowed,
+    /// in the iPad window) — what ``closeWindow`` fronts as the row closes.
+    @Environment(\.sceneID) private var sceneID
     @Environment(\.openURL) private var openURL
     @Environment(AppState.self) private var appState
 
@@ -201,7 +211,7 @@ struct SourceExplorerView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "source.explorer.done",
                                   defaultValue: "Done")) {
-                        dismiss()
+                        closeWindow()
                     }
                 }
                 // Contextual deep link into the Research Guide's "Understanding
@@ -2380,7 +2390,9 @@ struct SourceExplorerView: View {
                     // are only unique within a single volume.
                     ForEach(relatedDocs, id: \.compositeKey) { doc in
                         Button {
-                            dismiss()
+                            // Close first, as before. In the iPad window that fronts the main
+                            // window the host then addresses the document to (#1368).
+                            closeWindow(frontingHandOffTo: closeWindow.handOffTarget(from: sceneID))
                             onRelatedDocumentTapped?(doc.volumeId, doc.documentId)
                         } label: {
                             relatedDocumentRow(doc)
