@@ -18459,3 +18459,82 @@ carry no size label, and no capture shows the iOS Collections list.
 
 Restored, with `CollectionTests`, `CodingStandardsAuditTests` and `GlobalContextTests` on the same
 simulator: 160 tests in 3 suites pass. The macOS scheme builds.
+
+## Session 2026-09-23 — Learn About NARA Lookup opens the page that describes the lookup, and a dead guide link fails a test
+
+**The question:** lane S's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1352. Both **Learn About NARA Lookup** links in `NARACatalogLookupView` (the macOS title row and
+the iOS sheet's toolbar) named `"app-features"`, a page id retired in Session 163 (`d4e9e96a`,
+2026-06-16). `IndexingEducationView` falls back to page 0 on an unknown id, so for three months
+the link opened *The Official Record of American Foreign Policy*.
+
+**The plan's target was wrong, and reading the page is what showed it.** The issue and the plan
+both proposed `"finding-documents"`, the page that replaced `"app-features"`, with the condition
+"after checking that page's sections carry the NARA Lookup guidance". They do not: since the
+build-43 content revision (guide v1.20) pages 5–7 are contracts that leave the controls to the
+User Manual, and page 5's five sections never mention NARA, the National Archives or the lookup
+(the word "archival" appears three times, naming a results facet and a similarity signal). Across all
+eleven pages the only text naming the tool is page 4's *Editorial Notes as a Finding Aid* ("the
+free-text NARA Lookup tool to find the relevant finding aids"), on `"research-practices"` (*Using
+FRUS for Research*), which also carries *Think of FRUS as a Map of the Archives*. Both links now
+open that page. Page 3, `"understanding-documents"`, was the runner-up — its *Reading a Source
+Note* explains the record group, series and file a lookup query is made of — but it never names
+the lookup and is already the Source Explorer button's target.
+
+**The guard reads the source, and it checks two things.** `ResearchGuideDeepLinkTests` (a second
+type in `EducationDashboardTests.swift`, so no new file) walks every `ResearchGuideLinkButton(…)`
+and `IndexingEducationView(…)` call under `FRUSExplorer/` by balanced parentheses, extracts the
+`pageId:`/`initialPageId:` literal, and resolves it through `EducationPage.index(ofDeepLink:)` —
+a new one-line function the view's `init` now calls, so the test and the guide use one lookup. A
+button whose `pageId:` is not a string literal, or that passes none (review round, below), fails
+too, because nothing could check it. The scan asserts it read more than 400 files (479 today) and found at least five links (five today).
+A second test requires the NARA Lookup links' page to mention "NARA Lookup" in its sections,
+because resolving is not enough — `"finding-documents"` resolves.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`).** On the unfixed literals: 7 tests in 2 suites, 3
+issues — `everyNamedGuidePageExists` naming `NARACatalogLookupView.swift:116 → "app-features";
+NARACatalogLookupView.swift:220 → "app-features"`, and the content test failing at both sites.
+With the plan's `"finding-documents"` (a deliberate intermediate, re-edited away): the resolve test
+passes and the content test fails at both sites, "opens a page whose sections never mention NARA
+Lookup". With `"research-practices"`: both pass; run beside the guide's neighbouring suites
+(`EducationDashboardTests`, `EditableContentKeyTests`, `EmbeddedMarkdownLinkTests`,
+`ResearchGuideCoverageTests`), 18 tests in 5 suites with one issue —
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the "subjects facet" failure the previous
+entry records as red on `v2` since #1353 (neither of its two terms occurs in `origin/v2`'s
+`Docs/EditableContent.md`). The macOS scheme builds.
+
+**Also:** `ResearchGuideLinkButton`'s doc comment named `"app-features"` as the NARA Lookup target
+and now names the three real ones; `Docs/EditableContent.md`'s eleven advisory `lines:` ranges for
+the guide pages moved by the sixteen lines the new function and its history added, and its eight
+`NARACatalogLookupView.swift` ranges by the nine lines that file's history and link comment added
+(the first commit moved only the eleven; the review caught it). No `defaultValue` changed, no
+manual sentence names the target page, and nothing here touches the index.
+
+**Review round.** Five changes, each from a confirmed finding or a cheap nit.
+- *The eight NARA Lookup `lines:` ranges* were exact on `v2` and nine off after the first commit;
+  they now read 374–375, 392–393, 570–571 … 585–586, each checked against its key's line.
+- *The macOS entry point was still described as a `Window(id: "frus.researchGuide")` scene*, in the
+  doc block this PR rewrote, in `ResearchGuideView`'s own entry-points list and on
+  `AppState.researchGuideInitialPageId`. #363 #7 replaced it with the value-based
+  `WindowGroup(for: ResearchGuideWindowID.self)`. The button's doc and `AppState` now name
+  `openWindow(value: ResearchGuideWindowID())`, and the entry-points list names the
+  `WindowGroup` itself.
+- *The lookup's `nil` had no pin, and the resolve test uses the lookup as its oracle.* Moving the
+  view's `?? 0` into `index(ofDeepLink:)` compiles, leaves the view unchanged and turns every dead
+  literal green; only the two NARA sites would stay guarded, by the content test.
+  `lookupAnswersNilForAnUnknownId` pins `nil` for `"app-features"` and `""` and each live id's own
+  position, and `dashboardsResolveViaDeepLink` calls the same function (it had its own
+  `firstIndex`) and checks the page it lands on.
+- *Two scanner branches had never run*: the app tree has no `IndexingEducationView(…)` naming a
+  literal, and a button call with no `pageId:` label was silently skipped. The per-file walk is now
+  `sites(in:file:)`, `scannerReadsEachShapeOfCall` drives every branch over an eleven-line fixture,
+  and a label-less button is reported as a site the scan cannot read rather than skipped.
+- *Wording:* page 5's MARK still said "App Feature Walkthrough"; the test type's doc dated the dead
+  literal "from Session 163", when it went in live at `4429e786` (2026-06-07) and died there.
+
+A/B on the same simulator: with `?? 0` moved into the lookup and the old skip restored, 9 tests in
+2 suites with 4 issues — the `nil` test at `"app-features"` and `""`, and the fixture reading lines
+`[1, 2, 6, 9]` against `[1, 2, 6, 7, 9]` (line 7 is the label-less button). The resolve test
+stayed green under that mutant, which is the gap the review named. Restored, beside the same
+neighbouring suites: 20 tests in 5 suites with one issue, the `mirrorMatchesTheGuide` "subjects
+facet" failure recorded above. The macOS scheme builds.

@@ -408,7 +408,7 @@ FRUS Explorer provides a variety of research tools for using the series, which i
 
 ### 3.1 Page 1 — The Official Record of American Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 671–717 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 687–733 -->
 
 **Title:** The Official Record of American Foreign Policy
 
@@ -453,7 +453,7 @@ FRUS volumes produced today cover U.S. bilateral and regional relations across t
 
 ### 3.2 Page 2 — 165 Years of Documenting U.S. Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 723–777 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 739–793 -->
 
 **Title:** 165 Years of Documenting U.S. Foreign Policy
 
@@ -505,7 +505,7 @@ To dive deeper into the history of the series, see the Office of the Historian�
 
 ### 3.3 Page 3 — Understanding What You're Reading
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 783–832 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 799–848 -->
 
 **Title:** Understanding What You’re Reading
 
@@ -563,7 +563,7 @@ FRUS publishes thousands of documents for every administration’s foreign polic
 
 ### 3.4 Page 4 — Using FRUS for Research
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 838–892 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 854–908 -->
 
 **Title:** Using FRUS for Research
 
@@ -613,7 +613,7 @@ FRUS tells the U.S. side of the history of foreign relations. The counterpart ca
 
 ### 3.5 Page 5 — Finding What You Need in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 900–942 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 916–958 -->
 
 **Title:** Finding What You Need in FRUS Explorer
 
@@ -655,7 +655,7 @@ To delve into the details about search screens, filters, and syntax, visit the U
 
 ### 3.6 Page 6 — Seeing the Bigger Picture in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 946–995 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 962–1011 -->
 
 **Title:** Seeing the Bigger Picture in FRUS Explorer
 
@@ -703,7 +703,7 @@ FRUS is a selective, evolving proxy for the archival record. To learn more about
 
 ### 3.7 Page 7 — Working With Documents in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 999–1048 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 1015–1064 -->
 
 **Title:** Working With Documents in FRUS Explorer
 
@@ -751,7 +751,7 @@ To learn more about what FRUS Explorer lets you do with documents, see the User 
 
 ### 3.8 Page 8 — Production & Timeliness *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1060–1069 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1076–1085 | note: dashboard page, sections: [] -->
 
 This page renders the live **Production & Timeliness** dashboard (`EducationDashboard.seriesProduction`) instead of prose, so it has no editable page-level sections. Its page **title** (“Production & Timeliness”) and **subtitle** (“How long the official record takes to reach print”) are localized in code at the lines above (`education.series.production.page.title` / `.subtitle`).
 
@@ -769,7 +769,7 @@ The dashboard’s own on-screen copy — the intro paragraph, per-chart captions
 
 ### 3.9 Page 9 — Geographic Emphasis *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1081–1090 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1097–1106 | note: dashboard page, sections: [] -->
 
 This page renders the live **Geographic Emphasis** dashboard (`EducationDashboard.seriesGeography`) instead of prose, so it has no editable page-level sections. Its page **title** (“Geographic Emphasis”) and **subtitle** (“Which regions and countries the series covers most”) are localized in code at the lines above (`education.series.geography.page.title` / `.subtitle`).
 
@@ -787,7 +787,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Se
 
 ### 3.10 Page 10 — Archival Sourcing *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1102–1111 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1118–1127 | note: dashboard page, sections: [] -->
 
 This page renders the live **Archival Sourcing** dashboard (`EducationDashboard.seriesSourcing`) instead of prose, so it has no editable page-level sections. Its page **title** (“Archival Sourcing”) and **subtitle** (“Where the series drew its documents from, over time”) are localized in code at the lines above (`education.series.sourcing.page.title` / `.subtitle`).
 
@@ -805,7 +805,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/So
 
 ### 3.11 Page 11 — Administration Profiles *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1123–1132 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1139–1148 | note: dashboard page, sections: [] -->
 
 This page renders the live **Administration Profiles** dashboard (`EducationDashboard.administrationProfiles`) instead of prose, so it has no editable page-level sections. Its page **title** (“Administration Profiles”) and **subtitle** (“How the series’ coverage is distributed across presidencies”) are localized in code at the lines above (`education.series.administrations.page.title` / `.subtitle`).
 
@@ -9083,56 +9083,56 @@ NARA Catalog API rate limit reached. Try again later, or use the manual search l
 <!-- END SOURCE: nara.error.rateLimited -->
 
 #### A NARA Catalog API key is required for this strategy. Add…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 365–366 | key: nara.lookup.noKey.warning -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 374–375 | key: nara.lookup.noKey.warning -->
 
 A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The “Central files identifier” strategy does not require a key.
 
 <!-- END SOURCE: nara.lookup.noKey.warning -->
 
 #### Select the filing period that matches the document date.…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 383–384 | key: nara.lookup.periodLinks.intro -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 392–393 | key: nara.lookup.periodLinks.intro -->
 
 Select the filing period that matches the document date. Each link goes directly to the NARA research page for that period — no API key required.
 
 <!-- END SOURCE: nara.lookup.periodLinks.intro -->
 
 #### Use for D-designator lot numbers (e.g. “63D135” or “68 D…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 561–562 | key: nara.lookup.strategy.lotFileRG59.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.lotFileRG59.hint -->
 
 Use for D-designator lot numbers (e.g. “63D135” or “68 D 277”). Queries State Dept. lot file series in RG 59.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG59.hint -->
 
 #### Use for F-designator lot numbers (e.g. “55F44” or “56 F…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 564–565 | key: nara.lookup.strategy.lotFileRG84.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.lotFileRG84.hint -->
 
 Use for F-designator lot numbers (e.g. “55F44” or “56 F 28”). Queries diplomatic post record lots in RG 84.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG84.hint -->
 
 #### Use for series names, collection descriptions, or partial…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 567–568 | key: nara.lookup.strategy.keywordRG59.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keywordRG59.hint -->
 
 Use for series names, collection descriptions, or partial citation text. Restricts results to RG 59 (State Dept.).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG59.hint -->
 
 #### Use for series names or collection descriptions. Restricts…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.keywordRG84.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 579–580 | key: nara.lookup.strategy.keywordRG84.hint -->
 
 Use for series names or collection descriptions. Restricts results to RG 84 (State Dept. post records).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG84.hint -->
 
 #### Use for decimal file identifiers (e.g. “862S.01/10-1646”)…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.centralURL.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 582–583 | key: nara.lookup.strategy.centralURL.hint -->
 
 Use for decimal file identifiers (e.g. “862S.01/10-1646”) or central file keywords. Opens a pre-filtered NARA Catalog search — no API key required.
 
 <!-- END SOURCE: nara.lookup.strategy.centralURL.hint -->
 
 #### General free-text search across all record groups in the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keyword.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 585–586 | key: nara.lookup.strategy.keyword.hint -->
 
 General free-text search across all record groups in the NARA Catalog. Useful when the collection type is unclear.
 

@@ -185,9 +185,9 @@ struct IndexingEducationView: View {
         presentationContext: PresentationContext = .onboarding,
         onComplete: @escaping () -> Void = {}
     ) {
-        let startIndex = initialPageId.flatMap { id in
-            EducationPage.all.firstIndex { $0.id == id }
-        } ?? 0
+        // The fallback to the first page is deliberate for a plain "open the guide"; a NAMED page
+        // that resolves to nothing is a dead link, which `ResearchGuideDeepLinkTests` refuses.
+        let startIndex = initialPageId.flatMap(EducationPage.index(ofDeepLink:)) ?? 0
         _pageIndex = State(initialValue: startIndex)
         self.presentationContext = presentationContext
         self.onComplete = onComplete
@@ -598,6 +598,8 @@ enum EducationCategory: String {
 ///   1.7 — Session 2026-08-23: the Cross-Reference Graph section names the teal archival
 ///         layer (#837/#834) — the guide described the graph as documents-only after the
 ///         canvas had stopped being that
+///   1.8 — 2026-09-23: #1352 — `index(ofDeepLink:)`, the one lookup both the guide's
+///         opening page and `ResearchGuideDeepLinkTests` resolve a named page through
 struct EducationPage: Identifiable {
     let id: String
     let title: String
@@ -638,6 +640,20 @@ struct EducationPage: Identifiable {
         page1, page2, page3, page4, page5, page6, page7,
         seriesProduction, seriesGeography, seriesSourcing, seriesAdministrations,
     ]
+
+    /// The position in ``all`` of the page a contextual deep link names, or `nil` when no page
+    /// carries that id.
+    ///
+    /// `IndexingEducationView.init(initialPageId:…)` opens at this index and falls back to the
+    /// first page on `nil` — right for a plain "open the guide", silent for a link whose page was
+    /// renamed. #1352 was the second case: NARA Lookup's **Learn About NARA Lookup** named
+    /// `"app-features"` for three months after that page became `"finding-documents"`, and opened
+    /// the guide at *The Official Record of American Foreign Policy*. So the lookup is one function
+    /// the view and `ResearchGuideDeepLinkTests` both call; the test fails on a named id this returns
+    /// `nil` for, and pins that `nil` itself, since a fallback moved in here would resolve every id.
+    static func index(ofDeepLink id: String) -> Int? {
+        all.firstIndex { $0.id == id }
+    }
 }
 
 struct EducationSection: Identifiable {
@@ -892,7 +908,7 @@ private extension EducationPage {
     )
 }
 
-// MARK: - Page 5: App Feature Walkthrough
+// MARK: - Page 5: Finding What You Need in FRUS Explorer
 
 private extension EducationPage {
     // MARK: Page 5 — Finding documents
