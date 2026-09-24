@@ -49,8 +49,13 @@ import Foundation
 /// Lazily, off the main actor, like ``BundledCloudVectors`` and for the same reason: nothing on the
 /// launch path needs it, and it is large enough that decoding it there would be felt.
 ///
+/// A fourth, added by #1373: **language analysis unavailable** — the scope side was counted
+/// without the lemmatiser (or, for a part-of-speech lens, the lexical classes) the reference was
+/// counted with, so the two sides are different vocabularies however the settings match.
+///
 /// Version history:
 ///   1.0 — S-1: initial implementation
+///   1.1 — #1373: `baseline` takes the tagger verdict the scope was counted under
 @MainActor
 enum BundledKeynessBaseline {
 
@@ -115,6 +120,10 @@ enum BundledKeynessBaseline {
             case lensNotPriced(WordCloudLens)
             /// The live tokenisation is not comparable to the artifact's.
             case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
+            /// The scope side was counted without a tagger the reference was counted with (#1373):
+            /// no lemmatiser, or no lexical classes for a part-of-speech lens. Unlike a
+            /// configuration mismatch there is no setting to restore.
+            case languageAnalysisUnavailable
         }
     }
 
@@ -128,10 +137,21 @@ enum BundledKeynessBaseline {
     ///   - tuning: The tuning the scope side is being counted under.
     ///   - includeDiplomatic: Whether the scope side has the diplomatic stopword layer active
     ///     (the `excludeBoilerplate` setting).
+    ///   - languageAnalysis: What the tagger could do when the scope side was counted (#1373) —
+    ///     `WordCloudResult.languageAnalysis` for a stored cloud, `NaturalLanguageReadiness`'s
+    ///     verdict for a count made now. Required, with no default: a default of "working" is
+    ///     exactly the unchecked assumption this parameter exists to remove.
     static func baseline(for lens: WordCloudLens,
                          tuning: WordCloudTuning,
-                         includeDiplomatic: Bool) -> Availability {
+                         includeDiplomatic: Bool,
+                         languageAnalysis: NaturalLanguageHealth) -> Availability {
         guard let file else { return .unavailable(.noArtifact) }
+        // Before the settings check: a mismatch's message tells the reader to restore a setting,
+        // and here no setting would help. Entity lenses fall through to `lensNotPriced`, which is
+        // the structural answer for them whatever the tagger does.
+        if !lens.isEntity, !languageAnalysis.countsAsDesigned(for: lens) {
+            return .unavailable(.languageAnalysisUnavailable)
+        }
         let digests = bundledPayloadDigests()
         let mismatches = file.configuration.mismatches(
             against: tuning, includeDiplomatic: includeDiplomatic,

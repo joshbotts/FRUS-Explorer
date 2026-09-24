@@ -2336,15 +2336,21 @@ struct MacSearchWindowView: View {
         defer { isLoadingCollocation = false }
 
         await BundledKeynessBaseline.prepare()
+        // The neighbours are counted in THIS process, so its tagger verdict is the one that says
+        // whether they are lemmas (#1373). Awaited: the first use in a process runs the warm-up, which can wait on its assets.
+        let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         // ONE resolution of the live settings, shared by the tokenizer and the reference lookup.
         let configuration = CollocationConfiguration.live()
         let availability = BundledKeynessBaseline.baseline(
             for: .allTerms, tuning: configuration.tuning,
-            includeDiplomatic: configuration.includeDiplomatic)
+            includeDiplomatic: configuration.includeDiplomatic,
+            languageAnalysis: languageAnalysis)
         let reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int)
         switch availability {
         case .unavailable(.noArtifact), .unavailable(.lensNotPriced):
             collocation = .unavailable(.noArtifact); return
+        case .unavailable(.languageAnalysisUnavailable):
+            collocation = .unavailable(.languageAnalysisUnavailable); return
         case .unavailable(.configurationMismatch(let mismatches)):
             collocation = .unavailable(.configurationMismatch(mismatches)); return
         case .available(let terms, let total, let cutoff):

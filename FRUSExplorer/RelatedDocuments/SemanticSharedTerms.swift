@@ -54,6 +54,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-3 follow-up: initial implementation
+///   1.1 — #1373: no chip when this process's tagger cannot lemmatise
 enum SemanticSharedTerms {
 
     /// How many terms a chip shows. Three is what fits beside the other axes' chips on an iPhone.
@@ -90,8 +91,15 @@ enum SemanticSharedTerms {
         // The corpus reference. Unavailable means unpriced, not "every term is rare" — ranking
         // without it would put the anchor's most ordinary words first.
         let tuning = WordCloudTuning.standard
+        // The terms below are counted in this process, so its tagger verdict decides whether they
+        // are the lemmas the reference prices (#1373). Printed forms ranked against lemma counts
+        // would skip every inflected word as unpriced and name only the uninflected ones — so no
+        // chip rather than a skewed one. Awaited, so the main actor is not blocked while the warm-up
+        // this may be the first to start waits on its assets.
+        let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         guard case .available(let corpusCounts, _, _) = BundledKeynessBaseline.baseline(
-            for: lens, tuning: tuning, includeDiplomatic: true)
+            for: lens, tuning: tuning, includeDiplomatic: true,
+            languageAnalysis: languageAnalysis)
         else { return [:] }
 
         let keys = ([anchor] + candidates).map {

@@ -125,6 +125,8 @@ import CoreText
 ///          a footnote marker — all with the highlight tracker parked (`unpainted`), since none
 ///          of it is flat text. `bodyAttributedString(for:highlights:includeFootnotes:)` is the
 ///          body step `drawDocumentSection` calls, internal so a test can read the shading.
+///   1.21 — #1373: awaits `WordCloudExporter.collectionCloudImage`, which now waits for the
+///          language tagger's warm-up off the main thread
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -167,11 +169,12 @@ final class PDFCollectionExporter: CollectionExporter {
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let wordCloud: CGImage? = options.includeWordCloud
-            ? WordCloudExporter.collectionCloudImage(
+        var wordCloud: CGImage?
+        if options.includeWordCloud {
+            wordCloud = await WordCloudExporter.collectionCloudImage(
                 texts: items.documents.map(\.bodyText), title: metadata.name
-              )?.cgImage
-            : nil
+            )?.cgImage
+        }
         let data = try buildPDF(collection: metadata, items: items,
                                 options: options, wordCloud: wordCloud)
         let filename = sanitized(metadata.name) + ".pdf"

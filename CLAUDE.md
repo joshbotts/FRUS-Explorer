@@ -183,6 +183,33 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
 ```
 
+**`WordCloudLensTests` (#1373) is a guard only on an iOS 27.0 simulator.** On iOS 27.0 an
+`NLTagger` scheme whose first use in a process fails stays failed for that process; the app's
+`NaturalLanguageReadiness` warm-up (WordCloudKit) prevents it, and these tests assert that a
+part-of-speech or entity lens keeps something whenever the warm-up's request for the scheme it
+reads (lexical classes, names) answered `available`. On the pre-fix tree they failed on the iPad Pro
+13-inch (M5) and the iPhone 17e, both iOS 27.0, and on iOS 27.0 those two requests answered in every
+launch measured. The warm-up runs on first use, **not at launch**: started from
+`FRUSExplorerApp.init()` it lost the lemmatiser in 7 of 14 iPhone 17e launches, against 1 of 14 on
+first use, and `NaturalLanguageReadinessScanTests.warmUpIsNotStartedAtLaunch` keeps it out of the
+launch path. A launch that loses it is the canary's to report, so a passing run does not mean every
+launch lemmatised: read the printed line. Each
+run's `NaturalLanguageReadinessWarmUpTests` prints the warm-up it saw (`[#1373] …`), which is how
+those launches were counted. On an **iPhone 17 running iOS 26.3** no request answers and nothing tags
+at all (the first tagging in each process waits out the 30 s budget), so the same tests fall back to
+checking that the canary agrees with the tokenizer: a control there, not a guard. Under `swift test`
+on the macOS host (`WordCloudKitTests`) tagging works with or without the warm-up, so those runtime
+cases are controls too.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5),OS=27.0" \
+  -only-testing FRUSExplorerTests/WordCloudLensTests \
+  -only-testing FRUSExplorerTests/NaturalLanguageReadinessWarmUpTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime

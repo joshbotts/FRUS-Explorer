@@ -198,6 +198,7 @@ struct CollocationResult: Equatable {
 ///
 /// Version history:
 ///   1.0 — S-2: initial implementation
+///   1.1 — #1373: `Unavailable.languageAnalysisUnavailable`
 enum CollocationAnalysis {
 
     /// Why a collocation could not be produced.
@@ -215,6 +216,9 @@ enum CollocationAnalysis {
         case noArtifact
         /// The live tokenisation is not comparable to the reference's.
         case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
+        /// This process's tagger cannot lemmatise, so the neighbours would be counted as printed
+        /// against a reference counted in lemmas (#1373). No setting fixes it.
+        case languageAnalysisUnavailable
         /// The query matched nothing whose neighbourhood could be collected.
         case noMatches
         /// Neighbours were collected, but none occurs often enough to be ranked.

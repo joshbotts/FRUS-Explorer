@@ -62,9 +62,12 @@ struct BundledKeynessBaselineTests {
     /// Asks under the artifact's own configuration, so only the thing under test can fail.
     private func ask(_ lens: WordCloudLens,
                      tuning: WordCloudTuning = .standard,
-                     includeDiplomatic: Bool = true) -> BundledKeynessBaseline.Availability {
+                     includeDiplomatic: Bool = true,
+                     languageAnalysis: NaturalLanguageHealth = .fullyWorking)
+    -> BundledKeynessBaseline.Availability {
         BundledKeynessBaseline.baseline(for: lens, tuning: tuning,
-                                        includeDiplomatic: includeDiplomatic)
+                                        includeDiplomatic: includeDiplomatic,
+                                        languageAnalysis: languageAnalysis)
     }
 
     // MARK: - Absence
@@ -185,6 +188,67 @@ struct BundledKeynessBaselineTests {
         // `.people` is unpriceable AND the configuration is wrong. The user can fix one of those.
         #expect(ask(.people, includeDiplomatic: false)
                 == .unavailable(.configurationMismatch([.diplomaticLayer])))
+    }
+
+    // MARK: - #1373: the tagger the scope was counted with
+
+    @Test("A scope counted without the lemmatiser has no comparable reference, on every word lens")
+    func noLemmatiserWithholdsEveryWordLens() {
+        inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40]),
+                                 .topics: (1000, 100, ["treaty": 40]),
+                                 .concepts: (1000, 100, ["sovereignty": 40])]))
+        defer { inject(nil) }
+        let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
+                                                 recognizesNames: true)
+        for lens in [WordCloudLens.allTerms, .topics, .concepts] {
+            // The control first: the same lens with a working tagger is priced.
+            #expect(ask(lens) != .unavailable(.languageAnalysisUnavailable))
+            #expect(ask(lens, languageAnalysis: unlemmatised)
+                    == .unavailable(.languageAnalysisUnavailable),
+                    "\(lens.rawValue): printed forms scored against lemma counts")
+        }
+    }
+
+    @Test("A part-of-speech lens counted without lexical classes has no comparable reference")
+    func noLexicalClassesWithholdsPartOfSpeechLenses() {
+        inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40]),
+                                 .topics: (1000, 100, ["treaty": 40])]))
+        defer { inject(nil) }
+        let unclassified = NaturalLanguageHealth(lemmatizes: true, classifiesWords: false,
+                                                 recognizesNames: true)
+        #expect(ask(.topics, languageAnalysis: unclassified)
+                == .unavailable(.languageAnalysisUnavailable))
+        // All terms does not read the lexical classes, so the same verdict leaves it priced.
+        #expect(ask(.allTerms, languageAnalysis: unclassified) != .unavailable(.languageAnalysisUnavailable))
+    }
+
+    @Test("An entity lens stays 'not priced' when names fail: that is its answer whatever the tagger does")
+    func entityLensKeepsItsStructuralAnswer() {
+        inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40])]))
+        defer { inject(nil) }
+        let nameless = NaturalLanguageHealth(lemmatizes: true, classifiesWords: true,
+                                             recognizesNames: false)
+        #expect(ask(.people, languageAnalysis: nameless) == .unavailable(.lensNotPriced(.people)))
+    }
+
+    @Test("The tagger check runs BEFORE the configuration check: no setting would fix it")
+    func languageAnalysisPrecedesConfiguration() {
+        inject(makeFile(lenses: [.allTerms: (1000, 100, ["treaty": 40])]))
+        defer { inject(nil) }
+        let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
+                                                 recognizesNames: true)
+        // Both are wrong. A mismatch message would tell the reader to restore a setting, and
+        // restoring it would only reveal the second refusal.
+        #expect(ask(.allTerms, includeDiplomatic: false, languageAnalysis: unlemmatised)
+                == .unavailable(.languageAnalysisUnavailable))
+    }
+
+    @Test("A missing artifact still reads as missing, whatever the tagger did")
+    func absenceStillWinsOverTheTagger() {
+        inject(nil)
+        let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: false,
+                                                 recognizesNames: false)
+        #expect(ask(.allTerms, languageAnalysis: unlemmatised) == .unavailable(.noArtifact))
     }
 }
 

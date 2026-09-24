@@ -431,3 +431,45 @@ struct CloudVectorsAggregatorTests {
         #expect(Set(out.volumes.scopes.keys) == ["v1", "v2"])
     }
 }
+
+// MARK: - The tagger canary (#1373)
+
+/// The generator writes the keyness reference the app's Distinctive measure compares against, so a
+/// run whose tagger lost its lemmatiser or lexical classes would ship a reference of printed forms
+/// and empty part-of-speech lenses. `requireLanguageAnalysis` is the refusal; one fixture per
+/// conjunct, and the passing cases pinned beside them so the guard cannot be satisfied by refusing
+/// everything.
+@Suite("CloudVectors — refuses to count without a working tagger (#1373)")
+struct CloudVectorsLanguageAnalysisGuardTests {
+
+    @Test("A working tagger passes, and so does one that only lacks names (the run counts no names)")
+    func workingTaggerPasses() throws {
+        try CloudVectorsRunner.requireLanguageAnalysis(.fullyWorking)
+        try CloudVectorsRunner.requireLanguageAnalysis(
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false))
+    }
+
+    @Test("No lemmatiser refuses the run")
+    func missingLemmasRefuses() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            try CloudVectorsRunner.requireLanguageAnalysis(
+                NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true))
+        }
+    }
+
+    @Test("No lexical classes refuses the run")
+    func missingLexicalClassesRefuses() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            try CloudVectorsRunner.requireLanguageAnalysis(
+                NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true))
+        }
+    }
+
+    @Test("The refusal names what failed")
+    func refusalNamesTheFailure() {
+        let health = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
+        let description = CloudVectorsRunner.RunError.languageAnalysisUnavailable(health).description
+        #expect(description.contains("lemmas: false"))
+        #expect(description.contains("lexical classes: true"))
+    }
+}

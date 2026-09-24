@@ -24,6 +24,9 @@ import UniformTypeIdentifiers
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — D3 Phase 4: `csv` removed (the view builds a provenance-stamped table instead);
 ///          `image` returns `Data?` and takes an optional provenance caption line
+///   1.2 — #1373: `collectionCloudImage` is `async` and awaits the language tagger's warm-up
+///          before it tags, so a collection export that is the process's first tagging does not
+///          hold the main thread while the warm-up waits on its assets
 enum WordCloudExporter {
 
     /// Fixed export canvas size (4:3, comfortable for slides and print).
@@ -130,12 +133,19 @@ enum WordCloudExporter {
     ///   - excludeBoilerplate: Whether to drop diplomatic-boilerplate words.
     /// - Returns: The rendered `CGImage` and its base64-encoded PNG, or `nil` when
     ///   there is no usable text.
+    ///
+    /// `async` for one reason (#1373): the tokenizing below runs on the main actor, and the first
+    /// tagging in a process waits for `NaturalLanguageReadiness`'s warm-up — up to its 30 s asset
+    /// budget where a request never answers. Awaiting the verdict first moves that wait off the
+    /// main thread; by the time the tokenizer asks for a tagger it is settled. The cloud itself is
+    /// All terms, which every verdict supports, so the verdict is not otherwise consulted.
     @MainActor
     static func collectionCloudImage(
         texts: [String],
         title: String,
         excludeBoilerplate: Bool = true
-    ) -> (cgImage: CGImage, pngBase64: String)? {
+    ) async -> (cgImage: CGImage, pngBase64: String)? {
+        _ = await NaturalLanguageReadiness.verdictWhenReady()
         let tuning = WordCloudSettings.tuning
         let tokenizer = WordCloudTokenizer.configured(
             tuning: tuning,

@@ -48,6 +48,79 @@ enum WordCloudViewMode: String, CaseIterable {
     var fraction: Double?
 }
 
+/// What the Word Cloud's main area shows, decided from its loaded state alone.
+///
+/// A pure decision rather than an `if` chain in the view body, so a test can walk every lens
+/// through it (#1373). The chain it replaced sent an empty result to the "No Terms" screen only
+/// under All terms; under any other lens an empty result fell through to the cloud canvas, which
+/// drew nothing under a header reading "0 terms from 4,591 documents" (Topics, Actions and
+/// Descriptors) or to "Not Enough Signal", which blamed a thin scope (the signal-dependent lenses).
+///
+/// Version history:
+///   1.0 — #1373: initial implementation
+enum WordCloudDisplayState: Equatable {
+    /// The index could not be opened, so there is no word-frequency service.
+    case serviceUnavailable
+    /// A cloud is being computed.
+    case loading
+    /// Computing failed; the associated value is the message to show.
+    case failed(String)
+    /// The scope holds no indexed documents, so no lens has anything to read.
+    case noIndexedText
+    /// This process's language tagger cannot serve the lens — no names, or no lexical classes —
+    /// so it was not computed (#1373).
+    case lensUnavailable(WordCloudLens)
+    /// Documents were read and the lens kept none of their words.
+    case noTerms(WordCloudLens)
+    /// A signal-dependent lens kept some words, but too few to fill a cloud.
+    case insufficientSignal(WordCloudLens)
+    /// There are terms to draw: the cloud, the ranked list, or the keyness reading.
+    case terms
+
+    /// Whether the scope header, lens chips and measure picker frame this state — the body's
+    /// first branch. Everything except the whole-screen states: a reader looking at an
+    /// unavailable or empty lens needs the chips to pick another one.
+    var showsCloudChrome: Bool {
+        switch self {
+        case .lensUnavailable, .noTerms, .insufficientSignal, .terms: return true
+        case .serviceUnavailable, .loading, .failed, .noIndexedText: return false
+        }
+    }
+
+    /// Decides the state, in precedence order.
+    ///
+    /// The tagger check comes before the empty checks because an unavailable lens is not computed —
+    /// its result is empty by construction, and reporting that as "no indexed text" would blame the
+    /// scope for the device. An empty result is then split on `documentCount`: nothing to read is
+    /// a different fact from reading documents and keeping nothing, and each gets its own words.
+    ///
+    /// - Parameters:
+    ///   - serviceAvailable: Whether the word-frequency service exists.
+    ///   - isLoading: Whether a computation is in flight.
+    ///   - errorMessage: The last computation's failure, if any.
+    ///   - result: The loaded result.
+    ///   - lens: The lens in force.
+    ///   - languageAnalysis: This process's tagger verdict, or `nil` before it has settled.
+    static func resolve(serviceAvailable: Bool,
+                        isLoading: Bool,
+                        errorMessage: String?,
+                        result: WordCloudResult,
+                        lens: WordCloudLens,
+                        languageAnalysis: NaturalLanguageHealth?) -> WordCloudDisplayState {
+        guard serviceAvailable else { return .serviceUnavailable }
+        if isLoading { return .loading }
+        if let errorMessage { return .failed(errorMessage) }
+        if languageAnalysis?.supports(lens) == false { return .lensUnavailable(lens) }
+        if result.terms.isEmpty {
+            return result.documentCount == 0 ? .noIndexedText : .noTerms(lens)
+        }
+        if lens.isSignalDependent && result.terms.count < lens.minimumSignalTerms {
+            return .insufficientSignal(lens)
+        }
+        return .terms
+    }
+}
+
 /// Displays a word cloud for a `WordCloudScope` — the most frequent meaningful
 /// terms across the document(s) the scope resolves to.
 ///
@@ -85,6 +158,12 @@ enum WordCloudViewMode: String, CaseIterable {
 ///   1.6 — Q wave: the index-unavailable placeholder named `cloud.slash`, which does not
 ///          exist — it had been rendering as a blank. `SymbolNameAuditTests` now gates every
 ///          literal symbol name in the app.
+///   1.7 — #1373: what the main area shows is `WordCloudDisplayState.resolve`. Every lens now has
+///          an empty state — no indexed text, or documents read and nothing kept, each worded for
+///          the case — where every lens but All terms used to fall through to a blank canvas; a
+///          lens this process's tagger cannot serve says so and is not computed; Distinctive is
+///          withheld for terms counted without the lemmatiser; and a cloud counted without it says
+///          it was counted as printed.
 
 struct WordCloudView: View {
 
@@ -161,6 +240,9 @@ struct WordCloudView: View {
     /// 20,000-entry dictionary and the score is a pass over every term, and a view body may be
     /// evaluated many times per frame.
     @State private var keyness: KeynessCloud.Outcome?
+    /// What this process's language tagger can do (#1373) — awaited at the start of every load, so
+    /// `nil` only before the first load reaches it. A lens it cannot serve is not computed.
+    @State private var languageHealth: NaturalLanguageHealth?
 
     @Query(sort: \Collection.name) private var collections: [Collection]
     @Query(sort: \UserTag.name) private var tags: [UserTag]
@@ -182,16 +264,16 @@ struct WordCloudView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if appState.wordFrequencyService == nil {
-                    unavailablePlaceholder
-                } else if isLoading {
-                    loadingView
-                } else if let errorMessage {
-                    errorView(errorMessage)
-                } else if result.terms.isEmpty && lens == .allTerms {
-                    emptyView
-                } else {
+                let state = displayState
+                if state.showsCloudChrome {
                     content
+                } else {
+                    switch state {
+                    case .serviceUnavailable: unavailablePlaceholder
+                    case .loading: loadingView
+                    case .failed(let message): errorView(message)
+                    default: emptyView  // `.noIndexedText`, the one whole-screen state left
+                    }
                 }
             }
             .navigationTitle(String(localized: "wordcloud.title", defaultValue: "Word Cloud"))
@@ -222,7 +304,8 @@ struct WordCloudView: View {
         .task(id: KeynessKey(measure: measureRaw, lens: lens, exclude: excludeBoilerplate,
                              settings: settingsToken, termCount: result.terms.count,
                              tokenTotal: result.totalTokenCount, hidden: sessionHiddenWords,
-                             referenceReady: BundledKeynessBaseline.isAvailable)) {
+                             referenceReady: BundledKeynessBaseline.isAvailable,
+                             languageAnalysis: keynessLanguageAnalysis)) {
             // The reference decodes off the main actor during launch, so a keyness read taken
             // before it lands verdicts `.noArtifact` — and without `referenceReady` in the key,
             // nothing would ever re-evaluate it. The mode would stay dark for the whole session
@@ -253,27 +336,47 @@ struct WordCloudView: View {
             measureBar
             if lens.colorsBySentiment { sentimentLegend }
             Divider()
-            if belowSignalThreshold {
+            switch displayState {
+            case .lensUnavailable(let unavailable):
+                lensUnavailableView(unavailable)
+            case .noTerms(let empty):
+                noTermsView(empty)
+            case .insufficientSignal:
                 insufficientSignalView
-            } else if measure == .keyness, case .unavailable(let reason) = keyness ?? .pending {
-                // `.pending` is NOT `.noArtifact`: before the first recompute lands there is no
-                // verdict yet, and rendering "the bundled corpus reference could not be loaded" for
-                // that frame states a failure that has not happened.
-                keynessUnavailableView(reason)
-            } else {
-                switch viewMode {
-                case .cloud: cloudCanvas
-                case .list:  measure == .keyness ? AnyView(keynessList) : AnyView(rankedList)
+            default:
+                if measure == .keyness, case .unavailable(let reason) = keyness ?? .pending {
+                    // `.pending` is NOT `.noArtifact`: before the first recompute lands there is no
+                    // verdict yet, and rendering "the bundled corpus reference could not be loaded"
+                    // for that frame states a failure that has not happened.
+                    keynessUnavailableView(reason)
+                } else {
+                    switch viewMode {
+                    case .cloud: cloudCanvas
+                    case .list:  measure == .keyness ? AnyView(keynessList) : AnyView(rankedList)
+                    }
                 }
             }
         }
     }
 
-    /// `true` when the active lens depends on semantic signal the current scope
-    /// doesn't contain enough of to be meaningful. Keyed to the *unfiltered* `result` so
-    /// per-cloud session hides can't tip the cloud into the "Not Enough Signal" placeholder.
-    private var belowSignalThreshold: Bool {
-        lens.isSignalDependent && result.terms.count < lens.minimumSignalTerms
+    /// What the main area shows — see ``WordCloudDisplayState/resolve(serviceAvailable:isLoading:errorMessage:result:lens:languageAnalysis:)``.
+    ///
+    /// Keyed to the *unfiltered* `result`, so per-cloud session hides can never tip the cloud into
+    /// an empty or "Not Enough Signal" state; and to THIS process's tagger verdict, since the lens
+    /// is computed here.
+    private var displayState: WordCloudDisplayState {
+        WordCloudDisplayState.resolve(
+            serviceAvailable: appState.wordFrequencyService != nil,
+            isLoading: isLoading, errorMessage: errorMessage, result: result, lens: lens,
+            languageAnalysis: languageHealth)
+    }
+
+    /// The tagger verdict the keyness reading must be judged by: the result's own stamp — a cloud
+    /// read back from the disk cache was counted by another process — and this process's verdict
+    /// only for a result that carries none. `nil` until one of them exists, which keeps keyness
+    /// pending rather than guessing (#1373).
+    private var keynessLanguageAnalysis: NaturalLanguageHealth? {
+        result.languageAnalysis ?? languageHealth
     }
 
     /// The terms actually shown — `result.terms` minus this cloud's session hides (#233).
@@ -554,6 +657,9 @@ struct WordCloudView: View {
                 localized: "wordcloud.keyness.unavailable.mismatch %@",
                 defaultValue: "Your settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to compare this scope with the corpus."),
                 Self.mismatchDescription(mismatches))
+        case .languageAnalysisUnavailable:
+            detail = String(localized: "wordcloud.keyness.unavailable.languageAnalysis",
+                            defaultValue: "These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead, or quit and reopen FRUS Explorer and try again.")
         case .noTermsAboveFloor(let minimum):
             detail = String(format: String(
                 localized: "wordcloud.keyness.unavailable.floor %lld",
@@ -631,6 +737,80 @@ struct WordCloudView: View {
             ))
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Shown when this process's language tagger cannot serve `lens`, instead of a cloud of zero
+    /// (#1373).
+    ///
+    /// Two messages because two taggers fail independently: the part-of-speech lenses read the
+    /// lexical classes and the entity lenses read the name recogniser. The advice to quit and
+    /// reopen is measured, not hopeful: the failure is sticky within a process, and on the iOS 27.0
+    /// simulators the next process's warm-up restored every tagger each time it was tried.
+    private func lensUnavailableView(_ lens: WordCloudLens) -> some View {
+        let detail = lens.isEntity
+            ? String(format: String(
+                localized: "wordcloud.lens.unavailable.names %@",
+                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
+                lens.label)
+            : String(format: String(
+                localized: "wordcloud.lens.unavailable.classes %@",
+                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
+                lens.label)
+        return ContentUnavailableView(
+            String(localized: "wordcloud.lens.unavailable.title", defaultValue: "Lens Unavailable on This Device"),
+            systemImage: "exclamationmark.triangle",
+            description: Text(detail)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Shown when the scope's documents were read and the lens kept none of their words — worded
+    /// for the lens, because "no nouns passed the filters" and "there is no indexed text here" are
+    /// different facts, and the second has its own screen (``emptyView``) (#1373).
+    ///
+    /// The header above still reads the document count, which is what tells the two apart at a
+    /// glance.
+    private func noTermsView(_ lens: WordCloudLens) -> some View {
+        ContentUnavailableView(
+            String(localized: "wordcloud.lens.noTerms.title", defaultValue: "Nothing Found for This Lens"),
+            systemImage: lens.systemImage,
+            description: Text(Self.noTermsDetail(for: lens))
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The per-lens explanation ``noTermsView(_:)`` shows. Exhaustive, so a new lens has to say what
+    /// finding nothing means for it.
+    static func noTermsDetail(for lens: WordCloudLens) -> String {
+        switch lens {
+        case .allTerms:
+            return String(localized: "wordcloud.lens.noTerms.allTerms",
+                          defaultValue: "This scope’s documents were read, but none of their words passed the Word Cloud’s filters: the stopword lists, your hidden words, the minimum word length and the minimum count. You can change them in Settings → Word Cloud.")
+        case .people:
+            return String(localized: "wordcloud.lens.noTerms.people",
+                          defaultValue: "This scope’s documents were read, but no person’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .places:
+            return String(localized: "wordcloud.lens.noTerms.places",
+                          defaultValue: "This scope’s documents were read, but no place name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .organizations:
+            return String(localized: "wordcloud.lens.noTerms.organizations",
+                          defaultValue: "This scope’s documents were read, but no organization’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .topics:
+            return String(localized: "wordcloud.lens.noTerms.topics",
+                          defaultValue: "This scope’s documents were read, but none of their nouns passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .actions:
+            return String(localized: "wordcloud.lens.noTerms.actions",
+                          defaultValue: "This scope’s documents were read, but none of their verbs passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .descriptors:
+            return String(localized: "wordcloud.lens.noTerms.descriptors",
+                          defaultValue: "This scope’s documents were read, but none of their adjectives passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .concepts:
+            return String(localized: "wordcloud.lens.noTerms.concepts",
+                          defaultValue: "This scope’s documents were read, but none of them uses a word from the Concepts list. Try a broader scope or a different lens.")
+        case .sentiment:
+            return String(localized: "wordcloud.lens.noTerms.sentiment",
+                          defaultValue: "This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.")
+        }
     }
 
     /// Whether the +/− no-color sentiment marks are active (UI audit A8): the
@@ -855,19 +1035,47 @@ struct WordCloudView: View {
                     .lineLimit(1)
                 // Counts what is ACTUALLY shown. Under keyness the cloud draws only the
                 // over-represented terms, so reporting the frequency count here would name a
-                // number of words the reader cannot find anywhere on screen.
-                Text(String(
-                    format: String(localized: "wordcloud.provenance %lld %lld",
-                                   defaultValue: "%lld terms from %lld documents"),
-                    Int64(ranking?.scores.count ?? visibleTerms.count), Int64(result.documentCount)
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                // number of words the reader cannot find anywhere on screen. Absent for a lens
+                // the tagger cannot serve: that lens was not computed, and "0 terms from 0
+                // documents" would describe a count that never ran (#1373).
+                if !Self.isLensUnavailable(displayState) {
+                    Text(String(
+                        format: String(localized: "wordcloud.provenance %lld %lld",
+                                       defaultValue: "%lld terms from %lld documents"),
+                        Int64(ranking?.scores.count ?? visibleTerms.count), Int64(result.documentCount)
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                // A word lens counted without the lemmatiser counts printed forms, so
+                // "negotiation" and "negotiations" are two words here and one on a device whose
+                // lemmatiser works. True, but different, and the reader cannot see why (#1373).
+                if Self.countedAsPrinted(result, lens: lens) {
+                    Text(String(localized: "wordcloud.countedAsPrinted",
+                                defaultValue: "Counted as printed: this device isn’t reducing words to their dictionary forms right now."))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
             }
             Spacer()
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+    }
+
+    /// Whether `state` is ``WordCloudDisplayState/lensUnavailable(_:)``, whose lens was never
+    /// counted — so the header must not print a count for it.
+    static func isLensUnavailable(_ state: WordCloudDisplayState) -> Bool {
+        if case .lensUnavailable = state { return true }
+        return false
+    }
+
+    /// Whether the header should say `result` was counted as printed: a word lens (the entity
+    /// lenses never lemmatise) whose own stamp says the lemmatiser did not work. Read from the
+    /// RESULT, because a cloud from the disk cache was counted by another process (#1373).
+    static func countedAsPrinted(_ result: WordCloudResult, lens: WordCloudLens) -> Bool {
+        !lens.isEntity && result.languageAnalysis?.lemmatizes == false && !result.terms.isEmpty
     }
 
     /// The spiral tag cloud, with each word an individually tappable, accessible element.
@@ -1264,6 +1472,9 @@ struct WordCloudView: View {
     /// the corpus's most distinctive vocabulary.
     private func recomputeKeyness() {
         guard measure == .keyness else { keyness = nil; return }
+        // No verdict for how these terms were counted yet: stay pending rather than assume the
+        // tagger worked (#1373).
+        guard let languageAnalysis = keynessLanguageAnalysis else { keyness = .pending; return }
         keyness = KeynessCloud.rank(
             terms: visibleTerms,
             scopeTotal: result.totalTokenCount,
@@ -1273,7 +1484,8 @@ struct WordCloudView: View {
             termLimit: Self.termLimit,
             lens: lens,
             tuning: WordCloudSettings.tuning,
-            includeDiplomatic: excludeBoilerplate
+            includeDiplomatic: excludeBoilerplate,
+            languageAnalysis: languageAnalysis
         )
     }
 
@@ -1290,6 +1502,20 @@ struct WordCloudView: View {
         errorMessage = nil
         progressModel.fraction = nil
         hiddenWords = WordCloudOverrides.hidden(for: scope.signature)
+
+        // The tagger's verdict first (#1373), awaited: a process's first cloud runs the warm-up,
+        // which can wait on its assets. A lens the tagger cannot serve is not computed; tokenising
+        // a scope to count what it cannot find would take the full time and yield zero. The last
+        // lens's result is cleared so nothing downstream (keyness, exports) reads it as this one's.
+        let health = await NaturalLanguageReadiness.verdictWhenReady().health
+        if Task.isCancelled { return }
+        languageHealth = health
+        guard health.supports(lens) else {
+            result = .empty
+            progressModel.fraction = nil
+            isLoading = false
+            return
+        }
 
         // Heavy scopes (corpus, subseries) report determinate progress and persist
         // their result to disk. The handler hops to the main actor to update state.
@@ -1404,12 +1630,7 @@ struct WordCloudView: View {
     /// Removes `term` from the displayed result without a recompute, so a hide takes
     /// effect instantly. Case-insensitive because the stop lists store lowercased words.
     private func removeTermFromResult(_ term: String) {
-        let lower = term.lowercased()
-        result = WordCloudResult(
-            terms: result.terms.filter { $0.term.lowercased() != lower },
-            documentCount: result.documentCount,
-            totalTokenCount: result.totalTokenCount
-        )
+        result = result.removingTerm(term)
     }
 
     /// Restores every word hidden from this cloud — both the non-persistent session hides
@@ -1654,6 +1875,10 @@ struct WordCloudView: View {
         /// Whether the bundled reference has finished decoding, so a verdict taken before it landed
         /// is re-evaluated rather than cached as a permanent failure.
         let referenceReady: Bool
+        /// The tagger verdict the terms are judged by (#1373). In the key for the same reason as
+        /// `referenceReady`: it arrives after the first render, and a verdict taken before it would
+        /// stay pending for the rest of the session.
+        let languageAnalysis: NaturalLanguageHealth?
     }
 
     /// Drives a reload when the scope, stopword policy, lens, or criteria change.
