@@ -18213,11 +18213,17 @@ carry no size label, and no capture shows the iOS Collections list.
   `documentCount == 2`. A/B: with the distinct-`.document` rule as the property, 153 tests in 2
   suites, 1 issue, `documentCount` read **1**; restored, it passes.
 - *"Every surface that labels a collection with its size reads this" was false*: Project Home's
-  collections sheet, in `ProjectContext/`, counts distinct keys on purpose, and the editor, export
-  sheet and preview count inline. `documentCount`'s doc now names the five sites that read it, the
-  three that count the same way inline, and the two deliberate distinct rules; the audit's doc
+  collections sheet, in `ProjectContext/`, counts distinct keys on purpose, and the iOS editor's
+  caption, the macOS detail pane's caption, the export sheet and the preview count inline.
+  `documentCount`'s doc now names the five sites that read it, the four that count the same way
+  inline, and the two deliberate distinct rules; the audit's doc
   names Project Home's as a filtered count the scan passes, and this entry names it above.
 - *The recapture* above (no code change).
+- *A second review pass* found the repeated-document fixture let one more wrong rule through:
+  `.document` entries plus excerpt-only documents, undeduplicated, read 2 like the property,
+  because the excerpt quoted d0. The fixture now holds d0 three times and an excerpt of a document
+  the collection does not hold, so the property reads 3, the raw entry count 8, distinct
+  `.document` keys 1, the Research sidebar's rule 2 and that wrong rule 4, each asserted.
 - Nits taken: the audit's doc now says what its pattern really does — any `(` or `{` after
   `.count` reads as a filter, so a raw count heading an `if let`/`switch` body passes and a call
   wrapping the array (the Research sidebar's) would be refused, neither present in the two

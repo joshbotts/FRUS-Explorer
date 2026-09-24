@@ -188,14 +188,17 @@ struct CollectionTests {
     /// `documentCount` counts `.document` entries and nothing else.
     ///
     /// The fixture carries one entry of EVERY authorable kind (iterated from
-    /// `CollectionEntryKind.allCases`, so a kind added later joins it without an edit), a second
-    /// `.document` naming the SAME document as the first, and a `kind` raw value no build knows —
-    /// what a newer app version syncs in. Any rule wider than `.document` reads more than 2; the
-    /// rule the Collections list row used, `documentEntries?.count`, reads 7 — the fault #1358
-    /// photographed as "9 documents" over six. The repeat, and an excerpt quoting that same
-    /// document, are what separate this from the distinct-document rules beside it (the Research
-    /// sidebar's, which admits excerpts, and Project Home's collections sheet's): both read 1, and
-    /// the property's contract is that a document added twice counts twice.
+    /// `CollectionEntryKind.allCases`, so a kind added later joins it without an edit), the first
+    /// document added twice more, and a `kind` raw value no build knows — what a newer app version
+    /// syncs in. The excerpt quotes a document that is NOT in the collection as a `.document`.
+    /// That shape gives every candidate rule a different answer, so no wrong one can pass:
+    ///  - this property (`.document` entries): 3;
+    ///  - the raw entry count the Collections list row used, `documentEntries?.count`: 8 — the
+    ///    fault #1358 photographed as "9 documents" over six;
+    ///  - distinct `.document` keys (Project Home's collections sheet): 1;
+    ///  - distinct documents with excerpts admitted (the Research sidebar): 2;
+    ///  - `.document` entries plus excerpt-only documents, undeduplicated: 4.
+    /// The property's contract is that a document added three times counts three times.
     @Test("DocumentCount: counts .document entries only — not headings, prose, excerpts, generated or unknown kinds")
     func documentCountCountsDocumentEntriesOnly() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -214,23 +217,29 @@ struct CollectionTests {
             order += 1
         }
         for kind in CollectionEntryKind.allCases {
-            // The excerpt quotes the collection's own first document, as an excerpt usually does.
-            add(documentId: kind == .excerpt ? "d0" : nil) { $0.entryKind = kind }
+            // The excerpt quotes a document the collection does not hold as a .document entry.
+            add(documentId: kind == .excerpt ? "d99" : (kind == .document ? "d0" : nil)) { $0.entryKind = kind }
         }
-        add(documentId: "d0") { $0.entryKind = .document }  // the first document, added again
+        add(documentId: "d0") { $0.entryKind = .document }  // the first document, added again…
+        add(documentId: "d0") { $0.entryKind = .document }  // …and a third time
         add { $0.kind = "marginalia" }                      // a newer build's kind: reads .unrecognized
         try context.save()
 
-        // The fixture is what it claims: every authorable kind, one document twice, one unknown.
+        // The fixture is what it claims: every authorable kind, one document three times, one unknown.
         let entries = try #require(collection.documentEntries)
-        #expect(entries.count == CollectionEntryKind.allCases.count + 2)
+        #expect(entries.count == CollectionEntryKind.allCases.count + 3)
         #expect(Set(entries.map(\.entryKind)) == Set(CollectionEntryKind.allCases + [.unrecognized]))
         let documentKeys = entries.filter { $0.entryKind == .document }.map { "\($0.volumeId)/\($0.documentId)" }
-        #expect(documentKeys == ["frus1961-63v14/d0", "frus1961-63v14/d0"])
-        // ...and it separates this count from the distinct-document rules, which read 1 here.
-        #expect(ResearchDocumentAggregation.distinctDocumentKeys(in: entries).count == 1)
+        #expect(documentKeys == Array(repeating: "frus1961-63v14/d0", count: 3))
+        // ...and every other candidate rule reads a different number from this one.
+        #expect(Set(documentKeys).count == 1, "distinct .document keys")
+        #expect(ResearchDocumentAggregation.distinctDocumentKeys(in: entries).count == 2,
+                "distinct documents with the excerpt admitted")
+        let excerptOnly = Set(entries.filter { $0.entryKind == .excerpt }.map(\.documentId))
+            .subtracting(entries.filter { $0.entryKind == .document }.map(\.documentId))
+        #expect(documentKeys.count + excerptOnly.count == 4, "document entries plus excerpt-only documents")
 
-        #expect(collection.documentCount == 2)
+        #expect(collection.documentCount == 3)
 
         // A collection with no entries yet reads zero, not a crash or a nil.
         let empty = Collection(name: "Empty")

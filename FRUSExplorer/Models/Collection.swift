@@ -814,8 +814,9 @@ extension Collection {
     /// under `Collections/` and `ProjectContext/`.
     ///
     /// It counts ENTRIES, so a document added twice counts twice — the composition as authored.
-    /// The editor's caption, the export sheet and the preview count `.document` entries the same
-    /// way, inline; a filtered count is not what the audit refuses, so nothing keeps those copies
+    /// The iOS editor's caption, the macOS detail pane's caption (`MacCollectionManagerView`), the
+    /// export sheet and the preview count `.document` entries the same way, inline; a filtered
+    /// count is not what the audit refuses, so nothing keeps those copies
     /// in line with this one. Two surfaces deliberately answer a different question and keep a
     /// rule of their own:
     ///  - the Research sidebar's per-collection number counts the DISTINCT documents its row
