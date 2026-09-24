@@ -796,7 +796,7 @@ struct WordCloudDisplayStateTests {
 
     @Test("Every lens's 'nothing found' message is its own, and says the documents were read")
     func noTermsMessagesAreWordedForTheLens() {
-        let messages = WordCloudLens.allCases.map { WordCloudView.noTermsDetail(for: $0) }
+        let messages = WordCloudLens.allCases.map { WordCloudDisplayState.noTermsDetail(for: $0) }
         #expect(Set(messages).count == WordCloudLens.allCases.count, "two lenses share a message")
         for message in messages {
             #expect(message.contains("were read"),
@@ -807,27 +807,27 @@ struct WordCloudDisplayStateTests {
 
     @Test("The header hides its count only for a lens that was never counted")
     func headerCountHiddenOnlyForUnavailableLens() {
-        #expect(WordCloudView.isLensUnavailable(.lensUnavailable(.topics)))
-        #expect(!WordCloudView.isLensUnavailable(.noTerms(.topics)))
-        #expect(!WordCloudView.isLensUnavailable(.terms))
+        #expect(WordCloudDisplayState.lensUnavailable(.topics).isLensUnavailable)
+        #expect(!WordCloudDisplayState.noTerms(.topics).isLensUnavailable)
+        #expect(!WordCloudDisplayState.terms.isLensUnavailable)
     }
 
     @Test("'Counted as printed' shows exactly for a word lens whose own stamp says the lemmatiser failed")
     func countedAsPrintedConditions() {
         let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
         // The one case that shows it…
-        #expect(WordCloudView.countedAsPrinted(result(terms: 5, documents: 2, analysis: unlemmatised),
+        #expect(WordCloudDisplayState.countedAsPrinted(result(terms: 5, documents: 2, analysis: unlemmatised),
                                                lens: .allTerms))
         // …and one fixture per condition that withholds it.
-        #expect(!WordCloudView.countedAsPrinted(result(terms: 5, documents: 2, analysis: unlemmatised),
+        #expect(!WordCloudDisplayState.countedAsPrinted(result(terms: 5, documents: 2, analysis: unlemmatised),
                                                 lens: .people),
                 "entity lenses never lemmatise, so the caption would say nothing true")
-        #expect(!WordCloudView.countedAsPrinted(result(terms: 5, documents: 2, analysis: .fullyWorking),
+        #expect(!WordCloudDisplayState.countedAsPrinted(result(terms: 5, documents: 2, analysis: .fullyWorking),
                                                 lens: .allTerms))
-        #expect(!WordCloudView.countedAsPrinted(result(terms: 5, documents: 2, analysis: nil),
+        #expect(!WordCloudDisplayState.countedAsPrinted(result(terms: 5, documents: 2, analysis: nil),
                                                 lens: .allTerms),
                 "an unstamped result is unknown, not unlemmatised")
-        #expect(!WordCloudView.countedAsPrinted(result(terms: 0, documents: 2, analysis: unlemmatised),
+        #expect(!WordCloudDisplayState.countedAsPrinted(result(terms: 0, documents: 2, analysis: unlemmatised),
                                                 lens: .allTerms),
                 "nothing was counted, so there is nothing to caption")
     }

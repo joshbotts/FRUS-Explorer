@@ -119,6 +119,57 @@ enum WordCloudDisplayState: Equatable {
         }
         return .terms
     }
+
+    /// Whether this is ``lensUnavailable(_:)``, whose lens was never counted — so the header must
+    /// not print a count for it.
+    var isLensUnavailable: Bool {
+        if case .lensUnavailable = self { return true }
+        return false
+    }
+
+    /// Whether the header should say `result` was counted as printed: a word lens (the entity
+    /// lenses never lemmatise) whose own stamp says the lemmatiser did not work. Read from the
+    /// RESULT, because a cloud from the disk cache was counted by another process (#1373).
+    static func countedAsPrinted(_ result: WordCloudResult, lens: WordCloudLens) -> Bool {
+        !lens.isEntity && result.languageAnalysis?.lemmatizes == false && !result.terms.isEmpty
+    }
+
+    /// The per-lens explanation the Word Cloud shows for ``noTerms(_:)``. Exhaustive, so a new lens
+    /// has to say what finding nothing means for it.
+    ///
+    /// Here rather than on `WordCloudView`, whose statics are main-actor-isolated like the rest of a
+    /// `View`: a rule a test reads belongs on a nonisolated type.
+    static func noTermsDetail(for lens: WordCloudLens) -> String {
+        switch lens {
+        case .allTerms:
+            return String(localized: "wordcloud.lens.noTerms.allTerms",
+                          defaultValue: "This scope’s documents were read, but none of their words passed the Word Cloud’s filters: the stopword lists, your hidden words, the minimum word length and the minimum count. You can change them in Settings → Word Cloud.")
+        case .people:
+            return String(localized: "wordcloud.lens.noTerms.people",
+                          defaultValue: "This scope’s documents were read, but no person’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .places:
+            return String(localized: "wordcloud.lens.noTerms.places",
+                          defaultValue: "This scope’s documents were read, but no place name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .organizations:
+            return String(localized: "wordcloud.lens.noTerms.organizations",
+                          defaultValue: "This scope’s documents were read, but no organization’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .topics:
+            return String(localized: "wordcloud.lens.noTerms.topics",
+                          defaultValue: "This scope’s documents were read, but none of their nouns passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .actions:
+            return String(localized: "wordcloud.lens.noTerms.actions",
+                          defaultValue: "This scope’s documents were read, but none of their verbs passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .descriptors:
+            return String(localized: "wordcloud.lens.noTerms.descriptors",
+                          defaultValue: "This scope’s documents were read, but none of their adjectives passed the Word Cloud’s filters. Try a broader scope or a different lens.")
+        case .concepts:
+            return String(localized: "wordcloud.lens.noTerms.concepts",
+                          defaultValue: "This scope’s documents were read, but none of them uses a word from the Concepts list. Try a broader scope or a different lens.")
+        case .sentiment:
+            return String(localized: "wordcloud.lens.noTerms.sentiment",
+                          defaultValue: "This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.")
+        }
+    }
 }
 
 /// Displays a word cloud for a `WordCloudScope` — the most frequent meaningful
@@ -774,43 +825,9 @@ struct WordCloudView: View {
         ContentUnavailableView(
             String(localized: "wordcloud.lens.noTerms.title", defaultValue: "Nothing Found for This Lens"),
             systemImage: lens.systemImage,
-            description: Text(Self.noTermsDetail(for: lens))
+            description: Text(WordCloudDisplayState.noTermsDetail(for: lens))
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// The per-lens explanation ``noTermsView(_:)`` shows. Exhaustive, so a new lens has to say what
-    /// finding nothing means for it.
-    static func noTermsDetail(for lens: WordCloudLens) -> String {
-        switch lens {
-        case .allTerms:
-            return String(localized: "wordcloud.lens.noTerms.allTerms",
-                          defaultValue: "This scope’s documents were read, but none of their words passed the Word Cloud’s filters: the stopword lists, your hidden words, the minimum word length and the minimum count. You can change them in Settings → Word Cloud.")
-        case .people:
-            return String(localized: "wordcloud.lens.noTerms.people",
-                          defaultValue: "This scope’s documents were read, but no person’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
-        case .places:
-            return String(localized: "wordcloud.lens.noTerms.places",
-                          defaultValue: "This scope’s documents were read, but no place name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
-        case .organizations:
-            return String(localized: "wordcloud.lens.noTerms.organizations",
-                          defaultValue: "This scope’s documents were read, but no organization’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.")
-        case .topics:
-            return String(localized: "wordcloud.lens.noTerms.topics",
-                          defaultValue: "This scope’s documents were read, but none of their nouns passed the Word Cloud’s filters. Try a broader scope or a different lens.")
-        case .actions:
-            return String(localized: "wordcloud.lens.noTerms.actions",
-                          defaultValue: "This scope’s documents were read, but none of their verbs passed the Word Cloud’s filters. Try a broader scope or a different lens.")
-        case .descriptors:
-            return String(localized: "wordcloud.lens.noTerms.descriptors",
-                          defaultValue: "This scope’s documents were read, but none of their adjectives passed the Word Cloud’s filters. Try a broader scope or a different lens.")
-        case .concepts:
-            return String(localized: "wordcloud.lens.noTerms.concepts",
-                          defaultValue: "This scope’s documents were read, but none of them uses a word from the Concepts list. Try a broader scope or a different lens.")
-        case .sentiment:
-            return String(localized: "wordcloud.lens.noTerms.sentiment",
-                          defaultValue: "This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.")
-        }
     }
 
     /// Whether the +/− no-color sentiment marks are active (UI audit A8): the
@@ -1038,7 +1055,7 @@ struct WordCloudView: View {
                 // number of words the reader cannot find anywhere on screen. Absent for a lens
                 // the tagger cannot serve: that lens was not computed, and "0 terms from 0
                 // documents" would describe a count that never ran (#1373).
-                if !Self.isLensUnavailable(displayState) {
+                if !displayState.isLensUnavailable {
                     Text(String(
                         format: String(localized: "wordcloud.provenance %lld %lld",
                                        defaultValue: "%lld terms from %lld documents"),
@@ -1050,7 +1067,7 @@ struct WordCloudView: View {
                 // A word lens counted without the lemmatiser counts printed forms, so
                 // "negotiation" and "negotiations" are two words here and one on a device whose
                 // lemmatiser works. True, but different, and the reader cannot see why (#1373).
-                if Self.countedAsPrinted(result, lens: lens) {
+                if WordCloudDisplayState.countedAsPrinted(result, lens: lens) {
                     Text(String(localized: "wordcloud.countedAsPrinted",
                                 defaultValue: "Counted as printed: this device isn’t reducing words to their dictionary forms right now."))
                         .font(.caption2)
@@ -1062,20 +1079,6 @@ struct WordCloudView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-    }
-
-    /// Whether `state` is ``WordCloudDisplayState/lensUnavailable(_:)``, whose lens was never
-    /// counted — so the header must not print a count for it.
-    static func isLensUnavailable(_ state: WordCloudDisplayState) -> Bool {
-        if case .lensUnavailable = state { return true }
-        return false
-    }
-
-    /// Whether the header should say `result` was counted as printed: a word lens (the entity
-    /// lenses never lemmatise) whose own stamp says the lemmatiser did not work. Read from the
-    /// RESULT, because a cloud from the disk cache was counted by another process (#1373).
-    static func countedAsPrinted(_ result: WordCloudResult, lens: WordCloudLens) -> Bool {
-        !lens.isEntity && result.languageAnalysis?.lemmatizes == false && !result.terms.isEmpty
     }
 
     /// The spiral tag cloud, with each word an individually tappable, accessible element.

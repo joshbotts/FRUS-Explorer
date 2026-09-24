@@ -199,7 +199,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///    fresh boots it listed no `Lemma`, and every scheme failed in all six.
 /// 2. **`requestAssets(for: .english, tagScheme:)` for `.lexicalClass`, `.nameType` and `.lemma`,
 ///    one at a time, each awaited.** When the list names `Lemma`, each answers `available` in
-///    4–34 ms. After a fresh boot the first answer took 12.2–13.9 s (four boots) and the lemma
+///    4–34 ms. After a fresh boot the first answer took 12.2–14.3 s on an idle machine and 26.0 s
+///    while the host was building (six boots), and the lemma
 ///    request did not answer at all in that process — not in 30 s (three boots), not in 120 s
 ///    (one) — while the next process got all three at once. So after a fresh boot this step saves
 ///    lexical classes and names for the current process, and the lemmatiser for the next one.
