@@ -18929,9 +18929,9 @@ bound from a probe capped at `partnerLimit + 1`, so whenever the footer shows, i
 The test loads 30 partners and gets `totalPartnerCount == 25`. The class doc's Navigation paragraph,
 which said tapping a node re-centres the graph, now says Explore connections does that and a tap only
 selects or deselects. `Docs/EditableContent.md` amends the `personCoMention.cap.disclosed` block
-(text, owner and lines) and re-points the four other blocks in the two files (`personCoMention.empty.detail`,
-`.node.hint`, `.cap.all`, `volumeGraph.node.help`); the review then rewrote `.node.hint`'s text
-(below). The parenthesis-spacing scan stays with C1.
+(text, owner and lines) and re-points the four other blocks in the two files
+(`personCoMention.empty.detail`, `.node.hint`, `.cap.all`, `volumeGraph.node.help`); the review
+then rewrote `.node.hint`'s text (below). The parenthesis-spacing scan stays with C1.
 
 **The scan reads closures, not lines.** It lexes each file into a copy with comments and string
 literals blanked, including nested strings inside `\( … )`, and takes a hover modifier's argument by
@@ -18984,7 +18984,7 @@ No manual sentence describes the old hover, so no manual changes.
   first variant in both view models, only the two stale-hover fixtures failed (2 and 3 issues); with
   the second, only the two re-entry fixtures (2 issues each). The other eight tests in each suite
   passed under both variants, as the reviewer found. Each of those two builds also carried one of
-  the lexer mutants below, which reach only `CodingStandardsAuditTests`.
+  the scan mutants below, which reach only `CodingStandardsAuditTests`.
 - **Nothing checked that the views read the new state.** On iOS `hoveredPartnerId` is never set, so
   a view reverted to `selectedPartnerId` behaves identically on the platform the tests run on, and
   the `.onHover` closures are `#if os(macOS)`. `graphViewsReadTheHoverRules` reads eight calls, each
@@ -19006,11 +19006,11 @@ No manual sentence describes the old hover, so no manual changes.
   dead — the rule that `(` or `{` must follow the name already passed over `.onHoverChanged` — so it
   is gone, and a fixture pins the rule that does the work. Three more fixtures pin the raw-string,
   escaped-quote and nested-comment rules, each with a brace a misread would take for the closure's
-  end. One rebuild per lexer mutant: letting any `.onHover` prefix count failed only the
-  `.onHoverChanged` case; forcing a raw string's hashes to 0 failed the raw-string case and the
-  tree-wide balance check; dropping the escape rule failed the escaped-quote case and the balance
-  check; resetting comment depth to 1 on a nested `/*` failed only the nested-comment case — so two
-  of the four had no guard at all before.
+  end. One rebuild per scan mutant, the first in the closure finder and the other three in the
+  lexer: letting any `.onHover` prefix count failed only the `.onHoverChanged` case; forcing a raw
+  string's hashes to 0 failed the raw-string case and the tree-wide balance check; dropping the
+  escape rule failed the escaped-quote case and the balance check; resetting comment depth to 1 on
+  a nested `/*` failed only the nested-comment case — so two of the four had no guard at all before.
 - With the fixes, `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
   `CodingStandardsAuditTests` and `EditableContentKeyTests` ran **44 tests in 4 suites and passed**.
   Every mutant was restored by re-editing and checked byte-identical to a snapshot.
@@ -19042,10 +19042,22 @@ figure above and raised four minor items, none blocking.
   - fix the view, not the claim, when the view now does what the mutant does.
   A/B with two harmless rewordings in the source: `hovering in` became `isHovering in` in the
   co-mention hit area, and `overlayControls` became `overlayChrome` in the volume graph.
-  - The round-1 binary failed 2 of the 8 claim cases (22 tests, 2 issues). Its messages named only
-    the mutant, and for the header only the file.
+  - The round-1 binary failed 2 of the 8 claim cases (22 tests, 2 issues). Its messages named the
+    file and the declaration header, and the reworded call's message named the mutant too, but
+    neither said what to update.
   - This round's binary failed the same 2 cases with the new messages.
   - Both files were restored and checked identical to their snapshots.
 - `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
   `CodingStandardsAuditTests`, `EditableContentKeyTests` and `PersonCoMentionPhysicsTests` ran
   **45 tests in 5 suites and passed**.
+- The full unit target (`-only-testing FRUSExplorerTests`), run test-without-building from this
+  round's build-for-testing on the same iPhone 17e (`2E021065`): **5,182 tests in 640 suites**,
+  failed with 1 issue — the known #1403 red, `ResearchGuideCoverageTests.mirrorMatchesTheGuide`
+  ("The editable mirror carries the same sections", `ResearchGuideCoverageTests.swift:112`). No
+  host crashed.
+
+**Doc round (2026-09-24).** A check of round 2 found no figure the code contradicts, and four
+minor gaps, now closed in place above: round 2's account of the round-1 failure messages, which
+named the declaration header as well as the file; the two lines that still called the `.onHover`
+prefix rule a lexer mutant; the view model's "Hover and selection" paragraph, which said a click
+only pins; and the full unit run just above, which round 2 made but did not record.

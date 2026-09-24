@@ -58,9 +58,9 @@ struct PersonCoMentionEdge: Equatable {
 /// lower bound, and the footer reads "(of 25+)" rather than a total (#1385).
 ///
 /// ## Hover and selection (#1383)
-/// A click or tap pins a partner (`selectedPartnerId`, written only by `toggleSelection(_:)`
-/// and `load`); on macOS the pointer previews one (`hoveredPartnerId`, written by
-/// `hoverChanged(_:hovering:)`). The dock and the node emphasis read `displayedPartnerId`.
+/// A click or tap pins or unpins a partner (`selectedPartnerId`, written only by
+/// `toggleSelection(_:)` and `load`); on macOS the pointer previews one (`hoveredPartnerId`,
+/// written by `hoverChanged(_:hovering:)`). The dock and node emphasis read `displayedPartnerId`.
 ///
 /// ## Navigation
 /// Explore connections, in the info dock or a node's context menu, re-centres the graph on that
