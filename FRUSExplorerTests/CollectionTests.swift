@@ -5787,6 +5787,20 @@ struct CollectionEditorNamingTests {
         #expect(CollectionEditorNaming.listName(savedName: "   ") == "Untitled Collection")
     }
 
+    @Test("A word cloud of an unnamed collection is titled \"Untitled Collection\", not blank")
+    func wordCloudTitlesAnUnnamedCollection() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "  ")
+        context.insert(collection)
+        let resolver = WordCloudScopeResolver(manifestStore: ManifestStore(bundledEntries: []), pipeline: nil,
+                                              searchService: nil, modelContext: context)
+        let resolved = try await resolver.resolve(.collection(id: collection.id))
+        #expect(resolved.title == CollectionEditorNaming.listName(savedName: ""))
+        #expect(!resolved.title.trimmingCharacters(in: .whitespaces).isEmpty)
+        withExtendedLifetime(container) {}
+    }
+
     // MARK: - Agreement
 
     /// Agreement is the test both directions of the sync turn on. Whitespace is the conjunct worth a fixture each way:
@@ -6112,6 +6126,11 @@ struct CollectionEditorNamingTests {
         let entry = CollectionDocumentDiscovery.appendToCollection(
             documentId: "d164", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
         context.delete(entry)
+        // The rule's `isDeleted` filter exists because, until the context saves, the relationship still lists the
+        // deleted entry. Pin that precondition: if SwiftData ever drops it at `delete`, this test would otherwise
+        // pass against the plain-`isEmpty` rule without saying so.
+        #expect(collection.documentEntries?.contains { $0.id == entry.id } == true,
+                "the deleted entry has left documentEntries before a save, so this fixture no longer tests the isDeleted filter")
         session.end()
 
         #expect(try !context.fetch(FetchDescriptor<Collection>()).contains { $0.id == collection.id }, """

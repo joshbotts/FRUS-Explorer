@@ -19212,3 +19212,23 @@ document to it from the picker, come back, tap Back. The unit test drives its tw
 picker's own attach call, and the session's end. Neither row was seen on screen with the fallback;
 hosting the picker read nothing, so both rows are pinned by reading their source. A kill while the
 editor waits in another tab was not measured.
+
+**Round 2's check, and what the owner session took from it.** The read-only check of round 2 found
+nothing blocking and four nits. Three were taken in one follow-up commit:
+- **The word cloud's scope title.** `WordCloudScopeResolver` titled a collection scope
+  `collection?.name`, a blank heading for an unnamed collection. It now uses
+  `CollectionEditorNaming.listName`. The new test `wordCloudTitlesAnUnnamedCollection` fails on the
+  old line (**18 tests, 2 issues**) and passes on the fix.
+- **The deleted-entry test's precondition is pinned.** The test now asserts that the relationship
+  still lists the deleted entry before the session ends. Without that, a SwiftData that dropped the
+  entry at `delete` would let the plain-`isEmpty` rule pass silently.
+- **`CLAUDE.md`** now says `CollectionEditorTitleTests` must run on an iPhone AND an iPad, and that
+  only the iPhone run guards the push-over.
+
+Final unit target on iPhone 17 (`A9FCCA50`, iOS 26.5): **5,177 tests in 639 suites**, with the one
+failure `mirrorMatchesTheGuide` (#1403). `FRUSExplorerMac` **BUILD SUCCEEDED**.
+
+Filed rather than fixed:
+- #1416: the editor's outline is loaded once, so an entry added from another tab is invisible to it
+  and can share its `sortOrder`.
+- Cosmetic, left in the PR: the picker's search and the rail's sort still read the raw name.
