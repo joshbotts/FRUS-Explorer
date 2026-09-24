@@ -93,6 +93,10 @@ import Foundation
 ///          `SourceNoteParser.decimalClassKey(_:)`, matching the new
 ///          `document_sources.decimal_class` column. The 13-volume verification
 ///          sample keyed 0 class leaves before this fix
+///   2.4 — 2026-09-23 (#1389): `VolumeStructureParserDelegate` takes a section's title from
+///          its FIRST `<head>` only, so an attached statement's or a list's heading no longer
+///          runs into it, and leaves out a footnote inside that head, as document titles do.
+///          Index v56.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -348,6 +352,12 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
         /// up to the parent instead of emitting a `VolumeSection`.
         var isTransparent: Bool = false
         var headParts: [String] = []
+        /// Whether this section's own title has been captured (#1389). A section's title is its
+        /// first `<head>` and nothing else: `<frus:attachment>` and `<list>` push no frame, so
+        /// their headings used to be captured into the enclosing section's title too — the
+        /// frus1946v06 preface read "PrefacePrinciples for the Compilation and Editing of
+        /// “Foreign Relations”", and 176 sections in 88 volumes carried a second heading.
+        var titleCaptured: Bool = false
         var documentIds: [String] = []
         var subsections: [VolumeSection] = []
     }
@@ -361,6 +371,12 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     /// Whether we are capturing text for the innermost section's `<head>`.
     private var capturingHead: Bool = false
     private var headNestDepth: Int = 0
+    /// Element depth inside a footnote within the head being captured; its text is not title
+    /// (#1389). A chapter's head carries its editorial footnote inline, and capturing it read
+    /// "The Greene Mission to the Baltic ProvincesAdditional information regarding…" — 3,918
+    /// section titles in 297 volumes, 3,624 of them run together. The rule is the document
+    /// parser's: a `<note>` is text only when it is `rend="inline"` and not `type="source"`.
+    private var headNoteDepth: Int = 0
     private var autoIdCounter: Int = 0
 
     // Div types that form structural sections above the document level when they
@@ -419,6 +435,14 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
             return
         }
 
+        // A footnote inside the head being captured: its text is not part of the title (#1389).
+        if headNoteDepth > 0 {
+            headNoteDepth += 1
+        } else if capturingHead, elementName == "note",
+                  attrs["type"] == "source" || attrs["rend"] != "inline" {
+            headNoteDepth = 1
+        }
+
         switch elementName {
         case "teiHeader":
             skipDepth = 1
@@ -461,10 +485,14 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
             }
 
         case "head":
-            // Capture head text only when inside a structural section frame.
-            if !stack.isEmpty && !capturingHead {
+            // Capture head text only when inside a structural section frame, and only the
+            // innermost section's FIRST head (#1389): a later `<head>` belongs to an attachment or
+            // a list inside the section — a statement the editors attached to a preface, a
+            // meeting's "Present" list — and is not part of the section's title.
+            if !capturingHead, let top = stack.last, !top.titleCaptured {
                 capturingHead = true
                 headNestDepth = 1
+                stack[stack.count - 1].titleCaptured = true
             } else if capturingHead {
                 headNestDepth += 1
             }
@@ -483,6 +511,8 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
             skipDepth -= 1
             return
         }
+
+        if headNoteDepth > 0 { headNoteDepth -= 1 }
 
         switch elementName {
         case "head":
@@ -505,7 +535,7 @@ private final class VolumeStructureParserDelegate: NSObject, XMLParserDelegate, 
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard capturingHead, !stack.isEmpty else { return }
+        guard capturingHead, headNoteDepth == 0, !stack.isEmpty else { return }
         stack[stack.count - 1].headParts.append(string)
     }
 

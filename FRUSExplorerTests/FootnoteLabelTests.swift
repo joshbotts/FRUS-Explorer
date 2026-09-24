@@ -202,6 +202,91 @@ struct FootnoteLabelTests {
                 "a note that is not a source note must not claim archival provenance")
     }
 
+    // MARK: - #1369: n="0" is the corpus's other encoding of "unnumbered"
+
+    /// Every heading marker's label in a render model, depth first.
+    private func headingMarkerLabels(_ model: FRUSDocumentRenderModel) -> [String?] {
+        var labels: [String?] = []
+        func walk(_ nodes: [FRUSRenderNode], inHeading: Bool) {
+            for node in nodes {
+                switch node {
+                case .heading(let c): walk(c, inHeading: true)
+                case .footnoteMarker(_, _, _, let label) where inHeading: labels.append(label)
+                case .boldText(let c), .italicText(let c), .smallCapsText(let c), .underlineText(let c):
+                    walk(c, inHeading: inHeading)
+                default: break
+                }
+            }
+        }
+        walk(model.bodyNodes, inHeading: false)
+        return labels
+    }
+
+    /// frus1961-63v11 d21's shape — the source note nested in the head — in each of the four ways
+    /// the corpus encodes an unnumbered one: no `@n` (193,500 notes), `n=""`, a blank `n`, and
+    /// `n="0"` (9,985 notes in 34 volumes). All four must read as the archival mark; before #1369
+    /// the last drew a blue superscript 0 and VoiceOver said "Footnote 0".
+    @Test("A head-nested source note reads unnumbered in every encoding the corpus uses (#1369)",
+          arguments: [nil, "", " ", "0"] as [String?])
+    func unnumberedSourceNoteEncodings(_ n: String?) async throws {
+        let attribute = n.map { " n=\"\($0)\"" } ?? ""
+        let (html, model) = try await render("""
+        <div type="document" xml:id="d21" n="21">
+          <head>21. Off the Record Meeting on Cuba<note\(attribute) type="source" xml:id="d21fn0">Source: Kennedy Library, President's Office Files.</note></head>
+          <p>The President opened the meeting<note n="1" xml:id="d21fn1">Not printed.</note>.</p>
+        </div>
+        """)
+        let source = try #require(model.footnotes.first)
+        guard case .footnoteBody(_, _, _, _, let label, _) = source else {
+            Issue.record("expected the source note's footnote body first"); return
+        }
+        #expect(label == nil, "n=\(n.map { "\"\($0)\"" } ?? "absent") is not a number the volume printed")
+        #expect(html.contains("fn-marker-unnumbered"), "the marker is the unnumbered variant")
+        #expect(html.contains("class=\"fn-glyph\""), "it carries the archival glyph")
+        #expect(html.contains("aria-label=\"Source note\""), "VoiceOver names it as a source note")
+        #expect(!html.contains(">0</button>"), "no superscript 0")
+        #expect(!html.contains("<span class=\"fn-list-label\">0</span>"), "no 0 in the Footnotes list")
+        // The collection exporter's plain-text header appends "[label]" for a labelled heading
+        // marker; a nil label is what keeps "21. Off the Record Meeting on Cuba[0]" out of it.
+        #expect(headingMarkerLabels(model) == [nil])
+        // Footnote 1 is untouched.
+        #expect(html.contains(">1</button>"))
+    }
+
+    /// The four untyped body notes in frus1961-63v24 that carry `n="0"` read unnumbered too — with
+    /// the neutral mark, because they are not provenance statements.
+    @Test("An untyped body note with n=\"0\" reads unnumbered with the neutral mark (#1369)")
+    func zeroOnAnUntypedBodyNoteIsUnnumbered() async throws {
+        let (html, model) = try await render("""
+        <div type="document" xml:id="d313">
+          <p>Text<note n="0" xml:id="d313fn3">Department of State, Central Files, 751J.00/3–2162.</note>.</p>
+        </div>
+        """)
+        guard case .footnoteBody(_, _, _, _, let label, _) = try #require(model.footnotes.first) else {
+            Issue.record("expected a footnote body"); return
+        }
+        #expect(label == nil)
+        #expect(html.contains("\u{2022}"), "a bullet stands in for the missing number")
+        #expect(!html.contains("class=\"fn-glyph\""))
+        #expect(!html.contains(">0</button>"))
+    }
+
+    /// The rule itself, shared by the reader and the #1322 citation harvest.
+    @Test("printedLabel: 0 is no number; any other printed label survives (#1369)")
+    func printedLabelZeroRule() {
+        #expect(ASTToRenderNodeConverter.printedLabel(from: "0") == nil)
+        #expect(ASTToRenderNodeConverter.printedLabel(from: " 0 ") == nil)
+        #expect(ASTToRenderNodeConverter.printedLabel(from: "10") == "10")
+        #expect(ASTToRenderNodeConverter.printedLabel(from: "1") == "1")
+        #expect(ASTToRenderNodeConverter.printedLabel(from: "*") == "*")
+    }
+
+    /// The v57 bump is what moves `external_citations.note_label` for frus1961-63v24's four notes.
+    @Test("The index version is at least 57, the n=\"0\" label rebuild")
+    func indexVersionCoversZeroLabels() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 57)
+    }
+
     // MARK: - The key itself
 
     @Test("The DOM key prefers xml:id and falls back without colliding")

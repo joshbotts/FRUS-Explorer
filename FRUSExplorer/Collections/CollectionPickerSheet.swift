@@ -38,6 +38,9 @@ import SwiftData
 ///          of `collection.documentEntries?.append`, which is a silent no-op — and leaves the
 ///          entry permanently orphaned — on a collection that has not been saved since it was
 ///          inserted. The excerpt branch already did this via `CollectionExcerpts`.
+///   1.5 — 2026-09-23: #1358 — the row's count reads `Collection.documentCount`, the same
+///          `.document`-entries rule it applied inline, now shared with the Collections list
+///          and the macOS manager, which had never applied it
 struct CollectionPickerSheet: View {
 
     /// The document being added (its `volumeId`/`documentId` provenance).
@@ -91,8 +94,7 @@ struct CollectionPickerSheet: View {
                     Text(collection.name)
                         .font(.body)
                         .foregroundStyle(.primary)
-                    let count = (collection.documentEntries ?? [])
-                        .filter { $0.entryKind == .document }.count
+                    let count = collection.documentCount
                     Text(String(localized: "collection.picker.docCount",
                                 defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
                         .font(.caption)
