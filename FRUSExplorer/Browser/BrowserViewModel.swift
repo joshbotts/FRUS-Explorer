@@ -73,6 +73,8 @@ import Observation
 ///   1.8 — #1301 round 4: that comment's reason is corrected for kick 1, which is gated on an
 ///          `isIndexing` edge rather than on `isIndexed(_:)`; `indexVolume(_:)` cannot produce the
 ///          edge without a pipeline, so the conclusion stands. Comment only
+///   1.9 — #1365: `topicIndex` holds the Topic index's state for every index Browse mounts, and
+///          `openTopicIndex()` is the Topics row's entry, which resets it to the whole index
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -208,6 +210,34 @@ public final class BrowserViewModel {
     /// - Parameter level: The level the reader chose from the root list.
     public func select(_ level: BrowserLevel) {
         navigationPath = [level]
+    }
+
+    // MARK: - Topic Index (#1365)
+
+    /// The Topic index's state — the hand-off waiting to land, and the reader's search, topic-area
+    /// chip and open sheet — held HERE rather than in `SubjectIndexView`, which is bound to it.
+    ///
+    /// The two-pane mounts a new index for a reader who never left theirs: Back from a covering
+    /// volume opened out of a topic's sheet (`navigationPath.removeLast()` re-renders the detail
+    /// pane), and a layout change across the two-pane gate. This model outlives both, so the new
+    /// index shows the area and search the reader left — what the single-column stack, which keeps
+    /// the index alive underneath, always did. `SubjectIndexGrouping.HostState` has the rule.
+    var topicIndex = SubjectIndexGrouping.HostState()
+
+    /// The corpus root's Topics row: the whole index, whatever the last visit or hand-off left.
+    ///
+    /// **It resets `topicIndex` because it is not a hand-off.** Nothing is posted, so without the
+    /// reset the index would show whatever the host still holds — the area the last "All «area»
+    /// topics" door landed, or a search typed an hour ago. It also resets when `.subjects` is
+    /// ALREADY the level on screen, which only the iPad two-pane allows (its list pane stays beside
+    /// the index): the path assignment below is then equal and the same index view stays, so the
+    /// reset is the only thing that tells it to show the whole index.
+    ///
+    /// A hand-off goes through `BrowserView.consumePendingSubjectExplorer()` instead, which posts
+    /// its request and calls `select(.subjects)` — never this, which would drop what it posted.
+    func openTopicIndex() {
+        topicIndex.openWhole()
+        select(.subjects)
     }
 
     // MARK: - Download Filter

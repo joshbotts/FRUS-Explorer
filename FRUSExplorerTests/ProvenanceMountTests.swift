@@ -239,6 +239,44 @@ struct ProvenanceMountTests {
                 "the chip supplements the POCOM sentence — it does not replace it")
     }
 
+    /// **One lifespan, read once, and the register's (#1370).** Life years used to reach this sheet
+    /// twice: as the **Active** row, because the rollup wrote the name authority's birth and death
+    /// years into the active-span columns, and as the Career footer's POCOM lifespan — so
+    /// Kissinger's sheet said *Active 1923–2015* above *1923–2023*. The active span is the volumes'
+    /// now, and the one lifespan line sits in the header beside the register's role, under the
+    /// register's chip, where a reader can tell it is not the volumes' claim.
+    ///
+    /// **Counted, and case-folded, since the #1370 review.** The first version asked only that
+    /// `detailList` call the function *at least* once and that the footer not contain a lower-case
+    /// `lifespan`, so `Text(PersonLifespan.text(…) ?? "")` in the footer (capital L), a
+    /// `Text("\(career.b ?? 0)–…")`, or a second call anywhere in `detailList` all passed.
+    @Test("The sheet shows one lifespan, and the Career footer no longer prints a second")
+    func oneLifespanOnTheSheet() throws {
+        let file = try code("FRUSExplorer/Browser/PersonIndexView.swift")
+        let detail = try body(of: "private var detailList: some View {", in: file)
+        let career = try body(of: "private func careerSection(_ career: POCOMCareer) -> some View {",
+                              in: file)
+        func count(_ pattern: String, in text: String) throws -> Int {
+            try NSRegularExpression(pattern: pattern)
+                .numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
+        }
+        // Read once, through the one tested function, and drawn once.
+        #expect(try count(#"PersonLifespan\.text\("#, in: file) == 1,
+                "the view reads life years through PersonLifespan in more than one place")
+        #expect(try count(#"PersonLifespan\.text\(authority: authorityEntry, career: career\)"#,
+                          in: detail) == 1,
+                "the header no longer reads the life years through the one tested function")
+        #expect(try count(#"Text\(lifespan\)"#, in: detail) == 1,
+                "the header draws its lifespan line more than once, or not at all")
+        // No second lifespan by another road: a life year read straight off either source.
+        for (name, text) in [("detailList", detail), ("careerSection", career)] {
+            #expect(try count(#"\b(?:career|authorityEntry|auth)\??\.[bd]\b"#, in: text) == 0,
+                    "\(name) reads a birth or death year around PersonLifespan")
+        }
+        #expect(career.range(of: "lifespan", options: .caseInsensitive) == nil,
+                "the Career footer prints a second lifespan beside the header's")
+    }
+
     /// **The People LIST is deliberately unbadged, and the reason is measured.**
     ///
     /// Three things rule it out and any one would be enough. Its subtitle is uniformly Tier 1 —
@@ -252,6 +290,16 @@ struct ProvenanceMountTests {
     ///
     /// This test pins the row's shape, so the day one of those three stops being true, whoever
     /// changes it is told the exclusion rested on it.
+    ///
+    /// **The subtitle leg was false from the day this test was written, and it could not see it**
+    /// (#1370). The scan reads `roleEraSubtitle`, which really does read nothing but the entry; but
+    /// the entry's era came from `person_rollup.start_year`/`end_year`, and since Phase 5
+    /// (2026-06-18) the rollup had written the name authority's birth and death years there for
+    /// every covered person — 1,257 rows opened on a birth year. The era is the volumes' again (list years and dated body mentions, nothing
+    /// else), which `PersonRollupConsolidationTests` pins at the source, so the Tier-1 claim holds
+    /// once more. The row still carries no reconciled-identity seal either: the manuals said it
+    /// did, the seal has only ever been on the detail sheet, and #1370 corrected the manuals rather
+    /// than the row — a seal on ~71% of rows would say nothing a reader could use.
     @Test("The People list row stays unbadged, and the three reasons still hold")
     func peopleListRowRemainsUnbadged() throws {
         let file = try source("FRUSExplorer/Browser/PersonIndexView.swift")

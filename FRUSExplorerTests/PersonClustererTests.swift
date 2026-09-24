@@ -356,6 +356,102 @@ struct PersonClustererTests {
         #expect(PersonClusterer.normalize("Franklin D. Roosevelt Jr").surname == "roosevelt",
                 "a trailing suffix is never mistaken for the surname in no-comma names")
     }
+
+    // MARK: A member's span (#1370)
+
+    /// A member's two ends used to come from different sources — the start from the list, the end
+    /// from the documents — so a list year later than every mention produced a span that ran
+    /// backwards. All 235 reversed rollups #1370 measured had this shape.
+    ///
+    /// Abourezk: the parser stored "until January 3, 1979" as a START (the year he LEFT), and his
+    /// only mention is from 1977. Abdullah: "from June 13, 1982" is a start, and his only mention is
+    /// from 1981. Both are fed here in the shape they reach the clusterer in, list year as a start.
+    @Test("A list start later than the mentions cannot invert a member's span (Abourezk, Abdullah)")
+    func memberSpanCannotInvert() {
+        let abourezk = PersonClusterInput(volumeId: "frus1977-80v02", ref: "p_AJG_1",
+                                          name: "Abourezk, James G.", listStartYear: 1979,
+                                          mentionStartYear: 1977, mentionEndYear: 1977)
+        #expect(abourezk.effectiveStartYear == 1977)
+        #expect(abourezk.effectiveEndYear == 1979)
+
+        let abdullah = PersonClusterInput(volumeId: "frus1981-88v01", ref: "p_AASP_1",
+                                          name: "Abdullah bin Abdulaziz Al Saud", listStartYear: 1982,
+                                          mentionStartYear: 1981, mentionEndYear: 1981)
+        #expect(abdullah.effectiveStartYear == 1981)
+        #expect(abdullah.effectiveEndYear == 1982)
+
+        // The corrected parser stores Abourezk's year as an END; the span must not care which.
+        let abourezkAsEnd = PersonClusterInput(volumeId: "frus1977-80v02", ref: "p_AJG_1",
+                                               name: "Abourezk, James G.", listEndYear: 1979,
+                                               mentionStartYear: 1977, mentionEndYear: 1977)
+        #expect(abourezkAsEnd.effectiveStartYear == 1977)
+        #expect(abourezkAsEnd.effectiveEndYear == 1979)
+    }
+
+    /// The general form: whatever mix of years a member carries, its span is their minimum and
+    /// maximum. Swept over every present/absent combination of four years drawn from both orders,
+    /// so a rule that prefers one source for one end fails somewhere in the grid.
+    @Test("A member's span is the minimum and maximum of every year it carries")
+    func memberSpanIsMinMaxOfEveryYear() {
+        let values: [Int?] = [nil, 1950, 1960]
+        var checked = 0
+        var dated = 0
+        for ls in values { for le in values { for ms in values { for me in values {
+            let member = PersonClusterInput(volumeId: "v", ref: "r", name: "Smith, John",
+                                            listStartYear: ls, listEndYear: le,
+                                            mentionStartYear: ms, mentionEndYear: me)
+            let years = [ls, le, ms, me].compactMap { $0 }
+            #expect(member.effectiveStartYear == years.min(), "start for \([ls, le, ms, me])")
+            #expect(member.effectiveEndYear == years.max(), "end for \([ls, le, ms, me])")
+            checked += 1
+            if !years.isEmpty { dated += 1 }
+        }}}}
+        #expect(checked == 81 && dated == 80, "the sweep covered the whole grid")
+    }
+
+    // MARK: The era guardrail reads the list first (#1370 review)
+
+    /// **Two men, and a document that remembered one of them.** frus1945Berlinv01 lists "Alexander
+    /// II, Tsar of Russia, 1855–1881" and mentions him in a 1945 document; frus1917Supp02v01 lists
+    /// "Alexander, King of the Hellenes from June 12" and mentions him in 1917. Both names
+    /// normalise to the same key ("II" is folded away when it is the only given token), so only
+    /// the era guardrail keeps them apart. The union of list and mention years put the Tsar at
+    /// 1855–1945 and merged them; the list's own 1855–1881 is 36 years from 1917, beyond the gap.
+    /// Rows as they stand in a full index, mention years from the dated body documents.
+    @Test("A retrospective mention does not stretch the era the guardrail reads (Alexander II / Alexander)")
+    func retrospectiveMentionDoesNotMerge() {
+        let king = PersonClusterInput(volumeId: "frus1917Supp02v01", ref: "p_A1", name: "Alexander",
+                                      role: "King of the Hellenes from June 12",
+                                      mentionStartYear: 1917, mentionEndYear: 1917)
+        let tsar = PersonClusterInput(volumeId: "frus1945Berlinv01", ref: "p_AII1", name: "Alexander II",
+                                      role: "Tsar of Russia", listStartYear: 1855, listEndYear: 1881,
+                                      mentionStartYear: 1945, mentionEndYear: 1945)
+        #expect(PersonClusterer.eraRelation(king, tsar) == .disjoint)
+        let out = PersonClusterer.cluster([king, tsar])
+        #expect(out.clusters.count == 2, "the King of the Hellenes is not the Tsar of Russia")
+        // The rollup's own span still holds every year the Tsar's record carries.
+        #expect(tsar.effectiveStartYear == 1855 && tsar.effectiveEndYear == 1945)
+        #expect(tsar.eraStartYear == 1855 && tsar.eraEndYear == 1881)
+    }
+
+    /// The general form: the guardrail's span is the list's years when the list names any — both
+    /// ends over those years, so it cannot invert either — and the mention years only without them.
+    @Test("The era span is the list's years when it names any, else the mentions'")
+    func eraSpanIsListFirst() {
+        let values: [Int?] = [nil, 1950, 1960]
+        var checked = 0
+        for ls in values { for le in values { for ms in values { for me in values {
+            let member = PersonClusterInput(volumeId: "v", ref: "r", name: "Smith, John",
+                                            listStartYear: ls, listEndYear: le,
+                                            mentionStartYear: ms, mentionEndYear: me)
+            let list = [ls, le].compactMap { $0 }
+            let years = list.isEmpty ? [ms, me].compactMap { $0 } : list
+            #expect(member.eraStartYear == years.min(), "era start for \([ls, le, ms, me])")
+            #expect(member.eraEndYear == years.max(), "era end for \([ls, le, ms, me])")
+            checked += 1
+        }}}}
+        #expect(checked == 81, "the sweep covered the whole grid")
+    }
 }
 
 // MARK: - PersonClusterOverrideStoreTests
