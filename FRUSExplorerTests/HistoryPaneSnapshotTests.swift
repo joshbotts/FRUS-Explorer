@@ -40,6 +40,9 @@ import Testing
 ///          like the other two
 ///   1.2 — #1298 follow-up: the search filter folds typographic double quotation marks on both sides, so one row
 ///          refreshed by a curly and a straight run is found by a filter typed in either spelling
+///   1.3 — #1361: a document row's caption names the document, and a stored title that is only its
+///          volume's manifest title reads as no title — in the row, through the fetch, and in the
+///          one-line label the History menu and Project Home draw
 @MainActor
 struct HistoryPaneSnapshotTests {
 
@@ -80,6 +83,29 @@ struct HistoryPaneSnapshotTests {
         return entry
     }
 
+    /// The manifest lookup for tests that are not about volume titles: it lists no volume, so no
+    /// stored title is ever recognised as one (#1361).
+    private func noManifest(_ volumeId: String) -> String? { nil }
+
+    /// A document row built directly, for the tests of what a row draws.
+    private func documentRow(volumeId: String = "frus1961-63v11",
+                             documentId: String = "d21",
+                             displayTitle: String?,
+                             volumeTitle: String?) -> HistoryPaneSnapshot.DocumentRow {
+        HistoryPaneSnapshot.DocumentRow(id: HistoryRowID(entryID: UUID(), copy: 0),
+                                        volumeId: volumeId,
+                                        documentId: documentId,
+                                        displayTitle: displayTitle,
+                                        volumeTitle: volumeTitle,
+                                        accessedAt: nil,
+                                        projectId: nil)
+    }
+
+    /// The Cuban Missile Crisis volume's manifest title, which #1361 found stored as the title of
+    /// every visit opened from a `frusexplorer://` link into it.
+    private static let cubaVolumeTitle =
+        "Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath"
+
     // MARK: - Scope, as a pure function
 
     /// The in-memory mirror. Cheap, but it is the thing the fetch predicates have to agree with.
@@ -117,21 +143,23 @@ struct HistoryPaneSnapshotTests {
         insertSearch(context, query: "cuba", projectId: nil)
         try context.save()
 
-        let all = HistoryPaneSnapshot.fetch(from: context, scope: .all)
+        let all = HistoryPaneSnapshot.fetch(from: context, scope: .all, volumeTitle: noManifest)
         #expect(all.totalDocuments == 3)
         #expect(all.totalSearches == 2)
 
         // `== nil` inside a #Predicate — the form with no precedent in this codebase before R-3.
-        let unfiled = HistoryPaneSnapshot.fetch(from: context, scope: .unfiled)
+        let unfiled = HistoryPaneSnapshot.fetch(from: context, scope: .unfiled, volumeTitle: noManifest)
         #expect(unfiled.documents.map(\.documentId) == ["d3"])
         #expect(unfiled.searches.map(\.queryText) == ["cuba"])
         #expect(unfiled.totalDocuments == 1)
 
-        let scopedA = HistoryPaneSnapshot.fetch(from: context, scope: .project(projectA))
+        let scopedA = HistoryPaneSnapshot.fetch(from: context, scope: .project(projectA),
+                                                volumeTitle: noManifest)
         #expect(scopedA.documents.map(\.documentId) == ["d1"])
         #expect(scopedA.searches.map(\.queryText) == ["berlin"])
 
-        let scopedB = HistoryPaneSnapshot.fetch(from: context, scope: .project(projectB))
+        let scopedB = HistoryPaneSnapshot.fetch(from: context, scope: .project(projectB),
+                                                volumeTitle: noManifest)
         #expect(scopedB.documents.map(\.documentId) == ["d2"])
         #expect(scopedB.searches.isEmpty)
     }
@@ -151,7 +179,7 @@ struct HistoryPaneSnapshotTests {
         insertSearch(context, query: "new", executedAt: base.addingTimeInterval(600))
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(snapshot.documents.map(\.documentId) == ["newest", "middle", "oldest"])
         #expect(snapshot.searches.map(\.queryText) == ["new", "old"])
     }
@@ -178,7 +206,7 @@ struct HistoryPaneSnapshotTests {
         }
         try context.save()
 
-        let page = HistoryPaneSnapshot.fetch(from: context, limit: 2)
+        let page = HistoryPaneSnapshot.fetch(from: context, limit: 2, volumeTitle: noManifest)
         #expect(page.documents.count == 2)
         #expect(page.searches.count == 2)
         #expect(page.totalDocuments == 5)
@@ -188,7 +216,7 @@ struct HistoryPaneSnapshotTests {
         // Newest survive the cut, oldest are the ones left behind.
         #expect(page.documents.map(\.documentId) == ["d4", "d3"])
 
-        let wider = HistoryPaneSnapshot.fetch(from: context, limit: 100)
+        let wider = HistoryPaneSnapshot.fetch(from: context, limit: 100, volumeTitle: noManifest)
         #expect(wider.documents.count == 5)
         #expect(wider.hasMoreDocuments == false)
         #expect(wider.hasMoreSearches == false)
@@ -206,7 +234,8 @@ struct HistoryPaneSnapshotTests {
         for i in 0..<2 { insertVisit(context, documentId: "scoped\(i)", projectId: project) }
         try context.save()
 
-        let scoped = HistoryPaneSnapshot.fetch(from: context, scope: .project(project), limit: 1)
+        let scoped = HistoryPaneSnapshot.fetch(from: context, scope: .project(project), limit: 1,
+                                               volumeTitle: noManifest)
         #expect(scoped.documents.count == 1)
         #expect(scoped.totalDocuments == 2)      // not 6
         #expect(scoped.hasMoreDocuments)
@@ -225,10 +254,126 @@ struct HistoryPaneSnapshotTests {
         insertVisit(context, documentId: "d8", volumeId: "frus1969-76v01", title: "Memorandum")
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         let byId = Dictionary(uniqueKeysWithValues: snapshot.documents.map { ($0.documentId, $0) })
         #expect(byId["d7"]?.title == "frus1969-76v01 · d7")
         #expect(byId["d8"]?.title == "Memorandum")
+    }
+
+    // MARK: - #1361: the row names the document
+
+    /// **The row's second line names the document.** Before #1361 it drew the volume id alone, so
+    /// three visits to one document and visits to three documents sharing a heading read the same
+    /// except for the time, although `documentId` was loaded and the filter already matched on it.
+    @Test("A titled row's caption is volume id · document id (#1361)")
+    func captionNamesTheDocumentUnderATitle() {
+        let heading = "21. Telegram From the Department of State to the Embassy in the Soviet Union"
+        let row = documentRow(displayTitle: heading, volumeTitle: Self.cubaVolumeTitle)
+        #expect(row.title == heading)
+        #expect(row.caption == "frus1961-63v11 · d21")
+        #expect(row.caption?.contains(row.documentId) == true)
+    }
+
+    /// **Two visits to documents sharing a heading are told apart by the caption.** The title line
+    /// cannot do it, since it is the same heading.
+    @Test("Rows sharing a heading differ in their captions (#1361)")
+    func sharedHeadingsDifferInTheirCaptions() {
+        let first = documentRow(documentId: "d4", displayTitle: "Editorial Note", volumeTitle: nil)
+        let second = documentRow(documentId: "d9", displayTitle: "Editorial Note", volumeTitle: nil)
+        #expect(first.title == second.title)
+        #expect(first.caption != second.caption)
+    }
+
+    /// **A row whose title line already is the identifier pair draws no caption before the time**:
+    /// the pair twice says nothing. One fixture per way a row reaches that fallback.
+    @Test("A row titled by its identifiers draws them once, not twice (#1361)")
+    func captionIsOmittedWhenTheTitleIsTheIdentifier() {
+        let untitled = documentRow(displayTitle: nil, volumeTitle: Self.cubaVolumeTitle)
+        #expect(untitled.title == "frus1961-63v11 · d21")
+        #expect(untitled.caption == nil)
+
+        let empty = documentRow(displayTitle: "", volumeTitle: Self.cubaVolumeTitle)
+        #expect(empty.title == "frus1961-63v11 · d21")
+        #expect(empty.caption == nil)
+
+        let volumeTitled = documentRow(displayTitle: Self.cubaVolumeTitle, volumeTitle: Self.cubaVolumeTitle)
+        #expect(volumeTitled.title == "frus1961-63v11 · d21")
+        #expect(volumeTitled.caption == nil)
+    }
+
+    /// **The display-time rule, one fixture per branch.** A stored title that is exactly its
+    /// volume's manifest title names the volume and is treated as absent; anything else stored is
+    /// the document's title — including a title that merely BEGINS like its volume's, which is why
+    /// the test is equality rather than a prefix or a fuzzy match; and a volume the manifest does
+    /// not list has nothing to compare against, so its stored title stands.
+    @Test("A stored title equal to its volume's manifest title is treated as absent (#1361)")
+    func storedVolumeTitleIsTreatedAsAbsent() {
+        let volume = Self.cubaVolumeTitle
+        #expect(ReadingHistoryTitle.documentTitle(stored: volume, volumeTitle: volume) == nil)
+        #expect(ReadingHistoryTitle.documentTitle(stored: "21. Telegram", volumeTitle: volume) == "21. Telegram")
+        #expect(ReadingHistoryTitle.documentTitle(stored: volume + ", Part 2", volumeTitle: volume)
+                == volume + ", Part 2")
+        #expect(ReadingHistoryTitle.documentTitle(stored: volume, volumeTitle: nil) == volume)
+        #expect(ReadingHistoryTitle.documentTitle(stored: "", volumeTitle: volume) == nil)
+        #expect(ReadingHistoryTitle.documentTitle(stored: nil, volumeTitle: volume) == nil)
+        #expect(ReadingHistoryTitle.identifier(volumeId: "frus1961-63v11", documentId: "d21")
+                == "frus1961-63v11 · d21")
+    }
+
+    /// **Through the fetch, against the real manifest.** A visit written the way the
+    /// `frusexplorer://` handler wrote them — its title is the manifest entry's own `title` — and
+    /// read with the lookup `HistoryView` passes: the row falls back to its identifiers with no
+    /// migration, while a visit stored under a real heading in the same volume keeps it.
+    @Test("A visit stored under its volume's title reads by its identifiers, via the real manifest (#1361)")
+    func fetchRecognisesAStoredVolumeTitle() throws {
+        let manifest = ManifestStore()
+        let volumeTitle = try #require(manifest.entry(forVolumeId: "frus1961-63v11")?.title)
+        #expect(volumeTitle == Self.cubaVolumeTitle, "the manifest decodes its title whitespace-collapsed")
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        insertVisit(context, documentId: "d21", volumeId: "frus1961-63v11", title: volumeTitle)
+        let heading = "22. Telegram From the Department of State to the Embassy in the Soviet Union"
+        insertVisit(context, documentId: "d22", volumeId: "frus1961-63v11", title: heading)
+        try context.save()
+
+        let snapshot = HistoryPaneSnapshot.fetch(from: context,
+                                                 volumeTitle: { manifest.entry(forVolumeId: $0)?.title })
+        let byId = Dictionary(uniqueKeysWithValues: snapshot.documents.map { ($0.documentId, $0) })
+        let deepLinked = try #require(byId["d21"])
+        #expect(deepLinked.volumeTitle == volumeTitle)
+        #expect(deepLinked.displayTitle == volumeTitle, "the stored value is read, not rewritten")
+        #expect(deepLinked.title == "frus1961-63v11 · d21")
+        #expect(deepLinked.caption == nil)
+        let titled = try #require(byId["d22"])
+        #expect(titled.title == heading)
+        #expect(titled.caption == "frus1961-63v11 · d22")
+    }
+
+    /// **The one-line label the macOS History menu and Project Home's Recently Read draw**, through
+    /// the real manifest: a visit stored under its volume's title reads by its identifiers, a
+    /// visit with a real title keeps it, and a visit in a volume the manifest does not list keeps
+    /// whatever it stored.
+    @Test("The one-line visit label applies the volume-title rule against the real manifest (#1361)")
+    func oneLineLabelAppliesTheRule() throws {
+        let manifest = ManifestStore()
+        let volumeTitle = try #require(manifest.entry(forVolumeId: "frus1961-63v11")?.title)
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let deepLinked = insertVisit(context, documentId: "d21", volumeId: "frus1961-63v11",
+                                     title: volumeTitle)
+        let titled = insertVisit(context, documentId: "d22", volumeId: "frus1961-63v11",
+                                 title: "22. Telegram")
+        let untitled = insertVisit(context, documentId: "d23", volumeId: "frus1961-63v11", title: nil)
+        let unlisted = insertVisit(context, documentId: "d1", volumeId: "frus-not-in-the-manifest",
+                                   title: volumeTitle)
+        try context.save()
+
+        #expect(ReadingHistoryTitle.label(for: deepLinked, in: manifest) == "frus1961-63v11 · d21")
+        #expect(ReadingHistoryTitle.label(for: titled, in: manifest) == "22. Telegram")
+        #expect(ReadingHistoryTitle.label(for: untitled, in: manifest) == "frus1961-63v11 · d23")
+        #expect(ReadingHistoryTitle.label(for: unlisted, in: manifest) == volumeTitle)
     }
 
     /// The free-text filter reaches the title and both identifiers, so a reader who remembers
@@ -242,7 +387,7 @@ struct HistoryPaneSnapshotTests {
         insertVisit(context, documentId: "d99", volumeId: "frus1952-54v08", title: "Suez")
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(snapshot.filteredDocuments(matching: "berlin").map(\.documentId) == ["d42"])
         #expect(snapshot.filteredDocuments(matching: "1952-54").map(\.documentId) == ["d99"])
         #expect(snapshot.filteredDocuments(matching: "d42").map(\.documentId) == ["d42"])
@@ -262,7 +407,7 @@ struct HistoryPaneSnapshotTests {
         insertSearch(context, query: "Suez")
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(snapshot.filteredSearches(matching: "blockade").map(\.queryText) == ["Berlin blockade"])
         #expect(snapshot.filteredSearches(matching: "zzz").isEmpty)
     }
@@ -283,7 +428,7 @@ struct HistoryPaneSnapshotTests {
         insertSearch(context, query: "12\u{2033} guns")
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         func found(_ term: String) -> Set<String> { Set(snapshot.filteredSearches(matching: term).map(\.queryText)) }
 
         // Straight filter, typographic rows.
@@ -374,10 +519,10 @@ struct HistoryPaneSnapshotTests {
         let doomed = insertVisit(context, documentId: "goes")
         try context.save()
 
-        #expect(HistoryPaneSnapshot.fetch(from: context).totalDocuments == 2)
+        #expect(HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest).totalDocuments == 2)
         HistoryTrailAdmin.deleteDocumentVisit(id: doomed.id, in: context)
 
-        let after = HistoryPaneSnapshot.fetch(from: context)
+        let after = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(after.totalDocuments == 1)
         #expect(after.documents.map(\.documentId) == ["stays"])
     }
@@ -388,7 +533,7 @@ struct HistoryPaneSnapshotTests {
     @Test("An empty store produces an empty snapshot with nothing hidden")
     func emptyStoreIsEmpty() throws {
         let container = try ModelContainer.makeTestContainer()
-        let snapshot = HistoryPaneSnapshot.fetch(from: container.mainContext)
+        let snapshot = HistoryPaneSnapshot.fetch(from: container.mainContext, volumeTitle: noManifest)
 
         #expect(snapshot.isEmpty)
         #expect(snapshot.documents.isEmpty)
@@ -409,7 +554,7 @@ struct HistoryPaneSnapshotTests {
         context.insert(Project(name: "Berlin"))
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(snapshot.projects.map(\.name) == ["Berlin", "Zanzibar"])
     }
 
@@ -440,7 +585,7 @@ struct HistoryPaneSnapshotTests {
         context.insert(twin)
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(snapshot.searches.count == 2)
         #expect(Set(snapshot.searches.map(\.id)).count == 2, "ForEach needs two distinct ids")
         #expect(snapshot.searches.allSatisfy { $0.entryID == shared })
@@ -465,7 +610,7 @@ struct HistoryPaneSnapshotTests {
         let remaining = try context.fetch(FetchDescriptor<SearchHistoryEntry>())
         #expect(remaining.count == 1)
         #expect(remaining.first?.id == survivor.id)
-        #expect(HistoryPaneSnapshot.fetch(from: context).searches.count == 1)
+        #expect(HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest).searches.count == 1)
     }
 
     // MARK: - Exports
@@ -487,18 +632,19 @@ struct HistoryPaneSnapshotTests {
                                           exportedAt: base.addingTimeInterval(60)))
         try context.save()
 
-        let all = HistoryPaneSnapshot.fetch(from: context)
+        let all = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         #expect(all.totalExports == 2)
         #expect(all.exports.map(\.documentCount) == [3, 12], "newest first")
         #expect(all.isEmpty == false, "a store with only exports is not an empty trail")
 
-        let scopedSnapshot = HistoryPaneSnapshot.fetch(from: context, scope: .project(project))
+        let scopedSnapshot = HistoryPaneSnapshot.fetch(from: context, scope: .project(project),
+                                                       volumeTitle: noManifest)
         #expect(scopedSnapshot.exports.map(\.entryID) == [scoped.id])
-        let unfiled = HistoryPaneSnapshot.fetch(from: context, scope: .unfiled)
+        let unfiled = HistoryPaneSnapshot.fetch(from: context, scope: .unfiled, volumeTitle: noManifest)
         #expect(unfiled.exports.map(\.format) == ["zotero-api"])
 
         #expect(HistoryTrailAdmin.deleteExport(id: scoped.id, in: context))
-        #expect(HistoryPaneSnapshot.fetch(from: context).totalExports == 1)
+        #expect(HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest).totalExports == 1)
         #expect(HistoryTrailAdmin.deleteExport(id: UUID(), in: context) == false)
     }
 
@@ -517,7 +663,7 @@ struct HistoryPaneSnapshotTests {
                                           exportedAt: base.addingTimeInterval(60)))
         try context.save()
 
-        let snapshot = HistoryPaneSnapshot.fetch(from: context)
+        let snapshot = HistoryPaneSnapshot.fetch(from: context, volumeTitle: noManifest)
         let named = try #require(snapshot.exports.first { $0.format == "pdf" })
         let migrated = try #require(snapshot.exports.first { $0.format == "zotero-api" })
         #expect(named.title == "Détente Reader")

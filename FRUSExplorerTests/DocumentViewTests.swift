@@ -34,6 +34,40 @@ private func makeDocumentFixture(documentId: String = "d1", bodyText: String = "
     return url
 }
 
+/// Writes a one-document volume whose document div carries `attributes` and holds `head` (omitted
+/// when `nil`) — the shapes #1361's reading-history tests load through the real parser.
+private func makeVolumeFixture(documentId: String, attributes: String = "", head: String?) throws -> URL {
+    let headElement = head.map { "<head>\($0)</head>" } ?? ""
+    let xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <TEI xmlns="http://www.tei-c.org/ns/1.0">
+      <teiHeader><fileDesc><titleStmt><title>Test Volume</title></titleStmt></fileDesc></teiHeader>
+      <text><body>
+        <div type="document" xml:id="\(documentId)" \(attributes)>
+          \(headElement)
+          <p>The document body.</p>
+        </div>
+      </body></text>
+    </TEI>
+    """
+    let url = FileManager.default.temporaryDirectory
+        .appendingPathComponent("frus-docview-history-\(UUID().uuidString).xml")
+    try xml.write(to: url, atomically: true, encoding: .utf8)
+    return url
+}
+
+/// The Cuban Missile Crisis volume's manifest title — what the `frusexplorer://` handler hands a
+/// document open as its header (#1361), and so what every such visit used to be recorded under.
+private let cubaVolumeTitle =
+    "Foreign Relations of the United States, 1961–1963, Volume XI, Cuban Missile Crisis and Aftermath"
+
+/// An entry shaped the way `navigateToDocument` builds one: no number, no dateline, and the
+/// volume's title as the header.
+private func deepLinkEntry(documentId: String, volumeId: String = "frus1961-63v11",
+                           header: String = cubaVolumeTitle) -> DocumentBrowserEntry {
+    DocumentBrowserEntry(documentId: documentId, volumeId: volumeId, header: header)
+}
+
 private func makeEntry(documentId: String = "d1", volumeId: String = "frus1969-76v01") -> DocumentBrowserEntry {
     DocumentBrowserEntry(
         documentId: documentId,
@@ -90,6 +124,116 @@ struct DocumentViewTests {
         #expect(record.documentId == "d42")
         #expect(record.volumeId == "frus1969-76v01")
         #expect(record.projectId == projectId)
+    }
+
+    // MARK: - Reading History: what a visit is called (#1361)
+
+    /// **The test that stops the class.** A document opened from a `frusexplorer://` link arrives
+    /// with its VOLUME's title as the header, because that is the only title the handler has. The
+    /// writer used to store that header, so every such visit was listed under the volume's name —
+    /// 17 of 17 rows on the four capture simulators — while the reader's own bar showed the
+    /// document's heading. Driven through the real load, so the title stored is the one the parse
+    /// produced, not a value the test set.
+    @Test("A visit is recorded under the parsed title, not the opener's header (#1361)")
+    func recordReadingHistoryStoresTheParsedTitle() async throws {
+        let heading = "21. Telegram From the Department of State to the Embassy in the Soviet Union"
+        let url = try makeVolumeFixture(documentId: "d21", attributes: #"n="21""#, head: heading)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+
+        let vm = DocumentViewModel(entry: deepLinkEntry(documentId: "d21"), volumeEntry: nil,
+                                   parser: FRUSDocumentParser())
+        await vm.load(volumeURL: url)
+        #expect(vm.renderModel != nil)
+        let parsed = try #require(vm.documentTitle)
+        #expect(parsed == heading)
+
+        vm.recordReadingHistory(projectId: nil, in: ctx)
+
+        let record = try #require(try ctx.fetch(FetchDescriptor<ReadingHistoryEntry>()).first)
+        #expect(record.displayTitle == parsed)
+        #expect(record.displayTitle != cubaVolumeTitle)
+    }
+
+    /// **An editorial note is recorded under the name its reader shows.** Since #1372 a note whose
+    /// printed head only says *Editorial Note* is titled with its number, so the load produces a
+    /// title for it, and that title — not the volume's name the link supplied — is what the visit
+    /// is called.
+    @Test("An editorial note's visit is recorded as Editorial Note N (#1361, #1372)")
+    func recordReadingHistoryNamesAnEditorialNote() async throws {
+        let url = try makeVolumeFixture(documentId: "d245",
+                                        attributes: #"n="245" subtype="editorial-note""#,
+                                        head: "Editorial Note")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+
+        let vm = DocumentViewModel(entry: deepLinkEntry(documentId: "d245", volumeId: "frus1964-68v02"),
+                                   volumeEntry: nil, parser: FRUSDocumentParser())
+        await vm.load(volumeURL: url)
+        // The fixture really is the wrapped note shape; without this the test could pass on a
+        // plain document's head.
+        #expect(vm.parsedIsEditorialNote == true)
+        #expect(vm.documentTitle == "Editorial Note 245")
+
+        vm.recordReadingHistory(projectId: nil, in: ctx)
+
+        let record = try #require(try ctx.fetch(FetchDescriptor<ReadingHistoryEntry>()).first)
+        #expect(record.displayTitle == "Editorial Note 245")
+    }
+
+    /// **The fallback, through the real load.** A document with no head and no note flag — seven
+    /// in the corpus — leaves `documentTitle` unset, and the opener's header is then the only name
+    /// there is: the navigation bar shows it, and the visit is recorded under it.
+    @Test("A headless document's visit falls back to the opener's header (#1361)")
+    func recordReadingHistoryFallsBackToTheHeader() async throws {
+        let url = try makeVolumeFixture(documentId: "d7", head: nil)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+
+        let vm = DocumentViewModel(entry: deepLinkEntry(documentId: "d7", header: "Memorandum for the Record"),
+                                   volumeEntry: nil, parser: FRUSDocumentParser())
+        await vm.load(volumeURL: url)
+        #expect(vm.renderModel != nil, "the load succeeded, so the view would record the visit")
+        #expect(vm.documentTitle == nil)
+
+        vm.recordReadingHistory(projectId: nil, in: ctx)
+
+        let record = try #require(try ctx.fetch(FetchDescriptor<ReadingHistoryEntry>()).first)
+        #expect(record.displayTitle == "Memorandum for the Record")
+    }
+
+    /// **The navigation bar's other conjunct: an empty parsed title is no title.** `documentTitle`
+    /// is settable, and the bar skips an empty one; so does the writer.
+    @Test("An empty parsed title falls back to the opener's header (#1361)")
+    func recordReadingHistoryIgnoresAnEmptyParsedTitle() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+
+        let vm = DocumentViewModel(entry: deepLinkEntry(documentId: "d7", header: "Memorandum for the Record"),
+                                   volumeEntry: nil, parser: FRUSDocumentParser())
+        vm.documentTitle = ""
+        vm.recordReadingHistory(projectId: nil, in: ctx)
+
+        let record = try #require(try ctx.fetch(FetchDescriptor<ReadingHistoryEntry>()).first)
+        #expect(record.displayTitle == "Memorandum for the Record")
+    }
+
+    /// **And with neither, nothing is stored** — `nil`, so History draws the identifiers rather
+    /// than an empty line.
+    @Test("With no parsed title and an empty header, no title is stored (#1361)")
+    func recordReadingHistoryStoresNilWithoutAnyTitle() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+
+        let vm = DocumentViewModel(entry: deepLinkEntry(documentId: "d7", header: ""),
+                                   volumeEntry: nil, parser: FRUSDocumentParser())
+        vm.recordReadingHistory(projectId: nil, in: ctx)
+
+        let record = try #require(try ctx.fetch(FetchDescriptor<ReadingHistoryEntry>()).first)
+        #expect(record.displayTitle == nil)
     }
 
     // MARK: - Cross-Project Note Indicator

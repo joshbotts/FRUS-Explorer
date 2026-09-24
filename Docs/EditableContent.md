@@ -9299,7 +9299,7 @@ Read mode also enables edge-tap navigation to the previous and next document in 
 <!-- END SOURCE: document.toolbar.panelMode.hint -->
 
 #### This volume was side-loaded, not downloaded from the…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 255–256 | key: citation.sideloaded.note -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentViewModel.swift | DocumentViewModel.citationProvenanceNote | lines: 258–259 | key: citation.sideloaded.note -->
 
 This volume was side-loaded, not downloaded from the published catalogue. The app cannot confirm it is published, so no history.state.gov link is included — check the citation before using it.
 
@@ -9352,7 +9352,7 @@ At least %1$lld documents in %2$lld volumes you have not downloaded read as clos
 *The Research tab's empty states, Project Home's captions and footers, the project editor, and the history and session-log states.*
 
 #### Research logging is off, so new activity is not being…
-<!-- SOURCE: FRUSExplorer/History/HistoryView.swift | HistoryView.loggingFooter | lines: 306–307 | key: history.logging.off -->
+<!-- SOURCE: FRUSExplorer/History/HistoryView.swift | HistoryView.loggingFooter | lines: 308–309 | key: history.logging.off -->
 
 Research logging is off, so new activity is not being recorded. Turn it back on in Settings under Research Sessions.
 

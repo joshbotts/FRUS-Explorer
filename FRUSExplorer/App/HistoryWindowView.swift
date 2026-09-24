@@ -60,6 +60,8 @@ struct HistoryWindowView: View {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-07: initial implementation
+///   1.1 — #1361: a document item is labelled through `ReadingHistoryTitle`, so a visit stored
+///          under its volume's title reads `volumeId · documentId`
 struct HistoryMenuContent: View {
 
     let appState: AppState
@@ -88,7 +90,8 @@ struct HistoryMenuContent: View {
                             defaultValue: "No Documents Visited Yet"))
             } else {
                 ForEach(recentVisits) { entry in
-                    Button(entry.displayTitle ?? "\(entry.volumeId) · \(entry.documentId)") {
+                    // #1361: a visit stored under its volume's title reads by its identifiers.
+                    Button(ReadingHistoryTitle.label(for: entry, in: appState.manifestStore)) {
                         openDocument(entry)
                     }
                 }

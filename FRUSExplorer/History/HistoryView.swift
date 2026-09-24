@@ -45,6 +45,8 @@ import SwiftData
 ///   1.0 — Wave R-3: initial implementation, replacing `HistoryWindowView`'s macOS-only body
 ///   1.1 — Wave R-2a review fixes: a third section for `ExportHistoryEntry`, with the same
 ///          per-row delete; the deletes key on `entryID` rather than the row's display identity
+///   1.2 — #1361: a visited document's caption names it (`volumeId · documentId`), and the
+///          snapshot is read with the manifest so a stored volume title reads as no title
 struct HistoryView: View {
 
     @Environment(AppState.self) private var appState
@@ -338,11 +340,18 @@ struct HistoryView: View {
                     .lineLimit(2)
                     .foregroundStyle(.primary)
                 HStack(spacing: 6) {
-                    Text(row.volumeId)
-                        .font(FRUSTheme.captionFont)
-                        .foregroundStyle(.secondary)
+                    // #1361: `volumeId · documentId` under a document title, so two visits to one
+                    // document — or two documents sharing a heading — can be told apart. Absent when
+                    // the title line is already that pair.
+                    if let caption = row.caption {
+                        Text(caption)
+                            .font(FRUSTheme.captionFont)
+                            .foregroundStyle(.secondary)
+                    }
                     if let date = row.accessedAt {
-                        Text(verbatim: "·").foregroundStyle(.tertiary)
+                        if row.caption != nil {
+                            Text(verbatim: "·").foregroundStyle(.tertiary)
+                        }
                         Text(date, style: .relative)
                             .font(FRUSTheme.captionFont)
                             .foregroundStyle(.tertiary)
@@ -517,7 +526,9 @@ struct HistoryView: View {
     // MARK: - State
 
     private func refresh() {
-        snapshot = HistoryPaneSnapshot.fetch(from: modelContext, scope: scope, limit: pageLimit)
+        snapshot = HistoryPaneSnapshot.fetch(
+            from: modelContext, scope: scope, limit: pageLimit,
+            volumeTitle: { appState.manifestStore.entry(forVolumeId: $0)?.title })
         // A scope can disappear from under the picker — a project deleted in another window, or
         // a CloudKit import that removed it. Fall back to the global scope rather than showing an
         // empty list under a selection whose menu item no longer exists.

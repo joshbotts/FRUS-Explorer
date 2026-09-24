@@ -18136,3 +18136,66 @@ State" library citations the generator does not; mirror-gated, so ordinary runs 
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
 their own tasks.
+
+## Session 2026-09-23 — History names the document a visit was to, not the volume a link came from
+
+**The question:** lane K's fifth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1361. Research ▸ History listed documents opened from a `frusexplorer://` link under their
+volume's title (all 17 rows on the four #1081 capture simulators, each equal to its volume's
+manifest title), and no row named the document, so three visits to `frus1961-63v11/d21` looked like
+three different things with nothing to say otherwise.
+
+**Two causes, both as the issue describes them.** `DocumentViewModel.recordReadingHistory` stored
+`entry.header` — whatever the opener passed — and the deep-link handler passes the manifest entry's
+`title`, the only title it has before the volume is downloaded. The writer runs after a successful
+load, when the parsed `documentTitle` is already on the view model and already on iOS's navigation
+bar, so the bar and the trail disagreed. History, Project Home and Continue Reading reopen a visit
+with its stored title as the header, so a wrong title recorded itself again on every reopen. And
+the History row drew `row.title` over the volume id and the time; `documentId` was loaded and the
+filter matched on it, but it was never shown.
+
+**What changed.** The writer stores `readingHistoryTitle` — `documentTitle` when the load produced
+one, else the header, else nil, the bar's own order — which fixes every opener at once. Since #1372
+(index v55) an editorial note has a parsed title too, *Editorial Note N* for a generic head, so a
+note's visit is named that way rather than after the link. The row's caption is now
+`volumeId · documentId` under a document title, and omitted when the title line already is that
+pair. Rows already written keep their volume titles; rather than migrate a CloudKit-mirrored table,
+`ReadingHistoryTitle.documentTitle(stored:volumeTitle:)` treats a stored title that is EXACTLY its
+volume's manifest title as absent (equality, so a heading that merely begins like its volume's is
+kept). The History list (both platforms, via `HistoryPaneSnapshot.fetch`, which now requires the
+manifest lookup so no caller can omit it), the macOS History menu and Project Home's Recently Read
+apply it. Continue Reading does not — its fallback is the bare document id and its row names the
+volume nowhere else — nor the Session Log (no manifest in its row view) nor the research-data
+export (the stored value is data). No stored property changed, so the CloudKit schema did not:
+`CloudKitSchemaInventoryTests` passes unchanged. Both manuals' History sections gained one bullet
+saying what a visited-document row shows.
+
+**Verification.** iPhone 17e (iOS 26.4.1, `2E021065`). Eleven new unit tests: five drive the real
+`load(volumeURL:)` and `recordReadingHistory` (the deep-link shape, an editorial note, a headless
+document, an empty parsed title, no title at all), six pin the row, the rule, the fetch against the
+real bundled manifest and the one-line label. **Before the fix** — the writer unchanged and the new
+row API returning the old behaviour (caption = volume id, no rule) — the two suites ran 33 tests
+with 14 issues: 7 of the 10 new tests then written failed, and the three fallback controls passed,
+as a control should on code that only had the fallback (the eleventh, the one-line label, was
+written with the fix; the rule mutation below fails it). **After:** 72 tests in 5 suites pass
+(`DocumentViewTests`, `HistoryPaneSnapshotTests`, `CloudKitSchemaInventoryTests`,
+`ResearchLoggingGateTests`, `ProjectContextTests`). Three mutations, each restored by re-editing
+with the tree then byte-equal to the commit: the volume-title rule removed failed 4 tests, the
+writer's empty-title conjunct removed failed 1, and the header fallback removed failed 2.
+
+**And end to end, which only a UI test can see.** `HistoryVisitTitleTests` (in
+`ResearchReadingStaysInTabTests.swift`) seeds `frus1961-63v06`, opens
+`frusexplorer://document/frus1961-63v06/d1` through `XCUIApplication.open` — `simctl openurl` stops
+at a system "Open in FRUS Explorer?" prompt — waits for the reader to load, then reads the History
+row's accessibility label whole. On the pre-fix behaviour (the writer's line, the rule and the
+caption put back, then restored by re-editing) it failed all three assertions with the row reading
+*Foreign Relations of the United States, 1961–1963, Volume VI, Kennedy-Khrushchev Exchanges,
+frus1961-63v06, ·, 9 sec* — the issue's own picture; with the fix it passes and reads *UI Test
+Document One* over *frus1961-63v06 · d1*. It attaches a screenshot of History on every run, and
+skips on an iPad: the iPad Research two-pane reaches History through its sidebar, and this lane had
+one iPhone simulator, so that path is unmeasured rather than claimed. The
+final run, at the committed tree: 90 unit tests in 6 suites (the five above plus
+`CodingStandardsAuditTests`) and the UI test, `** TEST EXECUTE SUCCEEDED **`. The macOS scheme
+builds (`BUILD SUCCEEDED`). `ResearchGuideCoverageTests.mirrorMatchesTheGuide` fails here as it does
+on `v2` — `origin/v2`'s `Docs/EditableContent.md` holds neither "subjects facet" nor "topic area",
+and this change edits two line ranges in that file and nothing else.

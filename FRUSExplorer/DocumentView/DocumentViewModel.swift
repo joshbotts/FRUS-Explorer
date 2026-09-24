@@ -58,6 +58,8 @@ import SwiftData
 ///          interior whitespace collapsed, e-volume summary segs excluded
 ///   Session 09: subject-tag loading removed with the document-level taxonomy
 ///         (`subjectTags` property and the `subjectTagStore` init dependency are gone).
+///   1.8 — #1361: a visit is recorded under the parsed title (`readingHistoryTitle`), not the
+///          opener's header, which a `frusexplorer://` link sets to the volume's title
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -71,7 +73,8 @@ public final class DocumentViewModel {
     /// after a successful load.  Used as the navigation title when the
     /// `DocumentBrowserEntry` was created without a header (e.g. cross-reference
     /// targets, which are constructed with `header: ""` because the title is not
-    /// known until the XML is parsed).
+    /// known until the XML is parsed), and as the title a visit is recorded under
+    /// (``readingHistoryTitle``, #1361).
     public var documentTitle: String?
 
     /// Canonical document number resolved from the parsed document (the div's `@n` — the
@@ -583,8 +586,30 @@ public final class DocumentViewModel {
 
     // MARK: - Reading History
 
+    /// The title a visit to this document is recorded under: the parsed `documentTitle` when the
+    /// load produced one, else the opener's `entry.header`, else `nil` — the order iOS's navigation
+    /// bar uses (`DocumentView.displayTitle`), so the trail calls a document what its reader did.
+    ///
+    /// **Why not the header first (#1361).** The header is whatever the opener put in the entry,
+    /// and openers pass labels of their own: a `frusexplorer://` link passes its VOLUME's title,
+    /// the only one it has before the volume is downloaded, so every visit opened that way was
+    /// recorded under the volume's name — 17 of 17 rows on the four #1081 capture simulators —
+    /// while the bar showed the document's heading. History, Project Home and Continue Reading
+    /// reopen a visit with its stored title as the header, so a wrong title recorded itself again
+    /// on every reopen. The parsed title is known by the time this runs, and is right whichever
+    /// opener was used, including ones not yet written. An editorial note has one too: since #1372
+    /// a note whose printed head only says *Editorial Note* is titled *Editorial Note N*.
+    ///
+    /// The header remains the fallback for a document the parse gives no title — seven in the
+    /// corpus have neither a head nor the note flag — and for a view model that has not loaded.
+    var readingHistoryTitle: String? {
+        if let documentTitle, !documentTitle.isEmpty { return documentTitle }
+        return entry.header.isEmpty ? nil : entry.header
+    }
+
     /// Inserts a `ReadingHistoryEntry` into the SwiftData context.
-    /// Call this once after a successful load, passing the active project ID.
+    /// Call this once after a successful load, passing the active project ID. The entry's
+    /// `displayTitle` is ``readingHistoryTitle`` — the parsed title, not the opener's header (#1361).
     ///
     /// **Honours the research-logging preference.** Until Wave R-1 this writer had no gate of
     /// any kind, so "Log Research Sessions" stopped the `SessionEvent` recorder that only the
@@ -611,7 +636,7 @@ public final class DocumentViewModel {
         let record = ReadingHistoryEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
-            displayTitle: entry.header.isEmpty ? nil : entry.header,
+            displayTitle: readingHistoryTitle,
             projectId: projectId
         )
         context.insert(record)

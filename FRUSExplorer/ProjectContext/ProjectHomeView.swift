@@ -1044,7 +1044,7 @@ struct ProjectHomeView: View {
             if !s.recentVisits.isEmpty {
                 sectionCard(String(localized: "project.home.recent.documents", defaultValue: "Recently Read")) {
                     ForEach(s.recentVisits) { visit in
-                        recentRow(title: visit.displayTitle ?? "\(visit.volumeId) · \(visit.documentId)",
+                        recentRow(title: ReadingHistoryTitle.label(for: visit, in: appState.manifestStore),
                                   systemImage: "book") {
                             openDocument(volumeId: visit.volumeId, documentId: visit.documentId,
                                          title: visit.displayTitle)
