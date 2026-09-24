@@ -9083,56 +9083,56 @@ NARA Catalog API rate limit reached. Try again later, or use the manual search l
 <!-- END SOURCE: nara.error.rateLimited -->
 
 #### A NARA Catalog API key is required for this strategy. Add…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 365–366 | key: nara.lookup.noKey.warning -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 374–375 | key: nara.lookup.noKey.warning -->
 
 A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The “Central files identifier” strategy does not require a key.
 
 <!-- END SOURCE: nara.lookup.noKey.warning -->
 
 #### Select the filing period that matches the document date.…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 383–384 | key: nara.lookup.periodLinks.intro -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 392–393 | key: nara.lookup.periodLinks.intro -->
 
 Select the filing period that matches the document date. Each link goes directly to the NARA research page for that period — no API key required.
 
 <!-- END SOURCE: nara.lookup.periodLinks.intro -->
 
 #### Use for D-designator lot numbers (e.g. “63D135” or “68 D…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 561–562 | key: nara.lookup.strategy.lotFileRG59.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.lotFileRG59.hint -->
 
 Use for D-designator lot numbers (e.g. “63D135” or “68 D 277”). Queries State Dept. lot file series in RG 59.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG59.hint -->
 
 #### Use for F-designator lot numbers (e.g. “55F44” or “56 F…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 564–565 | key: nara.lookup.strategy.lotFileRG84.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.lotFileRG84.hint -->
 
 Use for F-designator lot numbers (e.g. “55F44” or “56 F 28”). Queries diplomatic post record lots in RG 84.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG84.hint -->
 
 #### Use for series names, collection descriptions, or partial…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 567–568 | key: nara.lookup.strategy.keywordRG59.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keywordRG59.hint -->
 
 Use for series names, collection descriptions, or partial citation text. Restricts results to RG 59 (State Dept.).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG59.hint -->
 
 #### Use for series names or collection descriptions. Restricts…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.keywordRG84.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 579–580 | key: nara.lookup.strategy.keywordRG84.hint -->
 
 Use for series names or collection descriptions. Restricts results to RG 84 (State Dept. post records).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG84.hint -->
 
 #### Use for decimal file identifiers (e.g. “862S.01/10-1646”)…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.centralURL.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 582–583 | key: nara.lookup.strategy.centralURL.hint -->
 
 Use for decimal file identifiers (e.g. “862S.01/10-1646”) or central file keywords. Opens a pre-filtered NARA Catalog search — no API key required.
 
 <!-- END SOURCE: nara.lookup.strategy.centralURL.hint -->
 
 #### General free-text search across all record groups in the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keyword.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 585–586 | key: nara.lookup.strategy.keyword.hint -->
 
 General free-text search across all record groups in the NARA Catalog. Useful when the collection type is unclear.
 

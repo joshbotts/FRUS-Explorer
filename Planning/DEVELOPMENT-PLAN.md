@@ -18163,8 +18163,8 @@ type in `EducationDashboardTests.swift`, so no new file) walks every `ResearchGu
 and `IndexingEducationView(…)` call under `FRUSExplorer/` by balanced parentheses, extracts the
 `pageId:`/`initialPageId:` literal, and resolves it through `EducationPage.index(ofDeepLink:)` —
 a new one-line function the view's `init` now calls, so the test and the guide use one lookup. A
-button whose `pageId:` is not a string literal fails too, because nothing could check it. The
-scan asserts it read more than 400 files (479 today) and found at least five links (five today).
+button whose `pageId:` is not a string literal, or that passes none (review round, below), fails
+too, because nothing could check it. The scan asserts it read more than 400 files (479 today) and found at least five links (five today).
 A second test requires the NARA Lookup links' page to mention "NARA Lookup" in its sections,
 because resolving is not enough — `"finding-documents"` resolves.
 
@@ -18182,6 +18182,35 @@ entry records as red on `v2` since #1353 (neither of its two terms occurs in `or
 
 **Also:** `ResearchGuideLinkButton`'s doc comment named `"app-features"` as the NARA Lookup target
 and now names the three real ones; `Docs/EditableContent.md`'s eleven advisory `lines:` ranges for
-the guide pages moved by the sixteen lines the new function and its history added. No
-`defaultValue` changed, no manual sentence names the target page, and nothing here touches the
-index.
+the guide pages moved by the sixteen lines the new function and its history added, and its eight
+`NARACatalogLookupView.swift` ranges by the nine lines that file's history and link comment added
+(the first commit moved only the eleven; the review caught it). No `defaultValue` changed, no
+manual sentence names the target page, and nothing here touches the index.
+
+**Review round.** Five changes, each from a confirmed finding or a cheap nit.
+- *The eight NARA Lookup `lines:` ranges* were exact on `v2` and nine off after the first commit;
+  they now read 374–375, 392–393, 570–571 … 585–586, each checked against its key's line.
+- *The macOS entry point was still described as a `Window(id: "frus.researchGuide")` scene*, in the
+  doc block this PR rewrote, in `ResearchGuideView`'s own entry-points list and on
+  `AppState.researchGuideInitialPageId`. #363 #7 replaced it with the value-based
+  `WindowGroup(for: ResearchGuideWindowID.self)`; all three now name
+  `openWindow(value: ResearchGuideWindowID())`.
+- *The lookup's `nil` had no pin, and the resolve test uses the lookup as its oracle.* Moving the
+  view's `?? 0` into `index(ofDeepLink:)` compiles, leaves the view unchanged and turns every dead
+  literal green; only the two NARA sites would stay guarded, by the content test.
+  `lookupAnswersNilForAnUnknownId` pins `nil` for `"app-features"` and `""` and each live id's own
+  position, and `dashboardsResolveViaDeepLink` calls the same function (it had its own
+  `firstIndex`) and checks the page it lands on.
+- *Two scanner branches had never run*: the app tree has no `IndexingEducationView(…)` naming a
+  literal, and a button call with no `pageId:` label was silently skipped. The per-file walk is now
+  `sites(in:file:)`, `scannerReadsEachShapeOfCall` drives every branch over an eleven-line fixture,
+  and a label-less button is reported as a site the scan cannot read rather than skipped.
+- *Wording:* page 5's MARK still said "App Feature Walkthrough"; the test type's doc dated the dead
+  literal "from Session 163", when it went in live at `4429e786` (2026-06-07) and died there.
+
+A/B on the same simulator: with `?? 0` moved into the lookup and the old skip restored, 9 tests in
+2 suites with 4 issues — the `nil` test at `"app-features"` and `""`, and the fixture reading lines
+`[1, 2, 6, 9]` against `[1, 2, 6, 7, 9]` (line 7 is the label-less button). The resolve test
+stayed green under that mutant, which is the gap the review named. Restored, beside the same
+neighbouring suites: 20 tests in 5 suites with one issue, the `mirrorMatchesTheGuide` "subjects
+facet" failure recorded above. The macOS scheme builds.

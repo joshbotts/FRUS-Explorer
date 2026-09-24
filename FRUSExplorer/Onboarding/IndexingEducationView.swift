@@ -649,8 +649,8 @@ struct EducationPage: Identifiable {
     /// renamed. #1352 was the second case: NARA Lookup's **Learn About NARA Lookup** named
     /// `"app-features"` for three months after that page became `"finding-documents"`, and opened
     /// the guide at *The Official Record of American Foreign Policy*. So the lookup is one function
-    /// the view and `ResearchGuideDeepLinkTests` both call, and the test fails on a named id this
-    /// returns `nil` for.
+    /// the view and `ResearchGuideDeepLinkTests` both call; the test fails on a named id this returns
+    /// `nil` for, and pins that `nil` itself, since a fallback moved in here would resolve every id.
     static func index(ofDeepLink id: String) -> Int? {
         all.firstIndex { $0.id == id }
     }
@@ -908,7 +908,7 @@ private extension EducationPage {
     )
 }
 
-// MARK: - Page 5: App Feature Walkthrough
+// MARK: - Page 5: Finding What You Need in FRUS Explorer
 
 private extension EducationPage {
     // MARK: Page 5 — Finding documents
