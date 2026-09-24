@@ -153,7 +153,12 @@ import Foundation
 ///          an item's own `<p>`s and a list nested in an item print in Word, and a highlight
 ///          after any of them shades the words it was made on. An item's label opens the first
 ///          paragraph that holds text of its own; a nested list is indented a step further.
-///          Content holding no block prints byte-for-byte as before.
+///          Content holding no block prints byte-for-byte as before. A footnote body is not
+///          split: it still prints as one paragraph of runs, and drops its blocks (#1414).
+///   1.18 — #1371 review, round 2: a paragraph a split opens starts on its first word, not on
+///          the space whitespace normalisation left before it (`trimmingLeadingSpace(ofFirstRun:)`,
+///          applied to the XML after the highlight tracker painted it, so the tracker still counts
+///          the space).
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -1002,9 +1007,11 @@ final class DocxCollectionExporter: CollectionExporter {
     /// A list, as Word paragraphs (#1371). The heading, each printed label and the list's other
     /// children print, but none of it is flat text, so none of it is handed the tracker — only
     /// the items are. An item prints through `paragraphsDocx`, its label (or its bullet) opening
-    /// the first paragraph that holds text of its own: 33,608 `<p>`s and 38,423 lists sit
-    /// directly in an `<item>` in the corpus, and until the #1371 review Word printed none of
-    /// them. A list nested in an item is indented one step further than the item.
+    /// the first paragraph that holds text of its own: outside footnote bodies, 33,572 `<p>`s and
+    /// 38,372 lists sit directly in an `<item>` in the corpus, and until the #1371 review Word
+    /// printed none of them. (A list in a footnote body still prints nothing, items and all:
+    /// `singleParaFootnoteXML` prints a note as one paragraph of runs — #1414.) A list nested in
+    /// an item is indented one step further than the item.
     private func listDocxXML(type: String?, heading: [FRUSRenderNode]?, items: [ListItemEntry],
                              trailing: [ListLead], indent: Int, footnoteIDMap: [String: Int],
                              tracker: HighlightPaintTracker?) -> String {
@@ -1049,13 +1056,17 @@ final class DocxCollectionExporter: CollectionExporter {
     /// Word paragraphs, each made by `paragraph` from its runs.
     ///
     /// Word cannot hold a paragraph inside a paragraph, and TEI can. Measured at corpus
-    /// `550a8c5c5` over the 553 manifest volumes, in documents and outside notes: 93,392 `<p>`s
-    /// sit in a `<quote>` inside a `<p>`; 54,151 lists sit directly in a `<p>` and 1,765 more in a
-    /// `<quote>` there; 38,423 lists and 33,608 `<p>`s sit directly in an `<item>`; 3,249 tables
-    /// sit in a `<p>`; and a table cell holds a `<p>`, a table or a list 1,140 times — 69,683
-    /// documents in all. The run path printed each of them through `inlineNodeRunXML`, whose
-    /// block arm prints nothing and does not advance the highlight tracker, so each vanished from
-    /// Word AND every highlight after it in the document shaded the wrong words.
+    /// `550a8c5c5` over the 553 manifest volumes, in documents and outside footnote bodies:
+    /// 91,332 `<p>`s sit in a `<quote>` inside a `<p>`; 53,759 lists sit directly in a `<p>` and
+    /// 1,693 more in a `<quote>` there; 38,372 lists and 33,572 `<p>`s sit directly in an
+    /// `<item>`; 3,223 tables sit in a `<p>`; and a table cell holds a `<p>`, a table or a list
+    /// 1,136 times — 68,944 documents in all. The run path printed each of them through
+    /// `inlineNodeRunXML`, whose block arm prints nothing and does not advance the highlight
+    /// tracker, so each vanished from Word AND every highlight after it in the document shaded
+    /// the wrong words. Another 2,653 such blocks, in 1,315 documents, sit inside a footnote body,
+    /// which never reaches this function: `singleParaFootnoteXML` still prints a note as one
+    /// paragraph of runs, so they still print nothing (#1414). No highlight moves for them, since
+    /// footnote bodies are outside the flat text.
     ///
     /// Runs gather into a paragraph. A `<p>` in the context ends it and starts another, styled the
     /// same way — an item's second paragraph is the item's; any other block (a list, a table, a
@@ -1064,7 +1075,9 @@ final class DocxCollectionExporter: CollectionExporter {
     /// is made in document order with the tracker, so the tracker stays in step with the flat
     /// text. `lead` — an item's label or bullet — opens the first paragraph that holds runs of
     /// its own, so an item that opens with a `<p>` prints its label beside that paragraph's
-    /// words; before a list or table it prints on a line of its own.
+    /// words; before a list or table it prints on a line of its own. Every paragraph gathered
+    /// after a split — a `<p>`'s edge or a printed block — opens on its first word, not on the
+    /// space whitespace normalisation left before it (`trimmingLeadingSpace(ofFirstRun:)`).
     ///
     /// Content holding no block prints exactly as it always has: one paragraph of runs.
     private func paragraphsDocx(_ nodes: [FRUSRenderNode], props: RunProps, lead: String = "",
@@ -1080,11 +1093,16 @@ final class DocxCollectionExporter: CollectionExporter {
         var xml = ""
         var pendingLead = lead
         var runs = ""
+        // Whether a split — a paragraph break or a printed block — has passed. Every paragraph
+        // gathered after one is a paragraph the split opened.
+        var afterSplit = false
         func closeParagraph() {
             guard !runs.isEmpty else { return }
-            xml += paragraph(pendingLead + runs)
-            pendingLead = ""
+            let body = afterSplit ? Self.trimmingLeadingSpace(ofFirstRun: runs) : runs
             runs = ""
+            guard !body.isEmpty else { return }
+            xml += paragraph(pendingLead + body)
+            pendingLead = ""
         }
         for piece in pieces {
             switch piece {
@@ -1092,6 +1110,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 runs += r
             case .paragraphBreak:
                 closeParagraph()
+                afterSplit = true
             case .blocks(let b):
                 // A block that prints nothing — a figure with no graphic — does not split the
                 // paragraph around it.
@@ -1102,11 +1121,36 @@ final class DocxCollectionExporter: CollectionExporter {
                     pendingLead = ""
                 }
                 xml += b
+                afterSplit = true
             }
         }
         closeParagraph()
         if !pendingLead.isEmpty { xml += paragraph(pendingLead) }
         return xml
+    }
+
+    /// `runs` without the whitespace that opens its first run, for a paragraph a split opened
+    /// (#1371 review, round 2). Whitespace normalisation keeps one space where the TEI had
+    /// whitespace before a text node, so the words after a block — `</list> and nothing more.` —
+    /// begin " and". In the paragraph they were written in, that space sat between two words;
+    /// opening a Word paragraph of their own, it prints as a visible indent.
+    ///
+    /// Only the first run is touched, and only its leading spaces: the words inside it and every
+    /// other run print as they were. A run that held nothing but the space is dropped rather than
+    /// printed empty. The space comes off the XML after the tracker painted it, never off the text
+    /// before, so the tracker still counts it, as the flat text does: a highlight that starts on
+    /// the space shades the words after it, and every later highlight keeps its words. A first run
+    /// holding no text — a footnote reference, a line break — leaves `runs` as it is.
+    private static func trimmingLeadingSpace(ofFirstRun runs: String) -> String {
+        guard runs.hasPrefix("<w:r>"), let runEnd = runs.range(of: "</w:r>") else { return runs }
+        let run = runs[..<runEnd.upperBound]
+        guard let open = run.range(of: "<w:t xml:space=\"preserve\">") ?? run.range(of: "<w:t>"),
+              let close = run.range(of: "</w:t>", range: open.upperBound..<run.endIndex) else { return runs }
+        let text = run[open.upperBound..<close.lowerBound]
+        let kept = text.drop(while: { $0 == " " || $0 == "\t" })
+        guard kept.startIndex != text.startIndex else { return runs }
+        guard !kept.isEmpty else { return String(runs[runEnd.upperBound...]) }
+        return String(runs[..<open.upperBound]) + kept + String(runs[close.lowerBound...])
     }
 
     /// `nodes` as `DocxPiece`s, in document order: runs for inline content, a paragraph break

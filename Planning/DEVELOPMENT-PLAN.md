@@ -18967,8 +18967,10 @@ removed failed the dangling-label export test. The macOS scheme builds.
 **Not done in this commit, and measured:** the DOCX exporter dropped every block node it met
 inside a paragraph's runs, and 54,151 lists sit directly in a `<p>` (35,453 documents, 43,198
 labelled) — so in Word those lists vanished whole, items and all, as they did before this change,
-while PDF and HTML rendered them. **The review fixes below do it**, for that shape and the others
-the same arm dropped. The manuals' floating-bar paragraphs gain one sentence each on what a highlight of a
+while PDF and HTML rendered them. **The review fixes below do it** for the 53,759 of those lists
+that sit outside a footnote body, and for the other shapes the same arm dropped. The other 392 are
+inside a footnote body, which Word still prints as one paragraph of runs, so they still print
+nothing there (#1414). The manuals' floating-bar paragraphs gain one sentence each on what a highlight of a
 numbered list keeps; no `defaultValue` changed.
 
 ## Session 2026-09-24 — #1371 review fixes: Word prints a list, a table or a quoted paragraph that sits inside a paragraph, and highlights after one keep their words
@@ -18980,21 +18982,33 @@ the highlight tracker**. So any block inside a paragraph, a table cell or a list
 from Word, and every highlight after it in the same document shaded the wrong words.
 
 **Measured, at corpus `550a8c5c5` over the 553 manifest volumes, in documents and outside
-notes**, each element under its nearest run context:
+footnote bodies**, each element under its nearest run context:
 
 | Block | Where it sits | Count |
 |---|---|---|
-| `<p>` | in a `<quote>` inside a `<p>` | 93,392 |
-| `<list>` | directly in a `<p>` | 54,151 |
-| `<list>` | in a `<quote>` inside a `<p>` | 1,765 |
-| `<list>` | directly in an `<item>` | 38,423 |
-| `<p>` | directly in an `<item>` | 33,608 |
-| `<p>` | in a `<quote>` in an `<item>` | 3,966 |
-| `<table>` | in a `<p>` | 3,249 |
-| `<p>`, `<table>` or `<list>` | directly in a table cell | 1,140 |
+| `<p>` | in a `<quote>` inside a `<p>` | 91,332 |
+| `<list>` | directly in a `<p>` | 53,759 |
+| `<list>` | in a `<quote>` inside a `<p>` | 1,693 |
+| `<list>` | directly in an `<item>` | 38,372 |
+| `<p>` | directly in an `<item>` | 33,572 |
+| `<p>` | in a `<quote>` in an `<item>` | 3,960 |
+| `<table>` | in a `<p>` | 3,223 |
+| `<p>`, `<table>` or `<list>` | directly in a table cell | 1,136 |
 
-In all, **69,683 documents** hold at least one. The entry above disclosed only the 54,152 lists
-in a `<p>`, which was itself one list too many (below).
+In all, **68,944 documents** hold at least one. The entry above disclosed only the lists in a
+`<p>`: 54,151 (it first said 54,152, one list too many; below), a figure that counts the 392
+inside footnote bodies.
+
+(This table first said 93,392 / 54,151 / 1,765 / 38,423 / 33,608 / 3,966 / 3,249 / 1,140 and
+69,683 documents, under the same "outside notes" heading. It was not: the recount climbed from
+each block only to its nearest run context and tested for a `<note>` on the way, so a note
+enclosing that context — a footnote's own `<p>` — was never seen. Round 2's recount tests every
+ancestor up to the document div, and splitting the first figures by it reproduces both columns
+exactly. **The 2,653 blocks it moves, in 1,315 documents, are ones this fix does not print**: every
+one sits in a real footnote rather than a `rend="inline"` note the parser hoists into the text,
+and a footnote body still goes through `singleParaFootnoteXML`, one paragraph of runs, which drops
+them — 2,060 quoted `<p>`s, 464 lists in a `<p>` or a quote there, 51 lists and 42 `<p>`s in an
+item, 26 tables, 6 figures and 4 `<p>`s in a cell. #1414 has the footnote side.)
 
 **The fix is one mechanism, not four patches.** `paragraphsDocx` prints the content of a
 paragraph, heading, dateline, salute, attachment heading, table cell or list item as one or more
@@ -19017,9 +19031,11 @@ graphic, does not split its paragraph.
 **Content holding no block prints byte-for-byte as before.** This holds by construction: that
 path calls the same paragraph closure with the same runs, and `wPara` is now `wParaXML` with the
 same layout. Where a paragraph did hold a block, its tail now opens a new Word paragraph. This is
-the one visible layout change, and Word has no other way to print it. The `inlineNodeRunXML`
-block arm keeps printing nothing. What still reaches it is a block inside a list's heading or
-label, or inside a footnote body, and none of that is flat text or handed the tracker. The PDF
+the one visible layout change, and Word has no other way to print it; since round 2 (below) that
+paragraph opens on its first word rather than on the space whitespace normalisation left before
+it. The `inlineNodeRunXML` block arm keeps printing nothing. What still reaches it is a block
+inside a list's heading or label, or inside a footnote body — the 2,653 above — and none of that
+is flat text or handed the tracker. The PDF
 exporter needed nothing, since its inline path already falls through to the block renderer.
 
 **The other findings.**
@@ -19080,9 +19096,12 @@ rounds:
 - **The snap removed:** all seven snap tests failed, including the new "(1)" drag.
 - **The binary search off by one:** all seven snap tests failed.
 - **#1386's `.fn-list-item > *` rule removed:** the sweep's offenders included
-  `span.list-label [block] text-indent -24.2px`.
+  `span.list-label [block] text-indent -24.2px`. #1386's own "The classification chip's text
+  starts inside its own border box" failed with it, at all four text sizes (4 cases, 8 issues):
+  it guards the same rule.
 - **The empty-block guard removed:** the bare-figure paragraph split.
-In each round, only the aimed tests failed.
+Apart from that chip test, which the #1386 mutant was bound to fail, only the aimed tests failed
+in each round.
 
 **The whole unit target, and the control held at the current base.** On this tree: 5,191 tests in
 642 suites, 5 issues in 4 tests. The four are the same ones the entry above names:
@@ -19100,4 +19119,50 @@ four failures is this change's. The macOS scheme builds.
 (`singleParaFootnoteXML`), so a list or table inside a note still prints nothing there: 566 lists
 (142 labelled) in 491 documents, and 61 tables in 52 documents, counting the outermost one in each
 note. Footnote bodies are outside the flat text and the tracker is nil there, so no highlight
-moves. The owner's session has it to file.
+moves. It is filed as #1414. The same path also drops a quoted paragraph inside a note's own
+`<p>` — 2,060 of the 2,653 in-note blocks above — which #1414's title, lists and tables, does not
+name.
+
+**Review round 2.** The check of the fix commit confirmed every finding above resolved and found
+three new problems. The first two are corrected in place above; the bullets say where.
+- **The "outside notes" figures were not outside notes.** The table, the prose after it,
+  `paragraphsDocx`'s and `listDocxXML`'s doc comments and the three DOCX tests' docs now give the
+  outside-footnote figures and name the in-note blocks as not printed (#1414). My own recount
+  (every ancestor up to the document div tested for a `<note>`, not only those below the nearest
+  run context) gives the checker's corrected figures exactly, and with the note test removed it
+  gives the first figures exactly. A footnote body is not split around its blocks, so the three
+  tests' docs no longer say "the paragraph is split around them" of every such paragraph.
+- **"Only the aimed tests failed"** was loose for round C: the #1386 mutant also failed #1386's own
+  classification-chip test. The line above now names it.
+- **The words after a block opened their Word paragraph on a space.** Whitespace normalisation
+  keeps one space where the TEI had whitespace before a text node, so `</list> and nothing more.`
+  split into a paragraph of its own began " and nothing more." — a visible indent in Word.
+  `paragraphsDocx` now passes every paragraph it gathers after a split (a paragraph break or a
+  printed block) through `trimmingLeadingSpace(ofFirstRun:)`, which takes the leading spaces off
+  that paragraph's first run and drops the run if nothing is left of it. It works on the XML after
+  the tracker painted it, never on the text before, so the tracker counts the space exactly as the
+  flat text does. A first run with no text (a footnote reference, a line break) is left alone, and
+  content holding no block never reaches it. `docxTrimsTheSpaceThatOpensASplitParagraph` marks
+  the first word after a list ("thereafter"), a highlight that starts on the trimmed space itself
+  (" then", after a quote) and the paragraph after both.
+
+**Verification, round 2, on the same iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** On the code
+before the trim, the new test failed with 3 issues and the other 10 `ListExportTests` passed: the
+paragraphs printed " thereafter nothing more." and " then stopped short.", and the green
+highlight shaded " then". With the trim, all 11 pass. Four mutants of the trim were each built and run on their own against
+those 11 tests, and the file was restored from a saved copy and compared byte-for-byte after each:
+- **Every run's leading space trimmed, not only the first:** "thereafternothing more.",
+  "thenstopped short.", and an empty run printed.
+- **The space taken off the text before the tracker painted it:** the highlights shaded
+  "hereafter ", "hen s" and "osing paragraph.", and the words the lookups search for were split
+  across runs. This also failed "A list or quoted paragraphs inside a paragraph print in Word…",
+  for the same reason.
+- **An emptied run kept rather than dropped:** only the empty-run assertion failed.
+- **A paragraph break not counted as a split:** the paragraph after the quote printed " then
+  stopped short." and the green highlight shaded " then".
+Apart from the one the second mutant named, no other test failed in any round.
+
+The whole unit target on this tree ran 5,192 tests in 642 suites, with 5 issues in 4 tests: the
+same four as above (`OnboardingIdentityPlacementTests`' welcome-dock case, two `SplashDriftTests`
+geometry cases, #1412, and `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403). The count
+is the 5,191 above plus the one test added here. The macOS scheme builds.

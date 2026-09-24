@@ -5923,9 +5923,11 @@ struct ListExportTests {
         return try await docxText(model, highlights: highlights)
     }
 
-    /// 33,608 `<p>`s and 38,423 lists sit directly in an `<item>` in the corpus. Word printed an
-    /// item through runs, whose block arm printed nothing and left the highlight tracker behind,
-    /// so such an item printed as its bare label and every highlight after it moved.
+    /// Outside footnote bodies, 33,572 `<p>`s and 38,372 lists sit directly in an `<item>` in the
+    /// corpus. Word printed an item through runs, whose block arm printed nothing and left the
+    /// highlight tracker behind, so such an item printed as its bare label and every highlight
+    /// after it moved. (A footnote body still prints as one paragraph of runs, and the list
+    /// holding such an item prints nothing there: #1414.)
     @Test("An item's own paragraphs and a list nested in an item print in Word, and a highlight after them keeps its words")
     func docxPrintsAnItemsParagraphsAndNestedList() async throws {
         let model = try await ListShapeFixtures.renderModel("""
@@ -5959,9 +5961,11 @@ struct ListExportTests {
                 "a highlight shaded the wrong words: \(docxPainted(xml))")
     }
 
-    /// 54,151 lists sit directly in a `<p>` and 93,392 `<p>`s in a `<quote>` inside one. Word
-    /// cannot put either inside a paragraph, so the paragraph is split around them — and the
-    /// words after them, in the same `<p>` and after it, keep their highlights.
+    /// Outside footnote bodies, 53,759 lists sit directly in a `<p>` and 91,332 `<p>`s in a
+    /// `<quote>` inside one. Word cannot put either inside a paragraph, so a body paragraph is
+    /// split around them — and the words after them, in the same `<p>` and after it, keep their
+    /// highlights. A footnote body is not split: it still prints as one paragraph of runs, and a
+    /// list or quoted paragraph inside it prints nothing (#1414).
     @Test("A list or quoted paragraphs inside a paragraph print in Word, and highlights after them keep their words")
     func docxPrintsBlocksInsideAParagraph() async throws {
         let model = try await ListShapeFixtures.renderModel("""
@@ -5994,8 +5998,46 @@ struct ListExportTests {
                 "a highlight shaded the wrong words: \(docxPainted(xml))")
     }
 
-    /// A table cell holds a `<p>`, a list or a table 1,140 times in the corpus. A Word cell may
-    /// hold several paragraphs and a table, but must end in a paragraph.
+    /// A paragraph a split opens begins with its words (#1371 review, round 2). Whitespace
+    /// normalisation keeps one space where the TEI had whitespace before a text node, so the words
+    /// after a list or a quote in a `<p>` begin with it (" thereafter", " then"); opening a Word
+    /// paragraph of their own, it printed as a visible indent. The exporter trims it from the
+    /// paragraph's first run only, after the tracker has counted it: a highlight on the first word
+    /// after the block, or one that starts on the trimmed space itself, shades exactly its words,
+    /// and the highlight after both still keeps its own.
+    @Test("The words after a block that splits a paragraph open their Word paragraph without a leading space, and their highlights keep their words")
+    func docxTrimsTheSpaceThatOpensASplitParagraph() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <p>The points were these: <list>
+              <label>(1)</label><item>First point.</item>
+            </list> thereafter nothing more.</p>
+          <p>He wrote: <quote><p>Quoted words.</p></quote> then stopped short.</p>
+          <p>Closing paragraph.</p>
+        </div>
+        """)
+        // "thereafter" is the first word after the list; " then" starts on the space itself.
+        let xml = try await docxText(model, marking: [("thereafter", .yellow), (" then", .green),
+                                                      ("Closing paragraph.", .blue)])
+        // Checked first: a tracker out of step splits the words the lookups below search for.
+        #expect(docxPainted(xml) == ["yellow": "thereafter", "green": "then", "cyan": "Closing paragraph."],
+                "a highlight shaded the wrong words: \(docxPainted(xml))")
+        func printed(_ para: String) -> String {
+            para.matches(of: /<w:t(?: xml:space="preserve")?>([^<]*)<\/w:t>/).map { String($0.output.1) }.joined()
+        }
+        let afterList = printed(try paragraph(containing: "nothing more.", in: xml))
+        #expect(afterList == "thereafter nothing more.", "the paragraph after the list prints \"\(afterList)\"")
+        let afterQuote = printed(try paragraph(containing: "stopped short.", in: xml))
+        #expect(afterQuote == "then stopped short.", "the paragraph after the quote prints \"\(afterQuote)\"")
+        // Only a split paragraph's opening space goes: the paragraph before the block, and the
+        // spaces between words, print as they always have.
+        let before = printed(try paragraph(containing: "The points were these:", in: xml))
+        #expect(before == "The points were these: ", "the paragraph before the list prints \"\(before)\"")
+        #expect(!xml.contains("<w:t xml:space=\"preserve\"></w:t>"), "a run that held only the space printed empty")
+    }
+
+    /// Outside footnote bodies, a table cell holds a `<p>`, a list or a table 1,136 times in the
+    /// corpus. A Word cell may hold several paragraphs and a table, but must end in a paragraph.
     @Test("A cell's paragraphs, list and nested table print in Word, and a highlight after the table keeps its words")
     func docxPrintsBlocksInsideATableCell() async throws {
         let model = try await ListShapeFixtures.renderModel("""
