@@ -148,6 +148,9 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.13 — `checkCloudKitHealth()` no longer writes an unavailable account into `cloudKitSyncState` (it
 ///          titled the iOS banner "iCloud Sync Failed" and went stale after sign-in), and a FAILED zone
 ///          listing records `nil` rather than `false` (`zoneVerification(listedZoneNames:)`)
+///   4.14 — #1356 review: `downloadedVolumes`, Volumes & Storage's measurement and the removal in
+///          progress, held here so a hub the reader leaves and re-enters mid-removal reads the same
+///          mark and receives the re-measure
 
 // MARK: - CloudKitSyncState
 
@@ -1842,6 +1845,15 @@ final class AppState {
     /// (which previously fired SQLite queries on every SwiftUI render pass — up to 10×/s
     /// during indexing — saturating the main thread and making the education sheet laggy).
     var indexedVolumeIds: Set<String> = []
+
+    /// What Volumes & Storage last measured and the volume removals in progress (#1356).
+    ///
+    /// Held here rather than by the hub, because a hub does not outlive the reader leaving it: the
+    /// iOS hub is a navigation destination and the Mac hub one arm of the Settings pane switch, so
+    /// Back and in again builds a new one. A removal keeps running after its hub is gone, and its
+    /// mark and its re-measure have to reach the hub the reader comes back to. See
+    /// `DownloadedVolumesListModel`.
+    let downloadedVolumes = DownloadedVolumesListModel()
 
     // MARK: - Live Activity (iOS only)
 

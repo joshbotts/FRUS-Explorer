@@ -20298,16 +20298,23 @@ the pushed list re-render when the hub's `storageReport` changes, and where does
 **What changed.**
 - **One model for both twins' lists.** `DownloadedVolumesListModel` (in `StorageHubModel.swift`,
   compiled on both platforms) holds the storage report, the indexed, protected and last-opened
-  sets, the re-indexing id, and the new `removingVolumeIds`. Each hub owns one as `@State` and
-  forwards its old property names to it, so the hub reads and writes them as before.
-  `DownloadedVolumesListView` (iOS) and `MacAllVolumesSheet` (macOS) now take the model instead of
-  seven `let` copies. The status line and the filter moved into the model from the two views, which
-  had carried identical copies of each.
+  sets, the re-indexing id, and the new `removingVolumeIds` — and since round 1 the index-page
+  split, free space and the iOS measurement error too. There is one, on `AppState`
+  (`downloadedVolumes`), which both hubs read; until round 1 each hub owned its own as `@State`
+  (see *Review fixes, round 1*). Each hub forwards its old property names to it, so the hub reads
+  and writes them as before. `DownloadedVolumesListView` (iOS) and `MacAllVolumesSheet` (macOS)
+  now take the model instead of six `let` snapshots (the model holds five; the sixth,
+  `redownloadableVolumeIds`, is now computed from the catalogue when the dialog asks). The status
+  line and the filter moved into the model from the two views, which had carried identical copies
+  of each.
 - **One removal routine.** `removeVolumes(_:unindex:deleteFile:remeasure:)` replaces the two
-  hubs' loops; each hub passes its own steps. It marks every volume before the first step. It drops
+  hubs' loops. Each hub passed its own steps until round 1, which lifted them into
+  `removeVolumes(_:in:context:remeasure:)` beside it, so a hub now passes only its re-measure. It
+  marks every volume before the first step. It drops
   each volume from the index set as soon as its rows are deleted, rather than when the re-measure
-  recomputes the set. It clears the mark only after the re-measure has assigned the new report. A
-  row being removed reads `id · size · removing…` with a spinner. On iOS it offers no swipe actions;
+  recomputes the set. It clears the mark only after the re-measure has run — which, when the
+  measurement succeeds, is after the new report has been assigned (round 1 corrected the model's
+  doc, which claimed that for a failed measurement too). A row being removed reads `id · size · removing…` with a spinner. On iOS it offers no swipe actions;
   on the Mac its Re-index and Remove are withdrawn.
 - **The row is marked, not dropped.** A removal the re-measure does not confirm (the file could not
   be deleted) brings the row back as it now is.
@@ -20324,25 +20331,27 @@ the pushed list re-render when the hub's `storageReport` changes, and where does
   which is window-modal and has no source view, so #1357 does not arise there.
 
 **Where this departs from the plan.**
-- **The removing set lives on the hub's model, not in the list's `@State`.** In the list's state it
+- **The removing set lives on a shared model, not in the list's `@State`.** In the list's state it
   is forgotten whenever the list is closed and reopened mid-removal (Back then Show all on iOS, Done
   then Show All on the Mac), and the reopened list draws the row as an ordinary one while its file
-  is deleted. The hub outlives both. Keeping the mark and the report on one object also means the
-  mark clears only after the report it marks has been replaced. The model is there for those two
-  reasons, not for propagation, which the check above found working.
+  is deleted. This PR first put the model on the hub, which outlives both of those but not the
+  reader leaving the hub itself; round 1 moved it to `AppState`. Keeping the mark and the report on
+  one object also means the mark clears only after the report it marks has been replaced. The model
+  is there for those two reasons, not for propagation, which the check above found working.
 - **The anchor test does not require "directly above or below".** It requires the popover to be
   presented FROM the source: its frame reaches the source within 24 pt and spans the source's
   horizontal centre. On iPadOS 26 a popover from a toolbar button grows out of the button and
   covers it. Measured with the fix: x 567–855 × y 274–506, over the button at 630–792 × 372–408. The
-  plan's rule fails that correctly anchored popover. The centre condition is what refuses one
-  anchored to a container.
+  plan's rule fails that correctly anchored popover. For Free Up Space the centre condition is what
+  refuses one anchored to a container; for a full-width list row it refuses nothing, which is why
+  round 1 replaced the row's rule with one that reads the row's own frame.
 - **The test swipes the fourth seeded row, not the third.** Against `v2` the list-anchored popover
   drew at y 62–387. The third row sat at 436–503, a 49 pt miss, only 25 pt outside the tolerance;
   the fourth sits at 503–570.
 
 **Tests.**
-- `DownloadedVolumesListModelTests` (7, in `StorageRemovalPlanTests.swift`). Five drive the real
-  routine with steps that suspend on a continuation (`StepGate`):
+- `DownloadedVolumesListModelTests` (7 here, 10 after round 1, in `StorageRemovalPlanTests.swift`).
+  Five drive the real routine with steps that suspend on a continuation (`StepGate`):
   - while the index rows are deleted, the row reads *removing…*, never `indexed`, and stays drawn;
     once the re-measure lands it is gone;
   - while the file is deleted, the index set no longer names the volume;
@@ -20351,13 +20360,14 @@ the pushed list re-render when the hub's `storageReport` changes, and where does
   - a Free Up Space batch marks every volume from the start.
 
   The other two pin what moved into the model: the status line at rest, and the filter.
-- `UITestStorageRowsSeederTests` (5, in `UITestVolumeSeederTests.swift`), for the new seam.
+- `UITestStorageRowsSeederTests` (5 here, 7 after round 1, in `UITestVolumeSeederTests.swift`), for
+  the new seam.
 - `VolumeRemovalTests` (UI, new file, one `xcodegen` plus the scheme restore). Two tests are **iPad
   only** and skip on a phone, where the dialog is an action sheet with no source:
   `testRemoveConfirmationPointsAtTheSwipedRow` and `testFreeUpSpaceConfirmationPointsAtItsButton`.
   Each keeps a screenshot of the popover in the result bundle. The third,
-  `testRemovedRowLeavesTheListWithoutATouch`, runs on both idioms. CLAUDE.md now names the devices
-  and the expected counts.
+  `testRemovedRowLeavesTheListWithoutATouch`, runs on both idioms, and round 1 added a fourth that
+  does too. CLAUDE.md now names the devices and the expected counts.
 
 **The seam.** `FRUS_UI_TEST_SEED_STORAGE_ROWS=1` writes five side-loaded volumes,
 `uitest-storage-01` … `-05`. They are not catalogue ids because three suites launch with
@@ -20427,9 +20437,13 @@ still say "per-volume re-index and remove", and neither was edited.
 5. Remove a second volume and click **Done** before its row leaves (a large volume gives more
    time), then reopen **Show All**: the row should read *removing…* or already be gone, never
    `indexed`.
+6. (Round 1.) Remove a third and, before its row leaves, switch to another Settings pane and back
+   to Volumes & Storage, then open **Show All**: the same — *removing…* or gone, never `indexed`, and
+   gone without a click once the removal ends.
 
 **Not verified.** The six-second row itself: it was not reproduced on a simulator, and only a large
-library on a device may show it. Also: when a removal takes the count from four to three, the iOS
+library on a device may show it. (Round 1 ran the fixed suite on iOS 27.0, which this paragraph
+did not say had not been done.) Also: when a removal takes the count from four to three, the iOS
 hub's **Show all** link disappears (`report.perVolume.count > inlineVolumeLimit`); whether that pops
 the pushed list mid-removal was not measured.
 
@@ -20446,3 +20460,161 @@ the pushed list mid-removal was not measured.
   "UI Test Storage Row 0N" in all three launches where it was captured (two UI trees and one
   screenshot), while one other launch's hub showed the titles. What made that launch differ was
   not determined.
+
+### Review fixes, round 1 (2026-09-24)
+
+Every CONFIRMED finding of the review is resolved, and two of its nits. Devices: iPad Pro 11-inch
+(M5) at iOS 26.4 (`AAC7408B`, unit and UI), the same at iOS 27.0 (`27A97343`, UI, where #1356 and
+#1357 were captured) and iPhone 17 Pro at iOS 26.4 (`E7E9FD66`, UI). Every UI run passed
+`-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300`.
+
+**The mark now survives leaving the hub (correctness#1).** The model moved from each hub's
+`@State` to `AppState.downloadedVolumes`, one for the app. The iOS hub is a navigation destination
+of the Settings root and the Mac hub one arm of the pane switch, so Back to Settings and in again,
+or another pane and back, built a new hub with an empty model while the old hub's removal ran on
+and re-measured into the old one. Measured with the removal held open (below) and the model back on
+the hub: the re-entered list read `uitest-storage-04 · 515 bytes · indexed · never opened` 13.8 s
+into the removal, on iOS 26.4 and on 27.0. On `AppState` it reads `… · removing…`, and the row
+leaves with nothing touched when the removal ends. The index-page split, free space and the iOS
+measurement error moved with it, because the same re-measure writes them and a hub the reader
+comes back to draws them.
+
+**The hub routing and the row drawing are tested (correctness#0).** The two hubs' identical step
+closures were lifted into `DownloadedVolumesListModel.removeVolumes(_:in:context:remeasure:)`, so a
+hub now passes only its `loadReport()`.
+- `HubRemovalRoutingTests` (4, new) scans both hubs, each assertion scoped to one declaration's
+  body: both read `appState.downloadedVolumes` and build no model of their own; both hubs'
+  `removeVolumes` call the shared routing and run no step of their own; both build Free Up Space's
+  plan through the model; and both lists' `row(_:)` draw `Text(model.statusLine(for: entry))` and
+  withdraw a removing row's Remove. For the Mac, which has no UI-test target, these scans are the
+  only automated guard.
+- `appStepsRemoveAVolumeThroughTheSharedRouting` drives the shared routing against a real
+  `IndexingPipeline`, `DownloadManager` and `AppState` over the five seeded rows.
+- `VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub` (both idioms) drives the whole chain.
+  `FRUS_UI_TEST_HOLD_STORAGE_REMOVAL=<seconds>` holds every removal open before its first step, in
+  the shared routing, so on the fixed code the row reads *removing…* for as long as the hold lasts
+  and on code that does not draw the mark it never does. Nothing races a fast removal. The test
+  reads the mark, goes Back, Back, and in again, reads it in the re-entered list, and waits for the
+  row to leave.
+
+**The hold is 40 s, with a pinned tolerance.** Leaving and re-entering took 13.8 s on the iPad at
+iOS 26.4, 17.1 s at iOS 27.0 and 16.3 s on the iPhone, so the first 25 s hold left too little room.
+And on iOS 27.0 a 25 s hold's row left 53.6 s after the confirmation. A temporary `Logger` pass
+(removed) settled why: a 40 s hold ended 2.7 s late, then every later step took 60 ms together, and
+the list redrew 1 ms after the re-measure. The removal was not slow and the list was not stale; the
+system was coalescing the sleep. `Task.sleep` now passes a 100 ms tolerance.
+
+**iOS 27.0 (correctness#2).** The fixed suite ran there, and so did the mutants: both anchor tests
+catch #1357 on the runtime it was reported on (below).
+
+**The row's anchor rule reads the row's own frame (correctness#3).** `rowAnchorFailure(_:row:)`
+requires the popover to be centred on the row, to sit on ONE side of it (clear of its middle), and
+to have its facing edge within 24 pt of the row's facing edge. The test asks from two rows: the
+catalogue row, which sorts first, and `uitest-storage-04`. A popover anchored anywhere else lands
+in one place whichever row asks. The Free Up Space rule (`buttonAnchorFailure`) is unchanged,
+because a toolbar popover covers its button.
+- Measured with the fix, at iOS 26.4: the catalogue row (y 235–302) drew its popover below it at
+  287–552; row 04 (503–570) drew its above at 193–518. Each facing edge sat 15 pt inside its row,
+  and each popover was centred on x 417. At iOS 27.0 the rows sat 6 pt higher and the popovers
+  followed.
+- Anchored to the list, both popovers drew at the top: y 62–327 and 62–387 at iOS 26.4, 32–297 and
+  32–357 at iOS 27.0. The catalogue row's check fails first, by covering that row's middle, not by
+  a distance.
+- The same rule also refuses an anchor on either neighbouring row. That answers tests-claims#7: the
+  old comment's claim for the row below was false, and it is gone.
+- `requireRow` now scrolls BEFORE requiring the row, so volumes left on a simulator can move the
+  rows without failing the suite.
+
+**The failed re-measure (correctness#5, tests-claims#11).** The doc now says what the code does.
+The mark clears after the re-measure has run. When the measurement succeeded, the new report no
+longer lists the volume. When it FAILED, iOS keeps its previous report and shows the error, so the
+deleted volume's row is drawn again, unmarked and `not indexed`. The Mac empties the list. Keeping
+the mark instead would have withdrawn the row's actions until some later measurement succeeded.
+
+**Tests-and-claims findings.**
+- #1: the removal test now also requires *Volumes on This Device* to be still on screen, with
+  `uitest-storage-03` listed.
+- #2: the seeder doc no longer names a boot side-load reconciliation. No boot step calls
+  `ManifestStore.refreshLocalEntries`.
+- #3: the #777 message is read out of the dialog. On iPad the catalogue row must promise a
+  re-download and the seeded row must warn it was side-loaded. On both idioms the removal test reads
+  the warning.
+- #4: "six `let` snapshots", corrected in place above.
+- #5: `prepareStorageRowIndex(pipeline:requested:)` takes the launch's answer as a parameter, and
+  `indexDispatchDrivesARealPipeline` drives that dispatch against a real pipeline. Its `.unindex`
+  doc no longer claims the plan checks the file.
+- #6: the unconfirmed-removal test's re-measure now recomputes the index set from a fake index,
+  as `refreshSnapshots()` does from the pipeline. Its `not indexed` is now the re-measure's
+  reading, not the early drop's.
+- #10: the suite sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1`.
+
+**Nits taken.**
+- correctness#4: Free Up Space no longer offers a volume whose removal is under way. It uses the
+  same state as the list (`DownloadedVolumesListModel.freeUpSpacePlan`).
+- tests-claims#8: the seeder no longer blames the suite's first-run failure on its rows. That run
+  indexed eleven volumes, which fits an index-version bump.
+- tests-claims#9: a phone run of the anchor tests is called a skip, not a control. The skip is on
+  the idiom, and the doc and CLAUDE.md say what a compact iPad window would do. That last point is
+  reasoned, not measured.
+
+correctness#6 and #7 (other lists with #1357's shape, and defects left only in this log) are
+listed for filing in the round's report, with sites.
+
+**Tests added or changed.**
+- `DownloadedVolumesListModelTests` (10), with three new tests:
+  - a hub opened while another hub's removal runs;
+  - Free Up Space withholding a removal that is under way;
+  - the app's steps through the shared routing.
+
+  The unconfirmed-removal test was changed.
+- `HubRemovalRoutingTests` (4, new).
+- `UITestStorageRowsSeederTests` (7): the index dispatch against a real pipeline, and the hold's
+  parse.
+- `VolumeRemovalTests` (4): the row anchor from two rows with the #777 messages; the list staying;
+  and `testRemovalMarkSurvivesLeavingTheHub`.
+
+**A/B.** Each new or changed test was run against a mutant of the fix, made and undone by
+re-editing. The tree was compared byte for byte against a snapshot afterwards.
+
+*Unit mutants.* One build carried nine mutants, each aimed at a different test: **35 tests, 17
+issues**, every one at its target.
+- AppState vending a fresh model per access (the per-hub defect): the two-hub test ✘ at
+  `indexState(of: "b") == .removing` and at the re-entered hub's entries.
+- The Free Up plan not excluding removals: ✘.
+- The shared unindex step not updating `AppState.indexedVolumeIds`: the app-steps test ✘.
+- The Mac hub back to `v2`'s inline loop: routing scan ✘ ×2.
+- The Mac row drawing its own status text: status-line scan ✘.
+- The iOS hub holding its own `@State` model: model scan ✘ ×2.
+- The iOS plan bypassing the model: plan scan ✘.
+- The dispatch's `.unindex` made `break`: dispatch test ✘ ×5.
+- The hold accepting `0` and negatives: ✘ ×2.
+
+Two more mutants ran separately:
+- The routine skipping `unindex`: the changed unconfirmed-removal test ✘ at `.notIndexed`. Its old
+  fixture passed under that mutant.
+- The early index-set drop removed (the first round's M7): the changed test now PASSES, as it
+  should, and the file-deletion test and the app-steps test ✘.
+
+*UI mutants*, on the iPad at iOS 26.4 unless noted.
+- The model back on the hub, the row's dialog back on the `List` and Free Up Space's back on the
+  sheet's content:
+  - at 26.4, the row test ✘ ("it covers the middle of the row"), Free Up Space ✘ (popover x
+    273–561 against the button's centre at x 612) and the re-entry test ✘ (`indexed · never
+    opened`); the removal test ✔ 1.1 s;
+  - at **27.0**, the same three ✘. There Free Up Space's popover drew at y 935–1180, nowhere near
+    its button at 289–325.
+- The row's catalogue check inverted, plus the row's status line ignoring the mark: the row test ✘
+  and the removal test ✘ on the #777 message, and the re-entry test ✘ at its first list
+  (`… · indexed`).
+- The iOS hub back to `v2`'s inline loop: the re-entry test ✘. The row had already left, unheld and
+  unmarked.
+- A list that dismisses itself when a row leaves: the removal test ✘ at "Volumes on This Device is
+  no longer on screen", although the row left in 1.2 s. The review's own example, a `loadReport()`
+  that nils the report first, did not fail the removal test: the list stayed, with its neighbour.
+
+*Fixed code.*
+- iPad at iOS 26.4: **4 tests, 0 failures**.
+- iPad at iOS 27.0: **4 tests, 0 failures**. The removal test's row left in 1.3 s.
+- iPhone 17 Pro at iOS 26.4: **4 tests, 2 skipped, 0 failures**.
+
+These three ran with the 25 s hold. The final runs after the merge below used 40 s.

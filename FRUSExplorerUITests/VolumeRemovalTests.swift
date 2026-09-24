@@ -18,60 +18,100 @@ import UIKit
 /// - ``testRemoveConfirmationPointsAtTheSwipedRow()`` — **iPad only** (#1357). In a regular-width
 ///   size class SwiftUI presents a confirmation dialog as a popover whose source is the view that
 ///   carries the modifier. The dialog used to be attached to the whole `List`, so its arrow pointed
-///   at the list, not at the row the reader swiped. The test swipes a row in the MIDDLE of the list
-///   and requires the popover to be presented from that row — ``isPresented(_:from:)`` says what
-///   that means on iPadOS 26, where it is not always "directly above or below". On a phone the
-///   dialog is an action sheet with no source, so the test skips there — it would pass either way,
-///   which makes a phone run a control, not a guard. Against unfixed `v2` on iPad Pro 13-inch
-///   (iOS 26.4) it fails: popover at y 62–387, the row at 503–570.
+///   at the list, not at the row the reader swiped. The test asks from TWO rows — the catalogue
+///   volume's and a seeded row four below it — and requires each popover to hang from its own row
+///   (``rowAnchorFailure(_:row:)`` says what that means). Each popover must also carry its row's
+///   #777 message: the promise of a re-download for the catalogue volume, the side-loaded warning
+///   for the seeded row. With the dialog moved back onto the list, it fails on iPad Pro 11-inch at
+///   iOS 26.4 and at iOS 27.0, where #1357 was reported, on the catalogue row: the list-anchored
+///   popover covers that row's middle.
 /// - ``testFreeUpSpaceConfirmationPointsAtItsButton()`` — **iPad only**, same mechanism. Free Up
 ///   Space's *Remove these volumes?* was attached to the sheet's content and asked from a toolbar
-///   button; the popover must be presented from that button. Against unfixed `v2` it fails: the
-///   popover spans x 372–660, and the button's centre is at x 711.
-/// - ``testRemovedRowLeavesTheListWithoutATouch()`` — **both idioms**, and a CONTROL against `v2`,
-///   not a guard of #1356's symptom. #1356's capture had the row on screen six seconds after its
-///   file was gone, and gone only at the next touch; the test removes the row and waits, touching
-///   nothing. Against unfixed `v2` it PASSES — the row left 1.1 s after the confirmation on iPad
-///   Pro 13-inch at iOS 26.4 and again at iOS 27.0 — so the capture's delay was not reproduced on
-///   a simulator. What it does guard is the fix's own wiring: the list now draws from the hub's
-///   model, and a hub that stopped writing its re-measured report there would leave the row in
-///   place and fail this test. It is deliberately NOT the test of the in-progress state: a
-///   timing-based assertion about what the row reads mid-removal passes on a fast removal and
-///   flakes under load. That state is `DownloadedVolumesListModelTests`', which suspends the
-///   removal on a continuation.
+///   button; the popover must be presented from that button (``buttonAnchorFailure(_:button:)``).
+///   With the dialog back on the sheet's content it fails: on iPad Pro 13-inch (iOS 26.4) the
+///   popover spanned x 372–660 against the button's centre at x 711; on iPad Pro 11-inch it spanned
+///   x 273–561 against x 612 at iOS 26.4, and at iOS 27.0 it drew at y 935–1180, nowhere near the
+///   button at y 289–325.
+/// - ``testRemovedRowLeavesTheListWithoutATouch()`` — **both idioms**. #1356's capture had the row
+///   on screen six seconds after its file was gone, and gone only at the next touch; this test
+///   removes the row and waits, touching nothing, and then requires the LIST to be still there
+///   with the removed row's neighbour in it — a list that popped or emptied loses the row too.
+///   Against unfixed `v2` it PASSES (the row left 1.1 s after the confirmation on iPad Pro 13-inch,
+///   iOS 26.4 and 27.0), so it guards the wiring rather than the reported symptom. It also reads
+///   the side-loaded warning out of the dialog on both idioms.
+/// - ``testRemovalMarkSurvivesLeavingTheHub()`` — **both idioms**, and the test of what the row
+///   reads WHILE it is being removed. The launch holds every removal open for
+///   ``removalHoldSeconds`` before its first step (`FRUS_UI_TEST_HOLD_STORAGE_REMOVAL`), so on the
+///   fixed code the mark is on screen for as long as the hold lasts, and on code that does not
+///   draw it the mark is never there at all — nothing races a fast removal. The test requires the
+///   row to read *removing…*, goes Back to Settings and in again — a NEW hub — requires the
+///   re-entered list to read it too, and then to lose the row with nothing touched. That is the
+///   whole chain no unit test reaches: the row's Remove, the hub's routing, `AppState`'s model
+///   and the row's status line. With the model held by the hub, as this PR first had it, the
+///   re-entered list read `… · indexed · never opened`; with the hub removing inline, as `v2` did,
+///   or the row drawing a status line of its own, the first list never read *removing…* at all.
+///
+/// A phone runs the two anchor tests only to skip them: there the dialog is an action sheet with
+/// no source, which neither guards nor controls anything.
 ///
 /// ## The rows
 /// `FRUS_UI_TEST_SEED_STORAGE_ROWS=1` makes the app write five side-loaded volumes,
 /// `uitest-storage-01` … `-05`, at boot, and every launch without it removes them again
-/// (`UITestVolumeSeeder.prepareStorageRows`). The tests use the fourth: rows on both sides of it,
-/// and far enough from where a list-anchored popover lands that it cannot sit beside it by accident
-/// (``targetVolumeId`` has the measurement). `FRUS_UI_TEST_SEED_VOLUME`
-/// writes the browse fixture as well, because Free Up Space offers only volumes the app can
-/// download again, and a side-loaded row is never one.
+/// (`UITestVolumeSeeder.prepareStorageRows`). `FRUS_UI_TEST_SEED_VOLUME` writes the browse fixture
+/// as well — the catalogue row the anchor test asks from first, and the one volume Free Up Space
+/// offers, since it offers only volumes the app can download again. The list sorts by id, so the
+/// fixture's row comes first and the seeded rows follow it. ``requireRow(_:)`` scrolls to a row
+/// rather than assuming it is on screen, so volumes left on a simulator move the rows without
+/// breaking the tests.
+///
+/// ## Animations are off
+/// `FRUS_UI_TEST_DISABLE_ANIMATIONS=1`, as CLAUDE.md asks of a suite that measures a screen at
+/// rest: two tests read popover frames, and on iOS 27 an interrupted system animation can leave
+/// XCTest waiting before every action for an idle that never comes. None of these tests is about
+/// an animated transition.
 ///
 /// Version history:
 ///   1.0 — #1356/#1357: initial implementation
+///   1.1 — #1356 review, round 1: the row anchor is asked from two rows and read against each row's
+///          own frame; the #777 messages; the list must stay after a removal;
+///          `testRemovalMarkSurvivesLeavingTheHub`; animations off; rows found by scrolling
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
 @MainActor
 final class VolumeRemovalTests: XCTestCase {
 
-    /// The row the tests act on: the fourth of the five the seam writes, with three seeded rows above
-    /// it and one below.
-    ///
-    /// Not the third, and that was measured. Against unfixed `v2` on iPad Pro 13-inch the
-    /// list-anchored popover drew at y 62–387 with the third row at 436–503: a 49 pt miss, only
-    /// 25 pt outside ``adjacency``, and inside it for the row above. The fourth row sits a full row
-    /// further from where a list-anchored popover lands.
+    /// The seeded row the tests remove and ask from: the fourth of the five the seam writes, with
+    /// the catalogue row and three seeded rows above it and one below.
     private static let targetVolumeId = "uitest-storage-04"
 
-    /// The catalogue volume the browse fixture is written for — Free Up Space's one candidate.
+    /// The row above ``targetVolumeId``, which must still be listed after the removal.
+    private static let neighbourVolumeId = "uitest-storage-03"
+
+    /// The catalogue volume the browse fixture is written for — the anchor test's first row, and
+    /// Free Up Space's one candidate.
     private static let catalogueVolumeId = "frus1961-63v06"
 
-    /// How far, in points, a popover's frame may stop short of its source and still reach it.
-    /// Covers the arrow, which XCUI may or may not count in the popover's frame; a row here is 67 pt
-    /// tall, so a popover beside a NEIGHBOURING row's far edge is outside it.
+    /// How long `testRemovalMarkSurvivesLeavingTheHub` holds the removal open, in seconds. Leaving
+    /// and re-entering takes Back, Back, the Volumes & Storage row and Show all at XCUITest's pace:
+    /// measured, 13.8 s on iPad Pro 11-inch at iOS 26.4 and 17.1 s at iOS 27.0, so 25 s left too
+    /// little room for a loaded machine. The test checks that the re-entry finished inside the
+    /// hold rather than assuming it.
+    private static let removalHoldSeconds = 40
+
+    /// What a row's status line ends with while its removal is under way. The app ships no
+    /// localization, so the default value is what renders.
+    private static let removingLabel = "removing…"
+
+    /// A phrase only the side-loaded confirmation carries (#777).
+    private static let sideLoadedWarning = "side-loaded"
+
+    /// A phrase only the catalogue confirmation carries.
+    private static let redownloadPromise = "can be downloaded again"
+
+    /// How far, in points, a popover's facing edge may sit from its source's facing edge. Covers
+    /// the arrow, which XCUI may or may not count in the popover's frame (measured with the fix, it
+    /// reached 15 pt into the row); a row here is 67 pt tall.
     private static let adjacency: CGFloat = 24
 
     var app: XCUIApplication!
@@ -85,9 +125,8 @@ final class VolumeRemovalTests: XCTestCase {
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_SEED_STORAGE_ROWS"] = "1"
         app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = Self.catalogueVolumeId
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
         app.launchArguments = UITestLaunch.arguments(startingOn: .settings)
-        app.launch()
-        settleAfterLaunch()
     }
 
     override func tearDown() async throws {
@@ -101,39 +140,51 @@ final class VolumeRemovalTests: XCTestCase {
         app = nil
     }
 
+    /// Launches the app — holding every storage removal open for `holdSeconds` when given — and
+    /// waits out anything a boot pass puts over the screen.
+    private func launchApp(holdingRemovalsFor holdSeconds: Int? = nil) {
+        if let holdSeconds {
+            app.launchEnvironment["FRUS_UI_TEST_HOLD_STORAGE_REMOVAL"] = String(holdSeconds)
+        }
+        app.launch()
+        settleAfterLaunch()
+    }
+
     // MARK: - #1357
 
-    /// The row's confirmation hangs from the row the reader swiped, not from the list.
+    /// Each row's confirmation hangs from the row the reader swiped, not from the list, and says
+    /// what removing that row means.
     func testRemoveConfirmationPointsAtTheSwipedRow() throws {
         try skipUnlessPad()
+        launchApp()
         try openVolumeList()
-        let row = try requireRow(Self.targetVolumeId)
 
-        row.swipeLeft()
-        let remove = app.buttons["Remove"].firstMatch
-        XCTAssertTrue(remove.waitForExistence(timeout: 5), "The row's Remove swipe action never appeared")
-        remove.tap()
+        // The catalogue row first: it sorts above the seeded rows, and `requireRow` scrolls down.
+        let catalogue = try askToRemove(Self.catalogueVolumeId)
+        let catalogueAsk = measurePopover(askedFrom: catalogue, named: Self.catalogueVolumeId)
+        requireDialog(saying: Self.redownloadPromise, notSaying: Self.sideLoadedWarning,
+                      for: Self.catalogueVolumeId)
+        dismissPopover()
 
-        let popover = app.popovers.firstMatch
-        XCTAssertTrue(popover.waitForExistence(timeout: 5), """
-            "Remove this volume?" did not open as a popover on iPad. Tree:
-            \(app.debugDescription)
-            """)
-        let rowFrame = row.frame
-        let popoverFrame = popover.frame
-        print("[VolumeRemovalTests] row \(rowFrame), popover \(popoverFrame)")
-        keepScreenshot(named: "Remove this volume? over \(Self.targetVolumeId)")
-        XCTAssertTrue(isPresented(popoverFrame, from: rowFrame), """
-            "Remove this volume?" is not anchored to the swiped row: popover \(popoverFrame), \
-            row \(Self.targetVolumeId) \(rowFrame). A popover that stops more than \
-            \(Self.adjacency) pt short of the row points at something else — before #1357, the \
-            whole list.
-            """)
+        let target = try askToRemove(Self.targetVolumeId)
+        let targetAsk = measurePopover(askedFrom: target, named: Self.targetVolumeId)
+        requireDialog(saying: Self.sideLoadedWarning, notSaying: Self.redownloadPromise,
+                      for: Self.targetVolumeId)
+
+        for (volumeId, ask) in [(Self.catalogueVolumeId, catalogueAsk), (Self.targetVolumeId, targetAsk)] {
+            XCTAssertNil(rowAnchorFailure(ask.popover, row: ask.row), """
+                "Remove this volume?" asked from \(volumeId) is not anchored to that row: popover \
+                \(ask.popover), row \(ask.row) — \(rowAnchorFailure(ask.popover, row: ask.row) ?? ""). \
+                Before #1357 it was anchored to the whole list, and landed in one place whichever \
+                row asked.
+                """)
+        }
     }
 
     /// Free Up Space's confirmation hangs from the button that asks it.
     func testFreeUpSpaceConfirmationPointsAtItsButton() throws {
         try skipUnlessPad()
+        launchApp()
         try openHub()
 
         let freeUp = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Free Up Space")).firstMatch
@@ -164,26 +215,25 @@ final class VolumeRemovalTests: XCTestCase {
         let popoverFrame = popover.frame
         print("[VolumeRemovalTests] Free Up Space button \(buttonFrame), popover \(popoverFrame)")
         keepScreenshot(named: "Remove these volumes? over Free Up Space")
-        XCTAssertTrue(isPresented(popoverFrame, from: buttonFrame), """
+        XCTAssertNil(buttonAnchorFailure(popoverFrame, button: buttonFrame), """
             "Remove these volumes?" is not anchored to the button that asks it: popover \
-            \(popoverFrame), button \(buttonFrame). A popover from the button reaches it and spans \
-            its centre; one anchored to the sheet's content — before #1357 — is centred on the sheet.
+            \(popoverFrame), button \(buttonFrame) — \
+            \(buttonAnchorFailure(popoverFrame, button: buttonFrame) ?? ""). One anchored to the \
+            sheet's content — before #1357 — is centred on the sheet.
             """)
     }
 
     // MARK: - #1356
 
-    /// A removed row leaves the list on its own, with nothing touched after the confirmation.
+    /// A removed row leaves the list on its own, with nothing touched after the confirmation, and
+    /// the list it left is still there.
     func testRemovedRowLeavesTheListWithoutATouch() throws {
+        launchApp()
         try openVolumeList()
-        let row = try requireRow(Self.targetVolumeId)
-
-        row.swipeLeft()
-        let remove = app.buttons["Remove"].firstMatch
-        XCTAssertTrue(remove.waitForExistence(timeout: 5), "The row's Remove swipe action never appeared")
-        remove.tap()
-        let confirm = try requireConfirmButton()
-        confirm.tap()
+        let row = try askToRemove(Self.targetVolumeId)
+        requireDialog(saying: Self.sideLoadedWarning, notSaying: Self.redownloadPromise,
+                      for: Self.targetVolumeId)
+        try requireConfirmButton().tap()
         let confirmedAt = Date()
 
         // Nothing is touched from here on: #1356's row left only at the NEXT touch.
@@ -196,6 +246,59 @@ final class VolumeRemovalTests: XCTestCase {
             measurement (#1356). Tree:
             \(app.debugDescription)
             """)
+        requireListStillShowsTheNeighbour()
+    }
+
+    /// The row reads *removing…* while its removal runs — in the list it was removed from, and in
+    /// the list of a hub the reader leaves and re-enters — and leaves that second list on its own.
+    func testRemovalMarkSurvivesLeavingTheHub() throws {
+        launchApp(holdingRemovalsFor: Self.removalHoldSeconds)
+        try openVolumeList()
+        _ = try askToRemove(Self.targetVolumeId)
+        try requireConfirmButton().tap()
+        let confirmedAt = Date()
+
+        // The removal is held at its first step, so the mark has to be on now.
+        let status = statusText(of: Self.targetVolumeId)
+        let marked = waitForLabel(of: status, toEndWith: Self.removingLabel, timeout: 10)
+        // A row already gone means the removal was never held: the hold is in the shared routing.
+        let seen = status.exists ? "\"\(status.label)\"" : "nothing (it has already left the list)"
+        XCTAssertTrue(marked, """
+            While its removal is held open, \(Self.targetVolumeId)'s row reads \(seen), not \
+            "… · \(Self.removingLabel)" — the list does not draw the removal in progress, or the hub \
+            does not remove through the shared routing that holds it (#1356).
+            """)
+
+        // Back to Settings, and in again: a NEW hub, and a new list.
+        goBack(from: "Volumes on This Device")
+        goBack(from: "Volumes & Storage")
+        try openVolumeList()
+        _ = try requireRow(Self.targetVolumeId)
+        let reentered = Date().timeIntervalSince(confirmedAt)
+        print("[VolumeRemovalTests] re-entered the list "
+              + String(format: "%.1f s after the confirmation", reentered)
+              + "; the row reads \"\(status.label)\"")
+        XCTAssertLessThan(reentered, Double(Self.removalHoldSeconds) - 2, """
+            Leaving and re-entering the hub took \(Int(reentered)) s, so the \
+            \(Self.removalHoldSeconds)-s hold may have ended and nothing below can be read. Raise \
+            `removalHoldSeconds`.
+            """)
+        XCTAssertTrue(status.label.hasSuffix(Self.removingLabel), """
+            A hub re-entered while \(Self.targetVolumeId) is being removed draws its row as \
+            "\(status.label)": the removal's mark belonged to the hub the reader left.
+            """)
+
+        // The removal finishes; nothing is touched.
+        let left = rowQuery(Self.targetVolumeId).waitForNonExistence(
+            timeout: TimeInterval(Self.removalHoldSeconds + 30))
+        print("[VolumeRemovalTests] the removed row \(left ? "left" : "was still listed") "
+              + String(format: "%.1f s after the confirmation", Date().timeIntervalSince(confirmedAt)))
+        XCTAssertTrue(left, """
+            The re-entered list still shows \(Self.targetVolumeId) after its removal ended: the \
+            removal's re-measure went to the hub the reader left, not the one on screen. Tree:
+            \(app.debugDescription)
+            """)
+        requireListStillShowsTheNeighbour()
     }
 
     // MARK: - Navigation
@@ -244,11 +347,17 @@ final class VolumeRemovalTests: XCTestCase {
     }
 
     /// Skips on a phone, where a confirmation dialog is an action sheet with no source to point at.
+    ///
+    /// The skip reads the idiom, not the size class, because a UI test cannot read the app's size
+    /// class: an iPad in a compact window (Split View, Slide Over, a small Stage Manager window)
+    /// would present an action sheet too, and fail on `app.popovers` rather than skip — reasoned
+    /// from SwiftUI's rule, not measured. Run the suite full-screen.
     private func skipUnlessPad() throws {
         #if canImport(UIKit)
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, """
             The confirmation is a popover only in a regular-width size class; on a phone it is an \
-            action sheet with no anchor, so this test would pass either way. Run it on an iPad.
+            action sheet with no anchor, so there is nothing for this test to measure. Run it on \
+            an iPad.
             """)
         #else
         throw XCTSkip("UIKit-only test")
@@ -282,15 +391,78 @@ final class VolumeRemovalTests: XCTestCase {
                       "Volumes on This Device never opened")
     }
 
-    /// The list cell for `volumeId`, found by the status line that begins with its id.
+    /// Leaves the screen titled `title` by its Back button.
+    private func goBack(from title: String) {
+        let bar = app.navigationBars[title]
+        XCTAssertTrue(bar.waitForExistence(timeout: 5), "\(title) is not on screen to leave")
+        let back = bar.buttons.matching(
+            NSPredicate(format: "identifier == %@ OR label == %@", "BackButton", "Back")).firstMatch
+        (back.exists ? back : bar.buttons.element(boundBy: 0)).tap()
+        XCTAssertTrue(bar.waitForNonExistence(timeout: 10), "Back did not leave \(title)")
+    }
+
+    /// Every list cell for `volumeId`, found by the status line that begins with its id.
+    private func rowQuery(_ volumeId: String) -> XCUIElement {
+        app.cells.containing(NSPredicate(format: "label BEGINSWITH %@", "\(volumeId) ·")).firstMatch
+    }
+
+    /// The status line of `volumeId`'s row: `id · size · …`.
+    private func statusText(of volumeId: String) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "\(volumeId) ·")).firstMatch
+    }
+
+    /// The list cell for `volumeId`, scrolled to.
+    ///
+    /// It scrolls BEFORE requiring the row: the list builds cells only near the screen, and on a
+    /// simulator carrying other volumes a row further down does not exist until it is scrolled to.
     private func requireRow(_ volumeId: String) throws -> XCUIElement {
-        let row = app.cells.containing(NSPredicate(format: "label BEGINSWITH %@", "\(volumeId) ·")).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10), """
-            No row for \(volumeId) in Volumes on This Device. Tree:
+        XCTAssertTrue(app.cells.firstMatch.waitForExistence(timeout: 10),
+                      "Volumes on This Device lists nothing")
+        let row = rowQuery(volumeId)
+        XCTAssertTrue(scrollUntilHittable(row, attempts: 12), """
+            No reachable row for \(volumeId) in Volumes on This Device. Tree:
             \(app.debugDescription)
             """)
-        XCTAssertTrue(scrollUntilHittable(row), "The row for \(volumeId) is not reachable")
         return row
+    }
+
+    /// Swipes `volumeId`'s row and taps its Remove, which asks *Remove this volume?*.
+    private func askToRemove(_ volumeId: String) throws -> XCUIElement {
+        let row = try requireRow(volumeId)
+        row.swipeLeft()
+        let remove = app.buttons["Remove"].firstMatch
+        XCTAssertTrue(remove.waitForExistence(timeout: 5), "\(volumeId)'s Remove swipe action never appeared")
+        remove.tap()
+        return row
+    }
+
+    /// The popover *Remove this volume?* opened in, and the frame of the row that asked, read
+    /// together while the popover is up.
+    private func measurePopover(askedFrom row: XCUIElement, named volumeId: String)
+        -> (popover: CGRect, row: CGRect) {
+        let popover = app.popovers.firstMatch
+        XCTAssertTrue(popover.waitForExistence(timeout: 5), """
+            "Remove this volume?" did not open as a popover on iPad. Tree:
+            \(app.debugDescription)
+            """)
+        let frames = (popover: popover.frame, row: row.frame)
+        print("[VolumeRemovalTests] row \(volumeId) \(frames.row), popover \(frames.popover)")
+        keepScreenshot(named: "Remove this volume? over \(volumeId)")
+        return frames
+    }
+
+    /// Requires the open confirmation to carry `expected` and not `unexpected` (#777).
+    private func requireDialog(saying expected: String, notSaying unexpected: String, for volumeId: String) {
+        let says = app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", expected)).firstMatch
+        XCTAssertTrue(says.waitForExistence(timeout: 5), """
+            The confirmation for \(volumeId) does not say "\(expected)" (#777). Tree:
+            \(app.debugDescription)
+            """)
+        XCTAssertFalse(app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", unexpected)).firstMatch.exists, """
+            The confirmation for \(volumeId) says "\(unexpected)", which is another kind of \
+            volume's message (#777).
+            """)
     }
 
     /// The confirmation's destructive button, in whichever form the idiom presents it.
@@ -309,6 +481,29 @@ final class VolumeRemovalTests: XCTestCase {
             """)
     }
 
+    /// Requires *Volumes on This Device* to be still on screen with ``neighbourVolumeId`` in it:
+    /// a list that popped back to the hub, or emptied, loses the removed row as well.
+    private func requireListStillShowsTheNeighbour() {
+        XCTAssertTrue(app.navigationBars["Volumes on This Device"].exists, """
+            Volumes on This Device is no longer on screen: the removal took the whole list away, \
+            not the row. Tree:
+            \(app.debugDescription)
+            """)
+        XCTAssertTrue(rowQuery(Self.neighbourVolumeId).waitForExistence(timeout: 5), """
+            \(Self.neighbourVolumeId), the removed row's neighbour, is no longer listed: the \
+            removal emptied the list rather than taking out one row. Tree:
+            \(app.debugDescription)
+            """)
+    }
+
+    /// Waits until `element`'s label ends with `suffix`.
+    private func waitForLabel(of element: XCUIElement, toEndWith suffix: String,
+                              timeout: TimeInterval) -> Bool {
+        let predicate = NSPredicate(format: "exists == true AND label ENDSWITH %@", suffix)
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
+    }
+
     /// Swipes the frontmost scroll view up until `element` is hittable, or gives up.
     @discardableResult
     private func scrollUntilHittable(_ element: XCUIElement, attempts: Int = 8) -> Bool {
@@ -319,21 +514,60 @@ final class VolumeRemovalTests: XCTestCase {
         return element.exists && element.isHittable
     }
 
-    /// Whether `popover` is presented FROM `source`: its frame reaches the source, within
-    /// ``adjacency``, and spans the source's horizontal centre.
+    /// Why `popover` does not hang from the list row framed by `row`, or `nil` when it does.
     ///
-    /// Two shapes pass, because iPadOS 26 draws two. A popover from a list row sits beside the row
-    /// with its arrow on it. A popover from a toolbar button grows out of the button and covers it
-    /// — measured with the fix, *Remove these volumes?* drew at x 567–855 × y 274–506 over its
-    /// button at 630–792 × 372–408 — so "directly above or below", the rule #1357 proposed, fails a
-    /// correctly anchored popover there. The centre condition is what refuses a popover anchored to
-    /// a container: against unfixed `v2` the same dialog, anchored to the sheet's content, drew
-    /// centred on the sheet at x 372–660 and missed its button's centre at x 711 while its frame,
-    /// widened by ``adjacency``, still reached the button.
-    private func isPresented(_ popover: CGRect, from source: CGRect) -> Bool {
-        let reaches = popover.insetBy(dx: -Self.adjacency, dy: -Self.adjacency).intersects(source)
-        let spansCentre = popover.minX <= source.midX && source.midX <= popover.maxX
-        return reaches && spansCentre
+    /// A popover from a row is centred on it, sits on ONE side of it, and has its facing edge — the
+    /// one its arrow leaves from — at the row's own facing edge, within ``adjacency``.
+    /// - *Centred on the row*: horizontal alignment. A list row spans the list, so a popover
+    ///   centred on the list passes this too; it is necessary, not sufficient.
+    /// - *Clear of the row's middle*: refuses a popover drawn over the row — where one anchored to
+    ///   the next row down opens, upward across this one.
+    /// - *Facing edge at the row's facing edge*: refuses one anchored a row or more away, and one
+    ///   anchored to a container, which lands where the container puts it.
+    ///
+    /// The last two read the row's own frame, and asking from two rows is what makes them binding:
+    /// a popover anchored to anything but the row lands in one place whichever row asked, and a
+    /// place against two rows four apart would have to fill the space between them exactly.
+    ///
+    /// Measured on iPad Pro 11-inch (M5) at iOS 26.4. With the fix, the catalogue row at y 235–302
+    /// drew its popover BELOW it, at 287–552, and the fourth seeded row at 503–570 drew its popover
+    /// ABOVE it, at 193–518 — each facing edge 15 pt inside its row, and each centred on x 417.
+    /// Anchored to the list, both drew at the top of the list (y 62–327 and 62–387; at iOS 27.0,
+    /// 32–297 and 32–357), over the catalogue row's middle and more than 100 pt short of the
+    /// fourth row.
+    private func rowAnchorFailure(_ popover: CGRect, row: CGRect) -> String? {
+        if abs(popover.midX - row.midX) > Self.adjacency {
+            return "its centre is \(Int(popover.midX - row.midX)) pt across from the row's"
+        }
+        let above = popover.midY < row.midY
+        let clearOfMiddle = above ? popover.maxY <= row.midY : popover.minY >= row.midY
+        if !clearOfMiddle { return "it covers the middle of the row" }
+        let gap = above ? row.minY - popover.maxY : popover.minY - row.maxY
+        if abs(gap) > Self.adjacency {
+            return "its \(above ? "bottom" : "top") edge is \(Int(abs(gap))) pt from the row's "
+                + "\(above ? "top" : "bottom") edge"
+        }
+        return nil
+    }
+
+    /// Why `popover` is not presented from the toolbar `button`, or `nil` when it is: its frame
+    /// reaches the button, within ``adjacency``, and spans the button's horizontal centre.
+    ///
+    /// A popover from a toolbar button grows out of the button and COVERS it — measured with the
+    /// fix on iPad Pro 13-inch, *Remove these volumes?* drew at x 567–855 × y 274–506 over its
+    /// button at 630–792 × 372–408 — so the row rule, which refuses a popover over its source, does
+    /// not apply here, and neither does "directly above or below", the rule #1357 proposed. The
+    /// centre condition is what refuses a popover anchored to the sheet: against unfixed `v2` it
+    /// drew centred on the sheet at x 372–660 and missed its button's centre at x 711, while its
+    /// frame, widened by ``adjacency``, still reached the button.
+    private func buttonAnchorFailure(_ popover: CGRect, button: CGRect) -> String? {
+        if !popover.insetBy(dx: -Self.adjacency, dy: -Self.adjacency).intersects(button) {
+            return "it does not reach the button"
+        }
+        if !(popover.minX <= button.midX && button.midX <= popover.maxX) {
+            return "it does not span the button's centre"
+        }
+        return nil
     }
 
     /// Keeps a screenshot in the result bundle whether the test passes or fails, so the anchor a
@@ -343,6 +577,19 @@ final class VolumeRemovalTests: XCTestCase {
         shot.name = name
         shot.lifetime = .keepAlways
         add(shot)
+    }
+
+    /// Closes the open popover by tapping outside it.
+    ///
+    /// The tap lands near the dismiss region's lower-left corner, not its centre: the region
+    /// covers the screen, and a popover can sit over the centre — a tap there would land on the
+    /// popover, and possibly on its Remove.
+    private func dismissPopover() {
+        let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
+        let count = regions.count
+        XCTAssertGreaterThan(count, 0, "No popover to dismiss")
+        regions.element(boundBy: count - 1).coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
+        XCTAssertTrue(app.popovers.firstMatch.waitForNonExistence(timeout: 5), "The popover did not close")
     }
 
     /// Closes an open popover and the Free Up Space sheet, if either is open.
@@ -355,7 +602,8 @@ final class VolumeRemovalTests: XCTestCase {
         let regions = app.otherElements.matching(identifier: "PopoverDismissRegion")
         let count = regions.count
         if count > 0 {
-            regions.element(boundBy: count - 1).tap()
+            regions.element(boundBy: count - 1)
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.97)).tap()
             Thread.sleep(forTimeInterval: 0.5)
         }
         let freeUpCancel = app.navigationBars["Free Up Space"].buttons["Cancel"]

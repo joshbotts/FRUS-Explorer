@@ -177,8 +177,13 @@ struct UITestVolumeSeederTests {
 /// silently stopped working would leave five more files on every simulator that ever ran the
 /// removal suite, each listed under Browse's `sideloaded` group.
 ///
+/// The index half is driven against a real pipeline: the table of what to do
+/// (`storageRowIndexPlanCoversEveryInput`) says nothing about whether the dispatch that reads it
+/// does it.
+///
 /// Version history:
 ///   1.0 — #1356/#1357: initial implementation
+///   1.1 — #1356 review, round 1: the index dispatch against a real pipeline; the removal hold
 struct UITestStorageRowsSeederTests {
 
     /// A temp volumes directory. Callers remove it.
@@ -280,5 +285,51 @@ struct UITestStorageRowsSeederTests {
                 "not asked for: the file is gone, so its index rows go too")
         #expect(Action.plan(requested: false, indexed: false) == .none,
                 "not asked for and not indexed: nothing to do — the case on every ordinary launch")
+    }
+
+    @Test("The index dispatch indexes the rows a launch asks for, and takes their index rows out on the next launch that does not")
+    func indexDispatchDrivesARealPipeline() async throws {
+        let dir = try makeVolumesDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("frus.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL),
+                                            databaseURL: dbURL, volumesDirectory: volumes,
+                                            concurrencyLimit: 1)
+        let rows = UITestVolumeSeeder.storageRowVolumeIds
+
+        // A launch that asks: boot writes the files, then brings their index rows in.
+        UITestVolumeSeeder.prepareStorageRows(requested: true, in: volumes)
+        await UITestVolumeSeeder.prepareStorageRowIndex(pipeline: pipeline, requested: true)
+        for volumeId in rows {
+            #expect(try pipeline.isVolumeIndexed(volumeId), """
+                \(volumeId) is on disk and not indexed after a launch that asked for it, so the boot \
+                reconcile pass indexes it AFTER the pipeline is published — banner, education sheet \
+                over the test.
+                """)
+        }
+
+        // The next launch does not ask: boot sweeps the files, then takes their index rows out.
+        UITestVolumeSeeder.prepareStorageRows(requested: false, in: volumes)
+        await UITestVolumeSeeder.prepareStorageRowIndex(pipeline: pipeline, requested: false)
+        for volumeId in rows {
+            #expect(try !pipeline.isVolumeIndexed(volumeId), """
+                \(volumeId)'s file was swept but its index rows were left, and every later suite on \
+                this simulator searches a volume that is not there.
+                """)
+        }
+    }
+
+    @Test("The removal hold is a whole, positive number of seconds or nothing")
+    func removalHoldReadsWholeSeconds() {
+        let key = UITestVolumeSeeder.storageRemovalHoldEnvironmentKey
+        #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "25"]) == .seconds(25))
+        #expect(UITestVolumeSeeder.storageRemovalHold(in: [:]) == nil,
+                "every launch but one test's leaves it unset, and must not be held")
+        #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "0"]) == nil)
+        #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "-5"]) == nil)
+        #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "2.5"]) == nil)
+        #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "yes"]) == nil)
     }
 }

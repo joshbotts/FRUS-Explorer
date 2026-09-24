@@ -278,17 +278,22 @@ enum UITestVolumeSeeder {
 /// would put five more rows in their Browse. An id the catalogue does not know is read as
 /// side-loaded instead (`LocalVolumeCatalog`), which lists it under the separate `sideloaded`
 /// group, so the files are also REMOVED on every launch that does not ask for them, and their
-/// index rows with them: nothing this seam writes outlives the suite that asked, and
-/// `refreshAfterCorpusChange` drops the side-load sidecars of files that are gone. The sweep checks
-/// five fixed names, never the directory.
+/// index rows with them. The one thing that can outlive the suite is a side-load sidecar
+/// (`LocalVolumeCatalog`) a hub minted for a row while the suite ran; only
+/// `LocalVolumeCatalog.reconcile` reads sidecars, and it drops each one whose file is gone, so an
+/// orphan is inert until the next `AppState.refreshAfterCorpusChange` — a hub action or the end of
+/// an indexing batch, never boot. The sweep checks five fixed names, never the directory.
 ///
 /// ## Why each row holds one document, and is indexed before the pipeline is published
 /// The boot reconcile pass indexes every file on disk with no rows in `document_cache`, and it
 /// runs AFTER the pipeline is published, so its progress banner opens the indexing education sheet
-/// over whatever the test is about to tap — in this suite's first UI run, a boot pass's sheet
-/// covered the Settings row and all three tests failed on it. A row with no documents never gains
-/// a `document_cache` row, so, by that pass's own filter, it would be reconciled — banner, sheet —
-/// on every launch; the seam's first draft wrote rows like that. Each row therefore
+/// over whatever the test is about to tap. A row with no documents never gains a
+/// `document_cache` row, so, by that pass's own filter, it would be reconciled — banner, sheet —
+/// on every launch; the seam's first draft wrote rows like that. (The suite's first UI run failed
+/// all three tests on that sheet, but it is not evidence for this rule: its banner read "Volume 7
+/// of 11" — eleven volumes, more than the six the suite seeds — so that pass was re-indexing more
+/// than these rows, which fits the index-version bump `VolumeRemovalTests.settleAfterLaunch`
+/// names.) Each row therefore
 /// carries one document, and ``prepareStorageRowIndex(pipeline:)`` indexes the rows (or, on a
 /// launch that did not ask for them, removes their index rows) BEFORE the pipeline is published —
 /// the same silence `UITestBrowseSeams.prepareSeededVolume` gives the browse fixture. The
@@ -297,6 +302,9 @@ enum UITestVolumeSeeder {
 ///
 /// Version history:
 ///   1.0 — #1356/#1357: initial implementation
+///   1.1 — #1356 review, round 1: ``prepareStorageRowIndex(pipeline:requested:)`` takes the
+///          launch's answer as a parameter so a test can drive its dispatch, and
+///          `FRUS_UI_TEST_HOLD_STORAGE_REMOVAL` holds a removal open
 extension UITestVolumeSeeder {
 
     /// The launch-environment key a UI test sets, to `1`, to request the storage rows.
@@ -308,8 +316,11 @@ extension UITestVolumeSeeder {
     /// Writes the storage rows when `FRUS_UI_TEST_SEED_STORAGE_ROWS` is `1`, and removes any that
     /// a previous launch left when it is not.
     ///
-    /// Called from `bootDownloadManager()` beside ``seedIfRequested(in:)``, before `AppState` knows
-    /// the volumes directory, so the boot's side-load reconciliation already sees the result.
+    /// Called from `bootDownloadManager()` beside ``seedIfRequested(in:)``, before the pipeline is
+    /// built, so the files are on disk for ``prepareStorageRowIndex(pipeline:requested:)``. No
+    /// boot step reconciles side-loaded volumes — `ManifestStore.refreshLocalEntries` runs only
+    /// from `AppState.refreshAfterCorpusChange` — so a launch can list the rows by their ids until
+    /// a hub action or an indexing batch reads their headers.
     ///
     /// - Parameter volumesDirectory: The app's volumes directory.
     /// - Returns: The volume ids written or removed.
@@ -376,7 +387,9 @@ extension UITestVolumeSeeder {
     enum StorageRowIndexAction: Equatable {
         /// Index it: this launch asked for the rows and this one has no index rows yet.
         case index
-        /// Remove its index rows: this launch did not ask for the rows, and its file is gone.
+        /// Remove its index rows: this launch did not ask for the rows. Its file has been swept by
+        /// then (``prepareStorageRowsIfRequested(in:)`` runs first), but the plan does not look at
+        /// the file: were a sweep to fail, the boot reconcile pass would index the row again.
         case unindex
         /// Leave it alone.
         case none
@@ -401,9 +414,15 @@ extension UITestVolumeSeeder {
     /// On a launch that did not ask for the rows this costs five `document_cache` primary-key
     /// lookups and nothing else.
     ///
-    /// - Parameter pipeline: The pipeline boot just built and has not yet published.
-    static func prepareStorageRowIndex(pipeline: IndexingPipeline) async {
-        let requested = ProcessInfo.processInfo.environment[storageRowsEnvironmentKey] == "1"
+    /// - Parameters:
+    ///   - pipeline: The pipeline boot just built and has not yet published.
+    ///   - requested: Whether this launch asked for the rows. Boot passes nothing and gets the
+    ///     launch environment's answer; `UITestStorageRowsSeederTests` passes each answer in turn
+    ///     and drives this dispatch against a real pipeline.
+    static func prepareStorageRowIndex(
+        pipeline: IndexingPipeline,
+        requested: Bool = ProcessInfo.processInfo.environment[storageRowsEnvironmentKey] == "1"
+    ) async {
         for volumeId in storageRowVolumeIds {
             let indexed = (try? pipeline.isVolumeIndexed(volumeId)) == true
             switch StorageRowIndexAction.plan(requested: requested, indexed: indexed) {
@@ -415,6 +434,47 @@ extension UITestVolumeSeeder {
                 break
             }
         }
+    }
+
+    // MARK: Holding a removal open
+
+    /// The launch-environment key a UI test sets, to a whole number of seconds, to hold every
+    /// storage removal open that long before its first step (#1356 review).
+    ///
+    /// A removal of a seeded row takes about a second on a simulator, which is too short for a UI
+    /// test to read the row's *removing…* mark or to leave Volumes & Storage and come back while
+    /// it runs — and a test that raced it would pass on a fast removal and flake on a slow one. A
+    /// held removal is marked for as long as the hold lasts, on the fixed code, and never marked at
+    /// all on code that does not mark it. `VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub`
+    /// sets it.
+    static let storageRemovalHoldEnvironmentKey = "FRUS_UI_TEST_HOLD_STORAGE_REMOVAL"
+
+    /// The hold `FRUS_UI_TEST_HOLD_STORAGE_REMOVAL` asks for, or `nil` when it is absent, zero, or
+    /// not a whole number of seconds.
+    ///
+    /// - Parameter environment: The launch environment; tests pass their own.
+    static func storageRemovalHold(
+        in environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> Duration? {
+        guard let raw = environment[storageRemovalHoldEnvironmentKey],
+              let seconds = Int(raw), seconds > 0 else { return nil }
+        return .seconds(seconds)
+    }
+
+    /// Sleeps for the hold a UI test asked for, if any. Called before each volume's first removal
+    /// step by `DownloadedVolumesListModel.removeVolumes(_:in:context:remeasure:)`, the
+    /// routing both hubs share — so a hub that stopped routing through it is not held, and its
+    /// row is never marked.
+    ///
+    /// The sleep's tolerance is pinned. Left to the system, on an iOS 27.0 iPad simulator, a 40 s
+    /// hold ended 2.7 s late by the app's own log, which showed every later step of the removal
+    /// taking 60 ms together; in the run before it a 25 s hold's row left 53.6 s after the
+    /// confirmation, and the hold is the only step that could have taken the other 28 s. A late
+    /// enough hold reads, to the test, as a removal that never finished.
+    static func holdStorageRemovalIfRequested() async {
+        guard let hold = storageRemovalHold() else { return }
+        print("[UITestVolumeSeeder] Holding a storage removal for \(hold)")
+        try? await Task.sleep(for: hold, tolerance: .milliseconds(100))
     }
 }
 

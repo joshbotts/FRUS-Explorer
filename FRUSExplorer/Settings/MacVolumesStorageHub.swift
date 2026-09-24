@@ -80,11 +80,14 @@ struct MacVolumesStorageHub: View {
 
     // MARK: - Snapshot state (see the live-query hazard note above)
 
-    /// The snapshots the full volume list draws, and the removal in progress, held by reference so
-    /// the sheet this hub presents observes them instead of holding copies (#1356) — the same
-    /// model the iOS hub holds. The four properties below and `reindexingVolumeId` forward to it,
-    /// so the hub reads and writes them exactly as it did when each was its own `@State`.
-    @State private var volumeList = DownloadedVolumesListModel()
+    /// The hub's measurement, the snapshots the full volume list draws, and the removal in
+    /// progress (#1356) — the same model the iOS hub reads. Held by `AppState`, not by this view:
+    /// switching Settings panes and coming back builds a NEW hub, and a removal still running from
+    /// the old one must show its mark here and re-measure into what this one draws. The sheet this
+    /// hub presents observes it rather than holding copies. The properties below and
+    /// `reindexingVolumeId` forward to it, so the hub reads and writes them exactly as it did when
+    /// each was its own `@State`.
+    private var volumeList: DownloadedVolumesListModel { appState.downloadedVolumes }
 
     /// Volumes carrying notes, collections, or summaries — never suggested for removal.
     private var protectedVolumeIds: Set<String> {
@@ -107,9 +110,15 @@ struct MacVolumesStorageHub: View {
         nonmutating set { volumeList.report = newValue }
     }
     /// The live-versus-reclaimable split of the index file, refreshed with the storage report.
-    @State private var indexPages: IndexPageStatistics? = nil
+    private var indexPages: IndexPageStatistics? {
+        get { volumeList.indexPages }
+        nonmutating set { volumeList.indexPages = newValue }
+    }
     /// Free space on the volume holding the index, for the compaction precondition.
-    @State private var availableBytes: Int? = nil
+    private var availableBytes: Int? {
+        get { volumeList.availableBytes }
+        nonmutating set { volumeList.availableBytes = newValue }
+    }
     /// Set while VACUUM holds its exclusive write lock.
     @State private var isCompacting = false
     /// A failed compaction's message. The Mac hub has no shared error surface, so this mirrors
@@ -846,13 +855,11 @@ struct MacVolumesStorageHub: View {
         DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)
     }
 
-    /// What Free Up Space may offer, and in what order. Shared with iOS so the two platforms
-    /// cannot drift into offering different volumes (`StorageRemovalPlan`).
+    /// What Free Up Space may offer, and in what order — never a volume whose removal is already
+    /// under way. Shared with iOS so the two platforms cannot drift into offering different
+    /// volumes (`StorageRemovalPlan`, through `DownloadedVolumesListModel.freeUpSpacePlan`).
     private var removalPlan: StorageRemovalPlan {
-        StorageRemovalPlan.make(entries: storageReport?.perVolume ?? [],
-                                protectedVolumeIds: protectedVolumeIds,
-                                redownloadableVolumeIds: redownloadableVolumeIds,
-                                lastOpenedByVolumeId: lastOpenedByVolumeId)
+        volumeList.freeUpSpacePlan(redownloadableVolumeIds: redownloadableVolumeIds)
     }
 
     /// Whether an indexing operation of any kind is in flight.
@@ -1215,33 +1222,13 @@ struct MacVolumesStorageHub: View {
     /// (#275) and the report is re-measured. The sheet used to carry its own copy of this and
     /// had never called `refreshReadOnlyStores()` at all.
     ///
-    /// The ORDER is `DownloadedVolumesListModel.removeVolumes`'s, shared with the iOS hub: that is
-    /// what marks the rows *removing…* until the re-measure lands and drops each volume from the
-    /// index set as soon as its rows are deleted (#1356). This supplies the steps.
+    /// The steps and their ORDER are `DownloadedVolumesListModel`'s, shared with the iOS hub: that
+    /// is what marks the rows *removing…* until the re-measure has run, drops each volume from the
+    /// index set as soon as its rows are deleted, and VACUUMs after a bulk removal and refreshes
+    /// the read-only stores (#1356). This hub supplies only its re-measure.
     private func removeVolumes(_ volumeIds: [String]) async {
-        guard let dm = appState.downloadManager,
-              let pipeline = appState.indexingPipeline else { return }
-        await volumeList.removeVolumes(
-            volumeIds,
-            unindex: { volumeId in
-                try? await pipeline.removeVolume(volumeId)
-                appState.indexedVolumeIds.remove(volumeId)
-            },
-            deleteFile: { volumeId in
-                try? await dm.deleteVolume(volumeId: volumeId)
-            },
-            remeasure: {
-                if volumeIds.count > 1 {
-                    // VACUUM after a bulk removal to shrink the index file immediately. Skipped
-                    // for a single removal, where the pause is not worth the few megabytes.
-                    try? await pipeline.vacuumIndex()
-                }
-                // Removing volumes deleted their aux-table rows — reopen the read-only stores so
-                // analytics don't keep counting them (#275).
-                appState.refreshAfterCorpusChange(context: modelContext)
-                await loadReport()
-            }
-        )
+        await volumeList.removeVolumes(volumeIds, in: appState, context: modelContext,
+                                       remeasure: { await loadReport() })
     }
 
     /// Clears and re-submits the system Spotlight index from `document_cache`, without
@@ -1273,8 +1260,8 @@ struct MacVolumesStorageHub: View {
 /// (S-2c) pushes, which is that platform's equivalent gesture.
 ///
 /// ## What it reads (#1356)
-/// The hub's `DownloadedVolumesListModel`, observed — the same model and the same removal routine
-/// as the iOS twin, so a volume being removed reads *removing…* with a spinner here too, and its
+/// `AppState`'s `DownloadedVolumesListModel`, handed over by the hub and observed — the same model
+/// and the same removal routine as the iOS twin, so a volume being removed reads *removing…* with a spinner here too, and its
 /// Re-index and Remove buttons are withdrawn until the re-measure lands. The confirmation stays an
 /// `.alert`: window-modal, with no source view, so #1357's anchor does not arise on the Mac.
 ///
@@ -1283,7 +1270,7 @@ struct MacVolumesStorageHub: View {
 ///   1.1 — #1356: reads the hub's model; a removal in progress is drawn
 private struct MacAllVolumesSheet: View {
 
-    /// The hub's snapshots and the removal in progress, shared by reference (#1356).
+    /// The hub's measurement and the removal in progress, shared by reference (#1356).
     let model: DownloadedVolumesListModel
     /// Re-index one volume.
     let onReindex: (String) async -> Void

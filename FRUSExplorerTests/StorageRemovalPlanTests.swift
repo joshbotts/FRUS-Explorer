@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftData
 import Testing
 @testable import FRUSExplorer
 
@@ -298,11 +299,24 @@ extension StorageRemovalPlanTests {
 /// - the file being deleted: the volume has already left the index set;
 /// - the re-measure running: the mark is still on, because the report the row would otherwise be
 ///   drawn from is the stale one;
-/// - a re-measure that still lists the volume (the delete failed): the row comes back as it is;
-/// - a multi-volume removal (Free Up Space): every volume is marked from the start.
+/// - a re-measure that still lists the volume (the delete failed): the row comes back as it is,
+///   reading what the re-measure found in the index;
+/// - a multi-volume removal (Free Up Space): every volume is marked from the start;
+/// - a hub opened while another hub's removal runs: it reads the same mark, and that removal's
+///   re-measure reaches it — the model is `AppState`'s, not a hub's;
+/// - Free Up Space: it does not offer a volume whose removal is under way;
+/// - the app's own steps, through the routing both hubs call, against a real index and a real
+///   volumes directory.
+///
+/// None of these reaches a hub. That both hubs call the routing, and both lists draw
+/// ``DownloadedVolumesListModel/statusLine(for:)``, is `HubRemovalRoutingTests`', and the iOS hub
+/// is driven end to end by `VolumeRemovalTests`.
 ///
 /// Version history:
 ///   1.0 — #1356: initial implementation
+///   1.1 — #1356 review, round 1: the unconfirmed removal reads its index state from the
+///          re-measure; a hub opened mid-removal; Free Up Space withholding a removal under way;
+///          the app's steps against a real pipeline
 @MainActor
 struct DownloadedVolumesListModelTests {
 
@@ -452,17 +466,24 @@ struct DownloadedVolumesListModelTests {
     @Test("A removal the re-measure does not confirm brings the row back as it is")
     func unconfirmedRemovalBringsTheRowBack() async {
         let model = makeModel()
+        // What the index holds. The re-measure recomputes the index set from it, as the hubs'
+        // `refreshSnapshots()` recomputes it from the pipeline, so the index state asserted below
+        // is the re-measure's reading and not what the routine's early drop left behind.
+        var index: Set<String> = ["a", "b", "c"]
         // The file could not be deleted: the re-measure lists the volume again.
         await model.removeVolumes(["b"],
-                                  unindex: { _ in },
+                                  unindex: { volumeId in _ = index.remove(volumeId) },
                                   deleteFile: { _ in },
-                                  remeasure: { model.report = Self.report(["a", "b", "c"]) })
+                                  remeasure: {
+                                      model.report = Self.report(["a", "b", "c"])
+                                      model.indexedVolumeIds = index
+                                  })
 
         #expect(drawn(model) == ["a", "b", "c"], "a volume still on disk is still listed")
         #expect(!model.isRemoving("b"), "the mark ends with the routine, confirmed or not")
         #expect(model.indexState(of: "b") == .notIndexed, """
-            Its index rows WERE deleted, so the row reads not indexed — not indexed, and not \
-            removing.
+            Its index rows WERE deleted — the re-measure found none — so the row reads not \
+            indexed, and not removing.
             """)
     }
 
@@ -488,6 +509,136 @@ struct DownloadedVolumesListModelTests {
         await removal.value
         #expect(drawn(model) == ["b"])
         #expect(model.removingVolumeIds.isEmpty)
+    }
+
+    @Test("A hub opened while another hub's removal runs shows the mark, and that removal's re-measure reaches it")
+    func removalReachesAHubOpenedWhileItRuns() async throws {
+        let appState = AppState()
+        // The hub the reader confirmed the removal in. Both hubs resolve their model through
+        // `AppState` (`volumeList`), and a removal keeps the one its hub resolved after the reader
+        // has left that hub.
+        let leftHub = appState.downloadedVolumes
+        leftHub.report = Self.report(["a", "b", "c"])
+        leftHub.indexedVolumeIds = ["a", "b", "c"]
+        let gate = StepGate()
+        let removal = Task {
+            await leftHub.removeVolumes(["b"],
+                                        unindex: { _ in await gate.hold("unindex") },
+                                        deleteFile: { _ in },
+                                        remeasure: {
+                                            leftHub.report = Self.report(["a", "c"])
+                                            leftHub.indexedVolumeIds = ["a", "c"]
+                                        })
+        }
+        try #require(await gate.waitUntilParked(at: "unindex"), "the removal never reached its first step")
+
+        // Back to Settings and in again builds a NEW hub, whose first measurement runs while the
+        // file is still on disk and its index rows are still there.
+        let reenteredHub = appState.downloadedVolumes
+        reenteredHub.report = Self.report(["a", "b", "c"])
+        reenteredHub.indexedVolumeIds = ["a", "b", "c"]
+        #expect(reenteredHub.indexState(of: "b") == .removing, """
+            The re-entered hub draws the row as an ordinary one while its removal runs: the mark \
+            belongs to the hub the reader left.
+            """)
+
+        gate.release()
+        await removal.value
+        #expect(reenteredHub.entries.map(\.volumeId) == ["a", "c"], """
+            The removal's re-measure did not reach the hub on screen, which goes on listing the \
+            removed volume until something else measures — #1356's row, one Back away.
+            """)
+        #expect(!reenteredHub.isRemoving("b"))
+    }
+
+    @Test("Free Up Space does not offer a volume whose removal is under way")
+    func freeUpSpaceWithholdsAVolumeBeingRemoved() async throws {
+        let model = makeModel()
+        let catalogue: Set<String> = ["a", "b", "c"]
+        #expect(model.freeUpSpacePlan(redownloadableVolumeIds: catalogue).candidates.map(\.volumeId)
+                    == ["a", "b", "c"], "at rest, every catalogue volume is offered")
+        let gate = StepGate()
+        let removal = Task {
+            await model.removeVolumes(["b"],
+                                      unindex: { _ in await gate.hold("unindex") },
+                                      deleteFile: { _ in },
+                                      remeasure: { model.report = Self.report(["a", "c"]) })
+        }
+        try #require(await gate.waitUntilParked(at: "unindex"), "the removal never reached its first step")
+
+        #expect(model.freeUpSpacePlan(redownloadableVolumeIds: catalogue).candidates.map(\.volumeId)
+                    == ["a", "c"], """
+            Free Up Space offers a volume that is already being removed. Its row withdrew its own \
+            Remove because a second removal would race the first; the sheet is the other way in.
+            """)
+
+        gate.release()
+        await removal.value
+    }
+
+    /// The context `AppState.refreshAfterCorpusChange(context:)` requires. Static because that call
+    /// starts a person-rollup task it does not await, which reads this context after the test has
+    /// returned, and a container dropped under a live context traps.
+    private static let rollupContainer = Result {
+        try ModelContainer(for: PersonClusterOverride.self,
+                           configurations: ModelConfiguration(isStoredInMemoryOnly: true,
+                                                              cloudKitDatabase: .none))
+    }
+
+    @Test("The hubs' routing deletes the index rows, the index-set entry and the file, then re-measures once, marked throughout")
+    func appStepsRemoveAVolumeThroughTheSharedRouting() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-hub-removal-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Five real one-document volumes, indexed — the UI suite's rows.
+        let rows = UITestVolumeSeeder.storageRowVolumeIds
+        UITestVolumeSeeder.prepareStorageRows(requested: true, in: volumes)
+        let dbURL = dir.appendingPathComponent("frus.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL),
+                                            databaseURL: dbURL, volumesDirectory: volumes,
+                                            concurrencyLimit: 1)
+        await UITestVolumeSeeder.prepareStorageRowIndex(pipeline: pipeline, requested: true)
+        let dm = DownloadManager(volumesDirectory: volumes, concurrencyLimit: 1,
+                                 downloadTask: { _ in throw CancellationError() },
+                                 onStateChanged: { _ in })
+
+        let appState = AppState()
+        appState.indexingPipeline = pipeline
+        appState.downloadManager = dm
+        appState.indexedVolumeIds = Set(rows)
+        let model = appState.downloadedVolumes
+        model.report = try await dm.storageReport()
+        model.indexedVolumeIds = Set(rows)
+        try #require(model.entries.map(\.volumeId) == rows, "the five rows were not measured")
+
+        let target = "uitest-storage-02"
+        let file = volumes.appendingPathComponent("\(target).xml")
+        var remeasures = 0
+        await model.removeVolumes([target], in: appState,
+                                  context: try Self.rollupContainer.get().mainContext,
+                                  remeasure: {
+            remeasures += 1
+            // What the hub's `loadReport()` finds when the routing hands over to it.
+            #expect(model.isRemoving(target), "the mark is off before the re-measure has run")
+            #expect((try? pipeline.isVolumeIndexed(target)) == false, "its index rows are still there")
+            #expect(!appState.indexedVolumeIds.contains(target), """
+                AppState's index set still names the volume, so every surface that reads it — \
+                Browse's index badges among them — claims rows that are gone.
+                """)
+            #expect(!model.indexedVolumeIds.contains(target), "the list's index set still names it")
+            #expect(!FileManager.default.fileExists(atPath: file.path), "its file is still on disk")
+            model.report = try? await dm.storageReport()
+        })
+
+        #expect(remeasures == 1, "the routing re-measured \(remeasures) times")
+        #expect(!model.isRemoving(target), "the mark outlived the re-measure")
+        #expect(model.entries.map(\.volumeId) == rows.filter { $0 != target })
+        for other in rows where other != target {
+            #expect((try? pipeline.isVolumeIndexed(other)) == true, "\(other) lost its index rows")
+        }
     }
 
     @Test("The status line of a row at rest: id · size · index state · last opened")
@@ -518,5 +669,129 @@ struct DownloadedVolumesListModelTests {
         #expect(matches("Fóundations") == ["frus1969-76v01"], "diacritics are ignored")
         #expect(matches("1969-76") == ["frus1969-76v01"], "an id")
         #expect(matches("Berlin").isEmpty)
+    }
+}
+
+// MARK: - HubRemovalRoutingTests
+
+/// Both hubs reach the removal through the one routing, read the one model on `AppState`, and both
+/// full lists draw that model's status line (#1356 review).
+///
+/// These are the connections the unit tests above cannot reach: `DownloadedVolumesListModelTests`
+/// drives the model with steps it supplies, so a hub gone back to its own inline removal loop, a
+/// hub holding its own model again, or a list row drawing its own status text would leave every
+/// one of them green while the row lost its *removing…* mark. The iOS hub is also driven end to
+/// end by `VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub`; the Mac has no UI-test target,
+/// so for `MacVolumesStorageHub` these scans are the only automated guard.
+///
+/// Each assertion is scoped to ONE declaration's body — the hub's `removeVolumes`, its
+/// `removalPlan`, the list's `row(_:)` — so a matching call elsewhere in a 2,000-line file cannot
+/// satisfy it.
+///
+/// Version history:
+///   1.0 — #1356 review, round 1: initial implementation
+@Suite("Hub removal routing")
+struct HubRemovalRoutingTests {
+
+    /// The two hubs, the full-list view each presents, and how that list withdraws a removing
+    /// row's actions — iOS offers no swipe actions, the Mac disables its Remove.
+    private static let hubs: [(path: String, list: String, withdrawal: String)] = [
+        ("FRUSExplorer/Settings/VolumesStorageHubView.swift", "private struct DownloadedVolumesListView",
+         "if !removing {"),
+        ("FRUSExplorer/Settings/MacVolumesStorageHub.swift", "private struct MacAllVolumesSheet",
+         ".disabled(model.reindexingVolumeId != nil || removing)"),
+    ]
+
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) is implausibly small — did it move?")
+        return text
+    }
+
+    /// The body of the first declaration introduced by `signature` — at or after `anchor`, when one
+    /// is given — from its opening brace to the brace that balances it.
+    private static func body(of signature: String, in text: String,
+                             after anchor: String? = nil) throws -> String {
+        var searchStart = text.startIndex
+        if let anchor {
+            searchStart = try #require(text.range(of: anchor), "no `\(anchor)`").upperBound
+        }
+        let declaration = try #require(text.range(of: signature, range: searchStart..<text.endIndex),
+                                       "no `\(signature)`")
+        let open = try #require(text[declaration.upperBound...].firstIndex(of: "{"),
+                                "`\(signature)` has no body")
+        var depth = 0
+        var index = open
+        while index < text.endIndex {
+            if text[index] == "{" { depth += 1 }
+            if text[index] == "}" {
+                depth -= 1
+                if depth == 0 { return String(text[open...index]) }
+            }
+            index = text.index(after: index)
+        }
+        Issue.record("`\(signature)`'s braces never balance")
+        return ""
+    }
+
+    @Test("Both hubs read the one model on AppState, and neither builds its own")
+    func bothHubsReadAppStatesModel() throws {
+        for hub in Self.hubs {
+            let text = try Self.source(hub.path)
+            #expect(text.contains("private var volumeList: DownloadedVolumesListModel { appState.downloadedVolumes }"),
+                    "\(hub.path) does not read its model from AppState")
+            #expect(!text.contains("DownloadedVolumesListModel()"), """
+                \(hub.path) builds a model of its own. A hub the reader leaves and re-enters is a \
+                new hub: a model it holds is forgotten with it, and a removal still running from \
+                the old one marks and re-measures into a model nobody draws.
+                """)
+            #expect(text.contains("model: volumeList,"), "\(hub.path) does not hand the model to its list")
+        }
+    }
+
+    @Test("Both hubs remove through the shared routing, not an inline loop")
+    func bothHubsRemoveThroughTheRouting() throws {
+        for hub in Self.hubs {
+            let removal = try Self.body(of: "private func removeVolumes(_ volumeIds: [String]) async",
+                                        in: try Self.source(hub.path))
+            #expect(removal.contains("volumeList.removeVolumes(volumeIds, in: appState, context: modelContext"),
+                    "\(hub.path)'s removeVolumes does not call the shared routing:\n\(removal)")
+            #expect(!removal.contains("pipeline.removeVolume(") && !removal.contains("deleteVolume("), """
+                \(hub.path)'s removeVolumes runs removal steps of its own. They mark nothing: the row \
+                reads `indexed` until the re-measure, which is #1356.
+                \(removal)
+                """)
+        }
+    }
+
+    @Test("Both hubs build Free Up Space's plan through the model, which withholds a removal under way")
+    func bothHubsPlanThroughTheModel() throws {
+        for hub in Self.hubs {
+            let plan = try Self.body(of: "private var removalPlan: StorageRemovalPlan",
+                                     in: try Self.source(hub.path))
+            #expect(plan.contains("volumeList.freeUpSpacePlan(redownloadableVolumeIds:"),
+                    "\(hub.path)'s removalPlan bypasses the model:\n\(plan)")
+        }
+    }
+
+    @Test("Both full lists draw the model's status line and withdraw a removing row's actions")
+    func bothListsDrawTheModelsStatusLine() throws {
+        for hub in Self.hubs {
+            let row = try Self.body(of: "private func row(_ entry: VolumeStorageEntry) -> some View",
+                                    in: try Self.source(hub.path), after: hub.list)
+            #expect(row.contains("Text(model.statusLine(for: entry))"), """
+                \(hub.list)'s row does not draw the model's status line, so it cannot read \
+                *removing…*:
+                \(row)
+                """)
+            #expect(row.contains("let removing = model.isRemoving(entry.volumeId)"),
+                    "\(hub.list)'s row does not ask whether its volume is being removed")
+            #expect(row.contains(hub.withdrawal), """
+                \(hub.list)'s row still offers Remove while its volume is being removed; a second \
+                removal would race the first.
+                """)
+        }
     }
 }

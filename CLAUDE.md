@@ -183,21 +183,29 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
 ```
 
-**`VolumeRemovalTests` (#1356/#1357) needs an iPad for two of its three tests.** The two
-confirmation-anchor tests exist only where a confirmation dialog is a popover — a regular-width
-size class — and skip on a phone, where it is an action sheet with no source; a phone run of them
-is a control, not a guard. The third, a removed row leaving *Volumes on This Device* with nothing
-touched, runs on both idioms and PASSED against unfixed `v2` (1.1 s, iPad Pro 13-inch on iOS 26.4
-and 27.0), so it guards the fix's wiring rather than #1356's reported symptom; the in-progress
-state is `DownloadedVolumesListModelTests`', a unit suite. The suite seeds five side-loaded rows
-through `FRUS_UI_TEST_SEED_STORAGE_ROWS`, which every launch WITHOUT it removes again. Expect **3
-tests, 0 skipped on iPad** and **3 with 2 skipped on iPhone**:
+**`VolumeRemovalTests` (#1356/#1357) needs an iPad for two of its four tests, and iOS 27 is where
+both issues were found.** The two confirmation-anchor tests exist only where a confirmation dialog
+is a popover — a regular-width size class — so a phone skips them, since there it is an action
+sheet with no source. The skip reads the idiom, not the size class, so run the iPad full-screen:
+a compact Split View or Slide Over window would present an action sheet too, and the tests would
+fail on `app.popovers` instead of skipping (reasoned, not measured). The row
+test asks from two rows and reads each popover against its own row's frame, so it does not depend
+on where one device happens to put a misanchored popover. The other two tests run on both idioms:
+a removed row leaving *Volumes on This Device* with nothing touched while the list itself stays —
+it PASSED against unfixed `v2` (1.1 s), so it guards wiring, not #1356's symptom — and
+`testRemovalMarkSurvivesLeavingTheHub`, which holds the removal open for 40 s through
+`FRUS_UI_TEST_HOLD_STORAGE_REMOVAL` and requires the row to read *removing…* both before and after
+the reader leaves Volumes & Storage and comes back. The suite seeds five side-loaded rows through
+`FRUS_UI_TEST_SEED_STORAGE_ROWS`, which every launch WITHOUT it removes again, and runs with
+`FRUS_UI_TEST_DISABLE_ANIMATIONS=1`. Expect **4 tests, 0 skipped on iPad** and **4 with 2 skipped
+on iPhone**, and run it on an iOS 27 iPad as well as an iOS 26 one:
 
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5),OS=27.0" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/VolumeRemovalTests
 ```
 

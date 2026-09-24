@@ -8,6 +8,7 @@
 
 import Foundation
 import Observation
+import SwiftData
 
 // MARK: - HubCopy
 
@@ -145,8 +146,11 @@ struct StorageRemovalPlan: Equatable, Sendable {
 
 // MARK: - DownloadedVolumesListModel
 
-/// What the full downloaded-volume list draws — *Volumes on This Device* on iOS, *Volumes on This
-/// Mac* on macOS — held by the hub and read by the list it opens (#1356).
+/// What Volumes & Storage last measured, what its full downloaded-volume list draws — *Volumes on
+/// This Device* on iOS, *Volumes on This Mac* on macOS — and the removal in progress (#1356).
+///
+/// There is ONE, on ``AppState/downloadedVolumes``. Both hubs read it, every instance of each, and
+/// the list each hub opens reads it from the hub.
 ///
 /// ## Why the list reads this and not copies
 /// Before #1356 each hub handed its list `let` snapshots of the storage report and the index,
@@ -155,16 +159,36 @@ struct StorageRemovalPlan: Equatable, Sendable {
 /// one does, and on the simulators it does: against unfixed `v2`, a removed row left the pushed
 /// list 1.1 s after the confirmation with nothing touched, on iPad Pro 13-inch at iOS 26.4 and at
 /// iOS 27.0 (`VolumeRemovalTests.testRemovedRowLeavesTheListWithoutATouch`). The capture's
-/// six-second row was not reproduced. The hub keeps the snapshots here anyway, one instance per
-/// hub, so that the removal mark below and the rows it marks live in ONE observed object. The mark
-/// clears only after the re-measured report has been assigned here, so no render can draw the row
-/// unmarked from the stale report — which a mark in the list's own state, clearing while the rows
-/// still waited on a hub re-render to reach the list, could not promise.
+/// six-second row was not reproduced. The snapshots live here anyway, so that the removal mark
+/// below and the rows it marks live in ONE observed object.
+///
+/// ## Why `AppState` holds it, not the hub or the list
+/// The plan for #1356 put the removing set in the list's own `@State`, which is forgotten whenever
+/// the list is closed and reopened mid-removal — Back then Show all on iOS, Done then Show All on
+/// the Mac. The first fix moved the whole model to the hub, which outlives the list but not
+/// itself: the iOS hub is a navigation destination of the Settings root and the Mac hub one arm of
+/// the Settings pane switch, so Back to Settings and in again — or another pane and back — builds
+/// a new hub with a new `@State`. Measured with the removal held open
+/// (`VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub`), on iOS 26.4 and 27.0: with the
+/// model on the hub, the re-entered list drew the row as `… · indexed · never opened` while the
+/// removal ran. Nor would anything have taken the row out of it afterwards, because the running
+/// removal re-measures into the model of the hub the reader left — the unit test's per-hub mutant
+/// shows the re-entered model still listing the volume once the removal is over. `AppState` lives
+/// as long as the app, so a re-entered hub reads the same mark, and the re-measure lands in what
+/// it draws.
+///
+/// That is also why the hub's WHOLE measurement lives here, not only what the list draws: the
+/// index-page split and free space behind the compaction offer, and the iOS hub's measurement
+/// error, are written by the same re-measure. The app holds one `AppState` for every scene, so two
+/// iPad windows open on Volumes & Storage share the model too, and a removal started in one is
+/// marked in the other.
 ///
 /// ## The removal routine lives here, not in either hub
 /// The two hubs are hand-maintained twins and each carried its own copy of the removal routine.
-/// ``removeVolumes(_:unindex:deleteFile:remeasure:)`` is the one both now call, so the in-progress
-/// state below cannot exist on one platform and be missing from the other.
+/// ``removeVolumes(_:in:context:remeasure:)`` is the one both now call — it supplies the app's
+/// steps to ``removeVolumes(_:unindex:deleteFile:remeasure:)``, which orders them — so the
+/// in-progress state below cannot exist on one platform and be missing from the other.
+/// `HubRemovalRoutingTests` pins that both hubs call it and both lists draw ``statusLine(for:)``.
 ///
 /// ## A removal in progress
 /// A removal deletes the volume's index rows, then its file, then re-measures storage: a walk of
@@ -172,24 +196,31 @@ struct StorageRemovalPlan: Equatable, Sendable {
 /// one index query per remaining volume. Before #1356 the row went on reading `indexed` through all
 /// of it, and nothing on screen said a removal had started. Now:
 /// - the volume is in ``removingVolumeIds`` from the moment the routine starts until the
-///   re-measure has landed, and ``statusLine(for:)`` reads *removing…* in place of its index state
+///   re-measure has run, and ``statusLine(for:)`` reads *removing…* in place of its index state
 ///   and last-opened date;
 /// - it leaves ``indexedVolumeIds`` as soon as its index rows are deleted, not when the re-measure
 ///   recomputes the set, so nothing that reads the set — the hub's hero count included — claims
-///   rows that no longer exist.
+///   rows that no longer exist;
+/// - Free Up Space does not offer it (``freeUpSpacePlan(redownloadableVolumeIds:)``), for the same
+///   reason its row withdraws its own Remove: a second removal would race the first.
+///
+/// The mark clears after the re-measure has run. When the re-measure assigned a new report — the
+/// ordinary case — that report no longer lists the volume, so no render draws the row unmarked
+/// from the stale one. When the measurement itself FAILED the mark clears all the same, and what
+/// the row does next is the hub's: iOS keeps its previous report and shows the error, so the
+/// deleted volume's row is drawn again, unmarked and `not indexed`, until a measurement succeeds;
+/// the Mac drops its report on a failure, which empties the list.
 ///
 /// The row is MARKED, not dropped. A removal the re-measure does not confirm (the file could not be
 /// deleted) brings the row back as it now is, and a list that had already dropped the row would
 /// have no reason to draw it again.
 ///
-/// ## Why the hub holds the removing set, not the list
-/// The plan for #1356 put the set in the list's own `@State`. Held there, it is forgotten whenever
-/// the list is closed and reopened mid-removal — Back then Show all on iOS, Done then Show All on
-/// the Mac — and the reopened list draws the row as an ordinary one while its file is being
-/// deleted. The hub outlives both.
-///
 /// Version history:
 ///   1.0 — #1356: initial implementation
+///   1.1 — #1356 review, round 1: owned by `AppState` rather than by each hub, so the mark and the
+///          re-measure reach a hub the reader re-enters mid-removal; carries the index-page split,
+///          free space and measurement error too; ``removeVolumes(_:in:context:remeasure:)`` (the
+///          app's steps, lifted from the twins) and ``freeUpSpacePlan(redownloadableVolumeIds:)``
 @MainActor
 @Observable
 final class DownloadedVolumesListModel {
@@ -204,10 +235,17 @@ final class DownloadedVolumesListModel {
     var lastOpenedByVolumeId: [String: Date] = [:]
     /// The volume the hub is re-indexing from the list, if any.
     var reindexingVolumeId: String?
-    /// Volumes whose removal has started and whose re-measure has not landed.
+    /// The live-versus-reclaimable split of the index file, measured with the report.
+    var indexPages: IndexPageStatistics?
+    /// Free space on the volume holding the index, for the compaction precondition.
+    var availableBytes: Int?
+    /// The message from a failed storage measurement. The iOS hub shows it; the Mac hub's
+    /// measurement has no error surface and never sets it.
+    var loadError: String?
+    /// Volumes whose removal has started and whose re-measure has not run.
     private(set) var removingVolumeIds: Set<String> = []
 
-    /// Creates an empty model; the hub fills it from its first storage measurement.
+    /// Creates an empty model; a hub fills it from its first storage measurement.
     init() {}
 
     /// Every downloaded volume, in the report's order (by volume id).
@@ -218,7 +256,7 @@ final class DownloadedVolumesListModel {
     /// Version history:
     ///   1.0 — #1356: initial implementation
     enum IndexState: Equatable, Sendable {
-        /// A removal has started and its re-measure has not landed.
+        /// A removal has started and its re-measure has not run.
         case removing
         /// The volume has rows in the search index.
         case indexed
@@ -283,17 +321,34 @@ final class DownloadedVolumesListModel {
         return "\(entry.volumeId) · \(size) · \(indexState) · \(opened)"
     }
 
+    /// What Free Up Space may offer: ``StorageRemovalPlan``'s rules over this measurement, less
+    /// every volume whose removal is under way.
+    ///
+    /// A volume being removed cannot be removed again — its row withdraws its own Remove because a
+    /// second removal would race the first — and Free Up Space is the other way to ask. Both hubs
+    /// build their sheet's plan here.
+    ///
+    /// - Parameter redownloadableVolumeIds: The catalogue ids (``redownloadableVolumeIds(in:)``).
+    func freeUpSpacePlan(redownloadableVolumeIds: Set<String>) -> StorageRemovalPlan {
+        StorageRemovalPlan.make(entries: entries.filter { !removingVolumeIds.contains($0.volumeId) },
+                                protectedVolumeIds: protectedVolumeIds,
+                                redownloadableVolumeIds: redownloadableVolumeIds,
+                                lastOpenedByVolumeId: lastOpenedByVolumeId)
+    }
+
     /// Removes volumes: for each, its index rows and then its file; then one re-measure.
     ///
-    /// The steps are the hub's, passed in, because they reach the pipeline, the download manager
-    /// and `AppState`; the ORDER, and what the list sees between the steps, is this function's.
+    /// The steps are passed in, because they reach the pipeline, the download manager and
+    /// `AppState`; the ORDER, and what the list sees between the steps, is this function's. The
+    /// hubs reach it through ``removeVolumes(_:in:context:remeasure:)``, which supplies the app's
+    /// steps; the tests supply their own.
     ///
     /// - Parameters:
     ///   - volumeIds: The volumes to remove — one from a row's Remove, several from Free Up Space.
     ///   - unindex: Deletes one volume's index rows.
     ///   - deleteFile: Deletes one volume's XML file.
     ///   - remeasure: Runs once after the last file: reopens the read-only stores and re-measures
-    ///     storage, which replaces ``report`` and ``indexedVolumeIds``.
+    ///     storage, which replaces ``report`` and ``indexedVolumeIds`` when it succeeds.
     func removeVolumes(_ volumeIds: [String],
                        unindex: @MainActor (String) async -> Void,
                        deleteFile: @MainActor (String) async -> Void,
@@ -311,6 +366,52 @@ final class DownloadedVolumesListModel {
         // Only after the re-measure: until it lands, the report still lists the deleted file, and
         // a row drawn from it without the mark is #1356's removed volume sitting in the list.
         removingVolumeIds.subtract(volumeIds)
+    }
+
+    /// Removes volumes with the app's own steps: the routing both hubs call (#1356 review).
+    ///
+    /// Each hub used to build these steps itself, around its own call to
+    /// ``removeVolumes(_:unindex:deleteFile:remeasure:)`` — so a hub gone back to removing inline
+    /// would have passed every unit test while its list lost the mark. The steps: delete the
+    /// volume's index rows and drop it from `AppState.indexedVolumeIds`; delete its file; then,
+    /// once, VACUUM after a multi-volume removal (a single one is not worth the pause for a few
+    /// megabytes), reopen the read-only stores so analytics stop counting the removed rows (#275),
+    /// and let the hub re-measure. A DEBUG launch can hold the first step open
+    /// (`UITestVolumeSeeder.holdStorageRemovalIfRequested()`), which is how a UI test reads the
+    /// mark and leaves the hub while a removal is still running.
+    ///
+    /// - Parameters:
+    ///   - volumeIds: The volumes to remove.
+    ///   - appState: Supplies the pipeline and the download manager. Without either this removes
+    ///     nothing, as each hub's own copy did.
+    ///   - context: The main-actor context `AppState.refreshAfterCorpusChange(context:)` requires.
+    ///   - remeasure: The calling hub's `loadReport()`, which writes its measurement here.
+    func removeVolumes(_ volumeIds: [String],
+                       in appState: AppState,
+                       context: ModelContext,
+                       remeasure: @MainActor () async -> Void) async {
+        guard let dm = appState.downloadManager,
+              let pipeline = appState.indexingPipeline else { return }
+        await removeVolumes(
+            volumeIds,
+            unindex: { volumeId in
+                #if DEBUG
+                await UITestVolumeSeeder.holdStorageRemovalIfRequested()
+                #endif
+                try? await pipeline.removeVolume(volumeId)
+                appState.indexedVolumeIds.remove(volumeId)
+            },
+            deleteFile: { volumeId in
+                try? await dm.deleteVolume(volumeId: volumeId)
+            },
+            remeasure: {
+                if volumeIds.count > 1 {
+                    try? await pipeline.vacuumIndex()
+                }
+                appState.refreshAfterCorpusChange(context: context)
+                await remeasure()
+            }
+        )
     }
 
     /// The ids the app can fetch again: the catalogue. A volume on disk and absent from this set
