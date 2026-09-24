@@ -30,6 +30,8 @@ import Charts
 ///   1.0 — Session 163: initial implementation
 ///   1.1 — #1388: the Mac hover magnifier lays a volume's topic and tag out as two texts, so a long
 ///          topic truncates and the tag never does
+///   1.2 — #1387: the "extend beyond this range" chip draws `ChronologyOverflowCounts`, whose
+///          breakdown adds up to its headline; it had counted an enclosing row as before and after
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -913,21 +915,14 @@ struct ChronologyView: View {
 
     // MARK: - Overflow ("extends beyond this range") section
 
-    /// Number of overflow rows that begin before / end after the loaded range, for the chip.
-    private var overflowCounts: (leading: Int, trailing: Int) {
-        var leading = 0, trailing = 0
-        for row in displayedOverflowRows {
-            let dir = ChronologyViewModel.overflowDirection(row, startISO: vm.loadedStartISO, endISO: vm.loadedEndISO)
-            if dir.leading { leading += 1 }
-            if dir.trailing { trailing += 1 }
-        }
-        return (leading, trailing)
-    }
-
     /// Chip beneath the chart summarising the uncertain documents whose interval straddles a
-    /// range boundary, and toggling their dedicated section.
+    /// range boundary, and toggling their dedicated section. Its headline, breakdown and VoiceOver
+    /// label all come from one `ChronologyOverflowCounts`, whose three parts do not overlap, so the
+    /// breakdown adds up to the headline (#1387). The breakdown sits on its own line under the
+    /// headline: at three parts it no longer fits beside it on a phone.
     private func overflowChip(scrollProxy: ScrollViewProxy) -> some View {
-        let counts = overflowCounts
+        let counts = ChronologyViewModel.overflowCounts(
+            displayedOverflowRows, startISO: vm.loadedStartISO, endISO: vm.loadedEndISO)
         return Button {
             withAnimation { showOverflow.toggle() }
             if showOverflow {
@@ -938,16 +933,14 @@ struct ChronologyView: View {
                 Image(systemName: "arrow.left.and.right")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
-                Text(String(
-                    format: String(localized: "chronology.overflow.chip %lld",
-                                   defaultValue: "%lld documents extend beyond this range"),
-                    Int64(displayedOverflowRows.count)
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                Text(verbatim: overflowBreakdownText(counts))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: counts.chipTitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(verbatim: counts.chipBreakdown)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
                 Spacer()
                 Image(systemName: showOverflow ? "chevron.up" : "chevron.down")
                     .font(.caption2)
@@ -958,25 +951,7 @@ struct ChronologyView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(String(
-            format: String(localized: "chronology.overflow.chip.a11y %lld",
-                           defaultValue: "%lld documents have uncertain dates that extend beyond this range. Toggle to show them."),
-            Int64(displayedOverflowRows.count)
-        )))
-    }
-
-    /// "(2 before · 1 after)" breakdown for the overflow chip.
-    private func overflowBreakdownText(_ counts: (leading: Int, trailing: Int)) -> String {
-        var parts: [String] = []
-        if counts.leading > 0 {
-            parts.append(String(format: String(localized: "chronology.overflow.before %lld",
-                                                defaultValue: "%lld before"), Int64(counts.leading)))
-        }
-        if counts.trailing > 0 {
-            parts.append(String(format: String(localized: "chronology.overflow.after %lld",
-                                                defaultValue: "%lld after"), Int64(counts.trailing)))
-        }
-        return parts.isEmpty ? "" : "(" + parts.joined(separator: " \u{00b7} ") + ")"
+        .accessibilityLabel(Text(verbatim: counts.chipAccessibilityLabel))
     }
 
     @ViewBuilder

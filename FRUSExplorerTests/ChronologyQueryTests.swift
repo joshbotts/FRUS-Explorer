@@ -58,6 +58,36 @@ private func makeChronPipeline(dir: URL) async throws -> (pipeline: IndexingPipe
     return (pipeline, store)
 }
 
+/// The four intervals `ChronologyAggregationTests.overflowDirections` classifies against its
+/// summer range: one that begins before the range and ends inside it, one that begins inside and
+/// ends after, one that encloses the whole range (a year-only date), and one squarely inside.
+/// `ChronologyOverflowChipTests` counts the same four, so the direction rule and the chip's
+/// counts are pinned on one set of fixtures (#1387).
+private enum ChronOverflowFixtures {
+    /// Inclusive start of the picked range.
+    static let startISO = "1962-06-01"
+    /// Inclusive end of the picked range.
+    static let endISO = "1962-08-31"
+    /// Begins before the range, ends inside it.
+    static let leading = row("a", iso: "1962-05-20", isoMax: "1962-07-10")
+    /// Begins inside the range, ends after it.
+    static let trailing = row("b", iso: "1962-07-01", isoMax: "1962-09-15")
+    /// Begins before the range and ends after it.
+    static let both = row("c", iso: "1962-01-01", isoMax: "1962-12-31")
+    /// Wholly inside the range — not an overflow row at all.
+    static let inside = row("d", iso: "1962-07-01", isoMax: "1962-07-31")
+
+    /// A day-precision row in volume `v` with the given interval.
+    static func row(_ doc: String, iso: String, isoMax: String) -> ChronologyRow {
+        ChronologyRow(
+            volumeId: "v", documentId: doc, header: "Header", dateline: nil, summary: nil,
+            dateISO: iso, dateISOMax: isoMax,
+            precision: .day, certainty: .exact,
+            isEditorialNote: false, isFrontMatter: false, documentNumber: nil
+        )
+    }
+}
+
 // MARK: - ChronologyQueryTests
 
 /// Verifies the corpus-wide date-range queries that back the Chronology browser.
@@ -231,11 +261,11 @@ struct ChronologyAggregationTests {
 
     @Test("overflowDirection flags leading, trailing, enclosing, and contained intervals")
     func overflowDirections() {
-        let s = "1962-06-01", e = "1962-08-31"
-        let leading = row("v", "a", iso: "1962-05-20", isoMax: "1962-07-10")
-        let trailing = row("v", "b", iso: "1962-07-01", isoMax: "1962-09-15")
-        let both = row("v", "c", iso: "1962-01-01", isoMax: "1962-12-31")
-        let inside = row("v", "d", iso: "1962-07-01", isoMax: "1962-07-31")
+        let s = ChronOverflowFixtures.startISO, e = ChronOverflowFixtures.endISO
+        let leading = ChronOverflowFixtures.leading
+        let trailing = ChronOverflowFixtures.trailing
+        let both = ChronOverflowFixtures.both
+        let inside = ChronOverflowFixtures.inside
 
         let l = ChronologyViewModel.overflowDirection(leading, startISO: s, endISO: e)
         #expect(l.leading && !l.trailing)
@@ -296,6 +326,157 @@ struct ChronologyAggregationTests {
         #expect(byDay["1972-03-04"]?.map(\.label) == ["vB", "vA"])
         #expect(byDay["1972-03-04"]?.map(\.count) == [5, 2])
         #expect(byDay["1972-03-04"]?.map(\.seriesKey) == ["vB", "vA"])
+    }
+}
+
+// MARK: - ChronologyOverflowChipTests
+
+/// #1387: the "extend beyond this range" chip's breakdown must be a split of its headline.
+///
+/// Before the fix the view counted "before" and "after" separately, so a row that encloses the
+/// whole range (a year-only date around a season) was counted on both sides and the chip read
+/// "26 documents extend beyond this range (26 before · 24 after)". These tests drive
+/// `ChronologyViewModel.overflowCounts` and the copy on `ChronologyOverflowCounts`, which the
+/// view draws; the last test pins that it does. None depends on the idiom — the chip is shared
+/// SwiftUI — so they fail on any destination when the rule regresses.
+@Suite("ChronologyOverflowChipTests")
+struct ChronologyOverflowChipTests {
+
+    private typealias F = ChronOverflowFixtures
+
+    private func counts(_ rows: [ChronologyRow]) -> ChronologyOverflowCounts {
+        ChronologyViewModel.overflowCounts(rows, startISO: F.startISO, endISO: F.endISO)
+    }
+
+    private func counts(_ before: Int, _ after: Int, _ both: Int) -> ChronologyOverflowCounts {
+        ChronologyOverflowCounts(beginsBeforeOnly: before, endsAfterOnly: after, spansWholeRange: both)
+    }
+
+    @Test("Each overflow row is counted once: one begins before, one ends after, one reaches past both ends")
+    func threeFixturesCountOnceEach() {
+        let c = counts([F.leading, F.trailing, F.both])
+        #expect(c.beginsBeforeOnly == 1)
+        #expect(c.endsAfterOnly == 1)
+        #expect(c.spansWholeRange == 1)
+        #expect(c.total == 3, "the three parts add up to the three rows")
+    }
+
+    @Test("A row inside the range adds to no part")
+    func insideRowAddsNothing() {
+        // Mixed with one leading and one enclosing row, so a mutation that files the inside row
+        // under ANY of the three parts changes the result.
+        let c = counts([F.leading, F.inside, F.both])
+        #expect(c == counts(1, 0, 1))
+        #expect(c.total == 2)
+    }
+
+    @Test("The captured shape — 2 begin before, 24 enclose — reads as 26 split into 2 and 24")
+    func capturedShapeAddsUp() {
+        // The macOS manual's Chronology capture (Sep 1 – Nov 30, 1962) printed
+        // "26 documents extend beyond this range (26 before · 24 after)".
+        let leadingOnly = (0..<2).map { F.row("l\($0)", iso: "1962-05-20", isoMax: "1962-07-10") }
+        let enclosing = (0..<24).map { F.row("e\($0)", iso: "1962-01-01", isoMax: "1962-12-31") }
+        let c = counts(leadingOnly + enclosing)
+        #expect(c == counts(2, 0, 24))
+        #expect(c.chipTitle == "26 documents extend beyond this range")
+        #expect(c.chipBreakdown == "(2 begin before · 24 reach past both ends)")
+    }
+
+    @Test("A part of one is singular")
+    func singularParts() {
+        let c = counts(1, 1, 1)
+        #expect(c.chipBreakdown == "(1 begins before · 1 ends after · 1 reaches past both ends)")
+        #expect(c.chipTitle == "3 documents extend beyond this range")
+    }
+
+    @Test("Plural parts and the total are grouped")
+    func pluralPartsAreGrouped() {
+        let c = counts(2, 3, 12_067)
+        #expect(c.chipBreakdown == "(2 begin before · 3 end after · 12,067 reach past both ends)")
+        #expect(c.chipTitle == "12,072 documents extend beyond this range")
+        #expect(c.chipAccessibilityLabel
+                == "12,072 documents have uncertain dates that extend beyond this range. Toggle to show them.")
+    }
+
+    @Test("A part that is zero is left out, each on its own")
+    func zeroPartsAreLeftOut() {
+        #expect(counts(0, 3, 4).chipBreakdown == "(3 end after · 4 reach past both ends)")
+        #expect(counts(5, 0, 6).chipBreakdown == "(5 begin before · 6 reach past both ends)")
+        #expect(counts(2, 3, 0).chipBreakdown == "(2 begin before · 3 end after)")
+        #expect(counts(0, 0, 0).chipBreakdown == "")
+    }
+
+    @Test("One document reads in the singular, on screen and to VoiceOver")
+    func oneDocumentIsSingular() {
+        let c = counts([F.both])
+        #expect(c == counts(0, 0, 1))
+        #expect(c.chipTitle == "1 document extends beyond this range")
+        #expect(c.chipBreakdown == "(1 reaches past both ends)")
+        #expect(c.chipAccessibilityLabel
+                == "1 document has an uncertain date that extends beyond this range. Toggle to show it.")
+    }
+
+    // MARK: The view draws these, and counts nowhere else
+
+    /// `ChronologyView.swift`, read from the repository.
+    private static func viewSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Chronology/ChronologyView.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The body of the declaration that starts with `header`, from its first `{` to the `}` that
+    /// balances it — the function's own text, never a window that runs into the next one.
+    private static func body(of header: String, in source: String) -> String? {
+        guard let start = source.range(of: header),
+              let open = source[start.upperBound...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var cursor = open
+        while cursor < source.endIndex {
+            if source[cursor] == "{" { depth += 1 }
+            if source[cursor] == "}" {
+                depth -= 1
+                if depth == 0 { return String(source[start.lowerBound...cursor]) }
+            }
+            cursor = source.index(after: cursor)
+        }
+        return nil
+    }
+
+    /// Occurrences of `pattern` (a regular expression) in `text`.
+    private static func matches(_ pattern: String, in text: String) throws -> Int {
+        try NSRegularExpression(pattern: pattern).numberOfMatches(
+            in: text, range: NSRange(text.startIndex..., in: text))
+    }
+
+    @Test("The chip draws the shared counts' sentences, and the view counts directions nowhere else")
+    func chipDrawsTheSharedCounts() throws {
+        let source = try Self.viewSource()
+        let chip = try #require(Self.body(of: "private func overflowChip(", in: source),
+                                "ChronologyView.overflowChip not found — the scan would read nothing")
+        let label = try #require(Self.body(of: "private func overflowDirectionLabel(", in: source),
+                                 "ChronologyView.overflowDirectionLabel not found")
+
+        // Counted once, over the rows the section lists, against the range that loaded them.
+        #expect(try Self.matches(#"let counts = ChronologyViewModel\.overflowCounts\(\s*displayedOverflowRows,\s*startISO: vm\.loadedStartISO,\s*endISO: vm\.loadedEndISO\s*\)"#, in: chip) == 1,
+                "overflowChip must count through ChronologyViewModel.overflowCounts over displayedOverflowRows")
+        #expect(try Self.matches(#"Text\(\s*verbatim:\s*counts\.chipTitle\s*\)"#, in: chip) == 1,
+                "overflowChip must draw counts.chipTitle")
+        #expect(try Self.matches(#"Text\(\s*verbatim:\s*counts\.chipBreakdown\s*\)"#, in: chip) == 1,
+                "overflowChip must draw counts.chipBreakdown")
+        #expect(try Self.matches(#"\.accessibilityLabel\(\s*Text\(\s*verbatim:\s*counts\.chipAccessibilityLabel\s*\)\s*\)"#, in: chip) == 1,
+                "overflowChip must hand counts.chipAccessibilityLabel to VoiceOver")
+        #expect(!chip.contains("displayedOverflowRows.count"),
+                "the headline's number must be the parts' total, not a second count")
+
+        // A second counter anywhere in the view is how the double count shipped: every direction
+        // test left in the file belongs to the per-row label.
+        let callsInFile = try Self.matches(#"ChronologyViewModel\.overflowDirection\("#, in: source)
+        let callsInLabel = try Self.matches(#"ChronologyViewModel\.overflowDirection\("#, in: label)
+        #expect(callsInLabel == 1, "the row label must still read the direction rule")
+        #expect(callsInFile == callsInLabel,
+                "ChronologyView calls overflowDirection \(callsInFile - callsInLabel) time(s) outside overflowDirectionLabel")
     }
 }
 

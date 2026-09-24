@@ -55,6 +55,89 @@ struct VolumeLabelParts: Equatable, Sendable {
     let tag: String
 }
 
+// MARK: - ChronologyOverflowCounts
+
+/// How the Chronology's overflow rows — the documents whose uncertain dates reach past the picked
+/// range — split by the way each one reaches past it, and the chip copy built from that split.
+/// `ChronologyViewModel.overflowCounts(_:startISO:endISO:)` produces it; `ChronologyView`'s chip
+/// draws its three strings and nothing else.
+///
+/// The three counts do not overlap. A row that begins before the range **and** ends after it (a
+/// year-only date around a season's range) is counted once, in `spansWholeRange`, and in neither
+/// of the others, so the parts always add up to `total` and the breakdown reads as a split of the
+/// headline. #1387: the view used to count "before" and "after" separately, so over Sep 1 – Nov
+/// 30, 1962 the chip read "26 documents extend beyond this range (26 before · 24 after)" — 24
+/// enclosing rows counted on both sides, and 2 that only began before.
+///
+/// Every count is grouped and singular at exactly one. The app ships no String Catalog, so each
+/// phrase is a `.one` / `.many` key pair (the `HubCopy` pattern) with the number passed through
+/// `formatted()`, which groups it (`12,067`) where a `%lld` through `String(format:)` does not.
+///
+/// Version history:
+///   1.0 — #1387: initial implementation, lifted out of `ChronologyView`'s two-counter loop
+struct ChronologyOverflowCounts: Equatable, Sendable {
+    /// Rows that begin before the range and end inside it.
+    let beginsBeforeOnly: Int
+    /// Rows that begin inside the range and end after it.
+    let endsAfterOnly: Int
+    /// Rows that begin before the range and end after it, so they enclose the whole of it.
+    let spansWholeRange: Int
+
+    /// Every overflow row counted: the sum of the three disjoint parts.
+    var total: Int { beginsBeforeOnly + endsAfterOnly + spansWholeRange }
+
+    /// The chip's headline, "26 documents extend beyond this range".
+    var chipTitle: String {
+        total == 1
+            ? String(localized: "chronology.overflow.chip.one",
+                     defaultValue: "1 document extends beyond this range")
+            : String(localized: "chronology.overflow.chip.many",
+                     defaultValue: "\(total.formatted()) documents extend beyond this range")
+    }
+
+    /// The chip's breakdown, "(2 begin before · 24 reach past both ends)": the non-zero parts in
+    /// the order before, after, both, or `""` when every part is zero. The third part says
+    /// "reach past both ends" rather than "span the whole range" because the chip directly above
+    /// this one reads "… span this whole period", for a different set of documents.
+    var chipBreakdown: String {
+        var parts: [String] = []
+        if beginsBeforeOnly > 0 {
+            let n = beginsBeforeOnly
+            parts.append(n == 1
+                ? String(localized: "chronology.overflow.beginsBefore.one",
+                         defaultValue: "1 begins before")
+                : String(localized: "chronology.overflow.beginsBefore.many",
+                         defaultValue: "\(n.formatted()) begin before"))
+        }
+        if endsAfterOnly > 0 {
+            let n = endsAfterOnly
+            parts.append(n == 1
+                ? String(localized: "chronology.overflow.endsAfter.one",
+                         defaultValue: "1 ends after")
+                : String(localized: "chronology.overflow.endsAfter.many",
+                         defaultValue: "\(n.formatted()) end after"))
+        }
+        if spansWholeRange > 0 {
+            let n = spansWholeRange
+            parts.append(n == 1
+                ? String(localized: "chronology.overflow.reachesPastBoth.one",
+                         defaultValue: "1 reaches past both ends")
+                : String(localized: "chronology.overflow.reachesPastBoth.many",
+                         defaultValue: "\(n.formatted()) reach past both ends"))
+        }
+        return parts.isEmpty ? "" : "(" + parts.joined(separator: " \u{00b7} ") + ")"
+    }
+
+    /// The chip's VoiceOver label, which replaces the headline and breakdown it is drawn from.
+    var chipAccessibilityLabel: String {
+        total == 1
+            ? String(localized: "chronology.overflow.chip.a11y.one",
+                     defaultValue: "1 document has an uncertain date that extends beyond this range. Toggle to show it.")
+            : String(localized: "chronology.overflow.chip.a11y.many",
+                     defaultValue: "\(total.formatted()) documents have uncertain dates that extend beyond this range. Toggle to show them.")
+    }
+}
+
 // MARK: - ChronologyViewModel
 
 /// Drives the corpus-wide Chronology browser: holds the selected date range, loads the
@@ -72,6 +155,9 @@ struct VolumeLabelParts: Equatable, Sendable {
 ///   1.2 — #1388: `volumeTag` reads the whole id suffix, so every bundled volume's tag is unique
 ///          (11 were shared by 29 volumes); `distilledVolumeLabelParts` returns the uncut topic and
 ///          the tag apart, so a surface can truncate the topic and never the tag
+///   1.3 — #1387: `overflowCounts` splits the overflow rows three ways that do not overlap (begins
+///          before only, ends after only, reaches past both ends); the view had counted a row that
+///          encloses the range as both "before" and "after"
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -416,6 +502,32 @@ final class ChronologyViewModel {
         let start = String(row.dateISO.prefix(10))
         let end = String((row.dateISOMax ?? row.dateISO).prefix(10))
         return (leading: start < startISO, trailing: end > endISO)
+    }
+
+    /// Counts `rows` by how each one reaches past the inclusive `startISO`…`endISO` range, for the
+    /// overflow chip: begins before only, ends after only, or both — three parts that do not
+    /// overlap, so they add up to the rows counted (#1387). A row inside the range on both sides
+    /// adds to no part; `splitOverflow` never hands the chip one, since it files such a row under
+    /// `inRange`.
+    nonisolated static func overflowCounts(
+        _ rows: [ChronologyRow],
+        startISO: String,
+        endISO: String
+    ) -> ChronologyOverflowCounts {
+        var beginsBeforeOnly = 0, endsAfterOnly = 0, spansWholeRange = 0
+        for row in rows {
+            switch overflowDirection(row, startISO: startISO, endISO: endISO) {
+            case (leading: true, trailing: true): spansWholeRange += 1
+            case (leading: true, trailing: false): beginsBeforeOnly += 1
+            case (leading: false, trailing: true): endsAfterOnly += 1
+            case (leading: false, trailing: false): break
+            }
+        }
+        return ChronologyOverflowCounts(
+            beginsBeforeOnly: beginsBeforeOnly,
+            endsAfterOnly: endsAfterOnly,
+            spansWholeRange: spansWholeRange
+        )
     }
 
     /// Re-buckets a date group's own rows one granularity finer than the group, for the macOS
